@@ -245,3 +245,39 @@ The manager provides:
 - responsive/touch management UI.
 
 External plugin installation is intentionally a separate future layer because it requires package validation, permissions, compatibility and code-trust policy. It should not be implemented as arbitrary script execution from an untrusted ZIP.
+
+## 10. Data Center foundation — v3.18
+
+The customization layer now adds five generic core modules:
+
+```text
+src/core/data-model.js
+src/core/formula-engine.js
+src/core/parameter-schema.js
+src/core/workflow-engine.js
+src/plugins/data-center/
+```
+
+The intended dependency direction is:
+
+```text
+Artifact Store / Data Model
+          ↓
+Formula + generic processors
+          ↓
+Workflow / Recipe engine
+          ↓
+Plugin Processor / Analyzer / Chart providers
+          ↓
+Schema-generated parameter UI
+          ↓
+Data Center or feature-specific workspaces
+```
+
+The Data Center is not meant to replace dedicated scientific plugins. It is the generic place where users can combine providers, derive columns, save Recipes and inspect provenance without changing core application code.
+
+Detailed contracts:
+- `docs/DATA_MODEL.md`
+- `docs/WORKFLOW_RECIPES.md`
+- `docs/PARAMETER_SCHEMA.md`
+- `docs/FORMULA_ENGINE.md`

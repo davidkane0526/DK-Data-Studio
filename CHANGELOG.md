@@ -1,5 +1,14 @@
 # Changelog
 
+## plugin branch — 3.18.0-plugin.1
+
+- standard Data Model + Artifact Store + Provenance;
+- Processor / Analyzer / Chart / Recipe Plugin API v1.1;
+- Workflow / Recipe execution engine;
+- schema-driven parameter forms;
+- safe Formula / Derived Column engine;
+- built-in Data Center customization workspace.
+
 ## plugin branch — 3.17.0-plugin.1
 
 - added core Plugin Manager UI;

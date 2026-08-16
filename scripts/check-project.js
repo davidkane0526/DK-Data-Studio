@@ -30,6 +30,10 @@ const required = [
   'src/core/plugin-kernel.js',
   'src/core/plugin-manager-ui.js',
   'src/core/platform.js',
+  'src/core/data-model.js',
+  'src/core/formula-engine.js',
+  'src/core/parameter-schema.js',
+  'src/core/workflow-engine.js',
   'src/plugins/plugin-index.generated.js',
   'src/science/common.js',
   'src/science/import.js',
@@ -40,6 +44,9 @@ const required = [
   'src/science/physics.js',
   'src/science/gate.js',
   'scripts/verify-science-parity.js',
+  'scripts/test-data-center-core.js',
+  'src/plugins/data-center/plugin.json',
+  'src/plugins/data-center/plugin.js',
   'mobile/App.tsx',
   'mobile/app.json',
   'mobile/package.json',
@@ -53,7 +60,11 @@ const required = [
   'docs/ARCHITECTURE.md',
   'docs/PLUGIN_API.md',
   'docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md',
-  'docs/ANDROID_PORTING.md'
+  'docs/ANDROID_PORTING.md',
+  'docs/DATA_MODEL.md',
+  'docs/WORKFLOW_RECIPES.md',
+  'docs/PARAMETER_SCHEMA.md',
+  'docs/FORMULA_ENGINE.md'
 ];
 for (const rel of required) {
   if (!fs.existsSync(path.join(root, rel))) {

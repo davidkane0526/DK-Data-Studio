@@ -37,6 +37,12 @@
       'chart.trend':'趋势图',
       'chart.heatmap':'热图',
       'chart.timeseries':'时序图',
+      'chart.renderer':'图形渲染',
+      'data.model':'标准数据模型',
+      'data.formula':'公式派生列',
+      'workflow.processor':'数据处理器',
+      'workflow.analyzer':'分析器',
+      'workflow.recipe':'Recipe / 工作流',
       'project.slice':'工程状态'
     };
     return map[capability] || capability;

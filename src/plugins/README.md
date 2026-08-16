@@ -4,6 +4,7 @@ Each non-underscore directory containing `plugin.json` is discovered by `scripts
 
 Current built-ins:
 
+- `data-center`
 - `flexible-import`
 - `resonance-workbench`
 - `ter-analysis`

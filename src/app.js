@@ -66,6 +66,7 @@
     gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0},
     gateAnalysisResult:null,
     transformPreviewByDataset:new Map(),
+    artifactStore:window.GRSData.createStore(),
     mainRangeSelection:null,
     mainRangeDrag:null,
     mainLayout: {raf:null,lastWidth:0,lastHeight:0,renderToken:0},
@@ -509,6 +510,7 @@
       gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0},
       gateAnalysisResult:null,
       transformPreviewByDataset:new Map(),
+      artifactStore:window.GRSData.createStore(),
       importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false},
       pulseAnalysisState:createPulseAnalysisState(),
       pluginState:{},
@@ -552,6 +554,7 @@
     t.gateAnalysisSettings={...state.gateAnalysisSettings};
     t.gateAnalysisResult=state.gateAnalysisResult;
     t.transformPreviewByDataset=new Map(state.transformPreviewByDataset);
+    t.artifactStore=state.artifactStore;
     t.importDraft=importDraft;
     t.pulseAnalysisState=pulseAnalysisState;
     t.pluginState=window.GRSPlugins?.project?.serialize?.(t.pluginState||{})||t.pluginState||{};
@@ -590,6 +593,9 @@
     state.gateAnalysisSettings={...(t.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=t.gateAnalysisResult||null;
     state.transformPreviewByDataset=t.transformPreviewByDataset instanceof Map?t.transformPreviewByDataset:new Map(t.transformPreviewByDataset||[]);
+    state.artifactStore=t.artifactStore||window.GRSData.createStore();
+    t.artifactStore=state.artifactStore;
+    syncLegacyArtifacts({emit:false});
     importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false};
     t.importDraft=importDraft;
     pulseAnalysisState=t.pulseAnalysisState||createPulseAnalysisState();
@@ -1196,6 +1202,11 @@
 
     snapshot('修改数据 Vg');
     ds.vg=next;
+    ds.dataProvenance=Array.isArray(ds.dataProvenance)?ds.dataProvenance:[];
+    ds.dataProvenance.push(window.GRSData.provenanceStep({
+      type:'manual',label:'Set dataset Vg',providerId:'dataset.set-vg',pluginId:'builtin.resonance-workbench',version:'3.18',manual:true,
+      parameters:{old:Number.isFinite(old)?old:null,value:Number.isFinite(next)?next:null},inputs:[ds.path],note:'User-edited gate-voltage metadata in the dataset list.'
+    }));
 
     for(const sw of state.sweeps){
       if(sw.datasetPath===ds.path)sw.vg=next;
@@ -1207,6 +1218,7 @@
     state.spacingResult=[];
     state.terMaxResult=null;
     state.gateAnalysisResult=null;
+    syncLegacyArtifacts();
     renderAll();
     refreshOpenAnalysisPage();
     setStatus(`已将 ${ds.name} 的 Vg 标记为 ${Number.isFinite(next)?`${next} V`:'未知'}。`);
@@ -1736,11 +1748,14 @@
       }
 
       for(const ds of parsed){
+        ds.importedAt=ds.importedAt||new Date().toISOString();
+        ds.dataProvenance=Array.isArray(ds.dataProvenance)?ds.dataProvenance:[];
         state.datasets.push(ds);
         state.scanVisibility.set(ds.path,{forward:true,reverse:true});
       }
 
       rebuildSweeps();
+      syncLegacyArtifacts();
       state.spacingResult=[];
       state.terMaxResult=null;
       state.gateAnalysisResult=null;
@@ -1769,6 +1784,32 @@
 
   async function importFiles(){
     openImportWorkbench(true);
+  }
+
+  function syncLegacyArtifacts({emit=true}={}){
+    if(!state.artifactStore)state.artifactStore=window.GRSData.createStore();
+    const live=new Set(state.datasets.map(d=>d.path));
+    for(const artifact of state.artifactStore.list({includeTransient:true})){
+      if(artifact.transient&&artifact.metadata?.adapter==='legacy-dataset'&&!live.has(artifact.metadata?.legacyDatasetPath)){
+        state.artifactStore.remove(artifact.id);
+      }
+    }
+    for(const ds of state.datasets)state.artifactStore.upsert(window.GRSData.fromLegacyDataset(ds));
+    const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
+    if(emit)window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{artifacts:state.artifactStore.list()});
+    return state.artifactStore;
+  }
+
+  function artifactHostApi(){
+    return {
+      list:options=>state.artifactStore?.list?.(options)||[],
+      get:id=>state.artifactStore?.get?.(id)||null,
+      add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'add',artifact:state.artifactStore.get(id)});return id;},
+      upsert:artifact=>{const id=state.artifactStore.upsert(artifact);window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'upsert',artifact:state.artifactStore.get(id)});return id;},
+      remove:id=>{const ok=state.artifactStore.remove(id);if(ok)window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'remove',id});return ok;},
+      syncLegacy:()=>syncLegacyArtifacts(),
+      serialize:()=>window.GRSData.serializeStore(state.artifactStore,{includeTransient:false})
+    };
   }
 
   function rebuildSweeps(){
@@ -4862,12 +4903,14 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.17-plugin',
+      version:'3.18-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
         sourceName:d.sourceName||d.name,
         encoding:d.encoding||'',
+        importedAt:d.importedAt||null,
+        dataProvenance:d.dataProvenance||[],
         importSpec:d.importSpec||null,
         points:(d.points||[]).map(p=>({
           v:p.v,i:p.i,index:p.index,sourceLine:p.sourceLine,sourceColumns:p.sourceColumns
@@ -4884,6 +4927,7 @@
       terHeatmapDisplay:{...state.terHeatmapDisplay},
       gateAnalysisSettings:{...state.gateAnalysisSettings},
       transformPreviewByDataset:[...state.transformPreviewByDataset.entries()],
+      dataModel:window.GRSData.serializeStore(state.artifactStore,{includeTransient:false}),
       plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
       panelLayout:{
         groupPanelMode:state.groupPanelMode,
@@ -4957,6 +5001,10 @@
     state.gateAnalysisSettings={...(pr.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=null;
     state.transformPreviewByDataset=new Map(pr.transformPreviewByDataset||[]);
+    state.artifactStore=window.GRSData.restoreStore(pr.dataModel||{schema:1,artifacts:[]});
+    const artifactTab=activeProjectTab();
+    if(artifactTab)artifactTab.artifactStore=state.artifactStore;
+    syncLegacyArtifacts({emit:false});
 
     // Preserve plugin blobs even when their plugin is currently disabled.
     // Active plugin slices overwrite only their own namespace on the next save.
@@ -5651,7 +5699,7 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.17.0-plugin.1',
+      appVersion:'3.18.0-plugin.1',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),
@@ -5668,6 +5716,7 @@
       togglePhysicsPanel:pluginTogglePhysicsPanel,
       copyTextToClipboard,
       savePlotlyImage,
+      artifacts:artifactHostApi(),
       pulse:{
         serialize:()=>serializePulseAnalysisState(),
         restore:pluginRestorePulseState,

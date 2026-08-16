@@ -64,6 +64,13 @@ P.define({
   throw new Error('expected activation failure');
 });
 
+P.define({
+  id:'test.duplicate',name:'Duplicate provider',version:'1.0.0',enabled:false,apiVersion:'1.1.0'
+},async ctx=>{
+  ctx.registry.add('analysis.providers','stateful',{id:'stateful'});
+  return {};
+});
+
 P.configure({
   getActiveProjectTab:()=>tab,
   captureActiveProjectTab:()=>{tab.pluginState=P.project.serialize(tab.pluginState||{});},
@@ -101,6 +108,12 @@ P.configure({
   assert(P.manager.get('test.error').enabled,'failed enable remains desired enabled state for retry');
   const leaked=(P.diagnostics().registries['analysis.providers']||[]).some(row=>row.pluginId==='test.error');
   assert(!leaked,'failed activation must roll back partial contributions before retry');
+
+  let duplicateFailed=false;
+  try { await P.manager.enable('test.duplicate'); } catch (err) { duplicateFailed=/already owned by test\.stateful/.test(err.message); }
+  assert(duplicateFailed,'globally addressed provider ids must be unique across plugins');
+  const statefulProviders=(P.diagnostics().registries['analysis.providers']||[]).filter(row=>row.id==='stateful');
+  assert(statefulProviders.length===1&&statefulProviders[0].pluginId==='test.stateful','duplicate provider activation must not replace the original owner');
 
   const saved=JSON.parse(store.get(P.manager.storageKey));
   assert(saved['test.stateful']===true,'enabled preference should persist to localStorage');

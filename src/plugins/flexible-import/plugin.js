@@ -16,6 +16,11 @@
       extensions:['csv','txt','dat','tsv','asc','xy','iv','prn','out','log'],
       inspect:(file,options)=>A.inspectDataText(file,options),
       parse:(file,options)=>A.parseFlexibleData(file,options),
+      parseArtifacts(file,options){
+        const parsed=A.parseFlexibleData(file,options);
+        return {artifacts:parsed.datasets.map(ds=>ctx.data.model.fromLegacyDataset(ds)),inspection:parsed.inspection};
+      },
+      outputKinds:['data.table'],
       defaultOptions:()=>A.defaultImportOptions(),
       normalizeOptions:options=>A.normalizeImportOptions(options)
     });

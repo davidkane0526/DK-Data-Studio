@@ -279,3 +279,52 @@ These fields are displayed by the Plugin Manager.
 A plugin must tolerate deactivation and later reactivation. All registrations should use tracked Plugin API methods so cleanup is automatic. Resources created outside the Plugin API must be released from the returned `deactivate()` hook.
 
 Never delete unknown/disabled plugin namespaces from project JSON.
+
+## v3.18 rule: use the Data Center contracts before inventing feature-specific plumbing
+
+For a new plugin, first decide which standard contribution it provides:
+
+```text
+Importer   -> data.importers
+Processor  -> ctx.workflow.processors
+Analyzer   -> ctx.workflow.analyzers
+Chart      -> ctx.charts
+Recipe     -> ctx.workflow.recipes
+```
+
+Use `GRSData` artifacts as provider inputs/outputs.
+
+Do not invent a private table object if `data.table` is sufficient.
+
+Do not hand-code an ordinary settings form. Declare `parameterSchema` and use `ctx.parameters.render()`.
+
+Do not use arbitrary JavaScript evaluation for user formulas. Use `GRSFormula`.
+
+Do not make a new analysis page merely because two existing processors need to run in sequence. Prefer a Recipe first. Create a dedicated page when the workflow needs genuinely specialized interaction or visualization.
+
+Every new Processor/Analyzer should document:
+- input artifact kinds;
+- output artifact kinds;
+- parameter schema;
+- units;
+- provenance meaning;
+- whether it mutates source data (normally it must not);
+- numerical edge cases.
+
+## Provider IDs must be globally unique
+
+For Processor / Analyzer / Chart / Recipe and other globally addressed provider registries, never use generic IDs such as `fit`, `summary`, or `chart` in a third-party plugin. Prefer a plugin namespace:
+
+```text
+<plugin-id>.<operation>
+```
+
+Example:
+
+```text
+com.lab.raman.baseline
+com.lab.raman.fit-peaks
+com.lab.raman.spectrum-chart
+```
+
+The plugin host intentionally rejects duplicate provider IDs instead of silently selecting whichever plugin loaded first.

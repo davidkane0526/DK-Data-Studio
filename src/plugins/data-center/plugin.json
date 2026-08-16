@@ -1,0 +1,21 @@
+{
+  "id": "builtin.data-center",
+  "name": "Data Center",
+  "version": "1.0.0",
+  "apiVersion": "1.1.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 20,
+  "description": "Generic data model, formula-derived columns, configurable workflows, schema-driven parameters and chart previews.",
+  "capabilities": [
+    "data.model",
+    "data.formula",
+    "workflow.processor",
+    "workflow.analyzer",
+    "workflow.recipe",
+    "chart.renderer",
+    "ui.page",
+    "project.slice"
+  ],
+  "source": "builtin"
+}

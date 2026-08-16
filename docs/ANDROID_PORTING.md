@@ -204,3 +204,19 @@ The phase-1 shell is intentionally hybrid. The next native components worth extr
 - Android share/save UX.
 
 Scientific plots can remain WebView-hosted until a native replacement provides equal interaction fidelity.
+
+## v3.18 Data Center portability
+
+`mobile/scripts/sync-web-assets.js` copies the entire `src/` tree, so Android automatically receives:
+
+```text
+GRSData
+GRSFormula
+GRSParameters
+GRSWorkflow
+builtin.data-center
+```
+
+Do not create Android-specific Formula, Recipe or Data Model implementations.
+
+On compact/coarse-pointer devices the generic schema renderer switches to a single-column parameter layout and expands input touch targets.

@@ -891,3 +891,47 @@ assert(appV317.includes('currentTab.pluginState=JSON.parse(JSON.stringify(pr.plu
 assert(cssV317.includes('.plugin-manager-list')&&cssV317.includes('.plugin-enable-switch'),'plugin manager must have dedicated responsive management UI');
 assert(cssV317.includes('.grs-pointer-coarse .plugin-switch-track'),'plugin manager toggle must have coarse-pointer adaptation');
 console.log('v3.17 plugin-manager checks passed.');
+
+
+// v3.18 customizable Data Center foundation
+const dataModel318=fs.readFileSync('./src/core/data-model.js','utf8');
+const formula318=fs.readFileSync('./src/core/formula-engine.js','utf8');
+const params318=fs.readFileSync('./src/core/parameter-schema.js','utf8');
+const workflow318=fs.readFileSync('./src/core/workflow-engine.js','utf8');
+const kernel318=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const dataCenter318=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
+const index318=fs.readFileSync('./src/index.html','utf8');
+const app318=fs.readFileSync('./src/app.js','utf8');
+const pkg318=JSON.parse(fs.readFileSync('./package.json','utf8'));
+assert(index318.includes('core/data-model.js')&&index318.includes('core/formula-engine.js')&&index318.includes('core/parameter-schema.js')&&index318.includes('core/workflow-engine.js'),
+  'desktop/web/mobile renderer bundle must load generic Data Center core modules');
+assert(dataModel318.includes("createTable")&&dataModel318.includes("provenanceStep")&&dataModel318.includes("serializeStore"),
+  'standard Data Model must provide DataTable, provenance and project artifact-store serialization');
+assert(dataModel318.includes("transient:true")&&app318.includes("syncLegacyArtifacts"),
+  'legacy resonance datasets must map to transient standard DataTables without duplicate project persistence');
+assert(app318.includes('dataModel:window.GRSData.serializeStore')&&app318.includes('window.GRSData.restoreStore(pr.dataModel'),
+  'generic artifact store must persist in project files independently of plugin-specific state');
+assert(formula318.includes('function tokenize')&&formula318.includes('function parse')&&formula318.includes('deriveColumn'),
+  'formula engine must use a parser/AST and support provenance-aware derived columns');
+assert(!formula318.includes('eval(')&&!formula318.includes('new Function'),
+  'formula engine must never execute arbitrary JavaScript');
+assert(params318.includes('function validate')&&params318.includes('function render')&&params318.includes("field.type==='column'"),
+  'schema-driven parameter system must validate/render generic fields and DataTable column selectors');
+assert(workflow318.includes('function executionOrder')&&workflow318.includes('function buildSequentialRecipe')&&workflow318.includes('workflow:completed'),
+  'workflow engine must support DAG ordering, sequential recipes and lifecycle events');
+assert(workflow318.includes('inputKinds')&&workflow318.includes('outputKinds')&&workflow318.includes('resolveParameterBindings'),
+  'workflow providers must enforce typed artifact contracts and recipe-level parameter binding');
+assert(kernel318.includes("workflow.processors")&&kernel318.includes("workflow.analyzers")&&kernel318.includes("charts.renderers")&&kernel318.includes("workflow.recipes"),
+  'Plugin API must expose typed Processor / Analyzer / Chart / Recipe contribution interfaces');
+assert(kernel318.includes('data: {')&&kernel318.includes('parameters: {'),
+  'Plugin API must expose Data Model / Artifact Store and schema-driven parameter services');
+assert(dataCenter318.includes("id:'builtin.data-center'")&&dataCenter318.includes("ctx.workflow.processors.register('formula.derived-column'")&&dataCenter318.includes("ctx.workflow.analyzers.register('table.summary'"),
+  'Data Center built-in plugin must provide formula processor and generic analyzer examples');
+assert(dataCenter318.includes("ctx.charts.register('xy-line'")&&dataCenter318.includes('dcWorkflowSteps')&&dataCenter318.includes('dcProvenanceList'),
+  'Data Center UI must expose configurable workflow steps, generic chart provider and provenance inspection');
+assert(fs.readFileSync('./src/plugins/plugin-index.generated.js','utf8').includes('plugins/data-center/plugin.js'),
+  'Data Center plugin must be discoverable without hard-coded HTML script tags');
+for(const doc of ['./docs/DATA_MODEL.md','./docs/WORKFLOW_RECIPES.md','./docs/PARAMETER_SCHEMA.md','./docs/FORMULA_ENGINE.md'])
+  assert(fs.existsSync(doc),`v3.18 Data Center documentation missing: ${doc}`);
+assert(pkg318.scripts['data-center:test'],'package scripts must include Data Center core tests');
+console.log('v3.18 Data Model / Workflow / Schema / Formula / Data Center checks passed.');

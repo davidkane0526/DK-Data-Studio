@@ -116,3 +116,18 @@ The core Plugin Manager already owns enable/disable/reload/preferences. Do not b
 When a built-in plugin is added, its runtime manifest should include `name`, `version`, `description`, `capabilities`, `source`, and `order` so the manager can present it clearly.
 
 Disabling a plugin must never delete that plugin's namespaced project state.
+
+## Data Center / Workflow rule (v3.18+)
+
+Before adding a feature-specific state object or settings form, inspect:
+
+- `docs/DATA_MODEL.md`
+- `docs/WORKFLOW_RECIPES.md`
+- `docs/PARAMETER_SCHEMA.md`
+- `docs/FORMULA_ENGINE.md`
+
+New reusable processing operations should normally be `workflow.processors` or `workflow.analyzers` that consume/return `GRSData` artifacts.
+
+New ordinary parameter UIs should use `parameterSchema`; do not hand-build repetitive form markup.
+
+New user-defined numeric columns must use the safe `GRSFormula` parser; never use `eval()` or `new Function()`.

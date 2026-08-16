@@ -1,4 +1,208 @@
-# Graphene Resonance Studio — plugin branch (3.17.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.18.0-plugin.1)
+
+
+## v3.18 可定制数据处理中心：完成 Data Model / Workflow / Recipe / 参数 Schema / Formula
+
+本版本不是继续增加一个新的“专用分析功能”，而是完成下一层通用平台能力。
+
+新增内置插件：
+
+```text
+Data Center
+```
+
+它提供一个面向不写代码用户的通用工作区：
+
+```text
+数据对象
+  ↓
+公式派生列
+  ↓
+Processor / Analyzer 工作流
+  ↓
+Recipe 保存
+  ↓
+Chart Provider
+  ↓
+Provenance 检查
+```
+
+### 1. 标准 Data Model + Provenance
+
+新增：
+
+```text
+src/core/data-model.js
+```
+
+核心对象包括：
+
+```text
+DataTable
+Series
+Sweep
+EventSeries
+ImageData
+PeakSet
+FitResult
+AnalysisResult
+Annotation
+```
+
+每个工程标签页都有自己的 Artifact Store。
+
+现有石墨烯 I–V 数据会自动映射成标准 `data.table`，但这些镜像对象标记为 transient，因此保存工程时不会再复制一份原始 I–V 数据。
+
+新的派生数据会真正写入工程：
+
+```json
+{
+  "dataModel": {
+    "schema": 1,
+    "artifacts": []
+  }
+}
+```
+
+每个派生结果保留：
+
+```text
+源数据
+处理器
+插件
+版本
+参数
+输入 artifact id
+输出 artifact id
+workflow execution id
+node id
+人工/自动状态
+时间
+```
+
+### 2. Processor / Analyzer / Chart 插件接口
+
+Plugin API 更新为 v1.1，并新增：
+
+```js
+ctx.workflow.processors.register(...)
+ctx.workflow.analyzers.register(...)
+ctx.charts.register(...)
+ctx.workflow.recipes.register(...)
+```
+
+不同实验场景以后优先增加 provider，而不是增加主程序分支判断。
+
+### 3. Workflow / Recipe Engine
+
+新增：
+
+```text
+src/core/workflow-engine.js
+```
+
+支持：
+
+```text
+DAG 节点依赖
+拓扑排序
+循环依赖检查
+Processor / Analyzer / Chart node
+input:xxx / node:xxx 引用
+Recipe 级参数
+参数绑定
+输入/输出 Artifact 类型检查
+运行进度事件
+执行 provenance
+```
+
+Data Center 中已经提供顺序工作流编辑器，用户可以添加、删除、上下移动 Processor / Analyzer，并保存为当前工程的 Recipe。
+
+### 4. Schema-driven 参数面板
+
+新增：
+
+```text
+src/core/parameter-schema.js
+```
+
+插件现在可以声明参数，而不必重复编写 HTML：
+
+```text
+text
+textarea
+formula
+number / integer
+boolean
+select / multiselect
+column / columns
+color
+```
+
+系统统一负责：
+
+```text
+默认值
+必填
+min/max
+正则验证
+自定义验证
+条件显示
+DataTable 列选择
+桌面布局
+手机单列布局
+触摸屏控件尺寸
+```
+
+### 5. Formula / Derived Column
+
+新增：
+
+```text
+src/core/formula-engine.js
+```
+
+例如直接输入：
+
+```text
+abs(Vd / Id)
+log10(abs(Id))
+sqrt(X^2 + Y^2)
+[Gate Voltage] / 10
+```
+
+即可生成新的 DataTable 列。
+
+Formula Engine 使用 tokenizer + parser + AST，不使用 `eval()` 或 `new Function()`。
+
+因此既适合科研数据表达式，也不会把公式框变成任意 JavaScript 执行入口。
+
+### Data Center 当前内置的通用 provider
+
+```text
+Processor
+├─ 公式派生列
+├─ 选择列
+└─ 有限值筛选
+
+Analyzer
+└─ 列统计摘要
+
+Chart
+└─ XY 多序列图
+```
+
+这些只是平台能力示例；以后 Raman、FET、Retention、Endurance 等插件可以继续注册新的 Processor / Analyzer / Chart / Recipe，而不修改 Data Center 主体。
+
+详细开发文档：
+
+```text
+docs/DATA_MODEL.md
+docs/WORKFLOW_RECIPES.md
+docs/PARAMETER_SCHEMA.md
+docs/FORMULA_ENGINE.md
+```
+
 
 ## v3.17 插件管理
 

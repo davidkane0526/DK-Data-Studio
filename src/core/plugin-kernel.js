@@ -11,7 +11,7 @@
   let host = null;
   let loadingPromise = null;
 
-  const API_VERSION = '1.0.0';
+  const API_VERSION = '1.1.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -138,8 +138,28 @@
     assertId(id, 'contribution id');
     const reg = getRegistry(kind);
     const key = `${pluginId}:${id}`;
+    if (reg.has(key)) throw new Error(`Contribution already registered: ${kind}/${pluginId}:${id}`);
     reg.set(key, { pluginId, id, value });
     return addCleanup(pluginId, () => reg.delete(key));
+  }
+
+  const globallyUniqueRegistryKinds = new Set([
+    'workflow.processors',
+    'workflow.analyzers',
+    'workflow.recipes',
+    'charts.renderers',
+    'data.importers',
+    'analysis.providers'
+  ]);
+
+  function registerTypedContribution(pluginId, kind, id, value) {
+    if (globallyUniqueRegistryKinds.has(kind)) {
+      const existing = [...getRegistry(kind).values()].find(row => row.id === id);
+      if (existing) {
+        throw new Error(`Contribution id must be unique in ${kind}: ${id} is already owned by ${existing.pluginId}`);
+      }
+    }
+    return registerContribution(pluginId, kind, id, value);
   }
 
   function listContributions(kind) {
@@ -282,12 +302,54 @@
         get: id => getRegistry('commands').get(id) || null
       },
       registry: {
-        add: (kind, id, value) => registerContribution(pluginId, kind, id, value),
+        add: (kind, id, value) => registerTypedContribution(pluginId, kind, id, value),
         list: kind => listContributions(kind),
         own: kind => listContributions(kind).filter(x => x.pluginId === pluginId)
       },
       project: {
         registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
+      },
+      data: {
+        model: window.GRSData,
+        formula: window.GRSFormula,
+        artifacts: {
+          list: options => host?.artifacts?.list?.(options) || [],
+          get: id => host?.artifacts?.get?.(id) || null,
+          add: (artifact, options) => host?.artifacts?.add?.(artifact, options),
+          upsert: artifact => host?.artifacts?.upsert?.(artifact),
+          remove: id => host?.artifacts?.remove?.(id),
+          syncLegacy: () => host?.artifacts?.syncLegacy?.()
+        }
+      },
+      workflow: {
+        run: (recipe, options) => window.GRSWorkflow.run(recipe, options),
+        buildSequentialRecipe: spec => window.GRSWorkflow.buildSequentialRecipe(spec),
+        processors: {
+          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.processors', id, window.GRSWorkflow.normalizeProvider('processor', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+          list: () => listContributions('workflow.processors').map(x=>x.value)
+        },
+        analyzers: {
+          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.analyzers', id, window.GRSWorkflow.normalizeProvider('analyzer', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+          list: () => listContributions('workflow.analyzers').map(x=>x.value)
+        },
+        recipes: {
+          register: (id, recipe) => {
+            const value={...recipe,id:recipe?.id||id,pluginId,pluginVersion:definition.manifest.version||'1.0.0'};
+            const check=window.GRSWorkflow.validateRecipe(value);
+            if(!check.ok)throw new Error(`Recipe ${id}: ${check.errors.join(' ')}`);
+            return registerTypedContribution(pluginId, 'workflow.recipes', id, value);
+          },
+          list: () => listContributions('workflow.recipes').map(x=>x.value)
+        }
+      },
+      charts: {
+        register: (id, spec) => registerTypedContribution(pluginId, 'charts.renderers', id, window.GRSWorkflow.normalizeProvider('chart', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+        list: () => listContributions('charts.renderers').map(x=>x.value)
+      },
+      parameters: {
+        render: (container, schema, options) => window.GRSParameters.render(container, schema, options),
+        validate: (schema, values, context) => window.GRSParameters.validate(schema, values, context),
+        defaults: (schema, initial) => window.GRSParameters.defaultValues(schema, initial)
       },
       ui: {
         toolbar: {
@@ -528,4 +590,14 @@
       };
     }
   };
+
+  window.GRSWorkflow?.configure?.({
+    getProvider(kind,id){
+      const rows=listContributions(kind);
+      const exact=rows.find(row=>row.value?.id===id||row.id===id);
+      return exact?.value||null;
+    },
+    listProviders(kind){ return listContributions(kind).map(row=>row.value); },
+    emit:eventEmit
+  });
 })();

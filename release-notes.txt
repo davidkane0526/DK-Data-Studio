@@ -1,15 +1,17 @@
-Graphene Resonance Studio 3.17.0-plugin.1
+Graphene Resonance Studio 3.18.0-plugin.1
 Branch: plugin
 
-- Added a core Plugin Manager page accessible from the top toolbar.
-- Plugin Manager shows plugin name, ID, version, API version, capabilities, runtime contributions and activation status.
-- Added search and status filters for all / enabled / disabled / error plugins.
-- Plugins can be enabled, disabled, retried and reloaded without restarting the whole application.
-- Plugin enable preferences persist locally under grs.plugin.preferences.v1 and are independent of project files.
-- Disabling/reloading a plugin captures its current project state before runtime cleanup.
-- Re-enabling a plugin restores its namespaced state for the current project.
-- Project serialization now preserves data for disabled or temporarily unavailable plugins instead of deleting their namespace.
-- Failed partial plugin activation is rolled back cleanly, avoiding leaked commands/registry/UI contributions before Retry.
-- Added Restore Defaults and Copy Diagnostics actions.
-- Plugin Manager UI includes compact/touch layouts for browser and React Native Android builds.
-- Android shell version advanced to 0.3.0 / versionCode 3 so plugin-manager builds can update earlier test APKs.
+- Added standard GRSData artifact model and per-project Artifact Store.
+- Added provenance chain with source/provider/plugin/version/parameters/input/output/execution metadata.
+- Legacy resonance datasets are mirrored into deterministic transient DataTables without duplicate project persistence.
+- Added Plugin API v1.1 typed Processor / Analyzer / Chart / Recipe contribution interfaces.
+- Globally addressed provider/recipe IDs are now uniqueness-checked across plugins to keep workflow resolution deterministic.
+- Added GRSWorkflow DAG/Recipe engine with type checks, parameter binding, progress events and workflow provenance.
+- Added GRSParameters schema-driven validation/UI renderer with responsive and coarse-pointer support.
+- Added safe GRSFormula tokenizer/parser/AST engine for derived DataTable columns; no eval/new Function.
+- Added builtin.data-center plugin with artifact browser, formula builder, configurable sequential workflow, saved Recipes, generic chart preview and Provenance viewer.
+- Added generic processors: formula-derived column, select columns, finite-row filter; analyzer: table summary; chart provider: generic XY.
+- Added detailed Data Model, Workflow/Recipe, Parameter Schema and Formula Engine development documentation.
+- React Native Android bundle consumes the same new core modules automatically through mobile sync.
+
+main remains the preserved v3.14 baseline; all changes are on plugin.

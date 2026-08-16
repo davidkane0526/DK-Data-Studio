@@ -2822,3 +2822,32 @@ button.danger-soft{
   .plugin-manager-summary{gap:7px}
   .plugin-manager-stat{min-height:62px;padding:9px 10px}
 }
+
+/* ============================================================
+   v3.18 generic schema-driven parameter controls
+   ============================================================ */
+.schema-parameter-panel{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(160px,1fr));
+  gap:8px 10px;
+  min-width:0;
+}
+.schema-parameter-panel.compact{grid-template-columns:repeat(2,minmax(130px,1fr));}
+.schema-param-group{display:contents;}
+.schema-param-group-title{grid-column:1/-1;font-size:10px;font-weight:700;color:#475467;padding-top:2px;}
+.schema-param-field{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.schema-param-label{font-size:9px;color:#5f6b7d;}
+.schema-param-field input,.schema-param-field select,.schema-param-field textarea{
+  width:100%;box-sizing:border-box;border:1px solid #cfd7e5;border-radius:6px;
+  padding:5px 7px;font-size:10px;background:#fff;color:#273244;min-height:30px;
+}
+.schema-param-field select[multiple]{min-height:88px;}
+.schema-param-field textarea{resize:vertical;line-height:1.45;}
+.schema-param-help{font-size:8px;color:#98a2b3;line-height:1.4;}
+.schema-param-error{min-height:10px;font-size:8px;color:#b42318;line-height:1.35;}
+.schema-param-field.has-error input,.schema-param-field.has-error select,.schema-param-field.has-error textarea{border-color:#e58d84;box-shadow:0 0 0 2px rgba(180,35,24,.06);}
+.schema-param-label .required,.schema-param-field .required{color:#b42318;}
+.grs-pointer-coarse .schema-param-field input,.grs-pointer-coarse .schema-param-field select,.grs-pointer-coarse .schema-param-field textarea{min-height:var(--grs-touch-target,44px);font-size:12px;}
+.grs-size-compact .schema-parameter-panel,.grs-size-compact .schema-parameter-panel.compact{grid-template-columns:1fr;}
+.schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;accent-color:#315efb;}
+.grs-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}

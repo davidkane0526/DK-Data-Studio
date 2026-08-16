@@ -1,4 +1,4 @@
-# Plugin API v1.0
+# Plugin API v1.x
 
 Global runtime:
 
@@ -358,3 +358,109 @@ Core project serialization merges active plugin slices into previously preserved
 ### Activation failure rollback
 
 If a plugin throws during `activate()`, every contribution already registered during that partial activation is rolled back before the plugin enters `error` state. This makes Retry/Reload safe from duplicated commands, styles, registry rows, and toolbar buttons.
+
+# Plugin API v1.1 additions — Data Center foundation
+
+v1.1 is additive. Plugins declaring any `1.x` API remain loadable.
+
+## Standard data model
+
+```js
+ctx.data.model        // GRSData
+ctx.data.formula      // GRSFormula
+ctx.data.artifacts.list()
+ctx.data.artifacts.get(id)
+ctx.data.artifacts.add(artifact)
+ctx.data.artifacts.upsert(artifact)
+ctx.data.artifacts.remove(id)
+ctx.data.artifacts.syncLegacy()
+```
+
+## Processor
+
+```js
+ctx.workflow.processors.register('my.processor', {
+  name:'My Processor',
+  inputKinds:['data.table'],
+  outputKinds:['data.table'],
+  parameterSchema:{ fields:[...] },
+  run({ inputs, parameters, context, signal, execution }) {
+    return outputArtifact;
+  }
+});
+```
+
+## Analyzer
+
+```js
+ctx.workflow.analyzers.register('my.analyzer', {
+  name:'My Analyzer',
+  inputKinds:['data.table'],
+  outputKinds:['result.analysis'],
+  parameterSchema:{ fields:[...] },
+  run({ inputs, parameters }) {
+    return GRSData.createAnalysisResult(...);
+  }
+});
+```
+
+## Chart provider
+
+```js
+ctx.charts.register('my.chart', {
+  name:'My Chart',
+  inputKinds:['data.table'],
+  parameterSchema:{ fields:[...] },
+  render({ container, artifact, parameters }) {}
+});
+```
+
+## Recipe
+
+```js
+ctx.workflow.recipes.register('my.recipe', recipeDefinition);
+```
+
+## Schema UI
+
+```js
+const panel=ctx.parameters.render(container, provider.parameterSchema, {
+  value:settings,
+  context:{table},
+  onChange(next,validation){}
+});
+```
+
+## Workflow execution
+
+```js
+const result=await ctx.workflow.run(recipe, {
+  inputs:{main:table},
+  parameters:{...}
+});
+```
+
+See the dedicated Data Center documentation for the complete contracts.
+
+### Provider / Recipe ID uniqueness
+
+The following registries are globally addressed and therefore require an ID that is unique across all enabled plugins:
+
+```text
+workflow.processors
+workflow.analyzers
+workflow.recipes
+charts.renderers
+data.importers
+analysis.providers
+```
+
+Use a stable namespace for third-party plugins, for example:
+
+```js
+ctx.workflow.processors.register('com.example.raman.baseline', { ... });
+ctx.workflow.analyzers.register('com.example.raman.fit-peaks', { ... });
+ctx.charts.register('com.example.raman.spectrum', { ... });
+```
+
+The host rejects a second plugin that tries to claim an already registered globally addressed ID. This prevents Recipe/provider resolution from depending on plugin load order.
