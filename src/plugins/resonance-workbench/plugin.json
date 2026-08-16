@@ -1,0 +1,16 @@
+{
+  "id": "builtin.resonance-workbench",
+  "name": "Resonance Workbench",
+  "version": "1.0.0",
+  "apiVersion": "1.0.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 100,
+  "description": "Resonance-specific peak/ridge/physics analysis UI contributions.",
+  "capabilities": [
+    "ui.page",
+    "ui.panel",
+    "analysis.resonance",
+    "chart.trend"
+  ]
+}

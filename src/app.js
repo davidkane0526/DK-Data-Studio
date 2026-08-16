@@ -89,6 +89,20 @@
     return importDraft.files.find(f=>f.path===importDraft.activePath)||null;
   }
 
+  function flexibleImportProvider(){
+    const pluginProvider=window.GRSPlugins?.registry?.find?.(
+      'data.importers',
+      value=>value?.id==='flexible-text'
+    );
+    return pluginProvider||{
+      id:'legacy-flexible-text',
+      inspect:(file,options)=>A.inspectDataText(file,options),
+      parse:(file,options)=>A.parseFlexibleData(file,options),
+      defaultOptions:()=>A.defaultImportOptions(),
+      normalizeOptions:options=>A.normalizeImportOptions(options)
+    };
+  }
+
   function createPulseAnalysisState(){
     return {
       files:[],
@@ -497,6 +511,7 @@
       transformPreviewByDataset:new Map(),
       importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false},
       pulseAnalysisState:createPulseAnalysisState(),
+      pluginState:{},
       mainView:{xDomain:null,yDomain:null,mode:'select'}
     };
   }
@@ -539,6 +554,7 @@
     t.transformPreviewByDataset=new Map(state.transformPreviewByDataset);
     t.importDraft=importDraft;
     t.pulseAnalysisState=pulseAnalysisState;
+    t.pluginState=window.GRSPlugins?.project?.serialize?.()||t.pluginState||{};
     t.mainView={...state.mainView,
       xDomain:state.mainView.xDomain?state.mainView.xDomain.slice():null,
       yDomain:state.mainView.yDomain?state.mainView.yDomain.slice():null};
@@ -588,6 +604,12 @@
     state.mainRangeDrag=null;
     closeRangeActionMenu();
     syncPhysicsLabelControls();
+
+    // Every project tab owns an isolated snapshot for every registered plugin,
+    // not only the historical built-in pulse workspace.
+    if(window.GRSPlugins?.project?.restore){
+      window.GRSPlugins.project.restore(t.pluginState||{},null);
+    }
   }
 
   function createProjectTab(title=null,activate=true){
@@ -1423,7 +1445,7 @@
   function recomputeImportItem(item,initializeMapping=false){
     if(!item?.text)return;
     try{
-      item.inspection=A.inspectDataText({
+      item.inspection=flexibleImportProvider().inspect({
         name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding
       },item.settings);
       item.error='';
@@ -1466,7 +1488,7 @@
           text:'',
           detectedEncoding:'',
           loadedEncodingRequest:'',
-          settings:A.defaultImportOptions(),
+          settings:flexibleImportProvider().defaultOptions(),
           inspection:null,
           mappingTouched:false,
           loading:false,
@@ -1766,7 +1788,7 @@
   async function resetCurrentImportAuto(){
     const item=importActiveItem();
     if(!item)return;
-    item.settings=A.defaultImportOptions();
+    item.settings=flexibleImportProvider().defaultOptions();
     item.mappingTouched=false;
     await readImportItemText(item,true);
     recomputeImportItem(item,true);
@@ -1785,7 +1807,7 @@
       for(const item of selected){
         await readImportItemText(item);
         if(item.error)continue;
-        const result=A.parseFlexibleData({
+        const result=flexibleImportProvider().parse({
           name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding
         },item.settings);
         if(result.datasets.length){
@@ -2638,7 +2660,10 @@
       const peakHits=dataLayer.append('g').selectAll('circle.peak-hit-target').data(peakData,d=>d.id).join('circle')
         .attr('class',d=>`peak-hit-target ${d.locked?'locked':''} ${d.sweepId===state.selectedSweepId?'editable':''}`)
         .attr('cx',d=>x(d.v)).attr('cy',d=>y(d.i))
-        .attr('r',d=>(d.id===state.selectedPeakId||state.selectedPeakIds.has(d.id))?12:10)
+        .attr('r',d=>{
+          const base=window.GRSPlatform?.profile?.interaction?.peakHitRadiusPx||10;
+          return (d.id===state.selectedPeakId||state.selectedPeakIds.has(d.id))?base+2:base;
+        })
         .on('click',(event,d)=>{
           event.stopPropagation();
           closeRangeActionMenu();
@@ -2675,7 +2700,7 @@
         .on('mousemove',moveTip)
         .on('mouseleave',hideTip);
 
-      peakHits.call(d3.drag().clickDistance(7)
+      peakHits.call(d3.drag().clickDistance(window.GRSPlatform?.profile?.interaction?.dragThresholdPx||7)
         .filter(event=>event.button===0&&!event.ctrlKey)
         .on('start',(event,d)=>{
           if(d.locked)return;
@@ -2780,7 +2805,7 @@
       try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}
 
       if(!drag.moved){
-        const nearby=nearestSweepAtPixel(drag.sx,drag.sy,x,y,visibleSweeps,18);
+        const nearby=nearestSweepAtPixel(drag.sx,drag.sy,x,y,visibleSweeps,window.GRSPlatform?.profile?.interaction?.nearestCurvePx||18);
         if(nearby){
           if(drag.zoom){
             state.selectedSweepId=nearby.sw.id;
@@ -3496,15 +3521,19 @@
   }
 
   function openAnalysisPage(id){
-    ['gateAnalysisPage','spacingPage','terMaxPage','pulseAnalysisPage'].forEach(pid=>$('#'+pid).classList.toggle('hidden',pid!==id));
+    document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!==id));
     if(id==='gateAnalysisPage')renderGateAnalysis();
     if(id==='spacingPage')renderSpacingPage();
     if(id==='terMaxPage')renderTerMaxPage();
     if(id==='pulseAnalysisPage')renderPulseAnalysisResult();
+    window.GRSPlugins?.events?.emit?.('analysis:opened',{id});
+    scheduleMainPlotRelayout();
   }
 
   function closeAnalysisPage(id){
-    $('#'+id).classList.add('hidden');
+    const page=$('#'+id);
+    if(page)page.classList.add('hidden');
+    window.GRSPlugins?.events?.emit?.('analysis:closed',{id});
     scheduleMainPlotRelayout();
   }
 
@@ -5147,7 +5176,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.14',
+      version:'3.15-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -5169,7 +5198,7 @@
       terHeatmapDisplay:{...state.terHeatmapDisplay},
       gateAnalysisSettings:{...state.gateAnalysisSettings},
       transformPreviewByDataset:[...state.transformPreviewByDataset.entries()],
-      pulseAnalysis:serializePulseAnalysisState(),
+      plugins:window.GRSPlugins?.project?.serialize?.()||{},
       panelLayout:{
         groupPanelMode:state.groupPanelMode,
         groupPanelCollapsed:state.groupPanelCollapsed,
@@ -5242,9 +5271,16 @@
     state.gateAnalysisSettings={...(pr.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=null;
     state.transformPreviewByDataset=new Map(pr.transformPreviewByDataset||[]);
-    pulseAnalysisState=restorePulseAnalysisState(pr.pulseAnalysis);
-    const activeTab=activeProjectTab();
-    if(activeTab)activeTab.pulseAnalysisState=pulseAnalysisState;
+
+    // Plugin-owned project state. v3.14 pulseAnalysis is passed as legacyProject
+    // so the pulse plugin can migrate old projects without core knowing its schema.
+    if(window.GRSPlugins?.project?.restore){
+      window.GRSPlugins.project.restore(pr.plugins||{},pr);
+    }else{
+      pulseAnalysisState=restorePulseAnalysisState(pr.pulseAnalysis);
+      const activeTab=activeProjectTab();
+      if(activeTab)activeTab.pulseAnalysisState=pulseAnalysisState;
+    }
 
     const panelLayout=pr.panelLayout||{};
     state.groupPanelMode=panelLayout.groupPanelMode||'docked';
@@ -5675,10 +5711,6 @@
   $('#mainResetViewBtn').onclick=resetMainView;
   $('#undoBtn').onclick=undo; $('#deselectBtn').onclick=deselect;
   $('#toggleInspectorBtn').onclick=toggleInspectorVisibility;
-  $('#openGateAnalysisPageBtn').onclick=()=>openAnalysisPage('gateAnalysisPage');
-  $('#openSpacingPageBtn').onclick=()=>openAnalysisPage('spacingPage');
-  $('#openTerMaxPageBtn').onclick=()=>openAnalysisPage('terMaxPage');
-  $('#openPulseAnalysisPageBtn').onclick=()=>openAnalysisPage('pulseAnalysisPage');
 
   $('#pulseAddFilesBtn').onclick=addPulseAnalysisFiles;
   $('#pulseCheckAllBtn').onclick=()=>{
@@ -5746,10 +5778,7 @@
   $('#pulseExportCsvBtn').onclick=()=>exportPulseCsv('pulse_read_analysis_visible.csv',pulseResultCsvText());
   document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
 
-  $('#togglePhysicsBtn').onclick=()=>{
-    $('#physicsPanel').classList.toggle('hidden');
-    if(!$('#physicsPanel').classList.contains('hidden'))renderPhysicsPanel();
-  };
+
   $('#refreshPhysicsBtn').onclick=()=>{renderPhysicsPanel();renderMainPlot();setStatus('物理机制分析已根据当前已采纳峰刷新。');};
   $('#toggleGroupBtn').onclick=()=>{
     const panel=$('#groupPanel');
@@ -5907,14 +5936,81 @@
     panelObserver.observe($('#zoomPanel'));
   }
 
-  // Start with exactly one isolated blank project.
-  const initialTab=blankProjectTab('项目 1');
-  state.projectTabs.push(initialTab);
-  state.activeProjectTabId=initialTab.id;
-  mountProjectTab(initialTab);
-  syncPhysicsLabelControls();
-  renderProjectTabs();
-  renderAlgorithmControls(); updateMainModeButtons(); renderAll(); applyGroupPanelLayout(); applyInspectorPanelLayout();
-  initializeUpdateUi();
-  initializeLanWebUi();
+  function pluginTogglePhysicsPanel(){
+    const panel=$('#physicsPanel');
+    if(!panel)return;
+    panel.classList.toggle('hidden');
+    if(!panel.classList.contains('hidden'))renderPhysicsPanel();
+  }
+
+  function pluginRestorePulseState(saved){
+    pulseAnalysisState=restorePulseAnalysisState(saved);
+    const tab=activeProjectTab();
+    if(tab)tab.pulseAnalysisState=pulseAnalysisState;
+    if(!$('#pulseAnalysisPage')?.classList.contains('hidden'))renderPulseBatchUi();
+  }
+
+  function pluginResetPulseState(){
+    pulseAnalysisState=createPulseAnalysisState();
+    const tab=activeProjectTab();
+    if(tab)tab.pulseAnalysisState=pulseAnalysisState;
+  }
+
+  async function initializePluginArchitecture(){
+    if(!window.GRSPlugins)return;
+
+    window.GRSPlugins.configure({
+      appVersion:'3.15.0-plugin.1',
+      platform:window.GRSPlatform,
+      getState:()=>state,
+      getActiveProjectTab:()=>activeProjectTab(),
+      setStatus,
+      renderAll,
+      scheduleMainPlotRelayout,
+      openAnalysisPage,
+      closeAnalysisPage,
+      renderSpacingPage,
+      renderGateAnalysis,
+      renderTerMaxPage,
+      renderPulseAnalysis:renderPulseAnalysisResult,
+      togglePhysicsPanel:pluginTogglePhysicsPanel,
+      copyTextToClipboard,
+      savePlotlyImage,
+      pulse:{
+        serialize:()=>serializePulseAnalysisState(),
+        restore:pluginRestorePulseState,
+        reset:pluginResetPulseState,
+        getState:()=>pulseAnalysisState
+      }
+    });
+
+    await window.GRSPlugins.loadBuiltinEntries();
+    const activated=await window.GRSPlugins.activateAll();
+    console.info('[GRS plugins] activated',activated);
+  }
+
+  async function startApplication(){
+    await initializePluginArchitecture();
+
+    // Start with exactly one isolated blank project after plugin slices are ready.
+    const initialTab=blankProjectTab('项目 1');
+    state.projectTabs.push(initialTab);
+    state.activeProjectTabId=initialTab.id;
+    mountProjectTab(initialTab);
+    syncPhysicsLabelControls();
+    renderProjectTabs();
+    renderAlgorithmControls();
+    updateMainModeButtons();
+    renderAll();
+    applyGroupPanelLayout();
+    applyInspectorPanelLayout();
+    initializeUpdateUi();
+    initializeLanWebUi();
+    window.GRSPlugins?.events?.emit?.('app:ready',{state});
+  }
+
+  startApplication().catch(err=>{
+    console.error('[GRS startup]',err);
+    setStatus(`启动失败：${err.message}`);
+  });
 })();

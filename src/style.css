@@ -1031,7 +1031,7 @@ button.danger-soft{
 .curve-hit{
   fill:none;
   stroke:rgba(0,0,0,0);
-  stroke-width:14px;
+  stroke-width:var(--grs-curve-hit,14px);
   pointer-events:stroke;
   cursor:pointer;
 }
@@ -2313,4 +2313,215 @@ button.danger-soft{
   .lan-web-share-actions{
     grid-template-columns:1fr;
   }
+}
+
+
+/* ============================================================
+   plugin branch: platform-adaptive shell / touch foundations
+   ============================================================ */
+.plugin-toolbar-slot{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+}
+.plugin-toolbar-btn[data-plugin-id]{
+  position:relative;
+}
+.plugin-toolbar-btn[data-plugin-id]::after{
+  content:'';
+  position:absolute;
+  left:6px;
+  right:6px;
+  bottom:1px;
+  height:1px;
+  background:currentColor;
+  opacity:.10;
+  pointer-events:none;
+}
+
+/* Coarse-pointer devices need larger targets without changing desktop density. */
+.grs-pointer-coarse button,
+.grs-pointer-coarse input,
+.grs-pointer-coarse select{
+  min-height:var(--grs-touch-target,44px);
+}
+.grs-pointer-coarse .toolbar-btn{
+  height:var(--grs-touch-target,44px);
+  padding-left:11px;
+  padding-right:11px;
+}
+.grs-pointer-coarse .width-handle{
+  stroke-width:12px;
+}
+.grs-pointer-coarse .main-plot-tools button{
+  min-height:40px;
+}
+.grs-pointer-coarse .project-tab{
+  min-height:40px;
+}
+.grs-pointer-coarse .scan-toggle-row{
+  gap:18px;
+}
+
+/* Tablet-sized layouts: preserve the scientific canvas and allow side controls to scroll. */
+.grs-size-medium .workspace{
+  grid-template-columns:minmax(230px,260px) minmax(0,1fr);
+}
+.grs-size-medium .left-panel{
+  padding:9px;
+}
+.grs-size-medium .brand{
+  max-width:170px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.grs-size-medium .inspector-dock-slot.active{
+  max-width:38vw;
+}
+
+/* Compact portrait/mobile: two-stage layout rather than squeezing the desktop grid. */
+.grs-size-compact .topbar{
+  height:auto;
+  min-height:58px;
+  flex-wrap:wrap;
+  align-content:center;
+  gap:3px 8px;
+  padding:5px 7px;
+}
+.grs-size-compact .brand{
+  width:100%;
+  max-width:none;
+  height:27px;
+  display:flex;
+  align-items:center;
+  font-size:12px;
+}
+.grs-size-compact .toolbar{
+  width:100%;
+  flex:1 0 100%;
+  justify-content:flex-start;
+  padding:2px 0 4px;
+  scroll-snap-type:x proximity;
+}
+.grs-size-compact .toolbar-group{
+  scroll-snap-align:start;
+}
+.grs-size-compact .project-tabs-bar{
+  height:42px;
+  padding-left:6px;
+  padding-right:6px;
+}
+.grs-size-compact .project-tab{
+  min-width:145px;
+}
+.grs-size-compact .workspace{
+  height:calc(100% - 126px);
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,34vh) minmax(0,1fr);
+}
+.grs-size-compact .left-panel{
+  min-height:0;
+  border-right:0;
+  border-bottom:1px solid var(--border);
+  padding:8px;
+}
+.grs-size-compact .left-panel section{
+  margin-bottom:9px;
+  padding-bottom:9px;
+}
+.grs-size-compact .dataset-list{
+  max-height:175px;
+}
+.grs-size-compact .main-area{
+  min-height:0;
+}
+.grs-size-compact .main-plot-header{
+  left:10px;
+  right:8px;
+  top:6px;
+  align-items:flex-start;
+}
+.grs-size-compact .main-plot-tools{
+  max-width:62vw;
+  overflow-x:auto;
+}
+.grs-size-compact .main-legend-bar{
+  max-width:35vw;
+}
+.grs-size-compact .group-panel.docked:not(.collapsed){
+  height:min(42vh,330px)!important;
+}
+.grs-size-compact .inspector-dock-slot.active{
+  position:absolute;
+  z-index:115;
+  right:6px;
+  top:58px;
+  bottom:34px;
+  width:min(92vw,420px)!important;
+  max-width:none;
+  height:auto;
+  border:1px solid var(--border);
+  border-radius:10px 0 0 10px;
+  box-shadow:var(--shadow);
+}
+.grs-size-compact .main-workspace{
+  position:relative;
+  grid-template-columns:minmax(0,1fr);
+}
+.grs-size-compact .floating-panel{
+  max-width:calc(100vw - 12px);
+  max-height:calc(100vh - 80px);
+}
+.grs-size-compact .analysis-page-header{
+  min-height:56px;
+  height:auto;
+  padding:8px 10px;
+}
+.grs-size-compact .analysis-page-body{
+  padding:9px;
+}
+.grs-size-compact .import-panel-overlay{
+  padding:5px;
+}
+.grs-size-compact .import-workbench{
+  width:100%;
+  height:100%;
+  border-radius:8px;
+}
+.grs-size-compact .import-workbench-body{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,28vh) minmax(0,1fr);
+}
+.grs-size-compact .import-file-pane{
+  border-right:0;
+  border-bottom:1px solid #dfe5ef;
+}
+.grs-size-compact .import-basic-grid,
+.grs-size-compact .import-mapping-grid{
+  grid-template-columns:1fr;
+}
+.grs-size-compact .pulse-batch-workspace,
+.grs-size-compact .pulse-results-grid{
+  grid-template-columns:1fr;
+}
+
+/* Landscape phones/tablets prioritize the graph and keep controls as a narrower rail. */
+.grs-size-compact.grs-orientation-landscape .workspace{
+  grid-template-columns:minmax(220px,30vw) minmax(0,1fr);
+  grid-template-rows:1fr;
+}
+.grs-size-compact.grs-orientation-landscape .left-panel{
+  border-right:1px solid var(--border);
+  border-bottom:0;
+}
+.grs-size-compact.grs-orientation-landscape .dataset-list{
+  max-height:230px;
+}
+
+/* Android/WebView safe-area support. */
+.grs-platform-android body{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-right:env(safe-area-inset-right,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:env(safe-area-inset-left,0px);
 }

@@ -1,14 +1,17 @@
 {
   "name": "graphene-resonance-studio",
-  "version": "3.14.0",
-  "description": "Interactive graphene resonant tunneling analysis studio",
+  "version": "3.15.0-plugin.1",
+  "description": "Plugin-oriented interactive scientific data analysis studio (Graphene resonance built-in plugins)",
   "main": "main.js",
-  "author": "OpenAI",
+  "author": "Graphene Resonance Studio contributors",
   "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "test": "node tests.js",
-    "dist": "node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
+    "plugin:index": "node scripts/generate-plugin-index.js",
+    "plugin:validate": "node scripts/validate-plugins.js",
+    "start": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
+    "test": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node tests.js",
+    "check": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/check-project.js",
+    "dist": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
     "update-server": "node update-server/server.js",
     "publish:update": "node update-server/publish-release.js dist"
   },

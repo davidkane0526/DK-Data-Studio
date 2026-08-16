@@ -7,10 +7,10 @@ set "GRS_VERSION=%~1"
 if defined GRS_VERSION goto HAVE_VERSION
 
 echo.
+echo PLUGIN BRANCH: do not publish this build to the stable main channel by accident.
 echo Enter a release version.
-echo Examples:
-echo   3.14.1 = exact version
-echo   3.14   = next patch in the 3.14.x series
+echo Example:
+echo   3.15.0-plugin.2 = exact plugin prerelease version
 echo.
 set /p "GRS_VERSION=Version: "
 
@@ -19,7 +19,7 @@ if defined GRS_VERSION goto VERSION_OK
 
 echo.
 echo ERROR: No version was provided.
-echo Use a version such as 3.14.1, or use 3.14 to auto-increment the patch.
+echo Use an explicit prerelease version such as 3.15.0-plugin.2.
 pause
 exit /b 2
 

@@ -1,4 +1,64 @@
-# Graphene Resonance Studio v3.14
+# Graphene Resonance Studio — plugin branch (3.15.0-plugin.1)
+
+
+> **分支身份非常重要**
+>
+> - `main`：保留原来的 v3.14 完整基线，不与本分支混用。
+> - `plugin`：当前检出的插件架构开发分支。
+> - Git tag `v3.14.0-main-baseline` 指向插件化之前的基线。
+
+## plugin 分支开发入口
+
+先阅读：
+
+```text
+AGENTS.md
+docs/ARCHITECTURE.md
+docs/PLUGIN_API.md
+docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md
+docs/ANDROID_PORTING.md
+docs/BRANCHING.md
+```
+
+检查工程：
+
+```bash
+npm run check
+npm test
+```
+
+启动开发版：
+
+```bash
+npm start
+```
+
+新增插件时，不需要修改 `index.html`。在：
+
+```text
+src/plugins/<plugin-name>/
+```
+
+增加 `plugin.json`、`plugin.js` 和 README，然后：
+
+```bash
+npm run plugin:index
+npm run plugin:validate
+```
+
+正常的 `npm start / npm test / npm run check / npm run dist` 都会自动重新生成内置插件索引。
+
+### 当前插件化边界
+
+当前是**兼容桥式插件化迁移**：
+
+- 插件系统已经实际负责插件发现、加载、功能入口、工具栏贡献、页面/面板贡献、扩展注册表和插件工程状态；
+- 灵活文本导入工作台已经通过 importer plugin provider 调用；
+- pulse 工作区保存已经迁移到 namespaced plugin project state，并兼容 v3.14 工程；
+- 原来成熟的共振/TER/脉冲内部算法暂时通过 host compatibility bridge 调用，避免为了“移动代码”一次性重写成熟逻辑造成回归；
+- 后续新增功能必须直接写插件；当某个旧功能需要大改时，再将该功能内部实现从兼容桥逐步抽入自己的插件目录。
+
+
 
 
 ## v3.14 局域网网页版二维码与连接面板重构

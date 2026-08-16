@@ -130,8 +130,8 @@ const appV29 = fs.readFileSync('./src/app.js','utf8');
 const htmlV29 = fs.readFileSync('./src/index.html','utf8');
 const analysisV29 = require('./src/analysis.js');
 
-assert(htmlV29.includes('id="openSpacingPageBtn"')&&htmlV29.includes('id="spacingSeriesA"')&&htmlV29.includes('id="spacingSeriesB"'),'peak spacing page/dropdowns must exist');
-assert(htmlV29.includes('id="openTerMaxPageBtn"')&&htmlV29.includes('id="terMaxPage"'),'dedicated TER_max page/button must exist');
+assert(htmlV29.includes('id="spacingSeriesA"')&&htmlV29.includes('id="spacingSeriesB"')&&fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8').includes("buttonId:'openSpacingPageBtn'"),'peak spacing page/dropdowns and plugin toolbar entry must exist');
+assert(htmlV29.includes('id="terMaxPage"')&&fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8').includes("buttonId:'openTerMaxPageBtn'"),'dedicated TER_max page and plugin toolbar entry must exist');
 assert(typeof analysisV29.computeTerMatrix==='function','TER matrix JS implementation must be exported');
 
 // Synthetic raw acquisition with repeated turning points:
@@ -227,7 +227,7 @@ console.log('v3.2 TER square / Max-Vg / Max-Vd checks passed.');
 const appV33 = fs.readFileSync('./src/app.js','utf8');
 const htmlV33 = fs.readFileSync('./src/index.html','utf8');
 
-assert(htmlV33.includes('id="openGateAnalysisPageBtn"')&&htmlV33.includes('id="gateAnalysisPage"'),'gate analysis page/button must exist');
+assert(htmlV33.includes('id="gateAnalysisPage"')&&fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8').includes("buttonId:'openGateAnalysisPageBtn'"),'gate analysis page/plugin button must exist');
 assert(htmlV33.includes('id="gateSeriesA"')&&htmlV33.includes('id="gateSeriesB"'),'gate analysis must allow two resonance ridge dropdowns');
 assert(htmlV33.includes('id="gateV0Plot"')&&htmlV33.includes('id="gateDeltaPlot"'),'V0 and delta plots must exist');
 assert(htmlV33.includes('id="gateWidthPlot"')&&htmlV33.includes('id="gateTerCorrelationPlot"'),'width/delta-over-w and TER correlation plots must exist');
@@ -501,10 +501,10 @@ const parsed310=analysisV310.parseFlexibleData(shared310,{
 assert(parsed310.datasets.length===2,'per-column Vg test should generate two series');
 assert(parsed310.datasets[0].vg===-12.5&&parsed310.datasets[1].vg===27,'per-column Vg overrides must become dataset Vg values');
 
-assert(cssV310.includes('.curve-hit')&&cssV310.includes('stroke-width:14px'),'main curves must have a wider invisible hit path');
-assert(appV310.includes('nearestSweepAtPixel')&&appV310.includes('visibleSweeps,18'),'background click/add must also use nearest-curve pixel tolerance');
+assert(cssV310.includes('.curve-hit')&&cssV310.includes('stroke-width:var(--grs-curve-hit,14px)'),'main curves must have a wider platform-adaptive invisible hit path');
+assert(appV310.includes('nearestSweepAtPixel')&&appV310.includes('interaction?.nearestCurvePx||18'),'background click/add must use platform-adaptive nearest-curve pixel tolerance');
 assert(cssV310.includes('.peak-hit-target'),'peak markers must have a separate enlarged interaction target');
-assert(appV310.includes("peakHits.call(d3.drag().clickDistance(7)"),'peak hit target must distinguish click from drag with a nonzero threshold');
+assert(appV310.includes("peakHits.call(d3.drag().clickDistance(window.GRSPlatform?.profile?.interaction?.dragThresholdPx||7)"),'peak hit target must distinguish click from drag with a platform-adaptive threshold');
 assert(appV310.includes('showInspectorPanel();')&&appV310.includes('可直接用 ←/→ 移动'),'single-clicking a peak must select it, open inspector, and enable arrow-key movement');
 
 assert(appV310.includes("mainSvg.on('wheel.mainzoom'"),'main plot must implement mouse-wheel zoom');
@@ -676,10 +676,10 @@ assert(appV313.includes("['label,source_file,index,pulse_voltage_V,pulse_current
   'batch pulse-current CSV must identify both display label and source file');
 assert(appV313.includes('pulseAnalysisState:pulseAnalysisState')||appV313.includes('t.pulseAnalysisState=pulseAnalysisState'),
   'pulse batch state must be project-tab scoped');
-assert(appV313.includes('pulseAnalysis:serializePulseAnalysisState()'),
-  'multi-file pulse workspace configuration must persist in .grs project files');
-assert(appV313.includes('pulseAnalysisState=restorePulseAnalysisState(pr.pulseAnalysis)'),
-  'saved multi-file pulse workspace must restore when a project is reopened');
+assert(appV313.includes('plugins:window.GRSPlugins?.project?.serialize?.()||{}')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
+  'multi-file pulse workspace configuration must persist through plugin project slices');
+assert(appV313.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes('legacyProject?.pulseAnalysis'),
+  'saved multi-file pulse workspace must restore through plugin state and migrate legacy projects');
 assert(cssV313.includes('.pulse-batch-workspace')&&cssV313.includes('grid-template-columns:330px minmax(0,1fr)'),
   'pulse page must have a dedicated file-manager/editor workspace');
 assert(cssV313.includes('.pulse-batch-file-item.active')&&cssV313.includes('.pulse-file-state.done'),
@@ -737,3 +737,54 @@ assert(cssV314.includes('.lan-web-qr-frame')&&cssV314.includes('.lan-web-qr-imag
 assert(cssV314.includes('@media(max-width:820px)')&&cssV314.includes('grid-template-columns:1fr'),
   'LAN web panel must collapse to one column on narrow windows');
 console.log('v3.14 LAN web QR / responsive layout checks passed.');
+
+
+// plugin branch architecture / platform contracts
+const pluginKernel = fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const platformCore = fs.readFileSync('./src/core/platform.js','utf8');
+const pluginIndex = fs.readFileSync('./src/plugins/plugin-index.generated.js','utf8');
+const pluginApp = fs.readFileSync('./src/app.js','utf8');
+const pluginHtml = fs.readFileSync('./src/index.html','utf8');
+const pluginCss = fs.readFileSync('./src/style.css','utf8');
+const pluginPkg = JSON.parse(fs.readFileSync('./package.json','utf8'));
+
+assert(pluginKernel.includes('window.GRSPlugins')&&pluginKernel.includes('activateAll')&&pluginKernel.includes('registerProjectSlice'),
+  'plugin kernel must expose lifecycle and namespaced project state');
+assert(pluginKernel.includes('createToolbarButton')&&pluginKernel.includes('addPage')&&pluginKernel.includes('addStyle'),
+  'plugin kernel must support toolbar/page/style UI contributions');
+assert(pluginKernel.includes("getRegistry('commands')")&&pluginKernel.includes('runCommand'),
+  'plugin kernel must expose command registration/execution');
+assert(pluginIndex.includes('plugins/flexible-import/plugin.js')&&
+       pluginIndex.includes('plugins/resonance-workbench/plugin.js')&&
+       pluginIndex.includes('plugins/ter-analysis/plugin.js')&&
+       pluginIndex.includes('plugins/pulse-analysis/plugin.js'),
+  'generated plugin index must list all built-in plugin entries');
+assert(pluginHtml.includes('data-plugin-toolbar="analysis"')&&pluginHtml.includes('core/plugin-kernel.js')&&pluginHtml.includes('core/platform.js'),
+  'renderer must provide plugin toolbar mount and load core plugin/platform runtime');
+assert(!pluginHtml.includes('id="openGateAnalysisPageBtn"')&&!pluginHtml.includes('id="openPulseAnalysisPageBtn"'),
+  'domain feature toolbar buttons should not be hard-coded in core HTML');
+assert(pluginApp.includes('flexibleImportProvider().parse')&&pluginApp.includes('flexibleImportProvider().inspect'),
+  'import workbench must resolve parser/inspector from plugin registry');
+assert(pluginApp.includes('plugins:window.GRSPlugins?.project?.serialize?.()||{}'),
+  'core project format must serialize plugin state generically');
+assert(pluginApp.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)'),
+  'core project loader must restore plugin state generically');
+assert(pluginApp.includes('await window.GRSPlugins.loadBuiltinEntries()')&&pluginApp.includes('await window.GRSPlugins.activateAll()'),
+  'plugins must load/activate before first blank project is mounted');
+assert(platformCore.includes("size = 'compact'")&&platformCore.includes("pointer: coarse ? 'coarse' : 'fine'"),
+  'platform core must expose responsive size and pointer profiles');
+assert(platformCore.includes('curveHitPx')&&platformCore.includes('peakHitRadiusPx')&&platformCore.includes('longPressMs'),
+  'platform core must expose touch interaction geometry/gesture constants');
+assert(pluginCss.includes('.grs-size-compact .workspace')&&pluginCss.includes('.grs-pointer-coarse button'),
+  'CSS must include compact and coarse-pointer adaptations');
+assert(pluginApp.includes('window.GRSPlatform?.profile?.interaction?.nearestCurvePx')&&
+       pluginApp.includes('window.GRSPlatform?.profile?.interaction?.dragThresholdPx'),
+  'main plot interaction tolerances must consume platform profile');
+assert(pluginPkg.scripts['plugin:index']&&pluginPkg.scripts['plugin:validate']&&pluginPkg.scripts.check,
+  'package scripts must support plugin index generation, validation, and project checks');
+for(const doc of [
+  './AGENTS.md','./docs/ARCHITECTURE.md','./docs/PLUGIN_API.md',
+  './docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md','./docs/ANDROID_PORTING.md','./docs/BRANCHING.md'
+]) assert(fs.existsSync(doc),`required plugin architecture documentation missing: ${doc}`);
+
+console.log('plugin branch architecture/platform checks passed.');
