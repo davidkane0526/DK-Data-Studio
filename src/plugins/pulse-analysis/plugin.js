@@ -4,6 +4,8 @@
     name:'Pulse / Read Analysis',
     version:'1.0.0',
     apiVersion:'1.0.0',
+    description:'Batch pulse/read transient extraction workspace.',
+    source:'builtin',
     order:140,
     capabilities:['ui.page','analysis.pulse','project.slice','chart.timeseries']
   }, async ctx => {

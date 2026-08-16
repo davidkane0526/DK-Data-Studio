@@ -28,6 +28,7 @@ for (const file of jsFiles) {
 
 const required = [
   'src/core/plugin-kernel.js',
+  'src/core/plugin-manager-ui.js',
   'src/core/platform.js',
   'src/plugins/plugin-index.generated.js',
   'src/science/common.js',

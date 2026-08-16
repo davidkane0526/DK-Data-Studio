@@ -1,4 +1,4 @@
-Graphene Resonance Studio 3.16.0-plugin.1 - Android 快速安装测试
+Graphene Resonance Studio 3.17.0-plugin.1 - Android 快速安装测试
 ================================================================
 
 本文件对应 Git 分支：plugin

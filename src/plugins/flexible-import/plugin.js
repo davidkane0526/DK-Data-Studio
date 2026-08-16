@@ -4,6 +4,8 @@
     name:'Flexible Text Import',
     version:'1.0.0',
     apiVersion:'1.0.0',
+    description:'Generic text/multicolumn import provider used by the import workbench.',
+    source:'builtin',
     order:10,
     capabilities:['data.importer','data.inspector']
   }, async ctx => {

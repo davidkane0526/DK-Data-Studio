@@ -221,3 +221,27 @@ Disallowed:
 `app.js` is now primarily the mature interactive workspace/state controller: project tabs, curve/peak interaction, generic import UI, plot coordination and shared renderer plumbing.
 
 Scientific computations that had independent meaning have been moved to `src/science`. Future changes should continue shrinking `app.js` by moving workflow-specific presentation into plugins, but do not duplicate or fork the shared science engine.
+
+## 9. Core Plugin Manager
+
+Plugin management is a host/core responsibility rather than a plugin because it controls plugin lifecycle itself.
+
+Files:
+
+```text
+src/core/plugin-kernel.js
+src/core/plugin-manager-ui.js
+```
+
+The manager controls only plugins already discovered by the runtime. Current built-in discovery still comes from generated manifests/entries under `src/plugins/`.
+
+The manager provides:
+- runtime activation/deactivation;
+- reload/retry;
+- locally persistent desired enable state;
+- activation error diagnostics;
+- contribution counts;
+- safe preservation/restoration of per-project plugin state;
+- responsive/touch management UI.
+
+External plugin installation is intentionally a separate future layer because it requires package validation, permissions, compatibility and code-trust policy. It should not be implemented as arbitrary script execution from an untrusted ZIP.

@@ -677,7 +677,7 @@ assert(appV313.includes("['label,source_file,index,pulse_voltage_V,pulse_current
   'batch pulse-current CSV must identify both display label and source file');
 assert(appV313.includes('pulseAnalysisState:pulseAnalysisState')||appV313.includes('t.pulseAnalysisState=pulseAnalysisState'),
   'pulse batch state must be project-tab scoped');
-assert(appV313.includes('plugins:window.GRSPlugins?.project?.serialize?.()||{}')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
+assert(appV313.includes('plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
   'multi-file pulse workspace configuration must persist through plugin project slices');
 assert(appV313.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes('legacyProject?.pulseAnalysis'),
   'saved multi-file pulse workspace must restore through plugin state and migrate legacy projects');
@@ -766,7 +766,7 @@ assert(!pluginHtml.includes('id="openGateAnalysisPageBtn"')&&!pluginHtml.include
   'domain feature toolbar buttons should not be hard-coded in core HTML');
 assert(pluginApp.includes('flexibleImportProvider().parse')&&pluginApp.includes('flexibleImportProvider().inspect'),
   'import workbench must resolve parser/inspector from plugin registry');
-assert(pluginApp.includes('plugins:window.GRSPlugins?.project?.serialize?.()||{}'),
+assert(pluginApp.includes('plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})'),
   'core project format must serialize plugin state generically');
 assert(pluginApp.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)'),
   'core project loader must restore plugin state generically');
@@ -870,3 +870,24 @@ assert(Math.abs(gateRows316[0].deltaOverW-4)<1e-12,
 assert(gateRows316[0].terMax===250&&gateRows316[0].vStar===.15,
   'rewritten gate engine must join strict TER maxima by Vg');
 console.log('v3.16 rewritten identity/gate numerical checks passed.');
+
+
+// v3.17 plugin manager UI / lifecycle contracts
+const kernelV317=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const managerUiV317=fs.readFileSync('./src/core/plugin-manager-ui.js','utf8');
+const htmlV317=fs.readFileSync('./src/index.html','utf8');
+const cssV317=fs.readFileSync('./src/style.css','utf8');
+const appV317=fs.readFileSync('./src/app.js','utf8');
+assert(htmlV317.includes('id="pluginManagerBtn"')&&htmlV317.includes('id="pluginManagerPage"'),'core toolbar/page must expose plugin manager');
+assert(htmlV317.includes('id="pluginManagerSearch"')&&htmlV317.includes('id="pluginManagerFilter"'),'plugin manager must support search and status filter');
+assert(managerUiV317.includes('plugin-enable-switch')&&managerUiV317.includes('GRSPlugins.manager.setEnabled'),'plugin manager UI must support live enable/disable');
+assert(managerUiV317.includes('GRSPlugins.manager.reload')&&managerUiV317.includes('resetPreferences'),'plugin manager UI must support reload and restore defaults');
+assert(kernelV317.includes("preferenceStorageKey = 'grs.plugin.preferences.v1'"),'plugin desired states must persist outside project files');
+assert(kernelV317.includes('async function setPluginEnabled')&&kernelV317.includes('async function reloadPlugin'),'kernel must own enable/disable/reload lifecycle');
+assert(kernelV317.includes('host?.captureActiveProjectTab?.()'),'plugin disable/reload must capture current project state before cleanup');
+assert(kernelV317.includes('restorePluginProjectState(manifest.id'),'plugin enable/reload must restore current project plugin state');
+assert(kernelV317.includes('function serializeProject(base={})'),'project serialization must preserve disabled/unknown plugin namespaces');
+assert(appV317.includes('currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}))'),'project load must preserve plugin blobs even when plugin is disabled');
+assert(cssV317.includes('.plugin-manager-list')&&cssV317.includes('.plugin-enable-switch'),'plugin manager must have dedicated responsive management UI');
+assert(cssV317.includes('.grs-pointer-coarse .plugin-switch-track'),'plugin manager toggle must have coarse-pointer adaptation');
+console.log('v3.17 plugin-manager checks passed.');

@@ -4,6 +4,8 @@
     name:'TER Analysis',
     version:'1.0.0',
     apiVersion:'1.0.0',
+    description:'Same-Vd TER matrix, extrema and resonance-associated TER UI.',
+    source:'builtin',
     order:120,
     capabilities:['ui.page','analysis.ter','chart.heatmap']
   }, async ctx => {

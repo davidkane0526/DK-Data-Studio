@@ -4,6 +4,8 @@
     name:'Resonance Workbench',
     version:'1.0.0',
     apiVersion:'1.0.0',
+    description:'Resonance-specific peak/ridge/physics analysis UI contributions.',
+    source:'builtin',
     order:100,
     capabilities:['ui.page','ui.panel','analysis.resonance','chart.trend']
   }, async ctx => {

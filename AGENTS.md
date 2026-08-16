@@ -108,3 +108,11 @@ INSTALL_ANDROID_APK.cmd
 ```
 
 The Android shell must remain a consumer of the same plugins and `src/science/*` engine.
+
+## Plugin Manager
+
+The core Plugin Manager already owns enable/disable/reload/preferences. Do not build a second manager inside a feature plugin.
+
+When a built-in plugin is added, its runtime manifest should include `name`, `version`, `description`, `capabilities`, `source`, and `order` so the manager can present it clearly.
+
+Disabling a plugin must never delete that plugin's namespaced project state.

@@ -1,5 +1,15 @@
 # Changelog
 
+## plugin branch — 3.17.0-plugin.1
+
+- added core Plugin Manager UI;
+- added persistent enable/disable/reload lifecycle;
+- added activation-error retry and partial-activation rollback;
+- preserved disabled plugin project state across save/load;
+- added plugin diagnostics copy and restore-default actions;
+- added touch/responsive Plugin Manager layout;
+- added dedicated plugin-manager lifecycle regression tests.
+
 ## plugin branch — 3.16.0-plugin.1
 
 - rewrote the mature numerical/scientific engine into `src/science/*` modules;

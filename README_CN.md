@@ -1,4 +1,40 @@
-# Graphene Resonance Studio — plugin branch (3.16.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.17.0-plugin.1)
+
+## v3.17 插件管理
+
+顶部新增：
+
+```text
+插件
+```
+
+打开后可查看全部已打包插件的：
+
+```text
+名称 / ID / 版本 / API 版本
+Capabilities
+已注册运行时贡献
+启用 / 停用 / 错误状态
+```
+
+支持：
+
+```text
+搜索
+状态筛选
+即时启用 / 停用
+重新加载
+错误重试
+恢复默认
+复制插件诊断
+```
+
+插件开关是本机全局设置，不写进单个 `.grs.json` 工程。
+
+停用插件前会先保存当前工程中该插件的 namespaced state。即使插件处于停用状态，保存工程时也会保留原有 plugin namespace；重新启用后自动恢复，因此停用插件不会导致其工程数据被静默删除。
+
+当前插件管理器管理**已经随应用打包/发现的插件**。外部插件包安装、权限声明与签名校验属于后续插件分发层，不在本版中伪装成“安装”按钮。
+
 
 
 ## 3.16.0-plugin.1：成熟科学逻辑重写 + React Native Android

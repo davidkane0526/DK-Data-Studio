@@ -2525,3 +2525,300 @@ button.danger-soft{
   padding-bottom:env(safe-area-inset-bottom,0px);
   padding-left:env(safe-area-inset-left,0px);
 }
+
+/* ============================================================
+   v3.17 core plugin manager
+   ============================================================ */
+.plugin-manager-header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.plugin-manager-body{
+  width:min(1500px,100%);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding-bottom:34px;
+}
+.plugin-manager-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:10px;
+}
+.plugin-manager-stat{
+  min-height:74px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  padding:12px 14px;
+  border:1px solid #dfe5ef;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+.plugin-manager-stat span{font-size:10px;color:#7d8798}
+.plugin-manager-stat strong{font-size:22px;line-height:1;color:#253047;font-variant-numeric:tabular-nums}
+.plugin-manager-stat.has-error{border-color:#efc5c1;background:#fff9f8}
+.plugin-manager-stat.has-error strong{color:#b42318}
+.plugin-manager-toolbar-card{
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) 170px auto auto;
+  align-items:center;
+  gap:9px;
+  padding:10px 12px;
+  border:1px solid #dfe5ef;
+  border-radius:10px;
+  background:#fff;
+}
+.plugin-manager-search-wrap{
+  min-width:0;
+  height:34px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 9px;
+  border:1px solid #cfd7e5;
+  border-radius:7px;
+  background:#fff;
+  color:#98a2b3;
+}
+.plugin-manager-search-wrap:focus-within{border-color:#7190ed;box-shadow:0 0 0 3px rgba(49,94,251,.08)}
+.plugin-manager-search-wrap input{
+  width:100%;
+  min-width:0;
+  height:30px;
+  padding:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#273244;
+  font-size:11px;
+}
+.plugin-manager-toolbar-card>label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#667085;
+  font-size:10px;
+  white-space:nowrap;
+}
+.plugin-manager-toolbar-card select{
+  min-width:110px;
+  height:34px;
+  border:1px solid #cfd7e5;
+  border-radius:7px;
+  background:#fff;
+  padding:3px 7px;
+  font-size:10px;
+}
+.plugin-manager-toolbar-card>button{height:34px}
+.plugin-manager-visible-count{
+  padding:5px 8px;
+  border:1px solid #e1e6ef;
+  border-radius:999px;
+  background:#f7f9fc;
+  color:#667085;
+  font-size:9px;
+  white-space:nowrap;
+}
+.plugin-manager-note{
+  padding:9px 11px;
+  border-left:3px solid #8091b8;
+  border-radius:5px;
+  background:#f7f9fc;
+  color:#667085;
+  font-size:10px;
+  line-height:1.55;
+}
+.plugin-manager-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;
+}
+.plugin-manager-empty{
+  grid-column:1/-1;
+  min-height:190px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed #cfd7e5;
+  border-radius:10px;
+  background:#fbfcfe;
+  color:#98a2b3;
+  font-size:11px;
+}
+.plugin-manager-card{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #dfe5ef;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+.plugin-manager-card.status-active{border-color:#cdd9f6}
+.plugin-manager-card.status-error{border-color:#efc5c1}
+.plugin-manager-card.status-disabled{background:#fbfcfe}
+.plugin-card-head{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px 9px;
+}
+.plugin-card-icon{
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#eef3ff;
+  color:#315efb;
+  font-size:16px;
+  font-weight:800;
+}
+.status-disabled .plugin-card-icon{background:#f0f2f5;color:#7d8798}
+.status-error .plugin-card-icon{background:#fff0ef;color:#b42318}
+.plugin-card-title-wrap{min-width:0}
+.plugin-card-title-line{display:flex;align-items:center;gap:7px;min-width:0}
+.plugin-card-title-line h3{
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:#253047;
+  font-size:13px;
+}
+.plugin-card-id{
+  margin-top:3px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:#98a2b3;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:8.5px;
+}
+.plugin-status-badge{
+  flex:0 0 auto;
+  padding:2px 6px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.plugin-status-badge.active{background:#edf8f1;color:#237a46}
+.plugin-status-badge.disabled{background:#eef1f5;color:#667085}
+.plugin-status-badge.available{background:#fff8e8;color:#8b5d00}
+.plugin-status-badge.error{background:#fff0ef;color:#b42318}
+.plugin-enable-switch{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+.plugin-enable-switch input{position:absolute;opacity:0;pointer-events:none}
+.plugin-switch-track{
+  position:relative;
+  width:36px;
+  height:20px;
+  border-radius:999px;
+  background:#c9d1dc;
+  transition:background .15s;
+}
+.plugin-switch-thumb{
+  position:absolute;
+  width:16px;
+  height:16px;
+  left:2px;
+  top:2px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(15,23,42,.25);
+  transition:transform .15s;
+}
+.plugin-enable-switch input:checked + .plugin-switch-track{background:#315efb}
+.plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(16px)}
+.plugin-enable-switch input:disabled + .plugin-switch-track{opacity:.45}
+.plugin-switch-label{min-width:24px;color:#667085;font-size:9px}
+.plugin-card-body{padding:0 13px 10px}
+.plugin-card-description{
+  min-height:31px;
+  margin:0 0 8px;
+  color:#667085;
+  font-size:10px;
+  line-height:1.55;
+}
+.plugin-capability-row{display:flex;flex-wrap:wrap;gap:5px}
+.plugin-capability-chip{
+  padding:3px 6px;
+  border:1px solid #dce4f3;
+  border-radius:999px;
+  background:#f7f9fd;
+  color:#566176;
+  font-size:8px;
+}
+.plugin-capability-chip.muted{color:#98a2b3}
+.plugin-error-box{
+  margin-top:8px;
+  padding:7px 8px;
+  border:1px solid #efc5c1;
+  border-radius:6px;
+  background:#fff7f6;
+  color:#b42318;
+  font-size:9px;
+  line-height:1.45;
+  word-break:break-word;
+}
+.plugin-card-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:42px;
+  padding:7px 10px 7px 13px;
+  border-top:1px solid #edf0f5;
+  background:#fbfcfe;
+}
+.plugin-card-meta{display:flex;flex-wrap:wrap;gap:8px;color:#98a2b3;font-size:8px}
+.plugin-card-actions{display:flex;align-items:center;gap:5px}
+.plugin-card-actions button{height:28px;padding:3px 8px;font-size:9px}
+.plugin-card-details{
+  padding:9px 13px 10px;
+  border-top:1px solid #edf0f5;
+  background:#f8faff;
+  color:#667085;
+  font-size:9px;
+  line-height:1.65;
+  word-break:break-word;
+}
+.plugin-card-details.hidden{display:none}
+.grs-pointer-coarse .plugin-switch-track{width:46px;height:26px}
+.grs-pointer-coarse .plugin-switch-thumb{width:22px;height:22px}
+.grs-pointer-coarse .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(20px)}
+.grs-pointer-coarse .plugin-card-actions button{min-height:40px}
+@media(max-width:1050px){
+  .plugin-manager-list{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .plugin-manager-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plugin-manager-toolbar-card{grid-template-columns:1fr 1fr}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+  .plugin-manager-visible-count{justify-self:start}
+  .plugin-card-head{grid-template-columns:40px minmax(0,1fr)}
+  .plugin-enable-switch{grid-column:1/-1;justify-self:end;margin-top:-3px}
+  .plugin-card-footer{align-items:flex-start;flex-direction:column}
+  .plugin-card-actions{width:100%;justify-content:flex-end}
+  .plugin-manager-header-actions{width:100%;justify-content:flex-start}
+}
+@media(max-width:480px){
+  .plugin-manager-toolbar-card{grid-template-columns:1fr}
+  .plugin-manager-search-wrap{grid-column:auto}
+  .plugin-manager-summary{gap:7px}
+  .plugin-manager-stat{min-height:62px;padding:9px 10px}
+}

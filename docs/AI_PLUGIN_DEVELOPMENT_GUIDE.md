@@ -252,3 +252,30 @@ Do not commit generated `node_modules`, `dist`, or `build-info.json`.
 - [ ] Are CSV/image exports owned by the plugin?
 - [ ] Did I preserve scientific definitions?
 - [ ] Did I run `npm run check` and `npm test`?
+
+## Plugin Manager rules for future AI work
+
+Do not add a second feature-specific plugin manager.
+
+Use the existing core lifecycle API:
+
+```js
+GRSPlugins.manager.list()
+GRSPlugins.manager.enable(id)
+GRSPlugins.manager.disable(id)
+GRSPlugins.manager.reload(id)
+```
+
+When adding a new built-in plugin, make sure its runtime `GRSPlugins.define()` manifest contains useful:
+- `name`;
+- `version`;
+- `description`;
+- `capabilities`;
+- `source`;
+- `order`.
+
+These fields are displayed by the Plugin Manager.
+
+A plugin must tolerate deactivation and later reactivation. All registrations should use tracked Plugin API methods so cleanup is automatic. Resources created outside the Plugin API must be released from the returned `deactivate()` hook.
+
+Never delete unknown/disabled plugin namespaces from project JSON.

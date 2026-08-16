@@ -300,3 +300,61 @@ return {
 ```
 
 Do not leave window listeners, timers, workers, or DOM nodes alive after deactivation.
+
+## Plugin Manager lifecycle API
+
+The core Plugin Manager is available through:
+
+```js
+GRSPlugins.manager
+```
+
+Read current plugin states:
+
+```js
+const rows = GRSPlugins.manager.list();
+const one = GRSPlugins.manager.get('com.example.plugin');
+```
+
+Each state includes:
+
+```text
+id / name / version / apiVersion
+enabled      desired persistent state
+active       currently activated in this runtime
+status       active | disabled | available | error
+error
+capabilities
+contributionCounts
+preference   undefined = manifest default, boolean = user override
+```
+
+Lifecycle operations:
+
+```js
+await GRSPlugins.manager.enable(id);
+await GRSPlugins.manager.disable(id);
+await GRSPlugins.manager.reload(id);
+await GRSPlugins.manager.setEnabled(id, boolean);
+await GRSPlugins.manager.resetPreferences();
+```
+
+Enable/disable preferences are stored locally by the host under:
+
+```text
+grs.plugin.preferences.v1
+```
+
+They are intentionally not project state.
+
+### State safety during disable/reload
+
+Before an active plugin is deactivated, the host captures the active project tab. Its registered project slices are serialized before cleanup.
+
+When it is enabled again, the plugin activates first, registers its slices again, and the manager restores the current project's saved namespace.
+
+Core project serialization merges active plugin slices into previously preserved plugin blobs. This means a disabled, missing, or temporarily failing plugin does not lose its saved project data merely because its slice is not active at save time.
+
+### Activation failure rollback
+
+If a plugin throws during `activate()`, every contribution already registered during that partial activation is rolled back before the plugin enters `error` state. This makes Retry/Reload safe from duplicated commands, styles, registry rows, and toolbar buttons.

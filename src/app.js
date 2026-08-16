@@ -554,7 +554,7 @@
     t.transformPreviewByDataset=new Map(state.transformPreviewByDataset);
     t.importDraft=importDraft;
     t.pulseAnalysisState=pulseAnalysisState;
-    t.pluginState=window.GRSPlugins?.project?.serialize?.()||t.pluginState||{};
+    t.pluginState=window.GRSPlugins?.project?.serialize?.(t.pluginState||{})||t.pluginState||{};
     t.mainView={...state.mainView,
       xDomain:state.mainView.xDomain?state.mainView.xDomain.slice():null,
       yDomain:state.mainView.yDomain?state.mainView.yDomain.slice():null};
@@ -4862,7 +4862,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.16-plugin',
+      version:'3.17-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -4884,7 +4884,7 @@
       terHeatmapDisplay:{...state.terHeatmapDisplay},
       gateAnalysisSettings:{...state.gateAnalysisSettings},
       transformPreviewByDataset:[...state.transformPreviewByDataset.entries()],
-      plugins:window.GRSPlugins?.project?.serialize?.()||{},
+      plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
       panelLayout:{
         groupPanelMode:state.groupPanelMode,
         groupPanelCollapsed:state.groupPanelCollapsed,
@@ -4957,6 +4957,11 @@
     state.gateAnalysisSettings={...(pr.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=null;
     state.transformPreviewByDataset=new Map(pr.transformPreviewByDataset||[]);
+
+    // Preserve plugin blobs even when their plugin is currently disabled.
+    // Active plugin slices overwrite only their own namespace on the next save.
+    const currentTab=activeProjectTab();
+    if(currentTab)currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}));
 
     // Plugin-owned project state. v3.14 pulseAnalysis is passed as legacyProject
     // so the pulse plugin can migrate old projects without core knowing its schema.
@@ -5646,10 +5651,11 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.16.0-plugin.1',
+      appVersion:'3.17.0-plugin.1',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),
+      captureActiveProjectTab,
       setStatus,
       renderAll,
       scheduleMainPlotRelayout,
@@ -5668,6 +5674,12 @@
         reset:pluginResetPulseState,
         getState:()=>pulseAnalysisState
       }
+    });
+
+    window.GRSPluginManagerUI?.configure?.({
+      openAnalysisPage,
+      closeAnalysisPage,
+      setStatus
     });
 
     await window.GRSPlugins.loadBuiltinEntries();

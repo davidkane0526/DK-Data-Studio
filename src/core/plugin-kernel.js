@@ -6,10 +6,50 @@
   const projectSlices = new Map();
   const cleanupByPlugin = new Map();
   const eventListeners = new Map();
+  const preferenceStorageKey = 'grs.plugin.preferences.v1';
+  let preferences = null;
   let host = null;
   let loadingPromise = null;
 
   const API_VERSION = '1.0.0';
+
+  function readPreferences() {
+    if (preferences) return preferences;
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(preferenceStorageKey) || '{}') || {};
+    } catch {}
+    preferences = saved && typeof saved === 'object' ? saved : {};
+    return preferences;
+  }
+
+  function writePreferences() {
+    try { localStorage.setItem(preferenceStorageKey, JSON.stringify(readPreferences())); } catch {}
+  }
+
+  function preferenceFor(id) {
+    const value = readPreferences()[id];
+    return typeof value === 'boolean' ? value : undefined;
+  }
+
+  function isDefinitionEnabled(definition) {
+    const saved = preferenceFor(definition.manifest.id);
+    return saved === undefined ? definition.manifest.enabled !== false : saved;
+  }
+
+  function setPreference(id, enabled) {
+    readPreferences()[id] = !!enabled;
+    writePreferences();
+  }
+
+  function clearPreference(id) {
+    delete readPreferences()[id];
+    writePreferences();
+  }
+
+  function definitionById(id) {
+    return definitions.find(d => d.manifest.id === id) || null;
+  }
 
   function assertId(id, what='id') {
     if (!/^[a-z0-9][a-z0-9._-]*$/i.test(String(id || ''))) {
@@ -75,6 +115,7 @@
     const siblings = [...mount.querySelectorAll('.plugin-toolbar-btn')];
     const before = siblings.find(el => Number(el.dataset.pluginOrder || 100) > Number(spec.order || 100));
     mount.insertBefore(button, before || null);
+    addCleanup(pluginId, () => button.remove());
     return button;
   }
 
@@ -113,8 +154,9 @@
     return addCleanup(pluginId, () => map.delete(key));
   }
 
-  function serializeProject() {
-    const out = {};
+  function serializeProject(base={}) {
+    let out = {};
+    try { out = JSON.parse(JSON.stringify(base || {})); } catch { out = {}; }
     for (const [pluginId, slices] of projectSlices) {
       const pluginData = {};
       for (const [key, hooks] of slices) {
@@ -182,6 +224,7 @@
       pageId: page.id,
       element: page
     });
+    addCleanup(pluginId, () => page.classList.add('hidden'));
 
     if (spec.toolbar !== false) {
       const commandId = `${pluginId}.${spec.id}.open`;
@@ -206,6 +249,7 @@
     const panel = document.getElementById(spec.panelId);
     if (!panel) throw new Error(`Plugin panel not found: ${spec.panelId}`);
     const commandId = `${pluginId}.${spec.id}.toggle`;
+    addCleanup(pluginId, () => panel.classList.add('hidden'));
     registerCommand(pluginId, commandId, () => {
       if (spec.toggle) return spec.toggle({ panel, host });
       panel.classList.toggle('hidden');
@@ -262,30 +306,58 @@
     });
   }
 
-  async function activateDefinition(definition) {
+  function restorePluginProjectState(pluginId, data={}, legacyProject=null) {
+    const slices = projectSlices.get(pluginId);
+    if (!slices) return;
+    const pluginData = data?.[pluginId] || {};
+    for (const [key, hooks] of slices) {
+      if (typeof hooks.restore !== 'function') continue;
+      try { hooks.restore(pluginData?.[key], { pluginData, legacyProject }); }
+      catch (err) { console.error(`[GRS plugin project restore:${pluginId}/${key}]`, err); }
+    }
+  }
+
+  async function activateDefinition(definition, { restoreCurrentProject=true }={}) {
     const { manifest } = definition;
-    if (active.has(manifest.id)) return active.get(manifest.id);
+    if (active.has(manifest.id)) return active.get(manifest.id)?.instance || null;
     if (manifest.apiVersion && !String(manifest.apiVersion).startsWith('1.')) {
       disabled.set(manifest.id, `Unsupported plugin API ${manifest.apiVersion}`);
+      eventEmit('plugin:state-changed', { id:manifest.id, reason:'api-version' });
       return null;
     }
+    disabled.delete(manifest.id);
     const api = createApi(definition);
     try {
       const instance = await definition.activate(api);
       active.set(manifest.id, { manifest, instance: instance || null });
+      if (restoreCurrentProject) {
+        const tab = host?.getActiveProjectTab?.();
+        restorePluginProjectState(manifest.id, tab?.pluginState || {}, null);
+      }
       eventEmit('plugin:activated', { id: manifest.id, manifest });
+      eventEmit('plugin:state-changed', { id:manifest.id, reason:'activated' });
       return instance || null;
     } catch (err) {
+      // Roll back partial registrations so a later Retry/Reload starts cleanly.
+      for (const fn of (cleanupByPlugin.get(manifest.id) || []).reverse()) {
+        try { fn(); } catch (cleanupError) { console.error(cleanupError); }
+      }
+      cleanupByPlugin.delete(manifest.id);
+      active.delete(manifest.id);
       disabled.set(manifest.id, err.message);
       console.error(`[GRS plugin activation:${manifest.id}]`, err);
       host?.setStatus?.(`插件 ${manifest.name || manifest.id} 加载失败：${err.message}`);
+      eventEmit('plugin:state-changed', { id:manifest.id, reason:'error', error:err.message });
       return null;
     }
   }
 
-  async function deactivate(id) {
+  async function deactivate(id, { captureProject=true }={}) {
     const row = active.get(id);
     if (!row) return;
+    if (captureProject) {
+      try { host?.captureActiveProjectTab?.(); } catch (err) { console.error('[GRS plugin capture before deactivate]', err); }
+    }
     try { await row.instance?.deactivate?.(); } catch (err) { console.error(err); }
     for (const fn of (cleanupByPlugin.get(id) || []).reverse()) {
       try { fn(); } catch (err) { console.error(err); }
@@ -293,6 +365,89 @@
     cleanupByPlugin.delete(id);
     active.delete(id);
     eventEmit('plugin:deactivated', { id });
+    eventEmit('plugin:state-changed', { id, reason:'deactivated' });
+  }
+
+  function pluginStateRow(definition) {
+    const m = definition.manifest;
+    const enabled = isDefinitionEnabled(definition);
+    const isActive = active.has(m.id);
+    const error = disabled.get(m.id) || '';
+    const status = error ? 'error' : isActive ? 'active' : enabled ? 'available' : 'disabled';
+    const contributionCounts = {};
+    for (const [kind, reg] of registries) {
+      const count = [...reg.values()].filter(row => row.pluginId === m.id).length;
+      if (count) contributionCounts[kind] = count;
+    }
+    return {
+      ...m,
+      enabled,
+      active:isActive,
+      status,
+      error,
+      source:m.source || 'builtin',
+      capabilities:Array.isArray(m.capabilities)?m.capabilities.slice():[],
+      contributionCounts,
+      preference:preferenceFor(m.id)
+    };
+  }
+
+  function listPluginStates() {
+    return definitions
+      .slice()
+      .sort((a,b)=>(a.manifest.order||100)-(b.manifest.order||100)||String(a.manifest.name||a.manifest.id).localeCompare(String(b.manifest.name||b.manifest.id)))
+      .map(pluginStateRow);
+  }
+
+  async function setPluginEnabled(id, enabled) {
+    const definition = definitionById(id);
+    if (!definition) throw new Error(`Plugin not found: ${id}`);
+    const next = !!enabled;
+    setPreference(id, next);
+
+    if (!next) {
+      await deactivate(id, { captureProject:true });
+      disabled.delete(id);
+      host?.setStatus?.(`插件 ${definition.manifest.name || id} 已停用。设置会在下次启动继续生效。`);
+    } else {
+      const result = await activateDefinition(definition, { restoreCurrentProject:true });
+      if (!active.has(id)) throw new Error(disabled.get(id) || `Plugin ${id} failed to activate.`);
+      host?.setStatus?.(`插件 ${definition.manifest.name || id} 已启用。`);
+      void result;
+    }
+    eventEmit('plugin:preference-changed', { id, enabled:next });
+    eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
+    return pluginStateRow(definition);
+  }
+
+  async function reloadPlugin(id) {
+    const definition = definitionById(id);
+    if (!definition) throw new Error(`Plugin not found: ${id}`);
+    if (!isDefinitionEnabled(definition)) throw new Error(`Plugin ${id} is disabled.`);
+    await deactivate(id, { captureProject:true });
+    const result = await activateDefinition(definition, { restoreCurrentProject:true });
+    if (!active.has(id)) throw new Error(disabled.get(id) || `Plugin ${id} failed to reload.`);
+    host?.setStatus?.(`插件 ${definition.manifest.name || id} 已重新加载。`);
+    eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
+    return result;
+  }
+
+  async function resetPluginPreferences() {
+    preferences = {};
+    writePreferences();
+    for (const definition of definitions) {
+      const shouldEnable = definition.manifest.enabled !== false;
+      if (shouldEnable && !active.has(definition.manifest.id)) {
+        await activateDefinition(definition, { restoreCurrentProject:true });
+      } else if (!shouldEnable && active.has(definition.manifest.id)) {
+        await deactivate(definition.manifest.id, { captureProject:true });
+        disabled.delete(definition.manifest.id);
+      } else if (!shouldEnable) {
+        disabled.delete(definition.manifest.id);
+      }
+    }
+    eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
+    return listPluginStates();
   }
 
   function loadScript(src) {
@@ -329,12 +484,25 @@
     loadBuiltinEntries,
     async activateAll() {
       for (const def of definitions.slice().sort((a,b)=>(a.manifest.order||100)-(b.manifest.order||100))) {
-        await activateDefinition(def);
+        if (!isDefinitionEnabled(def)) continue;
+        await activateDefinition(def, { restoreCurrentProject:false });
       }
       eventEmit('plugins:ready', { active: [...active.keys()] });
+      eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
       return [...active.keys()];
     },
     deactivate,
+    manager: {
+      list:listPluginStates,
+      get:id=>{ const def=definitionById(id); return def?pluginStateRow(def):null; },
+      setEnabled:setPluginEnabled,
+      enable:id=>setPluginEnabled(id,true),
+      disable:id=>setPluginEnabled(id,false),
+      reload:reloadPlugin,
+      resetPreferences:resetPluginPreferences,
+      clearPreference(id){ clearPreference(id); return this.get(id); },
+      storageKey:preferenceStorageKey
+    },
     commands: { run: runCommand },
     registry: {
       list: listContributions,
@@ -344,6 +512,7 @@
     project: {
       serialize: serializeProject,
       restore: restoreProject,
+      restorePlugin: restorePluginProjectState,
       reset: resetProjectSlices
     },
     events: { on: eventOn, emit: eventEmit },
@@ -351,8 +520,10 @@
       return {
         apiVersion: API_VERSION,
         definitions: definitions.map(d => d.manifest),
+        plugins:listPluginStates(),
         active: [...active.values()].map(x => x.manifest),
         disabled: Object.fromEntries(disabled),
+        preferences:{...readPreferences()},
         registries: Object.fromEntries([...registries].map(([k,v])=>[k,[...v.values()].map(x=>({pluginId:x.pluginId,id:x.id}))]))
       };
     }
