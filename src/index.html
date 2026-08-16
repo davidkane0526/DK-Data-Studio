@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Graphene Resonance Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">Graphene Resonance Studio <span class="version">v3.14.0</span></div>
+      <div class="toolbar">
+        <div class="toolbar-group" title="文件">
+          <button id="openBtn" class="toolbar-btn strong" title="导入数据 / 打开导入工作台">导入</button>
+          <button id="openProjectBtn" class="toolbar-btn" title="读取工程 · Ctrl+O">读取</button>
+          <button id="saveProjectBtn" class="toolbar-btn" title="保存工程 · Ctrl+S">保存</button>
+          <button id="updateBtn" class="toolbar-btn update-toolbar-btn" title="局域网热更新">
+            更新 <span id="updateBadge" class="update-badge hidden"></span>
+          </button>
+          <button id="lanWebBtn" class="toolbar-btn" title="让同一局域网中的浏览器运行 Graphene Resonance Studio">网页版</button>
+        </div>
+        <div class="toolbar-group" title="编辑">
+          <button id="undoBtn" class="toolbar-btn icon-btn" title="回退上一步 · Ctrl+Z">↶</button>
+          <button id="deselectBtn" class="toolbar-btn" title="退出选中 · Esc">退出选中</button>
+        </div>
+        <div class="toolbar-group" title="分析">
+          <button id="toggleInspectorBtn" class="toolbar-btn">检查器</button>
+          <button id="toggleGroupBtn" class="toolbar-btn">组图</button>
+          <button id="togglePhysicsBtn" class="toolbar-btn">物理机制</button>
+          <button id="openSpacingPageBtn" class="toolbar-btn">峰间距</button>
+          <button id="openGateAnalysisPageBtn" class="toolbar-btn accent-soft">栅压分析</button>
+          <button id="openTerMaxPageBtn" class="toolbar-btn">TER_max</button>
+          <button id="openPulseAnalysisPageBtn" class="toolbar-btn accent-soft">脉冲分析</button>
+        </div>
+        <div class="toolbar-group" title="导出">
+          <button id="exportMainSvgBtn" class="toolbar-btn" title="导出主图 SVG">主图 SVG</button>
+          <button id="exportMainPngBtn" class="toolbar-btn" title="导出主图 PNG">主图 PNG</button>
+          <button id="exportMainCsvBtn" class="toolbar-btn" title="导出主图数据 CSV">主图数据</button>
+          <button id="copyMainCsvBtn" class="toolbar-btn copy-btn" title="复制主图 CSV 数据到剪贴板">复制主图</button>
+          <button id="exportPeaksBtn" class="toolbar-btn" title="导出峰参数 CSV">峰参数</button>
+          <button id="copyPeaksCsvBtn" class="toolbar-btn copy-btn" title="复制峰参数 CSV 到剪贴板">复制峰</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="project-tabs-bar">
+      <div id="projectTabs" class="project-tabs"></div>
+      <button id="newProjectTabBtn" class="new-project-tab" title="新建独立项目标签页 (Ctrl+N)">＋</button>
+    </div>
+
+    <div class="workspace">
+      <aside class="left-panel">
+        <section>
+          <h3>数据列表</h3>
+          <div class="row compact scan-global-buttons">
+            <button id="checkAllBtn">全部扫描</button>
+            <button id="forwardOnlyBtn">仅正扫</button>
+            <button id="reverseOnlyBtn">仅反扫</button>
+            <button id="uncheckAllBtn">全不选</button>
+          </div>
+          <div id="datasetList" class="dataset-list"></div>
+        </section>
+
+        <section>
+          <h3>智能寻峰</h3>
+          <div class="smart-detection-note">
+            自动融合原始 I–V、去背景、dI/dV、d²I/dV²、d ln|I|/dV、dV/dI 与 R=|V/I|。
+            <b>辅助通道只发现候选，最终 Vd 始终回到原始 I–V 的真实采样点。</b>
+          </div>
+          <div class="preset-row smart-preset-row">
+            <button data-preset="strict">可靠</button>
+            <button data-preset="balanced" class="active">平衡</button>
+            <button data-preset="sensitive">灵敏</button>
+          </div>
+          <button id="rerunDetectionBtn" class="primary wide">智能寻峰 / 补峰</button>
+          <details class="advanced-peak-settings">
+            <summary>高级设置（一般不用改）</summary>
+            <div id="algorithmControls"></div>
+          </details>
+          <div id="peakColorLegend" class="peak-color-legend"></div>
+        </section>
+
+        <section>
+          <h3>显示</h3>
+          <label><input type="checkbox" id="showRejected" /> 显示不采纳峰</label>
+          <label><input type="checkbox" id="showWidth" checked /> 显示选中峰宽</label>
+          <label><input type="checkbox" id="showPoints" checked /> 显示峰位点</label>
+          <label><input type="checkbox" id="showPhysicsLabels" checked /> 主图标注物理类型</label>
+        </section>
+
+        <section>
+          <h3>手动操作</h3>
+          <div class="hint">
+            Ctrl + 左键点击曲线：立即新增峰<br/>
+            Ctrl + 右键点击峰点：立即删除峰<br/>
+            直接拖框：弹出“局部寻峰 / 删除 / 锁定 / 解锁”菜单<br/>
+            Ctrl + 拖框：仅缩放，不改变峰<br/>
+            拖峰点：吸附到当前选中曲线<br/>
+            拖宽度手柄：修改 FWHM<br/>
+            L / Shift+L：锁定 / 解锁所选峰<br/>
+            峰序排序：跨 Vg 智能保持峰轨迹编号，允许缺峰<br/>
+            P：显示/隐藏物理类型文字标记<br/>
+            ↑/↓：切换曲线；若当前视野仅一个峰则自动选中<br/>
+            ←/→：移动已选峰一个真实采样点<br/>
+            Ctrl+←/→：选中当前曲线的上一个 / 下一个峰<br/>
+            锁定峰重新寻峰时保持不变<br/>
+            Ctrl+Z：回退上一步<br/>
+            Esc：退出选中
+          </div>
+        </section>
+      </aside>
+
+      <main class="main-area">
+        <div id="mainWorkspace" class="main-workspace">
+        <div id="mainPlotWrap" class="plot-wrap">
+          <div class="main-plot-header">
+          <div class="main-plot-tools" id="mainPlotTools">
+            <span class="direct-box-hint" title="默认直接拖框选择区域；按住 Ctrl 拖框才缩放">拖框=操作 · Ctrl+拖框=缩放</span>
+            <button id="lockSelectedPeaksBtn" title="锁定框选/选中的峰 (L)">锁定所选</button>
+            <button id="unlockSelectedPeaksBtn" title="解锁框选/选中的峰 (Shift+L)">解锁所选</button>
+            <button id="sortPeakOrderBtn" title="跨 Vg 智能峰序：允许某些栅压缺峰，保持同一物理 ridge 的编号不被后续峰顶替">智能峰序</button>
+            <button id="togglePhysicsLabelsBtn" class="active" title="显示/隐藏主图物理类型文字标记 (P)">物理标记</button>
+            <button id="mainResetViewBtn" title="重新居中并适应全部可见数据 (R)">重新居中</button>
+          </div>
+          <div id="mainLegendBar" class="main-legend-bar" title="横向滚动查看全部 Vg；点击图例可凸显对应数据"></div>
+          </div>
+          <svg id="mainPlot"></svg>
+          <div id="rangeActionMenu" class="range-action-menu hidden">
+            <div id="rangeActionSummary" class="range-action-summary">已框选区域</div>
+            <div class="range-action-grid">
+              <button id="rangeLocalDetectBtn" class="primary">局部寻峰</button>
+              <button id="rangeDeletePeaksBtn" class="danger-soft">删除框选峰</button>
+              <button id="rangeLockPeaksBtn">锁定框选峰</button>
+              <button id="rangeUnlockPeaksBtn">解锁框选峰</button>
+            </div>
+            <div class="range-unify-identity">
+              <div class="range-unify-title">统一峰序 / 峰标签</div>
+              <select id="rangePeakOrderSelect" title="将全部框选峰设置为同一峰类别"></select>
+              <input id="rangePeakLabelInput" type="text" placeholder="类别标签，例如 峰3 / AB">
+              <button id="rangeApplyPeakIdentityBtn">应用到框选峰</button>
+            </div>
+            <div class="range-action-footer">
+              <span>峰位仍落在原始 I–V 采样点</span>
+              <button id="rangeCloseBtn">关闭</button>
+            </div>
+          </div>
+          <div id="hoverTip" class="hover-tip hidden"></div>
+        </div>
+        <div id="inspectorDockSlot" class="inspector-dock-slot"></div>
+        </div>
+        <div id="dockedGroupSlot" class="docked-group-slot"></div>
+        <div id="statusBar" class="statusbar">未加载数据</div>
+      </main>
+    </div>
+
+
+
+
+    <section id="pulseAnalysisPage" class="analysis-page hidden">
+      <div class="analysis-page-header pulse-page-header">
+        <div>
+          <h2>脉冲 / 读取电流分析</h2>
+          <div class="analysis-subtitle">批量导入瞬态文件；每个文件独立识别参数，可叠加比较提取结果。</div>
+        </div>
+        <button class="analysis-page-close" data-analysis-target="pulseAnalysisPage">返回主图</button>
+      </div>
+
+      <div class="analysis-page-body pulse-analysis-body">
+
+        <div class="pulse-batch-workspace">
+          <aside class="pulse-card pulse-file-manager-card">
+            <div class="pulse-card-heading pulse-file-manager-heading">
+              <div>
+                <h3>脉冲数据文件</h3>
+                <p>勾选决定是否参与批量分析和叠加比较；点击文件切换当前编辑对象。</p>
+              </div>
+              <button id="pulseAddFilesBtn" class="primary">添加文件</button>
+            </div>
+
+            <div class="pulse-file-toolbar">
+              <button id="pulseCheckAllBtn">全选</button>
+              <button id="pulseUncheckAllBtn">全不选</button>
+              <button id="pulseRemoveFilesBtn">移除勾选</button>
+            </div>
+
+            <div id="pulseFileList" class="pulse-file-list">
+              <div class="pulse-file-empty">尚未添加脉冲数据文件</div>
+            </div>
+
+            <div id="pulseBatchFileSummary" class="pulse-file-summary">0 个文件</div>
+          </aside>
+
+          <section class="pulse-card pulse-config-card">
+            <div class="pulse-card-heading">
+              <div>
+                <h3>当前文件与提取设置</h3>
+                <p>每个文件独立保存列映射、平台长度和稳态窗口。可将当前设置复制到全部勾选文件。</p>
+              </div>
+              <div class="pulse-current-file-actions">
+                <button id="pulseAnalyzeCurrentBtn">分析当前文件</button>
+                <button id="pulseAnalyzeCheckedBtn" class="primary">分析全部勾选文件</button>
+              </div>
+            </div>
+
+            <div id="pulseNoActiveFile" class="pulse-current-empty">
+              从左侧添加并选择一个文件。
+            </div>
+
+            <div id="pulseActiveEditor" class="hidden">
+              <div class="pulse-active-file-head">
+                <div>
+                  <div class="pulse-active-path" id="pulseActiveFileName">—</div>
+                  <div class="pulse-active-meta" id="pulseActiveFileMeta">—</div>
+                </div>
+                <label class="pulse-label-edit">
+                  显示标签
+                  <input id="pulseSeriesLabel" type="text" placeholder="例如 read=0.5 V / Device A">
+                </label>
+              </div>
+
+              <div class="pulse-control-grid">
+                <label>时间列
+                  <select id="pulseTimeCol"></select>
+                </label>
+                <label>电流列
+                  <select id="pulseCurrentCol"></select>
+                </label>
+                <label>脉冲电压列
+                  <select id="pulseVoltageCol"></select>
+                </label>
+                <label>每个平台点数
+                  <input id="pulseBlockSamples" type="number" min="0" step="1" value="0" title="0 = 自动识别">
+                </label>
+                <label>稳态窗口起点 (%)
+                  <input id="pulseWindowStart" type="number" min="0" max="95" step="1" value="25">
+                </label>
+                <label>稳态窗口终点 (%)
+                  <input id="pulseWindowEnd" type="number" min="5" max="100" step="1" value="75">
+                </label>
+                <label>读取平台配对
+                  <select id="pulseReadPairMode">
+                    <option value="after">脉冲后的读取平台</option>
+                    <option value="before">脉冲前的读取平台</option>
+                  </select>
+                </label>
+                <div class="pulse-analyze-cell">
+                  <button id="pulseApplySettingsBtn">当前设置应用到勾选文件</button>
+                </div>
+              </div>
+
+              <div id="pulseSummary" class="pulse-summary pulse-summary-grid">
+                <span class="pulse-summary-placeholder">当前文件尚未分析。</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="pulse-card pulse-raw-card">
+          <div class="pulse-card-heading pulse-plot-heading">
+            <div>
+              <h3>当前文件 · 原始波形诊断</h3>
+              <p id="pulseRawSubtitle">原始波形只显示当前文件，避免多个瞬态文件叠加后无法判断平台识别质量。</p>
+            </div>
+            <div class="pulse-plot-actions">
+              <button id="pulseRawFitBtn">适应全部</button>
+              <button id="pulseRawCopyBtn" class="copy-btn">复制数据</button>
+              <button id="pulseRawExportBtn">导出 CSV</button>
+              <button id="pulseRawSvgBtn">导出 SVG</button>
+              <button id="pulseRawPngBtn">导出 PNG</button>
+            </div>
+          </div>
+          <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface"></div>
+        </section>
+
+        <section class="pulse-card pulse-compare-toolbar-card">
+          <div class="pulse-compare-toolbar">
+            <div>
+              <strong>结果比较</strong>
+              <span>结果图和结果表可以只看当前文件，也可以叠加全部勾选且已分析的文件。</span>
+            </div>
+            <label>显示范围
+              <select id="pulseResultScope">
+                <option value="checked">全部勾选文件</option>
+                <option value="active">仅当前文件</option>
+              </select>
+            </label>
+            <div id="pulseComparedSummary" class="pulse-compared-summary">0 个已分析文件</div>
+          </div>
+        </section>
+
+        <div class="pulse-results-grid">
+          <section class="pulse-card pulse-result-card">
+            <div class="pulse-card-heading pulse-plot-heading">
+              <div>
+                <h3>脉冲电压 → 读取电流</h3>
+                <p>多文件模式下每个文件是一条独立序列，图例使用文件显示标签。</p>
+              </div>
+              <div class="pulse-plot-actions">
+                <button id="pulseReadCopyBtn" class="copy-btn">复制可见数据</button>
+                <button id="pulseReadExportBtn">导出 CSV</button>
+                <button id="pulseReadSvgBtn">导出 SVG</button>
+                <button id="pulseReadPngBtn">导出 PNG</button>
+              </div>
+            </div>
+            <div id="pulseReadPlot" class="pulse-result-plot pulse-plot-surface"></div>
+          </section>
+
+          <section class="pulse-card pulse-result-card">
+            <div class="pulse-card-heading pulse-plot-heading">
+              <div>
+                <h3>脉冲电压 → 脉冲电流</h3>
+                <p>可用于比较不同读取电压、器件、循环或测试条件下的脉冲响应。</p>
+              </div>
+              <div class="pulse-plot-actions">
+                <button id="pulsePulseCopyBtn" class="copy-btn">复制可见数据</button>
+                <button id="pulsePulseExportBtn">导出 CSV</button>
+                <button id="pulsePulseSvgBtn">导出 SVG</button>
+                <button id="pulsePulsePngBtn">导出 PNG</button>
+              </div>
+            </div>
+            <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface"></div>
+          </section>
+        </div>
+
+        <section class="pulse-card pulse-results-table-card">
+          <div class="pulse-card-heading pulse-table-heading">
+            <div>
+              <h3>批量提取结果</h3>
+              <p id="pulseResultMeta">结果表会加入文件标签、源文件、读取电压等字段，便于多个文件一起复制、导出和后续统计。</p>
+            </div>
+            <div class="pulse-table-actions">
+              <button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button>
+              <button id="pulseExportCsvBtn">导出可见 CSV</button>
+            </div>
+          </div>
+          <div class="pulse-table-wrap">
+            <table id="pulseResultTable" class="physics-table pulse-result-table"></table>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <section id="gateAnalysisPage" class="analysis-page hidden">
+      <div class="analysis-page-header">
+        <div>
+          <h2>栅压物理分析</h2>
+          <div id="gateAnalysisProjectName" class="analysis-subtitle">当前项目</div>
+        </div>
+        <button class="analysis-page-close" data-analysis-target="gateAnalysisPage">返回主图</button>
+      </div>
+
+      <div class="analysis-page-body gate-analysis-body">
+        <div class="analysis-control-card gate-analysis-controls">
+          <label>共振 ridge A
+            <select id="gateSeriesA"></select>
+          </label>
+          <label>共振 ridge B
+            <select id="gateSeriesB"></select>
+          </label>
+          <label>回滞峰标签
+            <select id="gateHysteresisLabel"></select>
+          </label>
+          <label>宽度显示
+            <select id="gateWidthMode">
+              <option value="hwhm">HWHM = FWHM/2</option>
+              <option value="fwhm">FWHM</option>
+            </select>
+          </label>
+          <button id="gateAnalysisRefreshBtn" class="primary">计算 / 刷新</button>
+          <button id="gateAnalysisExportCsvBtn">导出分析数据 CSV</button>
+          <button id="gateAnalysisCopyCsvBtn" class="copy-btn">复制分析数据</button>
+          <button id="gateAnalysisExportReportBtn">导出报告 Markdown</button>
+        </div>
+
+        <div class="analysis-control-card gate-density-controls">
+          <strong>可选：栅压 → 载流子浓度</strong>
+          <label class="inline-check">
+            <input id="gateUseCarrierDensity" type="checkbox">
+            启用 n<sub>g</sub>
+          </label>
+          <label>C<sub>g</sub> (F/m²)
+            <input id="gateCg" type="number" step="any" placeholder="例如 1.0e-4">
+          </label>
+          <label>V<sub>CNP</sub> (V)
+            <input id="gateCnp" type="number" step="any" placeholder="0">
+          </label>
+          <span class="analysis-inline-formula">n<sub>g</sub> = C<sub>g</sub>(V<sub>g</sub>−V<sub>CNP</sub>)/e</span>
+        </div>
+
+        <div class="analysis-note gate-analysis-note">
+          两条 ridge 应尽量选择同一扫描方向，并由你根据独立证据决定是否可称为 AB/BA。
+          页面内部使用 A/B 中性命名。V<sub>0</sub>=(V<sub>B</sub>+V<sub>A</sub>)/2，
+          δ=(V<sub>B</sub>−V<sub>A</sub>)/2；用于可分辨度时采用 |δ|。
+          峰宽 w 默认使用 HWHM。回滞页显示的是同一峰标签的正/反扫峰位差 ΔV<sub>R</sub>，
+          <b>不把它自动当作 coercive voltage V<sub>c</sub></b>。
+        </div>
+
+        <div id="gateAnalysisSummary" class="ter-summary"></div>
+
+        <div class="gate-analysis-grid">
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">1. 共振轨迹 V<sub>R,A</sub>(V<sub>g</sub>) / V<sub>R,B</sub>(V<sub>g</sub>)</div>
+            <div id="gateResonancePlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">2. 共振中心 V<sub>0</sub>(V<sub>g</sub>)</div>
+            <div id="gateV0Plot" class="analysis-chart"></div>
+          </div>
+
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">3. 有效分裂 δ(V<sub>g</sub>)</div>
+            <div id="gateDeltaPlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">4. 峰宽与 |δ|/w</div>
+            <div id="gateWidthPlot" class="analysis-chart"></div>
+          </div>
+
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">5. TER<sub>max</sub>(V<sub>g</sub>)</div>
+            <div id="gateTerMaxPlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">6. 最佳读出偏压 V<sub>d</sub><sup>*</sup>(V<sub>g</sub>)</div>
+            <div id="gateVdStarPlot" class="analysis-chart"></div>
+          </div>
+
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">7. 正/反扫峰位回滞（不是 V<sub>c</sub>）</div>
+            <div id="gateHysteresisPlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">8. TER<sub>max</sub> vs |δ|/w</div>
+            <div id="gateTerCorrelationPlot" class="analysis-chart"></div>
+          </div>
+
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">9. V<sub>d</sub><sup>*</sup> vs V<sub>0</sub></div>
+            <div id="gateReadoutCorrelationPlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">10. 峰高与有效电学权重</div>
+            <div id="gateAmplitudePlot" class="analysis-chart"></div>
+          </div>
+
+          <div class="analysis-chart-card">
+            <div class="analysis-chart-title">11. 局域背景与峰/背景比</div>
+            <div id="gateBackgroundPlot" class="analysis-chart"></div>
+          </div>
+          <div class="analysis-chart-card gate-density-card">
+            <div class="analysis-chart-title">12. 可选：δ(n<sub>g</sub>) 与 TER<sub>max</sub>(n<sub>g</sub>)</div>
+            <div id="gateDensityPlot" class="analysis-chart"></div>
+          </div>
+        </div>
+
+        <h3 class="analysis-section-title">自动分析报告</h3>
+        <div id="gateAnalysisReport" class="gate-analysis-report"></div>
+
+        <h3 class="analysis-section-title">派生数据</h3>
+        <div class="analysis-table-wrap gate-analysis-table-wrap">
+          <table id="gateAnalysisTable" class="analysis-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="spacingPage" class="analysis-page hidden">
+      <div class="analysis-page-header">
+        <div>
+          <h2>两峰间距分析</h2>
+          <div id="spacingProjectName" class="analysis-subtitle">当前项目</div>
+        </div>
+        <button class="analysis-page-close" data-analysis-target="spacingPage">返回主图</button>
+      </div>
+      <div class="analysis-page-body">
+        <div class="analysis-control-card">
+          <label>峰 A
+            <select id="spacingSeriesA"></select>
+          </label>
+          <label>峰 B
+            <select id="spacingSeriesB"></select>
+          </label>
+          <label>显示
+            <select id="spacingMode">
+              <option value="abs">绝对间距 |VB−VA|</option>
+              <option value="signed">有符号差 VB−VA</option>
+            </select>
+          </label>
+          <button id="spacingRefreshBtn" class="primary">计算 / 刷新</button>
+          <button id="spacingExportCsvBtn">导出 CSV</button>
+          <button id="spacingCopyCsvBtn" class="copy-btn">复制数据</button>
+          <button id="spacingExportSvgBtn">导出 SVG</button>
+          <button id="spacingExportPngBtn">导出 PNG</button>
+        </div>
+        <div class="analysis-note">
+          下拉框中的“正扫·峰1”和“反扫·峰1”是两个独立序列。仅在两个序列具有相同 Vg 数据点时计算间距。
+        </div>
+        <div id="spacingPlot" class="analysis-large-plot"></div>
+        <div class="analysis-table-wrap">
+          <table id="spacingTable" class="analysis-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="terMaxPage" class="analysis-page hidden">
+      <div class="analysis-page-header">
+        <div>
+          <h2>TER 热图 / TER_Max 分析</h2>
+          <div id="terMaxProjectName" class="analysis-subtitle">当前项目</div>
+        </div>
+        <button class="analysis-page-close" data-analysis-target="terMaxPage">返回主图</button>
+      </div>
+      <div class="analysis-page-body">
+        <div class="analysis-control-card ter-controls">
+          <label>Vds min (V)<input id="terVmin" type="number" step="any"></label>
+          <label>Vds max (V)<input id="terVmax" type="number" step="any"></label>
+          <label>Vds step (V)<input id="terVstep" type="number" step="any"></label>
+          <label>配对容差 (V)<input id="terTolerance" type="number" step="any"></label>
+          <label>电流下限 (A)<input id="terCurrentFloor" type="number" step="any" value="1e-15"></label>
+          <label class="inline-check"><input id="terOnlyFullyVisible" type="checkbox">仅使用正反扫均显示的数据文件</label>
+          <button id="terAutoParamsBtn">自动参数</button>
+          <button id="terCalculateBtn" class="primary">计算 TER_max</button>
+        </div>
+
+        <div class="analysis-note">
+          TER 热图中的每个像素都对应一个实际 (Vd, Vg) 组合：在相同 Vd 下配对正扫/反扫，
+          R=|Vd/I|，TER=(Rhigh−Rlow)/Rlow×100%。TER_Max–Vg 是固定 Vg 后沿 Vd 方向取最大值；
+          TER_Max–Vd 是固定 Vd 后沿 Vg 方向取最大值。
+        </div>
+
+        <div class="analysis-control-card heatmap-display-controls">
+          <strong>热图显示</strong>
+          <label>色图
+            <select id="terColorScale">
+              <option value="Viridis">Viridis</option>
+              <option value="Turbo">Turbo</option>
+              <option value="Cividis">Cividis</option>
+              <option value="Jet">Jet</option>
+              <option value="Hot">Hot</option>
+            </select>
+          </label>
+          <label>色阶最小 (%)
+            <input id="terColorMin" type="number" step="any" placeholder="自动">
+          </label>
+          <label>色阶最大 (%)
+            <input id="terColorMax" type="number" step="any" placeholder="自动">
+          </label>
+          <label>色阶刻度 (%)
+            <input id="terColorTick" type="number" step="any" placeholder="自动">
+          </label>
+          <label>Vds 刻度 (V)
+            <input id="terXTick" type="number" step="any" placeholder="自动">
+          </label>
+          <label>Vg 刻度 (V)
+            <input id="terYTick" type="number" step="any" placeholder="自动">
+          </label>
+          <button id="terApplyDisplayBtn">应用显示</button>
+          <button id="terResetDisplayBtn">自动色阶/刻度</button>
+        </div>
+        <div id="terSummary" class="ter-summary"></div>
+
+        <div class="ter-chart-grid">
+          <div class="analysis-chart-card heatmap-square-card">
+            <div class="analysis-chart-title">TER(Vd, Vg) 全组合热图</div>
+            <div id="terHeatmapPlot" class="analysis-chart ter-heatmap-square"></div>
+          </div>
+
+          <div class="ter-reduction-grid">
+            <div class="analysis-chart-card">
+              <div class="analysis-chart-title">TER_Max–Vg：max over Vd</div>
+              <div id="terMaxVgPlot" class="analysis-chart"></div>
+            </div>
+            <div class="analysis-chart-card">
+              <div class="analysis-chart-title">Vd@TER_Max–Vg</div>
+              <div id="terMaxVgArgPlot" class="analysis-chart"></div>
+            </div>
+            <div class="analysis-chart-card">
+              <div class="analysis-chart-title">TER_Max–Vd：max over Vg</div>
+              <div id="terMaxVdPlot" class="analysis-chart"></div>
+            </div>
+            <div class="analysis-chart-card">
+              <div class="analysis-chart-title">Vg@TER_Max–Vd</div>
+              <div id="terMaxVdArgPlot" class="analysis-chart"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-control-card export-card">
+          <strong>热图/矩阵导出</strong>
+          <button id="terExportLongBtn">TER_long.csv</button>
+          <button id="terCopyLongBtn" class="copy-btn">复制 long</button>
+          <button id="terExportMatrixBtn">TER_matrix.csv</button>
+          <button id="terCopyMatrixBtn" class="copy-btn">复制 matrix</button>
+          <button id="terExportHeatmapSvgBtn">热图 SVG</button>
+          <button id="terExportHeatmapPngBtn">热图 PNG</button>
+        </div>
+
+        <div class="analysis-control-card export-card">
+          <strong>TER_Max–Vg</strong>
+          <button id="terExportMaxVgBtn">数据 CSV</button>
+          <button id="terCopyMaxVgBtn" class="copy-btn">复制数据</button>
+          <button id="terExportMaxVgSvgBtn">图形 SVG</button>
+          <button id="terExportMaxVgPngBtn">图形 PNG</button>
+          <strong>TER_Max–Vd</strong>
+          <button id="terExportMaxVdBtn">数据 CSV</button>
+          <button id="terCopyMaxVdBtn" class="copy-btn">复制数据</button>
+          <button id="terExportMaxVdSvgBtn">图形 SVG</button>
+          <button id="terExportMaxVdPngBtn">图形 PNG</button>
+        </div>
+
+        <h3 class="analysis-section-title">TER_Max–Vg 数据</h3>
+        <div class="analysis-table-wrap">
+          <table id="terMaxVgTable" class="analysis-table"></table>
+        </div>
+
+        <h3 class="analysis-section-title">TER_Max–Vd 数据</h3>
+        <div class="analysis-table-wrap">
+          <table id="terMaxVdTable" class="analysis-table"></table>
+        </div>
+      </div>
+    </section>
+
+
+
+    <div id="importPanel" class="import-panel-overlay hidden">
+      <div class="import-workbench">
+        <div class="import-workbench-header">
+          <div>
+            <h2>数据导入工作台</h2>
+            <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
+          </div>
+          <div class="import-header-actions">
+            <button id="importChooseFilesBtn" class="primary">选择文件</button>
+            <button id="importCloseBtn">关闭</button>
+          </div>
+        </div>
+
+        <div class="import-workbench-body">
+          <aside class="import-file-pane">
+            <div class="import-pane-title">待导入文件</div>
+            <div id="importFileList" class="import-file-list"></div>
+            <div class="import-file-actions">
+              <button id="importCheckAllBtn">全选</button>
+              <button id="importUncheckAllBtn">全不选</button>
+              <button id="importRemoveBtn">移除</button>
+            </div>
+          </aside>
+
+          <main class="import-main-pane">
+            <div id="importNoFile" class="import-empty">
+              点击“选择文件”添加 CSV / TXT / DAT / TSV / ASC / XY / IV 数据。
+            </div>
+
+            <div id="importEditor" class="hidden">
+              <div class="import-section import-basic-grid">
+                <label>编码
+                  <select id="importEncoding">
+                    <option value="auto">自动</option>
+                    <option value="utf-8">UTF-8</option>
+                    <option value="gb18030">GB18030 / GBK</option>
+                    <option value="big5">Big5</option>
+                    <option value="shift_jis">Shift-JIS</option>
+                    <option value="utf-16le">UTF-16 LE</option>
+                    <option value="utf-16be">UTF-16 BE</option>
+                    <option value="windows-1252">Latin-1 / Windows-1252</option>
+                  </select>
+                </label>
+                <label>跳过前 N 行
+                  <input id="importSkipRows" type="number" min="0" step="1" value="0">
+                </label>
+                <label>结束行
+                  <input id="importEndRow" type="number" min="0" step="1" value="0" title="0 = 读到文件末尾">
+                </label>
+                <label>分隔符
+                  <select id="importDelimiter">
+                    <option value="auto">自动</option>
+                    <option value="comma">逗号 ,</option>
+                    <option value="tab">Tab</option>
+                    <option value="semicolon">分号 ;</option>
+                    <option value="whitespace">空格 / 连续空白</option>
+                    <option value="pipe">竖线 |</option>
+                  </select>
+                </label>
+                <label>表头
+                  <select id="importHeaderMode">
+                    <option value="auto">自动识别</option>
+                    <option value="first">跳行后的第一行</option>
+                    <option value="none">无表头</option>
+                  </select>
+                </label>
+                <label>小数格式
+                  <select id="importDecimal">
+                    <option value="auto">自动</option>
+                    <option value="dot">小数点 .</option>
+                    <option value="comma">小数逗号 ,</option>
+                  </select>
+                </label>
+                <label>注释前缀
+                  <input id="importCommentPrefix" type="text" value="auto" placeholder="auto / # / % / //">
+                </label>
+                <label>数据排列
+                  <select id="importLayout">
+                    <option value="auto">自动识别</option>
+                    <option value="single">单组 V / I</option>
+                    <option value="sharedX">共享一个 V + 多个 I</option>
+                    <option value="paired">V1/I1, V2/I2… 成对列</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="import-section">
+                <div class="import-section-head">
+                  <strong>列映射</strong>
+                  <span id="importAutoDiagnosis" class="import-diagnosis"></span>
+                </div>
+                <div class="import-mapping-grid">
+                  <label>X / V 列
+                    <select id="importXCol"></select>
+                  </label>
+                  <label id="importYSingleWrap">Y / I 列
+                    <select id="importYCol"></select>
+                  </label>
+                  <label id="importPairStartWrap" class="hidden">成对起始列
+                    <select id="importPairStart"></select>
+                  </label>
+                  <label>V 单位
+                    <select id="importVoltageUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="V">V</option>
+                      <option value="mV">mV</option>
+                      <option value="uV">µV</option>
+                    </select>
+                  </label>
+                  <label>I 单位
+                    <select id="importCurrentUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="A">A</option>
+                      <option value="mA">mA</option>
+                      <option value="uA">µA</option>
+                      <option value="nA">nA</option>
+                      <option value="pA">pA</option>
+                    </select>
+                  </label>
+                  <label>Vg 来源
+                    <select id="importVgMode">
+                      <option value="auto">自动：优先列标题</option>
+                      <option value="header">列标题</option>
+                      <option value="filename">文件名 / 文件头</option>
+                      <option value="manual">手动</option>
+                    </select>
+                  </label>
+                  <label id="importManualVgWrap" class="hidden">手动 Vg (V)
+                    <input id="importManualVg" type="number" step="any">
+                  </label>
+                </div>
+
+                <div id="importYMultiWrap" class="import-y-multi hidden">
+                  <div class="import-y-multi-head">
+                    <span>选择要导入的 I 列</span>
+                    <button id="importYAllBtn">全部数值列</button>
+                    <button id="importYNoneBtn">清空</button>
+                  </div>
+                  <div id="importYColumns" class="import-y-columns"></div>
+                </div>
+
+                <div class="import-series-vg">
+                  <div class="import-y-multi-head">
+                    <span>每组数据的 Vg</span>
+                    <span class="import-series-vg-hint">留空 = 按当前 Vg 来源自动识别；填写后优先使用该值</span>
+                  </div>
+                  <div id="importSeriesVgRows" class="import-series-vg-rows"></div>
+                </div>
+              </div>
+
+              <div class="import-section import-preview-section">
+                <div class="import-section-head">
+                  <strong>解析预览</strong>
+                  <div class="import-preview-actions">
+                    <button id="importResetAutoBtn">恢复自动识别</button>
+                    <button id="importApplyAllBtn">当前设置应用到全部文件</button>
+                  </div>
+                </div>
+                <div id="importPreviewSummary" class="import-preview-summary"></div>
+                <div class="import-preview-table-wrap">
+                  <table id="importPreviewTable" class="import-preview-table"></table>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+
+        <div class="import-workbench-footer">
+          <div id="importGlobalSummary" class="import-global-summary">尚未选择文件</div>
+          <div class="import-footer-actions">
+            <button id="importCancelBtn">取消</button>
+            <button id="importCommitBtn" class="primary">导入勾选文件</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="lanWebPanel" class="floating-panel lan-web-panel hidden">
+      <div class="floating-header drag-handle">
+        <div class="lan-web-panel-title">
+          <span>局域网网页版</span>
+          <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
+        </div>
+        <button class="panel-close" data-target="lanWebPanel">×</button>
+      </div>
+
+      <div class="floating-body lan-web-body">
+        <div class="lan-web-grid">
+
+          <section class="lan-web-section lan-web-control-section">
+            <div class="lan-web-status-card">
+              <div class="lan-web-status-row">
+                <span id="lanWebStatusDot" class="lan-web-dot"></span>
+                <div>
+                  <strong id="lanWebStatusTitle">未启动</strong>
+                  <div id="lanWebStatusText" class="lan-web-status-text">
+                    启动后，同一局域网中的设备可直接用浏览器运行完整分析界面。
+                  </div>
+                </div>
+              </div>
+              <div class="lan-web-session-count">
+                已配对会话 <strong id="lanWebClientCount">0</strong>
+              </div>
+            </div>
+
+            <div class="lan-web-settings-card">
+              <div class="lan-web-section-title">服务设置</div>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>开启局域网网页版</strong>
+                  <small>保存设置后，下次启动软件继续保持</small>
+                </span>
+                <input id="lanWebEnabled" type="checkbox">
+              </label>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>免 Key 访问</strong>
+                  <small>仅建议在可信实验室 / 办公室局域网中使用</small>
+                </span>
+                <input id="lanWebNoKey" type="checkbox">
+              </label>
+
+              <div class="lan-web-port-row">
+                <div>
+                  <strong>服务端口</strong>
+                  <small>修改端口后会自动重启网页版服务</small>
+                </div>
+                <input id="lanWebPort" type="number" min="1024" max="65535" value="45910">
+              </div>
+
+              <div class="lan-web-key-card">
+                <div>
+                  <span>当前 4 位配对 Key</span>
+                  <small id="lanWebKeyHint">扫码二维码可自动携带 Key；手动输入地址时使用此 Key。</small>
+                </div>
+                <strong id="lanWebKey">----</strong>
+                <button id="lanWebNewKeyBtn">换一个 Key</button>
+              </div>
+
+              <div class="lan-web-actions">
+                <button id="lanWebApplyBtn" class="primary">应用设置</button>
+                <button id="lanWebStopBtn">停止服务</button>
+              </div>
+            </div>
+
+            <div class="lan-web-address-card">
+              <div class="lan-web-section-title-row">
+                <div>
+                  <div class="lan-web-section-title">可用局域网地址</div>
+                  <small>多网卡时选择与你同学处于同一网络的地址。</small>
+                </div>
+                <button id="lanWebCopyBaseUrlBtn">复制地址</button>
+              </div>
+              <div id="lanWebUrls" class="lan-web-urls">
+                <div class="lan-web-empty-address">服务启动后显示</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="lan-web-section lan-web-share-section">
+            <div class="lan-web-share-heading">
+              <div>
+                <div class="lan-web-section-title">扫码连接</div>
+                <small id="lanWebQrHint">启动服务后自动生成二维码。</small>
+              </div>
+              <span id="lanWebQrModeBadge" class="lan-web-mode-badge">等待服务</span>
+            </div>
+
+            <div class="lan-web-qr-frame">
+              <div id="lanWebQrPlaceholder" class="lan-web-qr-placeholder">
+                <span>QR</span>
+                <small>服务启动后显示</small>
+              </div>
+              <img id="lanWebQrImage" class="lan-web-qr-image hidden" alt="Graphene Resonance Studio LAN web QR code">
+            </div>
+
+            <div class="lan-web-share-url-card">
+              <div class="lan-web-share-url-label">当前连接地址</div>
+              <code id="lanWebSelectedUrl">—</code>
+            </div>
+
+            <div class="lan-web-share-actions">
+              <button id="lanWebCopyShareLinkBtn" class="primary">复制扫码链接</button>
+              <button id="lanWebRefreshQrBtn">刷新二维码</button>
+            </div>
+
+            <div class="lan-web-share-note">
+              <strong>扫码逻辑</strong>
+              <span id="lanWebQrSecurityText">
+                启用 Key 时，二维码会把本次 4 位 Key 一并带入链接，扫码后自动配对；Key 更新后旧二维码立即失效。
+              </span>
+            </div>
+
+            <div class="lan-web-capabilities">
+              <span>数据导入</span><span>寻峰</span><span>TER</span><span>组图</span>
+              <span>脉冲分析</span><span>工程保存</span><span>CSV / 图形导出</span>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="updatePanel" class="floating-panel update-panel hidden">
+      <div class="floating-header drag-handle">
+        <span>局域网热更新</span>
+        <div class="panel-header-actions">
+          <button class="panel-close" data-target="updatePanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body update-panel-body">
+        <div class="update-status-card">
+          <div class="update-status-line">
+            <span id="updatePhaseDot" class="update-phase-dot idle"></span>
+            <strong id="updateStatusTitle">等待更新服务</strong>
+          </div>
+          <div id="updateStatusMessage" class="update-status-message">正在读取更新状态…</div>
+          <div class="update-progress-wrap">
+            <div class="update-progress-track"><div id="updateProgressBar" class="update-progress-bar"></div></div>
+            <span id="updateProgressText">0%</span>
+          </div>
+        </div>
+
+        <div class="update-info-grid">
+          <div>当前版本</div><div id="updateCurrentVersion">—</div>
+          <div>可用版本</div><div id="updateAvailableVersion">—</div>
+          <div>服务器</div><div id="updateServerDisplay">尚未发现</div>
+          <div>完整性</div><div id="updateIntegrityState">SHA512 下载校验</div>
+          <div>模式</div><div id="updateRuntimeMode">—</div>
+          <div>上次检查</div><div id="updateLastCheck">—</div>
+        </div>
+
+        <div class="update-actions">
+          <button id="updateCheckNowBtn" class="primary">立即检查</button>
+          <button id="updateDownloadBtn" class="hidden">开始下载</button>
+          <button id="updateInstallBtn" class="success hidden">保存工程并重启安装</button>
+        </div>
+
+        <details class="update-settings-details">
+          <summary>服务器设置</summary>
+          <div class="update-settings-body">
+            <label>手动服务器地址
+              <input id="updateServerUrlInput" type="text" placeholder="留空 = 自动发现，例如 http://192.168.1.10:45880">
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDiscover" type="checkbox" checked>
+              自动发现局域网服务器（multicast）
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDownload" type="checkbox" checked>
+              验证通过后自动下载
+            </label>
+            <button id="updateSaveSettingsBtn">保存更新设置</button>
+          </div>
+        </details>
+
+        <div class="update-security-note">
+          当前采用“可信局域网简化模式”：无需任何密钥。客户端从你指定/自动发现的局域网服务器读取
+          latest.yml，并由 electron-updater 使用其中的 SHA512 校验下载安装包完整性。
+          请只连接你信任的实验室或办公室局域网服务器。
+        </div>
+      </div>
+    </div>
+
+    <div id="inspectorPanel" class="floating-panel inspector-panel">
+      <div id="inspectorDockResizer" class="inspector-dock-resizer" title="拖动调整右侧检查器宽度"></div>
+      <div class="floating-header drag-handle">
+        <span>曲线检查器</span>
+        <div class="panel-header-actions">
+          <button id="inspectorDockBtn" type="button" title="在悬浮与主图右侧停靠之间切换">停靠右侧</button>
+          <button class="panel-close" data-target="inspectorPanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body" id="inspectorBody">
+        <div class="empty-state">点击曲线或峰位点查看详细信息</div>
+      </div>
+    </div>
+
+    <div id="groupPanel" class="floating-panel group-panel">
+      <div id="groupDockResizer" class="dock-resizer" title="拖动调整底部组图高度"></div>
+      <div class="floating-header drag-handle">
+        <span>组图面板</span>
+        <div class="panel-header-actions">
+          <button id="groupDockBtn" type="button" title="将组图停靠到主图下方">停靠底部</button>
+          <button id="groupMinimizeBtn" type="button" title="缩小/展开组图">缩小</button>
+          <button class="panel-close" data-target="groupPanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body">
+        <div class="group-panel-toolbar">
+          <div class="group-panel-title-wrap">
+            <span id="groupPanelTitle">未选择</span>
+            <span class="group-panel-hint">双击任意小图放大</span>
+          </div>
+          <div class="trend-layout-controls" title="设置每行子图数量；自动模式会优先使用整齐排布">
+            <span>每行</span>
+            <button type="button" data-trend-cols="auto">自动</button>
+            <button type="button" data-trend-cols="1">1</button>
+            <button type="button" data-trend-cols="2">2</button>
+            <button type="button" data-trend-cols="3" class="active">3</button>
+            <button type="button" data-trend-cols="4">4</button>
+            <button type="button" data-trend-cols="5">5</button>
+            <button type="button" data-trend-cols="6">6</button>
+          </div>
+        </div>
+        <div id="trendGrid" class="trend-grid"></div>
+      </div>
+    </div>
+
+    <div id="physicsPanel" class="floating-panel physics-panel hidden">
+      <div class="floating-header drag-handle">
+        <span>物理机制分析</span>
+        <div class="panel-header-actions">
+          <button id="refreshPhysicsBtn" type="button">刷新</button>
+          <button class="panel-close" data-target="physicsPanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body" id="physicsBody">
+        <div class="empty-state">导入并确认峰位后自动分析</div>
+      </div>
+    </div>
+
+    <div id="zoomPanel" class="floating-panel zoom-panel hidden">
+      <div class="floating-header drag-handle">
+        <span id="zoomPanelTitle">放大图</span>
+        <button class="panel-close" data-target="zoomPanel">×</button>
+      </div>
+      <div class="floating-body zoom-body">
+        <div id="zoomPlot" class="zoom-plot"></div>
+        <div class="zoom-actions">
+          <button id="zoomExportSvg">导出 SVG</button>
+          <button id="zoomExportCsv">导出数据</button>
+          <button id="zoomCopyCsv" class="copy-btn">复制数据</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../node_modules/d3/dist/d3.min.js"></script>
+  <script src="../node_modules/plotly.js-dist-min/plotly.min.js"></script>
+  <script src="web-bridge.js"></script>
+  <script src="analysis.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

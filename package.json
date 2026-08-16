@@ -1,0 +1,73 @@
+{
+  "name": "graphene-resonance-studio",
+  "version": "3.14.0",
+  "description": "Interactive graphene resonant tunneling analysis studio",
+  "main": "main.js",
+  "author": "OpenAI",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests.js",
+    "dist": "node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
+    "update-server": "node update-server/server.js",
+    "publish:update": "node update-server/publish-release.js dist"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "plotly.js-dist-min": "^3.1.0",
+    "electron-updater": "^6.8.9",
+    "ws": "^8.18.3",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.15.7"
+  },
+  "build": {
+    "appId": "org.openai.graphene-resonance-studio",
+    "productName": "Graphene Resonance Studio",
+    "files": [
+      "main.js",
+      "update-client.js",
+      "lan-web-server.js",
+      "preload.js",
+      "src/**/*",
+      "package.json",
+      "build-info.json",
+      "update-config.default.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://127.0.0.1:45880/releases/bootstrap/"
+      }
+    ],
+    "electronUpdaterCompatibility": ">=2.16"
+  }
+}

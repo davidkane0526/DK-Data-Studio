@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "serverName": "GRS LAN Update Server",
+  "host": "0.0.0.0",
+  "port": 45880,
+  "multicastGroup": "239.255.42.99",
+  "multicastPort": 45881,
+  "announceIntervalMs": 3000,
+  "currentPollIntervalMs": 1500,
+  "storageDir": "./storage",
+  "retainReleases": 12
+}
