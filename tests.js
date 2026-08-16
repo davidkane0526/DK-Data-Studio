@@ -103,7 +103,8 @@ assert(appV27.includes('function openRangeActionMenu')&&appV27.includes('functio
 assert(appV27.includes('const preserved=state.peaks.filter(p=>p.manual||p.locked)'),'rerun must preserve locked automatic peaks');
 assert(appV27.includes('!fixed.some(q=>Math.abs(q.v-p.v)<=tol)'),'new auto peaks must not duplicate locked/manual peaks');
 assert(appV27.includes('function physicalAnalysis()'),'physical mechanism analysis must exist');
-assert(appV27.includes("M1：零转角静态两-ridge 模型优先")&&appV27.includes("M3：存在额外稳定 ridge"),'physical model hierarchy must be present');
+const physicsCoreV27=fs.readFileSync('./src/science/physics.js','utf8');
+assert(physicsCoreV27.includes("M1：零转角静态两-ridge 模型优先")&&physicsCoreV27.includes("M3：存在额外稳定 ridge"),'physical model hierarchy must be present in shared science engine');
 assert(htmlV27.includes('id="physicsPanel"')&&htmlV27.includes('id="showPhysicsLabels"'),'physics panel and main-plot labels must exist');
 console.log('v2.7 multi-project / physics / locking checks passed.');
 
@@ -236,7 +237,7 @@ assert(htmlV33.includes('id="gateAmplitudePlot"')&&htmlV33.includes('id="gateBac
 assert(htmlV33.includes('id="gateHysteresisPlot"'),'scan-direction resonance hysteresis plot must exist');
 assert(htmlV33.includes('id="gateUseCarrierDensity"')&&htmlV33.includes('id="gateCg"')&&htmlV33.includes('id="gateCnp"'),'optional carrier-density conversion must exist');
 assert(appV33.includes('function computeGateAnalysis()'),'gate analysis calculation function must exist');
-assert(appV33.includes('deltaOverW:hwhmEff>0?Math.abs(delta)/hwhmEff:NaN'),'delta/w must use effective HWHM, not derivative peak positions');
+assert(fs.readFileSync('./src/science/gate.js','utf8').includes('deltaOverW:hwhmEff>0?Math.abs(delta)/hwhmEff:NaN'),'delta/w must use effective HWHM in shared gate-analysis engine');
 assert(appV33.includes('η_eff=A_A/(A_A+A_B)'),'effective electrical weight must be explicitly labeled');
 assert(appV33.includes('不把它自动当作 coercive voltage')||htmlV33.includes('不把它自动当作 coercive voltage'),'hysteresis must not be mislabeled as coercive voltage');
 assert(appV33.includes('当前工程没有独立的“switching step / jump”对象'),'report must explicitly refuse to fabricate Vc from resonance peaks');
@@ -362,8 +363,8 @@ assert(appV37.includes("if((e.ctrlKey||e.metaKey)&&e.key==='ArrowRight')")&&appV
 assert(appV37.includes('bindTrendPointClick(plot)')&&appV37.includes('focusPeakFromTrendCustomData'),'group plot points must navigate back to the main plot');
 assert(appV37.includes("main-legend-chip ${selected?'selected':''} ${selectedPath&&!selected?'dimmed':''}"),'main legend must follow curve highlight/dimming');
 assert(appV37.includes('function smartAssignPeakOrders'),'cross-Vg smart peak identity assignment must exist');
-assert(appV37.includes('enumerateTrackAssignments'),'smart identity must permit missing track indices rather than compress every curve');
-assert(appV37.includes("cost+=30"),'smart identity must strongly discourage crossing positive/negative Vd track regions');
+assert(fs.readFileSync('./src/science/identity.js','utf8').includes('enumerateTrackAssignments'),'smart identity must permit missing track indices rather than compress every curve');
+assert(fs.readFileSync('./src/science/identity.js','utf8').includes("cost+=30"),'smart identity must strongly discourage crossing positive/negative Vd track regions');
 assert(appV37.includes('p.orderAnchor=true'),'manual order correction must create an identity anchor');
 assert(appV37.includes('if(o<=previous)o=previous+1'),'manual m->n correction must cascade later peak orders forward');
 
@@ -788,3 +789,84 @@ for(const doc of [
 ]) assert(fs.existsSync(doc),`required plugin architecture documentation missing: ${doc}`);
 
 console.log('plugin branch architecture/platform checks passed.');
+
+// v3.16 shared science rewrite + React Native Android shell contracts
+const analysisFacade316 = fs.readFileSync('./src/analysis.js','utf8');
+const app316 = fs.readFileSync('./src/app.js','utf8');
+const html316 = fs.readFileSync('./src/index.html','utf8');
+const webBridge316 = fs.readFileSync('./src/web-bridge.js','utf8');
+const identity316 = fs.readFileSync('./src/science/identity.js','utf8');
+const physics316 = fs.readFileSync('./src/science/physics.js','utf8');
+const gate316 = fs.readFileSync('./src/science/gate.js','utf8');
+const mobilePkg316 = JSON.parse(fs.readFileSync('./mobile/package.json','utf8'));
+const mobileApp316 = fs.readFileSync('./mobile/App.tsx','utf8');
+const mobileAssetPlugin316 = fs.readFileSync('./mobile/plugins/withGrsWebAssets.js','utf8');
+const mobileSync316 = fs.readFileSync('./mobile/scripts/sync-web-assets.js','utf8');
+
+assert(analysisFacade316.split(/\r?\n/).length < 40,
+  'analysis.js must remain a thin compatibility facade after mature science rewrite');
+for(const rel of [
+  './src/science/common.js','./src/science/presets.js','./src/science/import.js',
+  './src/science/peaks.js','./src/science/pulse.js','./src/science/ter.js',
+  './src/science/identity.js','./src/science/physics.js','./src/science/gate.js'
+]) assert(fs.existsSync(rel),`shared science module missing: ${rel}`);
+assert(html316.includes('science/peaks.js')&&html316.includes('science/identity.js')&&html316.includes('science/gate.js'),
+  'desktop/web renderer must load rewritten shared science modules');
+assert(identity316.includes('function solvePeakTracks')&&app316.includes('A.solvePeakTracks(rows'),
+  'cross-Vg smart peak identity must be implemented by shared science engine');
+assert(physics316.includes('function analyzePhysicalFamilies')&&app316.includes('A.analyzePhysicalFamilies({'),
+  'physical family/model classification must be implemented by shared science engine');
+assert(gate316.includes('function pairGateSeries')&&gate316.includes('function summarizeGateRows')&&
+       app316.includes('A.pairGateSeries(Arows,Brows,terByVg,s)'),
+  'gate-voltage mathematics must be implemented by shared science engine');
+assert(fs.existsSync('./scripts/verify-science-parity.js'),
+  'scientific rewrite must include parity verification against preserved main baseline');
+
+assert(mobilePkg316.dependencies.expo.startsWith('~57.')&&mobilePkg316.dependencies['react-native']==='0.86.2',
+  'Android shell must target Expo SDK 57 / React Native 0.86.2');
+assert(mobilePkg316.dependencies['react-native-webview']==='13.16.1',
+  'Android shell must use the Expo-compatible react-native-webview version');
+assert(mobilePkg316.dependencies['expo-document-picker']==='~57.0.1',
+  'Android shell must use native DocumentPicker for robust data/project import');
+assert(mobileApp316.includes("file:///android_asset/grs/index.html?reactNative=1")&&
+       mobileApp316.includes('<WebView')&&mobileApp316.includes("req.type === 'openFiles'"),
+  'React Native shell must load offline app assets and expose native file picking');
+assert(mobileApp316.includes('expo-clipboard')&&mobileApp316.includes('expo-sharing')&&mobileApp316.includes('expo-file-system/legacy'),
+  'Android native bridge must support clipboard and file/image export sharing');
+assert(webBridge316.includes('window.ReactNativeWebView?.postMessage')&&webBridge316.includes("nativeCall('openFiles'")&&
+       webBridge316.includes("nativeCall('saveBase64'"),
+  'shared renderer bridge must delegate Android I/O to React Native');
+assert(mobileAssetPlugin316.includes("android',")&&mobileAssetPlugin316.includes("'assets', 'grs'"),
+  'Expo config plugin must copy the offline renderer into Android assets');
+assert(mobileSync316.includes("fs.cpSync(source, out")&&mobileSync316.includes("vendor, 'plotly.min.js'"),
+  'mobile sync must package full plugin renderer and plotting libraries offline');
+for(const rel of ['./BUILD_ANDROID_DEBUG.cmd','./RUN_ANDROID_DEVICE.cmd','./INSTALL_ANDROID_APK.cmd','./mobile/README_ANDROID_CN.md'])
+  assert(fs.existsSync(rel),`Android build/install helper missing: ${rel}`);
+console.log('v3.16 science rewrite / React Native Android shell checks passed.');
+
+// v3.16 rewritten mature-domain unit checks
+const sci316 = require('./src/analysis.js');
+const identityRows316 = [
+  {sw:{id:'g0',vg:0,direction:1},peaks:[
+    {v:-1.0,peakOrder:1},{v:-.4,peakOrder:2},{v:.35,peakOrder:3},{v:.9,peakOrder:4}
+  ]},
+  {sw:{id:'g1',vg:10,direction:1},peaks:[
+    {v:-.95,peakOrder:1},{v:.4,peakOrder:3},{v:.95,peakOrder:4}
+  ]}
+];
+const solved316=sci316.solvePeakTracks(identityRows316,{minimumK:4});
+assert(solved316.assignments.get('g1').join(',')==='0,2,3',
+  'rewritten smart identity must preserve the missing peak-2 slot instead of renumbering positive peaks');
+
+const gateRows316=sci316.pairGateSeries(
+  [{vg:0,v:-.2,hwhm:.05,fwhm:.1,i:1,amplitude:2,baseline:.2,peakToBg:5}],
+  [{vg:0,v:.4,hwhm:.1,fwhm:.2,i:2,amplitude:3,baseline:.3,peakToBg:6}],
+  [{vg:0,terMax:250,vdsAtMax:.15}],{}
+);
+assert(Math.abs(gateRows316[0].V0-.1)<1e-12&&Math.abs(gateRows316[0].delta-.3)<1e-12,
+  'rewritten gate engine must compute V0 and signed delta correctly');
+assert(Math.abs(gateRows316[0].deltaOverW-4)<1e-12,
+  'rewritten gate engine must use effective HWHM for delta/w');
+assert(gateRows316[0].terMax===250&&gateRows316[0].vStar===.15,
+  'rewritten gate engine must join strict TER maxima by Vg');
+console.log('v3.16 rewritten identity/gate numerical checks passed.');

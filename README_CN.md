@@ -1,4 +1,107 @@
-# Graphene Resonance Studio — plugin branch (3.15.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.16.0-plugin.1)
+
+
+## 3.16.0-plugin.1：成熟科学逻辑重写 + React Native Android
+
+这次不再保留“科学算法通过旧 `analysis.js` 兼容桥运行”的方案。
+
+原来集中的成熟计算逻辑已经拆为共享科学引擎：
+
+```text
+src/science/
+├─ common.js
+├─ presets.js
+├─ import.js
+├─ peaks.js
+├─ identity.js
+├─ physics.js
+├─ gate.js
+├─ ter.js
+└─ pulse.js
+```
+
+`src/analysis.js` 只保留历史 API facade。桌面、LAN 网页和 Android 都执行同一份 `GRSScience`。
+
+重写后增加：
+
+```bash
+npm run science:parity
+```
+
+该脚本会从 Git 的 `main` 分支直接读取原 v3.14 `src/analysis.js`，用代表性数据对比新旧：
+
+```text
+CSV 解析
+扫描重构
+信号变换
+寻峰
+TER matrix
+脉冲 / 读取提取
+```
+
+从而让“重构代码”和“改变科学结果”成为两件可分别审查的事情。
+
+### Android 可安装测试版源码
+
+新增：
+
+```text
+mobile/
+```
+
+技术路线：
+
+```text
+React Native / Expo SDK 57
+        ↓
+react-native-webview
+        ↓
+Android 离线 assets
+        ↓
+完整插件界面 + GRSScience
+```
+
+Android 壳层提供原生：
+
+```text
+DocumentPicker 多文件选择
+Clipboard
+CSV / JSON / SVG / PNG 保存与分享
+Safe Area
+Android 生命周期容器
+```
+
+Windows 最简单的 APK 测试流程：
+
+```text
+BUILD_ANDROID_DEBUG.cmd
+```
+
+成功后生成：
+
+```text
+mobile-dist\Graphene-Resonance-Studio-debug.apk
+```
+
+然后：
+
+```text
+INSTALL_ANDROID_APK.cmd
+```
+
+或者连接开启 USB 调试的手机后运行：
+
+```text
+RUN_ANDROID_DEVICE.cmd
+```
+
+详细环境见：
+
+```text
+mobile/README_ANDROID_CN.md
+```
+
+
 
 
 > **分支身份非常重要**
@@ -50,13 +153,14 @@ npm run plugin:validate
 
 ### 当前插件化边界
 
-当前是**兼容桥式插件化迁移**：
+3.16 开始，成熟的**科学计算逻辑已经完成共享引擎重写**：
 
-- 插件系统已经实际负责插件发现、加载、功能入口、工具栏贡献、页面/面板贡献、扩展注册表和插件工程状态；
-- 灵活文本导入工作台已经通过 importer plugin provider 调用；
-- pulse 工作区保存已经迁移到 namespaced plugin project state，并兼容 v3.14 工程；
-- 原来成熟的共振/TER/脉冲内部算法暂时通过 host compatibility bridge 调用，避免为了“移动代码”一次性重写成熟逻辑造成回归；
-- 后续新增功能必须直接写插件；当某个旧功能需要大改时，再将该功能内部实现从兼容桥逐步抽入自己的插件目录。
+- 插件系统负责发现、加载、功能入口、工具栏、页面/面板、扩展注册表和插件工程状态；
+- `src/science/*` 统一提供导入解析、扫描重构、寻峰、峰序轨迹、物理分类、栅压计算、TER 与脉冲分析；
+- `src/analysis.js` 只保留历史 API facade，不再承载算法实现；
+- Electron、LAN 网页和 React Native Android 使用同一份 `GRSScience`；
+- 成熟工作区的 DOM/Plotly/D3 交互控制仍由共享 renderer host 组织，插件负责功能入口与工作流；后续 UI 原生化不得复制科学算法；
+- 新增科学功能默认写为插件，跨插件可复用的纯计算才进入 `src/science`。
 
 
 

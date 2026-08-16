@@ -19,8 +19,8 @@
     ctx.registry.add('analysis.providers','ter',{
       id:'ter',
       name:'Same-Vd TER',
-      computeMatrix:window.Analysis.computeTerMatrix,
-      computeResonant:window.Analysis.computeResonantTerForLabel
+      computeMatrix:window.GRSScience.computeTerMatrix,
+      computeResonant:window.GRSScience.computeResonantTerForLabel
     });
     return {};
   });

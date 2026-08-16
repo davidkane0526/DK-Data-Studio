@@ -12,3 +12,9 @@ update-server/storage/*
 update-server/keys/
 *.tmp
 *.bak
+
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/assets/web/
+mobile-dist/

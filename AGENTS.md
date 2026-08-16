@@ -8,7 +8,7 @@ This repository uses a plugin-first architecture.
 - `plugin` is the plugin-architecture development branch.
 - Do **not** merge `plugin` into `main` unless the user explicitly requests it.
 - New feature work on the plugin branch should normally be implemented as a plugin.
-- Do not rewrite `src/app.js`, `src/analysis.js`, `main.js`, or `preload.js` just to add a feature unless the Plugin API cannot express the requirement.
+- `src/analysis.js` is now a compatibility facade. New/reworked reusable scientific calculations belong in `src/science/*`; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms back into `app.js`.
 
 ## Before changing code
 
@@ -21,6 +21,7 @@ This repository uses a plugin-first architecture.
    npm run check
    npm test
    ```
+6. If Android is affected, also inspect `mobile/README_ANDROID_CN.md` and keep the shared renderer compatible with the React Native bridge.
 
 ## Plugin-first decision rule
 
@@ -74,3 +75,36 @@ A plugin is complete only when it has:
 - no direct dependency on another plugin's internal variables.
 
 Run `npm run plugin:index` after adding/removing plugin folders. Normal `npm start`, `npm test`, `npm run check`, and `npm run dist` already regenerate the index.
+
+## Shared science rule
+
+Pure, runtime-independent calculations that are useful across desktop/web/Android live in `src/science/`.
+
+Examples already moved there:
+- import/parser primitives;
+- sweep reconstruction and peak detection;
+- cross-Vg peak identity tracking;
+- physical-family classification;
+- gate-voltage calculations;
+- TER;
+- pulse/read extraction.
+
+A plugin should call `window.GRSScience`; it must not copy these algorithms.
+
+Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
+
+## Android build rule
+
+React Native source lives in `mobile/`.
+
+Do not commit generated `mobile/android`, `mobile/ios`, `mobile/node_modules`, `mobile/assets/web` or `mobile-dist`.
+
+For Android changes, preserve these routes:
+
+```text
+BUILD_ANDROID_DEBUG.cmd
+RUN_ANDROID_DEVICE.cmd
+INSTALL_ANDROID_APK.cmd
+```
+
+The Android shell must remain a consumer of the same plugins and `src/science/*` engine.

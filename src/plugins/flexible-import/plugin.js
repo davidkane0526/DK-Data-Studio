@@ -7,7 +7,7 @@
     order:10,
     capabilities:['data.importer','data.inspector']
   }, async ctx => {
-    const A=window.Analysis;
+    const A=window.GRSScience;
     ctx.registry.add('data.importers','flexible-text',{
       id:'flexible-text',
       name:'Flexible Text / Multi-column',

@@ -4,4 +4,4 @@ Plugin id: `builtin.pulse-analysis`
 
 Batch pulse/read transient extraction workspace.
 
-This is a built-in plugin. Domain-specific implementation still uses the v3.14 compatibility bridge where noted in the architecture documentation.
+This built-in plugin uses the shared `GRSScience` engine. The preserved `main` v3.14 implementation is used only by parity/migration tests, not as the runtime scientific engine.

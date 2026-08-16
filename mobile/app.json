@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Graphene Resonance Studio",
+    "slug": "graphene-resonance-studio",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.grapheneresonance.studio",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#eef3ff"
+      }
+    },
+    "plugins": [
+      "./plugins/withGrsWebAssets.js"
+    ]
+  }
+}

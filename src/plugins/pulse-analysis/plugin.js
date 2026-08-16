@@ -31,7 +31,7 @@
     ctx.registry.add('analysis.providers','pulse-read',{
       id:'pulse-read',
       name:'Pulse / read transient extraction',
-      analyze:window.Analysis.analyzePulseReadData
+      analyze:window.GRSScience.analyzePulseReadData
     });
     return {};
   });

@@ -1,240 +1,223 @@
-# Architecture
+# Architecture — plugin branch
 
 ## 1. Goal
 
-Graphene Resonance Studio is being converted from a single-domain Electron application into a reusable scientific-data-analysis host.
+Graphene Resonance Studio is a reusable scientific-data-analysis host rather than a single graphene-only Electron program.
 
-The architecture deliberately separates:
+The `plugin` branch separates four layers:
 
 ```text
-Generic Application Host
-├─ platform/runtime abstraction
-├─ plugin lifecycle
-├─ project shell
-├─ generic file/clipboard/export bridges
-├─ generic page/panel/toolbar mounting
-├─ generic responsive/touch behavior
-└─ update/LAN infrastructure
-
-Built-in Plugins
-├─ flexible text import
-├─ resonance workbench
-├─ TER analysis
-└─ pulse/read transient analysis
+Platform shells
+├─ Electron desktop
+├─ LAN/browser client
+└─ React Native Android shell
+        ↓
+Generic application host
+├─ project tabs
+├─ file/clipboard/export bridge
+├─ plugin lifecycle / commands / registries
+├─ generic toolbar/page/panel mounting
+└─ responsive/touch profile
+        ↓
+Shared scientific engine
+├─ import / sweep reconstruction
+├─ peak transforms and detection
+├─ smart peak identity tracking
+├─ physical-family classification
+├─ gate-voltage mathematics
+├─ TER
+└─ pulse/read extraction
+        ↓
+Plugins
+├─ flexible-import
+├─ resonance-workbench
+├─ ter-analysis
+└─ pulse-analysis
 ```
 
-The current `plugin` branch uses a **compatibility-backed migration**: stable v3.14 domain implementations are not rewritten merely to move lines between files. Instead, the plugin kernel owns feature discovery, entry points, project slices, import providers, and extension registries; built-in plugins call the existing stable implementation through a restricted host bridge. New functionality should be written directly as plugins.
+The preserved `main` branch remains the v3.14 baseline. All architecture and Android work belongs to `plugin`.
 
-This minimizes regression risk while making the architectural boundary real.
+## 2. Shared scientific engine
 
-## 2. Runtime layers
+The former monolithic `src/analysis.js` has been rewritten into independent modules under `src/science/`:
 
-### Desktop runtime
+```text
+common.js     shared constants/statistics/index helpers
+presets.js    peak-detection presets
+import.js     encodings, delimiter/header detection, multicolumn import
+peaks.js      sweep reconstruction, transforms, detector, peak metrics
+identity.js   cross-Vg peak-track assignment / missing-peak aware order solver
+physics.js    R/H/D/X/Q family classification and M0–M3 model hierarchy
+gate.js       V0, delta, delta/w, fits/correlations, carrier-density conversion
+ter.js        strict same-Vd TER matrix and resonance-associated TER
+pulse.js      repeated pulse/read platform detection and stable-window extraction
+```
+
+`src/analysis.js` is now only a compatibility facade that exposes `GRSScience` as the historical `Analysis` API.
+
+Desktop, LAN web, and Android execute the same `src/science/*` code. There must never be a separate Android peak/TER implementation.
+
+### Scientific regression guard
+
+`scripts/verify-science-parity.js` loads the preserved implementation directly from Git:
+
+```text
+git show main:src/analysis.js
+```
+
+and compares representative mature workflows with the rewritten engine. It currently checks:
+- CSV parsing;
+- sweep reconstruction;
+- transformed signals;
+- peak detection;
+- TER matrix;
+- pulse/read extraction.
+
+Run:
+
+```bash
+npm run science:parity
+```
+
+This parity check is part of `npm run check`.
+
+## 3. Runtime shells
+
+### Electron desktop
 
 ```text
 main.js
-  ├─ Electron BrowserWindow
-  ├─ filesystem dialogs / save
-  ├─ updater
-  ├─ LAN update server
-  └─ LAN web server
-        ↓
+  ↓
 preload.js
-        ↓
-renderer
+  ↓
+src/index.html + app.js + plugin kernel + science engine
 ```
 
-### Renderer host
+Electron owns desktop-only concerns such as native dialogs, window management, packaged updater and LAN server.
+
+### LAN/browser
 
 ```text
-src/core/platform.js
-src/core/plugin-kernel.js
-src/web-bridge.js
-src/app.js
+lan-web-server.js
+  ↓
+web-bridge.js
+  ↓
+same renderer/plugins/science engine
 ```
 
-`platform.js` describes runtime/input/screen characteristics.
+### React Native Android
 
-`plugin-kernel.js` owns:
-- plugin definitions;
-- plugin loading;
-- activation/deactivation;
+```text
+mobile/App.tsx
+  ↓ react-native-webview
+file:///android_asset/grs/index.html
+  ↓
+same renderer/plugins/science engine
+```
+
+`mobile/scripts/sync-web-assets.js` creates the offline web bundle. The Expo config plugin `mobile/plugins/withGrsWebAssets.js` copies it into the generated Android project at prebuild time.
+
+React Native provides native:
+- document selection;
+- clipboard;
+- save/share for CSV/JSON/SVG/PNG;
+- native lifecycle/container.
+
+Scientific plotting and the mature interactive workspace remain in the shared renderer so Android can run the same features immediately.
+
+## 4. Plugin host
+
+`src/core/plugin-kernel.js` owns:
+- manifest definitions;
+- discovery/activation/deactivation;
 - commands;
 - contribution registries;
-- toolbar/page/panel contributions;
-- plugin styles;
-- namespaced project-state slices;
-- events.
+- toolbar contributions;
+- analysis pages;
+- panel toggles;
+- plugin CSS;
+- event bus;
+- namespaced project slices.
 
-`app.js` is currently the compatibility host for the mature v3.14 workspace.
+Built-in plugin discovery is generated from `src/plugins/*/plugin.json` by:
 
-## 3. Built-in plugin discovery
-
-Each built-in plugin is a directory:
-
-```text
-src/plugins/<folder>/
-  plugin.json
-  plugin.js
-  README.md
+```bash
+npm run plugin:index
 ```
 
-`scripts/generate-plugin-index.js` scans those manifests and generates:
+No new plugin should require adding a `<script>` tag or a feature button to core HTML.
 
-```text
-src/plugins/plugin-index.generated.js
-```
-
-Therefore a new built-in plugin does **not** require editing `index.html` or `app.js`.
-
-The following commands regenerate the index automatically:
-
-```text
-npm start
-npm test
-npm run check
-npm run dist
-```
-
-## 4. Current plugin ownership
+## 5. Plugin ownership
 
 ### `builtin.flexible-import`
 
-Owns the generic flexible-text importer contribution:
-- inspection;
-- delimiter/header/encoding options;
-- multi-column parsing.
-
-The existing import workbench resolves its parser from the plugin registry.
+Provides the generic text/multicolumn importer provider. The core import workbench resolves the parser/inspector through the plugin registry.
 
 ### `builtin.resonance-workbench`
 
-Owns feature entry points for:
-- physical-mechanism panel;
-- peak spacing page;
-- gate-voltage analysis page.
-
-It also advertises resonance detector/metric providers and the resonance chart semantic theme.
-
-The detailed mature peak editing implementation is still compatibility-backed by `app.js` / `analysis.js`.
+Owns resonance-specific feature entry points and registers the shared resonance analysis provider. Peak detection/tracking/physics calculations come from `GRSScience` rather than a private plugin copy.
 
 ### `builtin.ter-analysis`
 
-Owns:
-- TER_max page entry;
-- TER analysis provider registration.
+Owns TER feature entry and registers the shared TER provider.
 
 ### `builtin.pulse-analysis`
 
-Owns:
-- pulse analysis page entry;
-- pulse analysis provider;
-- pulse workspace project-state slice.
+Owns pulse feature entry, shared pulse-analysis provider, and its namespaced project-state slice. It migrates v3.14 root-level `pulseAnalysis` state when old projects are opened.
 
-Pulse project persistence is no longer a top-level core project field. New project data is stored under:
+## 6. Core vs shared science vs plugin
 
-```json
-{
-  "plugins": {
-    "builtin.pulse-analysis": {
-      "workspace": {}
-    }
-  }
-}
-```
+| Concern | Core host | Shared science | Plugin |
+|---|---:|---:|---:|
+| Electron/Android/browser bridges | yes | no | no |
+| plugin manager | yes | no | no |
+| generic project container | yes | no | no |
+| generic panel/page mounting | yes | no | no |
+| generic responsive/touch profile | yes | no | consume |
+| numerical/statistical reusable algorithm | no | yes | consume |
+| domain workflow/UI | no | consume | yes |
+| feature-specific project state | no | no | yes |
+| data format provider | host acquisition only | parser if reusable | yes |
+| chart dashboard | primitive only | data math | yes |
 
-The plugin still migrates old v3.14 `pulseAnalysis` project data.
+Rule: if an algorithm is useful to more than one plugin/runtime, put the pure calculation in `src/science`. If it is a workflow/UI for one measurement type, put it in a plugin.
 
-## 5. Core versus plugin decision matrix
+## 7. Project files
 
-| Concern | Core | Plugin |
-|---|---:|---:|
-| Electron/window/update infrastructure | yes | no |
-| Browser/Android runtime bridge | yes | no |
-| Plugin manager | yes | no |
-| Generic project container | yes | no |
-| Feature-specific project state | no | yes |
-| Generic import file acquisition | yes | optionally |
-| Specific importer/parser | no | yes |
-| Resonance peak physics | no | yes |
-| TER | no | yes |
-| Pulse/read extraction | no | yes |
-| New chart family | host primitive only | yes |
-| New analysis page | mounting API only | yes |
-| Layout variant for a workflow | layout API | yes |
-| Touch/accessibility primitives | yes | plugins consume |
-
-## 6. Project file contract
-
-Core project data remains backward-compatible. Plugin data is namespaced by plugin id.
-
-Plugins must never place unnamespaced fields at root.
-
-Recommended plugin state:
+Plugin state is namespaced:
 
 ```json
 {
   "plugins": {
-    "com.example.my-analysis": {
+    "com.example.my-plugin": {
       "settings": {
-        "schema": 2,
-        "threshold": 0.3
+        "schema": 2
       }
     }
   }
 }
 ```
 
-Every persistent plugin should carry its own schema number and migrate old schemas in `restore()`.
+Never add feature-specific fields to the root project format.
 
-## 7. No direct cross-plugin internals
+Every persistent plugin owns its schema/migration logic.
 
-One plugin must not call variables inside another plugin.
+## 8. Cross-plugin communication
 
-Allowed communication:
-- registered contributions;
+Allowed:
 - commands;
-- host services;
+- contribution registries;
 - event bus;
-- documented shared data model.
+- documented host services;
+- shared `GRSScience` pure functions.
 
 Disallowed:
-- `window.SomeOtherPluginPrivateObject`;
-- DOM scraping another plugin's private implementation;
-- modifying another plugin's saved state directly.
+- reading another plugin's private variables;
+- modifying another plugin's DOM/private state;
+- duplicating another plugin's scientific algorithm.
 
-## 8. Migration map from the v3.14 monolith
+## 9. What remains in `app.js`
 
-The plugin branch intentionally distinguishes three statuses.
+`app.js` is now primarily the mature interactive workspace/state controller: project tabs, curve/peak interaction, generic import UI, plot coordination and shared renderer plumbing.
 
-### Already host-level
-
-- Electron/preload/browser bridge;
-- update infrastructure;
-- LAN web infrastructure;
-- project tab shell;
-- common panel mechanics;
-- platform/input profile;
-- plugin lifecycle.
-
-### Plugin-fronted, compatibility-backed implementation
-
-- resonance peak workflow;
-- gate analysis;
-- spacing;
-- TER;
-- pulse analysis.
-
-The feature is enabled/discovered through plugins, but mature implementation functions still live in the compatibility host.
-
-### Future extraction targets
-
-Move implementation into plugin folders when modifying those areas substantially:
-1. pulse workspace renderer;
-2. TER page renderer;
-3. gate-analysis renderer;
-4. resonance trend rendering;
-5. peak detection/editing model;
-6. flexible import UI.
-
-Do extraction feature-by-feature. Do not perform a blind rewrite of the entire app.
+Scientific computations that had independent meaning have been moved to `src/science`. Future changes should continue shrinking `app.js` by moving workflow-specific presentation into plugins, but do not duplicate or fork the shared science engine.

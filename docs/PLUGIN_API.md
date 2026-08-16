@@ -41,7 +41,7 @@ Plugin ids are permanent. Do not rename an id after project files have stored st
 
 The host bridge exposes stable host functions.
 
-Current compatibility services include:
+Stable host services include:
 
 ```js
 ctx.host.setStatus(text)
@@ -55,14 +55,28 @@ ctx.host.getState()
 ctx.host.platform
 ```
 
-Built-in compatibility services also expose mature legacy renderers:
-- `renderSpacingPage`
-- `renderGateAnalysis`
-- `renderTerMaxPage`
-- `renderPulseAnalysis`
-- `togglePhysicsPanel`
+The current built-in workbench also exposes shared renderer controllers (`renderSpacingPage`, `renderGateAnalysis`, `renderTerMaxPage`, `renderPulseAnalysis`, `togglePhysicsPanel`). These are presentation/workspace services, not scientific algorithms. New unrelated plugins should create their own page/view rather than call them.
 
-Do not use those compatibility methods in a new unrelated plugin.
+## Shared scientific engine
+
+Reusable mature calculations are exposed through:
+
+```js
+window.GRSScience
+```
+
+Examples:
+
+```js
+GRSScience.detectPeaks(...)
+GRSScience.solvePeakTracks(...)
+GRSScience.analyzePhysicalFamilies(...)
+GRSScience.pairGateSeries(...)
+GRSScience.computeTerMatrix(...)
+GRSScience.analyzePulseReadData(...)
+```
+
+Plugins should consume this shared engine instead of copying an algorithm. If a new pure calculation is useful across workflows/runtimes, add a tested module under `src/science/`.
 
 ## Commands
 

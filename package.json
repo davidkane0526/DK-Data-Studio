@@ -1,6 +1,6 @@
 {
   "name": "graphene-resonance-studio",
-  "version": "3.15.0-plugin.1",
+  "version": "3.16.0-plugin.1",
   "description": "Plugin-oriented interactive scientific data analysis studio (Graphene resonance built-in plugins)",
   "main": "main.js",
   "author": "Graphene Resonance Studio contributors",
@@ -10,10 +10,13 @@
     "plugin:validate": "node scripts/validate-plugins.js",
     "start": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
     "test": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node tests.js",
-    "check": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/check-project.js",
+    "check": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/check-project.js && node scripts/verify-science-parity.js",
     "dist": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
     "update-server": "node update-server/server.js",
-    "publish:update": "node update-server/publish-release.js dist"
+    "publish:update": "node update-server/publish-release.js dist",
+    "science:parity": "node scripts/verify-science-parity.js",
+    "mobile:sync": "cd mobile && npm run sync:web",
+    "mobile:android": "cd mobile && npm run android"
   },
   "dependencies": {
     "d3": "^7.9.0",

@@ -5,6 +5,46 @@
   document.documentElement.classList.add('web-client');
 
   const fileStore = new Map();
+  const nativePending = new Map();
+  const nativeBridge = window.ReactNativeWebView?.postMessage
+    ? window.ReactNativeWebView
+    : null;
+
+  function nativeCall(type,payload={}){
+    if(!nativeBridge)return null;
+    const id=`native-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{
+        nativePending.delete(id);
+        reject(new Error(`Native bridge timeout: ${type}`));
+      },30000);
+      nativePending.set(id,{resolve,reject,timer});
+      nativeBridge.postMessage(JSON.stringify({id,type,payload}));
+    });
+  }
+
+  window.__GRS_NATIVE_RESOLVE__=(id,ok,value)=>{
+    const row=nativePending.get(id);
+    if(!row)return;
+    clearTimeout(row.timer);
+    nativePending.delete(id);
+    if(ok)row.resolve(value);
+    else row.reject(new Error(String(value||'Native operation failed')));
+  };
+
+  function receiveNativeMessage(event){
+    let msg;
+    try{msg=JSON.parse(String(event?.data||''));}catch{return;}
+    if(!msg?.__grsNativeResponse)return;
+    window.__GRS_NATIVE_RESOLVE__(msg.id,msg.ok,msg.value);
+  }
+  window.addEventListener('message',receiveNativeMessage);
+  document.addEventListener('message',receiveNativeMessage);
+
+  if(nativeBridge){
+    document.documentElement.classList.add('react-native-client');
+    setTimeout(()=>nativeCall('ready',{href:location.href}).catch(()=>{}),0);
+  }
 
   function uuid() {
     if (crypto?.randomUUID) return crypto.randomUUID();
@@ -38,9 +78,14 @@
     })[s]||s;
   }
 
-  async function decodeFile(file,encoding='auto') {
-    const buf=await file.arrayBuffer();
-    const bytes=new Uint8Array(buf);
+  function base64Bytes(base64){
+    const bin=atob(String(base64||''));
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  }
+
+  function decodeBytes(bytes,encoding='auto'){
     let enc=encodingAlias(encoding);
     if(String(encoding).toLowerCase()==='auto'){
       if(bytes.length>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)enc='utf-8';
@@ -57,6 +102,12 @@
     }catch{
       return {text:new TextDecoder('utf-8',{fatal:false}).decode(bytes).replace(/^\uFEFF/,''),encoding:'utf-8'};
     }
+  }
+
+  async function decodeFile(file,encoding='auto') {
+    const buf=await file.arrayBuffer();
+    const bytes=new Uint8Array(buf);
+    return decodeBytes(bytes,encoding);
   }
 
   function registerFile(file) {
@@ -78,6 +129,9 @@
   }
 
   async function copyText(text) {
+    if(nativeBridge){
+      return await nativeCall('copyText',{text:String(text??'')});
+    }
     try{
       await navigator.clipboard.writeText(String(text??''));
       return true;
@@ -96,18 +150,35 @@
     isWebClient:true,
 
     openDataFiles: async()=>{
+      if(nativeBridge){
+        const assets=await nativeCall('openFiles',{multiple:true,type:'*/*'});
+        for(const asset of assets||[])fileStore.set(asset.path,{...asset,native:true});
+        return (assets||[]).map(({path,name,size})=>({path,name,size}));
+      }
       const files=await chooseFiles({multiple:true,accept:'.csv,.txt,.dat,.tsv,.asc,.xy,.iv,.prn,.out,.log,text/*'});
       return files.map(registerFile);
     },
 
     readDataText: async payload=>{
       const file=fileStore.get(payload?.path);
-      if(!file)throw new Error('浏览器中的源文件引用已失效，请重新选择该文件。');
-      const decoded=await decodeFile(file,payload?.encoding||'auto');
+      if(!file)throw new Error('当前会话中的源文件引用已失效，请重新选择该文件。');
+      const decoded=file.native
+        ? decodeBytes(base64Bytes(file.base64),payload?.encoding||'auto')
+        : await decodeFile(file,payload?.encoding||'auto');
       return {path:payload.path,name:file.name,size:file.size,text:decoded.text,encoding:decoded.encoding};
     },
 
     openCsvFiles: async()=>{
+      if(nativeBridge){
+        const assets=await nativeCall('openFiles',{multiple:true,type:'*/*'});
+        const out=[];
+        for(const asset of assets||[]){
+          fileStore.set(asset.path,{...asset,native:true});
+          const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
+          out.push({path:asset.path,name:asset.name,size:asset.size,text:decoded.text});
+        }
+        return out;
+      }
       const files=await chooseFiles({multiple:true,accept:'.csv,.txt,.dat,.tsv,.asc,.xy,.iv,text/*'});
       const out=[];
       for(const file of files){
@@ -121,11 +192,25 @@
     copyText,
 
     saveText: async payload=>{
+      if(nativeBridge){
+        return await nativeCall('saveText',{
+          name:payload?.defaultName||'data.txt',
+          content:String(payload?.content??''),
+          mimeType:payload?.mimeType||'text/plain'
+        });
+      }
       downloadBlob(new Blob([String(payload?.content??'')],{type:'text/plain;charset=utf-8'}),payload?.defaultName||'data.txt');
       return true;
     },
 
     saveBase64: async payload=>{
+      if(nativeBridge){
+        return await nativeCall('saveBase64',{
+          name:payload?.defaultName||'image.png',
+          base64:String(payload?.base64||''),
+          mimeType:payload?.mimeType||'image/png'
+        });
+      }
       const raw=String(payload?.base64||'').replace(/^data:[^;]+;base64,/,'');
       const bin=atob(raw);
       const bytes=new Uint8Array(bin.length);
@@ -137,11 +222,26 @@
     saveProject: async payload=>{
       const name=(String(payload?.path||'').split(/[\\/]/).pop()||payload?.defaultName||'graphene_resonance_project.grs.json')
         .replace(/^web:\/\//,'');
+      if(nativeBridge){
+        const uri=await nativeCall('saveText',{
+          name,
+          content:JSON.stringify(payload?.project||{},null,2),
+          mimeType:'application/json'
+        });
+        return `native://${uri||name}`;
+      }
       downloadBlob(new Blob([JSON.stringify(payload?.project||{},null,2)],{type:'application/json;charset=utf-8'}),name);
       return `web://${name}`;
     },
 
     openProject: async()=>{
+      if(nativeBridge){
+        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/*']});
+        const asset=assets?.[0];
+        if(!asset)return null;
+        const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
+        return {path:asset.path,project:JSON.parse(decoded.text)};
+      }
       const files=await chooseFiles({multiple:false,accept:'.json,.grs.json,application/json'});
       const file=files[0];
       if(!file)return null;
@@ -150,7 +250,7 @@
     },
 
     updateGetStatus: async()=>({
-      phase:'disabled',message:'网页版由局域网桌面端提供，不执行桌面程序热更新。',
+      phase:'disabled',message:nativeBridge?'Android React Native 壳层不执行桌面程序热更新。':'网页版由局域网桌面端提供，不执行桌面程序热更新。',
       currentVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'web',
       availableVersion:null,serverUrl:location.origin,canApply:false,isPackaged:false,isPortable:false,
       autoDiscover:false,autoDownload:false

@@ -700,116 +700,15 @@
   // ------------------------------------------------------------------
   // Conservative physical-mechanism analysis
   // ------------------------------------------------------------------
-  const PHYSICS_TYPES={
-    R:{name:'静态共振候选',detail:'正反扫均稳定存在，峰位差相对峰宽较小。'},
-    H:{name:'历史依赖共振',detail:'正反扫均可追踪，但峰位存在显著扫描历史偏移。'},
-    D:{name:'动态/切换候选',detail:'主要稳定存在于单一扫描方向；需与 switching ridge / 畴动力学进一步核对。'},
-    X:{name:'额外稳定 ridge',detail:'第三条及以上稳定双向 ridge；仅在简单模型不足时考虑有限转角等额外机制。'},
-    Q:{name:'待定',detail:'跨栅压/跨扫描方向证据尚不足。'}
-  };
-
-  function medianFinite(values){
-    const a=values.filter(Number.isFinite).sort((x,y)=>x-y);
-    if(!a.length)return NaN;
-    const m=Math.floor(a.length/2);
-    return a.length%2?a[m]:0.5*(a[m-1]+a[m]);
-  }
+  const PHYSICS_TYPES=A.PHYSICS_TYPES;
 
   function physicalAnalysis(){
-    const accepted=state.peaks.filter(p=>p.accepted);
-    const byOrder=new Map();
-    for(const p of accepted){
-      const order=Math.max(1,Math.round(Number(p.peakOrder)||1));
-      if(!byOrder.has(order))byOrder.set(order,[]);
-      byOrder.get(order).push(p);
-    }
-
-    const families=[];
-    const peakMap=new Map();
-
-    for(const [order,arr] of [...byOrder.entries()].sort((a,b)=>a[0]-b[0])){
-      const forward=arr.filter(p=>p.direction>0);
-      const reverse=arr.filter(p=>p.direction<0);
-      const fVgs=[...new Set(forward.map(p=>p.vg).filter(Number.isFinite))];
-      const rVgs=[...new Set(reverse.map(p=>p.vg).filter(Number.isFinite))];
-      const fMap=new Map(forward.map(p=>[String(p.vg),p]));
-      const rMap=new Map(reverse.map(p=>[String(p.vg),p]));
-      const common=[...fMap.keys()].filter(k=>rMap.has(k));
-
-      const deltas=common.map(k=>Math.abs(fMap.get(k).v-rMap.get(k).v));
-      const widths=arr.map(p=>{
-        const sw=sweepById(p.sweepId);
-        if(!sw)return NaN;
-        return A.peakMetrics(p,sw).fwhm;
-      });
-      const medianWidth=medianFinite(widths);
-      const medianDelta=medianFinite(deltas);
-      const threshold=Math.max(0.04,Number.isFinite(medianWidth)?0.50*medianWidth:0.06);
-      const stableF=fVgs.length>=3;
-      const stableR=rVgs.length>=3;
-      const bothStable=stableF&&stableR&&common.length>=2;
-
-      let code='Q';
-      if(bothStable&&order>2)code='X';
-      else if(bothStable&&Number.isFinite(medianDelta)&&medianDelta<=threshold)code='R';
-      else if(bothStable)code='H';
-      else if((stableF||stableR)&&!(stableF&&stableR))code='D';
-
-      const row={
-        order,label:categoryLabel(order),code,
-        type:PHYSICS_TYPES[code].name,
-        forwardCount:fVgs.length,reverseCount:rVgs.length,
-        commonCount:common.length,
-        medianDelta,medianWidth,threshold,
-        stableF,stableR,bothStable
-      };
-      families.push(row);
-      for(const p of arr)peakMap.set(p.id,row);
-    }
-
-    const stableBoth=families.filter(f=>f.bothStable);
-    const dynamic=families.filter(f=>f.code==='H'||f.code==='D');
-    const extras=families.filter(f=>f.code==='X');
-
-    let modelCode='M0',modelTitle='证据不足：继续提取/人工确认 ridge';
-    let modelText='当前稳定峰轨迹不足，暂不增加物理模型复杂度。';
-
-    if(extras.length){
-      modelCode='M3';
-      modelTitle='M3：存在额外稳定 ridge，有限转角为候选机制';
-      modelText='已出现第三条及以上跨 Vg、正反扫均稳定的 ridge。应先确认 M1/M2 无法解释，再讨论有限转角或其他额外通道。';
-    }else if(dynamic.length){
-      modelCode='M2';
-      modelTitle='M2：动态多畴 / 历史依赖模型优先';
-      modelText='存在明显正反扫偏移或单向稳定特征。应将共振 ridge 与 switching/dynamic ridge 分开追踪。';
-    }else if(stableBoth.length&&stableBoth.length<=2){
-      modelCode='M1';
-      modelTitle='M1：零转角静态两-ridge 模型优先';
-      modelText='当前主要稳定轨迹不超过两条，且正反扫差异相对较小。优先用最简单静态共振模型描述。';
-    }
-
-    // Optional V0/delta summary from first two stable families.
-    let v0Delta=null;
-    if(stableBoth.length>=2){
-      const a=stableBoth[0],b=stableBoth[1];
-      const pa=accepted.filter(p=>Number(p.peakOrder)===a.order);
-      const pb=accepted.filter(p=>Number(p.peakOrder)===b.order);
-      const vgs=[...new Set(pa.map(p=>p.vg).filter(v=>pb.some(q=>q.vg===v)))].sort((x,y)=>x-y);
-      const rows=[];
-      for(const vg of vgs){
-        const meanV=list=>{
-          const vals=list.filter(p=>p.vg===vg).map(p=>p.v);
-          return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:NaN;
-        };
-        const va=meanV(pa),vb=meanV(pb);
-        if(Number.isFinite(va)&&Number.isFinite(vb)){
-          rows.push({vg,V0:0.5*(va+vb),delta:0.5*Math.abs(vb-va)});
-        }
-      }
-      if(rows.length)v0Delta=rows;
-    }
-
-    return {families,peakMap,modelCode,modelTitle,modelText,v0Delta};
+    return A.analyzePhysicalFamilies({
+      peaks:state.peaks,
+      sweepById,
+      peakMetrics:A.peakMetrics,
+      labelForOrder:categoryLabel
+    });
   }
 
   function renderPhysicsPanel(){
@@ -1900,70 +1799,6 @@
       p.customColor=null; // legacy arbitrary colors are intentionally disabled in v2.4
     }
   }
-  function linearTrackFit(points){
-    const pts=points.filter(q=>Number.isFinite(q.vg)&&Number.isFinite(q.v));
-    if(pts.length<2)return null;
-    const mx=pts.reduce((s,q)=>s+q.vg,0)/pts.length;
-    const my=pts.reduce((s,q)=>s+q.v,0)/pts.length;
-    let sxx=0,sxy=0;
-    for(const q of pts){sxx+=(q.vg-mx)**2;sxy+=(q.vg-mx)*(q.v-my);}
-    if(sxx<=1e-20)return null;
-    return {slope:sxy/sxx,intercept:my-(sxy/sxx)*mx};
-  }
-
-  function enumerateTrackAssignments(peaks,K,predicted,referencePositions,scale){
-    const m=peaks.length;
-    if(!m||m>K)return null;
-    let best=null;
-    const chosen=[];
-
-    function evaluate(){
-      const diffs=chosen.map((k,j)=>peaks[j].v-predicted[k]);
-      const commonShift=A.median(diffs)||0;
-      let cost=0;
-      for(let j=0;j<m;j++){
-        const p=peaks[j],k=chosen[j];
-        const target=predicted[k]+commonShift;
-        const d=(p.v-target)/Math.max(scale,1e-6);
-        cost+=d*d;
-
-        const ref=referencePositions[k];
-        if(Number.isFinite(ref)&&Math.abs(ref)>0.055&&Math.abs(p.v)>0.055&&Math.sign(ref)!==Math.sign(p.v)){
-          cost+=30;
-        }
-
-        if((p.orderAnchor||p.locked)&&Number.isFinite(Number(p.peakOrder))){
-          if(k!==Math.max(0,Math.round(Number(p.peakOrder))-1))cost+=1e7;
-        }
-      }
-
-      // Prefer preserving an explicitly assigned existing order when two
-      // assignments are otherwise essentially equivalent.
-      for(let j=0;j<m;j++){
-        const old=Math.round(Number(peaks[j].peakOrder)||0)-1;
-        if(old>=0&&old<K&&old!==chosen[j])cost+=0.03;
-      }
-
-      if(!best||cost<best.cost)best={cost,tracks:chosen.slice(),commonShift};
-    }
-
-    function walk(j,startK){
-      if(j===m){evaluate();return;}
-      const remaining=m-j-1;
-      for(let k=startK;k<=K-1-remaining;k++){
-        if((peaks[j].orderAnchor||peaks[j].locked)&&Number.isFinite(Number(peaks[j].peakOrder))){
-          const fixed=Math.max(0,Math.round(Number(peaks[j].peakOrder))-1);
-          if(k!==fixed)continue;
-        }
-        chosen.push(k);
-        walk(j+1,k+1);
-        chosen.pop();
-      }
-    }
-    walk(0,0);
-    return best;
-  }
-
   function smartAssignPeakOrders({withSnapshot=true,render=true,referenceSweepId=null,status=true}={}){
     const sweeps=state.sweeps.filter(isSweepVisible);
     const rows=sweeps.map(sw=>({
@@ -1976,97 +1811,20 @@
       return {changed:0,K:0};
     }
 
-    let K=Math.max(...rows.map(r=>r.peaks.length));
+    let minimumK=0;
     for(const p of state.peaks.filter(p=>p.accepted&&(p.orderAnchor||p.locked))){
-      K=Math.max(K,Math.max(1,Math.round(Number(p.peakOrder)||1)));
+      minimumK=Math.max(minimumK,Math.max(1,Math.round(Number(p.peakOrder)||1)));
     }
-    K=Math.max(1,K);
 
-    let refRow=null;
     const requested=referenceSweepId||state.selectedSweepId;
     const requestedSw=requested?sweepById(requested):null;
-    const full=rows.filter(r=>r.peaks.length===K);
-
-    if(full.length){
-      if(requestedSw){
-        refRow=full.slice().sort((a,b)=>{
-          const da=Math.abs(a.sw.vg-requestedSw.vg)+(a.sw.direction===requestedSw.direction?0:.25);
-          const db=Math.abs(b.sw.vg-requestedSw.vg)+(b.sw.direction===requestedSw.direction?0:.25);
-          return da-db;
-        })[0];
-      }else{
-        const vgs=full.map(r=>r.sw.vg).filter(Number.isFinite).sort((a,b)=>a-b);
-        const mid=vgs.length?vgs[Math.floor(vgs.length/2)]:0;
-        refRow=full.slice().sort((a,b)=>Math.abs(a.sw.vg-mid)-Math.abs(b.sw.vg-mid))[0];
-      }
-    }else{
-      refRow=rows.slice().sort((a,b)=>b.peaks.length-a.peaks.length)[0];
-    }
-
-    const referencePositions=new Array(K).fill(NaN);
-    if(refRow.peaks.length===K){
-      refRow.peaks.forEach((p,i)=>referencePositions[i]=p.v);
-    }else{
-      // Rare case: K is larger only because of an anchored/locked category.
-      // Use existing orders where available, then interpolate/extrapolate gaps.
-      for(const p of refRow.peaks){
-        const o=Math.round(Number(p.peakOrder)||0);
-        if(o>=1&&o<=K)referencePositions[o-1]=p.v;
-      }
-      const sorted=refRow.peaks.map(p=>p.v).sort((a,b)=>a-b);
-      for(let i=0;i<K;i++){
-        if(Number.isFinite(referencePositions[i]))continue;
-        const frac=K===1?0:i/(K-1);
-        referencePositions[i]=sorted[0]+frac*((sorted.at(-1)??sorted[0])-sorted[0]);
-      }
-    }
-
-    const gaps=[];
-    for(let k=1;k<K;k++){
-      const g=Math.abs(referencePositions[k]-referencePositions[k-1]);
-      if(g>1e-6)gaps.push(g);
-    }
-    const scale=Math.max(0.045,(A.median(gaps)||0.14)*0.42);
+    const solution=A.solvePeakTracks(rows,{requestedSweep:requestedSw,minimumK});
 
     if(withSnapshot)snapshot('跨 Vg 智能峰序排序');
 
-    let assignments=new Map();
-    let fitsByDirection=new Map();
-
-    for(let iteration=0;iteration<4;iteration++){
-      const next=new Map();
-
-      for(const row of rows){
-        const predicted=referencePositions.map((ref,k)=>{
-          const dirFits=fitsByDirection.get(row.sw.direction);
-          const f=dirFits?.[k];
-          return f?f.slope*row.sw.vg+f.intercept:ref;
-        });
-        const result=enumerateTrackAssignments(row.peaks,K,predicted,referencePositions,scale);
-        if(result)next.set(row.sw.id,result.tracks);
-      }
-      assignments=next;
-
-      fitsByDirection=new Map();
-      for(const direction of [1,-1]){
-        const fits=new Array(K).fill(null);
-        for(let k=0;k<K;k++){
-          const pts=[];
-          for(const row of rows.filter(r=>r.sw.direction===direction)){
-            const tracks=assignments.get(row.sw.id);
-            if(!tracks)continue;
-            const j=tracks.indexOf(k);
-            if(j>=0)pts.push({vg:row.sw.vg,v:row.peaks[j].v});
-          }
-          fits[k]=linearTrackFit(pts);
-        }
-        fitsByDirection.set(direction,fits);
-      }
-    }
-
     let changed=0,assigned=0;
     for(const row of rows){
-      const tracks=assignments.get(row.sw.id);
+      const tracks=solution.assignments.get(row.sw.id);
       if(!tracks)continue;
       row.peaks.forEach((p,j)=>{
         const order=tracks[j]+1;
@@ -2078,7 +1836,7 @@
       });
     }
 
-    while(state.peakCategories.length<K)addPeakCategory();
+    while(state.peakCategories.length<solution.K)addPeakCategory();
     ensurePeakCategories();
     for(const p of state.peaks){
       if(Number.isFinite(Number(p.peakOrder)))p.peakLabel=categoryLabel(p.peakOrder);
@@ -2093,12 +1851,13 @@
     }
     if(status){
       setStatus(
-        `跨 Vg 智能峰序完成：建立 ${K} 条峰轨迹，处理 ${assigned} 个峰，更新 ${changed} 个序号。`
+        `跨 Vg 智能峰序完成：建立 ${solution.K} 条峰轨迹，处理 ${assigned} 个峰，更新 ${changed} 个序号。`
         + `缺失峰会保留编号空位，不会把后面的峰整体前移。峰位/峰宽/锁定状态未改变。`
       );
     }
-    return {changed,K,assignments,fitsByDirection,referencePositions,scale};
+    return {changed,...solution};
   }
+
 
   function changePeakOrderWithCascade(p,newOrder){
     const oldOrder=Math.max(1,Math.round(Number(p.peakOrder)||1));
@@ -4278,31 +4037,6 @@
     };
   }
 
-  function gateLinearFit(rows,xKey,yKey){
-    const pts=rows.map(r=>[Number(r[xKey]),Number(r[yKey])]).filter(([x,y])=>Number.isFinite(x)&&Number.isFinite(y));
-    if(pts.length<2)return null;
-    const n=pts.length;
-    const mx=pts.reduce((s,p)=>s+p[0],0)/n;
-    const my=pts.reduce((s,p)=>s+p[1],0)/n;
-    let sxx=0,sxy=0,syy=0;
-    for(const [x,y] of pts){sxx+=(x-mx)**2;sxy+=(x-mx)*(y-my);syy+=(y-my)**2;}
-    if(sxx<=0)return null;
-    const slope=sxy/sxx,intercept=my-slope*mx;
-    const r=syy>0?sxy/Math.sqrt(sxx*syy):NaN;
-    return {n,slope,intercept,r,r2:Number.isFinite(r)?r*r:NaN,xMin:Math.min(...pts.map(p=>p[0])),xMax:Math.max(...pts.map(p=>p[0]))};
-  }
-
-  function gatePearson(rows,xKey,yKey){
-    return gateLinearFit(rows,xKey,yKey)?.r??NaN;
-  }
-
-  function gateJoinTerByVg(rows,ter){
-    const map=new Map((ter||[]).map(d=>[String(d.vg),d]));
-    return rows.map(r=>{
-      const t=map.get(String(r.vg));
-      return {...r,terMax:t?.terMax,vStar:t?.vdsAtMax};
-    });
-  }
 
   function gateHysteresisRows(label){
     if(!label)return [];
@@ -4341,45 +4075,11 @@
     readGateAnalysisControls();
     const s=state.gateAnalysisSettings;
     const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);
-    const bMap=new Map(Brows.map(r=>[String(r.vg),r]));
-    const common=[];
-    for(const a of Arows){
-      const b=bMap.get(String(a.vg));
-      if(!b)continue;
-      const delta=0.5*(b.v-a.v);
-      const hwhmEff=0.5*(a.hwhm+b.hwhm);
-      const fwhmEff=0.5*(a.fwhm+b.fwhm);
-      const ampSum=a.amplitude+b.amplitude;
-      common.push({
-        vg:a.vg,
-        vA:a.v,vB:b.v,
-        V0:0.5*(a.v+b.v),
-        delta,absDelta:Math.abs(delta),
-        fwhmA:a.fwhm,fwhmB:b.fwhm,
-        hwhmA:a.hwhm,hwhmB:b.hwhm,
-        hwhmEff,fwhmEff,
-        deltaOverW:hwhmEff>0?Math.abs(delta)/hwhmEff:NaN,
-        iA:a.i,iB:b.i,
-        amplitudeA:a.amplitude,amplitudeB:b.amplitude,
-        amplitudeRatio:b.amplitude>0?a.amplitude/b.amplitude:NaN,
-        etaEff:ampSum>0?a.amplitude/ampSum:NaN,
-        baselineA:a.baseline,baselineB:b.baseline,
-        peakToBgA:a.peakToBg,peakToBgB:b.peakToBg
-      });
-    }
-
     const terResult=ensureGateTerResult();
     const terByVg=terResult?.terMaxByVg||terResult?.terMax||[];
-    const rows=gateJoinTerByVg(common,terByVg);
+    const rows=A.pairGateSeries(Arows,Brows,terByVg,s);
     const hysteresis=gateHysteresisRows(s.hysteresisLabel);
-
-    const e=1.602176634e-19;
-    if(s.useCarrierDensity&&Number.isFinite(Number(s.cg))&&Number(s.cg)>0){
-      for(const r of rows){
-        r.ng_m2=Number(s.cg)*(r.vg-Number(s.cnp||0))/e;
-        r.ng_cm2=r.ng_m2/1e4;
-      }
-    }
+    const summary=A.summarizeGateRows(rows,hysteresis);
 
     const result={
       settings:{...s},
@@ -4387,22 +4087,8 @@
       seriesB:gateOptionByKey(s.seriesB),
       Arows,Brows,rows,hysteresis,
       terResult,
-      fits:{
-        V0:gateLinearFit(rows,'vg','V0'),
-        delta:gateLinearFit(rows,'vg','delta'),
-        deltaAbs:gateLinearFit(rows,'vg','absDelta'),
-        deltaOverW:gateLinearFit(rows,'vg','deltaOverW'),
-        terMax:gateLinearFit(rows,'vg','terMax'),
-        vStar:gateLinearFit(rows,'vg','vStar'),
-        eta:gateLinearFit(rows,'vg','etaEff'),
-        hysteresis:gateLinearFit(hysteresis,'vg','absDeltaVR')
-      },
-      correlations:{
-        terVsDeltaOverW:gatePearson(rows,'deltaOverW','terMax'),
-        vStarVsV0:gatePearson(rows,'V0','vStar'),
-        terVsDelta:gatePearson(rows,'absDelta','terMax'),
-        terVsBg:gatePearson(rows,'baselineA','terMax')
-      }
+      fits:summary.fits,
+      correlations:summary.correlations
     };
     state.gateAnalysisResult=result;
     return result;
@@ -5176,7 +4862,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.15-plugin',
+      version:'3.16-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -5960,7 +5646,7 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.15.0-plugin.1',
+      appVersion:'3.16.0-plugin.1',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),

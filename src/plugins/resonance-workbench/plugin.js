@@ -40,9 +40,9 @@
     ctx.registry.add('analysis.providers','resonance',{
       id:'resonance',
       name:'Resonant tunneling / peak-ridge analysis',
-      detector:window.Analysis.detectPeaks,
-      buildSweeps:window.Analysis.buildSweeps,
-      metrics:window.Analysis.peakMetrics
+      detector:window.GRSScience.detectPeaks,
+      buildSweeps:window.GRSScience.buildSweeps,
+      metrics:window.GRSScience.peakMetrics
     });
 
     ctx.registry.add('chart.themes','resonance-default',{

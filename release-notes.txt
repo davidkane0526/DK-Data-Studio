@@ -1,17 +1,13 @@
-Graphene Resonance Studio 3.15.0-plugin.1
+Graphene Resonance Studio 3.16.0-plugin.1
 Branch: plugin
 
-- Git repository initialized with v3.14 preserved as main and tag v3.14.0-main-baseline.
-- plugin branch created from the main baseline.
-- Added Plugin API v1 and generated built-in plugin discovery.
-- Added built-in flexible-import, resonance-workbench, TER-analysis, and pulse-analysis plugins.
-- Domain analysis toolbar entries are now plugin contributions rather than hard-coded core buttons.
-- Flexible import workbench resolves its inspector/parser through the plugin registry.
-- Pulse workspace persistence moved to namespaced plugin project state with v3.14 migration support.
-- Added generic per-project-tab plugin state isolation.
-- Added command, registry, page, panel, style, event, and project-slice extension points.
-- Added platform abstraction for desktop/web/future Android and responsive coarse-pointer interaction geometry.
-- Added compact portrait/landscape and tablet layout foundations.
-- Added AGENTS.md and detailed architecture/plugin/AI/Android documentation.
+- Mature scientific logic rewritten into shared src/science modules.
+- analysis.js is now only a compatibility facade.
+- Cross-Vg peak identity, physical model classification, gate-voltage mathematics, TER, pulse analysis, peak detection and import parsing share one engine across runtimes.
+- Scientific parity script verifies representative rewritten results against the preserved main v3.14 implementation.
+- Added Expo SDK 57 / React Native 0.86.2 Android shell with offline packaged plugin renderer.
+- Added native Android multi-file DocumentPicker, clipboard and save/share bridge.
+- Added BUILD_ANDROID_DEBUG.cmd, RUN_ANDROID_DEVICE.cmd and INSTALL_ANDROID_APK.cmd.
+- Android debug APK target: mobile-dist\Graphene-Resonance-Studio-debug.apk.
 
-This is the plugin development branch. Do not confuse it with the preserved main v3.14 baseline.
+This is the plugin development branch. main remains the preserved v3.14 baseline.
