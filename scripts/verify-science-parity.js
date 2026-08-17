@@ -4,23 +4,65 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const current = require(path.join(root, 'src', 'analysis.js'));
+const baselineRef = process.env.DKDS_PARITY_BASELINE_REF || 'main';
 
-function loadBaseline() {
-  const source = execFileSync('git', ['show', 'main:src/analysis.js'], {
+function readBaselineSource(relativePath) {
+  return execFileSync('git', ['show', `${baselineRef}:${relativePath}`], {
     cwd: root,
     encoding: 'utf8',
   });
+}
+
+function resolveBaselineModule(parentPath, request) {
+  if (!request.startsWith('./') && !request.startsWith('../')) {
+    throw new Error(`Unsupported baseline dependency ${request} from ${parentPath}`);
+  }
+  let resolved = path.posix.normalize(
+    path.posix.join(path.posix.dirname(parentPath), request)
+  );
+  if (!path.posix.extname(resolved)) resolved += '.js';
+  return resolved;
+}
+
+function loadBaselineModule(relativePath, context, cache) {
+  const normalizedPath = path.posix.normalize(relativePath);
+  if (cache.has(normalizedPath)) return cache.get(normalizedPath).exports;
+
+  const source = readBaselineSource(normalizedPath);
+  const moduleRecord = { exports: {} };
+  cache.set(normalizedPath, moduleRecord);
+
+  const wrapper = vm.runInContext(
+    `(function(module, exports, require, __filename, __dirname) {\n${source}\n})`,
+    context,
+    { filename: `${baselineRef}/${normalizedPath}` }
+  );
+
+  const localRequire = request => loadBaselineModule(
+    resolveBaselineModule(normalizedPath, request),
+    context,
+    cache
+  );
+
+  wrapper(
+    moduleRecord,
+    moduleRecord.exports,
+    localRequire,
+    normalizedPath,
+    path.posix.dirname(normalizedPath)
+  );
+  return moduleRecord.exports;
+}
+
+function loadBaseline() {
   const sandbox = {
-    module: { exports: {} },
-    exports: {},
-    globalThis: {},
     console,
     setTimeout,
     clearTimeout,
   };
   sandbox.globalThis = sandbox;
-  vm.runInNewContext(source, sandbox, { filename: 'main/src/analysis.js' });
-  return sandbox.module.exports;
+  const context = vm.createContext(sandbox);
+  return loadBaselineModule('src/analysis.js', context, new Map());
 }
 
 const baseline = loadBaseline();
@@ -92,4 +134,4 @@ for (const v of blocks) {
 const pulseFile = {name:'pulse.csv',path:'pulse.csv',text:pulseRows.join('\n')};
 equal('analyzePulseReadData', baseline.analyzePulseReadData(pulseFile, {}), current.analyzePulseReadData(pulseFile, {}));
 
-console.log('Scientific engine rewrite matches the preserved main baseline for representative mature workflows.');
+console.log(`Scientific engine rewrite matches the preserved ${baselineRef} baseline for representative mature workflows.`);
