@@ -328,3 +328,53 @@ com.lab.raman.spectrum-chart
 ```
 
 The plugin host intentionally rejects duplicate provider IDs instead of silently selecting whichever plugin loaded first.
+
+
+## v3.19: Never grow the global toolbar for domain features
+
+The top application bar is now an activity shell.
+
+When adding a top-level scientific workflow:
+
+```js
+ctx.ui.activities.add(...)
+```
+
+Then contribute its activity-scoped tools:
+
+```js
+ctx.ui.toolbar.add({ activity:'...' })
+ctx.ui.mainTools.add({ activity:'...' })
+```
+
+Do not add another permanent button beside Import/Save/Update/Plugins.
+
+When a workflow needs a different central graph, register:
+
+```js
+ctx.ui.mainViews.register(...)
+```
+
+When it needs custom inspection or summary charts:
+
+```js
+ctx.ui.inspectors.register(...)
+ctx.ui.groupViews.register(...)
+ctx.ui.groupCharts.register(...)
+```
+
+When an algorithm can be replaced by a stronger algorithm, define a provider interface rather than hard-code it into the workbench. The built-in robust resonance detector is the reference:
+- detector algorithm = `builtin.resonance-detector-robust`;
+- detector settings UI = detector provider;
+- resonance workbench = generic detector selector/consumer.
+
+See `docs/WORKSPACE_PLUGIN_API.md`.
+
+
+Desktop shortcuts that are specific to a workflow belong to `ctx.ui.shortcuts.add(...)`. Do not append Raman/FET/resonance keys to the global `window.keydown` block.
+
+Plugins that own Plotly/D3 canvases should react to `layout:resize` themselves. Do not put domain plot IDs into core resize handlers.
+
+## Packaging a finished plugin
+
+When a feature should be installable without rebuilding Graphene Resonance Studio, give it a non-`builtin.*` id and package it with `npm run plugin:package -- <folder> <name>.grsplugin`. Read `PLUGIN_PACKAGES.md`. For detector plugins, the Resonance Workbench must discover the provider dynamically; do not add detector-name branches to the workbench.

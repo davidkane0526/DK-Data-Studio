@@ -1,12 +1,58 @@
-const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { LanWebServer } = require('./lan-web-server');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
 
 let lanUpdater = null;
 let lanWebServer = null;
+
+function externalPluginDirectory() {
+  return path.join(app.getPath('userData'), 'plugins');
+}
+
+function ensureExternalPluginDirectory() {
+  const dir = externalPluginDirectory();
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function builtinPluginIds() {
+  const base = path.join(app.getAppPath(), 'src', 'plugins');
+  const ids = new Set();
+  try {
+    for (const name of fs.readdirSync(base)) {
+      if (name.startsWith('_')) continue;
+      const manifestPath = path.join(base, name, 'plugin.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (manifest?.id) ids.add(String(manifest.id));
+      } catch {}
+    }
+  } catch {}
+  return ids;
+}
+
+function readInstalledExternalPlugins() {
+  const dir = ensureExternalPluginDirectory();
+  const packages = [];
+  const errors = [];
+  for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.grsplugin')).sort()) {
+    const filePath = path.join(dir, name);
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const pkg = normalizePluginPackage(JSON.parse(raw), { allowBuiltinId:false });
+      if (builtinPluginIds().has(pkg.manifest.id)) throw new Error(`Plugin id conflicts with built-in plugin: ${pkg.manifest.id}`);
+      packages.push({ ...pkg, installedPath:filePath });
+    } catch (err) {
+      errors.push({ file:name, error:err?.message || String(err) });
+    }
+  }
+  return { packages, errors, directory:dir };
+}
 
 const PACKAGED_TRIAL_DAYS = 30;
 const PACKAGED_EXPIRY_MAX_TIMER_MS = 12 * 60 * 60 * 1000; // reschedule at most every 12 h
@@ -148,6 +194,76 @@ app.whenReady().then(() => {
       return { text: buffer.toString('utf8').replace(/^\uFEFF/, ''), encoding: 'utf-8' };
     }
   }
+
+  ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
+  ipcMain.handle('plugins:installPackage', async () => {
+    const result = await dialog.showOpenDialog({
+      title:'安装 Graphene Resonance Studio 插件',
+      properties:['openFile'],
+      filters:[
+        { name:'GRS Plugin Package', extensions:['grsplugin'] },
+        { name:'JSON', extensions:['json'] }
+      ]
+    });
+    if(result.canceled || !result.filePaths.length)return null;
+    const sourcePath=result.filePaths[0];
+    const stat=fs.statSync(sourcePath);
+    if(stat.size>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
+    const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
+    if(builtinPluginIds().has(pkg.manifest.id))throw new Error(`不能覆盖内置插件：${pkg.manifest.id}`);
+
+    const dir=ensureExternalPluginDirectory();
+    const target=path.join(dir,pluginPackageFileName(pkg.manifest.id));
+    const exists=fs.existsSync(target);
+    let previousPackage=null;
+    if(exists){
+      try{previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});}
+      catch(err){throw new Error(`已安装插件包损坏，无法安全更新：${err.message}`);}
+    }
+    const confirm=await dialog.showMessageBox({
+      type:'warning',buttons:['取消',exists?'更新插件':'安装插件'],defaultId:0,cancelId:0,
+      title:exists?'更新已安装插件':'安装本地插件',
+      message:`${pkg.manifest.name} v${pkg.manifest.version}`,
+      detail:(exists?`将替换已安装的 ${pkg.manifest.id}。\n\n`:'')
+        +'本地插件包含可执行 JavaScript，可访问当前应用提供的插件 API 和工作区数据。仅安装你信任或已审查源码的插件包。工程中的插件数据不会因安装/更新被删除。'
+    });
+    if(confirm.response!==1)return null;
+    const normalized={...pkg,installedAt:new Date().toISOString()};
+    const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(tmp,JSON.stringify(normalized,null,2)+'\n','utf8');
+    if(fs.existsSync(target))fs.rmSync(target,{force:true});
+    fs.renameSync(tmp,target);
+    return {...normalized,installedPath:target,previousPackage};
+  });
+  ipcMain.handle('plugins:restorePackage', async (_event, payload) => {
+    const id=String(payload?.id||payload?.package?.manifest?.id||'');
+    if(!validPluginId(id)||id.startsWith('builtin.'))throw new Error('无效的插件回滚 ID。');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));
+    if(!payload?.package){
+      if(fs.existsSync(target))fs.unlinkSync(target);
+      return true;
+    }
+    const pkg=normalizePluginPackage(payload.package,{allowBuiltinId:false});
+    if(pkg.manifest.id!==id)throw new Error('插件回滚包 ID 不匹配。');
+    const tmp=`${target}.rollback-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(tmp,JSON.stringify(pkg,null,2)+'\n','utf8');
+    if(fs.existsSync(target))fs.rmSync(target,{force:true});
+    fs.renameSync(tmp,target);
+    return true;
+  });
+  ipcMain.handle('plugins:uninstall', async (_event, id) => {
+    const pluginId=String(id||'');
+    if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的可卸载插件 ID。');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
+    if(fs.existsSync(target))fs.unlinkSync(target);
+    return true;
+  });
+  ipcMain.handle('plugins:openFolder', async () => {
+    const dir=ensureExternalPluginDirectory();
+    const error=await shell.openPath(dir);
+    if(error)throw new Error(error);
+    return dir;
+  });
 
   ipcMain.handle('lanweb:getStatus', async () => lanWebServer?.getStatus() || null);
   ipcMain.handle('lanweb:makeQr', async (_event, payload) => {

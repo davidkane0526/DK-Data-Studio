@@ -1,5 +1,157 @@
-# Graphene Resonance Studio — plugin branch (3.18.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.19.0-plugin.1)
 
+
+## v3.19 成熟共振工作区完成 Plugin-Native UI 迁移
+
+v3.19 的目标不是增加新的科学功能，而是用现有成熟共振工作流验证插件框架的完整性。
+
+### UI 从“功能按钮堆叠”改为 Activity / Context
+
+顶栏分成：
+
+```text
+全局命令 | 工作区 Activity | 系统命令
+                 ↓
+          当前工作区工具栏
+```
+
+插件越多时，Activity 自动进入 `工作区 ▾`；当前工作区工具过多时自动进入 `更多 ▾`。
+
+科学插件不再把所有按钮永久堆在顶栏。
+
+### 共振 UI 已归属插件
+
+`builtin.resonance-workbench` 现在负责：
+
+```text
+共振 Activity
+数据列表 sidebar
+寻峰/算法选择 sidebar
+共振显示 sidebar
+主图 provider
+主图工具
+框选菜单 overlay
+曲线/峰检查器 provider
+组图 view + subplot providers
+物理机制 panel
+峰间距 page
+栅压分析 page
+共振专用导出
+```
+
+核心 `index.html` 不再包含“智能寻峰”“手动操作”、共振 range menu、物理机制 panel、峰间距/栅压页面等测量场景 UI。
+
+### 寻峰算法是独立插件
+
+成熟的 multichannel/multiscale Ricker 寻峰器已拆成：
+
+```text
+builtin.resonance-detector-robust
+```
+
+共振工作台只消费 `peak.detectors` provider。
+
+因此以后可以同时安装：
+
+```text
+robust detector
+ML detector
+instrument-specific detector
+high-SNR detector
+...
+```
+
+每个 detector 自己声明：
+- detect 算法；
+- presets；
+- 参数 UI / parameter schema；
+- evidence 名称；
+- 峰标记形状；
+- detector version。
+
+工作台不再为某个具体寻峰算法硬编码设置面板。
+
+### 主图 / 检查器 / 组图均成为 provider
+
+新的 Workspace API v1.2 包含：
+
+```text
+ui.activities
+ui.sidebar
+ui.mainViews
+ui.mainTools
+ui.mainOverlays
+ui.inspectors
+ui.groupViews
+ui.groupCharts
+ui.pages
+ui.panels
+peak.detectors
+```
+
+因此未来 Raman / FET / Retention / Image 等插件可以替换：
+- 主图类型和交互；
+- 检查器内容；
+- 组图有哪些子图；
+- 子图数据来源；
+- Plotly 绘制方式；
+- 单击图中数据后的联动行为；
+- CSV / SVG / PNG 导出语义。
+
+### TER 与 Pulse 页面也不再属于 Core HTML
+
+`TER` 和 `Pulse / Read` 页面现在由各自插件运行时动态创建，核心只保留通用 analysis-page host 和成熟兼容计算服务。
+
+### 空间占用优化
+
+永久显示的“手动操作”说明块和：
+
+```text
+拖框=操作 · Ctrl+拖框=缩放
+```
+
+提示已删除。
+
+快捷键/操作说明以后应放到插件帮助、context menu 或可展开帮助中，而不是长期占据科学工作区。
+
+### 稳定性约束
+
+新增：
+
+```bash
+node scripts/check-plugin-boundaries.js
+```
+
+并纳入：
+
+```bash
+npm run check
+```
+
+如果以后 AI 再把智能寻峰、共振页面、Pulse/TER 页面等硬编码回 `src/index.html`，检查会直接失败。
+
+详细开发接口见：
+
+```text
+docs/WORKSPACE_PLUGIN_API.md
+```
+
+
+
+
+
+### 可安装的外部插件包
+
+桌面端插件管理器支持安装受信任的 `.grsplugin`。因此新的寻峰算法、工作区、Inspector 或组图实现可以作为独立插件安装，而不必重新修改 Core。更新同 ID 外部插件时，如果新版本加载/激活失败，运行时会尝试恢复旧包。
+
+开发/打包说明：
+
+```text
+docs/PLUGIN_PACKAGES.md
+examples/external-plugins/resonance-detector-template/
+```
+
+上下文工具栏还支持插件声明 `section` 和 `priority`：同类命令自动形成视觉分组，窗口不足时低优先级命令先进入“更多”菜单。
 
 ## v3.18 可定制数据处理中心：完成 Data Model / Workflow / Recipe / 参数 Schema / Formula
 

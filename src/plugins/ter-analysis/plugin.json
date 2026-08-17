@@ -1,13 +1,14 @@
 {
   "id": "builtin.ter-analysis",
   "name": "TER Analysis",
-  "version": "1.0.0",
-  "apiVersion": "1.0.0",
+  "version": "2.0.0",
+  "apiVersion": "1.2.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 120,
-  "description": "Same-Vd TER matrix, extrema and resonance-associated TER UI.",
+  "description": "Same-Vd TER matrix and extrema workspace with plugin-owned UI.",
   "capabilities": [
+    "ui.activity",
     "ui.page",
     "analysis.ter",
     "chart.heatmap"

@@ -45,6 +45,9 @@ const required = [
   'src/science/gate.js',
   'scripts/verify-science-parity.js',
   'scripts/test-data-center-core.js',
+  'scripts/test-plugin-package.js',
+  'scripts/package-plugin.js',
+  'plugin-package.js',
   'src/plugins/data-center/plugin.json',
   'src/plugins/data-center/plugin.js',
   'mobile/App.tsx',
@@ -64,7 +67,14 @@ const required = [
   'docs/DATA_MODEL.md',
   'docs/WORKFLOW_RECIPES.md',
   'docs/PARAMETER_SCHEMA.md',
-  'docs/FORMULA_ENGINE.md'
+  'docs/FORMULA_ENGINE.md',
+  'docs/WORKSPACE_PLUGIN_API.md',
+  'docs/PLUGIN_PACKAGES.md',
+  'scripts/check-plugin-boundaries.js',
+  'src/plugins/resonance-detector-robust/plugin.json',
+  'src/plugins/resonance-detector-robust/plugin.js',
+  'examples/external-plugins/resonance-detector-template/plugin.json',
+  'examples/external-plugins/resonance-detector-template/plugin.js'
 ];
 for (const rel of required) {
   if (!fs.existsSync(path.join(root, rel))) {

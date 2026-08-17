@@ -46,9 +46,13 @@ console.log('All tests passed.', {
 const fs=require('fs');
 const appSource=fs.readFileSync('./src/app.js','utf8');
 const htmlSource=fs.readFileSync('./src/index.html','utf8');
+const resonancePluginSource=fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8');
+const detectorPluginSource=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
+const terPluginSource=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
+const pulsePluginSource=fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8');
 assert(appSource.includes("Ctrl+框选缩放完成")&&appSource.includes("pointerdown"),'main plot should support direct Ctrl+drag box zoom');
-assert(appSource.includes("ArrowUp")&&appSource.includes("ArrowDown"),'up/down curve switching must exist');
-assert(appSource.includes("ArrowLeft")&&appSource.includes("ArrowRight"),'left/right peak movement must exist');
+assert(resonancePluginSource.includes("ArrowUp")&&resonancePluginSource.includes("ArrowDown"),'resonance plugin must own up/down curve switching shortcuts');
+assert(resonancePluginSource.includes("moveSelectedPeakBy")&&resonancePluginSource.includes("ArrowRight"),'resonance plugin must own left/right peak movement shortcuts');
 assert(appSource.includes("showlegend:false"),'small trend charts should use custom per-card legends');
 assert(appSource.includes("scrollZoom:true"),'zoomed trend chart should support wheel zoom');
 assert(!htmlSource.includes('mainBoxZoomBtn')&&htmlSource.includes('mainResetViewBtn'),'box zoom should no longer require a mode button; reset control must remain');
@@ -63,12 +67,12 @@ console.log('UI contract checks passed.');
 // 5) v2.5 category/color contract.
 assert(!appSource.includes('customColorInput'),'arbitrary color picker must be removed');
 assert(appSource.includes('colorForPeakOrder'),'all peak colors should come from one category/direction mapping');
-assert(appSource.includes('peak-category-choice'),'inspector must classify peaks by existing category swatches');
-assert(appSource.includes('addPeakCategoryBtn'),'inspector must allow adding a new category/color pair');
+assert(resonancePluginSource.includes('peak-category-choice'),'resonance inspector plugin must classify peaks by existing category swatches');
+assert(resonancePluginSource.includes('data-add-cat'),'resonance inspector plugin must allow adding a new category/color pair');
 assert(appSource.includes(".on('dblclick',(event,d)=>"),'double-clicking a peak should be handled');
 assert(appSource.includes('showInspectorPanel'),'peak click/double-click should open inspector');
 assert(!appSource.includes('TER_COLORS'),'TER must not use a separate unrelated palette');
-assert(appSource.includes('_forwardColor')&&appSource.includes('_reverseColor'),'TER must carry exact forward/reverse peak colors');
+assert(resonancePluginSource.includes('_forwardColor')&&resonancePluginSource.includes('_reverseColor'),'resonance TER chart plugin must carry exact forward/reverse peak colors');
 
 assert(htmlSource.includes('groupDockBtn')&&htmlSource.includes('groupMinimizeBtn'),'group panel should support dock/minimize controls');
 assert(htmlSource.includes('dockedGroupSlot'),'main workspace should include bottom docking slot');
@@ -98,14 +102,14 @@ const htmlV27 = fs.readFileSync('./src/index.html','utf8');
 assert(htmlV27.includes('id="projectTabs"')&&htmlV27.includes('id="newProjectTabBtn"'),'v2.7 must expose project tabs');
 assert(appV27.includes('function captureActiveProjectTab()')&&appV27.includes('function mountProjectTab(t)'),'project state must be explicitly isolated per tab');
 assert(appV27.includes('state.projectTabs.push(tab)')&&appV27.includes('已在新标签页打开工程'),'open project should create a new tab rather than overwrite active project');
-assert(htmlV27.includes('id="rangeActionMenu"')&&htmlV27.includes('id="lockSelectedPeaksBtn"'),'direct multi-peak range menu and lock controls must exist');
+assert(resonancePluginSource.includes("elementId:'rangeActionMenu'")&&resonancePluginSource.includes("id:'resonanceLockTool'"),'resonance plugin must own direct multi-peak range menu and lock control');
 assert(appV27.includes('function openRangeActionMenu')&&appV27.includes('function selectPeaksInRange'),'main plot must implement direct peak range selection');
 assert(appV27.includes('const preserved=state.peaks.filter(p=>p.manual||p.locked)'),'rerun must preserve locked automatic peaks');
 assert(appV27.includes('!fixed.some(q=>Math.abs(q.v-p.v)<=tol)'),'new auto peaks must not duplicate locked/manual peaks');
 assert(appV27.includes('function physicalAnalysis()'),'physical mechanism analysis must exist');
 const physicsCoreV27=fs.readFileSync('./src/science/physics.js','utf8');
 assert(physicsCoreV27.includes("M1：零转角静态两-ridge 模型优先")&&physicsCoreV27.includes("M3：存在额外稳定 ridge"),'physical model hierarchy must be present in shared science engine');
-assert(htmlV27.includes('id="physicsPanel"')&&htmlV27.includes('id="showPhysicsLabels"'),'physics panel and main-plot labels must exist');
+assert(resonancePluginSource.includes("panelId:'physicsPanel'")&&resonancePluginSource.includes('id="showPhysicsLabels"'),'resonance plugin must own physics panel and main-plot-label UI');
 console.log('v2.7 multi-project / physics / locking checks passed.');
 
 
@@ -119,10 +123,10 @@ assert(appV28.includes(".attr('viewBox',null)")&&appV28.includes(".style('left',
 assert(!appV28.includes(".attr('viewBox',`0 0 ${width} ${height}`)"),'main plot must not recreate a viewBox');
 assert(appV28.includes("Math.abs(svgRect.left-wrapRect.left)>2"),'geometry watchdog must detect SVG origin drift');
 assert(cssV28.includes(".physics-type-label.dimmed{opacity:.08!important}"),'unselected physical labels must dim');
-assert(htmlV28.includes('id="togglePhysicsLabelsBtn"'),'main toolbar physics-label toggle must exist');
+assert(resonancePluginSource.includes("id:'resonancePhysicsLabelsTool'"),'resonance plugin must contribute the main-plot physics-label toggle');
 assert(appV28.includes('function autoSelectSinglePeakInCurrentView(sw)'),'curve keyboard switching must support unique-peak auto selection');
 assert(appV28.includes('当前视野仅 1 个峰'),'status must report automatic peak selection');
-assert(appV28.includes("if(e.key==='p'||e.key==='P')"),'P shortcut must toggle physical labels');
+assert(resonancePluginSource.includes("if(key==='p'||key==='P')")&&resonancePluginSource.includes('togglePhysicsLabels'),'P shortcut must be owned by resonance plugin and toggle physical labels');
 console.log('v2.8 SVG geometry / focus / keyboard checks passed.');
 
 
@@ -131,8 +135,8 @@ const appV29 = fs.readFileSync('./src/app.js','utf8');
 const htmlV29 = fs.readFileSync('./src/index.html','utf8');
 const analysisV29 = require('./src/analysis.js');
 
-assert(htmlV29.includes('id="spacingSeriesA"')&&htmlV29.includes('id="spacingSeriesB"')&&fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8').includes("buttonId:'openSpacingPageBtn'"),'peak spacing page/dropdowns and plugin toolbar entry must exist');
-assert(htmlV29.includes('id="terMaxPage"')&&fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8').includes("buttonId:'openTerMaxPageBtn'"),'dedicated TER_max page and plugin toolbar entry must exist');
+assert(resonancePluginSource.includes('id="spacingSeriesA"')&&resonancePluginSource.includes('id="spacingSeriesB"')&&resonancePluginSource.includes("buttonId:'openSpacingPageBtn'"),'peak spacing page/dropdowns and plugin toolbar entry must exist');
+assert(terPluginSource.includes("pageId:'terMaxPage'")&&terPluginSource.includes("id:'ter'"),'dedicated TER_max page must be plugin-owned and exposed as a TER activity');
 assert(typeof analysisV29.computeTerMatrix==='function','TER matrix JS implementation must be exported');
 
 // Synthetic raw acquisition with repeated turning points:
@@ -158,12 +162,12 @@ const appV30 = fs.readFileSync('./src/app.js','utf8');
 const htmlV30 = fs.readFileSync('./src/index.html','utf8');
 const cssV30 = fs.readFileSync('./src/style.css','utf8');
 
-assert(htmlV30.includes('class="toolbar-group"'),'topbar must use compact grouped controls');
+assert(htmlV30.includes('id="activityBar"')&&htmlV30.includes('id="pluginToolbarAnalysis"')&&htmlV30.includes('id="contextOverflowBtn"'),'topbar must use activity/context-aware grouped controls with overflow');
 assert(cssV30.includes('.toolbar-btn{height:30px'),'toolbar buttons must have normalized compact height');
-assert(appV30.includes("['ter_peak','共振位 TER（双向候选）','%']"),'group panel must expose resonance-associated same-Vd TER');
-assert(appV30.includes("if(key==='ter_peak')"),'peak-position TER plot/export path must be active');
-assert(htmlV30.includes('id="terColorMin"')&&htmlV30.includes('id="terColorMax"'),'TER heatmap color limits must be adjustable');
-assert(htmlV30.includes('id="terColorTick"')&&htmlV30.includes('id="terXTick"')&&htmlV30.includes('id="terYTick"'),'TER heatmap scale/axis ticks must be adjustable');
+assert(resonancePluginSource.includes("resonance-ter")&&resonancePluginSource.includes('共振位 TER（双向候选）'),'resonance group-chart plugin must expose same-Vd resonant TER');
+assert(resonancePluginSource.includes('computeResonantTerForLabel'),'resonance TER group-chart provider must use resonant same-Vd TER');
+assert(terPluginSource.includes('id=\\\"terColorMin\\\"')&&terPluginSource.includes('id=\\\"terColorMax\\\"'),'TER plugin heatmap color limits must be adjustable');
+assert(terPluginSource.includes('id=\\\"terColorTick\\\"')&&terPluginSource.includes('id=\\\"terXTick\\\"')&&terPluginSource.includes('id=\\\"terYTick\\\"'),'TER plugin heatmap scale/axis ticks must be adjustable');
 assert(true,'v3.2 supersedes the v3.0 rectangular heatmap requirement with a square heatmap');
 assert(appV30.includes("colorscale:hd.colorscale||'Viridis'"),'heatmap color scale must use UI setting');
 assert(appV30.includes("dtick:hd.colorDtick||undefined"),'colorbar tick interval must be applied');
@@ -195,10 +199,10 @@ const htmlV32 = fs.readFileSync('./src/index.html','utf8');
 const cssV32 = fs.readFileSync('./src/style.css','utf8');
 const analysisV32 = require('./src/analysis.js');
 
-assert(htmlV32.includes('TER(Vd, Vg) 全组合热图'),'TER page must explicitly describe full Vd-Vg matrix');
+assert(terPluginSource.includes('TER(Vd, Vg) 全组合热图'),'TER plugin page must explicitly describe full Vd-Vg matrix');
 assert(cssV32.includes('aspect-ratio:1 / 1'),'TER heatmap canvas must be square');
-assert(htmlV32.includes('id="terMaxVgPlot"')&&htmlV32.includes('id="terMaxVdPlot"'),'both TER_Max-Vg and TER_Max-Vd plots must exist');
-assert(htmlV32.includes('id="terExportMaxVgBtn"')&&htmlV32.includes('id="terExportMaxVdBtn"'),'both max reductions must export data');
+assert(terPluginSource.includes('id=\\\"terMaxVgPlot\\\"')&&terPluginSource.includes('id=\\\"terMaxVdPlot\\\"'),'TER plugin must contain both Max-Vg and Max-Vd plots');
+assert(terPluginSource.includes('id=\\\"terExportMaxVgBtn\\\"')&&terPluginSource.includes('id=\\\"terExportMaxVdBtn\\\"'),'TER plugin must expose both max-reduction exports');
 assert(appV32.includes("savePlotlyImage('terMaxVgPlot','TER_Max-Vg','svg')"),'TER_Max-Vg must export SVG');
 assert(appV32.includes("savePlotlyImage('terMaxVdPlot','TER_Max-Vd','png')"),'TER_Max-Vd must export PNG');
 
@@ -228,18 +232,18 @@ console.log('v3.2 TER square / Max-Vg / Max-Vd checks passed.');
 const appV33 = fs.readFileSync('./src/app.js','utf8');
 const htmlV33 = fs.readFileSync('./src/index.html','utf8');
 
-assert(htmlV33.includes('id="gateAnalysisPage"')&&fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8').includes("buttonId:'openGateAnalysisPageBtn'"),'gate analysis page/plugin button must exist');
-assert(htmlV33.includes('id="gateSeriesA"')&&htmlV33.includes('id="gateSeriesB"'),'gate analysis must allow two resonance ridge dropdowns');
-assert(htmlV33.includes('id="gateV0Plot"')&&htmlV33.includes('id="gateDeltaPlot"'),'V0 and delta plots must exist');
-assert(htmlV33.includes('id="gateWidthPlot"')&&htmlV33.includes('id="gateTerCorrelationPlot"'),'width/delta-over-w and TER correlation plots must exist');
-assert(htmlV33.includes('id="gateVdStarPlot"')&&htmlV33.includes('id="gateReadoutCorrelationPlot"'),'Vd* and Vd*-V0 plots must exist');
-assert(htmlV33.includes('id="gateAmplitudePlot"')&&htmlV33.includes('id="gateBackgroundPlot"'),'amplitude/effective-weight and background plots must exist');
-assert(htmlV33.includes('id="gateHysteresisPlot"'),'scan-direction resonance hysteresis plot must exist');
-assert(htmlV33.includes('id="gateUseCarrierDensity"')&&htmlV33.includes('id="gateCg"')&&htmlV33.includes('id="gateCnp"'),'optional carrier-density conversion must exist');
+assert(resonancePluginSource.includes("pageId:'gateAnalysisPage'")&&resonancePluginSource.includes("buttonId:'openGateAnalysisPageBtn'"),'gate analysis page/plugin button must exist');
+assert(resonancePluginSource.includes('id="gateSeriesA"')&&resonancePluginSource.includes('id="gateSeriesB"'),'resonance plugin gate UI must allow two ridge dropdowns');
+assert(resonancePluginSource.includes('id="gateV0Plot"')&&resonancePluginSource.includes('id="gateDeltaPlot"'),'plugin gate UI must include V0 and delta plots');
+assert(resonancePluginSource.includes('id="gateWidthPlot"')&&resonancePluginSource.includes('id="gateTerCorrelationPlot"'),'plugin gate UI must include width and TER correlation plots');
+assert(resonancePluginSource.includes('id="gateVdStarPlot"')&&resonancePluginSource.includes('id="gateReadoutCorrelationPlot"'),'plugin gate UI must include Vd* plots');
+assert(resonancePluginSource.includes('id="gateAmplitudePlot"')&&resonancePluginSource.includes('id="gateBackgroundPlot"'),'plugin gate UI must include amplitude/background plots');
+assert(resonancePluginSource.includes('id="gateHysteresisPlot"'),'plugin gate UI must include scan-direction hysteresis plot');
+assert(resonancePluginSource.includes('id="gateUseCarrierDensity"')&&resonancePluginSource.includes('id="gateCg"')&&resonancePluginSource.includes('id="gateCnp"'),'plugin gate UI must include optional carrier-density controls');
 assert(appV33.includes('function computeGateAnalysis()'),'gate analysis calculation function must exist');
 assert(fs.readFileSync('./src/science/gate.js','utf8').includes('deltaOverW:hwhmEff>0?Math.abs(delta)/hwhmEff:NaN'),'delta/w must use effective HWHM in shared gate-analysis engine');
 assert(appV33.includes('η_eff=A_A/(A_A+A_B)'),'effective electrical weight must be explicitly labeled');
-assert(appV33.includes('不把它自动当作 coercive voltage')||htmlV33.includes('不把它自动当作 coercive voltage'),'hysteresis must not be mislabeled as coercive voltage');
+assert(resonancePluginSource.includes('不把它自动当作 coercive voltage')||appV33.includes('不把它自动当作 coercive voltage'),'hysteresis must not be mislabeled as coercive voltage');
 assert(appV33.includes('当前工程没有独立的“switching step / jump”对象'),'report must explicitly refuse to fabricate Vc from resonance peaks');
 assert(appV33.includes('Pearson r'),'automatic report must include quantitative correlation analysis');
 assert(appV33.includes("defaultName:'gate_physics_analysis.csv'")&&appV33.includes("defaultName:'gate_physics_analysis_report.md'"),'gate analysis data and report exports must exist');
@@ -272,12 +276,19 @@ for(const peak of detectedV34){
   assert(['raw-local-maximum','raw-residual-projection'].includes(peak.projectionMethod),'auto peak must record raw-I projection method');
 }
 assert(appV34.includes("['dlog','d ln|I|/dV']")&&appV34.includes("['resistance','R=|V/I|']"),'dataset transform selector must include log-derivative and resistance');
-assert(htmlV34.includes('高级设置（一般不用改）')&&htmlV34.includes('智能寻峰 / 补峰'),'peak-finding UI must default to simple sensitivity workflow');
+assert(resonancePluginSource.includes('智能寻峰 / 补峰')&&resonancePluginSource.includes('算法参数'),'peak-finding workflow UI must be owned by the resonance plugin and keep a simple preset-first flow');
 assert(mainV34.includes("ipcMain.handle('clipboard:writeText'")&&mainV34.includes('clipboard.writeText'),'Electron main process must expose system clipboard write');
 assert(preloadV34.includes("copyText: text => ipcRenderer.invoke('clipboard:writeText', text)"),'preload must expose clipboard copy');
-for(const id of ['copyMainCsvBtn','copyPeaksCsvBtn','gateAnalysisCopyCsvBtn','spacingCopyCsvBtn','terCopyLongBtn','terCopyMatrixBtn','terCopyMaxVgBtn','terCopyMaxVdBtn','zoomCopyCsv']){
-  assert(htmlV34.includes(`id="${id}"`),`missing CSV clipboard button ${id}`);
+for(const id of ['copyMainCsvBtn','zoomCopyCsv']){
+  assert(htmlV34.includes(`id="${id}"`),`missing core CSV clipboard button ${id}`);
 }
+for(const id of ['gateAnalysisCopyCsvBtn','spacingCopyCsvBtn']){
+  assert(resonancePluginSource.includes(`id="${id}"`),`missing resonance-plugin CSV clipboard button ${id}`);
+}
+for(const id of ['terCopyLongBtn','terCopyMatrixBtn','terCopyMaxVgBtn','terCopyMaxVdBtn']){
+  assert(terPluginSource.includes(`id=\\\"${id}\\\"`),`missing TER-plugin CSV clipboard button ${id}`);
+}
+assert(resonancePluginSource.includes("id:'copyPeakParameters'"),'resonance plugin export menu must provide peak CSV copy');
 assert(appV34.includes('trend-copy-btn'),'dynamic group-plot CSV must also have copy action');
 console.log('v3.4 smart detection / transform / clipboard checks passed.');
 
@@ -327,8 +338,8 @@ console.log('v3.8 trusted-LAN keyless hot-update checks passed.');
 const appV36 = fs.readFileSync('./src/app.js','utf8');
 const htmlV36 = fs.readFileSync('./src/index.html','utf8');
 
-assert(htmlV36.includes('id="sortPeakOrderBtn"'),'main toolbar must provide peak-order sort button');
-assert(appV36.includes('跨 Vg 智能整理峰序'),'curve inspector must provide intelligent one-click sort');
+assert(resonancePluginSource.includes("id:'resonanceSortTool'"),'resonance plugin must provide peak-order sort main tool');
+assert(resonancePluginSource.includes('跨 Vg 智能整理峰序'),'resonance inspector plugin must provide intelligent one-click sort');
 assert(appV36.includes('function sortPeakOrderByVd()'),'peak order sorting function must exist');
 assert(appV36.includes(".filter(p=>p.sweepId===sw.id&&p.accepted)"),'only accepted peaks should count in automatic peak order');
 assert(appV36.includes(".sort((a,b)=>a.v-b.v)"),'peak order must be based on ascending raw Vd');
@@ -344,23 +355,23 @@ const htmlV37 = fs.readFileSync('./src/index.html','utf8');
 const cssV37 = fs.readFileSync('./src/style.css','utf8');
 const analysisV37 = require('./src/analysis.js');
 
-assert(htmlV37.includes('id="rangeActionMenu"'),'direct range action menu must exist');
+assert(resonancePluginSource.includes("elementId:'rangeActionMenu'"),'direct range action menu must be contributed by the resonance plugin');
 for(const id of ['rangeLocalDetectBtn','rangeDeletePeaksBtn','rangeLockPeaksBtn','rangeUnlockPeaksBtn']){
-  assert(htmlV37.includes(`id="${id}"`),`range action ${id} must exist`);
+  assert(resonancePluginSource.includes(`id="${id}"`),`resonance plugin range action ${id} must exist`);
 }
 assert(!htmlV37.includes('id="mainPeakSelectBtn"')&&!htmlV37.includes('id="mainBoxZoomBtn"'),'range/zoom mode buttons must be removed');
 assert(appV37.includes("const zoom=!!event.ctrlKey"),'Ctrl+drag must control zoom');
 assert(appV37.includes('openRangeActionMenu(range,drag.clientX,drag.clientY)'),'plain drag must open range menu without zoom');
 assert(appV37.includes('function runLocalDetectionInRange()'),'local range peak detection must exist');
-assert(appV37.includes("A.detectPeaks(sw,normalizedDetectionSettings(state.algorithms),{range})"),'local detection must pass physical box range into detector');
+assert(appV37.includes("detectPeaksViaProvider(sw,{range})"),'local detection must pass physical box range through the active detector plugin');
 assert(appV37.includes("snapshot('框选区域局部寻峰')"),'local detection must be undoable');
 assert(appV37.includes("deleteSelectedPeaks('框选删除峰')"),'box delete must exist');
 assert(cssV37.includes('.width-band,.width-line{pointer-events:none!important}'),'width overlay must not swallow peak click/double-click');
-assert(appV37.includes('d3.drag().clickDistance(5)'),'peak drag must have click-distance threshold');
+assert(appV37.includes('dragThresholdPx||7'),'peak drag must use a nonzero platform-adaptive click-distance threshold');
 assert(appV37.includes("if(event.ctrlKey){")&&appV37.includes("if(!event.ctrlKey)return;"),'manual add/delete mouse modifiers must use Ctrl');
-assert(appV37.includes("if((e.ctrlKey||e.metaKey)&&e.key==='ArrowLeft')")&&appV37.includes('selectAdjacentPeak(-1)'),'Ctrl+left must select previous peak');
-assert(appV37.includes("if((e.ctrlKey||e.metaKey)&&e.key==='ArrowRight')")&&appV37.includes('selectAdjacentPeak(1)'),'Ctrl+right must select next peak');
-assert(appV37.includes('bindTrendPointClick(plot)')&&appV37.includes('focusPeakFromTrendCustomData'),'group plot points must navigate back to the main plot');
+assert(resonancePluginSource.includes("(e.ctrlKey||e.metaKey)&&key==='ArrowLeft'")&&resonancePluginSource.includes('selectAdjacentPeak(-1)'),'Ctrl+left must be plugin-owned and select previous peak');
+assert(resonancePluginSource.includes("(e.ctrlKey||e.metaKey)&&key==='ArrowRight'")&&resonancePluginSource.includes('selectAdjacentPeak(1)'),'Ctrl+right must be plugin-owned and select next peak');
+assert(appV37.includes('bindPluginGroupPointClick')&&resonancePluginSource.includes('focusPeakFromCustomData'),'plugin group-chart points must navigate back to the main plot');
 assert(appV37.includes("main-legend-chip ${selected?'selected':''} ${selectedPath&&!selected?'dimmed':''}"),'main legend must follow curve highlight/dimming');
 assert(appV37.includes('function smartAssignPeakOrders'),'cross-Vg smart peak identity assignment must exist');
 assert(fs.readFileSync('./src/science/identity.js','utf8').includes('enumerateTrackAssignments'),'smart identity must permit missing track indices rather than compress every curve');
@@ -482,7 +493,7 @@ const htmlV310 = fs.readFileSync('./src/index.html','utf8');
 const cssV310 = fs.readFileSync('./src/style.css','utf8');
 const analysisV310 = require('./src/analysis.js');
 
-assert(htmlV310.includes('class="dataset-vg-input"')||appV310.includes('dataset-vg-input'),'dataset list must expose editable Vg field');
+assert(resonancePluginSource.includes('dataset-vg-input'),'resonance data sidebar plugin must expose editable Vg field');
 assert(appV310.includes('function updateDatasetVg'),'dataset-level Vg edit handler must exist');
 assert(htmlV310.includes('id="importSeriesVgRows"'),'import workbench must provide per-series/per-column Vg editor');
 assert(appV310.includes('function renderImportSeriesVgRows'),'import workbench must render per-generated-series Vg rows');
@@ -549,9 +560,9 @@ assert(oneSideTer311.length===1,'reverse-only resonance must not be omitted from
 assert(Math.abs(oneSideTer311[0].ter-300)<1e-9,'same-Vd resistance TER should be 300% for 4:1 current ratio');
 assert(oneSideTer311[0].anchorDirection===-1&&oneSideTer311[0].vdAtTer===1,'TER result must retain the reverse resonance anchor');
 
-assert(appV311.includes("['i','峰电流 Ipk','A']"),'group panel must include peak-current-vs-gate plot');
-assert(appV311.includes("['ter_peak','共振位 TER（双向候选）','%']"),'group TER must clearly identify bidirectional resonance candidates');
-assert(appV311.includes('computeResonantTerForLabel'),'group trend model must call the new resonant TER routine');
+assert(resonancePluginSource.includes("['i','峰电流 Ipk','A']"),'resonance group chart plugin must include peak-current-vs-gate plot');
+assert(resonancePluginSource.includes('共振位 TER（双向候选）'),'group TER plugin must identify bidirectional resonance candidates');
+assert(resonancePluginSource.includes('computeResonantTerForLabel'),'resonance group trend plugin must call the resonant TER routine');
 
 // Import manager must be project-scoped and prevent duplicate native picker dialogs.
 assert(appV311.includes("importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false}"),'each project tab must own a blank import draft');
@@ -559,7 +570,7 @@ assert(appV311.includes('t.importDraft=importDraft')&&appV311.includes('importDr
 assert(appV311.includes('if(importDraft.fileDialogOpen)return;'),'import manager must guard against multiple simultaneous OS file pickers');
 
 // Box selection unified peak category/label.
-assert(htmlV311.includes('id="rangeApplyPeakIdentityBtn"')&&htmlV311.includes('id="rangePeakLabelInput"'),'range menu must expose unified peak identity controls');
+assert(resonancePluginSource.includes('id="rangeApplyPeakIdentityBtn"')&&resonancePluginSource.includes('id="rangePeakLabelInput"'),'resonance plugin range overlay must expose unified peak identity controls');
 assert(appV311.includes('function applyUnifiedPeakIdentityToSelection'),'range-selected peaks must support unified category/label assignment');
 assert(appV311.includes("snapshot('统一框选峰序与标签')"),'unified range identity operation must be undoable');
 
@@ -595,7 +606,7 @@ assert(pulseRes311.blockSamples===20,'pulse analyzer should auto-detect 20 sampl
 assert(Math.abs(pulseRes311.readVoltage-.5)<1e-9,'pulse analyzer should detect repeated 0.5 V read platform');
 assert(pulseRes311.points.length===4,'pulse analyzer should create one result per pulse/read pair');
 assert(Number.isFinite(pulseRes311.points[0].pulseCurrent)&&Number.isFinite(pulseRes311.points[0].readCurrent),'pulse analyzer must calculate both pulse and read stable-window currents');
-assert(htmlV311.includes('id="pulseReadPlot"')&&htmlV311.includes('id="pulsePulsePlot"'),'pulse panel must provide both requested plots');
+assert(pulsePluginSource.includes('id=\\\"pulseReadPlot\\\"')&&pulsePluginSource.includes('id=\\\"pulsePulsePlot\\\"'),'pulse plugin panel must provide both requested plots');
 assert(appV311.includes('function pulseResultCsvText'),'pulse analysis results must support CSV copy/export');
 
 console.log('v3.11 TER / LAN web / scoped import / range identity / pulse-analysis checks passed.');
@@ -616,10 +627,10 @@ for(const id of [
   'pulseReadCopyBtn','pulseReadExportBtn','pulseReadSvgBtn','pulseReadPngBtn',
   'pulsePulseCopyBtn','pulsePulseExportBtn','pulsePulseSvgBtn','pulsePulsePngBtn'
 ]){
-  assert(htmlV312.includes(`id="${id}"`),`pulse plot action ${id} must exist`);
+  assert(pulsePluginSource.includes(`id=\\"${id}\\"`),`pulse plugin plot action ${id} must exist`);
 }
-assert(!htmlV312.includes('class="pulse-advanced"'),
-  'raw waveform diagnostics should be permanently visible rather than hidden in a collapsed details block');
+assert(!pulsePluginSource.includes('class=\"pulse-advanced\"'),
+  'pulse plugin raw diagnostics should be permanently visible rather than hidden in a collapsed details block');
 assert(cssV312.includes('.pulse-raw-plot')&&cssV312.includes('height:530px!important'),
   'raw waveform diagnostics must have a substantially larger default plotting area');
 assert(appV312.includes("domain:[0.57,1]")&&appV312.includes("domain:[0,0.42]"),
@@ -630,8 +641,8 @@ assert(appV312.includes('function pulseReadCsvText()')&&appV312.includes('functi
   'each pulse plot must expose its own exact CSV data');
 assert(appV312.includes("exportPulsePlotImage('pulseReadPlot'")&&appV312.includes("exportPulsePlotImage('pulsePulsePlot'")&&appV312.includes("exportPulsePlotImage('pulseRawPlot'"),
   'raw/read/pulse plots must provide explicit image export actions');
-assert(htmlV312.includes('id="pulseResultMeta"')&&cssV312.includes('.pulse-table-heading'),
-  'extracted results must use a dedicated summary/header toolbar');
+assert(pulsePluginSource.includes('id=\\\"pulseResultMeta\\\"')&&cssV312.includes('.pulse-table-heading'),
+  'pulse plugin extracted results must use a dedicated summary/header toolbar');
 assert(cssV312.includes('.pulse-result-table thead th')&&cssV312.includes('position:sticky'),
   'pulse result table header must remain visible while scrolling');
 console.log('v3.12 group-default / pulse-analysis layout-export checks passed.');
@@ -647,7 +658,7 @@ for(const id of [
   'pulseRemoveFilesBtn','pulseAnalyzeCurrentBtn','pulseAnalyzeCheckedBtn',
   'pulseApplySettingsBtn','pulseSeriesLabel','pulseResultScope'
 ]){
-  assert(htmlV313.includes(`id="${id}"`),`multi-file pulse control ${id} must exist`);
+  assert(pulsePluginSource.includes(`id=\\\"${id}\\\"`),`multi-file pulse plugin control ${id} must exist`);
 }
 assert(appV313.includes('function createPulseAnalysisState()')&&appV313.includes('files:[]')&&appV313.includes("resultScope:'checked'"),
   'pulse analysis must use a batch-oriented state object');
@@ -935,3 +946,139 @@ for(const doc of ['./docs/DATA_MODEL.md','./docs/WORKFLOW_RECIPES.md','./docs/PA
   assert(fs.existsSync(doc),`v3.18 Data Center documentation missing: ${doc}`);
 assert(pkg318.scripts['data-center:test'],'package scripts must include Data Center core tests');
 console.log('v3.18 Data Model / Workflow / Schema / Formula / Data Center checks passed.');
+
+
+// v3.19 plugin-native workspace / detector / adaptive UI shell
+const appV319=fs.readFileSync('./src/app.js','utf8');
+const htmlV319=fs.readFileSync('./src/index.html','utf8');
+const cssV319=fs.readFileSync('./src/style.css','utf8');
+const kernelV319=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const resonanceV319=fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8');
+const detectorV319=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
+const dataCenterV319=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
+const terPluginV319=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
+const pulsePluginV319=fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8');
+
+assert(htmlV319.includes('id="activityBar"')&&htmlV319.includes('id="activityMoreMenu"'),
+  'top shell must expose an activity switcher with overflow');
+assert(htmlV319.includes('id="pluginToolbarAnalysis"')&&htmlV319.includes('id="contextOverflowMenu"'),
+  'activity-specific tools must use a separate context row with automatic overflow');
+assert(htmlV319.includes('id="exportMenuBtn"')&&htmlV319.includes('data-plugin-menu="export"'),
+  'exports must be collapsed into a generic menu with plugin contribution slot');
+assert(!htmlV319.includes('手动操作')&&!htmlV319.includes('拖框=操作 · Ctrl+拖框=缩放'),
+  'space-consuming permanent manual-operation hints must be removed');
+assert(!htmlV319.includes('智能寻峰')&&!htmlV319.includes('dataset-vg-input'),
+  'resonance sidebar UI must not remain hard-coded in core HTML');
+assert(!htmlV319.includes('id="rangeActionMenu"')&&!htmlV319.includes('id="physicsPanel"')&&!htmlV319.includes('id="spacingPage"')&&!htmlV319.includes('id="gateAnalysisPage"'),
+  'resonance overlays/panels/pages must be dynamically contributed by the workbench plugin');
+assert(!htmlV319.includes('id="pulseAnalysisPage"')&&!htmlV319.includes('id="terMaxPage"'),
+  'pulse and TER domain pages must not remain hard-coded in core HTML');
+assert(pulsePluginV319.includes("pageId:'pulseAnalysisPage'")&&pulsePluginV319.includes('html:pageHtml'),
+  'pulse analysis page must be dynamically created by the pulse plugin');
+assert(terPluginV319.includes("pageId:'terMaxPage'")&&terPluginV319.includes('html:pageHtml'),
+  'TER analysis page must be dynamically created by the TER plugin');
+
+assert(kernelV319.includes("const API_VERSION = '1.2.0'"),'workspace extension API must be v1.2');
+for(const token of [
+  'function registerActivity','function addSidebarSection','function addMainOverlay',
+  "registerTypedContribution(pluginId,'ui.inspectors'",
+  "registerTypedContribution(pluginId,'ui.groupCharts'",
+  "registerTypedContribution(pluginId,'ui.groupViews'",
+  "registerTypedContribution(pluginId,'ui.mainViews'"
+]){
+  assert(kernelV319.includes(token),`plugin kernel missing workspace extension ${token}`);
+}
+assert(kernelV319.includes("if(overflow)overflow.innerHTML=''"),
+  'activity rerender must clear overflow storage to prevent duplicate activity buttons');
+assert(kernelV319.includes("sortContributions(mount,'.plugin-sidebar-section')"),
+  'sidebar contributions must be deterministically ordered across plugins');
+assert(kernelV319.includes("registerContribution(pluginId,'ui.shortcuts'")&&kernelV319.includes('dispatchPluginShortcut'),
+  'workspace plugins must be able to own activity-scoped keyboard shortcuts');
+assert(!appV319.includes("if(e.key==='l'||e.key==='L')")&&!appV319.includes("if(e.key==='p'||e.key==='P')"),
+  'resonance editing/physics shortcuts must not remain in the core key handler');
+assert(resonanceV319.includes("ctx.ui.shortcuts.add")&&resonanceV319.includes("id:'resonance-editing-shortcuts'"),
+  'resonance plugin must own its desktop editing shortcuts');
+const resizeStartV319=appV319.indexOf("window.addEventListener('resize'");
+const resizeEndV319=appV319.indexOf('if(window.ResizeObserver)',resizeStartV319);
+const resizeBlockV319=resizeStartV319>=0&&resizeEndV319>resizeStartV319?appV319.slice(resizeStartV319,resizeEndV319):'';
+assert(appV319.includes("events?.emit?.('layout:resize'")&&!['gateResonancePlot','spacingPlot','terHeatmapPlot','pulseRawPlot'].some(id=>resizeBlockV319.includes(id)),
+  'core resize handling must emit a generic event instead of knowing domain plot ids');
+assert(resonanceV319.includes("ctx.events.on('layout:resize'")&&terPluginV319.includes("ctx.events.on('layout:resize'")&&pulsePluginV319.includes("ctx.events.on('layout:resize'"),
+  'domain plugins must own resize behavior for their own Plotly canvases');
+
+assert(appV319.includes("registry?.values?.('ui.mainViews')")&&appV319.includes('function renderResonanceMainPlot()'),
+  'main plot host must select a plugin main-view provider while keeping mature renderer as compatibility implementation');
+assert(appV319.includes('currentMainViewCsvText')&&appV319.includes('exportCurrentMainSvg')&&appV319.includes('exportCurrentMainPng'),
+  'main data/image exports must dispatch through the active main-view plugin');
+assert(appV319.includes("registry?.values?.('ui.inspectors')"),
+  'inspector body must be provider-driven');
+assert(appV319.includes("registry?.values?.('ui.groupCharts')")&&appV319.includes("registry?.values?.('ui.groupViews')"),
+  'group chart types/data/view must be provider-driven');
+assert(!appV319.includes('function renderPhysicsPanel(){'),
+  'resonance physics-panel renderer must no longer be core UI code');
+
+for(const token of [
+  "ctx.ui.activities.add",
+  "ctx.ui.sidebar.add",
+  "ctx.ui.mainViews.register",
+  "ctx.ui.mainOverlays.add",
+  "ctx.ui.inspectors.register",
+  "ctx.ui.groupCharts.register",
+  "ctx.ui.groupViews.register",
+  "ctx.ui.panels.add",
+  "ctx.ui.pages.add"
+]){
+  assert(resonanceV319.includes(token),`resonance workbench must own ${token}`);
+}
+assert(resonanceV319.includes("elementId:'rangeActionMenu'")&&resonanceV319.includes('统一峰序 / 峰标签'),
+  'range menu and its peak-identity UI must be workbench plugin content');
+assert(resonanceV319.includes('function renderPhysicsPanel()'),
+  'physics panel rendering must be owned by the resonance plugin');
+assert(resonanceV319.includes("panelTitle:'共振检查器'")&&resonanceV319.includes("panelTitle:'共振组图'"),
+  'generic inspector/group hosts must receive plugin-specific panel titles');
+assert(resonanceV319.includes('csvText:()=>R.mainCsvText()')&&resonanceV319.includes('exportPng:()=>R.exportMainPng()'),
+  'resonance main-view provider must own its data/image export contract');
+
+assert(detectorV319.includes("ctx.analysis.detectors.register('robust-ricker-v1'"),
+  'mature robust finder must be an independent detector plugin');
+assert(detectorV319.includes('renderSettings({container,settings,onChange})'),
+  'algorithm-specific settings UI must be supplied by the detector plugin');
+assert(detectorV319.includes("evidence.matched")&&detectorV319.includes("symbol:'triangle-down'"),
+  'detector plugin must own evidence label/glyph/symbol metadata');
+assert(appV319.includes('peak.detectors')&&appV319.includes('没有启用的寻峰算法插件'),
+  'disabling all detector plugins must fail visibly instead of silently re-enabling the built-in algorithm');
+assert(appV319.includes('peak.detectorId=peak.detectorId||provider.id'),
+  'detected peaks must record their detector provider for reproducible rendering/provenance');
+
+assert(dataCenterV319.includes("id:'data-center'")&&terPluginV319.includes("id:'ter'")&&pulsePluginV319.includes("id:'pulse'"),
+  'top-level feature plugins must be exposed as activities rather than accumulating toolbar buttons');
+
+assert(cssV319.includes('.activity-switcher')&&cssV319.includes('.plugin-context-toolbar')&&cssV319.includes('.context-overflow-menu'),
+  'adaptive toolbar/activity/context layout styles must exist');
+assert(kernelV319.includes('dataset.pluginPriority')&&kernelV319.includes('dataset.pluginSection')&&kernelV319.includes('const ranked=visible.slice().sort'),
+  'context toolbar must support plugin-defined groups and priority-aware overflow');
+assert(resonanceV319.includes("section:'视图'")&&resonanceV319.includes("section:'分析'"),
+  'resonance workbench must declare semantic toolbar groups instead of a flat action row');
+assert(cssV319.includes('.plugin-toolbar-btn.plugin-section-start'),
+  'context toolbar must visually separate plugin-declared command groups');
+
+const mainExternalV319=fs.readFileSync('./main.js','utf8');
+const preloadExternalV319=fs.readFileSync('./preload.js','utf8');
+const managerExternalV319=fs.readFileSync('./src/core/plugin-manager-ui.js','utf8');
+const packageCoreV319=fs.readFileSync('./plugin-package.js','utf8');
+assert(htmlV319.includes('id="pluginManagerInstallBtn"')&&htmlV319.includes('id="pluginManagerOpenFolderBtn"'),
+  'desktop plugin manager must expose install and plugin-directory actions');
+assert(mainExternalV319.includes("ipcMain.handle('plugins:installPackage'")&&mainExternalV319.includes("ipcMain.handle('plugins:restorePackage'"),
+  'desktop plugin installation must support transactional package rollback');
+assert(preloadExternalV319.includes('pluginInstallPackage')&&preloadExternalV319.includes('pluginRestorePackage'),
+  'context-isolated preload must expose plugin installation and rollback IPC');
+assert(kernelV319.includes('loadExternalPackage')&&kernelV319.includes('oldPackage=externalPackages.get(id)||pkg.previousPackage||null'),
+  'plugin kernel must support dynamic external package load and failed-update rollback');
+assert(managerExternalV319.includes('plugin-uninstall-btn')&&managerExternalV319.includes('GRSPlugins.external.install'),
+  'plugin manager must manage external install/update/uninstall lifecycle');
+assert(packageCoreV319.includes('normalizeRelativeFile')&&packageCoreV319.includes('MAX_TOTAL_CHARS'),
+  'external plugin packages must be validated for safe paths and bounded size');
+assert(fs.existsSync('./docs/PLUGIN_PACKAGES.md')&&fs.existsSync('./examples/external-plugins/resonance-detector-template/plugin.json'),
+  'external plugin packaging and installable detector SDK example must be documented');
+
+console.log('v3.19 plugin-native resonance workspace / adaptive shell checks passed.');

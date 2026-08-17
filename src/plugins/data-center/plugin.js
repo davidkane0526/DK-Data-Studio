@@ -16,6 +16,12 @@
     const $$=(sel,root=page)=>[...(root?.querySelectorAll(sel)||[])];
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+    ctx.ui.activities.add({
+      id:'data-center',label:'数据中心',contextLabel:'数据中心',icon:'▦',order:20,
+      description:'标准数据对象、公式、Workflow / Recipe 与来源链',
+      onActivate:()=>ctx.host.openAnalysisPage(page?.id||'builtin-data-center-data-center-page')
+    });
+
     const formulaSchema={
       fields:[
         {id:'name',type:'text',label:'新列名称',default:'Derived',required:true,placeholder:'例如 Resistance'},
@@ -90,7 +96,7 @@
     });
 
     page=ctx.ui.pages.add({
-      id:'data-center',label:'数据中心',title:'可定制数据处理中心',order:15,buttonClass:'accent-soft',
+      id:'data-center',activity:'data-center',label:'数据中心',title:'可定制数据处理中心',order:15,buttonClass:'accent-soft',toolbar:false,
       html:`
         <div class="analysis-page-header data-center-header"><div><h2>数据中心</h2><div class="analysis-subtitle">标准 Data Model + Provenance + Formula + Workflow / Recipe。新场景优先组合处理步骤，而不是修改主程序。</div></div><button class="analysis-page-close">返回主图</button></div>
         <div class="analysis-page-body data-center-body">
@@ -139,7 +145,7 @@
     function renderAllUi(){renderArtifacts();renderPreview();renderFormula();refreshProviderSelect();renderSteps();renderSavedRecipes();renderProvenance();renderChartControls();requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});}
 
     $('#dcRefreshArtifacts').onclick=()=>{ctx.data.artifacts.syncLegacy();renderAllUi();};$('#dcApplyFormula').onclick=applyFormula;$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcRunWorkflow').onclick=runWorkflow;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=renderChartParams;$('#dcRenderChart').onclick=renderChart;$('#dcExportChart').onclick=()=>ctx.host.savePlotlyImage('dcChart','data_center_chart','png');$('#dcCopyProvenance').onclick=()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON');
-    ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});
+    ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});
 
     ctx.project.registerSlice('workspace',{
       serialize:()=>({schema:1,activeArtifactId:state.activeArtifactId,recipeName:state.recipeName,steps:D.deepClone(state.steps),savedRecipes:D.deepClone(state.savedRecipes),chart:D.deepClone(state.chart)}),

@@ -1,17 +1,17 @@
-Graphene Resonance Studio 3.18.0-plugin.1
+Graphene Resonance Studio 3.19.0-plugin.1
 Branch: plugin
 
-- Added standard GRSData artifact model and per-project Artifact Store.
-- Added provenance chain with source/provider/plugin/version/parameters/input/output/execution metadata.
-- Legacy resonance datasets are mirrored into deterministic transient DataTables without duplicate project persistence.
-- Added Plugin API v1.1 typed Processor / Analyzer / Chart / Recipe contribution interfaces.
-- Globally addressed provider/recipe IDs are now uniqueness-checked across plugins to keep workflow resolution deterministic.
-- Added GRSWorkflow DAG/Recipe engine with type checks, parameter binding, progress events and workflow provenance.
-- Added GRSParameters schema-driven validation/UI renderer with responsive and coarse-pointer support.
-- Added safe GRSFormula tokenizer/parser/AST engine for derived DataTable columns; no eval/new Function.
-- Added builtin.data-center plugin with artifact browser, formula builder, configurable sequential workflow, saved Recipes, generic chart preview and Provenance viewer.
-- Added generic processors: formula-derived column, select columns, finite-row filter; analyzer: table summary; chart provider: generic XY.
-- Added detailed Data Model, Workflow/Recipe, Parameter Schema and Formula Engine development documentation.
-- React Native Android bundle consumes the same new core modules automatically through mobile sync.
+- Plugin-native workspace shell: global commands, Activity switcher, context toolbar and automatic overflow.
+- Resonance data list, smart-peak controls, display controls, range menu, physics panel, spacing page and gate-analysis page are plugin-owned UI.
+- Main canvas, inspector, group view and each group subplot are resolved from plugin providers.
+- Mature robust resonance finder is now an independent detector plugin with its own presets, settings UI and evidence marker metadata.
+- Additional detector plugins can coexist; disabling all detectors no longer silently restores the built-in algorithm.
+- TER and Pulse analysis page markup/event bindings moved out of core HTML into their plugins.
+- Permanent manual-operation help block and drag/Ctrl-drag plot hint removed.
+- Added Workspace/UI Plugin API v1.2 documentation and automated plugin-boundary regression checks.
+- Context commands now support semantic groups and priority-aware overflow.
+- Desktop Plugin Manager can install/update/uninstall trusted `.grsplugin` packages; failed updates attempt transactional rollback to the previous package.
+- Added an external resonance detector SDK example proving stronger detector providers can be installed without editing the Resonance Workbench or core.
+- Existing peak/TER/scientific behavior remains regression-locked.
 
-main remains the preserved v3.14 baseline; all changes are on plugin.
+This is the plugin development branch. The preserved main branch remains the v3.14 baseline.

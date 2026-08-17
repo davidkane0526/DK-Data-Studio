@@ -34,6 +34,12 @@
       'analysis.resonance':'共振分析',
       'analysis.ter':'TER 分析',
       'analysis.pulse':'脉冲分析',
+      'analysis.peak-detector':'寻峰算法',
+      'ui.activity':'工作区',
+      'ui.sidebar':'侧栏 UI',
+      'ui.inspector':'检查器',
+      'ui.group-charts':'组图',
+      'ui.main-tools':'主图工具',
       'chart.trend':'趋势图',
       'chart.heatmap':'热图',
       'chart.timeseries':'时序图',
@@ -72,10 +78,11 @@
     const active=all.filter(p=>p.active).length;
     const disabled=all.filter(p=>!p.enabled).length;
     const errors=all.filter(p=>p.status==='error').length;
-    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['错误',errors]];
+    const external=all.filter(p=>p.source==='external').length;
+    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['本地安装',external],['错误',errors]];
     const host=$('#pluginManagerSummary');
     if(!host)return;
-    host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${index===3&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
+    host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${index===4&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
   }
 
   function renderList() {
@@ -83,6 +90,14 @@
     if(!list)return;
     const all=window.GRSPlugins?.manager?.list?.()||[];
     renderSummary(all);
+    const installSupported=!!window.GRSPlugins?.external?.available?.();
+    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.title=installSupported?'安装 .grsplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
+    const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn)folderBtn.disabled=!installSupported;
+    const externalErrors=window.GRSPlugins?.external?.errors?.()||[];
+    const note=$('#pluginManagerNote');
+    if(note)note.innerHTML=externalErrors.length
+      ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
+      : '停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。桌面版可安装本地 <code>.grsplugin</code> 插件包。';
     const plugins=filteredPlugins();
     $('#pluginManagerVisibleCount').textContent=`显示 ${plugins.length} / ${all.length}`;
 
@@ -99,7 +114,7 @@
       card.className=`plugin-manager-card status-${status.className}`;
       card.dataset.pluginId=plugin.id;
       const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
-      const source=plugin.source==='builtin'?'内置插件':escapeHtml(plugin.source||'插件');
+      const source=plugin.source==='builtin'?'内置插件':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
       const actionLabel=plugin.status==='error'?'重试':plugin.active?'重新加载':'加载';
       card.innerHTML=`
         <div class="plugin-card-head">
@@ -131,6 +146,7 @@
           <div class="plugin-card-actions">
             <button class="plugin-details-btn" type="button">详情</button>
             <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
+            ${plugin.source==='external'?`<button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>卸载</button>`:''}
           </div>
         </div>
         <div class="plugin-card-details hidden">
@@ -168,6 +184,15 @@
         }
       };
 
+      const uninstall=card.querySelector('.plugin-uninstall-btn');
+      if(uninstall)uninstall.onclick=async()=>{
+        if(!window.confirm(`卸载本地插件 ${plugin.name||plugin.id}？\n\n不会删除工程中已保存的 ${plugin.id} 数据；重新安装同 ID 插件后仍可恢复。`))return;
+        state.busy.add(plugin.id);renderList();
+        try{await window.GRSPlugins.external.uninstall(plugin.id);}
+        catch(err){state.host?.setStatus?.(`卸载插件失败：${err.message}`);}
+        finally{state.busy.delete(plugin.id);renderList();}
+      };
+
       card.querySelector('.plugin-details-btn').onclick=()=>{
         const details=card.querySelector('.plugin-card-details');
         details.classList.toggle('hidden');
@@ -198,6 +223,14 @@
     $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList();};
     $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList();};
     $('#pluginManagerRefreshBtn').onclick=renderList;
+    $('#pluginManagerInstallBtn').onclick=async()=>{
+      try{
+        const installed=await window.GRSPlugins.external.install();
+        if(installed)state.host?.setStatus?.(`插件 ${installed.name||installed.id} 已安装并载入。`);
+      }catch(err){state.host?.setStatus?.(`安装插件失败：${err.message}`);}
+      renderList();
+    };
+    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.GRSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
       if(!window.confirm('恢复所有插件的默认启用状态？不会删除插件工程数据。'))return;

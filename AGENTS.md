@@ -131,3 +131,37 @@ New reusable processing operations should normally be `workflow.processors` or `
 New ordinary parameter UIs should use `parameterSchema`; do not hand-build repetitive form markup.
 
 New user-defined numeric columns must use the safe `GRSFormula` parser; never use `eval()` or `new Function()`.
+
+
+## Workspace ownership rule (v3.19+)
+
+Read `docs/WORKSPACE_PLUGIN_API.md` before changing any scientific workspace UI.
+
+Do not put domain-specific content in `src/index.html` merely because it is convenient.
+
+For a measurement plugin, the plugin should normally own:
+- activity;
+- sidebar;
+- algorithm/provider selectors;
+- main-view provider;
+- main-view tools/overlays;
+- inspector provider;
+- group view/chart providers;
+- domain analysis pages;
+- domain floating panels;
+- domain export actions.
+
+Algorithms that are alternatives to one another should be separate providers/plugins. In particular, a peak detector should register `peak.detectors`; its algorithm-specific parameter UI belongs to the detector provider through `renderSettings` or `parameterSchema`.
+
+The generic workbench may select a detector; it must not contain special-case controls for a particular detector implementation.
+
+Run `node scripts/check-plugin-boundaries.js` (included in `npm run check`) before committing workspace changes.
+
+
+Domain keyboard shortcuts belong to `ctx.ui.shortcuts`; only universal project/file commands belong in the core key handler.
+
+Domain canvases own their resize behavior via the generic `layout:resize` event. Never add lists of feature-specific Plotly element IDs to core resize code.
+
+## Installable plugins
+
+Desktop runtime supports trusted local `.grsplugin` packages. Read `docs/PLUGIN_PACKAGES.md` before adding package installation, update, uninstall, or external detector behavior. New algorithm plugins should be independently installable when practical; never reserve a hard-coded detector id in the Resonance Workbench.

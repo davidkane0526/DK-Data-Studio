@@ -249,6 +249,12 @@
       return {path:`web://${file.name}`,project:JSON.parse(text)};
     },
 
+    pluginExternalList: async()=>({packages:[],errors:[],unsupported:true}),
+    pluginInstallPackage: async()=>{throw new Error('浏览器 / Android 模式暂不允许安装可执行插件包；请在桌面版安装，或使用内置插件与 Recipe。');},
+    pluginRestorePackage: async()=>false,
+    pluginUninstall: async()=>false,
+    pluginOpenFolder: async()=>false,
+
     updateGetStatus: async()=>({
       phase:'disabled',message:nativeBridge?'Android React Native 壳层不执行桌面程序热更新。':'网页版由局域网桌面端提供，不执行桌面程序热更新。',
       currentVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'web',

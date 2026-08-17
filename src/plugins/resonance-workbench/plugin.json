@@ -1,15 +1,18 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "1.0.0",
-  "apiVersion": "1.0.0",
+  "version": "2.1.0",
+  "apiVersion": "1.2.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
-  "description": "Resonance-specific peak/ridge/physics analysis UI contributions.",
+  "description": "Complete resonance workspace UI and analysis composition. Peak algorithms are discovered from independent detector plugins.",
   "capabilities": [
-    "ui.page",
-    "ui.panel",
+    "ui.activity",
+    "ui.sidebar",
+    "ui.inspector",
+    "ui.group-charts",
+    "ui.main-tools",
     "analysis.resonance",
     "chart.trend"
   ]

@@ -10,7 +10,7 @@ echo.
 echo PLUGIN BRANCH: do not publish this build to the stable main channel by accident.
 echo Enter a release version.
 echo Example:
-echo   3.18.0-plugin.2 = exact plugin prerelease version
+echo   3.19.0-plugin.2 = exact plugin prerelease version
 echo.
 set /p "GRS_VERSION=Version: "
 
@@ -19,7 +19,7 @@ if defined GRS_VERSION goto VERSION_OK
 
 echo.
 echo ERROR: No version was provided.
-echo Use an explicit prerelease version such as 3.18.0-plugin.2.
+echo Use an explicit prerelease version such as 3.19.0-plugin.2.
 pause
 exit /b 2
 

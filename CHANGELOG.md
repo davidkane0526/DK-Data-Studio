@@ -1,5 +1,19 @@
 # Changelog
 
+## plugin branch — 3.19.0-plugin.1
+
+- introduced Activity + context-toolbar shell with automatic overflow;
+- moved resonance sidebar/range menu/physics/gate/spacing UI ownership into `builtin.resonance-workbench`;
+- made the central main view, inspector and group subplot system provider-driven;
+- extracted mature robust resonance peak finding into independent `builtin.resonance-detector-robust`;
+- added detector-owned parameter UI, presets and evidence-marker metadata;
+- removed permanent manual-operation instructions and main-plot shortcut hint;
+- moved TER and Pulse page markup/event bindings out of core HTML into their plugins;
+- added Plugin Workspace/UI API v1.2 and strict architecture-boundary checks.
+- added semantic context-toolbar groups and priority-aware overflow so plugin growth does not create a single long command strip;
+- added trusted desktop `.grsplugin` install/update/uninstall support with rollback on failed plugin updates;
+- added an installable external resonance-detector SDK example and package documentation.
+
 ## plugin branch — 3.18.0-plugin.1
 
 - standard Data Model + Artifact Store + Provenance;

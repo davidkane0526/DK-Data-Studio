@@ -220,3 +220,7 @@ builtin.data-center
 Do not create Android-specific Formula, Recipe or Data Model implementations.
 
 On compact/coarse-pointer devices the generic schema renderer switches to a single-column parameter layout and expands input touch targets.
+
+## Runtime plugin installation
+
+Arbitrary executable `.grsplugin` installation is currently desktop-only. Android and LAN Web continue to use the same Plugin API and built-in plugin bundles, but runtime JavaScript installation remains disabled until an explicit mobile trust/signing/sandbox model is designed. Do not fork the scientific implementation for mobile.

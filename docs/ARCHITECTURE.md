@@ -281,3 +281,59 @@ Detailed contracts:
 - `docs/WORKFLOW_RECIPES.md`
 - `docs/PARAMETER_SCHEMA.md`
 - `docs/FORMULA_ENGINE.md`
+
+
+## 11. Plugin-native workspace shell — v3.19
+
+The resonance workbench is now the reference proof that a mature domain workflow can live inside the generic host.
+
+The core renderer provides generic surfaces:
+
+```text
+activity switcher
+context toolbar + overflow
+sidebar mount
+main-view mount
+main-tool mount
+inspector host
+group-panel host
+page/panel factories
+export menu
+```
+
+`builtin.resonance-workbench` contributes:
+- the `resonance` activity;
+- dataset navigator;
+- detector selector;
+- resonance display settings;
+- main-view provider;
+- range-action overlay;
+- inspector provider;
+- group-view provider;
+- individual group-chart providers;
+- physical-mechanism panel;
+- peak-spacing page;
+- gate-analysis page;
+- resonance-specific exports.
+
+`builtin.resonance-detector-robust` separately contributes the mature peak algorithm, its parameter UI and evidence/marker metadata.
+
+This separation is deliberate:
+
+```text
+Resonance Workbench UI
+        ↓ chooses
+Peak Detector Provider
+        ↓ returns peaks + detector provenance
+Shared GRSScience primitives
+```
+
+A stronger detector can therefore be added without rewriting the workbench. A different measurement plugin can replace the entire main view/inspector/group charts without modifying the core shell.
+
+The old mature D3 resonance canvas remains a compatibility implementation inside `app.js`, but the core no longer selects it directly. It runs only because the resonance plugin registers `ui.mainViews/resonance-main`. This preserves mature interaction behavior while making the ownership boundary real.
+
+`npm run check` includes `scripts/check-plugin-boundaries.js`, which rejects regression such as putting resonance smart-detection/range/gate/physics UI back into core HTML.
+
+## External plugin distribution
+
+The desktop host has a user plugin directory and `.grsplugin` loader. External packages are validated by the main process, loaded through the context-isolated renderer plugin kernel, and managed by the same lifecycle as built-ins. Runtime update is transactional: if a replacement package cannot load/activate, the prior installed package is restored when possible. See `PLUGIN_PACKAGES.md`.

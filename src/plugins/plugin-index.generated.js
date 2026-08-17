@@ -3,6 +3,7 @@ window.GRS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/data-center/plugin.js",
   "plugins/flexible-import/plugin.js",
   "plugins/pulse-analysis/plugin.js",
+  "plugins/resonance-detector-robust/plugin.js",
   "plugins/resonance-workbench/plugin.js",
   "plugins/ter-analysis/plugin.js"
 ];

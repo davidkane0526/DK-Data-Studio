@@ -1,4 +1,4 @@
-# Plugin API v1.x
+# Plugin API v1.2
 
 Global runtime:
 
@@ -36,6 +36,36 @@ GRSPlugins.define(manifest, async ctx => {
 ```
 
 Plugin ids are permanent. Do not rename an id after project files have stored state under it.
+
+
+## Workspace UI API v1.2
+
+Activity-scoped keyboard behavior must use `ctx.ui.shortcuts.add(...)`; plugins should listen to the generic `layout:resize` event to resize their own canvases. Core must not know domain shortcut keys or domain plot IDs.
+
+For full scientific-workspace customization, read:
+
+```text
+docs/WORKSPACE_PLUGIN_API.md
+```
+
+v1.2 adds first-class contributions for:
+
+```text
+ui.activities
+ui.sidebar
+ui.mainViews
+ui.mainOverlays
+ui.mainTools
+ui.inspectors
+ui.groupViews
+ui.groupCharts
+ui.pages
+ui.panels
+peak.detectors
+```
+
+This is the preferred route for scientific UI. A feature plugin should own its activity, sidebar, main-view contract, inspector, group charts and domain pages rather than append permanent controls to the global shell.
+
 
 ## `ctx.host`
 
@@ -201,11 +231,21 @@ Read contributions:
 const providers = GRSPlugins.registry.values('analysis.providers');
 ```
 
-Existing registry kinds:
+Important registry kinds include:
 - `data.importers`
 - `analysis.providers`
-- `chart.themes`
-- `ui.pages`
+- `peak.detectors`
+- `workflow.processors`
+- `workflow.analyzers`
+- `workflow.recipes`
+- `charts.renderers`
+- `ui.activities`
+- `ui.inspectors`
+- `ui.mainViews`
+- `ui.groupViews`
+- `ui.groupCharts`
+
+DOM-mounted sidebar/toolbar/menu/overlay contributions are lifecycle-tracked by the same plugin kernel.
 
 New kinds are allowed when the contract is documented.
 
@@ -464,3 +504,7 @@ ctx.charts.register('com.example.raman.spectrum', { ... });
 ```
 
 The host rejects a second plugin that tries to claim an already registered globally addressed ID. This prevents Recipe/provider resolution from depending on plugin load order.
+
+## Installable package distribution
+
+Plugin API v1.2 can be distributed as desktop `.grsplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.

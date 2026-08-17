@@ -872,7 +872,7 @@ button.danger-soft{
 .import-y-multi-head span{margin-right:auto}
 .import-y-columns{
   display:grid;
-  grid-template-columns:repeat(4,minmax(130px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
   gap:5px;
   max-height:130px;
   overflow:auto;
@@ -2567,7 +2567,7 @@ button.danger-soft{
 .plugin-manager-stat.has-error strong{color:#b42318}
 .plugin-manager-toolbar-card{
   display:grid;
-  grid-template-columns:minmax(260px,1fr) 170px auto auto;
+  grid-template-columns:minmax(240px,1fr) auto auto auto auto auto;
   align-items:center;
   gap:9px;
   padding:10px 12px;
@@ -2805,6 +2805,13 @@ button.danger-soft{
 @media(max-width:1050px){
   .plugin-manager-list{grid-template-columns:1fr}
 }
+@media(max-width:920px){
+  .plugin-manager-toolbar-card{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+  .plugin-manager-toolbar-card>label{justify-content:flex-start}
+  .plugin-manager-toolbar-card>button{width:100%}
+  .plugin-manager-visible-count{justify-self:start}
+}
 @media(max-width:760px){
   .plugin-manager-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
   .plugin-manager-toolbar-card{grid-template-columns:1fr 1fr}
@@ -2851,3 +2858,190 @@ button.danger-soft{
 .grs-size-compact .schema-parameter-panel,.grs-size-compact .schema-parameter-panel.compact{grid-template-columns:1fr;}
 .schema-param-field.type-boolean input[type="checkbox"]{width:18px;height:18px;min-height:18px;padding:0;align-self:flex-start;accent-color:#315efb;}
 .grs-pointer-coarse .schema-param-field.type-boolean input[type="checkbox"]{width:26px;height:26px;min-height:26px;}
+
+/* ============================================================
+   v3.19 plugin-native workspace shell
+   ============================================================ */
+.plugin-activity-hidden{display:none!important}
+
+.topbar{
+  height:76px;
+  display:grid;
+  grid-template-rows:42px 34px;
+  gap:0;
+  padding:0;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  overflow:visible;
+}
+.topbar-primary{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:4px 10px 3px 14px;
+}
+.topbar-primary .brand{font-size:13px;max-width:245px;overflow:hidden;text-overflow:ellipsis}
+.global-commandbar,.system-commandbar{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.global-commandbar .toolbar-group{padding:2px;background:#f8faff}
+.system-commandbar{margin-left:auto}
+.activity-switcher{min-width:120px;flex:1 1 auto;display:flex;align-items:center;gap:4px;overflow:hidden}
+.activity-bar{min-width:0;display:flex;align-items:center;gap:4px;overflow:hidden}
+.activity-tab{
+  height:31px;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 9px;
+  border:1px solid transparent;
+  border-radius:7px;
+  background:transparent;
+  color:#475569;
+  white-space:nowrap;
+  font-size:11px;
+}
+.activity-tab:hover{background:#f4f7fd;border-color:#e0e6f0}
+.activity-tab.active{background:#eaf0ff;border-color:#cbd9ff;color:#2148ba;font-weight:700}
+.activity-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;font-size:13px}
+.activity-more-anchor,.menu-anchor,.context-overflow-anchor{position:relative;flex:0 0 auto}
+.activity-more-menu{right:0;left:auto;top:calc(100% + 4px)}
+.activity-more-menu .activity-tab{display:flex;width:100%;justify-content:flex-start;border-radius:5px}
+.activity-more-menu .activity-tab.active{background:#eaf0ff}
+
+.topbar-context{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 10px 4px 14px;
+  border-top:1px solid #f0f2f7;
+  background:#fbfcfe;
+}
+.activity-context-head{flex:0 0 auto;min-width:72px;padding-right:8px;border-right:1px solid #e2e7ef;color:#64748b;font-size:10px;font-weight:700;white-space:nowrap}
+.plugin-context-toolbar{min-width:0;flex:1 1 auto;display:flex;align-items:center;gap:3px;overflow:hidden}
+.plugin-context-toolbar .plugin-toolbar-btn{height:27px;padding:3px 8px;font-size:10px;border:1px solid transparent;background:transparent;border-radius:6px;color:#334155;flex:0 0 auto}
+.plugin-context-toolbar .plugin-toolbar-btn:hover{background:#fff;border-color:#d9e0ec}
+.context-overflow-anchor{margin-left:auto}
+.context-overflow-anchor>#contextOverflowBtn{height:27px;font-size:10px}
+.context-overflow-menu{right:0;left:auto;top:calc(100% + 4px)}
+.context-overflow-menu .plugin-toolbar-btn{display:flex;width:100%;height:30px;justify-content:flex-start;border:0;background:transparent;border-radius:5px;padding:5px 8px;font-size:10px}
+
+.command-menu{
+  position:absolute;
+  z-index:520;
+  top:calc(100% + 5px);
+  right:0;
+  min-width:178px;
+  max-width:min(360px,90vw);
+  padding:5px;
+  border:1px solid #d9e0eb;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 14px 34px rgba(15,23,42,.16);
+}
+.command-menu>button,.command-menu>div>.plugin-menu-item{
+  width:100%;
+  min-height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:5px 8px;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  color:#334155;
+  font-size:10px;
+  text-align:left;
+}
+.command-menu>button:hover,.command-menu>div>.plugin-menu-item:hover{background:#f1f5fb}
+.command-menu-separator{height:1px;background:#e8ecf3;margin:4px 2px}
+.menu-trigger{border:1px solid #e0e6ef!important;background:#f8faff!important}
+
+.workspace{height:calc(100% - 114px)}
+.left-panel{padding:10px 10px 12px}
+.plugin-sidebar-sections{display:flex;flex-direction:column;gap:0}
+.plugin-sidebar-section{border-bottom:1px solid #edf0f6;padding-bottom:11px;margin-bottom:11px}
+.plugin-sidebar-section h3{font-size:13px;margin:0 0 7px}
+.plugin-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plugin-section-title h3{margin:0 0 7px}
+.plugin-owned-badge{font-size:8px;padding:2px 5px;border-radius:999px;background:#eef3ff;color:#4261bf;border:1px solid #dce5ff}
+.compact-note{font-size:10px!important;line-height:1.55!important;padding:7px 8px!important;margin-top:6px}
+.compact-empty{padding:10px!important;font-size:10px!important}
+.resonance-detector-picker{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:6px;font-size:10px;color:#64748b}
+.resonance-detector-picker select{min-width:0;height:29px;border:1px solid #d4dce8;border-radius:6px;padding:3px 6px;background:#fff;color:#334155}
+.resonance-display-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;font-size:11px}
+.resonance-display-grid label{display:flex;align-items:center;gap:4px;min-width:0}
+.plugin-dataset-list{max-height:310px}
+
+.plugin-main-tools{display:flex;align-items:center;gap:4px;min-width:0}
+.plugin-main-tool-btn{padding:4px 7px!important;font-size:10px!important;background:#fff;border:1px solid #d7dce7;border-radius:6px;white-space:nowrap}
+.plugin-main-tool-btn.active{background:#e8efff;border-color:#7c9cff;color:#2147b7;font-weight:650}
+.main-plot-tools{gap:4px;max-width:min(72vw,760px);overflow-x:auto;scrollbar-width:none}
+.main-plot-tools::-webkit-scrollbar{display:none}
+.main-plot-tools>#mainResetViewBtn{flex:0 0 auto}
+
+/* Plugin-owned inspector/group content remains inside generic dock hosts. */
+.inspector-panel[data-generic-panel="inspector"] .floating-header>span::after,
+.group-panel[data-generic-panel="group"] .floating-header>span::after{content:' · 插件内容';font-size:9px;color:#94a3b8;font-weight:500}
+
+@media(max-width:1380px){
+  .topbar-primary .brand{max-width:180px}
+  .activity-label{max-width:84px;overflow:hidden;text-overflow:ellipsis}
+  .system-commandbar #updateBtn{display:none}
+}
+@media(max-width:1080px){
+  .topbar{height:78px;grid-template-rows:43px 35px}
+  .workspace{height:calc(100% - 116px)}
+  .topbar-primary{gap:5px;padding-left:8px;padding-right:8px}
+  .topbar-primary .brand{max-width:135px;font-size:11px}
+  .global-commandbar .toolbar-btn{padding-left:6px;padding-right:6px;font-size:10px}
+  .system-commandbar #lanWebBtn{display:none}
+  .activity-tab{padding-left:7px;padding-right:7px}
+}
+@media(max-width:760px){
+  .topbar{height:auto;min-height:92px;display:flex;flex-direction:column;align-items:stretch}
+  .topbar-primary{min-height:52px;flex-wrap:wrap;padding:4px 6px}
+  .topbar-primary .brand{display:none}
+  .global-commandbar{order:1}
+  .activity-switcher{order:2;min-width:0;flex:1}
+  .system-commandbar{order:3;margin-left:0}
+  .system-commandbar #updateBtn,.system-commandbar #lanWebBtn{display:none}
+  .activity-bar{overflow-x:auto;scrollbar-width:none}
+  .activity-label{max-width:none}
+  .topbar-context{min-height:36px;padding-left:7px;padding-right:7px}
+  .activity-context-head{display:none}
+  .workspace{height:calc(100% - 132px)}
+  .resonance-display-grid{grid-template-columns:1fr}
+}
+
+/* v3.19 adaptive context-toolbar grouping */
+.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start{
+  margin-left:7px;
+  padding-left:10px;
+  position:relative;
+}
+.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start::before{
+  content:'';
+  position:absolute;
+  left:-5px;
+  top:5px;
+  bottom:5px;
+  width:1px;
+  background:#dfe5ef;
+}
+.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{
+  margin-left:0;
+  padding-left:8px;
+}
+.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child::before{display:none}
+.context-overflow-menu .plugin-toolbar-btn.plugin-section-start{
+  margin-top:4px;
+  border-top:1px solid #e7ebf2;
+  padding-top:7px;
+}
+.context-overflow-menu .plugin-toolbar-btn.plugin-section-start:first-child{
+  margin-top:0;
+  border-top:0;
+  padding-top:5px;
+}

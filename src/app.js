@@ -45,7 +45,8 @@
     selectedSweepId: null,
     selectedPeakId: null,
     selectedPeakIds: new Set(),
-    algorithms: A.preset('balanced'),
+    algorithms: {...A.preset('balanced'),_detectorId:'robust-ricker-v1'},
+    peakDisplay:{showRejected:false,showWidth:true,showPoints:true},
     undo: [],
     zoomChart: null,
     trendColumns: 3,
@@ -440,7 +441,7 @@
   function normalizedDetectionSettings(settings){
     const mode=['strict','balanced','sensitive'].includes(settings?._preset)?settings._preset:'balanced';
     const base=A.preset(mode);
-    const out={...base,_preset:settings?._preset||mode};
+    const out={...base,_preset:settings?._preset||mode,_detectorId:settings?._detectorId||'robust-ricker-v1',_detectorSettings:{...(settings?._detectorSettings||{})}};
     for(const key of ['raw','snr','diff','detrend','curvature','dlog','dvdi','resistance']){
       out[key]={...(base[key]||{}),...(settings?.[key]||{})};
     }
@@ -449,6 +450,67 @@
 
   function currentDetectionPreset(){
     return normalizedDetectionSettings(state.algorithms)._preset;
+  }
+
+  function peakDetectorProviders(){
+    return window.GRSPlugins?.registry?.values?.('peak.detectors')||[];
+  }
+
+  function activePeakDetector(){
+    const providers=peakDetectorProviders();
+    const wanted=state.algorithms?._detectorId||'robust-ricker-v1';
+    const selected=providers.find(p=>p.id===wanted)
+      || providers.find(p=>p.default===true)
+      || providers[0]
+      || null;
+    if(selected)return selected;
+
+    // The plugin branch must not silently resurrect a disabled detector.
+    // This fallback exists only for extreme compatibility when the plugin
+    // runtime itself is unavailable.
+    if(!window.GRSPlugins){
+      return {
+        id:'legacy-robust-ricker',
+        name:'内置兼容寻峰',
+        detect:(sweep,settings,options)=>A.detectPeaks(sweep,settings,options),
+        presets:['strict','balanced','sensitive']
+      };
+    }
+    return null;
+  }
+
+  function detectorSettingsFor(provider){
+    const normalized=normalizedDetectionSettings(state.algorithms);
+    if(!provider||provider.id==='robust-ricker-v1'||provider.id==='legacy-robust-ricker')return normalized;
+    const saved=normalized._detectorSettings?.[provider.id];
+    if(saved)return JSON.parse(JSON.stringify(saved));
+    if(typeof provider.defaultSettings==='function')return provider.defaultSettings();
+    return JSON.parse(JSON.stringify(provider.defaultSettings||{}));
+  }
+
+  function detectPeaksViaProvider(sw,options={}){
+    const provider=activePeakDetector();
+    if(!provider)throw new Error('没有启用的寻峰算法插件。请在“插件”中启用一个 peak.detectors 插件。');
+    const settings=detectorSettingsFor(provider);
+    if(typeof provider.detect!=='function')throw new Error(`寻峰插件 ${provider.name||provider.id} 没有实现 detect()。`);
+    const result=provider.detect(sw,settings,options);
+    if(!Array.isArray(result))throw new Error(`寻峰插件 ${provider.name||provider.id} 未返回峰数组。`);
+    for(const peak of result){
+      if(!peak||typeof peak!=='object')continue;
+      peak.detectorId=peak.detectorId||provider.id;
+      peak.detectorVersion=peak.detectorVersion||provider.version||'';
+      const evidence=provider.evidence?.[peak.primaryAlgorithm]
+        ||(provider.channels||[]).find(x=>x.key===peak.primaryAlgorithm)
+        ||null;
+      if(evidence&&!peak.detectorEvidence){
+        peak.detectorEvidence={
+          label:evidence.label||peak.primaryAlgorithm||'',
+          glyph:evidence.glyph||'●',
+          symbol:evidence.symbol||'circle'
+        };
+      }
+    }
+    return result;
   }
 
   function transformName(type){
@@ -490,7 +552,8 @@
       selectedSweepId:null,
       selectedPeakId:null,
       selectedPeakIds:new Set(),
-      algorithms:A.preset('balanced'),
+      algorithms:{...A.preset('balanced'),_detectorId:'robust-ricker-v1'},
+      peakDisplay:{showRejected:false,showWidth:true,showPoints:true},
       undo:[],
       trendColumns:3,
       projectPath:null,
@@ -535,6 +598,7 @@
     t.selectedPeakId=state.selectedPeakId;
     t.selectedPeakIds=state.selectedPeakIds;
     t.algorithms=state.algorithms;
+    t.peakDisplay={...state.peakDisplay};
     t.undo=state.undo;
     t.trendColumns=state.trendColumns;
     t.projectPath=state.projectPath;
@@ -573,7 +637,8 @@
     state.selectedSweepId=t.selectedSweepId||null;
     state.selectedPeakId=t.selectedPeakId||null;
     state.selectedPeakIds=t.selectedPeakIds instanceof Set?t.selectedPeakIds:new Set(t.selectedPeakIds||[]);
-    state.algorithms=normalizedDetectionSettings(t.algorithms||A.preset('balanced'));
+    state.algorithms=normalizedDetectionSettings(t.algorithms||{...A.preset('balanced'),_detectorId:'robust-ricker-v1'});
+    state.peakDisplay={showRejected:false,showWidth:true,showPoints:true,...(t.peakDisplay||{})};
     state.undo=t.undo||[];
     state.trendColumns=t.trendColumns??'auto';
     state.projectPath=t.projectPath||null;
@@ -641,7 +706,7 @@
     if(!t)return;
     state.activeProjectTabId=id;
     mountProjectTab(t);
-    $('#showPhysicsLabels').checked=state.physicsShowLabels;
+    if($('#showPhysicsLabels'))$('#showPhysicsLabels').checked=state.physicsShowLabels;
     renderProjectTabs();
     renderAll();
     applyGroupPanelLayout();
@@ -717,51 +782,6 @@
     });
   }
 
-  function renderPhysicsPanel(){
-    const host=$('#physicsBody');
-    if(!host)return;
-    const ph=physicalAnalysis();
-    if(!state.peaks.length){
-      host.innerHTML='<div class="empty-state">尚无峰位。先寻峰/人工确认峰位后再进行机制分析。</div>';
-      return;
-    }
-    const codes=['R','H','D','X','Q'].map(code=>
-      `<span class="physics-code"><span class="physics-badge ${code}">${code==='Q'?'?':code}</span>${PHYSICS_TYPES[code].name}</span>`
-    ).join('');
-
-    const rows=ph.families.map(f=>`
-      <tr>
-        <td>${escapeHtml(f.label)}</td>
-        <td><span class="physics-badge ${f.code}">${f.code==='Q'?'?':f.code}</span> ${escapeHtml(f.type)}</td>
-        <td>${f.forwardCount}</td>
-        <td>${f.reverseCount}</td>
-        <td>${Number.isFinite(f.medianDelta)?f.medianDelta.toFixed(4):'—'}</td>
-        <td>${Number.isFinite(f.medianWidth)?f.medianWidth.toFixed(4):'—'}</td>
-      </tr>`).join('');
-
-    const vd=ph.v0Delta?.length?`
-      <div class="inspector-section">
-        <h4>两主 ridge 的 V0 / δ（基于已确认峰位）</h4>
-        <table class="physics-table"><thead><tr><th>Vg</th><th>V0</th><th>δ</th></tr></thead>
-        <tbody>${ph.v0Delta.slice(0,24).map(r=>`<tr><td>${r.vg}</td><td>${r.V0.toFixed(4)} V</td><td>${r.delta.toFixed(4)} V</td></tr>`).join('')}</tbody></table>
-      </div>`:'';
-
-    host.innerHTML=`
-      <div class="physics-model-card">
-        <div class="physics-model-title">${escapeHtml(ph.modelTitle)}</div>
-        <div>${escapeHtml(ph.modelText)}</div>
-      </div>
-      <div class="physics-code-list">${codes}</div>
-      <div class="physics-note">
-        自动分类只使用峰轨迹的跨 Vg 连续性、正反扫共同出现情况、峰位差与峰宽等实验量。
-        “D”仅表示动态/切换候选，不等价于已证明畴壁切换；“X”也不等价于已证明有限转角。
-      </div>
-      <table class="physics-table">
-        <thead><tr><th>峰标签</th><th>物理类型</th><th>正扫 Vg 点</th><th>反扫 Vg 点</th><th>中位 ΔV</th><th>中位 FWHM</th></tr></thead>
-        <tbody>${rows||'<tr><td colspan="6">暂无可分析峰族</td></tr>'}</tbody>
-      </table>
-      ${vd}`;
-  }
 
   const symbolHexagon={
     draw(context,size){
@@ -795,22 +815,57 @@
     }
   };
 
-  function d3SymbolType(algorithm){
+  const NAMED_D3_SYMBOLS={
+    circle:d3.symbolCircle,
+    diamond:d3.symbolDiamond,
+    triangle:d3.symbolTriangle,
+    square:d3.symbolSquare,
+    cross:d3.symbolCross,
+    hexagon:symbolHexagon,
+    kite:symbolKite,
+    'triangle-down':symbolTriangleDown,
+    star:d3.symbolStar
+  };
+
+  function detectorProviderById(id){
+    const providers=peakDetectorProviders();
+    return providers.find(p=>p.id===id)||null;
+  }
+
+  function algorithmMetaForPeak(p){
+    if(!p)return {key:'unknown',label:'未知证据',glyph:'●',symbol:'circle'};
+    if(p.primaryAlgorithm==='manual'){
+      return {key:'manual',label:'手动',glyph:'★',symbol:'star'};
+    }
+    const provider=detectorProviderById(p.detectorId)
+      ||activePeakDetector()
+      ||peakDetectorProviders()[0]
+      ||null;
+    const evidence=p.detectorEvidence
+      ||provider?.evidence?.[p.primaryAlgorithm]
+      ||(provider?.channels||[]).find(x=>x.key===p.primaryAlgorithm)
+      ||null;
     return {
-      raw:d3.symbolCircle,
-      snr:d3.symbolDiamond,
-      diff:d3.symbolTriangle,
-      detrend:d3.symbolSquare,
-      curvature:d3.symbolCross,
-      matched:d3.symbolCircle,
-      dlog:symbolHexagon,
-      dvdi:symbolKite,
-      resistance:symbolTriangleDown,
-      manual:d3.symbolStar
-    }[algorithm] || d3.symbolCircle;
+      key:p.primaryAlgorithm||'unknown',
+      label:evidence?.label||algNames[p.primaryAlgorithm]||p.primaryAlgorithm||'未知证据',
+      glyph:evidence?.glyph||ALG_GLYPHS[p.primaryAlgorithm]||'●',
+      symbol:evidence?.symbol||A.ALG_SYMBOLS[p.primaryAlgorithm]||'circle'
+    };
+  }
+
+  function d3SymbolTypeForPeak(p){
+    const provider=detectorProviderById(p?.detectorId);
+    if(provider&&typeof provider.markerSymbol==='function'){
+      try{
+        const custom=provider.markerSymbol(p);
+        if(typeof custom==='function'||custom?.draw)return custom;
+        if(typeof custom==='string'&&NAMED_D3_SYMBOLS[custom])return NAMED_D3_SYMBOLS[custom];
+      }catch(err){console.error(`[GRS detector marker:${provider.id}]`,err);}
+    }
+    return NAMED_D3_SYMBOLS[algorithmMetaForPeak(p).symbol]||d3.symbolCircle;
   }
   function markerPath(p,selected=false){
-    return d3.symbol().type(d3SymbolType(p.primaryAlgorithm)).size(selected?180:105)();
+    return d3.symbol().type(d3SymbolTypeForPeak(p)).size(selected?180:105)();
   }
 
   function snapshot(label){
@@ -935,6 +990,16 @@
     else setStatus('选择模式：点击曲线/峰点，峰点仅在所属曲线被选中时可拖动。');
   }
   function resetMainView(){
+    const provider=activeMainViewProvider();
+    if(provider?.reset){
+      try{return provider.reset({state,container:$('#mainPlotWrap'),svg:mainSvg});}
+      catch(err){console.error(`[GRS main view reset:${provider.id}]`,err);}
+    }
+    if(!window.GRSPlugins)return resetResonanceMainView();
+    if(provider?.render)return renderMainPlot();
+  }
+
+  function resetResonanceMainView(){
     clearMainView(false);
 
     // Remove stale geometry immediately, then redraw only after the CSS
@@ -983,8 +1048,8 @@
   }
 
   function visiblePeaksForSweepInCurrentView(sw){
-    if(!sw||!$('#showPoints')?.checked)return [];
-    const showRejected=!!$('#showRejected')?.checked;
+    if(!sw||!state.peakDisplay.showPoints)return []
+    const showRejected=!!state.peakDisplay.showRejected;
     return state.peaks
       .filter(p=>p.sweepId===sw.id)
       .filter(p=>p.accepted||showRejected)
@@ -1126,48 +1191,6 @@
     trendRenderTimer=setTimeout(()=>renderTrendPanel(),delay);
   }
 
-  function renderAlgorithmControls(){
-    state.algorithms=normalizedDetectionSettings(state.algorithms);
-    const host=$('#algorithmControls'); host.innerHTML='';
-    for(const key of ['raw','snr','diff','detrend','curvature','dlog','dvdi','resistance']){
-      const cfg=state.algorithms[key];
-      const row=document.createElement('div'); row.className='algorithm-row';
-      row.innerHTML=`
-        <input type="checkbox" ${cfg.enabled?'checked':''} data-alg-enabled="${key}">
-        <div class="algorithm-label"><span class="algorithm-shape">${ALG_GLYPHS[key]}</span>${algNames[key]}</div>
-        <input type="number" step="0.1" min="0" value="${Number(cfg.threshold).toFixed(1)}" data-alg-threshold="${key}" title="高级证据阈值">`;
-      host.appendChild(row);
-    }
-    host.querySelectorAll('[data-alg-enabled]').forEach(el=>el.onchange=e=>{
-      state.algorithms[e.target.dataset.algEnabled].enabled=e.target.checked;
-      state.algorithms._preset='custom';
-      updatePresetButtons();
-    });
-    host.querySelectorAll('[data-alg-threshold]').forEach(el=>el.onchange=e=>{
-      state.algorithms[e.target.dataset.algThreshold].threshold=Number(e.target.value);
-      state.algorithms._preset='custom';
-      updatePresetButtons();
-    });
-    updatePresetButtons();
-  }
-
-  function updatePresetButtons(){
-    const active=state.algorithms?._preset||'custom';
-    document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('active',b.dataset.preset===active));
-  }
-
-  function renderPeakColorLegend(){
-    const host=$('#peakColorLegend'); if(!host)return;
-    ensurePeakCategories();
-    const orders=state.peakCategories.length?state.peakCategories.map(c=>c.order):[1];
-    let html='<div class="legend-title">颜色 = 峰类别/峰序；形状 = 寻峰算法</div>';
-    html+='<div class="peak-color-rows"><div><b>正扫</b> ';
-    for(const k of orders) html+=`<span class="peak-order-chip"><i style="background:${colorForPeakOrder(k,1)}"></i>${escapeHtml(categoryLabel(k))}</span>`;
-    html+='</div><div><b>反扫</b> ';
-    for(const k of orders) html+=`<span class="peak-order-chip"><i style="background:${colorForPeakOrder(k,-1)}"></i>${escapeHtml(categoryLabel(k))}</span>`;
-    html+='</div></div>';
-    host.innerHTML=html;
-  }
 
   function setDatasetVisibility(path,mode,value){
     const v=ensureVisibility(path);
@@ -1204,7 +1227,7 @@
     ds.vg=next;
     ds.dataProvenance=Array.isArray(ds.dataProvenance)?ds.dataProvenance:[];
     ds.dataProvenance.push(window.GRSData.provenanceStep({
-      type:'manual',label:'Set dataset Vg',providerId:'dataset.set-vg',pluginId:'builtin.resonance-workbench',version:'3.18',manual:true,
+      type:'manual',label:'Set dataset Vg',providerId:'dataset.set-vg',pluginId:'builtin.resonance-workbench',version:'3.19',manual:true,
       parameters:{old:Number.isFinite(old)?old:null,value:Number.isFinite(next)?next:null},inputs:[ds.path],note:'User-edited gate-voltage metadata in the dataset list.'
     }));
 
@@ -1226,78 +1249,9 @@
   }
 
   function renderDatasetList(){
-    const host=$('#datasetList'); host.innerHTML='';
-    for(const ds of state.datasets){
-      const item=document.createElement('div'); item.className='dataset-item';
-      if(state.sweeps.some(s=>s.datasetPath===ds.path && s.id===state.selectedSweepId)) item.classList.add('selected');
-      const vis=ensureVisibility(ds.path);
-      const hasF=state.sweeps.some(s=>s.datasetPath===ds.path&&s.direction>0);
-      const hasR=state.sweeps.some(s=>s.datasetPath===ds.path&&s.direction<0);
-      item.innerHTML=`
-        <input class="dataset-master" type="checkbox">
-        <div class="dataset-content">
-          <div class="dataset-title">${escapeHtml(ds.name)}</div>
-          <label class="dataset-vg-edit" title="可直接修改该数据组的栅压标记">
-            <span>Vg</span>
-            <input class="dataset-vg-input" type="number" step="any" value="${Number.isFinite(ds.vg)?ds.vg:''}" placeholder="?">
-            <span>V</span>
-          </label>
-          <div class="scan-toggle-row">
-            <label><input class="scan-forward" type="checkbox" ${vis.forward?'checked':''} ${hasF?'':'disabled'}> 正扫</label>
-            <label><input class="scan-reverse" type="checkbox" ${vis.reverse?'checked':''} ${hasR?'':'disabled'}> 反扫</label>
-          </div>
-          <div class="dataset-transform-row" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V">
-            <span>辅助</span>
-            <select class="transform-preview">
-              ${TRANSFORM_OPTIONS.map(([k,n])=>`<option value="${k}" ${transformForDataset(ds.path)===k?'selected':''}>${n}</option>`).join('')}
-            </select>
-          </div>
-        </div>`;
-      const master=item.querySelector('.dataset-master');
-      master.checked=vis.forward&&vis.reverse;
-      master.indeterminate=vis.forward!==vis.reverse;
-      master.onclick=e=>{e.stopPropagation();snapshot('修改数据显示');setDatasetVisibility(ds.path,'all',e.target.checked);renderAll();};
-      const vgInput=item.querySelector('.dataset-vg-input');
-      vgInput.onclick=e=>e.stopPropagation();
-      vgInput.onkeydown=e=>e.stopPropagation();
-      vgInput.onchange=e=>{e.stopPropagation();updateDatasetVg(ds,e.target.value);};
-      item.querySelector('.scan-forward').onclick=e=>{e.stopPropagation();snapshot('修改正扫显示');setDatasetVisibility(ds.path,'forward',e.target.checked);renderAll();};
-      item.querySelector('.scan-reverse').onclick=e=>{e.stopPropagation();snapshot('修改反扫显示');setDatasetVisibility(ds.path,'reverse',e.target.checked);renderAll();};
-      item.querySelector('.transform-preview').onchange=e=>{
-        e.stopPropagation();
-        state.transformPreviewByDataset.set(ds.path,e.target.value);
-        const current=selectedSweep();
-        let sw=current?.datasetPath===ds.path?current:null;
-        if(!sw){
-          const sweeps=state.sweeps.filter(s=>s.datasetPath===ds.path&&isSweepVisible(s));
-          sw=sweeps.find(s=>s.direction>0)||sweeps[0];
-        }
-        if(sw){
-          state.selectedSweepId=sw.id;
-          state.selectedPeakId=null;
-          state.selectedPeakIds.clear();
-          showInspectorPanel();
-          renderInspector();
-          renderDatasetList();
-          setStatus(`辅助视图：${transformName(e.target.value)}。主图和峰位仍保持原始 I–V。`);
-        }
-        captureActiveProjectTab();
-      };
-      item.onclick=e=>{
-        if(e.target.closest('input,label,button,select'))return;
-        const sweeps=state.sweeps.filter(s=>s.datasetPath===ds.path&&isSweepVisible(s));
-        const sw=sweeps.find(s=>s.direction>0)||sweeps[0];
-        if(sw){
-          state.selectedSweepId=sw.id;
-          state.selectedPeakId=null;
-          state.selectedPeakIds.clear();
-          showInspectorPanel();
-          renderAll();
-        }
-      };
-      host.appendChild(item);
-    }
+    window.GRSPlugins?.events?.emit?.('sidebar:data-render',{context:pluginUiContext()});
   }
+
 
   function humanFileSize(bytes){
     const n=Number(bytes)||0;
@@ -1966,6 +1920,11 @@
 
 
   function runDetection(withSnapshot=true){
+    const provider=activePeakDetector();
+    if(!provider){
+      setStatus('没有启用的寻峰算法插件。请打开“插件”并启用一个寻峰算法。');
+      return false;
+    }
     if(withSnapshot)snapshot('重新寻峰');
 
     // Manual peaks always persist. Any locked peak (including an automatic
@@ -1976,7 +1935,7 @@
     for(const sw of state.sweeps){
       const fixed=preserved.filter(p=>p.sweepId===sw.id);
       const tol=Math.max(0.035,2*(sw.step||0.01));
-      let det=A.detectPeaks(sw,normalizedDetectionSettings(state.algorithms))
+      let det=detectPeaksViaProvider(sw)
         .filter(p=>!fixed.some(q=>Math.abs(q.v-p.v)<=tol))
         .sort((a,b)=>a.v-b.v);
 
@@ -2011,7 +1970,8 @@
     refreshOpenAnalysisPage();
     const lockedCount=preserved.filter(p=>p.locked).length;
     const avgConfidence=auto.length?auto.reduce((s,p)=>s+(Number(p.confidence)||0),0)/auto.length:0;
-    setStatus(`智能寻峰完成：新增/更新 ${auto.length} 个候选，保留 ${lockedCount} 个锁定峰；所有自动峰位均已回投影到原始 I–V 采样点。平均置信度 ${(avgConfidence*100).toFixed(0)}%。`);
+    setStatus(`智能寻峰完成（${provider.shortName||provider.name||provider.id}）：新增/更新 ${auto.length} 个候选，保留 ${lockedCount} 个锁定峰；所有自动峰位均已回投影到原始 I–V 采样点。平均置信度 ${(avgConfidence*100).toFixed(0)}%。`);
+    return true;
   }
 
   function peakInsideRange(p,range){
@@ -2038,7 +1998,7 @@
     for(const p of state.peaks){
       const sw=sweepById(p.sweepId);
       if(!sw||!isSweepVisible(sw))continue;
-      if(!p.accepted&&!$('#showRejected').checked)continue;
+      if(!p.accepted&&!state.peakDisplay.showRejected)continue;
       if(peakInsideRange(p,range))ids.push(p.id);
     }
     state.selectedPeakIds=new Set(ids);
@@ -2158,6 +2118,12 @@
       return;
     }
 
+    const provider=activePeakDetector();
+    if(!provider){
+      setStatus('没有启用的寻峰算法插件，无法执行局部寻峰。');
+      return false;
+    }
+
     snapshot('框选区域局部寻峰');
 
     const targetIds=new Set(targets.map(sw=>sw.id));
@@ -2178,7 +2144,7 @@
       const oldInside=oldPeaks.filter(p=>p.sweepId===sw.id&&peakInsideRange(p,range));
       const tol=Math.max(0.030,2*Math.abs(sw.step||0.01));
 
-      let det=A.detectPeaks(sw,normalizedDetectionSettings(state.algorithms),{range})
+      let det=detectPeaksViaProvider(sw,{range})
         .filter(p=>!fixed.some(q=>Math.abs(q.v-p.v)<=tol))
         .sort((a,b)=>a.v-b.v);
 
@@ -2234,13 +2200,11 @@
   function renderAll(){
     validateSelection();
     renderProjectTabs();
-    renderAlgorithmControls();
-    renderPeakColorLegend();
     renderDatasetList();
     renderMainPlot();
     renderInspector();
     renderTrendPanel();
-    renderPhysicsPanel();
+    window.GRSPlugins?.events?.emit?.('workspace:render',{context:pluginUiContext()});
   }
 
   function selectSweepFromMain(sw,{openInspector=true}={}){
@@ -2326,7 +2290,54 @@
     }
   }
 
+  function activeMainViewProvider(){
+    const activityId=window.GRSPlugins?.activities?.active?.()||null;
+    const providers=window.GRSPlugins?.registry?.values?.('ui.mainViews')||[];
+    return providers
+      .filter(p=>!p.activity||!activityId||p.activity===activityId)
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))[0]||null;
+  }
+
+  function renderEmptyMainView(message='当前工作区没有提供主图视图'){
+    const host=$('#mainLegendBar');
+    if(host)host.innerHTML='';
+    try{
+      mainSvg.on('click',null).on('dblclick',null).on('wheel.mainzoom',null);
+      mainSvg.selectAll('*').remove();
+      const size=measureMainPlot();
+      if(size){
+        mainSvg.attr('viewBox',null).attr('preserveAspectRatio',null)
+          .attr('width',size.width).attr('height',size.height)
+          .style('width',`${size.width}px`).style('height',`${size.height}px`);
+        mainSvg.append('text')
+          .attr('x',size.width/2).attr('y',size.height/2)
+          .attr('text-anchor','middle').attr('class','empty-main-view')
+          .text(message);
+      }
+    }catch{}
+  }
+
   function renderMainPlot(){
+    const provider=activeMainViewProvider();
+    if(provider?.render){
+      try{
+        return provider.render({
+          container:$('#mainPlotWrap'),
+          svg:mainSvg,
+          state,
+          activityId:window.GRSPlugins?.activities?.active?.()||null
+        });
+      }catch(err){
+        console.error(`[GRS main view:${provider.id}]`,err);
+        renderEmptyMainView(`主图插件 ${provider.title||provider.id} 渲染失败`);
+        return;
+      }
+    }
+    if(!window.GRSPlugins)return renderResonanceMainPlot();
+    renderEmptyMainView();
+  }
+
+  function renderResonanceMainPlot(){
     const wrap=$('#mainPlotWrap');
     const size=measureMainPlot();
 
@@ -2436,10 +2447,10 @@
 
     renderMainLegend(curveColor);
 
-    if($('#showPoints').checked){
+    if(state.peakDisplay.showPoints){
       const peakData=state.peaks.filter(p=>{
         const sw=sweepById(p.sweepId);
-        return sw&&isSweepVisible(sw)&&(p.accepted||$('#showRejected').checked);
+        return sw&&isSweepVisible(sw)&&(p.accepted||state.peakDisplay.showRejected);
       });
       const marks=dataLayer.append('g').selectAll('path.peak-point').data(peakData,d=>d.id).join('path')
         .attr('class',d=>`peak-point ${d.locked?'locked':''} ${state.selectedPeakIds.has(d.id)?'multi-selected':''} ${d.sweepId===state.selectedSweepId?'editable':'inactive'} ${hasSelection&&d.sweepId!==state.selectedSweepId?'dimmed':''}`)
@@ -2525,7 +2536,7 @@
           if(!d.locked)renderAll();
         }));
 
-      if(state.physicsShowLabels && $('#showPhysicsLabels')?.checked){
+      if(state.physicsShowLabels){
         const ph=physicalAnalysis();
         const typeColor={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'};
         dataLayer.append('g').selectAll('text.physics-type-label')
@@ -2544,7 +2555,7 @@
     }
 
     const sp=selectedPeak();
-    if(sp&&$('#showWidth').checked&&sp.accepted){
+    if(sp&&state.peakDisplay.showWidth&&sp.accepted){
       const sw=sweepById(sp.sweepId); if(sw&&isSweepVisible(sw))drawWidthOverlay(sp,sw,x,y,{margin,innerW,innerH,clipId:'mainDataClip'});
     }
 
@@ -2774,142 +2785,46 @@
   }
   function estimateManualWidth(sw,idx){const dx=sw.step||.01;return{left:sw.points[Math.max(0,idx-3)].v,right:sw.points[Math.min(sw.points.length-1,idx+3)].v,fwhm:6*dx};}
 
-  function transformPreviewMarkup(sw){
-    if(!sw)return '';
-    const type=transformForDataset(sw.datasetPath);
-    return `<div class="transform-preview-wrap">
-      <div class="transform-preview-head">
-        <b>辅助变换：${escapeHtml(transformName(type))}</b>
-        <span>仅用于发现/核对候选</span>
-      </div>
-      <div id="transformPreviewPlot" class="transform-preview-plot"></div>
-      <div class="transform-preview-note">峰位点不会放在变换曲线上。最终 Vd 始终对应主图原始 I–V 的真实采样点；单调肩峰也只把变换通道作为“候选提示”。</div>
-    </div>`;
+  function pluginUiContext(){
+    return {
+      activityId:window.GRSPlugins?.activities?.active?.()||null,
+      state,
+      selectedSweep:selectedSweep(),
+      selectedPeak:selectedPeak(),
+      selectedPeakIds:new Set(state.selectedPeakIds),
+      platform:window.GRSPlatform?.profile||null
+    };
   }
 
-  function renderInspectorTransformPlot(sw){
-    const el=$('#transformPreviewPlot');
-    if(!el||!sw)return;
-    const type=transformForDataset(sw.datasetPath);
-    const t=A.transformSweep(sw,type);
-    const finite=t.points.filter(p=>Number.isFinite(p.y));
-    const peaks=state.peaks.filter(p=>p.sweepId===sw.id&&p.accepted);
-    const traces=[{
-      x:finite.map(p=>p.v),y:finite.map(p=>p.y),
-      mode:'lines',name:t.label,line:{width:1.7},
-      hovertemplate:`Vd=%{x:.6g} V<br>${t.label}=%{y:.5g}<extra></extra>`
-    }];
-    if(peaks.length){
-      const nearestY=p=>{
-        const j=A.nearestIndex(t.points.map(q=>q.v),p.v);
-        return t.points[j]?.y;
-      };
-      traces.push({
-        x:peaks.map(p=>p.v),y:peaks.map(nearestY),
-        mode:'markers',name:'原始 I–V 峰位投影',
-        marker:{size:8,symbol:'circle-open'},
-        text:peaks.map(p=>peakLabel(p)),
-        hovertemplate:'%{text}<br>Vpk(raw I–V)=%{x:.6g} V<extra></extra>'
-      });
-    }
-    Plotly.newPlot(el,traces,{
-      margin:{l:58,r:14,t:10,b:42},
-      xaxis:{title:'Vd (V)',gridcolor:'#edf0f5',automargin:true},
-      yaxis:{title:t.unit||'',gridcolor:'#edf0f5',automargin:true,exponentformat:'e'},
-      showlegend:false,hovermode:'closest',dragmode:'zoom',autosize:true
-    },{responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:true,doubleClick:'reset'});
+  function activeInspectorProvider(){
+    const activityId=window.GRSPlugins?.activities?.active?.()||null;
+    const providers=(window.GRSPlugins?.registry?.values?.('ui.inspectors')||[])
+      .filter(p=>!p.activity||p.activity===activityId)
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0));
+    const context=pluginUiContext();
+    return providers.find(p=>{
+      try{return typeof p.supports==='function'?p.supports(context)!==false:true;}catch{return false;}
+    })||null;
   }
 
   function renderInspector(){
-    const host=$('#inspectorBody'),p=selectedPeak(),sw=selectedSweep();
-    if(p){
-      const psw=sweepById(p.sweepId),m=A.peakMetrics(p,psw);
-      ensurePeakCategories();
-      const categoryButtons=state.peakCategories.map(c=>{
-        const selected=Number(c.order)===Number(p.peakOrder)?' selected':'';
-        const cf=colorForPeakOrder(c.order,1), cr=colorForPeakOrder(c.order,-1);
-        return `<button type="button" class="peak-category-choice${selected}" data-peak-category="${c.order}"><span class="category-pair-swatch"><i class="cool" style="background:${cf}"></i><i class="warm" style="background:${cr}"></i></span><span>${escapeHtml(c.label)}</span></button>`;
-      }).join('');
-      host.innerHTML=`
-        <div class="inspector-section"><h4>选中峰</h4><div class="kv">
-          <div class="k">文件</div><div>${escapeHtml(psw.datasetName)}</div>
-          <div class="k">Vg</div><div>${p.vg} V</div>
-          <div class="k">扫描</div><div>${directionName(p.direction)}</div>
-          <div class="k">Vpk</div><div>${p.v.toFixed(6)} V</div>
-          <div class="k">Ipk</div><div>${formatI(p.i)}</div>
-          <div class="k">FWHM</div><div>${m.fwhm.toFixed(6)} V</div>
-          <div class="k">Amplitude</div><div>${formatI(m.amplitude)}</div>
-          <div class="k">Area</div><div>${m.area.toExponential(4)} A·V</div>
-          <div class="k">寻峰证据</div><div>${ALG_GLYPHS[p.primaryAlgorithm]||'●'} ${escapeHtml((p.supportChannels||p.algorithms||[]).map(k=>algNames[k]||k).join('、')||'手动')}</div>
-          <div class="k">原始回投影</div><div>${p.manual?'手动原始点':escapeHtml(p.projectionMethod||'原始 I–V 点')}</div>
-          <div class="k">置信度</div><div>${Number.isFinite(Number(p.confidence))?(Number(p.confidence)*100).toFixed(0)+'%':'—'}</div>
-          <div class="k">状态</div><div>${p.accepted?'采纳':'不采纳'}</div>
-        </div></div>
-        <div class="inspector-section"><h4>峰类别 / 峰标签</h4>
-          <div class="hint">颜色不是任意设置项。点击已有颜色即可把该峰归入现有类别；“新增类别”会自动增加下一组正扫冷色/反扫暖色。</div>
-          <div class="peak-category-palette">${categoryButtons}</div>
-          <div class="row compact"><button id="addPeakCategoryBtn">＋ 新增类别/颜色</button></div>
-          <div class="peak-class-grid category-rename-grid">
-            <label>当前类别<input id="peakOrderDisplay" type="text" value="峰${Number(p.peakOrder)||1}" disabled></label>
-            <label>类别标签<input id="peakCategoryLabelInput" type="text" value="${escapeHtml(peakLabel(p))}"></label>
-          </div>
-          <div class="row compact"><button id="renamePeakCategoryBtn">重命名当前类别</button></div>
-        </div>
-        <div class="action-grid"><button id="acceptToggleBtn">${p.accepted?'不采纳':'恢复采纳'}</button><button id="lockPeakBtn">${p.locked?'解除锁定':'锁定峰位'}</button><button id="deletePeakBtn">删除峰</button><button id="selectCurveBtn">选中所属曲线</button></div>
-        ${transformPreviewMarkup(psw)}`;
-      host.querySelectorAll('[data-peak-category]').forEach(btn=>btn.onclick=()=>{
-        snapshot('修改峰类别');
-        const order=Math.max(1,Math.round(Number(btn.dataset.peakCategory)||1));
-        changePeakOrderWithCascade(p,order);
-        p.customColor=null;
-        renderAll();
-        setStatus(`已将该峰改为 ${categoryLabel(order)}；同曲线冲突序号已级联调整，并据此重新推导跨 Vg 峰轨迹。`);
-      });
-      $('#addPeakCategoryBtn').onclick=()=>{
-        snapshot('新增峰类别');
-        const c=addPeakCategory();
-        p.peakOrder=c.order;
-        p.peakLabel=c.label;
-        p.customColor=null;
-        p.manual=true;
-        renderAll();
-        setStatus(`已新增类别 ${c.label}；正扫/反扫自动使用配对冷/暖颜色`);
-      };
-      $('#renamePeakCategoryBtn').onclick=()=>{
-        const text=$('#peakCategoryLabelInput').value.trim();
-        if(!text)return;
-        snapshot('重命名峰类别');
-        const c=categoryForOrder(p.peakOrder);
-        const real=state.peakCategories.find(q=>Number(q.order)===Number(c.order));
-        if(real)real.label=text;
-        else state.peakCategories.push({order:c.order,label:text});
-        for(const q of state.peaks.filter(q=>Number(q.peakOrder)===Number(c.order))) q.peakLabel=text;
-        renderAll();
-      };
-      $('#acceptToggleBtn').onclick=()=>{snapshot('修改采纳状态');p.accepted=!p.accepted;renderAll();};
-      $('#lockPeakBtn').onclick=()=>{snapshot('锁定峰位');p.locked=!p.locked;state.selectedPeakIds=new Set([p.id]);renderAll();};
-      $('#deletePeakBtn').onclick=()=>{snapshot('删除峰');state.peaks=state.peaks.filter(q=>q.id!==p.id);state.selectedPeakIds.delete(p.id);state.selectedPeakId=null;renderAll();};
-      $('#selectCurveBtn').onclick=()=>{state.selectedSweepId=p.sweepId;state.selectedPeakId=null;renderAll();};
-      requestAnimationFrame(()=>renderInspectorTransformPlot(psw));
+    const host=$('#inspectorBody');
+    if(!host)return;
+    const provider=activeInspectorProvider();
+    const header=$('#inspectorPanelHeaderTitle');
+    if(header)header.textContent=provider?.panelTitle||provider?.title||'检查器';
+    if(!provider){
+      host.innerHTML='<div class="empty-state">当前工作区没有提供检查器。</div>';
       return;
     }
-    if(sw){
-      const peaks=state.peaks.filter(p=>p.sweepId===sw.id).sort((a,b)=>a.v-b.v);
-      const tags=peaks.map(p=>`${escapeHtml(peakLabel(p))} (${ALG_GLYPHS[p.primaryAlgorithm]||'●'})`).join('、')||'无';
-      host.innerHTML=`<div class="inspector-section"><h4>选中曲线</h4><div class="kv">
-        <div class="k">文件</div><div>${escapeHtml(sw.datasetName)}</div><div class="k">Vg</div><div>${sw.vg} V</div>
-        <div class="k">扫描方向</div><div>${directionName(sw.direction)}</div><div class="k">电压范围</div><div>${sw.points[0].v.toFixed(3)} ~ ${sw.points.at(-1).v.toFixed(3)} V</div>
-        <div class="k">数据点</div><div>${sw.points.length}</div><div class="k">峰位点</div><div>${peaks.length}（采纳 ${peaks.filter(p=>p.accepted).length}）</div>
-        <div class="k">峰标签</div><div>${tags}</div></div></div>
-        <div class="hint">只有当前选中曲线上的峰位点允许拖动；未选中曲线上的点只能查看，不能移动。</div>
-        <div class="row compact"><button id="sortCurrentCurvePeakOrderBtn">跨 Vg 智能整理峰序</button></div>
-        ${transformPreviewMarkup(sw)}`;
-      $('#sortCurrentCurvePeakOrderBtn').onclick=sortPeakOrderByVd;
-      requestAnimationFrame(()=>renderInspectorTransformPlot(sw));
-      return;
+    try{
+      provider.render({container:host,context:pluginUiContext()});
+    }catch(err){
+      console.error('[GRS inspector provider]',err);
+      host.innerHTML=`<div class="empty-state">检查器插件渲染失败：${escapeHtml(err.message)}</div>`;
     }
-    host.innerHTML='<div class="empty-state">点击曲线或峰位点查看详细信息</div>';
   }
+
 
   // Group-panel resonant TER is intentionally different from the full TER_max page.
   // For each peak family, resonance coordinates from BOTH scan directions are
@@ -3314,18 +3229,12 @@
   }
 
   function refreshOpenAnalysisPage(){
-    if(!$('#gateAnalysisPage').classList.contains('hidden'))renderGateAnalysis();
-    if(!$('#spacingPage').classList.contains('hidden'))renderSpacingPage();
-    if(!$('#terMaxPage').classList.contains('hidden'))renderTerMaxPage();
-    if(!$('#pulseAnalysisPage').classList.contains('hidden'))renderPulseAnalysisResult();
+    const page=[...document.querySelectorAll('.analysis-page')].find(el=>!el.classList.contains('hidden'));
+    if(page)window.GRSPlugins?.events?.emit?.('analysis:refresh',{id:page.id});
   }
 
   function openAnalysisPage(id){
     document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!==id));
-    if(id==='gateAnalysisPage')renderGateAnalysis();
-    if(id==='spacingPage')renderSpacingPage();
-    if(id==='terMaxPage')renderTerMaxPage();
-    if(id==='pulseAnalysisPage')renderPulseAnalysisResult();
     window.GRSPlugins?.events?.emit?.('analysis:opened',{id});
     scheduleMainPlotRelayout();
   }
@@ -3335,6 +3244,12 @@
     if(page)page.classList.add('hidden');
     window.GRSPlugins?.events?.emit?.('analysis:closed',{id});
     scheduleMainPlotRelayout();
+  }
+
+  function showMainWorkspace(){
+    document.querySelectorAll('.analysis-page').forEach(page=>page.classList.add('hidden'));
+    scheduleMainPlotRelayout();
+    renderAll();
   }
 
   async function savePlotlyImage(plotId,defaultName,format){
@@ -4491,64 +4406,29 @@
     });
   }
 
-  const trendDefs=[
-    ['v','峰位 Vpk','V'],
-    ['i','峰电流 Ipk','A'],
-    ['fwhm','FWHM','V'],
-    ['amplitude','峰高 A','A'],
-    ['area','峰面积 S','A·V'],
-    ['prominence','Prominence','A'],
-    ['ter_peak','共振位 TER（双向候选）','%']
-  ];
+  function activeGroupChartProviders(){
+    const activityId=window.GRSPlugins?.activities?.active?.()||null;
+    const context=pluginUiContext();
+    return (window.GRSPlugins?.registry?.values?.('ui.groupCharts')||[])
+      .filter(p=>!p.activity||p.activity===activityId)
+      .filter(p=>{
+        try{return typeof p.supports==='function'?p.supports(context)!==false:true;}catch{return false;}
+      })
+      .sort((a,b)=>(Number(a.order)||100)-(Number(b.order)||100));
+  }
 
-  function trendModel(){
-    const p=selectedPeak(),sw=selectedSweep();
-    const visibleIds=new Set(visibleSweepIds());
-    const accepted=state.peaks.filter(q=>q.accepted && visibleIds.has(q.sweepId));
-    let wanted=[];
-    if(p){
-      wanted=[{direction:p.direction,label:peakLabel(p)}];
-    }else if(sw){
-      const labels=[...new Set(state.peaks.filter(q=>q.accepted&&q.sweepId===sw.id).map(q=>peakLabel(q)))];
-      wanted=labels.map(label=>({direction:sw.direction,label}));
-    }else{
-      const seen=new Set();
-      for(const q of accepted){const key=`${q.direction}::${peakLabel(q)}`;if(!seen.has(key)){seen.add(key);wanted.push({direction:q.direction,label:peakLabel(q)});}}
-    }
-
-    const series=[];
-    for(const w of wanted){
-      const pts=accepted.filter(q=>q.direction===w.direction&&peakLabel(q)===w.label)
-        .map(q=>{const ss=sweepById(q.sweepId);return ss?A.peakMetrics(q,ss):null;}).filter(Boolean).sort((a,b)=>a.vg-b.vg);
-      if(!pts.length)continue;
-      const repr=pts[0];
-      series.push({
-        key:`${w.direction}::${w.label}`,
-        name:`${directionName(w.direction)}·${w.label}`,
-        direction:w.direction,label:w.label,
-        order:Number(repr.peakOrder)||1,color:colorForPeakOrder(repr.peakOrder,w.direction),points:pts
-      });
-    }
-
-    let terLabels=[];
-    if(p)terLabels=[peakLabel(p)];
-    else terLabels=[...new Set(accepted.map(q=>peakLabel(q)))];
-    const terSeries=[];
-    for(const label of terLabels){
-      const reps=accepted.filter(q=>peakLabel(q)===label);
-      const order=reps.length?Number(reps[0].peakOrder)||1:1;
-      const data=A.computeResonantTerForLabel(state.peaks,state.sweeps,label,[...visibleIds]);
-      const pair=pairedTerColors(order);
-      if(data.length)terSeries.push({name:`峰位TER·${label}`,label,order,color:pair.forward,forwardColor:pair.forward,reverseColor:pair.reverse,points:data});
-    }
-    return {series,terSeries};
+  function activeGroupViewProvider(){
+    const activityId=window.GRSPlugins?.activities?.active?.()||null;
+    return (window.GRSPlugins?.registry?.values?.('ui.groupViews')||[])
+      .filter(p=>!p.activity||p.activity===activityId)
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))[0]||null;
   }
 
   function traceColor(trace){
     return trace?.line?.color || trace?.marker?.color || '#64748b';
   }
 
-  function renderSubplotLegend(host,traces,isTer=false){
+  function renderSubplotLegend(host,traces,mode='series'){
     if(!host)return;
     if(!traces.length){
       host.innerHTML='<span class="muted">无可显示序列</span>';
@@ -4556,8 +4436,8 @@
     }
     host.innerHTML=traces.map(t=>{
       const c=traceColor(t);
-      const reverse=!isTer && t?.line?.dash==='dash';
-      const glyph=isTer
+      const reverse=t?.line?.dash==='dash';
+      const glyph=mode==='paired'
         ? `<span class="ter-pair-glyph"><i class="trend-legend-dot" style="background:${t._forwardColor||c}"></i><i class="trend-legend-dot ring" style="border-color:${t._reverseColor||c}"></i></span>`
         : `<i class="trend-legend-line ${reverse?'reverse':''}" style="color:${c}"></i>`;
       return `<span class="trend-legend-chip">${glyph}<span>${escapeHtml(t.name||'')}</span></span>`;
@@ -4567,30 +4447,14 @@
   function resolvedTrendColumns(){
     const host=$('#trendGrid');
     const panel=$('#groupPanel');
-    const count=trendDefs.length;
+    const count=Math.max(1,activeGroupChartProviders().length);
     if(state.trendColumns!=='auto'){
       const n=Math.max(1,Math.min(6,Number(state.trendColumns)||1));
       return Math.min(n,count);
     }
-
-    // "自动"优先得到整齐矩阵。对于固定 6 张参数图：
-    // 宽度足够时优先 3×2，而不是 4+2。
-    const bodyWidth=Math.max(
-      300,
-      host?.parentElement?.clientWidth || panel?.clientWidth || 880
-    );
-    if(count===6){
-      if(bodyWidth>=1880)return 6;
-      if(bodyWidth>=930)return 3;
-      if(bodyWidth>=620)return 2;
-      return 1;
-    }
-
+    const bodyWidth=Math.max(300,host?.parentElement?.clientWidth || panel?.clientWidth || 880);
     const maxByWidth=Math.max(1,Math.min(count,Math.floor(bodyWidth/300)));
-    // 优先选择能整除图数的最大列数，避免最后一行只剩少量图。
-    for(let c=maxByWidth;c>=1;c--){
-      if(count%c===0)return c;
-    }
+    for(let c=maxByWidth;c>=1;c--)if(count%c===0)return c;
     return maxByWidth;
   }
 
@@ -4599,23 +4463,17 @@
     if(!grid)return;
     const cols=resolvedTrendColumns();
     grid.style.setProperty('--trend-cols',String(cols));
-
-    // 根据当前单卡宽度动态决定图高，保证坐标轴/图例不会被压扁或裁掉。
     const gridWidth=Math.max(280,grid.clientWidth || grid.parentElement?.clientWidth || 800);
     const gap=12;
     const cardWidth=Math.max(160,(gridWidth-gap*(cols-1))/cols);
     const plotHeight=Math.max(220,Math.min(390,Math.round(cardWidth*0.62)));
     grid.style.setProperty('--trend-plot-height',`${plotHeight}px`);
-
     document.querySelectorAll('[data-trend-cols]').forEach(b=>{
       b.classList.toggle('active',String(b.dataset.trendCols)===String(state.trendColumns));
     });
-
     if(resizePlots){
       requestAnimationFrame(()=>{
-        document.querySelectorAll('.trend-plot').forEach(plot=>{
-          try{Plotly.Plots.resize(plot);}catch{}
-        });
+        document.querySelectorAll('.trend-plot').forEach(plot=>{try{Plotly.Plots.resize(plot);}catch{}});
       });
     }
   }
@@ -4626,136 +4484,99 @@
     setStatus(`组图排列：${state.trendColumns==='auto'?'自动':`每行 ${state.trendColumns} 个`}`);
   }
 
-  function ensurePeakVisibleInMain(p){
-    if(!p)return;
-    const sw=sweepById(p.sweepId);
-    if(!sw)return;
-
-    if(state.mainView.xDomain){
-      const [a,b]=state.mainView.xDomain;
-      const lo=Math.min(a,b),hi=Math.max(a,b),span=Math.max(hi-lo,0.08);
-      if(p.v<lo||p.v>hi)state.mainView.xDomain=[p.v-span/2,p.v+span/2];
-    }
-    if(state.mainView.yDomain){
-      const [a,b]=state.mainView.yDomain;
-      const lo=Math.min(a,b),hi=Math.max(a,b),span=Math.max(hi-lo,Math.abs(p.i)*0.35,1e-12);
-      if(p.i<lo||p.i>hi)state.mainView.yDomain=[p.i-span/2,p.i+span/2];
-    }
-  }
-
-  function focusPeakFromTrendCustomData(custom){
-    if(!custom)return false;
-    let id=custom.id||custom.anchorPeakId||null;
-    if(!id&&(custom.forwardPeakId||custom.reversePeakId)){
-      const dir=selectedSweep()?.direction;
-      id=dir<0?(custom.reversePeakId||custom.forwardPeakId):(custom.forwardPeakId||custom.reversePeakId);
-    }
-    const p=id?peakById(id):null;
-    if(!p)return false;
-
-    closeRangeActionMenu();
-    state.selectedSweepId=p.sweepId;
-    state.selectedPeakId=p.id;
-    state.selectedPeakIds=new Set([p.id]);
-    ensurePeakVisibleInMain(p);
-    renderAll();
-    setStatus(`已从组图定位：Vg=${p.vg} V · ${directionName(p.direction)} · ${peakLabel(p)}；主图已凸显该曲线和峰点。`);
-    return true;
-  }
-
-  function bindTrendPointClick(plot){
+  function bindPluginGroupPointClick(plot,provider,result){
     if(!plot||typeof plot.on!=='function')return;
     try{plot.removeAllListeners?.('plotly_click');}catch{}
     plot.on('plotly_click',ev=>{
-      const point=ev?.points?.[0];
-      if(point?.customdata)focusPeakFromTrendCustomData(point.customdata);
+      try{provider.onPointClick?.({event:ev,point:ev?.points?.[0],result,context:pluginUiContext()});}
+      catch(err){console.error('[GRS group point click]',err);}
     });
   }
 
   function renderTrendPanel(){
-    const host=$('#trendGrid'); host.innerHTML='';
-    const model=trendModel(),p=selectedPeak(),sw=selectedSweep();
-    $('#groupPanelTitle').textContent=p?`峰：${seriesName(p)}`:sw?`曲线：Vg=${sw.vg} V ${directionName(sw.direction)}`:'全部可见数据';
+    const host=$('#trendGrid');
+    if(!host)return;
+    host.innerHTML='';
+    const providers=activeGroupChartProviders();
+    const view=activeGroupViewProvider();
+    const context=pluginUiContext();
+    const panelHeader=$('#groupPanelHeaderTitle');
+    if(panelHeader)panelHeader.textContent=view?.panelTitle||view?.label||'组图';
+    const title=$('#groupPanelTitle');
+    if(title){
+      try{title.textContent=view?.title?.(context)||view?.label||'组图';}
+      catch{title.textContent='组图';}
+    }
 
-    for(const [key,title,unit] of trendDefs){
+    if(!providers.length){
+      host.innerHTML='<div class="empty-state">当前工作区没有提供组图类型。插件可以注册自己的数据模型、图形和导出方式。</div>';
+      updateTrendLayout(false);
+      return;
+    }
+
+    for(const provider of providers){
+      let result;
+      try{result=provider.build({context,host:window.GRSPlugins?.host})||{};}
+      catch(err){
+        console.error(`[GRS group chart:${provider.id}]`,err);
+        result={title:provider.title||provider.name||provider.id,unit:'',traces:[],error:err.message};
+      }
+
+      const titleText=result.title||provider.title||provider.name||provider.id;
+      const unit=result.unit||provider.unit||'';
       const card=document.createElement('div');
       card.className='trend-card';
+      card.dataset.groupChartId=provider.id;
       card.innerHTML=`
-        <div class="trend-card-header"><span>${title}</span><span class="trend-header-actions"><button type="button" class="trend-csv-btn">CSV</button><button type="button" class="trend-copy-btn copy-btn">复制</button></span></div>
+        <div class="trend-card-header">
+          <span>${escapeHtml(titleText)}</span>
+          <span class="trend-header-actions">
+            <button type="button" class="trend-csv-btn">CSV</button>
+            <button type="button" class="trend-copy-btn copy-btn">复制</button>
+          </span>
+        </div>
         <div class="trend-plot"></div>
         <div class="trend-card-legend"></div>`;
       host.appendChild(card);
-
       const plot=card.querySelector('.trend-plot');
       const legend=card.querySelector('.trend-card-legend');
-      const traces=[];
+      const traces=Array.isArray(result.traces)?result.traces:[];
 
-      if(key==='ter_peak'){
-        for(const s of model.terSeries){
-          traces.push({
-            x:s.points.map(d=>d.vg),
-            y:s.points.map(d=>d.ter),
-            name:s.name,
-            mode:'lines+markers',
-            line:{color:s.forwardColor||s.color,width:2},
-            marker:{color:s.forwardColor||s.color,size:8,line:{color:s.reverseColor||s.color,width:3}},
-            _forwardColor:s.forwardColor||s.color,
-            _reverseColor:s.reverseColor||s.color,
-            customdata:s.points,
-            hovertemplate:`Vg=%{x}<br>共振位 TER=%{y:.3g}%<br>Vd*=%{customdata.vdAtTer:.5g} V<br>候选峰位=%{customdata.candidateCount}<extra>${s.name}</extra>`
-          });
-        }
+      if(result.error){
+        plot.innerHTML=`<div class="empty-state">${escapeHtml(result.error)}</div>`;
       }else{
-        for(const s of model.series){
-          const yy=s.points.map(d=>d[key]??NaN);
-          traces.push({
-            x:s.points.map(d=>d.vg),
-            y:yy,
-            name:s.name,
-            mode:'lines+markers',
-            line:{color:s.color,dash:s.direction>0?'solid':'dash',width:2},
-            marker:{color:s.color,size:7},
-            customdata:s.points,
-            hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>${s.name}</extra>`
-          });
-        }
+        renderSubplotLegend(legend,traces,result.legendMode||'series');
+        const layout={
+          margin:{l:60,r:14,t:14,b:48},
+          xaxis:{title:result.xTitle||'Vg (V)',gridcolor:'#edf0f5',automargin:true},
+          yaxis:{title:unit,gridcolor:'#edf0f5',automargin:true},
+          showlegend:false,hovermode:'closest',dragmode:'zoom',autosize:true,
+          ...(result.layout||{})
+        };
+        const config={displayModeBar:false,responsive:true,doubleClick:'reset',...(result.config||{})};
+        Plotly.newPlot(plot,traces,layout,config).then(()=>bindPluginGroupPointClick(plot,provider,result));
       }
 
-      renderSubplotLegend(legend,traces,key==='ter_peak');
-
-      Plotly.newPlot(plot,traces,{
-        margin:{l:60,r:14,t:14,b:48},
-        xaxis:{title:'Vg (V)',gridcolor:'#edf0f5',automargin:true},
-        yaxis:{title:unit,gridcolor:'#edf0f5',automargin:true},
-        showlegend:false,
-        hovermode:'closest',
-        dragmode:'zoom',
-        autosize:true
-      },{
-        displayModeBar:false,
-        responsive:true,
-        doubleClick:'reset'
-      }).then(()=>bindTrendPointClick(plot));
-
-      // 双击绘图区/卡片均可进入独立大图；大图保留 Plotly 常规操作。
       card.addEventListener('dblclick',event=>{
-        if(event.target.closest('button'))return;
-        openZoomChart(title,unit,traces);
+        if(event.target.closest('button')||!traces.length)return;
+        openZoomChart(titleText,unit,traces,provider,result);
       });
       card.querySelector('.trend-csv-btn').onclick=event=>{
         event.stopPropagation();
-        exportTrendCsv(title,key,model);
+        const text=typeof result.csvText==='function'?result.csvText():result.csvText;
+        if(text)window.electronAPI.saveText({defaultName:`${safeName(titleText)}.csv`,content:text,filters:[{name:'CSV',extensions:['csv']}]});
       };
       card.querySelector('.trend-copy-btn').onclick=event=>{
         event.stopPropagation();
-        copyTextToClipboard(trendCsvText(title,key,model),`${title} CSV`);
+        const text=typeof result.csvText==='function'?result.csvText():result.csvText;
+        if(text)copyTextToClipboard(text,`${titleText} CSV`);
       };
     }
-
     updateTrendLayout(true);
   }
 
-  function openZoomChart(title,unit,traces){
+
+  function openZoomChart(title,unit,traces,provider=null,result=null){
     state.zoomChart={title,unit,traces}; $('#zoomPanelTitle').textContent=title; $('#zoomPanel').classList.remove('hidden');
     const layout={
       margin:{l:78,r:145,t:42,b:62},xaxis:{title:'Vg (V)',automargin:true},yaxis:{title:unit,automargin:true},
@@ -4766,7 +4587,7 @@
       modeBarButtonsToAdd:['select2d','lasso2d'],toImageButtonOptions:{format:'svg',filename:safeName(title),width:1400,height:900}
     };
     Plotly.newPlot('zoomPlot',traces,layout,config).then(()=>{
-      bindTrendPointClick($('#zoomPlot'));
+      if(provider)bindPluginGroupPointClick($('#zoomPlot'),provider,result||{});
       requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#zoomPlot'));}catch{}});
     });
   }
@@ -4805,7 +4626,7 @@
     for(const p of state.peaks){
       const sw=sweepById(p.sweepId); if(!sw)continue; const m=A.peakMetrics(p,sw);
       const pr=ph.peakMap.get(p.id);
-      rows.push([csvCell(sw.datasetName),p.vg,p.direction>0?'forward':'reverse',p.accepted,p.locked,p.peakOrder,csvCell(peakLabel(p)),pr?.code||'Q',csvCell(pr?.type||'待定'),peakColor(p),A.ALG_SYMBOLS[p.primaryAlgorithm]||'circle',p.primaryAlgorithm,csvCell((p.supportChannels||p.algorithms||[]).join('|')),p.confidence??'',csvCell(p.projectionMethod||''),p.v,p.i,m.fwhm,m.amplitude,m.area].join(','));
+      rows.push([csvCell(sw.datasetName),p.vg,p.direction>0?'forward':'reverse',p.accepted,p.locked,p.peakOrder,csvCell(peakLabel(p)),pr?.code||'Q',csvCell(pr?.type||'待定'),peakColor(p),algorithmMetaForPeak(p).symbol,p.primaryAlgorithm,csvCell((p.supportChannels||p.algorithms||[]).join('|')),p.confidence??'',csvCell(p.projectionMethod||''),p.v,p.i,m.fwhm,m.amplitude,m.area].join(','));
     }
     return rows.join('\n');
   }
@@ -4846,6 +4667,41 @@
       if(saved)setStatus(`主图 PNG 已导出：${saved}`);
     }finally{URL.revokeObjectURL(url);}
   }
+
+  function currentMainViewCsvText(){
+    const provider=activeMainViewProvider();
+    if(provider?.csvText){
+      try{return String(provider.csvText({state,context:pluginUiContext()})||'');}
+      catch(err){setStatus(`主图数据导出失败：${err.message}`);return '';}
+    }
+    return !window.GRSPlugins?mainCsvText():'';
+  }
+
+  async function exportCurrentMainCsv(){
+    const provider=activeMainViewProvider();
+    if(provider?.exportCsv)return provider.exportCsv({state,context:pluginUiContext()});
+    const text=currentMainViewCsvText();
+    if(!text){setStatus('当前主图插件没有提供数据导出。');return false;}
+    const name=provider?.exportBaseName||'main_view_data';
+    return window.electronAPI.saveText({defaultName:`${safeName(name)}.csv`,content:text,filters:[{name:'CSV',extensions:['csv']}]});
+  }
+
+  async function exportCurrentMainSvg(){
+    const provider=activeMainViewProvider();
+    if(provider?.exportSvg)return provider.exportSvg({state,context:pluginUiContext()});
+    if(!provider&&!window.GRSPlugins)return exportSvg($('#mainPlot'),'graphene_resonance_main.svg');
+    setStatus('当前主图插件没有提供 SVG 导出。');
+    return false;
+  }
+
+  async function exportCurrentMainPng(){
+    const provider=activeMainViewProvider();
+    if(provider?.exportPng)return provider.exportPng({state,context:pluginUiContext()});
+    if(!provider&&!window.GRSPlugins)return exportMainPng();
+    setStatus('当前主图插件没有提供 PNG 导出。');
+    return false;
+  }
+
 
   function serializePulseAnalysisState(){
     return {
@@ -4903,7 +4759,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.18-plugin',
+      version:'3.19-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -5035,7 +4891,7 @@
     state.selectedPeakIds=new Set();
     state.undo=[];
     clearMainView(false);
-    $('#showPhysicsLabels').checked=state.physicsShowLabels;
+    if($('#showPhysicsLabels'))$('#showPhysicsLabels').checked=state.physicsShowLabels;
   }
 
   async function openProject(){
@@ -5436,173 +5292,24 @@
   };
 
   $('#newProjectTabBtn').onclick=()=>createProjectTab(null,true);
-  $('#lockSelectedPeaksBtn').onclick=()=>lockSelectedPeaks(true);
-  $('#unlockSelectedPeaksBtn').onclick=()=>lockSelectedPeaks(false);
-  $('#rangeLocalDetectBtn').onclick=runLocalDetectionInRange;
-  $('#rangeDeletePeaksBtn').onclick=()=>deleteSelectedPeaks('框选删除峰');
-  $('#rangeLockPeaksBtn').onclick=()=>{lockSelectedPeaks(true);closeRangeActionMenu();};
-  $('#rangeUnlockPeaksBtn').onclick=()=>{lockSelectedPeaks(false);closeRangeActionMenu();};
-  $('#rangePeakOrderSelect').onchange=e=>{$('#rangePeakLabelInput').value=categoryLabel(Number(e.target.value)||1);};
-  $('#rangeApplyPeakIdentityBtn').onclick=applyUnifiedPeakIdentityToSelection;
-  $('#rangeCloseBtn').onclick=closeRangeActionMenu;
-  $('#sortPeakOrderBtn').onclick=sortPeakOrderByVd;
-  $('#togglePhysicsLabelsBtn').onclick=togglePhysicsLabels;
   $('#mainResetViewBtn').onclick=resetMainView;
   $('#undoBtn').onclick=undo; $('#deselectBtn').onclick=deselect;
-  $('#toggleInspectorBtn').onclick=toggleInspectorVisibility;
 
-  $('#pulseAddFilesBtn').onclick=addPulseAnalysisFiles;
-  $('#pulseCheckAllBtn').onclick=()=>{
-    pulseAnalysisState.files.forEach(f=>f.checked=true);
-    renderPulseBatchUi();
-  };
-  $('#pulseUncheckAllBtn').onclick=()=>{
-    pulseAnalysisState.files.forEach(f=>f.checked=false);
-    renderPulseBatchUi();
-  };
-  $('#pulseRemoveFilesBtn').onclick=removeCheckedPulseFiles;
-  $('#pulseAnalyzeCurrentBtn').onclick=analyzeCurrentPulseFile;
-  $('#pulseAnalyzeCheckedBtn').onclick=analyzeCheckedPulseFiles;
-  $('#pulseApplySettingsBtn').onclick=applyPulseSettingsToChecked;
-
-  $('#pulseSeriesLabel').onchange=()=>{
-    const item=syncPulseEditorToActive();
-    if(item){
-      renderPulseFileList();
-      renderPulseComparison();
-    }
-  };
-  for(const id of ['pulseTimeCol','pulseCurrentCol','pulseVoltageCol','pulseBlockSamples','pulseWindowStart','pulseWindowEnd','pulseReadPairMode']){
-    $('#'+id).onchange=()=>syncPulseEditorToActive();
-  }
-
-  $('#pulseResultScope').onchange=e=>{
-    pulseAnalysisState.resultScope=e.target.value==='active'?'active':'checked';
-    renderPulseComparison();
-  };
-
-  $('#pulseRawFitBtn').onclick=()=>{
-    if(!pulseActiveItem()?.result)return;
-    Plotly.relayout('pulseRawPlot',{
-      'xaxis.autorange':true,
-      'yaxis.autorange':true,
-      'yaxis2.autorange':true
-    });
-  };
-  $('#pulseRawCopyBtn').onclick=()=>copyTextToClipboard(pulseRawCsvText(),'当前原始脉冲波形 CSV');
-  $('#pulseRawExportBtn').onclick=()=>{
-    const item=pulseActiveItem();
-    return exportPulseCsv(`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform.csv`,pulseRawCsvText());
-  };
-  $('#pulseRawSvgBtn').onclick=()=>{
-    const item=pulseActiveItem();
-    return exportPulsePlotImage('pulseRawPlot',`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform`,'svg');
-  };
-  $('#pulseRawPngBtn').onclick=()=>{
-    const item=pulseActiveItem();
-    return exportPulsePlotImage('pulseRawPlot',`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform`,'png');
-  };
-
-  $('#pulseReadCopyBtn').onclick=()=>copyTextToClipboard(pulseReadCsvText(),'可见脉冲电压-读取电流 CSV');
-  $('#pulseReadExportBtn').onclick=()=>exportPulseCsv('pulse_voltage_read_current_visible.csv',pulseReadCsvText());
-  $('#pulseReadSvgBtn').onclick=()=>exportPulsePlotImage('pulseReadPlot','pulse_voltage_read_current_visible','svg');
-  $('#pulseReadPngBtn').onclick=()=>exportPulsePlotImage('pulseReadPlot','pulse_voltage_read_current_visible','png');
-
-  $('#pulsePulseCopyBtn').onclick=()=>copyTextToClipboard(pulsePulseCsvText(),'可见脉冲电压-脉冲电流 CSV');
-  $('#pulsePulseExportBtn').onclick=()=>exportPulseCsv('pulse_voltage_pulse_current_visible.csv',pulsePulseCsvText());
-  $('#pulsePulseSvgBtn').onclick=()=>exportPulsePlotImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','svg');
-  $('#pulsePulsePngBtn').onclick=()=>exportPulsePlotImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','png');
-
-  $('#pulseCopyCsvBtn').onclick=()=>copyTextToClipboard(pulseResultCsvText(),'可见脉冲分析结果 CSV');
-  $('#pulseExportCsvBtn').onclick=()=>exportPulseCsv('pulse_read_analysis_visible.csv',pulseResultCsvText());
   document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
 
 
-  $('#refreshPhysicsBtn').onclick=()=>{renderPhysicsPanel();renderMainPlot();setStatus('物理机制分析已根据当前已采纳峰刷新。');};
-  $('#toggleGroupBtn').onclick=()=>{
-    const panel=$('#groupPanel');
-    panel.classList.toggle('hidden');
-    if(state.groupPanelMode==='docked')$('#dockedGroupSlot').classList.toggle('active',!panel.classList.contains('hidden'));
-    if(!panel.classList.contains('hidden')){applyGroupPanelLayout();requestAnimationFrame(()=>updateTrendLayout(true));}
-  };
   $('#groupDockBtn').onclick=toggleGroupDock;
   $('#groupMinimizeBtn').onclick=toggleGroupMinimize;
   document.querySelectorAll('[data-trend-cols]').forEach(b=>{
     b.onclick=()=>setTrendColumns(b.dataset.trendCols);
   });
-  $('#checkAllBtn').onclick=()=>setAllVisibility('all');
-  $('#forwardOnlyBtn').onclick=()=>setAllVisibility('forward');
-  $('#reverseOnlyBtn').onclick=()=>setAllVisibility('reverse');
-  $('#uncheckAllBtn').onclick=()=>setAllVisibility('none');
-  $('#rerunDetectionBtn').onclick=()=>runDetection(true);
-  document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{
-    state.algorithms=A.preset(b.dataset.preset);
-    renderAlgorithmControls();
-    setStatus(`寻峰灵敏度已设为“${b.textContent.trim()}”。点击“智能寻峰 / 补峰”执行；锁定峰不会改变。`);
-  });
-  ['showRejected','showWidth','showPoints'].forEach(id=>$('#'+id).onchange=renderMainPlot);
-  $('#showPhysicsLabels').onchange=e=>{
-    state.physicsShowLabels=!!e.target.checked;
-    syncPhysicsLabelControls();
-    renderMainPlot();
-    captureActiveProjectTab();
-  };
-  $('#gateSeriesA').onchange=e=>{state.gateAnalysisSettings.seriesA=e.target.value;renderGateAnalysis();};
-  $('#gateSeriesB').onchange=e=>{state.gateAnalysisSettings.seriesB=e.target.value;renderGateAnalysis();};
-  $('#gateHysteresisLabel').onchange=e=>{state.gateAnalysisSettings.hysteresisLabel=e.target.value;renderGateAnalysis();};
-  $('#gateWidthMode').onchange=e=>{state.gateAnalysisSettings.widthMode=e.target.value;renderGateAnalysis();};
-  $('#gateUseCarrierDensity').onchange=e=>{state.gateAnalysisSettings.useCarrierDensity=!!e.target.checked;renderGateAnalysis();};
-  $('#gateCg').onchange=()=>renderGateAnalysis();
-  $('#gateCnp').onchange=()=>renderGateAnalysis();
-  $('#gateAnalysisRefreshBtn').onclick=renderGateAnalysis;
-  $('#gateAnalysisExportCsvBtn').onclick=exportGateAnalysisCsv;
-  $('#gateAnalysisCopyCsvBtn').onclick=()=>{
-    if(!state.gateAnalysisResult)renderGateAnalysis();
-    copyTextToClipboard(gateAnalysisCsv(),'栅压分析 CSV');
-  };
-  $('#gateAnalysisExportReportBtn').onclick=exportGateAnalysisReport;
 
-  $('#spacingSeriesA').onchange=e=>{state.spacingSettings.seriesA=e.target.value;renderSpacingPage();};
-  $('#spacingSeriesB').onchange=e=>{state.spacingSettings.seriesB=e.target.value;renderSpacingPage();};
-  $('#spacingMode').onchange=e=>{state.spacingSettings.mode=e.target.value;renderSpacingPage();};
-  $('#spacingRefreshBtn').onclick=renderSpacingPage;
-  $('#spacingExportCsvBtn').onclick=exportSpacingCsv;
-  $('#spacingCopyCsvBtn').onclick=()=>copyTextToClipboard(spacingCsvText(),'峰间距 CSV');
-  $('#spacingExportSvgBtn').onclick=()=>savePlotlyImage('spacingPlot','peak_spacing_vs_Vg','svg');
-  $('#spacingExportPngBtn').onclick=()=>savePlotlyImage('spacingPlot','peak_spacing_vs_Vg','png');
 
-  $('#terAutoParamsBtn').onclick=autoTerParameters;
-  $('#terCalculateBtn').onclick=computeTerMaxPage;
-  $('#terApplyDisplayBtn').onclick=()=>{
-    readTerHeatmapControls();
-    if(state.terMaxResult)renderTerMaxResult();
-    setStatus('TER 热图显示范围/刻度已应用；TER 数值本身未改变。');
-  };
-  $('#terResetDisplayBtn').onclick=resetTerHeatmapDisplay;
-  $('#terOnlyFullyVisible').onchange=e=>{state.terMaxSettings.onlyFullyVisible=!!e.target.checked;autoTerParameters();};
-  $('#terExportLongBtn').onclick=exportTerLong;
-  $('#terCopyLongBtn').onclick=()=>copyTextToClipboard(terLongCsvText(),'TER_long CSV');
-  $('#terExportMatrixBtn').onclick=exportTerMatrix;
-  $('#terCopyMatrixBtn').onclick=()=>copyTextToClipboard(terMatrixCsvText(),'TER_matrix CSV');
-  $('#terExportHeatmapSvgBtn').onclick=()=>savePlotlyImage('terHeatmapPlot','TER_heatmap','svg');
-  $('#terExportHeatmapPngBtn').onclick=()=>savePlotlyImage('terHeatmapPlot','TER_heatmap','png');
 
-  $('#terExportMaxVgBtn').onclick=exportTerMaxVg;
-  $('#terCopyMaxVgBtn').onclick=()=>copyTextToClipboard(terMaxVgCsvText(),'TER_Max–Vg CSV');
-  $('#terExportMaxVgSvgBtn').onclick=()=>savePlotlyImage('terMaxVgPlot','TER_Max-Vg','svg');
-  $('#terExportMaxVgPngBtn').onclick=()=>savePlotlyImage('terMaxVgPlot','TER_Max-Vg','png');
-
-  $('#terExportMaxVdBtn').onclick=exportTerMaxVd;
-  $('#terCopyMaxVdBtn').onclick=()=>copyTextToClipboard(terMaxVdCsvText(),'TER_Max–Vd CSV');
-  $('#terExportMaxVdSvgBtn').onclick=()=>savePlotlyImage('terMaxVdPlot','TER_Max-Vd','svg');
-  $('#terExportMaxVdPngBtn').onclick=()=>savePlotlyImage('terMaxVdPlot','TER_Max-Vd','png');
-
-  $('#exportMainCsvBtn').onclick=exportMainCsv;
-  $('#copyMainCsvBtn').onclick=()=>copyTextToClipboard(mainCsvText(),'主图 I–V CSV');
-  $('#exportPeaksBtn').onclick=exportPeaks;
-  $('#copyPeaksCsvBtn').onclick=()=>copyTextToClipboard(peaksCsvText(),'峰参数 CSV');
-  $('#exportMainSvgBtn').onclick=()=>exportSvg($('#mainPlot'),'graphene_resonance_main.svg');
-  $('#exportMainPngBtn').onclick=exportMainPng;
+  $('#exportMainCsvBtn').onclick=exportCurrentMainCsv;
+  $('#copyMainCsvBtn').onclick=()=>{const text=currentMainViewCsvText();if(text)copyTextToClipboard(text,'当前主图数据');else setStatus('当前主图插件没有提供可复制的数据。');};
+  $('#exportMainSvgBtn').onclick=exportCurrentMainSvg;
+  $('#exportMainPngBtn').onclick=exportCurrentMainPng;
   $('#zoomExportCsv').onclick=()=>{
     if(!state.zoomChart)return;
     window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.csv`,content:zoomCsvText(),filters:[{name:'CSV',extensions:['csv']}]});
@@ -5622,34 +5329,16 @@
         closeImportWorkbench();
         return;
       }
-      if(!$('#rangeActionMenu').classList.contains('hidden')){
-        closeRangeActionMenu();
-        renderMainPlot();
-        return;
-      }
       deselect();return;
     }
-    if(e.key==='r'||e.key==='R'){e.preventDefault();closeRangeActionMenu();resetMainView();return;}
-    if(e.key==='l'||e.key==='L'){e.preventDefault();lockSelectedPeaks(!e.shiftKey);return;}
-    if(e.key==='p'||e.key==='P'){e.preventDefault();togglePhysicsLabels();return;}
-    if((e.ctrlKey||e.metaKey)&&e.key==='ArrowLeft'){e.preventDefault();selectAdjacentPeak(-1);return;}
-    if((e.ctrlKey||e.metaKey)&&e.key==='ArrowRight'){e.preventDefault();selectAdjacentPeak(1);return;}
-    if(e.key==='Delete'||e.key==='Backspace'){
-      if(selectedPeakIdSet().size){e.preventDefault();deleteSelectedPeaks('键盘删除所选峰');return;}
-    }
-    if(e.key==='ArrowUp'){e.preventDefault();switchSelectedSweep(-1);return;}
-    if(e.key==='ArrowDown'){e.preventDefault();switchSelectedSweep(1);return;}
-    if(e.key==='ArrowLeft'&&selectedPeak()){e.preventDefault();moveSelectedPeakBy(e.shiftKey?-5:-1);return;}
-    if(e.key==='ArrowRight'&&selectedPeak()){e.preventDefault();moveSelectedPeakBy(e.shiftKey?5:1);return;}
+    if(e.key==='r'||e.key==='R'){e.preventDefault();resetMainView();return;}
   });
 
   window.addEventListener('resize',()=>{
     scheduleMainPlotRelayout();
     updateTrendLayout(true);
     try{if(!$('#zoomPanel').classList.contains('hidden'))Plotly.Plots.resize($('#zoomPlot'));}catch{}
-    for(const id of ['gateResonancePlot','gateV0Plot','gateDeltaPlot','gateWidthPlot','gateTerMaxPlot','gateVdStarPlot','gateHysteresisPlot','gateTerCorrelationPlot','gateReadoutCorrelationPlot','gateAmplitudePlot','gateBackgroundPlot','gateDensityPlot','spacingPlot','terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-      const el=$('#'+id); if(el&&el.offsetParent!==null){try{Plotly.Plots.resize(el);}catch{}}
-    }
+    window.GRSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
   });
 
   if(window.ResizeObserver){
@@ -5675,11 +5364,302 @@
     panelObserver.observe($('#zoomPanel'));
   }
 
+  function ensurePeakVisibleInMain(p){
+    if(!p)return;
+    if(state.mainView.xDomain){
+      const [a,b]=state.mainView.xDomain;
+      const lo=Math.min(a,b),hi=Math.max(a,b),span=Math.max(hi-lo,0.08);
+      if(p.v<lo||p.v>hi)state.mainView.xDomain=[p.v-span/2,p.v+span/2];
+    }
+    if(state.mainView.yDomain){
+      const [a,b]=state.mainView.yDomain;
+      const lo=Math.min(a,b),hi=Math.max(a,b),span=Math.max(hi-lo,Math.abs(p.i)*0.35,1e-12);
+      if(p.i<lo||p.i>hi)state.mainView.yDomain=[p.i-span/2,p.i+span/2];
+    }
+  }
+
+  function focusPeakById(id){
+    const p=peakById(id);
+    if(!p)return false;
+    closeRangeActionMenu();
+    state.selectedSweepId=p.sweepId;
+    state.selectedPeakId=p.id;
+    state.selectedPeakIds=new Set([p.id]);
+    ensurePeakVisibleInMain(p);
+    showInspectorPanel();
+    renderAll();
+    return true;
+  }
+
+  function focusPeakFromCustomData(custom){
+    if(!custom)return false;
+    let id=custom.id||custom.anchorPeakId||null;
+    if(!id&&(custom.forwardPeakId||custom.reversePeakId)){
+      const dir=selectedSweep()?.direction;
+      id=dir<0?(custom.reversePeakId||custom.forwardPeakId):(custom.forwardPeakId||custom.reversePeakId);
+    }
+    return id?focusPeakById(id):false;
+  }
+
+  function toggleGroupVisibility(){
+    const panel=$('#groupPanel');
+    if(!panel)return;
+    panel.classList.toggle('hidden');
+    if(state.groupPanelMode==='docked')$('#dockedGroupSlot')?.classList.toggle('active',!panel.classList.contains('hidden'));
+    if(!panel.classList.contains('hidden')){
+      applyGroupPanelLayout();
+      requestAnimationFrame(()=>updateTrendLayout(true));
+    }
+  }
+
+  function setDetectionPreset(name){
+    const detectorId=state.algorithms?._detectorId||'robust-ricker-v1';
+    state.algorithms={...A.preset(name),_detectorId:detectorId};
+    renderAll();
+  }
+
+  function setDetectorSettings(id,settings){
+    const normalized=normalizedDetectionSettings(state.algorithms);
+    normalized._detectorSettings={...(normalized._detectorSettings||{}),[id]:JSON.parse(JSON.stringify(settings||{}))};
+    state.algorithms=normalized;
+    captureActiveProjectTab();
+  }
+
+  function setDetectorId(id){
+    const exists=peakDetectorProviders().some(p=>p.id===id);
+    if(!exists)throw new Error(`未找到寻峰算法插件：${id}`);
+    state.algorithms={...normalizedDetectionSettings(state.algorithms),_detectorId:id};
+    captureActiveProjectTab();
+    window.GRSPlugins?.events?.emit?.('resonance:detector-changed',{id});
+  }
+
+  function setPeakDisplay(key,value){
+    if(!(key in state.peakDisplay))throw new Error(`Unknown peak display setting: ${key}`);
+    state.peakDisplay[key]=!!value;
+    renderMainPlot();
+    captureActiveProjectTab();
+  }
+
+  function renamePeakCategory(p,label){
+    const text=String(label||'').trim();
+    if(!p||!text)return;
+    snapshot('重命名峰类别');
+    const c=categoryForOrder(p.peakOrder);
+    const real=state.peakCategories.find(q=>Number(q.order)===Number(c.order));
+    if(real)real.label=text;
+    else state.peakCategories.push({order:c.order,label:text});
+    for(const q of state.peaks.filter(q=>Number(q.peakOrder)===Number(c.order)))q.peakLabel=text;
+    renderAll();
+  }
+
+  function assignPeakCategory(p,order){
+    if(!p)return;
+    snapshot('修改峰类别');
+    changePeakOrderWithCascade(p,Math.max(1,Math.round(Number(order)||1)));
+    p.customColor=null;
+    renderAll();
+  }
+
+  function createPeakCategoryForPeak(p){
+    if(!p)return null;
+    snapshot('新增峰类别');
+    const c=addPeakCategory();
+    p.peakOrder=c.order;p.peakLabel=c.label;p.customColor=null;p.manual=true;
+    renderAll();
+    return c;
+  }
+
+  function togglePeakAccepted(p){
+    if(!p)return;
+    snapshot('修改采纳状态');p.accepted=!p.accepted;renderAll();
+  }
+
+  function togglePeakLocked(p){
+    if(!p)return;
+    snapshot('锁定峰位');p.locked=!p.locked;state.selectedPeakIds=new Set([p.id]);renderAll();
+  }
+
+  function deletePeakById(id){
+    const p=peakById(id);
+    if(!p)return;
+    snapshot('删除峰');
+    state.peaks=state.peaks.filter(q=>q.id!==id);
+    state.selectedPeakIds.delete(id);
+    if(state.selectedPeakId===id)state.selectedPeakId=null;
+    renderAll();
+  }
+
+  function selectDatasetByPath(path){
+    const sweeps=state.sweeps.filter(sw=>sw.datasetPath===path&&isSweepVisible(sw));
+    const sw=sweeps.find(sw=>sw.direction>0)||sweeps[0];
+    if(!sw)return false;
+    state.selectedSweepId=sw.id;
+    state.selectedPeakId=null;
+    state.selectedPeakIds.clear();
+    showInspectorPanel();
+    renderAll();
+    return true;
+  }
+
+  function setDatasetTransform(path,type){
+    state.transformPreviewByDataset.set(path,type);
+    const current=selectedSweep();
+    let sw=current?.datasetPath===path?current:null;
+    if(!sw){
+      const sweeps=state.sweeps.filter(s=>s.datasetPath===path&&isSweepVisible(s));
+      sw=sweeps.find(s=>s.direction>0)||sweeps[0];
+    }
+    if(sw){
+      state.selectedSweepId=sw.id;
+      state.selectedPeakId=null;
+      state.selectedPeakIds.clear();
+      showInspectorPanel();
+      renderAll();
+      setStatus(`辅助视图：${transformName(type)}。主图和峰位仍保持原始 I–V。`);
+    }
+    captureActiveProjectTab();
+  }
+
+  function resonanceHostApi(){
+    return {
+      getState:()=>state,
+      selectedPeak,selectedSweep,peakById,sweepById,
+      visibleSweepIds,isSweepVisible,
+      setAllVisibility,setDatasetVisibility,updateDatasetVg,selectDatasetByPath,setDatasetTransform,
+      directionName,formatI,peakLabel,categoryLabel,categoryForOrder,
+      ensurePeakCategories,addPeakCategory,colorForPeakOrder,pairedTerColors,
+      algGlyphs:ALG_GLYPHS,algNames,evidenceMeta:algorithmMetaForPeak,transformOptions:TRANSFORM_OPTIONS,
+      transformName,transformForDataset,
+      metrics:A.peakMetrics,
+      snapshot,renderAll,renderMainPlot,renderMainPlotLegacy:renderResonanceMainPlot,
+      resetMainViewLegacy:resetResonanceMainView,physicalAnalysis,
+      setStatus,captureActiveProjectTab,
+      runDetection,runLocalDetectionInRange,
+      sortPeakOrderByVd,lockSelectedPeaks,togglePhysicsLabels,
+      toggleInspectorVisibility,toggleGroupVisibility,
+      focusPeakById,focusPeakFromCustomData,
+      moveSelectedPeakBy,selectAdjacentPeak,switchSelectedSweep,
+      deleteSelectedPeaks,hasSelectedPeaks:()=>selectedPeakIdSet().size>0,
+      assignPeakCategory,renamePeakCategory,createPeakCategoryForPeak,
+      togglePeakAccepted,togglePeakLocked,deletePeakById,
+      setDetectionPreset,setDetectorId,setDetectorSettings,setPeakDisplay,
+      detectorSettingsFor,
+      detectors:peakDetectorProviders,
+      activeDetector:activePeakDetector,
+      mainCsvText,exportMainCsv,exportMainPng,
+      exportMainSvg:()=>exportSvg($('#mainPlot'),'graphene_resonance_main.svg'),
+      peaksCsvText,exportPeaks,
+      copyPeaks:()=>copyTextToClipboard(peaksCsvText(),'峰参数 CSV'),
+      range:{
+        localDetect:runLocalDetectionInRange,
+        deleteSelected:()=>deleteSelectedPeaks('框选删除峰'),
+        lockSelected:()=>{lockSelectedPeaks(true);closeRangeActionMenu();},
+        unlockSelected:()=>{lockSelectedPeaks(false);closeRangeActionMenu();},
+        applyIdentity:applyUnifiedPeakIdentityToSelection,
+        close:closeRangeActionMenu,
+        categoryLabel
+      },
+      renderSpacingPage,spacingCsvText,exportSpacingCsv,
+      renderGateAnalysis,gateAnalysisCsv,exportGateAnalysisCsv,exportGateAnalysisReport,
+      savePlotlyImage,copyTextToClipboard,
+      showInspectorPanel,
+      selectSweepFromMain
+    };
+  }
+
+  function pulseHostApi(){
+    return {
+      render:renderPulseAnalysisResult,
+      addFiles:addPulseAnalysisFiles,
+      setAllChecked(value){
+        pulseAnalysisState.files.forEach(f=>f.checked=!!value);
+        renderPulseBatchUi();
+      },
+      removeChecked:removeCheckedPulseFiles,
+      analyzeCurrent:analyzeCurrentPulseFile,
+      analyzeChecked:analyzeCheckedPulseFiles,
+      applySettingsToChecked:applyPulseSettingsToChecked,
+      syncEditor:syncPulseEditorToActive,
+      refreshFileAndComparison(){
+        renderPulseFileList();
+        renderPulseComparison();
+      },
+      setResultScope(value){
+        pulseAnalysisState.resultScope=value==='active'?'active':'checked';
+        renderPulseComparison();
+      },
+      fitRaw(){
+        if(!pulseActiveItem()?.result)return false;
+        Plotly.relayout('pulseRawPlot',{'xaxis.autorange':true,'yaxis.autorange':true,'yaxis2.autorange':true});
+        return true;
+      },
+      copyRaw:()=>copyTextToClipboard(pulseRawCsvText(),'当前原始脉冲波形 CSV'),
+      exportRawCsv(){
+        const item=pulseActiveItem();
+        return exportPulseCsv(`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform.csv`,pulseRawCsvText());
+      },
+      exportRawSvg(){
+        const item=pulseActiveItem();
+        return exportPulsePlotImage('pulseRawPlot',`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform`,'svg');
+      },
+      exportRawPng(){
+        const item=pulseActiveItem();
+        return exportPulsePlotImage('pulseRawPlot',`${pulseSafeFileName(pulseItemLabel(item))}_raw_waveform`,'png');
+      },
+      copyRead:()=>copyTextToClipboard(pulseReadCsvText(),'可见脉冲电压-读取电流 CSV'),
+      exportReadCsv:()=>exportPulseCsv('pulse_voltage_read_current_visible.csv',pulseReadCsvText()),
+      exportReadSvg:()=>exportPulsePlotImage('pulseReadPlot','pulse_voltage_read_current_visible','svg'),
+      exportReadPng:()=>exportPulsePlotImage('pulseReadPlot','pulse_voltage_read_current_visible','png'),
+      copyPulse:()=>copyTextToClipboard(pulsePulseCsvText(),'可见脉冲电压-脉冲电流 CSV'),
+      exportPulseCsv:()=>exportPulseCsv('pulse_voltage_pulse_current_visible.csv',pulsePulseCsvText()),
+      exportPulseSvg:()=>exportPulsePlotImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','svg'),
+      exportPulsePng:()=>exportPulsePlotImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','png'),
+      copyResults:()=>copyTextToClipboard(pulseResultCsvText(),'可见脉冲分析结果 CSV'),
+      exportResults:()=>exportPulseCsv('pulse_read_analysis_visible.csv',pulseResultCsvText()),
+      serialize:()=>serializePulseAnalysisState(),
+      restore:pluginRestorePulseState,
+      reset:pluginResetPulseState,
+      getState:()=>pulseAnalysisState
+    };
+  }
+
+  function terHostApi(){
+    return {
+      render:renderTerMaxPage,
+      autoParameters:autoTerParameters,
+      calculate:computeTerMaxPage,
+      applyDisplay(){
+        readTerHeatmapControls();
+        if(state.terMaxResult)renderTerMaxResult();
+        setStatus('TER 热图显示范围/刻度已应用；TER 数值本身未改变。');
+      },
+      resetDisplay:resetTerHeatmapDisplay,
+      setOnlyFullyVisible(value){
+        state.terMaxSettings.onlyFullyVisible=!!value;
+        autoTerParameters();
+      },
+      exportLong:exportTerLong,
+      copyLong:()=>copyTextToClipboard(terLongCsvText(),'TER_long CSV'),
+      exportMatrix:exportTerMatrix,
+      copyMatrix:()=>copyTextToClipboard(terMatrixCsvText(),'TER_matrix CSV'),
+      exportHeatmapSvg:()=>savePlotlyImage('terHeatmapPlot','TER_heatmap','svg'),
+      exportHeatmapPng:()=>savePlotlyImage('terHeatmapPlot','TER_heatmap','png'),
+      exportMaxVg:exportTerMaxVg,
+      copyMaxVg:()=>copyTextToClipboard(terMaxVgCsvText(),'TER_Max–Vg CSV'),
+      exportMaxVgSvg:()=>savePlotlyImage('terMaxVgPlot','TER_Max-Vg','svg'),
+      exportMaxVgPng:()=>savePlotlyImage('terMaxVgPlot','TER_Max-Vg','png'),
+      exportMaxVd:exportTerMaxVd,
+      copyMaxVd:()=>copyTextToClipboard(terMaxVdCsvText(),'TER_Max–Vd CSV'),
+      exportMaxVdSvg:()=>savePlotlyImage('terMaxVdPlot','TER_Max-Vd','svg'),
+      exportMaxVdPng:()=>savePlotlyImage('terMaxVdPlot','TER_Max-Vd','png')
+    };
+  }
+
   function pluginTogglePhysicsPanel(){
     const panel=$('#physicsPanel');
     if(!panel)return;
     panel.classList.toggle('hidden');
-    if(!panel.classList.contains('hidden'))renderPhysicsPanel();
+    window.GRSPlugins?.events?.emit?.('panel:toggled',{id:'physicsPanel',hidden:panel.classList.contains('hidden')});
   }
 
   function pluginRestorePulseState(saved){
@@ -5699,7 +5679,7 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.18.0-plugin.1',
+      appVersion:'3.19.0-plugin.1',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),
@@ -5709,6 +5689,7 @@
       scheduleMainPlotRelayout,
       openAnalysisPage,
       closeAnalysisPage,
+      showMainWorkspace,
       renderSpacingPage,
       renderGateAnalysis,
       renderTerMaxPage,
@@ -5716,13 +5697,15 @@
       togglePhysicsPanel:pluginTogglePhysicsPanel,
       copyTextToClipboard,
       savePlotlyImage,
+      makeFloating,
       artifacts:artifactHostApi(),
-      pulse:{
-        serialize:()=>serializePulseAnalysisState(),
-        restore:pluginRestorePulseState,
-        reset:pluginResetPulseState,
-        getState:()=>pulseAnalysisState
-      }
+      resonance:resonanceHostApi(),
+      panels:{
+        inspector:{toggle:toggleInspectorVisibility,show:showInspectorPanel,apply:applyInspectorPanelLayout},
+        group:{toggle:toggleGroupVisibility,apply:applyGroupPanelLayout,updateLayout:updateTrendLayout}
+      },
+      pulse:pulseHostApi(),
+      ter:terHostApi()
     });
 
     window.GRSPluginManagerUI?.configure?.({
@@ -5732,6 +5715,7 @@
     });
 
     await window.GRSPlugins.loadBuiltinEntries();
+    await window.GRSPlugins.loadExternalEntries?.();
     const activated=await window.GRSPlugins.activateAll();
     console.info('[GRS plugins] activated',activated);
   }
@@ -5746,7 +5730,6 @@
     mountProjectTab(initialTab);
     syncPhysicsLabelControls();
     renderProjectTabs();
-    renderAlgorithmControls();
     updateMainModeButtons();
     renderAll();
     applyGroupPanelLayout();
