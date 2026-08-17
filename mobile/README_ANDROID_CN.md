@@ -37,22 +37,14 @@ src/science/* shared scientific engine
 建议：
 
 1. Node.js 22.13 或更新的兼容版本。
-2. JDK 17。
-3. Android Studio。
-4. Android SDK / Platform Tools。
-5. 设置：
-   ```text
-   ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk
-   ```
-6. `platform-tools` 加入 `PATH`。
+2. Android SDK / Platform Tools。
+3. Android Studio 可选。若系统没有 JDK，DKDS 会自动准备 Eclipse Temurin JDK 17。
+4. `ANDROID_HOME` 和 `platform-tools` 的 `PATH` 均可由 DKDS 自动识别；已有配置会优先使用。
 
-可检查：
+统一检查入口：
 
 ```bat
-node --version
-java -version
-adb version
-echo %ANDROID_HOME%
+DKDS.cmd android-check
 ```
 
 ## 最简单：生成可直接安装的 APK
@@ -66,7 +58,8 @@ DKDS.cmd android-build
 脚本会：
 
 ```text
-mobile\npm install
+自动发现或准备 Temurin JDK 17
+→ mobile\npm install
 → 创建/复用本机独立 release 签名
 → sync:web
 → expo prebuild --platform android --clean
@@ -81,9 +74,17 @@ mobile-dist\DK-Data-Studio.apk
 
 这是独立 release 签名的 APK，可直接侧载到 Android 手机。首次构建会在 `%LOCALAPPDATA%\DKDataStudio\android-signing` 生成本机 release 签名，后续自动复用。若希望以后生成的 APK 能覆盖安装当前版本，请备份该目录。 从旧签名版本迁移到本版本时，首次安装可能需要先执行 `adb uninstall com.dk.datastudio`；这会清除旧版应用数据，之后同一 release 签名下可正常覆盖升级。
 
-## Windows 环境自动识别
+## Windows 环境自动识别与 JDK 自动准备
 
-`DKDS.cmd android-check` 会自动查找 Android SDK、`adb` 和 JDK，不要求它们预先全部写入 PATH。Android Studio 的内置 `jbr` 也会作为 JDK 候选。如果最终仍提示没有完整 JDK，则机器上确实缺少可运行 Gradle 的 Java 环境。
+`DKDS.cmd android-check` 会自动查找 Android SDK、`adb` 和已有 JDK，不要求它们预先全部写入 PATH。Android Studio 的内置 `jbr` 也会作为候选。
+
+如果系统没有完整 JDK，DKDS 会从 Eclipse Adoptium 官方稳定 API 下载 Eclipse Temurin JDK 17，并校验官方 SHA-256 后解压到：
+
+```text
+%LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current
+```
+
+这是用户目录中的 DKDS 私有工具链，不修改系统 Java 安装，也不要求管理员权限；后续 Android 构建直接复用。首次下载需要联网。若明确希望禁用自动准备，可设置 `DKDS_DISABLE_MANAGED_JDK=1`。
 
 ## USB 直接编译并安装
 

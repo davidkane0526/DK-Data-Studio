@@ -1098,7 +1098,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.21.1','v3.21 package version must be set');
+assert(pkgV321.version==='3.21.2','v3.21 package version must be set');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(htmlV321.includes('id="primaryActivityBar"')&&htmlV321.includes('class="primary-activity-cluster"'),
   'resonance activity and its plugin commands must share a primary activity cluster');

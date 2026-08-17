@@ -42,7 +42,7 @@ function Invoke-Step {
   try {
     $display = if ($Arguments.Count -gt 0) { $FilePath + ' ' + ($Arguments -join ' ') } else { $FilePath }
     Write-Host ('> ' + $display) -ForegroundColor DarkGray
-    & $FilePath @Arguments
+    & $FilePath @Arguments | Out-Host
     $exitCode = $LASTEXITCODE
     if ($null -ne $exitCode -and $exitCode -ne 0) {
       throw "$FilePath exited with code $exitCode"
@@ -129,6 +129,27 @@ function Resolve-AndroidSdk {
   return $null
 }
 
+function Get-DkdsToolchainRoot {
+  $base = if ($env:LOCALAPPDATA) {
+    Join-Path $env:LOCALAPPDATA 'DKDataStudio\toolchains'
+  } elseif ($env:USERPROFILE) {
+    Join-Path $env:USERPROFILE '.dkds\toolchains'
+  } else {
+    return $null
+  }
+  return $base
+}
+
+function Get-DkdsManagedJdkHome {
+  $toolchainRoot = Get-DkdsToolchainRoot
+  if (-not $toolchainRoot) { return $null }
+  $managedHome = Join-Path $toolchainRoot 'temurin-17\current'
+  if ((Test-Path (Join-Path $managedHome 'bin\java.exe')) -and (Test-Path (Join-Path $managedHome 'bin\keytool.exe'))) {
+    return $managedHome
+  }
+  return $null
+}
+
 function Resolve-JavaToolchain {
   # Do not use $home here: PowerShell variable names are case-insensitive and
   # $HOME is a read-only automatic variable under Windows PowerShell 5.1.
@@ -144,6 +165,9 @@ function Resolve-JavaToolchain {
   if ($javaOnPath -and $javaOnPath.Source) {
     try { $javaHomes += (Split-Path (Split-Path $javaOnPath.Source -Parent) -Parent) } catch {}
   }
+
+  $managedJdkHome = Get-DkdsManagedJdkHome
+  if ($managedJdkHome) { $javaHomes += $managedJdkHome }
 
   foreach ($programRoot in @($env:ProgramFiles,${env:ProgramFiles(x86)},$env:LOCALAPPDATA)) {
     if (-not $programRoot) { continue }
@@ -209,29 +233,167 @@ function Resolve-JavaToolchain {
     if ((Test-Path $javaPath) -and (Test-Path $keytoolPath)) {
       $env:JAVA_HOME = $javaHomeCandidate
       Add-PathEntry (Join-Path $javaHomeCandidate 'bin')
-      return @{ Home=$javaHomeCandidate; Java=$javaPath; Keytool=$keytoolPath }
+      return @{ Home=$javaHomeCandidate; Java=$javaPath; Keytool=$keytoolPath; Managed=$false }
     }
   }
   return $null
 }
 
+function Install-DkdsManagedJdk {
+  $existingManagedHome = Get-DkdsManagedJdkHome
+  if ($existingManagedHome) {
+    $env:JAVA_HOME = $existingManagedHome
+    Add-PathEntry (Join-Path $existingManagedHome 'bin')
+    return @{
+      Home = $existingManagedHome
+      Java = (Join-Path $existingManagedHome 'bin\java.exe')
+      Keytool = (Join-Path $existingManagedHome 'bin\keytool.exe')
+      Managed = $true
+    }
+  }
+
+  $toolchainRoot = Get-DkdsToolchainRoot
+  if (-not $toolchainRoot) {
+    throw 'Cannot resolve a persistent user directory for the DKDS managed JDK.'
+  }
+
+  $architectureName = [string]$env:PROCESSOR_ARCHITECTURE
+  if ($env:PROCESSOR_ARCHITEW6432) { $architectureName = [string]$env:PROCESSOR_ARCHITEW6432 }
+  switch -Regex ($architectureName.ToUpperInvariant()) {
+    'ARM64' { $adoptiumArch = 'aarch64'; break }
+    'AMD64|X64' { $adoptiumArch = 'x64'; break }
+    default { throw "Unsupported Windows architecture for automatic JDK provisioning: $architectureName" }
+  }
+
+  $jdkRoot = Join-Path $toolchainRoot 'temurin-17'
+  $currentHome = Join-Path $jdkRoot 'current'
+  $downloadPath = Join-Path $jdkRoot 'temurin-17.zip'
+  $extractRoot = Join-Path $jdkRoot ('extract-' + [Guid]::NewGuid().ToString('N'))
+  $apiUrl = "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$adoptiumArch/jdk/hotspot/normal/eclipse"
+
+  New-Item -ItemType Directory -Force -Path $jdkRoot | Out-Null
+  Write-SectionTitle 'Prepare managed JDK 17'
+  Write-Host 'No complete JDK was found. DKDS will download Eclipse Temurin JDK 17 once and reuse it for Android builds.' -ForegroundColor Yellow
+  Write-Host "Managed JDK directory: $currentHome" -ForegroundColor DarkGray
+
+  try {
+    try {
+      $previousSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+      [Net.ServicePointManager]::SecurityProtocol = $previousSecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    } catch {}
+
+    $redirectResponse = $null
+    try {
+      $redirectResponse = Invoke-WebRequest -Uri $apiUrl -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+    } catch {
+      if ($_.Exception.Response) { $redirectResponse = $_.Exception.Response }
+      else { throw }
+    }
+
+    $downloadUrl = $null
+    if ($redirectResponse -and $redirectResponse.Headers) {
+      try { $downloadUrl = [string]$redirectResponse.Headers['Location'] } catch {}
+    }
+    if (-not $downloadUrl) {
+      throw 'Adoptium API did not return a JDK download redirect.'
+    }
+
+    Write-Host 'Downloading Eclipse Temurin JDK 17...' -ForegroundColor Cyan
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+
+    Write-Host 'Verifying JDK SHA-256...' -ForegroundColor Cyan
+    $checksumResponse = Invoke-WebRequest -Uri ($downloadUrl + '.sha256.txt') -UseBasicParsing
+    $checksumText = [string]$checksumResponse.Content
+    $expectedHash = (($checksumText -split '\s+')[0]).Trim().ToUpperInvariant()
+    if ($expectedHash -notmatch '^[0-9A-F]{64}$') {
+      throw 'Adoptium checksum response was invalid.'
+    }
+    $actualHash = (Get-FileHash -Path $downloadPath -Algorithm SHA256).Hash.ToUpperInvariant()
+    if ($actualHash -ne $expectedHash) {
+      throw "Managed JDK checksum verification failed. Expected $expectedHash but got $actualHash."
+    }
+
+    New-Item -ItemType Directory -Force -Path $extractRoot | Out-Null
+    Expand-Archive -Path $downloadPath -DestinationPath $extractRoot -Force
+    $javaExecutable = Get-ChildItem -Path $extractRoot -Filter 'java.exe' -File -Recurse -ErrorAction SilentlyContinue |
+      Where-Object { $_.FullName -match '[\\/]bin[\\/]java\.exe$' } |
+      Select-Object -First 1
+    if (-not $javaExecutable) { throw 'Downloaded JDK archive does not contain bin\java.exe.' }
+
+    $discoveredHome = Split-Path (Split-Path $javaExecutable.FullName -Parent) -Parent
+    $discoveredKeytool = Join-Path $discoveredHome 'bin\keytool.exe'
+    if (-not (Test-Path $discoveredKeytool)) { throw 'Downloaded JDK archive does not contain bin\keytool.exe.' }
+
+    if (Test-Path $currentHome) { Remove-Item -Recurse -Force $currentHome }
+    Move-Item -Path $discoveredHome -Destination $currentHome
+
+    @{
+      javaMajor = 17
+      distribution = 'Eclipse Temurin'
+      source = 'Adoptium API'
+      apiUrl = $apiUrl
+      sha256 = $actualHash
+      installedAt = (Get-Date).ToString('o')
+    } | ConvertTo-Json | Set-Content -Path (Join-Path $jdkRoot 'managed-jdk.json') -Encoding UTF8
+  } finally {
+    if (Test-Path $downloadPath) { Remove-Item -Force $downloadPath -ErrorAction SilentlyContinue }
+    if (Test-Path $extractRoot) { Remove-Item -Recurse -Force $extractRoot -ErrorAction SilentlyContinue }
+  }
+
+  if (-not ((Test-Path (Join-Path $currentHome 'bin\java.exe')) -and (Test-Path (Join-Path $currentHome 'bin\keytool.exe')))) {
+    throw "Managed JDK installation is incomplete: $currentHome"
+  }
+
+  $env:JAVA_HOME = $currentHome
+  Add-PathEntry (Join-Path $currentHome 'bin')
+  Write-Host 'Managed Eclipse Temurin JDK 17 is ready.' -ForegroundColor Green
+  return @{
+    Home = $currentHome
+    Java = (Join-Path $currentHome 'bin\java.exe')
+    Keytool = (Join-Path $currentHome 'bin\keytool.exe')
+    Managed = $true
+  }
+}
+
+function Ensure-JavaToolchain([bool]$AutoProvision=$true) {
+  $jdk = Resolve-JavaToolchain
+  if ($jdk) { return $jdk }
+  if (-not $AutoProvision -or $env:DKDS_DISABLE_MANAGED_JDK -eq '1') { return $null }
+  return Install-DkdsManagedJdk
+}
+
 function Check-AndroidEnvironment {
+  param(
+    [bool]$RequireJdk = $true,
+    [bool]$AutoProvisionJdk = $true
+  )
+
   Write-SectionTitle 'Android environment check'
   $ok = $true
   $sdk = Resolve-AndroidSdk
-  $jdk = Resolve-JavaToolchain
+  $jdk = $null
+  $jdkProvisionError = $null
+  if ($RequireJdk) {
+    try { $jdk = Ensure-JavaToolchain -AutoProvision $AutoProvisionJdk }
+    catch { $jdkProvisionError = $_.Exception.Message }
+  }
 
   $node = Get-Command 'node' -ErrorAction SilentlyContinue
   if ($node) { Write-Host ("OK  node: {0}" -f $node.Source) -ForegroundColor Green }
   else { Write-Host 'ERR node: not found' -ForegroundColor Red; $ok=$false }
 
-  if ($jdk) {
+  if (-not $RequireJdk) {
+    Write-Host 'INFO java/keytool: not required for this action.' -ForegroundColor DarkGray
+  } elseif ($jdk) {
     Write-Host ("OK  java: {0}" -f $jdk.Java) -ForegroundColor Green
     Write-Host ("OK  keytool: {0}" -f $jdk.Keytool) -ForegroundColor Green
     Write-Host ("JAVA_HOME: {0}" -f $jdk.Home) -ForegroundColor Green
+    if ($jdk.Managed) { Write-Host 'OK  JDK source: DKDS-managed Eclipse Temurin 17' -ForegroundColor Green }
   } else {
     Write-Host 'ERR java/keytool: no complete JDK was found.' -ForegroundColor Red
-    Write-Host '    DKDS automatically checks JAVA_HOME, PATH, Android Studio\jbr, Java, Eclipse Adoptium and Microsoft JDK folders.' -ForegroundColor Yellow
+    if ($jdkProvisionError) { Write-Host ("    Automatic JDK preparation failed: {0}" -f $jdkProvisionError) -ForegroundColor Yellow }
+    elseif (-not $AutoProvisionJdk -or $env:DKDS_DISABLE_MANAGED_JDK -eq '1') { Write-Host '    Automatic managed-JDK preparation is disabled for this action.' -ForegroundColor Yellow }
+    else { Write-Host '    DKDS could not prepare its managed Eclipse Temurin JDK 17.' -ForegroundColor Yellow }
     $ok=$false
   }
 
@@ -268,7 +430,8 @@ function Check-AndroidEnvironment {
 
 
 function Initialize-AndroidReleaseSigning {
-  [void](Require-Command 'keytool' 'Install a JDK, not only a JRE.')
+  $jdk = Ensure-JavaToolchain -AutoProvision $true
+  if (-not $jdk) { throw 'A complete JDK is required for Android release signing.' }
 
   $base = if ($env:LOCALAPPDATA) {
     Join-Path $env:LOCALAPPDATA 'DKDataStudio\android-signing'
@@ -302,7 +465,7 @@ function Initialize-AndroidReleaseSigning {
       '-validity','10000',
       '-dname','CN=DK Data Studio, OU=Local Release, O=DK Data Studio'
     )
-    & keytool @keytoolArgs
+    & $jdk.Keytool @keytoolArgs | Out-Host
     $exitCode = $LASTEXITCODE
     if ($null -ne $exitCode -and $exitCode -ne 0) {
       throw "keytool exited with code $exitCode"
@@ -375,7 +538,7 @@ function Remove-UpdateServerAutostart {
 
 function Resolve-ReleaseVersion {
   if ($Version) { return $Version }
-  $v = Read-Host 'Release version, e.g. 3.21.1'
+  $v = Read-Host 'Release version, e.g. 3.21.2'
   if (-not $v) { throw 'A release version is required.' }
   return $v
 }
@@ -435,7 +598,7 @@ try {
       }
     }
     'android-install' {
-      if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
+      if (-not (Check-AndroidEnvironment -RequireJdk $false -AutoProvisionJdk $false)) { throw 'Android environment is incomplete.' }
       [void](Require-Command 'adb' 'Install Android SDK Platform Tools.')
       $apk = Join-Path $MobileDist 'DK-Data-Studio.apk'
       if (-not (Test-Path $apk)) { throw "APK not found: $apk. Run android-build first." }

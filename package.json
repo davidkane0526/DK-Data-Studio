@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.21.1",
+  "version": "3.21.2",
   "description": "Plugin-oriented interactive scientific data analysis studio (resonance-analysis built-in plugins)",
   "main": "main.js",
   "author": "DK Data Studio contributors",

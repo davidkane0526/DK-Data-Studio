@@ -19,9 +19,10 @@ mobile-dist\DK-Data-Studio.apk
 环境自动识别：
 - SDK：ANDROID_HOME / ANDROID_SDK_ROOT / %LOCALAPPDATA%\Android\Sdk
 - adb：自动从 SDK\platform-tools 查找，不要求提前加入 PATH
-- JDK：JAVA_HOME / JDK_HOME / STUDIO_JDK / PATH / Android Studio\jbr / 常见 JDK 目录与 Windows 安装信息
+- JDK：优先使用 JAVA_HOME / JDK_HOME / STUDIO_JDK / PATH / Android Studio\jbr / 已安装 JDK
+- 如果系统没有完整 JDK：DKDS 会从 Eclipse Adoptium 官方 API 自动下载并校验 Temurin JDK 17，保存到 %LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current，之后重复使用，不需要手动安装或配置 PATH
 
-如果 android-check 仍报告“no complete JDK was found”，说明系统中确实没有可用 JDK/JBR；Gradle 本身需要 Java，此时需要安装 JDK 或 Android Studio。
+首次执行 android-check / android-build 时如果缺少 JDK，会发生一次联网下载。可设置 DKDS_DISABLE_MANAGED_JDK=1 禁用自动 JDK，此时必须自行提供完整 JDK。
 
 release 签名目录（首次构建自动生成，后续复用）：
 %LOCALAPPDATA%\DKDataStudio\android-signing

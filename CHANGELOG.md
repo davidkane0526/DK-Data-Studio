@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.21.2 — managed Android JDK + strict environment gating
+
+- Fixed `Check-AndroidEnvironment` returning a truthy array when diagnostic native-command stdout (for example `node --version`) leaked into the PowerShell pipeline; failed checks now stop the build reliably.
+- Added automatic per-user Eclipse Temurin JDK 17 provisioning from the official Adoptium stable binary API when no complete JDK is installed.
+- Managed JDK downloads are SHA-256 verified and stored outside the repository under `%LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current`.
+- Existing `JAVA_HOME` / PATH / Android Studio JBR installations still take priority over the managed JDK.
+- Android release signing now calls the resolved JDK `keytool` directly. Installing an already-built APK no longer requires Java.
+- Android app metadata advanced to `0.3.1` / versionCode `5`.
+
 ## 3.21.1 — Windows Android environment hotfix
 
 - Fixed `android-check` crashing under Windows PowerShell 5.1 because `$home` collided case-insensitively with the read-only automatic variable `$HOME`.
