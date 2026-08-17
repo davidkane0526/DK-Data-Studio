@@ -16,9 +16,9 @@ function Resolve-ArtifactRoot([string]$PathValue) {
     $PathValue = $PSScriptRoot
   }
 
-  # A quoted native-process argument whose value ends in "\" can arrive with
-  # a stray double quote on some Windows command-line parsing paths.
-  # Double quotes are illegal in Windows paths, so trimming them is safe here.
+  # Native command-line parsing can leave a stray quote when a quoted path
+  # ends in a backslash. Quotes are invalid inside Windows paths, so remove
+  # only surrounding quotes before resolving the path.
   $clean = $PathValue.Trim().Trim('"')
   if ([string]::IsNullOrWhiteSpace($clean)) {
     Fail 'ArtifactRoot is empty.'
@@ -29,6 +29,88 @@ function Resolve-ArtifactRoot([string]$PathValue) {
   } catch {
     Fail "ArtifactRoot is not a valid path: $PathValue. $($_.Exception.Message)"
   }
+}
+
+function Get-ServerHealth {
+  try {
+    $health = Invoke-RestMethod -Method Get -Uri "$ServerBaseUrl/health" -TimeoutSec 2
+    if ($health.ok -and $health.localPublishApi) { return $health }
+  } catch {}
+  return $null
+}
+
+function Start-BundledUpdateServer {
+  $serverDir = Join-Path $ArtifactRoot 'update-server'
+  $serverScript = Join-Path $serverDir 'server.js'
+  $runtimeDir = Join-Path $ArtifactRoot 'win-unpacked'
+  $runtime = Join-Path $runtimeDir 'DK Data Studio.exe'
+
+  if (-not (Test-Path -LiteralPath $serverScript -PathType Leaf)) {
+    Fail "Bundled LAN update server is missing: $serverScript"
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $serverDir 'config.json') -PathType Leaf)) {
+    Fail "Bundled LAN update server config is missing: $serverDir\config.json"
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $serverDir 'node_modules\ws\package.json') -PathType Leaf)) {
+    Fail "Bundled LAN update server dependency is missing: $serverDir\node_modules\ws"
+  }
+
+  if (-not (Test-Path -LiteralPath $runtime -PathType Leaf)) {
+    $runtime = Get-ChildItem -LiteralPath $runtimeDir -File -Filter '*.exe' -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -notmatch '(?i)elevate|uninstall' } |
+      Select-Object -First 1 -ExpandProperty FullName
+  }
+  if (-not $runtime -or -not (Test-Path -LiteralPath $runtime -PathType Leaf)) {
+    Fail "Bundled Electron runtime was not found under $runtimeDir"
+  }
+
+  try {
+    $serverUri = [uri]$ServerBaseUrl
+  } catch {
+    Fail "ServerBaseUrl is invalid: $ServerBaseUrl"
+  }
+  if ($serverUri.Port -ne 45880 -or $serverUri.Host -notin @('127.0.0.1','localhost','::1')) {
+    Fail "The bundled server can only auto-start for the local default endpoint http://127.0.0.1:45880. Current endpoint: $ServerBaseUrl"
+  }
+
+  Write-Host 'LAN update server is not running. Starting bundled server...'
+  Write-Host "Runtime  : $runtime"
+  Write-Host "Server   : $serverScript"
+
+  $hadElectronRunAsNode = Test-Path Env:ELECTRON_RUN_AS_NODE
+  $previousElectronRunAsNode = $env:ELECTRON_RUN_AS_NODE
+  try {
+    $env:ELECTRON_RUN_AS_NODE = '1'
+    Start-Process -FilePath $runtime `
+      -ArgumentList ('"' + $serverScript + '"') `
+      -WorkingDirectory $serverDir `
+      -WindowStyle Hidden | Out-Null
+  } catch {
+    Fail "Unable to start bundled LAN update server. $($_.Exception.Message)"
+  } finally {
+    if ($hadElectronRunAsNode) {
+      $env:ELECTRON_RUN_AS_NODE = $previousElectronRunAsNode
+    } else {
+      Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+    }
+  }
+
+  for ($attempt = 1; $attempt -le 40; $attempt++) {
+    Start-Sleep -Milliseconds 500
+    $health = Get-ServerHealth
+    if ($health) {
+      Write-Host 'Bundled LAN update server is ready.' -ForegroundColor Green
+      return $health
+    }
+  }
+
+  $logPath = Join-Path $serverDir 'server.log'
+  if (Test-Path -LiteralPath $logPath -PathType Leaf) {
+    Write-Host ''
+    Write-Host "Server log: $logPath" -ForegroundColor Yellow
+    Get-Content -LiteralPath $logPath -Tail 12 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
+  }
+  Fail "Bundled LAN update server did not become ready at $ServerBaseUrl within 20 seconds."
 }
 
 $ArtifactRoot = Resolve-ArtifactRoot $ArtifactRoot
@@ -66,13 +148,12 @@ Write-Host "Server   : $ServerBaseUrl"
 Write-Host "Files    : $($files.Count)"
 Write-Host ''
 
-try {
-  $health = Invoke-RestMethod -Method Get -Uri "$ServerBaseUrl/health" -TimeoutSec 5
-} catch {
-  Fail "LAN update server is not reachable at $ServerBaseUrl. Start DKDS LAN Update Server on this PC first. $($_.Exception.Message)"
+$health = Get-ServerHealth
+if (-not $health) {
+  $health = Start-BundledUpdateServer
 }
-if (-not $health.ok) {
-  Fail 'LAN update server health check did not return ok=true.'
+if (-not $health -or -not $health.ok -or -not $health.localPublishApi) {
+  Fail "LAN update server health check failed at $ServerBaseUrl."
 }
 
 $startBody = @{ version = $version; replace = $false } | ConvertTo-Json -Compress
@@ -110,6 +191,8 @@ Write-Host 'LAN update published successfully.' -ForegroundColor Green
 Write-Host "Version     : $($result.version)"
 Write-Host "Published at: $($result.publishedAt)"
 Write-Host "Clients     : $($result.connectedClients)"
+Write-Host "Dashboard   : $ServerBaseUrl/"
 Write-Host ''
+Write-Host 'The bundled LAN update server remains running in the background so clients can receive this release.'
 Write-Host 'win-unpacked is for direct local use only; it is not uploaded to the update server.'
 exit 0
