@@ -68,22 +68,26 @@ jobs:
           "DKDS_BUILD_VERSION=$ciVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "CI build version: $ciVersion"
 
-      - name: Build Windows installer and unpacked app
+      - name: Build Windows installer and portable app
         shell: pwsh
         run: npm run dist
 
-      - name: Stage Windows artifact
+      - name: Stage Windows artifacts
         shell: pwsh
         run: |
           $stage = Join-Path $PWD 'artifact-windows'
           if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
           New-Item -ItemType Directory -Path $stage | Out-Null
 
-          $setup = Get-ChildItem -Path dist -File -Filter '*.exe' |
-            Where-Object { $_.Name -match '(?i)setup' } |
-            Select-Object -First 1
+          $executables = @(Get-ChildItem -Path dist -File -Filter '*.exe')
+          if ($executables.Count -eq 0) { throw 'No Windows EXE files found in dist.' }
+          $setup = $executables | Where-Object { $_.Name -match '(?i)setup' } | Select-Object -First 1
           if (-not $setup) { throw 'Setup EXE not found in dist.' }
-          Copy-Item -LiteralPath $setup.FullName -Destination $stage
+          $portable = $executables | Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found in dist.' }
+          $executables | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $stage
+          }
 
           $latest = Join-Path $PWD 'dist\latest.yml'
           if (-not (Test-Path -LiteralPath $latest)) { throw 'latest.yml not found in dist.' }
