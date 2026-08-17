@@ -1,5 +1,13 @@
 # Changelog
 
+## plugin branch — 3.20.0-plugin.2
+
+- fixed Windows PowerShell command argument forwarding so `npm install`, `npm start`, checks, tests, builds, Android and update actions receive their arguments correctly;
+- replaced fragile WinForms absolute-coordinate construction with a responsive card layout compatible with Windows PowerShell 5.1;
+- added explicit dependency repair and desktop-tooling diagnostics actions to both CLI and GUI;
+- added Windows-tooling regression checks to `npm run check` and `npm test`;
+- kept the PowerShell sources UTF-8 with BOM so Chinese UI text is decoded correctly by Windows PowerShell 5.1.
+
 ## plugin branch — 3.19.0-plugin.1
 
 - introduced Activity + context-toolbar shell with automatic overflow;

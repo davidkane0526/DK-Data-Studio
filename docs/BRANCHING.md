@@ -46,4 +46,4 @@ Only merge into `main` when explicitly requested.
 
 ## Current delivery checkpoint
 
-The current plugin-branch delivery is `v3.20.0-plugin.1` (created after the v3.19 plugin-native workspace milestone). `main` remains unchanged at `v3.14.0-main-baseline`.
+The current plugin-branch delivery is `v3.20.0-plugin.2` (created after the v3.19 plugin-native workspace milestone). `main` remains unchanged at `v3.14.0-main-baseline`.
