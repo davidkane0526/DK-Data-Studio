@@ -4,6 +4,12 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
+const {
+  WindowsNetworkDiscovery,
+  normalizeDeviceId,
+  extractMessageId,
+  buildMetadataResponse
+} = require('./windows-network-discovery');
 
 function randomPairKey() {
   return String(crypto.randomInt(1000, 10000));
@@ -55,6 +61,12 @@ function readBody(req, maxBytes = 32 * 1024) {
   });
 }
 
+function requestLocalIPv4(req) {
+  const raw = String(req?.socket?.localAddress || '').replace(/^::ffff:/, '');
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(raw)) return raw;
+  return lanIPv4Addresses()[0] || '127.0.0.1';
+}
+
 class LanWebServer extends EventEmitter {
   constructor({ app, BrowserWindow }) {
     super();
@@ -67,6 +79,16 @@ class LanWebServer extends EventEmitter {
     this.pairKey = randomPairKey();
     this.tokens = new Set();
     this.lastError = '';
+    this.discovery = new WindowsNetworkDiscovery({
+      deviceId: this.settings.deviceId,
+      getHttpPort: () => Number(this.settings.port) || 45910,
+      deviceName: 'DK Data Studio'
+    });
+
+    // Persist the generated discovery UUID immediately. This makes Windows see
+    // the LAN web endpoint as the same network device across app restarts.
+    this.settings.deviceId = this.discovery.deviceId;
+    this.persist();
   }
 
   readSettings() {
@@ -75,7 +97,8 @@ class LanWebServer extends EventEmitter {
     return {
       enabled: !!saved.enabled,
       noKey: !!saved.noKey,
-      port: Math.max(1024, Math.min(65535, Number(saved.port) || 45910))
+      port: Math.max(1024, Math.min(65535, Number(saved.port) || 45910)),
+      deviceId: normalizeDeviceId(saved.deviceId) || crypto.randomUUID()
     };
   }
 
@@ -95,12 +118,17 @@ class LanWebServer extends EventEmitter {
       urls: this.server ? lanIPv4Addresses().map(ip => `http://${ip}:${port}/`) : [],
       localhostUrl: `http://127.0.0.1:${port}/`,
       pairedClients: this.tokens.size,
+      networkDiscovery: this.discovery?.getStatus?.() || null,
       error: this.lastError
     };
   }
 
   getSettings() {
-    return { ...this.settings };
+    return {
+      enabled: !!this.settings.enabled,
+      noKey: !!this.settings.noKey,
+      port: Number(this.settings.port) || 45910
+    };
   }
 
   broadcast() {
@@ -184,6 +212,15 @@ class LanWebServer extends EventEmitter {
     });
 
     this.server = server;
+
+    // Windows Network discovery is an optional convenience layer. Failure to
+    // bind/join WS-Discovery must never stop the actual LAN web server.
+    try {
+      await this.discovery.start();
+    } catch (err) {
+      console.warn('LAN web WS-Discovery:', err.message);
+    }
+
     this.broadcast();
     return this.getStatus();
   }
@@ -196,6 +233,9 @@ class LanWebServer extends EventEmitter {
     const server = this.server;
     this.server = null;
     this.tokens.clear();
+
+    try { await this.discovery.stop(); } catch (err) { console.warn('LAN web WS-Discovery stop:', err.message); }
+
     if (server) {
       await new Promise(resolve => server.close(() => resolve()));
     }
@@ -269,6 +309,37 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
 
   async handleRequest(req, res) {
     const u = new URL(req.url, 'http://localhost');
+
+    // WSD metadata exchange is intentionally outside the pairing gate. It only
+    // describes the device and provides the same presentation URL users could
+    // already see in the LAN web panel; app data remains protected by pairing.
+    if (u.pathname === '/wsd') {
+      if (req.method === 'GET') {
+        res.writeHead(302, { Location:'/', 'Cache-Control':'no-store' });
+        res.end();
+        return;
+      }
+      if (req.method === 'POST') {
+        const body = (await readBody(req, 64 * 1024)).toString('utf8');
+        const ip = requestLocalIPv4(req);
+        const presentationUrl = `http://${ip}:${Number(this.settings.port) || 45910}/`;
+        const xml = buildMetadataResponse({
+          deviceId: this.settings.deviceId,
+          version: this.app.getVersion(),
+          presentationUrl,
+          requestMessageId: extractMessageId(body),
+          friendlyName: `DK Data Studio · ${os.hostname()}`
+        });
+        res.writeHead(200, {
+          'Content-Type':'application/soap+xml; charset=utf-8',
+          'Content-Length':Buffer.byteLength(xml),
+          'Cache-Control':'no-store',
+          'X-Content-Type-Options':'nosniff'
+        });
+        res.end(xml);
+        return;
+      }
+    }
 
     if (req.method === 'GET' && u.pathname === '/health') {
       res.writeHead(200, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
