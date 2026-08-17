@@ -1,0 +1,18 @@
+GRS 局域网更新最简步骤
+=======================
+
+推荐方式：双击 GRS_GUI.cmd -> “局域网更新”。
+
+命令行：
+1. 构建 Windows：
+   GRS.cmd build-windows
+2. 启动服务器：
+   GRS.cmd update-server
+3. 发布已有构建：
+   GRS.cmd publish-update
+
+以后一个动作完成构建+发布：
+   GRS.cmd build-publish-update -Version 3.20.0-plugin.2
+
+服务器目录：services\update-server\
+完整说明：docs\guides\UPDATE_SERVER_CN.md

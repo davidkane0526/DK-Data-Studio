@@ -10,17 +10,20 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand">Graphene Resonance Studio <span class="version">v3.19.0-plugin.1</span></div>
+        <div class="brand" title="Graphene Resonance Studio">GRS <span class="brand-full">Graphene Resonance Studio</span><span class="version">v3.20.0-plugin.1</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
-          <div class="toolbar-group compact-group" title="文件">
+          <div class="toolbar-group compact-group file-command-group" title="工程与数据">
             <button id="openBtn" class="toolbar-btn strong" title="导入数据 / 打开导入工作台">导入</button>
             <button id="openProjectBtn" class="toolbar-btn" title="读取工程 · Ctrl+O">读取</button>
             <button id="saveProjectBtn" class="toolbar-btn" title="保存工程 · Ctrl+S">保存</button>
           </div>
-          <div class="toolbar-group compact-group" title="编辑">
-            <button id="undoBtn" class="toolbar-btn icon-btn" title="回退上一步 · Ctrl+Z">↶</button>
-            <button id="deselectBtn" class="toolbar-btn" title="退出选中 · Esc">退出选中</button>
+          <div class="menu-anchor compact-menu-anchor">
+            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
+            <div id="editMenu" class="command-menu hidden">
+              <button id="undoBtn" type="button"><span>撤销</span><kbd>Ctrl+Z</kbd></button>
+              <button id="deselectBtn" type="button"><span>退出选中</span><kbd>Esc</kbd></button>
+            </div>
           </div>
         </div>
 
@@ -32,9 +35,18 @@
           </div>
         </div>
 
+        <div class="context-commandbar" aria-label="当前工作区命令">
+          <span id="activityContextTitle" class="sr-only">工作区</span>
+          <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
+          <div class="context-overflow-anchor">
+            <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多 ▾</button>
+            <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+          </div>
+        </div>
+
         <div class="system-commandbar">
           <div class="menu-anchor">
-            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" aria-haspopup="true" aria-expanded="false">导出 ▾</button>
+            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出 ▾</button>
             <div id="exportMenu" class="command-menu hidden">
               <button id="exportMainSvgBtn" type="button">主图 SVG</button>
               <button id="exportMainPngBtn" type="button">主图 PNG</button>
@@ -44,22 +56,14 @@
               <div id="pluginExportMenu" data-plugin-menu="export"></div>
             </div>
           </div>
-          <button id="updateBtn" class="toolbar-btn update-toolbar-btn" title="局域网热更新">
-            更新 <span id="updateBadge" class="update-badge hidden"></span>
-          </button>
-          <button id="lanWebBtn" class="toolbar-btn" title="让同一局域网中的浏览器运行 Graphene Resonance Studio">网页版</button>
-          <button id="pluginManagerBtn" class="toolbar-btn" title="管理、启用、停用和诊断插件">插件</button>
-        </div>
-      </div>
-
-      <div class="topbar-context">
-        <div class="activity-context-head">
-          <span id="activityContextTitle">工作区</span>
-        </div>
-        <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
-        <div class="context-overflow-anchor">
-          <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多 ▾</button>
-          <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+          <div class="menu-anchor">
+            <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">管理 ▾</button>
+            <div id="manageMenu" class="command-menu hidden">
+              <button id="pluginManagerBtn" type="button">插件管理</button>
+              <button id="lanWebBtn" type="button">局域网网页版</button>
+              <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
+            </div>
+          </div>
         </div>
       </div>
     </header>

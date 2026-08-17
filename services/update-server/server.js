@@ -122,7 +122,7 @@ code{background:#f2f5fa;padding:2px 5px;border-radius:5px}.ok{color:#087443}.mut
 </div>
 <div class="box">
 <b>发布方式</b><br><br>
-在应用工程目录先运行 <code>BUILD_WINDOWS.cmd</code>，然后运行 <code>PUBLISH_UPDATE.cmd</code>。
+在应用工程目录运行 <code>GRS_GUI.cmd</code>，在“局域网更新”页执行“构建 Windows”与“发布现有构建”。
 发布脚本会复制 electron-builder 生成的更新文件；服务端检测到 <code>current.json</code> 改变后立即向所有客户端推送。
 </div>
 <p class="muted">简化可信局域网模式：不需要任何公钥/私钥。安装包下载后仍由 electron-updater 按 latest.yml 中的 SHA512 校验完整性。请仅在你信任的实验室/办公室局域网中使用。</p>
@@ -296,7 +296,7 @@ server.listen(Number(config.port), config.host || '0.0.0.0', () => {
   log(`Storage   : ${storageDir}`);
   log(`Current   : ${currentRelease?.version || '(none)'}`);
   for (const ip of lanIPv4Addresses()) log(`Dashboard : http://${ip}:${config.port}`);
-  log('Publish a build with: PUBLISH_UPDATE.cmd');
+  log('Publish a build with: GRS.cmd publish-update');
   log('============================================================');
   multicastAnnouncement();
 });

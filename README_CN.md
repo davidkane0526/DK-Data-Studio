@@ -1,4 +1,49 @@
-# Graphene Resonance Studio — plugin branch (3.19.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.20.0-plugin.1)
+
+
+## v3.20 UI 与工程整理
+
+v3.20 不增加新的科学定义，重点是把 plugin 分支整理成适合下一阶段长期开发的工程。
+
+### 单行自适应命令栏
+
+桌面顶部不再固定分成两行。当前结构为：
+
+```text
+GRS | 导入/工程 | 编辑 | Activity | 当前工作区命令 | 导出 | 管理
+```
+
+Activity 过多自动进入 `工作区 ▾`；当前插件命令过多则按插件声明的 `priority / order / section` 自动保留高优先级动作，其余进入 `更多 ▾`，而不是新增第二行。
+
+普通 UI 使用统一字号和控制高度 token，按钮更紧凑但保持完整命中范围。
+
+### Windows 工具入口只剩两个
+
+```text
+GRS_GUI.cmd   推荐的图形开发工具箱
+GRS.cmd       统一命令行入口
+```
+
+旧的构建、Android、更新服务器、自启动等一批 CMD 已合并到：
+
+```text
+tools/windows/grs-tools.ps1
+tools/windows/grs-gui.ps1
+```
+
+详细说明：`docs/guides/TOOLBOX_CN.md`。
+
+### 工程目录整理
+
+```text
+services/update-server/   局域网更新服务
+config/                   默认运行配置
+tools/windows/            Windows 开发/构建工具
+docs/guides/              操作指南
+docs/releases/            发布快照
+```
+
+下一会话首先阅读：`docs/HANDOFF_NEXT_SESSION.md`。
 
 
 ## v3.19 成熟共振工作区完成 Plugin-Native UI 迁移
@@ -466,7 +511,7 @@ Android 生命周期容器
 Windows 最简单的 APK 测试流程：
 
 ```text
-BUILD_ANDROID_DEBUG.cmd
+GRS.cmd android-build
 ```
 
 成功后生成：
@@ -478,13 +523,13 @@ mobile-dist\Graphene-Resonance-Studio-debug.apk
 然后：
 
 ```text
-INSTALL_ANDROID_APK.cmd
+GRS.cmd android-install
 ```
 
 或者连接开启 USB 调试的手机后运行：
 
 ```text
-RUN_ANDROID_DEVICE.cmd
+GRS.cmd android-run
 ```
 
 详细环境见：
@@ -1342,13 +1387,13 @@ Vg=-10 V
 日常只需要：
 
 ```text
-START_UPDATE_SERVER.cmd
+GRS.cmd update-server
 ```
 
 以及：
 
 ```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8
+GRS.cmd build-publish-update -Version 3.20.0-plugin.2
 ```
 
 即可。
@@ -1356,7 +1401,7 @@ BUILD_AND_PUBLISH_UPDATE.cmd 3.8
 **从旧 v3.7 签名版迁移到 v3.8，需要同学手动安装一次 v3.8 Setup。**
 之后的更新不再需要任何密钥。
 
-完整说明：`UPDATE_SERVER_GUIDE_CN.md`
+完整说明：`docs/guides/UPDATE_SERVER_CN.md`
 
 
 
@@ -1374,34 +1419,21 @@ BUILD_AND_PUBLISH_UPDATE.cmd 3.8
 
 ## Windows 发布脚本兼容性修复
 
-`BUILD_AND_PUBLISH_UPDATE.cmd`、`BUILD_WINDOWS.cmd`、`PUBLISH_UPDATE.cmd`、
-`START_UPDATE_SERVER.cmd` 等 Windows 脚本已改为：
+v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `GRS.cmd` / `GRS_GUI.cmd` 调用 `tools/windows/grs-tools.ps1`。后端脚本负责：
 
-- ASCII-only
-- Windows CRLF
-- 避免在 CMD 控制流中使用中文提示文字
-- 使用 `goto` 而不是容易受 CMD 解析影响的复杂括号块
+- 依赖安装；
+- Windows 构建；
+- Android 环境检查/构建/安装；
+- 局域网更新服务；
+- 插件索引与验证。
 
-因此不再受 Windows 中文代码页 / UTF-8 无 BOM 影响。
-
-`BUILD_AND_PUBLISH_UPDATE.cmd` 支持两种版本写法：
+发布新版本时使用显式版本号：
 
 ```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8.1
+GRS.cmd build-publish-update -Version 3.20.0-plugin.2
 ```
 
-表示精确发布 3.7.1。
-
-也可以：
-
-```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8
-```
-
-如果当前源码为 3.8.0，则自动解析为 3.8.1；
-再次从 3.8.1 源码运行 `3.8`，则解析为 3.8.2。
-
-热更新版本必须高于当前版本；脚本会拒绝相同或更低版本。
+图形界面可直接使用 `GRS_GUI.cmd` 的“局域网更新”页。
 
 
 ## v3.7 直接框选 / 局部寻峰 / 跨 Vg 智能峰序
@@ -1744,7 +1776,7 @@ TER 热图明确表示完整二维矩阵：
 以下启动方式不受时间限制：
 
 ```text
-START_DEV.cmd
+GRS.cmd dev
 npm start
 ```
 
@@ -1754,7 +1786,7 @@ Electron 在开发模式下 `app.isPackaged === false`，因此不会执行到�
 运行：
 
 ```text
-BUILD_WINDOWS.cmd
+GRS.cmd build-windows
 ```
 
 或：
@@ -2267,7 +2299,7 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`START_DEV.cmd`
+`GRS.cmd dev`
 
 首次会自动安装 npm 依赖。
 
@@ -2275,6 +2307,6 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`BUILD_WINDOWS.cmd`
+`GRS.cmd build-windows`
 
 输出位于 `release/`。

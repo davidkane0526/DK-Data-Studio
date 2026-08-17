@@ -337,3 +337,28 @@ The old mature D3 resonance canvas remains a compatibility implementation inside
 ## External plugin distribution
 
 The desktop host has a user plugin directory and `.grsplugin` loader. External packages are validated by the main process, loaded through the context-isolated renderer plugin kernel, and managed by the same lifecycle as built-ins. Runtime update is transactional: if a replacement package cannot load/activate, the prior installed package is restored when possible. See `PLUGIN_PACKAGES.md`.
+
+## v3.20 Shell and developer-tooling boundary
+
+The desktop shell now has one adaptive command row above project tabs. It is a host primitive, not a plugin-specific toolbar layout.
+
+```text
+Global project/data commands
+→ Activity switcher
+→ active Activity plugin commands
+→ Export / Manage menus
+```
+
+Activity and context command overflow are width-driven. Plugins should declare `activity`, `priority`, `order`, and `section`; they must not add another permanent toolbar row to solve overflow.
+
+Windows operational tooling is outside the application runtime:
+
+```text
+GRS.cmd / GRS_GUI.cmd
+        ↓
+tools/windows/grs-tools.ps1
+        ↓
+Node / Electron Builder / Expo / Gradle / LAN update service
+```
+
+The LAN update server is a development/deployment service under `services/update-server/`, not part of the renderer plugin architecture.

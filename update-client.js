@@ -71,7 +71,7 @@ class LanUpdateClient extends EventEmitter {
     this.app = app;
     this.BrowserWindow = BrowserWindow;
     this.root = __dirname;
-    this.defaultConfigPath = path.join(this.root, 'update-config.default.json');
+    this.defaultConfigPath = path.join(this.root, 'config', 'update-config.default.json');
     this.userSettingsPath = path.join(app.getPath('userData'), 'update-settings.json');
 
     this.defaults = this.readDefaults();

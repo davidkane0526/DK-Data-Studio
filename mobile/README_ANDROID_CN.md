@@ -30,7 +30,7 @@ src/science/* shared scientific engine
 
 ## Windows 环境
 
-仓库根目录也提供 `CHECK_ANDROID_ENV.cmd`，可先检查 Node、Java、ANDROID_HOME、adb 与 Android SDK Platform 36。
+仓库根目录也提供 `GRS.cmd android-check`，可先检查 Node、Java、ANDROID_HOME、adb 与 Android SDK Platform 36。
 
 
 
@@ -60,7 +60,7 @@ echo %ANDROID_HOME%
 在仓库根目录双击：
 
 ```text
-BUILD_ANDROID_DEBUG.cmd
+GRS.cmd android-build
 ```
 
 脚本会：
@@ -92,13 +92,13 @@ mobile-dist\Graphene-Resonance-Studio-debug.apk
 USB 连接后运行：
 
 ```text
-RUN_ANDROID_DEVICE.cmd
+GRS.cmd android-run
 ```
 
 或者先编译 APK，再运行：
 
 ```text
-INSTALL_ANDROID_APK.cmd
+GRS.cmd android-install
 ```
 
 ## 手动命令

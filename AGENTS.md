@@ -102,9 +102,9 @@ Do not commit generated `mobile/android`, `mobile/ios`, `mobile/node_modules`, `
 For Android changes, preserve these routes:
 
 ```text
-BUILD_ANDROID_DEBUG.cmd
-RUN_ANDROID_DEVICE.cmd
-INSTALL_ANDROID_APK.cmd
+GRS.cmd android-build
+GRS.cmd android-run
+GRS.cmd android-install
 ```
 
 The Android shell must remain a consumer of the same plugins and `src/science/*` engine.
@@ -165,3 +165,22 @@ Domain canvases own their resize behavior via the generic `layout:resize` event.
 ## Installable plugins
 
 Desktop runtime supports trusted local `.grsplugin` packages. Read `docs/PLUGIN_PACKAGES.md` before adding package installation, update, uninstall, or external detector behavior. New algorithm plugins should be independently installable when practical; never reserve a hard-coded detector id in the Resonance Workbench.
+
+## v3.20 shell / tooling / repository hygiene
+
+Before changing the desktop header, read `docs/DEVELOPMENT_GUIDE.md` and `docs/HANDOFF_NEXT_SESSION.md`.
+
+The top command shell is intentionally one row above project tabs. Do not restore a permanent second context-toolbar row. Plugin actions must use `activity`, `priority`, `order`, and `section`; the host moves lower-priority actions into overflow.
+
+Ordinary controls should use the semantic size tokens defined in `src/style.css` (`--ui-font-size`, `--ui-font-small`, `--ui-font-title`, `--ui-control-h`) instead of inventing arbitrary font/control sizes.
+
+Windows developer tooling is consolidated. The only root CMD files are:
+
+```text
+GRS.cmd
+GRS_GUI.cmd
+```
+
+Do not add another root CMD. Add an action to `tools/windows/grs-tools.ps1` and, when useful, a button in `tools/windows/grs-gui.ps1`.
+
+Repository layout is documented in `docs/PROJECT_STRUCTURE.md`. Operational update-server code belongs under `services/update-server/`; default configuration belongs under `config/`; user/developer operation guides belong under `docs/guides/`.

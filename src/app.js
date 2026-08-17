@@ -4759,7 +4759,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.19-plugin',
+      version:'3.20-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -5679,7 +5679,7 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.19.0-plugin.1',
+      appVersion:'3.20.0-plugin.1',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),

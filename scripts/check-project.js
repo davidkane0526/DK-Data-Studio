@@ -56,10 +56,10 @@ const required = [
   'mobile/plugins/withGrsWebAssets.js',
   'mobile/scripts/sync-web-assets.js',
   'mobile/README_ANDROID_CN.md',
-  'BUILD_ANDROID_DEBUG.cmd',
-  'RUN_ANDROID_DEVICE.cmd',
-  'INSTALL_ANDROID_APK.cmd',
-  'CHECK_ANDROID_ENV.cmd',
+  'GRS.cmd',
+  'GRS_GUI.cmd',
+  'tools/windows/grs-tools.ps1',
+  'tools/windows/grs-gui.ps1',
   'docs/ARCHITECTURE.md',
   'docs/PLUGIN_API.md',
   'docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md',
@@ -70,6 +70,13 @@ const required = [
   'docs/FORMULA_ENGINE.md',
   'docs/WORKSPACE_PLUGIN_API.md',
   'docs/PLUGIN_PACKAGES.md',
+  'docs/PROJECT_STRUCTURE.md',
+  'docs/DEVELOPMENT_GUIDE.md',
+  'docs/HANDOFF_NEXT_SESSION.md',
+  'docs/guides/TOOLBOX_CN.md',
+  'services/update-server/server.js',
+  'services/update-server/publish-release.js',
+  'config/update-config.default.json',
   'scripts/check-plugin-boundaries.js',
   'src/plugins/resonance-detector-robust/plugin.json',
   'src/plugins/resonance-detector-robust/plugin.js',
@@ -83,5 +90,22 @@ for (const rel of required) {
   }
 }
 
+const allCmds = [];
+(function collectCmds(dir){
+  for (const name of fs.readdirSync(dir)) {
+    if (name === '.git' || name === 'node_modules' || name === 'dist' || name === 'android' || name === 'ios') continue;
+    const full = path.join(dir,name);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) collectCmds(full);
+    else if (name.toLowerCase().endsWith('.cmd')) allCmds.push(path.relative(root,full).replace(/\\/g,'/'));
+  }
+})(root);
+allCmds.sort();
+const expectedCmds = ['GRS.cmd','GRS_GUI.cmd'];
+if (JSON.stringify(allCmds) !== JSON.stringify(expectedCmds)) {
+  failed = true;
+  console.error(`CMD consolidation policy failed. Expected ${expectedCmds.join(', ')}; found ${allCmds.join(', ')}`);
+}
+
 if (failed) process.exit(2);
-console.log(`Project check OK: ${jsFiles.length} JavaScript files + required architecture docs.`);
+console.log(`Project check OK: ${jsFiles.length} JavaScript files + required architecture/docs/toolbox layout.`);

@@ -7,9 +7,9 @@ Thumbs.db
 .vscode/
 .idea/
 coverage/
-update-server/storage/*
-!update-server/storage/.gitkeep
-update-server/keys/
+services/update-server/storage/*
+!services/update-server/storage/.gitkeep
+services/update-server/keys/
 *.tmp
 *.bak
 

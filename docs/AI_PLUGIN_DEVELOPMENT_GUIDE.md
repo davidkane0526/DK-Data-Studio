@@ -378,3 +378,11 @@ Plugins that own Plotly/D3 canvases should react to `layout:resize` themselves. 
 ## Packaging a finished plugin
 
 When a feature should be installable without rebuilding Graphene Resonance Studio, give it a non-`builtin.*` id and package it with `npm run plugin:package -- <folder> <name>.grsplugin`. Read `PLUGIN_PACKAGES.md`. For detector plugins, the Resonance Workbench must discover the provider dynamically; do not add detector-name branches to the workbench.
+
+## v3.20 UI/tooling constraints for AI changes
+
+Do not solve toolbar crowding by adding rows. Register plugin actions with meaningful `priority`, `order`, `section`, and `activity`; the host will overflow low-priority actions automatically.
+
+For ordinary UI typography, use the semantic CSS tokens already defined in `src/style.css`. Do not introduce arbitrary 8px/9px/13px control fonts unless the component is genuinely a different semantic level.
+
+Do not create a new `.cmd` for a build or maintenance task. Add a new action to `tools/windows/grs-tools.ps1`; add a GUI button in `tools/windows/grs-gui.ps1` if users benefit from it. The repository-wide rule is exactly two CMD launchers: `GRS.cmd` and `GRS_GUI.cmd`.

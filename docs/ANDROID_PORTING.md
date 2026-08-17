@@ -105,7 +105,7 @@ This supports:
 From repository root, run:
 
 ```text
-BUILD_ANDROID_DEBUG.cmd
+GRS.cmd android-build
 ```
 
 It performs:
@@ -126,7 +126,7 @@ mobile-dist\Graphene-Resonance-Studio-debug.apk
 Install it with:
 
 ```text
-INSTALL_ANDROID_APK.cmd
+GRS.cmd android-install
 ```
 
 or manually:
@@ -138,7 +138,7 @@ adb install -r mobile-dist/Graphene-Resonance-Studio-debug.apk
 For an attached phone/emulator with live native compilation:
 
 ```text
-RUN_ANDROID_DEVICE.cmd
+GRS.cmd android-run
 ```
 
 ## 7. EAS APK alternative

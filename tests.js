@@ -297,8 +297,8 @@ console.log('v3.4 smart detection / transform / clipboard checks passed.');
 const mainV38 = fs.readFileSync('./main.js','utf8');
 const preloadV38 = fs.readFileSync('./preload.js','utf8');
 const updateClientV38 = fs.readFileSync('./update-client.js','utf8');
-const serverV38 = fs.readFileSync('./update-server/server.js','utf8');
-const publishV38 = fs.readFileSync('./update-server/publish-release.js','utf8');
+const serverV38 = fs.readFileSync('./services/update-server/server.js','utf8');
+const publishV38 = fs.readFileSync('./services/update-server/publish-release.js','utf8');
 const pkgV38 = JSON.parse(fs.readFileSync('./package.json','utf8'));
 const htmlV38 = fs.readFileSync('./src/index.html','utf8');
 const prepareV38 = fs.readFileSync('./scripts/prepare-build.js','utf8');
@@ -330,8 +330,10 @@ assert(publishV38.includes("mode: 'trusted-lan'"),'current release metadata must
 assert(prepareV38.includes('generate-build-info.js')&&!prepareV38.includes('generate-update-keys'),'build preparation must only generate packaged build metadata');
 assert(htmlV38.includes('id="updatePanel"')&&htmlV38.includes('id="updateInstallBtn"'),'renderer must expose update status/settings/install UI');
 assert(htmlV38.includes('可信局域网简化模式')&&htmlV38.includes('SHA512'),'update UI must clearly describe keyless trusted-LAN integrity model');
-assert(fs.existsSync('./START_UPDATE_SERVER.cmd')&&fs.existsSync('./PUBLISH_UPDATE.cmd')&&fs.existsSync('./BUILD_AND_PUBLISH_UPDATE.cmd'),'server start/publish one-click scripts must exist');
-assert(fs.existsSync('./INSTALL_UPDATE_SERVER_AUTOSTART.cmd')&&fs.existsSync('./REMOVE_UPDATE_SERVER_AUTOSTART.cmd'),'optional Windows autostart server scripts must exist');
+assert(fs.existsSync('./GRS.cmd')&&fs.existsSync('./GRS_GUI.cmd'),'consolidated CLI/GUI Windows entry points must exist');
+const grsToolsV38=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
+assert(grsToolsV38.includes("'update-server'")&&grsToolsV38.includes("'publish-update'")&&grsToolsV38.includes("'build-publish-update'"),'unified Windows backend must own update-server/publish workflows');
+assert(grsToolsV38.includes("'update-autostart-install'")&&grsToolsV38.includes("'update-autostart-remove'"),'unified Windows backend must own update-server autostart workflows');
 console.log('v3.8 trusted-LAN keyless hot-update checks passed.');
 
 // v3.6 one-click peak order sorting
@@ -851,8 +853,11 @@ assert(mobileAssetPlugin316.includes("android',")&&mobileAssetPlugin316.includes
   'Expo config plugin must copy the offline renderer into Android assets');
 assert(mobileSync316.includes("fs.cpSync(source, out")&&mobileSync316.includes("vendor, 'plotly.min.js'"),
   'mobile sync must package full plugin renderer and plotting libraries offline');
-for(const rel of ['./BUILD_ANDROID_DEBUG.cmd','./RUN_ANDROID_DEVICE.cmd','./INSTALL_ANDROID_APK.cmd','./mobile/README_ANDROID_CN.md'])
-  assert(fs.existsSync(rel),`Android build/install helper missing: ${rel}`);
+for(const rel of ['./GRS.cmd','./GRS_GUI.cmd','./tools/windows/grs-tools.ps1','./mobile/README_ANDROID_CN.md'])
+  assert(fs.existsSync(rel),`Android/toolbox helper missing: ${rel}`);
+const grsTools316=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
+assert(grsTools316.includes("'android-check'")&&grsTools316.includes("'android-build'")&&grsTools316.includes("'android-run'")&&grsTools316.includes("'android-install'"),
+  'unified toolbox backend must expose Android check/build/run/install actions');
 console.log('v3.16 science rewrite / React Native Android shell checks passed.');
 
 // v3.16 rewritten mature-domain unit checks
@@ -1082,3 +1087,39 @@ assert(fs.existsSync('./docs/PLUGIN_PACKAGES.md')&&fs.existsSync('./examples/ext
   'external plugin packaging and installable detector SDK example must be documented');
 
 console.log('v3.19 plugin-native resonance workspace / adaptive shell checks passed.');
+
+
+// v3.20 single-row shell / toolbox / clean project structure
+const htmlV320=fs.readFileSync('./src/index.html','utf8');
+const cssV320=fs.readFileSync('./src/style.css','utf8');
+const kernelV320=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const pkgV320=JSON.parse(fs.readFileSync('./package.json','utf8'));
+const grsTools320=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
+const grsGui320=fs.readFileSync('./tools/windows/grs-gui.ps1','utf8');
+assert(pkgV320.version==='3.20.0-plugin.1','v3.20 package version must be set');
+assert(htmlV320.includes('class="context-commandbar"')&&!htmlV320.includes('class="topbar-context"'),
+  'desktop shell must use one unified command row rather than a permanent second context row');
+assert(htmlV320.includes('data-menu-target="editMenu"')&&htmlV320.includes('data-menu-target="manageMenu"'),
+  'low-frequency edit/manage actions must be grouped into compact menus');
+assert(htmlV320.includes('id="pluginToolbarAnalysis"')&&htmlV320.includes('id="contextOverflowBtn"'),
+  'plugin context actions must remain priority-overflow capable on the unified row');
+assert(kernelV320.includes("document.querySelector('.context-commandbar')")&&kernelV320.includes('dataset.pluginPriority'),
+  'context reflow must measure the unified command host and preserve plugin priority overflow');
+assert(!kernelV320.includes('buttons.length<=3'),
+  'activity overflow must react to available width even when only two or three activities exist');
+assert(cssV320.includes('--ui-font-size:11px')&&cssV320.includes('--ui-control-h:28px'),
+  'UI must define a shared compact semantic typography/control scale');
+assert(cssV320.includes('.topbar{\n  height:42px')&&cssV320.includes('.workspace{height:calc(100% - 78px)}'),
+  'single-row shell must reclaim vertical workspace');
+const rootCmds320=fs.readdirSync('.').filter(n=>n.toLowerCase().endsWith('.cmd')).sort();
+assert(JSON.stringify(rootCmds320)===JSON.stringify(['GRS.cmd','GRS_GUI.cmd']),
+  'root must contain only the consolidated CLI and GUI CMD launchers');
+for(const action of ['dev','check','test','build-windows','android-check','android-build','android-run','android-install','update-server','publish-update','build-publish-update','plugin-validate'])
+  assert(grsTools320.includes(`'${action}'`),`unified GRS tool backend missing action: ${action}`);
+assert(grsGui320.includes("New-Page '常用'")&&grsGui320.includes("New-Page 'Android'")&&grsGui320.includes("New-Page '局域网更新'")&&grsGui320.includes("New-Page '插件与维护'"),
+  'GUI toolbox must group tasks by understandable workflow tabs');
+assert(fs.existsSync('./services/update-server/server.js')&&fs.existsSync('./config/update-config.default.json'),
+  'runtime service/config files must live in their organized directories');
+for(const rel of ['./docs/PROJECT_STRUCTURE.md','./docs/DEVELOPMENT_GUIDE.md','./docs/HANDOFF_NEXT_SESSION.md','./docs/guides/TOOLBOX_CN.md'])
+  assert(fs.existsSync(rel),`v3.20 handoff/structure documentation missing: ${rel}`);
+console.log('v3.20 unified-shell / developer-toolbox / project-structure checks passed.');

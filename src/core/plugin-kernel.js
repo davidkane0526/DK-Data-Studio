@@ -114,7 +114,7 @@
     more.classList.add('hidden');
 
     const width=Math.max(0,wrap.getBoundingClientRect().width);
-    if(!width||buttons.length<=3)return;
+    if(!width||buttons.length<=1)return;
     const reserve=92;
     const max=Math.max(150,width-reserve);
     let used=0;
@@ -331,31 +331,31 @@
     const toolbar=document.querySelector('#pluginToolbarAnalysis');
     const overflow=document.querySelector('#contextOverflowMenu');
     const overflowBtn=document.querySelector('#contextOverflowBtn');
-    const row=document.querySelector('.topbar-context');
+    const row=document.querySelector('.context-commandbar');
     if(!toolbar||!overflow||!overflowBtn||!row)return;
 
-    // Return previous overflow items before measuring. This makes every reflow
-    // deterministic after plugin activation/deactivation or window resizing.
+    // Return previous overflow items before measuring. Reflow must be stable
+    // after resize, plugin activation, activity switches, and font changes.
     for(const child of [...overflow.querySelectorAll('.plugin-toolbar-btn')])toolbar.appendChild(child);
     sortButtons(toolbar);
     overflow.classList.add('hidden');
     overflowBtn.classList.add('hidden');
 
-    const visible=[...toolbar.querySelectorAll('.plugin-toolbar-btn')].filter(b=>!b.classList.contains('plugin-activity-hidden'));
+    const visible=[...toolbar.querySelectorAll('.plugin-toolbar-btn')]
+      .filter(b=>!b.classList.contains('plugin-activity-hidden'));
     if(!visible.length){markToolbarSections(toolbar);return;}
 
-    const head=document.querySelector('.activity-context-head');
-    const reserve=(head?.getBoundingClientRect().width||80)+105;
-    const available=Math.max(120,row.getBoundingClientRect().width-reserve);
-    const widths=new Map(visible.map(b=>[b,Math.ceil(b.getBoundingClientRect().width)+4]));
-    const total=visible.reduce((sum,b)=>sum+widths.get(b),0);
+    const available=Math.max(90,row.getBoundingClientRect().width);
+    const widths=new Map(visible.map(b=>[b,Math.ceil(b.getBoundingClientRect().width)+3]));
+    const total=visible.reduce((sum,b)=>sum+(widths.get(b)||0),0);
     if(total<=available){markToolbarSections(toolbar);return;}
 
     overflowBtn.classList.remove('hidden');
-    const target=Math.max(80,available-78);
+    const overflowWidth=Math.ceil(overflowBtn.getBoundingClientRect().width)||52;
+    const target=Math.max(54,available-overflowWidth-4);
 
-    // Plugins can mark important actions with priority. High-priority actions
-    // stay visible first; order still controls their visual sequence.
+    // Priority decides which actions survive on the single-row command bar.
+    // DOM/order still decides their final left-to-right sequence.
     const ranked=visible.slice().sort((a,b)=>(Number(b.dataset.pluginPriority)||0)-(Number(a.dataset.pluginPriority)||0)
       ||(Number(a.dataset.pluginOrder)||100)-(Number(b.dataset.pluginOrder)||100));
     const keep=new Set();
@@ -411,8 +411,6 @@
   function bindShellOnce() {
     if(shellBound)return;
     shellBound=true;
-    const exportBtn=document.querySelector('#exportMenuBtn');
-    const exportMenu=document.querySelector('#exportMenu');
     const overflowBtn=document.querySelector('#contextOverflowBtn');
     const overflowMenu=document.querySelector('#contextOverflowMenu');
     const activityMoreBtn=document.querySelector('#activityMoreBtn');
@@ -421,25 +419,49 @@
       if(!button||!menu)return;
       button.addEventListener('click',event=>{
         event.stopPropagation();
-        const open=menu.classList.toggle('hidden')===false;
-        button.setAttribute('aria-expanded',open?'true':'false');
+        const willOpen=menu.classList.contains('hidden');
+        document.querySelectorAll('.command-menu').forEach(m=>{if(m!==menu)m.classList.add('hidden');});
+        document.querySelectorAll('[aria-expanded="true"]').forEach(b=>{if(b!==button)b.setAttribute('aria-expanded','false');});
+        menu.classList.toggle('hidden',!willOpen);
+        button.setAttribute('aria-expanded',willOpen?'true':'false');
       });
     };
-    toggle(exportBtn,exportMenu);
+
+    // Ordinary shell menus declare their target in HTML, keeping the shell
+    // extensible without hard-coding one JavaScript branch per menu.
+    document.querySelectorAll('[data-menu-target]').forEach(button=>{
+      const menu=document.getElementById(button.dataset.menuTarget||'');
+      toggle(button,menu);
+    });
     toggle(overflowBtn,overflowMenu);
     toggle(activityMoreBtn,activityMoreMenu);
+
+    document.querySelectorAll('.menu-anchor .command-menu').forEach(menu=>{
+      menu.addEventListener('click',event=>{
+        if(event.target.closest('button')&&!event.target.closest('[data-menu-target]')){
+          menu.classList.add('hidden');
+          menu.closest('.menu-anchor')?.querySelector('[aria-expanded]')?.setAttribute('aria-expanded','false');
+        }
+      });
+    });
+
     window.addEventListener?.('keydown',dispatchPluginShortcut,{capture:true});
     document.addEventListener?.('click',event=>{
-      if(!event.target.closest('.menu-anchor'))exportMenu?.classList.add('hidden');
+      if(!event.target.closest('.menu-anchor')){
+        document.querySelectorAll('.menu-anchor .command-menu').forEach(m=>m.classList.add('hidden'));
+        document.querySelectorAll('.menu-anchor [aria-expanded]').forEach(b=>b.setAttribute('aria-expanded','false'));
+      }
       if(!event.target.closest('.context-overflow-anchor'))overflowMenu?.classList.add('hidden');
       if(!event.target.closest('.activity-more-anchor'))activityMoreMenu?.classList.add('hidden');
     });
     if(window.ResizeObserver){
       shellResizeObserver=new ResizeObserver(()=>{reflowContextToolbar();reflowActivities();});
-      const context=document.querySelector('.topbar-context');
+      const context=document.querySelector('.context-commandbar');
       const activity=document.querySelector('.activity-switcher');
+      const topbar=document.querySelector('.topbar-primary');
       if(context)shellResizeObserver.observe(context);
       if(activity)shellResizeObserver.observe(activity);
+      if(topbar)shellResizeObserver.observe(topbar);
     }else{
       window.addEventListener?.('resize',()=>{reflowContextToolbar();reflowActivities();},{passive:true});
     }

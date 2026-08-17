@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const SERVER_ROOT = path.resolve(__dirname);
 const config = JSON.parse(fs.readFileSync(path.join(SERVER_ROOT, 'config.json'), 'utf8'));
 const storageDir = path.resolve(SERVER_ROOT, config.storageDir || './storage');
@@ -94,6 +94,6 @@ console.log(`Files       : ${candidates.length}`);
 console.log('Keys        : NOT REQUIRED');
 console.log('Integrity   : electron-updater latest.yml / SHA512');
 console.log('');
-console.log('If update-server/server.js is running, clients will receive');
+console.log('If services/update-server/server.js is running, clients will receive');
 console.log('a WebSocket push within ~1.5 seconds.');
 console.log('============================================================');

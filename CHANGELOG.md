@@ -57,3 +57,14 @@
 - added runtime platform/touch profile;
 - added compact/medium/large responsive foundations;
 - added AI plugin-development and Android porting documentation.
+
+## plugin branch — 3.20.0-plugin.1
+
+- collapsed the two-row desktop command shell into one adaptive command row;
+- retained Activity and plugin-action priority overflow instead of wrapping;
+- normalized UI typography/control density using semantic CSS tokens;
+- consolidated Windows CMD workflows into `GRS.cmd` and `GRS_GUI.cmd`;
+- added the WinForms developer toolbox and one PowerShell task backend;
+- moved LAN update service under `services/update-server/` and update defaults under `config/`;
+- organized practical guides/releases under `docs/`;
+- added project-structure, development and next-session handoff documentation.

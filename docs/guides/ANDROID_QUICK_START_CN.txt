@@ -1,0 +1,19 @@
+GRS Android 最简步骤
+====================
+
+推荐方式：双击 GRS_GUI.cmd -> “Android”。
+
+1. 检查环境：
+   GRS.cmd android-check
+2. 构建 Debug APK：
+   GRS.cmd android-build
+3. 安装已有 APK：
+   GRS.cmd android-install
+4. 连接设备直接运行：
+   GRS.cmd android-run
+
+APK 输出：
+mobile-dist\Graphene-Resonance-Studio-debug.apk
+
+详细说明：
+mobile\README_ANDROID_CN.md
