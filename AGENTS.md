@@ -1,4 +1,4 @@
-# AI Development Rules — Graphene Resonance Studio
+# AI Development Rules — DK Data Studio
 
 This repository uses a plugin-first architecture.
 
@@ -89,7 +89,7 @@ Examples already moved there:
 - TER;
 - pulse/read extraction.
 
-A plugin should call `window.GRSScience`; it must not copy these algorithms.
+A plugin should call `window.DKDSScience`; it must not copy these algorithms.
 
 Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
 
@@ -102,9 +102,9 @@ Do not commit generated `mobile/android`, `mobile/ios`, `mobile/node_modules`, `
 For Android changes, preserve these routes:
 
 ```text
-GRS.cmd android-build
-GRS.cmd android-run
-GRS.cmd android-install
+DKDS.cmd android-build
+DKDS.cmd android-run
+DKDS.cmd android-install
 ```
 
 The Android shell must remain a consumer of the same plugins and `src/science/*` engine.
@@ -126,11 +126,11 @@ Before adding a feature-specific state object or settings form, inspect:
 - `docs/PARAMETER_SCHEMA.md`
 - `docs/FORMULA_ENGINE.md`
 
-New reusable processing operations should normally be `workflow.processors` or `workflow.analyzers` that consume/return `GRSData` artifacts.
+New reusable processing operations should normally be `workflow.processors` or `workflow.analyzers` that consume/return `DKDSData` artifacts.
 
 New ordinary parameter UIs should use `parameterSchema`; do not hand-build repetitive form markup.
 
-New user-defined numeric columns must use the safe `GRSFormula` parser; never use `eval()` or `new Function()`.
+New user-defined numeric columns must use the safe `DKDSFormula` parser; never use `eval()` or `new Function()`.
 
 
 ## Workspace ownership rule (v3.19+)
@@ -164,7 +164,7 @@ Domain canvases own their resize behavior via the generic `layout:resize` event.
 
 ## Installable plugins
 
-Desktop runtime supports trusted local `.grsplugin` packages. Read `docs/PLUGIN_PACKAGES.md` before adding package installation, update, uninstall, or external detector behavior. New algorithm plugins should be independently installable when practical; never reserve a hard-coded detector id in the Resonance Workbench.
+Desktop runtime supports trusted local `.dkplugin` packages. Read `docs/PLUGIN_PACKAGES.md` before adding package installation, update, uninstall, or external detector behavior. New algorithm plugins should be independently installable when practical; never reserve a hard-coded detector id in the Resonance Workbench.
 
 ## v3.20 shell / tooling / repository hygiene
 
@@ -177,10 +177,10 @@ Ordinary controls should use the semantic size tokens defined in `src/style.css`
 Windows developer tooling is consolidated. The only root CMD files are:
 
 ```text
-GRS.cmd
-GRS_GUI.cmd
+DKDS.cmd
+DKDS_GUI.cmd
 ```
 
-Do not add another root CMD. Add an action to `tools/windows/grs-tools.ps1` and, when useful, a button in `tools/windows/grs-gui.ps1`.
+Do not add another root CMD. Add an action to `tools/windows/dkds-tools.ps1` and, when useful, a button in `tools/windows/dkds-gui.ps1`.
 
 Repository layout is documented in `docs/PROJECT_STRUCTURE.md`. Operational update-server code belongs under `services/update-server/`; default configuration belongs under `config/`; user/developer operation guides belong under `docs/guides/`.

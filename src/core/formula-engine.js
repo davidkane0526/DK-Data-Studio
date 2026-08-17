@@ -1,5 +1,5 @@
 (() => {
-  const D=window.GRSData;
+  const D=window.DKDSData;
   const FUNCTIONS={
     abs:Math.abs,sqrt:Math.sqrt,exp:Math.exp,ln:Math.log,log:Math.log,log10:Math.log10,
     sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,
@@ -109,5 +109,5 @@
     out.rowCount=table.rowCount;return {table:out,column:col,nonFinite,references:compiled.references};
   }
 
-  window.GRSFormula={FUNCTIONS:Object.keys(FUNCTIONS),CONSTANTS:Object.keys(CONSTANTS),tokenize,parse,compile,collectReferences,deriveColumn};
+  window.DKDSFormula={FUNCTIONS:Object.keys(FUNCTIONS),CONSTANTS:Object.keys(CONSTANTS),tokenize,parse,compile,collectReferences,deriveColumn};
 })();

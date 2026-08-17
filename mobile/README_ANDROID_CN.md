@@ -1,4 +1,4 @@
-# Graphene Resonance Studio — React Native Android
+# DK Data Studio — React Native Android
 
 这是 `plugin` 分支的 Android 可安装测试壳层。
 
@@ -9,9 +9,9 @@ React Native / Expo native shell
         ↓
 react-native-webview
         ↓
-离线 android_asset/grs/
+离线 android_asset/dkds/
         ↓
-Graphene Resonance Studio plugin renderer
+DK Data Studio plugin renderer
         ↓
 src/science/* shared scientific engine
 ```
@@ -30,7 +30,7 @@ src/science/* shared scientific engine
 
 ## Windows 环境
 
-仓库根目录也提供 `GRS.cmd android-check`，可先检查 Node、Java、ANDROID_HOME、adb 与 Android SDK Platform 36。
+仓库根目录也提供 `DKDS.cmd android-check`，可先检查 Node、Java、ANDROID_HOME、adb 与 Android SDK Platform 36。
 
 
 
@@ -60,7 +60,7 @@ echo %ANDROID_HOME%
 在仓库根目录双击：
 
 ```text
-GRS.cmd android-build
+DKDS.cmd android-build
 ```
 
 脚本会：
@@ -76,10 +76,14 @@ mobile\npm install
 输出：
 
 ```text
-mobile-dist\Graphene-Resonance-Studio.apk
+mobile-dist\DK-Data-Studio.apk
 ```
 
-这是独立 release 签名的 APK，可直接侧载到 Android 手机。首次构建会在 `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing` 生成本机 release 签名，后续自动复用。若希望以后生成的 APK 能覆盖安装当前版本，请备份该目录。 从旧签名版本迁移到本版本时，首次安装可能需要先执行 `adb uninstall com.grapheneresonance.studio`；这会清除旧版应用数据，之后同一 release 签名下可正常覆盖升级。
+这是独立 release 签名的 APK，可直接侧载到 Android 手机。首次构建会在 `%LOCALAPPDATA%\DKDataStudio\android-signing` 生成本机 release 签名，后续自动复用。若希望以后生成的 APK 能覆盖安装当前版本，请备份该目录。 从旧签名版本迁移到本版本时，首次安装可能需要先执行 `adb uninstall com.dk.datastudio`；这会清除旧版应用数据，之后同一 release 签名下可正常覆盖升级。
+
+## Windows 环境自动识别
+
+`DKDS.cmd android-check` 会自动查找 Android SDK、`adb` 和 JDK，不要求它们预先全部写入 PATH。Android Studio 的内置 `jbr` 也会作为 JDK 候选。如果最终仍提示没有完整 JDK，则机器上确实缺少可运行 Gradle 的 Java 环境。
 
 ## USB 直接编译并安装
 
@@ -93,23 +97,23 @@ mobile-dist\Graphene-Resonance-Studio.apk
 USB 连接后运行：
 
 ```text
-GRS.cmd android-run
+DKDS.cmd android-run
 ```
 
 或者先编译 APK，再运行：
 
 ```text
-GRS.cmd android-install
+DKDS.cmd android-install
 ```
 
 ## 命令行入口
 
-若不使用 GUI，也请从仓库根目录调用 GRS 工具，以确保使用同一套 release 签名：
+若不使用 GUI，也请从仓库根目录调用 DKDS 工具，以确保使用同一套 release 签名：
 
 ```bat
-GRS.cmd android-build
-GRS.cmd android-run
-GRS.cmd android-install
+DKDS.cmd android-build
+DKDS.cmd android-run
+DKDS.cmd android-install
 ```
 
 也可以在 `mobile` 目录执行：
@@ -119,11 +123,11 @@ npm run apk:release
 npm run android
 ```
 
-这两个 npm 命令同样会转回 GRS Windows 工具，不会绕过 release 签名流程。
+这两个 npm 命令同样会转回 DKDS Windows 工具，不会绕过 release 签名流程。
 
 ## EAS 云端 APK
 
-`eas.json` 的 `production` 已设置 `android.buildType = "apk"`，因此生产构建直接输出 APK。EAS 使用其自身管理的生产签名，不使用本机 GRS 签名。
+`eas.json` 的 `production` 已设置 `android.buildType = "apk"`，因此生产构建直接输出 APK。EAS 使用其自身管理的生产签名，不使用本机 DKDS 签名。
 
 安装 EAS CLI 并登录后：
 
@@ -168,8 +172,8 @@ expo-sharing
 触摸屏会自动进入：
 
 ```text
-.grs-pointer-coarse
-.grs-size-compact / medium / large
+.dkds-pointer-coarse
+.dkds-size-compact / medium / large
 ```
 
 并自动增加：

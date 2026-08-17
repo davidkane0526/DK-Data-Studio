@@ -1,15 +1,15 @@
-# Installable Plugin Packages (`.grsplugin`)
+# Installable Plugin Packages (`.dkplugin`)
 
 ## Purpose
 
 The `plugin` branch supports installable desktop plugins so a new algorithm or scientific workflow does not require rebuilding the application.
 
-A package is a text-only JSON container with the extension `.grsplugin`.
+A package is a text-only JSON container with the extension `.dkplugin`.
 
 ```text
-Graphene Resonance Studio desktop
+DK Data Studio desktop
         ↓ Plugin Manager → Install Plugin
-<userData>/plugins/<plugin-id>.grsplugin
+<userData>/plugins/<plugin-id>.dkplugin
         ↓
 Plugin Kernel
         ↓
@@ -64,7 +64,7 @@ examples/external-plugins/resonance-detector-template/
 Package any external plugin folder with:
 
 ```bash
-npm run plugin:package -- examples/external-plugins/resonance-detector-template detector.grsplugin
+npm run plugin:package -- examples/external-plugins/resonance-detector-template detector.dkplugin
 ```
 
 The folder must contain `plugin.json` and its declared source/style files.
@@ -76,7 +76,7 @@ Desktop application:
 ```text
 Plugins
 → Install Plugin
-→ choose *.grsplugin
+→ choose *.dkplugin
 ```
 
 The application displays a warning before installation because the package contains executable JavaScript.
@@ -164,14 +164,14 @@ Renderer context isolation prevents it from directly importing Node/Electron mod
 Therefore:
 
 - install only plugins you trust or whose source you have reviewed;
-- do not install unknown `.grsplugin` files received from untrusted sources;
+- do not install unknown `.dkplugin` files received from untrusted sources;
 - the application deliberately shows a warning before installation.
 
 This is not a cryptographically signed marketplace system.
 
 ## Web and Android
 
-Runtime installation of executable `.grsplugin` packages is currently **desktop-only**.
+Runtime installation of executable `.dkplugin` packages is currently **desktop-only**.
 
 LAN Web and Android/React Native use the same built-in plugin architecture, Recipe system, formula engine, and science engine, but arbitrary runtime JavaScript installation is deliberately disabled there for now.
 

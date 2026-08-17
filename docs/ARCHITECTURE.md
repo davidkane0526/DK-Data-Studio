@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Graphene Resonance Studio is a reusable scientific-data-analysis host rather than a single graphene-only Electron program.
+DK Data Studio is a reusable scientific-data-analysis host rather than a single graphene-only Electron program.
 
 The `plugin` branch separates four layers:
 
@@ -53,7 +53,7 @@ ter.js        strict same-Vd TER matrix and resonance-associated TER
 pulse.js      repeated pulse/read platform detection and stable-window extraction
 ```
 
-`src/analysis.js` is now only a compatibility facade that exposes `GRSScience` as the historical `Analysis` API.
+`src/analysis.js` is now only a compatibility facade that exposes `DKDSScience` as the historical `Analysis` API.
 
 Desktop, LAN web, and Android execute the same `src/science/*` code. There must never be a separate Android peak/TER implementation.
 
@@ -110,12 +110,12 @@ same renderer/plugins/science engine
 ```text
 mobile/App.tsx
   ↓ react-native-webview
-file:///android_asset/grs/index.html
+file:///android_asset/dkds/index.html
   ↓
 same renderer/plugins/science engine
 ```
 
-`mobile/scripts/sync-web-assets.js` creates the offline web bundle. The Expo config plugin `mobile/plugins/withGrsWebAssets.js` copies it into the generated Android project at prebuild time.
+`mobile/scripts/sync-web-assets.js` creates the offline web bundle. The Expo config plugin `mobile/plugins/withDkdsWebAssets.js` copies it into the generated Android project at prebuild time.
 
 React Native provides native:
 - document selection;
@@ -155,7 +155,7 @@ Provides the generic text/multicolumn importer provider. The core import workben
 
 ### `builtin.resonance-workbench`
 
-Owns resonance-specific feature entry points and registers the shared resonance analysis provider. Peak detection/tracking/physics calculations come from `GRSScience` rather than a private plugin copy.
+Owns resonance-specific feature entry points and registers the shared resonance analysis provider. Peak detection/tracking/physics calculations come from `DKDSScience` rather than a private plugin copy.
 
 ### `builtin.ter-analysis`
 
@@ -209,7 +209,7 @@ Allowed:
 - contribution registries;
 - event bus;
 - documented host services;
-- shared `GRSScience` pure functions.
+- shared `DKDSScience` pure functions.
 
 Disallowed:
 - reading another plugin's private variables;
@@ -325,7 +325,7 @@ Resonance Workbench UI
         ↓ chooses
 Peak Detector Provider
         ↓ returns peaks + detector provenance
-Shared GRSScience primitives
+Shared DKDSScience primitives
 ```
 
 A stronger detector can therefore be added without rewriting the workbench. A different measurement plugin can replace the entire main view/inspector/group charts without modifying the core shell.
@@ -336,7 +336,7 @@ The old mature D3 resonance canvas remains a compatibility implementation inside
 
 ## External plugin distribution
 
-The desktop host has a user plugin directory and `.grsplugin` loader. External packages are validated by the main process, loaded through the context-isolated renderer plugin kernel, and managed by the same lifecycle as built-ins. Runtime update is transactional: if a replacement package cannot load/activate, the prior installed package is restored when possible. See `PLUGIN_PACKAGES.md`.
+The desktop host has a user plugin directory and `.dkplugin` loader. External packages are validated by the main process, loaded through the context-isolated renderer plugin kernel, and managed by the same lifecycle as built-ins. Runtime update is transactional: if a replacement package cannot load/activate, the prior installed package is restored when possible. See `PLUGIN_PACKAGES.md`.
 
 ## v3.20 Shell and developer-tooling boundary
 
@@ -354,9 +354,9 @@ Activity and context command overflow are width-driven. Plugins should declare `
 Windows operational tooling is outside the application runtime:
 
 ```text
-GRS.cmd / GRS_GUI.cmd
+DKDS.cmd / DKDS_GUI.cmd
         ↓
-tools/windows/grs-tools.ps1
+tools/windows/dkds-tools.ps1
         ↓
 Node / Electron Builder / Expo / Gradle / LAN update service
 ```

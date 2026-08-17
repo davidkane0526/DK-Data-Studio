@@ -13,7 +13,7 @@ react-native-webview
         ↓
 offline Android asset bundle
         ↓
-Graphene Resonance Studio renderer + plugins
+DK Data Studio renderer + plugins
         ↓
 shared src/science/* engine
 ```
@@ -59,16 +59,16 @@ The script copies the current `src/` tree and vendor D3/Plotly files into:
 mobile/assets/web/
 ```
 
-During `expo prebuild`, `withGrsWebAssets.js` copies that directory to:
+During `expo prebuild`, `withDkdsWebAssets.js` copies that directory to:
 
 ```text
-android/app/src/main/assets/grs/
+android/app/src/main/assets/dkds/
 ```
 
 React Native WebView opens:
 
 ```text
-file:///android_asset/grs/index.html?reactNative=1
+file:///android_asset/dkds/index.html?reactNative=1
 ```
 
 Therefore every Android build snapshots exactly the current plugin renderer/science engine.
@@ -105,7 +105,7 @@ This supports:
 From repository root, run:
 
 ```text
-GRS.cmd android-build
+DKDS.cmd android-build
 ```
 
 It performs:
@@ -118,30 +118,30 @@ expo prebuild --platform android --clean
 gradlew assembleRelease
 ```
 
-Local signing is stored outside the repository at `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing`. Back up that directory if future local APKs must update the same installed app. Migrating from an older differently signed build requires one uninstall/reinstall (`adb uninstall com.grapheneresonance.studio`), which removes the old app data.
+Local signing is stored outside the repository at `%LOCALAPPDATA%\DKDataStudio\android-signing`. Back up that directory if future local APKs must update the same installed app. Migrating from an older differently signed build requires one uninstall/reinstall (`adb uninstall com.dk.datastudio`), which removes the old app data.
 
 Output:
 
 ```text
-mobile-dist\Graphene-Resonance-Studio.apk
+mobile-dist\DK-Data-Studio.apk
 ```
 
 Install it with:
 
 ```text
-GRS.cmd android-install
+DKDS.cmd android-install
 ```
 
 or manually:
 
 ```bash
-adb install -r mobile-dist/Graphene-Resonance-Studio.apk
+adb install -r mobile-dist/DK-Data-Studio.apk
 ```
 
 For an attached phone/emulator with live native compilation:
 
 ```text
-GRS.cmd android-run
+DKDS.cmd android-run
 ```
 
 ## 7. EAS APK alternative
@@ -213,10 +213,10 @@ Scientific plots can remain WebView-hosted until a native replacement provides e
 `mobile/scripts/sync-web-assets.js` copies the entire `src/` tree, so Android automatically receives:
 
 ```text
-GRSData
-GRSFormula
-GRSParameters
-GRSWorkflow
+DKDSData
+DKDSFormula
+DKDSParameters
+DKDSWorkflow
 builtin.data-center
 ```
 
@@ -226,4 +226,4 @@ On compact/coarse-pointer devices the generic schema renderer switches to a sing
 
 ## Runtime plugin installation
 
-Arbitrary executable `.grsplugin` installation is currently desktop-only. Android and LAN Web continue to use the same Plugin API and built-in plugin bundles, but runtime JavaScript installation remains disabled until an explicit mobile trust/signing/sandbox model is designed. Do not fork the scientific implementation for mobile.
+Arbitrary executable `.dkplugin` installation is currently desktop-only. Android and LAN Web continue to use the same Plugin API and built-in plugin bundles, but runtime JavaScript installation remains disabled until an explicit mobile trust/signing/sandbox model is designed. Do not fork the scientific implementation for mobile.

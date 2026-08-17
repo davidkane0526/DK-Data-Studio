@@ -4,7 +4,7 @@ const { normalizePluginPackage } = require('../plugin-package');
 
 const folder = path.resolve(process.argv[2] || '');
 if (!process.argv[2] || !fs.existsSync(folder) || !fs.statSync(folder).isDirectory()) {
-  console.error('Usage: node scripts/package-plugin.js <plugin-folder> [output.grsplugin]');
+  console.error('Usage: node scripts/package-plugin.js <plugin-folder> [output.dkplugin]');
   process.exit(2);
 }
 
@@ -30,6 +30,6 @@ for (const rel of referenced) {
 }
 
 const pkg = normalizePluginPackage({ schema:1, manifest:{...manifest,source:'external'}, files }, { allowBuiltinId:false });
-const output = path.resolve(process.argv[3] || `${manifest.id}-${manifest.version}.grsplugin`);
+const output = path.resolve(process.argv[3] || `${manifest.id}-${manifest.version}.dkplugin`);
 fs.writeFileSync(output, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
 console.log(`Created external plugin package: ${output}`);

@@ -279,7 +279,7 @@
   }
   function restoreStore(data){ return createStore(safeArray(data?.artifacts)); }
 
-  window.GRSData={
+  window.DKDSData={
     ARTIFACT_VERSION,STORE_VERSION,nowIso,deepClone,hashString,makeId,stableId,
     provenanceStep,createTable,createSeries,createSweep,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,

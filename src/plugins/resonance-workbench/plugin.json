@@ -2,7 +2,7 @@
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
   "version": "2.1.0",
-  "apiVersion": "1.2.0",
+  "apiVersion": "1.3.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
@@ -14,6 +14,7 @@
     "ui.group-charts",
     "ui.main-tools",
     "analysis.resonance",
-    "chart.trend"
+    "chart.trend",
+    "ui.selection-menu"
   ]
 }

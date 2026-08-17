@@ -1,15 +1,15 @@
-# GRS 局域网更新指南
+# DKDS 局域网更新指南
 
 推荐不再寻找多个 CMD。根目录只使用：
 
 ```text
-GRS_GUI.cmd   图形化开发/构建工具
-GRS.cmd       命令行统一入口
+DKDS_GUI.cmd   图形化开发/构建工具
+DKDS.cmd       命令行统一入口
 ```
 
 ## 图形界面
 
-双击 `GRS_GUI.cmd`，进入“局域网更新”页：
+双击 `DKDS_GUI.cmd`，进入“局域网更新”页：
 
 - 启动更新服务器
 - 发布已有构建
@@ -19,12 +19,12 @@ GRS.cmd       命令行统一入口
 ## 命令行等价操作
 
 ```bat
-GRS.cmd update-server
-GRS.cmd build-windows
-GRS.cmd publish-update
-GRS.cmd build-publish-update -Version 3.20.0-plugin.3
-GRS.cmd update-autostart-install
-GRS.cmd update-autostart-remove
+DKDS.cmd update-server
+DKDS.cmd build-windows
+DKDS.cmd publish-update
+DKDS.cmd build-publish-update -Version 3.21.0
+DKDS.cmd update-autostart-install
+DKDS.cmd update-autostart-remove
 ```
 
 服务实现位于：

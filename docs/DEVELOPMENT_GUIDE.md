@@ -5,28 +5,28 @@
 GUI-first on Windows:
 
 ```text
-GRS_GUI.cmd
+DKDS_GUI.cmd
 ```
 
 Command line:
 
 ```bat
-GRS.cmd dev
-GRS.cmd check
-GRS.cmd test
+DKDS.cmd dev
+DKDS.cmd check
+DKDS.cmd test
 ```
 
 Before delivery, run at least:
 
 ```bat
-GRS.cmd check
-GRS.cmd test
+DKDS.cmd check
+DKDS.cmd test
 ```
 
 ## Windows package
 
 ```bat
-GRS.cmd build-windows
+DKDS.cmd build-windows
 ```
 
 Outputs go to `dist/`.
@@ -34,19 +34,19 @@ Outputs go to `dist/`.
 ## Android
 
 ```bat
-GRS.cmd android-check
-GRS.cmd android-build
-GRS.cmd android-install
+DKDS.cmd android-check
+DKDS.cmd android-build
+DKDS.cmd android-install
 ```
 
-Or use the Android tab in `GRS_GUI.cmd`.
+Or use the Android tab in `DKDS_GUI.cmd`.
 
 ## LAN update
 
 ```bat
-GRS.cmd update-server
-GRS.cmd publish-update
-GRS.cmd build-publish-update -Version 3.20.0-plugin.3
+DKDS.cmd update-server
+DKDS.cmd publish-update
+DKDS.cmd build-publish-update -Version 3.21.0
 ```
 
 The server implementation is under `services/update-server/`.
@@ -63,7 +63,7 @@ Do not edit the host merely to add a scientific feature. Read:
 For a new built-in plugin, add a folder below `src/plugins/`, then run:
 
 ```bat
-GRS.cmd plugin-validate
+DKDS.cmd plugin-validate
 ```
 
 For an installable external plugin, use `examples/external-plugins/` as the starting point.

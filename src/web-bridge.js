@@ -1,7 +1,7 @@
 (() => {
   if (window.electronAPI) return;
 
-  window.__GRS_WEB_CLIENT__ = true;
+  window.__DKDS_WEB_CLIENT__ = true;
   document.documentElement.classList.add('web-client');
 
   const fileStore = new Map();
@@ -23,7 +23,7 @@
     });
   }
 
-  window.__GRS_NATIVE_RESOLVE__=(id,ok,value)=>{
+  window.__DKDS_NATIVE_RESOLVE__=(id,ok,value)=>{
     const row=nativePending.get(id);
     if(!row)return;
     clearTimeout(row.timer);
@@ -35,8 +35,8 @@
   function receiveNativeMessage(event){
     let msg;
     try{msg=JSON.parse(String(event?.data||''));}catch{return;}
-    if(!msg?.__grsNativeResponse)return;
-    window.__GRS_NATIVE_RESOLVE__(msg.id,msg.ok,msg.value);
+    if(!msg?.__dkdsNativeResponse)return;
+    window.__DKDS_NATIVE_RESOLVE__(msg.id,msg.ok,msg.value);
   }
   window.addEventListener('message',receiveNativeMessage);
   document.addEventListener('message',receiveNativeMessage);
@@ -220,7 +220,7 @@
     },
 
     saveProject: async payload=>{
-      const name=(String(payload?.path||'').split(/[\\/]/).pop()||payload?.defaultName||'graphene_resonance_project.grs.json')
+      const name=(String(payload?.path||'').split(/[\\/]/).pop()||payload?.defaultName||'dk_data_project.dkds.json')
         .replace(/^web:\/\//,'');
       if(nativeBridge){
         const uri=await nativeCall('saveText',{
@@ -242,7 +242,7 @@
         const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
         return {path:asset.path,project:JSON.parse(decoded.text)};
       }
-      const files=await chooseFiles({multiple:false,accept:'.json,.grs.json,application/json'});
+      const files=await chooseFiles({multiple:false,accept:'.json,.dkds.json,application/json'});
       const file=files[0];
       if(!file)return null;
       const text=await file.text();

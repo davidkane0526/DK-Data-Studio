@@ -96,7 +96,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
 
 function pluginPackageFileName(id) {
   if (!validPluginId(id)) throw new Error(`Invalid plugin id: ${id}`);
-  return `${id}.grsplugin`;
+  return `${id}.dkplugin`;
 }
 
 module.exports = {

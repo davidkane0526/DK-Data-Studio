@@ -4,6 +4,9 @@
   const mainSvg = d3.select('#mainPlot');
   const tip = $('#hoverTip');
   const status = $('#statusBar');
+  const AUX_ACTIVITY_ID = new URLSearchParams(window.location.search).get('aux') || '';
+  const IS_AUXILIARY_WINDOW = !!AUX_ACTIVITY_ID;
+  let auxiliaryBootstrapState = null;
 
   // v2.4: high-separation categorical palettes. Forward stays cool, reverse stays warm,
   // but adjacent peak orders are deliberately farther apart in hue/lightness.
@@ -35,6 +38,20 @@
     ['resistance','R=|V/I|']
   ];
 
+  const TREND_COLUMNS_PREFERENCE_KEY='dkds.ui.trendColumns.v1';
+  function loadTrendColumnsPreference(){
+    try{
+      const raw=localStorage.getItem(TREND_COLUMNS_PREFERENCE_KEY);
+      if(raw==='auto')return 'auto';
+      const n=Number(raw);
+      if(Number.isFinite(n)&&n>=1&&n<=6)return Math.round(n);
+    }catch{}
+    return 3;
+  }
+  function saveTrendColumnsPreference(value){
+    try{localStorage.setItem(TREND_COLUMNS_PREFERENCE_KEY,String(value));}catch{}
+  }
+
   const state = {
     // Active project state. Only one project is mounted into these fields at a time.
     datasets: [],
@@ -49,7 +66,7 @@
     peakDisplay:{showRejected:false,showWidth:true,showPoints:true},
     undo: [],
     zoomChart: null,
-    trendColumns: 3,
+    trendColumns: loadTrendColumnsPreference(),
     projectPath: null,
     groupPanelMode: 'docked',
     groupPanelCollapsed: false,
@@ -67,7 +84,7 @@
     gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0},
     gateAnalysisResult:null,
     transformPreviewByDataset:new Map(),
-    artifactStore:window.GRSData.createStore(),
+    artifactStore:window.DKDSData.createStore(),
     mainRangeSelection:null,
     mainRangeDrag:null,
     mainLayout: {raf:null,lastWidth:0,lastHeight:0,renderToken:0},
@@ -92,7 +109,7 @@
   }
 
   function flexibleImportProvider(){
-    const pluginProvider=window.GRSPlugins?.registry?.find?.(
+    const pluginProvider=window.DKDSPlugins?.registry?.find?.(
       'data.importers',
       value=>value?.id==='flexible-text'
     );
@@ -453,7 +470,7 @@
   }
 
   function peakDetectorProviders(){
-    return window.GRSPlugins?.registry?.values?.('peak.detectors')||[];
+    return window.DKDSPlugins?.registry?.values?.('peak.detectors')||[];
   }
 
   function activePeakDetector(){
@@ -468,7 +485,7 @@
     // The plugin branch must not silently resurrect a disabled detector.
     // This fallback exists only for extreme compatibility when the plugin
     // runtime itself is unavailable.
-    if(!window.GRSPlugins){
+    if(!window.DKDSPlugins){
       return {
         id:'legacy-robust-ricker',
         name:'内置兼容寻峰',
@@ -536,7 +553,7 @@
   // ------------------------------------------------------------------
   function projectBaseName(path){
     const raw=String(path||'').split(/[\\/]/).pop()||'';
-    return raw.replace(/\.grs\.json$/i,'').replace(/\.json$/i,'')||'项目';
+    return raw.replace(/\.dkds\.json$/i,'').replace(/\.json$/i,'')||'项目';
   }
 
   function blankProjectTab(title=null){
@@ -555,7 +572,7 @@
       algorithms:{...A.preset('balanced'),_detectorId:'robust-ricker-v1'},
       peakDisplay:{showRejected:false,showWidth:true,showPoints:true},
       undo:[],
-      trendColumns:3,
+      trendColumns:loadTrendColumnsPreference(),
       projectPath:null,
       groupPanelMode:'docked',
       groupPanelCollapsed:false,
@@ -573,10 +590,11 @@
       gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0},
       gateAnalysisResult:null,
       transformPreviewByDataset:new Map(),
-      artifactStore:window.GRSData.createStore(),
+      artifactStore:window.DKDSData.createStore(),
       importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false},
       pulseAnalysisState:createPulseAnalysisState(),
       pluginState:{},
+      pendingAuxProject:null,
       mainView:{xDomain:null,yDomain:null,mode:'select'}
     };
   }
@@ -621,7 +639,7 @@
     t.artifactStore=state.artifactStore;
     t.importDraft=importDraft;
     t.pulseAnalysisState=pulseAnalysisState;
-    t.pluginState=window.GRSPlugins?.project?.serialize?.(t.pluginState||{})||t.pluginState||{};
+    t.pluginState=window.DKDSPlugins?.project?.serialize?.(t.pluginState||{})||t.pluginState||{};
     t.mainView={...state.mainView,
       xDomain:state.mainView.xDomain?state.mainView.xDomain.slice():null,
       yDomain:state.mainView.yDomain?state.mainView.yDomain.slice():null};
@@ -640,7 +658,7 @@
     state.algorithms=normalizedDetectionSettings(t.algorithms||{...A.preset('balanced'),_detectorId:'robust-ricker-v1'});
     state.peakDisplay={showRejected:false,showWidth:true,showPoints:true,...(t.peakDisplay||{})};
     state.undo=t.undo||[];
-    state.trendColumns=t.trendColumns??'auto';
+    state.trendColumns=loadTrendColumnsPreference();
     state.projectPath=t.projectPath||null;
     state.groupPanelMode=t.groupPanelMode||'docked';
     state.groupPanelCollapsed=!!t.groupPanelCollapsed;
@@ -658,7 +676,7 @@
     state.gateAnalysisSettings={...(t.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=t.gateAnalysisResult||null;
     state.transformPreviewByDataset=t.transformPreviewByDataset instanceof Map?t.transformPreviewByDataset:new Map(t.transformPreviewByDataset||[]);
-    state.artifactStore=t.artifactStore||window.GRSData.createStore();
+    state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncLegacyArtifacts({emit:false});
     importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false};
@@ -678,8 +696,8 @@
 
     // Every project tab owns an isolated snapshot for every registered plugin,
     // not only the historical built-in pulse workspace.
-    if(window.GRSPlugins?.project?.restore){
-      window.GRSPlugins.project.restore(t.pluginState||{},null);
+    if(window.DKDSPlugins?.project?.restore){
+      window.DKDSPlugins.project.restore(t.pluginState||{},null);
     }
   }
 
@@ -706,6 +724,12 @@
     if(!t)return;
     state.activeProjectTabId=id;
     mountProjectTab(t);
+    if(t.pendingAuxProject){
+      const pending=t.pendingAuxProject;
+      t.pendingAuxProject=null;
+      loadProjectIntoActive(pending.project,t.projectPath);
+      captureActiveProjectTab();
+    }
     if($('#showPhysicsLabels'))$('#showPhysicsLabels').checked=state.physicsShowLabels;
     renderProjectTabs();
     renderAll();
@@ -860,7 +884,7 @@
         const custom=provider.markerSymbol(p);
         if(typeof custom==='function'||custom?.draw)return custom;
         if(typeof custom==='string'&&NAMED_D3_SYMBOLS[custom])return NAMED_D3_SYMBOLS[custom];
-      }catch(err){console.error(`[GRS detector marker:${provider.id}]`,err);}
+      }catch(err){console.error(`[DKDS detector marker:${provider.id}]`,err);}
     }
     return NAMED_D3_SYMBOLS[algorithmMetaForPeak(p).symbol]||d3.symbolCircle;
   }
@@ -993,9 +1017,9 @@
     const provider=activeMainViewProvider();
     if(provider?.reset){
       try{return provider.reset({state,container:$('#mainPlotWrap'),svg:mainSvg});}
-      catch(err){console.error(`[GRS main view reset:${provider.id}]`,err);}
+      catch(err){console.error(`[DKDS main view reset:${provider.id}]`,err);}
     }
-    if(!window.GRSPlugins)return resetResonanceMainView();
+    if(!window.DKDSPlugins)return resetResonanceMainView();
     if(provider?.render)return renderMainPlot();
   }
 
@@ -1226,7 +1250,7 @@
     snapshot('修改数据 Vg');
     ds.vg=next;
     ds.dataProvenance=Array.isArray(ds.dataProvenance)?ds.dataProvenance:[];
-    ds.dataProvenance.push(window.GRSData.provenanceStep({
+    ds.dataProvenance.push(window.DKDSData.provenanceStep({
       type:'manual',label:'Set dataset Vg',providerId:'dataset.set-vg',pluginId:'builtin.resonance-workbench',version:'3.19',manual:true,
       parameters:{old:Number.isFinite(old)?old:null,value:Number.isFinite(next)?next:null},inputs:[ds.path],note:'User-edited gate-voltage metadata in the dataset list.'
     }));
@@ -1249,7 +1273,7 @@
   }
 
   function renderDatasetList(){
-    window.GRSPlugins?.events?.emit?.('sidebar:data-render',{context:pluginUiContext()});
+    window.DKDSPlugins?.events?.emit?.('sidebar:data-render',{context:pluginUiContext()});
   }
 
 
@@ -1372,10 +1396,9 @@
     renderImportWorkbench();
   }
 
-  function openImportWorkbench(pickFiles=false){
+  function openImportWorkbench(){
     $('#importPanel').classList.remove('hidden');
     renderImportWorkbench();
-    if(pickFiles||!importDraft.files.length)addImportFiles();
   }
 
   function closeImportWorkbench(){
@@ -1737,20 +1760,20 @@
   }
 
   async function importFiles(){
-    openImportWorkbench(true);
+    openImportWorkbench();
   }
 
   function syncLegacyArtifacts({emit=true}={}){
-    if(!state.artifactStore)state.artifactStore=window.GRSData.createStore();
+    if(!state.artifactStore)state.artifactStore=window.DKDSData.createStore();
     const live=new Set(state.datasets.map(d=>d.path));
     for(const artifact of state.artifactStore.list({includeTransient:true})){
       if(artifact.transient&&artifact.metadata?.adapter==='legacy-dataset'&&!live.has(artifact.metadata?.legacyDatasetPath)){
         state.artifactStore.remove(artifact.id);
       }
     }
-    for(const ds of state.datasets)state.artifactStore.upsert(window.GRSData.fromLegacyDataset(ds));
+    for(const ds of state.datasets)state.artifactStore.upsert(window.DKDSData.fromLegacyDataset(ds));
     const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
-    if(emit)window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{artifacts:state.artifactStore.list()});
+    if(emit)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{artifacts:state.artifactStore.list()});
     return state.artifactStore;
   }
 
@@ -1758,11 +1781,11 @@
     return {
       list:options=>state.artifactStore?.list?.(options)||[],
       get:id=>state.artifactStore?.get?.(id)||null,
-      add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'add',artifact:state.artifactStore.get(id)});return id;},
-      upsert:artifact=>{const id=state.artifactStore.upsert(artifact);window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'upsert',artifact:state.artifactStore.get(id)});return id;},
-      remove:id=>{const ok=state.artifactStore.remove(id);if(ok)window.GRSPlugins?.events?.emit?.('data:artifacts-changed',{type:'remove',id});return ok;},
+      add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'add',artifact:state.artifactStore.get(id)});return id;},
+      upsert:artifact=>{const id=state.artifactStore.upsert(artifact);window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'upsert',artifact:state.artifactStore.get(id)});return id;},
+      remove:id=>{const ok=state.artifactStore.remove(id);if(ok)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'remove',id});return ok;},
       syncLegacy:()=>syncLegacyArtifacts(),
-      serialize:()=>window.GRSData.serializeStore(state.artifactStore,{includeTransient:false})
+      serialize:()=>window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false})
     };
   }
 
@@ -1987,7 +2010,7 @@
   }
 
   function closeRangeActionMenu(){
-    const menu=$('#rangeActionMenu');
+    const menu=$('#selectionActionMenu');
     if(menu)menu.classList.add('hidden');
     state.mainRangeSelection=null;
     try{mainSvg.selectAll('.persisted-range-box').remove();}catch{}
@@ -2015,14 +2038,14 @@
     return ids;
   }
 
-  function applyUnifiedPeakIdentityToSelection(){
+  function applyUnifiedPeakIdentityToSelection(orderValue,labelValue){
     const ids=selectedPeakIdSet();
     if(!ids.size){
       setStatus('框选区域中没有峰可统一设置。');
       return;
     }
-    const order=Math.max(1,Math.round(Number($('#rangePeakOrderSelect').value)||1));
-    const label=String($('#rangePeakLabelInput').value||'').trim()||categoryLabel(order);
+    const order=Math.max(1,Math.round(Number(orderValue)||1));
+    const label=String(labelValue||'').trim()||categoryLabel(order);
 
     snapshot('统一框选峰序与标签');
 
@@ -2057,48 +2080,70 @@
     setStatus(`已将 ${count} 个框选峰统一设为 峰序 ${order} / 标签“${label}”；这些点作为跨 Vg 峰轨迹 anchor。`);
   }
 
+  function activeSelectionMenuProvider(){
+    const activityId=window.DKDSPlugins?.activities?.active?.()||null;
+    return (window.DKDSPlugins?.registry?.values?.('ui.selectionMenus')||[])
+      .filter(p=>!p.activity||p.activity===activityId)
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))[0]||null;
+  }
+
   function openRangeActionMenu(range,clientX,clientY){
-    // Scope is decided from the curve that was highlighted BEFORE boxing.
-    // Boxing itself may select one existing peak, but that must not silently
-    // change an intended "all visible curves" local search into one curve.
+    // Selection geometry belongs to the canvas host; all visible actions and
+    // labels belong to the active plugin through ui.selectionMenus.
     const scopeSweepId=state.selectedSweepId||null;
     state.mainRangeSelection={...range,scopeSweepId};
     const ids=selectPeaksInRange(range);
     const targets=rangeTargetSweeps(state.mainRangeSelection);
     const wrap=$('#mainPlotWrap');
-    const menu=$('#rangeActionMenu');
-    const wr=wrap.getBoundingClientRect();
-    menu.classList.remove('hidden');
-
-    // Position after layout so the menu never escapes the plot container.
-    requestAnimationFrame(()=>{
-      const mr=menu.getBoundingClientRect();
-      const left=Math.max(6,Math.min(wr.width-mr.width-6,clientX-wr.left+8));
-      const top=Math.max(38,Math.min(wr.height-mr.height-6,clientY-wr.top+8));
-      menu.style.left=`${left}px`;
-      menu.style.top=`${top}px`;
-    });
-
-    const scope=selectedSweep()
-      ? `当前凸显曲线：Vg=${selectedSweep().vg} V · ${directionName(selectedSweep().direction)}`
-      : `全部 ${targets.length} 条可见曲线`;
-    $('#rangeActionSummary').textContent=
-      `Vd ${range.vMin.toFixed(4)} ~ ${range.vMax.toFixed(4)} V · 框内 ${ids.length} 个峰 · 局部寻峰作用于${scope}`;
-
-    $('#rangeDeletePeaksBtn').disabled=!ids.length;
-    $('#rangeLockPeaksBtn').disabled=!ids.length;
-    $('#rangeUnlockPeaksBtn').disabled=!ids.length;
-    $('#rangeApplyPeakIdentityBtn').disabled=!ids.length;
+    const menu=$('#selectionActionMenu');
+    const provider=activeSelectionMenuProvider();
+    if(!menu||!provider){
+      menu?.classList.add('hidden');
+      renderMainPlot();renderInspector();renderDatasetList();
+      return;
+    }
 
     ensurePeakCategories();
     const selectedPeaks=ids.map(id=>peakById(id)).filter(Boolean);
     const firstOrder=Math.max(1,Math.round(Number(selectedPeaks[0]?.peakOrder)||1));
     const maxOrder=Math.max(firstOrder,...state.peakCategories.map(c=>Number(c.order)||0),1);
     while(state.peakCategories.length<maxOrder)addPeakCategory();
-    $('#rangePeakOrderSelect').innerHTML=state.peakCategories
-      .map(c=>`<option value="${c.order}" ${Number(c.order)===firstOrder?'selected':''}>${c.order} · ${escapeHtml(c.label||defaultPeakLabel(c.order))}</option>`)
-      .join('');
-    $('#rangePeakLabelInput').value=categoryLabel(firstOrder);
+    const selectedSweepBeforeBox=scopeSweepId?sweepById(scopeSweepId):null;
+    const scopeText=selectedSweepBeforeBox
+      ? `当前凸显曲线：Vg=${selectedSweepBeforeBox.vg} V · ${directionName(selectedSweepBeforeBox.direction)}`
+      : `全部 ${targets.length} 条可见曲线`;
+
+    menu.innerHTML='';
+    try{
+      provider.render?.({
+        container:menu,
+        selection:{
+          range:{...range},
+          peakIds:ids.slice(),
+          peakCount:ids.length,
+          targetSweepIds:targets.map(sw=>sw.id),
+          targetCount:targets.length,
+          scopeSweepId,
+          scopeText,
+          firstOrder,
+          categories:state.peakCategories.map(c=>({...c}))
+        },
+        context:pluginUiContext(),
+        host:window.DKDSPlugins?.host
+      });
+    }catch(err){
+      console.error(`[DKDS selection menu:${provider.id}]`,err);
+      menu.innerHTML=`<div class="range-action-summary">插件菜单渲染失败：${escapeHtml(err.message||String(err))}</div>`;
+    }
+    menu.classList.remove('hidden');
+    const wr=wrap.getBoundingClientRect();
+    requestAnimationFrame(()=>{
+      const mr=menu.getBoundingClientRect();
+      const left=Math.max(6,Math.min(wr.width-mr.width-6,clientX-wr.left+8));
+      const top=Math.max(52,Math.min(wr.height-mr.height-6,clientY-wr.top+8));
+      menu.style.left=`${left}px`;
+      menu.style.top=`${top}px`;
+    });
 
     renderMainPlot();
     renderInspector();
@@ -2204,7 +2249,7 @@
     renderMainPlot();
     renderInspector();
     renderTrendPanel();
-    window.GRSPlugins?.events?.emit?.('workspace:render',{context:pluginUiContext()});
+    window.DKDSPlugins?.events?.emit?.('workspace:render',{context:pluginUiContext()});
   }
 
   function selectSweepFromMain(sw,{openInspector=true}={}){
@@ -2291,8 +2336,8 @@
   }
 
   function activeMainViewProvider(){
-    const activityId=window.GRSPlugins?.activities?.active?.()||null;
-    const providers=window.GRSPlugins?.registry?.values?.('ui.mainViews')||[];
+    const activityId=window.DKDSPlugins?.activities?.active?.()||null;
+    const providers=window.DKDSPlugins?.registry?.values?.('ui.mainViews')||[];
     return providers
       .filter(p=>!p.activity||!activityId||p.activity===activityId)
       .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))[0]||null;
@@ -2325,15 +2370,15 @@
           container:$('#mainPlotWrap'),
           svg:mainSvg,
           state,
-          activityId:window.GRSPlugins?.activities?.active?.()||null
+          activityId:window.DKDSPlugins?.activities?.active?.()||null
         });
       }catch(err){
-        console.error(`[GRS main view:${provider.id}]`,err);
+        console.error(`[DKDS main view:${provider.id}]`,err);
         renderEmptyMainView(`主图插件 ${provider.title||provider.id} 渲染失败`);
         return;
       }
     }
-    if(!window.GRSPlugins)return renderResonanceMainPlot();
+    if(!window.DKDSPlugins)return renderResonanceMainPlot();
     renderEmptyMainView();
   }
 
@@ -2386,7 +2431,7 @@
       return;
     }
 
-    const margin={top:62,right:30,bottom:50,left:78};
+    const margin={top:78,right:30,bottom:50,left:78};
     const innerW=Math.max(50,width-margin.left-margin.right),innerH=Math.max(50,height-margin.top-margin.bottom);
     const xs=visibleSweeps.flatMap(s=>s.points.map(p=>p.v));
     const ys=visibleSweeps.flatMap(s=>s.points.map(p=>p.i));
@@ -2472,7 +2517,7 @@
         .attr('class',d=>`peak-hit-target ${d.locked?'locked':''} ${d.sweepId===state.selectedSweepId?'editable':''}`)
         .attr('cx',d=>x(d.v)).attr('cy',d=>y(d.i))
         .attr('r',d=>{
-          const base=window.GRSPlatform?.profile?.interaction?.peakHitRadiusPx||10;
+          const base=window.DKDSPlatform?.profile?.interaction?.peakHitRadiusPx||10;
           return (d.id===state.selectedPeakId||state.selectedPeakIds.has(d.id))?base+2:base;
         })
         .on('click',(event,d)=>{
@@ -2511,7 +2556,7 @@
         .on('mousemove',moveTip)
         .on('mouseleave',hideTip);
 
-      peakHits.call(d3.drag().clickDistance(window.GRSPlatform?.profile?.interaction?.dragThresholdPx||7)
+      peakHits.call(d3.drag().clickDistance(window.DKDSPlatform?.profile?.interaction?.dragThresholdPx||7)
         .filter(event=>event.button===0&&!event.ctrlKey)
         .on('start',(event,d)=>{
           if(d.locked)return;
@@ -2616,7 +2661,7 @@
       try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}
 
       if(!drag.moved){
-        const nearby=nearestSweepAtPixel(drag.sx,drag.sy,x,y,visibleSweeps,window.GRSPlatform?.profile?.interaction?.nearestCurvePx||18);
+        const nearby=nearestSweepAtPixel(drag.sx,drag.sy,x,y,visibleSweeps,window.DKDSPlatform?.profile?.interaction?.nearestCurvePx||18);
         if(nearby){
           if(drag.zoom){
             state.selectedSweepId=nearby.sw.id;
@@ -2787,18 +2832,18 @@
 
   function pluginUiContext(){
     return {
-      activityId:window.GRSPlugins?.activities?.active?.()||null,
+      activityId:window.DKDSPlugins?.activities?.active?.()||null,
       state,
       selectedSweep:selectedSweep(),
       selectedPeak:selectedPeak(),
       selectedPeakIds:new Set(state.selectedPeakIds),
-      platform:window.GRSPlatform?.profile||null
+      platform:window.DKDSPlatform?.profile||null
     };
   }
 
   function activeInspectorProvider(){
-    const activityId=window.GRSPlugins?.activities?.active?.()||null;
-    const providers=(window.GRSPlugins?.registry?.values?.('ui.inspectors')||[])
+    const activityId=window.DKDSPlugins?.activities?.active?.()||null;
+    const providers=(window.DKDSPlugins?.registry?.values?.('ui.inspectors')||[])
       .filter(p=>!p.activity||p.activity===activityId)
       .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0));
     const context=pluginUiContext();
@@ -2820,7 +2865,7 @@
     try{
       provider.render({container:host,context:pluginUiContext()});
     }catch(err){
-      console.error('[GRS inspector provider]',err);
+      console.error('[DKDS inspector provider]',err);
       host.innerHTML=`<div class="empty-state">检查器插件渲染失败：${escapeHtml(err.message)}</div>`;
     }
   }
@@ -3230,19 +3275,19 @@
 
   function refreshOpenAnalysisPage(){
     const page=[...document.querySelectorAll('.analysis-page')].find(el=>!el.classList.contains('hidden'));
-    if(page)window.GRSPlugins?.events?.emit?.('analysis:refresh',{id:page.id});
+    if(page)window.DKDSPlugins?.events?.emit?.('analysis:refresh',{id:page.id});
   }
 
   function openAnalysisPage(id){
     document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!==id));
-    window.GRSPlugins?.events?.emit?.('analysis:opened',{id});
+    window.DKDSPlugins?.events?.emit?.('analysis:opened',{id});
     scheduleMainPlotRelayout();
   }
 
   function closeAnalysisPage(id){
     const page=$('#'+id);
     if(page)page.classList.add('hidden');
-    window.GRSPlugins?.events?.emit?.('analysis:closed',{id});
+    window.DKDSPlugins?.events?.emit?.('analysis:closed',{id});
     scheduleMainPlotRelayout();
   }
 
@@ -4407,9 +4452,9 @@
   }
 
   function activeGroupChartProviders(){
-    const activityId=window.GRSPlugins?.activities?.active?.()||null;
+    const activityId=window.DKDSPlugins?.activities?.active?.()||null;
     const context=pluginUiContext();
-    return (window.GRSPlugins?.registry?.values?.('ui.groupCharts')||[])
+    return (window.DKDSPlugins?.registry?.values?.('ui.groupCharts')||[])
       .filter(p=>!p.activity||p.activity===activityId)
       .filter(p=>{
         try{return typeof p.supports==='function'?p.supports(context)!==false:true;}catch{return false;}
@@ -4418,8 +4463,8 @@
   }
 
   function activeGroupViewProvider(){
-    const activityId=window.GRSPlugins?.activities?.active?.()||null;
-    return (window.GRSPlugins?.registry?.values?.('ui.groupViews')||[])
+    const activityId=window.DKDSPlugins?.activities?.active?.()||null;
+    return (window.DKDSPlugins?.registry?.values?.('ui.groupViews')||[])
       .filter(p=>!p.activity||p.activity===activityId)
       .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))[0]||null;
   }
@@ -4480,6 +4525,8 @@
 
   function setTrendColumns(value){
     state.trendColumns=value==='auto'?'auto':Math.max(1,Math.min(6,Number(value)||1));
+    saveTrendColumnsPreference(state.trendColumns);
+    const tab=activeProjectTab();if(tab)tab.trendColumns=state.trendColumns;
     updateTrendLayout(true);
     setStatus(`组图排列：${state.trendColumns==='auto'?'自动':`每行 ${state.trendColumns} 个`}`);
   }
@@ -4489,7 +4536,7 @@
     try{plot.removeAllListeners?.('plotly_click');}catch{}
     plot.on('plotly_click',ev=>{
       try{provider.onPointClick?.({event:ev,point:ev?.points?.[0],result,context:pluginUiContext()});}
-      catch(err){console.error('[GRS group point click]',err);}
+      catch(err){console.error('[DKDS group point click]',err);}
     });
   }
 
@@ -4516,9 +4563,9 @@
 
     for(const provider of providers){
       let result;
-      try{result=provider.build({context,host:window.GRSPlugins?.host})||{};}
+      try{result=provider.build({context,host:window.DKDSPlugins?.host})||{};}
       catch(err){
-        console.error(`[GRS group chart:${provider.id}]`,err);
+        console.error(`[DKDS group chart:${provider.id}]`,err);
         result={title:provider.title||provider.name||provider.id,unit:'',traces:[],error:err.message};
       }
 
@@ -4663,7 +4710,7 @@
       ctx.scale(scale,scale);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);
       const dataUrl=canvas.toDataURL('image/png');
       const base64=dataUrl.split(',')[1];
-      const saved=await window.electronAPI.saveBase64({defaultName:'graphene_resonance_main.png',base64,filters:[{name:'PNG Image',extensions:['png']}]});
+      const saved=await window.electronAPI.saveBase64({defaultName:'dk_data_main.png',base64,filters:[{name:'PNG Image',extensions:['png']}]});
       if(saved)setStatus(`主图 PNG 已导出：${saved}`);
     }finally{URL.revokeObjectURL(url);}
   }
@@ -4674,7 +4721,7 @@
       try{return String(provider.csvText({state,context:pluginUiContext()})||'');}
       catch(err){setStatus(`主图数据导出失败：${err.message}`);return '';}
     }
-    return !window.GRSPlugins?mainCsvText():'';
+    return !window.DKDSPlugins?mainCsvText():'';
   }
 
   async function exportCurrentMainCsv(){
@@ -4689,7 +4736,7 @@
   async function exportCurrentMainSvg(){
     const provider=activeMainViewProvider();
     if(provider?.exportSvg)return provider.exportSvg({state,context:pluginUiContext()});
-    if(!provider&&!window.GRSPlugins)return exportSvg($('#mainPlot'),'graphene_resonance_main.svg');
+    if(!provider&&!window.DKDSPlugins)return exportSvg($('#mainPlot'),'dk_data_main.svg');
     setStatus('当前主图插件没有提供 SVG 导出。');
     return false;
   }
@@ -4697,7 +4744,7 @@
   async function exportCurrentMainPng(){
     const provider=activeMainViewProvider();
     if(provider?.exportPng)return provider.exportPng({state,context:pluginUiContext()});
-    if(!provider&&!window.GRSPlugins)return exportMainPng();
+    if(!provider&&!window.DKDSPlugins)return exportMainPng();
     setStatus('当前主图插件没有提供 PNG 导出。');
     return false;
   }
@@ -4759,7 +4806,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.20-plugin',
+      version:'3.21-plugin',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -4776,15 +4823,14 @@
       peaks:state.peaks,
       peakCategories:state.peakCategories,
       algorithms:state.algorithms,
-      trendColumns:state.trendColumns,
       physicsShowLabels:state.physicsShowLabels,
       spacingSettings:{...state.spacingSettings},
       terMaxSettings:{...state.terMaxSettings},
       terHeatmapDisplay:{...state.terHeatmapDisplay},
       gateAnalysisSettings:{...state.gateAnalysisSettings},
       transformPreviewByDataset:[...state.transformPreviewByDataset.entries()],
-      dataModel:window.GRSData.serializeStore(state.artifactStore,{includeTransient:false}),
-      plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
+      dataModel:window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),
+      plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
       panelLayout:{
         groupPanelMode:state.groupPanelMode,
         groupPanelCollapsed:state.groupPanelCollapsed,
@@ -4797,7 +4843,7 @@
     };
   }
   async function saveProject(){
-    const saved=await window.electronAPI.saveProject({path:state.projectPath,defaultName:'graphene_resonance_project.grs.json',project:makeProject()});
+    const saved=await window.electronAPI.saveProject({path:state.projectPath,defaultName:'dk_data_project.dkds.json',project:makeProject()});
     if(saved){
       state.projectPath=saved;
       const tab=activeProjectTab();
@@ -4846,7 +4892,7 @@
     state.peakCategories=(pr.peakCategories||[]).map(c=>({order:Number(c.order),label:String(c.label||defaultPeakLabel(c.order))}));
     state.peaks=(pr.peaks||[]).map(migratePeak);
     normalizePeakMetadata();
-    state.trendColumns=pr.trendColumns??'auto';
+    state.trendColumns=loadTrendColumnsPreference();
     state.projectPath=path||null;
     state.physicsShowLabels=pr.physicsShowLabels!==false;
     state.spacingSettings={...(pr.spacingSettings||{seriesA:'',seriesB:'',mode:'abs'})};
@@ -4857,7 +4903,7 @@
     state.gateAnalysisSettings={...(pr.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=null;
     state.transformPreviewByDataset=new Map(pr.transformPreviewByDataset||[]);
-    state.artifactStore=window.GRSData.restoreStore(pr.dataModel||{schema:1,artifacts:[]});
+    state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:1,artifacts:[]});
     const artifactTab=activeProjectTab();
     if(artifactTab)artifactTab.artifactStore=state.artifactStore;
     syncLegacyArtifacts({emit:false});
@@ -4869,8 +4915,8 @@
 
     // Plugin-owned project state. v3.14 pulseAnalysis is passed as legacyProject
     // so the pulse plugin can migrate old projects without core knowing its schema.
-    if(window.GRSPlugins?.project?.restore){
-      window.GRSPlugins.project.restore(pr.plugins||{},pr);
+    if(window.DKDSPlugins?.project?.restore){
+      window.DKDSPlugins.project.restore(pr.plugins||{},pr);
     }else{
       pulseAnalysisState=restorePulseAnalysisState(pr.pulseAnalysis);
       const activeTab=activeProjectTab();
@@ -5292,10 +5338,9 @@
   };
 
   $('#newProjectTabBtn').onclick=()=>createProjectTab(null,true);
-  $('#mainResetViewBtn').onclick=resetMainView;
   $('#undoBtn').onclick=undo; $('#deselectBtn').onclick=deselect;
 
-  document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
+  document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>{if(IS_AUXILIARY_WINDOW)window.electronAPI?.closeCurrentWindow?.();else closeAnalysisPage(b.dataset.analysisTarget);});
 
 
   $('#groupDockBtn').onclick=toggleGroupDock;
@@ -5338,7 +5383,7 @@
     scheduleMainPlotRelayout();
     updateTrendLayout(true);
     try{if(!$('#zoomPanel').classList.contains('hidden'))Plotly.Plots.resize($('#zoomPlot'));}catch{}
-    window.GRSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
+    window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
   });
 
   if(window.ResizeObserver){
@@ -5430,7 +5475,7 @@
     if(!exists)throw new Error(`未找到寻峰算法插件：${id}`);
     state.algorithms={...normalizedDetectionSettings(state.algorithms),_detectorId:id};
     captureActiveProjectTab();
-    window.GRSPlugins?.events?.emit?.('resonance:detector-changed',{id});
+    window.DKDSPlugins?.events?.emit?.('resonance:detector-changed',{id});
   }
 
   function setPeakDisplay(key,value){
@@ -5547,7 +5592,7 @@
       detectors:peakDetectorProviders,
       activeDetector:activePeakDetector,
       mainCsvText,exportMainCsv,exportMainPng,
-      exportMainSvg:()=>exportSvg($('#mainPlot'),'graphene_resonance_main.svg'),
+      exportMainSvg:()=>exportSvg($('#mainPlot'),'dk_data_main.svg'),
       peaksCsvText,exportPeaks,
       copyPeaks:()=>copyTextToClipboard(peaksCsvText(),'峰参数 CSV'),
       range:{
@@ -5555,7 +5600,7 @@
         deleteSelected:()=>deleteSelectedPeaks('框选删除峰'),
         lockSelected:()=>{lockSelectedPeaks(true);closeRangeActionMenu();},
         unlockSelected:()=>{lockSelectedPeaks(false);closeRangeActionMenu();},
-        applyIdentity:applyUnifiedPeakIdentityToSelection,
+        applyIdentity:(order,label)=>applyUnifiedPeakIdentityToSelection(order,label),
         close:closeRangeActionMenu,
         categoryLabel
       },
@@ -5659,7 +5704,7 @@
     const panel=$('#physicsPanel');
     if(!panel)return;
     panel.classList.toggle('hidden');
-    window.GRSPlugins?.events?.emit?.('panel:toggled',{id:'physicsPanel',hidden:panel.classList.contains('hidden')});
+    window.DKDSPlugins?.events?.emit?.('panel:toggled',{id:'physicsPanel',hidden:panel.classList.contains('hidden')});
   }
 
   function pluginRestorePulseState(saved){
@@ -5675,12 +5720,62 @@
     if(tab)tab.pulseAnalysisState=pulseAnalysisState;
   }
 
-  async function initializePluginArchitecture(){
-    if(!window.GRSPlugins)return;
+  async function openPluginActivityWindow(activityId){
+    if(IS_AUXILIARY_WINDOW){
+      return window.DKDSPlugins?.activities?.set?.(activityId);
+    }
+    const tab=activeProjectTab();
+    if(!tab)return false;
+    captureActiveProjectTab();
+    if(!window.electronAPI?.openActivityWindow){
+      return window.DKDSPlugins?.activities?.set?.(activityId);
+    }
+    return window.electronAPI.openActivityWindow({
+      activityId,
+      projectTabId:tab.id,
+      title:tab.title,
+      projectPath:state.projectPath,
+      project:makeProject()
+    });
+  }
 
-    window.GRSPlugins.configure({
-      appVersion:'3.20.0-plugin.3',
-      platform:window.GRSPlatform,
+  function applyActivityProjectSnapshot(payload){
+    const projectTabId=String(payload?.projectTabId||'');
+    const project=payload?.project;
+    if(!projectTabId||!project)return;
+    const tab=state.projectTabs.find(t=>t.id===projectTabId);
+    if(!tab)return;
+    if(payload.final&&projectTabId===state.activeProjectTabId){
+      const path=tab.projectPath;
+      loadProjectIntoActive(project,path);
+      captureActiveProjectTab();
+      renderAll();
+      applyGroupPanelLayout();
+      applyInspectorPanelLayout();
+      scheduleMainPlotRelayout();
+      setStatus(`已同步 ${payload.activityId||'扩展窗口'} 的项目修改。`);
+    }else{
+      tab.pendingAuxProject={project,activityId:payload.activityId||''};
+    }
+  }
+
+  function pushAuxiliaryProjectSnapshot(final=true){
+    if(!IS_AUXILIARY_WINDOW||!auxiliaryBootstrapState||!window.electronAPI?.pushActivityProjectSnapshot)return;
+    try{
+      captureActiveProjectTab();
+      window.electronAPI.pushActivityProjectSnapshot({project:makeProject(),final});
+    }catch(err){console.warn('[DKDS auxiliary snapshot]',err);}
+  }
+
+  async function initializePluginArchitecture(){
+    if(!window.DKDSPlugins)return;
+
+    window.DKDSPlugins.configure({
+      appVersion:'3.21.0',
+      platform:window.DKDSPlatform,
+      isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
+      openActivityWindow:openPluginActivityWindow,
+      closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),
       captureActiveProjectTab,
@@ -5708,39 +5803,69 @@
       ter:terHostApi()
     });
 
-    window.GRSPluginManagerUI?.configure?.({
+    window.DKDSPluginManagerUI?.configure?.({
       openAnalysisPage,
       closeAnalysisPage,
       setStatus
     });
 
-    await window.GRSPlugins.loadBuiltinEntries();
-    await window.GRSPlugins.loadExternalEntries?.();
-    const activated=await window.GRSPlugins.activateAll();
-    console.info('[GRS plugins] activated',activated);
+    await window.DKDSPlugins.loadBuiltinEntries();
+    await window.DKDSPlugins.loadExternalEntries?.();
+    const activated=await window.DKDSPlugins.activateAll();
+    console.info('[DKDS plugins] activated',activated);
   }
 
   async function startApplication(){
     await initializePluginArchitecture();
 
-    // Start with exactly one isolated blank project after plugin slices are ready.
+    // Start with exactly one isolated project after plugin slices are ready.
     const initialTab=blankProjectTab('项目 1');
     state.projectTabs.push(initialTab);
     state.activeProjectTabId=initialTab.id;
     mountProjectTab(initialTab);
+
+    if(IS_AUXILIARY_WINDOW){
+      document.body.classList.add('auxiliary-window');
+      auxiliaryBootstrapState=await window.electronAPI?.getActivityWindowBootstrap?.();
+      if(auxiliaryBootstrapState?.project){
+        initialTab.id=auxiliaryBootstrapState.projectTabId||initialTab.id;
+        initialTab.title=auxiliaryBootstrapState.title||initialTab.title;
+        state.activeProjectTabId=initialTab.id;
+        loadProjectIntoActive(auxiliaryBootstrapState.project,auxiliaryBootstrapState.projectPath||null);
+        captureActiveProjectTab();
+      }
+      window.addEventListener('beforeunload',()=>pushAuxiliaryProjectSnapshot(true));
+      window.electronAPI?.onActivityBootstrapChanged?.(async()=>{
+        const next=await window.electronAPI?.getActivityWindowBootstrap?.();
+        if(!next?.project)return;
+        auxiliaryBootstrapState=next;
+        loadProjectIntoActive(next.project,next.projectPath||null);
+        captureActiveProjectTab();
+        renderAll();
+        window.DKDSPlugins?.activities?.set?.(next.activityId||AUX_ACTIVITY_ID);
+      });
+    }else{
+      window.electronAPI?.onActivityProjectSnapshot?.(applyActivityProjectSnapshot);
+    }
+
     syncPhysicsLabelControls();
     renderProjectTabs();
     updateMainModeButtons();
     renderAll();
     applyGroupPanelLayout();
     applyInspectorPanelLayout();
-    initializeUpdateUi();
-    initializeLanWebUi();
-    window.GRSPlugins?.events?.emit?.('app:ready',{state});
+    if(!IS_AUXILIARY_WINDOW){
+      initializeUpdateUi();
+      initializeLanWebUi();
+    }
+    if(IS_AUXILIARY_WINDOW){
+      await window.DKDSPlugins?.activities?.set?.(auxiliaryBootstrapState?.activityId||AUX_ACTIVITY_ID);
+    }
+    window.DKDSPlugins?.events?.emit?.('app:ready',{state,auxiliary:IS_AUXILIARY_WINDOW});
   }
 
   startApplication().catch(err=>{
-    console.error('[GRS startup]',err);
+    console.error('[DKDS startup]',err);
     setStatus(`启动失败：${err.message}`);
   });
 })();

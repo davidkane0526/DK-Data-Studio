@@ -1,5 +1,5 @@
 (() => {
-  GRSPlugins.define({
+  DKDSPlugins.define({
     id:'com.example.raw-prominence-detector',
     name:'Raw Prominence Detector Example',
     version:'0.1.0',
@@ -10,7 +10,7 @@
     description:'SDK example: raw-sample local maxima with a prominence threshold.',
     capabilities:['analysis.peak-detector']
   }, async ctx => {
-    const S=window.GRSScience;
+    const S=window.DKDSScience;
 
     ctx.analysis.detectors.register('example-raw-prominence-v1',{
       name:'Example · Raw Prominence',

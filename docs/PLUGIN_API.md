@@ -1,15 +1,15 @@
-# Plugin API v1.2
+# Plugin API v1.3
 
 Global runtime:
 
 ```js
-window.GRSPlugins
+window.DKDSPlugins
 ```
 
 A plugin registers itself with:
 
 ```js
-GRSPlugins.define(manifest, async ctx => {
+DKDSPlugins.define(manifest, async ctx => {
   // activate
   return {
     deactivate() {}
@@ -26,7 +26,7 @@ GRSPlugins.define(manifest, async ctx => {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
   "version": "0.1.0",
-  "apiVersion": "1.0.0",
+  "apiVersion": "1.3.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 300,
@@ -38,7 +38,7 @@ GRSPlugins.define(manifest, async ctx => {
 Plugin ids are permanent. Do not rename an id after project files have stored state under it.
 
 
-## Workspace UI API v1.2
+## Workspace UI API v1.3
 
 Activity-scoped keyboard behavior must use `ctx.ui.shortcuts.add(...)`; plugins should listen to the generic `layout:resize` event to resize their own canvases. Core must not know domain shortcut keys or domain plot IDs.
 
@@ -48,12 +48,13 @@ For full scientific-workspace customization, read:
 docs/WORKSPACE_PLUGIN_API.md
 ```
 
-v1.2 adds first-class contributions for:
+v1.3 keeps the v1.x API additive and adds first-class selection menus plus desktop auxiliary-activity windows. Workspace contributions include:
 
 ```text
 ui.activities
 ui.sidebar
 ui.mainViews
+ui.selectionMenus
 ui.mainOverlays
 ui.mainTools
 ui.inspectors
@@ -83,27 +84,43 @@ ctx.host.copyTextToClipboard(text, label)
 ctx.host.savePlotlyImage(plotId, baseName, format)
 ctx.host.getState()
 ctx.host.platform
+ctx.host.isAuxiliaryWindow
+ctx.host.openActivityWindow(activityId)
+ctx.host.closeCurrentWindow()
 ```
 
 The current built-in workbench also exposes shared renderer controllers (`renderSpacingPage`, `renderGateAnalysis`, `renderTerMaxPage`, `renderPulseAnalysis`, `togglePhysicsPanel`). These are presentation/workspace services, not scientific algorithms. New unrelated plugins should create their own page/view rather than call them.
+
+For a top-level activity that should open in a dedicated desktop window, prefer the declarative activity contract rather than calling the host directly:
+
+```js
+ctx.ui.activities.add({
+  id: 'my-analysis',
+  label: '数据分析',
+  openMode: 'window',
+  onActivate: () => ctx.host.openAnalysisPage('my-page')
+});
+```
+
+The shell opens the auxiliary Electron window from the main renderer and activates the same plugin in that window. Project snapshots are synchronized back to the owning project tab when the auxiliary activity changes data or closes.
 
 ## Shared scientific engine
 
 Reusable mature calculations are exposed through:
 
 ```js
-window.GRSScience
+window.DKDSScience
 ```
 
 Examples:
 
 ```js
-GRSScience.detectPeaks(...)
-GRSScience.solvePeakTracks(...)
-GRSScience.analyzePhysicalFamilies(...)
-GRSScience.pairGateSeries(...)
-GRSScience.computeTerMatrix(...)
-GRSScience.analyzePulseReadData(...)
+DKDSScience.detectPeaks(...)
+DKDSScience.solvePeakTracks(...)
+DKDSScience.analyzePhysicalFamilies(...)
+DKDSScience.pairGateSeries(...)
+DKDSScience.computeTerMatrix(...)
+DKDSScience.analyzePulseReadData(...)
 ```
 
 Plugins should consume this shared engine instead of copying an algorithm. If a new pure calculation is useful across workflows/runtimes, add a tested module under `src/science/`.
@@ -204,7 +221,7 @@ ctx.ui.styles.add('compact-card-layout', `
     border-radius: 14px;
   }
 
-  .grs-size-compact .my-plugin-grid {
+  .dkds-size-compact .my-plugin-grid {
     grid-template-columns: 1fr;
   }
 `);
@@ -228,7 +245,7 @@ ctx.registry.add('analysis.providers', 'my-analysis', {
 Read contributions:
 
 ```js
-const providers = GRSPlugins.registry.values('analysis.providers');
+const providers = DKDSPlugins.registry.values('analysis.providers');
 ```
 
 Important registry kinds include:
@@ -242,10 +259,11 @@ Important registry kinds include:
 - `ui.activities`
 - `ui.inspectors`
 - `ui.mainViews`
+- `ui.selectionMenus`
 - `ui.groupViews`
 - `ui.groupCharts`
 
-DOM-mounted sidebar/toolbar/menu/overlay contributions are lifecycle-tracked by the same plugin kernel.
+DOM-mounted sidebar/toolbar/menu/overlay contributions and typed `ui.selectionMenus` are lifecycle-tracked by the same plugin kernel.
 
 New kinds are allowed when the contract is documented.
 
@@ -346,14 +364,14 @@ Do not leave window listeners, timers, workers, or DOM nodes alive after deactiv
 The core Plugin Manager is available through:
 
 ```js
-GRSPlugins.manager
+DKDSPlugins.manager
 ```
 
 Read current plugin states:
 
 ```js
-const rows = GRSPlugins.manager.list();
-const one = GRSPlugins.manager.get('com.example.plugin');
+const rows = DKDSPlugins.manager.list();
+const one = DKDSPlugins.manager.get('com.example.plugin');
 ```
 
 Each state includes:
@@ -372,17 +390,17 @@ preference   undefined = manifest default, boolean = user override
 Lifecycle operations:
 
 ```js
-await GRSPlugins.manager.enable(id);
-await GRSPlugins.manager.disable(id);
-await GRSPlugins.manager.reload(id);
-await GRSPlugins.manager.setEnabled(id, boolean);
-await GRSPlugins.manager.resetPreferences();
+await DKDSPlugins.manager.enable(id);
+await DKDSPlugins.manager.disable(id);
+await DKDSPlugins.manager.reload(id);
+await DKDSPlugins.manager.setEnabled(id, boolean);
+await DKDSPlugins.manager.resetPreferences();
 ```
 
 Enable/disable preferences are stored locally by the host under:
 
 ```text
-grs.plugin.preferences.v1
+dkds.plugin.preferences.v1
 ```
 
 They are intentionally not project state.
@@ -406,8 +424,8 @@ v1.1 is additive. Plugins declaring any `1.x` API remain loadable.
 ## Standard data model
 
 ```js
-ctx.data.model        // GRSData
-ctx.data.formula      // GRSFormula
+ctx.data.model        // DKDSData
+ctx.data.formula      // DKDSFormula
 ctx.data.artifacts.list()
 ctx.data.artifacts.get(id)
 ctx.data.artifacts.add(artifact)
@@ -439,7 +457,7 @@ ctx.workflow.analyzers.register('my.analyzer', {
   outputKinds:['result.analysis'],
   parameterSchema:{ fields:[...] },
   run({ inputs, parameters }) {
-    return GRSData.createAnalysisResult(...);
+    return DKDSData.createAnalysisResult(...);
   }
 });
 ```
@@ -507,4 +525,4 @@ The host rejects a second plugin that tries to claim an already registered globa
 
 ## Installable package distribution
 
-Plugin API v1.2 can be distributed as desktop `.grsplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+Plugin API v1.3 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.

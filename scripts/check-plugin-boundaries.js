@@ -29,10 +29,10 @@ for(const [token,label] of forbiddenCoreHtml){
 for(const token of ['data-plugin-sidebar','data-plugin-main-tools','id="activityBar"','id="pluginToolbarAnalysis"']){
   if(!html.includes(token))fail(`generic workspace mount missing: ${token}`);
 }
-for(const token of ["'ui.mainViews'","'ui.inspectors'","'ui.groupCharts'","'ui.groupViews'","'ui.shortcuts'","'peak.detectors'"]){
+for(const token of ["'ui.mainViews'","'ui.inspectors'","'ui.groupCharts'","'ui.groupViews'","'ui.selectionMenus'","'ui.shortcuts'","'peak.detectors'"]){
   if(!kernel.includes(token))fail(`plugin kernel registry missing: ${token}`);
 }
-for(const token of ['mainViews:','mainOverlays:','inspectors:','groupCharts:','sidebar:','activities:']){
+for(const token of ['mainViews:','selectionMenus:','mainOverlays:','inspectors:','groupCharts:','sidebar:','activities:']){
   if(!kernel.includes(token))fail(`plugin API extension missing: ${token}`);
 }
 
@@ -54,7 +54,7 @@ for(const token of [
   "ctx.ui.sidebar.add",
   "ctx.ui.mainViews.register",
   "ctx.ui.shortcuts.add",
-  "ctx.ui.mainOverlays.add",
+  "ctx.ui.selectionMenus.register",
   "ctx.ui.inspectors.register",
   "ctx.ui.groupCharts.register",
   "ctx.ui.groupViews.register",

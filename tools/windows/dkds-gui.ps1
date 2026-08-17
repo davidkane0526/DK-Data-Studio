@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.Drawing
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$Runner = Join-Path $PSScriptRoot 'grs-tools.ps1'
+$Runner = Join-Path $PSScriptRoot 'dkds-tools.ps1'
 $Package = Join-Path $Root 'package.json'
 $Version = try { (Get-Content $Package -Raw | ConvertFrom-Json).version } catch { '?' }
 $Branch = try { (& git -C $Root branch --show-current 2>$null).Trim() } catch { '?' }
@@ -21,7 +21,7 @@ $ColorAccent = [System.Drawing.Color]::FromArgb(49,94,251)
 $ColorAccentHover = [System.Drawing.Color]::FromArgb(39,79,220)
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'GRS Developer Toolbox'
+$form.Text = 'DK Data Studio · Developer Toolbox'
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
 $form.ClientSize = [System.Drawing.Size]::new(980,650)
 $form.MinimumSize = [System.Drawing.Size]::new(760,560)
@@ -51,7 +51,7 @@ $head.Padding = [System.Windows.Forms.Padding]::new(20,9,20,7)
 $rootLayout.Controls.Add($head,0,0)
 
 $title = New-Object System.Windows.Forms.Label
-$title.Text = 'Graphene Resonance Studio · Developer Toolbox'
+$title.Text = 'DK Data Studio · Developer Toolbox'
 $title.Font = [System.Drawing.Font]::new('Segoe UI',13,[System.Drawing.FontStyle]::Bold)
 $title.ForeColor = $ColorText
 $title.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -131,7 +131,7 @@ function Run-Action([string]$Action,[string]$VersionArg='') {
     $commandLine = "-NoLogo -NoProfile -ExecutionPolicy Bypass -NoExit -File $runnerQuoted -Action $Action"
     if ($VersionArg) {
       if ($VersionArg -notmatch '^[0-9A-Za-z.+-]+$') {
-        [System.Windows.Forms.MessageBox]::Show('版本号只能包含字母、数字、点、加号和连字符。','GRS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('版本号只能包含字母、数字、点、加号和连字符。','DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Warning) | Out-Null
         return
       }
       $commandLine += " -Version $VersionArg"
@@ -140,7 +140,7 @@ function Run-Action([string]$Action,[string]$VersionArg='') {
     $status.Text = "已启动：$Action"
   } catch {
     $status.Text = '启动失败'
-    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'GRS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
   }
 }
 
@@ -236,7 +236,7 @@ function Add-VersionCard([System.Windows.Forms.FlowLayoutPanel]$Flow) {
   $inner.Controls.Add($label,0,0)
 
   $versionBox = New-Object System.Windows.Forms.TextBox
-  $versionBox.Text = '3.20.0-plugin.3'
+  $versionBox.Text = '3.21.0'
   $versionBox.Dock = [System.Windows.Forms.DockStyle]::Fill
   $versionBox.Margin = [System.Windows.Forms.Padding]::new(0,2,0,4)
   $inner.Controls.Add($versionBox,0,1)
@@ -280,7 +280,7 @@ $update = New-Page '局域网更新'
 Add-ActionCard -Flow $update -Text '启动更新服务器' -Description '运行可信局域网更新服务。' -Action 'update-server' -Accent
 Add-ActionCard -Flow $update -Text '发布已有构建' -Description '发布 dist/latest.yml 对应的构建。' -Action 'publish-update'
 Add-ActionCard -Flow $update -Text '安装服务器自启动' -Description '创建登录时启动的 Windows 计划任务。' -Action 'update-autostart-install'
-Add-ActionCard -Flow $update -Text '移除服务器自启动' -Description '删除 GRS LAN Update Server 计划任务。' -Action 'update-autostart-remove'
+Add-ActionCard -Flow $update -Text '移除服务器自启动' -Description '删除 DKDS LAN Update Server 计划任务。' -Action 'update-autostart-remove'
 Add-VersionCard -Flow $update
 
 $plugin = New-Page '插件与维护'

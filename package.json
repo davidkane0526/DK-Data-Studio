@@ -1,9 +1,9 @@
 {
-  "name": "graphene-resonance-studio",
-  "version": "3.20.0-plugin.3",
-  "description": "Plugin-oriented interactive scientific data analysis studio (Graphene resonance built-in plugins)",
+  "name": "dk-data-studio",
+  "version": "3.21.0",
+  "description": "Plugin-oriented interactive scientific data analysis studio (resonance-analysis built-in plugins)",
   "main": "main.js",
-  "author": "Graphene Resonance Studio contributors",
+  "author": "DK Data Studio contributors",
   "license": "MIT",
   "scripts": {
     "plugin:index": "node scripts/generate-plugin-index.js",
@@ -35,8 +35,8 @@
     "electron-builder": "^26.15.7"
   },
   "build": {
-    "appId": "org.openai.graphene-resonance-studio",
-    "productName": "Graphene Resonance Studio",
+    "appId": "com.dk.datastudio",
+    "productName": "DK Data Studio",
     "files": [
       "main.js",
       "plugin-package.js",

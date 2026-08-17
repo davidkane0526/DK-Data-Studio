@@ -1,90 +1,99 @@
-# Next Session Handoff — v3.20.0-plugin.3
+# Next Session Handoff — v3.21.0
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.20.0-plugin.3`
+- Current delivery: `v3.21.0`
+- Product name: **DK Data Studio**
+- Installable plugin package extension: **`.dkplugin`**
 
-Never confuse `main` with `plugin`. Continue new work from `plugin`.
+Continue new product work from `plugin`, not from `main`.
 
-## What v3.20 changed
+## v3.21 user-visible behavior
 
-### UI shell
+### Main shell
 
-The former two-row Activity/Context toolbar was collapsed into one adaptive command row above project tabs.
-
-Current order:
-
-```text
-GRS | Import/Project | Edit | Activities | Current activity actions | Export | Manage
-```
-
-- Activity overflow remains automatic (`工作区 ▾`).
-- Plugin context actions use priority-aware overflow (`更多 ▾`).
-- Update / LAN Web / Plugin Manager live in the compact `管理 ▾` menu.
-- Undo / deselect live in `编辑 ▾`.
-- No permanent second toolbar row should be reintroduced.
-
-### UI density
-
-`src/style.css` defines semantic UI tokens:
+The desktop header is a single, larger adaptive row. The primary resonance Activity and resonance-owned commands are one visual group; auxiliary Activities remain separate. Do not shrink controls back to the v3.20 compact scale unless a real small-screen breakpoint requires it.
 
 ```text
---ui-font-size
---ui-font-small
---ui-font-title
---ui-font-page-title
---ui-control-h
+DK Data Studio | Import/Project | Edit | [Resonance + resonance commands] | Auxiliary Activities | Export | Manage
 ```
 
-Use these for ordinary UI. Scientific axes/annotations may keep domain-specific sizes.
+### Plugin-owned plot interaction
 
-### Windows tooling
+- Box geometry remains core canvas infrastructure.
+- Visible box-selection commands are supplied by the active plugin through `ui.selectionMenus`.
+- Main-plot action buttons are supplied by `ui.mainTools`; even “适应视图” is resonance-plugin owned.
+- Do not reintroduce resonance-specific menu markup into `src/index.html`.
 
-All old one-off CMD files were removed. Root contains only:
+### Group chart layout
+
+`dkds.ui.trendColumns.v1` is a local UI preference. Its fallback is 3 columns. Opening a project, importing data, creating a project tab or switching tabs must not overwrite that preference from project data.
+
+### Import behavior
+
+`导入数据` opens the import workbench only. The OS file picker must open only when the user explicitly presses `导入文件`.
+
+### Auxiliary analysis windows
+
+`数据中心`, `TER分析`, and `脉冲分析` declare `openMode:'window'`. From the main Electron window they open dedicated BrowserWindows and leave the main Activity on resonance. Their header action is `关闭窗口`, never `返回主图`.
+
+The auxiliary renderer receives the current project snapshot and sends the updated project snapshot back on close. If the corresponding project tab is inactive, the snapshot is stored and applied when that tab is activated.
+
+## Android release APK
+
+Android remains release-only from user-facing tooling:
 
 ```text
-GRS.cmd
-GRS_GUI.cmd
+DKDS.cmd android-check
+DKDS.cmd android-build
+DKDS.cmd android-install
+DKDS.cmd android-run
 ```
 
-Backend: `tools/windows/grs-tools.ps1`
-GUI: `tools/windows/grs-gui.ps1`
+Final APK:
 
-`v3.20.0-plugin.2` repaired the Windows toolbox after the first consolidation:
+```text
+mobile-dist\DK-Data-Studio.apk
+```
 
-- `Invoke-Step` now uses the explicit `-Arguments` parameter; never rename it back to PowerShell's automatic `$Args` variable.
-- `GRS.cmd install-deps` explicitly runs `npm.cmd install`; `GRS.cmd doctor` checks Node/npm/Git and dependency state.
-- the WinForms GUI uses responsive Flow/Table layouts and typed geometry constructors instead of fixed `(X,Y)` placement.
-- `scripts/test-windows-tooling.js` is part of both `npm run check` and `npm test`.
-- keep `tools/windows/*.ps1` as UTF-8 with BOM for Windows PowerShell 5.1 Chinese text compatibility.
+Local signing identity:
 
-Add new developer/build actions there instead of creating more CMDs.
+```text
+%LOCALAPPDATA%\DKDataStudio\android-signing
+```
 
-### Project structure
+`tools/windows/dkds-tools.ps1` now auto-discovers:
 
-- update server moved to `services/update-server/`
-- updater defaults moved to `config/update-config.default.json`
-- operational guides moved under `docs/guides/`
-- release snapshots live under `docs/releases/`
+- Android SDK through `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and standard `%LOCALAPPDATA%\Android\Sdk`;
+- `adb.exe` from SDK `platform-tools` even when it is not on `PATH`;
+- JDK through `JAVA_HOME`, `JDK_HOME`, `STUDIO_JDK`, PATH, Android Studio `jbr`, common JDK vendors, and Windows uninstall/JDK registry metadata.
 
-Read `docs/PROJECT_STRUCTURE.md` before moving files again.
+Java is still physically required because Gradle itself needs a JDK. If no JDK/JBR exists anywhere, the environment check should explain that rather than pretending APK compilation can proceed.
 
-## Architecture status inherited from v3.19
+Android metadata: app `0.3.0`, versionCode `4`, package `com.dk.datastudio`.
 
-Core remains plugin-first. Mature resonance UI is plugin-native:
+## Windows toolbox rules inherited from v3.20
 
-- Activity/sidebar/main view/main tools/overlay
-- detector providers
-- inspector provider
-- group/subplot providers
-- domain pages/panels/exports
+Root launchers remain only:
 
-Shared scientific logic remains in `src/science/` and must stay common to Electron, Web and Android.
+```text
+DKDS.cmd
+DKDS_GUI.cmd
+```
 
-## Before coding in a new AI session
+Backend: `tools/windows/dkds-tools.ps1`
+GUI: `tools/windows/dkds-gui.ps1`
+
+Do not use PowerShell automatic `$Args` as a formal parameter. Keep the scripts UTF-8 with BOM for Windows PowerShell 5.1. Keep the responsive Flow/Table WinForms layout.
+
+## Architecture status
+
+Core remains plugin-first. Shared scientific logic stays in `src/science/` and is shared by Electron/Web/Android. Mature resonance UI is plugin-native: Activity, sidebar, main view, main tools, selection menu, detector providers, inspector, group charts, pages/panels and exports.
+
+## Before coding in a new session
 
 Read in this order:
 
@@ -93,15 +102,13 @@ Read in this order:
 3. `docs/ARCHITECTURE.md`
 4. `docs/PROJECT_STRUCTURE.md`
 5. `docs/DEVELOPMENT_GUIDE.md`
-6. feature-specific Plugin/Data/Workflow docs
+6. `docs/PLUGIN_API.md` and `docs/WORKSPACE_PLUGIN_API.md` for UI/plugin changes
 
 Then run:
 
 ```bat
-GRS.cmd check
-GRS.cmd test
+DKDS.cmd check
+DKDS.cmd test
 ```
 
-## Next recommended work
-
-Do not continue changing the shell merely for visual novelty. The next architecture-validation milestone should be a genuinely different scientific plugin (for example Raman/FET/retention) implemented without core changes, so the plugin framework is tested outside the resonance domain.
+Both commands must pass before delivery.

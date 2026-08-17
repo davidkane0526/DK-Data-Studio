@@ -104,14 +104,14 @@ function dashboardHtml() {
   const ips = lanIPv4Addresses();
   const urls = ips.map(ip => `http://${ip}:${config.port}`).join('<br>');
   return `<!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><title>GRS LAN Update Server</title>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>DKDS LAN Update Server</title>
 <style>
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f7fb;color:#172033;margin:0}
 main{max-width:920px;margin:40px auto;background:#fff;padding:28px;border:1px solid #dfe5ef;border-radius:14px;box-shadow:0 8px 30px rgba(20,30,60,.08)}
 code{background:#f2f5fa;padding:2px 5px;border-radius:5px}.ok{color:#087443}.muted{color:#667085}
 .grid{display:grid;grid-template-columns:180px 1fr;gap:9px 14px}.box{margin-top:18px;padding:14px;border:1px solid #e5eaf2;border-radius:10px;background:#fafcff}
 </style></head><body><main>
-<h1>Graphene Resonance Studio 局域网更新服务</h1>
+<h1>DK Data Studio 局域网更新服务</h1>
 <div class="grid">
 <div>服务状态</div><div class="ok">运行中</div>
 <div>Server ID</div><div><code>${serverId}</code></div>
@@ -122,7 +122,7 @@ code{background:#f2f5fa;padding:2px 5px;border-radius:5px}.ok{color:#087443}.mut
 </div>
 <div class="box">
 <b>发布方式</b><br><br>
-在应用工程目录运行 <code>GRS_GUI.cmd</code>，在“局域网更新”页执行“构建 Windows”与“发布现有构建”。
+在应用工程目录运行 <code>DKDS_GUI.cmd</code>，在“局域网更新”页执行“构建 Windows”与“发布现有构建”。
 发布脚本会复制 electron-builder 生成的更新文件；服务端检测到 <code>current.json</code> 改变后立即向所有客户端推送。
 </div>
 <p class="muted">简化可信局域网模式：不需要任何公钥/私钥。安装包下载后仍由 electron-updater 按 latest.yml 中的 SHA512 校验完整性。请仅在你信任的实验室/办公室局域网中使用。</p>
@@ -273,7 +273,7 @@ function multicastAnnouncement() {
   const ips = lanIPv4Addresses();
   for (const ip of ips.length ? ips : ['127.0.0.1']) {
     const payload = Buffer.from(JSON.stringify({
-      type: 'grs-update-server',
+      type: 'dkds-update-server',
       schema: 1,
       serverId,
       serverName: config.serverName,
@@ -288,7 +288,7 @@ setInterval(multicastAnnouncement, Math.max(1000, Number(config.announceInterval
 
 server.listen(Number(config.port), config.host || '0.0.0.0', () => {
   log('============================================================');
-  log('Graphene Resonance Studio - LAN Update Server');
+  log('DK Data Studio - LAN Update Server');
   log('============================================================');
   log(`Server ID : ${serverId}`);
   log(`HTTP port : ${config.port}`);
@@ -296,7 +296,7 @@ server.listen(Number(config.port), config.host || '0.0.0.0', () => {
   log(`Storage   : ${storageDir}`);
   log(`Current   : ${currentRelease?.version || '(none)'}`);
   for (const ip of lanIPv4Addresses()) log(`Dashboard : http://${ip}:${config.port}`);
-  log('Publish a build with: GRS.cmd publish-update');
+  log('Publish a build with: DKDS.cmd publish-update');
   log('============================================================');
   multicastAnnouncement();
 });

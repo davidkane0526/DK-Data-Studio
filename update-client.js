@@ -42,7 +42,7 @@ async function fetchBuffer(url, timeoutMs = 8000) {
     const res = await fetch(url, {
       cache: 'no-store',
       signal: controller.signal,
-      headers: { 'User-Agent': 'Graphene-Resonance-Studio-LAN-Updater/1' }
+      headers: { 'User-Agent': 'DK-Data-Studio-LAN-Updater/1' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
     return Buffer.from(await res.arrayBuffer());
@@ -272,7 +272,7 @@ class LanUpdateClient extends EventEmitter {
     socket.on('message', msg => {
       let payload;
       try { payload = JSON.parse(msg.toString('utf8')); } catch { return; }
-      if (payload?.type !== 'grs-update-server' || payload?.schema !== 1) return;
+      if (payload?.type !== 'dkds-update-server' || payload?.schema !== 1) return;
 
       // Manual URL has priority over multicast discovery.
       if (normalizeBaseUrl(this.settings.serverUrl)) return;

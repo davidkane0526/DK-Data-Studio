@@ -33,7 +33,7 @@ let html = fs.readFileSync(indexPath, 'utf8');
 html = html
   .replace('../node_modules/d3/dist/d3.min.js', 'vendor/d3.min.js')
   .replace('../node_modules/plotly.js-dist-min/plotly.min.js', 'vendor/plotly.min.js')
-  .replace('<title>Graphene Resonance Studio</title>', '<title>Graphene Resonance Studio Mobile</title>');
+  .replace('<title>DK Data Studio</title>', '<title>DK Data Studio Mobile</title>');
 fs.writeFileSync(indexPath, html, 'utf8');
 
 const marker = {

@@ -72,12 +72,12 @@ ctx.ui.styles.add(...)
 ```
 
 Use:
-- `.grs-size-compact`
-- `.grs-size-medium`
-- `.grs-size-large`
-- `.grs-pointer-coarse`
-- `.grs-orientation-portrait`
-- `.grs-orientation-landscape`
+- `.dkds-size-compact`
+- `.dkds-size-medium`
+- `.dkds-size-large`
+- `.dkds-pointer-coarse`
+- `.dkds-orientation-portrait`
+- `.dkds-orientation-landscape`
 
 Do not use desktop pixel coordinates as the only layout rule.
 
@@ -260,13 +260,13 @@ Do not add a second feature-specific plugin manager.
 Use the existing core lifecycle API:
 
 ```js
-GRSPlugins.manager.list()
-GRSPlugins.manager.enable(id)
-GRSPlugins.manager.disable(id)
-GRSPlugins.manager.reload(id)
+DKDSPlugins.manager.list()
+DKDSPlugins.manager.enable(id)
+DKDSPlugins.manager.disable(id)
+DKDSPlugins.manager.reload(id)
 ```
 
-When adding a new built-in plugin, make sure its runtime `GRSPlugins.define()` manifest contains useful:
+When adding a new built-in plugin, make sure its runtime `DKDSPlugins.define()` manifest contains useful:
 - `name`;
 - `version`;
 - `description`;
@@ -292,13 +292,13 @@ Chart      -> ctx.charts
 Recipe     -> ctx.workflow.recipes
 ```
 
-Use `GRSData` artifacts as provider inputs/outputs.
+Use `DKDSData` artifacts as provider inputs/outputs.
 
 Do not invent a private table object if `data.table` is sufficient.
 
 Do not hand-code an ordinary settings form. Declare `parameterSchema` and use `ctx.parameters.render()`.
 
-Do not use arbitrary JavaScript evaluation for user formulas. Use `GRSFormula`.
+Do not use arbitrary JavaScript evaluation for user formulas. Use `DKDSFormula`.
 
 Do not make a new analysis page merely because two existing processors need to run in sequence. Prefer a Recipe first. Create a dedicated page when the workflow needs genuinely specialized interaction or visualization.
 
@@ -377,7 +377,7 @@ Plugins that own Plotly/D3 canvases should react to `layout:resize` themselves. 
 
 ## Packaging a finished plugin
 
-When a feature should be installable without rebuilding Graphene Resonance Studio, give it a non-`builtin.*` id and package it with `npm run plugin:package -- <folder> <name>.grsplugin`. Read `PLUGIN_PACKAGES.md`. For detector plugins, the Resonance Workbench must discover the provider dynamically; do not add detector-name branches to the workbench.
+When a feature should be installable without rebuilding DK Data Studio, give it a non-`builtin.*` id and package it with `npm run plugin:package -- <folder> <name>.dkplugin`. Read `PLUGIN_PACKAGES.md`. For detector plugins, the Resonance Workbench must discover the provider dynamically; do not add detector-name branches to the workbench.
 
 ## v3.20 UI/tooling constraints for AI changes
 
@@ -385,4 +385,4 @@ Do not solve toolbar crowding by adding rows. Register plugin actions with meani
 
 For ordinary UI typography, use the semantic CSS tokens already defined in `src/style.css`. Do not introduce arbitrary 8px/9px/13px control fonts unless the component is genuinely a different semantic level.
 
-Do not create a new `.cmd` for a build or maintenance task. Add a new action to `tools/windows/grs-tools.ps1`; add a GUI button in `tools/windows/grs-gui.ps1` if users benefit from it. The repository-wide rule is exactly two CMD launchers: `GRS.cmd` and `GRS_GUI.cmd`.
+Do not create a new `.cmd` for a build or maintenance task. Add a new action to `tools/windows/dkds-tools.ps1`; add a GUI button in `tools/windows/dkds-gui.ps1` if users benefit from it. The repository-wide rule is exactly two CMD launchers: `DKDS.cmd` and `DKDS_GUI.cmd`.

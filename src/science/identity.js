@@ -1,5 +1,5 @@
 (function(root,factory){
-  const core=(root.GRSScience=root.GRSScience||{});
+  const core=(root.DKDSScience=root.DKDSScience||{});
   const api=factory(core);
   Object.assign(core,api);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
