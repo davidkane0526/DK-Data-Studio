@@ -24,7 +24,6 @@ jobs:
     timeout-minutes: 45
     env:
       CI: '1'
-      DKDS_LOCAL_RELEASE_SIGNING: '1'
 
     steps:
       - name: Checkout
@@ -62,31 +61,6 @@ jobs:
           java -version
           sdkmanager --version
 
-      - name: Generate temporary release keystore
-        shell: bash
-        run: |
-          KEYSTORE_PATH="$RUNNER_TEMP/dkds-ci-release.p12"
-          SIGNING_PASSWORD="$(node -e "process.stdout.write(require('crypto').randomBytes(24).toString('hex'))")"
-          SIGNING_ALIAS="dkds-ci-release"
-
-          keytool -genkeypair \
-            -keystore "$KEYSTORE_PATH" \
-            -storetype PKCS12 \
-            -storepass "$SIGNING_PASSWORD" \
-            -keypass "$SIGNING_PASSWORD" \
-            -alias "$SIGNING_ALIAS" \
-            -keyalg RSA \
-            -keysize 4096 \
-            -validity 36500 \
-            -dname "CN=DK Data Studio CI, O=DK Data Studio, C=US" \
-            -noprompt
-
-          chmod 600 "$KEYSTORE_PATH"
-          echo "DKDS_ANDROID_RELEASE_STORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
-          echo "DKDS_ANDROID_RELEASE_STORE_PASSWORD=$SIGNING_PASSWORD" >> "$GITHUB_ENV"
-          echo "DKDS_ANDROID_RELEASE_KEY_ALIAS=$SIGNING_ALIAS" >> "$GITHUB_ENV"
-          echo "DKDS_ANDROID_RELEASE_KEY_PASSWORD=$SIGNING_PASSWORD" >> "$GITHUB_ENV"
-
       - name: Install mobile dependencies
         working-directory: mobile
         shell: bash
@@ -106,6 +80,16 @@ jobs:
         working-directory: mobile
         shell: bash
         run: npx expo prebuild --platform android --clean
+
+      - name: Verify stable self-signing key
+        working-directory: mobile/android
+        shell: bash
+        run: |
+          test -f app/debug.keystore
+          keytool -list \
+            -keystore app/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey
 
       - name: Build arm64 release APK
         working-directory: mobile/android
