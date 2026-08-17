@@ -13,6 +13,9 @@ const ACTION_RESOLVE_MATCHES = 'http://schemas.xmlsoap.org/ws/2005/04/discovery/
 const ACTION_HELLO = 'http://schemas.xmlsoap.org/ws/2005/04/discovery/Hello';
 const ACTION_BYE = 'http://schemas.xmlsoap.org/ws/2005/04/discovery/Bye';
 const ACTION_GET_RESPONSE = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/GetResponse';
+const PNPX_NS = 'http://schemas.microsoft.com/windows/pnpx/2005/10';
+const PUBLICATION_NS = 'http://schemas.microsoft.com/windows/pub/2005/07';
+const DISCOVERY_TYPES = 'wsdp:Device pub:Computer';
 
 function xmlEscape(value) {
   return String(value ?? '')
@@ -83,7 +86,7 @@ function bestLocalIPv4(remoteAddress) {
 }
 
 function soapEnvelope(header, body, extraNamespaces = '') {
-  return `<?xml version="1.0" encoding="utf-8"?>\n<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsd="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:wsdp="http://schemas.xmlsoap.org/ws/2006/02/devprof" ${extraNamespaces}>\n  <soap:Header>${header}</soap:Header>\n  <soap:Body>${body}</soap:Body>\n</soap:Envelope>`;
+  return `<?xml version="1.0" encoding="utf-8"?>\n<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:wsd="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:wsdp="http://schemas.xmlsoap.org/ws/2006/02/devprof" xmlns:pnpx="${PNPX_NS}" xmlns:pub="${PUBLICATION_NS}" ${extraNamespaces}>\n  <soap:Header>${header}</soap:Header>\n  <soap:Body>${body}</soap:Body>\n</soap:Envelope>`;
 }
 
 function appSequence(instanceId, sequenceId, messageNumber) {
@@ -98,24 +101,34 @@ function endpointReference(deviceUrn) {
   return `<wsa:EndpointReference><wsa:Address>${xmlEscape(deviceUrn)}</wsa:Address></wsa:EndpointReference>`;
 }
 
+function discoveryTypeElement() {
+  return `<wsd:Types>${DISCOVERY_TYPES}</wsd:Types>`;
+}
+
+function probeTypesSupported(types) {
+  const requested = String(types || '').trim();
+  if (!requested) return true;
+  return requested.split(/\s+/).some(type => /(?:^|:)Device$/i.test(type) || /(?:^|:)Computer$/i.test(type));
+}
+
 function buildProbeMatches({ deviceId, xaddr, relatesTo, instanceId = 1, sequenceId = messageUuid(), messageNumber = 1 }) {
   const deviceUrn = endpointUrn(deviceId);
   const header = discoveryHeader({ action:ACTION_PROBE_MATCHES, to:ANONYMOUS_TO, relatesTo, instanceId, sequenceId, messageNumber });
-  const body = `<wsd:ProbeMatches><wsd:ProbeMatch>${endpointReference(deviceUrn)}<wsd:Types>wsdp:Device</wsd:Types><wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs><wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:ProbeMatch></wsd:ProbeMatches>`;
+  const body = `<wsd:ProbeMatches><wsd:ProbeMatch>${endpointReference(deviceUrn)}${discoveryTypeElement()}<wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs><wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:ProbeMatch></wsd:ProbeMatches>`;
   return soapEnvelope(header, body);
 }
 
 function buildResolveMatches({ deviceId, xaddr, relatesTo, instanceId = 1, sequenceId = messageUuid(), messageNumber = 1 }) {
   const deviceUrn = endpointUrn(deviceId);
   const header = discoveryHeader({ action:ACTION_RESOLVE_MATCHES, to:ANONYMOUS_TO, relatesTo, instanceId, sequenceId, messageNumber });
-  const body = `<wsd:ResolveMatches><wsd:ResolveMatch>${endpointReference(deviceUrn)}<wsd:Types>wsdp:Device</wsd:Types><wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs><wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:ResolveMatch></wsd:ResolveMatches>`;
+  const body = `<wsd:ResolveMatches><wsd:ResolveMatch>${endpointReference(deviceUrn)}${discoveryTypeElement()}<wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs><wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:ResolveMatch></wsd:ResolveMatches>`;
   return soapEnvelope(header, body);
 }
 
 function buildHello({ deviceId, xaddr = '', instanceId = 1, sequenceId = messageUuid(), messageNumber = 1 }) {
   const deviceUrn = endpointUrn(deviceId);
   const header = discoveryHeader({ action:ACTION_HELLO, to:DISCOVERY_TO, instanceId, sequenceId, messageNumber });
-  const body = `<wsd:Hello>${endpointReference(deviceUrn)}<wsd:Types>wsdp:Device</wsd:Types>${xaddr ? `<wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs>` : ''}<wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:Hello>`;
+  const body = `<wsd:Hello>${endpointReference(deviceUrn)}${discoveryTypeElement()}${xaddr ? `<wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs>` : ''}<wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:Hello>`;
   return soapEnvelope(header, body);
 }
 
@@ -126,12 +139,22 @@ function buildBye({ deviceId, instanceId = 1, sequenceId = messageUuid(), messag
   return soapEnvelope(header, body);
 }
 
+function computerPublicationIdentity() {
+  const host = String(os.hostname() || 'DK-DATA-STUDIO').replace(/[\\/]/g, '-').slice(0, 63) || 'DK-DATA-STUDIO';
+  const userDomain = String(process.env.USERDOMAIN || '').trim();
+  const dnsDomain = String(process.env.USERDNSDOMAIN || '').trim();
+  const group = userDomain && userDomain.toLowerCase() !== host.toLowerCase() ? userDomain : (dnsDomain || 'WORKGROUP');
+  const qualifier = (userDomain && userDomain.toLowerCase() !== host.toLowerCase()) || dnsDomain ? 'Domain' : 'Workgroup';
+  return `${host}/${qualifier}:${group}`;
+}
+
 function buildMetadataResponse({ deviceId, version, presentationUrl, requestMessageId = '', friendlyName = 'DK Data Studio' }) {
   const deviceUrn = endpointUrn(deviceId);
   const safeVersion = String(version || '0.0.0');
   const serial = normalizeDeviceId(deviceId).slice(0, 8);
+  const computer = computerPublicationIdentity();
   const header = `\n    <wsa:To>${ANONYMOUS_TO}</wsa:To>\n    <wsa:Action>${ACTION_GET_RESPONSE}</wsa:Action>\n    <wsa:MessageID>${messageUuid()}</wsa:MessageID>${requestMessageId ? `\n    <wsa:RelatesTo>${xmlEscape(requestMessageId)}</wsa:RelatesTo>` : ''}\n  `;
-  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:SerialNumber></wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio Web Service</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationURL>${xmlEscape(presentationUrl)}</wsdp:PresentationURL></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>wsdp:Device</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
+  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:SerialNumber></wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio LAN Workspace</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationURL>${xmlEscape(presentationUrl)}</wsdp:PresentationURL><pnpx:DeviceCategory>Computers</pnpx:DeviceCategory></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>pub:Computer</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId><pub:Computer>${xmlEscape(computer)}</pub:Computer></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
   return soapEnvelope(header, body, 'xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex"');
 }
 
@@ -156,7 +179,8 @@ class WindowsNetworkDiscovery {
   getStatus() {
     return {
       running: !!this.socket,
-      protocol: 'WS-Discovery',
+      protocol: 'WS-Discovery / Windows Publication Services',
+      deviceCategory: 'Computers',
       deviceName: this.deviceName,
       deviceId: this.deviceId,
       port: WSD_PORT,
@@ -186,7 +210,7 @@ class WindowsNetworkDiscovery {
 
     if (action === ACTION_PROBE) {
       const types = extractElementText(xml, 'Types');
-      if (types && !/(^|\s)[^\s]*:?Device(\s|$)/i.test(types)) return;
+      if (!probeTypesSupported(types)) return;
       const xaddr = this.xaddrFor(rinfo.address);
       if (!xaddr) return;
       this.send(buildProbeMatches({ deviceId:this.deviceId, xaddr, relatesTo:messageId, ...this.nextSequence() }), rinfo.port, rinfo.address);
@@ -251,8 +275,9 @@ class WindowsNetworkDiscovery {
     try { socket.setMulticastTTL(2); } catch {}
     try { socket.setMulticastLoopback(false); } catch {}
 
-    // Announce once per usable LAN interface so Network Explorer can cache an
-    // HTTP metadata endpoint immediately, even before it issues its own Probe.
+    // Announce a Windows Publication Services computer endpoint. Network
+    // Explorer also actively probes UDP/3702; those probes are answered above
+    // for both generic Device and pub:Computer QName filters.
     const announced = new Set();
     for (const row of lanIPv4Interfaces()) {
       const xaddr = `http://${row.address}:${Number(this.getHttpPort()) || 45910}/wsd`;
@@ -287,6 +312,7 @@ module.exports = {
   extractElementText,
   extractMessageId,
   bestLocalIPv4,
+  probeTypesSupported,
   buildProbeMatches,
   buildResolveMatches,
   buildHello,

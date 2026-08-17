@@ -2,6 +2,7 @@ const assert = require('assert');
 const {
   normalizeDeviceId,
   extractMessageId,
+  probeTypesSupported,
   buildProbeMatches,
   buildResolveMatches,
   buildHello,
@@ -14,6 +15,10 @@ const xaddr = 'http://192.168.1.23:45910/wsd';
 
 assert.strictEqual(normalizeDeviceId(`urn:uuid:${deviceId}`), deviceId);
 assert.strictEqual(normalizeDeviceId('not-a-uuid'), '');
+assert.strictEqual(probeTypesSupported(''), true);
+assert.strictEqual(probeTypesSupported('wsdp:Device'), true);
+assert.strictEqual(probeTypesSupported('pub:Computer'), true);
+assert.strictEqual(probeTypesSupported('dn:NetworkVideoTransmitter'), false);
 
 const probe = buildProbeMatches({
   deviceId,
@@ -24,7 +29,8 @@ const probe = buildProbeMatches({
   messageNumber:2
 });
 assert.match(probe, /ProbeMatches/);
-assert.match(probe, /wsdp:Device/);
+assert.match(probe, /wsdp:Device pub:Computer/);
+assert.match(probe, /xmlns:pub="http:\/\/schemas\.microsoft\.com\/windows\/pub\/2005\/07"/);
 assert.ok(probe.includes(xaddr));
 assert.ok(probe.includes(relatesTo));
 
@@ -37,6 +43,7 @@ const resolve = buildResolveMatches({
   messageNumber:3
 });
 assert.match(resolve, /ResolveMatches/);
+assert.match(resolve, /pub:Computer/);
 assert.ok(resolve.includes(`urn:uuid:${deviceId}`));
 assert.ok(resolve.includes(xaddr));
 
@@ -48,6 +55,7 @@ const hello = buildHello({
   messageNumber:4
 });
 assert.match(hello, /<wsd:Hello>/);
+assert.match(hello, /<wsd:Types>wsdp:Device pub:Computer<\/wsd:Types>/);
 assert.match(hello, /<wsd:XAddrs>http:\/\/192\.168\.1\.23:45910\/wsd<\/wsd:XAddrs>/);
 assert.match(hello, /<wsd:MetadataVersion>1<\/wsd:MetadataVersion>/);
 
@@ -63,6 +71,9 @@ const metadata = buildMetadataResponse({
 });
 assert.match(metadata, /ThisDevice/);
 assert.match(metadata, /ThisModel/);
+assert.match(metadata, /<pnpx:DeviceCategory>Computers<\/pnpx:DeviceCategory>/);
+assert.match(metadata, /<wsdp:Types>pub:Computer<\/wsdp:Types>/);
+assert.match(metadata, /<pub:Computer>[^<]+\/(?:Domain|Workgroup):[^<]+<\/pub:Computer>/);
 assert.match(metadata, /<wsdp:PresentationURL>http:\/\/192\.168\.1\.23:45910\/<\/wsdp:PresentationURL>/);
 assert.doesNotMatch(metadata, /<wsdp:PresentationUrl>/);
 assert.match(metadata, /DK Data Studio · TEST-PC/);
