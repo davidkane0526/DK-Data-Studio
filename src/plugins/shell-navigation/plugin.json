@@ -1,0 +1,14 @@
+{
+  "id": "builtin.shell-navigation",
+  "name": "Shell Navigation",
+  "version": "1.0.0",
+  "apiVersion": "1.3.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 6,
+  "description": "Unified top-level workspace navigation, responsive child-action overflow, and plugin-manager readability polish.",
+  "capabilities": [
+    "ui.styles",
+    "ui.activity"
+  ]
+}
