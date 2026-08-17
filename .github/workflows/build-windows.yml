@@ -26,6 +26,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Ensure main baseline ref
+        shell: pwsh
+        run: |
+          if (-not (git show-ref --verify --quiet refs/heads/main)) {
+            git branch main origin/main
+          }
+          git rev-parse main
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
