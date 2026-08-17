@@ -2,19 +2,21 @@
   "expo": {
     "name": "DK Data Studio",
     "slug": "dk-data-studio",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.dk.datastudio",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
-        "backgroundColor": "#eef3ff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#315efb"
       }
     },
     "plugins": [
       "./plugins/withDkdsWebAssets.js",
       "./plugins/withDkdsReleaseSigning.js"
-    ]
+    ],
+    "icon": "./assets/icon.png"
   }
 }

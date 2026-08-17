@@ -20,7 +20,7 @@ mobile-dist\DK-Data-Studio.apk
 - SDK：ANDROID_HOME / ANDROID_SDK_ROOT / %LOCALAPPDATA%\Android\Sdk
 - adb：自动从 SDK\platform-tools 查找，不要求提前加入 PATH
 - JDK：优先使用 JAVA_HOME / JDK_HOME / STUDIO_JDK / PATH / Android Studio\jbr / 已安装 JDK
-- 如果系统没有完整 JDK：DKDS 会从 Eclipse Adoptium 官方 API 自动下载并校验 Temurin JDK 17，保存到 %LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current，之后重复使用，不需要手动安装或配置 PATH
+- 如果系统没有完整 JDK：DKDS 会从 Eclipse Adoptium 官方 API 自动下载并校验 Temurin JDK 21，保存到 %DK_TOOL_ROOT%\Java\temurin-21\current，之后重复使用，不需要手动安装或配置 PATH
 
 首次执行 android-check / android-build 时如果缺少 JDK，会发生一次联网下载。可设置 DKDS_DISABLE_MANAGED_JDK=1 禁用自动 JDK，此时必须自行提供完整 JDK。
 

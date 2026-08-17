@@ -38,7 +38,7 @@ src/science/* shared scientific engine
 
 1. Node.js 22.13 或更新的兼容版本。
 2. Android SDK / Platform Tools。
-3. Android Studio 可选。若系统没有 JDK，DKDS 会自动准备 Eclipse Temurin JDK 17。
+3. Android Studio 可选。若系统没有 JDK，DKDS 会自动准备 Eclipse Temurin JDK 21。
 4. `ANDROID_HOME` 和 `platform-tools` 的 `PATH` 均可由 DKDS 自动识别；已有配置会优先使用。
 
 统一检查入口：
@@ -58,7 +58,7 @@ DKDS.cmd android-build
 脚本会：
 
 ```text
-自动发现或准备 Temurin JDK 17
+自动发现或准备 Temurin JDK 21
 → mobile\npm install
 → 创建/复用本机独立 release 签名
 → sync:web
@@ -78,10 +78,10 @@ mobile-dist\DK-Data-Studio.apk
 
 `DKDS.cmd android-check` 会自动查找 Android SDK、`adb` 和已有 JDK，不要求它们预先全部写入 PATH。Android Studio 的内置 `jbr` 也会作为候选。
 
-如果系统没有完整 JDK，DKDS 会从 Eclipse Adoptium 官方稳定 API 下载 Eclipse Temurin JDK 17，并校验官方 SHA-256 后解压到：
+如果系统没有完整 JDK，DKDS 会从 Eclipse Adoptium 官方稳定 API 下载 Eclipse Temurin JDK 21，并校验官方 SHA-256 后解压到：
 
 ```text
-%LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current
+%DK_TOOL_ROOT%\Java\temurin-21\current
 ```
 
 这是用户目录中的 DKDS 私有工具链，不修改系统 Java 安装，也不要求管理员权限；后续 Android 构建直接复用。首次下载需要联网。若明确希望禁用自动准备，可设置 `DKDS_DISABLE_MANAGED_JDK=1`。

@@ -1,4 +1,21 @@
-# DK Data Studio — v3.21.2
+# DK Data Studio — v3.22.0
+
+## v3.22 共享工具链与应用图标
+
+- 新增精简 DK 专属图标，并接入桌面标题栏、Electron 窗口、Windows 安装包和 Android 图标。
+- DKDS 与 PyDroid 构建工具统一支持 `DK_TOOL_ROOT` / `DK_CACHE_ROOT`。本机存在 `D:\Code\NodeJs` 时会自动把 `D:\Code` 作为共享工具根目录。
+- JDK、Android SDK、Node、Python 等可安装一次后跨项目复用；npm/pnpm、Electron、electron-builder 和 Gradle 使用公共缓存，避免重复下载。
+- Electron、electron-builder 和 Gradle **不做全局固定版本安装**，仍由各项目声明版本，只共享下载缓存，避免项目间版本冲突。
+- 新增 `DKDS.cmd toolchain`，可直接查看当前实际复用的工具与缓存路径。
+
+推荐：
+
+```text
+DK_TOOL_ROOT=D:\Code
+DK_CACHE_ROOT=D:\Code\BuildCache
+```
+
+完整说明见 `docs/guides/SHARED_TOOLCHAIN_CN.txt`。
 
 
 ## v3.21 UI / 插件界面 / 多窗口工作区
@@ -1417,7 +1434,7 @@ DKDS.cmd update-server
 以及：
 
 ```text
-DKDS.cmd build-publish-update -Version 3.21.2
+DKDS.cmd build-publish-update -Version 3.22.0
 ```
 
 即可。
@@ -1454,7 +1471,7 @@ v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `
 发布新版本时使用显式版本号：
 
 ```text
-DKDS.cmd build-publish-update -Version 3.21.2
+DKDS.cmd build-publish-update -Version 3.22.0
 ```
 
 图形界面可直接使用 `DKDS_GUI.cmd` 的“局域网更新”页。

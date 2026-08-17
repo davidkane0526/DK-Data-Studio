@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.22.0 — shared Windows toolchain + compact application identity
+
+- Added a compact DK Data Studio app mark and wired it into Electron windows, Windows packaging, the desktop header and Expo Android icons.
+- Added cross-project `DK_TOOL_ROOT` / `DK_CACHE_ROOT` discovery. On this workstation `D:\Code` is auto-detected when `D:\Code\NodeJs` exists.
+- Node, JDK, Android SDK, npm cache, pnpm store, Electron cache, electron-builder cache and Gradle cache can now be reused by DKDS and PyDroid instead of being downloaded per project.
+- Automatic JDK fallback now provisions shared Eclipse Temurin JDK 21 under `DK_TOOL_ROOT\Java\temurin-21\current`.
+- Added `DKDS.cmd toolchain` and a GUI card that reports every shared tool/cache location.
+- Android metadata advanced to `0.4.0` / versionCode `6`.
+
 ## 3.21.2 — managed Android JDK + strict environment gating
 
 - Fixed `Check-AndroidEnvironment` returning a truthy array when diagnostic native-command stdout (for example `node --version`) leaked into the PowerShell pipeline; failed checks now stop the build reliably.
