@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - plugin
+    paths:
+      - 'mobile/**'
+      - 'src/**'
+      - 'scripts/generate-brand-assets.js'
+      - 'scripts/generate-plugin-index.js'
+      - 'scripts/validate-plugins.js'
   pull_request:
     branches:
       - main
+    paths:
+      - 'mobile/**'
+      - 'src/**'
+      - 'scripts/generate-brand-assets.js'
+      - 'scripts/generate-plugin-index.js'
+      - 'scripts/validate-plugins.js'
   workflow_dispatch:
 
 permissions:

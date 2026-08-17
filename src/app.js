@@ -3308,17 +3308,20 @@
     return window.electronAPI.saveBase64({defaultName:`${defaultName}.png`,base64,filters:[{name:'PNG',extensions:['png']}]});
   }
 
-  function pulseColumnOptions(ins,selected){
-    return (ins?.headers||[]).map((h,i)=>
+  function pulseColumnOptions(ins,selected,{optional=false,optionalLabel='未记录'}={}){
+    const options=(ins?.headers||[]).map((h,i)=>
       `<option value="${i}" ${Number(selected)===i?'selected':''}>${i+1}: ${escapeHtml(h)}</option>`
     ).join('');
+    return optional
+      ? `<option value="-1" ${Number(selected)<0?'selected':''}>— ${escapeHtml(optionalLabel)} —</option>${options}`
+      : options;
   }
 
   function guessPulseColumn(ins,kind){
     const hs=(ins?.headers||[]).map(h=>String(h||'').toLowerCase());
     if(kind==='time'){
       const j=hs.findIndex(h=>/time|时间/.test(h));
-      return j>=0?j:0;
+      return j>=0?j:-1;
     }
     if(kind==='current'){
       let j=hs.findIndex(h=>/\bid\b|current|(^|[^a-z])i(?:\W|$)/.test(h));
@@ -3326,16 +3329,35 @@
     }
     if(kind==='voltage'){
       let j=hs.findIndex(h=>/\bvd\b|\bvds\b|voltage|bias/.test(h));
-      return j>=0?j:Math.max(0,hs.length-1);
+      if(j<0)j=hs.findIndex(h=>/(^|[^a-z])v(?:\W|$)/.test(h)&&!/vg|gate/.test(h));
+      return j;
     }
-    return 0;
+    return -1;
   }
 
-  function defaultPulseItemSettings(ins){
+  function pulseIsFiniteValue(value){
+    return value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));
+  }
+
+  function pulseNullableNumber(value){
+    if(value===null||value===undefined||String(value).trim()==='')return null;
+    const n=Number(value);
+    return Number.isFinite(n)?n:null;
+  }
+
+  function defaultPulseItemSettings(ins,name=''){
+    const inferred=A.inferPulseProtocolFromName?.(name)||{};
     return {
+      segmentationMode:'auto',
       timeCol:guessPulseColumn(ins,'time'),
       currentCol:guessPulseColumn(ins,'current'),
       voltageCol:guessPulseColumn(ins,'voltage'),
+      writeDuration:pulseNullableNumber(inferred.writeDuration),
+      readDuration:pulseNullableNumber(inferred.readDuration),
+      sampleInterval:null,
+      phaseOrder:'write-read',
+      readVoltage:pulseNullableNumber(inferred.readVoltage),
+      pulseVoltage:pulseNullableNumber(inferred.pulseVoltage),
       blockSamples:0,
       windowStartFraction:.25,
       windowEndFraction:.75,
@@ -3355,6 +3377,20 @@
       .slice(0,80)||'pulse';
   }
 
+  function pulseModeName(mode){
+    return ({timing:'按时间协议',waveform:'按记录电压',legacy:'旧版等点数',auto:'自动'})[mode]||'旧版等点数';
+  }
+
+  function pulseFiniteText(value,{digits=6,suffix=''}={}){
+    if(!pulseIsFiniteValue(value))return '—';
+    const n=Number(value);
+    return `${n.toPrecision(digits)}${suffix}`;
+  }
+
+  function pulseResultMode(result){
+    return result?.segmentationMode||'legacy';
+  }
+
   function makePulseItem(meta,data){
     const inspection=A.inspectDataText({
       name:meta.name,path:meta.path,text:data.text,encoding:data.encoding
@@ -3369,7 +3405,7 @@
       text:data.text,
       encoding:data.encoding,
       inspection,
-      settings:defaultPulseItemSettings(inspection),
+      settings:defaultPulseItemSettings(inspection,meta.name),
       result:null,
       error:'',
       loading:false,
@@ -3390,8 +3426,9 @@
       const active=item.id===pulseAnalysisState.activeId;
       const el=document.createElement('div');
       el.className=`pulse-batch-file-item ${active?'active':''} ${item.error?'error':''}`;
+      const rv=pulseNullableNumber(item.result?.readVoltage);
       const resultMeta=item.result
-        ? `读取≈${Number(item.result.readVoltage).toFixed(4)} V · ${item.result.points.length} 组`
+        ? `${pulseModeName(pulseResultMode(item.result))} · ${rv!==null?`读取≈${rv.toFixed(4)} V`:'未记录读取电压'} · ${item.result.points.length} 组`
         : item.error
           ? item.error
           : item.loading?'读取中…':'待分析';
@@ -3435,7 +3472,7 @@
     $('#pulseAnalyzeCurrentBtn').disabled=!item;
     if(!item)return;
 
-    const s=item.settings||defaultPulseItemSettings(item.inspection);
+    const s={...defaultPulseItemSettings(item.inspection,item.name),...(item.settings||{})};
     item.settings=s;
     $('#pulseActiveFileName').textContent=item.name;
     $('#pulseActiveFileMeta').textContent=
@@ -3443,9 +3480,16 @@
       + (item.result?` · 最近分析 ${item.result.points.length} 个脉冲/读取对`:'');
     $('#pulseSeriesLabel').value=pulseItemLabel(item);
 
-    $('#pulseTimeCol').innerHTML=pulseColumnOptions(item.inspection,s.timeCol);
+    $('#pulseSegmentationMode').value=s.segmentationMode||'auto';
+    $('#pulseTimeCol').innerHTML=pulseColumnOptions(item.inspection,s.timeCol,{optional:true,optionalLabel:'未记录时间'});
     $('#pulseCurrentCol').innerHTML=pulseColumnOptions(item.inspection,s.currentCol);
-    $('#pulseVoltageCol').innerHTML=pulseColumnOptions(item.inspection,s.voltageCol);
+    $('#pulseVoltageCol').innerHTML=pulseColumnOptions(item.inspection,s.voltageCol,{optional:true,optionalLabel:'未记录电压'});
+    $('#pulseWriteDuration').value=pulseIsFiniteValue(s.writeDuration)?String(s.writeDuration):'';
+    $('#pulseReadDuration').value=pulseIsFiniteValue(s.readDuration)?String(s.readDuration):'';
+    $('#pulseSampleInterval').value=pulseIsFiniteValue(s.sampleInterval)?String(s.sampleInterval):'';
+    $('#pulsePhaseOrder').value=s.phaseOrder||'write-read';
+    $('#pulseReadVoltageFallback').value=pulseIsFiniteValue(s.readVoltage)?String(s.readVoltage):'';
+    $('#pulsePulseVoltageFallback').value=pulseIsFiniteValue(s.pulseVoltage)?String(s.pulseVoltage):'';
     $('#pulseBlockSamples').value=Number(s.blockSamples)||0;
     $('#pulseWindowStart').value=Math.round((Number(s.windowStartFraction)||.25)*100);
     $('#pulseWindowEnd').value=Math.round((Number(s.windowEndFraction)||.75)*100);
@@ -3470,13 +3514,16 @@
       return;
     }
 
-    $('#pulseSummary').innerHTML=[
-      ['平台点数',String(r.blockSamples)],
-      ['起始偏移',`${r.offsetSamples} 点`],
-      ['读取电压',`${r.readVoltage.toFixed(6)} V`],
+    const rows=[
+      ['分段方式',pulseModeName(pulseResultMode(r))],
+      ['读取电压',pulseIsFiniteValue(r.readVoltage)?`${Number(r.readVoltage).toFixed(6)} V`:'未记录 / 未指定'],
       ['脉冲/读取对',String(r.points.length)],
       ['稳态窗口',`${(r.windowStartFraction*100).toFixed(0)}–${(r.windowEndFraction*100).toFixed(0)}%`]
-    ].map(([k,v])=>`
+    ];
+    if(r.protocol?.writeDuration>0)rows.splice(1,0,['写入宽度',`${r.protocol.writeDuration} s`]);
+    if(r.protocol?.readDuration>0)rows.splice(2,0,['读取宽度',`${r.protocol.readDuration} s`]);
+    if(pulseIsFiniteValue(r.blockSamples))rows.splice(1,0,['平台点数',String(r.blockSamples)]);
+    $('#pulseSummary').innerHTML=rows.map(([k,v])=>`
       <span class="pulse-stat-chip"><span>${escapeHtml(k)}</span><strong>${escapeHtml(v)}</strong></span>
     `).join('');
   }
@@ -3488,9 +3535,16 @@
     const end=Math.max(start+1,Math.min(100,Number($('#pulseWindowEnd').value)||75));
     item.label=String($('#pulseSeriesLabel').value||item.label||item.name).trim()||item.name;
     item.settings={
+      segmentationMode:$('#pulseSegmentationMode').value||'auto',
       timeCol:Number($('#pulseTimeCol').value),
       currentCol:Number($('#pulseCurrentCol').value),
       voltageCol:Number($('#pulseVoltageCol').value),
+      writeDuration:pulseNullableNumber($('#pulseWriteDuration').value),
+      readDuration:pulseNullableNumber($('#pulseReadDuration').value),
+      sampleInterval:pulseNullableNumber($('#pulseSampleInterval').value),
+      phaseOrder:$('#pulsePhaseOrder').value||'write-read',
+      readVoltage:pulseNullableNumber($('#pulseReadVoltageFallback').value),
+      pulseVoltage:pulseNullableNumber($('#pulsePulseVoltageFallback').value),
       blockSamples:Math.max(0,Math.round(Number($('#pulseBlockSamples').value)||0)),
       windowStartFraction:start/100,
       windowEndFraction:end/100,
@@ -3533,9 +3587,7 @@
     }
 
     renderPulseBatchUi();
-    if(added){
-      setStatus(`已加入 ${added} 个脉冲数据文件；可逐文件设置参数或直接“分析全部勾选文件”。`);
-    }
+    if(added)setStatus(`已加入 ${added} 个脉冲数据文件；支持记录电压、仅电流，以及不同写入/读取脉宽。`);
   }
 
   function removeCheckedPulseFiles(){
@@ -3566,11 +3618,18 @@
   }
 
   function pulseAnalysisOptionsForItem(item){
-    const s=item.settings||{};
+    const s={...defaultPulseItemSettings(item.inspection,item.name),...(item.settings||{})};
     return {
+      segmentationMode:s.segmentationMode||'auto',
       timeCol:Number(s.timeCol),
       currentCol:Number(s.currentCol),
       voltageCol:Number(s.voltageCol),
+      writeDuration:pulseNullableNumber(s.writeDuration),
+      readDuration:pulseNullableNumber(s.readDuration),
+      sampleInterval:pulseNullableNumber(s.sampleInterval),
+      phaseOrder:s.phaseOrder||'write-read',
+      readVoltage:pulseNullableNumber(s.readVoltage),
+      pulseVoltage:pulseNullableNumber(s.pulseVoltage),
       blockSamples:Math.max(0,Math.round(Number(s.blockSamples)||0)),
       windowStartFraction:Number.isFinite(Number(s.windowStartFraction))?Number(s.windowStartFraction):.25,
       windowEndFraction:Number.isFinite(Number(s.windowEndFraction))?Number(s.windowEndFraction):.75,
@@ -3607,8 +3666,10 @@
     }
     const ok=analyzePulseItem(item);
     renderPulseBatchUi();
-    if(ok)setStatus(`已分析 ${pulseItemLabel(item)}：${item.result.points.length} 个脉冲/读取对，Vread≈${item.result.readVoltage.toFixed(4)} V。`);
-    else setStatus(`脉冲分析失败：${item.error}`);
+    if(ok){
+      const rv=pulseNullableNumber(item.result.readVoltage);
+      setStatus(`已分析 ${pulseItemLabel(item)}：${item.result.points.length} 个脉冲/读取对 · ${pulseModeName(pulseResultMode(item.result))}${rv!==null?` · Vread≈${rv.toFixed(4)} V`:''}。`);
+    }else setStatus(`脉冲分析失败：${item.error}`);
   }
 
   async function analyzeCheckedPulseFiles(){
@@ -3643,11 +3704,11 @@
     return {factor:1e12,unit:'pA'};
   }
 
-  function pulseBaseLayout(yTitle,showLegend=false){
+  function pulseBaseLayout(yTitle,showLegend=false,xTitle='脉冲电压 (V)'){
     return {
       margin:{l:78,r:24,t:showLegend?48:26,b:64},
       xaxis:{
-        title:'脉冲电压 (V)',gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',
+        title:xTitle,gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',
         automargin:true,showline:true,linecolor:'#cfd7e5'
       },
       yaxis:{
@@ -3680,8 +3741,8 @@
     const item=pulseActiveItem();
     const r=item?.result;
     $('#pulseRawSubtitle').textContent=item
-      ? `${pulseItemLabel(item)} · ${item.name}。原始波形只显示当前文件，避免多文件瞬态叠加影响诊断。`
-      : '原始波形只显示当前文件，避免多个瞬态文件叠加后无法判断平台识别质量。';
+      ? `${pulseItemLabel(item)} · ${item.name}。${r&&!(r.raw.voltage||[]).some(Number.isFinite)?'该文件未记录电压，仅显示电流–时间波形。':'原始波形只显示当前文件。'}`
+      : '原始波形只显示当前文件，避免多个瞬态文件叠加后无法判断分段质量。';
 
     if(!r){
       emptyPulsePlot('pulseRawPlot',item?'当前文件尚未分析':'请选择左侧文件');
@@ -3689,7 +3750,21 @@
     }
 
     const scale=currentPlotScale(r.raw.current);
+    const hasVoltage=(r.raw.voltage||[]).some(Number.isFinite);
     const cleanPlotConfig={responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:true,doubleClick:'reset'};
+    if(!hasVoltage){
+      Plotly.react('pulseRawPlot',[{
+        x:r.raw.time,y:r.raw.current.map(v=>v*scale.factor),mode:'lines',name:'Id',line:{width:1.2},
+        hovertemplate:`Time=%{x:.7g}<br>Id=%{y:.7g} ${scale.unit}<extra>Id</extra>`
+      }],{
+        margin:{l:82,r:34,t:42,b:66},
+        xaxis:{title:'Time',gridcolor:'#edf0f5',automargin:true,showline:true,linecolor:'#cfd7e5'},
+        yaxis:{title:`Id (${scale.unit})`,gridcolor:'#edf0f5',automargin:true,showline:true,linecolor:'#cfd7e5'},
+        hovermode:'x unified',dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+      },cleanPlotConfig);
+      return;
+    }
+
     Plotly.react('pulseRawPlot',[
       {
         x:r.raw.time,y:r.raw.voltage,mode:'lines',name:'Vd',line:{width:1.25},yaxis:'y',
@@ -3701,21 +3776,11 @@
       }
     ],{
       margin:{l:82,r:34,t:54,b:66},
-      xaxis:{
-        title:'Time',anchor:'y2',gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',
-        automargin:true,showline:true,linecolor:'#cfd7e5'
-      },
-      yaxis:{
-        title:'Vd (V)',domain:[0.57,1],gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',
-        automargin:true,showline:true,linecolor:'#cfd7e5'
-      },
-      yaxis2:{
-        title:`Id (${scale.unit})`,domain:[0,0.42],gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',
-        automargin:true,showline:true,linecolor:'#cfd7e5'
-      },
+      xaxis:{title:'Time',anchor:'y2',gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',automargin:true,showline:true,linecolor:'#cfd7e5'},
+      yaxis:{title:'Vd (V)',domain:[0.57,1],gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',automargin:true,showline:true,linecolor:'#cfd7e5'},
+      yaxis2:{title:`Id (${scale.unit})`,domain:[0,0.42],gridcolor:'#edf0f5',zerolinecolor:'#cfd7e5',automargin:true,showline:true,linecolor:'#cfd7e5'},
       legend:{orientation:'h',x:0,xanchor:'left',y:1.10,yanchor:'bottom'},
-      hovermode:'x unified',dragmode:'zoom',autosize:true,
-      paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+      hovermode:'x unified',dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
     },cleanPlotConfig);
   }
 
@@ -3730,42 +3795,37 @@
     }
 
     const allCurrents=[];
-    for(const item of items){
-      allCurrents.push(...item.result.points.map(p=>p.readCurrent),...item.result.points.map(p=>p.pulseCurrent));
-    }
+    for(const item of items)allCurrents.push(...item.result.points.map(p=>p.readCurrent),...item.result.points.map(p=>p.pulseCurrent));
     const scale=currentPlotScale(allCurrents);
     const showLegend=items.length>1;
+    const useVoltageX=items.every(item=>item.result.points.every(p=>pulseIsFiniteValue(p.pulseVoltage)));
+    const xTitle=useVoltageX?'脉冲电压 (V)':'脉冲序号';
+    const xValue=p=>useVoltageX?Number(p.pulseVoltage):(Number(p.sequence)||Number(p.index)+1);
     const readTraces=[];
     const pulseTraces=[];
 
     for(const item of items){
       const pts=item.result.points;
       const name=pulseItemLabel(item);
-      const custom=pts.map(p=>[
-        p.readVoltage,p.pulseCurrent,p.readCurrent,
-        p.pulseBlockIndex,p.readBlockIndex,item.name
-      ]);
       readTraces.push({
-        x:pts.map(p=>p.pulseVoltage),
+        x:pts.map(xValue),
         y:pts.map(p=>p.readCurrent*scale.factor),
-        mode:'lines+markers',name,
-        marker:{size:6},line:{width:1.7},
-        customdata:custom,
-        hovertemplate:`${escapeHtml(name)}<br>Vpulse=%{x:.6g} V<br>Iread=%{y:.6g} ${scale.unit}<br>Vread=%{customdata[0]:.6g} V<extra></extra>`
+        mode:'lines+markers',name,marker:{size:6},line:{width:1.7},
+        text:pts.map(p=>`Vread=${pulseIsFiniteValue(p.readVoltage)?Number(p.readVoltage).toPrecision(6)+' V':'未记录'}<br>Vpulse=${pulseIsFiniteValue(p.pulseVoltage)?Number(p.pulseVoltage).toPrecision(6)+' V':'未记录'}`),
+        hovertemplate:`${escapeHtml(name)}<br>${useVoltageX?'Vpulse':'Pulse #'}=%{x}<br>Iread=%{y:.6g} ${scale.unit}<br>%{text}<extra></extra>`
       });
       pulseTraces.push({
-        x:pts.map(p=>p.pulseVoltage),
+        x:pts.map(xValue),
         y:pts.map(p=>p.pulseCurrent*scale.factor),
-        mode:'lines+markers',name,
-        marker:{size:6},line:{width:1.7},
-        customdata:custom,
-        hovertemplate:`${escapeHtml(name)}<br>Vpulse=%{x:.6g} V<br>Ipulse=%{y:.6g} ${scale.unit}<extra></extra>`
+        mode:'lines+markers',name,marker:{size:6},line:{width:1.7},
+        text:pts.map(p=>`Vpulse=${pulseIsFiniteValue(p.pulseVoltage)?Number(p.pulseVoltage).toPrecision(6)+' V':'未记录'}`),
+        hovertemplate:`${escapeHtml(name)}<br>${useVoltageX?'Vpulse':'Pulse #'}=%{x}<br>Ipulse=%{y:.6g} ${scale.unit}<br>%{text}<extra></extra>`
       });
     }
 
     const config={responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:true,doubleClick:'reset'};
-    Plotly.react('pulseReadPlot',readTraces,pulseBaseLayout(`读取电流 (${scale.unit})`,showLegend),config);
-    Plotly.react('pulsePulsePlot',pulseTraces,pulseBaseLayout(`脉冲电流 (${scale.unit})`,showLegend),config);
+    Plotly.react('pulseReadPlot',readTraces,pulseBaseLayout(`读取电流 (${scale.unit})`,showLegend,xTitle),config);
+    Plotly.react('pulsePulsePlot',pulseTraces,pulseBaseLayout(`脉冲电流 (${scale.unit})`,showLegend,xTitle),config);
     renderPulseResultTable();
 
     requestAnimationFrame(()=>{
@@ -3775,22 +3835,24 @@
     });
   }
 
+  function pulseTableNumber(value,kind='number'){
+    if(!pulseIsFiniteValue(value))return '';
+    const n=Number(value);
+    return kind==='current'?n.toExponential(8):n.toPrecision(9);
+  }
+
   function renderPulseResultTable(){
     const items=pulseVisibleResultItems();
     const rows=[];
-    for(const item of items){
-      for(const d of item.result.points){
-        rows.push({item,d});
-      }
-    }
+    for(const item of items)for(const d of item.result.points)rows.push({item,d});
 
     $('#pulseResultMeta').textContent=items.length
-      ? `当前显示 ${items.length} 个文件、${rows.length} 个脉冲/读取对。CSV 使用原始 A / V 单位。`
+      ? `当前显示 ${items.length} 个文件、${rows.length} 个脉冲/读取对。未记录的电压保持为空，不会伪造数值。`
       : '没有可显示的已分析结果。';
 
     $('#pulseResultTable').innerHTML=`
       <thead><tr>
-        <th>标签</th><th>源文件</th><th>#</th>
+        <th>标签</th><th>源文件</th><th>#</th><th>分段</th>
         <th>Vpulse (V)</th><th>Ipulse (A)</th>
         <th>Vread (V)</th><th>Iread (A)</th>
         <th>Pulse time</th><th>Read time</th>
@@ -3799,15 +3861,16 @@
       <tbody>${rows.map(({item,d})=>`<tr>
         <td class="pulse-table-label">${escapeHtml(pulseItemLabel(item))}</td>
         <td class="pulse-table-source">${escapeHtml(item.name)}</td>
-        <td>${d.index+1}</td>
-        <td>${Number(d.pulseVoltage).toPrecision(9)}</td>
-        <td>${Number(d.pulseCurrent).toExponential(8)}</td>
-        <td>${Number(d.readVoltage).toPrecision(9)}</td>
-        <td>${Number(d.readCurrent).toExponential(8)}</td>
-        <td>${Number(d.pulseTime).toPrecision(9)}</td>
-        <td>${Number(d.readTime).toPrecision(9)}</td>
-        <td>${d.pulseBlockIndex}</td>
-        <td>${d.readBlockIndex}</td>
+        <td>${d.sequence??d.index+1}</td>
+        <td>${escapeHtml(pulseModeName(pulseResultMode(item.result)))}</td>
+        <td>${pulseTableNumber(d.pulseVoltage)}</td>
+        <td>${pulseTableNumber(d.pulseCurrent,'current')}</td>
+        <td>${pulseTableNumber(d.readVoltage)}</td>
+        <td>${pulseTableNumber(d.readCurrent,'current')}</td>
+        <td>${pulseTableNumber(d.pulseTime)}</td>
+        <td>${pulseTableNumber(d.readTime)}</td>
+        <td>${d.pulseBlockIndex??''}</td>
+        <td>${d.readBlockIndex??''}</td>
       </tr>`).join('')}</tbody>`;
   }
 
@@ -3824,17 +3887,17 @@
     });
   }
 
-  function renderPulseAnalysisResult(){
-    renderPulseBatchUi();
-  }
+  function renderPulseAnalysisResult(){renderPulseBatchUi();}
+
+  function pulseCsvValue(value){return pulseIsFiniteValue(value)?String(Number(value)):'';}
 
   function pulseReadCsvText(){
     const items=pulseVisibleResultItems();
-    const rows=['label,source_file,index,pulse_voltage_V,read_voltage_V,read_current_A,read_time,read_block'];
+    const rows=['label,source_file,index,segmentation_mode,pulse_voltage_V,read_voltage_V,read_current_A,read_time,read_block'];
     for(const item of items){
       for(const d of item.result.points)rows.push([
-        csvCell(pulseItemLabel(item)),csvCell(item.name),d.index,
-        d.pulseVoltage,d.readVoltage,d.readCurrent,d.readTime,d.readBlockIndex
+        csvCell(pulseItemLabel(item)),csvCell(item.name),d.sequence??d.index+1,pulseResultMode(item.result),
+        pulseCsvValue(d.pulseVoltage),pulseCsvValue(d.readVoltage),pulseCsvValue(d.readCurrent),pulseCsvValue(d.readTime),d.readBlockIndex??''
       ].join(','));
     }
     return rows.join('\n');
@@ -3842,11 +3905,11 @@
 
   function pulsePulseCsvText(){
     const items=pulseVisibleResultItems();
-    const rows=['label,source_file,index,pulse_voltage_V,pulse_current_A,pulse_time,pulse_block'];
+    const rows=['label,source_file,index,segmentation_mode,pulse_voltage_V,pulse_current_A,pulse_time,pulse_block'];
     for(const item of items){
       for(const d of item.result.points)rows.push([
-        csvCell(pulseItemLabel(item)),csvCell(item.name),d.index,
-        d.pulseVoltage,d.pulseCurrent,d.pulseTime,d.pulseBlockIndex
+        csvCell(pulseItemLabel(item)),csvCell(item.name),d.sequence??d.index+1,pulseResultMode(item.result),
+        pulseCsvValue(d.pulseVoltage),pulseCsvValue(d.pulseCurrent),pulseCsvValue(d.pulseTime),d.pulseBlockIndex??''
       ].join(','));
     }
     return rows.join('\n');
@@ -3857,22 +3920,22 @@
     const r=item?.result;
     if(!r)return '';
     const rows=['label,source_file,index,time,voltage_V,current_A'];
-    const n=Math.max(r.raw.time.length,r.raw.voltage.length,r.raw.current.length);
+    const n=Math.max(r.raw.time.length,(r.raw.voltage||[]).length,r.raw.current.length);
     for(let i=0;i<n;i++)rows.push([
       csvCell(pulseItemLabel(item)),csvCell(item.name),i,
-      r.raw.time[i]??'',r.raw.voltage[i]??'',r.raw.current[i]??''
+      pulseCsvValue(r.raw.time[i]),pulseCsvValue(r.raw.voltage?.[i]),pulseCsvValue(r.raw.current[i])
     ].join(','));
     return rows.join('\n');
   }
 
   function pulseResultCsvText(){
     const items=pulseVisibleResultItems();
-    const rows=['label,source_file,index,pulse_voltage_V,pulse_current_A,read_voltage_V,read_current_A,pulse_time,read_time,pulse_block,read_block'];
+    const rows=['label,source_file,index,segmentation_mode,pulse_voltage_V,pulse_current_A,read_voltage_V,read_current_A,pulse_time,read_time,pulse_block,read_block'];
     for(const item of items){
       for(const d of item.result.points)rows.push([
-        csvCell(pulseItemLabel(item)),csvCell(item.name),d.index,
-        d.pulseVoltage,d.pulseCurrent,d.readVoltage,d.readCurrent,
-        d.pulseTime,d.readTime,d.pulseBlockIndex,d.readBlockIndex
+        csvCell(pulseItemLabel(item)),csvCell(item.name),d.sequence??d.index+1,pulseResultMode(item.result),
+        pulseCsvValue(d.pulseVoltage),pulseCsvValue(d.pulseCurrent),pulseCsvValue(d.readVoltage),pulseCsvValue(d.readCurrent),
+        pulseCsvValue(d.pulseTime),pulseCsvValue(d.readTime),d.pulseBlockIndex??'',d.readBlockIndex??''
       ].join(','));
     }
     return rows.join('\n');
@@ -3880,9 +3943,7 @@
 
   async function exportPulseCsv(defaultName,content){
     if(!content)return;
-    await window.electronAPI.saveText({
-      defaultName,content,filters:[{name:'CSV',extensions:['csv']}]
-    });
+    await window.electronAPI.saveText({defaultName,content,filters:[{name:'CSV',extensions:['csv']}]});
   }
 
   async function exportPulsePlotImage(plotId,baseName,format){

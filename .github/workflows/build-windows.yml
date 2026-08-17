@@ -4,9 +4,38 @@ on:
   push:
     branches:
       - plugin
+    paths:
+      - '.github/workflows/build-windows.yml'
+      - 'main.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'package.json'
+      - 'src/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'tools/windows/**'
+      - 'services/update-server/**'
   pull_request:
     branches:
       - main
+    paths:
+      - 'main.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'package.json'
+      - 'src/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'tools/windows/**'
+      - 'services/update-server/**'
   workflow_dispatch:
 
 permissions:
@@ -102,6 +131,31 @@ jobs:
 
           Copy-Item -LiteralPath 'tools\windows\publish-artifact-to-lan.ps1' -Destination (Join-Path $stage 'publish-to-lan.ps1')
 
+          $serverStage = Join-Path $stage 'update-server'
+          New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
+          Copy-Item -LiteralPath 'services\update-server\server.js' -Destination $serverStage
+          Copy-Item -LiteralPath 'services\update-server\config.json' -Destination $serverStage
+          $serverNodeModules = Join-Path $serverStage 'node_modules'
+          New-Item -ItemType Directory -Path $serverNodeModules -Force | Out-Null
+          if (-not (Test-Path -LiteralPath 'node_modules\ws\package.json' -PathType Leaf)) {
+            throw 'ws dependency is missing after npm install; cannot create self-contained LAN update server.'
+          }
+          Copy-Item -LiteralPath 'node_modules\ws' -Destination (Join-Path $serverNodeModules 'ws') -Recurse
+
+          $runtimeExe = Join-Path $stage 'win-unpacked\DK Data Studio.exe'
+          if (-not (Test-Path -LiteralPath $runtimeExe -PathType Leaf)) {
+            throw 'Bundled Electron runtime not found: artifact-windows\win-unpacked\DK Data Studio.exe'
+          }
+          foreach ($required in @(
+            (Join-Path $serverStage 'server.js'),
+            (Join-Path $serverStage 'config.json'),
+            (Join-Path $serverStage 'node_modules\ws\package.json')
+          )) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+              throw "Self-contained LAN update server is incomplete: $required"
+            }
+          }
+
           $cmd = @'
           @echo off
           setlocal
@@ -126,6 +180,59 @@ jobs:
 
           Write-Host 'Staged files:'
           Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
+
+      - name: Smoke-test bundled LAN update server
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact-windows'
+          $runtime = Join-Path $stage 'win-unpacked\DK Data Studio.exe'
+          $serverDir = Join-Path $stage 'update-server'
+          $serverScript = Join-Path $serverDir 'server.js'
+          $healthUri = 'http://127.0.0.1:45880/health'
+
+          $hadElectronRunAsNode = Test-Path Env:ELECTRON_RUN_AS_NODE
+          $previousElectronRunAsNode = $env:ELECTRON_RUN_AS_NODE
+          $process = $null
+          try {
+            $env:ELECTRON_RUN_AS_NODE = '1'
+            $process = Start-Process -FilePath $runtime `
+              -ArgumentList ('"' + $serverScript + '"') `
+              -WorkingDirectory $serverDir `
+              -PassThru
+          } finally {
+            if ($hadElectronRunAsNode) {
+              $env:ELECTRON_RUN_AS_NODE = $previousElectronRunAsNode
+            } else {
+              Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+            }
+          }
+
+          try {
+            $health = $null
+            for ($attempt = 1; $attempt -le 30; $attempt++) {
+              Start-Sleep -Milliseconds 500
+              try {
+                $candidate = Invoke-RestMethod -Method Get -Uri $healthUri -TimeoutSec 2
+                if ($candidate.ok -and $candidate.localPublishApi) {
+                  $health = $candidate
+                  break
+                }
+              } catch {}
+            }
+            if (-not $health) {
+              $logPath = Join-Path $serverDir 'server.log'
+              if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Tail 30 }
+              throw 'Bundled LAN update server failed its /health smoke test.'
+            }
+            Write-Host "Bundled LAN update server ready: $($health.serverName)"
+          } finally {
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            Remove-Item -LiteralPath (Join-Path $serverDir 'server.log') -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath (Join-Path $serverDir 'server.log.1') -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath (Join-Path $serverDir 'storage') -Recurse -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7

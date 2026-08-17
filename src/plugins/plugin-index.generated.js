@@ -5,5 +5,7 @@ window.DKDS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/pulse-analysis/plugin.js",
   "plugins/resonance-detector-robust/plugin.js",
   "plugins/resonance-workbench/plugin.js",
-  "plugins/ter-analysis/plugin.js"
+  "plugins/shell-navigation/plugin.js",
+  "plugins/ter-analysis/plugin.js",
+  "plugins/workspace-safeguards/plugin.js"
 ];

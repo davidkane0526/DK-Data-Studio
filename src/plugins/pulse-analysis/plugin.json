@@ -1,12 +1,12 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "apiVersion": "1.3.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 140,
-  "description": "Batch pulse/read transient extraction workspace with plugin-owned UI.",
+  "description": "Batch pulse/read transient extraction with unequal write/read widths and current-only data support.",
   "capabilities": [
     "ui.activity",
     "ui.page",
