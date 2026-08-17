@@ -143,9 +143,10 @@ function computerPublicationIdentity() {
   const host = String(os.hostname() || 'DK-DATA-STUDIO').replace(/[\\/]/g, '-').slice(0, 63) || 'DK-DATA-STUDIO';
   const userDomain = String(process.env.USERDOMAIN || '').trim();
   const dnsDomain = String(process.env.USERDNSDOMAIN || '').trim();
-  const group = userDomain && userDomain.toLowerCase() !== host.toLowerCase() ? userDomain : (dnsDomain || 'WORKGROUP');
-  const qualifier = (userDomain && userDomain.toLowerCase() !== host.toLowerCase()) || dnsDomain ? 'Domain' : 'Workgroup';
-  return `${host}/${qualifier}:${group}`;
+  const domainJoined = !!dnsDomain && !!userDomain && userDomain.toLowerCase() !== host.toLowerCase();
+  if (domainJoined) return `${host}/Domain:${userDomain}`;
+  const workgroup = String(process.env.DKDS_WORKGROUP || 'WORKGROUP').trim() || 'WORKGROUP';
+  return `${host}\\Workgroup:${workgroup}`;
 }
 
 function buildMetadataResponse({ deviceId, version, presentationUrl, requestMessageId = '', friendlyName = 'DK Data Studio' }) {
@@ -154,7 +155,7 @@ function buildMetadataResponse({ deviceId, version, presentationUrl, requestMess
   const serial = normalizeDeviceId(deviceId).slice(0, 8);
   const computer = computerPublicationIdentity();
   const header = `\n    <wsa:To>${ANONYMOUS_TO}</wsa:To>\n    <wsa:Action>${ACTION_GET_RESPONSE}</wsa:Action>\n    <wsa:MessageID>${messageUuid()}</wsa:MessageID>${requestMessageId ? `\n    <wsa:RelatesTo>${xmlEscape(requestMessageId)}</wsa:RelatesTo>` : ''}\n  `;
-  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:SerialNumber></wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio LAN Workspace</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationURL>${xmlEscape(presentationUrl)}</wsdp:PresentationURL><pnpx:DeviceCategory>Computers</pnpx:DeviceCategory></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>pub:Computer</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId><pub:Computer>${xmlEscape(computer)}</pub:Computer></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
+  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio LAN Workspace</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationURL>${xmlEscape(presentationUrl)}</wsdp:PresentationURL><pnpx:DeviceCategory>Computers</pnpx:DeviceCategory></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>pub:Computer</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId><pub:Computer>${xmlEscape(computer)}</pub:Computer></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
   return soapEnvelope(header, body, 'xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex"');
 }
 

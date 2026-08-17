@@ -73,7 +73,7 @@ assert.match(metadata, /ThisDevice/);
 assert.match(metadata, /ThisModel/);
 assert.match(metadata, /<pnpx:DeviceCategory>Computers<\/pnpx:DeviceCategory>/);
 assert.match(metadata, /<wsdp:Types>pub:Computer<\/wsdp:Types>/);
-assert.match(metadata, /<pub:Computer>[^<]+\/(?:Domain|Workgroup):[^<]+<\/pub:Computer>/);
+assert.match(metadata, /<pub:Computer>[^<]+(?:\/Domain:[^<]+|\\Workgroup:[^<]+)<\/pub:Computer>/);
 assert.match(metadata, /<wsdp:PresentationURL>http:\/\/192\.168\.1\.23:45910\/<\/wsdp:PresentationURL>/);
 assert.doesNotMatch(metadata, /<wsdp:PresentationUrl>/);
 assert.match(metadata, /DK Data Studio · TEST-PC/);
