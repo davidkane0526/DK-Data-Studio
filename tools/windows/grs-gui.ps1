@@ -270,10 +270,10 @@ Add-ActionCard -Flow $common -Text '打开 Windows 输出' -Description '打开 
 Add-ActionCard -Flow $common -Text '查看 Git 状态' -Description '检查当前分支与未提交修改。' -Action 'git-status'
 
 $android = New-Page 'Android'
-Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、JDK、adb、ANDROID_HOME 与 API 36。' -Action 'android-check' -Accent
-Add-ActionCard -Flow $android -Text '构建 Debug APK' -Description '同步 Web 资源、Prebuild、Gradle assembleDebug。' -Action 'android-build'
-Add-ActionCard -Flow $android -Text '连接设备运行' -Description '使用 expo run:android 编译并安装。' -Action 'android-run'
-Add-ActionCard -Flow $android -Text '安装已有 APK' -Description 'adb install -r mobile-dist 中的 debug APK。' -Action 'android-install'
+Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、JDK/keytool、adb、ANDROID_HOME 与 API 36。' -Action 'android-check' -Accent
+Add-ActionCard -Flow $android -Text '构建 APK' -Description '同步 Web 资源、Prebuild，并生成独立签名的 release APK。' -Action 'android-build'
+Add-ActionCard -Flow $android -Text '连接设备运行' -Description '使用 release variant 编译并安装到已连接设备。' -Action 'android-run'
+Add-ActionCard -Flow $android -Text '安装已有 APK' -Description '安装 mobile-dist 中已生成的 release APK。' -Action 'android-install'
 Add-ActionCard -Flow $android -Text '打开 APK 输出' -Description '打开 mobile-dist/。' -Action 'open-mobile-dist'
 
 $update = New-Page '局域网更新'

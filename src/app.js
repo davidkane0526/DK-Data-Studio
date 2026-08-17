@@ -5679,7 +5679,7 @@
     if(!window.GRSPlugins)return;
 
     window.GRSPlugins.configure({
-      appVersion:'3.20.0-plugin.2',
+      appVersion:'3.20.0-plugin.3',
       platform:window.GRSPlatform,
       getState:()=>state,
       getActiveProjectTab:()=>activeProjectTab(),

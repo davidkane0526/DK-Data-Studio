@@ -46,7 +46,7 @@ Or use the Android tab in `GRS_GUI.cmd`.
 ```bat
 GRS.cmd update-server
 GRS.cmd publish-update
-GRS.cmd build-publish-update -Version 3.20.0-plugin.2
+GRS.cmd build-publish-update -Version 3.20.0-plugin.3
 ```
 
 The server implementation is under `services/update-server/`.

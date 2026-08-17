@@ -67,18 +67,19 @@ GRS.cmd android-build
 
 ```text
 mobile\npm install
+→ 创建/复用本机独立 release 签名
 → sync:web
 → expo prebuild --platform android --clean
-→ gradlew assembleDebug
+→ gradlew assembleRelease
 ```
 
 输出：
 
 ```text
-mobile-dist\Graphene-Resonance-Studio-debug.apk
+mobile-dist\Graphene-Resonance-Studio.apk
 ```
 
-这是 debug APK，可直接侧载到 Android 手机。
+这是独立 release 签名的 APK，可直接侧载到 Android 手机。首次构建会在 `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing` 生成本机 release 签名，后续自动复用。若希望以后生成的 APK 能覆盖安装当前版本，请备份该目录。 从旧签名版本迁移到本版本时，首次安装可能需要先执行 `adb uninstall com.grapheneresonance.studio`；这会清除旧版应用数据，之后同一 release 签名下可正常覆盖升级。
 
 ## USB 直接编译并安装
 
@@ -101,47 +102,35 @@ GRS.cmd android-run
 GRS.cmd android-install
 ```
 
-## 手动命令
+## 命令行入口
+
+若不使用 GUI，也请从仓库根目录调用 GRS 工具，以确保使用同一套 release 签名：
 
 ```bat
-cd mobile
-npm install
-npm run sync:web
-npx expo prebuild --platform android --clean
-npx expo run:android
+GRS.cmd android-build
+GRS.cmd android-run
+GRS.cmd android-install
 ```
 
-只生成 APK：
+也可以在 `mobile` 目录执行：
 
 ```bat
-cd mobile
-npm run sync:web
-npx expo prebuild --platform android --clean
-cd android
-gradlew.bat assembleDebug
+npm run apk:release
+npm run android
 ```
+
+这两个 npm 命令同样会转回 GRS Windows 工具，不会绕过 release 签名流程。
 
 ## EAS 云端 APK
 
-`eas.json` 已包含：
-
-```json
-{
-  "preview": {
-    "distribution": "internal",
-    "android": {
-      "buildType": "apk"
-    }
-  }
-}
-```
+`eas.json` 的 `production` 已设置 `android.buildType = "apk"`，因此生产构建直接输出 APK。EAS 使用其自身管理的生产签名，不使用本机 GRS 签名。
 
 安装 EAS CLI 并登录后：
 
 ```bat
 cd mobile
 npm run sync:web
-eas build --platform android --profile preview
+eas build --platform android --profile production
 ```
 
 得到可直接安装的 APK。

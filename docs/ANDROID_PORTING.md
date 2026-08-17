@@ -112,15 +112,18 @@ It performs:
 
 ```text
 mobile\npm install       (first build only)
+create/reuse the persistent local release signing identity
 npm run sync:web
 expo prebuild --platform android --clean
-gradlew assembleDebug
+gradlew assembleRelease
 ```
+
+Local signing is stored outside the repository at `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing`. Back up that directory if future local APKs must update the same installed app. Migrating from an older differently signed build requires one uninstall/reinstall (`adb uninstall com.grapheneresonance.studio`), which removes the old app data.
 
 Output:
 
 ```text
-mobile-dist\Graphene-Resonance-Studio-debug.apk
+mobile-dist\Graphene-Resonance-Studio.apk
 ```
 
 Install it with:
@@ -132,7 +135,7 @@ GRS.cmd android-install
 or manually:
 
 ```bash
-adb install -r mobile-dist/Graphene-Resonance-Studio-debug.apk
+adb install -r mobile-dist/Graphene-Resonance-Studio.apk
 ```
 
 For an attached phone/emulator with live native compilation:
@@ -143,7 +146,7 @@ GRS.cmd android-run
 
 ## 7. EAS APK alternative
 
-`mobile/eas.json` contains a `preview` profile using Android APK/internal distribution.
+`mobile/eas.json` configures the `production` profile to output an APK. EAS manages its own production signing credentials.
 
 After installing/logging in to EAS CLI:
 
@@ -151,7 +154,7 @@ After installing/logging in to EAS CLI:
 cd mobile
 npm install
 npm run sync:web
-eas build --platform android --profile preview
+eas build --platform android --profile production
 ```
 
 ## 8. Touch model

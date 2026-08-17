@@ -1,6 +1,6 @@
 {
   "name": "graphene-resonance-studio",
-  "version": "3.20.0-plugin.2",
+  "version": "3.20.0-plugin.3",
   "description": "Plugin-oriented interactive scientific data analysis studio (Graphene resonance built-in plugins)",
   "main": "main.js",
   "author": "Graphene Resonance Studio contributors",
