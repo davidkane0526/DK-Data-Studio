@@ -1,0 +1,132 @@
+name: Build Windows
+
+on:
+  push:
+    branches:
+      - plugin
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Ensure main baseline ref
+        shell: pwsh
+        run: |
+          if (-not (git show-ref --verify --quiet refs/heads/main)) {
+            git branch main origin/main
+          }
+          git rev-parse main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Show tool versions
+        shell: pwsh
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+
+      - name: Run project checks
+        shell: pwsh
+        run: npm run check
+
+      - name: Set unique CI build version
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $parts = [string]$pkg.version -split '\.'
+          if ($parts.Count -lt 2) { throw "Invalid package version: $($pkg.version)" }
+          $ciVersion = "$($parts[0]).$($parts[1]).${{ github.run_number }}"
+          npm version $ciVersion --no-git-tag-version --allow-same-version
+          "DKDS_BUILD_VERSION=$ciVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "CI build version: $ciVersion"
+
+      - name: Build Windows installer and portable app
+        shell: pwsh
+        run: npm run dist
+
+      - name: Stage Windows artifacts
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact-windows'
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+
+          $executables = @(Get-ChildItem -Path dist -File -Filter '*.exe')
+          if ($executables.Count -eq 0) { throw 'No Windows EXE files found in dist.' }
+          $setup = $executables | Where-Object { $_.Name -match '(?i)setup' } | Select-Object -First 1
+          if (-not $setup) { throw 'Setup EXE not found in dist.' }
+          $portable = $executables | Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found in dist.' }
+          $executables | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $stage
+          }
+
+          $latest = Join-Path $PWD 'dist\latest.yml'
+          if (-not (Test-Path -LiteralPath $latest)) { throw 'latest.yml not found in dist.' }
+          Copy-Item -LiteralPath $latest -Destination $stage
+
+          Get-ChildItem -Path dist -File -Filter '*.blockmap' | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $stage
+          }
+
+          $unpacked = Join-Path $PWD 'dist\win-unpacked'
+          if (-not (Test-Path -LiteralPath $unpacked -PathType Container)) { throw 'win-unpacked not found in dist.' }
+          Copy-Item -LiteralPath $unpacked -Destination (Join-Path $stage 'win-unpacked') -Recurse
+
+          Copy-Item -LiteralPath 'tools\windows\publish-artifact-to-lan.ps1' -Destination (Join-Path $stage 'publish-to-lan.ps1')
+
+          $cmd = @'
+          @echo off
+          setlocal
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0publish-to-lan.ps1" -ArtifactRoot "%~dp0"
+          set "code=%errorlevel%"
+          echo.
+          if "%code%"=="0" (
+            echo LAN publish completed.
+          ) else (
+            echo LAN publish failed. Exit code: %code%
+          )
+          pause
+          exit /b %code%
+          '@
+          $cmdPath = Join-Path $stage '局域网发布.cmd'
+          [System.IO.File]::WriteAllText($cmdPath, $cmd.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+
+          Write-Host 'Staged files:'
+          Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Windows-${{ github.sha }}
+          path: artifact-windows/**
+          if-no-files-found: error
+          retention-days: 30
