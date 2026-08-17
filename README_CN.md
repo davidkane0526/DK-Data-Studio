@@ -1,4 +1,4 @@
-# Graphene Resonance Studio — plugin branch (3.20.0-plugin.2)
+# Graphene Resonance Studio — plugin branch (3.20.0-plugin.3)
 
 
 ## v3.20 UI 与工程整理
@@ -517,8 +517,10 @@ GRS.cmd android-build
 成功后生成：
 
 ```text
-mobile-dist\Graphene-Resonance-Studio-debug.apk
+mobile-dist\Graphene-Resonance-Studio.apk
 ```
+
+本地构建使用独立 release 签名，签名文件保存在 `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing`，不会写入 Git。建议备份该目录以保持后续 APK 的覆盖安装能力。 若设备仍安装旧签名版本，首次切换需先卸载旧版，再安装新的 release APK。
 
 然后：
 
@@ -1393,7 +1395,7 @@ GRS.cmd update-server
 以及：
 
 ```text
-GRS.cmd build-publish-update -Version 3.20.0-plugin.2
+GRS.cmd build-publish-update -Version 3.20.0-plugin.3
 ```
 
 即可。
@@ -1430,7 +1432,7 @@ v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `
 发布新版本时使用显式版本号：
 
 ```text
-GRS.cmd build-publish-update -Version 3.20.0-plugin.2
+GRS.cmd build-publish-update -Version 3.20.0-plugin.3
 ```
 
 图形界面可直接使用 `GRS_GUI.cmd` 的“局域网更新”页。

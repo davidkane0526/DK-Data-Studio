@@ -1,11 +1,11 @@
-# Next Session Handoff — v3.20.0-plugin.2
+# Next Session Handoff — v3.20.0-plugin.3
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.20.0-plugin.2`
+- Current delivery: `v3.20.0-plugin.3`
 
 Never confuse `main` with `plugin`. Continue new work from `plugin`.
 

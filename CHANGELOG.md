@@ -1,3 +1,12 @@
+## plugin branch — 3.20.0-plugin.3
+
+- Android toolbox now builds the release variant with `assembleRelease` and a dedicated persistent local release signing identity.
+- Final Android artifact is normalized to `mobile-dist/Graphene-Resonance-Studio.apk`.
+- Connected-device runs use Expo's `--variant release`, and the direct mobile npm workflow matches it.
+- EAS production output is now APK instead of app bundle.
+- Android app version advanced to `0.2.1` / versionCode `3` for clean replacement installs.
+- Windows tooling regression tests now guard the release-only APK workflow.
+
 # Changelog
 
 ## plugin branch — 3.20.0-plugin.2

@@ -108,7 +108,7 @@ function Show-DesktopDoctor {
 function Check-AndroidEnvironment {
   Write-SectionTitle 'Android environment check'
   $ok = $true
-  foreach ($name in @('node','java','adb')) {
+  foreach ($name in @('node','java','keytool','adb')) {
     $cmd = Get-Command $name -ErrorAction SilentlyContinue
     if ($cmd) { Write-Host ("OK  {0}: {1}" -f $name,$cmd.Source) -ForegroundColor Green }
     else { Write-Host ("ERR {0}: not found" -f $name) -ForegroundColor Red; $ok=$false }
@@ -136,18 +136,90 @@ function Check-AndroidEnvironment {
   return $true
 }
 
-function Build-AndroidDebug {
+
+function Initialize-AndroidReleaseSigning {
+  [void](Require-Command 'keytool' 'Install a JDK, not only a JRE.')
+
+  $base = if ($env:LOCALAPPDATA) {
+    Join-Path $env:LOCALAPPDATA 'GrapheneResonanceStudio\android-signing'
+  } elseif ($env:USERPROFILE) {
+    Join-Path $env:USERPROFILE '.grs\android-signing'
+  } else {
+    throw 'Cannot resolve a persistent user directory for Android release signing.'
+  }
+
+  New-Item -ItemType Directory -Force -Path $base | Out-Null
+  $keystore = Join-Path $base 'grs-release.jks'
+  $metadata = Join-Path $base 'signing.json'
+  $alias = 'grsrelease'
+
+  if ((Test-Path $keystore) -xor (Test-Path $metadata)) {
+    throw "Incomplete Android release signing state in $base. Restore both grs-release.jks and signing.json, or remove both to generate a new signing identity."
+  }
+
+  if (-not (Test-Path $keystore)) {
+    Write-SectionTitle 'Create local Android release signing key'
+    $password = ([Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N'))
+    $keytoolArgs = @(
+      '-genkeypair','-noprompt',
+      '-keystore',$keystore,
+      '-storetype','JKS',
+      '-storepass',$password,
+      '-alias',$alias,
+      '-keypass',$password,
+      '-keyalg','RSA',
+      '-keysize','4096',
+      '-validity','10000',
+      '-dname','CN=Graphene Resonance Studio, OU=Local Release, O=Graphene Resonance Studio'
+    )
+    & keytool @keytoolArgs
+    $exitCode = $LASTEXITCODE
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+      throw "keytool exited with code $exitCode"
+    }
+    @{
+      storePassword = $password
+      keyAlias = $alias
+      keyPassword = $password
+    } | ConvertTo-Json | Set-Content -Path $metadata -Encoding UTF8
+    Write-Host "Created persistent release signing identity: $keystore" -ForegroundColor Green
+    Write-Host 'Back up this signing directory if you need future APKs to update the same installed app.' -ForegroundColor Yellow
+  }
+
+  $signing = Get-Content -Raw -Path $metadata | ConvertFrom-Json
+  if (-not $signing.storePassword -or -not $signing.keyAlias -or -not $signing.keyPassword) {
+    throw "Invalid Android signing metadata: $metadata"
+  }
+
+  $env:GRS_LOCAL_RELEASE_SIGNING = '1'
+  $env:GRS_ANDROID_RELEASE_STORE_FILE = $keystore
+  $env:GRS_ANDROID_RELEASE_STORE_PASSWORD = [string]$signing.storePassword
+  $env:GRS_ANDROID_RELEASE_KEY_ALIAS = [string]$signing.keyAlias
+  $env:GRS_ANDROID_RELEASE_KEY_PASSWORD = [string]$signing.keyPassword
+  Write-Host "Release signing: $keystore" -ForegroundColor DarkGray
+}
+
+function Write-AndroidSigningMigrationHint {
+  Write-Host ''
+  Write-Host 'If an older GRS Android build with a different signing identity is already installed, Android cannot replace it in place.' -ForegroundColor Yellow
+  Write-Host 'One-time migration command: adb uninstall com.grapheneresonance.studio' -ForegroundColor Yellow
+  Write-Host 'Then run GRS.cmd android-install again. This uninstall removes the old app data.' -ForegroundColor Yellow
+}
+
+function Build-AndroidRelease {
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
   Ensure-NodeDeps -Dir $Mobile
+  Initialize-AndroidReleaseSigning
   Write-SectionTitle 'Prepare Android offline renderer'
   Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
   Write-SectionTitle 'Expo prebuild'
   Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
-  Write-SectionTitle 'Build debug APK'
-  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleDebug') -WorkingDirectory (Join-Path $Mobile 'android')
+  Write-SectionTitle 'Build release APK'
+  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleRelease') -WorkingDirectory (Join-Path $Mobile 'android')
   New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
-  $src = Join-Path $Mobile 'android\app\build\outputs\apk\debug\app-debug.apk'
-  $dst = Join-Path $MobileDist 'Graphene-Resonance-Studio-debug.apk'
+  $src = Join-Path $Mobile 'android\app\build\outputs\apk\release\app-release.apk'
+  if (-not (Test-Path $src)) { throw "Release APK was not generated: $src" }
+  $dst = Join-Path $MobileDist 'Graphene-Resonance-Studio.apk'
   Copy-Item -Force $src $dst
   Write-Host "APK: $dst" -ForegroundColor Green
 }
@@ -187,7 +259,7 @@ function Show-Menu {
   Write-Host '  5  Run regression tests'
   Write-Host '  6  Build Windows Setup + Portable'
   Write-Host '  7  Check Android environment'
-  Write-Host '  8  Build Android debug APK'
+  Write-Host '  8  Build Android release APK'
   Write-Host '  9  Run/install Android on connected device'
   Write-Host ' 10  Install existing Android APK'
   Write-Host ' 11  Start LAN update server'
@@ -218,19 +290,31 @@ try {
     'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }
     'build-windows' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') }
     'android-check' { if (-not (Check-AndroidEnvironment)) { exit 2 } }
-    'android-build' { Build-AndroidDebug }
+    'android-build' { Build-AndroidRelease }
     'android-run' {
       if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
       Ensure-NodeDeps -Dir $Mobile
+      Initialize-AndroidReleaseSigning
       Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
-      Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','run:android') -WorkingDirectory $Mobile
+      Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
+      try {
+        Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','run:android','--variant','release') -WorkingDirectory $Mobile
+      } catch {
+        Write-AndroidSigningMigrationHint
+        throw
+      }
     }
     'android-install' {
       [void](Require-Command 'adb' 'Install Android SDK Platform Tools.')
-      $apk = Join-Path $MobileDist 'Graphene-Resonance-Studio-debug.apk'
+      $apk = Join-Path $MobileDist 'Graphene-Resonance-Studio.apk'
       if (-not (Test-Path $apk)) { throw "APK not found: $apk. Run android-build first." }
       Invoke-Step -FilePath 'adb' -Arguments @('devices')
-      Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$apk)
+      try {
+        Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$apk)
+      } catch {
+        Write-AndroidSigningMigrationHint
+        throw
+      }
     }
     'update-server' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'LAN update server'; Invoke-Step -FilePath 'node' -Arguments @('services/update-server/server.js') }
     'build-publish-update' {

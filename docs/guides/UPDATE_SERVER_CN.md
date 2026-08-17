@@ -22,7 +22,7 @@ GRS.cmd       命令行统一入口
 GRS.cmd update-server
 GRS.cmd build-windows
 GRS.cmd publish-update
-GRS.cmd build-publish-update -Version 3.20.0-plugin.2
+GRS.cmd build-publish-update -Version 3.20.0-plugin.3
 GRS.cmd update-autostart-install
 GRS.cmd update-autostart-remove
 ```
