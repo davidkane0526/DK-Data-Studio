@@ -25,10 +25,6 @@ jobs:
     env:
       CI: '1'
       DKDS_LOCAL_RELEASE_SIGNING: '1'
-      DKDS_ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.DKDS_ANDROID_RELEASE_KEYSTORE_BASE64 }}
-      DKDS_ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.DKDS_ANDROID_RELEASE_STORE_PASSWORD }}
-      DKDS_ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.DKDS_ANDROID_RELEASE_KEY_ALIAS }}
-      DKDS_ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.DKDS_ANDROID_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -66,36 +62,30 @@ jobs:
           java -version
           sdkmanager --version
 
-      - name: Validate release signing secrets
+      - name: Generate temporary release keystore
         shell: bash
         run: |
-          missing=0
-          for name in \
-            DKDS_ANDROID_RELEASE_KEYSTORE_BASE64 \
-            DKDS_ANDROID_RELEASE_STORE_PASSWORD \
-            DKDS_ANDROID_RELEASE_KEY_ALIAS \
-            DKDS_ANDROID_RELEASE_KEY_PASSWORD
-          do
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Missing GitHub Actions secret: $name"
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
+          KEYSTORE_PATH="$RUNNER_TEMP/dkds-ci-release.p12"
+          SIGNING_PASSWORD="$(node -e "process.stdout.write(require('crypto').randomBytes(24).toString('hex'))")"
+          SIGNING_ALIAS="dkds-ci-release"
 
-      - name: Restore release keystore
-        shell: bash
-        run: |
-          KEYSTORE_PATH="$RUNNER_TEMP/dkds-android-release.jks"
-          printf '%s' "$DKDS_ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          keytool -genkeypair \
+            -keystore "$KEYSTORE_PATH" \
+            -storetype PKCS12 \
+            -storepass "$SIGNING_PASSWORD" \
+            -keypass "$SIGNING_PASSWORD" \
+            -alias "$SIGNING_ALIAS" \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 36500 \
+            -dname "CN=DK Data Studio CI, O=DK Data Studio, C=US" \
+            -noprompt
+
           chmod 600 "$KEYSTORE_PATH"
           echo "DKDS_ANDROID_RELEASE_STORE_FILE=$KEYSTORE_PATH" >> "$GITHUB_ENV"
-          keytool -list \
-            -keystore "$KEYSTORE_PATH" \
-            -storepass "$DKDS_ANDROID_RELEASE_STORE_PASSWORD" \
-            -alias "$DKDS_ANDROID_RELEASE_KEY_ALIAS" >/dev/null
+          echo "DKDS_ANDROID_RELEASE_STORE_PASSWORD=$SIGNING_PASSWORD" >> "$GITHUB_ENV"
+          echo "DKDS_ANDROID_RELEASE_KEY_ALIAS=$SIGNING_ALIAS" >> "$GITHUB_ENV"
+          echo "DKDS_ANDROID_RELEASE_KEY_PASSWORD=$SIGNING_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Install mobile dependencies
         working-directory: mobile
