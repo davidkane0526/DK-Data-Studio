@@ -9,8 +9,8 @@
     "plugin:index": "node scripts/generate-plugin-index.js",
     "plugin:validate": "node scripts/validate-plugins.js",
     "start": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
-    "test": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/test-plugin-manager.js && node scripts/test-plugin-package.js && node scripts/test-data-center-core.js && node tests.js && node scripts/test-windows-network-discovery.js && node scripts/test-windows-tooling.js",
-    "check": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/check-project.js && node scripts/test-plugin-manager.js && node scripts/test-plugin-package.js && node scripts/test-data-center-core.js && node scripts/verify-science-parity.js && node scripts/check-plugin-boundaries.js && node scripts/test-windows-network-discovery.js && node scripts/test-windows-tooling.js",
+    "test": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/test-plugin-manager.js && node scripts/test-plugin-package.js && node scripts/test-data-center-core.js && node tests.js && node scripts/test-workspace-safeguards.js && node scripts/test-windows-network-discovery.js && node scripts/test-windows-tooling.js",
+    "check": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/check-project.js && node scripts/test-plugin-manager.js && node scripts/test-plugin-package.js && node scripts/test-data-center-core.js && node scripts/verify-science-parity.js && node scripts/check-plugin-boundaries.js && node scripts/test-workspace-safeguards.js && node scripts/test-windows-network-discovery.js && node scripts/test-windows-tooling.js",
     "dist": "node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
     "update-server": "node services/update-server/server.js",
     "publish:update": "node services/update-server/publish-release.js dist",
@@ -21,6 +21,7 @@
     "data-center:test": "node scripts/test-data-center-core.js",
     "plugin:package": "node scripts/package-plugin.js",
     "plugin-package:test": "node scripts/test-plugin-package.js",
+    "workspace-safeguards:test": "node scripts/test-workspace-safeguards.js",
     "windows-network-discovery:test": "node scripts/test-windows-network-discovery.js",
     "windows-tools:test": "node scripts/test-windows-tooling.js"
   },
