@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#315efb"/>
-  <text x="256" y="306" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="226" font-weight="700" letter-spacing="-18" fill="#ffffff">DK</text>
-  <path d="M108 370 C170 346 208 388 266 354 C322 322 350 280 410 244" fill="none" stroke="#7de8ff" stroke-width="18" stroke-linecap="round"/>
-  <circle cx="108" cy="370" r="12" fill="#ffffff"/>
-  <circle cx="266" cy="354" r="12" fill="#ffffff"/>
-  <circle cx="410" cy="244" r="12" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DK Data Studio">
+  <rect x="22" y="22" width="468" height="468" rx="96" fill="#111827"/>
+  <rect x="46" y="46" width="420" height="420" rx="72" fill="none" stroke="#f0f5ff" stroke-width="2"/>
+  <path d="M132 201 C208 176 303 186 379 259" fill="none" stroke="#5b9aff" stroke-width="20" stroke-linecap="round"/>
+  <path d="M107 348 C176 302 260 293 405 164" fill="none" stroke="#63edd4" stroke-width="26" stroke-linecap="round"/>
+  <g fill="#fff">
+    <circle cx="132" cy="201" r="14"/>
+    <circle cx="379" cy="259" r="14"/>
+    <circle cx="107" cy="348" r="18"/>
+    <circle cx="260" cy="281" r="16"/>
+    <circle cx="405" cy="164" r="19"/>
+  </g>
 </svg>
