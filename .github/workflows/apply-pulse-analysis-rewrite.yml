@@ -1,0 +1,63 @@
+name: Apply pulse analysis rewrite
+
+on:
+  push:
+    branches:
+      - plugin
+    paths:
+      - scripts/apply-pulse-analysis-rewrite.py
+      - .pulse-rewrite/**
+      - .github/workflows/apply-pulse-analysis-rewrite.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-pulse-analysis-rewrite-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Apply rewrite
+        run: python3 scripts/apply-pulse-analysis-rewrite.py
+
+      - name: Verify JavaScript syntax
+        run: |
+          node --check src/science/pulse.js
+          node --check src/plugins/pulse-analysis/plugin.js
+          node --check src/app.js
+          node --check main.js
+          node --check scripts/test-pulse-analysis.js
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run project checks
+        env:
+          DKDS_PARITY_BASELINE_REF: main
+        run: npm run check
+
+      - name: Commit final source only
+        shell: bash
+        run: |
+          rm -rf .pulse-rewrite
+          rm -f scripts/apply-pulse-analysis-rewrite.py
+          rm -f .github/workflows/apply-pulse-analysis-rewrite.yml
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix: rewrite pulse read analysis"
+          git push
