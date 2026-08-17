@@ -57,23 +57,20 @@ function readInstalledExternalPlugins() {
 }
 
 const PACKAGED_TRIAL_DAYS = 30;
-const PACKAGED_EXPIRY_MAX_TIMER_MS = 12 * 60 * 60 * 1000; // reschedule at most every 12 h
+const PACKAGED_EXPIRY_MAX_TIMER_MS = 12 * 60 * 60 * 1000;
 
 function readPackagedBuildInfo() {
   const infoPath = path.join(__dirname, 'build-info.json');
   try {
     const raw = fs.readFileSync(infoPath, 'utf8');
     const info = JSON.parse(raw);
-
     if (
       info?.buildType !== 'packaged-trial' ||
       Number(info?.durationDays) !== PACKAGED_TRIAL_DAYS ||
       !Number.isFinite(Number(info?.builtAtMs)) ||
       !Number.isFinite(Number(info?.expiresAtMs)) ||
       Number(info.expiresAtMs) <= Number(info.builtAtMs)
-    ) {
-      return null;
-    }
+    ) return null;
     return info;
   } catch {
     return null;
@@ -85,42 +82,28 @@ function packagedBuildIsExpired(info, nowMs = Date.now()) {
 }
 
 function exitImmediately() {
-  // Deliberately no dialog/message: packaged build should terminate directly.
-  // Development mode never reaches this path because app.isPackaged is false.
   process.exit(0);
 }
 
 function enforcePackagedExpiry() {
   if (!app.isPackaged) return;
-
   const info = readPackagedBuildInfo();
-
-  // Fail closed for packaged builds: if build metadata is missing/corrupted,
-  // terminate instead of accidentally creating a non-expiring package.
   if (packagedBuildIsExpired(info)) {
     exitImmediately();
     return;
   }
-
-  // Also enforce expiry if the application remains open across the deadline.
-  // Node timers cannot safely hold an arbitrary 30-day delay on every runtime,
-  // so schedule in bounded chunks and use the exact remaining time for the
-  // final chunk.
   const scheduleNextExpiryCheck = () => {
     const remainingMs = Number(info.expiresAtMs) - Date.now();
     if (remainingMs <= 0) {
       exitImmediately();
       return;
     }
-
     const delayMs = Math.min(remainingMs, PACKAGED_EXPIRY_MAX_TIMER_MS);
     const timer = setTimeout(scheduleNextExpiryCheck, delayMs);
     if (typeof timer.unref === 'function') timer.unref();
   };
-
   scheduleNextExpiryCheck();
 }
-
 
 function commonWindowPreferences() {
   return {
@@ -149,6 +132,12 @@ function createWindow() {
 
 function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId) {
   return `${ownerWebContentsId}::${projectTabId || 'project'}::${activityId}`;
+}
+
+function revealAuxiliaryWindow(win) {
+  if (!win || win.isDestroyed() || win.isVisible()) return;
+  win.show();
+  win.focus();
 }
 
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
@@ -182,6 +171,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     height: 940,
     minWidth: 920,
     minHeight: 650,
+    show: false,
     backgroundColor: '#f5f7fb',
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
@@ -206,6 +196,13 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   ownerWindow.once('closed', () => {
     if (!win.isDestroyed()) win.close();
   });
+
+  // The renderer explicitly signals only after the auxiliary activity page is
+  // mounted and visible. This prevents a flash of the normal workspace shell.
+  const fallback = setTimeout(() => revealAuxiliaryWindow(win), 8000);
+  if (typeof fallback.unref === 'function') fallback.unref();
+  win.once('closed', () => clearTimeout(fallback));
+  win.webContents.once('did-fail-load', () => revealAuxiliaryWindow(win));
   win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
   return { reused:false };
 }
@@ -224,6 +221,10 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win && !win.isDestroyed()) win.close();
     return true;
+  });
+  ipcMain.on('windows:activityReady', event => {
+    if (!auxiliaryBootstrap.has(event.sender.id)) return;
+    revealAuxiliaryWindow(BrowserWindow.fromWebContents(event.sender));
   });
   ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
@@ -255,18 +256,11 @@ app.whenReady().then(() => {
   function decodeTextBuffer(buffer, requestedEncoding = 'auto') {
     const req = String(requestedEncoding || 'auto').toLowerCase();
     const aliases = {
-      auto: 'auto',
-      utf8: 'utf-8',
-      'utf-8-bom': 'utf-8',
-      gbk: 'gb18030',
-      gb2312: 'gb18030',
-      sjis: 'shift_jis',
-      'shift-jis': 'shift_jis',
-      latin1: 'windows-1252',
-      'iso-8859-1': 'windows-1252'
+      auto: 'auto', utf8: 'utf-8', 'utf-8-bom': 'utf-8', gbk: 'gb18030',
+      gb2312: 'gb18030', sjis: 'shift_jis', 'shift-jis': 'shift_jis',
+      latin1: 'windows-1252', 'iso-8859-1': 'windows-1252'
     };
     let enc = aliases[req] || req;
-
     if (enc === 'auto') {
       enc = detectBomEncoding(buffer) || 'utf-8';
       if (enc === 'utf-8') {
@@ -274,12 +268,10 @@ app.whenReady().then(() => {
           const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
           return { text: text.replace(/^\uFEFF/, ''), encoding: 'utf-8' };
         } catch {
-          // Chinese laboratory instruments commonly export ANSI/GBK text.
           enc = 'gb18030';
         }
       }
     }
-
     try {
       let text = new TextDecoder(enc, { fatal: false }).decode(buffer);
       text = text.replace(/^\uFEFF/, '');
@@ -292,12 +284,8 @@ app.whenReady().then(() => {
   ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
   ipcMain.handle('plugins:installPackage', async () => {
     const result = await dialog.showOpenDialog({
-      title:'安装 DK Data Studio 插件',
-      properties:['openFile'],
-      filters:[
-        { name:'DK Data Studio Plugin', extensions:['dkplugin'] },
-        { name:'JSON', extensions:['json'] }
-      ]
+      title:'安装 DK Data Studio 插件', properties:['openFile'],
+      filters:[{ name:'DK Data Studio Plugin', extensions:['dkplugin'] },{ name:'JSON', extensions:['json'] }]
     });
     if(result.canceled || !result.filePaths.length)return null;
     const sourcePath=result.filePaths[0];
@@ -305,7 +293,6 @@ app.whenReady().then(() => {
     if(stat.size>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
     const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
     if(builtinPluginIds().has(pkg.manifest.id))throw new Error(`不能覆盖内置插件：${pkg.manifest.id}`);
-
     const dir=ensureExternalPluginDirectory();
     const target=path.join(dir,pluginPackageFileName(pkg.manifest.id));
     const exists=fs.existsSync(target);
@@ -316,8 +303,7 @@ app.whenReady().then(() => {
     }
     const confirm=await dialog.showMessageBox({
       type:'warning',buttons:['取消',exists?'更新插件':'安装插件'],defaultId:0,cancelId:0,
-      title:exists?'更新已安装插件':'安装本地插件',
-      message:`${pkg.manifest.name} v${pkg.manifest.version}`,
+      title:exists?'更新已安装插件':'安装本地插件',message:`${pkg.manifest.name} v${pkg.manifest.version}`,
       detail:(exists?`将替换已安装的 ${pkg.manifest.id}。\n\n`:'')
         +'本地插件包含可执行 JavaScript，可访问当前应用提供的插件 API 和工作区数据。仅安装你信任或已审查源码的插件包。工程中的插件数据不会因安装/更新被删除。'
     });
@@ -333,10 +319,7 @@ app.whenReady().then(() => {
     const id=String(payload?.id||payload?.package?.manifest?.id||'');
     if(!validPluginId(id)||id.startsWith('builtin.'))throw new Error('无效的插件回滚 ID。');
     const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));
-    if(!payload?.package){
-      if(fs.existsSync(target))fs.unlinkSync(target);
-      return true;
-    }
+    if(!payload?.package){if(fs.existsSync(target))fs.unlinkSync(target);return true;}
     const pkg=normalizePluginPackage(payload.package,{allowBuiltinId:false});
     if(pkg.manifest.id!==id)throw new Error('插件回滚包 ID 不匹配。');
     const tmp=`${target}.rollback-${process.pid}-${Date.now()}`;
@@ -364,15 +347,8 @@ app.whenReady().then(() => {
     const text=String(payload?.text||'').trim();
     if(!text) return null;
     if(text.length>2048) throw new Error('QR content too long.');
-    return QRCode.toDataURL(text,{
-      errorCorrectionLevel:'M',
-      type:'image/png',
-      width:320,
-      margin:2,
-      color:{dark:'#172033',light:'#ffffff'}
-    });
+    return QRCode.toDataURL(text,{errorCorrectionLevel:'M',type:'image/png',width:320,margin:2,color:{dark:'#172033',light:'#ffffff'}});
   });
-
   ipcMain.handle('lanweb:getSettings', async () => lanWebServer?.getSettings() || null);
   ipcMain.handle('lanweb:setSettings', async (_event, settings) => lanWebServer?.setSettings(settings) || null);
   ipcMain.handle('lanweb:start', async () => lanWebServer?.start() || null);
@@ -381,8 +357,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:openData', async () => {
     const result = await dialog.showOpenDialog({
-      title: '选择 I-V / 多列数据文件',
-      properties: ['openFile', 'multiSelections'],
+      title: '选择 I-V / 多列数据文件', properties: ['openFile', 'multiSelections'],
       filters: [
         { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
         { name: 'CSV', extensions: ['csv'] },
@@ -402,20 +377,12 @@ app.whenReady().then(() => {
     if (!filePath || !fs.existsSync(filePath)) throw new Error('Data file not found.');
     const buffer = fs.readFileSync(filePath);
     const decoded = decodeTextBuffer(buffer, payload?.encoding || 'auto');
-    return {
-      path: filePath,
-      name: path.basename(filePath),
-      size: buffer.length,
-      text: decoded.text,
-      encoding: decoded.encoding
-    };
+    return {path:filePath,name:path.basename(filePath),size:buffer.length,text:decoded.text,encoding:decoded.encoding};
   });
 
-  // Backward-compatible endpoint for older renderer/project code paths.
   ipcMain.handle('files:openCsv', async () => {
     const result = await dialog.showOpenDialog({
-      title: '选择 I-V CSV 数据',
-      properties: ['openFile', 'multiSelections'],
+      title: '选择 I-V CSV 数据', properties: ['openFile', 'multiSelections'],
       filters: [
         { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
         { name: 'All Files', extensions: ['*'] }
@@ -436,10 +403,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:saveText', async (_event, payload) => {
     const { defaultName, content, filters } = payload;
-    const result = await dialog.showSaveDialog({
-      defaultPath: defaultName,
-      filters: filters || [{ name: 'Text', extensions: ['txt'] }]
-    });
+    const result = await dialog.showSaveDialog({defaultPath:defaultName,filters:filters || [{ name: 'Text', extensions: ['txt'] }]});
     if (result.canceled || !result.filePath) return false;
     fs.writeFileSync(result.filePath, content, 'utf8');
     return true;
@@ -471,28 +435,20 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:openProject', async () => {
     const result = await dialog.showOpenDialog({
-      title: '打开 DK Data Studio 项目',
-      properties: ['openFile'],
+      title: '打开 DK Data Studio 项目', properties: ['openFile'],
       filters: [{ name: 'DK Data Studio Project', extensions: ['json'] }]
     });
     if (result.canceled || !result.filePaths.length) return null;
     const filePath = result.filePaths[0];
-    return {
-      path: filePath,
-      project: JSON.parse(fs.readFileSync(filePath, 'utf8'))
-    };
+    return {path:filePath,project:JSON.parse(fs.readFileSync(filePath, 'utf8'))};
   });
 
   lanUpdater = new LanUpdateClient({ app, BrowserWindow });
   lanUpdater.start();
-
   lanWebServer = new LanWebServer({ app, BrowserWindow });
-  if (lanWebServer.getSettings().enabled) {
-    lanWebServer.start(false).catch(err => console.error('LAN web server:', err));
-  }
+  if (lanWebServer.getSettings().enabled) lanWebServer.start(false).catch(err => console.error('LAN web server:', err));
 
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
