@@ -206,7 +206,7 @@ class LanWebServer extends EventEmitter {
   isAuthorized(req) {
     if (this.settings.noKey) return true;
     const cookie = String(req.headers.cookie || '');
-    const m = cookie.match(/(?:^|;\s*)grs_pair=([a-f0-9]+)/i);
+    const m = cookie.match(/(?:^|;\s*)dkds_pair=([a-f0-9]+)/i);
     return !!(m && this.tokens.has(m[1]));
   }
 
@@ -214,7 +214,7 @@ class LanWebServer extends EventEmitter {
     const noKey = this.settings.noKey;
     return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Graphene Resonance Studio · LAN</title>
+<title>DK Data Studio · LAN</title>
 <style>
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#f4f7fb;color:#1f2937}
 .wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
@@ -226,7 +226,7 @@ button{margin-top:10px;width:100%;height:42px;border:0;border-radius:8px;backgro
 .err{min-height:20px;margin-top:8px;color:#b42318;font-size:11px}.foot{font-size:10px;color:#98a2b3;margin-top:16px;line-height:1.5}
 </style></head>
 <body><div class="wrap"><div class="card">
-<h1>Graphene Resonance Studio</h1>
+<h1>DK Data Studio</h1>
 <div class="sub">${noKey ? '桌面端已关闭配对 Key，点击进入网页版。' : '请输入桌面端“局域网网页版”面板显示的 4 位配对 Key。'}</div>
 ${noKey ? '<button id="enter">进入网页版</button>' : '<input id="key" class="key" inputmode="numeric" maxlength="4" autocomplete="one-time-code" autofocus><button id="enter">配对并进入</button>'}
 <div id="err" class="err">${errorText}</div>
@@ -272,7 +272,7 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
 
     if (req.method === 'GET' && u.pathname === '/health') {
       res.writeHead(200, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
-      res.end(JSON.stringify({ ok:true, app:'Graphene Resonance Studio', version:this.app.getVersion(), noKey:this.settings.noKey }));
+      res.end(JSON.stringify({ ok:true, app:'DK Data Studio', version:this.app.getVersion(), noKey:this.settings.noKey }));
       return;
     }
 
@@ -294,7 +294,7 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
       res.writeHead(200, {
         'Content-Type':'application/json; charset=utf-8',
         'Cache-Control':'no-store',
-        'Set-Cookie':`grs_pair=${token}; HttpOnly; SameSite=Lax; Path=/`
+        'Set-Cookie':`dkds_pair=${token}; HttpOnly; SameSite=Lax; Path=/`
       });
       res.end(JSON.stringify({ ok:true }));
       this.broadcast();
@@ -303,11 +303,11 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
 
     if (req.method === 'POST' && u.pathname === '/api/logout') {
       const cookie = String(req.headers.cookie || '');
-      const m = cookie.match(/(?:^|;\s*)grs_pair=([a-f0-9]+)/i);
+      const m = cookie.match(/(?:^|;\s*)dkds_pair=([a-f0-9]+)/i);
       if (m) this.tokens.delete(m[1]);
       res.writeHead(200, {
         'Content-Type':'application/json; charset=utf-8',
-        'Set-Cookie':'grs_pair=; Max-Age=0; Path=/'
+        'Set-Cookie':'dkds_pair=; Max-Age=0; Path=/'
       });
       res.end(JSON.stringify({ ok:true }));
       this.broadcast();
@@ -331,7 +331,7 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
         res.writeHead(302, {
           Location:'/app/',
           'Cache-Control':'no-store',
-          'Set-Cookie':`grs_pair=${token}; HttpOnly; SameSite=Lax; Path=/`
+          'Set-Cookie':`dkds_pair=${token}; HttpOnly; SameSite=Lax; Path=/`
         });
         res.end();
         this.broadcast();

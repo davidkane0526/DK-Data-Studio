@@ -21,7 +21,7 @@ type NativeRequest = {
   payload?: any;
 };
 
-const LOCAL_APP = 'file:///android_asset/grs/index.html?reactNative=1';
+const LOCAL_APP = 'file:///android_asset/dkds/index.html?reactNative=1';
 
 function safeName(name: string | undefined, fallback: string) {
   return String(name || fallback)
@@ -47,7 +47,7 @@ export default function App() {
   const resolveWeb = useCallback((id: string | undefined, ok: boolean, value: any) => {
     if (!id) return;
     webRef.current?.postMessage(JSON.stringify({
-      __grsNativeResponse: true,
+      __dkdsNativeResponse: true,
       id,
       ok,
       value,
@@ -55,7 +55,7 @@ export default function App() {
   }, []);
 
   const shareTextFile = useCallback(async (name: string, content: string, mimeType?: string) => {
-    const fileName = safeName(name, 'grs-export.txt');
+    const fileName = safeName(name, 'dkds-export.txt');
     const uri = `${FileSystem.cacheDirectory}${Date.now()}-${fileName}`;
     await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
     if (await Sharing.isAvailableAsync()) {
@@ -68,7 +68,7 @@ export default function App() {
   }, []);
 
   const shareBase64File = useCallback(async (name: string, rawBase64: string, mimeType?: string) => {
-    const fileName = safeName(name, 'grs-export.bin');
+    const fileName = safeName(name, 'dkds-export.bin');
     const uri = `${FileSystem.cacheDirectory}${Date.now()}-${fileName}`;
     await FileSystem.writeAsStringAsync(uri, rawBase64, { encoding: FileSystem.EncodingType.Base64 });
     if (await Sharing.isAvailableAsync()) {
@@ -130,7 +130,7 @@ export default function App() {
 
       if (req.type === 'saveText') {
         const uri = await shareTextFile(
-          req.payload?.name || 'grs-export.txt',
+          req.payload?.name || 'dkds-export.txt',
           String(req.payload?.content ?? ''),
           req.payload?.mimeType
         );
@@ -141,7 +141,7 @@ export default function App() {
       if (req.type === 'saveBase64') {
         const raw = String(req.payload?.base64 ?? '').replace(/^data:[^;]+;base64,/, '');
         const uri = await shareBase64File(
-          req.payload?.name || 'grs-export.png',
+          req.payload?.name || 'dkds-export.png',
           raw,
           req.payload?.mimeType
         );
@@ -153,7 +153,7 @@ export default function App() {
     } catch (error: any) {
       const message = error?.message || String(error);
       resolveWeb(req.id, false, message);
-      Alert.alert('Graphene Resonance Studio', message);
+      Alert.alert('DK Data Studio', message);
     }
   }, [resolveWeb, shareBase64File, shareTextFile]);
 
@@ -163,7 +163,7 @@ export default function App() {
       <StatusBar style="auto" />
       <View style={styles.nativeBar}>
         <View style={styles.titleArea}>
-          <Text style={styles.title}>Graphene Resonance Studio</Text>
+          <Text style={styles.title}>DK Data Studio</Text>
           <Text style={styles.subtitle}>React Native Android · plugin branch</Text>
         </View>
         {!ready && !loadError ? <ActivityIndicator size="small" /> : null}

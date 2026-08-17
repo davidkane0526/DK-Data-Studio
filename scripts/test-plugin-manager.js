@@ -32,7 +32,7 @@ sandbox.window.dispatchEvent=()=>{};
 
 const source = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-kernel.js'),'utf8');
 vm.runInNewContext(source,sandbox,{filename:'plugin-kernel.js'});
-const P=sandbox.GRSPlugins;
+const P=sandbox.DKDSPlugins;
 
 let value=7;
 let activations=0;

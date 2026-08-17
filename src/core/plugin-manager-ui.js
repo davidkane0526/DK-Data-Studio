@@ -61,7 +61,7 @@
   }
 
   function filteredPlugins() {
-    const plugins=window.GRSPlugins?.manager?.list?.()||[];
+    const plugins=window.DKDSPlugins?.manager?.list?.()||[];
     const q=state.query.trim().toLowerCase();
     return plugins.filter(plugin=>{
       if(state.filter==='active'&&!plugin.active)return false;
@@ -88,16 +88,16 @@
   function renderList() {
     const list=$('#pluginManagerList');
     if(!list)return;
-    const all=window.GRSPlugins?.manager?.list?.()||[];
+    const all=window.DKDSPlugins?.manager?.list?.()||[];
     renderSummary(all);
-    const installSupported=!!window.GRSPlugins?.external?.available?.();
-    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.title=installSupported?'安装 .grsplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
+    const installSupported=!!window.DKDSPlugins?.external?.available?.();
+    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.title=installSupported?'安装 .dkplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
     const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn)folderBtn.disabled=!installSupported;
-    const externalErrors=window.GRSPlugins?.external?.errors?.()||[];
+    const externalErrors=window.DKDSPlugins?.external?.errors?.()||[];
     const note=$('#pluginManagerNote');
     if(note)note.innerHTML=externalErrors.length
       ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
-      : '停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。桌面版可安装本地 <code>.grsplugin</code> 插件包。';
+      : '停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。桌面版可安装本地 <code>.dkplugin</code> 插件包。';
     const plugins=filteredPlugins();
     $('#pluginManagerVisibleCount').textContent=`显示 ${plugins.length} / ${all.length}`;
 
@@ -160,7 +160,7 @@
         state.busy.add(plugin.id);
         renderList();
         try{
-          await window.GRSPlugins.manager.setEnabled(plugin.id,toggle.checked);
+          await window.DKDSPlugins.manager.setEnabled(plugin.id,toggle.checked);
         }catch(err){
           state.host?.setStatus?.(`插件 ${plugin.name||plugin.id} 状态修改失败：${err.message}`);
         }finally{
@@ -174,8 +174,8 @@
         state.busy.add(plugin.id);
         renderList();
         try{
-          if(plugin.active)await window.GRSPlugins.manager.reload(plugin.id);
-          else await window.GRSPlugins.manager.enable(plugin.id);
+          if(plugin.active)await window.DKDSPlugins.manager.reload(plugin.id);
+          else await window.DKDSPlugins.manager.enable(plugin.id);
         }catch(err){
           state.host?.setStatus?.(`插件 ${plugin.name||plugin.id} 加载失败：${err.message}`);
         }finally{
@@ -188,7 +188,7 @@
       if(uninstall)uninstall.onclick=async()=>{
         if(!window.confirm(`卸载本地插件 ${plugin.name||plugin.id}？\n\n不会删除工程中已保存的 ${plugin.id} 数据；重新安装同 ID 插件后仍可恢复。`))return;
         state.busy.add(plugin.id);renderList();
-        try{await window.GRSPlugins.external.uninstall(plugin.id);}
+        try{await window.DKDSPlugins.external.uninstall(plugin.id);}
         catch(err){state.host?.setStatus?.(`卸载插件失败：${err.message}`);}
         finally{state.busy.delete(plugin.id);renderList();}
       };
@@ -203,7 +203,7 @@
   }
 
   async function copyDiagnostics(){
-    const text=JSON.stringify(window.GRSPlugins?.diagnostics?.()||{},null,2);
+    const text=JSON.stringify(window.DKDSPlugins?.diagnostics?.()||{},null,2);
     try{
       if(window.electronAPI?.copyText)await window.electronAPI.copyText(text);
       else await navigator.clipboard.writeText(text);
@@ -225,17 +225,17 @@
     $('#pluginManagerRefreshBtn').onclick=renderList;
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{
-        const installed=await window.GRSPlugins.external.install();
+        const installed=await window.DKDSPlugins.external.install();
         if(installed)state.host?.setStatus?.(`插件 ${installed.name||installed.id} 已安装并载入。`);
       }catch(err){state.host?.setStatus?.(`安装插件失败：${err.message}`);}
       renderList();
     };
-    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.GRSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
+    $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.DKDSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
       if(!window.confirm('恢复所有插件的默认启用状态？不会删除插件工程数据。'))return;
       try{
-        await window.GRSPlugins.manager.resetPreferences();
+        await window.DKDSPlugins.manager.resetPreferences();
         state.host?.setStatus?.('插件启用状态已恢复默认。');
       }catch(err){
         state.host?.setStatus?.(`恢复插件默认状态失败：${err.message}`);
@@ -243,12 +243,12 @@
       renderList();
     };
 
-    window.GRSPlugins?.events?.on?.('plugin:manager-changed',renderList);
-    window.GRSPlugins?.events?.on?.('plugin:state-changed',renderList);
-    window.GRSPlugins?.events?.on?.('plugins:ready',renderList);
+    window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderList);
+    window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderList);
+    window.DKDSPlugins?.events?.on?.('plugins:ready',renderList);
   }
 
-  window.GRSPluginManagerUI={
+  window.DKDSPluginManagerUI={
     configure(host){state.host=host||{};bind();renderList();},
     render:renderList,
     open(){state.host?.openAnalysisPage?.('pluginManagerPage');renderList();}

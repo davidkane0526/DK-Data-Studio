@@ -1,13 +1,13 @@
-# GRS 开发工具箱
+# DKDS 开发工具箱
 
 根目录只保留两个 Windows 入口：
 
 ```text
-GRS_GUI.cmd   推荐：图形界面
-GRS.cmd       命令行统一入口
+DKDS_GUI.cmd   推荐：图形界面
+DKDS.cmd       命令行统一入口
 ```
 
-## GRS_GUI.cmd
+## DKDS_GUI.cmd
 
 双击后按用途分为：
 
@@ -18,37 +18,37 @@ GRS.cmd       命令行统一入口
 
 长时间构建动作会打开独立 PowerShell 窗口，因此 GUI 不会因为 Gradle / electron-builder 输出而假死。
 
-## GRS.cmd
+## DKDS.cmd
 
 不带参数会显示文本菜单：
 
 ```bat
-GRS.cmd
+DKDS.cmd
 ```
 
 也可以直接执行：
 
 ```bat
-GRS.cmd dev
-GRS.cmd install-deps
-GRS.cmd doctor
-GRS.cmd check
-GRS.cmd test
-GRS.cmd build-windows
-GRS.cmd android-check
-GRS.cmd android-build
-GRS.cmd android-run
-GRS.cmd android-install
-GRS.cmd update-server
-GRS.cmd publish-update
-GRS.cmd build-publish-update -Version 3.20.0-plugin.3
-GRS.cmd update-autostart-install
-GRS.cmd update-autostart-remove
-GRS.cmd plugin-index
-GRS.cmd plugin-validate
+DKDS.cmd dev
+DKDS.cmd install-deps
+DKDS.cmd doctor
+DKDS.cmd check
+DKDS.cmd test
+DKDS.cmd build-windows
+DKDS.cmd android-check
+DKDS.cmd android-build
+DKDS.cmd android-run
+DKDS.cmd android-install
+DKDS.cmd update-server
+DKDS.cmd publish-update
+DKDS.cmd build-publish-update -Version 3.21.0
+DKDS.cmd update-autostart-install
+DKDS.cmd update-autostart-remove
+DKDS.cmd plugin-index
+DKDS.cmd plugin-validate
 ```
 
-所有实际逻辑都在 `tools/windows/grs-tools.ps1`，不要再新增一个功能一个 CMD。
+所有实际逻辑都在 `tools/windows/dkds-tools.ps1`，不要再新增一个功能一个 CMD。
 
 ## Windows PowerShell 兼容性
 

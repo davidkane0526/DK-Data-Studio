@@ -1,4 +1,4 @@
-Graphene Resonance Studio 3.19.0-plugin.1
+DK Data Studio 3.19.0-plugin.1
 Branch: plugin
 
 - Plugin-native workspace shell: global commands, Activity switcher, context toolbar and automatic overflow.
@@ -10,7 +10,7 @@ Branch: plugin
 - Permanent manual-operation help block and drag/Ctrl-drag plot hint removed.
 - Added Workspace/UI Plugin API v1.2 documentation and automated plugin-boundary regression checks.
 - Context commands now support semantic groups and priority-aware overflow.
-- Desktop Plugin Manager can install/update/uninstall trusted `.grsplugin` packages; failed updates attempt transactional rollback to the previous package.
+- Desktop Plugin Manager can install/update/uninstall trusted `.dkplugin` packages; failed updates attempt transactional rollback to the previous package.
 - Added an external resonance detector SDK example proving stronger detector providers can be installed without editing the Resonance Workbench or core.
 - Existing peak/TER/scientific behavior remains regression-locked.
 

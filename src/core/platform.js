@@ -7,7 +7,7 @@
     const coarse = !!window.matchMedia?.('(pointer: coarse)').matches;
     const hover = !!window.matchMedia?.('(hover: hover)').matches;
     const standalone = !!window.matchMedia?.('(display-mode: standalone)').matches;
-    const webClient = !!window.__GRS_WEB_CLIENT__;
+    const webClient = !!window.__DKDS_WEB_CLIENT__;
     const android = /\bAndroid\b/i.test(navigator.userAgent || '');
 
     let size = 'large';
@@ -44,22 +44,22 @@
   function applyClasses(next) {
     const root = document.documentElement;
     for (const c of [
-      'grs-size-compact','grs-size-medium','grs-size-large',
-      'grs-pointer-coarse','grs-pointer-fine',
-      'grs-orientation-portrait','grs-orientation-landscape',
-      'grs-runtime-web','grs-runtime-electron',
-      'grs-platform-android'
+      'dkds-size-compact','dkds-size-medium','dkds-size-large',
+      'dkds-pointer-coarse','dkds-pointer-fine',
+      'dkds-orientation-portrait','dkds-orientation-landscape',
+      'dkds-runtime-web','dkds-runtime-electron',
+      'dkds-platform-android'
     ]) root.classList.remove(c);
 
-    root.classList.add(`grs-size-${next.size}`);
-    root.classList.add(`grs-pointer-${next.pointer}`);
-    root.classList.add(`grs-orientation-${next.orientation}`);
-    root.classList.add(`grs-runtime-${next.runtime}`);
-    if (next.android) root.classList.add('grs-platform-android');
+    root.classList.add(`dkds-size-${next.size}`);
+    root.classList.add(`dkds-pointer-${next.pointer}`);
+    root.classList.add(`dkds-orientation-${next.orientation}`);
+    root.classList.add(`dkds-runtime-${next.runtime}`);
+    if (next.android) root.classList.add('dkds-platform-android');
 
-    root.style.setProperty('--grs-touch-target', `${next.interaction.targetMinPx}px`);
-    root.style.setProperty('--grs-curve-hit', `${next.interaction.curveHitPx}px`);
-    root.style.setProperty('--grs-peak-hit-radius', `${next.interaction.peakHitRadiusPx}px`);
+    root.style.setProperty('--dkds-touch-target', `${next.interaction.targetMinPx}px`);
+    root.style.setProperty('--dkds-curve-hit', `${next.interaction.curveHitPx}px`);
+    root.style.setProperty('--dkds-peak-hit-radius', `${next.interaction.peakHitRadiusPx}px`);
   }
 
   function refresh() {
@@ -69,14 +69,14 @@
     applyClasses(profile);
     if (changed) {
       for (const fn of listeners) {
-        try { fn(profile); } catch (err) { console.error('[GRS platform listener]', err); }
+        try { fn(profile); } catch (err) { console.error('[DKDS platform listener]', err); }
       }
-      window.dispatchEvent(new CustomEvent('grs:platform-change', { detail: profile }));
+      window.dispatchEvent(new CustomEvent('dkds:platform-change', { detail: profile }));
     }
     return profile;
   }
 
-  window.GRSPlatform = {
+  window.DKDSPlatform = {
     get profile() { return profile; },
     refresh,
     onChange(fn) {

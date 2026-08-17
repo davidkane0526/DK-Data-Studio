@@ -1,5 +1,5 @@
 (() => {
-  const D=window.GRSData;let adapter={getProvider:()=>null,listProviders:()=>[],emit:()=>{}};
+  const D=window.DKDSData;let adapter={getProvider:()=>null,listProviders:()=>[],emit:()=>{}};
   const registryKind={processor:'workflow.processors',analyzer:'workflow.analyzers',chart:'charts.renderers'};
   function configure(next={}){adapter={...adapter,...next};}
   function normalizeProvider(type,id,spec={}){
@@ -49,14 +49,14 @@
 
   async function run(recipe,{inputs={},parameters={},context={},signal=null,onProgress=null}={}){
     const valid=validateRecipe(recipe);if(!valid.ok)throw new Error(valid.errors.join(' '));
-    const recipeParameters={...window.GRSParameters?.defaultValues?.(recipe.parameterSchema||{fields:[]},recipe.defaultParameters||{}),...parameters};
-    const recipeValidation=window.GRSParameters?.validate?.(recipe.parameterSchema||{fields:[]},recipeParameters,{inputs,...context});if(recipeValidation&&!recipeValidation.ok)throw new Error(`Recipe parameters: ${Object.values(recipeValidation.errors).join(' ')}`);
+    const recipeParameters={...window.DKDSParameters?.defaultValues?.(recipe.parameterSchema||{fields:[]},recipe.defaultParameters||{}),...parameters};
+    const recipeValidation=window.DKDSParameters?.validate?.(recipe.parameterSchema||{fields:[]},recipeParameters,{inputs,...context});if(recipeValidation&&!recipeValidation.ok)throw new Error(`Recipe parameters: ${Object.values(recipeValidation.errors).join(' ')}`);
     const order=executionOrder(recipe);const executionId=D?.makeId?.('workflow')||`workflow:${Date.now()}`;const nodeResults=new Map();const startedAt=new Date().toISOString();adapter.emit?.('workflow:started',{executionId,recipe,parameters:recipeParameters});
     for(let index=0;index<order.length;index++){
       if(signal?.aborted)throw new DOMException('Workflow aborted.','AbortError');const node=order[index];const provider=getProvider(node.type,node.provider);if(!provider)throw new Error(`Provider not found for ${node.type}: ${node.provider}`);
       const resolvedInputs={};if(Object.keys(node.inputs||{}).length){for(const [k,ref] of Object.entries(node.inputs))resolvedInputs[k]=resolveRef(ref,inputs,nodeResults);}else if(index>0)resolvedInputs.input=nodeResults.get(order[index-1].id);else resolvedInputs.input=inputs.main??Object.values(inputs)[0];
       const inputArtifacts=collectArtifacts(resolvedInputs);if(provider.inputKinds?.length&&!inputArtifacts.length)throw new Error(`Node ${node.id}: ${provider.name} requires an artifact of kind ${provider.inputKinds.join(' / ')}, but no typed artifact was provided.`);if(provider.inputKinds?.length&&!inputArtifacts.every(a=>provider.inputKinds.includes(a.kind)))throw new Error(`Node ${node.id}: ${provider.name} requires ${provider.inputKinds.join(' / ')}, received ${[...new Set(inputArtifacts.map(a=>a.kind))].join(' / ')}.`);
-      const nodeParameters=resolveParameterBindings(node.parameters||{},recipeParameters);const parameters={...(provider.defaultParameters||{}),...nodeParameters};const vr=window.GRSParameters?.validate?.(provider.parameterSchema||{fields:[]},parameters,{inputs:resolvedInputs,...context});if(vr&&!vr.ok)throw new Error(`Node ${node.id}: ${Object.values(vr.errors).join(' ')}`);
+      const nodeParameters=resolveParameterBindings(node.parameters||{},recipeParameters);const parameters={...(provider.defaultParameters||{}),...nodeParameters};const vr=window.DKDSParameters?.validate?.(provider.parameterSchema||{fields:[]},parameters,{inputs:resolvedInputs,...context});if(vr&&!vr.ok)throw new Error(`Node ${node.id}: ${Object.values(vr.errors).join(' ')}`);
       onProgress?.({executionId,index,total:order.length,node,provider,phase:'running'});adapter.emit?.('workflow:node-started',{executionId,node,provider});
       let result;if(node.type==='chart'){result=provider.buildSpec?await provider.buildSpec({inputs:resolvedInputs,parameters,context,signal,execution:{id:executionId,recipeId:recipe.id,nodeId:node.id}}):{kind:'chart.render-request',providerId:provider.id,inputs:resolvedInputs,parameters};}else result=await provider.run({inputs:resolvedInputs,parameters,context,signal,execution:{id:executionId,recipeId:recipe.id,nodeId:node.id}});
       const decorated=decorateArtifacts(result,{node,provider,parameters,inputArtifacts,executionId});const outputArtifacts=collectArtifacts(decorated);if(provider.outputKinds?.length&&!outputArtifacts.length)throw new Error(`Node ${node.id}: ${provider.name} must return an artifact of kind ${provider.outputKinds.join(' / ')}, but returned no typed artifact.`);if(provider.outputKinds?.length&&!outputArtifacts.every(a=>provider.outputKinds.includes(a.kind)))throw new Error(`Node ${node.id}: ${provider.name} returned unsupported artifact kind ${[...new Set(outputArtifacts.map(a=>a.kind))].join(' / ')}.`);nodeResults.set(node.id,decorated);adapter.emit?.('workflow:node-completed',{executionId,node,provider,result:decorated});onProgress?.({executionId,index:index+1,total:order.length,node,provider,phase:'completed'});
@@ -69,5 +69,5 @@
     let previous=`input:${inputName}`;const nodes=steps.map((step,index)=>{const node={id:step.id||`step-${index+1}`,type:step.type||'processor',provider:step.provider,parameters:step.parameters||{},inputs:step.inputs||{input:previous}};previous=`node:${node.id}`;return node;});return {schema:1,id,name,version,inputs:[{id:inputName}],nodes,outputs:{result:previous},workspace};
   }
 
-  window.GRSWorkflow={registryKind,configure,normalizeProvider,getProvider,listProviders,validateRecipe,executionOrder,run,buildSequentialRecipe};
+  window.DKDSWorkflow={registryKind,configure,normalizeProvider,getProvider,listProviders,validateRecipe,executionOrder,run,buildSequentialRecipe};
 })();

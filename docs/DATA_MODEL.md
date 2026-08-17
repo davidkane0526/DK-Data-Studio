@@ -7,7 +7,7 @@ The plugin branch no longer treats every feature-specific object as the primary 
 The generic contract is exposed as:
 
 ```js
-window.GRSData
+window.DKDSData
 ```
 
 The model is deliberately JSON-serializable so the same artifacts can be consumed by Electron, LAN Web and the React Native Android shell.
@@ -35,31 +35,31 @@ Current factories:
 
 ```text
 data.table
-  GRSData.createTable()
+  DKDSData.createTable()
 
 data.series
-  GRSData.createSeries()
+  DKDSData.createSeries()
 
 data.sweep
-  GRSData.createSweep()
+  DKDSData.createSweep()
 
 data.events
-  GRSData.createEventSeries()
+  DKDSData.createEventSeries()
 
 data.image
-  GRSData.createImageData()
+  DKDSData.createImageData()
 
 result.peaks
-  GRSData.createPeakSet()
+  DKDSData.createPeakSet()
 
 result.fit
-  GRSData.createFitResult()
+  DKDSData.createFitResult()
 
 result.analysis
-  GRSData.createAnalysisResult()
+  DKDSData.createAnalysisResult()
 
 annotation
-  GRSData.createAnnotation()
+  DKDSData.createAnnotation()
 ```
 
 Plugins may introduce additional `kind` values, but should first prefer these generic types.
@@ -69,7 +69,7 @@ Plugins may introduce additional `kind` values, but should first prefer these ge
 A DataTable is the default tabular exchange type.
 
 ```js
-const table = GRSData.createTable({
+const table = DKDSData.createTable({
   name: 'Device A',
   columns: [
     { key:'Vd', name:'Drain voltage', unit:'V', role:'x', values:[...] },
@@ -120,7 +120,7 @@ For migration, every legacy dataset is mirrored into a deterministic transient D
 ```text
 legacy dataset
     ↓
-GRSData.fromLegacyDataset()
+DKDSData.fromLegacyDataset()
     ↓
 data.table
 ```

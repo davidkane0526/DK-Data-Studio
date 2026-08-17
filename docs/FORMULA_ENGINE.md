@@ -3,7 +3,7 @@
 Global API:
 
 ```js
-window.GRSFormula
+window.DKDSFormula
 ```
 
 The formula engine is intentionally **not** implemented with `eval()` or `new Function()`.
@@ -71,7 +71,7 @@ NaN
 ## Compile
 
 ```js
-const compiled = GRSFormula.compile('abs(Vd / Id)', table);
+const compiled = DKDSFormula.compile('abs(Vd / Id)', table);
 
 compiled.references;
 compiled.evaluate(rowIndex);
@@ -80,7 +80,7 @@ compiled.evaluate(rowIndex);
 ## Derived column
 
 ```js
-const { table:newTable, column } = GRSFormula.deriveColumn(table, {
+const { table:newTable, column } = DKDSFormula.deriveColumn(table, {
   name:'Resistance',
   formula:'abs(Vd / Id)',
   unit:'Ω',
@@ -96,6 +96,6 @@ The new artifact records formula text, source artifact id, provider/plugin versi
 
 Division by zero and invalid mathematical domains are preserved as non-finite values in memory.
 
-Project JSON converts non-finite numbers to `null`; `GRSData.restoreStore()` rehydrates table numeric `null` values to `NaN`.
+Project JSON converts non-finite numbers to `null`; `DKDSData.restoreStore()` rehydrates table numeric `null` values to `NaN`.
 
 A later finite-row Processor can explicitly filter such rows. The formula engine does not silently discard them.

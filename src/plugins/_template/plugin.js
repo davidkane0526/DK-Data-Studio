@@ -1,5 +1,5 @@
 (() => {
-  GRSPlugins.define({
+  DKDSPlugins.define({
     id:'example.plugin',
     name:'Example Plugin',
     version:'0.1.0',

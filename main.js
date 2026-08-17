@@ -8,6 +8,8 @@ const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require
 
 let lanUpdater = null;
 let lanWebServer = null;
+const auxiliaryWindows = new Map();
+const auxiliaryBootstrap = new Map();
 
 function externalPluginDirectory() {
   return path.join(app.getPath('userData'), 'plugins');
@@ -40,7 +42,7 @@ function readInstalledExternalPlugins() {
   const dir = ensureExternalPluginDirectory();
   const packages = [];
   const errors = [];
-  for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.grsplugin')).sort()) {
+  for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.dkplugin')).sort()) {
     const filePath = path.join(dir, name);
     try {
       const raw = fs.readFileSync(filePath, 'utf8');
@@ -120,6 +122,15 @@ function enforcePackagedExpiry() {
 }
 
 
+function commonWindowPreferences() {
+  return {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: false
+  };
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1680,
@@ -128,21 +139,102 @@ function createWindow() {
     minHeight: 760,
     backgroundColor: '#f5f7fb',
     autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false
-    }
+    webPreferences: commonWindowPreferences()
   });
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   return win;
 }
 
+function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId) {
+  return `${ownerWebContentsId}::${projectTabId || 'project'}::${activityId}`;
+}
+
+function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
+  const activityId = String(payload.activityId || '').trim();
+  const projectTabId = String(payload.projectTabId || '').trim();
+  if (!activityId || !projectTabId) throw new Error('Missing auxiliary activity/project id.');
+
+  const ownerWebContentsId = ownerWindow?.webContents?.id;
+  if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
+  const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
+  const previous = auxiliaryWindows.get(key);
+  if (previous && !previous.isDestroyed()) {
+    auxiliaryBootstrap.set(previous.webContents.id, {
+      activityId,
+      projectTabId,
+      project: payload.project || null,
+      projectPath: payload.projectPath || null,
+      title: payload.title || '',
+      ownerWebContentsId
+    });
+    previous.webContents.send('windows:activityBootstrapChanged');
+    if (previous.isMinimized()) previous.restore();
+    previous.show();
+    previous.focus();
+    return { reused:true };
+  }
+
+  const labels = { 'data-center':'数据中心', ter:'TER 分析', pulse:'脉冲分析' };
+  const win = new BrowserWindow({
+    width: 1480,
+    height: 940,
+    minWidth: 920,
+    minHeight: 650,
+    backgroundColor: '#f5f7fb',
+    autoHideMenuBar: true,
+    title: `DK Data Studio · ${labels[activityId] || payload.title || activityId}`,
+    webPreferences: commonWindowPreferences()
+  });
+  win.setMenuBarVisibility(false);
+  auxiliaryWindows.set(key, win);
+  const auxiliaryWebContentsId = win.webContents.id;
+  auxiliaryBootstrap.set(auxiliaryWebContentsId, {
+    activityId,
+    projectTabId,
+    project: payload.project || null,
+    projectPath: payload.projectPath || null,
+    title: payload.title || '',
+    ownerWebContentsId
+  });
+  win.on('closed', () => {
+    auxiliaryWindows.delete(key);
+    auxiliaryBootstrap.delete(auxiliaryWebContentsId);
+  });
+  ownerWindow.once('closed', () => {
+    if (!win.isDestroyed()) win.close();
+  });
+  win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
+  return { reused:false };
+}
+
 app.whenReady().then(() => {
   enforcePackagedExpiry();
   Menu.setApplicationMenu(null);
+
+  ipcMain.handle('windows:openActivity', async (event, payload) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    if (!owner) throw new Error('Unable to resolve the main application window.');
+    return createOrFocusAuxiliaryWindow(owner, payload || {});
+  });
+  ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
+  ipcMain.handle('windows:closeCurrent', async event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) win.close();
+    return true;
+  });
+  ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    owner.webContents.send('windows:activityProjectSnapshot', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      project: payload?.project || null,
+      final: payload?.final !== false
+    });
+  });
 
   ipcMain.handle('update:getStatus', async () => lanUpdater?.getStatus() || null);
   ipcMain.handle('update:getSettings', async () => lanUpdater?.getSettings() || null);
@@ -198,10 +290,10 @@ app.whenReady().then(() => {
   ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
   ipcMain.handle('plugins:installPackage', async () => {
     const result = await dialog.showOpenDialog({
-      title:'安装 Graphene Resonance Studio 插件',
+      title:'安装 DK Data Studio 插件',
       properties:['openFile'],
       filters:[
-        { name:'GRS Plugin Package', extensions:['grsplugin'] },
+        { name:'DK Data Studio Plugin', extensions:['dkplugin'] },
         { name:'JSON', extensions:['json'] }
       ]
     });
@@ -353,7 +445,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:saveBase64', async (_event, payload) => {
     const result = await dialog.showSaveDialog({
-      defaultPath: payload.defaultName || 'graphene_resonance.png',
+      defaultPath: payload.defaultName || 'dk_data.png',
       filters: payload.filters || [{ name: 'PNG Image', extensions: ['png'] }]
     });
     if (result.canceled || !result.filePath) return false;
@@ -365,8 +457,8 @@ app.whenReady().then(() => {
     let filePath = payload.path || null;
     if (!filePath) {
       const result = await dialog.showSaveDialog({
-        defaultPath: payload.defaultName || 'graphene_resonance_project.grs.json',
-        filters: [{ name: 'Graphene Resonance Project', extensions: ['grs.json', 'json'] }]
+        defaultPath: payload.defaultName || 'dk_data_project.dkds.json',
+        filters: [{ name: 'DK Data Studio Project', extensions: ['dkds.json', 'json'] }]
       });
       if (result.canceled || !result.filePath) return null;
       filePath = result.filePath;
@@ -377,9 +469,9 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:openProject', async () => {
     const result = await dialog.showOpenDialog({
-      title: '打开 Graphene Resonance Studio 项目',
+      title: '打开 DK Data Studio 项目',
       properties: ['openFile'],
-      filters: [{ name: 'Graphene Resonance Project', extensions: ['json'] }]
+      filters: [{ name: 'DK Data Studio Project', extensions: ['json'] }]
     });
     if (result.canceled || !result.filePaths.length) return null;
     const filePath = result.filePaths[0];

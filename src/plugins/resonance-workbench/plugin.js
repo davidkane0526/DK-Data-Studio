@@ -1,9 +1,9 @@
 (() => {
-  GRSPlugins.define({
+  DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
     version:'2.1.0',
-    apiVersion:'1.2.0',
+    apiVersion:'1.3.0',
     description:'Complete resonance workspace UI: data navigator, detector controls, inspector, group charts, ridge/physics tools and exports.',
     source:'builtin',
     order:100,
@@ -11,7 +11,7 @@
   }, async ctx => {
     const h=ctx.host;
     const R=h.resonance;
-    const S=window.GRSScience;
+    const S=window.DKDSScience;
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     let detectorParamPanel=null;
     const gatePageHtml=`<div class="analysis-page-header">
@@ -159,7 +159,7 @@
 </div>`;
 
     ctx.ui.activities.add({
-      id:'resonance',label:'共振',contextLabel:'共振分析',icon:'⌁',order:10,default:true,
+      id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,
       description:'共振 I–V、峰轨迹、TER 与栅压依赖工作区',
       onActivate:()=>h.showMainWorkspace()
     });
@@ -167,7 +167,7 @@
     // The main scientific canvas is also a plugin contribution. Core owns the
     // canvas host, while this plugin owns the resonance-specific renderer.
     ctx.ui.mainViews.register('resonance-main',{
-      activity:'resonance',priority:100,title:'共振 I–V',exportBaseName:'graphene_resonance_main',
+      activity:'resonance',priority:100,title:'共振 I–V',exportBaseName:'dk_data_main',
       render:()=>R.renderMainPlotLegacy(),
       reset:()=>R.resetMainViewLegacy(),
       csvText:()=>R.mainCsvText(),
@@ -176,38 +176,35 @@
       exportPng:()=>R.exportMainPng()
     });
 
-    // Range actions are resonance semantics, so the overlay is mounted by the
-    // workbench rather than being hard-coded in the application shell.
-    ctx.ui.mainOverlays.add({
-      id:'resonance-range-actions',activity:'resonance',order:20,
-      elementId:'rangeActionMenu',className:'range-action-menu hidden',
-      html:`<div id="rangeActionSummary" class="range-action-summary">已框选区域</div>
-        <div class="range-action-grid">
-          <button id="rangeLocalDetectBtn" class="primary">局部寻峰</button>
-          <button id="rangeDeletePeaksBtn" class="danger-soft">删除框选峰</button>
-          <button id="rangeLockPeaksBtn">锁定框选峰</button>
-          <button id="rangeUnlockPeaksBtn">解锁框选峰</button>
-        </div>
-        <div class="range-unify-identity">
-          <div class="range-unify-title">统一峰序 / 峰标签</div>
-          <select id="rangePeakOrderSelect" title="将全部框选峰设置为同一峰类别"></select>
-          <input id="rangePeakLabelInput" type="text" placeholder="类别标签，例如 峰3 / AB">
-          <button id="rangeApplyPeakIdentityBtn">应用到框选峰</button>
-        </div>
-        <div class="range-action-footer">
-          <span>峰位仍落在原始 I–V 采样点</span>
-          <button id="rangeCloseBtn">关闭</button>
-        </div>`,
-      onMount:({element})=>{
-        element.querySelector('#rangeLocalDetectBtn').onclick=()=>R.range.localDetect();
-        element.querySelector('#rangeDeletePeaksBtn').onclick=()=>R.range.deleteSelected();
-        element.querySelector('#rangeLockPeaksBtn').onclick=()=>R.range.lockSelected();
-        element.querySelector('#rangeUnlockPeaksBtn').onclick=()=>R.range.unlockSelected();
-        element.querySelector('#rangePeakOrderSelect').onchange=e=>{
-          element.querySelector('#rangePeakLabelInput').value=R.range.categoryLabel(Number(e.target.value)||1);
-        };
-        element.querySelector('#rangeApplyPeakIdentityBtn').onclick=()=>R.range.applyIdentity();
-        element.querySelector('#rangeCloseBtn').onclick=()=>R.range.close();
+    // The canvas host owns rectangle geometry; the active plugin owns every
+    // command, label and control shown for that selection.
+    ctx.ui.selectionMenus.register('resonance-range',{
+      activity:'resonance',priority:100,
+      render:({container,selection})=>{
+        const disabled=selection.peakCount?'':' disabled';
+        container.innerHTML=`<div class="range-action-summary">Vd ${selection.range.vMin.toFixed(4)} ~ ${selection.range.vMax.toFixed(4)} V · 框内 ${selection.peakCount} 个峰 · 局部寻峰作用于${esc(selection.scopeText)}</div>
+          <div class="range-action-grid">
+            <button data-range-action="detect" class="primary">局部寻峰</button>
+            <button data-range-action="delete" class="danger-soft"${disabled}>删除框选峰</button>
+            <button data-range-action="lock"${disabled}>锁定框选峰</button>
+            <button data-range-action="unlock"${disabled}>解锁框选峰</button>
+          </div>
+          <div class="range-unify-identity">
+            <div class="range-unify-title">统一峰序 / 峰标签</div>
+            <select data-range-order title="将全部框选峰设置为同一峰类别"${disabled}>${selection.categories.map(c=>`<option value="${c.order}" ${Number(c.order)===selection.firstOrder?'selected':''}>${c.order} · ${esc(c.label||R.range.categoryLabel(c.order))}</option>`).join('')}</select>
+            <input data-range-label type="text" value="${esc(R.range.categoryLabel(selection.firstOrder))}" placeholder="类别标签，例如 峰3 / AB"${disabled}>
+            <button data-range-action="identity"${disabled}>应用到框选峰</button>
+          </div>
+          <div class="range-action-footer"><span>峰位仍落在原始 I–V 采样点</span><button data-range-action="close">关闭</button></div>`;
+        const order=container.querySelector('[data-range-order]');
+        const label=container.querySelector('[data-range-label]');
+        order?.addEventListener('change',()=>{label.value=R.range.categoryLabel(Number(order.value)||1);});
+        container.querySelector('[data-range-action="detect"]')?.addEventListener('click',()=>R.range.localDetect());
+        container.querySelector('[data-range-action="delete"]')?.addEventListener('click',()=>R.range.deleteSelected());
+        container.querySelector('[data-range-action="lock"]')?.addEventListener('click',()=>R.range.lockSelected());
+        container.querySelector('[data-range-action="unlock"]')?.addEventListener('click',()=>R.range.unlockSelected());
+        container.querySelector('[data-range-action="identity"]')?.addEventListener('click',()=>R.range.applyIdentity(Number(order?.value)||1,label?.value||''));
+        container.querySelector('[data-range-action="close"]')?.addEventListener('click',()=>R.range.close());
       }
     });
 
@@ -378,8 +375,8 @@
     // ----------------------------
     // Context tools and plugin pages
     // ----------------------------
-    ctx.ui.toolbar.add({id:'toggleInspectorBtn',activity:'resonance',section:'视图',priority:100,label:'检查器',order:10,onClick:()=>R.toggleInspectorVisibility()});
-    ctx.ui.toolbar.add({id:'toggleGroupBtn',activity:'resonance',section:'视图',priority:95,label:'组图',order:20,onClick:()=>R.toggleGroupVisibility()});
+    ctx.ui.toolbar.add({id:'toggleInspectorBtn',activity:'resonance',section:'视图',priority:100,label:'曲线检查',order:10,onClick:()=>R.toggleInspectorVisibility()});
+    ctx.ui.toolbar.add({id:'toggleGroupBtn',activity:'resonance',section:'视图',priority:95,label:'组图分析',order:20,onClick:()=>R.toggleGroupVisibility()});
 
     const physicsPanel=ctx.ui.panels.add({
       id:'physics',panelId:'physicsPanel',activity:'resonance',section:'分析',priority:70,label:'物理机制',toolbarLabel:'物理机制',order:30,
@@ -390,7 +387,7 @@
     physicsPanel.querySelector('#refreshPhysicsBtn').onclick=()=>{renderPhysicsPanel();R.renderMainPlot();R.setStatus('物理机制分析已根据当前已采纳峰刷新。');};
 
     const spacingPage=ctx.ui.pages.add({
-      id:'spacing',buttonId:'openSpacingPageBtn',pageId:'spacingPage',activity:'resonance',section:'分析',priority:60,label:'峰间距',order:40,
+      id:'spacing',buttonId:'openSpacingPageBtn',pageId:'spacingPage',activity:'resonance',section:'分析',priority:60,label:'峰间分析',order:40,
       html:spacingPageHtml,onOpen:()=>R.renderSpacingPage()
     });
     spacingPage.querySelector('#spacingSeriesA').onchange=e=>{R.getState().spacingSettings.seriesA=e.target.value;R.renderSpacingPage();};
@@ -419,9 +416,10 @@
     gatePage.querySelector('#gateAnalysisExportReportBtn').onclick=()=>R.exportGateAnalysisReport();
 
     ctx.ui.mainTools.add({id:'resonanceLockTool',activity:'resonance',label:'锁定所选',title:'锁定框选/选中的峰 (L)',order:10,onClick:()=>R.lockSelectedPeaks(true)});
-    ctx.ui.mainTools.add({id:'resonanceUnlockTool',activity:'resonance',label:'解锁所选',title:'解锁框选/选中的峰 (Shift+L)',order:20,onClick:()=>R.lockSelectedPeaks(false)});
+    ctx.ui.mainTools.add({id:'resonanceUnlockTool',activity:'resonance',label:'解除锁定',title:'解锁框选/选中的峰 (Shift+L)',order:20,onClick:()=>R.lockSelectedPeaks(false)});
     ctx.ui.mainTools.add({id:'resonanceSortTool',activity:'resonance',label:'智能峰序',title:'跨 Vg 保持 ridge 编号并允许缺峰',order:30,onClick:()=>R.sortPeakOrderByVd()});
     ctx.ui.mainTools.add({id:'resonancePhysicsLabelsTool',activity:'resonance',label:'物理标记',title:'显示/隐藏物理类型文字标记 (P)',order:40,onClick:()=>R.togglePhysicsLabels()});
+    ctx.ui.mainTools.add({id:'resonanceResetViewTool',activity:'resonance',label:'适应视图',title:'恢复完整主图范围 (R)',order:50,onClick:()=>R.resetMainViewLegacy()});
 
 
     // Desktop shortcuts belong to this scientific workspace. Core keeps only
@@ -431,7 +429,7 @@
       match:e=>{
         const key=String(e.key||'');
         if(key==='Escape'){
-          const menu=document.querySelector('#rangeActionMenu');
+          const menu=document.querySelector('#selectionActionMenu');
           return !!menu&&!menu.classList.contains('hidden');
         }
         if(key==='l'||key==='L'||key==='p'||key==='P')return true;

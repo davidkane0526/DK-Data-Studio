@@ -53,13 +53,13 @@ const required = [
   'mobile/App.tsx',
   'mobile/app.json',
   'mobile/package.json',
-  'mobile/plugins/withGrsWebAssets.js',
+  'mobile/plugins/withDkdsWebAssets.js',
   'mobile/scripts/sync-web-assets.js',
   'mobile/README_ANDROID_CN.md',
-  'GRS.cmd',
-  'GRS_GUI.cmd',
-  'tools/windows/grs-tools.ps1',
-  'tools/windows/grs-gui.ps1',
+  'DKDS.cmd',
+  'DKDS_GUI.cmd',
+  'tools/windows/dkds-tools.ps1',
+  'tools/windows/dkds-gui.ps1',
   'docs/ARCHITECTURE.md',
   'docs/PLUGIN_API.md',
   'docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md',
@@ -101,7 +101,7 @@ const allCmds = [];
   }
 })(root);
 allCmds.sort();
-const expectedCmds = ['GRS.cmd','GRS_GUI.cmd'];
+const expectedCmds = ['DKDS.cmd','DKDS_GUI.cmd'];
 if (JSON.stringify(allCmds) !== JSON.stringify(expectedCmds)) {
   failed = true;
   console.error(`CMD consolidation policy failed. Expected ${expectedCmds.join(', ')}; found ${allCmds.join(', ')}`);

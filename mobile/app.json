@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "Graphene Resonance Studio",
-    "slug": "graphene-resonance-studio",
-    "version": "0.2.1",
+    "name": "DK Data Studio",
+    "slug": "dk-data-studio",
+    "version": "0.3.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "android": {
-      "package": "com.grapheneresonance.studio",
-      "versionCode": 3,
+      "package": "com.dk.datastudio",
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#eef3ff"
       }
     },
     "plugins": [
-      "./plugins/withGrsWebAssets.js",
-      "./plugins/withGrsReleaseSigning.js"
+      "./plugins/withDkdsWebAssets.js",
+      "./plugins/withDkdsReleaseSigning.js"
     ]
   }
 }

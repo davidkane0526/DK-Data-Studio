@@ -1,13 +1,25 @@
+# Changelog
+
+## 3.21.0 — DK Data Studio UI / plugin surfaces / auxiliary windows
+
+- Renamed the application to **DK Data Studio** and standardized installable plugin packages on `.dkplugin`.
+- Enlarged and regrouped the desktop command shell; resonance Activity and resonance-specific commands now share one visual group.
+- Added plugin-owned `ui.selectionMenus` for box-selection actions and moved the final hard-coded main-view reset action into the resonance plugin.
+- Persisted group-chart columns as a machine UI preference so opening/importing projects cannot reset the layout to one chart per row.
+- Import command now opens the workbench only; the native file picker opens only from the explicit “导入文件” action.
+- Data Center, TER and Pulse Activities now default to separate Electron BrowserWindows and synchronize their project snapshot on close.
+- Android release build auto-discovers the SDK/adb and Android Studio JBR/JDK from environment, standard locations and Windows install metadata.
+- Release APK remains `mobile-dist/DK-Data-Studio.apk`; Android metadata is `0.3.0`, versionCode `4`, package `com.dk.datastudio`.
+- Added v3.21 regression checks for the plugin-owned selection menu, auxiliary windows, persisted layout, explicit import picker and Android environment discovery.
+
 ## plugin branch — 3.20.0-plugin.3
 
 - Android toolbox now builds the release variant with `assembleRelease` and a dedicated persistent local release signing identity.
-- Final Android artifact is normalized to `mobile-dist/Graphene-Resonance-Studio.apk`.
+- Final Android artifact is normalized to `mobile-dist/DK-Data-Studio.apk`.
 - Connected-device runs use Expo's `--variant release`, and the direct mobile npm workflow matches it.
 - EAS production output is now APK instead of app bundle.
 - Android app version advanced to `0.2.1` / versionCode `3` for clean replacement installs.
 - Windows tooling regression tests now guard the release-only APK workflow.
-
-# Changelog
 
 ## plugin branch — 3.20.0-plugin.2
 
@@ -28,7 +40,7 @@
 - moved TER and Pulse page markup/event bindings out of core HTML into their plugins;
 - added Plugin Workspace/UI API v1.2 and strict architecture-boundary checks.
 - added semantic context-toolbar groups and priority-aware overflow so plugin growth does not create a single long command strip;
-- added trusted desktop `.grsplugin` install/update/uninstall support with rollback on failed plugin updates;
+- added trusted desktop `.dkplugin` install/update/uninstall support with rollback on failed plugin updates;
 - added an installable external resonance-detector SDK example and package documentation.
 
 ## plugin branch — 3.18.0-plugin.1
@@ -80,7 +92,7 @@
 - collapsed the two-row desktop command shell into one adaptive command row;
 - retained Activity and plugin-action priority overflow instead of wrapping;
 - normalized UI typography/control density using semantic CSS tokens;
-- consolidated Windows CMD workflows into `GRS.cmd` and `GRS_GUI.cmd`;
+- consolidated Windows CMD workflows into `DKDS.cmd` and `DKDS_GUI.cmd`;
 - added the WinForms developer toolbox and one PowerShell task backend;
 - moved LAN update service under `services/update-server/` and update defaults under `config/`;
 - organized practical guides/releases under `docs/`;

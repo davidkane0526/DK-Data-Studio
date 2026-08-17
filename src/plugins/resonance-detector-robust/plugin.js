@@ -1,5 +1,5 @@
 (() => {
-  GRSPlugins.define({
+  DKDSPlugins.define({
     id:'builtin.resonance-detector-robust',
     name:'Robust Resonance Detector',
     version:'1.0.0',
@@ -9,7 +9,7 @@
     order:80,
     capabilities:['analysis.peak-detector']
   }, async ctx => {
-    const S=window.GRSScience;
+    const S=window.DKDSScience;
     const channels=[
       {key:'raw',label:'原始 I–V 峰',glyph:'●',symbol:'circle'},
       {key:'snr',label:'原始 I–V 局部 SNR',glyph:'◆',symbol:'diamond'},

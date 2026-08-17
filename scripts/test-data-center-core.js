@@ -20,7 +20,7 @@ load('src/core/formula-engine.js',ctx);
 load('src/core/parameter-schema.js',ctx);
 load('src/core/workflow-engine.js',ctx);
 
-const D=ctx.GRSData,F=ctx.GRSFormula,P=ctx.GRSParameters,W=ctx.GRSWorkflow;
+const D=ctx.DKDSData,F=ctx.DKDSFormula,P=ctx.DKDSParameters,W=ctx.DKDSWorkflow;
 function assert(cond,msg){if(!cond)throw new Error(msg);}
 
 const source=D.createTable({

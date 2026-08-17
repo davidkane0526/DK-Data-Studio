@@ -1,5 +1,5 @@
 (() => {
-  GRSPlugins.define({
+  DKDSPlugins.define({
     id:'builtin.flexible-import',
     name:'Flexible Text Import',
     version:'1.0.0',
@@ -9,7 +9,7 @@
     order:10,
     capabilities:['data.importer','data.inspector']
   }, async ctx => {
-    const A=window.GRSScience;
+    const A=window.DKDSScience;
     ctx.registry.add('data.importers','flexible-text',{
       id:'flexible-text',
       name:'Flexible Text / Multi-column',

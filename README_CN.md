@@ -1,5 +1,27 @@
-# Graphene Resonance Studio — plugin branch (3.20.0-plugin.3)
+# DK Data Studio — v3.21.0
 
+
+## v3.21 UI / 插件界面 / 多窗口工作区
+
+v3.21 将软件正式更名为 **DK Data Studio**，外部插件统一使用 `.dkplugin`。本版本重点修复顶部 UI、组图布局偏好、导入行为、插件可配置界面以及 Android 构建环境。
+
+关键变化：
+
+- 顶部命令栏增大字号与控件高度，`共振分析` 与其专属命令归入同一视觉组。
+- 共振框选菜单改为 `ui.selectionMenus` 插件贡献，不再由核心写死。
+- 主图局部工具由 `ui.mainTools` 插件贡献，包括“适应视图”。
+- 组图每行列数是本机 UI 偏好，跨新建、导入和打开项目保持，不再被工程文件重置。
+- 打开“导入数据”只显示导入工作台；只有点击“导入文件”才弹出系统文件选择器。
+- 数据中心、TER 分析、脉冲分析默认打开独立 Electron 窗口，不再切走主图 Activity，也不再提供“返回主图”。
+- Android 构建仍只生成独立签名的 release APK，并自动搜索 Android SDK、`adb`、Android Studio JBR/JDK 与常见 JDK 安装位置。
+
+### 顶部工作区布局
+
+```text
+DK Data Studio | 导入/项目 | 编辑 | [共振分析 + 共振命令] | 数据中心/TER/脉冲 | 导出 | 管理
+```
+
+辅助分析 Activity 默认在独立窗口中运行；主窗口持续停留在共振工作区。
 
 ## v3.20 UI 与工程整理
 
@@ -10,7 +32,7 @@ v3.20 不增加新的科学定义，重点是把 plugin 分支整理成适合下
 桌面顶部不再固定分成两行。当前结构为：
 
 ```text
-GRS | 导入/工程 | 编辑 | Activity | 当前工作区命令 | 导出 | 管理
+DKDS | 导入/工程 | 编辑 | Activity | 当前工作区命令 | 导出 | 管理
 ```
 
 Activity 过多自动进入 `工作区 ▾`；当前插件命令过多则按插件声明的 `priority / order / section` 自动保留高优先级动作，其余进入 `更多 ▾`，而不是新增第二行。
@@ -20,15 +42,15 @@ Activity 过多自动进入 `工作区 ▾`；当前插件命令过多则按插�
 ### Windows 工具入口只剩两个
 
 ```text
-GRS_GUI.cmd   推荐的图形开发工具箱
-GRS.cmd       统一命令行入口
+DKDS_GUI.cmd   推荐的图形开发工具箱
+DKDS.cmd       统一命令行入口
 ```
 
 旧的构建、Android、更新服务器、自启动等一批 CMD 已合并到：
 
 ```text
-tools/windows/grs-tools.ps1
-tools/windows/grs-gui.ps1
+tools/windows/dkds-tools.ps1
+tools/windows/dkds-gui.ps1
 ```
 
 详细说明：`docs/guides/TOOLBOX_CN.md`。
@@ -187,7 +209,7 @@ docs/WORKSPACE_PLUGIN_API.md
 
 ### 可安装的外部插件包
 
-桌面端插件管理器支持安装受信任的 `.grsplugin`。因此新的寻峰算法、工作区、Inspector 或组图实现可以作为独立插件安装，而不必重新修改 Core。更新同 ID 外部插件时，如果新版本加载/激活失败，运行时会尝试恢复旧包。
+桌面端插件管理器支持安装受信任的 `.dkplugin`。因此新的寻峰算法、工作区、Inspector 或组图实现可以作为独立插件安装，而不必重新修改 Core。更新同 ID 外部插件时，如果新版本加载/激活失败，运行时会尝试恢复旧包。
 
 开发/打包说明：
 
@@ -430,7 +452,7 @@ Capabilities
 复制插件诊断
 ```
 
-插件开关是本机全局设置，不写进单个 `.grs.json` 工程。
+插件开关是本机全局设置，不写进单个 `.dkds.json` 工程。
 
 停用插件前会先保存当前工程中该插件的 namespaced state。即使插件处于停用状态，保存工程时也会保留原有 plugin namespace；重新启用后自动恢复，因此停用插件不会导致其工程数据被静默删除。
 
@@ -457,7 +479,7 @@ src/science/
 └─ pulse.js
 ```
 
-`src/analysis.js` 只保留历史 API facade。桌面、LAN 网页和 Android 都执行同一份 `GRSScience`。
+`src/analysis.js` 只保留历史 API facade。桌面、LAN 网页和 Android 都执行同一份 `DKDSScience`。
 
 重写后增加：
 
@@ -495,7 +517,7 @@ react-native-webview
         ↓
 Android 离线 assets
         ↓
-完整插件界面 + GRSScience
+完整插件界面 + DKDSScience
 ```
 
 Android 壳层提供原生：
@@ -511,27 +533,27 @@ Android 生命周期容器
 Windows 最简单的 APK 测试流程：
 
 ```text
-GRS.cmd android-build
+DKDS.cmd android-build
 ```
 
 成功后生成：
 
 ```text
-mobile-dist\Graphene-Resonance-Studio.apk
+mobile-dist\DK-Data-Studio.apk
 ```
 
-本地构建使用独立 release 签名，签名文件保存在 `%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing`，不会写入 Git。建议备份该目录以保持后续 APK 的覆盖安装能力。 若设备仍安装旧签名版本，首次切换需先卸载旧版，再安装新的 release APK。
+本地构建使用独立 release 签名，签名文件保存在 `%LOCALAPPDATA%\DKDataStudio\android-signing`，不会写入 Git。建议备份该目录以保持后续 APK 的覆盖安装能力。 若设备仍安装旧签名版本，首次切换需先卸载旧版，再安装新的 release APK。
 
 然后：
 
 ```text
-GRS.cmd android-install
+DKDS.cmd android-install
 ```
 
 或者连接开启 USB 调试的手机后运行：
 
 ```text
-GRS.cmd android-run
+DKDS.cmd android-run
 ```
 
 详细环境见：
@@ -597,7 +619,7 @@ npm run plugin:validate
 - 插件系统负责发现、加载、功能入口、工具栏、页面/面板、扩展注册表和插件工程状态；
 - `src/science/*` 统一提供导入解析、扫描重构、寻峰、峰序轨迹、物理分类、栅压计算、TER 与脉冲分析；
 - `src/analysis.js` 只保留历史 API facade，不再承载算法实现；
-- Electron、LAN 网页和 React Native Android 使用同一份 `GRSScience`；
+- Electron、LAN 网页和 React Native Android 使用同一份 `DKDSScience`；
 - 成熟工作区的 DOM/Plotly/D3 交互控制仍由共享 renderer host 组织，插件负责功能入口与工作流；后续 UI 原生化不得复制科学算法；
 - 新增科学功能默认写为插件，跨插件可复用的纯计算才进入 `src/science`。
 
@@ -644,7 +666,7 @@ http://192.168.1.100:45910/?key=4827
 验证二维码中的 Key
 → 建立 HttpOnly 配对会话
 → 跳转 /app/
-→ 直接进入 Graphene Resonance Studio
+→ 直接进入 DK Data Studio
 ```
 
 因此扫码使用时不再需要再手动输入一次 4 位 Key。
@@ -875,7 +897,7 @@ Read block
 新建项目 -> 空脉冲工作区
 ```
 
-保存 `.grs.json` 时会保存：
+保存 `.dkds.json` 时会保存：
 - 原始脉冲文本数据
 - 文件标签
 - 勾选状态
@@ -1356,7 +1378,7 @@ Vg=-10 V
 
 每个文件可以使用不同设置，也可以点击“当前设置应用到全部文件”。
 
-新导入的数据会保存已解析的 `(Vd,I)` 点、源文件、编码和导入配置到 `.grs.json` 工程中，
+新导入的数据会保存已解析的 `(Vd,I)` 点、源文件、编码和导入配置到 `.dkds.json` 工程中，
 因此重新打开工程不依赖再次猜测原始文件格式；旧工程仍兼容。
 
 
@@ -1371,7 +1393,7 @@ Vg=-10 V
 - `SETUP_UPDATE_KEYS.cmd`
 - `update-public-key.pem`
 - `update-private-key.pem`
-- `grs-release.sig`
+- `dkds-release.sig`
 - 发布签名步骤
 
 保留：
@@ -1389,13 +1411,13 @@ Vg=-10 V
 日常只需要：
 
 ```text
-GRS.cmd update-server
+DKDS.cmd update-server
 ```
 
 以及：
 
 ```text
-GRS.cmd build-publish-update -Version 3.20.0-plugin.3
+DKDS.cmd build-publish-update -Version 3.21.0
 ```
 
 即可。
@@ -1421,7 +1443,7 @@ GRS.cmd build-publish-update -Version 3.20.0-plugin.3
 
 ## Windows 发布脚本兼容性修复
 
-v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `GRS.cmd` / `GRS_GUI.cmd` 调用 `tools/windows/grs-tools.ps1`。后端脚本负责：
+v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `DKDS.cmd` / `DKDS_GUI.cmd` 调用 `tools/windows/dkds-tools.ps1`。后端脚本负责：
 
 - 依赖安装；
 - Windows 构建；
@@ -1432,10 +1454,10 @@ v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `
 发布新版本时使用显式版本号：
 
 ```text
-GRS.cmd build-publish-update -Version 3.20.0-plugin.3
+DKDS.cmd build-publish-update -Version 3.21.0
 ```
 
-图形界面可直接使用 `GRS_GUI.cmd` 的“局域网更新”页。
+图形界面可直接使用 `DKDS_GUI.cmd` 的“局域网更新”页。
 
 
 ## v3.7 直接框选 / 局部寻峰 / 跨 Vg 智能峰序
@@ -1778,7 +1800,7 @@ TER 热图明确表示完整二维矩阵：
 以下启动方式不受时间限制：
 
 ```text
-GRS.cmd dev
+DKDS.cmd dev
 npm start
 ```
 
@@ -1788,7 +1810,7 @@ Electron 在开发模式下 `app.isPackaged === false`，因此不会执行到�
 运行：
 
 ```text
-GRS.cmd build-windows
+DKDS.cmd build-windows
 ```
 
 或：
@@ -2046,7 +2068,7 @@ v2.6：
 ## v2.5：工程文件、图片导出与底部停靠组图
 
 ### 工程文件
-- **保存项目**：首次保存选择 `.grs.json` 路径；再次 `Ctrl+S` 直接覆盖当前工程。
+- **保存项目**：首次保存选择 `.dkds.json` 路径；再次 `Ctrl+S` 直接覆盖当前工程。
 - **打开项目**：恢复 CSV 原始数据、扫描显示、峰位/峰宽、峰类别、采纳状态、寻峰参数、组图列数以及组图停靠状态。
 - 快捷键：`Ctrl+S` 保存工程，`Ctrl+O` 打开工程。
 
@@ -2280,7 +2302,7 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 - 全部峰参数 CSV
 - 每一张趋势图 CSV
 - 放大趋势图 SVG
-- `.grs.json` 项目文件
+- `.dkds.json` 项目文件
 
 峰参数 CSV 明确输出：
 
@@ -2301,7 +2323,7 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`GRS.cmd dev`
+`DKDS.cmd dev`
 
 首次会自动安装 npm 依赖。
 
@@ -2309,6 +2331,6 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`GRS.cmd build-windows`
+`DKDS.cmd build-windows`
 
 输出位于 `release/`。

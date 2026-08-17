@@ -36,12 +36,12 @@ function getNamedBlock(source, blockName, fromIndex = 0) {
 }
 
 function patchReleaseSigning(source) {
-  if (source.includes('GRS_ANDROID_RELEASE_STORE_FILE')) return source;
+  if (source.includes('DKDS_ANDROID_RELEASE_STORE_FILE')) return source;
 
   const signing = getNamedBlock(source, 'signingConfigs');
   if (!signing) throw new Error('Unable to locate signingConfigs in android/app/build.gradle.');
 
-  const releaseSigning = `\n        release {\n            def grsStoreFile = System.getenv('GRS_ANDROID_RELEASE_STORE_FILE')\n            def grsStorePassword = System.getenv('GRS_ANDROID_RELEASE_STORE_PASSWORD')\n            def grsKeyAlias = System.getenv('GRS_ANDROID_RELEASE_KEY_ALIAS')\n            def grsKeyPassword = System.getenv('GRS_ANDROID_RELEASE_KEY_PASSWORD')\n            if (!grsStoreFile || !grsStorePassword || !grsKeyAlias || !grsKeyPassword) {\n                throw new GradleException('GRS local release signing environment is incomplete.')\n            }\n            storeFile file(grsStoreFile)\n            storePassword grsStorePassword\n            keyAlias grsKeyAlias\n            keyPassword grsKeyPassword\n        }\n`;
+  const releaseSigning = `\n        release {\n            def dkdsStoreFile = System.getenv('DKDS_ANDROID_RELEASE_STORE_FILE')\n            def dkdsStorePassword = System.getenv('DKDS_ANDROID_RELEASE_STORE_PASSWORD')\n            def dkdsKeyAlias = System.getenv('DKDS_ANDROID_RELEASE_KEY_ALIAS')\n            def dkdsKeyPassword = System.getenv('DKDS_ANDROID_RELEASE_KEY_PASSWORD')\n            if (!dkdsStoreFile || !dkdsStorePassword || !dkdsKeyAlias || !dkdsKeyPassword) {\n                throw new GradleException('DKDS local release signing environment is incomplete.')\n            }\n            storeFile file(dkdsStoreFile)\n            storePassword dkdsStorePassword\n            keyAlias dkdsKeyAlias\n            keyPassword dkdsKeyPassword\n        }\n`;
 
   let patched = source.slice(0, signing.end) + releaseSigning + source.slice(signing.end);
 
@@ -63,14 +63,14 @@ function patchReleaseSigning(source) {
   return patched;
 }
 
-module.exports = function withGrsReleaseSigning(config) {
+module.exports = function withDkdsReleaseSigning(config) {
   // EAS manages its own production credentials. Only patch native Gradle when
-  // the local Windows toolbox explicitly requests GRS local release signing.
-  if (process.env.GRS_LOCAL_RELEASE_SIGNING !== '1') return config;
+  // the local Windows toolbox explicitly requests DKDS local release signing.
+  if (process.env.DKDS_LOCAL_RELEASE_SIGNING !== '1') return config;
 
   return withAppBuildGradle(config, mod => {
     if (mod.modResults.language !== 'groovy') {
-      throw new Error('GRS release signing currently expects Groovy build.gradle.');
+      throw new Error('DKDS release signing currently expects Groovy build.gradle.');
     }
     mod.modResults.contents = patchReleaseSigning(mod.modResults.contents);
     return mod;

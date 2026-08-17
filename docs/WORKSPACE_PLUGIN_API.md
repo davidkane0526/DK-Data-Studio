@@ -1,4 +1,4 @@
-# Workspace / UI Plugin API v1.2
+# Workspace / UI Plugin API v1.3
 
 This document defines how a plugin owns an entire scientific workspace without adding domain UI to `src/index.html` or `src/app.js`.
 
@@ -42,9 +42,22 @@ ctx.ui.activities.add({
 
 Activities replace the old pattern of adding every feature as another permanent top-toolbar button.
 
+An activity that should live in its own desktop window can declare:
+
+```js
+ctx.ui.activities.add({
+  id: 'my-analysis',
+  label: '数据分析',
+  openMode: 'window',
+  onActivate: () => ctx.host.openAnalysisPage('my-analysis-page')
+});
+```
+
+On Electron, `openMode: 'window'` keeps the main scientific workspace intact and opens a dedicated `BrowserWindow` for that activity. In the auxiliary renderer the same activity activates normally, so the plugin does not need a second implementation. Web/mobile runtimes may fall back to an inline activity.
+
 The shell automatically:
-- keeps the current activity visible;
-- moves excess activities into `工作区 ▾`;
+- keeps primary activities visible and groups their commands with them;
+- moves excess secondary activities into the overflow menu;
 - shows only UI contributions belonging to the active activity;
 - reflows on window-size changes.
 
@@ -126,24 +139,38 @@ ctx.ui.mainTools.add({
 
 These controls sit inside the main-plot header.
 
-## 7. Main-view overlays
+## 7. Selection menus and main-view overlays
 
-Context menus, box-selection menus and plot-local controls belong to the plugin:
+The shell may own generic interaction geometry, but the active scientific plugin owns the actions shown for that interaction. Box/range-selection menus use the dedicated typed contribution:
 
 ```js
-ctx.ui.mainOverlays.add({
-  id: 'range-actions',
+ctx.ui.selectionMenus.register('range-actions', {
   activity: 'my-workspace',
-  elementId: 'myRangeMenu',
-  className: 'range-action-menu hidden',
-  html: `...`,
-  onMount({ element }) {
-    // bind plugin-owned behavior
+  priority: 100,
+  render({ container, selection, context, host }) {
+    container.innerHTML = `
+      <button data-action="fit">局部拟合</button>
+      <button data-action="delete">删除所选</button>
+    `;
+    // bind plugin-owned actions here
   }
 });
 ```
 
-The resonance range menu is implemented this way. It is no longer core HTML.
+Core may calculate the selection rectangle and selected item IDs, but it must not hard-code domain labels, peak operations, fit commands, or other workflow-specific actions. The resonance range menu is implemented through `ui.selectionMenus`, so another main-view plugin can replace it without editing `index.html` or `app.js`.
+
+`ctx.ui.mainOverlays.add(...)` remains available for arbitrary plugin-owned plot-local DOM such as annotations or floating widgets that are not tied to the generic selection-menu contract:
+
+```js
+ctx.ui.mainOverlays.add({
+  id: 'my-overlay',
+  activity: 'my-workspace',
+  elementId: 'myOverlay',
+  className: 'my-overlay hidden',
+  html: `...`,
+  onMount({ element }) {}
+});
+```
 
 ## 8. Inspector provider
 
@@ -383,12 +410,12 @@ ctx.platform.profile
 and CSS classes:
 
 ```text
-.grs-size-compact
-.grs-size-medium
-.grs-size-large
-.grs-pointer-coarse
-.grs-orientation-portrait
-.grs-orientation-landscape
+.dkds-size-compact
+.dkds-size-medium
+.dkds-size-large
+.dkds-pointer-coarse
+.dkds-orientation-portrait
+.dkds-orientation-landscape
 ```
 
 Do not make hover, right-click or Ctrl modifiers the only route to an operation.
@@ -402,7 +429,7 @@ activity
 sidebar
 algorithm selector/settings
 main-view renderer registration
-plot-local context UI
+plot-local context UI / `ui.selectionMenus`
 inspector
 group view
 group chart types
@@ -444,4 +471,4 @@ This makes toolbar growth scale with plugins without returning to a single long 
 
 ## 16. Installable algorithm providers
 
-Peak detectors and other algorithm providers must be discovered from registries rather than hard-coded ids. Desktop `.grsplugin` packages can add stronger algorithms at runtime. See `PLUGIN_PACKAGES.md`. The surrounding workbench owns workflow/UI semantics, while the detector plugin owns its algorithm, parameter UI/schema, presets and evidence metadata.
+Peak detectors and other algorithm providers must be discovered from registries rather than hard-coded ids. Desktop `.dkplugin` packages can add stronger algorithms at runtime. See `PLUGIN_PACKAGES.md`. The surrounding workbench owns workflow/UI semantics, while the detector plugin owns its algorithm, parameter UI/schema, presets and evidence metadata.

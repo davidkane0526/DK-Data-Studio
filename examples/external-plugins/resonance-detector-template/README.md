@@ -2,12 +2,12 @@
 
 This is an SDK example, not a recommended scientific replacement for the built-in robust detector.
 
-It demonstrates that a resonance peak algorithm can be installed as an external `.grsplugin` and discovered by the existing Resonance Workbench without changing core source.
+It demonstrates that a resonance peak algorithm can be installed as an external `.dkplugin` and discovered by the existing Resonance Workbench without changing core source.
 
 Package it from the repository root:
 
 ```bash
-npm run plugin:package -- examples/external-plugins/resonance-detector-template raw-prominence.grsplugin
+npm run plugin:package -- examples/external-plugins/resonance-detector-template raw-prominence.dkplugin
 ```
 
 Then install it from **Plugins → Install Plugin**.

@@ -3,7 +3,7 @@
 Global API:
 
 ```js
-window.GRSParameters
+window.DKDSParameters
 ```
 
 Plugin API:

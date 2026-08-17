@@ -6,7 +6,7 @@
   const projectSlices = new Map();
   const cleanupByPlugin = new Map();
   const eventListeners = new Map();
-  const preferenceStorageKey = 'grs.plugin.preferences.v1';
+  const preferenceStorageKey = 'dkds.plugin.preferences.v1';
   let preferences = null;
   let host = null;
   let loadingPromise = null;
@@ -17,7 +17,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.2.0';
+  const API_VERSION = '1.3.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -77,7 +77,7 @@
 
   function eventEmit(name, payload) {
     for (const row of eventListeners.get(name) || []) {
-      try { row.fn(payload); } catch (err) { console.error(`[GRS event:${name}]`, err); }
+      try { row.fn(payload); } catch (err) { console.error(`[DKDS event:${name}]`, err); }
     }
   }
 
@@ -138,10 +138,12 @@
 
   function renderActivityBar() {
     const mount=document.querySelector('#activityBar');
+    const primaryMount=document.querySelector('#primaryActivityBar');
     const overflow=document.querySelector('#activityMoreMenu');
     if(!mount)return;
     const rows=activityRows();
     mount.innerHTML='';
+    if(primaryMount)primaryMount.innerHTML='';
     if(overflow)overflow.innerHTML='';
     for(const row of rows){
       const spec=row.value||{};
@@ -152,11 +154,18 @@
       button.dataset.pluginId=row.pluginId;
       button.dataset.activityOrder=String(Number(spec.order)||100);
       button.title=spec.title||spec.description||spec.label||spec.id;
-      const icon=spec.icon?`<span class="activity-icon">${spec.icon}</span>`:'';
+      const icon=spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:'';
       button.innerHTML=`${icon}<span class="activity-label">${spec.label||spec.id}</span>`;
       button.classList.toggle('active',spec.id===activeActivityId);
-      button.onclick=()=>setActiveActivity(spec.id,{invoke:true});
-      mount.appendChild(button);
+      button.onclick=()=>{
+        if(spec.openMode==='window'&&!host?.isAuxiliaryWindow){
+          host?.openActivityWindow?.(spec.id);
+          return;
+        }
+        setActiveActivity(spec.id,{invoke:true});
+      };
+      const target=(spec.primary&&primaryMount)?primaryMount:mount;
+      target.appendChild(button);
     }
     queueMicrotask(reflowActivities);
   }
@@ -182,7 +191,7 @@
     const title=document.querySelector('#activityContextTitle');
     const active=activeActivity();
     if(title)title.textContent=active?.contextLabel||active?.label||'工作区';
-    document.querySelectorAll('#activityBar .activity-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.activityId===id));
+    document.querySelectorAll('#activityBar .activity-tab,#primaryActivityBar .activity-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.activityId===id));
     reflowContextToolbar();
     eventEmit('activity:changed',{id,activity:active});
   }
@@ -196,7 +205,7 @@
     if(invoke){
       try { await row.value?.onActivate?.({id,host,pluginId:row.pluginId}); }
       catch(err){
-        console.error(`[GRS activity:${id}]`,err);
+        console.error(`[DKDS activity:${id}]`,err);
         host?.setStatus?.(`工作区 ${row.value?.label||id} 打开失败：${err.message}`);
       }
     }
@@ -290,7 +299,7 @@
         if(spec.onClick)await spec.onClick(event);
         else if(spec.command)await runCommand(spec.command,{event});
       }catch(err){
-        console.error(`[GRS plugin action:${pluginId}]`,err);
+        console.error(`[DKDS plugin action:${pluginId}]`,err);
         host?.setStatus?.(`插件 ${pluginId} 执行失败：${err.message}`);
       }
     });
@@ -387,7 +396,7 @@
       if(isTypingTarget(event.target)&&!spec.allowTyping)continue;
       let match=false;
       try{match=typeof spec.match==='function'?!!spec.match(event,{host,activityId:activeActivityId,pluginId:row.pluginId}):false;}
-      catch(err){console.error(`[GRS shortcut match:${row.pluginId}/${row.id}]`,err);continue;}
+      catch(err){console.error(`[DKDS shortcut match:${row.pluginId}/${row.id}]`,err);continue;}
       if(!match)continue;
       try{
         const handled=spec.handler?.({event,host,activityId:activeActivityId,pluginId:row.pluginId})!==false;
@@ -398,7 +407,7 @@
           return true;
         }
       }catch(err){
-        console.error(`[GRS shortcut:${row.pluginId}/${row.id}]`,err);
+        console.error(`[DKDS shortcut:${row.pluginId}/${row.id}]`,err);
         host?.setStatus?.(`插件快捷键执行失败：${err.message}`);
         event.preventDefault?.();
         event.stopImmediatePropagation?.();
@@ -495,7 +504,7 @@
         if (spec.onClick) await spec.onClick(event);
         else if (spec.command) await runCommand(spec.command, { event });
       } catch (err) {
-        console.error(`[GRS plugin toolbar:${pluginId}]`, err);
+        console.error(`[DKDS plugin toolbar:${pluginId}]`, err);
         host?.setStatus?.(`插件 ${pluginId} 执行失败：${err.message}`);
       }
     });
@@ -578,7 +587,7 @@
       for (const [key, hooks] of slices) {
         if (typeof hooks.serialize !== 'function') continue;
         try { pluginData[key] = hooks.serialize(); }
-        catch (err) { console.error(`[GRS plugin project serialize:${pluginId}/${key}]`, err); }
+        catch (err) { console.error(`[DKDS plugin project serialize:${pluginId}/${key}]`, err); }
       }
       if (Object.keys(pluginData).length) out[pluginId] = pluginData;
     }
@@ -591,7 +600,7 @@
       for (const [key, hooks] of slices) {
         if (typeof hooks.restore !== 'function') continue;
         try { hooks.restore(pluginData?.[key], { pluginData, legacyProject }); }
-        catch (err) { console.error(`[GRS plugin project restore:${pluginId}/${key}]`, err); }
+        catch (err) { console.error(`[DKDS plugin project restore:${pluginId}/${key}]`, err); }
       }
     }
     eventEmit('project:restored', { data, legacyProject });
@@ -602,7 +611,7 @@
       for (const [key, hooks] of slices) {
         if (typeof hooks.reset !== 'function') continue;
         try { hooks.reset(); }
-        catch (err) { console.error(`[GRS plugin project reset:${pluginId}/${key}]`, err); }
+        catch (err) { console.error(`[DKDS plugin project reset:${pluginId}/${key}]`, err); }
       }
     }
   }
@@ -631,9 +640,12 @@
     page.dataset.pluginActivity = spec.activity || page.dataset.pluginActivity || '';
 
     for (const close of page.querySelectorAll('.analysis-page-close')) {
-      if (close.dataset.grsPluginCloseBound === '1') continue;
-      close.dataset.grsPluginCloseBound = '1';
-      close.addEventListener('click', () => host?.closeAnalysisPage?.(page.id));
+      if (close.dataset.dkdsPluginCloseBound === '1') continue;
+      close.dataset.dkdsPluginCloseBound = '1';
+      close.addEventListener('click', () => {
+        if(host?.isAuxiliaryWindow)host?.closeCurrentWindow?.();
+        else host?.closeAnalysisPage?.(page.id);
+      });
     }
 
     registerContribution(pluginId, 'ui.pages', spec.id, {
@@ -738,7 +750,7 @@
       apiVersion: API_VERSION,
       manifest: Object.freeze({ ...definition.manifest }),
       host,
-      platform: window.GRSPlatform,
+      platform: window.DKDSPlatform,
       events: {
         on: (name, fn) => addCleanup(pluginId, eventOn(name, fn, pluginId)),
         emit: eventEmit
@@ -757,8 +769,8 @@
         registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
       },
       data: {
-        model: window.GRSData,
-        formula: window.GRSFormula,
+        model: window.DKDSData,
+        formula: window.DKDSFormula,
         artifacts: {
           list: options => host?.artifacts?.list?.(options) || [],
           get: id => host?.artifacts?.get?.(id) || null,
@@ -769,20 +781,20 @@
         }
       },
       workflow: {
-        run: (recipe, options) => window.GRSWorkflow.run(recipe, options),
-        buildSequentialRecipe: spec => window.GRSWorkflow.buildSequentialRecipe(spec),
+        run: (recipe, options) => window.DKDSWorkflow.run(recipe, options),
+        buildSequentialRecipe: spec => window.DKDSWorkflow.buildSequentialRecipe(spec),
         processors: {
-          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.processors', id, window.GRSWorkflow.normalizeProvider('processor', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.processors', id, window.DKDSWorkflow.normalizeProvider('processor', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
           list: () => listContributions('workflow.processors').map(x=>x.value)
         },
         analyzers: {
-          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.analyzers', id, window.GRSWorkflow.normalizeProvider('analyzer', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.analyzers', id, window.DKDSWorkflow.normalizeProvider('analyzer', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
           list: () => listContributions('workflow.analyzers').map(x=>x.value)
         },
         recipes: {
           register: (id, recipe) => {
             const value={...recipe,id:recipe?.id||id,pluginId,pluginVersion:definition.manifest.version||'1.0.0'};
-            const check=window.GRSWorkflow.validateRecipe(value);
+            const check=window.DKDSWorkflow.validateRecipe(value);
             if(!check.ok)throw new Error(`Recipe ${id}: ${check.errors.join(' ')}`);
             return registerTypedContribution(pluginId, 'workflow.recipes', id, value);
           },
@@ -790,7 +802,7 @@
         }
       },
       charts: {
-        register: (id, spec) => registerTypedContribution(pluginId, 'charts.renderers', id, window.GRSWorkflow.normalizeProvider('chart', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
+        register: (id, spec) => registerTypedContribution(pluginId, 'charts.renderers', id, window.DKDSWorkflow.normalizeProvider('chart', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
         list: () => listContributions('charts.renderers').map(x=>x.value)
       },
       analysis: {
@@ -800,9 +812,9 @@
         }
       },
       parameters: {
-        render: (container, schema, options) => window.GRSParameters.render(container, schema, options),
-        validate: (schema, values, context) => window.GRSParameters.validate(schema, values, context),
-        defaults: (schema, initial) => window.GRSParameters.defaultValues(schema, initial)
+        render: (container, schema, options) => window.DKDSParameters.render(container, schema, options),
+        validate: (schema, values, context) => window.DKDSParameters.validate(schema, values, context),
+        defaults: (schema, initial) => window.DKDSParameters.defaultValues(schema, initial)
       },
       ui: {
         activities: {
@@ -834,6 +846,9 @@
         mainViews: {
           register: (id,spec) => registerTypedContribution(pluginId,'ui.mainViews',id,{id,...spec,pluginId})
         },
+        selectionMenus: {
+          register: (id,spec) => registerTypedContribution(pluginId,'ui.selectionMenus',id,{id,...spec,pluginId})
+        },
         mainOverlays: {
           add: spec => addMainOverlay(pluginId,spec)
         },
@@ -861,7 +876,7 @@
     for (const [key, hooks] of slices) {
       if (typeof hooks.restore !== 'function') continue;
       try { hooks.restore(pluginData?.[key], { pluginData, legacyProject }); }
-      catch (err) { console.error(`[GRS plugin project restore:${pluginId}/${key}]`, err); }
+      catch (err) { console.error(`[DKDS plugin project restore:${pluginId}/${key}]`, err); }
     }
   }
 
@@ -893,7 +908,7 @@
       cleanupByPlugin.delete(manifest.id);
       active.delete(manifest.id);
       disabled.set(manifest.id, err.message);
-      console.error(`[GRS plugin activation:${manifest.id}]`, err);
+      console.error(`[DKDS plugin activation:${manifest.id}]`, err);
       host?.setStatus?.(`插件 ${manifest.name || manifest.id} 加载失败：${err.message}`);
       eventEmit('plugin:state-changed', { id:manifest.id, reason:'error', error:err.message });
       return null;
@@ -904,7 +919,7 @@
     const row = active.get(id);
     if (!row) return;
     if (captureProject) {
-      try { host?.captureActiveProjectTab?.(); } catch (err) { console.error('[GRS plugin capture before deactivate]', err); }
+      try { host?.captureActiveProjectTab?.(); } catch (err) { console.error('[DKDS plugin capture before deactivate]', err); }
     }
     try { await row.instance?.deactivate?.(); } catch (err) { console.error(err); }
     for (const fn of (cleanupByPlugin.get(id) || []).reverse()) {
@@ -1008,8 +1023,8 @@
     return new Promise((resolve,reject)=>{
       const script=document.createElement('script');
       script.async=false;
-      script.dataset.grsExternalPlugin=label;
-      script.textContent=`${String(source||'')}\n//# sourceURL=grs-plugin://${encodeURIComponent(label)}`;
+      script.dataset.dkdsExternalPlugin=label;
+      script.textContent=`${String(source||'')}\n//# sourceURL=dkds-plugin://${encodeURIComponent(label)}`;
       let runtimeError=null;
       const onError=event=>{runtimeError=event?.error||new Error(event?.message||`External plugin script failed: ${label}`);};
       window.addEventListener?.('error',onError);
@@ -1072,7 +1087,7 @@
       const loaded=[];
       for(const pkg of result?.packages||[]){
         try{const def=await loadExternalPackage(pkg);loaded.push(def.manifest.id);}
-        catch(err){externalLoadErrors.push({file:pkg?.manifest?.id||'<package>',error:err.message});console.error('[GRS external plugin]',err);}
+        catch(err){externalLoadErrors.push({file:pkg?.manifest?.id||'<package>',error:err.message});console.error('[DKDS external plugin]',err);}
       }
       return loaded;
     })();
@@ -1127,7 +1142,7 @@
         chooseFallbackActivity();
         eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
       }catch(rollbackError){
-        console.error('[GRS external plugin rollback]',rollbackError);
+        console.error('[DKDS external plugin rollback]',rollbackError);
         externalLoadErrors.push({file:id,error:`安装失败且回滚失败：${rollbackError.message}`});
       }
       throw err;
@@ -1154,14 +1169,14 @@
       const script = document.createElement('script');
       script.src = src;
       script.async = false;
-      script.dataset.grsPluginEntry = src;
+      script.dataset.dkdsPluginEntry = src;
       script.onload = () => resolve(src);
       script.onerror = () => reject(new Error(`Failed to load plugin entry: ${src}`));
       document.head.appendChild(script);
     });
   }
 
-  async function loadBuiltinEntries(entries = window.GRS_BUILTIN_PLUGIN_ENTRIES || []) {
+  async function loadBuiltinEntries(entries = window.DKDS_BUILTIN_PLUGIN_ENTRIES || []) {
     if (loadingPromise) return loadingPromise;
     loadingPromise = (async () => {
       for (const src of entries) await loadScript(src);
@@ -1170,7 +1185,7 @@
     return loadingPromise;
   }
 
-  window.GRSPlugins = {
+  window.DKDSPlugins = {
     API_VERSION,
     get host(){ return host; },
     define(manifest, activate) {
@@ -1246,7 +1261,7 @@
     }
   };
 
-  window.GRSWorkflow?.configure?.({
+  window.DKDSWorkflow?.configure?.({
     getProvider(kind,id){
       const rows=listContributions(kind);
       const exact=rows.find(row=>row.value?.id===id||row.id===id);

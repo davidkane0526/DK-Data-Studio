@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "serverName": "GRS LAN Update Server",
+  "serverName": "DKDS LAN Update Server",
   "host": "0.0.0.0",
   "port": 45880,
   "multicastGroup": "239.255.42.99",

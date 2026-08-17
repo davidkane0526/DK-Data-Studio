@@ -3,50 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Graphene Resonance Studio</title>
+  <title>DK Data Studio</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="Graphene Resonance Studio">GRS <span class="brand-full">Graphene Resonance Studio</span><span class="version">v3.20.0-plugin.3</span></div>
+        <div class="brand" title="DK Data Studio"><span class="brand-full">DK Data Studio</span><span class="version">v3.21.0</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
-          <div class="toolbar-group compact-group file-command-group" title="工程与数据">
-            <button id="openBtn" class="toolbar-btn strong" title="导入数据 / 打开导入工作台">导入</button>
-            <button id="openProjectBtn" class="toolbar-btn" title="读取工程 · Ctrl+O">读取</button>
-            <button id="saveProjectBtn" class="toolbar-btn" title="保存工程 · Ctrl+S">保存</button>
+          <div class="toolbar-group file-command-group" title="工程与数据">
+            <button id="openBtn" class="toolbar-btn strong" title="打开数据导入工作台">导入数据</button>
+            <button id="openProjectBtn" class="toolbar-btn" title="读取项目 · Ctrl+O">读取项目</button>
+            <button id="saveProjectBtn" class="toolbar-btn" title="保存项目 · Ctrl+S">保存项目</button>
           </div>
           <div class="menu-anchor compact-menu-anchor">
-            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
+            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑操作 ▾</button>
             <div id="editMenu" class="command-menu hidden">
-              <button id="undoBtn" type="button"><span>撤销</span><kbd>Ctrl+Z</kbd></button>
+              <button id="undoBtn" type="button"><span>撤销操作</span><kbd>Ctrl+Z</kbd></button>
               <button id="deselectBtn" type="button"><span>退出选中</span><kbd>Esc</kbd></button>
             </div>
           </div>
         </div>
 
-        <div class="activity-switcher">
-          <nav id="activityBar" class="activity-bar" aria-label="插件工作区"></nav>
-          <div class="activity-more-anchor">
-            <button id="activityMoreBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">工作区 ▾</button>
-            <div id="activityMoreMenu" class="command-menu activity-more-menu hidden"></div>
+        <div class="workspace-commandbar" aria-label="插件工作区与命令">
+          <div class="primary-activity-cluster">
+            <nav id="primaryActivityBar" class="activity-bar primary-activity-bar" aria-label="主工作区"></nav>
+            <div class="context-commandbar" aria-label="当前工作区命令">
+              <span id="activityContextTitle" class="sr-only">工作区</span>
+              <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
+              <div class="context-overflow-anchor">
+                <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多功能 ▾</button>
+                <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="context-commandbar" aria-label="当前工作区命令">
-          <span id="activityContextTitle" class="sr-only">工作区</span>
-          <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
-          <div class="context-overflow-anchor">
-            <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多 ▾</button>
-            <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+          <div class="activity-switcher">
+            <nav id="activityBar" class="activity-bar" aria-label="扩展工作区"></nav>
+            <div class="activity-more-anchor">
+              <button id="activityMoreBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多工作区 ▾</button>
+              <div id="activityMoreMenu" class="command-menu activity-more-menu hidden"></div>
+            </div>
           </div>
         </div>
 
         <div class="system-commandbar">
           <div class="menu-anchor">
-            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出 ▾</button>
+            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出数据 ▾</button>
             <div id="exportMenu" class="command-menu hidden">
               <button id="exportMainSvgBtn" type="button">主图 SVG</button>
               <button id="exportMainPngBtn" type="button">主图 PNG</button>
@@ -57,7 +62,7 @@
             </div>
           </div>
           <div class="menu-anchor">
-            <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">管理 ▾</button>
+            <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
             <div id="manageMenu" class="command-menu hidden">
               <button id="pluginManagerBtn" type="button">插件管理</button>
               <button id="lanWebBtn" type="button">局域网网页版</button>
@@ -67,7 +72,6 @@
         </div>
       </div>
     </header>
-
     <div class="project-tabs-bar">
       <div id="projectTabs" class="project-tabs"></div>
       <button id="newProjectTabBtn" class="new-project-tab" title="新建独立项目标签页 (Ctrl+N)">＋</button>
@@ -84,11 +88,11 @@
           <div class="main-plot-header">
           <div class="main-plot-tools" id="mainPlotTools">
             <div id="pluginMainPlotTools" class="plugin-main-tools" data-plugin-main-tools></div>
-            <button id="mainResetViewBtn" title="让当前主图插件恢复完整视图 (R)">适应视图</button>
           </div>
           <div id="mainLegendBar" class="main-legend-bar" title="当前工作区图例；内容和交互由主图插件提供"></div>
           </div>
           <svg id="mainPlot"></svg>
+          <div id="selectionActionMenu" class="range-action-menu hidden" aria-live="polite"></div>
           <div id="hoverTip" class="hover-tip hidden"></div>
         </div>
         <div id="inspectorDockSlot" class="inspector-dock-slot"></div>
@@ -154,7 +158,7 @@
             <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
           </div>
           <div class="import-header-actions">
-            <button id="importChooseFilesBtn" class="primary">选择文件</button>
+            <button id="importChooseFilesBtn" class="primary">导入文件</button>
             <button id="importCloseBtn">关闭</button>
           </div>
         </div>
@@ -172,7 +176,7 @@
 
           <main class="import-main-pane">
             <div id="importNoFile" class="import-empty">
-              点击“选择文件”添加 CSV / TXT / DAT / TSV / ASC / XY / IV 数据。
+              点击“导入文件”添加 CSV / TXT / DAT / TSV / ASC / XY / IV 数据。
             </div>
 
             <div id="importEditor" class="hidden">
@@ -422,7 +426,7 @@
                 <span>QR</span>
                 <small>服务启动后显示</small>
               </div>
-              <img id="lanWebQrImage" class="lan-web-qr-image hidden" alt="Graphene Resonance Studio LAN web QR code">
+              <img id="lanWebQrImage" class="lan-web-qr-image hidden" alt="DK Data Studio LAN web QR code">
             </div>
 
             <div class="lan-web-share-url-card">

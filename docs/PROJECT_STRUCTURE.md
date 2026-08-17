@@ -3,14 +3,14 @@
 This repository intentionally keeps the root small and separates runtime, tools, services, docs, mobile, plugins and scientific code.
 
 ```text
-Graphene Resonance Studio/
-├─ GRS.cmd                  # single CLI entry on Windows
-├─ GRS_GUI.cmd              # graphical developer toolbox
+DK Data Studio/
+├─ DKDS.cmd                  # single CLI entry on Windows
+├─ DKDS_GUI.cmd              # graphical developer toolbox
 ├─ main.js                  # Electron main entry
 ├─ preload.js               # Electron renderer bridge
 ├─ update-client.js         # desktop LAN updater client
 ├─ lan-web-server.js        # embedded LAN web server
-├─ plugin-package.js        # .grsplugin package helpers
+├─ plugin-package.js        # .dkplugin package helpers
 ├─ package.json
 ├─ README_CN.md
 ├─ AGENTS.md
@@ -33,8 +33,8 @@ Graphene Resonance Studio/
 │  └─ update-config.default.json
 ├─ tools/
 │  └─ windows/
-│     ├─ grs-tools.ps1      # all Windows developer/build/update operations
-│     └─ grs-gui.ps1       # WinForms launcher for grs-tools.ps1
+│     ├─ dkds-tools.ps1      # all Windows developer/build/update operations
+│     └─ dkds-gui.ps1       # WinForms launcher for dkds-tools.ps1
 ├─ scripts/                 # cross-platform Node maintenance/test/build scripts
 ├─ examples/                # external plugin examples
 └─ docs/
@@ -47,11 +47,11 @@ Graphene Resonance Studio/
 
 New helper scripts should not be added to the repository root. Add reusable cross-platform scripts under `scripts/`, and Windows-only tooling under `tools/windows/`.
 
-Do not create new one-off `.cmd` files. Add a new `-Action` to `tools/windows/grs-tools.ps1`, then expose it in `tools/windows/grs-gui.ps1` if it is useful to non-command-line users.
+Do not create new one-off `.cmd` files. Add a new `-Action` to `tools/windows/dkds-tools.ps1`, then expose it in `tools/windows/dkds-gui.ps1` if it is useful to non-command-line users.
 
 The only root CMD launchers should remain:
 
 ```text
-GRS.cmd
-GRS_GUI.cmd
+DKDS.cmd
+DKDS_GUI.cmd
 ```

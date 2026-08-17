@@ -3,7 +3,7 @@
 Global API:
 
 ```js
-window.GRSWorkflow
+window.DKDSWorkflow
 ```
 
 ## Concepts
@@ -66,7 +66,7 @@ ctx.workflow.analyzers.register('fit.linear', {
   outputKinds: ['result.fit'],
   parameterSchema: {...},
   run({ inputs, parameters }) {
-    return GRSData.createFitResult(...);
+    return DKDSData.createFitResult(...);
   }
 });
 ```
@@ -166,7 +166,7 @@ or:
 Execution:
 
 ```js
-await GRSWorkflow.run(recipe, {
+await DKDSWorkflow.run(recipe, {
   inputs: { main: table },
   parameters: { formula: 'Vd / Id' }
 });

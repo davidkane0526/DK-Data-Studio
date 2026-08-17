@@ -1,22 +1,30 @@
-﻿GRS Android 最简步骤
+﻿DKDS Android 最简步骤
 ====================
 
-推荐方式：双击 GRS_GUI.cmd -> “Android”。
+推荐方式：双击 DKDS_GUI.cmd -> “Android”。
 
 1. 检查环境：
-   GRS.cmd android-check
+   DKDS.cmd android-check
 2. 构建 APK（release）：
-   GRS.cmd android-build
+   DKDS.cmd android-build
 3. 安装已有 APK：
-   GRS.cmd android-install
+   DKDS.cmd android-install
 4. 连接设备直接运行：
-   GRS.cmd android-run
+   DKDS.cmd android-run
 
 APK 输出：
-mobile-dist\Graphene-Resonance-Studio.apk
+mobile-dist\DK-Data-Studio.apk
+
+
+环境自动识别：
+- SDK：ANDROID_HOME / ANDROID_SDK_ROOT / %LOCALAPPDATA%\Android\Sdk
+- adb：自动从 SDK\platform-tools 查找，不要求提前加入 PATH
+- JDK：JAVA_HOME / JDK_HOME / STUDIO_JDK / PATH / Android Studio\jbr / 常见 JDK 目录与 Windows 安装信息
+
+如果 android-check 仍报告“no complete JDK was found”，说明系统中确实没有可用 JDK/JBR；Gradle 本身需要 Java，此时需要安装 JDK 或 Android Studio。
 
 release 签名目录（首次构建自动生成，后续复用）：
-%LOCALAPPDATA%\GrapheneResonanceStudio\android-signing
+%LOCALAPPDATA%\DKDataStudio\android-signing
 建议备份该目录，以便未来 APK 可覆盖安装。
 若手机上仍有旧签名版本，首次切换需先卸载旧版后再安装。
 

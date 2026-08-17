@@ -1,6 +1,6 @@
 (() => {
   const $create=(tag,cls='')=>{const el=document.createElement(tag);if(cls)el.className=cls;return el;};
-  function clone(v){return window.GRSData?.deepClone?.(v)??JSON.parse(JSON.stringify(v));}
+  function clone(v){return window.DKDSData?.deepClone?.(v)??JSON.parse(JSON.stringify(v));}
   function fieldsOf(schema){
     if(Array.isArray(schema?.fields))return schema.fields.map(f=>({...f}));
     if(schema?.properties&&typeof schema.properties==='object')return Object.entries(schema.properties).map(([id,f])=>({id,...f}));
@@ -83,5 +83,5 @@
       schema,context
     };
   }
-  window.GRSParameters={fieldsOf,defaultValues,validate,render};
+  window.DKDSParameters={fieldsOf,defaultValues,validate,render};
 })();

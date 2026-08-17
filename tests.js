@@ -55,7 +55,7 @@ assert(resonancePluginSource.includes("ArrowUp")&&resonancePluginSource.includes
 assert(resonancePluginSource.includes("moveSelectedPeakBy")&&resonancePluginSource.includes("ArrowRight"),'resonance plugin must own left/right peak movement shortcuts');
 assert(appSource.includes("showlegend:false"),'small trend charts should use custom per-card legends');
 assert(appSource.includes("scrollZoom:true"),'zoomed trend chart should support wheel zoom');
-assert(!htmlSource.includes('mainBoxZoomBtn')&&htmlSource.includes('mainResetViewBtn'),'box zoom should no longer require a mode button; reset control must remain');
+assert(!htmlSource.includes('mainBoxZoomBtn')&&!htmlSource.includes('mainResetViewBtn')&&resonancePluginSource.includes("id:'resonanceResetViewTool'"),'box zoom/reset controls must be owned by the resonance plugin rather than hard-coded in core HTML');
 assert(htmlSource.includes('data-trend-cols="3"'),'group panel should support explicit 3-column layout');
 assert(htmlSource.includes('data-trend-cols="auto"'),'group panel should support automatic layout');
 assert(appSource.includes('trend-card-legend'),'each subplot should have its own horizontal legend');
@@ -102,7 +102,7 @@ const htmlV27 = fs.readFileSync('./src/index.html','utf8');
 assert(htmlV27.includes('id="projectTabs"')&&htmlV27.includes('id="newProjectTabBtn"'),'v2.7 must expose project tabs');
 assert(appV27.includes('function captureActiveProjectTab()')&&appV27.includes('function mountProjectTab(t)'),'project state must be explicitly isolated per tab');
 assert(appV27.includes('state.projectTabs.push(tab)')&&appV27.includes('已在新标签页打开工程'),'open project should create a new tab rather than overwrite active project');
-assert(resonancePluginSource.includes("elementId:'rangeActionMenu'")&&resonancePluginSource.includes("id:'resonanceLockTool'"),'resonance plugin must own direct multi-peak range menu and lock control');
+assert(resonancePluginSource.includes("ctx.ui.selectionMenus.register('resonance-range'")&&resonancePluginSource.includes("id:'resonanceLockTool'"),'resonance plugin must own direct multi-peak range menu and lock control');
 assert(appV27.includes('function openRangeActionMenu')&&appV27.includes('function selectPeaksInRange'),'main plot must implement direct peak range selection');
 assert(appV27.includes('const preserved=state.peaks.filter(p=>p.manual||p.locked)'),'rerun must preserve locked automatic peaks');
 assert(appV27.includes('!fixed.some(q=>Math.abs(q.v-p.v)<=tol)'),'new auto peaks must not duplicate locked/manual peaks');
@@ -330,10 +330,10 @@ assert(publishV38.includes("mode: 'trusted-lan'"),'current release metadata must
 assert(prepareV38.includes('generate-build-info.js')&&!prepareV38.includes('generate-update-keys'),'build preparation must only generate packaged build metadata');
 assert(htmlV38.includes('id="updatePanel"')&&htmlV38.includes('id="updateInstallBtn"'),'renderer must expose update status/settings/install UI');
 assert(htmlV38.includes('可信局域网简化模式')&&htmlV38.includes('SHA512'),'update UI must clearly describe keyless trusted-LAN integrity model');
-assert(fs.existsSync('./GRS.cmd')&&fs.existsSync('./GRS_GUI.cmd'),'consolidated CLI/GUI Windows entry points must exist');
-const grsToolsV38=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
-assert(grsToolsV38.includes("'update-server'")&&grsToolsV38.includes("'publish-update'")&&grsToolsV38.includes("'build-publish-update'"),'unified Windows backend must own update-server/publish workflows');
-assert(grsToolsV38.includes("'update-autostart-install'")&&grsToolsV38.includes("'update-autostart-remove'"),'unified Windows backend must own update-server autostart workflows');
+assert(fs.existsSync('./DKDS.cmd')&&fs.existsSync('./DKDS_GUI.cmd'),'consolidated CLI/GUI Windows entry points must exist');
+const dkdsToolsV38=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
+assert(dkdsToolsV38.includes("'update-server'")&&dkdsToolsV38.includes("'publish-update'")&&dkdsToolsV38.includes("'build-publish-update'"),'unified Windows backend must own update-server/publish workflows');
+assert(dkdsToolsV38.includes("'update-autostart-install'")&&dkdsToolsV38.includes("'update-autostart-remove'"),'unified Windows backend must own update-server autostart workflows');
 console.log('v3.8 trusted-LAN keyless hot-update checks passed.');
 
 // v3.6 one-click peak order sorting
@@ -357,9 +357,9 @@ const htmlV37 = fs.readFileSync('./src/index.html','utf8');
 const cssV37 = fs.readFileSync('./src/style.css','utf8');
 const analysisV37 = require('./src/analysis.js');
 
-assert(resonancePluginSource.includes("elementId:'rangeActionMenu'"),'direct range action menu must be contributed by the resonance plugin');
-for(const id of ['rangeLocalDetectBtn','rangeDeletePeaksBtn','rangeLockPeaksBtn','rangeUnlockPeaksBtn']){
-  assert(resonancePluginSource.includes(`id="${id}"`),`resonance plugin range action ${id} must exist`);
+assert(resonancePluginSource.includes("ctx.ui.selectionMenus.register('resonance-range'"),'direct range action menu must be contributed by the resonance plugin');
+for(const action of ['detect','delete','lock','unlock','identity']){
+  assert(resonancePluginSource.includes(`data-range-action="${action}"`),`resonance plugin range action ${action} must exist`);
 }
 assert(!htmlV37.includes('id="mainPeakSelectBtn"')&&!htmlV37.includes('id="mainBoxZoomBtn"'),'range/zoom mode buttons must be removed');
 assert(appV37.includes("const zoom=!!event.ctrlKey"),'Ctrl+drag must control zoom');
@@ -515,10 +515,10 @@ const parsed310=analysisV310.parseFlexibleData(shared310,{
 assert(parsed310.datasets.length===2,'per-column Vg test should generate two series');
 assert(parsed310.datasets[0].vg===-12.5&&parsed310.datasets[1].vg===27,'per-column Vg overrides must become dataset Vg values');
 
-assert(cssV310.includes('.curve-hit')&&cssV310.includes('stroke-width:var(--grs-curve-hit,14px)'),'main curves must have a wider platform-adaptive invisible hit path');
+assert(cssV310.includes('.curve-hit')&&cssV310.includes('stroke-width:var(--dkds-curve-hit,14px)'),'main curves must have a wider platform-adaptive invisible hit path');
 assert(appV310.includes('nearestSweepAtPixel')&&appV310.includes('interaction?.nearestCurvePx||18'),'background click/add must use platform-adaptive nearest-curve pixel tolerance');
 assert(cssV310.includes('.peak-hit-target'),'peak markers must have a separate enlarged interaction target');
-assert(appV310.includes("peakHits.call(d3.drag().clickDistance(window.GRSPlatform?.profile?.interaction?.dragThresholdPx||7)"),'peak hit target must distinguish click from drag with a platform-adaptive threshold');
+assert(appV310.includes("peakHits.call(d3.drag().clickDistance(window.DKDSPlatform?.profile?.interaction?.dragThresholdPx||7)"),'peak hit target must distinguish click from drag with a platform-adaptive threshold');
 assert(appV310.includes('showInspectorPanel();')&&appV310.includes('可直接用 ←/→ 移动'),'single-clicking a peak must select it, open inspector, and enable arrow-key movement');
 
 assert(appV310.includes("mainSvg.on('wheel.mainzoom'"),'main plot must implement mouse-wheel zoom');
@@ -572,7 +572,7 @@ assert(appV311.includes('t.importDraft=importDraft')&&appV311.includes('importDr
 assert(appV311.includes('if(importDraft.fileDialogOpen)return;'),'import manager must guard against multiple simultaneous OS file pickers');
 
 // Box selection unified peak category/label.
-assert(resonancePluginSource.includes('id="rangeApplyPeakIdentityBtn"')&&resonancePluginSource.includes('id="rangePeakLabelInput"'),'resonance plugin range overlay must expose unified peak identity controls');
+assert(resonancePluginSource.includes('data-range-action="identity"')&&resonancePluginSource.includes('data-range-label'),'resonance plugin range menu must expose unified peak identity controls');
 assert(appV311.includes('function applyUnifiedPeakIdentityToSelection'),'range-selected peaks must support unified category/label assignment');
 assert(appV311.includes("snapshot('统一框选峰序与标签')"),'unified range identity operation must be undoable');
 
@@ -585,7 +585,7 @@ assert(mainV311.includes("new LanWebServer({ app, BrowserWindow })"),'main proce
 assert(preloadV311.includes('lanWebGetStatus')&&preloadV311.includes('lanWebRegenerateKey'),'desktop renderer must expose LAN web controls');
 assert(lanWebV311.includes('crypto.randomInt(1000, 10000)'),'pairing key must be random four digits');
 assert(lanWebV311.includes("this.settings.noKey"),'LAN web server must support no-key mode');
-assert(lanWebV311.includes("Set-Cookie")&&lanWebV311.includes("grs_pair="),'key pairing must establish an authenticated browser session');
+assert(lanWebV311.includes("Set-Cookie")&&lanWebV311.includes("dkds_pair="),'key pairing must establish an authenticated browser session');
 assert(lanWebV311.includes("'/app/'")&&lanWebV311.includes("node_modules"),'LAN web server must serve the full analysis UI and dependencies');
 assert(htmlV311.includes('id="lanWebPanel"')&&htmlV311.includes('id="lanWebNoKey"'),'desktop app must include LAN web settings panel');
 assert(webBridgeV311.includes('openDataFiles')&&webBridgeV311.includes('saveProject')&&webBridgeV311.includes('copyText'),'browser bridge must provide import/project/export/clipboard compatibility');
@@ -619,8 +619,8 @@ const appV312 = fs.readFileSync('./src/app.js','utf8');
 const htmlV312 = fs.readFileSync('./src/index.html','utf8');
 const cssV312 = fs.readFileSync('./src/style.css','utf8');
 
-assert(appV312.includes("trendColumns: 3")&&appV312.includes("trendColumns:3"),
-  'new app/new project defaults must use three group charts per row');
+assert(appV312.includes('function loadTrendColumnsPreference()')&&appV312.includes('return 3;')&&appV312.includes('trendColumns:loadTrendColumnsPreference()'),
+  'new app/new project defaults must use the persisted group-column preference with three-column fallback');
 assert(htmlV312.includes('data-trend-cols="3" class="active"'),
   'group layout UI must initially highlight three charts per row');
 
@@ -690,9 +690,9 @@ assert(appV313.includes("['label,source_file,index,pulse_voltage_V,pulse_current
   'batch pulse-current CSV must identify both display label and source file');
 assert(appV313.includes('pulseAnalysisState:pulseAnalysisState')||appV313.includes('t.pulseAnalysisState=pulseAnalysisState'),
   'pulse batch state must be project-tab scoped');
-assert(appV313.includes('plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
+assert(appV313.includes('plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
   'multi-file pulse workspace configuration must persist through plugin project slices');
-assert(appV313.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes('legacyProject?.pulseAnalysis'),
+assert(appV313.includes('window.DKDSPlugins.project.restore(pr.plugins||{},pr)')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes('legacyProject?.pulseAnalysis'),
   'saved multi-file pulse workspace must restore through plugin state and migrate legacy projects');
 assert(cssV313.includes('.pulse-batch-workspace')&&cssV313.includes('grid-template-columns:330px minmax(0,1fr)'),
   'pulse page must have a dedicated file-manager/editor workspace');
@@ -739,7 +739,7 @@ assert(lanWebV314.includes("u.searchParams.get('key')"),
   'LAN server must accept a QR-carried pairing key');
 assert(lanWebV314.includes("qrKey === this.pairKey"),
   'QR auto-pair must validate the exact current pairing key');
-assert(lanWebV314.includes("'Set-Cookie':`grs_pair=${token}; HttpOnly; SameSite=Lax; Path=/`"),
+assert(lanWebV314.includes("'Set-Cookie':`dkds_pair=${token}; HttpOnly; SameSite=Lax; Path=/`"),
   'valid QR pairing must establish the same HttpOnly session cookie as manual pairing');
 assert(lanWebV314.includes("Location:'/app/'"),
   'valid QR pairing must redirect directly into the full web app');
@@ -762,7 +762,7 @@ const pluginHtml = fs.readFileSync('./src/index.html','utf8');
 const pluginCss = fs.readFileSync('./src/style.css','utf8');
 const pluginPkg = JSON.parse(fs.readFileSync('./package.json','utf8'));
 
-assert(pluginKernel.includes('window.GRSPlugins')&&pluginKernel.includes('activateAll')&&pluginKernel.includes('registerProjectSlice'),
+assert(pluginKernel.includes('window.DKDSPlugins')&&pluginKernel.includes('activateAll')&&pluginKernel.includes('registerProjectSlice'),
   'plugin kernel must expose lifecycle and namespaced project state');
 assert(pluginKernel.includes('createToolbarButton')&&pluginKernel.includes('addPage')&&pluginKernel.includes('addStyle'),
   'plugin kernel must support toolbar/page/style UI contributions');
@@ -779,20 +779,20 @@ assert(!pluginHtml.includes('id="openGateAnalysisPageBtn"')&&!pluginHtml.include
   'domain feature toolbar buttons should not be hard-coded in core HTML');
 assert(pluginApp.includes('flexibleImportProvider().parse')&&pluginApp.includes('flexibleImportProvider().inspect'),
   'import workbench must resolve parser/inspector from plugin registry');
-assert(pluginApp.includes('plugins:window.GRSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})'),
+assert(pluginApp.includes('plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})'),
   'core project format must serialize plugin state generically');
-assert(pluginApp.includes('window.GRSPlugins.project.restore(pr.plugins||{},pr)'),
+assert(pluginApp.includes('window.DKDSPlugins.project.restore(pr.plugins||{},pr)'),
   'core project loader must restore plugin state generically');
-assert(pluginApp.includes('await window.GRSPlugins.loadBuiltinEntries()')&&pluginApp.includes('await window.GRSPlugins.activateAll()'),
+assert(pluginApp.includes('await window.DKDSPlugins.loadBuiltinEntries()')&&pluginApp.includes('await window.DKDSPlugins.activateAll()'),
   'plugins must load/activate before first blank project is mounted');
 assert(platformCore.includes("size = 'compact'")&&platformCore.includes("pointer: coarse ? 'coarse' : 'fine'"),
   'platform core must expose responsive size and pointer profiles');
 assert(platformCore.includes('curveHitPx')&&platformCore.includes('peakHitRadiusPx')&&platformCore.includes('longPressMs'),
   'platform core must expose touch interaction geometry/gesture constants');
-assert(pluginCss.includes('.grs-size-compact .workspace')&&pluginCss.includes('.grs-pointer-coarse button'),
+assert(pluginCss.includes('.dkds-size-compact .workspace')&&pluginCss.includes('.dkds-pointer-coarse button'),
   'CSS must include compact and coarse-pointer adaptations');
-assert(pluginApp.includes('window.GRSPlatform?.profile?.interaction?.nearestCurvePx')&&
-       pluginApp.includes('window.GRSPlatform?.profile?.interaction?.dragThresholdPx'),
+assert(pluginApp.includes('window.DKDSPlatform?.profile?.interaction?.nearestCurvePx')&&
+       pluginApp.includes('window.DKDSPlatform?.profile?.interaction?.dragThresholdPx'),
   'main plot interaction tolerances must consume platform profile');
 assert(pluginPkg.scripts['plugin:index']&&pluginPkg.scripts['plugin:validate']&&pluginPkg.scripts.check,
   'package scripts must support plugin index generation, validation, and project checks');
@@ -813,7 +813,7 @@ const physics316 = fs.readFileSync('./src/science/physics.js','utf8');
 const gate316 = fs.readFileSync('./src/science/gate.js','utf8');
 const mobilePkg316 = JSON.parse(fs.readFileSync('./mobile/package.json','utf8'));
 const mobileApp316 = fs.readFileSync('./mobile/App.tsx','utf8');
-const mobileAssetPlugin316 = fs.readFileSync('./mobile/plugins/withGrsWebAssets.js','utf8');
+const mobileAssetPlugin316 = fs.readFileSync('./mobile/plugins/withDkdsWebAssets.js','utf8');
 const mobileSync316 = fs.readFileSync('./mobile/scripts/sync-web-assets.js','utf8');
 
 assert(analysisFacade316.split(/\r?\n/).length < 40,
@@ -841,7 +841,7 @@ assert(mobilePkg316.dependencies['react-native-webview']==='13.16.1',
   'Android shell must use the Expo-compatible react-native-webview version');
 assert(mobilePkg316.dependencies['expo-document-picker']==='~57.0.1',
   'Android shell must use native DocumentPicker for robust data/project import');
-assert(mobileApp316.includes("file:///android_asset/grs/index.html?reactNative=1")&&
+assert(mobileApp316.includes("file:///android_asset/dkds/index.html?reactNative=1")&&
        mobileApp316.includes('<WebView')&&mobileApp316.includes("req.type === 'openFiles'"),
   'React Native shell must load offline app assets and expose native file picking');
 assert(mobileApp316.includes('expo-clipboard')&&mobileApp316.includes('expo-sharing')&&mobileApp316.includes('expo-file-system/legacy'),
@@ -849,14 +849,14 @@ assert(mobileApp316.includes('expo-clipboard')&&mobileApp316.includes('expo-shar
 assert(webBridge316.includes('window.ReactNativeWebView?.postMessage')&&webBridge316.includes("nativeCall('openFiles'")&&
        webBridge316.includes("nativeCall('saveBase64'"),
   'shared renderer bridge must delegate Android I/O to React Native');
-assert(mobileAssetPlugin316.includes("android',")&&mobileAssetPlugin316.includes("'assets', 'grs'"),
+assert(mobileAssetPlugin316.includes("android',")&&mobileAssetPlugin316.includes("'assets', 'dkds'"),
   'Expo config plugin must copy the offline renderer into Android assets');
 assert(mobileSync316.includes("fs.cpSync(source, out")&&mobileSync316.includes("vendor, 'plotly.min.js'"),
   'mobile sync must package full plugin renderer and plotting libraries offline');
-for(const rel of ['./GRS.cmd','./GRS_GUI.cmd','./tools/windows/grs-tools.ps1','./mobile/README_ANDROID_CN.md'])
+for(const rel of ['./DKDS.cmd','./DKDS_GUI.cmd','./tools/windows/dkds-tools.ps1','./mobile/README_ANDROID_CN.md'])
   assert(fs.existsSync(rel),`Android/toolbox helper missing: ${rel}`);
-const grsTools316=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
-assert(grsTools316.includes("'android-check'")&&grsTools316.includes("'android-build'")&&grsTools316.includes("'android-run'")&&grsTools316.includes("'android-install'"),
+const dkdsTools316=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
+assert(dkdsTools316.includes("'android-check'")&&dkdsTools316.includes("'android-build'")&&dkdsTools316.includes("'android-run'")&&dkdsTools316.includes("'android-install'"),
   'unified toolbox backend must expose Android check/build/run/install actions');
 console.log('v3.16 science rewrite / React Native Android shell checks passed.');
 
@@ -896,16 +896,16 @@ const cssV317=fs.readFileSync('./src/style.css','utf8');
 const appV317=fs.readFileSync('./src/app.js','utf8');
 assert(htmlV317.includes('id="pluginManagerBtn"')&&htmlV317.includes('id="pluginManagerPage"'),'core toolbar/page must expose plugin manager');
 assert(htmlV317.includes('id="pluginManagerSearch"')&&htmlV317.includes('id="pluginManagerFilter"'),'plugin manager must support search and status filter');
-assert(managerUiV317.includes('plugin-enable-switch')&&managerUiV317.includes('GRSPlugins.manager.setEnabled'),'plugin manager UI must support live enable/disable');
-assert(managerUiV317.includes('GRSPlugins.manager.reload')&&managerUiV317.includes('resetPreferences'),'plugin manager UI must support reload and restore defaults');
-assert(kernelV317.includes("preferenceStorageKey = 'grs.plugin.preferences.v1'"),'plugin desired states must persist outside project files');
+assert(managerUiV317.includes('plugin-enable-switch')&&managerUiV317.includes('DKDSPlugins.manager.setEnabled'),'plugin manager UI must support live enable/disable');
+assert(managerUiV317.includes('DKDSPlugins.manager.reload')&&managerUiV317.includes('resetPreferences'),'plugin manager UI must support reload and restore defaults');
+assert(kernelV317.includes("preferenceStorageKey = 'dkds.plugin.preferences.v1'"),'plugin desired states must persist outside project files');
 assert(kernelV317.includes('async function setPluginEnabled')&&kernelV317.includes('async function reloadPlugin'),'kernel must own enable/disable/reload lifecycle');
 assert(kernelV317.includes('host?.captureActiveProjectTab?.()'),'plugin disable/reload must capture current project state before cleanup');
 assert(kernelV317.includes('restorePluginProjectState(manifest.id'),'plugin enable/reload must restore current project plugin state');
 assert(kernelV317.includes('function serializeProject(base={})'),'project serialization must preserve disabled/unknown plugin namespaces');
 assert(appV317.includes('currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}))'),'project load must preserve plugin blobs even when plugin is disabled');
 assert(cssV317.includes('.plugin-manager-list')&&cssV317.includes('.plugin-enable-switch'),'plugin manager must have dedicated responsive management UI');
-assert(cssV317.includes('.grs-pointer-coarse .plugin-switch-track'),'plugin manager toggle must have coarse-pointer adaptation');
+assert(cssV317.includes('.dkds-pointer-coarse .plugin-switch-track'),'plugin manager toggle must have coarse-pointer adaptation');
 console.log('v3.17 plugin-manager checks passed.');
 
 
@@ -925,7 +925,7 @@ assert(dataModel318.includes("createTable")&&dataModel318.includes("provenanceSt
   'standard Data Model must provide DataTable, provenance and project artifact-store serialization');
 assert(dataModel318.includes("transient:true")&&app318.includes("syncLegacyArtifacts"),
   'legacy resonance datasets must map to transient standard DataTables without duplicate project persistence');
-assert(app318.includes('dataModel:window.GRSData.serializeStore')&&app318.includes('window.GRSData.restoreStore(pr.dataModel'),
+assert(app318.includes('dataModel:window.DKDSData.serializeStore')&&app318.includes('window.DKDSData.restoreStore(pr.dataModel'),
   'generic artifact store must persist in project files independently of plugin-specific state');
 assert(formula318.includes('function tokenize')&&formula318.includes('function parse')&&formula318.includes('deriveColumn'),
   'formula engine must use a parser/AST and support provenance-aware derived columns');
@@ -983,7 +983,7 @@ assert(pulsePluginV319.includes("pageId:'pulseAnalysisPage'")&&pulsePluginV319.i
 assert(terPluginV319.includes("pageId:'terMaxPage'")&&terPluginV319.includes('html:pageHtml'),
   'TER analysis page must be dynamically created by the TER plugin');
 
-assert(kernelV319.includes("const API_VERSION = '1.2.0'"),'workspace extension API must be v1.2');
+assert(kernelV319.includes("const API_VERSION = '1.3.0'"),'workspace extension API must expose the current v1.3 contract');
 for(const token of [
   'function registerActivity','function addSidebarSection','function addMainOverlay',
   "registerTypedContribution(pluginId,'ui.inspectors'",
@@ -1026,7 +1026,7 @@ for(const token of [
   "ctx.ui.activities.add",
   "ctx.ui.sidebar.add",
   "ctx.ui.mainViews.register",
-  "ctx.ui.mainOverlays.add",
+  "ctx.ui.selectionMenus.register",
   "ctx.ui.inspectors.register",
   "ctx.ui.groupCharts.register",
   "ctx.ui.groupViews.register",
@@ -1035,7 +1035,7 @@ for(const token of [
 ]){
   assert(resonanceV319.includes(token),`resonance workbench must own ${token}`);
 }
-assert(resonanceV319.includes("elementId:'rangeActionMenu'")&&resonanceV319.includes('统一峰序 / 峰标签'),
+assert(resonanceV319.includes("ctx.ui.selectionMenus.register('resonance-range'")&&resonanceV319.includes('统一峰序 / 峰标签'),
   'range menu and its peak-identity UI must be workbench plugin content');
 assert(resonanceV319.includes('function renderPhysicsPanel()'),
   'physics panel rendering must be owned by the resonance plugin');
@@ -1079,7 +1079,7 @@ assert(preloadExternalV319.includes('pluginInstallPackage')&&preloadExternalV319
   'context-isolated preload must expose plugin installation and rollback IPC');
 assert(kernelV319.includes('loadExternalPackage')&&kernelV319.includes('oldPackage=externalPackages.get(id)||pkg.previousPackage||null'),
   'plugin kernel must support dynamic external package load and failed-update rollback');
-assert(managerExternalV319.includes('plugin-uninstall-btn')&&managerExternalV319.includes('GRSPlugins.external.install'),
+assert(managerExternalV319.includes('plugin-uninstall-btn')&&managerExternalV319.includes('DKDSPlugins.external.install'),
   'plugin manager must manage external install/update/uninstall lifecycle');
 assert(packageCoreV319.includes('normalizeRelativeFile')&&packageCoreV319.includes('MAX_TOTAL_CHARS'),
   'external plugin packages must be validated for safe paths and bounded size');
@@ -1089,37 +1089,61 @@ assert(fs.existsSync('./docs/PLUGIN_PACKAGES.md')&&fs.existsSync('./examples/ext
 console.log('v3.19 plugin-native resonance workspace / adaptive shell checks passed.');
 
 
-// v3.20 single-row shell / toolbox / clean project structure
-const htmlV320=fs.readFileSync('./src/index.html','utf8');
-const cssV320=fs.readFileSync('./src/style.css','utf8');
-const kernelV320=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
-const pkgV320=JSON.parse(fs.readFileSync('./package.json','utf8'));
-const grsTools320=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
-const grsGui320=fs.readFileSync('./tools/windows/grs-gui.ps1','utf8');
-assert(/^3\.20\.0-plugin\.\d+$/.test(pkgV320.version),'v3.20 plugin package version must be set');
-assert(htmlV320.includes('class="context-commandbar"')&&!htmlV320.includes('class="topbar-context"'),
+// v3.21 DK Data Studio shell / plugin surfaces / auxiliary workspaces / tooling
+const htmlV321=fs.readFileSync('./src/index.html','utf8');
+const cssV321=fs.readFileSync('./src/style.css','utf8');
+const kernelV321=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
+const mainV321=fs.readFileSync('./main.js','utf8');
+const preloadV321=fs.readFileSync('./preload.js','utf8');
+const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
+const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
+const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
+assert(pkgV321.version==='3.21.0','v3.21 package version must be set');
+assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
+assert(htmlV321.includes('id="primaryActivityBar"')&&htmlV321.includes('class="primary-activity-cluster"'),
+  'resonance activity and its plugin commands must share a primary activity cluster');
+assert(htmlV321.includes('class="context-commandbar"')&&!htmlV321.includes('class="topbar-context"'),
   'desktop shell must use one unified command row rather than a permanent second context row');
-assert(htmlV320.includes('data-menu-target="editMenu"')&&htmlV320.includes('data-menu-target="manageMenu"'),
-  'low-frequency edit/manage actions must be grouped into compact menus');
-assert(htmlV320.includes('id="pluginToolbarAnalysis"')&&htmlV320.includes('id="contextOverflowBtn"'),
-  'plugin context actions must remain priority-overflow capable on the unified row');
-assert(kernelV320.includes("document.querySelector('.context-commandbar')")&&kernelV320.includes('dataset.pluginPriority'),
-  'context reflow must measure the unified command host and preserve plugin priority overflow');
-assert(!kernelV320.includes('buttons.length<=3'),
-  'activity overflow must react to available width even when only two or three activities exist');
-assert(cssV320.includes('--ui-font-size:11px')&&cssV320.includes('--ui-control-h:28px'),
-  'UI must define a shared compact semantic typography/control scale');
-assert(cssV320.includes('.topbar{\n  height:42px')&&cssV320.includes('.workspace{height:calc(100% - 78px)}'),
-  'single-row shell must reclaim vertical workspace');
-const rootCmds320=fs.readdirSync('.').filter(n=>n.toLowerCase().endsWith('.cmd')).sort();
-assert(JSON.stringify(rootCmds320)===JSON.stringify(['GRS.cmd','GRS_GUI.cmd']),
-  'root must contain only the consolidated CLI and GUI CMD launchers');
+assert(htmlV321.includes('data-menu-target="editMenu"')&&htmlV321.includes('data-menu-target="manageMenu"'),
+  'low-frequency edit/manage actions must stay grouped into compact menus');
+assert(htmlV321.includes('id="pluginToolbarAnalysis"')&&htmlV321.includes('id="contextOverflowBtn"'),
+  'plugin context actions must remain priority-overflow capable');
+assert(kernelV321.includes("'ui.selectionMenus'")&&kernelV321.includes('selectionMenus:'),
+  'box-selection action UI must be supplied through the plugin registry');
+assert(resonancePluginSource.includes("ctx.ui.selectionMenus.register('resonance-range'")&&resonancePluginSource.includes("ctx.ui.mainTools.add({id:'resonanceResetViewTool'"),
+  'resonance plugin must own both selection menu and main-plot controls');
+assert(kernelV321.includes("spec.openMode==='window'")&&mainV321.includes("ipcMain.handle('windows:openActivity'")&&preloadV321.includes('openActivityWindow'),
+  'auxiliary activities must open in dedicated Electron windows');
+assert(dataCenterWindowContract()&&terPluginSource.includes("openMode:'window'")&&pulsePluginSource.includes("openMode:'window'"),
+  'Data Center, TER and Pulse activities must default to separate windows');
+assert(!terPluginSource.includes('返回主图')&&!pulsePluginSource.includes('返回主图')&&!fs.readFileSync('./src/plugins/data-center/plugin.js','utf8').includes('返回主图'),
+  'dedicated auxiliary activities must not expose a return-to-main-plot button');
+assert(cssV321.includes('--ui-font-size:12px')&&cssV321.includes('--ui-control-h:34px')&&cssV321.includes('.topbar{height:52px'),
+  'v3.21 shell must use the larger desktop control scale');
+assert(cssV321.includes('.main-legend-bar::-webkit-scrollbar{height:4px}')&&cssV321.includes('body.auxiliary-window .topbar'),
+  'main legend scrollbar must stay thin and auxiliary windows must hide the main shell');
+assert(appSource.includes("TREND_COLUMNS_PREFERENCE_KEY='dkds.ui.trendColumns.v1'")&&appSource.includes('saveTrendColumnsPreference(state.trendColumns)'),
+  'group-chart column count must persist as a global UI preference');
+assert(appSource.includes('async function importFiles(){\n    openImportWorkbench();\n  }')&&!appSource.includes('async function importFiles(){\n    openImportWorkbench();\n    await addImportFiles()'),
+  'opening the import workbench must not automatically open a file chooser');
+assert(htmlV321.includes('id="importChooseFilesBtn" class="primary">导入文件</button>'),
+  'file dialog must be explicitly initiated by the 导入文件 button');
+assert(kernelV321.includes("const API_VERSION = '1.3.0'"),'plugin API must be advanced for selection-menu/window contributions');
+assert(mainV321.includes("extensions:['dkplugin']")&&fs.readFileSync('./plugin-package.js','utf8').includes('.dkplugin'),
+  'external plugin package extension must be .dkplugin');
+const rootCmds321=fs.readdirSync('.').filter(n=>n.toLowerCase().endsWith('.cmd')).sort();
+assert(JSON.stringify(rootCmds321)===JSON.stringify(['DKDS.cmd','DKDS_GUI.cmd']),
+  'root must contain only the consolidated DK Data Studio CLI and GUI launchers');
 for(const action of ['dev','check','test','build-windows','android-check','android-build','android-run','android-install','update-server','publish-update','build-publish-update','plugin-validate'])
-  assert(grsTools320.includes(`'${action}'`),`unified GRS tool backend missing action: ${action}`);
-assert(grsGui320.includes("New-Page '常用'")&&grsGui320.includes("New-Page 'Android'")&&grsGui320.includes("New-Page '局域网更新'")&&grsGui320.includes("New-Page '插件与维护'"),
+  assert(dkdsTools321.includes(`'${action}'`),`unified DKDS tool backend missing action: ${action}`);
+assert(dkdsGui321.includes("New-Page '常用'")&&dkdsGui321.includes("New-Page 'Android'")&&dkdsGui321.includes("New-Page '局域网更新'")&&dkdsGui321.includes("New-Page '插件与维护'"),
   'GUI toolbox must group tasks by understandable workflow tabs');
 assert(fs.existsSync('./services/update-server/server.js')&&fs.existsSync('./config/update-config.default.json'),
   'runtime service/config files must live in their organized directories');
 for(const rel of ['./docs/PROJECT_STRUCTURE.md','./docs/DEVELOPMENT_GUIDE.md','./docs/HANDOFF_NEXT_SESSION.md','./docs/guides/TOOLBOX_CN.md'])
-  assert(fs.existsSync(rel),`v3.20 handoff/structure documentation missing: ${rel}`);
-console.log('v3.20 unified-shell / developer-toolbox / project-structure checks passed.');
+  assert(fs.existsSync(rel),`v3.21 handoff/structure documentation missing: ${rel}`);
+function dataCenterWindowContract(){
+  const source=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
+  return source.includes("id:'data-center',label:'数据中心'")&&source.includes("openMode:'window'");
+}
+console.log('v3.21 DK Data Studio shell / auxiliary workspace / plugin-surface checks passed.');
