@@ -105,7 +105,7 @@ jobs:
           $cmd = @'
           @echo off
           setlocal
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0publish-to-lan.ps1" -ArtifactRoot "%~dp0"
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0publish-to-lan.ps1"
           set "code=%errorlevel%"
           echo.
           if "%code%"=="0" (
@@ -118,6 +118,11 @@ jobs:
           '@
           $cmdPath = Join-Path $stage '局域网发布.cmd'
           [System.IO.File]::WriteAllText($cmdPath, $cmd.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+
+          $cmdText = Get-Content -LiteralPath $cmdPath -Raw
+          if ($cmdText -match '-ArtifactRoot') {
+            throw 'Generated LAN publish launcher must rely on publish-to-lan.ps1 $PSScriptRoot and must not pass %~dp0 as ArtifactRoot.'
+          }
 
           Write-Host 'Staged files:'
           Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
