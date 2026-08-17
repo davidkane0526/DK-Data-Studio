@@ -1,11 +1,11 @@
-# Next Session Handoff — v3.21.0
+# Next Session Handoff — v3.21.1
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.21.0`
+- Current delivery: `v3.21.1`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 

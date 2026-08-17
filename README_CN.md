@@ -1,4 +1,4 @@
-# DK Data Studio — v3.21.0
+# DK Data Studio — v3.21.1
 
 
 ## v3.21 UI / 插件界面 / 多窗口工作区
@@ -1417,7 +1417,7 @@ DKDS.cmd update-server
 以及：
 
 ```text
-DKDS.cmd build-publish-update -Version 3.21.0
+DKDS.cmd build-publish-update -Version 3.21.1
 ```
 
 即可。
@@ -1454,7 +1454,7 @@ v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `
 发布新版本时使用显式版本号：
 
 ```text
-DKDS.cmd build-publish-update -Version 3.21.0
+DKDS.cmd build-publish-update -Version 3.21.1
 ```
 
 图形界面可直接使用 `DKDS_GUI.cmd` 的“局域网更新”页。

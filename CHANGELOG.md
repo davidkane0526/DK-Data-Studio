@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.21.1 — Windows Android environment hotfix
+
+- Fixed `android-check` crashing under Windows PowerShell 5.1 because `$home` collided case-insensitively with the read-only automatic variable `$HOME`.
+- Reworked Java/JDK discovery to use non-reserved variable names and a pipeline-clean candidate array.
+- Prevented Java discovery from leaking collection-operation return values into the function result.
+- Added regression guards against writing to PowerShell read-only/automatic variables in Windows tooling.
+
 ## 3.21.0 — DK Data Studio UI / plugin surfaces / auxiliary windows
 
 - Renamed the application to **DK Data Studio** and standardized installable plugin packages on `.dkplugin`.

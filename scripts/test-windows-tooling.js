@@ -35,6 +35,26 @@ assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args va
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
 assert(/Invoke-Step\s+-FilePath\s+'npm\.cmd'\s+-Arguments\s+@\('install'\)/.test(backend), 'npm install arguments must be explicit.');
 
+// PowerShell variable names are case-insensitive. Names such as $HOME are
+// automatic/read-only in Windows PowerShell 5.1, so even a local `$home =`
+// assignment crashes before Android discovery can run. Guard writable forms
+// of the automatic variables that have caused or could cause toolbox failures.
+const protectedPsVars = [
+  'HOME','Host','PID','PSHOME','PWD','ShellId','Args','Input','Matches',
+  'MyInvocation','ExecutionContext','PSVersionTable','NestedPromptLevel','StackTrace',
+];
+const protectedAlternation = protectedPsVars.join('|');
+const protectedAssignment = new RegExp(`\\$(?:${protectedAlternation})\\b\\s*(?:=|\\+=|-=|\\*=|/=)`, 'i');
+const protectedForeach = new RegExp(`foreach\\s*\\(\\s*\\$(?:${protectedAlternation})\\b`, 'i');
+const protectedParameter = new RegExp(`\\[[^\\]]+\\]\\s*\\$(?:${protectedAlternation})\\b`, 'i');
+for (const [name, source] of [['dkds-tools.ps1', backend], ['dkds-gui.ps1', gui]]) {
+  assert(!protectedAssignment.test(source), `${name} must not assign to a PowerShell automatic/read-only variable.`);
+  assert(!protectedForeach.test(source), `${name} must not use a PowerShell automatic/read-only variable as a foreach iterator.`);
+  assert(!protectedParameter.test(source), `${name} must not declare a PowerShell automatic/read-only variable as a typed parameter.`);
+}
+assert(!/\$homes\.Add\(/i.test(backend), 'Java discovery must not leak List.Add() return values into the PowerShell pipeline.');
+assert(/\$javaHomeCandidate\b/.test(backend), 'Java discovery should use an explicit non-reserved candidate variable.');
+
 // Geometry must use typed constructors instead of New-Object overload syntax;
 // expressions such as ($Y + 42) were parsed as extra constructor arguments.
 assert(!/New-Object\s+System\.Drawing\./i.test(gui), 'GUI contains fragile System.Drawing New-Object constructor syntax.');
