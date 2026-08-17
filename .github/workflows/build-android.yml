@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build-android:
     name: Android arm64 Release APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CI: '1'
@@ -29,37 +29,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          package-manager-cache: false
-
-      - name: Setup Java 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: microsoft
-          java-version: '21'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install Android SDK packages
+      - name: Select preinstalled JDK 21
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
+          test -n "${JAVA_HOME_21_X64:-}"
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
 
-      - name: Show tool versions
+      - name: Verify preinstalled Android toolchain
         shell: bash
         run: |
+          test -n "${ANDROID_HOME:-}"
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
           node --version
           npm --version
           java -version
-          sdkmanager --version
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME"
 
       - name: Install mobile dependencies
         working-directory: mobile
