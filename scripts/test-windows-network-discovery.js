@@ -50,7 +50,7 @@ const metadata = buildMetadataResponse({
 });
 assert.match(metadata, /ThisDevice/);
 assert.match(metadata, /ThisModel/);
-assert.match(metadata, /PresentationURL/);
+assert.match(metadata, /PresentationUrl/);
 assert.match(metadata, /DK Data Studio · TEST-PC/);
 assert.ok(metadata.includes('http://192.168.1.23:45910/'));
 assert.ok(metadata.includes(relatesTo));
