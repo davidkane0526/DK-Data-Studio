@@ -130,24 +130,31 @@ function Resolve-AndroidSdk {
 }
 
 function Resolve-JavaToolchain {
-  $homes = New-Object System.Collections.Generic.List[string]
-  foreach ($envHome in @($env:JAVA_HOME,$env:JDK_HOME,$env:STUDIO_JDK)) { if ($envHome) { $homes.Add($envHome) } }
+  # Do not use $home here: PowerShell variable names are case-insensitive and
+  # $HOME is a read-only automatic variable under Windows PowerShell 5.1.
+  # Keep this function pipeline-clean as well: it must return either one
+  # toolchain hashtable or $null, never List.Add() indices or discovery noise.
+  $javaHomes = @()
+
+  foreach ($configuredJavaHome in @($env:JAVA_HOME,$env:JDK_HOME,$env:STUDIO_JDK)) {
+    if ($configuredJavaHome) { $javaHomes += [string]$configuredJavaHome }
+  }
 
   $javaOnPath = Get-Command 'java.exe' -ErrorAction SilentlyContinue
   if ($javaOnPath -and $javaOnPath.Source) {
-    try { $homes.Add((Split-Path (Split-Path $javaOnPath.Source -Parent) -Parent)) } catch {}
+    try { $javaHomes += (Split-Path (Split-Path $javaOnPath.Source -Parent) -Parent) } catch {}
   }
 
   foreach ($programRoot in @($env:ProgramFiles,${env:ProgramFiles(x86)},$env:LOCALAPPDATA)) {
     if (-not $programRoot) { continue }
-    $homes.Add((Join-Path $programRoot 'Android\Android Studio\jbr'))
-    $homes.Add((Join-Path $programRoot 'Android\Android Studio\jre'))
-    $homes.Add((Join-Path $programRoot 'Programs\Android Studio\jbr'))
+    $javaHomes += (Join-Path $programRoot 'Android\Android Studio\jbr')
+    $javaHomes += (Join-Path $programRoot 'Android\Android Studio\jre')
+    $javaHomes += (Join-Path $programRoot 'Programs\Android Studio\jbr')
   }
 
   $studio = Get-Command 'studio64.exe' -ErrorAction SilentlyContinue
   if ($studio -and $studio.Source) {
-    try { $homes.Add((Join-Path (Split-Path (Split-Path $studio.Source -Parent) -Parent) 'jbr')) } catch {}
+    try { $javaHomes += (Join-Path (Split-Path (Split-Path $studio.Source -Parent) -Parent) 'jbr') } catch {}
   }
 
   foreach ($uninstallRoot in @(
@@ -156,17 +163,17 @@ function Resolve-JavaToolchain {
     'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
   )) {
     if (-not (Test-Path $uninstallRoot)) { continue }
-    Get-ChildItem $uninstallRoot -ErrorAction SilentlyContinue | ForEach-Object {
+    foreach ($uninstallEntry in @(Get-ChildItem $uninstallRoot -ErrorAction SilentlyContinue)) {
       try {
-        $item=Get-ItemProperty $_.PSPath -ErrorAction Stop
+        $item = Get-ItemProperty $uninstallEntry.PSPath -ErrorAction Stop
         if ([string]$item.DisplayName -match 'Android Studio') {
-          $install=[string]$item.InstallLocation
-          if ($install) { $homes.Add((Join-Path $install 'jbr')) }
-          $icon=[string]$item.DisplayIcon
-          if ($icon) {
-            $exe=$icon.Trim('"').Split(',')[0]
-            $root=Split-Path (Split-Path $exe -Parent) -Parent
-            if ($root) { $homes.Add((Join-Path $root 'jbr')) }
+          $installLocation = [string]$item.InstallLocation
+          if ($installLocation) { $javaHomes += (Join-Path $installLocation 'jbr') }
+          $displayIcon = [string]$item.DisplayIcon
+          if ($displayIcon) {
+            $studioExe = $displayIcon.Trim('"').Split(',')[0]
+            $studioRoot = Split-Path (Split-Path $studioExe -Parent) -Parent
+            if ($studioRoot) { $javaHomes += (Join-Path $studioRoot 'jbr') }
           }
         }
       } catch {}
@@ -174,37 +181,35 @@ function Resolve-JavaToolchain {
   }
 
   if ($env:ProgramFiles) {
-    foreach ($root in @('Java','Eclipse Adoptium','Microsoft')) {
-      $base = Join-Path $env:ProgramFiles $root
-      if (Test-Path $base) {
-        Get-ChildItem $base -Directory -ErrorAction SilentlyContinue |
-          Sort-Object LastWriteTime -Descending |
-          ForEach-Object { $homes.Add($_.FullName) }
+    foreach ($vendorFolder in @('Java','Eclipse Adoptium','Microsoft')) {
+      $vendorBase = Join-Path $env:ProgramFiles $vendorFolder
+      if (Test-Path $vendorBase) {
+        $vendorJdks = @(Get-ChildItem $vendorBase -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+        foreach ($vendorJdk in $vendorJdks) { $javaHomes += $vendorJdk.FullName }
       }
     }
   }
 
-  foreach ($regPath in @(
+  foreach ($jdkRegistryRoot in @(
     'HKLM:\SOFTWARE\JavaSoft\JDK',
     'HKLM:\SOFTWARE\WOW6432Node\JavaSoft\JDK'
   )) {
-    if (-not (Test-Path $regPath)) { continue }
-    Get-ChildItem $regPath -ErrorAction SilentlyContinue | ForEach-Object {
+    if (-not (Test-Path $jdkRegistryRoot)) { continue }
+    foreach ($jdkRegistryEntry in @(Get-ChildItem $jdkRegistryRoot -ErrorAction SilentlyContinue)) {
       try {
-        $home=(Get-ItemProperty $_.PSPath -ErrorAction Stop).JavaHome
-        if ($home) { $homes.Add([string]$home) }
+        $registryJavaHome = (Get-ItemProperty $jdkRegistryEntry.PSPath -ErrorAction Stop).JavaHome
+        if ($registryJavaHome) { $javaHomes += [string]$registryJavaHome }
       } catch {}
     }
   }
 
-  foreach ($home in ($homes | Select-Object -Unique)) {
-    if (-not $home) { continue }
-    $java = Join-Path $home 'bin\java.exe'
-    $keytool = Join-Path $home 'bin\keytool.exe'
-    if ((Test-Path $java) -and (Test-Path $keytool)) {
-      $env:JAVA_HOME = $home
-      Add-PathEntry (Join-Path $home 'bin')
-      return @{ Home=$home; Java=$java; Keytool=$keytool }
+  foreach ($javaHomeCandidate in ($javaHomes | Where-Object { $_ } | Select-Object -Unique)) {
+    $javaPath = Join-Path $javaHomeCandidate 'bin\java.exe'
+    $keytoolPath = Join-Path $javaHomeCandidate 'bin\keytool.exe'
+    if ((Test-Path $javaPath) -and (Test-Path $keytoolPath)) {
+      $env:JAVA_HOME = $javaHomeCandidate
+      Add-PathEntry (Join-Path $javaHomeCandidate 'bin')
+      return @{ Home=$javaHomeCandidate; Java=$javaPath; Keytool=$keytoolPath }
     }
   }
   return $null
@@ -370,7 +375,7 @@ function Remove-UpdateServerAutostart {
 
 function Resolve-ReleaseVersion {
   if ($Version) { return $Version }
-  $v = Read-Host 'Release version, e.g. 3.21.0'
+  $v = Read-Host 'Release version, e.g. 3.21.1'
   if (-not $v) { throw 'A release version is required.' }
   return $v
 }

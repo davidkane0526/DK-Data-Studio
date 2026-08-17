@@ -236,7 +236,7 @@ function Add-VersionCard([System.Windows.Forms.FlowLayoutPanel]$Flow) {
   $inner.Controls.Add($label,0,0)
 
   $versionBox = New-Object System.Windows.Forms.TextBox
-  $versionBox.Text = '3.21.0'
+  $versionBox.Text = '3.21.1'
   $versionBox.Dock = [System.Windows.Forms.DockStyle]::Fill
   $versionBox.Margin = [System.Windows.Forms.Padding]::new(0,2,0,4)
   $inner.Controls.Add($versionBox,0,1)

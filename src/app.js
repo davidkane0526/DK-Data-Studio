@@ -5771,7 +5771,7 @@
     if(!window.DKDSPlugins)return;
 
     window.DKDSPlugins.configure({
-      appVersion:'3.21.0',
+      appVersion:'3.21.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       openActivityWindow:openPluginActivityWindow,
