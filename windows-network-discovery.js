@@ -112,10 +112,10 @@ function buildResolveMatches({ deviceId, xaddr, relatesTo, instanceId = 1, seque
   return soapEnvelope(header, body);
 }
 
-function buildHello({ deviceId, instanceId = 1, sequenceId = messageUuid(), messageNumber = 1 }) {
+function buildHello({ deviceId, xaddr = '', instanceId = 1, sequenceId = messageUuid(), messageNumber = 1 }) {
   const deviceUrn = endpointUrn(deviceId);
   const header = discoveryHeader({ action:ACTION_HELLO, to:DISCOVERY_TO, instanceId, sequenceId, messageNumber });
-  const body = `<wsd:Hello>${endpointReference(deviceUrn)}<wsd:Types>wsdp:Device</wsd:Types><wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:Hello>`;
+  const body = `<wsd:Hello>${endpointReference(deviceUrn)}<wsd:Types>wsdp:Device</wsd:Types>${xaddr ? `<wsd:XAddrs>${xmlEscape(xaddr)}</wsd:XAddrs>` : ''}<wsd:MetadataVersion>1</wsd:MetadataVersion></wsd:Hello>`;
   return soapEnvelope(header, body);
 }
 
@@ -131,7 +131,7 @@ function buildMetadataResponse({ deviceId, version, presentationUrl, requestMess
   const safeVersion = String(version || '0.0.0');
   const serial = normalizeDeviceId(deviceId).slice(0, 8);
   const header = `\n    <wsa:To>${ANONYMOUS_TO}</wsa:To>\n    <wsa:Action>${ACTION_GET_RESPONSE}</wsa:Action>\n    <wsa:MessageID>${messageUuid()}</wsa:MessageID>${requestMessageId ? `\n    <wsa:RelatesTo>${xmlEscape(requestMessageId)}</wsa:RelatesTo>` : ''}\n  `;
-  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:SerialNumber></wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio Web Service</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationUrl>${xmlEscape(presentationUrl)}</wsdp:PresentationUrl></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>wsdp:Device</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
+  const body = `<wsx:Metadata>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisDevice">\n        <wsdp:ThisDevice><wsdp:FriendlyName>${xmlEscape(friendlyName)}</wsdp:FriendlyName><wsdp:FirmwareVersion>${xmlEscape(safeVersion)}</wsdp:FirmwareVersion><wsdp:SerialNumber>${xmlEscape(serial)}</wsdp:SerialNumber></wsdp:ThisDevice>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/ThisModel">\n        <wsdp:ThisModel><wsdp:Manufacturer>DK Data Studio</wsdp:Manufacturer><wsdp:ModelName>DK Data Studio Web Service</wsdp:ModelName><wsdp:ModelNumber>${xmlEscape(safeVersion)}</wsdp:ModelNumber><wsdp:PresentationURL>${xmlEscape(presentationUrl)}</wsdp:PresentationURL></wsdp:ThisModel>\n      </wsx:MetadataSection>\n      <wsx:MetadataSection Dialect="http://schemas.xmlsoap.org/ws/2006/02/devprof/Relationship">\n        <wsdp:Relationship Type="http://schemas.xmlsoap.org/ws/2006/02/devprof/host"><wsdp:Host>${endpointReference(deviceUrn)}<wsdp:Types>wsdp:Device</wsdp:Types><wsdp:ServiceId>${xmlEscape(deviceUrn)}</wsdp:ServiceId></wsdp:Host></wsdp:Relationship>\n      </wsx:MetadataSection>\n    </wsx:Metadata>`;
   return soapEnvelope(header, body, 'xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex"');
 }
 
@@ -238,6 +238,7 @@ class WindowsNetworkDiscovery {
         this.memberships.push(row.address);
       } catch {}
     }
+
     if (!this.memberships.length) {
       try {
         socket.addMembership(WSD_MULTICAST_ADDRESS);
@@ -249,7 +250,17 @@ class WindowsNetworkDiscovery {
 
     try { socket.setMulticastTTL(2); } catch {}
     try { socket.setMulticastLoopback(false); } catch {}
-    this.send(buildHello({ deviceId:this.deviceId, ...this.nextSequence() }), WSD_PORT, WSD_MULTICAST_ADDRESS);
+
+    // Announce once per usable LAN interface so Network Explorer can cache an
+    // HTTP metadata endpoint immediately, even before it issues its own Probe.
+    const announced = new Set();
+    for (const row of lanIPv4Interfaces()) {
+      const xaddr = `http://${row.address}:${Number(this.getHttpPort()) || 45910}/wsd`;
+      if (announced.has(xaddr)) continue;
+      announced.add(xaddr);
+      this.send(buildHello({ deviceId:this.deviceId, xaddr, ...this.nextSequence() }), WSD_PORT, WSD_MULTICAST_ADDRESS);
+    }
+    if (!announced.size) this.send(buildHello({ deviceId:this.deviceId, ...this.nextSequence() }), WSD_PORT, WSD_MULTICAST_ADDRESS);
     return this.getStatus();
   }
 
