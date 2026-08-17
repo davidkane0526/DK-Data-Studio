@@ -4,6 +4,7 @@ const {
   extractMessageId,
   buildProbeMatches,
   buildResolveMatches,
+  buildHello,
   buildMetadataResponse
 } = require('../windows-network-discovery');
 
@@ -37,6 +38,18 @@ const resolve = buildResolveMatches({
 });
 assert.match(resolve, /ResolveMatches/);
 assert.ok(resolve.includes(`urn:uuid:${deviceId}`));
+assert.ok(resolve.includes(xaddr));
+
+const hello = buildHello({
+  deviceId,
+  xaddr,
+  instanceId:1,
+  sequenceId:'urn:uuid:bbbbbbbb-cccc-4ddd-8eee-ffffffffffff',
+  messageNumber:4
+});
+assert.match(hello, /<wsd:Hello>/);
+assert.match(hello, /<wsd:XAddrs>http:\/\/192\.168\.1\.23:45910\/wsd<\/wsd:XAddrs>/);
+assert.match(hello, /<wsd:MetadataVersion>1<\/wsd:MetadataVersion>/);
 
 const requestXml = `<?xml version="1.0"?><s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"><s:Header><a:MessageID>${relatesTo}</a:MessageID></s:Header><s:Body/></s:Envelope>`;
 assert.strictEqual(extractMessageId(requestXml), relatesTo);
@@ -50,9 +63,9 @@ const metadata = buildMetadataResponse({
 });
 assert.match(metadata, /ThisDevice/);
 assert.match(metadata, /ThisModel/);
-assert.match(metadata, /PresentationUrl/);
+assert.match(metadata, /<wsdp:PresentationURL>http:\/\/192\.168\.1\.23:45910\/<\/wsdp:PresentationURL>/);
+assert.doesNotMatch(metadata, /<wsdp:PresentationUrl>/);
 assert.match(metadata, /DK Data Studio · TEST-PC/);
-assert.ok(metadata.includes('http://192.168.1.23:45910/'));
 assert.ok(metadata.includes(relatesTo));
 
 console.log('Windows network discovery metadata checks passed.');
