@@ -7,6 +7,10 @@ const repoRoot = path.resolve(mobileRoot, '..');
 const source = path.join(repoRoot, 'src');
 const out = path.join(mobileRoot, 'assets', 'web');
 
+// Keep desktop, web favicon and Android launcher assets on the same generated
+// abstract mark before Expo prebuild copies Android resources.
+execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-brand-assets.js')], { cwd: repoRoot, stdio: 'inherit' });
+
 // Mobile builds must always package the current plugin set.
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'generate-plugin-index.js')], { cwd: repoRoot, stdio: 'inherit' });
 execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'validate-plugins.js')], { cwd: repoRoot, stdio: 'inherit' });
