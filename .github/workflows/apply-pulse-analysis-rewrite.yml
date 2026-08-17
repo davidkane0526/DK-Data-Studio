@@ -42,7 +42,7 @@ jobs:
 
       - name: Run project checks
         env:
-          DKDS_PARITY_BASELINE_REF: main
+          DKDS_PARITY_BASELINE_REF: origin/main
         run: npm run check
 
       - name: Commit final source only
