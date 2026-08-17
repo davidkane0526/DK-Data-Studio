@@ -6,17 +6,25 @@
   "entry": "plugin.js",
   "enabled": true,
   "order": 20,
-  "description": "Generic data model, formula-derived columns, configurable workflows, schema-driven parameters and chart previews.",
+  "description": "Unified artifact store, formula/workflow pipeline, provenance explorer and extensible chart workspace.",
   "capabilities": [
     "ui.activity",
-    "data.model",
+    "ui.page",
+    "data.artifacts",
     "data.formula",
     "workflow.processor",
     "workflow.analyzer",
     "workflow.recipe",
-    "chart.renderer",
-    "ui.page",
+    "chart.provider",
     "project.slice"
   ],
-  "source": "builtin"
+  "source": "builtin",
+  "window": {
+    "activity": "data-center",
+    "title": "数据中心",
+    "width": 1480,
+    "height": 940,
+    "minWidth": 920,
+    "minHeight": 650
+  }
 }

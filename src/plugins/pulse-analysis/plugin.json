@@ -13,5 +13,14 @@
     "analysis.pulse",
     "project.slice",
     "chart.timeseries"
-  ]
+  ],
+  "window": {
+    "activity": "pulse",
+    "runtime": "window-runtime.js",
+    "title": "脉冲分析",
+    "width": 1480,
+    "height": 940,
+    "minWidth": 920,
+    "minHeight": 650
+  }
 }

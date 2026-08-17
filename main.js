@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { LanWebServer } = require('./lan-web-server');
+const { resolveBuiltinPluginWindow } = require('./plugin-window-manager');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
@@ -134,6 +135,17 @@ function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId) {
   return `${ownerWebContentsId}::${projectTabId || 'project'}::${activityId}`;
 }
 
+function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
+  return {
+    activityId:String(payload.activityId || '').trim(),
+    projectTabId:String(payload.projectTabId || '').trim(),
+    project:payload.project || null,
+    projectPath:payload.projectPath || null,
+    title:payload.title || '',
+    ownerWebContentsId,
+    pluginWindow:pluginWindow ? {...pluginWindow} : null
+  };
+}
 
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const activityId = String(payload.activityId || '').trim();
@@ -142,47 +154,41 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
 
   const ownerWebContentsId = ownerWindow?.webContents?.id;
   if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
+
+  const pluginWindow = resolveBuiltinPluginWindow(app.getAppPath(), activityId);
   const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
   const previous = auxiliaryWindows.get(key);
   if (previous && !previous.isDestroyed()) {
-    auxiliaryBootstrap.set(previous.webContents.id, {
-      activityId,
-      projectTabId,
-      project: payload.project || null,
-      projectPath: payload.projectPath || null,
-      title: payload.title || '',
-      ownerWebContentsId
-    });
+    auxiliaryBootstrap.set(
+      previous.webContents.id,
+      makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
+    );
     previous.webContents.send('windows:activityBootstrapChanged');
     if (previous.isMinimized()) previous.restore();
     previous.show();
     previous.focus();
-    return { reused:true };
+    return { reused:true, dedicated:!!pluginWindow };
   }
 
   const labels = { 'data-center':'数据中心', ter:'TER 分析', pulse:'脉冲分析' };
   const win = new BrowserWindow({
-    width: 1480,
-    height: 940,
-    minWidth: 920,
-    minHeight: 650,
+    width: pluginWindow?.width || 1480,
+    height: pluginWindow?.height || 940,
+    minWidth: pluginWindow?.minWidth || 920,
+    minHeight: pluginWindow?.minHeight || 650,
     backgroundColor: '#f5f7fb',
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
-    title: `DK Data Studio · ${labels[activityId] || payload.title || activityId}`,
+    title: `DK Data Studio · ${pluginWindow?.title || labels[activityId] || payload.title || activityId}`,
     webPreferences: commonWindowPreferences()
   });
   win.setMenuBarVisibility(false);
   auxiliaryWindows.set(key, win);
   const auxiliaryWebContentsId = win.webContents.id;
-  auxiliaryBootstrap.set(auxiliaryWebContentsId, {
-    activityId,
-    projectTabId,
-    project: payload.project || null,
-    projectPath: payload.projectPath || null,
-    title: payload.title || '',
-    ownerWebContentsId
-  });
+  auxiliaryBootstrap.set(
+    auxiliaryWebContentsId,
+    makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
+  );
   win.on('closed', () => {
     auxiliaryWindows.delete(key);
     auxiliaryBootstrap.delete(auxiliaryWebContentsId);
@@ -191,8 +197,14 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     if (!win.isDestroyed()) win.close();
   });
 
-  win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
-  return { reused:false };
+  if (pluginWindow) {
+    win.loadFile(path.join(__dirname, 'src', 'plugin-window', 'index.html'));
+  } else {
+    // Compatibility fallback for activities that have not opted into the
+    // dedicated plugin-window contract yet.
+    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
+  }
+  return { reused:false, dedicated:!!pluginWindow };
 }
 
 app.whenReady().then(() => {

@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/build-windows.yml'
       - 'main.js'
+      - 'plugin-window-manager.js'
       - 'preload.js'
       - 'plugin-package.js'
       - 'update-client.js'
@@ -24,6 +25,7 @@ on:
       - main
     paths:
       - 'main.js'
+      - 'plugin-window-manager.js'
       - 'preload.js'
       - 'plugin-package.js'
       - 'update-client.js'
@@ -64,6 +66,18 @@ jobs:
             git branch main origin/main
           }
           git rev-parse main
+
+      - name: Create clean project package
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP "DK-Data-Studio-Project-${{ github.sha }}.zip"
+          & ".\tools\windows\package-clean-project.ps1" -SourceRoot $PWD -OutputPath $zip
+          $stage = Join-Path $PWD 'artifact-project'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -LiteralPath $zip -Destination $stage
+          if (-not (Test-Path -LiteralPath (Join-Path $stage (Split-Path $zip -Leaf)))) {
+            throw 'Clean project ZIP staging failed.'
+          }
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -113,9 +127,7 @@ jobs:
           if (-not $setup) { throw 'Setup EXE not found in dist.' }
           $portable = $executables | Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
           if (-not $portable) { throw 'Portable EXE not found in dist.' }
-          $executables | ForEach-Object {
-            Copy-Item -LiteralPath $_.FullName -Destination $stage
-          }
+          $executables | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $stage }
 
           $latest = Join-Path $PWD 'dist\latest.yml'
           if (-not (Test-Path -LiteralPath $latest)) { throw 'latest.yml not found in dist.' }
@@ -239,5 +251,13 @@ jobs:
         with:
           name: DK-Data-Studio-Windows-${{ github.sha }}
           path: artifact-windows/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload clean project package
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Project-${{ github.sha }}
+          path: artifact-project/*.zip
           if-no-files-found: error
           retention-days: 30

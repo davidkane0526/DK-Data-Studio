@@ -1,0 +1,32 @@
+html,body,#app{width:100%;height:100%;margin:0;overflow:hidden}
+body.plugin-window-host{background:var(--bg);padding-bottom:28px}
+body.plugin-window-host #app{height:calc(100vh - 28px);min-height:0}
+body.plugin-window-host .analysis-page{
+  top:0!important;
+  bottom:28px!important;
+  left:0!important;
+  right:0!important;
+  z-index:1000!important;
+}
+.plugin-window-loading{
+  position:fixed;
+  inset:0 0 28px 0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  background:var(--bg);
+  color:var(--muted);
+  z-index:900;
+}
+.plugin-window-loading-title{font-size:20px;font-weight:750;color:var(--text)}
+.plugin-window-loading-text{font-size:12px}
+.plugin-window-status{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:28px;
+  z-index:1200;
+}
+body.plugin-window-host.ready .plugin-window-loading{display:none}
+body.plugin-window-host.failed .plugin-window-loading-title{color:#b42318}
