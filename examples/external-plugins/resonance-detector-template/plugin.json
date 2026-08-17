@@ -1,0 +1,12 @@
+{
+  "id": "com.example.raw-prominence-detector",
+  "name": "Raw Prominence Detector Example",
+  "version": "0.1.0",
+  "apiVersion": "1.2.0",
+  "entry": "plugin.js",
+  "styles": ["style.css"],
+  "enabled": false,
+  "order": 500,
+  "description": "External detector SDK example. Not intended to outperform the built-in robust detector.",
+  "capabilities": ["analysis.peak-detector"]
+}

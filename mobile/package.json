@@ -1,0 +1,33 @@
+{
+  "name": "dk-data-studio-mobile",
+  "version": "0.4.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "sync:web": "node scripts/sync-web-assets.js",
+    "prebuild:android": "npm run sync:web && expo prebuild --platform android",
+    "android": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ..\\tools\\windows\\dkds-tools.ps1 android-run",
+    "typecheck": "tsc --noEmit",
+    "eas-build-post-install": "npm run sync:web",
+    "apk:release": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ..\\tools\\windows\\dkds-tools.ps1 android-build"
+  },
+  "dependencies": {
+    "expo": "~57.0.9",
+    "expo-clipboard": "~57.0.1",
+    "expo-file-system": "~57.0.1",
+    "expo-sharing": "~57.0.6",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "13.16.1",
+    "d3": "^7.9.0",
+    "plotly.js-dist-min": "^3.1.0",
+    "expo-document-picker": "~57.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  }
+}

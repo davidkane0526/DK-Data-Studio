@@ -1,4 +1,646 @@
-# Graphene Resonance Studio v3.14
+# DK Data Studio — v3.22.0
+
+## v3.22 共享工具链与应用图标
+
+- 新增精简 DK 专属图标，并接入桌面标题栏、Electron 窗口、Windows 安装包和 Android 图标。
+- DKDS 与 PyDroid 构建工具统一支持 `DK_TOOL_ROOT` / `DK_CACHE_ROOT`。本机存在 `D:\Code\NodeJs` 时会自动把 `D:\Code` 作为共享工具根目录。
+- JDK、Android SDK、Node、Python 等可安装一次后跨项目复用；npm/pnpm、Electron、electron-builder 和 Gradle 使用公共缓存，避免重复下载。
+- Electron、electron-builder 和 Gradle **不做全局固定版本安装**，仍由各项目声明版本，只共享下载缓存，避免项目间版本冲突。
+- 新增 `DKDS.cmd toolchain`，可直接查看当前实际复用的工具与缓存路径。
+
+推荐：
+
+```text
+DK_TOOL_ROOT=D:\Code
+DK_CACHE_ROOT=D:\Code\BuildCache
+```
+
+完整说明见 `docs/guides/SHARED_TOOLCHAIN_CN.txt`。
+
+
+## v3.21 UI / 插件界面 / 多窗口工作区
+
+v3.21 将软件正式更名为 **DK Data Studio**，外部插件统一使用 `.dkplugin`。本版本重点修复顶部 UI、组图布局偏好、导入行为、插件可配置界面以及 Android 构建环境。
+
+关键变化：
+
+- 顶部命令栏增大字号与控件高度，`共振分析` 与其专属命令归入同一视觉组。
+- 共振框选菜单改为 `ui.selectionMenus` 插件贡献，不再由核心写死。
+- 主图局部工具由 `ui.mainTools` 插件贡献，包括“适应视图”。
+- 组图每行列数是本机 UI 偏好，跨新建、导入和打开项目保持，不再被工程文件重置。
+- 打开“导入数据”只显示导入工作台；只有点击“导入文件”才弹出系统文件选择器。
+- 数据中心、TER 分析、脉冲分析默认打开独立 Electron 窗口，不再切走主图 Activity，也不再提供“返回主图”。
+- Android 构建仍只生成独立签名的 release APK，并自动搜索 Android SDK、`adb`、Android Studio JBR/JDK 与常见 JDK 安装位置。
+
+### 顶部工作区布局
+
+```text
+DK Data Studio | 导入/项目 | 编辑 | [共振分析 + 共振命令] | 数据中心/TER/脉冲 | 导出 | 管理
+```
+
+辅助分析 Activity 默认在独立窗口中运行；主窗口持续停留在共振工作区。
+
+## v3.20 UI 与工程整理
+
+v3.20 不增加新的科学定义，重点是把 plugin 分支整理成适合下一阶段长期开发的工程。
+
+### 单行自适应命令栏
+
+桌面顶部不再固定分成两行。当前结构为：
+
+```text
+DKDS | 导入/工程 | 编辑 | Activity | 当前工作区命令 | 导出 | 管理
+```
+
+Activity 过多自动进入 `工作区 ▾`；当前插件命令过多则按插件声明的 `priority / order / section` 自动保留高优先级动作，其余进入 `更多 ▾`，而不是新增第二行。
+
+普通 UI 使用统一字号和控制高度 token，按钮更紧凑但保持完整命中范围。
+
+### Windows 工具入口只剩两个
+
+```text
+DKDS_GUI.cmd   推荐的图形开发工具箱
+DKDS.cmd       统一命令行入口
+```
+
+旧的构建、Android、更新服务器、自启动等一批 CMD 已合并到：
+
+```text
+tools/windows/dkds-tools.ps1
+tools/windows/dkds-gui.ps1
+```
+
+详细说明：`docs/guides/TOOLBOX_CN.md`。
+
+### 工程目录整理
+
+```text
+services/update-server/   局域网更新服务
+config/                   默认运行配置
+tools/windows/            Windows 开发/构建工具
+docs/guides/              操作指南
+docs/releases/            发布快照
+```
+
+下一会话首先阅读：`docs/HANDOFF_NEXT_SESSION.md`。
+
+
+## v3.19 成熟共振工作区完成 Plugin-Native UI 迁移
+
+v3.19 的目标不是增加新的科学功能，而是用现有成熟共振工作流验证插件框架的完整性。
+
+### UI 从“功能按钮堆叠”改为 Activity / Context
+
+顶栏分成：
+
+```text
+全局命令 | 工作区 Activity | 系统命令
+                 ↓
+          当前工作区工具栏
+```
+
+插件越多时，Activity 自动进入 `工作区 ▾`；当前工作区工具过多时自动进入 `更多 ▾`。
+
+科学插件不再把所有按钮永久堆在顶栏。
+
+### 共振 UI 已归属插件
+
+`builtin.resonance-workbench` 现在负责：
+
+```text
+共振 Activity
+数据列表 sidebar
+寻峰/算法选择 sidebar
+共振显示 sidebar
+主图 provider
+主图工具
+框选菜单 overlay
+曲线/峰检查器 provider
+组图 view + subplot providers
+物理机制 panel
+峰间距 page
+栅压分析 page
+共振专用导出
+```
+
+核心 `index.html` 不再包含“智能寻峰”“手动操作”、共振 range menu、物理机制 panel、峰间距/栅压页面等测量场景 UI。
+
+### 寻峰算法是独立插件
+
+成熟的 multichannel/multiscale Ricker 寻峰器已拆成：
+
+```text
+builtin.resonance-detector-robust
+```
+
+共振工作台只消费 `peak.detectors` provider。
+
+因此以后可以同时安装：
+
+```text
+robust detector
+ML detector
+instrument-specific detector
+high-SNR detector
+...
+```
+
+每个 detector 自己声明：
+- detect 算法；
+- presets；
+- 参数 UI / parameter schema；
+- evidence 名称；
+- 峰标记形状；
+- detector version。
+
+工作台不再为某个具体寻峰算法硬编码设置面板。
+
+### 主图 / 检查器 / 组图均成为 provider
+
+新的 Workspace API v1.2 包含：
+
+```text
+ui.activities
+ui.sidebar
+ui.mainViews
+ui.mainTools
+ui.mainOverlays
+ui.inspectors
+ui.groupViews
+ui.groupCharts
+ui.pages
+ui.panels
+peak.detectors
+```
+
+因此未来 Raman / FET / Retention / Image 等插件可以替换：
+- 主图类型和交互；
+- 检查器内容；
+- 组图有哪些子图；
+- 子图数据来源；
+- Plotly 绘制方式；
+- 单击图中数据后的联动行为；
+- CSV / SVG / PNG 导出语义。
+
+### TER 与 Pulse 页面也不再属于 Core HTML
+
+`TER` 和 `Pulse / Read` 页面现在由各自插件运行时动态创建，核心只保留通用 analysis-page host 和成熟兼容计算服务。
+
+### 空间占用优化
+
+永久显示的“手动操作”说明块和：
+
+```text
+拖框=操作 · Ctrl+拖框=缩放
+```
+
+提示已删除。
+
+快捷键/操作说明以后应放到插件帮助、context menu 或可展开帮助中，而不是长期占据科学工作区。
+
+### 稳定性约束
+
+新增：
+
+```bash
+node scripts/check-plugin-boundaries.js
+```
+
+并纳入：
+
+```bash
+npm run check
+```
+
+如果以后 AI 再把智能寻峰、共振页面、Pulse/TER 页面等硬编码回 `src/index.html`，检查会直接失败。
+
+详细开发接口见：
+
+```text
+docs/WORKSPACE_PLUGIN_API.md
+```
+
+
+
+
+
+### 可安装的外部插件包
+
+桌面端插件管理器支持安装受信任的 `.dkplugin`。因此新的寻峰算法、工作区、Inspector 或组图实现可以作为独立插件安装，而不必重新修改 Core。更新同 ID 外部插件时，如果新版本加载/激活失败，运行时会尝试恢复旧包。
+
+开发/打包说明：
+
+```text
+docs/PLUGIN_PACKAGES.md
+examples/external-plugins/resonance-detector-template/
+```
+
+上下文工具栏还支持插件声明 `section` 和 `priority`：同类命令自动形成视觉分组，窗口不足时低优先级命令先进入“更多”菜单。
+
+## v3.18 可定制数据处理中心：完成 Data Model / Workflow / Recipe / 参数 Schema / Formula
+
+本版本不是继续增加一个新的“专用分析功能”，而是完成下一层通用平台能力。
+
+新增内置插件：
+
+```text
+Data Center
+```
+
+它提供一个面向不写代码用户的通用工作区：
+
+```text
+数据对象
+  ↓
+公式派生列
+  ↓
+Processor / Analyzer 工作流
+  ↓
+Recipe 保存
+  ↓
+Chart Provider
+  ↓
+Provenance 检查
+```
+
+### 1. 标准 Data Model + Provenance
+
+新增：
+
+```text
+src/core/data-model.js
+```
+
+核心对象包括：
+
+```text
+DataTable
+Series
+Sweep
+EventSeries
+ImageData
+PeakSet
+FitResult
+AnalysisResult
+Annotation
+```
+
+每个工程标签页都有自己的 Artifact Store。
+
+现有石墨烯 I–V 数据会自动映射成标准 `data.table`，但这些镜像对象标记为 transient，因此保存工程时不会再复制一份原始 I–V 数据。
+
+新的派生数据会真正写入工程：
+
+```json
+{
+  "dataModel": {
+    "schema": 1,
+    "artifacts": []
+  }
+}
+```
+
+每个派生结果保留：
+
+```text
+源数据
+处理器
+插件
+版本
+参数
+输入 artifact id
+输出 artifact id
+workflow execution id
+node id
+人工/自动状态
+时间
+```
+
+### 2. Processor / Analyzer / Chart 插件接口
+
+Plugin API 更新为 v1.1，并新增：
+
+```js
+ctx.workflow.processors.register(...)
+ctx.workflow.analyzers.register(...)
+ctx.charts.register(...)
+ctx.workflow.recipes.register(...)
+```
+
+不同实验场景以后优先增加 provider，而不是增加主程序分支判断。
+
+### 3. Workflow / Recipe Engine
+
+新增：
+
+```text
+src/core/workflow-engine.js
+```
+
+支持：
+
+```text
+DAG 节点依赖
+拓扑排序
+循环依赖检查
+Processor / Analyzer / Chart node
+input:xxx / node:xxx 引用
+Recipe 级参数
+参数绑定
+输入/输出 Artifact 类型检查
+运行进度事件
+执行 provenance
+```
+
+Data Center 中已经提供顺序工作流编辑器，用户可以添加、删除、上下移动 Processor / Analyzer，并保存为当前工程的 Recipe。
+
+### 4. Schema-driven 参数面板
+
+新增：
+
+```text
+src/core/parameter-schema.js
+```
+
+插件现在可以声明参数，而不必重复编写 HTML：
+
+```text
+text
+textarea
+formula
+number / integer
+boolean
+select / multiselect
+column / columns
+color
+```
+
+系统统一负责：
+
+```text
+默认值
+必填
+min/max
+正则验证
+自定义验证
+条件显示
+DataTable 列选择
+桌面布局
+手机单列布局
+触摸屏控件尺寸
+```
+
+### 5. Formula / Derived Column
+
+新增：
+
+```text
+src/core/formula-engine.js
+```
+
+例如直接输入：
+
+```text
+abs(Vd / Id)
+log10(abs(Id))
+sqrt(X^2 + Y^2)
+[Gate Voltage] / 10
+```
+
+即可生成新的 DataTable 列。
+
+Formula Engine 使用 tokenizer + parser + AST，不使用 `eval()` 或 `new Function()`。
+
+因此既适合科研数据表达式，也不会把公式框变成任意 JavaScript 执行入口。
+
+### Data Center 当前内置的通用 provider
+
+```text
+Processor
+├─ 公式派生列
+├─ 选择列
+└─ 有限值筛选
+
+Analyzer
+└─ 列统计摘要
+
+Chart
+└─ XY 多序列图
+```
+
+这些只是平台能力示例；以后 Raman、FET、Retention、Endurance 等插件可以继续注册新的 Processor / Analyzer / Chart / Recipe，而不修改 Data Center 主体。
+
+详细开发文档：
+
+```text
+docs/DATA_MODEL.md
+docs/WORKFLOW_RECIPES.md
+docs/PARAMETER_SCHEMA.md
+docs/FORMULA_ENGINE.md
+```
+
+
+## v3.17 插件管理
+
+顶部新增：
+
+```text
+插件
+```
+
+打开后可查看全部已打包插件的：
+
+```text
+名称 / ID / 版本 / API 版本
+Capabilities
+已注册运行时贡献
+启用 / 停用 / 错误状态
+```
+
+支持：
+
+```text
+搜索
+状态筛选
+即时启用 / 停用
+重新加载
+错误重试
+恢复默认
+复制插件诊断
+```
+
+插件开关是本机全局设置，不写进单个 `.dkds.json` 工程。
+
+停用插件前会先保存当前工程中该插件的 namespaced state。即使插件处于停用状态，保存工程时也会保留原有 plugin namespace；重新启用后自动恢复，因此停用插件不会导致其工程数据被静默删除。
+
+当前插件管理器管理**已经随应用打包/发现的插件**。外部插件包安装、权限声明与签名校验属于后续插件分发层，不在本版中伪装成“安装”按钮。
+
+
+
+## 3.16.0-plugin.1：成熟科学逻辑重写 + React Native Android
+
+这次不再保留“科学算法通过旧 `analysis.js` 兼容桥运行”的方案。
+
+原来集中的成熟计算逻辑已经拆为共享科学引擎：
+
+```text
+src/science/
+├─ common.js
+├─ presets.js
+├─ import.js
+├─ peaks.js
+├─ identity.js
+├─ physics.js
+├─ gate.js
+├─ ter.js
+└─ pulse.js
+```
+
+`src/analysis.js` 只保留历史 API facade。桌面、LAN 网页和 Android 都执行同一份 `DKDSScience`。
+
+重写后增加：
+
+```bash
+npm run science:parity
+```
+
+该脚本会从 Git 的 `main` 分支直接读取原 v3.14 `src/analysis.js`，用代表性数据对比新旧：
+
+```text
+CSV 解析
+扫描重构
+信号变换
+寻峰
+TER matrix
+脉冲 / 读取提取
+```
+
+从而让“重构代码”和“改变科学结果”成为两件可分别审查的事情。
+
+### Android 可安装测试版源码
+
+新增：
+
+```text
+mobile/
+```
+
+技术路线：
+
+```text
+React Native / Expo SDK 57
+        ↓
+react-native-webview
+        ↓
+Android 离线 assets
+        ↓
+完整插件界面 + DKDSScience
+```
+
+Android 壳层提供原生：
+
+```text
+DocumentPicker 多文件选择
+Clipboard
+CSV / JSON / SVG / PNG 保存与分享
+Safe Area
+Android 生命周期容器
+```
+
+Windows 最简单的 APK 测试流程：
+
+```text
+DKDS.cmd android-build
+```
+
+成功后生成：
+
+```text
+mobile-dist\DK-Data-Studio.apk
+```
+
+本地构建使用独立 release 签名，签名文件保存在 `%LOCALAPPDATA%\DKDataStudio\android-signing`，不会写入 Git。建议备份该目录以保持后续 APK 的覆盖安装能力。 若设备仍安装旧签名版本，首次切换需先卸载旧版，再安装新的 release APK。
+
+然后：
+
+```text
+DKDS.cmd android-install
+```
+
+或者连接开启 USB 调试的手机后运行：
+
+```text
+DKDS.cmd android-run
+```
+
+详细环境见：
+
+```text
+mobile/README_ANDROID_CN.md
+```
+
+
+
+
+> **分支身份非常重要**
+>
+> - `main`：保留原来的 v3.14 完整基线，不与本分支混用。
+> - `plugin`：当前检出的插件架构开发分支。
+> - Git tag `v3.14.0-main-baseline` 指向插件化之前的基线。
+
+## plugin 分支开发入口
+
+先阅读：
+
+```text
+AGENTS.md
+docs/ARCHITECTURE.md
+docs/PLUGIN_API.md
+docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md
+docs/ANDROID_PORTING.md
+docs/BRANCHING.md
+```
+
+检查工程：
+
+```bash
+npm run check
+npm test
+```
+
+启动开发版：
+
+```bash
+npm start
+```
+
+新增插件时，不需要修改 `index.html`。在：
+
+```text
+src/plugins/<plugin-name>/
+```
+
+增加 `plugin.json`、`plugin.js` 和 README，然后：
+
+```bash
+npm run plugin:index
+npm run plugin:validate
+```
+
+正常的 `npm start / npm test / npm run check / npm run dist` 都会自动重新生成内置插件索引。
+
+### 当前插件化边界
+
+3.16 开始，成熟的**科学计算逻辑已经完成共享引擎重写**：
+
+- 插件系统负责发现、加载、功能入口、工具栏、页面/面板、扩展注册表和插件工程状态；
+- `src/science/*` 统一提供导入解析、扫描重构、寻峰、峰序轨迹、物理分类、栅压计算、TER 与脉冲分析；
+- `src/analysis.js` 只保留历史 API facade，不再承载算法实现；
+- Electron、LAN 网页和 React Native Android 使用同一份 `DKDSScience`；
+- 成熟工作区的 DOM/Plotly/D3 交互控制仍由共享 renderer host 组织，插件负责功能入口与工作流；后续 UI 原生化不得复制科学算法；
+- 新增科学功能默认写为插件，跨插件可复用的纯计算才进入 `src/science`。
+
+
 
 
 ## v3.14 局域网网页版二维码与连接面板重构
@@ -41,7 +683,7 @@ http://192.168.1.100:45910/?key=4827
 验证二维码中的 Key
 → 建立 HttpOnly 配对会话
 → 跳转 /app/
-→ 直接进入 Graphene Resonance Studio
+→ 直接进入 DK Data Studio
 ```
 
 因此扫码使用时不再需要再手动输入一次 4 位 Key。
@@ -272,7 +914,7 @@ Read block
 新建项目 -> 空脉冲工作区
 ```
 
-保存 `.grs.json` 时会保存：
+保存 `.dkds.json` 时会保存：
 - 原始脉冲文本数据
 - 文件标签
 - 勾选状态
@@ -753,7 +1395,7 @@ Vg=-10 V
 
 每个文件可以使用不同设置，也可以点击“当前设置应用到全部文件”。
 
-新导入的数据会保存已解析的 `(Vd,I)` 点、源文件、编码和导入配置到 `.grs.json` 工程中，
+新导入的数据会保存已解析的 `(Vd,I)` 点、源文件、编码和导入配置到 `.dkds.json` 工程中，
 因此重新打开工程不依赖再次猜测原始文件格式；旧工程仍兼容。
 
 
@@ -768,7 +1410,7 @@ Vg=-10 V
 - `SETUP_UPDATE_KEYS.cmd`
 - `update-public-key.pem`
 - `update-private-key.pem`
-- `grs-release.sig`
+- `dkds-release.sig`
 - 发布签名步骤
 
 保留：
@@ -786,13 +1428,13 @@ Vg=-10 V
 日常只需要：
 
 ```text
-START_UPDATE_SERVER.cmd
+DKDS.cmd update-server
 ```
 
 以及：
 
 ```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8
+DKDS.cmd build-publish-update -Version 3.22.0
 ```
 
 即可。
@@ -800,7 +1442,7 @@ BUILD_AND_PUBLISH_UPDATE.cmd 3.8
 **从旧 v3.7 签名版迁移到 v3.8，需要同学手动安装一次 v3.8 Setup。**
 之后的更新不再需要任何密钥。
 
-完整说明：`UPDATE_SERVER_GUIDE_CN.md`
+完整说明：`docs/guides/UPDATE_SERVER_CN.md`
 
 
 
@@ -818,34 +1460,21 @@ BUILD_AND_PUBLISH_UPDATE.cmd 3.8
 
 ## Windows 发布脚本兼容性修复
 
-`BUILD_AND_PUBLISH_UPDATE.cmd`、`BUILD_WINDOWS.cmd`、`PUBLISH_UPDATE.cmd`、
-`START_UPDATE_SERVER.cmd` 等 Windows 脚本已改为：
+v3.20 起不再维护一组彼此独立的 Windows CMD。所有操作统一由 `DKDS.cmd` / `DKDS_GUI.cmd` 调用 `tools/windows/dkds-tools.ps1`。后端脚本负责：
 
-- ASCII-only
-- Windows CRLF
-- 避免在 CMD 控制流中使用中文提示文字
-- 使用 `goto` 而不是容易受 CMD 解析影响的复杂括号块
+- 依赖安装；
+- Windows 构建；
+- Android 环境检查/构建/安装；
+- 局域网更新服务；
+- 插件索引与验证。
 
-因此不再受 Windows 中文代码页 / UTF-8 无 BOM 影响。
-
-`BUILD_AND_PUBLISH_UPDATE.cmd` 支持两种版本写法：
+发布新版本时使用显式版本号：
 
 ```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8.1
+DKDS.cmd build-publish-update -Version 3.22.0
 ```
 
-表示精确发布 3.7.1。
-
-也可以：
-
-```text
-BUILD_AND_PUBLISH_UPDATE.cmd 3.8
-```
-
-如果当前源码为 3.8.0，则自动解析为 3.8.1；
-再次从 3.8.1 源码运行 `3.8`，则解析为 3.8.2。
-
-热更新版本必须高于当前版本；脚本会拒绝相同或更低版本。
+图形界面可直接使用 `DKDS_GUI.cmd` 的“局域网更新”页。
 
 
 ## v3.7 直接框选 / 局部寻峰 / 跨 Vg 智能峰序
@@ -1188,7 +1817,7 @@ TER 热图明确表示完整二维矩阵：
 以下启动方式不受时间限制：
 
 ```text
-START_DEV.cmd
+DKDS.cmd dev
 npm start
 ```
 
@@ -1198,7 +1827,7 @@ Electron 在开发模式下 `app.isPackaged === false`，因此不会执行到�
 运行：
 
 ```text
-BUILD_WINDOWS.cmd
+DKDS.cmd build-windows
 ```
 
 或：
@@ -1456,7 +2085,7 @@ v2.6：
 ## v2.5：工程文件、图片导出与底部停靠组图
 
 ### 工程文件
-- **保存项目**：首次保存选择 `.grs.json` 路径；再次 `Ctrl+S` 直接覆盖当前工程。
+- **保存项目**：首次保存选择 `.dkds.json` 路径；再次 `Ctrl+S` 直接覆盖当前工程。
 - **打开项目**：恢复 CSV 原始数据、扫描显示、峰位/峰宽、峰类别、采纳状态、寻峰参数、组图列数以及组图停靠状态。
 - 快捷键：`Ctrl+S` 保存工程，`Ctrl+O` 打开工程。
 
@@ -1690,7 +2319,7 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 - 全部峰参数 CSV
 - 每一张趋势图 CSV
 - 放大趋势图 SVG
-- `.grs.json` 项目文件
+- `.dkds.json` 项目文件
 
 峰参数 CSV 明确输出：
 
@@ -1711,7 +2340,7 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`START_DEV.cmd`
+`DKDS.cmd dev`
 
 首次会自动安装 npm 依赖。
 
@@ -1719,6 +2348,6 @@ TER 再使用相同的“峰标签”将正扫与反扫配对。
 
 双击：
 
-`BUILD_WINDOWS.cmd`
+`DKDS.cmd build-windows`
 
 输出位于 `release/`。

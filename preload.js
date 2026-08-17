@@ -9,6 +9,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
   openProject: () => ipcRenderer.invoke('files:openProject'),
+  openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
+  getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
+  closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
+  pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
+  onActivityProjectSnapshot: callback => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('windows:activityProjectSnapshot', handler);
+    return () => ipcRenderer.removeListener('windows:activityProjectSnapshot', handler);
+  },
+  onActivityBootstrapChanged: callback => {
+    const handler = () => callback();
+    ipcRenderer.on('windows:activityBootstrapChanged', handler);
+    return () => ipcRenderer.removeListener('windows:activityBootstrapChanged', handler);
+  },
+  pluginExternalList: () => ipcRenderer.invoke('plugins:listExternal'),
+  pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),
+  pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
+  pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
+  pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),
   updateGetStatus: () => ipcRenderer.invoke('update:getStatus'),
   updateGetSettings: () => ipcRenderer.invoke('update:getSettings'),
   updateSetSettings: settings => ipcRenderer.invoke('update:setSettings', settings),
