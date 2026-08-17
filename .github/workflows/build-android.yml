@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build-android:
-    name: Android arm64 APK
+    name: Android arm64 Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -81,22 +81,32 @@ jobs:
         shell: bash
         run: npx expo prebuild --platform android --clean
 
-      - name: Build arm64 debug APK
+      - name: Verify CI signing key
         working-directory: mobile/android
         shell: bash
-        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a --no-daemon --stacktrace
+        run: |
+          test -f app/debug.keystore
+          keytool -list \
+            -keystore app/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey
 
-      - name: Verify APK
+      - name: Build arm64 release APK
+        working-directory: mobile/android
+        shell: bash
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon --stacktrace
+
+      - name: Verify release APK
         shell: bash
         run: |
-          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
 
           echo "Packaged native ABIs:"
           ABIS="$(unzip -Z1 "$APK" | awk -F/ '/^lib\/[^/]+\// {print $2}' | sort -u)"
           printf '%s\n' "$ABIS"
           if [ "$ABIS" != "arm64-v8a" ]; then
-            echo "::error::APK must contain arm64-v8a only; found: $ABIS"
+            echo "::error::Release APK must contain arm64-v8a only; found: $ABIS"
             exit 1
           fi
 
@@ -110,14 +120,14 @@ jobs:
         run: |
           mkdir -p mobile-dist
           cp \
-            mobile/android/app/build/outputs/apk/debug/app-debug.apk \
-            mobile-dist/DK-Data-Studio-arm64-v8a-debug.apk
+            mobile/android/app/build/outputs/apk/release/app-release.apk \
+            mobile-dist/DK-Data-Studio-arm64-v8a-release.apk
           ls -lh mobile-dist
 
-      - name: Upload Android APK
+      - name: Upload Android release APK
         uses: actions/upload-artifact@v7
         with:
-          name: DK-Data-Studio-Android-arm64-${{ github.sha }}
-          path: mobile-dist/DK-Data-Studio-arm64-v8a-debug.apk
+          name: DK-Data-Studio-Android-arm64-release-${{ github.sha }}
+          path: mobile-dist/DK-Data-Studio-arm64-v8a-release.apk
           if-no-files-found: error
           retention-days: 30
