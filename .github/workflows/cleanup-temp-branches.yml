@@ -1,0 +1,40 @@
+name: Cleanup temporary branches
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cleanup-temp-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Delete temporary branches
+        shell: bash
+        run: |
+          git push origin --delete \
+            __pulse_rewrite_stage__ \
+            __temp_build_prepare__ \
+            __temp_noop_check__
+
+      - name: Remove one-shot workflow and synchronize main/plugin
+        shell: bash
+        run: |
+          rm -f .github/workflows/cleanup-temp-branches.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: clean temporary branches"
+          git push origin HEAD:main
+          git push origin HEAD:plugin
