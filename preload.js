@@ -1,5 +1,33 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+function notifyAuxiliaryReadyWhenRendered() {
+  const params = new URLSearchParams(globalThis.location?.search || '');
+  if (!params.get('aux')) return;
+
+  let sent = false;
+  const sendReady = () => {
+    if (sent) return;
+    const body = document.body;
+    const page = document.querySelector('.analysis-page:not(.hidden)');
+    if (!body?.classList.contains('auxiliary-window') || !page) return;
+    sent = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => ipcRenderer.send('windows:activityReady')));
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const observer = new MutationObserver(sendReady);
+    observer.observe(document.documentElement, { subtree:true, childList:true, attributes:true, attributeFilter:['class'] });
+    sendReady();
+    setTimeout(sendReady, 250);
+    setTimeout(() => {
+      sendReady();
+      if (sent) observer.disconnect();
+    }, 1500);
+  }, { once:true });
+}
+
+notifyAuxiliaryReadyWhenRendered();
+
 contextBridge.exposeInMainWorld('electronAPI', {
   openCsvFiles: () => ipcRenderer.invoke('files:openCsv'),
   openDataFiles: () => ipcRenderer.invoke('files:openData'),
