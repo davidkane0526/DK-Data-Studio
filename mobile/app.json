@@ -2,12 +2,12 @@
   "expo": {
     "name": "DK Data Studio",
     "slug": "dk-data-studio",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.dk.datastudio",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#eef3ff"
       }

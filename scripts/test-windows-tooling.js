@@ -34,6 +34,7 @@ assert(!/\[string\[\]\]\s*\$Args\b/i.test(backend), 'Backend must not declare $A
 assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args variable.');
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
 assert(/Invoke-Step\s+-FilePath\s+'npm\.cmd'\s+-Arguments\s+@\('install'\)/.test(backend), 'npm install arguments must be explicit.');
+assert(/&\s+\$FilePath\s+@Arguments\s+\|\s+Out-Host/.test(backend), 'Invoke-Step must keep native stdout visible without leaking it into function return values.');
 
 // PowerShell variable names are case-insensitive. Names such as $HOME are
 // automatic/read-only in Windows PowerShell 5.1, so even a local `$home =`
@@ -73,6 +74,11 @@ assert(/Initialize-AndroidReleaseSigning/.test(backend), 'Android build must ini
 assert(/Resolve-AndroidSdk/.test(backend) && /platform-tools/.test(backend), 'Android toolbox must auto-discover the SDK and adb from standard Windows locations.');
 assert(/Resolve-JavaToolchain/.test(backend) && /Android Studio\\jbr/.test(backend), 'Android toolbox must auto-discover Android Studio bundled JDK/JBR.');
 assert(/DisplayName.*Android Studio/.test(backend), 'Android JDK discovery should also consult Windows install metadata for custom Android Studio paths.');
+assert(/Install-DkdsManagedJdk/.test(backend) && /Ensure-JavaToolchain/.test(backend), 'Android tooling must be able to provision a managed JDK when the machine has none.');
+assert(/api\.adoptium\.net\/v3\/binary\/latest\/17\/ga\/windows/.test(backend), 'Managed JDK must use the official Adoptium stable JDK 17 binary API.');
+assert(/Get-FileHash[\s\S]*SHA256/.test(backend) && /sha256\.txt/.test(backend), 'Managed JDK download must verify the published SHA-256 checksum.');
+assert(/DKDataStudio\\toolchains/.test(backend), 'Managed JDK must be stored outside the repository in the user profile.');
+assert(/Check-AndroidEnvironment\s+-RequireJdk\s+\$false\s+-AutoProvisionJdk\s+\$false/.test(backend), 'Installing an already-built APK must not require or download a JDK.');
 assert(/DKDS_ANDROID_RELEASE_STORE_FILE/.test(backend), 'Android release signing environment must be configured.');
 assert(/DKDataStudio\\android-signing/.test(backend), 'Android release signing must live outside the repository in the user profile.');
 assert(/dkds-tools\.ps1 android-run/.test(mobilePackage.scripts.android || ''), 'Direct mobile Android run must route through the signed toolbox workflow.');

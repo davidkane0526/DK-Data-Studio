@@ -46,7 +46,7 @@ Or use the Android tab in `DKDS_GUI.cmd`.
 ```bat
 DKDS.cmd update-server
 DKDS.cmd publish-update
-DKDS.cmd build-publish-update -Version 3.21.1
+DKDS.cmd build-publish-update -Version 3.21.2
 ```
 
 The server implementation is under `services/update-server/`.

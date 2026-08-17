@@ -22,7 +22,7 @@ DKDS.cmd       命令行统一入口
 DKDS.cmd update-server
 DKDS.cmd build-windows
 DKDS.cmd publish-update
-DKDS.cmd build-publish-update -Version 3.21.1
+DKDS.cmd build-publish-update -Version 3.21.2
 DKDS.cmd update-autostart-install
 DKDS.cmd update-autostart-remove
 ```
