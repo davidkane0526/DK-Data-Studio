@@ -11,7 +11,27 @@ function Fail([string]$Message) {
   exit 2
 }
 
-$ArtifactRoot = [System.IO.Path]::GetFullPath($ArtifactRoot)
+function Resolve-ArtifactRoot([string]$PathValue) {
+  if ([string]::IsNullOrWhiteSpace($PathValue)) {
+    $PathValue = $PSScriptRoot
+  }
+
+  # A quoted native-process argument whose value ends in "\" can arrive with
+  # a stray double quote on some Windows command-line parsing paths.
+  # Double quotes are illegal in Windows paths, so trimming them is safe here.
+  $clean = $PathValue.Trim().Trim('"')
+  if ([string]::IsNullOrWhiteSpace($clean)) {
+    Fail 'ArtifactRoot is empty.'
+  }
+
+  try {
+    return [System.IO.Path]::GetFullPath($clean)
+  } catch {
+    Fail "ArtifactRoot is not a valid path: $PathValue. $($_.Exception.Message)"
+  }
+}
+
+$ArtifactRoot = Resolve-ArtifactRoot $ArtifactRoot
 $latestPath = Join-Path $ArtifactRoot 'latest.yml'
 if (-not (Test-Path -LiteralPath $latestPath -PathType Leaf)) {
   Fail "latest.yml not found in $ArtifactRoot"
