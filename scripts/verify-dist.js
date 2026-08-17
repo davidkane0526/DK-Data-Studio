@@ -15,10 +15,12 @@ if (!fs.existsSync(dist)) fail('dist directory does not exist');
 const names = fs.readdirSync(dist);
 const latest = names.find(n => n.toLowerCase() === 'latest.yml');
 const setup = names.find(n => n.toLowerCase().endsWith('.exe') && n.toLowerCase().includes('setup'));
+const portable = names.find(n => n.toLowerCase().endsWith('.exe') && n.toLowerCase().includes('portable'));
 const unpacked = path.join(dist, 'win-unpacked');
 
 if (!latest) fail('latest.yml was not generated; LAN auto-update cannot be published');
 if (!setup) fail('NSIS Setup EXE was not generated; LAN auto-update needs the installer payload');
+if (!portable) fail('Portable EXE was not generated; Windows artifact bundle requires it');
 if (!fs.existsSync(unpacked) || !fs.statSync(unpacked).isDirectory()) {
   fail('win-unpacked directory was not generated');
 }
@@ -36,5 +38,5 @@ console.log('Build validation passed.');
 console.log(`  version : ${pkg.version}`);
 console.log(`  latest  : ${latest}`);
 console.log(`  setup   : ${setup}`);
+console.log(`  portable: ${portable}`);
 console.log(`  unpacked: ${unpacked}`);
-console.log('  portable: disabled by project policy');
