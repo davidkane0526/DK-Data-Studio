@@ -3209,8 +3209,8 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px}
   max-width:none;
   min-width:150px;
   display:flex;
-  align-items:baseline;
-  gap:5px;
+  align-items:center;
+  gap:7px;
   overflow:visible;
   padding-right:14px;
   margin-right:1px;
@@ -3220,6 +3220,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px}
   line-height:1;
   font-weight:760;
 }
+.brand-mark{width:26px;height:26px;flex:0 0 26px;border-radius:6px;display:block}
 .brand-full{display:inline!important;margin-left:0;letter-spacing:.05px}
 .version{font-size:9.5px;margin-left:0;color:#8b96a8;font-weight:600}
 

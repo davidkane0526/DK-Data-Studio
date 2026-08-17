@@ -138,6 +138,7 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 760,
     backgroundColor: '#f5f7fb',
+    icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
     webPreferences: commonWindowPreferences()
   });
@@ -182,6 +183,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     minWidth: 920,
     minHeight: 650,
     backgroundColor: '#f5f7fb',
+    icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
     title: `DK Data Studio · ${labels[activityId] || payload.title || activityId}`,
     webPreferences: commonWindowPreferences()

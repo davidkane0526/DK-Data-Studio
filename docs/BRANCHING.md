@@ -46,4 +46,4 @@ Only merge into `main` when explicitly requested.
 
 ## Current delivery checkpoint
 
-The current plugin-branch delivery is `v3.21.2` (DK Data Studio shell/plugin-window milestone, built on the v3.20 tooling work). `main` remains unchanged at `v3.14.0-main-baseline`.
+The current plugin-branch delivery is `v3.22.0` (shared Windows toolchain/cache + compact DK application identity, built on the v3.21 plugin-window shell). `main` remains unchanged at `v3.14.0-main-baseline`.

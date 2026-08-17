@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.21.2",
+  "version": "3.22.0",
   "description": "Plugin-oriented interactive scientific data analysis studio (resonance-analysis built-in plugins)",
   "main": "main.js",
   "author": "DK Data Studio contributors",
@@ -44,6 +44,7 @@
       "lan-web-server.js",
       "preload.js",
       "src/**/*",
+      "assets/**/*",
       "package.json",
       "build-info.json",
       "config/update-config.default.json"
@@ -62,7 +63,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "assets/dkds-icon.ico"
     },
     "nsis": {
       "oneClick": false,

@@ -28,6 +28,8 @@ $form.MinimumSize = [System.Drawing.Size]::new(760,560)
 $form.Font = [System.Drawing.Font]::new('Segoe UI',9)
 $form.BackColor = $ColorWindow
 $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
+$toolboxIcon = Join-Path $Root 'assets\dkds-icon.ico'
+if (Test-Path $toolboxIcon) { try { $form.Icon = [System.Drawing.Icon]::new($toolboxIcon) } catch {} }
 
 $rootLayout = New-Object System.Windows.Forms.TableLayoutPanel
 $rootLayout.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -236,7 +238,7 @@ function Add-VersionCard([System.Windows.Forms.FlowLayoutPanel]$Flow) {
   $inner.Controls.Add($label,0,0)
 
   $versionBox = New-Object System.Windows.Forms.TextBox
-  $versionBox.Text = '3.21.2'
+  $versionBox.Text = '3.22.0'
   $versionBox.Dock = [System.Windows.Forms.DockStyle]::Fill
   $versionBox.Margin = [System.Windows.Forms.Padding]::new(0,2,0,4)
   $inner.Controls.Add($versionBox,0,1)
@@ -261,6 +263,7 @@ $common = New-Page '常用'
 Add-ActionCard -Flow $common -Text '启动桌面开发版' -Description '自动检查依赖后启动 Electron。' -Action 'dev' -Accent
 Add-ActionCard -Flow $common -Text '安装 / 修复依赖' -Description '明确执行 npm install，可用于首次运行或依赖损坏。' -Action 'install-deps'
 Add-ActionCard -Flow $common -Text '工具环境诊断' -Description '检查 Node、npm、Git、项目路径和依赖状态。' -Action 'doctor'
+Add-ActionCard -Flow $common -Text '共享工具链' -Description '显示 DK_TOOL_ROOT、公共缓存、JDK、Android SDK 与 Electron/Gradle 缓存位置。' -Action 'toolchain'
 Add-ActionCard -Flow $common -Text '完整工程检查' -Description '插件、结构、科学引擎 parity 与边界检查。' -Action 'check'
 Add-ActionCard -Flow $common -Text '全部回归测试' -Description '运行历史功能和当前框架测试。' -Action 'test'
 Add-ActionCard -Flow $common -Text '构建 Windows' -Description '生成 Setup 与 Portable。' -Action 'build-windows'
@@ -270,7 +273,7 @@ Add-ActionCard -Flow $common -Text '打开 Windows 输出' -Description '打开 
 Add-ActionCard -Flow $common -Text '查看 Git 状态' -Description '检查当前分支与未提交修改。' -Action 'git-status'
 
 $android = New-Page 'Android'
-Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、adb、ANDROID_HOME 与 API 36；缺少 JDK 时自动准备 Temurin 17。' -Action 'android-check' -Accent
+Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、adb、ANDROID_HOME 与 API 36；缺少 JDK 时自动准备并共享 Temurin 21。' -Action 'android-check' -Accent
 Add-ActionCard -Flow $android -Text '构建 APK' -Description '自动准备所需 JDK，随后同步 Web 资源、Prebuild，并生成独立签名的 release APK。' -Action 'android-build'
 Add-ActionCard -Flow $android -Text '连接设备运行' -Description '使用 release variant 编译并安装到已连接设备。' -Action 'android-run'
 Add-ActionCard -Flow $android -Text '安装已有 APK' -Description '安装 mobile-dist 中已生成的 release APK。' -Action 'android-install'

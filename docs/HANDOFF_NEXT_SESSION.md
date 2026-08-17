@@ -1,11 +1,11 @@
-# Next Session Handoff — v3.21.2
+# Next Session Handoff — v3.22.0
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.21.2`
+- Current delivery: `v3.22.0`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
@@ -70,11 +70,13 @@ Local signing identity:
 - Android SDK through `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and standard `%LOCALAPPDATA%\Android\Sdk`;
 - `adb.exe` from SDK `platform-tools` even when it is not on `PATH`;
 - JDK through `JAVA_HOME`, `JDK_HOME`, `STUDIO_JDK`, PATH, Android Studio `jbr`, common JDK vendors, and Windows uninstall/JDK registry metadata;
-- if no complete JDK is present, download and verify a DKDS-managed Eclipse Temurin JDK 17 under `%LOCALAPPDATA%\DKDataStudio\toolchains\temurin-17\current`, then reuse it for later Android builds.
+- both DKDS and PyDroid now prefer the shared `DK_TOOL_ROOT` / `DK_CACHE_ROOT`; on this workstation `D:\Code` is auto-detected from `D:\Code\NodeJs`.
+- if no complete JDK is present, DKDS downloads and SHA-256 verifies shared Eclipse Temurin JDK 21 under `DK_TOOL_ROOT\Java\temurin-21\current`, so later projects can reuse it.
+- Electron/electron-builder/Gradle remain project-versioned; only their large binary/download caches are shared under `DK_CACHE_ROOT`.
 
 `Invoke-Step` must remain pipeline-clean (`| Out-Host`) so diagnostic command output cannot turn a `$false` environment result into a truthy PowerShell array. `android-install` does not require Java and must not download a JDK.
 
-Android metadata: app `0.3.1`, versionCode `5`, package `com.dk.datastudio`.
+Android metadata: app `0.4.0`, versionCode `6`, package `com.dk.datastudio`.
 
 ## Windows toolbox rules inherited from v3.20
 

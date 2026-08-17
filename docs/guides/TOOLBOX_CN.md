@@ -41,7 +41,7 @@ DKDS.cmd android-run
 DKDS.cmd android-install
 DKDS.cmd update-server
 DKDS.cmd publish-update
-DKDS.cmd build-publish-update -Version 3.21.2
+DKDS.cmd build-publish-update -Version 3.22.0
 DKDS.cmd update-autostart-install
 DKDS.cmd update-autostart-remove
 DKDS.cmd plugin-index

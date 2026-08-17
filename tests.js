@@ -1098,8 +1098,12 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.21.2','v3.21 package version must be set');
+assert(pkgV321.version==='3.22.0','current package version must be v3.22.0');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
+assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
+  'DK Data Studio must ship the compact dedicated DK logo/icon assets');
+assert(dkdsTools321.includes('DK_TOOL_ROOT')&&dkdsTools321.includes('DK_CACHE_ROOT')&&dkdsTools321.includes('ELECTRON_CACHE')&&dkdsTools321.includes('GRADLE_USER_HOME'),
+  'DKDS tooling must reuse the shared cross-project toolchain and caches');
 assert(htmlV321.includes('id="primaryActivityBar"')&&htmlV321.includes('class="primary-activity-cluster"'),
   'resonance activity and its plugin commands must share a primary activity cluster');
 assert(htmlV321.includes('class="context-commandbar"')&&!htmlV321.includes('class="topbar-context"'),

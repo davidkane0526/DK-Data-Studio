@@ -61,7 +61,7 @@ assert(/\$javaHomeCandidate\b/.test(backend), 'Java discovery should use an expl
 assert(!/New-Object\s+System\.Drawing\./i.test(gui), 'GUI contains fragile System.Drawing New-Object constructor syntax.');
 assert(/\[System\.Drawing\.Point\]::new\(/.test(gui), 'GUI should use typed Point constructors.');
 assert(/FlowLayoutPanel/.test(gui) && /Resize-ActionCards/.test(gui), 'GUI should retain responsive card layout.');
-assert(/install-deps/.test(gui) && /doctor/.test(gui), 'GUI should expose dependency repair and diagnostics.');
+assert(/install-deps/.test(gui) && /doctor/.test(gui) && /toolchain/.test(gui), 'GUI should expose dependency repair, diagnostics and shared-toolchain inspection.');
 
 // Android packaging exposed by the toolbox must produce the final release APK,
 // not a debug build or a debug-suffixed artifact.
@@ -75,9 +75,10 @@ assert(/Resolve-AndroidSdk/.test(backend) && /platform-tools/.test(backend), 'An
 assert(/Resolve-JavaToolchain/.test(backend) && /Android Studio\\jbr/.test(backend), 'Android toolbox must auto-discover Android Studio bundled JDK/JBR.');
 assert(/DisplayName.*Android Studio/.test(backend), 'Android JDK discovery should also consult Windows install metadata for custom Android Studio paths.');
 assert(/Install-DkdsManagedJdk/.test(backend) && /Ensure-JavaToolchain/.test(backend), 'Android tooling must be able to provision a managed JDK when the machine has none.');
-assert(/api\.adoptium\.net\/v3\/binary\/latest\/17\/ga\/windows/.test(backend), 'Managed JDK must use the official Adoptium stable JDK 17 binary API.');
+assert(/api\.adoptium\.net\/v3\/binary\/latest\/21\/ga\/windows/.test(backend), 'Shared JDK provisioning must use the official Adoptium stable JDK 21 binary API.');
 assert(/Get-FileHash[\s\S]*SHA256/.test(backend) && /sha256\.txt/.test(backend), 'Managed JDK download must verify the published SHA-256 checksum.');
-assert(/DKDataStudio\\toolchains/.test(backend), 'Managed JDK must be stored outside the repository in the user profile.');
+assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling must support a cross-project DK_TOOL_ROOT.');
+assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
 assert(/Check-AndroidEnvironment\s+-RequireJdk\s+\$false\s+-AutoProvisionJdk\s+\$false/.test(backend), 'Installing an already-built APK must not require or download a JDK.');
 assert(/DKDS_ANDROID_RELEASE_STORE_FILE/.test(backend), 'Android release signing environment must be configured.');
 assert(/DKDataStudio\\android-signing/.test(backend), 'Android release signing must live outside the repository in the user profile.');

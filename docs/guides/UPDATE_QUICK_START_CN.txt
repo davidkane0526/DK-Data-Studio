@@ -12,7 +12,7 @@
    DKDS.cmd publish-update
 
 以后一个动作完成构建+发布：
-   DKDS.cmd build-publish-update -Version 3.21.2
+   DKDS.cmd build-publish-update -Version 3.22.0
 
 服务器目录：services\update-server\
 完整说明：docs\guides\UPDATE_SERVER_CN.md

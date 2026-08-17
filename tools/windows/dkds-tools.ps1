@@ -12,6 +12,27 @@ $Mobile = Join-Path $Root 'mobile'
 $UpdateServer = Join-Path $Root 'services\update-server'
 $MobileDist = Join-Path $Root 'mobile-dist'
 
+function Get-SharedToolRoot {
+  if ($env:DK_TOOL_ROOT) { return [IO.Path]::GetFullPath($env:DK_TOOL_ROOT) }
+  if ($env:PYDROID_TOOL_ROOT -and $env:PYDROID_TOOL_ROOT -ine 'D:\Code\Language') { return [IO.Path]::GetFullPath($env:PYDROID_TOOL_ROOT) }
+  if (Test-Path 'D:\Code\NodeJs\node.exe') { return 'D:\Code' }
+  if ($env:PYDROID_TOOL_ROOT) { return [IO.Path]::GetFullPath($env:PYDROID_TOOL_ROOT) }
+  if (Test-Path 'D:\Code') { return 'D:\Code' }
+  if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKSharedToolchain') }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dk-toolchain') }
+  return $null
+}
+
+function Get-SharedCacheRoot {
+  if ($env:DK_CACHE_ROOT) { return [IO.Path]::GetFullPath($env:DK_CACHE_ROOT) }
+  $toolRoot = Get-SharedToolRoot
+  if ($toolRoot) { return (Join-Path $toolRoot 'BuildCache') }
+  return $null
+}
+
+$SharedToolRoot = Get-SharedToolRoot
+$SharedCacheRoot = Get-SharedCacheRoot
+
 function Write-SectionTitle([string]$Text) {
   Write-Host ''
   Write-Host ('=' * 68) -ForegroundColor DarkGray
@@ -101,6 +122,10 @@ function Show-DesktopDoctor {
   }
 
   Write-Host "ROOT: $Root" -ForegroundColor DarkGray
+  Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor DarkGray
+  Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor DarkGray
+  if ($env:ELECTRON_CACHE) { Write-Host "Electron cache: $env:ELECTRON_CACHE" -ForegroundColor DarkGray }
+  if ($env:GRADLE_USER_HOME) { Write-Host "Gradle cache: $env:GRADLE_USER_HOME" -ForegroundColor DarkGray }
   if (-not $ok) { return $false }
   return $true
 }
@@ -111,10 +136,70 @@ function Add-PathEntry([string]$PathEntry) {
   if ($parts -notcontains $PathEntry) { $env:PATH = $PathEntry + ';' + $env:PATH }
 }
 
+function Initialize-SharedBuildEnvironment {
+  if ($SharedToolRoot) {
+    foreach ($nodeDir in @(
+      (Join-Path $SharedToolRoot 'NodeJs'),
+      (Join-Path $SharedToolRoot 'NodeJS'),
+      (Join-Path $SharedToolRoot 'node'),
+      (Join-Path $SharedToolRoot 'Language\NodeJS')
+    )) {
+      if (Test-Path (Join-Path $nodeDir 'node.exe')) { Add-PathEntry $nodeDir; break }
+    }
+  }
+
+  if ($SharedCacheRoot) {
+    $cacheMap = @{
+      Npm = (Join-Path $SharedCacheRoot 'npm')
+      Pnpm = (Join-Path $SharedCacheRoot 'pnpm-store')
+      Electron = (Join-Path $SharedCacheRoot 'electron')
+      ElectronBuilder = (Join-Path $SharedCacheRoot 'electron-builder')
+      Gradle = (Join-Path $SharedCacheRoot 'gradle')
+    }
+    foreach ($cachePath in $cacheMap.Values) { New-Item -ItemType Directory -Force -Path $cachePath | Out-Null }
+    $env:npm_config_cache = $cacheMap.Npm
+    $env:PNPM_STORE_DIR = $cacheMap.Pnpm
+    $env:ELECTRON_CACHE = $cacheMap.Electron
+    $env:ELECTRON_BUILDER_CACHE = $cacheMap.ElectronBuilder
+    $env:GRADLE_USER_HOME = $cacheMap.Gradle
+  }
+}
+
+Initialize-SharedBuildEnvironment
+
+function Show-SharedToolchain {
+  Write-SectionTitle 'Shared toolchain'
+  Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor Cyan
+  Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor Cyan
+  foreach ($pair in @(
+    @('node','node.exe'), @('npm','npm.cmd'), @('pnpm','pnpm.cmd'), @('git','git.exe')
+  )) {
+    $command = Get-Command $pair[1] -ErrorAction SilentlyContinue
+    if ($command) { Write-Host ("OK  {0}: {1}" -f $pair[0],$command.Source) -ForegroundColor Green }
+    else { Write-Host ("--  {0}: not found" -f $pair[0]) -ForegroundColor DarkYellow }
+  }
+  $jdk = Resolve-JavaToolchain
+  if ($jdk) { Write-Host ("OK  JDK: {0}" -f $jdk.Home) -ForegroundColor Green }
+  else { Write-Host '--  JDK: not found (android-build can provision shared Temurin 21)' -ForegroundColor DarkYellow }
+  $sdk = Resolve-AndroidSdk
+  if ($sdk) { Write-Host ("OK  Android SDK: {0}" -f $sdk) -ForegroundColor Green }
+  else { Write-Host '--  Android SDK: not found' -ForegroundColor DarkYellow }
+  Write-Host ("npm cache: {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
+  Write-Host ("pnpm store: {0}" -f $env:PNPM_STORE_DIR) -ForegroundColor DarkGray
+  Write-Host ("Electron cache: {0}" -f $env:ELECTRON_CACHE) -ForegroundColor DarkGray
+  Write-Host ("electron-builder cache: {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  Write-Host ("Gradle cache: {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
+}
+
 function Resolve-AndroidSdk {
   $candidates = @()
   if ($env:ANDROID_HOME) { $candidates += $env:ANDROID_HOME }
   if ($env:ANDROID_SDK_ROOT) { $candidates += $env:ANDROID_SDK_ROOT }
+  if ($SharedToolRoot) {
+    $candidates += (Join-Path $SharedToolRoot 'Android\Sdk')
+    $candidates += (Join-Path $SharedToolRoot 'Android')
+    $candidates += (Join-Path $SharedToolRoot 'android-sdk')
+  }
   if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
   if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE 'AppData\Local\Android\Sdk') }
 
@@ -130,20 +215,13 @@ function Resolve-AndroidSdk {
 }
 
 function Get-DkdsToolchainRoot {
-  $base = if ($env:LOCALAPPDATA) {
-    Join-Path $env:LOCALAPPDATA 'DKDataStudio\toolchains'
-  } elseif ($env:USERPROFILE) {
-    Join-Path $env:USERPROFILE '.dkds\toolchains'
-  } else {
-    return $null
-  }
-  return $base
+  return $SharedToolRoot
 }
 
 function Get-DkdsManagedJdkHome {
   $toolchainRoot = Get-DkdsToolchainRoot
   if (-not $toolchainRoot) { return $null }
-  $managedHome = Join-Path $toolchainRoot 'temurin-17\current'
+  $managedHome = Join-Path $toolchainRoot 'Java\temurin-21\current'
   if ((Test-Path (Join-Path $managedHome 'bin\java.exe')) -and (Test-Path (Join-Path $managedHome 'bin\keytool.exe'))) {
     return $managedHome
   }
@@ -168,6 +246,14 @@ function Resolve-JavaToolchain {
 
   $managedJdkHome = Get-DkdsManagedJdkHome
   if ($managedJdkHome) { $javaHomes += $managedJdkHome }
+
+  if ($SharedToolRoot) {
+    foreach ($sharedJdk in @(
+      'Java\temurin-21\current','Java\jdk-21','JDK\21','jdk-21',
+      'Java\temurin-17\current','Java\jdk-17','JDK\17','jdk-17',
+      'Language\Java'
+    )) { $javaHomes += (Join-Path $SharedToolRoot $sharedJdk) }
+  }
 
   foreach ($programRoot in @($env:ProgramFiles,${env:ProgramFiles(x86)},$env:LOCALAPPDATA)) {
     if (-not $programRoot) { continue }
@@ -254,7 +340,7 @@ function Install-DkdsManagedJdk {
 
   $toolchainRoot = Get-DkdsToolchainRoot
   if (-not $toolchainRoot) {
-    throw 'Cannot resolve a persistent user directory for the DKDS managed JDK.'
+    throw 'Cannot resolve a persistent shared tool directory for JDK provisioning.'
   }
 
   $architectureName = [string]$env:PROCESSOR_ARCHITECTURE
@@ -265,15 +351,15 @@ function Install-DkdsManagedJdk {
     default { throw "Unsupported Windows architecture for automatic JDK provisioning: $architectureName" }
   }
 
-  $jdkRoot = Join-Path $toolchainRoot 'temurin-17'
+  $jdkRoot = Join-Path $toolchainRoot 'Java\temurin-21'
   $currentHome = Join-Path $jdkRoot 'current'
-  $downloadPath = Join-Path $jdkRoot 'temurin-17.zip'
+  $downloadPath = Join-Path $jdkRoot 'temurin-21.zip'
   $extractRoot = Join-Path $jdkRoot ('extract-' + [Guid]::NewGuid().ToString('N'))
-  $apiUrl = "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$adoptiumArch/jdk/hotspot/normal/eclipse"
+  $apiUrl = "https://api.adoptium.net/v3/binary/latest/21/ga/windows/$adoptiumArch/jdk/hotspot/normal/eclipse"
 
   New-Item -ItemType Directory -Force -Path $jdkRoot | Out-Null
-  Write-SectionTitle 'Prepare managed JDK 17'
-  Write-Host 'No complete JDK was found. DKDS will download Eclipse Temurin JDK 17 once and reuse it for Android builds.' -ForegroundColor Yellow
+  Write-SectionTitle 'Prepare shared JDK 21'
+  Write-Host 'No complete JDK was found. DKDS will download Eclipse Temurin JDK 21 once in the shared tool root and reuse it across projects.' -ForegroundColor Yellow
   Write-Host "Managed JDK directory: $currentHome" -ForegroundColor DarkGray
 
   try {
@@ -298,7 +384,7 @@ function Install-DkdsManagedJdk {
       throw 'Adoptium API did not return a JDK download redirect.'
     }
 
-    Write-Host 'Downloading Eclipse Temurin JDK 17...' -ForegroundColor Cyan
+    Write-Host 'Downloading Eclipse Temurin JDK 21...' -ForegroundColor Cyan
     Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
 
     Write-Host 'Verifying JDK SHA-256...' -ForegroundColor Cyan
@@ -328,7 +414,7 @@ function Install-DkdsManagedJdk {
     Move-Item -Path $discoveredHome -Destination $currentHome
 
     @{
-      javaMajor = 17
+      javaMajor = 21
       distribution = 'Eclipse Temurin'
       source = 'Adoptium API'
       apiUrl = $apiUrl
@@ -346,7 +432,7 @@ function Install-DkdsManagedJdk {
 
   $env:JAVA_HOME = $currentHome
   Add-PathEntry (Join-Path $currentHome 'bin')
-  Write-Host 'Managed Eclipse Temurin JDK 17 is ready.' -ForegroundColor Green
+  Write-Host 'Shared Eclipse Temurin JDK 21 is ready.' -ForegroundColor Green
   return @{
     Home = $currentHome
     Java = (Join-Path $currentHome 'bin\java.exe')
@@ -388,12 +474,12 @@ function Check-AndroidEnvironment {
     Write-Host ("OK  java: {0}" -f $jdk.Java) -ForegroundColor Green
     Write-Host ("OK  keytool: {0}" -f $jdk.Keytool) -ForegroundColor Green
     Write-Host ("JAVA_HOME: {0}" -f $jdk.Home) -ForegroundColor Green
-    if ($jdk.Managed) { Write-Host 'OK  JDK source: DKDS-managed Eclipse Temurin 17' -ForegroundColor Green }
+    if ($jdk.Managed) { Write-Host 'OK  JDK source: shared Eclipse Temurin 21' -ForegroundColor Green }
   } else {
     Write-Host 'ERR java/keytool: no complete JDK was found.' -ForegroundColor Red
     if ($jdkProvisionError) { Write-Host ("    Automatic JDK preparation failed: {0}" -f $jdkProvisionError) -ForegroundColor Yellow }
     elseif (-not $AutoProvisionJdk -or $env:DKDS_DISABLE_MANAGED_JDK -eq '1') { Write-Host '    Automatic managed-JDK preparation is disabled for this action.' -ForegroundColor Yellow }
-    else { Write-Host '    DKDS could not prepare its managed Eclipse Temurin JDK 17.' -ForegroundColor Yellow }
+    else { Write-Host '    DKDS could not prepare the shared Eclipse Temurin JDK 21.' -ForegroundColor Yellow }
     $ok=$false
   }
 
@@ -538,7 +624,7 @@ function Remove-UpdateServerAutostart {
 
 function Resolve-ReleaseVersion {
   if ($Version) { return $Version }
-  $v = Read-Host 'Release version, e.g. 3.21.2'
+  $v = Read-Host 'Release version, e.g. 3.22.0'
   if (-not $v) { throw 'A release version is required.' }
   return $v
 }
@@ -548,25 +634,26 @@ function Show-Menu {
   Write-Host '  1  Start desktop development'
   Write-Host '  2  Install/repair desktop dependencies'
   Write-Host '  3  Run desktop tooling diagnostics'
-  Write-Host '  4  Run complete project check'
-  Write-Host '  5  Run regression tests'
-  Write-Host '  6  Build Windows Setup + Portable'
-  Write-Host '  7  Check Android environment'
-  Write-Host '  8  Build Android release APK'
-  Write-Host '  9  Run/install Android on connected device'
-  Write-Host ' 10  Install existing Android APK'
-  Write-Host ' 11  Start LAN update server'
-  Write-Host ' 12  Build + publish LAN update'
-  Write-Host ' 13  Publish existing Windows build'
-  Write-Host ' 14  Validate plugins'
-  Write-Host ' 15  Open project folder'
-  Write-Host ' 16  Open documentation'
+  Write-Host '  4  Show shared toolchain/cache locations'
+  Write-Host '  5  Run complete project check'
+  Write-Host '  6  Run regression tests'
+  Write-Host '  7  Build Windows Setup + Portable'
+  Write-Host '  8  Check Android environment'
+  Write-Host '  9  Build Android release APK'
+  Write-Host ' 10  Run/install Android on connected device'
+  Write-Host ' 11  Install existing Android APK'
+  Write-Host ' 12  Start LAN update server'
+  Write-Host ' 13  Build + publish LAN update'
+  Write-Host ' 14  Publish existing Windows build'
+  Write-Host ' 15  Validate plugins'
+  Write-Host ' 16  Open project folder'
+  Write-Host ' 17  Open documentation'
   Write-Host '  0  Exit'
   $choice = Read-Host 'Select'
   $map = @{
-    '1'='dev';'2'='install-deps';'3'='doctor';'4'='check';'5'='test';'6'='build-windows';
-    '7'='android-check';'8'='android-build';'9'='android-run';'10'='android-install';'11'='update-server';
-    '12'='build-publish-update';'13'='publish-update';'14'='plugin-validate';'15'='open-root';'16'='open-docs';'0'='exit'
+    '1'='dev';'2'='install-deps';'3'='doctor';'4'='toolchain';'5'='check';'6'='test';'7'='build-windows';
+    '8'='android-check';'9'='android-build';'10'='android-run';'11'='android-install';'12'='update-server';
+    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'0'='exit'
   }
   if ($map.ContainsKey($choice)) { return $map[$choice] }
   return 'menu'
@@ -578,6 +665,7 @@ try {
     'exit' { exit 0 }
     'install-deps' { Install-NodeDeps -Dir $Root }
     'doctor' { if (-not (Show-DesktopDoctor)) { exit 2 } }
+    'toolchain' { Show-SharedToolchain }
     'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
     'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
     'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }

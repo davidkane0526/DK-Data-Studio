@@ -38,7 +38,7 @@ React Native therefore owns native platform concerns while WebView hosts the sha
 Use Node 22.13+ for SDK 57.
 
 For local Android compilation install:
-- JDK 17;
+- JDK 21（DKDS 也兼容可用的 JDK 17+，默认与其他项目共享 JDK 21）;
 - Android Studio;
 - Android SDK Platform 36 / Android 16;
 - platform-tools / adb;
