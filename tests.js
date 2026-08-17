@@ -1096,7 +1096,7 @@ const kernelV320=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
 const pkgV320=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const grsTools320=fs.readFileSync('./tools/windows/grs-tools.ps1','utf8');
 const grsGui320=fs.readFileSync('./tools/windows/grs-gui.ps1','utf8');
-assert(pkgV320.version==='3.20.0-plugin.1','v3.20 package version must be set');
+assert(/^3\.20\.0-plugin\.\d+$/.test(pkgV320.version),'v3.20 plugin package version must be set');
 assert(htmlV320.includes('class="context-commandbar"')&&!htmlV320.includes('class="topbar-context"'),
   'desktop shell must use one unified command row rather than a permanent second context row');
 assert(htmlV320.includes('data-menu-target="editMenu"')&&htmlV320.includes('data-menu-target="manageMenu"'),

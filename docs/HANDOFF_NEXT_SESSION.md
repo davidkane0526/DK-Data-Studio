@@ -1,11 +1,11 @@
-# Next Session Handoff — v3.20.0-plugin.1
+# Next Session Handoff — v3.20.0-plugin.2
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.20.0-plugin.1`
+- Current delivery: `v3.20.0-plugin.2`
 
 Never confuse `main` with `plugin`. Continue new work from `plugin`.
 
@@ -52,6 +52,14 @@ GRS_GUI.cmd
 
 Backend: `tools/windows/grs-tools.ps1`
 GUI: `tools/windows/grs-gui.ps1`
+
+`v3.20.0-plugin.2` repaired the Windows toolbox after the first consolidation:
+
+- `Invoke-Step` now uses the explicit `-Arguments` parameter; never rename it back to PowerShell's automatic `$Args` variable.
+- `GRS.cmd install-deps` explicitly runs `npm.cmd install`; `GRS.cmd doctor` checks Node/npm/Git and dependency state.
+- the WinForms GUI uses responsive Flow/Table layouts and typed geometry constructors instead of fixed `(X,Y)` placement.
+- `scripts/test-windows-tooling.js` is part of both `npm run check` and `npm test`.
+- keep `tools/windows/*.ps1` as UTF-8 with BOM for Windows PowerShell 5.1 Chinese text compatibility.
 
 Add new developer/build actions there instead of creating more CMDs.
 

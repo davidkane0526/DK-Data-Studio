@@ -5,13 +5,14 @@
   [string]$OutputPath = ''
 )
 
+Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Mobile = Join-Path $Root 'mobile'
 $UpdateServer = Join-Path $Root 'services\update-server'
 $MobileDist = Join-Path $Root 'mobile-dist'
 
-function Title([string]$Text) {
+function Write-SectionTitle([string]$Text) {
   Write-Host ''
   Write-Host ('=' * 68) -ForegroundColor DarkGray
   Write-Host (' GRS · ' + $Text) -ForegroundColor Cyan
@@ -19,39 +20,101 @@ function Title([string]$Text) {
 }
 
 function Require-Command([string]$Name,[string]$Hint='') {
-  if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
+  $command = Get-Command $Name -ErrorAction SilentlyContinue
+  if (-not $command) {
     throw "$Name not found. $Hint"
+  }
+  return $command
+}
+
+function Invoke-Step {
+  param(
+    [Parameter(Mandatory=$true)][string]$FilePath,
+    [string[]]$Arguments = @(),
+    [string]$WorkingDirectory = $Root
+  )
+
+  if (-not (Test-Path $WorkingDirectory)) {
+    throw "Working directory not found: $WorkingDirectory"
+  }
+
+  Push-Location $WorkingDirectory
+  try {
+    $display = if ($Arguments.Count -gt 0) { $FilePath + ' ' + ($Arguments -join ' ') } else { $FilePath }
+    Write-Host ('> ' + $display) -ForegroundColor DarkGray
+    & $FilePath @Arguments
+    $exitCode = $LASTEXITCODE
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+      throw "$FilePath exited with code $exitCode"
+    }
+  } finally {
+    Pop-Location
   }
 }
 
-function Invoke-Step([string]$File,[string[]]$Args=@(),[string]$WorkingDirectory=$Root) {
-  Push-Location $WorkingDirectory
-  try {
-    Write-Host ('> ' + $File + ' ' + ($Args -join ' ')) -ForegroundColor DarkGray
-    & $File @Args
-    if ($LASTEXITCODE -ne 0) { throw "$File exited with code $LASTEXITCODE" }
-  } finally { Pop-Location }
+function Install-NodeDeps([string]$Dir=$Root) {
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
+  if (-not (Test-Path (Join-Path $Dir 'package.json'))) {
+    throw "package.json not found: $Dir"
+  }
+  Write-SectionTitle "Install dependencies · $Dir"
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('install') -WorkingDirectory $Dir
 }
 
 function Ensure-NodeDeps([string]$Dir=$Root) {
-  Require-Command 'node' 'Install Node.js first.'
-  Require-Command 'npm.cmd' 'Install Node.js first.'
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
   if (-not (Test-Path (Join-Path $Dir 'node_modules'))) {
-    Title "Install dependencies · $Dir"
-    Invoke-Step 'npm.cmd' @('install') $Dir
+    Install-NodeDeps -Dir $Dir
   }
 }
 
+function Show-DesktopDoctor {
+  Write-SectionTitle 'Desktop tooling diagnostics'
+  $ok = $true
+  foreach ($name in @('node','npm.cmd','git')) {
+    $command = Get-Command $name -ErrorAction SilentlyContinue
+    if ($command) {
+      Write-Host ("OK  {0}: {1}" -f $name,$command.Source) -ForegroundColor Green
+    } else {
+      Write-Host ("ERR {0}: not found" -f $name) -ForegroundColor Red
+      $ok = $false
+    }
+  }
+
+  if (Get-Command node -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'node' -Arguments @('--version')
+  }
+  if (Get-Command npm.cmd -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'npm.cmd' -Arguments @('--version')
+  }
+  if (Get-Command git -ErrorAction SilentlyContinue) {
+    Invoke-Step -FilePath 'git' -Arguments @('--version')
+  }
+
+  $modules = Join-Path $Root 'node_modules'
+  if (Test-Path $modules) {
+    Write-Host "OK  dependencies: $modules" -ForegroundColor Green
+  } else {
+    Write-Host 'WARN node_modules is missing. Run install-deps or start dev to install it.' -ForegroundColor Yellow
+  }
+
+  Write-Host "ROOT: $Root" -ForegroundColor DarkGray
+  if (-not $ok) { return $false }
+  return $true
+}
+
 function Check-AndroidEnvironment {
-  Title 'Android environment check'
+  Write-SectionTitle 'Android environment check'
   $ok = $true
   foreach ($name in @('node','java','adb')) {
     $cmd = Get-Command $name -ErrorAction SilentlyContinue
     if ($cmd) { Write-Host ("OK  {0}: {1}" -f $name,$cmd.Source) -ForegroundColor Green }
     else { Write-Host ("ERR {0}: not found" -f $name) -ForegroundColor Red; $ok=$false }
   }
-  if (Get-Command node -ErrorAction SilentlyContinue) { & node --version }
-  if (Get-Command java -ErrorAction SilentlyContinue) { & java -version }
+  if (Get-Command node -ErrorAction SilentlyContinue) { Invoke-Step -FilePath 'node' -Arguments @('--version') }
+  if (Get-Command java -ErrorAction SilentlyContinue) { Invoke-Step -FilePath 'java' -Arguments @('-version') }
   $sdk = $env:ANDROID_HOME
   if (-not $sdk -and $env:LOCALAPPDATA) {
     $candidate = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
@@ -75,13 +138,13 @@ function Check-AndroidEnvironment {
 
 function Build-AndroidDebug {
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
-  Ensure-NodeDeps $Mobile
-  Title 'Prepare Android offline renderer'
-  Invoke-Step 'npm.cmd' @('run','sync:web') $Mobile
-  Title 'Expo prebuild'
-  Invoke-Step 'npx.cmd' @('expo','prebuild','--platform','android','--clean') $Mobile
-  Title 'Build debug APK'
-  Invoke-Step '.\gradlew.bat' @('assembleDebug') (Join-Path $Mobile 'android')
+  Ensure-NodeDeps -Dir $Mobile
+  Write-SectionTitle 'Prepare Android offline renderer'
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
+  Write-SectionTitle 'Expo prebuild'
+  Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
+  Write-SectionTitle 'Build debug APK'
+  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleDebug') -WorkingDirectory (Join-Path $Mobile 'android')
   New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
   $src = Join-Path $Mobile 'android\app\build\outputs\apk\debug\app-debug.apk'
   $dst = Join-Path $MobileDist 'Graphene-Resonance-Studio-debug.apk'
@@ -90,7 +153,7 @@ function Build-AndroidDebug {
 }
 
 function Install-UpdateServerAutostart {
-  $node = (Get-Command node -ErrorAction Stop).Source
+  $node = (Require-Command 'node' 'Install Node.js first.').Source
   $serverScript = Join-Path $UpdateServer 'server.js'
   $taskName = 'GRS LAN Update Server'
   $taskAction = New-ScheduledTaskAction -Execute $node -Argument ('"' + $serverScript + '"') -WorkingDirectory $Root
@@ -110,33 +173,35 @@ function Remove-UpdateServerAutostart {
 
 function Resolve-ReleaseVersion {
   if ($Version) { return $Version }
-  $v = Read-Host 'Release version, e.g. 3.20.0-plugin.2'
+  $v = Read-Host 'Release version, e.g. 3.20.0-plugin.3'
   if (-not $v) { throw 'A release version is required.' }
   return $v
 }
 
 function Show-Menu {
-  Title 'Developer toolbox'
+  Write-SectionTitle 'Developer toolbox'
   Write-Host '  1  Start desktop development'
-  Write-Host '  2  Run complete project check'
-  Write-Host '  3  Run regression tests'
-  Write-Host '  4  Build Windows Setup + Portable'
-  Write-Host '  5  Check Android environment'
-  Write-Host '  6  Build Android debug APK'
-  Write-Host '  7  Run/install Android on connected device'
-  Write-Host '  8  Install existing Android APK'
-  Write-Host '  9  Start LAN update server'
-  Write-Host ' 10  Build + publish LAN update'
-  Write-Host ' 11  Publish existing Windows build'
-  Write-Host ' 12  Validate plugins'
-  Write-Host ' 13  Open project folder'
-  Write-Host ' 14  Open documentation'
+  Write-Host '  2  Install/repair desktop dependencies'
+  Write-Host '  3  Run desktop tooling diagnostics'
+  Write-Host '  4  Run complete project check'
+  Write-Host '  5  Run regression tests'
+  Write-Host '  6  Build Windows Setup + Portable'
+  Write-Host '  7  Check Android environment'
+  Write-Host '  8  Build Android debug APK'
+  Write-Host '  9  Run/install Android on connected device'
+  Write-Host ' 10  Install existing Android APK'
+  Write-Host ' 11  Start LAN update server'
+  Write-Host ' 12  Build + publish LAN update'
+  Write-Host ' 13  Publish existing Windows build'
+  Write-Host ' 14  Validate plugins'
+  Write-Host ' 15  Open project folder'
+  Write-Host ' 16  Open documentation'
   Write-Host '  0  Exit'
   $choice = Read-Host 'Select'
   $map = @{
-    '1'='dev';'2'='check';'3'='test';'4'='build-windows';'5'='android-check';'6'='android-build';
-    '7'='android-run';'8'='android-install';'9'='update-server';'10'='build-publish-update';'11'='publish-update';
-    '12'='plugin-validate';'13'='open-root';'14'='open-docs';'0'='exit'
+    '1'='dev';'2'='install-deps';'3'='doctor';'4'='check';'5'='test';'6'='build-windows';
+    '7'='android-check';'8'='android-build';'9'='android-run';'10'='android-install';'11'='update-server';
+    '12'='build-publish-update';'13'='publish-update';'14'='plugin-validate';'15'='open-root';'16'='open-docs';'0'='exit'
   }
   if ($map.ContainsKey($choice)) { return $map[$choice] }
   return 'menu'
@@ -146,56 +211,58 @@ try {
   if (-not $Action -or $Action -eq 'menu') { $Action = Show-Menu }
   switch ($Action.ToLowerInvariant()) {
     'exit' { exit 0 }
-    'dev' { Ensure-NodeDeps; Title 'Desktop development'; Invoke-Step 'npm.cmd' @('start') }
-    'check' { Ensure-NodeDeps; Title 'Complete project check'; Invoke-Step 'npm.cmd' @('run','check') }
-    'test' { Ensure-NodeDeps; Title 'Regression tests'; Invoke-Step 'npm.cmd' @('test') }
-    'build-windows' { Ensure-NodeDeps; Title 'Windows build'; Invoke-Step 'npm.cmd' @('run','dist') }
+    'install-deps' { Install-NodeDeps -Dir $Root }
+    'doctor' { if (-not (Show-DesktopDoctor)) { exit 2 } }
+    'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
+    'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
+    'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }
+    'build-windows' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') }
     'android-check' { if (-not (Check-AndroidEnvironment)) { exit 2 } }
     'android-build' { Build-AndroidDebug }
     'android-run' {
       if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
-      Ensure-NodeDeps $Mobile
-      Invoke-Step 'npm.cmd' @('run','sync:web') $Mobile
-      Invoke-Step 'npx.cmd' @('expo','run:android') $Mobile
+      Ensure-NodeDeps -Dir $Mobile
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
+      Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','run:android') -WorkingDirectory $Mobile
     }
     'android-install' {
-      Require-Command 'adb' 'Install Android SDK Platform Tools.'
+      [void](Require-Command 'adb' 'Install Android SDK Platform Tools.')
       $apk = Join-Path $MobileDist 'Graphene-Resonance-Studio-debug.apk'
       if (-not (Test-Path $apk)) { throw "APK not found: $apk. Run android-build first." }
-      Invoke-Step 'adb' @('devices')
-      Invoke-Step 'adb' @('install','-r',$apk)
+      Invoke-Step -FilePath 'adb' -Arguments @('devices')
+      Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$apk)
     }
-    'update-server' { Ensure-NodeDeps; Title 'LAN update server'; Invoke-Step 'node' @('services/update-server/server.js') }
+    'update-server' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'LAN update server'; Invoke-Step -FilePath 'node' -Arguments @('services/update-server/server.js') }
     'build-publish-update' {
-      Ensure-NodeDeps
+      Ensure-NodeDeps -Dir $Root
       $release = Resolve-ReleaseVersion
-      Title "Build + publish $release"
-      Invoke-Step 'node' @('scripts/set-version.js',$release)
-      Invoke-Step 'npm.cmd' @('run','dist')
-      Invoke-Step 'node' @('services/update-server/publish-release.js','dist')
+      Write-SectionTitle "Build + publish $release"
+      Invoke-Step -FilePath 'node' -Arguments @('scripts/set-version.js',$release)
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist')
+      Invoke-Step -FilePath 'node' -Arguments @('services/update-server/publish-release.js','dist')
     }
     'publish-update' {
-      Ensure-NodeDeps
+      Ensure-NodeDeps -Dir $Root
       if (-not (Test-Path (Join-Path $Root 'dist\latest.yml'))) { throw 'dist\latest.yml not found. Build Windows first.' }
-      Title 'Publish existing Windows build'
-      Invoke-Step 'node' @('services/update-server/publish-release.js','dist')
+      Write-SectionTitle 'Publish existing Windows build'
+      Invoke-Step -FilePath 'node' -Arguments @('services/update-server/publish-release.js','dist')
     }
-    'update-autostart-install' { Ensure-NodeDeps; Install-UpdateServerAutostart }
+    'update-autostart-install' { Ensure-NodeDeps -Dir $Root; Install-UpdateServerAutostart }
     'update-autostart-remove' { Remove-UpdateServerAutostart }
-    'plugin-index' { Title 'Generate plugin index'; Invoke-Step 'node' @('scripts/generate-plugin-index.js') }
-    'plugin-validate' { Title 'Validate plugins'; Invoke-Step 'node' @('scripts/generate-plugin-index.js'); Invoke-Step 'node' @('scripts/validate-plugins.js') }
+    'plugin-index' { Write-SectionTitle 'Generate plugin index'; Invoke-Step -FilePath 'node' -Arguments @('scripts/generate-plugin-index.js') }
+    'plugin-validate' { Write-SectionTitle 'Validate plugins'; Invoke-Step -FilePath 'node' -Arguments @('scripts/generate-plugin-index.js'); Invoke-Step -FilePath 'node' -Arguments @('scripts/validate-plugins.js') }
     'plugin-package' {
       if (-not $PluginPath) { throw 'Use -PluginPath <folder>.' }
-      $args=@('scripts/package-plugin.js',$PluginPath)
-      if ($OutputPath) { $args += $OutputPath }
-      Invoke-Step 'node' $args
+      $pluginArguments = @('scripts/package-plugin.js',$PluginPath)
+      if ($OutputPath) { $pluginArguments += $OutputPath }
+      Invoke-Step -FilePath 'node' -Arguments $pluginArguments
     }
-    'open-root' { Start-Process explorer.exe $Root }
-    'open-docs' { Start-Process explorer.exe (Join-Path $Root 'docs') }
-    'open-examples' { Start-Process explorer.exe (Join-Path $Root 'examples\external-plugins') }
-    'open-dist' { $d=Join-Path $Root 'dist'; New-Item -ItemType Directory -Force -Path $d|Out-Null; Start-Process explorer.exe $d }
-    'open-mobile-dist' { New-Item -ItemType Directory -Force -Path $MobileDist|Out-Null; Start-Process explorer.exe $MobileDist }
-    'git-status' { Invoke-Step 'git' @('status','--short','--branch') }
+    'open-root' { Start-Process explorer.exe -ArgumentList ('"' + $Root + '"') }
+    'open-docs' { Start-Process explorer.exe -ArgumentList ('"' + (Join-Path $Root 'docs') + '"') }
+    'open-examples' { Start-Process explorer.exe -ArgumentList ('"' + (Join-Path $Root 'examples\external-plugins') + '"') }
+    'open-dist' { $d=Join-Path $Root 'dist'; New-Item -ItemType Directory -Force -Path $d|Out-Null; Start-Process explorer.exe -ArgumentList ('"' + $d + '"') }
+    'open-mobile-dist' { New-Item -ItemType Directory -Force -Path $MobileDist|Out-Null; Start-Process explorer.exe -ArgumentList ('"' + $MobileDist + '"') }
+    'git-status' { Invoke-Step -FilePath 'git' -Arguments @('status','--short','--branch') }
     default { throw "Unknown action: $Action" }
   }
   if ($Action -ne 'dev' -and $Action -ne 'update-server') {

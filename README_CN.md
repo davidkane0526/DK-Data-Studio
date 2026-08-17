@@ -1,4 +1,4 @@
-# Graphene Resonance Studio — plugin branch (3.20.0-plugin.1)
+# Graphene Resonance Studio — plugin branch (3.20.0-plugin.2)
 
 
 ## v3.20 UI 与工程整理
