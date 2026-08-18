@@ -18,7 +18,8 @@ assert(main.includes("app.setName(APP_NAME)"));
 assert(main.includes("app.setAppUserModelId(APP_ID)"));
 assert(main.includes("title: APP_NAME"));
 
-assert(nav.includes("const TOP_LEVEL=['resonance','data-center','ter','pulse']"));
+assert(!nav.includes("const TOP_LEVEL="),'navigation must not whitelist activity ids');
+assert(nav.includes('primaryButtons'),'navigation hierarchy must derive from registered primary activities');
 assert(nav.includes('data-nav-density'));
 assert(nav.includes("width>=980?'roomy':width>=720?'balanced':'compact'"));
 assert(css.includes('v3.22 unified typography + light visual polish'));

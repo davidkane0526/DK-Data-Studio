@@ -9,7 +9,6 @@
     order:6,
     capabilities:['ui.styles','ui.activity']
   }, async ctx => {
-    const TOP_LEVEL=['resonance','data-center','ter','pulse'];
     let queued=false;
     let observer=null;
     let resizeObserver=null;
@@ -120,47 +119,21 @@
       const switcher=document.querySelector('.activity-switcher');
       if(!primary||!secondary||!overflow||!switcher)return;
 
-      observer?.disconnect();
-      try{
-        const all=[
-          ...primary.querySelectorAll(':scope > .activity-tab'),
-          ...secondary.querySelectorAll(':scope > .activity-tab'),
-          ...overflow.querySelectorAll(':scope > .activity-tab')
-        ];
-        const unique=[...new Set(all)];
-        const byId=new Map(unique.map(btn=>[btn.dataset.activityId||'',btn]));
+      const primaryButtons=[...primary.querySelectorAll(':scope > .activity-tab')];
+      const secondaryButtons=[
+        ...secondary.querySelectorAll(':scope > .activity-tab'),
+        ...overflow.querySelectorAll(':scope > .activity-tab')
+      ];
+      for(const btn of primaryButtons)btn.classList.add('top-level-activity-tab');
+      for(const btn of secondaryButtons)btn.classList.remove('top-level-activity-tab');
 
-        for(const id of TOP_LEVEL){
-          const btn=byId.get(id);
-          if(!btn)continue;
-          btn.classList.add('top-level-activity-tab');
-          primary.appendChild(btn);
-        }
-
-        const rest=unique
-          .filter(btn=>!TOP_LEVEL.includes(btn.dataset.activityId||''))
-          .sort((a,b)=>(Number(a.dataset.activityOrder)||100)-(Number(b.dataset.activityOrder)||100));
-        for(const btn of rest){
-          btn.classList.remove('top-level-activity-tab');
-          secondary.appendChild(btn);
-        }
-
-        for(const btn of TOP_LEVEL.map(id=>byId.get(id)).filter(Boolean))primary.appendChild(btn);
-
-        switcher.classList.toggle('shell-secondary-empty',rest.length===0);
-        if(rest.length===0){
-          overflow.innerHTML='';
-          const more=document.querySelector('#activityMoreBtn');
-          more?.classList.add('hidden');
-          more?.setAttribute('aria-expanded','false');
-        }
-        applyDensity();
-      }finally{
-        if(observer){
-          observer.observe(primary,{childList:true});
-          observer.observe(secondary,{childList:true});
-          observer.observe(overflow,{childList:true});
-        }
+      const hasSecondary=secondaryButtons.length>0;
+      switcher.classList.toggle('shell-secondary-empty',!hasSecondary);
+      if(!hasSecondary){
+        overflow.innerHTML='';
+        const more=document.querySelector('#activityMoreBtn');
+        more?.classList.add('hidden');
+        more?.setAttribute('aria-expanded','false');
       }
     }
 

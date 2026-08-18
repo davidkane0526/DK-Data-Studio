@@ -526,3 +526,66 @@ The host rejects a second plugin that tries to claim an already registered globa
 ## Installable package distribution
 
 Plugin API v1.3 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+
+## Dedicated plugin windows
+
+A plugin can opt into a dedicated Electron window with `manifest.window`. The host discovers these manifests dynamically; core code must not maintain an activity-name whitelist.
+
+```json
+{
+  "id": "builtin.example-analysis",
+  "name": "Example Analysis",
+  "entry": "plugin.js",
+  "window": {
+    "activity": "example-analysis",
+    "title": "示例分析",
+    "prewarm": true,
+    "reuse": true,
+    "persistence": "project",
+    "runtime": "window-runtime.js",
+    "scripts": ["private-engine.js"],
+    "dependencies": ["plotly", "platform", "plugin-kernel"]
+  }
+}
+```
+
+Lifecycle defaults are deliberately useful for analysis workspaces:
+
+- `prewarm`: defaults to `true`. Enabled dedicated activities are created in the background after the current project is mounted.
+- `reuse`: defaults to `true`. Closing the native window hides it; reopening reuses the same renderer, DOM, Plotly instances and in-memory state.
+- `persistence`: defaults to `project`. Supported values are `project`, `memory`, and `none`.
+- `scripts`: optional plugin-local support files loaded before `runtime`/`entry`. This allows a new independent analysis to carry its own implementation without adding private modules to the host dependency allowlist. For `.dkplugin` packages, `scripts`, `runtime`, package scripts and styles are all loaded from the installed package into the dedicated renderer.
+- `dependencies`: shared host modules only. Private plugin implementation should normally use `scripts`.
+
+An activity registered with `openMode:'window'` defaults to first-level navigation (`primary:true`) unless the plugin explicitly sets `primary:false`.
+
+### Result persistence contract
+
+`persistence:'project'` does not attempt to serialize arbitrary JavaScript closures. Reproducible state must use the normal plugin project contract:
+
+```js
+ctx.project.registerSlice('workspace', {
+  serialize: () => ({ settings, result }),
+  restore: data => { /* restore cached result without recomputing */ },
+  reset: () => { /* reset plugin state */ }
+});
+```
+
+Large or reusable data products should be stored through `ctx.data.artifacts`. Dedicated windows send only their owning plugin namespace plus incremental artifact upserts/removals back to the main project. They do **not** replace the whole project snapshot. This prevents two simultaneously prewarmed windows from overwriting one another with stale copies of the project.
+
+For old project formats, `restore(data, { legacyProject })` may migrate previous root-level fields into the namespaced slice. TER analysis uses this migration pattern.
+
+### Host guarantees
+
+For every enabled built-in **or installed `.dkplugin`** with `manifest.window` and a registered `openMode:'window'` activity, the desktop host provides the same generic behavior:
+
+1. manifest discovery and validation;
+2. optional prewarm;
+3. first visible show only after the plugin reports ready;
+4. hide/reuse on normal close when `reuse` is enabled;
+5. final snapshot flush before hide;
+6. namespaced project-state merge;
+7. incremental artifact merge;
+8. cached-window disposal when the plugin is disabled or its project tab is closed.
+
+Regression coverage lives in `scripts/test-plugin-windows.js`, including both a synthetic future built-in plugin and an installed external `.dkplugin` fixture. New independent plugins must not require edits to `main.js` or `src/app.js` merely to participate in this lifecycle. External package updates carry an installation revision; cached windows using an older revision are destroyed and recreated before reuse.

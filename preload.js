@@ -10,10 +10,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
   openProject: () => ipcRenderer.invoke('files:openProject'),
   openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
+  listPluginWindows: () => ipcRenderer.invoke('windows:listPluginWindows'),
   prewarmActivityWindow: payload => ipcRenderer.invoke('windows:prewarmActivity', payload),
   getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
   markActivityWindowReady: () => ipcRenderer.send('windows:activityReady'),
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
+  syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
   pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
   onActivityProjectSnapshot: callback => {

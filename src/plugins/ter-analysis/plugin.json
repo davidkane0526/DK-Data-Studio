@@ -27,6 +27,9 @@
       "science-ter",
       "platform",
       "plugin-kernel"
-    ]
+    ],
+    "prewarm": true,
+    "reuse": true,
+    "persistence": "project"
   }
 }

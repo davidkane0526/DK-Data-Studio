@@ -714,7 +714,7 @@
       applyInspectorPanelLayout();
     }
     renderProjectTabs();
-    if(activate)setTimeout(()=>prewarmTopLevelPluginWindows(),0);
+    if(activate)setTimeout(()=>prewarmDedicatedPluginWindows(),0);
     return t;
   }
 
@@ -739,7 +739,7 @@
     scheduleMainPlotRelayout();
     refreshOpenAnalysisPage();
     setStatus(`已切换到独立项目：${t.title}`);
-    setTimeout(()=>prewarmTopLevelPluginWindows(),0);
+    setTimeout(()=>prewarmDedicatedPluginWindows(),0);
   }
 
   function closeProjectTab(id){
@@ -5774,6 +5774,30 @@
 
   function terHostApi(){
     return {
+      serialize:()=>({
+        schema:1,
+        settings:cloneProjectCache(state.terMaxSettings||{}),
+        display:cloneProjectCache(state.terHeatmapDisplay||{}),
+        result:state.terMaxResult?cloneProjectCache(state.terMaxResult):null
+      }),
+      restore(data,{legacyProject}={}){
+        const legacy=legacyProject&&typeof legacyProject==='object'?{
+          settings:legacyProject.terMaxSettings,
+          display:legacyProject.terHeatmapDisplay,
+          result:legacyProject.terMaxResult
+        }:null;
+        const source=data&&typeof data==='object'?data:legacy;
+        if(!source)return;
+        state.terMaxSettings={...(source.settings||{vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false})};
+        state.terHeatmapDisplay={...(source.display||{colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null})};
+        state.terMaxResult=source.result?cloneProjectCache(source.result):null;
+        if($('#terMaxPage')&&!$('#terMaxPage').classList.contains('hidden'))renderTerMaxPage();
+      },
+      reset(){
+        state.terMaxSettings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
+        state.terHeatmapDisplay={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
+        state.terMaxResult=null;
+      },
       render:renderTerMaxPage,
       autoParameters:autoTerParameters,
       calculate:computeTerMaxPage,
@@ -5843,13 +5867,39 @@
     });
   }
 
-  function prewarmTopLevelPluginWindows(){
-    if(IS_AUXILIARY_WINDOW||!window.electronAPI?.prewarmActivityWindow)return;
-    const activities=['data-center','ter','pulse'];
-    const run=(activityId,index)=>{
+  let dedicatedPrewarmToken=0;
+
+  async function prewarmDedicatedPluginWindows(){
+    if(IS_AUXILIARY_WINDOW||!window.electronAPI?.prewarmActivityWindow||!window.electronAPI?.listPluginWindows)return;
+    const token=++dedicatedPrewarmToken;
+    let specs=[];
+    try{specs=await window.electronAPI.listPluginWindows()||[];}
+    catch(err){console.warn('[DKDS prewarm:list]',err);return;}
+    if(token!==dedicatedPrewarmToken)return;
+
+    // Only prewarm activities that are both enabled in the renderer plugin
+    // registry and declared as dedicated windows by their manifest. No core
+    // activity-name whitelist is allowed here.
+    const enabledActivities=new Set((window.DKDSPlugins?.activities?.list?.()||[])
+      .filter(activity=>activity?.openMode==='window')
+      .map(activity=>String(activity.id||''))
+      .filter(Boolean));
+    if(window.electronAPI?.syncPluginActivityWindows){
+      try{await window.electronAPI.syncPluginActivityWindows([...enabledActivities]);}
+      catch(err){console.warn('[DKDS plugin-window sync]',err);}
+      if(token!==dedicatedPrewarmToken)return;
+    }
+    const activities=specs
+      .filter(spec=>spec?.prewarm!==false&&enabledActivities.has(String(spec?.activity||'')))
+      .map(spec=>String(spec.activity));
+    if(!activities.length)return;
+
+    const run=(index)=>{
+      if(token!==dedicatedPrewarmToken||index>=activities.length)return;
       const tab=activeProjectTab();
       if(!tab)return;
       captureActiveProjectTab();
+      const activityId=activities[index];
       const payload={
         activityId,
         projectTabId:tab.id,
@@ -5859,20 +5909,81 @@
       };
       Promise.resolve(window.electronAPI.prewarmActivityWindow(payload)).catch(err=>{
         console.warn(`[DKDS prewarm:${activityId}]`,err);
+      }).finally(()=>{
+        if(token===dedicatedPrewarmToken&&index+1<activities.length)setTimeout(()=>run(index+1),120);
       });
-      if(index+1<activities.length)setTimeout(()=>run(activities[index+1],index+1),140);
     };
-    const kick=()=>setTimeout(()=>run(activities[0],0),80);
+    const kick=()=>setTimeout(()=>run(0),60);
     if(typeof requestIdleCallback==='function')requestIdleCallback(kick,{timeout:450});
-    else setTimeout(kick,250);
+    else setTimeout(kick,220);
+  }
+
+  function cloneAuxSnapshot(value){
+    if(value===undefined)return undefined;
+    try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
+  }
+
+  function applyArtifactDeltaToTab(tab,delta){
+    if(!tab||!delta)return false;
+    if(!tab.artifactStore)tab.artifactStore=window.DKDSData.createStore();
+    let changed=false;
+    for(const artifact of (Array.isArray(delta.upserts)?delta.upserts:[])){
+      if(!artifact?.id)continue;
+      try{tab.artifactStore.upsert(artifact);changed=true;}catch(err){console.warn('[DKDS artifact merge:upsert]',err);}
+    }
+    for(const id of (Array.isArray(delta.removedIds)?delta.removedIds:[])){
+      try{changed=tab.artifactStore.remove(id)||changed;}catch(err){console.warn('[DKDS artifact merge:remove]',err);}
+    }
+    return changed;
+  }
+
+  function applyDedicatedActivitySnapshot(payload,tab){
+    const pluginId=String(payload?.pluginId||'').trim();
+    if(!pluginId||payload?.persistence==='none'||payload?.persistence==='memory')return false;
+    const active=tab.id===state.activeProjectTabId;
+    if(active)captureActiveProjectTab();
+
+    tab.pluginState=tab.pluginState&&typeof tab.pluginState==='object'?tab.pluginState:{};
+    if(payload.pluginState!==undefined&&payload.pluginState!==null){
+      tab.pluginState[pluginId]=cloneAuxSnapshot(payload.pluginState);
+    }
+    const artifactsChanged=applyArtifactDeltaToTab(tab,payload.artifactDelta);
+
+    if(active){
+      state.artifactStore=tab.artifactStore;
+      window.DKDSPlugins?.project?.restorePlugin?.(pluginId,tab.pluginState,null);
+      if(artifactsChanged)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+        type:'merge',pluginId,activityId:payload.activityId||'',artifacts:state.artifactStore.list()
+      });
+      captureActiveProjectTab();
+      if(payload.final){
+        renderAll();
+        applyGroupPanelLayout();
+        applyInspectorPanelLayout();
+        scheduleMainPlotRelayout();
+        setStatus(`已同步 ${payload.activityId||pluginId} 的插件状态与结果缓存。`);
+      }
+    }
+    return true;
   }
 
   function applyActivityProjectSnapshot(payload){
     const projectTabId=String(payload?.projectTabId||'');
-    const project=payload?.project;
-    if(!projectTabId||!project)return;
+    if(!projectTabId)return;
     const tab=state.projectTabs.find(t=>t.id===projectTabId);
     if(!tab)return;
+
+    // Dedicated plugin windows merge only their own namespaced state and
+    // artifact delta. This prevents two prewarmed windows with older full
+    // project snapshots from overwriting each other's results.
+    if(payload?.pluginId){
+      applyDedicatedActivitySnapshot(payload,tab);
+      return;
+    }
+
+    // Compatibility path for the old full-workspace auxiliary renderer.
+    const project=payload?.project;
+    if(!project)return;
     if(payload.final&&projectTabId===state.activeProjectTabId){
       const path=tab.projectPath;
       loadProjectIntoActive(project,path);
@@ -5899,7 +6010,7 @@
     if(!window.DKDSPlugins)return;
 
     window.DKDSPlugins.configure({
-      appVersion:'3.22.0',
+      appVersion:'3.22.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       openActivityWindow:openPluginActivityWindow,
@@ -5941,6 +6052,9 @@
     await window.DKDSPlugins.loadExternalEntries?.();
     const activated=await window.DKDSPlugins.activateAll();
     console.info('[DKDS plugins] activated',activated);
+    if(!IS_AUXILIARY_WINDOW){
+      window.DKDSPlugins.events.on('plugin:state-changed',()=>setTimeout(()=>prewarmDedicatedPluginWindows(),0));
+    }
   }
 
   async function startApplication(){
@@ -5989,7 +6103,7 @@
     if(IS_AUXILIARY_WINDOW){
       await window.DKDSPlugins?.activities?.set?.(auxiliaryBootstrapState?.activityId||AUX_ACTIVITY_ID);
     }else{
-      prewarmTopLevelPluginWindows();
+      prewarmDedicatedPluginWindows();
     }
     window.DKDSPlugins?.events?.emit?.('app:ready',{state,auxiliary:IS_AUXILIARY_WINDOW});
   }

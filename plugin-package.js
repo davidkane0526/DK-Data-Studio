@@ -73,6 +73,24 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if (!fileName.toLowerCase().endsWith('.css')) throw new Error(`Plugin stylesheet must be CSS: ${fileName}`);
   }
 
+  let windowSpec = sourceManifest.window;
+  if(windowSpec!==undefined){
+    if(!windowSpec||typeof windowSpec!=='object'||Array.isArray(windowSpec))throw new Error('Plugin manifest.window must be an object.');
+    const activity=String(windowSpec.activity||'').trim();
+    if(!validPluginId(activity))throw new Error(`Invalid plugin window activity: ${activity||'(empty)'}`);
+    for(const field of ['prewarm','reuse'])if(windowSpec[field]!==undefined&&typeof windowSpec[field]!=='boolean')throw new Error(`Plugin window.${field} must be boolean.`);
+    const persistence=String(windowSpec.persistence||'project').trim().toLowerCase();
+    if(!['project','memory','none'].includes(persistence))throw new Error(`Unsupported plugin window persistence: ${persistence}`);
+    const runtime=windowSpec.runtime?normalizeRelativeFile(windowSpec.runtime):'';
+    if(runtime&&!Object.prototype.hasOwnProperty.call(files,runtime))throw new Error(`Plugin window runtime not found: ${runtime}`);
+    const windowScripts=Array.isArray(windowSpec.scripts)?windowSpec.scripts.map(normalizeRelativeFile):[];
+    for(const fileName of windowScripts){
+      if(!Object.prototype.hasOwnProperty.call(files,fileName))throw new Error(`Plugin window script not found: ${fileName}`);
+      if(!fileName.toLowerCase().endsWith('.js'))throw new Error(`Plugin window script must be JavaScript: ${fileName}`);
+    }
+    windowSpec={...windowSpec,activity,runtime:runtime||undefined,scripts:[...new Set(windowScripts)],persistence};
+  }
+
   const manifest = {
     ...sourceManifest,
     id,
@@ -82,6 +100,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     entry,
     scripts: [...new Set(scripts)],
     styles: [...new Set(styles)],
+    ...(windowSpec!==undefined?{window:windowSpec}:{}),
     enabled: sourceManifest.enabled !== false,
     source: 'external'
   };

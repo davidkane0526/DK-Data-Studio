@@ -55,6 +55,14 @@
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage')T.render();});
 
+    // Dedicated-window persistence is namespaced by plugin. This slice is the
+    // canonical TER cache; legacy root-level TER fields are migration input.
+    ctx.project.registerSlice('workspace',{
+      serialize:()=>T.serialize(),
+      restore:(data,{legacyProject})=>T.restore(data,{legacyProject}),
+      reset:()=>T.reset()
+    });
+
     ctx.events.on('layout:resize',()=>{
       for(const id of ['terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
         const el=document.getElementById(id);

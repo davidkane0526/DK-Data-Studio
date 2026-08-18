@@ -227,6 +227,9 @@
 
   function registerActivity(pluginId,id,spec={}) {
     const value={id,label:id,order:100,...spec,id};
+    // Dedicated windows are top-level workspaces by default. A plugin can
+    // explicitly set primary:false if it intentionally wants secondary nav.
+    if(value.primary===undefined&&value.openMode==='window')value.primary=true;
     registerTypedContribution(pluginId,'ui.activities',id,value);
     addCleanup(pluginId,()=>{
       if(activeActivityId===id){

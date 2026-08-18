@@ -225,6 +225,27 @@
       async function saveCsv(name,content){if(!content)return false;return window.electronAPI.saveText({defaultName:name,content,filters:[{name:'CSV',extensions:['csv']}]});}
 
       const service={
+        serialize:()=>({schema:1,settings:cloneSerializable(settings),display:cloneSerializable(display),result:result?cloneSerializable(result):null}),
+        restore(data,{legacyProject}={}){
+          const legacy=legacyProject&&typeof legacyProject==='object'?{
+            settings:legacyProject.terMaxSettings,
+            display:legacyProject.terHeatmapDisplay,
+            result:legacyProject.terMaxResult
+          }:null;
+          const source=data&&typeof data==='object'?data:legacy;
+          if(!source)return;
+          settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(source.settings||{})};
+          display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,...(source.display||{})};
+          result=source.result?cloneSerializable(source.result):null;
+          if($('#terSummary'))render();
+        },
+        reset(){
+          settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
+          display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
+          result=null;
+          if($('#terSummary'))render();
+          scheduleSnapshot();
+        },
         render,autoParameters,calculate,
         applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){

@@ -50,6 +50,20 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
       for(const field of ['width','height','minWidth','minHeight']){
         if(m.window[field]!==undefined&&(!(Number(m.window[field])>0)))fail(`${name}: invalid window.${field}`);
       }
+      for(const field of ['prewarm','reuse']){
+        if(m.window[field]!==undefined&&typeof m.window[field]!=='boolean')fail(`${name}: window.${field} must be boolean`);
+      }
+      if(m.window.persistence!==undefined&&!['project','memory','none'].includes(String(m.window.persistence))){
+        fail(`${name}: window.persistence must be project, memory or none`);
+      }
+      if(m.window.scripts!==undefined){
+        if(!Array.isArray(m.window.scripts))fail(`${name}: window.scripts must be an array`);
+        else for(const raw of m.window.scripts){
+          const file=String(raw||'');
+          if(!file||file.includes('/')||file.includes('\\')||file==='.'||file==='..')fail(`${name}: window.scripts entries must be files in the plugin directory`);
+          else if(!fs.existsSync(path.join(dir,file)))fail(`${name}: window script not found ${file}`);
+        }
+      }
     }
   }
 }

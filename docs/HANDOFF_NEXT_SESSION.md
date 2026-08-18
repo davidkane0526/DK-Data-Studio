@@ -1,11 +1,11 @@
-# Next Session Handoff — v3.22.0
+# Next Session Handoff — v3.22.1
 
 ## Repository identity
 
 - Stable baseline branch: `main`
 - Stable baseline tag: `v3.14.0-main-baseline`
 - Active development branch: `plugin`
-- Current delivery: `v3.22.0`
+- Current delivery: `v3.22.1`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
@@ -23,9 +23,21 @@ This delivery is a **complete project snapshot**, not a patch. It intentionally 
 
 Regression guard: `node scripts/test-ui-polish.js` is included in both `npm test` and `npm run check`.
 
-### Dedicated-window cache preserved
+### Dedicated-window lifecycle is generic
 
-The current working tree includes the v3.22 prewarm/hide-reuse lifecycle for Data Center / TER / Pulse windows. Do not revert `main.js`, `plugin-window-manager.js`, `src/plugin-window/runtime.js`, or the activity window runtimes to the older close-and-recreate behavior while doing UI work.
+The current working tree no longer uses a `Data Center / TER / Pulse` window whitelist. Every enabled built-in or installed `.dkplugin` that declares `manifest.window` and registers an `openMode:'window'` activity participates in the same lifecycle.
+
+- `window.prewarm` defaults to `true`.
+- `window.reuse` defaults to `true`; normal close hides the renderer and reopening reuses its DOM/Plotly/in-memory state.
+- `window.persistence` defaults to `project`. Restart-safe results belong in `ctx.project.registerSlice(...)` and/or the artifact store.
+- Dedicated snapshots merge only the owning plugin namespace plus artifact deltas, preventing stale prewarmed windows from overwriting each other.
+- `window.scripts` allows plugin-local support code without adding private modules to the host dependency list; installed `.dkplugin` window runtime/scripts/styles use the same dedicated renderer.
+- External plugin updates carry a package revision so a cached old renderer is destroyed instead of reusing stale code.
+- `openMode:'window'` defaults to first-level navigation unless `primary:false` is explicit.
+
+`TER` now uses the same namespaced project-slice cache contract as Pulse and Data Center, while still migrating older root-level TER fields.
+
+Do not reintroduce activity-name lists in `src/app.js`, `main.js`, or `src/plugins/shell-navigation/plugin.js`. `scripts/test-plugin-windows.js` includes a synthetic future-plugin regression test.
 
 ## v3.21 user-visible behavior
 
@@ -54,7 +66,7 @@ DK Data Studio | Import/Project | Edit | [Resonance + resonance commands] | Auxi
 
 ### Auxiliary analysis windows
 
-`数据中心`, `TER分析`, and `脉冲分析` declare `openMode:'window'`. From the main Electron window they open dedicated BrowserWindows and leave the main Activity on resonance. Their header action is `关闭窗口`, never `返回主图`.
+Top-level analysis plugins can declare `openMode:'window'`. From the main Electron window they open dedicated BrowserWindows and leave the main Activity on resonance. Their header action is `关闭窗口`, never `返回主图`. The current Data Center, TER and Pulse plugins all use this generic contract.
 
 The auxiliary renderer receives the current project snapshot and sends the updated project snapshot back on close. If the corresponding project tab is inactive, the snapshot is stored and applied when that tab is activated.
 

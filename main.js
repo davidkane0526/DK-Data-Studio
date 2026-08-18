@@ -1,7 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { LanWebServer } = require('./lan-web-server');
-const { resolveBuiltinPluginWindow } = require('./plugin-window-manager');
+const { resolvePluginWindow, listPluginWindows } = require('./plugin-window-manager');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
@@ -67,6 +67,18 @@ function readInstalledExternalPlugins() {
     }
   }
   return { packages, errors, directory:dir };
+}
+
+function installedExternalPluginPackages() {
+  return readInstalledExternalPlugins().packages || [];
+}
+
+function resolveConfiguredPluginWindow(activityId) {
+  return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages());
+}
+
+function listConfiguredPluginWindows() {
+  return listPluginWindows(app.getAppPath(), installedExternalPluginPackages());
 }
 
 const PACKAGED_TRIAL_DAYS = 30;
@@ -192,9 +204,22 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const ownerWebContentsId = ownerWindow?.webContents?.id;
   if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
 
-  const pluginWindow = resolveBuiltinPluginWindow(app.getAppPath(), activityId);
+  const pluginWindow = resolveConfiguredPluginWindow(activityId);
   const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
-  const previous = auxiliaryWindows.get(key);
+  let previous = auxiliaryWindows.get(key);
+  if (previous && !previous.isDestroyed()) {
+    const previousSpec=auxiliaryBootstrap.get(previous.webContents.id)?.pluginWindow||null;
+    const definitionChanged=!!pluginWindow&&!!previousSpec&&(
+      previousSpec.pluginId!==pluginWindow.pluginId
+      ||previousSpec.source!==pluginWindow.source
+      ||previousSpec.revision!==pluginWindow.revision
+    );
+    if(definitionChanged){
+      auxiliaryWindows.delete(key);
+      closeAuxiliaryWindowForReal(previous);
+      previous=null;
+    }
+  }
   if (previous && !previous.isDestroyed()) {
     const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
     const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
@@ -223,7 +248,6 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:true };
   }
 
-  const labels = { 'data-center':'数据中心', ter:'TER 分析', pulse:'脉冲分析' };
   const win = new BrowserWindow({
     show: pluginWindow ? false : payload.prewarm !== true,
     width: pluginWindow?.width || 1480,
@@ -233,7 +257,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     backgroundColor: '#f5f7fb',
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
-    title: `DK Data Studio · ${pluginWindow?.title || labels[activityId] || payload.title || activityId}`,
+    title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
     webPreferences: commonWindowPreferences()
   });
   win.setMenuBarVisibility(false);
@@ -243,7 +267,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryWebContentsId,
     makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
   );
-  if (pluginWindow) {
+  if (pluginWindow?.reuse !== false) {
     win.on('close', event => {
       if (appQuitting || forcedAuxiliaryClose.has(win)) return;
       event.preventDefault();
@@ -278,9 +302,23 @@ app.whenReady().then(() => {
     if (!owner) throw new Error('Unable to resolve the main application window.');
     return createOrFocusAuxiliaryWindow(owner, payload || {});
   });
+  ipcMain.handle('windows:listPluginWindows', async () => listConfiguredPluginWindows().map(spec => ({
+    pluginId:spec.pluginId,
+    version:spec.version,
+    revision:spec.revision,
+    activity:spec.activity,
+    title:spec.title,
+    prewarm:spec.prewarm,
+    reuse:spec.reuse,
+    persistence:spec.persistence
+  })));
   ipcMain.handle('windows:prewarmActivity', async (event, payload) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
     if (!owner) throw new Error('Unable to resolve the main application window.');
+    const activityId = String(payload?.activityId || '').trim();
+    const spec = resolveConfiguredPluginWindow(activityId);
+    if (!spec) return { skipped:true, reason:'not-dedicated' };
+    if (spec.prewarm === false) return { skipped:true, reason:'prewarm-disabled' };
     return createOrFocusAuxiliaryWindow(owner, { ...(payload || {}), prewarm:true });
   });
   ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
@@ -294,6 +332,21 @@ app.whenReady().then(() => {
       if (!win || win.isDestroyed()) continue;
       const row = auxiliaryBootstrap.get(win.webContents.id);
       if (row?.ownerWebContentsId === ownerId && row?.projectTabId === targetProjectId) doomed.push(win);
+    }
+    for (const win of doomed) closeAuxiliaryWindowForReal(win);
+    return doomed.length;
+  });
+  ipcMain.handle('windows:syncPluginActivities', async (event, activityIds) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    if (!ownerId) return 0;
+    const allowed = new Set((Array.isArray(activityIds) ? activityIds : []).map(v => String(v || '').trim()).filter(Boolean));
+    const doomed = [];
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId !== ownerId || !row?.pluginWindow) continue;
+      if (!allowed.has(String(row.activityId || ''))) doomed.push(win);
     }
     for (const win of doomed) closeAuxiliaryWindowForReal(win);
     return doomed.length;
@@ -312,7 +365,7 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
-    if (bootstrap?.pluginWindow) return hideDedicatedAuxiliaryWindow(win);
+    if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
     win.close();
     return true;
   });
@@ -328,7 +381,11 @@ app.whenReady().then(() => {
     owner.webContents.send('windows:activityProjectSnapshot', {
       projectTabId: bootstrap.projectTabId,
       activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      persistence: bootstrap.pluginWindow?.persistence || 'project',
       project: payload?.project || null,
+      pluginState: payload?.pluginState ?? null,
+      artifactDelta: payload?.artifactDelta || null,
       final: payload?.final !== false
     });
   });

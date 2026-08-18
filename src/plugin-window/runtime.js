@@ -24,6 +24,8 @@
   let pluginRuntime = null;
   let ready = false;
   let snapshotTimer = null;
+  let artifactUpserts = new Map();
+  let artifactRemovals = new Set();
 
   function clone(value) {
     if (value === undefined) return undefined;
@@ -51,6 +53,35 @@
       script.onerror = () => reject(new Error(`无法加载插件窗口脚本：${src}`));
       document.head.appendChild(script);
     });
+  }
+
+  function loadInlineScript(source,label) {
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.async=false;
+      script.dataset.dkdsExternalWindow=label;
+      script.textContent=`${String(source||'')}\n//# sourceURL=dkds-window-plugin://${encodeURIComponent(label)}`;
+      let runtimeError=null;
+      const onError=event=>{runtimeError=event?.error||new Error(event?.message||`外部插件窗口脚本失败：${label}`);};
+      window.addEventListener('error',onError);
+      try{document.head.appendChild(script);}catch(err){runtimeError=err;}
+      finally{window.removeEventListener('error',onError);script.remove();}
+      if(runtimeError)reject(runtimeError);else resolve(label);
+    });
+  }
+
+  function loadInlineStyle(source,label) {
+    const style=document.createElement('style');
+    style.dataset.dkdsExternalWindowStyle=label;
+    style.textContent=String(source||'');
+    document.head.appendChild(style);
+    return style;
+  }
+
+  function externalPackageFile(spec,fileName) {
+    const source=spec?.packageFiles?.[fileName];
+    if(typeof source!=='string')throw new Error(`外部插件窗口文件缺失：${fileName}`);
+    return source;
   }
 
   async function loadDependencies(spec) {
@@ -98,9 +129,36 @@
     artifactStore = window.DKDSData?.restoreStore
       ? window.DKDSData.restoreStore(project.dataModel || { schema:1, artifacts:[] })
       : null;
+    artifactUpserts = new Map();
+    artifactRemovals = new Set();
+  }
+
+  function recordArtifactChange(payload={}) {
+    const type=String(payload.type||'');
+    if((type==='add'||type==='upsert')&&payload.artifact?.id){
+      artifactRemovals.delete(String(payload.artifact.id));
+      artifactUpserts.set(String(payload.artifact.id),clone(payload.artifact));
+    }else if(type==='remove'&&payload.id){
+      const id=String(payload.id);
+      artifactUpserts.delete(id);
+      artifactRemovals.add(id);
+    }else if(type==='clear'){
+      for(const id of payload.ids||[]){
+        artifactUpserts.delete(String(id));
+        artifactRemovals.add(String(id));
+      }
+    }
+  }
+
+  function artifactDeltaPayload() {
+    return {
+      upserts:[...artifactUpserts.values()].map(clone),
+      removedIds:[...artifactRemovals]
+    };
   }
 
   function emitArtifactsChanged(payload={}) {
+    recordArtifactChange(payload);
     window.DKDSPlugins?.events?.emit?.('data:artifacts-changed', payload);
     scheduleSnapshot();
   }
@@ -126,8 +184,9 @@
       return ok;
     },
     clear() {
+      const ids=(artifactStore?.list?.({includeTransient:true})||[]).map(a=>a.id).filter(Boolean);
       artifactStore?.clear?.();
-      emitArtifactsChanged({type:'clear'});
+      emitArtifactsChanged({type:'clear',ids});
     },
     syncLegacy() {
       // Dedicated plugin windows consume the canonical project snapshot. They
@@ -207,9 +266,17 @@
     clearTimeout(snapshotTimer);
     snapshotTimer = null;
     if (!bootstrap || bootstrap.prewarm === true || !window.electronAPI?.pushActivityProjectSnapshot) return;
+    const persistence=bootstrap?.pluginWindow?.persistence||'project';
+    if(persistence!=='project')return;
     try {
       syncProjectFromWindow();
-      window.electronAPI.pushActivityProjectSnapshot({project:clone(project), final:!!final});
+      const pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+      window.electronAPI.pushActivityProjectSnapshot({
+        project:clone(project),
+        pluginState:pluginId ? clone(project.plugins?.[pluginId] ?? null) : null,
+        artifactDelta:artifactDeltaPayload(),
+        final:!!final
+      });
     } catch (err) {
       console.warn('[DKDS plugin window snapshot]', err);
     }
@@ -222,7 +289,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.22.0',
+      appVersion:'3.22.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -256,8 +323,21 @@
     await loadDependencies(spec);
     restoreArtifactStore();
 
+    // Optional plugin-local support scripts make a dedicated plugin
+    // self-contained: adding a new analysis does not require extending the
+    // host's shared dependency allowlist for its private implementation.
+    const loadedExternalScripts=new Set();
+    const loadTargetScript=async file=>{
+      if(spec.source==='external'){
+        if(loadedExternalScripts.has(file))return;
+        await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
+        loadedExternalScripts.add(file);
+      }else await loadScript(pluginUrl(file));
+    };
+    for(const file of (spec.scripts||[]))await loadTargetScript(file);
+
     window.DKDSPluginWindowRuntime = null;
-    if (spec.runtime) await loadScript(pluginUrl(spec.runtime));
+    if (spec.runtime) await loadTargetScript(spec.runtime);
 
     const host = baseHost();
     if (window.DKDSPluginWindowRuntime?.create) {
@@ -276,11 +356,19 @@
     }
 
     window.DKDSPlugins.configure(host);
-    await loadScript(pluginUrl(spec.entry));
+    if(spec.source==='external'){
+      for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
+      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file);
+    }else{
+      await loadScript(pluginUrl(spec.entry));
+    }
 
     await window.DKDSPlugins.activateAll();
-    await window.DKDSPlugins.project.restore(project.plugins || {}, project);
+    // Mount legacy/base project data first, then let namespaced plugin slices
+    // override it. This makes plugin project state canonical without breaking
+    // older project files that only contain root-level analysis fields.
     await pluginRuntime?.setProject?.(project);
+    await window.DKDSPlugins.project.restore(project.plugins || {}, project);
 
     const opened = await window.DKDSPlugins.activities.set(bootstrap.activityId);
     if (!opened) throw new Error(`插件没有注册工作区：${bootstrap.activityId}`);

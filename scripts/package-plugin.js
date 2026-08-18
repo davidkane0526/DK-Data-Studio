@@ -19,6 +19,8 @@ const referenced = new Set([
   manifest.entry || 'plugin.js',
   ...(manifest.scripts || []),
   ...(manifest.styles || []),
+  ...(manifest.window?.runtime ? [manifest.window.runtime] : []),
+  ...(manifest.window?.scripts || []),
   ...(fs.existsSync(path.join(folder, 'README.md')) ? ['README.md'] : [])
 ]);
 const files = {};

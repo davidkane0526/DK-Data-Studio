@@ -176,3 +176,24 @@ Runtime installation of executable `.dkplugin` packages is currently **desktop-o
 LAN Web and Android/React Native use the same built-in plugin architecture, Recipe system, formula engine, and science engine, but arbitrary runtime JavaScript installation is deliberately disabled there for now.
 
 A mobile release can bundle additional plugins at build time. Scientific algorithms should remain shared; do not create a separate Android-only implementation.
+
+## Optional dedicated window in an external package
+
+Installed `.dkplugin` packages may use the same `manifest.window` contract as built-in plugins. When present, `scripts/package-plugin.js` automatically includes `window.runtime` and `window.scripts` in the package in addition to the ordinary plugin scripts/styles.
+
+```json
+"window": {
+  "activity": "my-analysis",
+  "title": "My Analysis",
+  "prewarm": true,
+  "reuse": true,
+  "persistence": "project",
+  "runtime": "window-runtime.js",
+  "scripts": ["analysis-engine.js"],
+  "dependencies": ["plotly", "platform", "plugin-kernel"]
+}
+```
+
+The package still registers its Activity normally with `openMode:'window'`. Project-safe results should be registered through `ctx.project.registerSlice(...)` or stored as Data Model artifacts. The dedicated renderer merges only the external plugin's namespace and artifact deltas back into the project, so it cannot replace unrelated plugin state with an older prewarmed project snapshot.
+
+If an installed package is updated while DK Data Studio is running, the package installation revision changes. Any hidden renderer from the previous revision is destroyed and a fresh dedicated renderer is created/prewarmed from the updated package.
