@@ -1,3 +1,13 @@
+# v3.27.1 — Shared build-cache binding fix
+
+- Fixed Developer Toolbox cache settings so changing the shared cache root actually moves npm, pnpm, Electron, electron-builder, Gradle and shared `node_modules` to the selected directory instead of leaving stale derived paths behind.
+- Added explicit derived/custom cache-path mode. The recommended default keeps all child caches under `DK_CACHE_ROOT`; advanced users can opt into per-cache custom paths.
+- Bound both current Electron `electron_config_cache` and compatibility `ELECTRON_CACHE` to the selected Electron cache directory.
+- `npm install` now passes the selected cache explicitly with `--cache` in addition to environment binding and `--prefer-offline`.
+- pnpm now receives `pnpm_config_store_dir` / `PNPM_CONFIG_STORE_DIR`; Gradle and electron-builder continue to receive their native cache environment variables.
+- Existing `node_modules` Junctions are inspected and automatically rebound when the configured shared cache location changes.
+- Windows and Android builds print the effective cache paths at startup and verify that npm resolved the requested cache before continuing.
+
 # v3.27.0 — Plugin-neutral UI/state infrastructure
 
 - Added core `DKDSUI` infrastructure for persistent workspace regions, resizable split panes, portable/pinnable/floating scientific views, dynamic action groups, activity-scoped shortcuts, mouse/pointer bindings, context menus, linked-selection channels, Plotly surface lifecycle, View/Controller mounting and common workbench shells.

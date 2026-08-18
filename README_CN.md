@@ -1,4 +1,4 @@
-# DK Data Studio — v3.27.0
+# DK Data Studio — v3.27.1
 
 ## v3.27 核心 UI / 状态基础设施
 
@@ -47,6 +47,8 @@ DK_CACHE_ROOT=D:\Code\BuildCache
 ```
 
 完整说明见 `docs/guides/SHARED_TOOLCHAIN_CN.txt`。
+
+> v3.27.1 修复了 Developer Toolbox 的缓存绑定：修改“共享缓存根目录”后，npm/pnpm/Electron/electron-builder/Gradle 与共享 node_modules 会真正跟随新目录，构建日志会显示并校验实际生效路径。
 
 
 ## v3.21 UI / 插件界面 / 多窗口工作区

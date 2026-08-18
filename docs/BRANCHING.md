@@ -4,7 +4,7 @@
 
 This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.27.0**.
+Current development baseline: **v3.27.1**.
 
 ## Recommended future flow
 
@@ -26,3 +26,6 @@ Do not access, push to, or modify any remote repository unless the user explicit
 ## Current delivery checkpoint
 
 `v3.27.0` establishes plugin-neutral UI/state infrastructure in core. Resonance SUPER/TOP adapters are host-only, while feature behavior lives in plugin-owned Controller/View/feature-runtime layers. TER, Pulse and Data Center consume common portable-view and dynamic-action infrastructure; Data Center also uses the core state/project store. This is the baseline for further plugin rewrites without growing `app.js`.
+
+
+`v3.27.1` fixes the shared build-cache contract: the Toolbox cache root is authoritative in derived mode, native npm/pnpm/Electron/electron-builder/Gradle cache variables are bound explicitly, and stale shared `node_modules` Junctions are rebound automatically.

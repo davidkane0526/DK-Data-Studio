@@ -250,6 +250,14 @@ function New-PathSettingsPage {
   $toolValue = Get-ToolboxConfigText $config 'toolRoot' $toolFallback
   $cacheFallback = if ($env:DK_CACHE_ROOT) { $env:DK_CACHE_ROOT } elseif ($toolValue) { Join-Path $toolValue 'BuildCache' } else { '' }
   $cacheValue = Get-ToolboxConfigText $config 'cacheRoot' $cacheFallback
+  $cacheMode = (Get-ToolboxConfigText $config 'cachePathMode' 'derived').ToLowerInvariant()
+  $followRoot = $cacheMode -ne 'custom'
+
+  function Get-CacheFieldValue([string]$Name,[string]$Leaf) {
+    if ($followRoot -and $cacheValue) { return (Join-Path $cacheValue $Leaf) }
+    $fallback = if ($cacheValue) { Join-Path $cacheValue $Leaf } else { '' }
+    return (Get-ToolboxConfigText $config $Name $fallback)
+  }
 
   $page = New-Object System.Windows.Forms.TabPage
   $page.Text = '路径与缓存'
@@ -259,28 +267,32 @@ function New-PathSettingsPage {
   $layout = New-Object System.Windows.Forms.TableLayoutPanel
   $layout.Dock = [System.Windows.Forms.DockStyle]::Fill
   $layout.ColumnCount = 3
-  $layout.RowCount = 8
+  $layout.RowCount = 11
   $layout.BackColor = $ColorPage
   [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute,165))
   [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
   [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute,76))
-  for ($rowIndex = 0; $rowIndex -lt 6; $rowIndex++) {
-    [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  for ($rowIndex = 0; $rowIndex -lt 8; $rowIndex++) {
+    [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,44))
   }
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,38))
   [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
   [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,46))
   $page.Controls.Add($layout)
 
   $fields = [ordered]@{
-    toolRoot = @{ Label='共享工具根目录'; Value=$toolValue; Hint='Node / JDK / Android SDK 等可复用工具的根目录' }
-    cacheRoot = @{ Label='共享缓存根目录'; Value=$cacheValue; Hint='所有下载缓存的默认父目录' }
-    npmCache = @{ Label='npm 下载缓存'; Value=(Get-ToolboxConfigText $config 'npmCache' $(if ($cacheValue) { Join-Path $cacheValue 'npm' } else { '' })); Hint='npm_config_cache' }
-    electronCache = @{ Label='Electron 下载缓存'; Value=(Get-ToolboxConfigText $config 'electronCache' $(if ($cacheValue) { Join-Path $cacheValue 'electron' } else { '' })); Hint='ELECTRON_CACHE' }
-    electronBuilderCache = @{ Label='electron-builder 缓存'; Value=(Get-ToolboxConfigText $config 'electronBuilderCache' $(if ($cacheValue) { Join-Path $cacheValue 'electron-builder' } else { '' })); Hint='ELECTRON_BUILDER_CACHE' }
-    nodeModulesRoot = @{ Label='共享 node_modules'; Value=(Get-ToolboxConfigText $config 'nodeModulesRoot' $(if ($cacheValue) { Join-Path $cacheValue 'node_modules' } else { '' })); Hint='新项目副本会通过 Junction 复用 desktop / mobile 依赖目录' }
+    toolRoot = @{ Label='共享工具根目录'; Value=$toolValue; Hint='Node / JDK / Android SDK 等可复用工具的根目录'; Leaf='' }
+    cacheRoot = @{ Label='共享缓存根目录'; Value=$cacheValue; Hint='所有下载缓存的父目录；默认情况下下方缓存自动跟随'; Leaf='' }
+    npmCache = @{ Label='npm 下载缓存'; Value=(Get-CacheFieldValue 'npmCache' 'npm'); Hint='npm --cache / npm_config_cache'; Leaf='npm' }
+    pnpmStore = @{ Label='pnpm Store'; Value=(Get-CacheFieldValue 'pnpmStore' 'pnpm-store'); Hint='pnpm store-dir'; Leaf='pnpm-store' }
+    electronCache = @{ Label='Electron 下载缓存'; Value=(Get-CacheFieldValue 'electronCache' 'electron'); Hint='electron_config_cache + ELECTRON_CACHE'; Leaf='electron' }
+    electronBuilderCache = @{ Label='electron-builder 缓存'; Value=(Get-CacheFieldValue 'electronBuilderCache' 'electron-builder'); Hint='ELECTRON_BUILDER_CACHE'; Leaf='electron-builder' }
+    gradleCache = @{ Label='Gradle 缓存'; Value=(Get-CacheFieldValue 'gradleCache' 'gradle'); Hint='GRADLE_USER_HOME'; Leaf='gradle' }
+    nodeModulesRoot = @{ Label='共享 node_modules'; Value=(Get-CacheFieldValue 'nodeModulesRoot' 'node_modules'); Hint='desktop / mobile Junction 的父目录'; Leaf='node_modules' }
   }
 
   $boxes = @{}
+  $browseButtons = @{}
   $row = 0
   foreach ($key in $fields.Keys) {
     $spec = $fields[$key]
@@ -294,7 +306,7 @@ function New-PathSettingsPage {
     $box = New-Object System.Windows.Forms.TextBox
     $box.Text = [string]$spec.Value
     $box.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $box.Margin = [System.Windows.Forms.Padding]::new(0,9,8,8)
+    $box.Margin = [System.Windows.Forms.Padding]::new(0,7,8,6)
     $box.Tag = $spec.Hint
     $layout.Controls.Add($box,1,$row)
     $boxes[$key] = $box
@@ -302,22 +314,56 @@ function New-PathSettingsPage {
     $browse = New-Object System.Windows.Forms.Button
     $browse.Text = '浏览…'
     $browse.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $browse.Margin = [System.Windows.Forms.Padding]::new(0,8,0,8)
+    $browse.Margin = [System.Windows.Forms.Padding]::new(0,6,0,6)
     $browse.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
     $browse.BackColor = $ColorSurface
     $browse.FlatAppearance.BorderColor = $ColorBorder
     $browse.Add_Click({ Select-ToolboxFolder $box }.GetNewClosure())
     $layout.Controls.Add($browse,2,$row)
+    $browseButtons[$key] = $browse
     $row++
   }
 
+  $follow = New-Object System.Windows.Forms.CheckBox
+  $follow.Text = '子缓存自动跟随“共享缓存根目录”（推荐）'
+  $follow.Checked = $followRoot
+  $follow.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $follow.ForeColor = $ColorText
+  $follow.Padding = [System.Windows.Forms.Padding]::new(0,4,0,0)
+  $layout.SetColumnSpan($follow,3)
+  $layout.Controls.Add($follow,0,8)
+
+  $childKeys = @('npmCache','pnpmStore','electronCache','electronBuilderCache','gradleCache','nodeModulesRoot')
+  $leafMap = @{
+    npmCache='npm'; pnpmStore='pnpm-store'; electronCache='electron'; electronBuilderCache='electron-builder'; gradleCache='gradle'; nodeModulesRoot='node_modules'
+  }
+
+  $updateDerived = {
+    if (-not $follow.Checked) { return }
+    $rootText = $boxes['cacheRoot'].Text.Trim()
+    foreach ($childKey in $childKeys) {
+      $boxes[$childKey].Text = if ($rootText) { Join-Path $rootText $leafMap[$childKey] } else { '' }
+    }
+  }
+  $updateChildMode = {
+    $custom = -not $follow.Checked
+    foreach ($childKey in $childKeys) {
+      $boxes[$childKey].Enabled = $custom
+      $browseButtons[$childKey].Enabled = $custom
+    }
+    if (-not $custom) { & $updateDerived }
+  }
+  $follow.Add_CheckedChanged($updateChildMode)
+  $boxes['cacheRoot'].Add_TextChanged($updateDerived)
+  & $updateChildMode
+
   $note = New-Object System.Windows.Forms.Label
-  $note.Text = "设置保存在：$(Get-ToolboxConfigPath)`r`n`r`n共享 node_modules 只会在项目副本没有本地 node_modules 时自动建立 Junction，因此不会擅自删除现有依赖。首次切换时可先删除旧副本中的 node_modules；之后不同 ZIP / Git 工作副本都可复用同一依赖目录。"
+  $note.Text = "设置保存在：$(Get-ToolboxConfigPath)`r`n`r`n构建启动时会把 npm、pnpm、Electron、electron-builder 与 Gradle 的实际环境变量都绑定到这里，并在日志开头显示最终路径。修改共享缓存根目录后，已有的 node_modules Junction 也会自动检查并重新绑定，不会继续偷偷指向旧目录。"
   $note.Dock = [System.Windows.Forms.DockStyle]::Fill
   $note.ForeColor = $ColorMuted
-  $note.Padding = [System.Windows.Forms.Padding]::new(0,10,0,0)
+  $note.Padding = [System.Windows.Forms.Padding]::new(0,8,0,0)
   $layout.SetColumnSpan($note,3)
-  $layout.Controls.Add($note,0,6)
+  $layout.Controls.Add($note,0,9)
 
   $actions = New-Object System.Windows.Forms.FlowLayoutPanel
   $actions.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -325,7 +371,7 @@ function New-PathSettingsPage {
   $actions.WrapContents = $false
   $actions.Padding = [System.Windows.Forms.Padding]::new(0,5,0,0)
   $layout.SetColumnSpan($actions,3)
-  $layout.Controls.Add($actions,0,7)
+  $layout.Controls.Add($actions,0,10)
 
   $save = New-Object System.Windows.Forms.Button
   $save.Text = '保存路径设置'
@@ -337,13 +383,15 @@ function New-PathSettingsPage {
   $save.FlatAppearance.BorderSize = 0
   $save.Add_Click({
     try {
-      $payload = [ordered]@{ schema=1 }
+      if ($follow.Checked) { & $updateDerived }
+      $cachePathModeValue = if ($follow.Checked) { 'derived' } else { 'custom' }
+      $payload = [ordered]@{ schema=2; cachePathMode=$cachePathModeValue }
       foreach ($fieldName in $boxes.Keys) { $payload[$fieldName] = $boxes[$fieldName].Text.Trim() }
       $configPath = Get-ToolboxConfigPath
       $configDir = Split-Path -Parent $configPath
       if ($configDir) { New-Item -ItemType Directory -Force -Path $configDir | Out-Null }
       [IO.File]::WriteAllText($configPath,($payload | ConvertTo-Json -Depth 3),[Text.UTF8Encoding]::new($false))
-      $status.Text = '路径设置已保存；新启动的构建/开发任务将使用这些缓存。'
+      $status.Text = '路径设置已保存；新启动的构建/开发任务会验证并使用这些缓存。'
     } catch {
       [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     }

@@ -8,13 +8,14 @@
 - TER/Pulse/Data Center now consume core portable-view/action infrastructure. Data Center also consumes `ctx.state.create`.
 - New complex plugins should follow `docs/PLUGIN_UI_INFRASTRUCTURE.md`; do not create plugin-local docking, global keydown or resize frameworks.
 
-# Next Session Handoff — v3.27.0
+# Next Session Handoff — v3.27.1
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.27.0`
+- Current delivery: `v3.27.1`
+- Cache/toolchain fix in v3.27.1: `cachePathMode=derived` makes the selected shared cache root authoritative; npm/pnpm/Electron/electron-builder/Gradle bindings and stale node_modules Junction rebinding are verified by tooling tests.
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 

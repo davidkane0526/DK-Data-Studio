@@ -19,3 +19,5 @@ Reconstructed sequence:
 The reconstructed commits preserve the file contents of those delivered snapshots so later changes can be reviewed with normal `git log`, `git diff`, and `git checkout` workflows.
 
 10. v3.27.0: establish plugin-neutral UI/state infrastructure, reduce Resonance SUPER/TOP adapters to host mapping only, and migrate TER/Pulse/Data Center to portable plots and shared command controls.
+
+11. v3.27.1: fix Developer Toolbox cache binding so selected shared cache directories are actually used by npm, pnpm, Electron, electron-builder, Gradle and shared node_modules.

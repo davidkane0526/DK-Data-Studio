@@ -42,3 +42,18 @@ D:\Code\
   DKDS.cmd toolchain
   DKDS.cmd doctor
   DKDS.cmd android-check
+
+v3.27.1 缓存绑定说明
+-------------------
+Developer Toolbox 的“共享缓存根目录”默认采用“自动跟随”模式，此时该根目录是权威配置：
+  npm                 -> <cacheRoot>\npm
+  pnpm Store          -> <cacheRoot>\pnpm-store
+  Electron            -> <cacheRoot>\electron
+  electron-builder    -> <cacheRoot>\electron-builder
+  Gradle              -> <cacheRoot>\gradle
+  shared node_modules -> <cacheRoot>\node_modules
+
+只有在 GUI 中取消“子缓存自动跟随共享缓存根目录”后，单项缓存路径才作为独立覆盖值。
+构建开始时会打印最终生效路径，并通过 `npm config get cache` 验证 npm 实际解析到的缓存目录。
+如果项目现有 node_modules 是指向旧缓存位置的 Junction，工具会检查目标并自动重绑到新目录。
+Electron 下载同时绑定 `electron_config_cache` 与 `ELECTRON_CACHE`，兼容当前 Electron installer 与 electron-builder/旧工具链。

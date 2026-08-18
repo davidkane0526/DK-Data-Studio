@@ -10,7 +10,7 @@ const app=read('src/app.js');
 const manager=read('src/core/plugin-manager-ui.js');
 const pkg=JSON.parse(read('package.json'));
 
-assert(pkg.version==='3.27.0','plugin infrastructure build must ship as v3.27.0.');
+assert(pkg.version==='3.27.1','plugin infrastructure build must ship as v3.27.1.');
 assert(css.includes('--dkds-analysis-page-top'),'analysis pages must use a measured shell-top CSS variable.');
 assert(app.includes("root.style.setProperty('--dkds-viewport-height'"),'viewport measurement may expose the current visual viewport height for components that need it.');
 assert(css.includes('100dvh'),'analysis pages need a dynamic-viewport fallback.');

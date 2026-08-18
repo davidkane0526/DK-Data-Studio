@@ -39,7 +39,7 @@ const releaseSigningPluginSource = read(releaseSigningPluginPath);
 assert(!/\[string\[\]\]\s*\$Args\b/i.test(backend), 'Backend must not declare $Args as a parameter.');
 assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args variable.');
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
-assert(/Invoke-Step\s+-FilePath\s+'npm\.cmd'\s+-Arguments\s+@\('install','--prefer-offline'\)/.test(backend), 'npm install arguments must be explicit and prefer the shared cache.');
+assert(/\$installArguments\s*=\s*@\('install','--prefer-offline'\)/.test(backend) && /--cache/.test(backend), 'npm install must prefer offline data and pass the selected cache explicitly.');
 assert(/&\s+\$FilePath\s+@Arguments\s+\|\s+Out-Host/.test(backend), 'Invoke-Step must keep native stdout visible without leaking it into function return values.');
 
 // PowerShell variable names are case-insensitive. Names such as $HOME are
@@ -87,10 +87,20 @@ assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling 
 assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
 assert(/developer-toolbox\.json/.test(backend) && /developer-toolbox\.json/.test(gui),
   'toolbox backend and GUI must share a persistent per-user path configuration file.');
-for(const token of ['npmCache','electronCache','electronBuilderCache','nodeModulesRoot']){
+for(const token of ['npmCache','pnpmStore','electronCache','electronBuilderCache','gradleCache','nodeModulesRoot']){
   assert(backend.includes(token),`toolbox backend must read configurable ${token}.`);
   assert(gui.includes(token),`toolbox GUI must expose configurable ${token}.`);
 }
+assert(backend.includes('cachePathMode') && gui.includes('cachePathMode') && gui.includes('子缓存自动跟随'),
+  'cache settings must distinguish root-derived child caches from explicit custom overrides.');
+assert(/electron_config_cache/.test(backend) && /ELECTRON_CACHE/.test(backend),
+  'Electron downloads must bind both the current documented cache variable and the compatibility alias.');
+assert(/pnpm_config_store_dir/.test(backend) && /PNPM_CONFIG_STORE_DIR/.test(backend),
+  'pnpm must receive a native store-dir configuration binding.');
+assert(backend.includes('currentTarget') && /ReparsePoint/.test(backend) && /Remove-Item\s+-LiteralPath\s+\$link\s+-Force/.test(backend) && /New-Item\s+-ItemType\s+Junction/.test(backend),
+  'shared node_modules Junctions must be inspected and rebound when the selected cache root changes.');
+assert(/Show-EffectiveBuildCaches\s+-VerifyNpm/.test(backend) && /npm\.cmd config get cache/.test(backend),
+  'build actions must display effective caches and verify npm resolved the requested path.');
 assert(/New-Item\s+-ItemType\s+Junction/.test(backend) && /SharedNodeModulesRoot/.test(backend),
   'toolbox must support cross-project node_modules reuse through a shared Junction target.');
 assert(/npm_config_prefer_offline/.test(backend),

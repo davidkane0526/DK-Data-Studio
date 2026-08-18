@@ -67,17 +67,45 @@ function Get-SharedCacheRoot {
   return $null
 }
 
+function Get-CachePathMode {
+  $configured = Get-DeveloperConfigValue 'cachePathMode'
+  if ($configured) { return $configured.ToLowerInvariant() }
+  # v1 configs wrote the derived child paths as if they were explicit overrides.
+  # Treat them as root-derived by default so changing cacheRoot actually moves the cache.
+  return 'derived'
+}
+
+function Get-ConfiguredCachePath([string]$ConfigName,[string]$DefaultLeaf,[string]$DkEnvName='',[string]$StandardEnvName='') {
+  if ($DkEnvName) {
+    $dkValue = [Environment]::GetEnvironmentVariable($DkEnvName,'Process')
+    if ($dkValue) { return (Resolve-ConfiguredPath $dkValue) }
+  }
+  $configured = Get-DeveloperConfigValue $ConfigName
+  $mode = Get-CachePathMode
+  if ($mode -eq 'custom' -and $configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot $DefaultLeaf) }
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($StandardEnvName) {
+    $standardValue = [Environment]::GetEnvironmentVariable($StandardEnvName,'Process')
+    if ($standardValue) { return (Resolve-ConfiguredPath $standardValue) }
+  }
+  return $null
+}
+
 function Get-SharedNodeModulesRoot {
   if ($env:DK_NODE_MODULES_ROOT) { return (Resolve-ConfiguredPath $env:DK_NODE_MODULES_ROOT) }
+  $mode = Get-CachePathMode
   $configured = Get-DeveloperConfigValue 'nodeModulesRoot'
-  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($mode -eq 'custom' -and $configured) { return (Resolve-ConfiguredPath $configured) }
   if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot 'node_modules') }
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
   return $null
 }
 
 $SharedToolRoot = Get-SharedToolRoot
 $SharedCacheRoot = Get-SharedCacheRoot
 $SharedNodeModulesRoot = Get-SharedNodeModulesRoot
+$script:BuildCachePaths = $null
 
 function Write-SectionTitle([string]$Text) {
   Write-Host ''
@@ -127,18 +155,37 @@ function Get-NodeModulesSlot([string]$Dir) {
 function Ensure-SharedNodeModulesLink([string]$Dir=$Root) {
   if (-not $SharedNodeModulesRoot) { return }
   $slot = Get-NodeModulesSlot $Dir
-  $target = Join-Path $SharedNodeModulesRoot $slot
+  $target = [IO.Path]::GetFullPath((Join-Path $SharedNodeModulesRoot $slot))
   $link = Join-Path $Dir 'node_modules'
   New-Item -ItemType Directory -Force -Path $SharedNodeModulesRoot | Out-Null
 
   if (Test-Path -LiteralPath $link) {
     $item = Get-Item -LiteralPath $link -Force
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+      $currentTarget = $null
+      try {
+        $rawTargets = @($item.Target)
+        if ($rawTargets.Count -gt 0 -and $rawTargets[0]) { $currentTarget = [string]$rawTargets[0] }
+      } catch {}
+      if ($currentTarget) {
+        if (-not [IO.Path]::IsPathRooted($currentTarget)) {
+          $currentTarget = Join-Path (Split-Path $link -Parent) $currentTarget
+        }
+        $currentTarget = [IO.Path]::GetFullPath($currentTarget)
+        if ($currentTarget -ieq $target) { return }
+        Write-Host "INFO shared node_modules cache changed; rebinding Junction:" -ForegroundColor Cyan
+        Write-Host "     old: $currentTarget" -ForegroundColor DarkGray
+        Write-Host "     new: $target" -ForegroundColor DarkGray
+        Remove-Item -LiteralPath $link -Force
+      } else {
+        Write-Host "WARN node_modules is a reparse point whose target cannot be inspected; keeping it: $link" -ForegroundColor Yellow
+        return
+      }
+    } else {
+      Write-Host "INFO local node_modules already exists; keeping it instead of replacing it with shared path: $link" -ForegroundColor DarkYellow
+      Write-Host "     Remove that directory once if you want this project copy to use: $target" -ForegroundColor DarkGray
       return
     }
-    Write-Host "INFO local node_modules already exists; keeping it instead of replacing it with shared path: $link" -ForegroundColor DarkYellow
-    Write-Host "     Remove that directory once if you want this project copy to use: $target" -ForegroundColor DarkGray
-    return
   }
 
   New-Item -ItemType Directory -Force -Path $target | Out-Null
@@ -154,7 +201,9 @@ function Install-NodeDeps([string]$Dir=$Root) {
   }
   Ensure-SharedNodeModulesLink -Dir $Dir
   Write-SectionTitle "Install dependencies · $Dir"
-  Invoke-Step -FilePath 'npm.cmd' -Arguments @('install','--prefer-offline') -WorkingDirectory $Dir
+  $installArguments = @('install','--prefer-offline')
+  if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
+  Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $Dir
 }
 
 function Test-NodeDepsReady([string]$Dir=$Root) {
@@ -223,6 +272,21 @@ function Add-PathEntry([string]$PathEntry) {
   if ($parts -notcontains $PathEntry) { $env:PATH = $PathEntry + ';' + $env:PATH }
 }
 
+function Get-EffectiveBuildCachePaths {
+  $npmCache = Get-ConfiguredCachePath 'npmCache' 'npm' 'DK_NPM_CACHE' 'npm_config_cache'
+  $pnpmStore = Get-ConfiguredCachePath 'pnpmStore' 'pnpm-store' 'DK_PNPM_STORE' 'PNPM_CONFIG_STORE_DIR'
+  $electronCache = Get-ConfiguredCachePath 'electronCache' 'electron' 'DK_ELECTRON_CACHE' 'electron_config_cache'
+  $electronBuilderCache = Get-ConfiguredCachePath 'electronBuilderCache' 'electron-builder' 'DK_ELECTRON_BUILDER_CACHE' 'ELECTRON_BUILDER_CACHE'
+  $gradleCache = Get-ConfiguredCachePath 'gradleCache' 'gradle' 'DK_GRADLE_CACHE' 'GRADLE_USER_HOME'
+  return [ordered]@{
+    Npm = $npmCache
+    Pnpm = $pnpmStore
+    Electron = $electronCache
+    ElectronBuilder = $electronBuilderCache
+    Gradle = $gradleCache
+  }
+}
+
 function Initialize-SharedBuildEnvironment {
   if ($SharedToolRoot) {
     foreach ($nodeDir in @(
@@ -235,24 +299,63 @@ function Initialize-SharedBuildEnvironment {
     }
   }
 
-  if ($SharedCacheRoot) {
-    $configuredNpm = Get-DeveloperConfigValue 'npmCache'
-    $configuredElectron = Get-DeveloperConfigValue 'electronCache'
-    $configuredBuilder = Get-DeveloperConfigValue 'electronBuilderCache'
-    $cacheMap = @{
-      Npm = if ($env:DK_NPM_CACHE) { Resolve-ConfiguredPath $env:DK_NPM_CACHE } elseif ($configuredNpm) { Resolve-ConfiguredPath $configuredNpm } else { Join-Path $SharedCacheRoot 'npm' }
-      Pnpm = (Join-Path $SharedCacheRoot 'pnpm-store')
-      Electron = if ($env:DK_ELECTRON_CACHE) { Resolve-ConfiguredPath $env:DK_ELECTRON_CACHE } elseif ($configuredElectron) { Resolve-ConfiguredPath $configuredElectron } else { Join-Path $SharedCacheRoot 'electron' }
-      ElectronBuilder = if ($env:DK_ELECTRON_BUILDER_CACHE) { Resolve-ConfiguredPath $env:DK_ELECTRON_BUILDER_CACHE } elseif ($configuredBuilder) { Resolve-ConfiguredPath $configuredBuilder } else { Join-Path $SharedCacheRoot 'electron-builder' }
-      Gradle = (Join-Path $SharedCacheRoot 'gradle')
-    }
-    foreach ($cachePath in $cacheMap.Values) { New-Item -ItemType Directory -Force -Path $cachePath | Out-Null }
-    $env:npm_config_cache = $cacheMap.Npm
+  $script:BuildCachePaths = Get-EffectiveBuildCachePaths
+  foreach ($cachePath in $script:BuildCachePaths.Values) {
+    if ($cachePath) { New-Item -ItemType Directory -Force -Path $cachePath | Out-Null }
+  }
+
+  if ($script:BuildCachePaths.Npm) {
+    $env:npm_config_cache = $script:BuildCachePaths.Npm
+    $env:NPM_CONFIG_CACHE = $script:BuildCachePaths.Npm
     $env:npm_config_prefer_offline = 'true'
-    $env:PNPM_STORE_DIR = $cacheMap.Pnpm
-    $env:ELECTRON_CACHE = $cacheMap.Electron
-    $env:ELECTRON_BUILDER_CACHE = $cacheMap.ElectronBuilder
-    $env:GRADLE_USER_HOME = $cacheMap.Gradle
+  }
+  if ($script:BuildCachePaths.Pnpm) {
+    # pnpm reads pnpm_config_* / PNPM_CONFIG_* settings. Keep the historical
+    # PNPM_STORE_DIR alias too for older local toolchains.
+    $env:pnpm_config_store_dir = $script:BuildCachePaths.Pnpm
+    $env:PNPM_CONFIG_STORE_DIR = $script:BuildCachePaths.Pnpm
+    $env:PNPM_STORE_DIR = $script:BuildCachePaths.Pnpm
+  }
+  if ($script:BuildCachePaths.Electron) {
+    # Current Electron installer documentation uses electron_config_cache,
+    # while electron-builder and older Electron tooling commonly use
+    # ELECTRON_CACHE. Bind both names to the same user-selected directory.
+    $env:electron_config_cache = $script:BuildCachePaths.Electron
+    $env:ELECTRON_CACHE = $script:BuildCachePaths.Electron
+  }
+  if ($script:BuildCachePaths.ElectronBuilder) {
+    $env:ELECTRON_BUILDER_CACHE = $script:BuildCachePaths.ElectronBuilder
+  }
+  if ($script:BuildCachePaths.Gradle) {
+    $env:GRADLE_USER_HOME = $script:BuildCachePaths.Gradle
+  }
+}
+
+function Show-EffectiveBuildCaches([switch]$VerifyNpm) {
+  Write-Host 'Effective build caches:' -ForegroundColor Cyan
+  Write-Host ("  npm              : {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
+  Write-Host ("  pnpm store       : {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
+  Write-Host ("  Electron         : {0}" -f $env:electron_config_cache) -ForegroundColor DarkGray
+  Write-Host ("  electron-builder : {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  Write-Host ("  Gradle           : {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
+  Write-Host ("  node_modules root: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray
+
+  if ($VerifyNpm -and (Get-Command 'npm.cmd' -ErrorAction SilentlyContinue) -and $env:npm_config_cache) {
+    $npmResolved = $null
+    try {
+      $npmResolved = [string]((& npm.cmd config get cache 2>$null | Select-Object -Last 1))
+      if ($npmResolved) { $npmResolved = $npmResolved.Trim() }
+    } catch {}
+    if ($npmResolved) {
+      Write-Host ("  npm resolved     : {0}" -f $npmResolved) -ForegroundColor DarkGray
+      try {
+        if ([IO.Path]::GetFullPath($npmResolved) -ine [IO.Path]::GetFullPath($env:npm_config_cache)) {
+          throw "npm ignored the configured cache. expected=$($env:npm_config_cache) actual=$npmResolved"
+        }
+      } catch {
+        if ($_.Exception.Message -like 'npm ignored*') { throw }
+      }
+    }
   }
 }
 
@@ -278,8 +381,8 @@ function Show-SharedToolchain {
   if ($sdk) { Write-Host ("OK  Android SDK: {0}" -f $sdk) -ForegroundColor Green }
   else { Write-Host '--  Android SDK: not found' -ForegroundColor DarkYellow }
   Write-Host ("npm cache: {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
-  Write-Host ("pnpm store: {0}" -f $env:PNPM_STORE_DIR) -ForegroundColor DarkGray
-  Write-Host ("Electron cache: {0}" -f $env:ELECTRON_CACHE) -ForegroundColor DarkGray
+  Write-Host ("pnpm store: {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
+  Write-Host ("Electron cache: {0}" -f $env:electron_config_cache) -ForegroundColor DarkGray
   Write-Host ("electron-builder cache: {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
   if ($SharedNodeModulesRoot) { Write-Host ("shared node_modules: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray }
   Write-Host ("Gradle cache: {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
@@ -680,6 +783,7 @@ function Write-AndroidSigningMigrationHint {
 }
 
 function Build-AndroidRelease {
+  Show-EffectiveBuildCaches -VerifyNpm
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
   Ensure-NodeDeps -Dir $Mobile
   Initialize-AndroidReleaseSigning
@@ -764,7 +868,7 @@ try {
     'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
     'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
     'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }
-    'build-windows' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') }
+    'build-windows' { Show-EffectiveBuildCaches -VerifyNpm; Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') }
     'android-check' { if (-not (Check-AndroidEnvironment)) { exit 2 } }
     'android-build' { Build-AndroidRelease }
     'android-run' {
