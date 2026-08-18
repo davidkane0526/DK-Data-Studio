@@ -1648,7 +1648,8 @@
             console.error('[DKDS built-in plugin override fallback]',id,err);
           }
         }
-        await loadScript(row.entry);
+        const scripts=Array.isArray(row?.scripts)&&row.scripts.length?row.scripts:[row.entry];
+        for(const script of scripts)await loadScript(script);
       }
       return definitions.length;
     })();

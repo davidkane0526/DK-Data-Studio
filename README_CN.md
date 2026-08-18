@@ -1,4 +1,4 @@
-# DK Data Studio — v3.25.0
+# DK Data Studio — v3.26.0
 
 ## v3.24 插件内存 / 共振独立窗口 / 工程兼容性
 

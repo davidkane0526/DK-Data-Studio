@@ -1,4 +1,5 @@
 const fs=require('fs');
+const path=require('path');
 
 function read(path){return fs.readFileSync(path,'utf8');}
 function fail(msg){console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCode=2;}
@@ -6,7 +7,8 @@ function fail(msg){console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCo
 const html=read('./src/index.html');
 const app=read('./src/app.js');
 const kernel=read('./src/core/plugin-kernel.js');
-const resonance=read('./src/plugins/resonance-workbench/plugin.js');
+const resonanceManifest=JSON.parse(read('./src/plugins/resonance-workbench/plugin.json'));
+const resonance=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/resonance-workbench/${file}`)).join('\n');
 const detector=read('./src/plugins/resonance-detector-robust/plugin.js');
 const pulse=read('./src/plugins/pulse-analysis/plugin.js');
 const ter=read('./src/plugins/ter-analysis/plugin.js');

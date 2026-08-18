@@ -1,5 +1,7 @@
 (() => {
   const S=window.DKDSScience;
+  const Shared=window.DKDSResonanceWorkbenchShared;
+  if(!Shared)throw new Error('Resonance shared workbench layer is not loaded before the dedicated runtime.');
   const $=selector=>document.querySelector(selector);
   const $$=selector=>[...document.querySelectorAll(selector)];
   const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
@@ -9,40 +11,8 @@
   const csvCell=value=>{const s=String(value??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
   const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
 
-  function defaultWorkspace(project={}){
-    return {
-      schema:1,
-      datasetMeta:(project.datasets||[]).map(d=>({path:d.path,name:d.name,vg:d.vg})),
-      scanVisibility:Array.isArray(project.scanVisibility)?clone(project.scanVisibility):[],
-      peaks:Array.isArray(project.peaks)?clone(project.peaks):[],
-      peakCategories:Array.isArray(project.peakCategories)?clone(project.peakCategories):[],
-      algorithms:clone(project.algorithms||S.preset?.('balanced')||{_preset:'balanced'}),
-      physicsShowLabels:project.physicsShowLabels!==false,
-      spacingSettings:clone(project.spacingSettings||{seriesA:'',seriesB:'',mode:'abs'}),
-      gateAnalysisSettings:clone(project.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0}),
-      transformPreviewByDataset:Array.isArray(project.transformPreviewByDataset)?clone(project.transformPreviewByDataset):[],
-      groupColumns:'auto',
-      activeView:'main'
-    };
-  }
-
-  function normalizeWorkspace(raw,project={}){
-    const base=defaultWorkspace(project);
-    const source=raw&&typeof raw==='object'?raw:{};
-    return {
-      ...base,...clone(source),schema:1,
-      datasetMeta:Array.isArray(source.datasetMeta)?clone(source.datasetMeta):base.datasetMeta,
-      scanVisibility:Array.isArray(source.scanVisibility)?clone(source.scanVisibility):base.scanVisibility,
-      peaks:Array.isArray(source.peaks)?clone(source.peaks):base.peaks,
-      peakCategories:Array.isArray(source.peakCategories)?clone(source.peakCategories):base.peakCategories,
-      algorithms:{...(base.algorithms||{}),...(source.algorithms||{})},
-      spacingSettings:{...(base.spacingSettings||{}),...(source.spacingSettings||{})},
-      gateAnalysisSettings:{...(base.gateAnalysisSettings||{}),...(source.gateAnalysisSettings||{})},
-      transformPreviewByDataset:Array.isArray(source.transformPreviewByDataset)?clone(source.transformPreviewByDataset):base.transformPreviewByDataset,
-      groupColumns:['auto','1','2','3','4'].includes(String(source.groupColumns))?String(source.groupColumns):'auto',
-      activeView:['main','inspect','group','physics','spacing','gate'].includes(String(source.activeView))?String(source.activeView):'main'
-    };
-  }
+  const defaultWorkspace=(project={})=>Shared.defaultWorkspace(project,S);
+  const normalizeWorkspace=(raw,project={})=>Shared.normalizeWorkspace(raw,project,S);
 
   function parseDatasets(project={}){
     return (project.datasets||[]).flatMap(d=>{
@@ -68,8 +38,9 @@
       let currentView='main';
       let spacingResult=[];
       let gateResult=null;
+      let sharedController=null;
 
-      function pluginSliceFromProject(p){return p?.plugins?.['builtin.resonance-workbench']?.workspace||null;}
+      function pluginSliceFromProject(p){return Shared.pluginSliceFromProject(p);}
       function sweepById(id){return sweeps.find(sw=>sw.id===id)||null;}
       function peakById(id){return (workspace.peaks||[]).find(p=>p.id===id)||null;}
 
@@ -312,19 +283,8 @@
       }
 
       function groupSeries(){
-        normalizeCategories();
-        const vis=new Set(visibleSweepIds());
-        const groups=new Map();
-        for(const p of workspace.peaks||[]){
-          if(p.accepted===false||!vis.has(p.sweepId))continue;
-          const key=`${p.direction}::${peakLabel(p)}`;
-          if(!groups.has(key))groups.set(key,[]);groups.get(key).push(p);
-        }
-        return [...groups.entries()].map(([key,peaks])=>{
-          peaks.sort((a,b)=>Number(a.vg)-Number(b.vg));
-          const first=peaks[0];
-          return {key,name:`${directionName(first.direction)} · ${peakLabel(first)}`,direction:first.direction,label:peakLabel(first),order:Number(first.peakOrder)||1,peaks};
-        });
+        if(!sharedController)return [];
+        return sharedController.buildTrendModel().series.map(sr=>({...sr,peaks:sr.points.map(row=>row._peak).filter(Boolean)}));
       }
 
       function renderTrend(){
@@ -436,24 +396,9 @@
         }
       }
 
-      function acceptedSeriesOptions(){
-        const seen=new Map();
-        for(const p of (workspace.peaks||[]).filter(p=>p.accepted!==false)){
-          const key=`${p.direction}::${peakLabel(p)}`;
-          if(!seen.has(key))seen.set(key,{key,direction:p.direction,label:peakLabel(p),order:Number(p.peakOrder)||1,name:`${directionName(p.direction)}·${peakLabel(p)}`});
-        }
-        return [...seen.values()].sort((a,b)=>a.direction===b.direction?(a.order-b.order):(b.direction-a.direction));
-      }
+      function acceptedSeriesOptions(){return sharedController?.acceptedSeriesOptions?.()||[];}
       function chooseRepresentativePeak(list){return list.slice().sort((a,b)=>Number(b.locked)-Number(a.locked)||Number(b.manual)-Number(a.manual)||(Number(b.score)||0)-(Number(a.score)||0))[0]||null;}
-      function computeSpacingResult(keyA,keyB){
-        const [dirAS,labelA]=String(keyA||'').split('::'),[dirBS,labelB]=String(keyB||'').split('::');
-        const dirA=Number(dirAS),dirB=Number(dirBS);if(!labelA||!labelB)return [];
-        const a=(workspace.peaks||[]).filter(p=>p.accepted!==false&&p.direction===dirA&&peakLabel(p)===labelA);
-        const b=(workspace.peaks||[]).filter(p=>p.accepted!==false&&p.direction===dirB&&peakLabel(p)===labelB);
-        const vgs=[...new Set(a.map(p=>p.vg).filter(v=>b.some(q=>q.vg===v)))].sort((x,y)=>x-y),out=[];
-        for(const vg of vgs){const pa=chooseRepresentativePeak(a.filter(p=>p.vg===vg)),pb=chooseRepresentativePeak(b.filter(p=>p.vg===vg));if(!pa||!pb)continue;out.push({vg,vA:pa.v,vB:pb.v,deltaV:pb.v-pa.v,spacing:Math.abs(pb.v-pa.v),labelA:`${directionName(dirA)}·${labelA}`,labelB:`${directionName(dirB)}·${labelB}`});}
-        return out;
-      }
+      function computeSpacingResult(keyA,keyB){return sharedController?.computeSpacingRows?.(keyA,keyB)||[];}
       function populateSpacing(){
         const opts=acceptedSeriesOptions(),valid=new Set(opts.map(o=>o.key)),s=workspace.spacingSettings||{};
         if(!valid.has(s.seriesA))s.seriesA=opts[0]?.key||'';
@@ -579,6 +524,8 @@
 
       const service={
         serialize:()=>clone(workspace),
+        selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
+        directionName,peakLabel,metrics:peakMetrics,
         restore(data,{legacyProject}={}){workspace=normalizeWorkspace(data,legacyProject||project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,
@@ -591,6 +538,7 @@
         exportMainPng:()=>savePlotlyImage('reswinMainPlot','resonance_iv','png'),
         getState:()=>({workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult,gateResult})
       };
+      sharedController=Shared.createController(service,{mode:'top-runtime',science:S,host});
 
       function setProject(next){project=clone(next||{});workspace=normalizeWorkspace(pluginSliceFromProject(project),project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();}
       await setProject(project);

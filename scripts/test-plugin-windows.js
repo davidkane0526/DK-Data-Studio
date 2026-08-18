@@ -182,9 +182,13 @@ assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must
 assert(resonanceRuntime.includes("serviceName:'resonance'"),'Resonance dedicated runtime must expose the normal plugin-window service contract.');
 assert(resonanceRuntime.includes("builtin.resonance-workbench"),'Resonance dedicated runtime must restore only its namespaced plugin state.');
 assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
+const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
 for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
-  assert(read('src/plugins/resonance-workbench/plugin.js').includes(label),`Resonance dedicated TOP UI must retain ${label}.`);
+  assert(resonanceShared.includes(label),`Resonance shared workbench must retain ${label}.`);
 }
+const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
+assert((resonanceManifest.window?.scripts||[]).includes('workbench-shared.js'),'Resonance TOP runtime must load the same shared View/Controller layer as SUPER.');
+assert((resonanceManifest.scripts||[]).includes('super-layout.js'),'Resonance SUPER layout adapter must be declared as a plugin-owned support script.');
 for(const marker of ['function renderInspection()','function renderGroup()','function renderPhysics()','function renderSpacing()','function renderGate()','analyzePhysicalFamilies','computeResonantTerForLabel','pairGateSeries']){
   assert(resonanceRuntime.includes(marker),`Resonance dedicated runtime parity marker missing: ${marker}`);
 }

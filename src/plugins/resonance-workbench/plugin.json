@@ -1,12 +1,12 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "apiVersion": "1.3.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
-  "description": "Full resonance TOP/SUPER workbench with a dedicated independent renderer that preserves curve inspection, grouped plots, physics, spacing and gate analysis.",
+  "description": "Plugin-owned shared Controller and View components; SUPER and TOP are presentation/layout adapters over the same resonance feature spine.",
   "capabilities": [
     "ui.activity",
     "ui.sidebar",
@@ -49,6 +49,16 @@
       "science-ter",
       "platform",
       "plugin-kernel"
+    ],
+    "scripts": [
+      "workbench-shared.js",
+      "view-components.js"
     ]
-  }
+  },
+  "scripts": [
+    "workbench-shared.js",
+    "view-components.js",
+    "super-layout.js",
+    "plugin.js"
+  ]
 }

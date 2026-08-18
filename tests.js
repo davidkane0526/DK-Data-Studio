@@ -46,7 +46,8 @@ console.log('All tests passed.', {
 const fs=require('fs');
 const appSource=fs.readFileSync('./src/app.js','utf8');
 const htmlSource=fs.readFileSync('./src/index.html','utf8');
-const resonancePluginSource=fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8');
+const resonanceManifest=JSON.parse(fs.readFileSync('./src/plugins/resonance-workbench/plugin.json','utf8'));
+const resonancePluginSource=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>fs.readFileSync(`./src/plugins/resonance-workbench/${file}`,'utf8')).join('\n');
 const detectorPluginSource=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
 const terPluginSource=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
 const pulsePluginSource=fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8');
@@ -982,7 +983,7 @@ const appV319=fs.readFileSync('./src/app.js','utf8');
 const htmlV319=fs.readFileSync('./src/index.html','utf8');
 const cssV319=fs.readFileSync('./src/style.css','utf8');
 const kernelV319=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
-const resonanceV319=fs.readFileSync('./src/plugins/resonance-workbench/plugin.js','utf8');
+const resonanceV319=resonancePluginSource;
 const detectorV319=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
 const dataCenterV319=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
 const terPluginV319=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
@@ -1063,8 +1064,8 @@ assert(resonanceV319.includes("ctx.ui.selectionMenus.register('resonance-range'"
   'range menu and its peak-identity UI must be workbench plugin content');
 assert(resonanceV319.includes('function renderPhysicsPanel()'),
   'physics panel rendering must be owned by the resonance plugin');
-assert(resonanceV319.includes("panelTitle:'共振检查器'")&&resonanceV319.includes("panelTitle:'共振组图'"),
-  'generic inspector/group hosts must receive plugin-specific panel titles');
+assert(resonanceV319.includes("superPanelTitle:'共振检查器'")&&resonanceV319.includes("superPanelTitle:'共振组图'")&&resonanceV319.includes('panelTitle:viewSet.inspect.superPanelTitle')&&resonanceV319.includes('panelTitle:viewSet.group.superPanelTitle'),
+  'generic inspector/group hosts must receive titles from shared resonance View descriptors');
 assert(resonanceV319.includes('csvText:()=>R.mainCsvText()')&&resonanceV319.includes('exportPng:()=>R.exportMainPng()'),
   'resonance main-view provider must own its data/image export contract');
 
@@ -1122,7 +1123,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.25.0','current package version must be v3.25.0');
+assert(pkgV321.version==='3.26.0','current package version must be v3.26.0');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
   'DK Data Studio must ship the compact dedicated DK logo/icon assets');

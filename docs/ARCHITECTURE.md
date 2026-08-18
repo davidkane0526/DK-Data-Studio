@@ -362,3 +362,34 @@ Node / Electron Builder / Expo / Gradle / LAN update service
 ```
 
 The LAN update server is a development/deployment service under `services/update-server/`, not part of the renderer plugin architecture.
+
+## Resonance shared View/Controller layer (v3.26)
+
+The Resonance workbench no longer treats SUPER and independent TOP as two separately implemented applications. The plugin owns one feature spine:
+
+```text
+builtin.resonance-workbench
+├─ workbench-shared.js
+│  ├─ canonical six-view catalog
+│  ├─ workspace/schema normalization
+│  ├─ shared controller facade
+│  ├─ trend/group ViewModel
+│  └─ peak-spacing ViewModel
+├─ view-components.js
+│  ├─ shared feature View descriptors
+│  ├─ mature SUPER spacing/gate templates
+│  ├─ dedicated TOP view composition
+│  └─ TOP styles / mount adapter
+├─ super-layout.js
+│  └─ SUPER placement / dock / host contribution adapter
+├─ window-runtime.js
+│  └─ dedicated TOP project/runtime adapter
+└─ plugin.js
+   └─ thin mode dispatcher only
+```
+
+The architectural rule is that scientific/workspace state and reusable feature ViewModels belong to the shared Controller layer, while feature identity and reusable View composition belong to the shared View-component layer. SUPER and TOP may arrange or bind those components differently, but must not create an independent workspace schema, duplicate a scientific ViewModel, or move mature feature templates back into a shell adapter. This specifically prevents the earlier failure mode where TOP visually existed but silently lost curve inspection, group analysis, physics or gate-dependent features as SUPER evolved.
+
+Built-in plugins may declare ordered `manifest.scripts`. The generated plugin index preserves that order, so plugin-private support code stays inside the plugin package rather than becoming a hard-coded core-shell dependency. Dedicated windows use `window.scripts` for the subset needed before their runtime.
+
+`test-resonance-shared-architecture.js` enforces this boundary.

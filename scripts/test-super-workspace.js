@@ -168,7 +168,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert(!terPlugin.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
-  assert(read('src/plugins/resonance-workbench/plugin.js').includes("placements:['right','float']")&&read('src/plugins/resonance-workbench/plugin.js').includes("placements:['bottom','float']"),'built-in resonance PRIME declarations must advertise only placements their adapters actually support.');
+  const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
+  assert(resonanceSuper.includes("placements:['right','float']")&&resonanceSuper.includes("placements:['bottom','float']"),'built-in resonance PRIME declarations must advertise only placements their adapters actually support.');
 
   console.log('SUPER/TOP/PRIME/SUB workspace contract checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

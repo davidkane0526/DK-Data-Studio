@@ -14,8 +14,15 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   if (!fs.existsSync(manifestPath)) continue;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   if (manifest.enabled === false) continue;
-  const entry = String(manifest.entry || 'plugin.js').replace(/\\/g, '/');
-  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`});
+  const normalizeFile = raw => {
+    const file=String(raw||'').replace(/\\/g,'/').replace(/^\.\//,'');
+    if(!file||file.startsWith('/')||file.includes('..')) throw new Error(`Unsafe built-in plugin script path: ${name}/${raw}`);
+    return file;
+  };
+  const entry = normalizeFile(manifest.entry || 'plugin.js');
+  const scriptFiles = Array.isArray(manifest.scripts)&&manifest.scripts.length ? manifest.scripts.map(normalizeFile) : [entry];
+  if(!scriptFiles.includes(entry))scriptFiles.push(entry);
+  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`,scripts:[...new Set(scriptFiles)].map(file=>`plugins/${name}/${file}`)});
 }
 
 const entries=plugins.map(row=>row.entry);

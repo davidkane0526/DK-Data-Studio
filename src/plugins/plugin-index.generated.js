@@ -2,39 +2,69 @@
 window.DKDS_BUILTIN_PLUGINS = [
   {
     "id": "builtin.data-center",
-    "entry": "plugins/data-center/plugin.js"
+    "entry": "plugins/data-center/plugin.js",
+    "scripts": [
+      "plugins/data-center/plugin.js"
+    ]
   },
   {
     "id": "builtin.flexible-import",
-    "entry": "plugins/flexible-import/plugin.js"
+    "entry": "plugins/flexible-import/plugin.js",
+    "scripts": [
+      "plugins/flexible-import/plugin.js"
+    ]
   },
   {
     "id": "builtin.pulse-analysis",
-    "entry": "plugins/pulse-analysis/plugin.js"
+    "entry": "plugins/pulse-analysis/plugin.js",
+    "scripts": [
+      "plugins/pulse-analysis/plugin.js"
+    ]
   },
   {
     "id": "builtin.resonance-detector-robust",
-    "entry": "plugins/resonance-detector-robust/plugin.js"
+    "entry": "plugins/resonance-detector-robust/plugin.js",
+    "scripts": [
+      "plugins/resonance-detector-robust/plugin.js"
+    ]
   },
   {
     "id": "builtin.resonance-workbench",
-    "entry": "plugins/resonance-workbench/plugin.js"
+    "entry": "plugins/resonance-workbench/plugin.js",
+    "scripts": [
+      "plugins/resonance-workbench/workbench-shared.js",
+      "plugins/resonance-workbench/view-components.js",
+      "plugins/resonance-workbench/super-layout.js",
+      "plugins/resonance-workbench/plugin.js"
+    ]
   },
   {
     "id": "builtin.shell-navigation",
-    "entry": "plugins/shell-navigation/plugin.js"
+    "entry": "plugins/shell-navigation/plugin.js",
+    "scripts": [
+      "plugins/shell-navigation/plugin.js"
+    ]
   },
   {
     "id": "builtin.status-monitor",
-    "entry": "plugins/status-monitor/plugin.js"
+    "entry": "plugins/status-monitor/plugin.js",
+    "scripts": [
+      "plugins/status-monitor/plugin.js"
+    ]
   },
   {
     "id": "builtin.ter-analysis",
-    "entry": "plugins/ter-analysis/plugin.js"
+    "entry": "plugins/ter-analysis/plugin.js",
+    "scripts": [
+      "plugins/ter-analysis/plugin.js"
+    ]
   },
   {
     "id": "builtin.workspace-safeguards",
-    "entry": "plugins/workspace-safeguards/plugin.js"
+    "entry": "plugins/workspace-safeguards/plugin.js",
+    "scripts": [
+      "plugins/workspace-safeguards/plugin.js"
+    ]
   }
 ];
 window.DKDS_BUILTIN_PLUGIN_ENTRIES = [

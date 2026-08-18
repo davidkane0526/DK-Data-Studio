@@ -32,6 +32,16 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
   if (m.apiVersion && !String(m.apiVersion).startsWith('1.')) fail(`${name}: unsupported apiVersion ${m.apiVersion}`);
+  if(m.scripts!==undefined){
+    if(!Array.isArray(m.scripts)||!m.scripts.length)fail(`${name}: scripts must be a non-empty array when declared`);
+    else for(const raw of m.scripts){
+      const file=String(raw||'').replace(/\\/g,'/');
+      if(!file||file.startsWith('/')||file.includes('..'))fail(`${name}: unsafe scripts entry ${file||'(empty)'}`);
+      else if(!fs.existsSync(path.join(dir,file)))fail(`${name}: script not found ${file}`);
+      else if(!file.toLowerCase().endsWith('.js'))fail(`${name}: plugin scripts must be JavaScript: ${file}`);
+    }
+    if(Array.isArray(m.scripts)&&!m.scripts.includes(m.entry||'plugin.js'))fail(`${name}: scripts must include entry ${m.entry||'plugin.js'}`);
+  }
 
   if (m.window !== undefined) {
     if (!m.window || typeof m.window !== 'object' || Array.isArray(m.window)) {

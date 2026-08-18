@@ -1,15 +1,25 @@
-# Next Session Handoff — v3.25.0
+# Next Session Handoff — v3.26.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.25.0`
+- Current delivery: `v3.26.0`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
 Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
 
+
+## v3.26 current continuation: shared Resonance View/Controller
+
+- `src/plugins/resonance-workbench/plugin.js` is intentionally a thin dispatcher. Do not move domain UI back into it.
+- `workbench-shared.js` is the canonical plugin-owned Controller layer shared by SUPER and dedicated TOP. It owns the six-view catalog, workspace normalization, controller facade, trend/group ViewModel and peak-spacing ViewModel. `view-components.js` is the shared View layer and owns reusable feature descriptors/templates plus TOP composition.
+- `super-layout.js` is the SUPER presentation/layout adapter. `window-runtime.js` is the dedicated TOP runtime adapter. Both must consume the shared Controller/View layers instead of implementing a second schema, analytical ViewModel, or mature spacing/gate feature template.
+- Built-in plugin manifests can now declare ordered `scripts`; the generated plugin index and plugin kernel load those scripts in order. This is generic infrastructure and must remain plugin-name agnostic.
+- Resonance main scripts are `workbench-shared.js → view-components.js → super-layout.js → plugin.js`; dedicated TOP loads both shared Controller and View layers through `window.scripts` before `window-runtime.js`.
+- Project serialization remains unchanged/self-contained. Do not trade project portability for runtime memory savings.
+- Regression guard: `node scripts/test-resonance-shared-architecture.js` plus the existing SUPER/TOP and plugin-window tests.
 
 ## v3.25 current continuation: stable Plugin Manager + full dedicated Resonance TOP
 
