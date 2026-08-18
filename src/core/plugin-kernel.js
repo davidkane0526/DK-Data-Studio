@@ -7,9 +7,11 @@
   const cleanupByPlugin = new Map();
   const eventListeners = new Map();
   const preferenceStorageKey = 'dkds.plugin.preferences.v1';
+  const prewarmPreferenceStorageKey = 'dkds.plugin.prewarm.v1';
   const superPreferenceStorageKey = 'dkds.workspace.super.v1';
   const primePlacementStorageKey = 'dkds.workspace.prime-placement.v1';
   let preferences = null;
+  let prewarmPreferences = null;
   let host = null;
   let loadingPromise = null;
   let externalLoadingPromise = null;
@@ -58,6 +60,44 @@
   function clearPreference(id) {
     delete readPreferences()[id];
     writePreferences();
+  }
+
+  function readPrewarmPreferences() {
+    if (prewarmPreferences) return prewarmPreferences;
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(prewarmPreferenceStorageKey) || '{}') || {}; } catch {}
+    prewarmPreferences = saved && typeof saved === 'object' ? saved : {};
+    return prewarmPreferences;
+  }
+
+  function writePrewarmPreferences() {
+    try { localStorage.setItem(prewarmPreferenceStorageKey, JSON.stringify(readPrewarmPreferences())); } catch {}
+  }
+
+  function prewarmPreferenceFor(id) {
+    const value = readPrewarmPreferences()[id];
+    return typeof value === 'boolean' ? value : undefined;
+  }
+
+  function defaultPrewarmFor(definition) {
+    const spec=definition?.manifest?.window;
+    return !!(spec&&String(spec.activity||'').trim()) && spec.prewarm !== false;
+  }
+
+  function isPrewarmEnabled(definition) {
+    if(!definition?.manifest?.window?.activity)return false;
+    const saved=prewarmPreferenceFor(definition.manifest.id);
+    return saved===undefined?defaultPrewarmFor(definition):saved;
+  }
+
+  function setPrewarmPreference(id, enabled) {
+    readPrewarmPreferences()[id]=!!enabled;
+    writePrewarmPreferences();
+  }
+
+  function clearPrewarmPreference(id) {
+    delete readPrewarmPreferences()[id];
+    writePrewarmPreferences();
   }
 
   function definitionById(id) {
@@ -1328,6 +1368,10 @@
       capabilities:Array.isArray(m.capabilities)?m.capabilities.slice():[],
       contributionCounts,
       preference:preferenceFor(m.id),
+      hasWindow:!!(m.window&&String(m.window.activity||'').trim()),
+      prewarmDefault:defaultPrewarmFor(definition),
+      prewarmPreference:prewarmPreferenceFor(m.id),
+      prewarmEnabled:isPrewarmEnabled(definition),
       workspaceRole:workspace.role,
       workspaceActivity:workspace.activity||topContract?.activity||'',
       workspaceIcon:workspace.icon||topContract?.icon||'',
@@ -1367,6 +1411,18 @@
     return pluginStateRow(definition);
   }
 
+  function setPluginPrewarm(id, enabled) {
+    const definition=definitionById(id);
+    if(!definition)throw new Error(`Plugin not found: ${id}`);
+    if(!definition.manifest?.window?.activity)throw new Error(`插件 ${id} 没有独立窗口，不能设置预热。`);
+    const next=!!enabled;
+    setPrewarmPreference(id,next);
+    host?.setStatus?.(`插件 ${definition.manifest.name||id} 的窗口预热已${next?'开启':'关闭'}。`);
+    eventEmit('plugin:prewarm-changed',{id,enabled:next});
+    eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+    return pluginStateRow(definition);
+  }
+
   async function reloadPlugin(id) {
     const definition = definitionById(id);
     if (!definition) throw new Error(`Plugin not found: ${id}`);
@@ -1382,8 +1438,10 @@
 
   async function resetPluginPreferences() {
     preferences = {};
+    prewarmPreferences = {};
     if(superPluginId)preferences[superPluginId]=true;
     writePreferences();
+    writePrewarmPreferences();
     for (const definition of definitions) {
       const shouldEnable = definition.manifest.id===superPluginId ? true : definition.manifest.enabled !== false;
       if (shouldEnable && !active.has(definition.manifest.id)) {
@@ -1637,9 +1695,12 @@
       enable:id=>setPluginEnabled(id,true),
       disable:id=>setPluginEnabled(id,false),
       reload:reloadPlugin,
+      setPrewarm:setPluginPrewarm,
       resetPreferences:resetPluginPreferences,
       clearPreference(id){ clearPreference(id); return this.get(id); },
+      clearPrewarmPreference(id){ clearPrewarmPreference(id); return this.get(id); },
       storageKey:preferenceStorageKey,
+      prewarmStorageKey:prewarmPreferenceStorageKey,
       superStorageKey:superPreferenceStorageKey,
       primePlacementStorageKey,
       setSuper:id=>setSuperPlugin(id),

@@ -1,49 +1,28 @@
 # Branching Model
 
-## Current repository history
+## Current local repository
 
-The repository was initialized from the complete v3.14 source tree.
+This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-- `main`
-  - commit: the untouched v3.14 baseline;
-  - tag: `v3.14.0-main-baseline`;
-  - purpose: stable historical baseline requested by the user.
+Current development baseline: **v3.24.0**.
 
-- `plugin`
-  - created from `main`;
-  - purpose: plugin architecture, future scientific workflows, responsive/touch groundwork.
+## Recommended future flow
 
-The repository is delivered with `plugin` checked out.
-
-## Rules
-
-Do not treat `plugin` as a rename of `main`. They are intentionally different lines of development.
-
-Recommended future flow:
-
-```text
-main (preserved v3.14 baseline)
- \
-  plugin
-    ├─ feature/plugin-foo
-    ├─ feature/plugin-bar
-    └─ fix/plugin-host-...
-```
-
-For a new plugin:
+Keep `main` as the local delivered baseline. For larger follow-up work, create a local feature branch and merge it only after tests pass:
 
 ```bash
-git switch plugin
-git switch -c feature/<plugin-name>
-# implement plugin
+git switch main
+git switch -c feature/<name>
+# implement
 npm test
+npm run check
 git commit
-git switch plugin
-git merge --no-ff feature/<plugin-name>
+git switch main
+git merge --no-ff feature/<name>
 ```
 
-Only merge into `main` when explicitly requested.
+Do not access, push to, or modify any remote repository unless the user explicitly requests it.
 
 ## Current delivery checkpoint
 
-The current clean-source delivery is `v3.23.0`, adding the SUPER/TOP/PRIME/SUB workspace contract on top of the v3.22 plugin-window lifecycle. Development can continue directly from the clean project ZIP; remote branch state is not required for local development.
+`v3.24.0` adds user-controlled plugin prewarming, a true dedicated Resonance TOP runtime, robust self-contained project parsing/saving, the plugin-manager viewport repair, and TER improvements selectively absorbed from the provided Graphene Resonance Studio project.

@@ -8,6 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
 
+const DKDSProjectFormat = require('./src/core/project-format');
 const APP_NAME = 'DK Data Studio';
 const APP_ID = 'com.dk.datastudio';
 
@@ -410,7 +411,6 @@ app.whenReady().then(() => {
     const activityId = String(payload?.activityId || '').trim();
     const spec = resolveConfiguredPluginWindow(activityId);
     if (!spec) return { skipped:true, reason:'not-dedicated' };
-    if (spec.prewarm === false) return { skipped:true, reason:'prewarm-disabled' };
     return createOrFocusAuxiliaryWindow(owner, { ...(payload || {}), prewarm:true });
   });
   ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
@@ -428,17 +428,21 @@ app.whenReady().then(() => {
     for (const win of doomed) closeAuxiliaryWindowForReal(win);
     return doomed.length;
   });
-  ipcMain.handle('windows:syncPluginActivities', async (event, activityIds) => {
+  ipcMain.handle('windows:syncPluginActivities', async (event, payload) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
     const ownerId = owner?.webContents?.id;
     if (!ownerId) return 0;
-    const allowed = new Set((Array.isArray(activityIds) ? activityIds : []).map(v => String(v || '').trim()).filter(Boolean));
+    const enabledRows=Array.isArray(payload)?payload:(Array.isArray(payload?.enabled)?payload.enabled:[]);
+    const prewarmRows=Array.isArray(payload)?enabledRows:(Array.isArray(payload?.prewarm)?payload.prewarm:[]);
+    const allowed = new Set(enabledRows.map(v => String(v || '').trim()).filter(Boolean));
+    const allowedPrewarm = new Set(prewarmRows.map(v => String(v || '').trim()).filter(Boolean));
     const doomed = [];
     for (const win of auxiliaryWindows.values()) {
       if (!win || win.isDestroyed()) continue;
       const row = auxiliaryBootstrap.get(win.webContents.id);
       if (row?.ownerWebContentsId !== ownerId || !row?.pluginWindow) continue;
-      if (!allowed.has(String(row.activityId || ''))) doomed.push(win);
+      const activity=String(row.activityId||'');
+      if (!allowed.has(activity) || (row.prewarm===true && !allowedPrewarm.has(activity))) doomed.push(win);
     }
     for (const win of doomed) closeAuxiliaryWindowForReal(win);
     return doomed.length;
@@ -671,7 +675,7 @@ app.whenReady().then(() => {
       if (result.canceled || !result.filePath) return null;
       filePath = result.filePath;
     }
-    fs.writeFileSync(filePath, JSON.stringify(payload.project || {}, null, 2), 'utf8');
+    fs.writeFileSync(filePath, DKDSProjectFormat.serializeProject(payload.project || {}), 'utf8');
     return filePath;
   });
 
@@ -700,7 +704,8 @@ app.whenReady().then(() => {
     });
     if (result.canceled || !result.filePaths.length) return null;
     const filePath = result.filePaths[0];
-    return {path:filePath,project:JSON.parse(fs.readFileSync(filePath, 'utf8'))};
+    const parsed=DKDSProjectFormat.parseProjectBytes(fs.readFileSync(filePath));
+    return {path:filePath,project:parsed.project,encoding:parsed.encoding};
   });
 
   lanUpdater = new LanUpdateClient({ app, BrowserWindow, installPluginPackage:installLanPluginPackage });

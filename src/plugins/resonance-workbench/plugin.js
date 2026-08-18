@@ -2,7 +2,7 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'2.1.0',
+    version:'2.2.0',
     apiVersion:'1.3.0',
     description:'Complete resonance workspace UI: data navigator, detector controls, inspector, group charts, ridge/physics tools and exports.',
     source:'builtin',
@@ -14,6 +14,87 @@
     const R=h.resonance;
     const S=window.DKDSScience;
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    if(h.isAuxiliaryWindow){
+      const pageHtml=`
+        <div class="analysis-page-header">
+          <div><h2>共振分析</h2><div class="analysis-subtitle">独立插件窗口 · 工程数据来自项目快照</div></div>
+          <button class="analysis-page-close" id="reswinCloseBtn">关闭窗口</button>
+        </div>
+        <div class="analysis-page-body resonance-dedicated-body">
+          <div class="reswin-shell">
+            <aside class="reswin-sidebar">
+              <div class="analysis-control-card reswin-control-stack">
+                <strong>数据与扫描</strong>
+                <label>当前扫描<select id="reswinSweepSelect"></select></label>
+                <label>辅助视图<select id="reswinTransform">
+                  <option value="raw">原始 I–V</option><option value="detrend">去背景</option><option value="didv">dI/dV</option>
+                  <option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option>
+                </select></label>
+              </div>
+              <div class="analysis-control-card reswin-control-stack">
+                <strong>寻峰</strong>
+                <label>预设<select id="reswinPreset"><option value="strict">严格</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
+                <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
+                <div class="analysis-note compact">在主图中按住 Shift 后点击曲线，可在最近的原始采样点添加手动峰。</div>
+              </div>
+              <div class="analysis-control-card reswin-control-stack reswin-datasets-card"><strong>数据文件</strong><div id="reswinDatasetList"></div></div>
+            </aside>
+            <main class="reswin-main">
+              <div id="reswinSummary" class="ter-summary reswin-summary"></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">共振 I–V / 峰位</div><div id="reswinMainPlot" class="analysis-chart reswin-main-plot"></div></div>
+              <div class="analysis-control-card export-card reswin-export"><strong>导出</strong><button id="reswinExportMainCsv">I–V CSV</button><button id="reswinExportMainSvg">主图 SVG</button><button id="reswinExportMainPng">主图 PNG</button><button id="reswinExportPeaks">峰参数 CSV</button><button id="reswinCopyPeaks" class="copy-btn">复制峰参数</button></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">峰轨迹 Vpk(Vg)</div><div id="reswinTrendPlot" class="analysis-chart reswin-trend-plot"></div></div>
+              <h3 class="analysis-section-title">当前扫描峰位</h3><div class="analysis-table-wrap"><table id="reswinPeakTable" class="analysis-table"></table></div>
+            </main>
+          </div>
+        </div>`;
+
+      ctx.ui.styles.add('resonance-dedicated',`
+        #resonanceDedicatedPage .reswin-shell{display:grid;grid-template-columns:minmax(250px,20%) minmax(0,1fr);gap:12px;align-items:start}
+        #resonanceDedicatedPage .reswin-sidebar{min-width:0;display:flex;flex-direction:column;gap:10px;position:sticky;top:0}
+        #resonanceDedicatedPage .reswin-control-stack{display:flex;flex-direction:column;align-items:stretch;margin:0;gap:8px}
+        #resonanceDedicatedPage .reswin-control-stack label{display:flex;flex-direction:column;align-items:stretch;gap:4px;font-size:9px;color:#667085}
+        #resonanceDedicatedPage .reswin-control-stack select,#resonanceDedicatedPage .reswin-control-stack input{width:100%;min-width:0}
+        #resonanceDedicatedPage .reswin-button-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        #resonanceDedicatedPage .reswin-datasets-card{max-height:48vh;overflow:auto}
+        #resonanceDedicatedPage .reswin-dataset{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:5px 7px;padding:8px 0;border-top:1px solid #edf0f5}
+        #resonanceDedicatedPage .reswin-dataset:first-child{border-top:0}
+        #resonanceDedicatedPage .reswin-dataset-title{grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;font-weight:700;color:#344054}
+        #resonanceDedicatedPage .reswin-dataset label{margin:0}
+        #resonanceDedicatedPage .reswin-check{flex-direction:row!important;align-items:center!important;justify-content:flex-start!important}
+        #resonanceDedicatedPage .reswin-check input{width:auto!important}
+        #resonanceDedicatedPage .reswin-main{min-width:0;display:flex;flex-direction:column;gap:10px}
+        #resonanceDedicatedPage .reswin-summary{display:flex;flex-wrap:wrap;gap:8px}
+        #resonanceDedicatedPage .reswin-summary span{padding:4px 8px;border:1px solid #dfe5ef;border-radius:999px;background:#fff;color:#566176;font-size:9px}
+        #resonanceDedicatedPage .reswin-main-plot{height:clamp(430px,55vh,680px)}
+        #resonanceDedicatedPage .reswin-trend-plot{height:380px}
+        #resonanceDedicatedPage #reswinPeakTable tr.selected{background:#eef3ff}
+        #resonanceDedicatedPage .analysis-note.compact{margin:0;padding:7px 8px;font-size:8.5px}
+        @media(max-width:900px){#resonanceDedicatedPage .reswin-shell{grid-template-columns:1fr}#resonanceDedicatedPage .reswin-sidebar{position:static}#resonanceDedicatedPage .reswin-datasets-card{max-height:none}}
+      `);
+
+      ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振 I–V 与峰位独立插件窗口',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');R.render();}});
+      const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:pageHtml,onOpen:()=>R.render()});
+      ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'split',root:{selector:'.reswin-shell'},left:{role:'data-display',pageId:page.id,selector:'.reswin-sidebar',stack:true,defaultFraction:.20,minFraction:.14,maxFraction:.38},main:{role:'primary-data',pageId:page.id,selector:'.reswin-main',interaction:'plugin-owned'},prime:[]}});
+      ctx.project.registerSlice('workspace',{serialize:()=>R.serialize(),restore:(data,{legacyProject})=>R.restore(data,{legacyProject}),reset:()=>R.reset()});
+
+      page.querySelector('#reswinCloseBtn').onclick=()=>h.closeCurrentWindow?.();
+      page.querySelector('#reswinSweepSelect').onchange=e=>R.selectSweep(e.target.value);
+      page.querySelector('#reswinTransform').onchange=e=>R.setTransform(e.target.value);
+      page.querySelector('#reswinPreset').onchange=e=>R.setPreset(e.target.value);
+      page.querySelector('#reswinDetectSelected').onclick=()=>R.runDetection('selected');
+      page.querySelector('#reswinDetectAll').onclick=()=>R.runDetection('all');
+      page.querySelector('#reswinExportMainCsv').onclick=()=>R.exportMainCsv();
+      page.querySelector('#reswinExportMainSvg').onclick=()=>R.exportMainSvg();
+      page.querySelector('#reswinExportMainPng').onclick=()=>R.exportMainPng();
+      page.querySelector('#reswinExportPeaks').onclick=()=>R.exportPeaks();
+      page.querySelector('#reswinCopyPeaks').onclick=()=>R.copyPeaks();
+      ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')R.render();});
+      ctx.events.on('layout:resize',()=>{for(const id of ['reswinMainPlot','reswinTrendPlot']){const el=document.getElementById(id);if(el&&el.offsetParent!==null){try{Plotly.Plots.resize(el);}catch{}}}});
+      return {};
+    }
+
     let detectorParamPanel=null;
     const gatePageHtml=`<div class="analysis-page-header">
 <div>
@@ -564,6 +645,8 @@
     ctx.events.on('plugin:manager-changed',()=>renderDetectorUi(true));
     ctx.events.on('activity:changed',({id})=>{if(id==='resonance')syncSidebarState();});
     syncSidebarState();
+
+    ctx.project.registerSlice('workspace',{serialize:()=>R.serialize(),restore:(data,{legacyProject})=>R.restore(data,{legacyProject}),reset:()=>R.reset()});
 
     return {deactivate(){detectorParamPanel?.destroy?.();}};
   });

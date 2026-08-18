@@ -21,6 +21,7 @@ const app=read('src/app.js');
 const pulseRuntime=read('src/plugins/pulse-analysis/window-runtime.js');
 const terRuntime=read('src/plugins/ter-analysis/window-runtime.js');
 const terPlugin=read('src/plugins/ter-analysis/plugin.js');
+const resonanceRuntime=read('src/plugins/resonance-workbench/window-runtime.js');
 
 assert(!shellHtml.includes('../app.js'),'Dedicated plugin window must not load the full src/app.js renderer.');
 assert(!shellHtml.includes('plugin-index'),'Dedicated plugin window must not load the full generated plugin index.');
@@ -79,16 +80,16 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'compatibility',runtime:'',manifestDeps:[],deps:['platform','plugin-kernel']},
-  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','plugin-kernel']},
-  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',deps:['plotly','science-common','science-ter','platform','plugin-kernel']},
-  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',deps:['plotly','science-common','science-import','science-pulse','platform','plugin-kernel']}
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','platform','plugin-kernel']},
+  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','plugin-kernel']},
+  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-ter','platform','plugin-kernel']},
+  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','plugin-kernel']}
 };
 for(const [folder,spec] of Object.entries(expected)){
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(manifest.window?.activity===spec.activity,`${folder}: window.activity must be ${spec.activity}`);
   assert((manifest.window?.mode||'dedicated')===spec.mode,`${folder}: window.mode must be ${spec.mode}`);
-  assert(manifest.window?.prewarm===true,`${folder}: window.prewarm must explicitly use the generic prewarm contract`);
+  assert(manifest.window?.prewarm===spec.prewarm,`${folder}: window.prewarm must match the built-in memory policy`);
   assert(manifest.window?.reuse===true,`${folder}: window.reuse must explicitly use the generic hide/reuse contract`);
   assert(manifest.window?.persistence==='project',`${folder}: project result persistence must be enabled`);
   assert(JSON.stringify(manifest.window?.dependencies||[])===JSON.stringify(spec.manifestDeps||spec.deps),`${folder}: unexpected dedicated-window dependency set`);
@@ -103,7 +104,7 @@ const resolved=readBuiltinPluginWindows(root);
 for(const spec of Object.values(expected)){
   const row=resolved.get(spec.activity);
   assert(!!row,`manager failed to resolve ${spec.activity}`);
-  assert(row.prewarm===true&&row.reuse===true&&row.persistence==='project',`${spec.activity}: generic lifecycle policy missing`);
+  assert(row.prewarm===spec.prewarm&&row.reuse===true&&row.persistence==='project',`${spec.activity}: generic lifecycle policy missing`);
   assert(row.mode===spec.mode,`${spec.activity}: resolved window mode differs from manifest`);
   assert(JSON.stringify(row?.dependencies||[])===JSON.stringify(spec.deps),`${spec.activity}: resolved dependencies differ from manifest`);
 }
@@ -175,6 +176,13 @@ assert(!withOverride.has('ter'),'built-in override must remove the packaged wind
 assert(withOverride.get('ter-override')?.source==='override','built-in override must install its replacement window contract with override source.');
 
 
+// Resonance must now use a real dedicated plugin renderer rather than launching
+// a second copy of the full application renderer.
+assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must not load the full application renderer.');
+assert(resonanceRuntime.includes("serviceName:'resonance'"),'Resonance dedicated runtime must expose the normal plugin-window service contract.');
+assert(resonanceRuntime.includes("builtin.resonance-workbench"),'Resonance dedicated runtime must restore only its namespaced plugin state.');
+assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
+
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
 // results live in namespaced project slices and artifact deltas.
 assert(pulseRuntime.includes('result:item.result ? cloneSerializable(item.result) : null'),'Pulse window project slice must persist computed result payloads.');
@@ -188,6 +196,7 @@ for(const rel of [
   'src/plugin-window/runtime.js',
   'src/plugins/pulse-analysis/window-runtime.js',
   'src/plugins/ter-analysis/window-runtime.js',
+  'src/plugins/resonance-workbench/window-runtime.js',
   'src/plugins/ter-analysis/plugin.js',
   'plugin-window-manager.js',
   'preload.js',

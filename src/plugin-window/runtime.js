@@ -8,6 +8,11 @@
     plotly:'../../node_modules/plotly.js-dist-min/plotly.min.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
+    'science-presets':'../science/presets.js',
+    'science-peaks':'../science/peaks.js',
+    'science-identity':'../science/identity.js',
+    'science-physics':'../science/physics.js',
+    'science-gate':'../science/gate.js',
     'science-pulse':'../science/pulse.js',
     'science-ter':'../science/ter.js',
     'data-model':'../core/data-model.js',
@@ -289,7 +294,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.23.0',
+      appVersion:'3.24.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

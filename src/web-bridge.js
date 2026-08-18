@@ -242,7 +242,9 @@
       const path=String(payload?.path||'');
       const rawName=(path.split(/[\\/]/).pop()||payload?.defaultName||'dk_data_project.dkds.json');
       const name=decodeURIComponent(rawName.replace(/^(?:web|webfs|native):\/\//,''));
-      const content=JSON.stringify(payload?.project||{},null,2);
+      const content=window.DKDSProjectFormat?.serializeProject
+        ? window.DKDSProjectFormat.serializeProject(payload?.project||{})
+        : JSON.stringify(payload?.project||{},null,2);
       if(nativeBridge){
         const uri=await nativeCall('saveText',{
           name,
@@ -284,7 +286,8 @@
         const asset=assets?.[0];
         if(!asset)return null;
         const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
-        return {path:asset.path,project:JSON.parse(decoded.text)};
+        const project=window.DKDSProjectFormat?.parseProjectText?window.DKDSProjectFormat.parseProjectText(decoded.text):JSON.parse(decoded.text);
+        return {path:asset.path,project};
       }
       if(canUseFileSystemAccess()){
         try{
@@ -296,7 +299,9 @@
           const file=await handle.getFile();
           const path=projectPathForHandle(handle);
           projectFileHandles.set(path,handle);
-          return {path,project:JSON.parse(await file.text())};
+          const bytes=new Uint8Array(await file.arrayBuffer());
+          const project=window.DKDSProjectFormat?.parseProjectBytes?window.DKDSProjectFormat.parseProjectBytes(bytes).project:JSON.parse(new TextDecoder().decode(bytes));
+          return {path,project};
         }catch(err){
           if(err?.name==='AbortError')return null;
           console.warn('[DKDS web project open picker]',err);
@@ -305,8 +310,9 @@
       const files=await chooseFiles({multiple:false,accept:'.json,.dkds.json,application/json'});
       const file=files[0];
       if(!file)return null;
-      const text=await file.text();
-      return {path:`web://${file.name}`,project:JSON.parse(text)};
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      const project=window.DKDSProjectFormat?.parseProjectBytes?window.DKDSProjectFormat.parseProjectBytes(bytes).project:JSON.parse(new TextDecoder().decode(bytes));
+      return {path:`web://${file.name}`,project};
     },
 
     getRuntimeStatus: async()=>{

@@ -1,6 +1,14 @@
 # Changelog
 
-- UI follow-up: standalone Edit / Export / Manage menu buttons now explicitly override the shared 34 px toolbar `!important` rule so their outer height matches the file-command group; the LAN minimize glyph is reduced to an 8×1 px hairline; plugin-manager enable/disable/reload rerenders preserve scroll position and disable Chromium scroll anchoring to prevent the manager surface from jumping upward.
+## 3.24.0 — user-controlled prewarm / dedicated resonance / robust self-contained projects
+
+- Plugin Manager now exposes a per-plugin **预热** preference. Built-in independent windows default to off to reduce idle Electron renderer memory; users can opt in per plugin.
+- Resonance Analysis no longer uses the compatibility full-app renderer for TOP windows. It now owns a dedicated runtime and namespaced project slice like TER / Pulse, while the SUPER workspace keeps the mature integrated resonance surface.
+- Project I/O now shares one parser/serializer across desktop and web, supports BOM/UTF-16 project files, preserves legacy plugin fields, and continues embedding both raw imported text and parsed points so projects remain portable without the original source files.
+- Plugin-manager lifecycle mutations reset to a valid top-aligned viewport and analysis pages use top/bottom constraints instead of stale calculated heights, preventing the large blank area after disabling/reloading plugins.
+- TER adopts the verified Python-reference voltage grid/automatic tolerance semantics plus linked R–V inspection, chart-layout and export interactions without importing the reference application's legacy architecture.
+
+- Carries forward the v3.23 toolbar/LAN polish; plugin-manager enable/disable/reload now deliberately resets to a valid top-aligned viewport instead of preserving a stale bottom scroll anchor.
 ## 3.23.0 continuation — toolbar outline alignment / LAN icon polish
 
 - Replaced the LAN Web minimize em dash with a compact 11 × 2 px drawn glyph while retaining the existing 32 × 30 px click target.

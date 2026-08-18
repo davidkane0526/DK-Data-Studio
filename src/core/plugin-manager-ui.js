@@ -161,7 +161,7 @@
   function scheduleViewportRepair(){
     requestAnimationFrame(()=>{
       state.host?.syncAnalysisPageViewport?.();
-      requestAnimationFrame(()=>state.host?.syncAnalysisPageViewport?.());
+      requestAnimationFrame(()=>{state.host?.syncAnalysisPageViewport?.();clampManagerScroll(pluginManagerScroller());});
     });
   }
 
@@ -169,26 +169,62 @@
     return $('#pluginManagerPage .analysis-page-body')||$('#pluginManagerList')?.closest?.('.analysis-page-body')||null;
   }
 
-  function captureManagerScroll(){
+  function captureManagerScroll(anchorPluginId=''){
     const scroller=pluginManagerScroller();
     if(!scroller)return null;
-    return {scroller,top:scroller.scrollTop,left:scroller.scrollLeft};
+    const rect=scroller.getBoundingClientRect();
+    let anchor=null;
+    if(anchorPluginId){
+      const safe=window.CSS?.escape?CSS.escape(anchorPluginId):String(anchorPluginId).replace(/["\\]/g,'\\$&');
+      anchor=document.querySelector(`#pluginManagerList .plugin-manager-card[data-plugin-id="${safe}"]`);
+    }
+    if(!anchor){
+      const cards=[...document.querySelectorAll('#pluginManagerList .plugin-manager-card')];
+      anchor=cards.find(card=>card.getBoundingClientRect().bottom>rect.top+4)||cards[0]||null;
+    }
+    return {
+      scroller,
+      top:scroller.scrollTop,
+      left:scroller.scrollLeft,
+      anchorPluginId:anchor?.dataset?.pluginId||anchorPluginId||'',
+      anchorOffset:anchor?anchor.getBoundingClientRect().top-rect.top:null
+    };
   }
 
-  function restoreManagerScroll(snapshot,{top=false}={}){
+  function clampManagerScroll(scroller){
+    if(!scroller)return;
+    const maxTop=Math.max(0,scroller.scrollHeight-scroller.clientHeight);
+    if(scroller.scrollTop>maxTop)scroller.scrollTop=maxTop;
+    if(scroller.scrollTop<0)scroller.scrollTop=0;
+  }
+
+  function restoreManagerScroll(snapshot,{top=false,anchorPluginId=''}={}){
     if(!snapshot?.scroller)return;
     const apply=()=>{
       const scroller=snapshot.scroller;
-      const maxTop=Math.max(0,scroller.scrollHeight-scroller.clientHeight);
-      scroller.scrollTop=top?0:Math.min(snapshot.top,maxTop);
+      if(top){
+        scroller.scrollTop=0;
+      }else{
+        const wanted=anchorPluginId||snapshot.anchorPluginId;
+        let anchored=false;
+        if(wanted&&Number.isFinite(snapshot.anchorOffset)){
+          const safe=window.CSS?.escape?CSS.escape(wanted):String(wanted).replace(/["\\]/g,'\\$&');
+          const card=document.querySelector(`#pluginManagerList .plugin-manager-card[data-plugin-id="${safe}"]`);
+          if(card){
+            const scrollerRect=scroller.getBoundingClientRect();
+            const delta=card.getBoundingClientRect().top-scrollerRect.top-snapshot.anchorOffset;
+            if(Number.isFinite(delta)){scroller.scrollTop+=delta;anchored=true;}
+          }
+        }
+        if(!anchored)scroller.scrollTop=snapshot.top;
+      }
       scroller.scrollLeft=snapshot.left;
+      clampManagerScroll(scroller);
     };
-    // Replacing every card can make Chromium's scroll anchoring run after the
-    // current task. Restore now and on the next two frames so enable/disable
-    // never makes the plugin manager appear to jump upward.
     apply();
     requestAnimationFrame(()=>{apply();requestAnimationFrame(apply);});
   }
+
 
   function renderSummary(all) {
     const total=all.length;
@@ -205,7 +241,8 @@
   function renderList(options={}) {
     const list=$('#pluginManagerList');
     if(!list)return;
-    const scrollSnapshot=captureManagerScroll();
+    const anchorPluginId=String(options.anchorPluginId||'');
+    const scrollSnapshot=captureManagerScroll(anchorPluginId);
     const resetScroll=options.scroll==='top';
     const all=window.DKDSPlugins?.manager?.list?.()||[];
     renderSummary(all);
@@ -222,7 +259,7 @@
 
     if(!plugins.length){
       list.innerHTML='<div class="plugin-manager-empty">没有符合当前筛选条件的插件。</div>';
-      restoreManagerScroll(scrollSnapshot,{top:resetScroll});
+      restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
       scheduleViewportRepair();
       return;
     }
@@ -253,11 +290,18 @@
             </div>
             <div class="plugin-card-id">${escapeHtml(plugin.id)} · v${escapeHtml(plugin.version||'?')}</div>
           </div>
-          <label class="plugin-enable-switch" title="${plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
-            <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper)?'disabled':''}>
-            <span class="plugin-switch-track"><span class="plugin-switch-thumb"></span></span>
-            <span class="plugin-switch-label">${plugin.enabled?'启用':'停用'}</span>
-          </label>
+          <div class="plugin-card-switches">
+            <label class="plugin-enable-switch" title="${plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
+              <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper)?'disabled':''}>
+              <span class="plugin-switch-track"><span class="plugin-switch-thumb"></span></span>
+              <span class="plugin-switch-label">${plugin.enabled?'启用':'停用'}</span>
+            </label>
+            ${plugin.hasWindow?`<label class="plugin-prewarm-switch" title="预热会在后台提前创建该插件窗口，打开更快，但会增加内存占用。">
+              <input class="plugin-prewarm-input" type="checkbox" ${plugin.prewarmEnabled?'checked':''} ${busy?'disabled':''}>
+              <span class="plugin-prewarm-box" aria-hidden="true"></span>
+              <span>预热</span>
+            </label>`:''}
+          </div>
         </div>
         <div class="plugin-card-body">
           <p class="plugin-card-description">${escapeHtml(display.description)}</p>
@@ -279,6 +323,7 @@
         <div class="plugin-card-details hidden">
           <div><strong>注册贡献：</strong>${escapeHtml(contributionText(plugin.contributionCounts))}</div>
           <div><strong>启用来源：</strong>${plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
+          ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
           ${plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:''}
         </div>`;
@@ -286,32 +331,43 @@
       const superSelector=card.querySelector('.plugin-super-selector');
       if(superSelector)superSelector.onclick=async()=>{
         if(plugin.isSuper||!plugin.active||!plugin.topContractReady||state.busy.has(plugin.id))return;
-        state.busy.add(plugin.id);renderList();
+        state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
         try{
           await window.DKDSPlugins.manager.setSuper(plugin.id);
           state.host?.setStatus?.(`${display.name} 已设为 SUPER 主界面；其他 TOP 保持独立窗口。`);
         }catch(err){state.host?.setStatus?.(`设置主界面失败：${err.message}`);}
-        finally{state.busy.delete(plugin.id);renderList();}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
       const toggle=card.querySelector('.plugin-enable-input');
       toggle.onchange=async()=>{
         state.busy.add(plugin.id);
-        renderList();
+        renderList({anchorPluginId:plugin.id});
         try{
           await window.DKDSPlugins.manager.setEnabled(plugin.id,toggle.checked);
         }catch(err){
           state.host?.setStatus?.(`插件 ${display.name} 状态修改失败：${err.message}`);
         }finally{
           state.busy.delete(plugin.id);
-          renderList();
+          renderList({scroll:'top'});
+        }
+      };
+
+      const prewarmToggle=card.querySelector('.plugin-prewarm-input');
+      if(prewarmToggle)prewarmToggle.onchange=()=>{
+        try{
+          window.DKDSPlugins.manager.setPrewarm(plugin.id,prewarmToggle.checked);
+          renderList({anchorPluginId:plugin.id});
+        }catch(err){
+          state.host?.setStatus?.(`插件 ${display.name} 预热设置失败：${err.message}`);
+          renderList({anchorPluginId:plugin.id});
         }
       };
 
       card.querySelector('.plugin-reload-btn').onclick=async()=>{
         if(!plugin.enabled)return;
         state.busy.add(plugin.id);
-        renderList();
+        renderList({anchorPluginId:plugin.id});
         try{
           if(plugin.active)await window.DKDSPlugins.manager.reload(plugin.id);
           else await window.DKDSPlugins.manager.enable(plugin.id);
@@ -319,17 +375,20 @@
           state.host?.setStatus?.(`插件 ${display.name} 加载失败：${err.message}`);
         }finally{
           state.busy.delete(plugin.id);
-          renderList();
+          // Plugin lifecycle changes can remove/rebuild cards and alter their
+          // heights. Always return the manager to a valid top-aligned viewport
+          // rather than preserving a now-invalid bottom scroll anchor.
+          renderList({scroll:'top'});
         }
       };
 
       const uninstall=card.querySelector('.plugin-uninstall-btn');
       if(uninstall)uninstall.onclick=async()=>{
         if(!window.confirm(`卸载本地插件 ${display.name}？\n\n不会删除工程中已保存的 ${plugin.id} 数据；重新安装同 ID 插件后仍可恢复。`))return;
-        state.busy.add(plugin.id);renderList();
+        state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
         try{await window.DKDSPlugins.external.uninstall(plugin.id);}
         catch(err){state.host?.setStatus?.(`卸载插件失败：${err.message}`);}
-        finally{state.busy.delete(plugin.id);renderList();}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
       card.querySelector('.plugin-details-btn').onclick=()=>{
@@ -339,7 +398,7 @@
       };
       list.appendChild(card);
     }
-    restoreManagerScroll(scrollSnapshot,{top:resetScroll});
+    restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
     scheduleViewportRepair();
   }
 
@@ -378,10 +437,10 @@
     $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.DKDSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
-      if(!window.confirm('恢复所有插件的默认启用状态？不会删除插件工程数据。'))return;
+      if(!window.confirm('恢复所有插件的默认启用状态与默认预热设置？不会删除插件工程数据。'))return;
       try{
         await window.DKDSPlugins.manager.resetPreferences();
-        state.host?.setStatus?.('插件启用状态已恢复默认。');
+        state.host?.setStatus?.('插件启用状态与预热设置已恢复默认。');
       }catch(err){
         state.host?.setStatus?.(`恢复插件默认状态失败：${err.message}`);
       }
@@ -395,7 +454,6 @@
 
   window.DKDSPluginManagerUI={
     configure(host){state.host=host||{};bind();renderList();},
-    render:renderList,
     render:renderList,
     open:openManager
   };

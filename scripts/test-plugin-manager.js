@@ -64,6 +64,12 @@ P.define({
   throw new Error('expected activation failure');
 });
 
+
+P.define({
+  id:'test.windowed',name:'Windowed',version:'1.0.0',enabled:true,apiVersion:'1.0.0',
+  window:{activity:'windowed',prewarm:false,reuse:true,persistence:'project'}
+},async()=>({}));
+
 P.define({
   id:'test.duplicate',name:'Duplicate provider',version:'1.0.0',enabled:false,apiVersion:'1.1.0'
 },async ctx=>{
@@ -115,6 +121,15 @@ P.configure({
   const statefulProviders=(P.diagnostics().registries['analysis.providers']||[]).filter(row=>row.id==='stateful');
   assert(statefulProviders.length===1&&statefulProviders[0].pluginId==='test.stateful','duplicate provider activation must not replace the original owner');
 
+  const windowed=P.manager.get('test.windowed');
+  assert(windowed.hasWindow,'windowed plugin should expose an independent-window state row');
+  assert(windowed.prewarmDefault===false&&windowed.prewarmEnabled===false,'built-in/default prewarm=false should remain off until user opts in');
+  P.manager.setPrewarm('test.windowed',true);
+  assert(P.manager.get('test.windowed').prewarmEnabled===true,'user must be able to enable prewarm from plugin manager');
+  assert(JSON.parse(store.get(P.manager.prewarmStorageKey))['test.windowed']===true,'prewarm preference should persist separately from enable/disable');
+  P.manager.setPrewarm('test.windowed',false);
+  assert(P.manager.get('test.windowed').prewarmEnabled===false,'user must be able to disable prewarm again');
+
   const saved=JSON.parse(store.get(P.manager.storageKey));
   assert(saved['test.stateful']===true,'enabled preference should persist to localStorage');
   assert(saved['test.default-off']===true,'default-off override should persist');
@@ -122,6 +137,7 @@ P.configure({
   await P.manager.resetPreferences();
   assert(P.manager.get('test.stateful').active,'reset should restore manifest default enabled state');
   assert(!P.manager.get('test.default-off').active,'reset should restore manifest default disabled state');
+  assert(P.manager.get('test.windowed').prewarmEnabled===false,'reset should restore manifest default prewarm state');
 
   console.log('Plugin manager lifecycle/state-preservation tests passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

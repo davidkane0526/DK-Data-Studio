@@ -139,7 +139,7 @@ assert.ok(mdns.includes(Buffer.from('path=/')),'mDNS TXT record must advertise p
 
 const tempUser=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-lan-web-test-'));
 try{
-  const fakeApp={getAppPath:()=>path.resolve(__dirname,'..'),getPath:()=>tempUser,getVersion:()=> '3.23.0'};
+  const fakeApp={getAppPath:()=>path.resolve(__dirname,'..'),getPath:()=>tempUser,getVersion:()=> '3.24.0'};
   const fakeWindows={getAllWindows:()=>[]};
   const lanWeb=new LanWebServer({app:fakeApp,BrowserWindow:fakeWindows});
   const upnp=lanWeb.upnpDeviceXml('192.168.1.23');

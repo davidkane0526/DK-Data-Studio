@@ -246,7 +246,7 @@
           if($('#terSummary'))render();
           scheduleSnapshot();
         },
-        render,autoParameters,calculate,
+        render,getState:()=>({settings,display,result}),autoParameters,calculate,
         applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};

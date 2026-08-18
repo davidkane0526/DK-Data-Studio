@@ -38,19 +38,33 @@
     return dirs;
   }
 
+  // Python's built-in round() uses bankers rounding for exact .5 ties.
+  // ter_gui.py uses round(abs(vmin)/step) and round(vmax/step) to decide
+  // the number of target samples, so reproduce that behavior explicitly.
+  function pythonRoundInt(value){
+    const n=Number(value);
+    if(!Number.isFinite(n))return NaN;
+    const lo=Math.floor(n),frac=n-lo;
+    // Do not use an epsilon here: Python only applies ties-to-even when the
+    // actual binary floating value is exactly halfway. 9.499999999999998,
+    // for example, must round to 9 rather than being snapped to 9.5.
+    if(frac===.5)return (Math.abs(lo)%2===0)?lo:lo+1;
+    return Math.round(n);
+  }
+
   function terVoltageGrid(vmin,vmax,step){
     if(!(vmin<0&&vmax>0))throw new Error('TER_max 要求 Vds 范围跨过 0 V。');
     if(!(step>0))throw new Error('Vds 步长必须大于 0。');
-    const out=[];
-    // Equivalent to np.arange(vmin, -step/2, step)
-    for(let v=vmin, guard=0; v < -step/2 && guard<100000; v+=step,guard++){
-      out.push(Number(v.toFixed(12)));
+    const nNegative=pythonRoundInt(Math.abs(vmin)/step);
+    const nPositive=pythonRoundInt(vmax/step);
+    if(!Number.isFinite(nNegative)||!Number.isFinite(nPositive)||nNegative<0||nPositive<0){
+      throw new Error('无法生成有效的 TER Vds 网格。');
     }
-    // Equivalent to np.arange(step, vmax + step/2, step)
-    for(let v=step, guard=0; v <= vmax+step/2 && guard<100000; v+=step,guard++){
-      out.push(Number(v.toFixed(12)));
-    }
-    return out;
+    const negative=[];
+    for(let index=0;index<nNegative;index++)negative.push(Number((vmin+index*step).toFixed(12)));
+    const positive=[];
+    for(let index=0;index<nPositive;index++)positive.push(Number(((index+1)*step).toFixed(12)));
+    return negative.concat(positive);
   }
 
   function calculateTerHighLow(rUp,rDown){
@@ -89,11 +103,19 @@
   function computeTerMatrix(datasets,options={}){
     if(!datasets?.length)throw new Error('当前项目没有可用于 TER_max 的数据。');
     const detected=detectTerVoltageParameters(datasets);
-    const vmin=Number.isFinite(Number(options.vmin))?Number(options.vmin):detected.vmin;
-    const vmax=Number.isFinite(Number(options.vmax))?Number(options.vmax):detected.vmax;
-    const vstep=Number.isFinite(Number(options.vstep))&&Number(options.vstep)>0?Number(options.vstep):detected.vstep;
-    const tolerance=Number.isFinite(Number(options.tolerance))&&Number(options.tolerance)>=0?Number(options.tolerance):vstep/20;
-    const currentFloor=Number.isFinite(Number(options.currentFloor))&&Number(options.currentFloor)>0?Number(options.currentFloor):1e-15;
+    const optionNumber=(key,predicate=Number.isFinite)=>{
+      const raw=options?.[key];
+      if(raw===null||raw===undefined||raw==='')return null;
+      const value=Number(raw);
+      return predicate(value)?value:null;
+    };
+    const vmin=optionNumber('vmin')??detected.vmin;
+    const vmax=optionNumber('vmax')??detected.vmax;
+    const vstep=optionNumber('vstep',v=>Number.isFinite(v)&&v>0)??detected.vstep;
+    // A blank/null tolerance means the same automatic vstep/20 used by
+    // ter_gui.py; Number(null) must not silently become 0 here.
+    const tolerance=optionNumber('tolerance',v=>Number.isFinite(v)&&v>=0)??vstep/20;
+    const currentFloor=optionNumber('currentFloor',v=>Number.isFinite(v)&&v>0)??1e-15;
     const targets=terVoltageGrid(vmin,vmax,vstep);
 
     const records=[];

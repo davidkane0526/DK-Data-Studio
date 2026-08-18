@@ -1,12 +1,12 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "apiVersion": "1.3.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
-  "description": "Complete resonance workspace UI and analysis composition. Peak algorithms are discovered from independent detector plugins.",
+  "description": "Resonance workspace with full SUPER integration and a dedicated independent renderer for TOP windows.",
   "capabilities": [
     "ui.activity",
     "ui.sidebar",
@@ -28,14 +28,26 @@
   },
   "window": {
     "activity": "resonance",
-    "mode": "compatibility",
     "title": "共振分析",
     "width": 1480,
     "height": 940,
     "minWidth": 920,
     "minHeight": 650,
-    "prewarm": true,
+    "prewarm": false,
     "reuse": true,
-    "persistence": "project"
+    "persistence": "project",
+    "runtime": "window-runtime.js",
+    "dependencies": [
+      "plotly",
+      "science-common",
+      "science-presets",
+      "science-import",
+      "science-peaks",
+      "science-identity",
+      "science-physics",
+      "science-gate",
+      "platform",
+      "plugin-kernel"
+    ]
   }
 }

@@ -1,4 +1,13 @@
-# DK Data Studio — v3.23.0
+# DK Data Studio — v3.24.0
+
+## v3.24 插件内存 / 共振独立窗口 / 工程兼容性
+
+- 插件管理器为所有具有独立窗口的插件提供“预热”选项。DKDS 内置 TOP 插件默认关闭预热以降低空闲内存，用户可以逐个开启。
+- 共振分析 TOP 已改为真正的 dedicated plugin window，不再通过 compatibility 模式启动第二套完整应用；SUPER 模式仍保留成熟的完整共振工作区。
+- 桌面版与网页版统一使用 `src/core/project-format.js` 打开/保存工程。工程继续同时保存原始文本与解析后的点数据，因此复制 `.dkds.json` 到没有原始 CSV/TXT 的电脑仍可完整显示和继续分析。
+- 旧工程根字段继续保留并可迁移到插件命名空间；新增插件字段不会删除旧字段。
+- TER 吸收 Graphene Resonance Studio 中经过 Python 参考脚本校验的电压网格/自动容差逻辑，并增加 R–V 联动、图表排列、逐图导出等交互；没有移植其旧的整体应用架构。
+- 插件启停/重载后插件管理器回到有效顶部视口，分析页采用 top/bottom 约束，避免再次出现内容整体上移后下方大面积空白。
 
 ## v3.23 SUPER / TOP / PRIME / SUB 工作区契约
 

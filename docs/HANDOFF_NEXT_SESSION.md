@@ -1,15 +1,24 @@
-# Next Session Handoff — v3.23.0
+# Next Session Handoff — v3.24.0
 
 ## Repository identity
 
-- Stable baseline branch: `main`
-- Stable baseline tag: `v3.14.0-main-baseline`
-- Active development branch: `plugin`
-- Current delivery: `v3.23.0`
+- Local working branch: `main`
+- This archive contains reconstructed local Git history only; no remote repository is required or assumed.
+- Current delivery: `v3.24.0`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
-Continue new product work from `plugin`, not from `main`.
+Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
+
+
+## v3.24 current continuation: memory, dedicated resonance, portable projects
+
+- Built-in independent TOP windows explicitly default `window.prewarm` to `false`. Plugin Manager exposes a persisted per-plugin prewarm override through `DKDSPlugins.manager.setPrewarm(...)`. Generic third-party manifests that omit the field still inherit the host default.
+- Resonance TOP is now dedicated and uses `src/plugins/resonance-workbench/window-runtime.js`; do not return it to compatibility/full-`app.js` mode. Its project state is stored under `plugins["builtin.resonance-workbench"].workspace`, with legacy root fields kept/restored for compatibility.
+- `src/core/project-format.js` is the shared desktop/web project parser/serializer. Do not remove embedded dataset `text` or `points`: project portability without source files is a required contract.
+- TER v2.1 adopts Python-reference grid/tolerance semantics and linked R–V/layout/export enhancements from the provided Graphene Resonance Studio, while keeping DKDS plugin architecture. Regression guard: `node scripts/test-ter-python-reference.js`.
+- Plugin lifecycle changes deliberately top-align Plugin Manager after enable/disable/reload. `.analysis-page` fills via fixed `top` + `bottom`, not a stale calculated height.
+- Regression guards: `node scripts/test-project-format.js`, `node scripts/test-plugin-manager.js`, `node scripts/test-plugin-windows.js`, `node scripts/test-analysis-page-viewport.js`.
 
 ## Current continuation: global status bar / project Save As / LAN Web state
 
@@ -35,7 +44,7 @@ Continue new product work from `plugin`, not from `main`.
 - Main-window analysis pages now derive their usable height from the current visual viewport and the measured bottom edge of the topbar/project-tab stack.
 - Plugin enable/disable/reload and plugin-manager rerender schedule a two-frame viewport resync so CSS/DOM contribution changes cannot leave a stale shortened scroll area.
 - `.analysis-page-body` is a zero-basis flex scroll region (`flex:1 1 0%; min-height:0; height:0`) to prevent long card/list content from shrinking the viewport.
-- Dedicated plugin windows keep a full-viewport override and are not coupled to the main-window shell height.
+- Dedicated plugin analysis pages fill the usable window with top/bottom constraints and are not coupled to stale main-window shell heights.
 - Regression guard: `node scripts/test-analysis-page-viewport.js` runs in both `npm test` and `npm run check`.
 
 ## v3.22 local UI / identity refinement
@@ -54,7 +63,7 @@ Regression guard: `node scripts/test-ui-polish.js` is included in both `npm test
 
 The current working tree no longer uses a `Data Center / TER / Pulse` window whitelist. Every enabled built-in or installed `.dkplugin` that declares `manifest.window` and registers an `openMode:'window'` activity participates in the same lifecycle.
 
-- `window.prewarm` defaults to `true`.
+- Generic manifests that omit `window.prewarm` default to `true`, but DKDS built-in TOP plugins explicitly ship with `prewarm:false`; the user preference in Plugin Manager is authoritative.
 - `window.reuse` defaults to `true`; normal close hides the renderer and reopening reuses its DOM/Plotly/in-memory state.
 - `window.persistence` defaults to `project`. Restart-safe results belong in `ctx.project.registerSlice(...)` and/or the artifact store.
 - Dedicated snapshots merge only the owning plugin namespace plus artifact deltas, preventing stale prewarmed windows from overwriting each other.

@@ -5276,7 +5276,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.21-plugin',
+      version:'3.24.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6107,8 +6107,81 @@
     captureActiveProjectTab();
   }
 
+  function serializeResonanceWorkspace(){
+    return {
+      schema:1,
+      datasetMeta:(state.datasets||[]).map(d=>({path:d.path,name:d.name,vg:d.vg})),
+      scanVisibility:[...(state.scanVisibility||new Map()).entries()].map(([path,value])=>[path,{forward:value?.forward!==false,reverse:value?.reverse!==false}]),
+      peaks:cloneProjectCache(state.peaks||[]),
+      peakCategories:cloneProjectCache(state.peakCategories||[]),
+      algorithms:cloneProjectCache(state.algorithms||{}),
+      physicsShowLabels:state.physicsShowLabels!==false,
+      spacingSettings:cloneProjectCache(state.spacingSettings||{}),
+      gateAnalysisSettings:cloneProjectCache(state.gateAnalysisSettings||{}),
+      transformPreviewByDataset:[...(state.transformPreviewByDataset||new Map()).entries()]
+    };
+  }
+
+  function legacyResonanceWorkspace(project){
+    if(!project||typeof project!=='object')return null;
+    const hasLegacy=Array.isArray(project.datasets)||Array.isArray(project.peaks)||Array.isArray(project.scanVisibility);
+    if(!hasLegacy)return null;
+    return {
+      schema:0,
+      datasetMeta:(project.datasets||[]).map(d=>({path:d.path,name:d.name,vg:d.vg})),
+      scanVisibility:project.scanVisibility||null,
+      peaks:project.peaks||[],
+      peakCategories:project.peakCategories||[],
+      algorithms:project.algorithms||null,
+      physicsShowLabels:project.physicsShowLabels,
+      spacingSettings:project.spacingSettings||null,
+      gateAnalysisSettings:project.gateAnalysisSettings||null,
+      transformPreviewByDataset:project.transformPreviewByDataset||null
+    };
+  }
+
+  function restoreResonanceWorkspace(data,{legacyProject}={}){
+    const source=data&&typeof data==='object'?data:legacyResonanceWorkspace(legacyProject);
+    if(!source)return;
+    const meta=new Map((Array.isArray(source.datasetMeta)?source.datasetMeta:[]).map(row=>[String(row?.path||''),row]));
+    let rebuild=false;
+    for(const dataset of state.datasets||[]){
+      const row=meta.get(String(dataset.path||''));
+      if(!row)continue;
+      if(Number.isFinite(Number(row.vg))&&Number(row.vg)!==Number(dataset.vg)){dataset.vg=Number(row.vg);rebuild=true;}
+      if(row.name&&row.name!==dataset.name)dataset.name=String(row.name);
+    }
+    if(rebuild)rebuildSweeps();
+    if(Array.isArray(source.scanVisibility))state.scanVisibility=new Map(source.scanVisibility.map(([path,value])=>[path,{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
+    if(Array.isArray(source.peakCategories))state.peakCategories=source.peakCategories.map(c=>({order:Number(c.order),label:String(c.label||defaultPeakLabel(c.order))}));
+    if(Array.isArray(source.peaks))state.peaks=source.peaks.map(migratePeak);
+    if(source.algorithms&&typeof source.algorithms==='object')state.algorithms=normalizedDetectionSettings(source.algorithms);
+    if(source.physicsShowLabels!==undefined)state.physicsShowLabels=source.physicsShowLabels!==false;
+    if(source.spacingSettings&&typeof source.spacingSettings==='object')state.spacingSettings={...state.spacingSettings,...source.spacingSettings};
+    if(source.gateAnalysisSettings&&typeof source.gateAnalysisSettings==='object')state.gateAnalysisSettings={...state.gateAnalysisSettings,...source.gateAnalysisSettings};
+    if(Array.isArray(source.transformPreviewByDataset))state.transformPreviewByDataset=new Map(source.transformPreviewByDataset);
+    normalizePeakMetadata();
+    if($('#showPhysicsLabels'))$('#showPhysicsLabels').checked=state.physicsShowLabels;
+  }
+
+  function resetResonanceWorkspace(){
+    state.scanVisibility=new Map((state.datasets||[]).map(d=>[d.path,{forward:true,reverse:true}]));
+    state.peaks=[];
+    state.peakCategories=[];
+    state.algorithms=normalizedDetectionSettings(A.preset('balanced'));
+    state.physicsShowLabels=true;
+    state.spacingSettings={seriesA:'',seriesB:'',mode:'abs'};
+    state.gateAnalysisSettings={seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0};
+    state.transformPreviewByDataset=new Map();
+    state.selectedPeakId=null;
+    state.selectedPeakIds=new Set();
+  }
+
   function resonanceHostApi(){
     return {
+      serialize:serializeResonanceWorkspace,
+      restore:restoreResonanceWorkspace,
+      reset:resetResonanceWorkspace,
       getState:()=>state,
       selectedPeak,selectedSweep,peakById,sweepById,
       visibleSweepIds,isSweepVisible,
@@ -6237,6 +6310,7 @@
         state.terMaxResult=null;
       },
       render:renderTerMaxPage,
+      getState:()=>({settings:state.terMaxSettings,display:state.terHeatmapDisplay,result:state.terMaxResult}),
       autoParameters:autoTerParameters,
       calculate:computeTerMaxPage,
       applyDisplay(){
@@ -6322,14 +6396,18 @@
       .filter(activity=>activity?.openMode==='window'&&activity?.isSuper!==true)
       .map(activity=>String(activity.id||''))
       .filter(Boolean));
+    const pluginRows=window.DKDSPlugins?.manager?.list?.()||[];
+    const prewarmByPlugin=new Map(pluginRows.map(row=>[String(row.id||''),row.prewarmEnabled===true]));
+    const prewarmActivities=new Set(specs
+      .filter(spec=>enabledActivities.has(String(spec?.activity||''))&&prewarmByPlugin.get(String(spec?.pluginId||''))===true)
+      .map(spec=>String(spec.activity||''))
+      .filter(Boolean));
     if(window.electronAPI?.syncPluginActivityWindows){
-      try{await window.electronAPI.syncPluginActivityWindows([...enabledActivities]);}
+      try{await window.electronAPI.syncPluginActivityWindows({enabled:[...enabledActivities],prewarm:[...prewarmActivities]});}
       catch(err){console.warn('[DKDS plugin-window sync]',err);}
       if(token!==dedicatedPrewarmToken)return;
     }
-    const activities=specs
-      .filter(spec=>spec?.prewarm!==false&&enabledActivities.has(String(spec?.activity||'')))
-      .map(spec=>String(spec.activity));
+    const activities=[...prewarmActivities];
     if(!activities.length)return;
 
     const run=(index)=>{
@@ -6470,7 +6548,7 @@
     if(!window.DKDSPlugins)return;
 
     window.DKDSPlugins.configure({
-      appVersion:'3.23.0',
+      appVersion:'3.24.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6528,6 +6606,7 @@
         setTimeout(()=>prewarmDedicatedPluginWindows(),0);
       });
       window.DKDSPlugins.events.on('plugin:manager-changed',syncAnalysisPageViewport);
+      window.DKDSPlugins.events.on('plugin:prewarm-changed',()=>setTimeout(()=>prewarmDedicatedPluginWindows(),0));
       window.DKDSPlugins.events.on('super:selection-changed',()=>{
         applySuperWorkspace(window.DKDSPlugins.workspace.super());
         syncAnalysisPageViewport();

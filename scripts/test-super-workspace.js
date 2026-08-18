@@ -161,8 +161,9 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert(managerUi.includes('plugin-super-selector')&&managerUi.includes('setSuper'),'plugin manager must expose an explicit SUPER selector for TOP plugins.');
   assert(managerUi.includes('topContractReady'),'plugin manager must expose whether a TOP contract is valid.');
   assert(windowManager.includes("WINDOW_MODES = new Set(['dedicated','compatibility'])"),'independent TOP lifecycle must support compatibility windows without special activity whitelists.');
-  assert(resonanceManifest.window?.mode==='compatibility','resonance must use the same manifest-driven independent-window lifecycle when it is not SUPER.');
-  assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'compatibility TOP windows must keep the shared .workspace visible instead of rendering blank.');
+  assert((resonanceManifest.window?.mode||'dedicated')==='dedicated'&&resonanceManifest.window?.runtime==='window-runtime.js','resonance TOP must use a dedicated plugin renderer instead of the full compatibility renderer.');
+  assert(read('src/plugins/resonance-workbench/window-runtime.js').includes("serviceName:'resonance'"),'resonance dedicated window must provide a plugin-owned resonance runtime service.');
+  assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'generic compatibility-window support must remain for older third-party plugins even though built-in resonance no longer needs it.');
   assert(terPlugin.includes("root:{selector:'.ter-workspace-shell'}")&&terPlugin.includes("selector:'.ter-workspace-left'")&&terPlugin.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
   assert(!terPlugin.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');

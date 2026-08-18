@@ -31,7 +31,7 @@
       "platform",
       "plugin-kernel"
     ],
-    "prewarm": true,
+    "prewarm": false,
     "reuse": true,
     "persistence": "project"
   },
