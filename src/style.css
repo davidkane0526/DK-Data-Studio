@@ -3803,8 +3803,45 @@ button.plugin-status-item:hover{background:#f0f4fa;color:#344054}
 }
 .project-save-choice-actions button{min-height:32px}
 
-#lanWebMinimizeBtn{min-width:29px;padding:2px 7px;font-size:16px;line-height:1}
-.lan-web-panel{max-height:calc(100vh - 76px - var(--dkds-statusbar-height,28px))}
+#lanWebMinimizeBtn,
+.lan-web-panel .panel-header-actions>.panel-close{
+  width:32px;
+  min-width:32px;
+  height:30px;
+  min-height:30px;
+  padding:0;
+  display:inline-grid;
+  place-items:center;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  font-size:16px;
+  line-height:1;
+}
+#lanWebMinimizeBtn:hover,
+.lan-web-panel .panel-header-actions>.panel-close:hover{
+  border-color:#d8e0eb;
+  background:#fff;
+}
+.lan-web-panel .panel-header-actions>.panel-close:hover{
+  color:#b42318;
+  border-color:#f1c5c0;
+  background:#fff5f4;
+}
+
+/* Floating LAN management is a shell overlay.  Keep it above SUPER/TOP
+   splitters and analysis surfaces, but below the persistent status bar and
+   modal save prompts.  This prevents the SUPER divider from visually cutting
+   through the panel after the user has resized the workspace. */
+.lan-web-panel{
+  z-index:1100!important;
+  max-height:calc(100vh - 76px - var(--dkds-statusbar-height,28px));
+}
+
+/* The edit dropdown belongs to the same file-command cluster visually.  Its
+   anchor used to inherit the wider generic dropdown minimum, making it the
+   only oversized command in the left toolbar group. */
+.global-commandbar .compact-menu-anchor>#editMenuBtn{min-width:72px}
 
 @media(max-width:760px){
   #statusBar.statusbar{gap:3px;padding-left:7px;padding-right:4px}

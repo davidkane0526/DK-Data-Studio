@@ -1,4 +1,11 @@
 # Changelog
+## 3.23.0 continuation — shell layering / control-size polish
+
+- Raised the LAN Web management surface above SUPER/TOP workspace splitters so the adjustable SUPER divider can no longer draw through the floating panel at particular saved divider positions.
+- Normalized the LAN Web minimize and close controls to the same 32 × 30 px hit area, with matching hover geometry and a restrained destructive hover state for close.
+- Matched the `编辑操作` command width to the adjacent import/open/save commands instead of inheriting the wider generic dropdown minimum.
+- Added static UI regression checks for these shell-level contracts.
+
 ## 3.23.0 continuation — unified status bar / Save As / LAN status
 
 - Added a global bottom status bar that remains outside the active SUPER/TOP workspace. Plugins can contribute ordered left/right status items through `ctx.ui.statusBar.add(...)`, including clickable icons, labels and state styling.

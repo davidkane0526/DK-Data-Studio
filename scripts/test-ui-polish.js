@@ -25,6 +25,9 @@ assert(nav.includes("width>=980?'roomy':width>=720?'balanced':'compact'"));
 assert(css.includes('v3.22 unified typography + light visual polish'));
 assert(css.includes('--ui-font-family:'));
 assert(css.includes('button:focus-visible'));
+assert(css.includes('.lan-web-panel{\n  z-index:1100!important;'), 'LAN panel must stay above SUPER workspace divider');
+assert(css.includes('.lan-web-panel .panel-header-actions>.panel-close'), 'LAN minimize/close controls must share one geometry contract');
+assert(css.includes('.global-commandbar .compact-menu-anchor>#editMenuBtn{min-width:72px}'), 'edit command must match file-command button width');
 
 const pathCount = (svg.match(/<path\b/g) || []).length;
 assert.equal(pathCount, 1, 'brand mark should contain one resonance trace');
