@@ -3865,6 +3865,12 @@ body.auxiliary-window .analysis-page{
 }
 .plugin-status-item.passive{cursor:default}
 
+/* Plugin-manager cards are rebuilt when a plugin is enabled, disabled or
+   reloaded. Chromium scroll anchoring can otherwise treat the replacement as
+   a layout shift and jump the manager body toward the bottom. JS restores the
+   exact scroll position; disabling anchoring makes that repair deterministic. */
+#pluginManagerList,.plugin-manager-card{overflow-anchor:none}
+
 /* ============================================================
    v3.23 continuation · toolbar outline alignment / LAN icon polish
    ============================================================ */
@@ -3875,8 +3881,8 @@ body.auxiliary-window .analysis-page{
 }
 #lanWebMinimizeBtn .lan-web-minimize-glyph{
   display:block;
-  width:11px;
-  height:2px;
+  width:8px;
+  height:1px;
   border-radius:999px;
   background:currentColor;
   pointer-events:none;
@@ -3893,8 +3899,8 @@ body.auxiliary-window .analysis-page{
 .global-commandbar>.compact-menu-anchor>#editMenuBtn,
 .system-commandbar>.menu-anchor>#exportMenuBtn,
 .system-commandbar>.menu-anchor>#manageMenuBtn{
-  height:42px;
-  min-height:42px;
+  height:42px!important;
+  min-height:42px!important;
   border-radius:10px;
 }
 

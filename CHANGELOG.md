@@ -1,4 +1,6 @@
 # Changelog
+
+- UI follow-up: standalone Edit / Export / Manage menu buttons now explicitly override the shared 34 px toolbar `!important` rule so their outer height matches the file-command group; the LAN minimize glyph is reduced to an 8×1 px hairline; plugin-manager enable/disable/reload rerenders preserve scroll position and disable Chromium scroll anchoring to prevent the manager surface from jumping upward.
 ## 3.23.0 continuation — toolbar outline alignment / LAN icon polish
 
 - Replaced the LAN Web minimize em dash with a compact 11 × 2 px drawn glyph while retaining the existing 32 × 30 px click target.

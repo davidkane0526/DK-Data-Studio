@@ -165,6 +165,31 @@
     });
   }
 
+  function pluginManagerScroller(){
+    return $('#pluginManagerPage .analysis-page-body')||$('#pluginManagerList')?.closest?.('.analysis-page-body')||null;
+  }
+
+  function captureManagerScroll(){
+    const scroller=pluginManagerScroller();
+    if(!scroller)return null;
+    return {scroller,top:scroller.scrollTop,left:scroller.scrollLeft};
+  }
+
+  function restoreManagerScroll(snapshot,{top=false}={}){
+    if(!snapshot?.scroller)return;
+    const apply=()=>{
+      const scroller=snapshot.scroller;
+      const maxTop=Math.max(0,scroller.scrollHeight-scroller.clientHeight);
+      scroller.scrollTop=top?0:Math.min(snapshot.top,maxTop);
+      scroller.scrollLeft=snapshot.left;
+    };
+    // Replacing every card can make Chromium's scroll anchoring run after the
+    // current task. Restore now and on the next two frames so enable/disable
+    // never makes the plugin manager appear to jump upward.
+    apply();
+    requestAnimationFrame(()=>{apply();requestAnimationFrame(apply);});
+  }
+
   function renderSummary(all) {
     const total=all.length;
     const active=all.filter(p=>p.active).length;
@@ -177,9 +202,11 @@
     host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${index===4&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
   }
 
-  function renderList() {
+  function renderList(options={}) {
     const list=$('#pluginManagerList');
     if(!list)return;
+    const scrollSnapshot=captureManagerScroll();
+    const resetScroll=options.scroll==='top';
     const all=window.DKDSPlugins?.manager?.list?.()||[];
     renderSummary(all);
     const installSupported=!!window.DKDSPlugins?.external?.available?.();
@@ -195,6 +222,7 @@
 
     if(!plugins.length){
       list.innerHTML='<div class="plugin-manager-empty">没有符合当前筛选条件的插件。</div>';
+      restoreManagerScroll(scrollSnapshot,{top:resetScroll});
       scheduleViewportRepair();
       return;
     }
@@ -311,6 +339,7 @@
       };
       list.appendChild(card);
     }
+    restoreManagerScroll(scrollSnapshot,{top:resetScroll});
     scheduleViewportRepair();
   }
 
@@ -325,15 +354,19 @@
     }
   }
 
+  function openManager(){
+    state.host?.openAnalysisPage?.('pluginManagerPage');
+    const scroller=pluginManagerScroller();
+    if(scroller)scroller.scrollTop=0;
+    renderList({scroll:'top'});
+  }
+
   function bind(){
     if(state.bound)return;
     state.bound=true;
-    $('#pluginManagerBtn').onclick=()=>{
-      state.host?.openAnalysisPage?.('pluginManagerPage');
-      renderList();
-    };
-    $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList();};
-    $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList();};
+    $('#pluginManagerBtn').onclick=openManager;
+    $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList({scroll:'top'});};
+    $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList({scroll:'top'});};
     $('#pluginManagerRefreshBtn').onclick=renderList;
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{
@@ -364,6 +397,6 @@
     configure(host){state.host=host||{};bind();renderList();},
     render:renderList,
     render:renderList,
-    open(){state.host?.openAnalysisPage?.('pluginManagerPage');renderList();}
+    open:openManager
   };
 })();
