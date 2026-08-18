@@ -13,5 +13,6 @@ Reconstructed sequence:
 5. Toolbar outline and LAN minimize glyph polish.
 6. Force standalone menu outer-height alignment, refine the minimize glyph, and stabilize plugin-manager scrolling during plugin lifecycle changes.
 7. v3.24.0: user-controlled plugin prewarming, dedicated Resonance runtime, portable project-format layer, stronger plugin-manager viewport repair, and TER improvements selectively absorbed from the supplied reference project.
+8. v3.25.0: harden Plugin Manager lifecycle scroll reset and restore full major Resonance TOP views in the dedicated renderer.
 
 The reconstructed commits preserve the file contents of those delivered snapshots so later changes can be reviewed with normal `git log`, `git diff`, and `git checkout` workflows.

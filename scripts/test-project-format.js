@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 const project={
-  version:'3.24.0',
+  version:'3.25.0',
   datasets:[{
     name:'embedded.csv',path:'C:/missing/original/embedded.csv',text:'V,I\n0,1e-9\n1,2e-9\n',vg:1,
     points:[{v:0,i:1e-9,index:0,sourceLine:2},{v:1,i:2e-9,index:1,sourceLine:3}]

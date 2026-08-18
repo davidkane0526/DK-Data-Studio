@@ -2,7 +2,7 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'2.2.0',
+    version:'2.3.0',
     apiVersion:'1.3.0',
     description:'Complete resonance workspace UI: data navigator, detector controls, inspector, group charts, ridge/physics tools and exports.',
     source:'builtin',
@@ -17,40 +17,118 @@
 
     if(h.isAuxiliaryWindow){
       const pageHtml=`
-        <div class="analysis-page-header">
-          <div><h2>共振分析</h2><div class="analysis-subtitle">独立插件窗口 · 工程数据来自项目快照</div></div>
+        <div class="analysis-page-header resonance-window-header">
+          <div class="reswin-title-block">
+            <h2>共振分析</h2>
+            <div class="analysis-subtitle">独立 TOP 插件窗口 · 完整共振工作区 · 工程数据来自自包含项目快照</div>
+          </div>
+          <nav class="reswin-nav" aria-label="共振分析功能">
+            <button type="button" class="active" data-reswin-view="main">主图</button>
+            <button type="button" data-reswin-view="inspect">曲线检查</button>
+            <button type="button" data-reswin-view="group">组图分析</button>
+            <button type="button" data-reswin-view="physics">物理机制</button>
+            <button type="button" data-reswin-view="spacing">峰间距</button>
+            <button type="button" data-reswin-view="gate">栅压分析</button>
+          </nav>
           <button class="analysis-page-close" id="reswinCloseBtn">关闭窗口</button>
         </div>
         <div class="analysis-page-body resonance-dedicated-body">
-          <div class="reswin-shell">
-            <aside class="reswin-sidebar">
-              <div class="analysis-control-card reswin-control-stack">
-                <strong>数据与扫描</strong>
-                <label>当前扫描<select id="reswinSweepSelect"></select></label>
-                <label>辅助视图<select id="reswinTransform">
-                  <option value="raw">原始 I–V</option><option value="detrend">去背景</option><option value="didv">dI/dV</option>
-                  <option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option>
-                </select></label>
+          <section class="reswin-view active" data-reswin-view-panel="main">
+            <div class="reswin-shell">
+              <aside class="reswin-sidebar">
+                <div class="analysis-control-card reswin-control-stack">
+                  <strong>数据与扫描</strong>
+                  <label>当前扫描<select id="reswinSweepSelect"></select></label>
+                  <label>辅助视图<select id="reswinTransform">
+                    <option value="raw">原始 I–V</option><option value="detrend">去背景</option><option value="didv">dI/dV</option>
+                    <option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option>
+                  </select></label>
+                  <div class="reswin-button-row"><button id="reswinShowAll">全部显示</button><button id="reswinHideAll">全部隐藏</button></div>
+                </div>
+                <div class="analysis-control-card reswin-control-stack">
+                  <strong>寻峰</strong>
+                  <label>预设<select id="reswinPreset"><option value="strict">严格</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
+                  <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
+                  <button id="reswinSortPeaks">跨 Vg 智能整理峰序</button>
+                  <div class="analysis-note compact">Shift + 左键点击曲线：在最近原始采样点添加手动峰。点击峰位后可在“曲线检查”中编辑。</div>
+                </div>
+                <div class="analysis-control-card reswin-control-stack reswin-datasets-card"><strong>数据文件</strong><div id="reswinDatasetList"></div></div>
+              </aside>
+              <main class="reswin-main">
+                <div id="reswinSummary" class="ter-summary reswin-summary"></div>
+                <div class="analysis-chart-card"><div class="analysis-chart-title">共振 I–V / 峰位</div><div id="reswinMainPlot" class="analysis-chart reswin-main-plot"></div></div>
+                <div class="analysis-control-card export-card reswin-export"><strong>导出</strong><button id="reswinExportMainCsv">I–V CSV</button><button id="reswinExportMainSvg">主图 SVG</button><button id="reswinExportMainPng">主图 PNG</button><button id="reswinExportPeaks">峰参数 CSV</button><button id="reswinCopyPeaks" class="copy-btn">复制峰参数</button></div>
+                <div class="analysis-chart-card"><div class="analysis-chart-title">峰轨迹 Vpk(Vg)</div><div id="reswinTrendPlot" class="analysis-chart reswin-trend-plot"></div></div>
+              </main>
+            </div>
+          </section>
+
+          <section class="reswin-view" data-reswin-view-panel="inspect">
+            <div class="reswin-inspect-grid">
+              <div class="reswin-inspect-column">
+                <div class="analysis-control-card reswin-control-stack"><strong>当前对象</strong><div id="reswinInspectorSummary" class="reswin-kv"></div></div>
+                <div class="analysis-control-card reswin-control-stack"><strong>峰类别</strong><label>类别标签<input id="reswinPeakLabelInput" type="text"></label><div class="reswin-button-row"><button id="reswinApplyPeakLabel">重命名类别</button><button id="reswinDeletePeak" class="danger-soft">删除选中峰</button></div></div>
+                <div class="analysis-control-card reswin-control-stack"><strong>扫描选择</strong><label>当前扫描<select id="reswinInspectSweepSelect"></select></label></div>
               </div>
-              <div class="analysis-control-card reswin-control-stack">
-                <strong>寻峰</strong>
-                <label>预设<select id="reswinPreset"><option value="strict">严格</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
-                <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
-                <div class="analysis-note compact">在主图中按住 Shift 后点击曲线，可在最近的原始采样点添加手动峰。</div>
+              <div class="reswin-inspect-main">
+                <div class="analysis-chart-card"><div class="analysis-chart-title">辅助变换 / 候选核对</div><div id="reswinInspectPlot" class="analysis-chart reswin-inspect-plot"></div></div>
+                <h3 class="analysis-section-title">当前扫描峰位</h3><div class="analysis-table-wrap"><table id="reswinPeakTable" class="analysis-table"></table></div>
               </div>
-              <div class="analysis-control-card reswin-control-stack reswin-datasets-card"><strong>数据文件</strong><div id="reswinDatasetList"></div></div>
-            </aside>
-            <main class="reswin-main">
-              <div id="reswinSummary" class="ter-summary reswin-summary"></div>
-              <div class="analysis-chart-card"><div class="analysis-chart-title">共振 I–V / 峰位</div><div id="reswinMainPlot" class="analysis-chart reswin-main-plot"></div></div>
-              <div class="analysis-control-card export-card reswin-export"><strong>导出</strong><button id="reswinExportMainCsv">I–V CSV</button><button id="reswinExportMainSvg">主图 SVG</button><button id="reswinExportMainPng">主图 PNG</button><button id="reswinExportPeaks">峰参数 CSV</button><button id="reswinCopyPeaks" class="copy-btn">复制峰参数</button></div>
-              <div class="analysis-chart-card"><div class="analysis-chart-title">峰轨迹 Vpk(Vg)</div><div id="reswinTrendPlot" class="analysis-chart reswin-trend-plot"></div></div>
-              <h3 class="analysis-section-title">当前扫描峰位</h3><div class="analysis-table-wrap"><table id="reswinPeakTable" class="analysis-table"></table></div>
-            </main>
-          </div>
+            </div>
+          </section>
+
+          <section class="reswin-view" data-reswin-view-panel="group">
+            <div class="analysis-control-card reswin-group-controls"><strong>组图排列</strong><button data-reswin-cols="auto" class="active">自动</button><button data-reswin-cols="1">1 列</button><button data-reswin-cols="2">2 列</button><button data-reswin-cols="3">3 列</button><button data-reswin-cols="4">4 列</button></div>
+            <div id="reswinGroupGrid" class="reswin-group-grid"></div>
+          </section>
+
+          <section class="reswin-view" data-reswin-view-panel="physics">
+            <div id="reswinPhysicsSummary" class="reswin-physics-summary"></div>
+            <div class="reswin-two-col">
+              <div class="analysis-chart-card"><div class="analysis-chart-title">稳定 ridge：V0 与有效分裂 δ</div><div id="reswinPhysicsPlot" class="analysis-chart reswin-medium-plot"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">物理机制判据</div><div id="reswinPhysicsModel" class="reswin-report"></div></div>
+            </div>
+            <h3 class="analysis-section-title">峰族判定</h3><div class="analysis-table-wrap"><table id="reswinPhysicsTable" class="analysis-table"></table></div>
+          </section>
+
+          <section class="reswin-view" data-reswin-view-panel="spacing">
+            <div class="analysis-control-card reswin-spacing-controls"><label>峰序列 A<select id="reswinSpacingA"></select></label><label>峰序列 B<select id="reswinSpacingB"></select></label><label>显示<select id="reswinSpacingMode"><option value="abs">|VB − VA|</option><option value="signed">VB − VA</option></select></label><button id="reswinSpacingExport">导出 CSV</button></div>
+            <div class="analysis-chart-card"><div class="analysis-chart-title">峰间距随 Vg 变化</div><div id="reswinSpacingPlot" class="analysis-chart reswin-medium-plot"></div></div>
+            <div class="analysis-table-wrap"><table id="reswinSpacingTable" class="analysis-table"></table></div>
+          </section>
+
+          <section class="reswin-view" data-reswin-view-panel="gate">
+            <div class="analysis-control-card reswin-gate-controls">
+              <label>ridge A<select id="reswinGateA"></select></label><label>ridge B<select id="reswinGateB"></select></label>
+              <label>回滞峰<select id="reswinGateHysteresis"></select></label><label>峰宽<select id="reswinGateWidth"><option value="hwhm">HWHM</option><option value="fwhm">FWHM</option></select></label>
+              <label class="inline-check"><input id="reswinGateUseDensity" type="checkbox">换算 n<sub>g</sub></label><label>Cg (F/m²)<input id="reswinGateCg" type="number" step="any"></label><label>V<sub>CNP</sub> (V)<input id="reswinGateCnp" type="number" step="any"></label>
+              <button id="reswinGateRun" class="primary">刷新分析</button><button id="reswinGateExportCsv">数据 CSV</button><button id="reswinGateExportReport">报告</button>
+            </div>
+            <div id="reswinGateSummary" class="ter-summary reswin-summary"></div>
+            <div class="reswin-gate-grid">
+              <div class="analysis-chart-card"><div class="analysis-chart-title">共振 ridge</div><div id="reswinGateRidges" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">共振中心 V0</div><div id="reswinGateV0" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">有效分裂 δ</div><div id="reswinGateDelta" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">峰宽与 |δ|/w</div><div id="reswinGateWidthPlot" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">TERmax</div><div id="reswinGateTer" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">最佳读出偏压 Vd*</div><div id="reswinGateVStar" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">正反扫回滞</div><div id="reswinGateHysteresisPlot" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">峰高与有效权重</div><div id="reswinGateAmplitude" class="analysis-chart"></div></div>
+            </div>
+            <div id="reswinGateReport" class="reswin-report"></div>
+            <div class="analysis-table-wrap"><table id="reswinGateTable" class="analysis-table"></table></div>
+          </section>
         </div>`;
 
       ctx.ui.styles.add('resonance-dedicated',`
+        #resonanceDedicatedPage .resonance-window-header{align-items:center;gap:12px;flex-wrap:nowrap}
+        #resonanceDedicatedPage .reswin-title-block{min-width:210px;flex:0 1 auto}
+        #resonanceDedicatedPage .reswin-nav{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+        #resonanceDedicatedPage .reswin-nav::-webkit-scrollbar{display:none}
+        #resonanceDedicatedPage .reswin-nav button{height:32px;min-width:max-content;padding:4px 10px;border-color:transparent;background:transparent}
+        #resonanceDedicatedPage .reswin-nav button.active{border-color:#bfd0ff;background:#eef3ff;color:#234fc4}
+        #resonanceDedicatedPage .reswin-view{display:none;min-width:0}
+        #resonanceDedicatedPage .reswin-view.active{display:block}
         #resonanceDedicatedPage .reswin-shell{display:grid;grid-template-columns:minmax(250px,20%) minmax(0,1fr);gap:12px;align-items:start}
         #resonanceDedicatedPage .reswin-sidebar{min-width:0;display:flex;flex-direction:column;gap:10px;position:sticky;top:0}
         #resonanceDedicatedPage .reswin-control-stack{display:flex;flex-direction:column;align-items:stretch;margin:0;gap:8px}
@@ -68,30 +146,40 @@
         #resonanceDedicatedPage .reswin-summary{display:flex;flex-wrap:wrap;gap:8px}
         #resonanceDedicatedPage .reswin-summary span{padding:4px 8px;border:1px solid #dfe5ef;border-radius:999px;background:#fff;color:#566176;font-size:9px}
         #resonanceDedicatedPage .reswin-main-plot{height:clamp(430px,55vh,680px)}
-        #resonanceDedicatedPage .reswin-trend-plot{height:380px}
+        #resonanceDedicatedPage .reswin-trend-plot{height:360px}
+        #resonanceDedicatedPage .reswin-inspect-grid{display:grid;grid-template-columns:minmax(260px,28%) minmax(0,1fr);gap:12px;align-items:start}
+        #resonanceDedicatedPage .reswin-inspect-column{display:flex;flex-direction:column;gap:10px;position:sticky;top:0}
+        #resonanceDedicatedPage .reswin-inspect-main{min-width:0;display:flex;flex-direction:column;gap:10px}
+        #resonanceDedicatedPage .reswin-inspect-plot{height:430px}
+        #resonanceDedicatedPage .reswin-kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;font-size:9px;line-height:1.45}
+        #resonanceDedicatedPage .reswin-kv b{color:#667085;font-weight:600}
         #resonanceDedicatedPage #reswinPeakTable tr.selected{background:#eef3ff}
         #resonanceDedicatedPage .analysis-note.compact{margin:0;padding:7px 8px;font-size:8.5px}
-        @media(max-width:900px){#resonanceDedicatedPage .reswin-shell{grid-template-columns:1fr}#resonanceDedicatedPage .reswin-sidebar{position:static}#resonanceDedicatedPage .reswin-datasets-card{max-height:none}}
+        #resonanceDedicatedPage .reswin-group-controls{align-items:center}
+        #resonanceDedicatedPage .reswin-group-controls button.active{border-color:#7c9cff;background:#eef3ff;color:#234fc4}
+        #resonanceDedicatedPage .reswin-group-grid{display:grid;grid-template-columns:repeat(var(--reswin-group-cols,2),minmax(0,1fr));gap:12px}
+        #resonanceDedicatedPage .reswin-group-card{min-width:0;border:1px solid #dfe5ef;border-radius:10px;background:#fff;overflow:hidden}
+        #resonanceDedicatedPage .reswin-group-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #edf0f5;font-size:10px;font-weight:700}
+        #resonanceDedicatedPage .reswin-group-plot{height:var(--reswin-group-height,300px)}
+        #resonanceDedicatedPage .reswin-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+        #resonanceDedicatedPage .reswin-medium-plot{height:420px}
+        #resonanceDedicatedPage .reswin-physics-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+        #resonanceDedicatedPage .reswin-physics-summary>div{padding:12px;border:1px solid #dfe5ef;border-radius:10px;background:#fff}
+        #resonanceDedicatedPage .reswin-report{padding:12px 14px;border:1px solid #dfe5ef;border-radius:10px;background:#fff;color:#4f5b6f;font-size:10px;line-height:1.7;white-space:normal}
+        #resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+        #resonanceDedicatedPage .reswin-gate-grid .analysis-chart{height:330px}
+        #resonanceDedicatedPage .reswin-spacing-controls,#resonanceDedicatedPage .reswin-gate-controls{align-items:end}
+        @media(max-width:1050px){#resonanceDedicatedPage .resonance-window-header{flex-wrap:wrap}#resonanceDedicatedPage .reswin-nav{order:3;width:100%}#resonanceDedicatedPage .reswin-shell,#resonanceDedicatedPage .reswin-inspect-grid{grid-template-columns:1fr}#resonanceDedicatedPage .reswin-sidebar,#resonanceDedicatedPage .reswin-inspect-column{position:static}#resonanceDedicatedPage .reswin-datasets-card{max-height:none}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
       `);
 
-      ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振 I–V 与峰位独立插件窗口',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');R.render();}});
+      ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'完整共振 I–V 独立插件工作区',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');R.render();}});
       const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:pageHtml,onOpen:()=>R.render()});
-      ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'split',root:{selector:'.reswin-shell'},left:{role:'data-display',pageId:page.id,selector:'.reswin-sidebar',stack:true,defaultFraction:.20,minFraction:.14,maxFraction:.38},main:{role:'primary-data',pageId:page.id,selector:'.reswin-main',interaction:'plugin-owned'},prime:[]}});
+      ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage'},prime:[]}});
       ctx.project.registerSlice('workspace',{serialize:()=>R.serialize(),restore:(data,{legacyProject})=>R.restore(data,{legacyProject}),reset:()=>R.reset()});
-
       page.querySelector('#reswinCloseBtn').onclick=()=>h.closeCurrentWindow?.();
-      page.querySelector('#reswinSweepSelect').onchange=e=>R.selectSweep(e.target.value);
-      page.querySelector('#reswinTransform').onchange=e=>R.setTransform(e.target.value);
-      page.querySelector('#reswinPreset').onchange=e=>R.setPreset(e.target.value);
-      page.querySelector('#reswinDetectSelected').onclick=()=>R.runDetection('selected');
-      page.querySelector('#reswinDetectAll').onclick=()=>R.runDetection('all');
-      page.querySelector('#reswinExportMainCsv').onclick=()=>R.exportMainCsv();
-      page.querySelector('#reswinExportMainSvg').onclick=()=>R.exportMainSvg();
-      page.querySelector('#reswinExportMainPng').onclick=()=>R.exportMainPng();
-      page.querySelector('#reswinExportPeaks').onclick=()=>R.exportPeaks();
-      page.querySelector('#reswinCopyPeaks').onclick=()=>R.copyPeaks();
+      R.bindUi?.(page);
       ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')R.render();});
-      ctx.events.on('layout:resize',()=>{for(const id of ['reswinMainPlot','reswinTrendPlot']){const el=document.getElementById(id);if(el&&el.offsetParent!==null){try{Plotly.Plots.resize(el);}catch{}}}});
+      ctx.events.on('layout:resize',()=>R.resize?.());
       return {};
     }
 

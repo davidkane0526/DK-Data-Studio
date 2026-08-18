@@ -80,7 +80,7 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','platform','plugin-kernel']},
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','plugin-kernel']},
   'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','plugin-kernel']},
   'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-ter','platform','plugin-kernel']},
   'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','plugin-kernel']}
@@ -182,6 +182,12 @@ assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must
 assert(resonanceRuntime.includes("serviceName:'resonance'"),'Resonance dedicated runtime must expose the normal plugin-window service contract.');
 assert(resonanceRuntime.includes("builtin.resonance-workbench"),'Resonance dedicated runtime must restore only its namespaced plugin state.');
 assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
+for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
+  assert(read('src/plugins/resonance-workbench/plugin.js').includes(label),`Resonance dedicated TOP UI must retain ${label}.`);
+}
+for(const marker of ['function renderInspection()','function renderGroup()','function renderPhysics()','function renderSpacing()','function renderGate()','analyzePhysicalFamilies','computeResonantTerForLabel','pairGateSeries']){
+  assert(resonanceRuntime.includes(marker),`Resonance dedicated runtime parity marker missing: ${marker}`);
+}
 
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
 // results live in namespaced project slices and artifact deltas.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.25.0 — plugin-manager viewport hardening / full Resonance TOP parity
+
+- Fixed the remaining Plugin Manager blank-area jump by treating plugin lifecycle rerenders as top-reset transactions and repeatedly clamping the real scroll container through late Chromium layout/scroll-anchor frames. Empty filter results use the same repair path.
+- Expanded the dedicated Resonance TOP renderer from the v3.24 minimal extraction to a full plugin-owned workbench with main I–V/peak editing, curve inspection, grouped plots, physical-family analysis, peak spacing and gate-dependent analysis.
+- Resonance remains a true dedicated plugin renderer and does not fall back to a second full `src/app.js` instance. SUPER and TOP now expose the same major analysis domains while keeping their own presentation shells.
+- Added `science-ter` to the Resonance dedicated dependency contract so gate-dependent TER analysis stays inside the plugin window.
+- Project files remain self-contained and backward-compatible; no dataset `text` or parsed `points` fields are removed by these runtime/UI changes.
+
 ## 3.24.0 — user-controlled prewarm / dedicated resonance / robust self-contained projects
 
 - Plugin Manager now exposes a per-plugin **预热** preference. Built-in independent windows default to off to reduce idle Electron renderer memory; users can opt in per plugin.

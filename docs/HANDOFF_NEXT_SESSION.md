@@ -1,15 +1,23 @@
-# Next Session Handoff — v3.24.0
+# Next Session Handoff — v3.25.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.24.0`
+- Current delivery: `v3.25.0`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
 Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
 
+
+## v3.25 current continuation: stable Plugin Manager + full dedicated Resonance TOP
+
+- Plugin Manager lifecycle events now always rerender with a top reset and `settleManagerAtTop()` clamps the real `.analysis-page-body` scroll container for multiple animation frames. This is intentional: plugin enable/disable/reload can rebuild contribution DOM after the first layout frame, so a single `scrollTop=0` is insufficient on Chromium.
+- Resonance remains `mode: dedicated`. Do not reintroduce the old compatibility renderer. The dedicated UI now owns six functional views: main, curve inspection, group analysis, physics, peak spacing and gate analysis.
+- `src/plugins/resonance-workbench/window-runtime.js` is the independent runtime. Keep TOP functionality in parity with the major SUPER analysis domains; shared science modules should be reused instead of loading `src/app.js`.
+- Project portability remains non-negotiable: saved projects continue embedding raw text plus parsed points and plugin state so another machine can work without source data files.
+- Regression guards: `node scripts/test-plugin-manager.js`, `node scripts/test-analysis-page-viewport.js`, `node scripts/test-plugin-windows.js`.
 
 ## v3.24 current continuation: memory, dedicated resonance, portable projects
 

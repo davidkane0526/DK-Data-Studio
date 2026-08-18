@@ -4,7 +4,7 @@
 
 This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.24.0**.
+Current development baseline: **v3.25.0**.
 
 ## Recommended future flow
 
@@ -25,4 +25,4 @@ Do not access, push to, or modify any remote repository unless the user explicit
 
 ## Current delivery checkpoint
 
-`v3.24.0` adds user-controlled plugin prewarming, a true dedicated Resonance TOP runtime, robust self-contained project parsing/saving, the plugin-manager viewport repair, and TER improvements selectively absorbed from the provided Graphene Resonance Studio project.
+`v3.25.0` hardens Plugin Manager lifecycle scrolling against late Chromium anchor/layout passes and upgrades the dedicated Resonance TOP runtime to restore the major SUPER analysis domains (curve inspection, grouped plots, physics, peak spacing and gate analysis), while retaining the v3.24 prewarm, portable-project and TER improvements.

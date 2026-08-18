@@ -198,6 +198,25 @@
     if(scroller.scrollTop<0)scroller.scrollTop=0;
   }
 
+  // Plugin lifecycle changes can rebuild the complete manager grid and, in
+  // Chromium, a later scroll-anchor/layout pass can restore the old scroll
+  // position *after* our first repair frame.  Hold the manager at the top for
+  // several animation frames after enable/disable/reload so a removed or
+  // resized card can never leave the viewport parked below the real content.
+  function settleManagerAtTop(frames=8){
+    const scroller=pluginManagerScroller();
+    if(!scroller)return;
+    let remaining=Math.max(1,Number(frames)||1);
+    const step=()=>{
+      if(!scroller.isConnected)return;
+      scroller.scrollTop=0;
+      scroller.scrollLeft=0;
+      clampManagerScroll(scroller);
+      if(--remaining>0)requestAnimationFrame(step);
+    };
+    step();
+  }
+
   function restoreManagerScroll(snapshot,{top=false,anchorPluginId=''}={}){
     if(!snapshot?.scroller)return;
     const apply=()=>{
@@ -260,6 +279,7 @@
     if(!plugins.length){
       list.innerHTML='<div class="plugin-manager-empty">没有符合当前筛选条件的插件。</div>';
       restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
+      if(resetScroll)settleManagerAtTop();
       scheduleViewportRepair();
       return;
     }
@@ -399,6 +419,7 @@
       list.appendChild(card);
     }
     restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
+    if(resetScroll)settleManagerAtTop();
     scheduleViewportRepair();
   }
 
@@ -418,6 +439,7 @@
     const scroller=pluginManagerScroller();
     if(scroller)scroller.scrollTop=0;
     renderList({scroll:'top'});
+    settleManagerAtTop();
   }
 
   function bind(){
@@ -447,9 +469,15 @@
       renderList();
     };
 
-    window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderList);
-    window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderList);
-    window.DKDSPlugins?.events?.on?.('plugins:ready',renderList);
+    // A plugin state transition changes card geometry and may also mutate the
+    // shell.  Always rebuild from a known top-aligned viewport.  This is more
+    // deterministic than preserving a stale card anchor across a lifecycle
+    // transition and fixes the large blank lower viewport seen after disabling
+    // or closing a plugin.
+    const renderAfterLifecycleChange=()=>renderList({scroll:'top'});
+    window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderAfterLifecycleChange);
+    window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderAfterLifecycleChange);
+    window.DKDSPlugins?.events?.on?.('plugins:ready',renderAfterLifecycleChange);
   }
 
   window.DKDSPluginManagerUI={
