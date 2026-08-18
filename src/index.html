@@ -103,11 +103,14 @@
         </div>
         <div id="dockedGroupSlot" class="docked-group-slot"></div>
         <div id="primeBottomDockSlot" class="prime-bottom-dock-slot" data-prime-dock="bottom" aria-label="PRIME 底部停靠区"></div>
-        <div id="statusBar" class="statusbar">未加载数据</div>
       </main>
     </div>
 
-
+    <footer id="statusBar" class="statusbar" aria-label="应用状态栏">
+      <div id="statusBarMessage" class="statusbar-message" aria-live="polite">未加载数据</div>
+      <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left" aria-label="插件状态"></div>
+      <div id="statusBarPluginRight" class="statusbar-plugin-zone statusbar-plugin-right" aria-label="系统状态"></div>
+    </footer>
 
 
     <section id="superWorkspaceEmpty" class="analysis-page hidden core-analysis-page super-empty-page">
@@ -342,13 +345,31 @@
     </div>
 
 
+    <div id="projectSaveChoiceDialog" class="project-save-choice-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="projectSaveChoiceTitle">
+      <div class="project-save-choice-card">
+        <div class="project-save-choice-icon" aria-hidden="true">▣</div>
+        <div class="project-save-choice-copy">
+          <strong id="projectSaveChoiceTitle">保存项目</strong>
+          <span id="projectSaveChoiceHint">请选择保存方式。</span>
+        </div>
+        <div class="project-save-choice-actions">
+          <button id="projectSaveCurrentBtn" class="primary" type="button">保存当前</button>
+          <button id="projectSaveAsBtn" type="button">另存为</button>
+          <button id="projectSaveCancelBtn" type="button">取消</button>
+        </div>
+      </div>
+    </div>
+
     <div id="lanWebPanel" class="floating-panel lan-web-panel hidden">
       <div class="floating-header drag-handle">
         <div class="lan-web-panel-title">
           <span>局域网网页版</span>
           <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
         </div>
-        <button class="panel-close" data-target="lanWebPanel">×</button>
+        <div class="panel-header-actions">
+          <button id="lanWebMinimizeBtn" type="button" title="隐藏到状态栏" aria-label="隐藏到状态栏">—</button>
+          <button class="panel-close" data-target="lanWebPanel" title="隐藏面板，网页版服务继续运行">×</button>
+        </div>
       </div>
 
       <div class="floating-body lan-web-body">

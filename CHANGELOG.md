@@ -1,4 +1,13 @@
 # Changelog
+## 3.23.0 continuation — unified status bar / Save As / LAN status
+
+- Added a global bottom status bar that remains outside the active SUPER/TOP workspace. Plugins can contribute ordered left/right status items through `ctx.ui.statusBar.add(...)`, including clickable icons, labels and state styling.
+- Added built-in `builtin.status-monitor`, showing runtime type, live memory usage and LAN Web status. The LAN status item restores the LAN Web panel when clicked on desktop.
+- LAN Web management can now be minimized to the status bar without stopping the server; status changes are emitted through the plugin event bus.
+- Project Save now asks `保存当前 / 另存为 / 取消` without adding another toolbar button. Desktop Save As always selects a new destination and then makes it the current project path.
+- Web and desktop still serialize the same complete project JSON. Web uses a retained File System Access handle for true overwrite where the browser permits it; ordinary LAN HTTP pages fall back to downloading the same project JSON because browsers cannot silently overwrite an arbitrary client file.
+- Added runtime-memory bridge support and `scripts/test-statusbar-project-save.js` regression coverage.
+
 ## 3.23.0 — SUPER / TOP / PRIME / SUB workspace contract
 - 新增通用 PRIME placement manager：`right / bottom / float`、adapter/portable 两种模式、当前 SUPER 作用域与本机 placement 记忆。
 

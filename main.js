@@ -656,18 +656,41 @@ app.whenReady().then(() => {
     return result.filePath;
   });
 
-  ipcMain.handle('files:saveProject', async (_event, payload) => {
-    let filePath = payload.path || null;
+  ipcMain.handle('files:saveProject', async (_event, payload = {}) => {
+    const mode = payload.mode === 'saveAs' ? 'saveAs' : 'current';
+    const currentPath = typeof payload.path === 'string' && !/^(?:web|webfs|native):\/\//i.test(payload.path)
+      ? payload.path
+      : null;
+    let filePath = mode === 'current' ? currentPath : null;
     if (!filePath) {
       const result = await dialog.showSaveDialog({
-        defaultPath: payload.defaultName || 'dk_data_project.dkds.json',
+        title: mode === 'saveAs' ? '项目另存为' : '保存 DK Data Studio 项目',
+        defaultPath: currentPath || payload.defaultName || 'dk_data_project.dkds.json',
         filters: [{ name: 'DK Data Studio Project', extensions: ['dkds.json', 'json'] }]
       });
       if (result.canceled || !result.filePath) return null;
       filePath = result.filePath;
     }
-    fs.writeFileSync(filePath, JSON.stringify(payload.project, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(payload.project || {}, null, 2), 'utf8');
     return filePath;
+  });
+
+  ipcMain.handle('system:getRuntimeStatus', async () => {
+    const metrics = app.getAppMetrics();
+    const memory = metrics.reduce((sum, row) => {
+      const m = row?.memory || {};
+      sum.workingSetBytes += (Number(m.workingSetSize) || 0) * 1024;
+      sum.peakWorkingSetBytes += (Number(m.peakWorkingSetSize) || 0) * 1024;
+      sum.privateBytes += (Number(m.privateBytes) || 0) * 1024;
+      return sum;
+    }, { workingSetBytes:0, peakWorkingSetBytes:0, privateBytes:0 });
+    return {
+      runtime:'desktop',
+      platform:process.platform,
+      isPackaged:app.isPackaged,
+      processCount:metrics.length,
+      memory
+    };
   });
 
   ipcMain.handle('files:openProject', async () => {

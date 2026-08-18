@@ -865,6 +865,68 @@
     return [...getRegistry(kind).values()];
   }
 
+  function statusBarZone(side='right') {
+    const normalized=String(side||'right').toLowerCase()==='left'?'left':'right';
+    return document.querySelector(normalized==='left'?'#statusBarPluginLeft':'#statusBarPluginRight');
+  }
+
+  function addStatusBarItem(pluginId,spec={}) {
+    const id=String(spec.id||'').trim();
+    assertId(id,'status item id');
+    let current={order:100,side:'right',icon:'',label:'',title:'',state:'',hidden:false,disabled:false,className:'',...spec,id};
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='plugin-status-item';
+    button.dataset.pluginId=pluginId;
+    button.dataset.pluginStatusId=id;
+    const icon=document.createElement('span');
+    icon.className='plugin-status-icon';
+    icon.setAttribute('aria-hidden','true');
+    const label=document.createElement('span');
+    label.className='plugin-status-label';
+    button.append(icon,label);
+    let clickHandler=typeof current.onClick==='function'?current.onClick:null;
+
+    const moveToZone=()=>{
+      const zone=statusBarZone(current.side);
+      if(!zone)return false;
+      if(button.parentElement!==zone)zone.appendChild(button);
+      sortContributions(zone,'.plugin-status-item');
+      return true;
+    };
+    const apply=patch=>{
+      if(patch&&typeof patch==='object')current={...current,...patch,id};
+      clickHandler=typeof current.onClick==='function'?current.onClick:null;
+      button.dataset.pluginOrder=String(Number(current.order)||100);
+      button.dataset.state=String(current.state||'');
+      button.className=`plugin-status-item ${current.className||''} ${clickHandler?'':'passive'}`.trim();
+      button.classList.toggle('hidden',!!current.hidden);
+      button.disabled=!!current.disabled;
+      button.title=String(current.title||current.label||'');
+      icon.textContent=String(current.icon||'');
+      icon.classList.toggle('hidden',!current.icon);
+      label.textContent=String(current.label??'');
+      label.classList.toggle('hidden',current.label===undefined||current.label===null||String(current.label)==='');
+      moveToZone();
+      return controller;
+    };
+    button.addEventListener('click',event=>{
+      if(button.disabled||typeof clickHandler!=='function')return;
+      try{clickHandler({event,element:button,pluginId,id,host});}
+      catch(err){console.error(`[DKDS status bar:${pluginId}/${id}]`,err);}
+    });
+    const controller={
+      id,pluginId,element:button,
+      update:patch=>apply(patch),
+      remove:()=>button.remove(),
+      get value(){return {...current};}
+    };
+    registerContribution(pluginId,'ui.statusItems',id,controller);
+    addCleanup(pluginId,()=>button.remove());
+    apply(current);
+    return controller;
+  }
+
   function registerProjectSlice(pluginId, key, hooks) {
     assertId(key, 'project slice key');
     if (!projectSlices.has(pluginId)) projectSlices.set(pluginId, new Map());
@@ -1130,6 +1192,10 @@
         },
         toolbar: {
           add: spec => createToolbarButton(pluginId, spec)
+        },
+        statusBar: {
+          add: spec => addStatusBarItem(pluginId, spec),
+          own: () => listContributions('ui.statusItems').filter(row=>row.pluginId===pluginId).map(row=>row.value)
         },
         mainTools: {
           add: spec => addMainTool(pluginId,spec)
@@ -1584,6 +1650,9 @@
       active:()=>activeActivityId,
       set:id=>setActiveActivity(id,{invoke:true}),
       refresh:()=>{renderActivityBar();refreshActivityVisibility();}
+    },
+    statusBar: {
+      list:()=>listContributions('ui.statusItems').map(row=>({pluginId:row.pluginId,id:row.id,value:row.value?.value||{}}))
     },
     workspace: {
       super:()=>superState(),

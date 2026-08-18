@@ -11,6 +11,15 @@
 
 Continue new product work from `plugin`, not from `main`.
 
+## Current continuation: global status bar / project Save As / LAN Web state
+
+- The shell now owns one fixed global bottom status bar. Do not put plugin status text back inside `.main-area`; use `ctx.ui.statusBar.add(...)` for optional plugin contributions.
+- `builtin.status-monitor` registers runtime type, live memory use and LAN Web state on the right side. Clicking the LAN item on desktop restores the LAN Web panel.
+- Hiding/minimizing the LAN Web panel is UI-only and does **not** stop the LAN server or discovery services.
+- Project Save always presents `保存当前 / 另存为 / 取消`. Desktop `saveAs` forces the native Save dialog; subsequent Save-current operations use the newly selected path.
+- Desktop and Web serialize the same `makeProject()` payload. A secure browser with File System Access can retain a writable file handle and overwrite it. A normal `http://LAN_IP:PORT` browser page cannot silently overwrite arbitrary client files, so it falls back to a same-name JSON download. Do not claim this browser sandbox limitation can be removed by renderer code.
+- Regression guard: `node scripts/test-statusbar-project-save.js`.
+
 ## v3.23 SUPER/TOP workspace architecture
 
 - SUPER is a single explicit local main-interface selection; never restore “pick the next TOP” fallback behavior.

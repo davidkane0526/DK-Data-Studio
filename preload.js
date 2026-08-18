@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveText: payload => ipcRenderer.invoke('files:saveText', payload),
   saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
+  getRuntimeStatus: () => ipcRenderer.invoke('system:getRuntimeStatus'),
   openProject: () => ipcRenderer.invoke('files:openProject'),
   openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
   listPluginWindows: () => ipcRenderer.invoke('windows:listPluginWindows'),

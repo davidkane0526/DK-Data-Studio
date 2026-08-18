@@ -25,6 +25,10 @@ window.DKDS_BUILTIN_PLUGINS = [
     "entry": "plugins/shell-navigation/plugin.js"
   },
   {
+    "id": "builtin.status-monitor",
+    "entry": "plugins/status-monitor/plugin.js"
+  },
+  {
     "id": "builtin.ter-analysis",
     "entry": "plugins/ter-analysis/plugin.js"
   },
@@ -40,6 +44,7 @@ window.DKDS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/resonance-detector-robust/plugin.js",
   "plugins/resonance-workbench/plugin.js",
   "plugins/shell-navigation/plugin.js",
+  "plugins/status-monitor/plugin.js",
   "plugins/ter-analysis/plugin.js",
   "plugins/workspace-safeguards/plugin.js"
 ];

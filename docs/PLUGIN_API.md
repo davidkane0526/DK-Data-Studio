@@ -62,6 +62,7 @@ ui.groupViews
 ui.groupCharts
 ui.pages
 ui.panels
+ui.statusBar
 peak.detectors
 ```
 
@@ -163,6 +164,28 @@ ctx.ui.toolbar.add({
 ```
 
 Do not add a feature button directly to `index.html`.
+
+## Bottom status-bar contribution
+
+The global bottom status bar is a shared shell surface. Plugins may contribute nothing, or add compact status items without editing `index.html`:
+
+```js
+const item = ctx.ui.statusBar.add({
+  id: 'connection',
+  side: 'right',          // `left` or `right`
+  order: 200,
+  icon: '◉',
+  label: '已连接',
+  title: '打开连接面板',
+  state: 'ok',            // `ok`, `warn`, `error`, `info` or empty
+  onClick: () => openPanel()
+});
+
+item.update({ label: '断开', state: 'warn' });
+item.remove();
+```
+
+Status contributions are lifecycle-owned by the registering plugin and are removed automatically when that plugin is deactivated. Keep them compact and status-oriented; full configuration UI belongs in a panel/page. The built-in `builtin.status-monitor` is the reference implementation for runtime memory and LAN Web state.
 
 ## Analysis page contribution
 

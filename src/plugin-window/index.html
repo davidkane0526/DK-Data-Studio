@@ -15,7 +15,11 @@
     <strong>插件窗口启动失败</strong>
     <span id="pluginWindowErrorText"></span>
   </div>
-  <div id="statusBar" class="statusbar plugin-window-status"></div>
+  <div id="statusBar" class="statusbar plugin-window-status" aria-label="插件窗口状态栏">
+    <div id="statusBarMessage" class="statusbar-message" aria-live="polite"></div>
+    <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left"></div>
+    <div id="statusBarPluginRight" class="statusbar-plugin-zone statusbar-plugin-right"></div>
+  </div>
   <script defer src="./runtime.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 (() => {
   const $ = selector => document.querySelector(selector);
-  const statusEl = $('#statusBar');
+  const statusEl = $('#statusBarMessage') || $('#statusBar');
   const errorEl = $('#pluginWindowError');
   const errorTextEl = $('#pluginWindowErrorText');
 

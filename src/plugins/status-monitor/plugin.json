@@ -1,0 +1,16 @@
+{
+  "id": "builtin.status-monitor",
+  "name": "Status Monitor",
+  "version": "1.0.0",
+  "apiVersion": "1.3.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 7,
+  "description": "Unified bottom status-bar monitor for runtime memory, client mode, and LAN web service state.",
+  "capabilities": [
+    "ui.status-bar",
+    "system.runtime-status",
+    "lan.web-status"
+  ],
+  "source": "builtin"
+}

@@ -5,6 +5,7 @@
   document.documentElement.classList.add('web-client');
 
   const fileStore = new Map();
+  const projectFileHandles = new Map();
   const nativePending = new Map();
   const nativeBridge = window.ReactNativeWebView?.postMessage
     ? window.ReactNativeWebView
@@ -128,6 +129,23 @@
     return true;
   }
 
+  function projectPathForHandle(handle) {
+    return `webfs://${handle?.name||'dk_data_project.dkds.json'}`;
+  }
+
+  async function writeProjectHandle(handle, content) {
+    const writable=await handle.createWritable();
+    await writable.write(content);
+    await writable.close();
+    const path=projectPathForHandle(handle);
+    projectFileHandles.set(path,handle);
+    return path;
+  }
+
+  function canUseFileSystemAccess() {
+    return !!(window.isSecureContext && window.showSaveFilePicker && window.showOpenFilePicker);
+  }
+
   async function copyText(text) {
     if(nativeBridge){
       return await nativeCall('copyText',{text:String(text??'')});
@@ -220,17 +238,43 @@
     },
 
     saveProject: async payload=>{
-      const name=(String(payload?.path||'').split(/[\\/]/).pop()||payload?.defaultName||'dk_data_project.dkds.json')
-        .replace(/^web:\/\//,'');
+      const mode=payload?.mode==='saveAs'?'saveAs':'current';
+      const path=String(payload?.path||'');
+      const rawName=(path.split(/[\\/]/).pop()||payload?.defaultName||'dk_data_project.dkds.json');
+      const name=decodeURIComponent(rawName.replace(/^(?:web|webfs|native):\/\//,''));
+      const content=JSON.stringify(payload?.project||{},null,2);
       if(nativeBridge){
         const uri=await nativeCall('saveText',{
           name,
-          content:JSON.stringify(payload?.project||{},null,2),
+          content,
           mimeType:'application/json'
         });
         return `native://${uri||name}`;
       }
-      downloadBlob(new Blob([JSON.stringify(payload?.project||{},null,2)],{type:'application/json;charset=utf-8'}),name);
+
+      const currentHandle=mode==='current'?projectFileHandles.get(path):null;
+      if(currentHandle){
+        try{return await writeProjectHandle(currentHandle,content);}
+        catch(err){console.warn('[DKDS web project overwrite]',err);}
+      }
+
+      if(canUseFileSystemAccess()){
+        try{
+          const handle=await window.showSaveFilePicker({
+            suggestedName:name,
+            types:[{description:'DK Data Studio Project',accept:{'application/json':['.json']}}]
+          });
+          return await writeProjectHandle(handle,content);
+        }catch(err){
+          if(err?.name==='AbortError')return null;
+          console.warn('[DKDS web project save picker]',err);
+        }
+      }
+
+      // Plain HTTP LAN pages cannot normally use File System Access API. In
+      // that browser security model the closest safe equivalent is downloading
+      // the same complete project JSON with the current file name.
+      downloadBlob(new Blob([content],{type:'application/json;charset=utf-8'}),name);
       return `web://${name}`;
     },
 
@@ -242,11 +286,42 @@
         const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
         return {path:asset.path,project:JSON.parse(decoded.text)};
       }
+      if(canUseFileSystemAccess()){
+        try{
+          const [handle]=await window.showOpenFilePicker({
+            multiple:false,
+            types:[{description:'DK Data Studio Project',accept:{'application/json':['.json']}}]
+          });
+          if(!handle)return null;
+          const file=await handle.getFile();
+          const path=projectPathForHandle(handle);
+          projectFileHandles.set(path,handle);
+          return {path,project:JSON.parse(await file.text())};
+        }catch(err){
+          if(err?.name==='AbortError')return null;
+          console.warn('[DKDS web project open picker]',err);
+        }
+      }
       const files=await chooseFiles({multiple:false,accept:'.json,.dkds.json,application/json'});
       const file=files[0];
       if(!file)return null;
       const text=await file.text();
       return {path:`web://${file.name}`,project:JSON.parse(text)};
+    },
+
+    getRuntimeStatus: async()=>{
+      const memory=performance?.memory||{};
+      return {
+        runtime:nativeBridge?'android':'web',
+        platform:navigator.platform||'',
+        isPackaged:false,
+        processCount:1,
+        memory:{
+          workingSetBytes:Number(memory.usedJSHeapSize)||0,
+          jsHeapUsedBytes:Number(memory.usedJSHeapSize)||0,
+          jsHeapLimitBytes:Number(memory.jsHeapSizeLimit)||0
+        }
+      };
     },
 
     pluginExternalList: async()=>({packages:[],errors:[],unsupported:true}),

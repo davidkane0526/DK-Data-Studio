@@ -83,6 +83,7 @@
       'ui.prime':'PRIME 功能',
       'ui.sub':'SUB 功能',
       'ui.main-tools':'主图工具',
+      'ui.status-bar':'底部状态栏',
       'ui.top-workspace':'TOP 工作区',
       'ui.prime':'PRIME 功能',
       'ui.sub':'SUB 功能',
@@ -103,6 +104,8 @@
       'workflow.analyzer':'分析器',
       'workflow.recipe':'工作流配方',
       'workspace.integrity':'工作区完整性',
+      'system.runtime-status':'运行状态',
+      'lan.web-status':'网页版状态',
       'project.slice':'工程状态'
     };
     return map[capability] || capability;
@@ -113,6 +116,7 @@
       'ui.activities':'顶级工作区',
       'ui.pages':'分析页面',
       'ui.panels':'功能面板',
+      'ui.statusItems':'状态栏项目',
       'ui.styles':'界面样式',
       'ui.sidebar':'侧栏区域',
       'ui.inspectors':'检查器',

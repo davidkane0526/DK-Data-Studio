@@ -3,7 +3,7 @@
   const $ = s => document.querySelector(s);
   const mainSvg = d3.select('#mainPlot');
   const tip = $('#hoverTip');
-  const status = $('#statusBar');
+  const status = $('#statusBarMessage') || $('#statusBar');
   const AUX_ACTIVITY_ID = new URLSearchParams(window.location.search).get('aux') || '';
   const IS_AUXILIARY_WINDOW = !!AUX_ACTIVITY_ID;
   let auxiliaryBootstrapState = null;
@@ -379,6 +379,7 @@
     $('#lanWebStopBtn').disabled=!running;
     $('#lanWebNewKeyBtn').disabled=!!status.noKey||!running;
     $('#lanWebApplyBtn').textContent=running?'应用并刷新':'应用并启动';
+    window.DKDSPlugins?.events?.emit?.('lanweb:status',status);
     void renderLanWebQr(status);
   }
 
@@ -398,6 +399,26 @@
       renderLanWebStatus(await window.electronAPI.lanWebGetStatus());
     }catch{}
     window.electronAPI.onLanWebStatus?.(status=>renderLanWebStatus(status));
+  }
+
+  async function showLanWebPanel(){
+    if(window.electronAPI?.isWebClient)return false;
+    const panel=$('#lanWebPanel');
+    if(!panel)return false;
+    panel.classList.remove('hidden');
+    try{
+      await loadLanWebSettings();
+      renderLanWebStatus(await window.electronAPI.lanWebGetStatus());
+    }catch(err){setStatus(`读取局域网网页版状态失败：${err?.message||err}`);}
+    return true;
+  }
+
+  function hideLanWebPanel({announce=true}={}){
+    const panel=$('#lanWebPanel');
+    if(!panel)return false;
+    panel.classList.add('hidden');
+    if(announce)setStatus('局域网网页版面板已隐藏到状态栏；点击状态栏“网页版”即可恢复。');
+    return true;
   }
 
   function sweepById(id){ return state.sweeps.find(s => s.id === id); }
@@ -553,7 +574,8 @@
   // Multi-project tabs
   // ------------------------------------------------------------------
   function projectBaseName(path){
-    const raw=String(path||'').split(/[\\/]/).pop()||'';
+    let raw=String(path||'').split(/[\\/]/).pop()||'';
+    try{raw=decodeURIComponent(raw);}catch{}
     return raw.replace(/\.dkds\.json$/i,'').replace(/\.json$/i,'')||'项目';
   }
 
@@ -5291,15 +5313,67 @@
       }
     };
   }
-  async function saveProject(){
-    const saved=await window.electronAPI.saveProject({path:state.projectPath,defaultName:'dk_data_project.dkds.json',project:makeProject()});
+  let projectSaveChoicePromise=null;
+  function chooseProjectSaveMode(){
+    if(projectSaveChoicePromise)return projectSaveChoicePromise;
+    const dialog=$('#projectSaveChoiceDialog');
+    if(!dialog)return Promise.resolve('current');
+    const currentBtn=$('#projectSaveCurrentBtn');
+    const saveAsBtn=$('#projectSaveAsBtn');
+    const cancelBtn=$('#projectSaveCancelBtn');
+    const hint=$('#projectSaveChoiceHint');
+    const currentName=state.projectPath?projectBaseName(state.projectPath):'';
+    if(window.electronAPI?.isWebClient){
+      hint.textContent=currentName
+        ? `当前工程：${currentName}。网页版工程内容与桌面版一致；浏览器允许原位写入时会直接覆盖，否则保存当前会下载同名工程文件。`
+        : '网页版工程内容与桌面版一致；首次保存会选择文件位置，普通 HTTP 局域网页在浏览器限制下可能改为下载工程文件。';
+    }else{
+      hint.textContent=currentName
+        ? `当前工程：${currentName}。保存当前会覆盖此文件；另存为会创建新工程文件并切换到新路径。`
+        : '当前工程尚未保存过。选择“保存当前”时会先要求选择保存位置。';
+    }
+    dialog.classList.remove('hidden');
+    projectSaveChoicePromise=new Promise(resolve=>{
+      let settled=false;
+      const finish=mode=>{
+        if(settled)return;settled=true;
+        dialog.classList.add('hidden');
+        window.removeEventListener('keydown',onKey,true);
+        projectSaveChoicePromise=null;
+        resolve(mode);
+      };
+      const onKey=e=>{
+        if(e.key==='Escape'){e.preventDefault();finish('cancel');}
+        else if(e.key==='Enter'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();finish('current');}
+      };
+      currentBtn.onclick=()=>finish('current');
+      saveAsBtn.onclick=()=>finish('saveAs');
+      cancelBtn.onclick=()=>finish('cancel');
+      dialog.onclick=e=>{if(e.target===dialog)finish('cancel');};
+      window.addEventListener('keydown',onKey,true);
+      requestAnimationFrame(()=>currentBtn.focus());
+    });
+    return projectSaveChoicePromise;
+  }
+
+  async function saveProject(options={}){
+    const mode=options.mode||await chooseProjectSaveMode();
+    if(!mode||mode==='cancel')return null;
+    const saved=await window.electronAPI.saveProject({
+      mode,
+      path:state.projectPath,
+      defaultName:state.projectPath?`${projectBaseName(state.projectPath)}.dkds.json`:'dk_data_project.dkds.json',
+      project:makeProject()
+    });
     if(saved){
       state.projectPath=saved;
       const tab=activeProjectTab();
       if(tab){tab.projectPath=saved;tab.title=projectBaseName(saved);}
       captureActiveProjectTab();
       renderProjectTabs();
-      setStatus(`工程已保存：${saved}`);
+      const verb=mode==='saveAs'?'工程已另存为':'工程已保存';
+      const browserDownload=window.electronAPI?.isWebClient&&String(saved).startsWith('web://');
+      setStatus(`${verb}：${saved}${browserDownload?'（浏览器下载模式）':''}`);
       return saved;
     }
     return null;
@@ -5651,6 +5725,7 @@
   setupInspectorDockResizer();
   document.querySelectorAll('.panel-close').forEach(b=>b.onclick=()=>{
     const panel=$('#'+b.dataset.target);panel.classList.add('hidden');
+    if(b.dataset.target==='lanWebPanel')setStatus('局域网网页版面板已隐藏到状态栏；服务状态不受影响。');
     if(b.dataset.target==='groupPanel')$('#dockedGroupSlot').classList.remove('active');
     if(b.dataset.target==='inspectorPanel'){
       $('#inspectorDockSlot').classList.remove('active');
@@ -5723,12 +5798,10 @@
   $('#lanWebBtn').onclick=async()=>{
     if(window.electronAPI?.isWebClient)return;
     const panel=$('#lanWebPanel');
-    panel.classList.toggle('hidden');
-    if(!panel.classList.contains('hidden')){
-      await loadLanWebSettings();
-      renderLanWebStatus(await window.electronAPI.lanWebGetStatus());
-    }
+    if(panel.classList.contains('hidden'))await showLanWebPanel();
+    else hideLanWebPanel({announce:false});
   };
+  $('#lanWebMinimizeBtn').onclick=()=>hideLanWebPanel();
   $('#lanWebApplyBtn').onclick=async()=>{
     const status=await window.electronAPI.lanWebSetSettings({
       enabled:$('#lanWebEnabled').checked,
@@ -6400,6 +6473,11 @@
       appVersion:'3.23.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
+      isWebClient:!!window.electronAPI?.isWebClient,
+      getRuntimeStatus:()=>window.electronAPI?.getRuntimeStatus?.(),
+      getLanWebStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),
+      openLanWebPanel:showLanWebPanel,
+      hideLanWebPanel,
       openActivityWindow:openPluginActivityWindow,
       closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
       getState:()=>state,
