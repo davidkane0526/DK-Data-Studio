@@ -13,6 +13,12 @@
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
   }
 
+  function cloneSerializable(value) {
+    if (value === null || value === undefined) return value;
+    try { return structuredClone(value); }
+    catch { return JSON.parse(JSON.stringify(value)); }
+  }
+
   function createState() {
     return {files:[],activeId:null,dialogOpen:false,resultScope:'checked'};
   }
@@ -47,11 +53,20 @@
 
   function defaultSettings(ins, name='') {
     const inferred = A.inferPulseProtocolFromName?.(name) || {};
+    const timeCol=guessColumn(ins,'time');
+    const currentCol=guessColumn(ins,'current');
+    const voltageCol=guessColumn(ins,'voltage');
     return {
       segmentationMode:'auto',
-      timeCol:guessColumn(ins,'time'),
-      currentCol:guessColumn(ins,'current'),
-      voltageCol:guessColumn(ins,'voltage'),
+      timeCol,
+      currentCol,
+      voltageCol,
+      cycleSamples:0,
+      cycleOffsetSamples:0,
+      writeStartSample:null,
+      writeEndSample:null,
+      readStartSample:null,
+      readEndSample:null,
       writeDuration:nullableNumber(inferred.writeDuration),
       readDuration:nullableNumber(inferred.readDuration),
       sampleInterval:null,
@@ -75,7 +90,7 @@
   }
 
   function modeName(mode) {
-    return ({timing:'按时间协议',waveform:'按记录电压',legacy:'旧版等点数',auto:'自动'})[mode] || '旧版等点数';
+    return ({cycle:'按周期点数',timing:'按时间协议',waveform:'按记录电压',legacy:'旧版等点数',auto:'自动'})[mode] || '旧版等点数';
   }
 
   function safeName(label) {
@@ -131,6 +146,12 @@
           timeCol:Number($('#pulseTimeCol').value),
           currentCol:Number($('#pulseCurrentCol').value),
           voltageCol:Number($('#pulseVoltageCol').value),
+          cycleSamples:Math.max(0,Math.round(Number($('#pulseCycleSamples').value)||0)),
+          cycleOffsetSamples:Math.max(0,Math.round(Number($('#pulseCycleOffsetSamples').value)||0)),
+          writeStartSample:nullableNumber($('#pulseWriteStartSample').value),
+          writeEndSample:nullableNumber($('#pulseWriteEndSample').value),
+          readStartSample:nullableNumber($('#pulseReadStartSample').value),
+          readEndSample:nullableNumber($('#pulseReadEndSample').value),
           writeDuration:nullableNumber($('#pulseWriteDuration').value),
           readDuration:nullableNumber($('#pulseReadDuration').value),
           sampleInterval:nullableNumber($('#pulseSampleInterval').value),
@@ -153,6 +174,12 @@
           timeCol:Number(s.timeCol),
           currentCol:Number(s.currentCol),
           voltageCol:Number(s.voltageCol),
+          cycleSamples:Math.max(0,Math.round(Number(s.cycleSamples)||0)),
+          cycleOffsetSamples:Math.max(0,Math.round(Number(s.cycleOffsetSamples)||0)),
+          writeStartSample:nullableNumber(s.writeStartSample),
+          writeEndSample:nullableNumber(s.writeEndSample),
+          readStartSample:nullableNumber(s.readStartSample),
+          readEndSample:nullableNumber(s.readEndSample),
           writeDuration:nullableNumber(s.writeDuration),
           readDuration:nullableNumber(s.readDuration),
           sampleInterval:nullableNumber(s.sampleInterval),
@@ -246,6 +273,7 @@
           ['脉冲/读取对',String(r.points.length)],
           ['稳态窗口',`${(r.windowStartFraction*100).toFixed(0)}–${(r.windowEndFraction*100).toFixed(0)}%`]
         ];
+        if (r.protocol?.cycleSamples>1) rows.splice(1,0,['周期点数',String(r.protocol.cycleSamples)]);
         if (r.protocol?.writeDuration>0) rows.splice(1,0,['写入宽度',`${r.protocol.writeDuration} s`]);
         if (r.protocol?.readDuration>0) rows.splice(2,0,['读取宽度',`${r.protocol.readDuration} s`]);
         if (finiteValue(r.blockSamples)) rows.splice(1,0,['平台点数',String(r.blockSamples)]);
@@ -273,6 +301,14 @@
         $('#pulseTimeCol').innerHTML = columnOptions(item.inspection,s.timeCol,{optional:true,optionalLabel:'未记录时间'});
         $('#pulseCurrentCol').innerHTML = columnOptions(item.inspection,s.currentCol);
         $('#pulseVoltageCol').innerHTML = columnOptions(item.inspection,s.voltageCol,{optional:true,optionalLabel:'未记录电压'});
+        const cycleEstimate = A.estimatePulseCycleSamples?.(item.inspection,{currentCol:Number(s.currentCol),voltageCol:Number(s.voltageCol)})||0;
+        $('#pulseCycleSamples').value = Number(s.cycleSamples)||0;
+        $('#pulseCycleSamples').placeholder = cycleEstimate>1?`0 = 自动（≈${cycleEstimate}）`:'0 = 自动';
+        $('#pulseCycleOffsetSamples').value = Math.max(0,Math.round(Number(s.cycleOffsetSamples)||0));
+        $('#pulseWriteStartSample').value = finiteValue(s.writeStartSample)?String(Math.round(Number(s.writeStartSample))):'';
+        $('#pulseWriteEndSample').value = finiteValue(s.writeEndSample)?String(Math.round(Number(s.writeEndSample))):'';
+        $('#pulseReadStartSample').value = finiteValue(s.readStartSample)?String(Math.round(Number(s.readStartSample))):'';
+        $('#pulseReadEndSample').value = finiteValue(s.readEndSample)?String(Math.round(Number(s.readEndSample))):'';
         $('#pulseWriteDuration').value = finiteValue(s.writeDuration)?String(s.writeDuration):'';
         $('#pulseReadDuration').value = finiteValue(s.readDuration)?String(s.readDuration):'';
         $('#pulseSampleInterval').value = finiteValue(s.sampleInterval)?String(s.sampleInterval):'';
@@ -537,7 +573,9 @@
           activeId:state.activeId,resultScope:state.resultScope||'checked',
           files:state.files.map(item=>({
             id:item.id,path:item.path,name:item.name,size:item.size,label:item.label,checked:item.checked,
-            text:item.text,encoding:item.encoding,settings:{...(item.settings||{})},analyzed:!!item.result
+            text:item.text,encoding:item.encoding,settings:{...(item.settings||{})},
+            analyzed:!!item.result,analyzedAt:item.analyzedAt||null,
+            result:item.result ? cloneSerializable(item.result) : null
           }))
         };
       }
@@ -555,9 +593,13 @@
                 label:source.label||String(source.name||'').replace(/\.[^.]+$/,''),
                 checked:source.checked!==false,text:source.text||'',encoding:source.encoding||'auto',
                 inspection,settings:{...defaultSettings(inspection,source.name),...(source.settings||{})},
-                result:null,error:'',loading:false,analyzedAt:null
+                result:source.result ? cloneSerializable(source.result) : null,
+                error:'',loading:false,analyzedAt:source.analyzedAt||null
               };
-              if(source.analyzed)analyzeItem(item);
+              // New projects persist the computed result. Re-run analysis only
+              // when migrating older project files that stored analyzed=true
+              // without a result payload.
+              if(source.analyzed && !item.result)analyzeItem(item);
               next.files.push(item);
             } catch {}
           }

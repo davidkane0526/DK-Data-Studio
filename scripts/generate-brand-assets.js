@@ -5,11 +5,11 @@ const zlib = require('zlib');
 const root = path.resolve(__dirname, '..');
 
 const COLORS = {
-  bg: [17, 24, 39, 255],
-  border: [240, 245, 255, 255],
-  blue: [91, 154, 255, 255],
-  mint: [99, 237, 212, 255],
-  node: [255, 255, 255, 255]
+  bg: [247, 249, 253, 255],
+  border: [215, 224, 238, 255],
+  blue: [49, 94, 251, 255],
+  mint: [37, 184, 166, 255],
+  white: [255, 255, 255, 255]
 };
 
 let crcTable = null;
@@ -105,25 +105,49 @@ function strokeBezier(buffer, size, points, radius, color) {
   }
 }
 
+function strokeLine(buffer, size, x1, y1, x2, y2, radius, color) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) * 1.6));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    fillCircle(buffer, size, x1 + dx * t, y1 + dy * t, radius, color);
+  }
+}
+
+function strokePolyline(buffer, size, points, radius, color) {
+  for (let i = 1; i < points.length; i++) {
+    strokeLine(buffer, size, points[i - 1].x, points[i - 1].y, points[i].x, points[i].y, radius, color);
+  }
+}
+
 function renderIcon(size) {
   const s = size / 512;
   const q = n => n * s;
   const pixels = Buffer.alloc(size * size * 4, 0);
 
-  fillRoundedRect(pixels, size, q(22), q(22), q(490), q(490), q(96), COLORS.bg);
-  strokeRoundedRect(pixels, size, q(46), q(46), q(466), q(466), q(72), Math.max(1, q(2)), COLORS.border);
+  // A light squircle keeps the mark legible on both light and dark taskbars.
+  fillRoundedRect(pixels, size, q(24), q(24), q(488), q(488), q(104), COLORS.bg);
+  strokeRoundedRect(pixels, size, q(24), q(24), q(488), q(488), q(104), Math.max(1, q(4)), COLORS.border);
 
-  strokeBezier(pixels, size, [
-    {x:q(132),y:q(201)}, {x:q(208),y:q(176)}, {x:q(303),y:q(186)}, {x:q(379),y:q(259)}
-  ], q(10), COLORS.blue);
+  // One resonance trace: quiet baseline -> narrow central peak -> quiet baseline.
+  // Fewer visual primitives make 16/24/32 px Windows icons remain recognizable.
+  const trace = [
+    {x:q(88), y:q(306)},
+    {x:q(150),y:q(306)},
+    {x:q(190),y:q(299)},
+    {x:q(230),y:q(282)},
+    {x:q(256),y:q(259)},
+    {x:q(278),y:q(126)},
+    {x:q(300),y:q(261)},
+    {x:q(326),y:q(286)},
+    {x:q(370),y:q(301)},
+    {x:q(424),y:q(306)}
+  ];
+  strokePolyline(pixels, size, trace, Math.max(1.1, q(5.5)), COLORS.blue);
 
-  strokeBezier(pixels, size, [
-    {x:q(107),y:q(348)}, {x:q(176),y:q(302)}, {x:q(260),y:q(293)}, {x:q(405),y:q(164)}
-  ], q(13), COLORS.mint);
-
-  for (const [x,y,r] of [
-    [132,201,14], [379,259,14], [107,348,18], [260,281,16], [405,164,19]
-  ]) fillCircle(pixels, size, q(x), q(y), q(r), COLORS.node);
+  fillCircle(pixels, size, q(278), q(126), q(15), COLORS.white);
+  fillCircle(pixels, size, q(278), q(126), q(10), COLORS.blue);
+  fillCircle(pixels, size, q(278), q(126), q(5), COLORS.mint);
 
   return pixels;
 }
@@ -154,20 +178,26 @@ function encodePng(size, pixels) {
   ]);
 }
 
-function encodeIco(png) {
-  const header = Buffer.alloc(22);
+function encodeIco(entries) {
+  const rows = entries.map(({size,png}) => ({size,png}));
+  const header = Buffer.alloc(6 + rows.length * 16);
   header.writeUInt16LE(0, 0);
   header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(1, 4);
-  header[6] = 0;
-  header[7] = 0;
-  header[8] = 0;
-  header[9] = 0;
-  header.writeUInt16LE(1, 10);
-  header.writeUInt16LE(32, 12);
-  header.writeUInt32LE(png.length, 14);
-  header.writeUInt32LE(22, 18);
-  return Buffer.concat([header, png]);
+  header.writeUInt16LE(rows.length, 4);
+  let offset = header.length;
+  rows.forEach((row,index) => {
+    const base = 6 + index * 16;
+    header[base] = row.size >= 256 ? 0 : row.size;
+    header[base + 1] = row.size >= 256 ? 0 : row.size;
+    header[base + 2] = 0;
+    header[base + 3] = 0;
+    header.writeUInt16LE(1, base + 4);
+    header.writeUInt16LE(32, base + 6);
+    header.writeUInt32LE(row.png.length, base + 8);
+    header.writeUInt32LE(offset, base + 12);
+    offset += row.png.length;
+  });
+  return Buffer.concat([header, ...rows.map(row => row.png)]);
 }
 
 function writeIfChanged(filePath, data) {
@@ -181,8 +211,11 @@ function writeIfChanged(filePath, data) {
 }
 
 const png512 = encodePng(512, renderIcon(512));
-const png256 = encodePng(256, renderIcon(256));
-const ico = encodeIco(png256);
+const icoEntries = [16,32,48,64,128,256].map(size => ({
+  size,
+  png:encodePng(size, renderIcon(size))
+}));
+const ico = encodeIco(icoEntries);
 
 const outputs = [
   [path.join(root, 'assets', 'dkds-icon.png'), png512],

@@ -62,6 +62,27 @@ assert.strictEqual(automatic.segmentationMode,'timing');
 assert.strictEqual(automatic.points.length,2);
 assert.strictEqual(automatic.readVoltage,.1);
 
+
+const periodicRows=['Time,Current,Voltage'];
+for(let cycle=0;cycle<4;cycle++){
+  for(let j=0;j<300;j++){
+    const write=j<100;
+    periodicRows.push(`${cycle*300+j},${write?10+cycle:100+cycle},${write?1+cycle*.1:.5}`);
+  }
+}
+const periodicFile={name:'periodic-300.csv',path:'periodic-300.csv',text:periodicRows.join('\n')};
+const periodicInspection=A.inspectDataText(periodicFile,A.defaultImportOptions());
+assert.strictEqual(A.estimatePulseCycleSamples(periodicInspection,{currentCol:1,voltageCol:2}),300);
+const periodic=A.analyzePulseReadData(periodicFile,{
+  segmentationMode:'cycle',timeCol:0,currentCol:1,voltageCol:2,
+  cycleSamples:300,writeStartSample:5,writeEndSample:15,readStartSample:105,readEndSample:115
+});
+assert.strictEqual(periodic.segmentationMode,'cycle');
+assert.strictEqual(periodic.cycleSamples,300);
+assert.strictEqual(periodic.points.length,4);
+assert.strictEqual(periodic.points[2].pulseCurrent,12);
+assert.strictEqual(periodic.points[2].readCurrent,102);
+
 const legacyRows=['Meta','Time(s),id(0.0),Time(s),vd(0.0)'];
 let t=0;
 const blocks=[1,.5,.5,.5,-1,.5,-.5,.5];
@@ -76,4 +97,4 @@ assert.strictEqual(legacy.segmentationMode,undefined);
 assert.strictEqual(legacy.blockSamples,20);
 assert.ok(legacy.points.length>=3);
 
-console.log('Pulse analysis supports unequal write/read widths, current-only files, filename protocol inference, and legacy data.');
+console.log('Pulse analysis supports periodic point-count cycles, unequal write/read widths, current-only files, filename protocol inference, and legacy data.');

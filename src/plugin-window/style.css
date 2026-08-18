@@ -8,25 +8,36 @@ body.plugin-window-host .analysis-page{
   right:0!important;
   z-index:1000!important;
 }
-.plugin-window-loading{
-  position:fixed;
-  inset:0 0 28px 0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  background:var(--bg);
-  color:var(--muted);
-  z-index:900;
-}
-.plugin-window-loading-title{font-size:20px;font-weight:750;color:var(--text)}
-.plugin-window-loading-text{font-size:12px}
 .plugin-window-status{
   position:fixed;
   left:0;right:0;bottom:0;
   height:28px;
   z-index:1200;
 }
-body.plugin-window-host.ready .plugin-window-loading{display:none}
-body.plugin-window-host.failed .plugin-window-loading-title{color:#b42318}
+.plugin-window-error{
+  position:fixed;
+  inset:0 0 28px 0;
+  z-index:1400;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:24px;
+  background:var(--bg);
+  color:#b42318;
+  text-align:center;
+}
+.plugin-window-error strong{font-size:18px}
+.plugin-window-error span{max-width:760px;font-size:12px;color:var(--muted);line-height:1.6}
+/* v3.22 plugin-window visual consistency */
+body.plugin-window-host{
+  font-family:var(--ui-font-family,"Microsoft YaHei UI","Segoe UI",sans-serif);
+  font-size:var(--ui-font-size,12px);
+  background:var(--bg,#f6f8fb);
+}
+body.plugin-window-host #app{background:var(--bg,#f6f8fb)}
+body.plugin-window-host .analysis-page-body{background:var(--bg,#f6f8fb)}
+.plugin-window-status{font-size:var(--ui-font-small,11px);background:#fbfcfe;color:#7a8495;border-top:1px solid #e6eaf0}
+.plugin-window-error strong{font-size:var(--ui-font-page-title,18px)}
+.plugin-window-error span{font-size:var(--ui-font-small,11px)}

@@ -714,6 +714,7 @@
       applyInspectorPanelLayout();
     }
     renderProjectTabs();
+    if(activate)setTimeout(()=>prewarmTopLevelPluginWindows(),0);
     return t;
   }
 
@@ -738,6 +739,7 @@
     scheduleMainPlotRelayout();
     refreshOpenAnalysisPage();
     setStatus(`已切换到独立项目：${t.title}`);
+    setTimeout(()=>prewarmTopLevelPluginWindows(),0);
   }
 
   function closeProjectTab(id){
@@ -746,6 +748,7 @@
     if(state.projectTabs.length===1){
       const ok=(!t.datasets.length&&!t.peaks.length)||window.confirm('当前是最后一个项目标签页。清空当前项目？');
       if(!ok)return;
+      window.electronAPI?.disposeProjectActivityWindows?.(id);
       captureActiveProjectTab();
       const fresh=blankProjectTab('项目 1');
       fresh.id=t.id;
@@ -757,6 +760,7 @@
     }
     const hadData=t.datasets.length||t.peaks.length;
     if(hadData&&!window.confirm(`关闭“${t.title}”？未保存修改不会自动写入磁盘。`))return;
+    window.electronAPI?.disposeProjectActivityWindows?.(id);
     const idx=state.projectTabs.findIndex(q=>q.id===id);
     const wasActive=id===state.activeProjectTabId;
     state.projectTabs.splice(idx,1);
@@ -3347,11 +3351,20 @@
 
   function defaultPulseItemSettings(ins,name=''){
     const inferred=A.inferPulseProtocolFromName?.(name)||{};
+    const timeCol=guessPulseColumn(ins,'time');
+    const currentCol=guessPulseColumn(ins,'current');
+    const voltageCol=guessPulseColumn(ins,'voltage');
     return {
       segmentationMode:'auto',
-      timeCol:guessPulseColumn(ins,'time'),
-      currentCol:guessPulseColumn(ins,'current'),
-      voltageCol:guessPulseColumn(ins,'voltage'),
+      timeCol,
+      currentCol,
+      voltageCol,
+      cycleSamples:0,
+      cycleOffsetSamples:0,
+      writeStartSample:null,
+      writeEndSample:null,
+      readStartSample:null,
+      readEndSample:null,
       writeDuration:pulseNullableNumber(inferred.writeDuration),
       readDuration:pulseNullableNumber(inferred.readDuration),
       sampleInterval:null,
@@ -3378,7 +3391,7 @@
   }
 
   function pulseModeName(mode){
-    return ({timing:'按时间协议',waveform:'按记录电压',legacy:'旧版等点数',auto:'自动'})[mode]||'旧版等点数';
+    return ({cycle:'按周期点数',timing:'按时间协议',waveform:'按记录电压',legacy:'旧版等点数',auto:'自动'})[mode]||'旧版等点数';
   }
 
   function pulseFiniteText(value,{digits=6,suffix=''}={}){
@@ -3484,6 +3497,14 @@
     $('#pulseTimeCol').innerHTML=pulseColumnOptions(item.inspection,s.timeCol,{optional:true,optionalLabel:'未记录时间'});
     $('#pulseCurrentCol').innerHTML=pulseColumnOptions(item.inspection,s.currentCol);
     $('#pulseVoltageCol').innerHTML=pulseColumnOptions(item.inspection,s.voltageCol,{optional:true,optionalLabel:'未记录电压'});
+    const cycleEstimate=A.estimatePulseCycleSamples?.(item.inspection,{currentCol:Number(s.currentCol),voltageCol:Number(s.voltageCol)})||0;
+    $('#pulseCycleSamples').value=Number(s.cycleSamples)||0;
+    $('#pulseCycleSamples').placeholder=cycleEstimate>1?`0 = 自动（≈${cycleEstimate}）`:'0 = 自动';
+    $('#pulseCycleOffsetSamples').value=Math.max(0,Math.round(Number(s.cycleOffsetSamples)||0));
+    $('#pulseWriteStartSample').value=pulseIsFiniteValue(s.writeStartSample)?String(Math.round(Number(s.writeStartSample))):'';
+    $('#pulseWriteEndSample').value=pulseIsFiniteValue(s.writeEndSample)?String(Math.round(Number(s.writeEndSample))):'';
+    $('#pulseReadStartSample').value=pulseIsFiniteValue(s.readStartSample)?String(Math.round(Number(s.readStartSample))):'';
+    $('#pulseReadEndSample').value=pulseIsFiniteValue(s.readEndSample)?String(Math.round(Number(s.readEndSample))):'';
     $('#pulseWriteDuration').value=pulseIsFiniteValue(s.writeDuration)?String(s.writeDuration):'';
     $('#pulseReadDuration').value=pulseIsFiniteValue(s.readDuration)?String(s.readDuration):'';
     $('#pulseSampleInterval').value=pulseIsFiniteValue(s.sampleInterval)?String(s.sampleInterval):'';
@@ -3520,6 +3541,7 @@
       ['脉冲/读取对',String(r.points.length)],
       ['稳态窗口',`${(r.windowStartFraction*100).toFixed(0)}–${(r.windowEndFraction*100).toFixed(0)}%`]
     ];
+    if(r.protocol?.cycleSamples>1)rows.splice(1,0,['周期点数',String(r.protocol.cycleSamples)]);
     if(r.protocol?.writeDuration>0)rows.splice(1,0,['写入宽度',`${r.protocol.writeDuration} s`]);
     if(r.protocol?.readDuration>0)rows.splice(2,0,['读取宽度',`${r.protocol.readDuration} s`]);
     if(pulseIsFiniteValue(r.blockSamples))rows.splice(1,0,['平台点数',String(r.blockSamples)]);
@@ -3539,6 +3561,12 @@
       timeCol:Number($('#pulseTimeCol').value),
       currentCol:Number($('#pulseCurrentCol').value),
       voltageCol:Number($('#pulseVoltageCol').value),
+      cycleSamples:Math.max(0,Math.round(Number($('#pulseCycleSamples').value)||0)),
+      cycleOffsetSamples:Math.max(0,Math.round(Number($('#pulseCycleOffsetSamples').value)||0)),
+      writeStartSample:pulseNullableNumber($('#pulseWriteStartSample').value),
+      writeEndSample:pulseNullableNumber($('#pulseWriteEndSample').value),
+      readStartSample:pulseNullableNumber($('#pulseReadStartSample').value),
+      readEndSample:pulseNullableNumber($('#pulseReadEndSample').value),
       writeDuration:pulseNullableNumber($('#pulseWriteDuration').value),
       readDuration:pulseNullableNumber($('#pulseReadDuration').value),
       sampleInterval:pulseNullableNumber($('#pulseSampleInterval').value),
@@ -3624,6 +3652,12 @@
       timeCol:Number(s.timeCol),
       currentCol:Number(s.currentCol),
       voltageCol:Number(s.voltageCol),
+      cycleSamples:Math.max(0,Math.round(Number(s.cycleSamples)||0)),
+      cycleOffsetSamples:Math.max(0,Math.round(Number(s.cycleOffsetSamples)||0)),
+      writeStartSample:pulseNullableNumber(s.writeStartSample),
+      writeEndSample:pulseNullableNumber(s.writeEndSample),
+      readStartSample:pulseNullableNumber(s.readStartSample),
+      readEndSample:pulseNullableNumber(s.readEndSample),
       writeDuration:pulseNullableNumber(s.writeDuration),
       readDuration:pulseNullableNumber(s.readDuration),
       sampleInterval:pulseNullableNumber(s.sampleInterval),
@@ -4811,6 +4845,11 @@
   }
 
 
+  function cloneProjectCache(value){
+    if(value===null||value===undefined)return value;
+    try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
+  }
+
   function serializePulseAnalysisState(){
     return {
       activeId:pulseAnalysisState.activeId,
@@ -4825,7 +4864,9 @@
         text:item.text,
         encoding:item.encoding,
         settings:{...(item.settings||{})},
-        analyzed:!!item.result
+        analyzed:!!item.result,
+        analyzedAt:item.analyzedAt||null,
+        result:item.result?cloneProjectCache(item.result):null
       }))
     };
   }
@@ -4851,9 +4892,10 @@
           encoding:source.encoding||'auto',
           inspection,
           settings:{...defaultPulseItemSettings(inspection),...(source.settings||{})},
-          result:null,error:'',loading:false,analyzedAt:null
+          result:source.result?cloneProjectCache(source.result):null,
+          error:'',loading:false,analyzedAt:source.analyzedAt||null
         };
-        if(source.analyzed)analyzePulseItem(item);
+        if(source.analyzed&&!item.result)analyzePulseItem(item);
         restored.files.push(item);
       }catch(err){}
     }
@@ -4888,6 +4930,7 @@
       spacingSettings:{...state.spacingSettings},
       terMaxSettings:{...state.terMaxSettings},
       terHeatmapDisplay:{...state.terHeatmapDisplay},
+      terMaxResult:state.terMaxResult?cloneProjectCache(state.terMaxResult):null,
       gateAnalysisSettings:{...state.gateAnalysisSettings},
       transformPreviewByDataset:[...state.transformPreviewByDataset.entries()],
       dataModel:window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),
@@ -4960,7 +5003,7 @@
     state.spacingResult=[];
     state.terMaxSettings={...(pr.terMaxSettings||{vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false})};
     state.terHeatmapDisplay={...(pr.terHeatmapDisplay||{colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null})};
-    state.terMaxResult=null;
+    state.terMaxResult=pr.terMaxResult?cloneProjectCache(pr.terMaxResult):null;
     state.gateAnalysisSettings={...(pr.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0})};
     state.gateAnalysisResult=null;
     state.transformPreviewByDataset=new Map(pr.transformPreviewByDataset||[]);
@@ -5800,6 +5843,30 @@
     });
   }
 
+  function prewarmTopLevelPluginWindows(){
+    if(IS_AUXILIARY_WINDOW||!window.electronAPI?.prewarmActivityWindow)return;
+    const activities=['data-center','ter','pulse'];
+    const run=(activityId,index)=>{
+      const tab=activeProjectTab();
+      if(!tab)return;
+      captureActiveProjectTab();
+      const payload={
+        activityId,
+        projectTabId:tab.id,
+        title:tab.title,
+        projectPath:state.projectPath,
+        project:makeProject()
+      };
+      Promise.resolve(window.electronAPI.prewarmActivityWindow(payload)).catch(err=>{
+        console.warn(`[DKDS prewarm:${activityId}]`,err);
+      });
+      if(index+1<activities.length)setTimeout(()=>run(activities[index+1],index+1),140);
+    };
+    const kick=()=>setTimeout(()=>run(activities[0],0),80);
+    if(typeof requestIdleCallback==='function')requestIdleCallback(kick,{timeout:450});
+    else setTimeout(kick,250);
+  }
+
   function applyActivityProjectSnapshot(payload){
     const projectTabId=String(payload?.projectTabId||'');
     const project=payload?.project;
@@ -5921,6 +5988,8 @@
     }
     if(IS_AUXILIARY_WINDOW){
       await window.DKDSPlugins?.activities?.set?.(auxiliaryBootstrapState?.activityId||AUX_ACTIVITY_ID);
+    }else{
+      prewarmTopLevelPluginWindows();
     }
     window.DKDSPlugins?.events?.emit?.('app:ready',{state,auxiliary:IS_AUXILIARY_WINDOW});
   }

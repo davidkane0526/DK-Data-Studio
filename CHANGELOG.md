@@ -1,4 +1,11 @@
 # Changelog
+## 3.22.0 UI refinement (local development snapshot)
+
+- Replaced the multi-curve brand mark with a compact single-resonance spike and regenerated Windows/Android icon assets.
+- Unified Windows app identity (`DK Data Studio`, executable name and AppUserModelID).
+- Clarified top-level plugin navigation versus contextual secondary commands with responsive density modes.
+- Standardized the desktop/plugin typography scale and refined borders, shadows, radii, states, cards and tables.
+
 
 ## 3.22.0 — shared Windows toolchain + compact application identity
 

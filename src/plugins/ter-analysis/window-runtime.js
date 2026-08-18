@@ -6,6 +6,11 @@
   function numOrNull(value){if(!finite(value))return null;return Number(value);}
   function csvCell(value){const s=String(value??'');return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 
+  function cloneSerializable(value){
+    if(value===null||value===undefined)return value;
+    try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
+  }
+
   window.DKDSPluginWindowRuntime={
     async create({host,project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}){
       let project=initialProject||{};
@@ -23,7 +28,7 @@
           colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,
           ...(project.terHeatmapDisplay||{})
         };
-        result=null;
+        result=project.terMaxResult?cloneSerializable(project.terMaxResult):null;
       }
       applyProject(project);
 
@@ -249,6 +254,7 @@
         syncProject(target){
           target.terMaxSettings={...settings};
           target.terHeatmapDisplay={...display};
+          target.terMaxResult=result?cloneSerializable(result):null;
         },
         getState:()=>({settings,display,result})
       };

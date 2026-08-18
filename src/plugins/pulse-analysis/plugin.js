@@ -68,6 +68,7 @@
                 <label>分段方式
                   <select id="pulseSegmentationMode">
                     <option value="auto">自动（推荐）</option>
+                    <option value="cycle">按周期点数</option>
                     <option value="timing">按时间协议</option>
                     <option value="waveform">按记录电压平台</option>
                     <option value="legacy">旧版等点数平台</option>
@@ -81,6 +82,19 @@
                 </label>
                 <label>记录电压列
                   <select id="pulseVoltageCol"></select>
+                </label>
+
+                <label>每周期点数
+                  <input id="pulseCycleSamples" type="number" min="0" step="1" placeholder="0 = 自动，例如 300">
+                </label>
+                <label>首周期偏移点数
+                  <input id="pulseCycleOffsetSamples" type="number" min="0" step="1" value="0">
+                </label>
+                <label>写入统计区间（点）
+                  <div class="pulse-inline-range"><input id="pulseWriteStartSample" type="number" min="0" step="1" placeholder="自动"><span>–</span><input id="pulseWriteEndSample" type="number" min="1" step="1" placeholder="自动"></div>
+                </label>
+                <label>读取统计区间（点）
+                  <div class="pulse-inline-range"><input id="pulseReadStartSample" type="number" min="0" step="1" placeholder="自动"><span>–</span><input id="pulseReadEndSample" type="number" min="1" step="1" placeholder="自动"></div>
                 </label>
 
                 <label>写入宽度 (s)
@@ -127,7 +141,7 @@
               </div>
 
               <div class="pulse-protocol-hint">
-                文件名也可携带协议，例如 <code>t=0.1s read=0.1 1s.csv</code>：自动识别写入宽度 0.1 s、读取电压 0.1 V、读取宽度 1 s。
+                周期数据可直接使用“每周期点数”。例如你的 DataDeal 脚本 <code>segs=300</code> 对应每周期 300 点；若只想统计周期内 105–115 点，可把读取统计区间设为 105–115。留空时会结合电压跳变或读写宽度比例自动确定相位。文件名也可携带 <code>t=0.1s read=0.1 1s</code> 等时间协议。
               </div>
               <div id="pulseSummary" class="pulse-summary pulse-summary-grid">
                 <span class="pulse-summary-placeholder">当前文件尚未分析。</span>
@@ -221,9 +235,10 @@
     };
     for(const id of [
       'pulseSegmentationMode','pulseTimeCol','pulseCurrentCol','pulseVoltageCol',
-      'pulseWriteDuration','pulseReadDuration','pulseSampleInterval','pulsePhaseOrder',
-      'pulseReadVoltageFallback','pulsePulseVoltageFallback','pulseBlockSamples',
-      'pulseWindowStart','pulseWindowEnd','pulseReadPairMode'
+      'pulseCycleSamples','pulseCycleOffsetSamples','pulseWriteStartSample','pulseWriteEndSample',
+      'pulseReadStartSample','pulseReadEndSample','pulseWriteDuration','pulseReadDuration',
+      'pulseSampleInterval','pulsePhaseOrder','pulseReadVoltageFallback','pulsePulseVoltageFallback',
+      'pulseBlockSamples','pulseWindowStart','pulseWindowEnd','pulseReadPairMode'
     ])page.querySelector('#'+id).onchange=()=>P.syncEditor();
     page.querySelector('#pulseResultScope').onchange=e=>P.setResultScope(e.target.value);
 

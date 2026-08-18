@@ -10,7 +10,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
   openProject: () => ipcRenderer.invoke('files:openProject'),
   openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
+  prewarmActivityWindow: payload => ipcRenderer.invoke('windows:prewarmActivity', payload),
   getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
+  markActivityWindowReady: () => ipcRenderer.send('windows:activityReady'),
+  disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
   pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
   onActivityProjectSnapshot: callback => {
@@ -22,6 +25,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = () => callback();
     ipcRenderer.on('windows:activityBootstrapChanged', handler);
     return () => ipcRenderer.removeListener('windows:activityBootstrapChanged', handler);
+  },
+  onActivityWillHide: callback => {
+    const handler = () => callback();
+    ipcRenderer.on('windows:activityWillHide', handler);
+    return () => ipcRenderer.removeListener('windows:activityWillHide', handler);
+  },
+  onActivityWillShow: callback => {
+    const handler = () => callback();
+    ipcRenderer.on('windows:activityWillShow', handler);
+    return () => ipcRenderer.removeListener('windows:activityWillShow', handler);
   },
   pluginExternalList: () => ipcRenderer.invoke('plugins:listExternal'),
   pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),

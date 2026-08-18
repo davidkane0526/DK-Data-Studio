@@ -11,6 +11,22 @@
 
 Continue new product work from `plugin`, not from `main`.
 
+## v3.22 local UI / identity refinement
+
+This delivery is a **complete project snapshot**, not a patch. It intentionally preserves the v3.22 prewarm/window-cache/Windows-tooling work already present in the working tree.
+
+- Brand: `assets/dkds-mark.svg` and `scripts/generate-brand-assets.js` now use one narrow resonance spike with a single apex marker. `npm run brand:assets` regenerates Windows PNG/ICO plus Android icon/adaptive-icon; the ICO contains 16/32/48/64/128/256 px entries.
+- Windows identity: keep `productName = DK Data Studio`, `appId = com.dk.datastudio`, `win.executableName = DK Data Studio`, `app.setName(APP_NAME)` and Windows `app.setAppUserModelId(APP_ID)` aligned.
+- Navigation hierarchy: `resonance`, `data-center`, `ter`, and `pulse` are first-level plugin activities. Commands belonging to the active plugin are second-level contextual actions. `builtin.shell-navigation` applies `roomy / balanced / compact` density according to available header width and lets the existing overflow logic move secondary actions to “更多功能”.
+- Typography: the shared scale is defined in the final `v3.22 unified typography + light visual polish` block in `src/style.css`; dedicated plugin windows inherit it through `src/plugin-window/style.css`. Avoid plugin-local 8–9 px body text unless it is genuinely tertiary metadata.
+- Visual system: use lighter borders, restrained shadows, consistent 7–10 px radii, 30–34 px control heights, visible focus states and subdued selected/hover surfaces.
+
+Regression guard: `node scripts/test-ui-polish.js` is included in both `npm test` and `npm run check`.
+
+### Dedicated-window cache preserved
+
+The current working tree includes the v3.22 prewarm/hide-reuse lifecycle for Data Center / TER / Pulse windows. Do not revert `main.js`, `plugin-window-manager.js`, `src/plugin-window/runtime.js`, or the activity window runtimes to the older close-and-recreate behavior while doing UI work.
+
 ## v3.21 user-visible behavior
 
 ### Main shell

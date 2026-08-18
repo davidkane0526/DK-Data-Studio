@@ -10,30 +10,12 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body class="auxiliary-window plugin-window-host">
-  <div id="app">
-    <div id="pluginWindowLoading" class="plugin-window-loading">
-      <div class="plugin-window-loading-title">DK Data Studio</div>
-      <div id="pluginWindowLoadingText" class="plugin-window-loading-text">正在打开插件…</div>
-    </div>
+  <div id="app"></div>
+  <div id="pluginWindowError" class="plugin-window-error hidden" role="alert">
+    <strong>插件窗口启动失败</strong>
+    <span id="pluginWindowErrorText"></span>
   </div>
-  <div id="statusBar" class="statusbar plugin-window-status">插件窗口正在初始化…</div>
-
-  <script defer src="../../node_modules/plotly.js-dist-min/plotly.min.js"></script>
-  <script defer src="../web-bridge.js"></script>
-
-  <script defer src="../science/common.js"></script>
-  <script defer src="../science/presets.js"></script>
-  <script defer src="../science/import.js"></script>
-  <script defer src="../science/pulse.js"></script>
-  <script defer src="../science/ter.js"></script>
-  <script defer src="../analysis.js"></script>
-
-  <script defer src="../core/data-model.js"></script>
-  <script defer src="../core/formula-engine.js"></script>
-  <script defer src="../core/parameter-schema.js"></script>
-  <script defer src="../core/workflow-engine.js"></script>
-  <script defer src="../core/platform.js"></script>
-  <script defer src="../core/plugin-kernel.js"></script>
+  <div id="statusBar" class="statusbar plugin-window-status"></div>
   <script defer src="./runtime.js"></script>
 </body>
 </html>

@@ -299,6 +299,248 @@
     return {current:average(currents),voltage:volts.length?average(volts):null,time:average(times),sampleCount:selected.length};
   }
 
+  function pointSamples(ins,columns,options={}){
+    const {timeCol,currentCol,voltageCol}=columns;
+    const sampleInterval=finiteOrNull(options.sampleInterval);
+    const out=[];
+    let ordinal=0;
+    for(const row of ins.numericRows){
+      const current=row.values[currentCol];
+      if(!Number.isFinite(current))continue;
+      const rawTime=timeCol>=0?row.values[timeCol]:NaN;
+      const time=Number.isFinite(rawTime)?rawTime:(sampleInterval>0?ordinal*sampleInterval:ordinal);
+      const voltage=voltageCol>=0&&Number.isFinite(row.values[voltageCol])?row.values[voltageCol]:null;
+      out.push({ordinal,time,current,voltage});
+      ordinal++;
+    }
+    if(out.length<8)throw new Error('有效脉冲样本过少。');
+    return out;
+  }
+
+  function robustTransitionIndices(values){
+    const finite=(values||[]).filter(Number.isFinite);
+    if(finite.length<12)return [];
+    const range=Math.max(...finite)-Math.min(...finite);
+    const diffs=[];
+    for(let i=1;i<values.length;i++){
+      const d=Math.abs(Number(values[i])-Number(values[i-1]));
+      if(Number.isFinite(d))diffs.push(d);
+    }
+    if(!diffs.length)return [];
+    const dm=median(diffs)||0;
+    const dn=medianAbsDeviation(diffs)||0;
+    const threshold=Math.max(range*.03,dm+7*dn,Math.abs(median(finite))*1e-8,1e-12);
+    const raw=[];
+    for(let i=1;i<values.length;i++){
+      const d=Math.abs(Number(values[i])-Number(values[i-1]));
+      if(Number.isFinite(d)&&d>=threshold)raw.push(i);
+    }
+    return groupNearbyIndices(raw,3).map(g=>Math.round(median(g)));
+  }
+
+  function estimateCycleFromTransitions(values){
+    const changes=robustTransitionIndices(values);
+    if(changes.length<4)return null;
+    const spans=[];
+    for(let i=0;i+2<changes.length;i++){
+      const span=changes[i+2]-changes[i];
+      if(span>=8)spans.push(span);
+    }
+    if(!spans.length)return null;
+    const center=median(spans);
+    const spread=medianAbsDeviation(spans);
+    if(!Number.isFinite(center)||center<8)return null;
+    if(Number.isFinite(spread)&&spread/center>.18)return null;
+    return Math.max(2,Math.round(center));
+  }
+
+  function estimatePulseCycleSamples(ins,options={}){
+    if(!ins?.numericRows?.length)return null;
+    const headers=ins.headers||[];
+    const currentCol=resolveColumn(headers,options,'currentCol','current',{required:false,fallback:pulseHeaderIndex(headers,'current')});
+    const voltageCol=resolveColumn(headers,options,'voltageCol','voltage',{required:false,fallback:pulseHeaderIndex(headers,'voltage')});
+    if(voltageCol>=0){
+      const voltage=ins.numericRows.map(r=>r.values[voltageCol]).filter(Number.isFinite);
+      const fromVoltage=estimateCycleFromTransitions(voltage);
+      if(fromVoltage)return fromVoltage;
+    }
+    if(currentCol>=0){
+      const current=ins.numericRows.map(r=>r.values[currentCol]).filter(Number.isFinite);
+      const fromCurrent=estimateCycleFromTransitions(current);
+      if(fromCurrent)return fromCurrent;
+    }
+    return null;
+  }
+
+  function rangeOption(options,startKey,endKey,cycleSamples){
+    const start=finiteOrNull(options[startKey]);
+    const end=finiteOrNull(options[endKey]);
+    if(start===null&&end===null)return null;
+    const a=Math.max(0,Math.round(start??0));
+    const b=Math.min(cycleSamples,Math.round(end??cycleSamples));
+    if(!(b>a))throw new Error(`${startKey}/${endKey} 的周期内点数范围无效。`);
+    return {start:a,end:b,explicit:true};
+  }
+
+  function averagePointRange(samples,cycleStart,range,startFraction,endFraction){
+    const a=cycleStart+range.start;
+    const b=cycleStart+range.end;
+    if(!(b>a))return null;
+    let begin=a,end=b;
+    if(!range.explicit){
+      const n=b-a;
+      begin=a+Math.floor(n*Math.max(0,Math.min(.95,startFraction)));
+      end=a+Math.ceil(n*Math.max(.05,Math.min(1,endFraction)));
+      if(end<=begin){begin=a;end=b;}
+    }
+    const selected=samples.slice(begin,end);
+    const currents=selected.map(v=>v.current).filter(Number.isFinite);
+    if(!currents.length)return null;
+    const volts=selected.map(v=>v.voltage).filter(Number.isFinite);
+    const times=selected.map(v=>v.time).filter(Number.isFinite);
+    return {
+      current:average(currents),
+      voltage:volts.length?average(volts):null,
+      time:times.length?average(times):null,
+      sampleCount:selected.length,
+      startIndex:begin,
+      endIndex:end-1
+    };
+  }
+
+  function inferPointCycleRanges(samples,cycleSamples,options,fileName){
+    const writeExplicit=rangeOption(options,'writeStartSample','writeEndSample',cycleSamples);
+    const readExplicit=rangeOption(options,'readStartSample','readEndSample',cycleSamples);
+    if(writeExplicit&&readExplicit)return {write:writeExplicit,read:readExplicit,source:'explicit'};
+
+    const phaseOrder=['write-read','read-write'].includes(options.phaseOrder)?options.phaseOrder:'write-read';
+    const inferred=inferPulseProtocolFromName(fileName||'');
+    const writeDuration=finiteOrNull(options.writeDuration)??inferred.writeDuration;
+    const readDuration=finiteOrNull(options.readDuration)??inferred.readDuration;
+    let split=null;
+    let source='half';
+
+    if(writeDuration>0&&readDuration>0){
+      split=Math.max(1,Math.min(cycleSamples-1,Math.round(cycleSamples*writeDuration/(writeDuration+readDuration))));
+      source='duration-ratio';
+    }
+
+    if(split===null&&samples.some(s=>Number.isFinite(s.voltage))){
+      const cycleCount=Math.floor(samples.length/cycleSamples);
+      if(cycleCount>=2){
+        const profile=new Array(cycleSamples).fill(0);
+        const counts=new Array(cycleSamples).fill(0);
+        for(let ci=0;ci<cycleCount;ci++){
+          const base=ci*cycleSamples;
+          for(let j=0;j<cycleSamples&&base+j<samples.length;j++){
+            const v=samples[base+j].voltage;
+            if(Number.isFinite(v)){profile[j]+=v;counts[j]++;}
+          }
+        }
+        for(let j=0;j<cycleSamples;j++)profile[j]=counts[j]?profile[j]/counts[j]:NaN;
+        let best=-1,bestScore=-Infinity;
+        const guard=Math.max(2,Math.round(cycleSamples*.06));
+        for(let j=guard;j<cycleSamples-guard;j++){
+          const a=profile[j-1],b=profile[j];
+          if(!Number.isFinite(a)||!Number.isFinite(b))continue;
+          const score=Math.abs(b-a);
+          if(score>bestScore){bestScore=score;best=j;}
+        }
+        if(best>0&&best<cycleSamples){
+          split=best;
+          source='voltage-transition';
+        }
+      }
+    }
+
+    if(split===null)split=Math.max(1,Math.min(cycleSamples-1,Math.round(cycleSamples/2)));
+    const first={start:0,end:split,explicit:false};
+    const second={start:split,end:cycleSamples,explicit:false};
+    const auto=phaseOrder==='read-write'?{read:first,write:second}:{write:first,read:second};
+    return {
+      write:writeExplicit||auto.write,
+      read:readExplicit||auto.read,
+      source:(writeExplicit||readExplicit)?`${source}+partial-explicit`:source
+    };
+  }
+
+  function pointCycleAnalyzePulseReadData(file,options,ins){
+    const headers=ins.headers;
+    const timeCol=resolveColumn(headers,options,'timeCol','time',{required:false,fallback:-1});
+    const currentCol=resolveColumn(headers,options,'currentCol','current',{required:true,fallback:Math.min(1,headers.length-1)});
+    const voltageCol=resolveColumn(headers,options,'voltageCol','voltage',{required:false,fallback:-1});
+    if(currentCol===voltageCol)throw new Error('电流列和电压列不能是同一列；若未记录电压，请把电压列设为“未记录”。');
+
+    const samples=pointSamples(ins,{timeCol,currentCol,voltageCol},options);
+    let cycleSamples=Math.max(0,Math.round(Number(options.cycleSamples)||0));
+    if(cycleSamples<=1)cycleSamples=estimatePulseCycleSamples(ins,{currentCol,voltageCol})||0;
+    if(cycleSamples<=1)throw new Error('无法从周期性数据自动确定“每周期点数”，请手动填写。例如 DataDeal 脚本中的 segs=300 对应这里的每周期点数 300。');
+    if(cycleSamples>samples.length)throw new Error(`每周期点数 ${cycleSamples} 大于有效数据点数 ${samples.length}。`);
+
+    let offset=Math.max(0,Math.round(Number(options.cycleOffsetSamples)||0));
+    if(offset>=cycleSamples)offset%=cycleSamples;
+    const usable=samples.length-offset;
+    const cycleCount=Math.floor(usable/cycleSamples);
+    if(cycleCount<1)throw new Error('没有完整周期可用于脉冲分析。');
+
+    const startFraction=Number.isFinite(Number(options.windowStartFraction))?Number(options.windowStartFraction):.25;
+    const endFraction=Number.isFinite(Number(options.windowEndFraction))?Number(options.windowEndFraction):.75;
+    const ranges=inferPointCycleRanges(samples.slice(offset,offset+cycleCount*cycleSamples),cycleSamples,options,file.name||'');
+    const inferred=inferPulseProtocolFromName(file.name||'');
+    const explicitReadVoltage=finiteOrNull(options.readVoltage)??inferred.readVoltage;
+    const explicitPulseVoltage=finiteOrNull(options.pulseVoltage)??inferred.pulseVoltage;
+    const blocks=[],points=[];
+
+    for(let ci=0;ci<cycleCount;ci++){
+      const base=offset+ci*cycleSamples;
+      const write=averagePointRange(samples,base,ranges.write,startFraction,endFraction);
+      const read=averagePointRange(samples,base,ranges.read,startFraction,endFraction);
+      if(!write||!read)continue;
+      const writeBlock={
+        blockIndex:blocks.length,phase:'write',sequence:ci+1,
+        startIndex:write.startIndex,endIndex:write.endIndex,current:write.current,voltage:write.voltage,time:write.time,
+        sampleCount:write.sampleCount
+      };
+      blocks.push(writeBlock);
+      const readBlock={
+        blockIndex:blocks.length,phase:'read',sequence:ci+1,
+        startIndex:read.startIndex,endIndex:read.endIndex,current:read.current,voltage:read.voltage,time:read.time,
+        sampleCount:read.sampleCount
+      };
+      blocks.push(readBlock);
+      const pulseVoltage=Number.isFinite(write.voltage)?write.voltage:explicitPulseVoltage;
+      const readVoltage=Number.isFinite(read.voltage)?read.voltage:explicitReadVoltage;
+      points.push({
+        index:points.length,sequence:ci+1,
+        pulseVoltage:Number.isFinite(pulseVoltage)?pulseVoltage:null,
+        pulseCurrent:write.current,
+        readVoltage:Number.isFinite(readVoltage)?readVoltage:null,
+        readCurrent:read.current,
+        pulseTime:write.time,readTime:read.time,
+        pulseBlockIndex:writeBlock.blockIndex,readBlockIndex:readBlock.blockIndex,
+        pulseSamples:write.sampleCount,readSamples:read.sampleCount
+      });
+    }
+    if(!points.length)throw new Error('按周期点数没有得到有效的写入/读取对，请检查周期点数、偏移和周期内统计区间。');
+
+    const readVoltages=points.map(p=>p.readVoltage).filter(Number.isFinite);
+    return {
+      fileName:file.name||'pulse-data',inspection:ins,
+      segmentationMode:'cycle',hasRecordedVoltage:voltageCol>=0,
+      columns:{timeCol,currentCol,voltageCol},
+      cycleSamples,cycleOffsetSamples:offset,blockSamples:null,offsetSamples:offset,readParity:null,
+      readVoltage:readVoltages.length?median(readVoltages):null,
+      windowStartFraction:startFraction,windowEndFraction:endFraction,pairMode:'cycle',
+      protocol:{
+        cycleSamples,cycleOffsetSamples:offset,phaseRangeSource:ranges.source,
+        writeRange:{start:ranges.write.start,end:ranges.write.end,explicit:!!ranges.write.explicit},
+        readRange:{start:ranges.read.start,end:ranges.read.end,explicit:!!ranges.read.explicit}
+      },
+      blocks,points,
+      raw:{time:samples.map(s=>s.time),current:samples.map(s=>s.current),voltage:samples.map(s=>s.voltage)}
+    };
+  }
+
   function timingAnalyzePulseReadData(file,options,ins){
     const headers=ins.headers;
     const timeCol=resolveColumn(headers,options,'timeCol','time',{required:false,fallback:-1});
@@ -466,23 +708,27 @@
   function analyzePulseReadData(file,options={}){
     const ins=inspectPulseFile(file,options);
     const mode=String(options.segmentationMode||'auto').trim().toLowerCase();
-    if(!['auto','legacy','timing','waveform'].includes(mode))throw new Error(`未知分段模式：${mode}`);
+    if(!['auto','cycle','legacy','timing','waveform'].includes(mode))throw new Error(`未知分段模式：${mode}`);
     const inferred=inferPulseProtocolFromName(file.name||'');
     const voltageCol=resolveColumn(ins.headers,options,'voltageCol','voltage',{required:false,fallback:pulseHeaderIndex(ins.headers,'voltage')});
     const hasTiming=(finiteOrNull(options.writeDuration)>0&&finiteOrNull(options.readDuration)>0)
       ||(inferred.writeDuration>0&&inferred.readDuration>0);
+    const explicitCycle=Math.round(Number(options.cycleSamples)||0)>1;
+    const inferredCycle=explicitCycle?Math.round(Number(options.cycleSamples)):null;
 
+    if(mode==='cycle')return pointCycleAnalyzePulseReadData(file,{...options,cycleSamples:explicitCycle?options.cycleSamples:inferredCycle},ins);
     if(mode==='legacy')return legacyAnalyzePulseReadData(file,options,ins);
     if(mode==='timing')return timingAnalyzePulseReadData(file,options,ins);
     if(mode==='waveform')return waveformAnalyzePulseReadData(file,options,ins);
 
-    // Auto mode deliberately preserves the mature equal-block algorithm for
-    // voltage-recorded legacy data. Timing metadata/inputs take precedence,
-    // and current-only files automatically use timing segmentation.
+    // Auto mode trusts an explicit cycle point count first. The UI estimates
+    // that value from periodic transitions when a file is loaded, while direct
+    // API callers without cycleSamples retain the mature legacy behavior.
+    if(inferredCycle>1)return pointCycleAnalyzePulseReadData(file,{...options,cycleSamples:inferredCycle},ins);
     if(hasTiming)return timingAnalyzePulseReadData(file,options,ins);
     if(voltageCol<0)return timingAnalyzePulseReadData(file,options,ins);
     return legacyAnalyzePulseReadData(file,options,ins);
   }
 
-  return {analyzePulseReadData,inferPulseProtocolFromName};
+  return {analyzePulseReadData,inferPulseProtocolFromName,estimatePulseCycleSamples};
 });

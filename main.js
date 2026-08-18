@@ -5,12 +5,24 @@ const { resolveBuiltinPluginWindow } = require('./plugin-window-manager');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
+
+const APP_NAME = 'DK Data Studio';
+const APP_ID = 'com.dk.datastudio';
+
+// Keep development, installed and portable Windows identities consistent.
+app.setName(APP_NAME);
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 let lanUpdater = null;
 let lanWebServer = null;
 const auxiliaryWindows = new Map();
 const auxiliaryBootstrap = new Map();
+const auxiliaryReady = new Set();
+const auxiliaryPendingShow = new Set();
+const forcedAuxiliaryClose = new WeakSet();
+let appQuitting = false;
 
 function externalPluginDirectory() {
   return path.join(app.getPath('userData'), 'plugins');
@@ -122,6 +134,7 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 760,
     backgroundColor: '#f5f7fb',
+    title: APP_NAME,
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
     webPreferences: commonWindowPreferences()
@@ -135,16 +148,40 @@ function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId) {
   return `${ownerWebContentsId}::${projectTabId || 'project'}::${activityId}`;
 }
 
+function projectSnapshotDigest(project) {
+  try {
+    return crypto.createHash('sha1').update(JSON.stringify(project || null)).digest('hex');
+  } catch {
+    return '';
+  }
+}
+
 function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
+  const project = payload.project || null;
   return {
     activityId:String(payload.activityId || '').trim(),
     projectTabId:String(payload.projectTabId || '').trim(),
-    project:payload.project || null,
+    project,
+    projectDigest:projectSnapshotDigest(project),
     projectPath:payload.projectPath || null,
     title:payload.title || '',
     ownerWebContentsId,
+    prewarm:payload.prewarm === true,
     pluginWindow:pluginWindow ? {...pluginWindow} : null
   };
+}
+
+function hideDedicatedAuxiliaryWindow(win) {
+  if (!win || win.isDestroyed()) return false;
+  try { win.webContents.send('windows:activityWillHide'); } catch {}
+  win.hide();
+  return true;
+}
+
+function closeAuxiliaryWindowForReal(win) {
+  if (!win || win.isDestroyed()) return;
+  forcedAuxiliaryClose.add(win);
+  win.close();
 }
 
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
@@ -159,19 +196,36 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
   const previous = auxiliaryWindows.get(key);
   if (previous && !previous.isDestroyed()) {
-    auxiliaryBootstrap.set(
-      previous.webContents.id,
-      makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
-    );
-    previous.webContents.send('windows:activityBootstrapChanged');
+    const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
+    const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
+    const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
+      || cachedBootstrap.projectPath !== nextBootstrap.projectPath
+      || cachedBootstrap.prewarm !== nextBootstrap.prewarm;
+    auxiliaryBootstrap.set(previous.webContents.id, nextBootstrap);
+
+    // A cached plugin renderer keeps its DOM, Plotly state and in-memory results.
+    // Only replace its project snapshot when the main project actually changed.
+    if (projectChanged) previous.webContents.send('windows:activityBootstrapChanged');
+
+    if (payload.prewarm === true) {
+      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:auxiliaryReady.has(previous.webContents.id) };
+    }
+
     if (previous.isMinimized()) previous.restore();
+    if (pluginWindow && !auxiliaryReady.has(previous.webContents.id)) {
+      auxiliaryPendingShow.add(previous.webContents.id);
+      return { reused:true, dedicated:true, synchronized:projectChanged, warming:true };
+    }
+
+    try { previous.webContents.send('windows:activityWillShow'); } catch {}
     previous.show();
     previous.focus();
-    return { reused:true, dedicated:!!pluginWindow };
+    return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:true };
   }
 
   const labels = { 'data-center':'数据中心', ter:'TER 分析', pulse:'脉冲分析' };
   const win = new BrowserWindow({
+    show: pluginWindow ? false : payload.prewarm !== true,
     width: pluginWindow?.width || 1480,
     height: pluginWindow?.height || 940,
     minWidth: pluginWindow?.minWidth || 920,
@@ -189,22 +243,30 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryWebContentsId,
     makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
   );
+  if (pluginWindow) {
+    win.on('close', event => {
+      if (appQuitting || forcedAuxiliaryClose.has(win)) return;
+      event.preventDefault();
+      hideDedicatedAuxiliaryWindow(win);
+    });
+  }
   win.on('closed', () => {
     auxiliaryWindows.delete(key);
     auxiliaryBootstrap.delete(auxiliaryWebContentsId);
+    auxiliaryReady.delete(auxiliaryWebContentsId);
+    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
   });
-  ownerWindow.once('closed', () => {
-    if (!win.isDestroyed()) win.close();
-  });
+  ownerWindow.once('closed', () => closeAuxiliaryWindowForReal(win));
 
   if (pluginWindow) {
+    if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
     win.loadFile(path.join(__dirname, 'src', 'plugin-window', 'index.html'));
   } else {
     // Compatibility fallback for activities that have not opted into the
     // dedicated plugin-window contract yet.
     win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
   }
-  return { reused:false, dedicated:!!pluginWindow };
+  return { reused:false, dedicated:!!pluginWindow, warming:!!pluginWindow, prewarmed:payload.prewarm === true };
 }
 
 app.whenReady().then(() => {
@@ -216,15 +278,51 @@ app.whenReady().then(() => {
     if (!owner) throw new Error('Unable to resolve the main application window.');
     return createOrFocusAuxiliaryWindow(owner, payload || {});
   });
+  ipcMain.handle('windows:prewarmActivity', async (event, payload) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    if (!owner) throw new Error('Unable to resolve the main application window.');
+    return createOrFocusAuxiliaryWindow(owner, { ...(payload || {}), prewarm:true });
+  });
   ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
+  ipcMain.handle('windows:disposeProjectActivities', async (event, projectTabId) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    const targetProjectId = String(projectTabId || '').trim();
+    if (!ownerId || !targetProjectId) return 0;
+    const doomed = [];
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId === ownerId && row?.projectTabId === targetProjectId) doomed.push(win);
+    }
+    for (const win of doomed) closeAuxiliaryWindowForReal(win);
+    return doomed.length;
+  });
+  ipcMain.on('windows:activityReady', event => {
+    const id = event.sender.id;
+    auxiliaryReady.add(id);
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed() || !auxiliaryPendingShow.has(id)) return;
+    auxiliaryPendingShow.delete(id);
+    try { win.webContents.send('windows:activityWillShow'); } catch {}
+    win.show();
+    win.focus();
+  });
   ipcMain.handle('windows:closeCurrent', async event => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    if (win && !win.isDestroyed()) win.close();
+    if (!win || win.isDestroyed()) return false;
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (bootstrap?.pluginWindow) return hideDedicatedAuxiliaryWindow(win);
+    win.close();
     return true;
   });
   ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
     if (!bootstrap) return;
+    if (payload?.project && typeof payload.project === 'object') {
+      bootstrap.project = payload.project;
+      bootstrap.projectDigest = projectSnapshotDigest(payload.project);
+    }
     const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
     if (!owner || owner.isDestroyed()) return;
     owner.webContents.send('windows:activityProjectSnapshot', {
@@ -454,4 +552,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => { try { lanUpdater?.stop(); } catch {} try { lanWebServer?.stop(false); } catch {} });
+app.on('before-quit', () => { appQuitting = true; try { lanUpdater?.stop(); } catch {} try { lanWebServer?.stop(false); } catch {} });

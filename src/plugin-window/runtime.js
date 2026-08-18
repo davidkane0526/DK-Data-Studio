@@ -1,7 +1,22 @@
 (() => {
   const $ = selector => document.querySelector(selector);
   const statusEl = $('#statusBar');
-  const loadingText = $('#pluginWindowLoadingText');
+  const errorEl = $('#pluginWindowError');
+  const errorTextEl = $('#pluginWindowErrorText');
+
+  const DEPENDENCY_SCRIPTS = Object.freeze({
+    plotly:'../../node_modules/plotly.js-dist-min/plotly.min.js',
+    'science-common':'../science/common.js',
+    'science-import':'../science/import.js',
+    'science-pulse':'../science/pulse.js',
+    'science-ter':'../science/ter.js',
+    'data-model':'../core/data-model.js',
+    'formula-engine':'../core/formula-engine.js',
+    'parameter-schema':'../core/parameter-schema.js',
+    'workflow-engine':'../core/workflow-engine.js',
+    platform:'../core/platform.js',
+    'plugin-kernel':'../core/plugin-kernel.js'
+  });
 
   let bootstrap = null;
   let project = {};
@@ -20,8 +35,11 @@
     if (statusEl) statusEl.textContent = String(text || '');
   }
 
-  function setLoading(text) {
-    if (loadingText) loadingText.textContent = String(text || '');
+  function showStartupError(err) {
+    const message = err?.message || String(err || '未知错误');
+    if (errorTextEl) errorTextEl.textContent = message;
+    errorEl?.classList.remove('hidden');
+    setStatus(`启动失败：${message}`);
   }
 
   function loadScript(src) {
@@ -33,6 +51,22 @@
       script.onerror = () => reject(new Error(`无法加载插件窗口脚本：${src}`));
       document.head.appendChild(script);
     });
+  }
+
+  async function loadDependencies(spec) {
+    const requested = Array.isArray(spec?.dependencies) ? spec.dependencies : [];
+    const ordered = [];
+    for (const id of requested) {
+      const key = String(id || '').trim();
+      if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
+      if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
+    }
+    if (!ordered.includes('platform')) ordered.push('platform');
+    ordered.push('plugin-kernel');
+
+    for (const id of ordered) await loadScript(DEPENDENCY_SCRIPTS[id]);
+    if (window.DKDSScience) window.Analysis = window.DKDSScience;
+    if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
   }
 
   function safeSegment(value) {
@@ -75,11 +109,13 @@
     list: options => artifactStore?.list?.(options) || [],
     get: id => artifactStore?.get?.(id) || null,
     add(artifact, options) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
       const id = artifactStore.add(artifact, options);
       emitArtifactsChanged({type:'add', artifact:artifactStore.get(id)});
       return id;
     },
     upsert(artifact) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
       const id = artifactStore.upsert(artifact);
       emitArtifactsChanged({type:'upsert', artifact:artifactStore.get(id)});
       return id;
@@ -94,9 +130,8 @@
       emitArtifactsChanged({type:'clear'});
     },
     syncLegacy() {
-      // Main project snapshots already contain the canonical dataModel. A
-      // dedicated plugin renderer must never regenerate artifacts from a
-      // second copy of the full workspace; it simply refreshes its local view.
+      // Dedicated plugin windows consume the canonical project snapshot. They
+      // never rebuild data objects by launching a second full workspace.
       emitArtifactsChanged({type:'refresh'});
       return artifactStore;
     }
@@ -109,7 +144,6 @@
     });
     const page = document.getElementById(target);
     if (page) {
-      document.body.classList.add('ready');
       window.DKDSPlugins?.events?.emit?.('analysis:opened', {id:target});
       window.DKDSPlugins?.events?.emit?.('analysis:refresh', {id:target});
       requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize', {reason:'page-open'}));
@@ -118,6 +152,7 @@
   }
 
   function closeAnalysisPage() {
+    pushSnapshot(true);
     return window.electronAPI?.closeCurrentWindow?.();
   }
 
@@ -169,7 +204,9 @@
   }
 
   function pushSnapshot(final=false) {
-    if (!bootstrap || !window.electronAPI?.pushActivityProjectSnapshot) return;
+    clearTimeout(snapshotTimer);
+    snapshotTimer = null;
+    if (!bootstrap || bootstrap.prewarm === true || !window.electronAPI?.pushActivityProjectSnapshot) return;
     try {
       syncProjectFromWindow();
       window.electronAPI.pushActivityProjectSnapshot({project:clone(project), final:!!final});
@@ -188,7 +225,7 @@
       appVersion:'3.22.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
-      closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
+      closeCurrentWindow:closeAnalysisPage,
       openActivityWindow:()=>false,
       getState:()=>pluginRuntime?.getState?.() || project,
       getActiveProjectTab:()=>({id:bootstrap?.projectTabId||'plugin-window', title:bootstrap?.title||'', pluginState:project.plugins||{}}),
@@ -214,11 +251,13 @@
     const spec = bootstrap?.pluginWindow;
     if (!spec?.pluginFolder || !spec?.entry) throw new Error('插件窗口缺少入口信息。');
 
+    // Load only the dependencies declared by this top-level plugin. The old
+    // host loaded Plotly + all science/workflow modules for every window.
+    await loadDependencies(spec);
+    restoreArtifactStore();
+
     window.DKDSPluginWindowRuntime = null;
-    if (spec.runtime) {
-      setLoading('正在加载插件运行层…');
-      await loadScript(pluginUrl(spec.runtime));
-    }
+    if (spec.runtime) await loadScript(pluginUrl(spec.runtime));
 
     const host = baseHost();
     if (window.DKDSPluginWindowRuntime?.create) {
@@ -237,8 +276,6 @@
     }
 
     window.DKDSPlugins.configure(host);
-
-    setLoading(`正在加载 ${spec.title || bootstrap.activityId || '插件'}…`);
     await loadScript(pluginUrl(spec.entry));
 
     await window.DKDSPlugins.activateAll();
@@ -249,14 +286,24 @@
     if (!opened) throw new Error(`插件没有注册工作区：${bootstrap.activityId}`);
 
     ready = true;
-    document.body.classList.add('ready');
     setStatus(`${spec.title || bootstrap.activityId} 已就绪`);
     requestAnimationFrame(() => window.DKDSPlugins.events.emit('layout:resize',{reason:'initial'}));
+    window.electronAPI?.markActivityWindowReady?.();
   }
 
   async function replaceProjectFromBootstrap(nextBootstrap) {
     if (!nextBootstrap?.project) return;
+    const sameProject = bootstrap?.projectDigest
+      && bootstrap.projectDigest === nextBootstrap.projectDigest
+      && bootstrap.projectPath === nextBootstrap.projectPath;
     bootstrap = nextBootstrap;
+    if (sameProject) {
+      // Typical prewarm -> first-open transition: dependencies, plugin DOM,
+      // Plotly and the project are already mounted. Only the lifecycle flag
+      // changed, so do not restore/re-render the project a second time.
+      setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
+      return;
+    }
     project = ensureProjectShape(nextBootstrap.project);
     restoreArtifactStore();
     try {
@@ -279,12 +326,18 @@
       if (!bootstrap?.pluginWindow) throw new Error('当前插件没有独立窗口定义。');
 
       project = ensureProjectShape(bootstrap.project);
-      restoreArtifactStore();
       document.title = `DK Data Studio · ${bootstrap.pluginWindow.title || bootstrap.activityId || '插件'}`;
 
       window.electronAPI?.onActivityBootstrapChanged?.(async () => {
         const next = await window.electronAPI?.getActivityWindowBootstrap?.();
         if (next) await replaceProjectFromBootstrap(next);
+      });
+      window.electronAPI?.onActivityWillHide?.(() => pushSnapshot(true));
+      window.electronAPI?.onActivityWillShow?.(() => {
+        requestAnimationFrame(() => {
+          window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show'});
+          requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show-settled'}));
+        });
       });
 
       window.addEventListener('resize', () => {
@@ -295,9 +348,7 @@
       await loadTargetPlugin();
     } catch (err) {
       console.error('[DKDS plugin window startup]', err);
-      document.body.classList.add('failed');
-      setLoading(`插件窗口启动失败：${err.message}`);
-      setStatus(`启动失败：${err.message}`);
+      showStartupError(err);
     }
   }
 

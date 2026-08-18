@@ -20,6 +20,13 @@
     "width": 1480,
     "height": 940,
     "minWidth": 920,
-    "minHeight": 650
+    "minHeight": 650,
+    "dependencies": [
+      "plotly",
+      "science-common",
+      "science-ter",
+      "platform",
+      "plugin-kernel"
+    ]
   }
 }

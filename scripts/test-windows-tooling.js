@@ -33,7 +33,7 @@ const releaseSigningPluginSource = read(releaseSigningPluginPath);
 assert(!/\[string\[\]\]\s*\$Args\b/i.test(backend), 'Backend must not declare $Args as a parameter.');
 assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args variable.');
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
-assert(/Invoke-Step\s+-FilePath\s+'npm\.cmd'\s+-Arguments\s+@\('install'\)/.test(backend), 'npm install arguments must be explicit.');
+assert(/Invoke-Step\s+-FilePath\s+'npm\.cmd'\s+-Arguments\s+@\('install','--prefer-offline'\)/.test(backend), 'npm install arguments must be explicit and prefer the shared cache.');
 assert(/&\s+\$FilePath\s+@Arguments\s+\|\s+Out-Host/.test(backend), 'Invoke-Step must keep native stdout visible without leaking it into function return values.');
 
 // PowerShell variable names are case-insensitive. Names such as $HOME are
@@ -79,6 +79,18 @@ assert(/api\.adoptium\.net\/v3\/binary\/latest\/21\/ga\/windows/.test(backend), 
 assert(/Get-FileHash[\s\S]*SHA256/.test(backend) && /sha256\.txt/.test(backend), 'Managed JDK download must verify the published SHA-256 checksum.');
 assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling must support a cross-project DK_TOOL_ROOT.');
 assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
+assert(/developer-toolbox\.json/.test(backend) && /developer-toolbox\.json/.test(gui),
+  'toolbox backend and GUI must share a persistent per-user path configuration file.');
+for(const token of ['npmCache','electronCache','electronBuilderCache','nodeModulesRoot']){
+  assert(backend.includes(token),`toolbox backend must read configurable ${token}.`);
+  assert(gui.includes(token),`toolbox GUI must expose configurable ${token}.`);
+}
+assert(/New-Item\s+-ItemType\s+Junction/.test(backend) && /SharedNodeModulesRoot/.test(backend),
+  'toolbox must support cross-project node_modules reuse through a shared Junction target.');
+assert(/npm_config_prefer_offline/.test(backend),
+  'toolbox must tell npm to prefer previously downloaded packages.');
+assert(/路径与缓存/.test(gui) && /保存路径设置/.test(gui),
+  'developer GUI must include a dedicated path/cache settings page.');
 assert(/Check-AndroidEnvironment\s+-RequireJdk\s+\$false\s+-AutoProvisionJdk\s+\$false/.test(backend), 'Installing an already-built APK must not require or download a JDK.');
 assert(/DKDS_ANDROID_RELEASE_STORE_FILE/.test(backend), 'Android release signing environment must be configured.');
 assert(/DKDataStudio\\android-signing/.test(backend), 'Android release signing must live outside the repository in the user profile.');

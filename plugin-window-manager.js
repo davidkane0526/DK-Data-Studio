@@ -4,6 +4,20 @@ const path = require('path');
 let cacheKey = '';
 let byActivity = new Map();
 
+const ALLOWED_WINDOW_DEPENDENCIES = new Set([
+  'plotly',
+  'science-common',
+  'science-import',
+  'science-pulse',
+  'science-ter',
+  'data-model',
+  'formula-engine',
+  'parameter-schema',
+  'workflow-engine',
+  'platform',
+  'plugin-kernel'
+]);
+
 function finiteDimension(value, fallback) {
   const n = Math.round(Number(value));
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -20,6 +34,21 @@ function safeRelativeFile(baseDir, fileName, label) {
     throw new Error(`${label} not found: ${file}`);
   }
   return file;
+}
+
+function normalizeDependencies(value) {
+  const rows = Array.isArray(value) ? value : [];
+  const out = [];
+  for (const raw of rows) {
+    const id = String(raw || '').trim();
+    if (!ALLOWED_WINDOW_DEPENDENCIES.has(id)) {
+      throw new Error(`Unsupported plugin window dependency: ${id || '(empty)'}`);
+    }
+    if (!out.includes(id)) out.push(id);
+  }
+  if (!out.includes('platform')) out.push('platform');
+  if (!out.includes('plugin-kernel')) out.push('plugin-kernel');
+  return Object.freeze(out);
 }
 
 function readBuiltinPluginWindows(appPath) {
@@ -57,6 +86,7 @@ function readBuiltinPluginWindows(appPath) {
           entry,
           runtime,
           activity,
+          dependencies:normalizeDependencies(windowSpec.dependencies),
           title:String(windowSpec.title || manifest.name || activity),
           width:finiteDimension(windowSpec.width,1480),
           height:finiteDimension(windowSpec.height,940),
@@ -80,4 +110,9 @@ function resolveBuiltinPluginWindow(appPath, activityId) {
   return readBuiltinPluginWindows(appPath).get(String(activityId || '').trim()) || null;
 }
 
-module.exports = { readBuiltinPluginWindows, resolveBuiltinPluginWindow };
+module.exports = {
+  ALLOWED_WINDOW_DEPENDENCIES,
+  normalizeDependencies,
+  readBuiltinPluginWindows,
+  resolveBuiltinPluginWindow
+};

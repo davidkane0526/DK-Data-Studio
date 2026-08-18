@@ -12,11 +12,46 @@ $Mobile = Join-Path $Root 'mobile'
 $UpdateServer = Join-Path $Root 'services\update-server'
 $MobileDist = Join-Path $Root 'mobile-dist'
 
+function Get-DeveloperConfigPath {
+  if ($env:DKDS_TOOLBOX_CONFIG) { return [IO.Path]::GetFullPath($env:DKDS_TOOLBOX_CONFIG) }
+  if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKDataStudio\developer-toolbox.json') }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dkds-developer-toolbox.json') }
+  return (Join-Path $Root '.dkds-developer-toolbox.json')
+}
+
+function Read-DeveloperConfig {
+  $configPath = Get-DeveloperConfigPath
+  if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) { return $null }
+  try { return (Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json) }
+  catch {
+    Write-Host "WARN invalid developer toolbox config: $configPath" -ForegroundColor Yellow
+    return $null
+  }
+}
+
+function Get-DeveloperConfigValue([string]$Name) {
+  if (-not $script:DeveloperConfig) { return $null }
+  $property = $script:DeveloperConfig.PSObject.Properties[$Name]
+  if (-not $property) { return $null }
+  $value = [string]$property.Value
+  if ([string]::IsNullOrWhiteSpace($value)) { return $null }
+  return $value.Trim()
+}
+
+function Resolve-ConfiguredPath([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  return [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Value.Trim()))
+}
+
+$script:DeveloperConfig = Read-DeveloperConfig
+
 function Get-SharedToolRoot {
-  if ($env:DK_TOOL_ROOT) { return [IO.Path]::GetFullPath($env:DK_TOOL_ROOT) }
-  if ($env:PYDROID_TOOL_ROOT -and $env:PYDROID_TOOL_ROOT -ine 'D:\Code\Language') { return [IO.Path]::GetFullPath($env:PYDROID_TOOL_ROOT) }
+  if ($env:DK_TOOL_ROOT) { return (Resolve-ConfiguredPath $env:DK_TOOL_ROOT) }
+  $configured = Get-DeveloperConfigValue 'toolRoot'
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($env:PYDROID_TOOL_ROOT -and $env:PYDROID_TOOL_ROOT -ine 'D:\Code\Language') { return (Resolve-ConfiguredPath $env:PYDROID_TOOL_ROOT) }
   if (Test-Path 'D:\Code\NodeJs\node.exe') { return 'D:\Code' }
-  if ($env:PYDROID_TOOL_ROOT) { return [IO.Path]::GetFullPath($env:PYDROID_TOOL_ROOT) }
+  if ($env:PYDROID_TOOL_ROOT) { return (Resolve-ConfiguredPath $env:PYDROID_TOOL_ROOT) }
   if (Test-Path 'D:\Code') { return 'D:\Code' }
   if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKSharedToolchain') }
   if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dk-toolchain') }
@@ -24,14 +59,25 @@ function Get-SharedToolRoot {
 }
 
 function Get-SharedCacheRoot {
-  if ($env:DK_CACHE_ROOT) { return [IO.Path]::GetFullPath($env:DK_CACHE_ROOT) }
+  if ($env:DK_CACHE_ROOT) { return (Resolve-ConfiguredPath $env:DK_CACHE_ROOT) }
+  $configured = Get-DeveloperConfigValue 'cacheRoot'
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
   $toolRoot = Get-SharedToolRoot
   if ($toolRoot) { return (Join-Path $toolRoot 'BuildCache') }
   return $null
 }
 
+function Get-SharedNodeModulesRoot {
+  if ($env:DK_NODE_MODULES_ROOT) { return (Resolve-ConfiguredPath $env:DK_NODE_MODULES_ROOT) }
+  $configured = Get-DeveloperConfigValue 'nodeModulesRoot'
+  if ($configured) { return (Resolve-ConfiguredPath $configured) }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot 'node_modules') }
+  return $null
+}
+
 $SharedToolRoot = Get-SharedToolRoot
 $SharedCacheRoot = Get-SharedCacheRoot
+$SharedNodeModulesRoot = Get-SharedNodeModulesRoot
 
 function Write-SectionTitle([string]$Text) {
   Write-Host ''
@@ -73,20 +119,59 @@ function Invoke-Step {
   }
 }
 
+function Get-NodeModulesSlot([string]$Dir) {
+  if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) { return 'mobile' }
+  return 'desktop'
+}
+
+function Ensure-SharedNodeModulesLink([string]$Dir=$Root) {
+  if (-not $SharedNodeModulesRoot) { return }
+  $slot = Get-NodeModulesSlot $Dir
+  $target = Join-Path $SharedNodeModulesRoot $slot
+  $link = Join-Path $Dir 'node_modules'
+  New-Item -ItemType Directory -Force -Path $SharedNodeModulesRoot | Out-Null
+
+  if (Test-Path -LiteralPath $link) {
+    $item = Get-Item -LiteralPath $link -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+      return
+    }
+    Write-Host "INFO local node_modules already exists; keeping it instead of replacing it with shared path: $link" -ForegroundColor DarkYellow
+    Write-Host "     Remove that directory once if you want this project copy to use: $target" -ForegroundColor DarkGray
+    return
+  }
+
+  New-Item -ItemType Directory -Force -Path $target | Out-Null
+  New-Item -ItemType Junction -Path $link -Target $target | Out-Null
+  Write-Host "Shared node_modules: $link -> $target" -ForegroundColor DarkGray
+}
+
 function Install-NodeDeps([string]$Dir=$Root) {
   [void](Require-Command 'node' 'Install Node.js first.')
   [void](Require-Command 'npm.cmd' 'Install Node.js first.')
   if (-not (Test-Path (Join-Path $Dir 'package.json'))) {
     throw "package.json not found: $Dir"
   }
+  Ensure-SharedNodeModulesLink -Dir $Dir
   Write-SectionTitle "Install dependencies · $Dir"
-  Invoke-Step -FilePath 'npm.cmd' -Arguments @('install') -WorkingDirectory $Dir
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('install','--prefer-offline') -WorkingDirectory $Dir
+}
+
+function Test-NodeDepsReady([string]$Dir=$Root) {
+  $modules = Join-Path $Dir 'node_modules'
+  if (-not (Test-Path -LiteralPath $modules -PathType Container)) { return $false }
+  if (Test-Path -LiteralPath (Join-Path $modules '.package-lock.json') -PathType Leaf) { return $true }
+  if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) {
+    return (Test-Path -LiteralPath (Join-Path $modules 'expo\package.json') -PathType Leaf)
+  }
+  return (Test-Path -LiteralPath (Join-Path $modules 'electron\package.json') -PathType Leaf)
 }
 
 function Ensure-NodeDeps([string]$Dir=$Root) {
   [void](Require-Command 'node' 'Install Node.js first.')
   [void](Require-Command 'npm.cmd' 'Install Node.js first.')
-  if (-not (Test-Path (Join-Path $Dir 'node_modules'))) {
+  Ensure-SharedNodeModulesLink -Dir $Dir
+  if (-not (Test-NodeDepsReady -Dir $Dir)) {
     Install-NodeDeps -Dir $Dir
   }
 }
@@ -124,6 +209,8 @@ function Show-DesktopDoctor {
   Write-Host "ROOT: $Root" -ForegroundColor DarkGray
   Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor DarkGray
   Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor DarkGray
+  Write-Host "DK_NODE_MODULES_ROOT: $SharedNodeModulesRoot" -ForegroundColor DarkGray
+  Write-Host "Toolbox config: $(Get-DeveloperConfigPath)" -ForegroundColor DarkGray
   if ($env:ELECTRON_CACHE) { Write-Host "Electron cache: $env:ELECTRON_CACHE" -ForegroundColor DarkGray }
   if ($env:GRADLE_USER_HOME) { Write-Host "Gradle cache: $env:GRADLE_USER_HOME" -ForegroundColor DarkGray }
   if (-not $ok) { return $false }
@@ -149,15 +236,19 @@ function Initialize-SharedBuildEnvironment {
   }
 
   if ($SharedCacheRoot) {
+    $configuredNpm = Get-DeveloperConfigValue 'npmCache'
+    $configuredElectron = Get-DeveloperConfigValue 'electronCache'
+    $configuredBuilder = Get-DeveloperConfigValue 'electronBuilderCache'
     $cacheMap = @{
-      Npm = (Join-Path $SharedCacheRoot 'npm')
+      Npm = if ($env:DK_NPM_CACHE) { Resolve-ConfiguredPath $env:DK_NPM_CACHE } elseif ($configuredNpm) { Resolve-ConfiguredPath $configuredNpm } else { Join-Path $SharedCacheRoot 'npm' }
       Pnpm = (Join-Path $SharedCacheRoot 'pnpm-store')
-      Electron = (Join-Path $SharedCacheRoot 'electron')
-      ElectronBuilder = (Join-Path $SharedCacheRoot 'electron-builder')
+      Electron = if ($env:DK_ELECTRON_CACHE) { Resolve-ConfiguredPath $env:DK_ELECTRON_CACHE } elseif ($configuredElectron) { Resolve-ConfiguredPath $configuredElectron } else { Join-Path $SharedCacheRoot 'electron' }
+      ElectronBuilder = if ($env:DK_ELECTRON_BUILDER_CACHE) { Resolve-ConfiguredPath $env:DK_ELECTRON_BUILDER_CACHE } elseif ($configuredBuilder) { Resolve-ConfiguredPath $configuredBuilder } else { Join-Path $SharedCacheRoot 'electron-builder' }
       Gradle = (Join-Path $SharedCacheRoot 'gradle')
     }
     foreach ($cachePath in $cacheMap.Values) { New-Item -ItemType Directory -Force -Path $cachePath | Out-Null }
     $env:npm_config_cache = $cacheMap.Npm
+    $env:npm_config_prefer_offline = 'true'
     $env:PNPM_STORE_DIR = $cacheMap.Pnpm
     $env:ELECTRON_CACHE = $cacheMap.Electron
     $env:ELECTRON_BUILDER_CACHE = $cacheMap.ElectronBuilder
@@ -171,6 +262,8 @@ function Show-SharedToolchain {
   Write-SectionTitle 'Shared toolchain'
   Write-Host "DK_TOOL_ROOT: $SharedToolRoot" -ForegroundColor Cyan
   Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor Cyan
+  Write-Host "DK_NODE_MODULES_ROOT: $SharedNodeModulesRoot" -ForegroundColor Cyan
+  Write-Host "Toolbox config: $(Get-DeveloperConfigPath)" -ForegroundColor DarkGray
   foreach ($pair in @(
     @('node','node.exe'), @('npm','npm.cmd'), @('pnpm','pnpm.cmd'), @('git','git.exe')
   )) {
@@ -188,6 +281,7 @@ function Show-SharedToolchain {
   Write-Host ("pnpm store: {0}" -f $env:PNPM_STORE_DIR) -ForegroundColor DarkGray
   Write-Host ("Electron cache: {0}" -f $env:ELECTRON_CACHE) -ForegroundColor DarkGray
   Write-Host ("electron-builder cache: {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  if ($SharedNodeModulesRoot) { Write-Host ("shared node_modules: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray }
   Write-Host ("Gradle cache: {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
 }
 

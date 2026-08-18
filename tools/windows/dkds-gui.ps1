@@ -208,6 +208,158 @@ function Add-ActionCard {
   Resize-ActionCards $Flow
 }
 
+
+function Get-ToolboxConfigPath {
+  if ($env:DKDS_TOOLBOX_CONFIG) { return [IO.Path]::GetFullPath($env:DKDS_TOOLBOX_CONFIG) }
+  if ($env:LOCALAPPDATA) { return (Join-Path $env:LOCALAPPDATA 'DKDataStudio\developer-toolbox.json') }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE '.dkds-developer-toolbox.json') }
+  return (Join-Path $Root '.dkds-developer-toolbox.json')
+}
+
+function Read-ToolboxConfig {
+  $configPath = Get-ToolboxConfigPath
+  if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) { return $null }
+  try { return (Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json) }
+  catch { return $null }
+}
+
+function Get-ToolboxConfigText($Config,[string]$Name,[string]$Fallback='') {
+  if ($Config) {
+    $property = $Config.PSObject.Properties[$Name]
+    if ($property -and -not [string]::IsNullOrWhiteSpace([string]$property.Value)) {
+      return [string]$property.Value
+    }
+  }
+  return $Fallback
+}
+
+function Select-ToolboxFolder([System.Windows.Forms.TextBox]$Target) {
+  $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+  $dialog.Description = '选择共享工具 / 缓存目录'
+  $dialog.ShowNewFolderButton = $true
+  if ($Target.Text -and (Test-Path -LiteralPath $Target.Text)) { $dialog.SelectedPath = $Target.Text }
+  if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+    $Target.Text = $dialog.SelectedPath
+  }
+  $dialog.Dispose()
+}
+
+function New-PathSettingsPage {
+  $config = Read-ToolboxConfig
+  $toolFallback = if ($env:DK_TOOL_ROOT) { $env:DK_TOOL_ROOT } elseif (Test-Path 'D:\Code') { 'D:\Code' } else { '' }
+  $toolValue = Get-ToolboxConfigText $config 'toolRoot' $toolFallback
+  $cacheFallback = if ($env:DK_CACHE_ROOT) { $env:DK_CACHE_ROOT } elseif ($toolValue) { Join-Path $toolValue 'BuildCache' } else { '' }
+  $cacheValue = Get-ToolboxConfigText $config 'cacheRoot' $cacheFallback
+
+  $page = New-Object System.Windows.Forms.TabPage
+  $page.Text = '路径与缓存'
+  $page.BackColor = $ColorPage
+  $page.Padding = [System.Windows.Forms.Padding]::new(16,16,16,14)
+
+  $layout = New-Object System.Windows.Forms.TableLayoutPanel
+  $layout.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $layout.ColumnCount = 3
+  $layout.RowCount = 8
+  $layout.BackColor = $ColorPage
+  [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute,165))
+  [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
+  [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute,76))
+  for ($rowIndex = 0; $rowIndex -lt 6; $rowIndex++) {
+    [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  }
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,46))
+  $page.Controls.Add($layout)
+
+  $fields = [ordered]@{
+    toolRoot = @{ Label='共享工具根目录'; Value=$toolValue; Hint='Node / JDK / Android SDK 等可复用工具的根目录' }
+    cacheRoot = @{ Label='共享缓存根目录'; Value=$cacheValue; Hint='所有下载缓存的默认父目录' }
+    npmCache = @{ Label='npm 下载缓存'; Value=(Get-ToolboxConfigText $config 'npmCache' $(if ($cacheValue) { Join-Path $cacheValue 'npm' } else { '' })); Hint='npm_config_cache' }
+    electronCache = @{ Label='Electron 下载缓存'; Value=(Get-ToolboxConfigText $config 'electronCache' $(if ($cacheValue) { Join-Path $cacheValue 'electron' } else { '' })); Hint='ELECTRON_CACHE' }
+    electronBuilderCache = @{ Label='electron-builder 缓存'; Value=(Get-ToolboxConfigText $config 'electronBuilderCache' $(if ($cacheValue) { Join-Path $cacheValue 'electron-builder' } else { '' })); Hint='ELECTRON_BUILDER_CACHE' }
+    nodeModulesRoot = @{ Label='共享 node_modules'; Value=(Get-ToolboxConfigText $config 'nodeModulesRoot' $(if ($cacheValue) { Join-Path $cacheValue 'node_modules' } else { '' })); Hint='新项目副本会通过 Junction 复用 desktop / mobile 依赖目录' }
+  }
+
+  $boxes = @{}
+  $row = 0
+  foreach ($key in $fields.Keys) {
+    $spec = $fields[$key]
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = $spec.Label
+    $label.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $label.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+    $label.ForeColor = $ColorText
+    $layout.Controls.Add($label,0,$row)
+
+    $box = New-Object System.Windows.Forms.TextBox
+    $box.Text = [string]$spec.Value
+    $box.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $box.Margin = [System.Windows.Forms.Padding]::new(0,9,8,8)
+    $box.Tag = $spec.Hint
+    $layout.Controls.Add($box,1,$row)
+    $boxes[$key] = $box
+
+    $browse = New-Object System.Windows.Forms.Button
+    $browse.Text = '浏览…'
+    $browse.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $browse.Margin = [System.Windows.Forms.Padding]::new(0,8,0,8)
+    $browse.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    $browse.BackColor = $ColorSurface
+    $browse.FlatAppearance.BorderColor = $ColorBorder
+    $browse.Add_Click({ Select-ToolboxFolder $box }.GetNewClosure())
+    $layout.Controls.Add($browse,2,$row)
+    $row++
+  }
+
+  $note = New-Object System.Windows.Forms.Label
+  $note.Text = "设置保存在：$(Get-ToolboxConfigPath)`r`n`r`n共享 node_modules 只会在项目副本没有本地 node_modules 时自动建立 Junction，因此不会擅自删除现有依赖。首次切换时可先删除旧副本中的 node_modules；之后不同 ZIP / Git 工作副本都可复用同一依赖目录。"
+  $note.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $note.ForeColor = $ColorMuted
+  $note.Padding = [System.Windows.Forms.Padding]::new(0,10,0,0)
+  $layout.SetColumnSpan($note,3)
+  $layout.Controls.Add($note,0,6)
+
+  $actions = New-Object System.Windows.Forms.FlowLayoutPanel
+  $actions.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $actions.FlowDirection = [System.Windows.Forms.FlowDirection]::RightToLeft
+  $actions.WrapContents = $false
+  $actions.Padding = [System.Windows.Forms.Padding]::new(0,5,0,0)
+  $layout.SetColumnSpan($actions,3)
+  $layout.Controls.Add($actions,0,7)
+
+  $save = New-Object System.Windows.Forms.Button
+  $save.Text = '保存路径设置'
+  $save.Width = 130
+  $save.Height = 31
+  $save.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+  $save.BackColor = $ColorAccent
+  $save.ForeColor = [System.Drawing.Color]::White
+  $save.FlatAppearance.BorderSize = 0
+  $save.Add_Click({
+    try {
+      $payload = [ordered]@{ schema=1 }
+      foreach ($fieldName in $boxes.Keys) { $payload[$fieldName] = $boxes[$fieldName].Text.Trim() }
+      $configPath = Get-ToolboxConfigPath
+      $configDir = Split-Path -Parent $configPath
+      if ($configDir) { New-Item -ItemType Directory -Force -Path $configDir | Out-Null }
+      [IO.File]::WriteAllText($configPath,($payload | ConvertTo-Json -Depth 3),[Text.UTF8Encoding]::new($false))
+      $status.Text = '路径设置已保存；新启动的构建/开发任务将使用这些缓存。'
+    } catch {
+      [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    }
+  }.GetNewClosure())
+  [void]$actions.Controls.Add($save)
+
+  $inspect = New-Object System.Windows.Forms.Button
+  $inspect.Text = '查看当前工具链'
+  $inspect.Width = 130
+  $inspect.Height = 31
+  $inspect.Add_Click({ Run-Action 'toolchain' })
+  [void]$actions.Controls.Add($inspect)
+
+  [void]$tabs.TabPages.Add($page)
+}
+
 function Add-VersionCard([System.Windows.Forms.FlowLayoutPanel]$Flow) {
   $card = New-Object System.Windows.Forms.Panel
   $card.Tag = 'action-card'
@@ -271,6 +423,8 @@ Add-ActionCard -Flow $common -Text '打开项目目录' -Description '在资源�
 Add-ActionCard -Flow $common -Text '打开开发文档' -Description '打开 docs/；新会话优先阅读 HANDOFF。' -Action 'open-docs'
 Add-ActionCard -Flow $common -Text '打开 Windows 输出' -Description '打开 dist/ 构建输出目录。' -Action 'open-dist'
 Add-ActionCard -Flow $common -Text '查看 Git 状态' -Description '检查当前分支与未提交修改。' -Action 'git-status'
+
+New-PathSettingsPage
 
 $android = New-Page 'Android'
 Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、adb、ANDROID_HOME 与 API 36；缺少 JDK 时自动准备并共享 Temurin 21。' -Action 'android-check' -Accent

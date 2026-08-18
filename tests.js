@@ -608,7 +608,31 @@ assert(pulseRes311.blockSamples===20,'pulse analyzer should auto-detect 20 sampl
 assert(Math.abs(pulseRes311.readVoltage-.5)<1e-9,'pulse analyzer should detect repeated 0.5 V read platform');
 assert(pulseRes311.points.length===4,'pulse analyzer should create one result per pulse/read pair');
 assert(Number.isFinite(pulseRes311.points[0].pulseCurrent)&&Number.isFinite(pulseRes311.points[0].readCurrent),'pulse analyzer must calculate both pulse and read stable-window currents');
-assert(pulsePluginSource.includes('id=\\\"pulseReadPlot\\\"')&&pulsePluginSource.includes('id=\\\"pulsePulsePlot\\\"'),'pulse plugin panel must provide both requested plots');
+
+const pulseCycleRows=['Time(s),Id(A),Vd(V)'];
+for(let cycle=0;cycle<4;cycle++){
+  for(let j=0;j<300;j++){
+    const write=j<100;
+    const current=write?(10+cycle):(100+cycle);
+    const voltage=write?(1+cycle*.1):.5;
+    pulseCycleRows.push(`${cycle*300+j},${current},${voltage}`);
+  }
+}
+const pulseCycleFile={name:'periodic-300.csv',path:'periodic-300.csv',text:pulseCycleRows.join('\n')};
+const pulseCycleInspection=analysisV311.inspectDataText(pulseCycleFile,analysisV311.defaultImportOptions());
+assert(analysisV311.estimatePulseCycleSamples(pulseCycleInspection,{currentCol:1,voltageCol:2})===300,
+  'periodic pulse estimator should recover the fixed 300-point cycle used by DataDeal-style files');
+const pulseCycleResult=analysisV311.analyzePulseReadData(pulseCycleFile,{
+  segmentationMode:'cycle',timeCol:0,currentCol:1,voltageCol:2,cycleSamples:300,
+  writeStartSample:5,writeEndSample:15,readStartSample:105,readEndSample:115
+});
+assert(pulseCycleResult.segmentationMode==='cycle'&&pulseCycleResult.points.length===4,
+  'point-cycle pulse mode must create one write/read result per full cycle');
+assert(Math.abs(pulseCycleResult.points[2].pulseCurrent-12)<1e-12&&Math.abs(pulseCycleResult.points[2].readCurrent-102)<1e-12,
+  'point-cycle pulse mode must average the explicit within-cycle point windows');
+assert(pulsePluginSource.includes('id="pulseCycleSamples"')&&pulsePluginSource.includes('value="cycle"'),
+  'pulse plugin must expose periodic point-count segmentation controls');
+assert(pulsePluginSource.includes('id="pulseReadPlot"')&&pulsePluginSource.includes('id="pulsePulsePlot"'),'pulse plugin panel must provide both requested plots');
 assert(appV311.includes('function pulseResultCsvText'),'pulse analysis results must support CSV copy/export');
 
 console.log('v3.11 TER / LAN web / scoped import / range identity / pulse-analysis checks passed.');
@@ -629,7 +653,7 @@ for(const id of [
   'pulseReadCopyBtn','pulseReadExportBtn','pulseReadSvgBtn','pulseReadPngBtn',
   'pulsePulseCopyBtn','pulsePulseExportBtn','pulsePulseSvgBtn','pulsePulsePngBtn'
 ]){
-  assert(pulsePluginSource.includes(`id=\\"${id}\\"`),`pulse plugin plot action ${id} must exist`);
+  assert(pulsePluginSource.includes(`id="${id}"`),`pulse plugin plot action ${id} must exist`);
 }
 assert(!pulsePluginSource.includes('class=\"pulse-advanced\"'),
   'pulse plugin raw diagnostics should be permanently visible rather than hidden in a collapsed details block');
@@ -643,7 +667,7 @@ assert(appV312.includes('function pulseReadCsvText()')&&appV312.includes('functi
   'each pulse plot must expose its own exact CSV data');
 assert(appV312.includes("exportPulsePlotImage('pulseReadPlot'")&&appV312.includes("exportPulsePlotImage('pulsePulsePlot'")&&appV312.includes("exportPulsePlotImage('pulseRawPlot'"),
   'raw/read/pulse plots must provide explicit image export actions');
-assert(pulsePluginSource.includes('id=\\\"pulseResultMeta\\\"')&&cssV312.includes('.pulse-table-heading'),
+assert(pulsePluginSource.includes('id="pulseResultMeta"')&&cssV312.includes('.pulse-table-heading'),
   'pulse plugin extracted results must use a dedicated summary/header toolbar');
 assert(cssV312.includes('.pulse-result-table thead th')&&cssV312.includes('position:sticky'),
   'pulse result table header must remain visible while scrolling');
@@ -660,7 +684,7 @@ for(const id of [
   'pulseRemoveFilesBtn','pulseAnalyzeCurrentBtn','pulseAnalyzeCheckedBtn',
   'pulseApplySettingsBtn','pulseSeriesLabel','pulseResultScope'
 ]){
-  assert(pulsePluginSource.includes(`id=\\\"${id}\\\"`),`multi-file pulse plugin control ${id} must exist`);
+  assert(pulsePluginSource.includes(`id="${id}"`),`multi-file pulse plugin control ${id} must exist`);
 }
 assert(appV313.includes('function createPulseAnalysisState()')&&appV313.includes('files:[]')&&appV313.includes("resultScope:'checked'"),
   'pulse analysis must use a batch-oriented state object');
@@ -684,9 +708,9 @@ assert(appV313.includes('const readTraces=[]')&&appV313.includes('const pulseTra
   'read-current and pulse-current plots must create one trace per visible analyzed file');
 assert(appV313.includes("showLegend=items.length>1"),
   'multi-file result plots must expose a legend when more than one file is shown');
-assert(appV313.includes("['label,source_file,index,pulse_voltage_V,read_voltage_V,read_current_A"),
+assert(appV313.includes("['label,source_file,index,segmentation_mode,pulse_voltage_V,read_voltage_V,read_current_A"),
   'batch read-current CSV must identify both display label and source file');
-assert(appV313.includes("['label,source_file,index,pulse_voltage_V,pulse_current_A"),
+assert(appV313.includes("['label,source_file,index,segmentation_mode,pulse_voltage_V,pulse_current_A"),
   'batch pulse-current CSV must identify both display label and source file');
 assert(appV313.includes('pulseAnalysisState:pulseAnalysisState')||appV313.includes('t.pulseAnalysisState=pulseAnalysisState'),
   'pulse batch state must be project-tab scoped');
