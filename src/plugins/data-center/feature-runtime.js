@@ -119,7 +119,7 @@
 
     const chartPane=page.querySelector('.dc-chart-pane');
     if(chartPane&&ctx.ui.portable?.create){
-      try{const portableSpec={title:'通用图形预览',handle:'.dc-tool-title',useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'};if(workbench?.layout?.portable)workbench.layout.portable('data-center-chart',chartPane,portableSpec);else ctx.ui.portable.create('data-center-chart',chartPane,portableSpec);const plot=page.querySelector('#dcChart');if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});}catch(err){console.warn('[Data Center portable chart]',err);}
+      try{const portableSpec={title:'通用图形预览',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'};if(workbench?.portable)workbench.portable('data-center-chart',chartPane,portableSpec);else ctx.ui.portable.create('data-center-chart',chartPane,portableSpec);const plot=page.querySelector('#dcChart');if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});}catch(err){console.warn('[Data Center portable chart]',err);}
     }
 
     ctx.ui.styles.add('data-center',`

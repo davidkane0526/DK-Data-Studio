@@ -1,3 +1,13 @@
+# v3.29.0 — Dedicated TOP runtime and portable workbench repair
+
+- Fix generic native TOP validation so dedicated Resonance windows no longer require split-only `left/main` regions.
+- Fix Pulse TOP startup contract: the support script now exports `DKDSPulseDedicatedService`, while the thin runtime adapter owns `DKDSPluginWindowRuntime`; the host clears stale runtime factories before support scripts load.
+- Upgrade core UI infrastructure to v2.3 with isolated Workbench-local portable docking shelves, preventing charts from being reparented into plugin data/control regions.
+- Restore the compact chart placement grammar `◫ / ← / → / ↓ / ↗` behind a single dropdown trigger; placement chrome can now mount inside an existing chart action cluster.
+- Rebuild TER as a flat six-chart grid, make R–V a first-class static chart, move layout choices into the header menu, and reset obsolete v2 portable-layout persistence.
+- Repair Data Center chart toolbar composition and Pulse/Data Center/TER portable placement through the new local Workbench docking API.
+- Refine floating panel header actions so dock/minimize/close affordances use lightweight borderless chrome.
+
 # v3.28.0 — Generic TOP/SUPER repair and shared plugin runtimes
 
 - Fixed plugin-manager lifecycle reflow/scroll anchoring so disabling/reloading a plugin cannot leave the manager visually shifted upward with a large empty region.

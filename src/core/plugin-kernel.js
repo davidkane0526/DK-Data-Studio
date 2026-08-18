@@ -180,9 +180,9 @@
     const activity=String(spec.activity||workspaceMeta(definition.manifest).activity||'').trim();
     if(!activity)throw new Error(`TOP workspace ${pluginId} must declare an activity.`);
     const layout=spec.layout&&typeof spec.layout==='object'?spec.layout:{};
-    if(!layout.left||!layout.main)throw new Error(`TOP workspace ${pluginId} must declare both layout.left and layout.main regions.`);
     const mode=String(layout.mode||'split').trim().toLowerCase();
     if(!['split','native'].includes(mode))throw new Error(`TOP workspace ${pluginId} has unsupported layout mode: ${mode}`);
+    if(mode==='split'&&(!layout.left||!layout.main))throw new Error(`TOP workspace ${pluginId} split layout must declare both layout.left and layout.main regions.`);
     const normalizeRegion=(region,name)=>{
       const raw=region&&typeof region==='object'?region:{};
       const selectors=[];
@@ -195,6 +195,9 @@
     };
     const root=layout.root&&typeof layout.root==='object'?layout.root:{};
     const rootSelector=String(root.selector||layout.rootSelector||'').trim();
+    if(mode==='native'&&!rootSelector)throw new Error(`TOP workspace ${pluginId} native layout must declare layout.root.selector.`);
+    const left=layout.left?normalizeRegion(layout.left,'left'):null;
+    const main=layout.main?normalizeRegion(layout.main,'main'):null;
     const flatten=Object.freeze((Array.isArray(layout.flatten)?layout.flatten:[]).map(String).map(x=>x.trim()).filter(Boolean));
     return Object.freeze({
       id:String(spec.id||activity),
@@ -204,8 +207,8 @@
       layout:Object.freeze({
         mode,
         root:Object.freeze({...root,selector:rootSelector}),
-        left:normalizeRegion(layout.left,'left'),
-        main:normalizeRegion(layout.main,'main'),
+        left,
+        main,
         flatten,
         prime:Object.freeze(Array.isArray(layout.prime)?layout.prime.map(row=>Object.freeze({...row})):[])
       }),

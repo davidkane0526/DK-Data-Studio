@@ -8,14 +8,14 @@
 - TER/Pulse/Data Center now consume core portable-view/action infrastructure. Data Center also consumes `ctx.state.create`.
 - New complex plugins should follow `docs/PLUGIN_UI_INFRASTRUCTURE.md`; do not create plugin-local docking, global keydown or resize frameworks.
 
-# Next Session Handoff — v3.28.0
+# Next Session Handoff — v3.29.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.28.0`
-- v3.28.0: generic TOP/SUPER root handling; plugin-manager late-scroll repair; global import overlay priority; compact portable-chart placement menu; TER/Pulse/Data Center Controller + Shared Views + Feature Runtime migration.
+- Current delivery: `v3.29.0`
+- v3.29.0: repair native TOP window validation and Pulse dedicated-runtime handshake; introduce isolated Workbench-local portable docking zones; restore compact `◫ / ← / → / ↓ / ↗` chart placement dropdown; flatten TER into a stable six-chart grid; clean Data Center/Pulse portable toolbars and lightweight panel chrome.
 - Cache/toolchain fix in v3.27.1: `cachePathMode=derived` makes the selected shared cache root authoritative; npm/pnpm/Electron/electron-builder/Gradle bindings and stale node_modules Junction rebinding are verified by tooling tests.
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**

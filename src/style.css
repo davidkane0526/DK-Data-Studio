@@ -374,11 +374,6 @@ button.wide { width:100%; margin-top:8px; }
   min-height:0!important;
   aspect-ratio:1 / 1;
 }
-.ter-reduction-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-}
 .analysis-section-title{
   margin:16px 2px 7px;
   font-size:13px;
@@ -390,7 +385,6 @@ button.wide { width:100%; margin-top:8px; }
 .heatmap-display-controls input{min-width:105px;width:112px}
 
 @media(max-width:950px){
-  .ter-reduction-grid{grid-template-columns:1fr}
   .heatmap-square-card{width:min(760px, calc(100vw - 44px))}
 }
 
@@ -3920,7 +3914,7 @@ body.auxiliary-window .analysis-page{
 @media(max-width:760px){.plugin-card-switches{grid-column:1/-1;justify-self:end}.plugin-enable-switch{grid-column:auto;margin-top:0}}
 
 /* =========================================================
-   DKDS UI Infrastructure v2 — plugin-neutral workspace layer
+   DKDS UI Infrastructure v2.3 — plugin-neutral workspace layer
    ========================================================= */
 .dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
 .dkds-action-button{height:30px;min-width:30px;padding:0 10px;border:1px solid var(--line,#d9e0ea);border-radius:8px;background:var(--panel,#fff);color:var(--text,#263247);display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
@@ -3963,3 +3957,71 @@ body.auxiliary-window .analysis-page{
 .dkds-workbench-existing-split>.dkds-workbench-splitter:hover::before,.dkds-workbench-existing-split>.dkds-workbench-splitter:focus-visible::before{left:1px;width:3px;background:#9fb2df}
 .dkds-workbench-existing-split>[data-dkds-region="left"]{grid-column:1!important;min-width:0}
 .dkds-workbench-existing-split>[data-dkds-region="main"]{grid-column:3!important;min-width:0}
+
+/* =========================================================
+   v3.29 portable workbench repair
+   ========================================================= */
+/* Portable placement is a compact icon breadcrumb. The active icon is always
+   visible (◫ at home); the caret opens the complete placement menu. */
+.dkds-portable-controls.dkds-portable-breadcrumb{margin-left:0;gap:0}
+.dkds-portable-placement-trigger{
+  height:24px!important;min-width:30px!important;width:auto!important;
+  padding:0 5px!important;border:0!important;border-radius:6px!important;
+  background:transparent!important;color:#627086!important;font-size:11px!important;
+  line-height:1!important;display:inline-flex!important;align-items:center!important;
+  justify-content:center!important;gap:2px!important;white-space:nowrap!important;
+  box-shadow:none!important;
+}
+.dkds-portable-placement-trigger:hover{background:#f0f4fa!important;color:#315efb!important}
+.dkds-portable-location-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1}
+.dkds-portable-caret{font-size:7px;opacity:.62;margin-top:1px}
+
+/* Existing-DOM workbenches own real local docking shelves. Moving a chart can
+   never append it into a plugin's semantic data/control region. */
+.dkds-workbench-existing{position:relative!important}
+.dkds-portable-zone{display:none;position:absolute;z-index:92;min-width:0;min-height:0;background:#f8faff;border:1px solid #dce4f0;box-shadow:0 10px 28px rgba(24,39,75,.10);overflow:auto;padding:6px;gap:6px}
+.dkds-portable-zone.active{display:flex;flex-direction:column}
+.dkds-portable-zone-left{left:8px;top:8px;bottom:8px;width:min(36%,430px)}
+.dkds-portable-zone-right{right:8px;top:8px;bottom:8px;width:min(38%,470px)}
+.dkds-portable-zone-bottom{left:8px;right:8px;bottom:8px;max-height:min(46%,440px)}
+.dkds-portable-zone>.dkds-portable-view{position:relative!important;left:auto!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important;box-shadow:none!important;flex:0 0 auto}
+@media(max-width:860px){
+  .dkds-portable-zone-left,.dkds-portable-zone-right{left:6px;right:6px;top:auto;bottom:6px;width:auto;max-height:50%}
+  .dkds-portable-zone-bottom{left:6px;right:6px;bottom:6px;max-height:50%}
+}
+
+/* Lightweight floating-panel chrome: these are window affordances, not primary
+   content buttons. */
+.panel-header-actions{gap:2px}
+.floating-panel:not(.lan-web-panel) .panel-header-actions>button,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close{
+  min-width:24px;min-height:24px;height:24px;padding:0 6px!important;
+  border:0!important;border-radius:6px!important;background:transparent!important;
+  box-shadow:none!important;color:#667085;font-size:11px;line-height:24px;
+}
+.floating-panel:not(.lan-web-panel) .panel-header-actions>button:hover,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close:hover{background:#edf2f8!important;color:#344054!important}
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close{font-size:15px;padding:0 5px!important}
+
+/* TER's six scientific charts are peers in one predictable grid. */
+#terMaxPage .ter-chart-grid{
+  --ter-grid-cols:3;
+  display:grid!important;
+  grid-template-columns:repeat(var(--ter-grid-cols),minmax(0,1fr))!important;
+  grid-auto-rows:auto!important;
+  align-items:start!important;gap:12px!important;
+}
+#terMaxPage .ter-chart-grid>.analysis-chart-card{width:100%!important;max-width:none!important;min-width:0!important;align-self:start!important}
+#terMaxPage .heatmap-square-card{width:100%!important;max-width:none!important;align-self:start!important}
+#terMaxPage .analysis-chart-card .analysis-chart{min-width:0}
+@media(max-width:1080px){#terMaxPage .ter-chart-grid{--ter-grid-cols:2!important}}
+@media(max-width:720px){#terMaxPage .ter-chart-grid{--ter-grid-cols:1!important}}
+
+/* Data Center chart header is one deliberate toolbar, not three competing flex
+   children injected by portable-view chrome. */
+.dc-chart-pane>.dc-tool-title{align-items:center;flex-wrap:wrap}
+.dc-chart-pane>.dc-tool-title>div:first-child{flex:1 1 260px;min-width:0}
+.dc-chart-toolbar{display:flex!important;align-items:center;justify-content:flex-end;gap:5px;flex:0 1 auto;min-width:0;flex-wrap:wrap}
+.dc-chart-toolbar select{min-width:130px;max-width:190px;height:30px}
+.dc-chart-toolbar .dkds-portable-controls{flex:0 0 auto}
+@media(max-width:760px){.dc-chart-toolbar{flex:1 1 100%;justify-content:flex-start}}

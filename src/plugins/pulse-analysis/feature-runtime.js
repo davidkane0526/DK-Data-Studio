@@ -52,8 +52,8 @@
       const card=page.querySelector('#'+id)?.closest('.pulse-card');
       if(!card||!ctx.ui.portable?.create)continue;
       try{
-        const portableSpec={title,handle:'.pulse-card-heading',useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'};
-        if(workbench?.layout?.portable)workbench.layout.portable(`pulse-chart-${id}`,card,portableSpec);else ctx.ui.portable.create(`pulse-chart-${id}`,card,portableSpec);
+        const portableSpec={title,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'};
+        if(workbench?.portable)workbench.portable(`pulse-chart-${id}`,card,portableSpec);else ctx.ui.portable.create(`pulse-chart-${id}`,card,portableSpec);
         const plot=page.querySelector('#'+id);if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});
       }catch(err){console.warn('[Pulse portable chart]',id,err);}
     }

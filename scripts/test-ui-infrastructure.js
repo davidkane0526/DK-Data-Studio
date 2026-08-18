@@ -16,6 +16,9 @@ for(const symbol of ['PortableView','ActionGroup','InteractionBinding','Selectio
 }
 assert(ui.includes("pin(placement='right')"),'portable views must expose pin placement');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('placementLongLabels'),'portable views must use one compact placement breadcrumb/menu rather than a six-button strip');
+assert(ui.includes("placementIcons={home:'◫',left:'←'")&&ui.includes("float:'↗'"),'portable placement must show ◫ at home and expose directional icons through its dropdown');
+assert(ui.includes('controlsHost')&&ui.includes("controlsPlacement==='start'"),'portable chrome must be injectable into an existing chart action cluster instead of creating a competing header column');
+assert(ui.includes('createPortableZones()')&&ui.includes('dkds-portable-zone'),'existing-DOM workbenches must own isolated local docking shelves');
 assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use the core context-menu service');
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');

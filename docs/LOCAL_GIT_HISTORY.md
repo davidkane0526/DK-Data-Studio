@@ -23,3 +23,5 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 11. v3.27.1: fix Developer Toolbox cache binding so selected shared cache directories are actually used by npm, pnpm, Electron, electron-builder, Gradle and shared node_modules.
 
 12. v3.28.0: remove resonance-specific SUPER assumptions; repair plugin-manager/overlay/TOP navigation regressions; replace portable chart icon strips with a compact location menu; and refactor TER/Pulse/Data Center into Controller + Shared Views + Feature Runtime stacks over core Workbench/Selection/Split/Chart infrastructure.
+
+13. v3.29.0: repair native TOP/dedicated runtime contracts; add isolated local portable docking zones; flatten TER six-chart layout; refine Data Center/Pulse portable UI and panel chrome.

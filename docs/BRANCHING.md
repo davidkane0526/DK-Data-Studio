@@ -4,7 +4,7 @@
 
 This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.28.0**.
+Current development baseline: **v3.29.0**.
 
 ## Recommended future flow
 
@@ -28,6 +28,6 @@ Do not access, push to, or modify any remote repository unless the user explicit
 `v3.27.0` establishes plugin-neutral UI/state infrastructure in core. Resonance SUPER/TOP adapters are host-only, while feature behavior lives in plugin-owned Controller/View/feature-runtime layers. TER, Pulse and Data Center consume common portable-view and dynamic-action infrastructure; Data Center also uses the core state/project store. This is the baseline for further plugin rewrites without growing `app.js`.
 
 
-`v3.28.0` removes resonance-only SUPER assumptions, fixes plugin-manager/overlay regressions, and migrates TER, Pulse and Data Center to thin host adapters backed by shared Controller/View/Feature runtimes and core UI infrastructure.
+`v3.29.0` fixes the dedicated TOP runtime contract for native workspaces and Pulse, moves portable charts onto isolated Workbench-local dock shelves, flattens TER into a stable six-chart grid, and integrates compact chart-placement controls into existing chart toolbars.
 
 `v3.27.1` fixes the shared build-cache contract: the Toolbox cache root is authoritative in derived mode, native npm/pnpm/Electron/electron-builder/Gradle cache variables are bound explicitly, and stale shared `node_modules` Junctions are rebound automatically.

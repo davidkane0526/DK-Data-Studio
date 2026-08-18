@@ -107,7 +107,7 @@
     return {factor:1e12,unit:'pA'};
   }
 
-  window.DKDSPluginWindowRuntime = {
+  window.DKDSPulseDedicatedService = {
     async create({host,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}) {
       let state = createState();
 

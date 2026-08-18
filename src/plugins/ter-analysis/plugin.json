@@ -1,7 +1,7 @@
 {
   "id": "builtin.ter-analysis",
   "name": "TER Analysis",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,

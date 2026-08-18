@@ -304,7 +304,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.28.0',
+      appVersion:'3.29.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -350,9 +350,12 @@
         loadedExternalScripts.add(file);
       }else await loadScript(pluginUrl(file));
     };
+    // Start every dedicated-window activation with a clean runtime factory.
+    // Support scripts may intentionally publish service factories consumed by
+    // the thin runtime adapter; never erase them after they have loaded.
+    window.DKDSPluginWindowRuntime = null;
     for(const file of (spec.scripts||[]))await loadTargetScript(file);
 
-    window.DKDSPluginWindowRuntime = null;
     if (spec.runtime) await loadTargetScript(spec.runtime);
 
     const host = baseHost();

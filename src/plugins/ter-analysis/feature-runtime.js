@@ -34,12 +34,6 @@
         max-width:none;
         align-self:start;
       }
-      #terMaxPage .ter-chart-grid > .ter-reduction-grid{
-        display:contents!important;
-      }
-      #terMaxPage .ter-reduction-grid > .analysis-chart-card{
-        min-width:0;
-      }
       #terMaxPage .ter-resistance-card{
         min-width:0;
         position:relative;
@@ -257,66 +251,25 @@
     }
 
     function ensureLayoutControls(){
-      const page=document.getElementById('terMaxPage');
-      const summary=document.getElementById('terSummary');
-      if(!page||!summary)return null;
-      let card=document.getElementById('terPluginLayoutControls');
-      if(card){syncLayoutControls();return card;}
-      card=document.createElement('div');
-      card.id='terPluginLayoutControls';
-      card.className='analysis-control-card ter-layout-controls';
-      card.dataset.pluginOwned='builtin.ter-analysis';
-      const options=FACTORS.map(v=>`<option value="${v}">${v}</option>`).join('');
-      card.innerHTML=`
-        <strong>图表布局</strong>
-        <label>行数 <select id="terLayoutRows">${options}</select></label>
-        <label>列数 <select id="terLayoutCols">${options}</select></label>
-        <label class="ter-sticky-check"><input id="terResistanceStickyToggle" type="checkbox"> R–V 随滚动悬浮</label>
-        <span class="ter-layout-note">共 6 张图；修改行数或列数时另一项自动匹配。窄屏自动切换为单列。</span>
-      `;
-      summary.insertAdjacentElement('beforebegin',card);
-      card.querySelector('#terLayoutRows')?.addEventListener('change',e=>setRows(e.target.value));
-      card.querySelector('#terLayoutCols')?.addEventListener('change',e=>setCols(e.target.value));
-      card.querySelector('#terResistanceStickyToggle')?.addEventListener('change',e=>setSticky(e.target.checked));
       syncLayoutControls();
-      return card;
+      return null;
     }
 
     function ensureResistanceCard(){
-      const page=document.getElementById('terMaxPage');
-      const heatmapCard=page?.querySelector('.ter-chart-grid > .heatmap-square-card');
-      if(!page||!heatmapCard)return null;
-      let card=document.getElementById('terResistanceCard');
-      if(card){
-        card.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
-        return card;
-      }
-      card=document.createElement('div');
-      card.id='terResistanceCard';
-      card.className='analysis-chart-card ter-resistance-card';
-      card.dataset.pluginOwned='builtin.ter-analysis';
-      card.innerHTML=`
-        <div class="ter-resistance-card-header">
-          <span class="ter-card-title-text">全部 Vg 的电阻–电压（R–V）正扫 / 反扫</span>
-          <div class="ter-chart-actions">
-            <button id="terResistanceClearBtn" type="button" title="恢复显示全部栅压曲线">清除高亮</button>
-            <button id="terResistanceStickyBtn" type="button">取消悬浮</button>
-            <button type="button" data-ter-export="data" data-ter-plot="resistance">CSV</button>
-            <button type="button" data-ter-export="svg" data-ter-plot="resistance">SVG</button>
-            <button type="button" data-ter-export="png" data-ter-plot="resistance">PNG</button>
-          </div>
-        </div>
-        <div class="ter-resistance-hint">同一 Vg 使用同一颜色：实线为正扫（Vds 递增），虚线为反扫（Vds 递减）。点击 TER_Max / 峰位图的数据点后，其他曲线变淡并在正扫、反扫曲线上分别标出对应位置。选中后可按 Ctrl+← / Ctrl+→ 沿 Vds 数据点移动红色标记，并将该位置手动设为对应 Vg 与 Vd 的 TER_Max。</div>
-        <div id="terResistanceSelection" class="ter-resistance-selection">尚未选择 TER 数据点。</div>
-        <div id="terResistancePlot" class="analysis-chart"></div>
-      `;
-      heatmapCard.insertAdjacentElement('afterend',card);
-      card.querySelector('#terResistanceClearBtn')?.addEventListener('click',()=>{
-        selectedTerPoint=null;
-        renderResistancePlot();
-      });
-      card.querySelector('#terResistanceStickyBtn')?.addEventListener('click',()=>setSticky(!layoutSettings.sticky));
+      const card=document.getElementById('terResistanceCard');
+      if(!card)return null;
       card.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
+      if(card.dataset.terBound!=='1'){
+        card.dataset.terBound='1';
+        const clearBtn=card.querySelector('#terResistanceClearBtn');
+        const stickyBtn=card.querySelector('#terResistanceStickyBtn');
+        if(clearBtn)clearBtn.onclick=()=>{
+          selectedTerPoint=null;
+          controller?.clearSelection?.({source:'ter-resistance-clear'});
+          renderResistancePlot();
+        };
+        if(stickyBtn)stickyBtn.onclick=()=>setSticky(!layoutSettings.sticky);
+      }
       syncLayoutControls();
       return card;
     }
@@ -372,9 +325,9 @@
         const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
         if(!card)continue;
         try{
-          const portableSpec={title:spec.title,handle:spec.handle,useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'};
-          const portable=workbench?.layout?.portable
-            ? workbench.layout.portable(`ter-chart-${spec.key}`,card,portableSpec)
+          const portableSpec={title:spec.title,handle:spec.handle,controlsHost:'.ter-chart-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'};
+          const portable=workbench?.portable
+            ? workbench.portable(`ter-chart-${spec.key}`,card,portableSpec)
             : ctx.ui.portable.create(`ter-chart-${spec.key}`,card,portableSpec);
           portableCharts.set(spec.key,portable);
         }catch(err){console.warn('[TER portable chart]',spec.key,err);}
@@ -1056,7 +1009,7 @@
     });
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
-    for(const plotId of ['terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
+    for(const plotId of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
       const el=page.querySelector('#'+plotId);if(!el||!ctx.ui.charts?.mount)continue;
       try{chartSurfaces.set(plotId,ctx.ui.charts.mount(el,{}));}catch(err){console.warn('[TER chart surface]',plotId,err);}
     }
@@ -1068,7 +1021,18 @@
       activity:'ter',
       actions:[
         {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
-        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()}
+        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
+        {id:'layout',icon:'▦',label:'布局',menu:true,order:30,onInvoke:({button})=>{
+          const rect=button.getBoundingClientRect();
+          ctx.ui.contextMenus.open({x:rect.left,y:rect.bottom+4,items:[
+            {id:'3x2',icon:'▦',label:'3 列 × 2 行',onInvoke:()=>setCols(3)},
+            {id:'2x3',icon:'▦',label:'2 列 × 3 行',onInvoke:()=>setCols(2)},
+            {id:'1x6',icon:'▤',label:'1 列 × 6 行',onInvoke:()=>setCols(1)},
+            {id:'6x1',icon:'▥',label:'6 列 × 1 行',onInvoke:()=>setCols(6)},
+            {type:'separator'},
+            {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动悬浮：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
+          ]});
+        }}
       ]
     });
 
@@ -1158,8 +1122,12 @@
       const plot=document.getElementById('terResistancePlot');
       if(plot&&window.Plotly){try{Plotly.purge(plot);}catch{}}
       restorePerChartActions();
-      document.getElementById('terPluginLayoutControls')?.remove();
-      document.getElementById('terResistanceCard')?.remove();
+      const resistanceCard=document.getElementById('terResistanceCard');
+      if(resistanceCard){
+        const clearBtn=resistanceCard.querySelector('#terResistanceClearBtn');
+        const stickyBtn=resistanceCard.querySelector('#terResistanceStickyBtn');
+        if(clearBtn)clearBtn.onclick=null;if(stickyBtn)stickyBtn.onclick=null;delete resistanceCard.dataset.terBound;
+      }
     }};
   }
   window.DKDSTERFeatureRuntime=Object.freeze({mount});

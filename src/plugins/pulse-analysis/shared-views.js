@@ -198,7 +198,7 @@
   function attach(ctx,page){
     const shell=page?.querySelector('.pulse-batch-workspace');if(!shell)return null;
     const body=page.querySelector('.pulse-analysis-body')||page;
-    return ctx.ui.workbench.create(shell,{existing:true,regions:{left:{target:'.pulse-file-manager-card'},main:{target:'.pulse-config-card'},right:{target:'.pulse-config-card'},bottom:{target:'.pulse-config-card'},overlay:{target:()=>body}},split:ctx.host.isAuxiliaryWindow?{id:'pulse-local-left',region:'left',mainRegion:'main',defaultSize:310,min:230,reserve:560}:null});
+    return ctx.ui.workbench.create(shell,{existing:true,regions:{left:{target:'.pulse-file-manager-card'},main:{target:'.pulse-config-card'},overlay:{target:()=>body}},split:ctx.host.isAuxiliaryWindow?{id:'pulse-local-left',region:'left',mainRegion:'main',defaultSize:310,min:230,reserve:560}:null});
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}
   window.DKDSPulseSharedViews=Object.freeze({create});
