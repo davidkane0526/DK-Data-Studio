@@ -1,4 +1,10 @@
 # Changelog
+## 3.23.0 continuation — toolbar outline alignment / LAN icon polish
+
+- Replaced the LAN Web minimize em dash with a compact 11 × 2 px drawn glyph while retaining the existing 32 × 30 px click target.
+- Matched the outer height and corner radius of `编辑操作`, `导出数据`, and `软件管理` to the outlined group containing `导入数据 / 读取项目 / 保存项目`.
+- Extended static UI regression checks for both shell contracts.
+
 ## 3.23.0 continuation — shell layering / control-size polish
 
 - Raised the LAN Web management surface above SUPER/TOP workspace splitters so the adjustable SUPER divider can no longer draw through the floating panel at particular saved divider positions.

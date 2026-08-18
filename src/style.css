@@ -3864,3 +3864,37 @@ body.auxiliary-window .analysis-page{
   height:calc(var(--dkds-viewport-height,100dvh) - var(--dkds-statusbar-height,28px))!important;
 }
 .plugin-status-item.passive{cursor:default}
+
+/* ============================================================
+   v3.23 continuation · toolbar outline alignment / LAN icon polish
+   ============================================================ */
+/* The LAN minimize action keeps the same hit target as Close, but uses a
+   compact drawn glyph instead of a long em dash. */
+#lanWebMinimizeBtn{
+  font-size:0;
+}
+#lanWebMinimizeBtn .lan-web-minimize-glyph{
+  display:block;
+  width:11px;
+  height:2px;
+  border-radius:999px;
+  background:currentColor;
+  pointer-events:none;
+}
+
+/* File commands are visually one outlined group. Standalone shell menus use
+   the exact same outer height/radius, so Edit / Export / Manage align with
+   that group rather than only matching the inner 34 px file buttons. */
+.global-commandbar .file-command-group{
+  height:42px;
+  min-height:42px;
+  border-radius:10px;
+}
+.global-commandbar>.compact-menu-anchor>#editMenuBtn,
+.system-commandbar>.menu-anchor>#exportMenuBtn,
+.system-commandbar>.menu-anchor>#manageMenuBtn{
+  height:42px;
+  min-height:42px;
+  border-radius:10px;
+}
+

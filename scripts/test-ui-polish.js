@@ -7,6 +7,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
 const nav = fs.readFileSync(path.join(root, 'src', 'plugins', 'shell-navigation', 'plugin.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'src', 'style.css'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
 const svg = fs.readFileSync(path.join(root, 'assets', 'dkds-mark.svg'), 'utf8');
 const ico = fs.readFileSync(path.join(root, 'assets', 'dkds-icon.ico'));
 
@@ -28,6 +29,10 @@ assert(css.includes('button:focus-visible'));
 assert(css.includes('.lan-web-panel{\n  z-index:1100!important;'), 'LAN panel must stay above SUPER workspace divider');
 assert(css.includes('.lan-web-panel .panel-header-actions>.panel-close'), 'LAN minimize/close controls must share one geometry contract');
 assert(css.includes('.global-commandbar .compact-menu-anchor>#editMenuBtn{min-width:72px}'), 'edit command must match file-command button width');
+assert(html.includes('class="lan-web-minimize-glyph"'), 'LAN minimize button must use a compact drawn glyph instead of a long text dash');
+assert(css.includes('#lanWebMinimizeBtn .lan-web-minimize-glyph{') && css.includes('width:11px;'), 'LAN minimize glyph must stay visually compact');
+assert(css.includes('.global-commandbar .file-command-group{\n  height:42px;'), 'file command group must have an explicit outer height');
+assert(css.includes('.system-commandbar>.menu-anchor>#manageMenuBtn{\n  height:42px;'), 'standalone shell menus must match the file-command group outer height');
 
 const pathCount = (svg.match(/<path\b/g) || []).length;
 assert.equal(pathCount, 1, 'brand mark should contain one resonance trace');
