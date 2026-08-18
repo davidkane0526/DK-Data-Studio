@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DK Data Studio</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="auxiliary-window plugin-window-host">
+  <div id="app"></div>
+  <div id="pluginWindowError" class="plugin-window-error hidden" role="alert">
+    <strong>插件窗口启动失败</strong>
+    <span id="pluginWindowErrorText"></span>
+  </div>
+  <div id="statusBar" class="statusbar plugin-window-status"></div>
+  <script defer src="./runtime.js"></script>
+</body>
+</html>

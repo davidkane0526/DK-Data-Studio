@@ -1,0 +1,289 @@
+(() => {
+  const ARTIFACT_VERSION=1;
+  const STORE_VERSION=1;
+
+  function nowIso(){ return new Date().toISOString(); }
+  function deepClone(value){
+    if(value===undefined)return undefined;
+    if(typeof structuredClone==='function'){
+      try{return structuredClone(value);}catch{}
+    }
+    return JSON.parse(JSON.stringify(value));
+  }
+  function hashString(value){
+    const text=String(value??'');
+    let h=2166136261;
+    for(let i=0;i<text.length;i++){
+      h^=text.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    return (h>>>0).toString(36);
+  }
+  function makeId(prefix='artifact'){
+    if(globalThis.crypto?.randomUUID)return `${prefix}:${crypto.randomUUID()}`;
+    return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,10)}`;
+  }
+  function stableId(prefix,value){ return `${prefix}:${hashString(value)}`; }
+  function safeArray(v){ return Array.isArray(v)?v:[]; }
+  function normalizeMetadata(v){ return v&&typeof v==='object'&&!Array.isArray(v)?deepClone(v):{}; }
+
+  function provenanceStep(spec={}){
+    return {
+      id:spec.id||makeId('prov'),
+      timestamp:spec.timestamp||nowIso(),
+      type:spec.type||'process',
+      label:spec.label||spec.type||'process',
+      providerId:spec.providerId||'',
+      pluginId:spec.pluginId||'',
+      version:spec.version||'',
+      parameters:normalizeMetadata(spec.parameters),
+      inputs:safeArray(spec.inputs).map(String),
+      outputs:safeArray(spec.outputs).map(String),
+      manual:!!spec.manual,
+      note:String(spec.note||''),
+      source:normalizeMetadata(spec.source),
+      environment:normalizeMetadata(spec.environment)
+    };
+  }
+
+  function envelope(kind,spec={}){
+    return {
+      artifactVersion:ARTIFACT_VERSION,
+      id:spec.id||makeId(kind.replace(/[^a-z0-9]+/gi,'-')),
+      kind,
+      name:String(spec.name||kind),
+      createdAt:spec.createdAt||nowIso(),
+      updatedAt:spec.updatedAt||nowIso(),
+      metadata:normalizeMetadata(spec.metadata),
+      tags:safeArray(spec.tags).map(String),
+      source:normalizeMetadata(spec.source),
+      provenance:safeArray(spec.provenance).map(p=>provenanceStep(p)),
+      transient:!!spec.transient
+    };
+  }
+
+  function normalizeColumn(column,index,rowCountHint=0){
+    const values=safeArray(column?.values).map(v=>v===null?NaN:v);
+    const name=String(column?.name||column?.key||`Column ${index+1}`);
+    const key=String(column?.key||name).trim()||`col_${index+1}`;
+    return {
+      id:String(column?.id||`col:${hashString(`${key}:${index}`)}`),
+      key,
+      name,
+      unit:String(column?.unit||''),
+      dtype:String(column?.dtype||'number'),
+      role:String(column?.role||''),
+      values,
+      metadata:normalizeMetadata(column?.metadata),
+      length:values.length||Number(rowCountHint)||0
+    };
+  }
+
+  function createTable(spec={}){
+    const cols=safeArray(spec.columns).map((c,i)=>normalizeColumn(c,i));
+    const rowCount=cols.length?Math.max(...cols.map(c=>c.values.length)):Math.max(0,Number(spec.rowCount)||0);
+    for(const c of cols){
+      if(c.values.length<rowCount)c.values=c.values.concat(new Array(rowCount-c.values.length).fill(NaN));
+      c.length=rowCount;
+    }
+    return {
+      ...envelope('data.table',spec),
+      schemaVersion:1,
+      rowCount,
+      columns:cols
+    };
+  }
+
+  function createSeries(spec={}){
+    const x=safeArray(spec.x),y=safeArray(spec.y);
+    const n=Math.min(x.length,y.length);
+    return {
+      ...envelope('data.series',spec),
+      schemaVersion:1,
+      x:x.slice(0,n),y:y.slice(0,n),
+      xName:String(spec.xName||'x'),yName:String(spec.yName||'y'),
+      xUnit:String(spec.xUnit||''),yUnit:String(spec.yUnit||''),
+      length:n
+    };
+  }
+
+  function createSweep(spec={}){
+    const series=createSeries(spec);
+    return {...series,kind:'data.sweep',direction:Number(spec.direction)||0,scanAxis:String(spec.scanAxis||series.xName)};
+  }
+
+  function createEventSeries(spec={}){
+    return {
+      ...envelope('data.events',spec),schemaVersion:1,
+      events:safeArray(spec.events).map((e,i)=>({id:e?.id||`event-${i+1}`,...deepClone(e)}))
+    };
+  }
+
+  function createPeakSet(spec={}){
+    return {
+      ...envelope('result.peaks',spec),schemaVersion:1,
+      peaks:safeArray(spec.peaks).map((p,i)=>({id:p?.id||`peak-${i+1}`,...deepClone(p)}))
+    };
+  }
+
+  function createFitResult(spec={}){
+    return {...envelope('result.fit',spec),schemaVersion:1,model:String(spec.model||''),parameters:normalizeMetadata(spec.parameters),statistics:normalizeMetadata(spec.statistics),series:deepClone(spec.series||null)};
+  }
+
+  function createAnalysisResult(spec={}){
+    return {...envelope('result.analysis',spec),schemaVersion:1,summary:normalizeMetadata(spec.summary),tables:safeArray(spec.tables).map(deepClone),payload:deepClone(spec.payload??null)};
+  }
+
+  function createAnnotation(spec={}){
+    return {...envelope('annotation',spec),schemaVersion:1,targetId:String(spec.targetId||''),annotationType:String(spec.annotationType||'note'),payload:deepClone(spec.payload??null)};
+  }
+
+  function createImageData(spec={}){
+    return {...envelope('data.image',spec),schemaVersion:1,width:Number(spec.width)||0,height:Number(spec.height)||0,channels:Number(spec.channels)||1,unit:String(spec.unit||''),data:deepClone(spec.data||null)};
+  }
+
+  function isArtifact(value){ return !!value&&typeof value==='object'&&typeof value.id==='string'&&typeof value.kind==='string'; }
+  function validateArtifact(a){
+    const errors=[];
+    if(!isArtifact(a))errors.push('Artifact requires string id and kind.');
+    if(a?.kind==='data.table'){
+      if(!Array.isArray(a.columns))errors.push('DataTable.columns must be an array.');
+      else{
+        const names=new Set();
+        for(const c of a.columns){
+          if(!c?.key)errors.push('Every DataTable column requires key.');
+          if(names.has(c?.key))errors.push(`Duplicate column key: ${c?.key}`);
+          names.add(c?.key);
+          if(!Array.isArray(c?.values))errors.push(`Column ${c?.key||'?'} values must be an array.`);
+        }
+      }
+    }
+    return {ok:!errors.length,errors};
+  }
+
+  function column(table,ref){
+    if(!table||table.kind!=='data.table')return null;
+    if(typeof ref==='number')return table.columns[ref]||null;
+    const target=String(ref??'');
+    return table.columns.find(c=>c.id===target||c.key===target||c.name===target)||null;
+  }
+
+  function columnValues(table,ref){ return column(table,ref)?.values||[]; }
+
+  function rows(table,{start=0,limit=Infinity}={}){
+    if(table?.kind!=='data.table')return [];
+    const out=[];
+    const end=Math.min(table.rowCount,start+limit);
+    for(let r=Math.max(0,start);r<end;r++){
+      const row={};
+      for(const c of table.columns)row[c.key]=c.values[r];
+      out.push(row);
+    }
+    return out;
+  }
+
+  function withProvenance(artifact,step){
+    const out=deepClone(artifact);
+    out.updatedAt=nowIso();
+    out.provenance=safeArray(out.provenance);
+    out.provenance.push(provenanceStep({...step,outputs:[...(step?.outputs||[]),out.id]}));
+    return out;
+  }
+
+  function derive(parent,spec={},step={}){
+    const out=deepClone(parent);
+    out.id=spec.id||makeId(parent.kind.replace(/[^a-z0-9]+/gi,'-'));
+    out.name=String(spec.name||parent.name);
+    out.createdAt=nowIso();out.updatedAt=out.createdAt;
+    out.transient=!!spec.transient;
+    if(spec.metadata)out.metadata={...normalizeMetadata(parent.metadata),...normalizeMetadata(spec.metadata)};
+    Object.assign(out,deepClone(spec.patch||{}));
+    out.provenance=safeArray(parent.provenance).map(provenanceStep);
+    out.provenance.push(provenanceStep({...step,inputs:[...(step.inputs||[]),parent.id],outputs:[out.id]}));
+    return out;
+  }
+
+  function fromLegacyDataset(ds){
+    const path=String(ds?.path||ds?.name||'dataset');
+    const points=safeArray(ds?.points);
+    const table=createTable({
+      id:stableId('legacy-table',path),
+      name:String(ds?.name||'I-V data'),
+      createdAt:ds?.importedAt||undefined,
+      updatedAt:safeArray(ds?.dataProvenance).at(-1)?.timestamp||ds?.importedAt||undefined,
+      transient:true,
+      metadata:{
+        adapter:'legacy-dataset',legacyDatasetPath:path,vg:Number.isFinite(ds?.vg)?ds.vg:null,
+        importSpec:deepClone(ds?.importSpec||null)
+      },
+      source:{path:ds?.sourcePath||ds?.path||'',name:ds?.sourceName||ds?.name||'',encoding:ds?.encoding||''},
+      columns:[
+        {key:'Vd',name:ds?.importSpec?.xHeader||'Vd',unit:'V',role:'x',values:points.map(p=>p.v),metadata:{sourceColumn:ds?.importSpec?.xCol}},
+        {key:'Id',name:ds?.importSpec?.yHeader||'Id',unit:'A',role:'y',values:points.map(p=>p.i),metadata:{sourceColumn:ds?.importSpec?.yCol}},
+        {key:'Vg',name:'Vg',unit:'V',role:'group',values:points.map(()=>Number.isFinite(ds?.vg)?ds.vg:NaN)},
+        {key:'sourceLine',name:'Source line',unit:'',role:'index',values:points.map(p=>Number(p.sourceLine)||NaN)}
+      ]
+    });
+    table.provenance=[provenanceStep({
+      timestamp:ds?.importedAt||undefined,
+      type:'import',label:'Import source data',providerId:'flexible-text',pluginId:'builtin.flexible-import',version:'1.x',
+      parameters:deepClone(ds?.importSpec||{}),inputs:[String(ds?.sourcePath||ds?.path||'')],outputs:[table.id],
+      source:{path:ds?.sourcePath||ds?.path||'',name:ds?.sourceName||ds?.name||''}
+    }),...safeArray(ds?.dataProvenance).map(p=>provenanceStep(p))];
+    return table;
+  }
+
+  function summarize(a){
+    if(!a)return null;
+    if(a.kind==='data.table')return {id:a.id,kind:a.kind,name:a.name,rows:a.rowCount,columns:a.columns.length,provenance:a.provenance?.length||0};
+    if(a.kind==='data.series'||a.kind==='data.sweep')return {id:a.id,kind:a.kind,name:a.name,length:a.length,provenance:a.provenance?.length||0};
+    return {id:a.id,kind:a.kind,name:a.name,provenance:a.provenance?.length||0};
+  }
+
+  function rehydrateArtifact(artifact){
+    if(!artifact||typeof artifact!=='object')return artifact;
+    if(artifact.kind==='data.table')return createTable({...artifact,columns:safeArray(artifact.columns).map(c=>({...c,values:safeArray(c.values).map(v=>v===null?NaN:v)}))});
+    if(artifact.kind==='data.series')return createSeries({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v)});
+    if(artifact.kind==='data.sweep')return createSweep({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v)});
+    return deepClone(artifact);
+  }
+
+  function createStore(initial=[]){
+    const map=new Map();
+    const listeners=new Set();
+    function emit(type,artifact){ for(const fn of listeners){try{fn({type,artifact});}catch(err){console.error(err);}} }
+    const api={
+      version:STORE_VERSION,
+      add(artifact,{replace=false}={}){
+        const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));
+        const existed=map.has(hydrated.id);if(existed&&!replace)throw new Error(`Artifact already exists: ${hydrated.id}`);
+        map.set(hydrated.id,deepClone(hydrated));emit(existed?'upsert':'add',hydrated);return hydrated.id;
+      },
+      upsert(artifact){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));map.set(hydrated.id,deepClone(hydrated));emit('upsert',hydrated);return hydrated.id;},
+      get(id){const a=map.get(String(id));return a?deepClone(a):null;},
+      getMutable(id){return map.get(String(id))||null;},
+      has(id){return map.has(String(id));},
+      list({kind=null,includeTransient=true}={}){return [...map.values()].filter(a=>(!kind||a.kind===kind)&&(includeTransient||!a.transient)).map(deepClone);},
+      remove(id){const a=map.get(String(id));const ok=map.delete(String(id));if(ok)emit('remove',a);return ok;},
+      clear({includeTransient=true}={}){for(const [id,a] of [...map])if(includeTransient||!a.transient){map.delete(id);emit('remove',a);}},
+      onChange(fn){listeners.add(fn);return()=>listeners.delete(fn);},
+      size(){return map.size;}
+    };
+    for(const a of safeArray(initial))api.upsert(a);
+    return api;
+  }
+
+  function serializeStore(store,{includeTransient=false}={}){
+    const artifacts=store?.list?store.list({includeTransient}):safeArray(store?.artifacts).filter(a=>includeTransient||!a.transient);
+    return {schema:STORE_VERSION,artifacts:artifacts.map(deepClone)};
+  }
+  function restoreStore(data){ return createStore(safeArray(data?.artifacts)); }
+
+  window.DKDSData={
+    ARTIFACT_VERSION,STORE_VERSION,nowIso,deepClone,hashString,makeId,stableId,
+    provenanceStep,createTable,createSeries,createSweep,createEventSeries,createPeakSet,
+    createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
+    column,columnValues,rows,withProvenance,derive,fromLegacyDataset,summarize,
+    rehydrateArtifact,createStore,serializeStore,restoreStore
+  };
+})();

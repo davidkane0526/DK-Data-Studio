@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DK Data Studio</title>
+  <link rel="icon" href="../assets/dkds-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="topbar-primary">
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.23.0</span></div>
+
+        <div class="global-commandbar" aria-label="全局命令">
+          <div class="toolbar-group file-command-group" title="工程与数据">
+            <button id="openBtn" class="toolbar-btn strong" title="打开数据导入工作台">导入数据</button>
+            <button id="openProjectBtn" class="toolbar-btn" title="读取项目 · Ctrl+O">读取项目</button>
+            <button id="saveProjectBtn" class="toolbar-btn" title="保存项目 · Ctrl+S">保存项目</button>
+          </div>
+          <div class="menu-anchor compact-menu-anchor">
+            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑操作 ▾</button>
+            <div id="editMenu" class="command-menu hidden">
+              <button id="undoBtn" type="button"><span>撤销操作</span><kbd>Ctrl+Z</kbd></button>
+              <button id="deselectBtn" type="button"><span>退出选中</span><kbd>Esc</kbd></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="workspace-commandbar" aria-label="插件工作区与命令">
+          <div class="primary-activity-cluster">
+            <nav id="primaryActivityBar" class="activity-bar primary-activity-bar" aria-label="主工作区"></nav>
+            <div class="context-commandbar" aria-label="当前工作区命令">
+              <span id="activityContextTitle" class="sr-only">工作区</span>
+              <div id="pluginToolbarAnalysis" class="plugin-context-toolbar" data-plugin-toolbar="analysis"></div>
+              <div class="context-overflow-anchor">
+                <button id="contextOverflowBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多功能 ▾</button>
+                <div id="contextOverflowMenu" class="command-menu context-overflow-menu hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="activity-switcher">
+            <nav id="activityBar" class="activity-bar" aria-label="扩展工作区"></nav>
+            <div class="activity-more-anchor">
+              <button id="activityMoreBtn" class="toolbar-btn hidden" type="button" aria-haspopup="true" aria-expanded="false">更多工作区 ▾</button>
+              <div id="activityMoreMenu" class="command-menu activity-more-menu hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="system-commandbar">
+          <div class="menu-anchor">
+            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出数据 ▾</button>
+            <div id="exportMenu" class="command-menu hidden">
+              <button id="exportMainSvgBtn" type="button">主图 SVG</button>
+              <button id="exportMainPngBtn" type="button">主图 PNG</button>
+              <button id="exportMainCsvBtn" type="button">主图数据 CSV</button>
+              <button id="copyMainCsvBtn" class="copy-btn" type="button">复制主图数据</button>
+              <div class="command-menu-separator"></div>
+              <div id="pluginExportMenu" data-plugin-menu="export"></div>
+            </div>
+          </div>
+          <div class="menu-anchor">
+            <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
+            <div id="manageMenu" class="command-menu hidden">
+              <button id="pluginManagerBtn" type="button">插件管理</button>
+              <button id="lanWebBtn" type="button">局域网网页版</button>
+              <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="project-tabs-bar">
+      <div id="projectTabs" class="project-tabs"></div>
+      <button id="newProjectTabBtn" class="new-project-tab" title="新建独立项目标签页 (Ctrl+N)">＋</button>
+    </div>
+
+    <div id="superWorkspaceDivider" class="super-workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整 SUPER 左右工作区宽度" tabindex="0"></div>
+
+    <div class="workspace">
+      <aside class="left-panel">
+        <div id="pluginSidebarSections" class="plugin-sidebar-sections" data-plugin-sidebar></div>
+      </aside>
+
+      <main class="main-area">
+        <div id="mainWorkspace" class="main-workspace">
+        <div id="mainPlotWrap" class="plot-wrap">
+          <div class="main-plot-header">
+          <div class="main-plot-tools" id="mainPlotTools">
+            <div id="pluginMainPlotTools" class="plugin-main-tools" data-plugin-main-tools></div>
+          </div>
+          <div id="mainLegendBar" class="main-legend-bar" title="当前工作区图例；内容和交互由主图插件提供"></div>
+          </div>
+          <svg id="mainPlot"></svg>
+          <div id="selectionActionMenu" class="range-action-menu hidden" aria-live="polite"></div>
+          <div id="hoverTip" class="hover-tip hidden"></div>
+        </div>
+        <div id="inspectorDockSlot" class="inspector-dock-slot"></div>
+        <div id="primeRightDockSlot" class="prime-right-dock-slot" data-prime-dock="right" aria-label="PRIME 右侧停靠区"></div>
+        </div>
+        <div id="dockedGroupSlot" class="docked-group-slot"></div>
+        <div id="primeBottomDockSlot" class="prime-bottom-dock-slot" data-prime-dock="bottom" aria-label="PRIME 底部停靠区"></div>
+        <div id="statusBar" class="statusbar">未加载数据</div>
+      </main>
+    </div>
+
+
+
+
+    <section id="superWorkspaceEmpty" class="analysis-page hidden core-analysis-page super-empty-page">
+      <div class="super-empty-card">
+        <div class="super-empty-icon">⌂</div>
+        <h2>尚未指定主界面</h2>
+        <p>请选择一个已启用且完成 TOP 工作区契约的插件作为 SUPER。DK Data Studio 不会在插件停用后自动猜测新的主界面。</p>
+        <button id="superEmptyOpenManagerBtn" class="primary" type="button">打开插件管理</button>
+      </div>
+    </section>
+
+    <section id="pluginManagerPage" class="analysis-page hidden core-analysis-page">
+      <div class="analysis-page-header plugin-manager-header">
+        <div>
+          <h2>插件管理</h2>
+          <div class="analysis-subtitle">启用、停用、重新加载和诊断插件。插件开关属于本机全局设置，不随工程切换。</div>
+        </div>
+        <div class="plugin-manager-header-actions">
+          <button id="pluginManagerDiagnosticsBtn">复制诊断</button>
+          <button id="pluginManagerResetBtn">恢复默认</button>
+          <button class="analysis-page-close" data-analysis-target="pluginManagerPage">返回主图</button>
+        </div>
+      </div>
+      <div class="analysis-page-body plugin-manager-body">
+        <div id="pluginManagerSummary" class="plugin-manager-summary"></div>
+        <div class="plugin-manager-toolbar-card">
+          <div class="plugin-manager-search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="pluginManagerSearch" type="search" placeholder="搜索插件名称、ID、能力…" autocomplete="off">
+          </div>
+          <label>状态
+            <select id="pluginManagerFilter">
+              <option value="all">全部</option>
+              <option value="active">已启用</option>
+              <option value="disabled">已停用</option>
+              <option value="error">错误</option>
+            </select>
+          </label>
+          <span id="pluginManagerVisibleCount" class="plugin-manager-visible-count">显示 0 / 0</span>
+          <button id="pluginManagerInstallBtn" class="primary">安装插件</button>
+          <button id="pluginManagerOpenFolderBtn">插件目录</button>
+          <button id="pluginManagerRefreshBtn">刷新</button>
+        </div>
+        <div id="pluginManagerNote" class="plugin-manager-note">
+          停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。
+        </div>
+        <div id="pluginManagerList" class="plugin-manager-list"></div>
+      </div>
+    </section>
+
+
+
+
+
+
+
+    <div id="importPanel" class="import-panel-overlay hidden">
+      <div class="import-workbench">
+        <div class="import-workbench-header">
+          <div>
+            <h2>数据导入工作台</h2>
+            <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
+          </div>
+          <div class="import-header-actions">
+            <button id="importChooseFilesBtn" class="primary">导入文件</button>
+            <button id="importCloseBtn">关闭</button>
+          </div>
+        </div>
+
+        <div class="import-workbench-body">
+          <aside class="import-file-pane">
+            <div class="import-pane-title">待导入文件</div>
+            <div id="importFileList" class="import-file-list"></div>
+            <div class="import-file-actions">
+              <button id="importCheckAllBtn">全选</button>
+              <button id="importUncheckAllBtn">全不选</button>
+              <button id="importRemoveBtn">移除</button>
+            </div>
+          </aside>
+
+          <main class="import-main-pane">
+            <div id="importNoFile" class="import-empty">
+              点击“导入文件”添加 CSV / TXT / DAT / TSV / ASC / XY / IV 数据。
+            </div>
+
+            <div id="importEditor" class="hidden">
+              <div class="import-section import-basic-grid">
+                <label>编码
+                  <select id="importEncoding">
+                    <option value="auto">自动</option>
+                    <option value="utf-8">UTF-8</option>
+                    <option value="gb18030">GB18030 / GBK</option>
+                    <option value="big5">Big5</option>
+                    <option value="shift_jis">Shift-JIS</option>
+                    <option value="utf-16le">UTF-16 LE</option>
+                    <option value="utf-16be">UTF-16 BE</option>
+                    <option value="windows-1252">Latin-1 / Windows-1252</option>
+                  </select>
+                </label>
+                <label>跳过前 N 行
+                  <input id="importSkipRows" type="number" min="0" step="1" value="0">
+                </label>
+                <label>结束行
+                  <input id="importEndRow" type="number" min="0" step="1" value="0" title="0 = 读到文件末尾">
+                </label>
+                <label>分隔符
+                  <select id="importDelimiter">
+                    <option value="auto">自动</option>
+                    <option value="comma">逗号 ,</option>
+                    <option value="tab">Tab</option>
+                    <option value="semicolon">分号 ;</option>
+                    <option value="whitespace">空格 / 连续空白</option>
+                    <option value="pipe">竖线 |</option>
+                  </select>
+                </label>
+                <label>表头
+                  <select id="importHeaderMode">
+                    <option value="auto">自动识别</option>
+                    <option value="first">跳行后的第一行</option>
+                    <option value="none">无表头</option>
+                  </select>
+                </label>
+                <label>小数格式
+                  <select id="importDecimal">
+                    <option value="auto">自动</option>
+                    <option value="dot">小数点 .</option>
+                    <option value="comma">小数逗号 ,</option>
+                  </select>
+                </label>
+                <label>注释前缀
+                  <input id="importCommentPrefix" type="text" value="auto" placeholder="auto / # / % / //">
+                </label>
+                <label>数据排列
+                  <select id="importLayout">
+                    <option value="auto">自动识别</option>
+                    <option value="single">单组 V / I</option>
+                    <option value="sharedX">共享一个 V + 多个 I</option>
+                    <option value="paired">V1/I1, V2/I2… 成对列</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="import-section">
+                <div class="import-section-head">
+                  <strong>列映射</strong>
+                  <span id="importAutoDiagnosis" class="import-diagnosis"></span>
+                </div>
+                <div class="import-mapping-grid">
+                  <label>X / V 列
+                    <select id="importXCol"></select>
+                  </label>
+                  <label id="importYSingleWrap">Y / I 列
+                    <select id="importYCol"></select>
+                  </label>
+                  <label id="importPairStartWrap" class="hidden">成对起始列
+                    <select id="importPairStart"></select>
+                  </label>
+                  <label>V 单位
+                    <select id="importVoltageUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="V">V</option>
+                      <option value="mV">mV</option>
+                      <option value="uV">µV</option>
+                    </select>
+                  </label>
+                  <label>I 单位
+                    <select id="importCurrentUnit">
+                      <option value="auto">自动看表头</option>
+                      <option value="A">A</option>
+                      <option value="mA">mA</option>
+                      <option value="uA">µA</option>
+                      <option value="nA">nA</option>
+                      <option value="pA">pA</option>
+                    </select>
+                  </label>
+                  <label>Vg 来源
+                    <select id="importVgMode">
+                      <option value="auto">自动：优先列标题</option>
+                      <option value="header">列标题</option>
+                      <option value="filename">文件名 / 文件头</option>
+                      <option value="manual">手动</option>
+                    </select>
+                  </label>
+                  <label id="importManualVgWrap" class="hidden">手动 Vg (V)
+                    <input id="importManualVg" type="number" step="any">
+                  </label>
+                </div>
+
+                <div id="importYMultiWrap" class="import-y-multi hidden">
+                  <div class="import-y-multi-head">
+                    <span>选择要导入的 I 列</span>
+                    <button id="importYAllBtn">全部数值列</button>
+                    <button id="importYNoneBtn">清空</button>
+                  </div>
+                  <div id="importYColumns" class="import-y-columns"></div>
+                </div>
+
+                <div class="import-series-vg">
+                  <div class="import-y-multi-head">
+                    <span>每组数据的 Vg</span>
+                    <span class="import-series-vg-hint">留空 = 按当前 Vg 来源自动识别；填写后优先使用该值</span>
+                  </div>
+                  <div id="importSeriesVgRows" class="import-series-vg-rows"></div>
+                </div>
+              </div>
+
+              <div class="import-section import-preview-section">
+                <div class="import-section-head">
+                  <strong>解析预览</strong>
+                  <div class="import-preview-actions">
+                    <button id="importResetAutoBtn">恢复自动识别</button>
+                    <button id="importApplyAllBtn">当前设置应用到全部文件</button>
+                  </div>
+                </div>
+                <div id="importPreviewSummary" class="import-preview-summary"></div>
+                <div class="import-preview-table-wrap">
+                  <table id="importPreviewTable" class="import-preview-table"></table>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+
+        <div class="import-workbench-footer">
+          <div id="importGlobalSummary" class="import-global-summary">尚未选择文件</div>
+          <div class="import-footer-actions">
+            <button id="importCancelBtn">取消</button>
+            <button id="importCommitBtn" class="primary">导入勾选文件</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="lanWebPanel" class="floating-panel lan-web-panel hidden">
+      <div class="floating-header drag-handle">
+        <div class="lan-web-panel-title">
+          <span>局域网网页版</span>
+          <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
+        </div>
+        <button class="panel-close" data-target="lanWebPanel">×</button>
+      </div>
+
+      <div class="floating-body lan-web-body">
+        <div class="lan-web-grid">
+
+          <section class="lan-web-section lan-web-control-section">
+            <div class="lan-web-status-card">
+              <div class="lan-web-status-row">
+                <span id="lanWebStatusDot" class="lan-web-dot"></span>
+                <div>
+                  <strong id="lanWebStatusTitle">未启动</strong>
+                  <div id="lanWebStatusText" class="lan-web-status-text">
+                    启动后，同一局域网中的设备可直接用浏览器运行完整分析界面。
+                  </div>
+                </div>
+              </div>
+              <div class="lan-web-session-count">
+                已配对会话 <strong id="lanWebClientCount">0</strong>
+              </div>
+            </div>
+
+            <div class="lan-web-settings-card">
+              <div class="lan-web-section-title">服务设置</div>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>开启局域网网页版</strong>
+                  <small>保存设置后，下次启动软件继续保持</small>
+                </span>
+                <input id="lanWebEnabled" type="checkbox">
+              </label>
+
+              <label class="lan-web-switch-row">
+                <span>
+                  <strong>免 Key 访问</strong>
+                  <small>仅建议在可信实验室 / 办公室局域网中使用</small>
+                </span>
+                <input id="lanWebNoKey" type="checkbox">
+              </label>
+
+              <div class="lan-web-port-row">
+                <div>
+                  <strong>服务端口</strong>
+                  <small>修改端口后会自动重启网页版服务</small>
+                </div>
+                <input id="lanWebPort" type="number" min="1024" max="65535" value="45910">
+              </div>
+
+              <div class="lan-web-key-card">
+                <div>
+                  <span>当前 4 位配对 Key</span>
+                  <small id="lanWebKeyHint">扫码二维码可自动携带 Key；手动输入地址时使用此 Key。</small>
+                </div>
+                <strong id="lanWebKey">----</strong>
+                <button id="lanWebNewKeyBtn">换一个 Key</button>
+              </div>
+
+              <div class="lan-web-actions">
+                <button id="lanWebApplyBtn" class="primary">应用设置</button>
+                <button id="lanWebStopBtn">停止服务</button>
+              </div>
+            </div>
+
+            <div class="lan-web-address-card">
+              <div class="lan-web-section-title-row">
+                <div>
+                  <div class="lan-web-section-title">可用局域网地址</div>
+                  <small>多网卡时选择与你同学处于同一网络的地址。</small>
+                </div>
+                <button id="lanWebCopyBaseUrlBtn">复制地址</button>
+              </div>
+              <div id="lanWebUrls" class="lan-web-urls">
+                <div class="lan-web-empty-address">服务启动后显示</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="lan-web-section lan-web-share-section">
+            <div class="lan-web-share-heading">
+              <div>
+                <div class="lan-web-section-title">扫码连接</div>
+                <small id="lanWebQrHint">启动服务后自动生成二维码。</small>
+              </div>
+              <span id="lanWebQrModeBadge" class="lan-web-mode-badge">等待服务</span>
+            </div>
+
+            <div class="lan-web-qr-frame">
+              <div id="lanWebQrPlaceholder" class="lan-web-qr-placeholder">
+                <span>QR</span>
+                <small>服务启动后显示</small>
+              </div>
+              <img id="lanWebQrImage" class="lan-web-qr-image hidden" alt="DK Data Studio LAN web QR code">
+            </div>
+
+            <div class="lan-web-share-url-card">
+              <div class="lan-web-share-url-label">当前连接地址</div>
+              <code id="lanWebSelectedUrl">—</code>
+            </div>
+
+            <div class="lan-web-share-actions">
+              <button id="lanWebCopyShareLinkBtn" class="primary">复制扫码链接</button>
+              <button id="lanWebRefreshQrBtn">刷新二维码</button>
+            </div>
+
+            <div class="lan-web-share-note">
+              <strong>扫码逻辑</strong>
+              <span id="lanWebQrSecurityText">
+                启用 Key 时，二维码会把本次 4 位 Key 一并带入链接，扫码后自动配对；Key 更新后旧二维码立即失效。
+              </span>
+            </div>
+
+            <div class="lan-web-capabilities">
+              <span>数据导入</span><span>寻峰</span><span>TER</span><span>组图</span>
+              <span>脉冲分析</span><span>工程保存</span><span>CSV / 图形导出</span>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="updatePanel" class="floating-panel update-panel hidden">
+      <div class="floating-header drag-handle">
+        <span>局域网热更新</span>
+        <div class="panel-header-actions">
+          <button class="panel-close" data-target="updatePanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body update-panel-body">
+        <div class="update-status-card">
+          <div class="update-status-line">
+            <span id="updatePhaseDot" class="update-phase-dot idle"></span>
+            <strong id="updateStatusTitle">等待更新服务</strong>
+          </div>
+          <div id="updateStatusMessage" class="update-status-message">正在读取更新状态…</div>
+          <div class="update-progress-wrap">
+            <div class="update-progress-track"><div id="updateProgressBar" class="update-progress-bar"></div></div>
+            <span id="updateProgressText">0%</span>
+          </div>
+        </div>
+
+        <div class="update-info-grid">
+          <div>当前版本</div><div id="updateCurrentVersion">—</div>
+          <div>可用版本</div><div id="updateAvailableVersion">—</div>
+          <div>服务器</div><div id="updateServerDisplay">尚未发现</div>
+          <div>完整性</div><div id="updateIntegrityState">SHA512 下载校验</div>
+          <div>模式</div><div id="updateRuntimeMode">—</div>
+          <div>上次检查</div><div id="updateLastCheck">—</div>
+        </div>
+
+        <div class="update-actions">
+          <button id="updateCheckNowBtn" class="primary">立即检查</button>
+          <button id="updateDownloadBtn" class="hidden">开始下载</button>
+          <button id="updateInstallBtn" class="success hidden">保存工程并重启安装</button>
+        </div>
+
+        <details class="update-settings-details">
+          <summary>服务器设置</summary>
+          <div class="update-settings-body">
+            <label>手动服务器地址
+              <input id="updateServerUrlInput" type="text" placeholder="留空 = 自动发现，例如 http://192.168.1.10:45880">
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDiscover" type="checkbox" checked>
+              自动发现局域网服务器（multicast）
+            </label>
+            <label class="inline-check">
+              <input id="updateAutoDownload" type="checkbox" checked>
+              验证通过后自动下载
+            </label>
+            <button id="updateSaveSettingsBtn">保存更新设置</button>
+          </div>
+        </details>
+
+        <div class="update-security-note">
+          当前采用“可信局域网简化模式”：无需任何密钥。客户端从你指定/自动发现的局域网服务器读取
+          latest.yml，并由 electron-updater 使用其中的 SHA512 校验下载安装包完整性。
+          请只连接你信任的实验室或办公室局域网服务器。
+        </div>
+      </div>
+    </div>
+
+    <div id="inspectorPanel" class="floating-panel inspector-panel" data-generic-panel="inspector">
+      <div id="inspectorDockResizer" class="inspector-dock-resizer" title="拖动调整右侧检查器宽度"></div>
+      <div class="floating-header drag-handle">
+        <span id="inspectorPanelHeaderTitle">检查器</span>
+        <div class="panel-header-actions">
+          <button id="inspectorDockBtn" type="button" title="在悬浮与主图右侧停靠之间切换">停靠右侧</button>
+          <button class="panel-close" data-target="inspectorPanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body" id="inspectorBody">
+        <div class="empty-state">点击曲线或峰位点查看详细信息</div>
+      </div>
+    </div>
+
+    <div id="groupPanel" class="floating-panel group-panel" data-generic-panel="group">
+      <div id="groupDockResizer" class="dock-resizer" title="拖动调整底部组图高度"></div>
+      <div class="floating-header drag-handle">
+        <span id="groupPanelHeaderTitle">组图</span>
+        <div class="panel-header-actions">
+          <button id="groupDockBtn" type="button" title="将组图停靠到主图下方">停靠底部</button>
+          <button id="groupMinimizeBtn" type="button" title="缩小/展开组图">缩小</button>
+          <button class="panel-close" data-target="groupPanel">×</button>
+        </div>
+      </div>
+      <div class="floating-body">
+        <div class="group-panel-toolbar">
+          <div class="group-panel-title-wrap">
+            <span id="groupPanelTitle">未选择</span>
+            <span class="group-panel-hint">双击任意小图放大</span>
+          </div>
+          <div class="trend-layout-controls" title="设置每行子图数量；自动模式会优先使用整齐排布">
+            <span>每行</span>
+            <button type="button" data-trend-cols="auto">自动</button>
+            <button type="button" data-trend-cols="1">1</button>
+            <button type="button" data-trend-cols="2">2</button>
+            <button type="button" data-trend-cols="3" class="active">3</button>
+            <button type="button" data-trend-cols="4">4</button>
+            <button type="button" data-trend-cols="5">5</button>
+            <button type="button" data-trend-cols="6">6</button>
+          </div>
+        </div>
+        <div id="trendGrid" class="trend-grid"></div>
+      </div>
+    </div>
+
+    <div id="zoomPanel" class="floating-panel zoom-panel hidden">
+      <div class="floating-header drag-handle">
+        <span id="zoomPanelTitle">放大图</span>
+        <button class="panel-close" data-target="zoomPanel">×</button>
+      </div>
+      <div class="floating-body zoom-body">
+        <div id="zoomPlot" class="zoom-plot"></div>
+        <div class="zoom-actions">
+          <button id="zoomExportSvg">导出 SVG</button>
+          <button id="zoomExportCsv">导出数据</button>
+          <button id="zoomCopyCsv" class="copy-btn">复制数据</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../node_modules/d3/dist/d3.min.js"></script>
+  <script src="../node_modules/plotly.js-dist-min/plotly.min.js"></script>
+  <script src="web-bridge.js"></script>
+  <script src="science/common.js"></script>
+  <script src="science/presets.js"></script>
+  <script src="science/import.js"></script>
+  <script src="science/peaks.js"></script>
+  <script src="science/pulse.js"></script>
+  <script src="science/ter.js"></script>
+  <script src="science/identity.js"></script>
+  <script src="science/physics.js"></script>
+  <script src="science/gate.js"></script>
+  <script src="analysis.js"></script>
+  <script src="core/data-model.js"></script>
+  <script src="core/formula-engine.js"></script>
+  <script src="core/parameter-schema.js"></script>
+  <script src="core/workflow-engine.js"></script>
+  <script src="core/platform.js"></script>
+  <script src="core/plugin-kernel.js"></script>
+  <script src="core/plugin-manager-ui.js"></script>
+  <script src="plugins/plugin-index.generated.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

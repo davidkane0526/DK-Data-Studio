@@ -1,0 +1,49 @@
+{
+  "id": "builtin.data-center",
+  "name": "Data Center",
+  "version": "1.0.0",
+  "apiVersion": "1.3.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 20,
+  "description": "Unified artifact store, formula/workflow pipeline, provenance explorer and extensible chart workspace.",
+  "capabilities": [
+    "ui.activity",
+    "ui.page",
+    "data.artifacts",
+    "data.formula",
+    "workflow.processor",
+    "workflow.analyzer",
+    "workflow.recipe",
+    "chart.provider",
+    "project.slice",
+    "ui.top-workspace"
+  ],
+  "source": "builtin",
+  "window": {
+    "activity": "data-center",
+    "title": "数据中心",
+    "width": 1480,
+    "height": 940,
+    "minWidth": 920,
+    "minHeight": 650,
+    "dependencies": [
+      "plotly",
+      "data-model",
+      "formula-engine",
+      "parameter-schema",
+      "workflow-engine",
+      "platform",
+      "plugin-kernel"
+    ],
+    "prewarm": true,
+    "reuse": true,
+    "persistence": "project"
+  },
+  "workspace": {
+    "role": "top",
+    "activity": "data-center",
+    "icon": "▦",
+    "title": "数据中心"
+  }
+}

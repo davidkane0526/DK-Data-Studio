@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "enabled": true,
+  "autoDiscover": true,
+  "autoDownload": true,
+  "checkIntervalMinutes": 30,
+  "serverUrl": "",
+  "multicastGroup": "239.255.42.99",
+  "multicastPort": 45881,
+  "wsPath": "/push",
+  "releaseBasePath": "/releases"
+}

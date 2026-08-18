@@ -1,0 +1,14 @@
+{
+  "id": "builtin.flexible-import",
+  "name": "Flexible Text Import",
+  "version": "1.0.0",
+  "apiVersion": "1.0.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 10,
+  "description": "Generic text/multicolumn import provider used by the import workbench.",
+  "capabilities": [
+    "data.importer",
+    "data.inspector"
+  ]
+}

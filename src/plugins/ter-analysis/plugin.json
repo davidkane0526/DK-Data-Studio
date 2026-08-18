@@ -1,0 +1,42 @@
+{
+  "id": "builtin.ter-analysis",
+  "name": "TER Analysis",
+  "version": "2.0.0",
+  "apiVersion": "1.3.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 120,
+  "description": "Same-Vd TER matrix and extrema workspace with plugin-owned UI.",
+  "capabilities": [
+    "ui.activity",
+    "ui.page",
+    "analysis.ter",
+    "chart.heatmap",
+    "ui.top-workspace"
+  ],
+  "window": {
+    "activity": "ter",
+    "runtime": "window-runtime.js",
+    "title": "TER 分析",
+    "width": 1480,
+    "height": 940,
+    "minWidth": 920,
+    "minHeight": 650,
+    "dependencies": [
+      "plotly",
+      "science-common",
+      "science-ter",
+      "platform",
+      "plugin-kernel"
+    ],
+    "prewarm": true,
+    "reuse": true,
+    "persistence": "project"
+  },
+  "workspace": {
+    "role": "top",
+    "activity": "ter",
+    "icon": "▧",
+    "title": "TER 分析"
+  }
+}

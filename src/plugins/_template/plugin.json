@@ -1,0 +1,14 @@
+{
+  "id": "example.plugin",
+  "name": "Example Plugin",
+  "version": "0.1.0",
+  "apiVersion": "1.1.0",
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 900,
+  "description": "Copy this folder when creating a new plugin. Prefer standard Data Model / Workflow providers.",
+  "capabilities": [
+    "ui.page",
+    "workflow.processor"
+  ]
+}

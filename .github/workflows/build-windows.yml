@@ -1,0 +1,263 @@
+name: Build Windows
+
+on:
+  push:
+    branches:
+      - plugin
+    paths:
+      - '.github/workflows/build-windows.yml'
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'package.json'
+      - 'src/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'tools/windows/**'
+      - 'services/update-server/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'main.js'
+      - 'plugin-window-manager.js'
+      - 'preload.js'
+      - 'plugin-package.js'
+      - 'update-client.js'
+      - 'lan-web-server.js'
+      - 'windows-network-discovery.js'
+      - 'package.json'
+      - 'src/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'tools/windows/**'
+      - 'services/update-server/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Ensure main baseline ref
+        shell: pwsh
+        run: |
+          if (-not (git show-ref --verify --quiet refs/heads/main)) {
+            git branch main origin/main
+          }
+          git rev-parse main
+
+      - name: Create clean project package
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP "DK-Data-Studio-Project-${{ github.sha }}.zip"
+          & ".\tools\windows\package-clean-project.ps1" -SourceRoot $PWD -OutputPath $zip
+          $stage = Join-Path $PWD 'artifact-project'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -LiteralPath $zip -Destination $stage
+          if (-not (Test-Path -LiteralPath (Join-Path $stage (Split-Path $zip -Leaf)))) {
+            throw 'Clean project ZIP staging failed.'
+          }
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Show tool versions
+        shell: pwsh
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+
+      - name: Run project checks
+        shell: pwsh
+        run: npm run check
+
+      - name: Set unique CI build version
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $parts = [string]$pkg.version -split '\.'
+          if ($parts.Count -lt 2) { throw "Invalid package version: $($pkg.version)" }
+          $ciVersion = "$($parts[0]).$($parts[1]).${{ github.run_number }}"
+          npm version $ciVersion --no-git-tag-version --allow-same-version
+          "DKDS_BUILD_VERSION=$ciVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "CI build version: $ciVersion"
+
+      - name: Build Windows installer and portable app
+        shell: pwsh
+        run: npm run dist
+
+      - name: Stage Windows artifacts
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact-windows'
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+
+          $executables = @(Get-ChildItem -Path dist -File -Filter '*.exe')
+          if ($executables.Count -eq 0) { throw 'No Windows EXE files found in dist.' }
+          $setup = $executables | Where-Object { $_.Name -match '(?i)setup' } | Select-Object -First 1
+          if (-not $setup) { throw 'Setup EXE not found in dist.' }
+          $portable = $executables | Where-Object { $_.Name -match '(?i)portable' } | Select-Object -First 1
+          if (-not $portable) { throw 'Portable EXE not found in dist.' }
+          $executables | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $stage }
+
+          $latest = Join-Path $PWD 'dist\latest.yml'
+          if (-not (Test-Path -LiteralPath $latest)) { throw 'latest.yml not found in dist.' }
+          Copy-Item -LiteralPath $latest -Destination $stage
+
+          Get-ChildItem -Path dist -File -Filter '*.blockmap' | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $stage
+          }
+
+          $unpacked = Join-Path $PWD 'dist\win-unpacked'
+          if (-not (Test-Path -LiteralPath $unpacked -PathType Container)) { throw 'win-unpacked not found in dist.' }
+          Copy-Item -LiteralPath $unpacked -Destination (Join-Path $stage 'win-unpacked') -Recurse
+
+          Copy-Item -LiteralPath 'tools\windows\publish-artifact-to-lan.ps1' -Destination (Join-Path $stage 'publish-to-lan.ps1')
+
+          $serverStage = Join-Path $stage 'update-server'
+          New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
+          Copy-Item -LiteralPath 'services\update-server\server.js' -Destination $serverStage
+          Copy-Item -LiteralPath 'services\update-server\config.json' -Destination $serverStage
+          $serverNodeModules = Join-Path $serverStage 'node_modules'
+          New-Item -ItemType Directory -Path $serverNodeModules -Force | Out-Null
+          if (-not (Test-Path -LiteralPath 'node_modules\ws\package.json' -PathType Leaf)) {
+            throw 'ws dependency is missing after npm install; cannot create self-contained LAN update server.'
+          }
+          Copy-Item -LiteralPath 'node_modules\ws' -Destination (Join-Path $serverNodeModules 'ws') -Recurse
+
+          $runtimeExe = Join-Path $stage 'win-unpacked\DK Data Studio.exe'
+          if (-not (Test-Path -LiteralPath $runtimeExe -PathType Leaf)) {
+            throw 'Bundled Electron runtime not found: artifact-windows\win-unpacked\DK Data Studio.exe'
+          }
+          foreach ($required in @(
+            (Join-Path $serverStage 'server.js'),
+            (Join-Path $serverStage 'config.json'),
+            (Join-Path $serverStage 'node_modules\ws\package.json')
+          )) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+              throw "Self-contained LAN update server is incomplete: $required"
+            }
+          }
+
+          $cmd = @'
+          @echo off
+          setlocal
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0publish-to-lan.ps1"
+          set "code=%errorlevel%"
+          echo.
+          if "%code%"=="0" (
+            echo LAN publish completed.
+          ) else (
+            echo LAN publish failed. Exit code: %code%
+          )
+          pause
+          exit /b %code%
+          '@
+          $cmdPath = Join-Path $stage '局域网发布.cmd'
+          [System.IO.File]::WriteAllText($cmdPath, $cmd.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+
+          $cmdText = Get-Content -LiteralPath $cmdPath -Raw
+          if ($cmdText -match '-ArtifactRoot') {
+            throw 'Generated LAN publish launcher must rely on publish-to-lan.ps1 $PSScriptRoot and must not pass %~dp0 as ArtifactRoot.'
+          }
+
+          Write-Host 'Staged files:'
+          Get-ChildItem -Path $stage -Recurse | Select-Object FullName, Length
+
+      - name: Smoke-test bundled LAN update server
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD 'artifact-windows'
+          $runtime = Join-Path $stage 'win-unpacked\DK Data Studio.exe'
+          $serverDir = Join-Path $stage 'update-server'
+          $serverScript = Join-Path $serverDir 'server.js'
+          $healthUri = 'http://127.0.0.1:45880/health'
+
+          $hadElectronRunAsNode = Test-Path Env:ELECTRON_RUN_AS_NODE
+          $previousElectronRunAsNode = $env:ELECTRON_RUN_AS_NODE
+          $process = $null
+          try {
+            $env:ELECTRON_RUN_AS_NODE = '1'
+            $process = Start-Process -FilePath $runtime `
+              -ArgumentList ('"' + $serverScript + '"') `
+              -WorkingDirectory $serverDir `
+              -PassThru
+          } finally {
+            if ($hadElectronRunAsNode) {
+              $env:ELECTRON_RUN_AS_NODE = $previousElectronRunAsNode
+            } else {
+              Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+            }
+          }
+
+          try {
+            $health = $null
+            for ($attempt = 1; $attempt -le 30; $attempt++) {
+              Start-Sleep -Milliseconds 500
+              try {
+                $candidate = Invoke-RestMethod -Method Get -Uri $healthUri -TimeoutSec 2
+                if ($candidate.ok -and $candidate.localPublishApi) {
+                  $health = $candidate
+                  break
+                }
+              } catch {}
+            }
+            if (-not $health) {
+              $logPath = Join-Path $serverDir 'server.log'
+              if (Test-Path -LiteralPath $logPath) { Get-Content -LiteralPath $logPath -Tail 30 }
+              throw 'Bundled LAN update server failed its /health smoke test.'
+            }
+            Write-Host "Bundled LAN update server ready: $($health.serverName)"
+          } finally {
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            Remove-Item -LiteralPath (Join-Path $serverDir 'server.log') -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath (Join-Path $serverDir 'server.log.1') -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath (Join-Path $serverDir 'storage') -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Windows-${{ github.sha }}
+          path: artifact-windows/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload clean project package
+        uses: actions/upload-artifact@v7
+        with:
+          name: DK-Data-Studio-Project-${{ github.sha }}
+          path: artifact-project/*.zip
+          if-no-files-found: error
+          retention-days: 30

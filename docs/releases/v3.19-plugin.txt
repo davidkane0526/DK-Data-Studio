@@ -1,0 +1,17 @@
+DK Data Studio 3.19.0-plugin.1
+Branch: plugin
+
+- Plugin-native workspace shell: global commands, Activity switcher, context toolbar and automatic overflow.
+- Resonance data list, smart-peak controls, display controls, range menu, physics panel, spacing page and gate-analysis page are plugin-owned UI.
+- Main canvas, inspector, group view and each group subplot are resolved from plugin providers.
+- Mature robust resonance finder is now an independent detector plugin with its own presets, settings UI and evidence marker metadata.
+- Additional detector plugins can coexist; disabling all detectors no longer silently restores the built-in algorithm.
+- TER and Pulse analysis page markup/event bindings moved out of core HTML into their plugins.
+- Permanent manual-operation help block and drag/Ctrl-drag plot hint removed.
+- Added Workspace/UI Plugin API v1.2 documentation and automated plugin-boundary regression checks.
+- Context commands now support semantic groups and priority-aware overflow.
+- Desktop Plugin Manager can install/update/uninstall trusted `.dkplugin` packages; failed updates attempt transactional rollback to the previous package.
+- Added an external resonance detector SDK example proving stronger detector providers can be installed without editing the Resonance Workbench or core.
+- Existing peak/TER/scientific behavior remains regression-locked.
+
+This is the plugin development branch. The preserved main branch remains the v3.14 baseline.
