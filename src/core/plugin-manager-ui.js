@@ -203,15 +203,24 @@
   // position *after* our first repair frame.  Hold the manager at the top for
   // several animation frames after enable/disable/reload so a removed or
   // resized card can never leave the viewport parked below the real content.
-  function settleManagerAtTop(frames=8){
+  function resetManagerScrollChain(){
+    const page=$('#pluginManagerPage');
+    const scroller=pluginManagerScroller();
+    for(const el of [scroller,page,document.scrollingElement,document.documentElement,document.body]){
+      if(!el)continue;
+      try{el.scrollTop=0;el.scrollLeft=0;el.scrollTo?.({top:0,left:0,behavior:'auto'});}catch{}
+    }
+    clampManagerScroll(scroller);
+  }
+
+  function settleManagerAtTop(frames=12){
     const scroller=pluginManagerScroller();
     if(!scroller)return;
     let remaining=Math.max(1,Number(frames)||1);
     const step=()=>{
       if(!scroller.isConnected)return;
-      scroller.scrollTop=0;
-      scroller.scrollLeft=0;
-      clampManagerScroll(scroller);
+      resetManagerScrollChain();
+      state.host?.syncAnalysisPageViewport?.();
       if(--remaining>0)requestAnimationFrame(step);
     };
     step();
@@ -474,7 +483,15 @@
     // deterministic than preserving a stale card anchor across a lifecycle
     // transition and fixes the large blank lower viewport seen after disabling
     // or closing a plugin.
-    const renderAfterLifecycleChange=()=>renderList({scroll:'top'});
+    const renderAfterLifecycleChange=()=>{
+      const page=$('#pluginManagerPage');
+      if(page&&!page.classList.contains('hidden')){
+        resetManagerScrollChain();
+        state.host?.openAnalysisPage?.('pluginManagerPage');
+      }
+      renderList({scroll:'top'});
+      settleManagerAtTop();
+    };
     window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderAfterLifecycleChange);
     window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderAfterLifecycleChange);
     window.DKDSPlugins?.events?.on?.('plugins:ready',renderAfterLifecycleChange);

@@ -19,8 +19,10 @@ const manager=read('plugin-window-manager.js');
 const kernel=read('src/core/plugin-kernel.js');
 const app=read('src/app.js');
 const pulseRuntime=read('src/plugins/pulse-analysis/window-runtime.js');
+const pulseService=read('src/plugins/pulse-analysis/dedicated-service.js');
 const terRuntime=read('src/plugins/ter-analysis/window-runtime.js');
-const terPlugin=read('src/plugins/ter-analysis/plugin.js');
+const terService=read('src/plugins/ter-analysis/dedicated-service.js');
+const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const resonanceRuntime=read('src/plugins/resonance-workbench/window-runtime.js');
 const resonanceFeatureRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 
@@ -196,11 +198,11 @@ for(const marker of ['function renderInspection()','function renderGroup()','fun
 
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
 // results live in namespaced project slices and artifact deltas.
-assert(pulseRuntime.includes('result:item.result ? cloneSerializable(item.result) : null'),'Pulse window project slice must persist computed result payloads.');
-assert(pulseRuntime.includes('if(source.analyzed && !item.result)analyzeItem(item);'),'Pulse restore must recompute only legacy projects without cached results.');
-assert(terPlugin.includes("ctx.project.registerSlice('workspace'"),'TER must use the same namespaced project-slice contract as other independent plugins.');
-assert(terRuntime.includes('serialize:()=>({schema:1,settings:cloneSerializable(settings)'),'TER window must serialize its expensive result into the namespaced slice.');
-assert(terRuntime.includes('result=source.result?cloneSerializable(source.result):null'),'TER restore must reuse cached result payloads rather than recompute.');
+assert(pulseService.includes('result:item.result ? cloneSerializable(item.result) : null'),'Pulse window project slice must persist computed result payloads.');
+assert(pulseService.includes('if(source.analyzed && !item.result)analyzeItem(item);'),'Pulse restore must recompute only legacy projects without cached results.');
+assert(terFeature.includes("ctx.project.registerSlice('workspace'"),'TER must use the same namespaced project-slice contract as other independent plugins.');
+assert(terService.includes('serialize:()=>({schema:1,settings:cloneSerializable(settings)'),'TER window must serialize its expensive result into the namespaced slice.');
+assert(terService.includes('result=source.result?cloneSerializable(source.result):null'),'TER restore must reuse cached result payloads rather than recompute.');
 assert(app.includes('serialize:()=>({')&&app.includes('result:state.terMaxResult?cloneProjectCache(state.terMaxResult):null'),'main TER service must expose namespaced serialization for project files.');
 
 for(const rel of [

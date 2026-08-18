@@ -1,12 +1,12 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 140,
-  "description": "Pulse/read analysis with portable scientific plots and shared command/shortcut infrastructure.",
+  "description": "Pulse/read analysis using shared Controller/View/Feature runtime and core workbench infrastructure.",
   "capabilities": [
     "ui.activity",
     "ui.page",
@@ -38,12 +38,26 @@
     ],
     "prewarm": false,
     "reuse": true,
-    "persistence": "project"
+    "persistence": "project",
+    "scripts": [
+      "controller.js",
+      "shared-views.js",
+      "feature-runtime.js",
+      "dedicated-service.js",
+      "super-layout.js"
+    ]
   },
   "workspace": {
     "role": "top",
     "activity": "pulse",
     "icon": "▥",
     "title": "脉冲分析"
-  }
+  },
+  "scripts": [
+    "controller.js",
+    "shared-views.js",
+    "feature-runtime.js",
+    "super-layout.js",
+    "plugin.js"
+  ]
 }

@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '2.1.0';
+  const VERSION = '2.2.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -233,12 +233,15 @@
       else header.classList.add('dkds-portable-inline-header','drag-handle');
       let title=header.querySelector?.('.dkds-portable-title');
       if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
-      const controls=document.createElement('div');controls.className='dkds-portable-controls';controls.dataset.dkdsPortableControls=this.id;
-      const add=(label,placement,titleText)=>{if(!this.allowed.includes(placement))return;const b=document.createElement('button');b.type='button';b.textContent=label;b.title=titleText;b.onclick=e=>{e.stopPropagation();this.place(placement);};controls.appendChild(b);};
-      add('◫','home','恢复原位置');add('↤','left','固定到左侧');add('▣','main','固定到主区域');add('↦','right','固定到右侧');add('↧','bottom','固定到底部');add('↗','float','悬浮');
-      header.appendChild(controls);
+      const controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb';controls.dataset.dkdsPortableControls=this.id;
+      const placementLabels={home:'原位',left:'左侧',main:'主区域',right:'右侧',bottom:'底部',float:'悬浮'};
+      const placementLongLabels={home:'恢复原位置',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'悬浮'};
+      const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';placementButton.title='图表位置';
+      const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location">${esc(placementLabels[current]||current)}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
+      const showPlacementMenu=(event)=>{event?.stopPropagation?.();event?.preventDefault?.();this.contextMenu?.dispose?.();const rect=placementButton.getBoundingClientRect();const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:rect.left;const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:rect.bottom+4;const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x,y,items:this.allowed.map(placement=>({id:placement,label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}))});};
+      placementButton.addEventListener('click',showPlacementMenu);controls.appendChild(placementButton);header.appendChild(controls);this.refreshPlacementButton=refreshPlacementButton;refreshPlacementButton();
       const toggleFloat=e=>{if(e.target.closest('button'))return;e.preventDefault();this.place(this.wrapper.dataset.placement==='float'?'home':'float');};
-      const openPlacementMenu=e=>{if(e.target.closest('button'))return;e.preventDefault();const labels={home:'恢复原位置',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'悬浮'};this.contextMenu?.dispose?.();const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x:e.clientX,y:e.clientY,items:this.allowed.map(placement=>({id:placement,label:labels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}))});};
+      const openPlacementMenu=e=>{if(e.target.closest('button'))return;e.preventDefault();this.contextMenu?.dispose?.();const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x:e.clientX,y:e.clientY,items:this.allowed.map(placement=>({id:placement,label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}))});};
       header.addEventListener('dblclick',toggleFloat);header.addEventListener('contextmenu',openPlacementMenu);
       this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat),()=>header.removeEventListener('contextmenu',openPlacementMenu));
       if(!useTarget){wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
@@ -269,6 +272,7 @@
         this.wrapper.classList.add('is-docked',`dock-${placement}`);
       }
       this.wrapper.dataset.placement=placement;
+      this.refreshPlacementButton?.();
       refreshDockZoneState();
       if(persist)this.writeState({placement,bounds:placement==='float'?this.bounds():undefined});
       this.scope.emitResize?.({id:this.id,reason:'portable-place',placement});
@@ -397,20 +401,35 @@
 
   class Workbench {
     constructor(scope,root,spec={}){
-      this.scope=scope;this.root=resolveElement(root);this.spec=spec;this.views=new Map();this.active='';
+      this.scope=scope;this.root=resolveElement(root);this.spec=spec;this.views=new Map();this.active='';this.splitter=null;this.split=null;
       if(!this.root)throw new Error('Workbench root not found.');
       this.root.classList.add('dkds-workbench');
-      this.root.innerHTML=`<header class="dkds-workbench-header"><div class="dkds-workbench-heading"><h2></h2><div class="dkds-workbench-subtitle"></div></div><div class="dkds-workbench-actions"></div></header><div class="dkds-workbench-tabs"></div><div class="dkds-workbench-grid"><aside class="dkds-workbench-left"></aside><main class="dkds-workbench-main"></main><aside class="dkds-workbench-right"></aside><section class="dkds-workbench-bottom"></section><div class="dkds-workbench-overlay"></div></div>`;
-      this.root.querySelector('h2').textContent=spec.title||'';this.root.querySelector('.dkds-workbench-subtitle').textContent=spec.subtitle||'';
+      if(spec.existing===true){
+        this.root.classList.add('dkds-workbench-existing');
+        this.layout=new WorkspaceLayout(scope,this.root,{regions:spec.regions||{}});
+        if(spec.split&&spec.split.enabled!==false)this.mountExistingSplit(spec.split);
+        return;
+      }
+      const showHeader=spec.header!==false,showTabs=spec.tabs!==false;
+      this.root.innerHTML=`${showHeader?'<header class="dkds-workbench-header"><div class="dkds-workbench-heading"><h2></h2><div class="dkds-workbench-subtitle"></div></div><div class="dkds-workbench-actions"></div></header>':''}${showTabs?'<div class="dkds-workbench-tabs"></div>':''}<div class="dkds-workbench-grid"><aside class="dkds-workbench-left"></aside><main class="dkds-workbench-main"></main><aside class="dkds-workbench-right"></aside><section class="dkds-workbench-bottom"></section><div class="dkds-workbench-overlay"></div></div>`;
+      const h=this.root.querySelector('h2');if(h)h.textContent=spec.title||'';const st=this.root.querySelector('.dkds-workbench-subtitle');if(st)st.textContent=spec.subtitle||'';
       this.layout=new WorkspaceLayout(scope,this.root.querySelector('.dkds-workbench-grid'),{regions:{left:{target:'.dkds-workbench-left'},main:{target:'.dkds-workbench-main'},right:{target:'.dkds-workbench-right'},bottom:{target:'.dkds-workbench-bottom'},overlay:{target:'.dkds-workbench-overlay'}}});
-      if(spec.actions)this.actions=new ActionGroup(scope.owner,this.root.querySelector('.dkds-workbench-actions'),{activity:spec.activity,actions:spec.actions});
+      const actionHost=this.root.querySelector('.dkds-workbench-actions');if(spec.actions&&actionHost)this.actions=new ActionGroup(scope.owner,actionHost,{activity:spec.activity,actions:spec.actions});
       for(const view of spec.views||[])this.registerView(view);
       if(spec.defaultView||this.views.size)this.activate(spec.defaultView||this.views.keys().next().value);
     }
+    mountExistingSplit(splitSpec={}){
+      const left=this.layout.slot(splitSpec.region||'left');const main=this.layout.slot(splitSpec.mainRegion||'main');if(!left||!main)return null;
+      this.root.classList.add('dkds-workbench-existing-split');
+      const handle=document.createElement('div');handle.className='dkds-workbench-splitter';handle.tabIndex=0;handle.title='拖动调整侧栏宽度；双击恢复默认';
+      if(left.nextSibling)this.root.insertBefore(handle,left.nextSibling);else this.root.appendChild(handle);this.splitter=handle;
+      this.split=new SplitController(this.scope,{id:splitSpec.id||'workbench-left',container:this.root,handle,target:left,axis:'x',min:splitSpec.min||190,max:splitSpec.max||null,reserve:splitSpec.reserve||360,defaultSize:splitSpec.defaultSize||300});
+      return this.split;
+    }
     registerView(view={}){const id=String(view.id||'');if(!id)throw new Error('Workbench view id required.');this.views.set(id,{...view,id});this.renderTabs();return this;}
-    renderTabs(){const host=this.root.querySelector('.dkds-workbench-tabs');host.innerHTML='';for(const view of [...this.views.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.dataset.viewId=view.id;b.className='dkds-workbench-tab';b.textContent=view.label||view.title||view.id;b.classList.toggle('active',view.id===this.active);b.onclick=()=>this.activate(view.id);host.appendChild(b);}}
-    activate(id){const next=this.views.get(String(id));if(!next)return false;const main=this.layout.slot('main');const previous=this.views.get(this.active);try{previous?.unmount?.({workbench:this,scope:this.scope,container:main});}catch(err){console.warn('[DKDS workbench unmount]',err);}this.active=next.id;main.replaceChildren();if(typeof next.mount==='function')next.mount({workbench:this,scope:this.scope,container:main,layout:this.layout});else if(next.html!==undefined)main.innerHTML=typeof next.html==='function'?next.html():String(next.html);this.renderTabs();this.scope.emitResize({reason:'workbench-view',viewId:next.id});return true;}
-    dispose(){try{this.views.get(this.active)?.unmount?.({workbench:this,scope:this.scope,container:this.layout.slot('main')});}catch{}this.actions?.dispose?.();this.layout?.dispose?.();this.root.replaceChildren();}
+    renderTabs(){const host=this.root.querySelector('.dkds-workbench-tabs');if(!host)return;host.innerHTML='';for(const view of [...this.views.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.dataset.viewId=view.id;b.className='dkds-workbench-tab';b.textContent=view.label||view.title||view.id;b.classList.toggle('active',view.id===this.active);b.onclick=()=>this.activate(view.id);host.appendChild(b);}}
+    activate(id){const next=this.views.get(String(id));if(!next)return false;const main=this.layout.slot('main');if(!main)return false;const previous=this.views.get(this.active);try{previous?.unmount?.({workbench:this,scope:this.scope,container:main});}catch(err){console.warn('[DKDS workbench unmount]',err);}this.active=next.id;main.replaceChildren();if(typeof next.mount==='function')next.mount({workbench:this,scope:this.scope,container:main,layout:this.layout});else if(next.html!==undefined)main.innerHTML=typeof next.html==='function'?next.html():String(next.html);this.renderTabs();this.scope.emitResize({reason:'workbench-view',viewId:next.id});return true;}
+    dispose(){try{this.views.get(this.active)?.unmount?.({workbench:this,scope:this.scope,container:this.layout.slot('main')});}catch{}this.actions?.dispose?.();this.split?.dispose?.();this.splitter?.remove?.();this.layout?.dispose?.();if(this.spec.existing===true){this.root.classList.remove('dkds-workbench','dkds-workbench-existing','dkds-workbench-existing-split');}else this.root.replaceChildren();}
   }
 
   class PluginScope {

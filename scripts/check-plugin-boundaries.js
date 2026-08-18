@@ -10,8 +10,10 @@ const kernel=read('./src/core/plugin-kernel.js');
 const resonanceManifest=JSON.parse(read('./src/plugins/resonance-workbench/plugin.json'));
 const resonance=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/resonance-workbench/${file}`)).join('\n');
 const detector=read('./src/plugins/resonance-detector-robust/plugin.js');
-const pulse=read('./src/plugins/pulse-analysis/plugin.js');
-const ter=read('./src/plugins/ter-analysis/plugin.js');
+const pulseManifest=JSON.parse(read('./src/plugins/pulse-analysis/plugin.json'));
+const pulse=(pulseManifest.scripts||[pulseManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/pulse-analysis/${file}`)).join('\n');
+const terManifest=JSON.parse(read('./src/plugins/ter-analysis/plugin.json'));
+const ter=(terManifest.scripts||[terManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/ter-analysis/${file}`)).join('\n');
 
 const forbiddenCoreHtml=[
   ['智能寻峰','resonance peak UI'],

@@ -3353,6 +3353,21 @@
 
   window.visualViewport?.addEventListener?.('resize',syncAnalysisPageViewport,{passive:true});
 
+  // Keep fixed analysis pages anchored to the live command shell. Plugin
+  // enable/disable and SUPER switches can reflow the toolbar several frames
+  // after the originating event; a persistent observer is more reliable than
+  // one-off scroll/view-height corrections.
+  let analysisShellResizeObserver=null;
+  function bindAnalysisShellViewportObserver(){
+    analysisShellResizeObserver?.disconnect?.();
+    if(!window.ResizeObserver||IS_AUXILIARY_WINDOW)return;
+    analysisShellResizeObserver=new ResizeObserver(()=>syncAnalysisPageViewport());
+    for(const selector of ['.topbar','.project-tabs-bar','#activityBar','#primaryActivityBar']){
+      const el=document.querySelector(selector);if(el)analysisShellResizeObserver.observe(el);
+    }
+  }
+  queueMicrotask(bindAnalysisShellViewportObserver);
+
   const SUPER_LEFT_STORAGE_KEY='dkds.workspace.super.left-fraction.v1';
   let superLeftFraction=0.20;
   let superDividerBound=false;
@@ -3396,7 +3411,7 @@
     if(!divider)return;
     const state=window.DKDSPlugins?.workspace?.super?.()||{};
     const page=visibleAnalysisPage();
-    const superPage=page&&page.classList.contains('super-workspace-page');
+    const superPage=page&&page.classList.contains('super-workspace-root-page');
     const blocked=page&&!superPage;
     divider.classList.toggle('hidden',!state.available||blocked||IS_AUXILIARY_WINDOW);
     if(!state.available||blocked||IS_AUXILIARY_WINDOW)return;
@@ -3570,6 +3585,19 @@
     return true;
   }
 
+  function superWorkspaceRootPageId(contract={}){
+    const layout=contract?.layout||{};
+    const explicit=String(layout.rootPageId||layout.pageId||'').trim();
+    if(explicit)return explicit;
+    const left=String(layout.left?.pageId||'').trim();
+    const main=String(layout.main?.pageId||'').trim();
+    if(left&&main&&left!==main){
+      console.warn('[DKDS SUPER] left/main pageId mismatch; using main page as root',{left,main,pluginId:contract?.pluginId||''});
+      return main;
+    }
+    return main||left||'';
+  }
+
   function applySuperWorkspace(superState){
     const state=superState||window.DKDSPlugins?.workspace?.super?.()||{};
     restorePortablePrimesExcept(String(state.pluginId||''));
@@ -3577,9 +3605,12 @@
     document.body.dataset.superActivity=activity;
     document.body.dataset.superPlugin=String(state.pluginId||'');
     document.body.classList.toggle('super-unconfigured',!state.available);
+    const rootPageId=superWorkspaceRootPageId(state.contract||{});
     document.querySelectorAll('.analysis-page').forEach(page=>{
-      const isSuperPage=!!activity&&page.dataset.pluginActivity===activity;
-      page.classList.toggle('super-workspace-page',isSuperPage);
+      const belongsToSuper=!!activity&&page.dataset.pluginActivity===activity;
+      const isRoot=belongsToSuper&&!!rootPageId&&page.id===rootPageId;
+      page.classList.toggle('super-workspace-page',belongsToSuper);
+      page.classList.toggle('super-workspace-root-page',isRoot);
     });
     applySuperWorkspaceComposition(state.contract||{});
     applySuperLeftFraction(readSuperLeftFraction());
@@ -3649,7 +3680,7 @@
 
   function closeAnalysisPage(id){
     const page=$('#'+id);
-    if(page?.classList.contains('super-workspace-page'))return false;
+    if(page?.classList.contains('super-workspace-root-page'))return false;
     if(page)page.classList.add('hidden');
     window.DKDSPlugins?.events?.emit?.('analysis:closed',{id});
     const superState=window.DKDSPlugins?.workspace?.super?.();
@@ -5276,7 +5307,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.27.1',
+      version:'3.28.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6561,7 +6592,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.27.1',
+      appVersion:'3.28.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

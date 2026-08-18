@@ -2,7 +2,7 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'2.6.0',
+    version:'2.7.0',
     apiVersion:'1.4.0',
     description:'Resonance workbench composed from plugin-owned shared Controller and View components; SUPER and TOP only adapt presentation/layout.',
     source:'builtin',

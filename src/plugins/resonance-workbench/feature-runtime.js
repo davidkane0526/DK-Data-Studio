@@ -15,13 +15,13 @@
     const spacingPageHtml=viewSet.spacing.superPageHtml();
 
     ctx.ui.activities.add({
-      id:'resonance',label:viewSet.main.label,contextLabel:viewSet.main.label,icon:'∿',order:10,default:true,primary:true,openMode:'window',
+      id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',
       description:'共振 I–V、峰轨迹、TER 与栅压依赖工作区',
       onActivate:()=>h.showMainWorkspace()
     });
 
     ctx.ui.topWorkspace.register({
-      id:'resonance',activity:'resonance',label:viewSet.main.label,icon:'∿',
+      id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',
       layout:{
         mode:'native',root:{selector:'.workspace'},
         left:{role:'data-display',mount:'#pluginSidebarSections',defaultFraction:0.20,minFraction:0.14,maxFraction:0.42},

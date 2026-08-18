@@ -4,6 +4,10 @@ window.DKDS_BUILTIN_PLUGINS = [
     "id": "builtin.data-center",
     "entry": "plugins/data-center/plugin.js",
     "scripts": [
+      "plugins/data-center/controller.js",
+      "plugins/data-center/shared-views.js",
+      "plugins/data-center/feature-runtime.js",
+      "plugins/data-center/super-layout.js",
       "plugins/data-center/plugin.js"
     ]
   },
@@ -18,6 +22,10 @@ window.DKDS_BUILTIN_PLUGINS = [
     "id": "builtin.pulse-analysis",
     "entry": "plugins/pulse-analysis/plugin.js",
     "scripts": [
+      "plugins/pulse-analysis/controller.js",
+      "plugins/pulse-analysis/shared-views.js",
+      "plugins/pulse-analysis/feature-runtime.js",
+      "plugins/pulse-analysis/super-layout.js",
       "plugins/pulse-analysis/plugin.js"
     ]
   },
@@ -57,6 +65,10 @@ window.DKDS_BUILTIN_PLUGINS = [
     "id": "builtin.ter-analysis",
     "entry": "plugins/ter-analysis/plugin.js",
     "scripts": [
+      "plugins/ter-analysis/controller.js",
+      "plugins/ter-analysis/shared-views.js",
+      "plugins/ter-analysis/feature-runtime.js",
+      "plugins/ter-analysis/super-layout.js",
       "plugins/ter-analysis/plugin.js"
     ]
   },

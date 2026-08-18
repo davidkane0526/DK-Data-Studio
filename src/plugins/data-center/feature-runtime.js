@@ -1,0 +1,168 @@
+(() => {
+  async function mount(ctx,controller=null,views=null,adapter={}){
+    const D=ctx.data.model,F=ctx.data.formula;
+    const sharedViews=views||window.DKDSDataCenterSharedViews?.create?.(controller)||null;
+    const stateStore=controller?.store;
+    if(!stateStore)throw new Error('Data Center Controller state store is unavailable.');
+    let state=controller.getState();
+    let page=null,lastExecution=null,quickPanel=null,chartPanel=null,stepPanels=[];
+    const $=(sel,root=page)=>root?.querySelector(sel)||null;
+    const $$=(sel,root=page)=>[...(root?.querySelectorAll(sel)||[])];
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    ctx.ui.activities.add({
+      id:'data-center',label:'数据中心',contextLabel:'数据中心',icon:'▦',order:20,openMode:'window',
+      description:'标准数据对象、公式、Workflow / Recipe 与来源链',
+      onActivate:()=>ctx.host.openAnalysisPage(page?.id||'builtin-data-center-data-center-page')
+    });
+
+    const formulaSchema={
+      fields:[
+        {id:'name',type:'text',label:'新列名称',default:'Derived',required:true,placeholder:'例如 Resistance'},
+        {id:'formula',type:'formula',label:'公式',default:'abs(Vd / Id)',required:true,rows:4,description:'支持列 key/名称，也可用 [带空格的列名]。函数：abs, sqrt, log10, exp, min, max, pow, clamp, ifelse…'},
+        {id:'unit',type:'text',label:'单位',default:'',placeholder:'例如 Ω'},
+        {id:'role',type:'select',label:'角色',default:'derived',options:[{value:'derived',label:'派生量'},{value:'x',label:'X'},{value:'y',label:'Y'},{value:'group',label:'分组'},{value:'',label:'未指定'}]},
+        {id:'replace',type:'boolean',label:'同名列存在时替换',default:false}
+      ]
+    };
+
+    ctx.workflow.processors.register('formula.derived-column',{
+      name:'公式派生列',description:'用安全公式表达式生成新的 DataTable 数值列。',
+      inputKinds:['data.table'],outputKinds:['data.table'],parameterSchema:formulaSchema,
+      run({inputs,parameters}){
+        const table=inputs.table||inputs.input||Object.values(inputs)[0];
+        return F.deriveColumn(table,{...parameters,providerId:'formula.derived-column',pluginId:ctx.manifest.id,version:ctx.manifest.version}).table;
+      }
+    });
+
+    ctx.workflow.processors.register('table.select-columns',{
+      name:'选择列',description:'只保留指定列，生成新的 DataTable。',inputKinds:['data.table'],outputKinds:['data.table'],
+      parameterSchema:{fields:[{id:'columns',type:'columns',label:'保留列',required:true,description:'可多选；列顺序按原表保持。'}]},
+      run({inputs,parameters}){
+        const table=inputs.table||inputs.input||Object.values(inputs)[0];
+        const keys=new Set(parameters.columns||[]);const cols=table.columns.filter(c=>keys.has(c.key)).map(D.deepClone);
+        if(!cols.length)throw new Error('至少选择一列。');
+        return D.derive(table,{name:`${table.name} · columns`,patch:{columns:cols,rowCount:table.rowCount}},{type:'process',label:'Select columns',providerId:'table.select-columns',pluginId:ctx.manifest.id,version:ctx.manifest.version,parameters});
+      }
+    });
+
+    ctx.workflow.processors.register('table.finite-rows',{
+      name:'有限值筛选',description:'根据指定列删除 NaN/Infinity 行。',inputKinds:['data.table'],outputKinds:['data.table'],
+      parameterSchema:{fields:[
+        {id:'columns',type:'columns',label:'检查列',required:true},
+        {id:'mode',type:'select',label:'保留条件',default:'all',options:[{value:'all',label:'所有选择列都为有限值'},{value:'any',label:'任一选择列为有限值'}]}
+      ]},
+      run({inputs,parameters}){
+        const table=inputs.table||inputs.input||Object.values(inputs)[0];const cols=(parameters.columns||[]).map(k=>D.column(table,k)).filter(Boolean);if(!cols.length)throw new Error('请选择检查列。');
+        const keep=[];for(let r=0;r<table.rowCount;r++){const flags=cols.map(c=>Number.isFinite(c.values[r]));if(parameters.mode==='any'?flags.some(Boolean):flags.every(Boolean))keep.push(r);}
+        const outCols=table.columns.map(c=>({...D.deepClone(c),values:keep.map(r=>c.values[r]),length:keep.length}));
+        return D.derive(table,{name:`${table.name} · finite`,patch:{columns:outCols,rowCount:keep.length}},{type:'process',label:'Filter finite rows',providerId:'table.finite-rows',pluginId:ctx.manifest.id,version:ctx.manifest.version,parameters});
+      }
+    });
+
+    ctx.workflow.analyzers.register('table.summary',{
+      name:'列统计摘要',description:'计算数值列的 count / min / max / mean / median / std。',inputKinds:['data.table'],outputKinds:['result.analysis'],parameterSchema:{fields:[{id:'columns',type:'columns',label:'统计列',required:false,description:'留空时分析全部数值列。'}]},
+      run({inputs,parameters}){
+        const table=inputs.table||inputs.input||Object.values(inputs)[0];const selected=new Set(parameters.columns||[]);const rows=[];
+        for(const c of table.columns){if(selected.size&&!selected.has(c.key))continue;const a=c.values.filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)continue;const mean=a.reduce((s,v)=>s+v,0)/a.length;const mid=Math.floor(a.length/2),median=a.length%2?a[mid]:(a[mid-1]+a[mid])/2;const variance=a.length>1?a.reduce((s,v)=>s+(v-mean)**2,0)/(a.length-1):0;rows.push({key:c.key,name:c.name,unit:c.unit,count:a.length,min:a[0],max:a.at(-1),mean,median,std:Math.sqrt(variance)});}
+        return D.createAnalysisResult({name:`${table.name} · summary`,summary:{sourceTable:table.id,columnCount:rows.length},tables:[{name:'summary',rows}],source:{artifactId:table.id}});
+      }
+    });
+
+    const chartSchema={fields:[
+      {id:'x',type:'column',label:'X 列',required:true},
+      {id:'ys',type:'columns',label:'Y 列',required:true},
+      {id:'mode',type:'select',label:'绘图模式',default:'lines+markers',options:[{value:'lines',label:'折线'},{value:'markers',label:'散点'},{value:'lines+markers',label:'折线 + 点'}]},
+      {id:'showLegend',type:'boolean',label:'显示图例',default:true}
+    ]};
+    ctx.charts.register('xy-line',{
+      name:'XY 多序列图',description:'通用 DataTable X/Y 折线或散点图。',inputKinds:['data.table'],parameterSchema:chartSchema,
+      render({container,artifact,parameters}){
+        const x=D.column(artifact,parameters.x);if(!x)throw new Error(`未找到 X 列 ${parameters.x}`);const ys=(parameters.ys||[]).map(k=>D.column(artifact,k)).filter(Boolean);if(!ys.length)throw new Error('至少选择一个 Y 列。');
+        const traces=ys.map(y=>({x:x.values,y:y.values,mode:parameters.mode||'lines+markers',name:y.name,hovertemplate:`${esc(x.name)}=%{x}<br>${esc(y.name)}=%{y}<extra>${esc(y.name)}</extra>`}));
+        Plotly.react(container,traces,{margin:{l:72,r:22,t:30,b:62},xaxis:{title:`${x.name}${x.unit?` (${x.unit})`:''}`,automargin:true,gridcolor:'#edf0f5'},yaxis:{title:ys.length===1?`${ys[0].name}${ys[0].unit?` (${ys[0].unit})`:''}`:'Value',automargin:true,gridcolor:'#edf0f5'},legend:{orientation:'h',y:1.08},showlegend:parameters.showLegend!==false,hovermode:'closest',paper_bgcolor:'#fff',plot_bgcolor:'#fff',autosize:true},{responsive:true,displaylogo:false,scrollZoom:true});
+      }
+    });
+
+    ctx.workflow.recipes.register('formula-example',{
+      schema:1,id:'formula-example',name:'公式派生列',version:'1.0.0',description:'从一张 DataTable 计算新的派生列。',
+      inputs:[{id:'main',kind:'data.table'}],nodes:[{id:'derive',type:'processor',provider:'formula.derived-column',inputs:{table:'input:main'},parameters:{name:'Resistance',formula:'abs(Vd / Id)',unit:'Ω',role:'derived',replace:false}}],outputs:{result:'node:derive'}
+    });
+
+    page=ctx.ui.pages.add({
+      id:'data-center',activity:'data-center',label:'数据中心',title:'可定制数据处理中心',order:15,buttonClass:'accent-soft',toolbar:false,
+      html:sharedViews?.pageHtml?.()||''
+    });
+
+    const workbench=sharedViews?.attach?.(ctx,page)||null;
+    const dcHeader=page.querySelector('.analysis-page-header');
+    const dcHeaderActionsHost=document.createElement('div');
+    dcHeaderActionsHost.className='dkds-plugin-header-actions';
+    dcHeader?.querySelector('.analysis-page-close')?.before(dcHeaderActionsHost);
+    ctx.ui.actions?.mount?.(dcHeaderActionsHost,{
+      activity:'data-center',
+      actions:[
+        {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>{ctx.data.artifacts.syncLegacy();renderAllUi();}},
+        {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>runWorkflow()}
+      ]
+    });
+
+    ctx.ui.topWorkspace.register({
+      id:'data-center',activity:'data-center',label:'数据中心',icon:'▦',
+      layout:{
+        mode:'split',root:{selector:'.data-center-body'},
+        left:{role:'data-display',pageId:page.id,selector:'.dc-artifact-pane',sticky:true,defaultFraction:0.20,minFraction:0.14,maxFraction:0.42},
+        main:{role:'primary-data',pageId:page.id,selector:'.dc-main',interaction:'plugin-owned'},
+        prime:[]
+      }
+    });
+
+    const chartPane=page.querySelector('.dc-chart-pane');
+    if(chartPane&&ctx.ui.portable?.create){
+      try{const portableSpec={title:'通用图形预览',handle:'.dc-tool-title',useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'};if(workbench?.layout?.portable)workbench.layout.portable('data-center-chart',chartPane,portableSpec);else ctx.ui.portable.create('data-center-chart',chartPane,portableSpec);const plot=page.querySelector('#dcChart');if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});}catch(err){console.warn('[Data Center portable chart]',err);}
+    }
+
+    ctx.ui.styles.add('data-center',`
+      .data-center-body{display:grid;grid-template-columns:290px minmax(0,1fr);gap:12px;padding:12px;overflow:auto;background:#f5f7fb}.dc-card{background:#fff;border:1px solid #dde4ef;border-radius:10px;min-width:0;overflow:hidden}.dc-artifact-pane{position:sticky;top:0;align-self:start;max-height:calc(100vh - 105px);display:flex;flex-direction:column}.dc-section-head,.dc-tool-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #edf0f5;background:#fbfcfe}.dc-section-head>div,.dc-tool-title>div{display:flex;flex-direction:column;gap:2px}.dc-section-head strong,.dc-tool-title strong{font-size:12px;color:#344054}.dc-section-head span,.dc-tool-title span{font-size:9px;color:#7d8798}.dc-artifact-list{overflow:auto;padding:7px;min-height:180px}.dc-artifact-item{display:block;width:100%;text-align:left;padding:8px;margin-bottom:6px;border:1px solid #e2e7ef;border-radius:8px;background:#fff;cursor:pointer}.dc-artifact-item.active{border-color:#7190ed;background:#eef3ff}.dc-artifact-name{font-size:10px;font-weight:700;color:#344054;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dc-artifact-meta{font-size:8.5px;color:#8a94a6;margin-top:3px}.dc-main{display:flex;flex-direction:column;gap:12px;min-width:0}.dc-tabs{display:flex;gap:4px}.dc-tabs button.active{background:#315efb;color:#fff}.dc-table-preview{max-height:250px;overflow:auto}.dc-json-preview{margin:0;padding:10px 12px;font:9px/1.5 ui-monospace,Consolas,monospace;color:#475467;white-space:pre-wrap;word-break:break-word}.dc-preview-table{width:100%;border-collapse:collapse;font-size:9px;font-variant-numeric:tabular-nums}.dc-preview-table th{position:sticky;top:0;background:#f7f9fc;z-index:2}.dc-preview-table th,.dc-preview-table td{border-bottom:1px solid #edf0f5;padding:5px 7px;text-align:right;white-space:nowrap}.dc-preview-table th:first-child,.dc-preview-table td:first-child{text-align:center}.dc-tool-pane{padding-bottom:10px}.dc-tool-pane>.schema-parameter-panel,.dc-chart-pane>.schema-parameter-panel{padding:10px 12px}.dc-inline-actions{display:flex;gap:5px;align-items:center}.dc-formula-refs{padding:0 12px;display:flex;gap:5px;flex-wrap:wrap}.dc-ref-chip{font-family:ui-monospace,Consolas,monospace;font-size:9px;padding:3px 6px;border:1px solid #dce3ef;border-radius:999px;background:#f7f9fc;cursor:pointer}.dc-recipe-bar,.dc-add-step{display:flex;gap:7px;align-items:end;padding:9px 12px;border-bottom:1px solid #edf0f5}.dc-recipe-bar label{display:flex;flex-direction:column;gap:3px;font-size:9px;color:#667085}.dc-recipe-bar input,.dc-recipe-bar select,.dc-add-step select{height:30px;border:1px solid #cfd7e5;border-radius:6px;padding:3px 7px;min-width:150px}.dc-workflow-steps{padding:10px 12px}.dc-step-card{border:1px solid #dfe5ef;border-radius:8px;margin-bottom:8px;overflow:hidden}.dc-step-head{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;background:#f8faff;border-bottom:1px solid #e8edf4}.dc-step-head strong{font-size:10px}.dc-step-actions{display:flex;gap:4px}.dc-step-params{padding:7px}.dc-workflow-status{margin:0 12px;padding:8px;border:1px solid #e1e6ef;border-radius:7px;background:#f8fafc;font-size:9px;color:#667085}.dc-workflow-status.running{border-color:#9db1ee;background:#f2f6ff}.dc-workflow-status.done{border-color:#a7d7b8;background:#f2fbf5}.dc-workflow-status.error{border-color:#efb8b2;background:#fff5f4;color:#b42318}.dc-provenance-list{padding:10px 12px;max-height:430px;overflow:auto}.dc-prov-item{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px solid #edf0f5}.dc-prov-time{font-size:8px;color:#98a2b3}.dc-prov-main strong{display:block;font-size:10px;color:#344054}.dc-prov-main div{font-size:8.5px;color:#667085;margin-top:2px;word-break:break-word}.dc-chart{height:430px;min-height:320px}.schema-parameter-panel{display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:8px 10px}.schema-param-group{display:contents}.schema-param-group-title{grid-column:1/-1;font-size:10px;font-weight:700;color:#475467}.schema-param-field{display:flex;flex-direction:column;gap:3px;min-width:0}.schema-param-label{font-size:9px;color:#5f6b7d}.schema-param-field input,.schema-param-field select,.schema-param-field textarea{width:100%;box-sizing:border-box;border:1px solid #cfd7e5;border-radius:6px;padding:5px 7px;font-size:10px;background:#fff;min-height:30px}.schema-param-field textarea{resize:vertical}.schema-param-help{font-size:8px;color:#98a2b3;line-height:1.4}.schema-param-error{min-height:10px;font-size:8px;color:#b42318}.schema-param-field.has-error input,.schema-param-field.has-error select,.schema-param-field.has-error textarea{border-color:#e58d84}.required{color:#b42318}@media(max-width:1000px){.data-center-body{grid-template-columns:230px minmax(0,1fr)}.schema-parameter-panel{grid-template-columns:1fr}}.dkds-size-compact .data-center-body{grid-template-columns:1fr;padding:7px}.dkds-size-compact .dc-artifact-pane{position:static;max-height:250px}.dkds-size-compact .dc-recipe-bar,.dkds-size-compact .dc-add-step,.dkds-size-compact .dc-tool-title{flex-wrap:wrap}.dkds-size-compact .dc-chart{height:360px}
+    `);
+
+    function artifacts(){return ctx.data.artifacts.list({includeTransient:true});}
+    function activeArtifact(){const rows=artifacts();let a=rows.find(x=>x.id===state.activeArtifactId)||rows.find(x=>x.kind==='data.table')||rows[0]||null;if(a&&a.id!==state.activeArtifactId)state.activeArtifactId=a.id;return a;}
+    function provider(type,id){const list=type==='processor'?ctx.workflow.processors.list():ctx.workflow.analyzers.list();return list.find(p=>p.id===id)||null;}
+    function currentOutputArtifact(){const result=lastExecution?.outputs?.result;if(D.isArtifact(result)&&result.kind==='data.table')return result;if(lastExecution?.nodeResults){const candidates=Object.values(lastExecution.nodeResults).flatMap(v=>D.isArtifact(v)?[v]:v&&typeof v==='object'?Object.values(v).filter(D.isArtifact):[]).filter(a=>a.kind==='data.table');if(candidates.length)return candidates.at(-1);}return activeArtifact();}
+
+    function renderArtifacts(){const list=$('#dcArtifactList');if(!list)return;const rows=artifacts();$('#dcArtifactCount').textContent=`${rows.length} 个`;list.innerHTML='';if(!rows.length){list.innerHTML='<div class="empty-state">先从主界面导入数据。导入结果会自动映射为标准 DataTable。</div>';return;}for(const a of rows){const sum=D.summarize(a);const b=document.createElement('button');b.type='button';b.className=`dc-artifact-item ${a.id===state.activeArtifactId?'active':''}`;const dimensions=a.kind==='data.table'?`${sum.rows??'—'} 行 · ${sum.columns??'—'} 列`:a.kind==='data.series'||a.kind==='data.sweep'?`${sum.length??'—'} 点`:a.kind;b.innerHTML=`<div class="dc-artifact-name">${esc(a.name)}</div><div class="dc-artifact-meta">${esc(a.kind)} · ${esc(dimensions)} · provenance ${sum.provenance}</div>`;b.onclick=()=>{state.activeArtifactId=a.id;lastExecution=null;controller?.select?.({id:a.id,kind:a.kind,name:a.name},{source:'data-center-artifact'});renderAllUi();};list.appendChild(b);}}
+    function renderPreview(){const a=activeArtifact();$('#dcActiveName').textContent=a?.name||'未选择数据';$('#dcActiveMeta').textContent=a?`${a.kind} · ${a.id}`:'—';const host=$('#dcTablePreview');if(!a){host.innerHTML='<div class="empty-state">暂无数据对象</div>';return;}if(a.kind==='data.table'){const n=Math.min(a.rowCount,18);host.innerHTML=`<table class="dc-preview-table"><thead><tr><th>#</th>${a.columns.map(c=>`<th>${esc(c.name)}${c.unit?` (${esc(c.unit)})`:''}</th>`).join('')}</tr></thead><tbody>${Array.from({length:n},(_,r)=>`<tr><td>${r+1}</td>${a.columns.map(c=>`<td>${Number.isFinite(c.values[r])?Number(c.values[r]).toPrecision(7):esc(c.values[r])}</td>`).join('')}</tr>`).join('')}</tbody></table>${a.rowCount>n?`<div class="import-diagnosis">预览前 ${n} / ${a.rowCount} 行</div>`:''}`;return;}if(a.kind==='result.analysis'){const table=a.tables?.[0],rows=table?.rows||[];if(rows.length){const keys=Object.keys(rows[0]);const n=Math.min(rows.length,18);host.innerHTML=`<div class="import-diagnosis">${esc(JSON.stringify(a.summary||{}))}</div><table class="dc-preview-table"><thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,n).map(row=>`<tr>${keys.map(k=>`<td>${Number.isFinite(row[k])?Number(row[k]).toPrecision(7):esc(row[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;return;}}host.innerHTML=`<pre class="dc-json-preview">${esc(JSON.stringify(D.summarize(a),null,2))}</pre>`;}
+    function renderFormula(){const a=activeArtifact();quickPanel?.destroy?.();const host=$('#dcFormulaParams');if(!a||a.kind!=='data.table'){host.innerHTML='<div class="empty-state">公式派生列需要选择 data.table。</div>';$('#dcFormulaRefs').innerHTML='';return;}quickPanel=ctx.parameters.render(host,formulaSchema,{value:{name:'Derived',formula:a.columns.some(c=>c.key==='Vd')&&a.columns.some(c=>c.key==='Id')?'abs(Vd / Id)':'abs('+a.columns[0].key+')',unit:'',role:'derived',replace:false},context:{table:a}});const refs=$('#dcFormulaRefs');refs.innerHTML=a.columns.map(c=>`<button class="dc-ref-chip" data-ref="${esc(c.key)}">${esc(c.key)}</button>`).join('');$$('.dc-ref-chip',refs).forEach(b=>b.onclick=()=>{const ta=host.querySelector('[data-param-id="formula"] textarea');if(ta){const token=/\s/.test(b.dataset.ref)?`[${b.dataset.ref}]`:b.dataset.ref;ta.setRangeText(token,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));}});}
+    async function applyFormula(){const a=activeArtifact();if(!a||a.kind!=='data.table'){ctx.host.setStatus('公式派生列需要选择 DataTable。');return;}const valid=quickPanel.validate();if(!valid.ok){ctx.host.setStatus('公式参数存在错误。');return;}try{const recipe=ctx.workflow.buildSequentialRecipe({id:'quick.formula',name:'Quick formula',steps:[{type:'processor',provider:'formula.derived-column',parameters:quickPanel.getValue()}]});const exec=await ctx.workflow.run(recipe,{inputs:{main:a}});const out=exec.outputs.result;if(D.isArtifact(out)){ctx.data.artifacts.upsert(out);state.activeArtifactId=out.id;lastExecution=exec;ctx.host.setStatus(`已生成派生 DataTable：${out.name}`);renderAllUi();}}catch(err){ctx.host.setStatus(`公式计算失败：${err.message}`);}}
+
+    function refreshProviderSelect(){const type=$('#dcStepType')?.value||'processor',select=$('#dcProviderSelect');if(!select)return;const rows=type==='processor'?ctx.workflow.processors.list():ctx.workflow.analyzers.list();select.innerHTML=rows.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join('');}
+    function renderSteps(){const host=$('#dcWorkflowSteps');if(!host)return;stepPanels.forEach(h=>h?.destroy?.());stepPanels=[];host.innerHTML='';if(!state.steps.length){host.innerHTML='<div class="empty-state">尚无步骤。选择 Processor / Analyzer 后点击“添加步骤”。</div>';return;}const table=activeArtifact();state.steps.forEach((step,index)=>{const p=provider(step.type,step.provider);const card=document.createElement('div');card.className='dc-step-card';card.innerHTML=`<div class="dc-step-head"><strong>${index+1}. ${esc(p?.name||step.provider)} <span class="plugin-card-id">${esc(step.type)}</span></strong><div class="dc-step-actions"><button data-act="up">↑</button><button data-act="down">↓</button><button data-act="remove">删除</button></div></div><div class="dc-step-params"></div>`;host.appendChild(card);if(p){const handle=ctx.parameters.render(card.querySelector('.dc-step-params'),p.parameterSchema||{fields:[]},{value:step.parameters||{},context:{table},compact:true,onChange:value=>step.parameters=value});stepPanels.push(handle);step.parameters=handle.getValue();}card.querySelector('[data-act="up"]').onclick=()=>{if(index){[state.steps[index-1],state.steps[index]]=[state.steps[index],state.steps[index-1]];renderSteps();}};card.querySelector('[data-act="down"]').onclick=()=>{if(index<state.steps.length-1){[state.steps[index+1],state.steps[index]]=[state.steps[index],state.steps[index+1]];renderSteps();}};card.querySelector('[data-act="remove"]').onclick=()=>{state.steps.splice(index,1);renderSteps();};});}
+    function addStep(){const type=$('#dcStepType').value,providerId=$('#dcProviderSelect').value;if(!providerId)return;const p=provider(type,providerId);state.steps.push({id:`step-${Date.now()}-${Math.random().toString(36).slice(2,5)}`,type,provider:providerId,parameters:ctx.parameters.defaults(p?.parameterSchema||{fields:[]},{})});renderSteps();}
+    function currentRecipe(){stepPanels.forEach((h,i)=>{if(state.steps[i])state.steps[i].parameters=h.getValue();});state.recipeName=$('#dcRecipeName').value.trim()||'我的工作流';return ctx.workflow.buildSequentialRecipe({id:`user.${D.hashString(state.recipeName)}`,name:state.recipeName,steps:state.steps.map(s=>({...s})),workspace:{sourceArtifactId:state.activeArtifactId}});}
+    async function runWorkflow(){const a=activeArtifact();if(!a){ctx.host.setStatus('请选择输入 DataTable。');return;}const status=$('#dcWorkflowStatus');try{status.className='dc-workflow-status running';status.textContent='正在运行…';const recipe=currentRecipe();const exec=await ctx.workflow.run(recipe,{inputs:{main:a},onProgress:p=>{status.textContent=`${p.index}/${p.total} · ${p.provider?.name||p.node?.provider}`;}});lastExecution=exec;const outputs=[];const seen=new Set();const collect=value=>{if(D.isArtifact(value)){if(!seen.has(value.id)){seen.add(value.id);outputs.push(value);}return;}if(Array.isArray(value)){value.forEach(collect);return;}if(value&&typeof value==='object')Object.values(value).forEach(collect);};Object.values(exec.nodeResults||{}).forEach(collect);Object.values(exec.outputs||{}).forEach(collect);for(const artifact of outputs)ctx.data.artifacts.upsert(artifact);const lastTable=outputs.filter(o=>o.kind==='data.table').at(-1);if(lastTable)state.activeArtifactId=lastTable.id;status.className='dc-workflow-status done';status.textContent=`完成 · ${recipe.nodes.length} 步 · 保存 ${outputs.length} 个结果对象`;ctx.host.setStatus(`工作流“${recipe.name}”执行完成。`);renderAllUi();}catch(err){status.className='dc-workflow-status error';status.textContent=`失败：${err.message}`;ctx.host.setStatus(`工作流失败：${err.message}`);}}
+    function renderSavedRecipes(){const sel=$('#dcSavedRecipe');if(!sel)return;const registered=ctx.workflow.recipes.list();sel.innerHTML='<option value="">—</option>'+`${registered.length?`<optgroup label="插件 Recipe">${registered.map(r=>`<option value="plugin:${esc(r.id)}">${esc(r.name||r.id)}</option>`).join('')}</optgroup>`:''}${state.savedRecipes.length?`<optgroup label="当前工程">${state.savedRecipes.map(r=>`<option value="saved:${esc(r.id)}">${esc(r.name)}</option>`).join('')}</optgroup>`:''}`;}
+    function saveRecipe(){const recipe=currentRecipe();const saved={...D.deepClone(recipe),savedAt:new Date().toISOString()};const i=state.savedRecipes.findIndex(r=>r.id===saved.id);if(i>=0)state.savedRecipes[i]=saved;else state.savedRecipes.push(saved);renderSavedRecipes();$('#dcSavedRecipe').value=`saved:${saved.id}`;ctx.host.setStatus(`Recipe 已保存到当前工程：${saved.name}`);}
+    function loadRecipe(){const raw=$('#dcSavedRecipe').value;if(!raw)return;const pluginRecipe=raw.startsWith('plugin:');const id=raw.replace(/^(plugin:|saved:)/,'');const r=pluginRecipe?ctx.workflow.recipes.list().find(x=>x.id===id):state.savedRecipes.find(x=>x.id===id);if(!r)return;state.recipeName=r.name||r.id;state.steps=(r.nodes||[]).map(n=>({id:n.id,type:n.type,provider:n.provider,parameters:D.deepClone(n.parameters||{})}));$('#dcRecipeName').value=state.recipeName;renderSteps();ctx.host.setStatus(`${pluginRecipe?'已载入插件 Recipe':'已载入工程 Recipe'}：${state.recipeName}`);}
+
+    function renderProvenance(){const a=activeArtifact();const host=$('#dcProvenanceList');if(!host)return;if(!a?.provenance?.length){host.innerHTML='<div class="empty-state">暂无 provenance。</div>';return;}host.innerHTML=a.provenance.slice().reverse().map(p=>`<div class="dc-prov-item"><div class="dc-prov-time">${esc(p.timestamp||'—')}</div><div class="dc-prov-main"><strong>${esc(p.label||p.type)}</strong><div>${esc([p.pluginId,p.providerId,p.version].filter(Boolean).join(' · '))}</div><div>${esc(JSON.stringify(p.parameters||{}))}</div>${p.note?`<div>${esc(p.note)}</div>`:''}</div></div>`).join('');}
+    function renderChartControls(){const a=currentOutputArtifact();const providers=ctx.charts.list().filter(p=>!p.inputKinds?.length||!a||p.inputKinds.includes(a.kind));const select=$('#dcChartProvider');if(!select)return;select.innerHTML=providers.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join('');if(providers.some(p=>p.id===state.chart.provider))select.value=state.chart.provider;else state.chart.provider=select.value||'';renderChartParams();}
+    function renderChartParams(){const a=currentOutputArtifact();chartPanel?.destroy?.();const p=ctx.charts.list().find(x=>x.id===$('#dcChartProvider')?.value);if(!p||!a||a.kind!=='data.table'){const host=$('#dcChartParams');if(host)host.innerHTML='<div class="empty-state">选择 DataTable 后可配置图形。</div>';return;}state.chart.provider=p.id;const defaults={...ctx.parameters.defaults(p.parameterSchema||{fields:[]},state.chart.parameters||{})};if(!defaults.x)defaults.x=a.columns.find(c=>c.role==='x')?.key||a.columns[0]?.key||'';if(!defaults.ys?.length)defaults.ys=[a.columns.find(c=>c.role==='y')?.key||a.columns[1]?.key].filter(Boolean);chartPanel=ctx.parameters.render($('#dcChartParams'),p.parameterSchema||{fields:[]},{value:defaults,context:{table:a},onChange:value=>state.chart.parameters=value});state.chart.parameters=chartPanel.getValue();}
+    function renderChart(){const a=currentOutputArtifact();const p=ctx.charts.list().find(x=>x.id===$('#dcChartProvider').value);if(!a||!p)return;const valid=chartPanel?.validate?.();if(valid&&!valid.ok){ctx.host.setStatus('图形参数存在错误。');return;}state.chart.parameters=chartPanel?.getValue?.()||state.chart.parameters||{};try{p.render({container:$('#dcChart'),artifact:a,parameters:state.chart.parameters,context:{page}});}catch(err){ctx.host.setStatus(`绘图失败：${err.message}`);}}
+    function switchTab(tab){for(const name of ['formula','workflow','provenance']){$(`#dc${name[0].toUpperCase()+name.slice(1)}Pane`)?.classList.toggle('hidden',name!==tab);}$$('[data-dc-tab]').forEach(b=>b.classList.toggle('active',b.dataset.dcTab===tab));if(tab==='provenance')renderProvenance();}
+    function renderAllUi(){renderArtifacts();renderPreview();renderFormula();refreshProviderSelect();renderSteps();renderSavedRecipes();renderProvenance();renderChartControls();requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});}
+
+$('#dcApplyFormula').onclick=applyFormula;$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=renderChartParams;$('#dcRenderChart').onclick=renderChart;$('#dcExportChart').onclick=()=>ctx.host.savePlotlyImage('dcChart','data_center_chart','png');$('#dcCopyProvenance').onclick=()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON');
+    ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});
+
+    stateStore.subscribe((next,meta)=>{
+      state=next;
+      if(meta?.reason==='project-reset'||meta?.reason==='reset')lastExecution=null;
+      if(page&&!page.classList.contains('hidden')&&(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset'))renderAllUi();
+    });
+
+    ctx.events.on('analysis:opened',({id})=>{if(id===page.id){ctx.data.artifacts.syncLegacy();renderAllUi();}});
+    return {deactivate(){platformOff?.();quickPanel?.destroy?.();chartPanel?.destroy?.();stepPanels.forEach(h=>h?.destroy?.());try{Plotly.purge($('#dcChart'));}catch{}}};
+  }
+  window.DKDSDataCenterFeatureRuntime=Object.freeze({mount});
+})();

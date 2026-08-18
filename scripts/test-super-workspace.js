@@ -147,10 +147,10 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   const managerUi=read('src/core/plugin-manager-ui.js');
   const windowManager=read('plugin-window-manager.js');
   const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
-  const terPlugin=read('src/plugins/ter-analysis/plugin.js');
+  const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 
   assert(app.includes("activity?.openMode==='window'&&activity?.isSuper!==true"),'prewarming must exclude the currently embedded SUPER.');
-  assert(app.includes("page?.classList.contains('super-workspace-page')"),'SUPER page must not be closable like a transient SUB/tool page.');
+  assert(app.includes("page?.classList.contains('super-workspace-root-page')"),'only the actual SUPER root page must be non-dismissible; plugin-owned SUB pages must remain closable.');
   assert(app.includes('superWorkspaceDivider'),'main renderer must own the adjustable SUPER left/main divider.');
   assert(css.includes('--dkds-super-left-width'),'SUPER layout must use a shared adjustable left-region width token.');
   assert(css.includes('.dkds-super-composed-root')&&css.includes('.dkds-super-slot-left')&&css.includes('.dkds-super-slot-main'),'core SUPER layout must be driven by semantic TOP slots.');
@@ -164,8 +164,22 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert((resonanceManifest.window?.mode||'dedicated')==='dedicated'&&resonanceManifest.window?.runtime==='window-runtime.js','resonance TOP must use a dedicated plugin renderer instead of the full compatibility renderer.');
   assert(read('src/plugins/resonance-workbench/feature-runtime.js').includes("serviceName:'resonance'"),'resonance feature runtime must provide the plugin-owned resonance service while the TOP adapter stays thin.');
   assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'generic compatibility-window support must remain for older third-party plugins even though built-in resonance no longer needs it.');
-  assert(terPlugin.includes("root:{selector:'.ter-workspace-shell'}")&&terPlugin.includes("selector:'.ter-workspace-left'")&&terPlugin.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
-  assert(!terPlugin.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
+  assert(terFeature.includes("root:{selector:'.ter-workspace-shell'}")&&terFeature.includes("selector:'.ter-workspace-left'")&&terFeature.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
+  assert(!terFeature.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
+
+  assert(app.includes('function superWorkspaceRootPageId('),'core must derive the one true SUPER root from any TOP workspace contract.');
+  assert(app.includes("page.classList.toggle('super-workspace-root-page',isRoot)"),'SUPER root identity must be contract-driven rather than resonance-specific.');
+  assert(css.includes('.analysis-page.super-workspace-root-page .analysis-page-close'),'only the SUPER root close control may be hidden; derived resonance pages must keep Return-to-main behavior.');
+  assert(!css.includes('.analysis-page.super-workspace-page .analysis-page-close{display:none'),'non-root pages owned by the SUPER must not lose their close/return control.');
+  const topFolders=['resonance-workbench','ter-analysis','pulse-analysis','data-center'];
+  for(const folder of topFolders){
+    const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
+    const combined=(manifest.scripts||[manifest.entry||'plugin.js']).map(file=>read(`src/plugins/${folder}/${file}`)).join('\n');
+    assert(manifest.workspace?.role==='top',`${folder} must declare the generic TOP role.`);
+    assert(combined.includes('ctx.ui.topWorkspace.register'),`${folder} must register a complete generic TOP contract before it can become SUPER.`);
+  }
+  assert(source.includes('const opened=await host?.openActivityWindow?.(spec.id)'),'non-SUPER TOP navigation must await the generic window host and surface failures instead of silently doing nothing.');
+
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
   const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');

@@ -49,8 +49,13 @@ const htmlSource=fs.readFileSync('./src/index.html','utf8');
 const resonanceManifest=JSON.parse(fs.readFileSync('./src/plugins/resonance-workbench/plugin.json','utf8'));
 const resonancePluginSource=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>fs.readFileSync(`./src/plugins/resonance-workbench/${file}`,'utf8')).join('\n');
 const detectorPluginSource=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
-const terPluginSource=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
-const pulsePluginSource=fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8');
+function pluginCombined(folder){
+  const manifest=JSON.parse(fs.readFileSync(`./src/plugins/${folder}/plugin.json`,'utf8'));
+  return (manifest.scripts||[manifest.entry||'plugin.js']).map(file=>fs.readFileSync(`./src/plugins/${folder}/${file}`,'utf8')).join('\n');
+}
+const terPluginSource=pluginCombined('ter-analysis');
+const pulsePluginSource=pluginCombined('pulse-analysis');
+const dataCenterPluginSource=pluginCombined('data-center');
 assert(appSource.includes("Ctrl+框选缩放完成")&&appSource.includes("pointerdown"),'main plot should support direct Ctrl+drag box zoom');
 assert(resonancePluginSource.includes("ArrowUp")&&resonancePluginSource.includes("ArrowDown"),'resonance plugin must own up/down curve switching shortcuts');
 assert(resonancePluginSource.includes("moveSelectedPeakBy")&&resonancePluginSource.includes("ArrowRight"),'resonance plugin must own left/right peak movement shortcuts');
@@ -681,12 +686,13 @@ const htmlV313 = fs.readFileSync('./src/index.html','utf8');
 const cssV313 = fs.readFileSync('./src/style.css','utf8');
 
 for(const id of [
-  'pulseAddFilesBtn','pulseFileList','pulseCheckAllBtn','pulseUncheckAllBtn',
-  'pulseRemoveFilesBtn','pulseAnalyzeCurrentBtn','pulseAnalyzeCheckedBtn',
+  'pulseFileList','pulseCheckAllBtn','pulseUncheckAllBtn','pulseRemoveFilesBtn',
   'pulseApplySettingsBtn','pulseSeriesLabel','pulseResultScope'
 ]){
   assert(pulsePluginSource.includes(`id="${id}"`),`multi-file pulse plugin control ${id} must exist`);
 }
+for(const marker of ["id:'add'","id:'current'","id:'checked'"])
+  assert(pulsePluginSource.includes(marker),`multi-file Pulse primary action must exist once in the shared dynamic ActionGroup: ${marker}`);
 assert(appV313.includes('function createPulseAnalysisState()')&&appV313.includes('files:[]')&&appV313.includes("resultScope:'checked'"),
   'pulse analysis must use a batch-oriented state object');
 assert(appV313.includes('function pulseCheckedItems()')&&appV313.includes('function pulseVisibleResultItems()'),
@@ -715,9 +721,9 @@ assert(appV313.includes("['label,source_file,index,segmentation_mode,pulse_volta
   'batch pulse-current CSV must identify both display label and source file');
 assert(appV313.includes('pulseAnalysisState:pulseAnalysisState')||appV313.includes('t.pulseAnalysisState=pulseAnalysisState'),
   'pulse batch state must be project-tab scoped');
-assert(appV313.includes('plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes("ctx.project.registerSlice('workspace'"),
+assert(appV313.includes('plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})')&&pulsePluginSource.includes("ctx.project.registerSlice('workspace'"),
   'multi-file pulse workspace configuration must persist through plugin project slices');
-assert(appV313.includes('window.DKDSPlugins.project.restore(pr.plugins||{},pr)')&&fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8').includes('legacyProject?.pulseAnalysis'),
+assert(appV313.includes('window.DKDSPlugins.project.restore(pr.plugins||{},pr)')&&pulsePluginSource.includes('legacyProject?.pulseAnalysis'),
   'saved multi-file pulse workspace must restore through plugin state and migrate legacy projects');
 assert(cssV313.includes('.pulse-batch-workspace')&&cssV313.includes('grid-template-columns:330px minmax(0,1fr)'),
   'pulse page must have a dedicated file-manager/editor workspace');
@@ -940,7 +946,7 @@ const formula318=fs.readFileSync('./src/core/formula-engine.js','utf8');
 const params318=fs.readFileSync('./src/core/parameter-schema.js','utf8');
 const workflow318=fs.readFileSync('./src/core/workflow-engine.js','utf8');
 const kernel318=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
-const dataCenter318=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
+const dataCenter318=dataCenterPluginSource;
 const index318=fs.readFileSync('./src/index.html','utf8');
 const app318=fs.readFileSync('./src/app.js','utf8');
 const pkg318=JSON.parse(fs.readFileSync('./package.json','utf8'));
@@ -985,9 +991,9 @@ const cssV319=fs.readFileSync('./src/style.css','utf8');
 const kernelV319=fs.readFileSync('./src/core/plugin-kernel.js','utf8');
 const resonanceV319=resonancePluginSource;
 const detectorV319=fs.readFileSync('./src/plugins/resonance-detector-robust/plugin.js','utf8');
-const dataCenterV319=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
-const terPluginV319=fs.readFileSync('./src/plugins/ter-analysis/plugin.js','utf8');
-const pulsePluginV319=fs.readFileSync('./src/plugins/pulse-analysis/plugin.js','utf8');
+const dataCenterV319=dataCenterPluginSource;
+const terPluginV319=terPluginSource;
+const pulsePluginV319=pulsePluginSource;
 
 assert(htmlV319.includes('id="activityBar"')&&htmlV319.includes('id="activityMoreMenu"'),
   'top shell must expose an activity switcher with overflow');
@@ -1123,7 +1129,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.27.1','current package version must be v3.27.1');
+assert(pkgV321.version==='3.28.0','current package version must be v3.28.0');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
   'DK Data Studio must ship the compact dedicated DK logo/icon assets');
@@ -1145,7 +1151,7 @@ assert(kernelV321.includes("spec.openMode==='window'")&&mainV321.includes("ipcMa
   'auxiliary activities must open in dedicated Electron windows');
 assert(dataCenterWindowContract()&&terPluginSource.includes("openMode:'window'")&&pulsePluginSource.includes("openMode:'window'"),
   'Data Center, TER and Pulse activities must default to separate windows');
-assert(!terPluginSource.includes('返回主图')&&!pulsePluginSource.includes('返回主图')&&!fs.readFileSync('./src/plugins/data-center/plugin.js','utf8').includes('返回主图'),
+assert(!terPluginSource.includes('返回主图')&&!pulsePluginSource.includes('返回主图')&&!dataCenterPluginSource.includes('返回主图'),
   'dedicated auxiliary activities must not expose a return-to-main-plot button');
 assert(cssV321.includes('--ui-font-size:12px')&&cssV321.includes('--ui-control-h:34px')&&cssV321.includes('.topbar{height:52px'),
   'v3.21 shell must use the larger desktop control scale');
@@ -1172,7 +1178,6 @@ assert(fs.existsSync('./services/update-server/server.js')&&fs.existsSync('./con
 for(const rel of ['./docs/PROJECT_STRUCTURE.md','./docs/DEVELOPMENT_GUIDE.md','./docs/HANDOFF_NEXT_SESSION.md','./docs/guides/TOOLBOX_CN.md'])
   assert(fs.existsSync(rel),`v3.21 handoff/structure documentation missing: ${rel}`);
 function dataCenterWindowContract(){
-  const source=fs.readFileSync('./src/plugins/data-center/plugin.js','utf8');
-  return source.includes("id:'data-center',label:'数据中心'")&&source.includes("openMode:'window'");
+  return dataCenterPluginSource.includes("id:'data-center',label:'数据中心'")&&dataCenterPluginSource.includes("openMode:'window'");
 }
 console.log('v3.21 DK Data Studio shell / auxiliary workspace / plugin-surface checks passed.');

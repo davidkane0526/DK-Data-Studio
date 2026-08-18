@@ -347,11 +347,18 @@
       superPluginId=saved&&topDefinitionReady(saved)?saved:null;
       return activateSuperWorkspace({invoke:true});
     }
-    // One-time migration from pre-SUPER builds. Resonance remains the initial
-    // main surface only when it is actually available; after a user selects a
-    // SUPER we never silently fall back to the next plugin.
-    const migration='builtin.resonance-workbench';
-    if(topDefinitionReady(migration)){
+    // One-time migration from pre-SUPER builds. Core never names a domain
+    // plugin here: TOP plugins may request the initial SUPER role through
+    // manifest.workspace.defaultSuper, otherwise the first ready TOP by
+    // manifest order is used. After a user selects a SUPER we never silently
+    // fall back to another plugin.
+    const candidates=[...definitions.values()]
+      .filter(definition=>isTopDefinition(definition)&&topDefinitionReady(definition.manifest.id))
+      .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)
+        ||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100)
+        ||String(a.manifest.id).localeCompare(String(b.manifest.id)));
+    const migration=candidates[0]?.manifest?.id||null;
+    if(migration){
       superPluginId=migration;
       writeSuperPreference(migration);
     }else superPluginId=null;
@@ -461,13 +468,20 @@
       const icon=spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:'';
       button.innerHTML=`${icon}<span class="activity-label">${spec.label||spec.id}</span>`;
       button.classList.toggle('active',spec.id===activeActivityId);
-      button.onclick=()=>{
+      button.onclick=async()=>{
         const nonSuperTop=spec.role==='top'&&row.pluginId!==superPluginId&&!host?.isAuxiliaryWindow;
         if(nonSuperTop||(spec.openMode==='window'&&!host?.isAuxiliaryWindow&&row.pluginId!==superPluginId)){
-          host?.openActivityWindow?.(spec.id);
+          try{
+            const opened=await host?.openActivityWindow?.(spec.id);
+            if(opened===false)host?.setStatus?.(`工作区 ${spec.label||spec.id} 未能打开。`);
+          }catch(err){
+            console.error(`[DKDS activity-window:${spec.id}]`,err);
+            host?.setStatus?.(`工作区 ${spec.label||spec.id} 打开失败：${err.message||err}`);
+          }
           return;
         }
-        setActiveActivity(spec.id,{invoke:true});
+        try{await setActiveActivity(spec.id,{invoke:true});}
+        catch(err){console.error(`[DKDS activity:${spec.id}]`,err);host?.setStatus?.(`工作区 ${spec.label||spec.id} 打开失败：${err.message||err}`);}
       };
       const target=(spec.primary&&primaryMount)?primaryMount:mount;
       target.appendChild(button);

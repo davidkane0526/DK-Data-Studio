@@ -128,3 +128,31 @@ SUPER and TOP are presentation hosts, not separate product implementations. Thei
 - host-specific status surface.
 
 Feature behavior must remain in plugin Controller/View/feature-runtime layers.
+
+## v3.28 migration baseline
+
+The built-in first-level analysis plugins now follow the same host contract:
+
+- `resonance-workbench`
+- `ter-analysis`
+- `pulse-analysis`
+- `data-center`
+
+Core does not identify resonance (or any other domain plugin) when selecting or rendering a SUPER. A plugin may declare `workspace.defaultSuper: true`; otherwise the generic TOP ordering decides the one-time initial selection.
+
+TER, Pulse and Data Center use the same split:
+
+```text
+controller.js       shared state / selection / domain command boundary
+shared-views.js     reusable plugin-owned DOM + Workbench mapping
+feature-runtime.js  feature wiring, scientific interactions and rendering
+super-layout.js     SUPER host adapter only
+window-runtime.js   TOP service/lifecycle adapter only (when required)
+plugin.js           registration/composition only
+```
+
+Primary commands must be declared once with `ctx.ui.actions`; do not duplicate the same action in a page header and again inside the body. Contextual/export commands may remain beside the data they affect.
+
+Portable plot placement is rendered by core as one compact location breadcrumb/menu (`原位 / 左侧 / 右侧 / 底部 / 悬浮`) backed by `ContextMenu`. Plugins must not render their own row of opaque docking icons.
+
+A TOP promoted to SUPER must behave identically to every other TOP. Core derives the single non-dismissible SUPER root from the registered TOP contract. Plugin-owned derived/SUB pages remain dismissible so controls such as `返回主图` continue to work.

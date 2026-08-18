@@ -10,16 +10,16 @@ const windowManager=read('plugin-window-manager.js');
 const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
 const resonanceTop=read('src/plugins/resonance-workbench/window-runtime.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
-const ter=read('src/plugins/ter-analysis/plugin.js');
-const pulse=read('src/plugins/pulse-analysis/plugin.js');
-const dataCenter=read('src/plugins/data-center/plugin.js');
 
 for(const symbol of ['PortableView','ActionGroup','InteractionBinding','SelectionChannel','ContextMenu','SplitController','ChartSurface','ViewHost','Workbench']){
   assert(ui.includes(`class ${symbol}`),`core UI infrastructure must expose ${symbol}`);
 }
 assert(ui.includes("pin(placement='right')"),'portable views must expose pin placement');
+assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('placementLongLabels'),'portable views must use one compact placement breadcrumb/menu rather than a six-button strip');
+assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use the core context-menu service');
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
+assert(ui.includes('spec.existing===true')&&ui.includes('mountExistingSplit'),'Workbench must be able to adapt mature existing DOM and still provide core split/layout infrastructure');
 assert(kernel.includes("const API_VERSION = '1.4.0'"),'plugin API must be v1.4.0');
 for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
   assert(kernel.includes(api),`kernel missing UI API: ${api}`);
@@ -31,11 +31,37 @@ for(const [name,adapter] of [['SUPER',resonanceSuper],['TOP',resonanceTop]]){
   assert(adapter.split(/\r?\n/).length<45,`${name} resonance adapter must remain thin`);
   for(const forbidden of ['Plotly.','computeTerMatrix','detectPeaks','renderGate','renderPhysics','innerHTML=`'])assert(!adapter.includes(forbidden),`${name} adapter contains feature logic: ${forbidden}`);
 }
-assert(resonanceFeature.includes('mountSuper')&&resonanceFeature.includes('createTop'),'feature runtime must own both host feature paths');
-for(const [name,src] of [['TER',ter],['Pulse',pulse],['Data Center',dataCenter]]){
-  assert(src.includes('ctx.ui.portable.create'),`${name} must use core portable view infrastructure`);
-  assert(/ctx\.ui\.actions\?\.mount\?\.|ctx\.ui\.actions\.mount/.test(src),`${name} must use core dynamic action infrastructure`);
+assert(resonanceFeature.includes('mountSuper')&&resonanceFeature.includes('createTop'),'resonance feature runtime must own both host feature paths');
+
+const migrated={
+  'TER':'ter-analysis',
+  'Pulse':'pulse-analysis',
+  'Data Center':'data-center'
+};
+for(const [name,folder] of Object.entries(migrated)){
+  const entry=read(`src/plugins/${folder}/plugin.js`);
+  const controller=read(`src/plugins/${folder}/controller.js`);
+  const views=read(`src/plugins/${folder}/shared-views.js`);
+  const feature=read(`src/plugins/${folder}/feature-runtime.js`);
+  const adapter=read(`src/plugins/${folder}/super-layout.js`);
+  const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
+  assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
+  assert(controller.includes('selection.channel'),`${name} controller must use the core Selection Channel`);
+  assert(views.includes('ctx.ui.workbench.create'),`${name} shared views must use the core Workbench`);
+  assert(views.includes('existing:true'),`${name} must adapt its shared DOM through the Workbench rather than owning a second host layout`);
+  assert(feature.includes('ctx.ui.actions')&&feature.includes('ctx.ui.charts'),`${name} feature runtime must use dynamic actions and Chart Surface infrastructure`);
+  assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
+  assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);
+  for(const forbidden of ['Plotly.','renderChart','calculate','analyze','innerHTML=`'])assert(!adapter.includes(forbidden),`${name} SUPER adapter contains feature logic: ${forbidden}`);
+  const scripts=manifest.scripts||[];
+  for(const required of ['controller.js','shared-views.js','feature-runtime.js','super-layout.js','plugin.js'])assert(scripts.includes(required),`${name} manifest must load ${required}`);
 }
-assert(!ter.includes("window.addEventListener('keydown'"),'TER must not own a global keydown listener');
-assert(dataCenter.includes('ctx.state.create')&&dataCenter.includes("projectSlice:'workspace'"),'Data Center must use core state/project infrastructure');
+const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
+const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
+const dataCenterController=read('src/plugins/data-center/controller.js');
+assert(!terFeature.includes("window.addEventListener('keydown'"),'TER must not own a global keydown listener');
+assert(terFeature.includes('controller?.select?.')&&terFeature.includes('controller?.clearSelection?.'),'TER linked chart selection must flow through the shared Selection Channel');
+assert(pulseFeature.includes("source:'pulse-file'"),'Pulse current-file selection must flow through the shared Selection Channel');
+assert(dataCenterController.includes('ctx.state.create')&&dataCenterController.includes("projectSlice:'workspace'"),'Data Center Controller must own core state/project infrastructure rather than its view runtime.');
 console.log('UI infrastructure architecture checks passed.');

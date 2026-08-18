@@ -711,7 +711,7 @@ button.danger-soft{
 .import-panel-overlay{
   position:fixed;
   inset:0;
-  z-index:260;
+  z-index:1500;
   background:rgba(15,23,42,.38);
   display:flex;
   align-items:center;
@@ -3590,7 +3590,7 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
 .super-divider-dragging *{cursor:col-resize!important;user-select:none!important}
 
 /* A SUPER is the main surface, not a dismissible child page. */
-.analysis-page.super-workspace-page .analysis-page-close{display:none!important}
+.analysis-page.super-workspace-root-page .analysis-page-close{display:none!important}
 .analysis-page.super-workspace-page{background:#f5f7fb}
 .analysis-page.super-workspace-page .analysis-page-header{background:#fff}
 
@@ -3947,3 +3947,19 @@ body.auxiliary-window .analysis-page{
 .dkds-context-item kbd{font:inherit;font-size:11px;opacity:.58}
 .dkds-context-separator{height:1px;background:var(--border,#d8deea);margin:3px 5px}
 .dkds-portable-view.is-floating{resize:both;overflow:auto;min-width:300px;min-height:180px}
+
+/* v3.28 compact portable-view location breadcrumb. One control replaces the
+   old six-icon strip so chart titles keep their horizontal space. */
+.dkds-portable-controls.dkds-portable-breadcrumb{display:flex;align-items:center;flex:0 0 auto;margin-left:auto}
+.dkds-portable-placement-trigger{height:24px!important;min-width:0!important;padding:2px 7px!important;border:1px solid #d8e0ed!important;border-radius:7px!important;background:#f8faff!important;color:#526078!important;font-size:10px!important;line-height:1!important;display:inline-flex!important;align-items:center;gap:4px;white-space:nowrap}
+.dkds-portable-placement-trigger:hover{background:#eef3ff!important;border-color:#bdcae6!important;color:#315efb!important}
+.dkds-portable-caret{font-size:8px;opacity:.72}
+
+/* Existing-DOM Workbench adapter: lets mature plugin UIs use the same core
+   layout/split/portable infrastructure without duplicating their scientific DOM. */
+.dkds-workbench-existing-split{display:grid!important;grid-template-columns:auto 6px minmax(0,1fr)!important;column-gap:8px!important;align-items:start!important}
+.dkds-workbench-existing-split>.dkds-workbench-splitter{grid-column:2;align-self:stretch;min-height:120px;cursor:col-resize;position:relative;touch-action:none}
+.dkds-workbench-existing-split>.dkds-workbench-splitter::before{content:'';position:absolute;top:0;bottom:0;left:2px;width:1px;background:#dbe3ef;transition:.12s}
+.dkds-workbench-existing-split>.dkds-workbench-splitter:hover::before,.dkds-workbench-existing-split>.dkds-workbench-splitter:focus-visible::before{left:1px;width:3px;background:#9fb2df}
+.dkds-workbench-existing-split>[data-dkds-region="left"]{grid-column:1!important;min-width:0}
+.dkds-workbench-existing-split>[data-dkds-region="main"]{grid-column:3!important;min-width:0}
