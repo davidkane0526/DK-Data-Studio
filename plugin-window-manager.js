@@ -18,6 +18,8 @@ const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'parameter-schema',
   'workflow-engine',
   'platform',
+  'state-store',
+  'ui-infrastructure',
   'plugin-kernel'
 ]);
 

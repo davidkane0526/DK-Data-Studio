@@ -17,3 +17,5 @@ Reconstructed sequence:
 9. v3.26.0: move Resonance onto plugin-owned shared Controller and View-component layers; SUPER and TOP use different layout adapters over the same workspace schema, canonical views, shared feature templates, and trend/spacing ViewModels.
 
 The reconstructed commits preserve the file contents of those delivered snapshots so later changes can be reviewed with normal `git log`, `git diff`, and `git checkout` workflows.
+
+10. v3.27.0: establish plugin-neutral UI/state infrastructure, reduce Resonance SUPER/TOP adapters to host mapping only, and migrate TER/Pulse/Data Center to portable plots and shared command controls.

@@ -162,14 +162,14 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert(managerUi.includes('topContractReady'),'plugin manager must expose whether a TOP contract is valid.');
   assert(windowManager.includes("WINDOW_MODES = new Set(['dedicated','compatibility'])"),'independent TOP lifecycle must support compatibility windows without special activity whitelists.');
   assert((resonanceManifest.window?.mode||'dedicated')==='dedicated'&&resonanceManifest.window?.runtime==='window-runtime.js','resonance TOP must use a dedicated plugin renderer instead of the full compatibility renderer.');
-  assert(read('src/plugins/resonance-workbench/window-runtime.js').includes("serviceName:'resonance'"),'resonance dedicated window must provide a plugin-owned resonance runtime service.');
+  assert(read('src/plugins/resonance-workbench/feature-runtime.js').includes("serviceName:'resonance'"),'resonance feature runtime must provide the plugin-owned resonance service while the TOP adapter stays thin.');
   assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'generic compatibility-window support must remain for older third-party plugins even though built-in resonance no longer needs it.');
   assert(terPlugin.includes("root:{selector:'.ter-workspace-shell'}")&&terPlugin.includes("selector:'.ter-workspace-left'")&&terPlugin.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
   assert(!terPlugin.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
-  const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
-  assert(resonanceSuper.includes("placements:['right','float']")&&resonanceSuper.includes("placements:['bottom','float']"),'built-in resonance PRIME declarations must advertise only placements their adapters actually support.');
+  const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+  assert(resonanceFeature.includes("placements:['right','float']")&&resonanceFeature.includes("placements:['bottom','float']"),'built-in resonance feature runtime must advertise only PRIME placements its host infrastructure supports.');
 
   console.log('SUPER/TOP/PRIME/SUB workspace contract checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

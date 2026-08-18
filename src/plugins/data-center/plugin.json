@@ -1,12 +1,12 @@
 {
   "id": "builtin.data-center",
   "name": "Data Center",
-  "version": "1.0.0",
-  "apiVersion": "1.3.0",
+  "version": "1.1.0",
+  "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 20,
-  "description": "Unified artifact store, formula/workflow pipeline, provenance explorer and extensible chart workspace.",
+  "description": "Data/workflow center using core portable views, command groups and common layout infrastructure.",
   "capabilities": [
     "ui.activity",
     "ui.page",
@@ -17,7 +17,12 @@
     "workflow.recipe",
     "chart.provider",
     "project.slice",
-    "ui.top-workspace"
+    "ui.top-workspace",
+    "ui.infrastructure",
+    "ui.portable",
+    "ui.dynamic-actions",
+    "ui.shortcuts",
+    "state.store"
   ],
   "source": "builtin",
   "window": {
@@ -34,6 +39,8 @@
       "parameter-schema",
       "workflow-engine",
       "platform",
+      "state-store",
+      "ui-infrastructure",
       "plugin-kernel"
     ],
     "prewarm": false,

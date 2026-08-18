@@ -41,3 +41,6 @@ body.plugin-window-host .analysis-page-body{background:var(--bg,#f6f8fb)}
 .plugin-window-status{font-size:var(--ui-font-small,11px);background:#fbfcfe;color:#7a8495;border-top:1px solid #e6eaf0}
 .plugin-window-error strong{font-size:var(--ui-font-page-title,18px)}
 .plugin-window-error span{font-size:var(--ui-font-small,11px)}
+.plugin-window-universal-dock{position:fixed;z-index:1150;background:var(--bg,#f6f8fb);padding:6px;overflow:auto;display:flex;gap:6px}.plugin-window-universal-dock:empty{display:none}.plugin-window-right-dock{top:0;right:0;bottom:28px;width:min(420px,36vw);flex-direction:column;border-left:1px solid var(--line,#e3e7ee)}.plugin-window-bottom-dock{left:0;right:0;bottom:28px;max-height:38vh;flex-direction:row;border-top:1px solid var(--line,#e3e7ee)}.plugin-window-bottom-dock>.dkds-portable-view{min-width:360px;flex:1 1 420px}
+
+.plugin-window-left-dock{position:fixed;left:8px;top:76px;bottom:38px;width:min(420px,36vw);z-index:1700;overflow:auto}

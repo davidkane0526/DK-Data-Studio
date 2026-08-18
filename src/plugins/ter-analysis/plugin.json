@@ -1,12 +1,12 @@
 {
   "id": "builtin.ter-analysis",
   "name": "TER Analysis",
-  "version": "2.1.0",
-  "apiVersion": "1.3.0",
+  "version": "2.2.0",
+  "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 120,
-  "description": "Same-Vd TER matrix with linked R–V inspection, manual TER_Max adjustment, configurable chart layout and per-chart export.",
+  "description": "TER Analysis with core portable charts, command groups and shortcut infrastructure.",
   "capabilities": [
     "ui.activity",
     "ui.page",
@@ -18,7 +18,11 @@
     "ui.sticky-inspector",
     "ui.chart-layout",
     "ui.keyboard-adjustment",
-    "chart.export"
+    "chart.export",
+    "ui.infrastructure",
+    "ui.portable",
+    "ui.dynamic-actions",
+    "ui.shortcuts"
   ],
   "window": {
     "activity": "ter",
@@ -33,6 +37,7 @@
       "science-common",
       "science-ter",
       "platform",
+      "ui-infrastructure",
       "plugin-kernel"
     ],
     "prewarm": false,

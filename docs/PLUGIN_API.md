@@ -1,4 +1,4 @@
-# Plugin API v1.3
+# Plugin API v1.4
 
 Global runtime:
 
@@ -26,7 +26,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
   "version": "0.1.0",
-  "apiVersion": "1.3.0",
+  "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 300,
@@ -38,8 +38,11 @@ DKDSPlugins.define(manifest, async ctx => {
 Plugin ids are permanent. Do not rename an id after project files have stored state under it.
 
 
-## Workspace UI API v1.3
+## Workspace UI API v1.4
 
+
+
+v1.4 adds plugin-neutral infrastructure for lifecycle-owned state, portable/pinnable views, dynamic action groups, chart surfaces, View/Controller hosts, mouse/pointer interaction, context menus and linked-selection channels. Complex plugins should consume these primitives instead of implementing their own window-layout framework. See `docs/PLUGIN_UI_INFRASTRUCTURE.md`.
 Activity-scoped keyboard behavior must use `ctx.ui.shortcuts.add(...)`; plugins should listen to the generic `layout:resize` event to resize their own canvases. Core must not know domain shortcut keys or domain plot IDs.
 
 For full scientific-workspace customization, read:
@@ -48,7 +51,7 @@ For full scientific-workspace customization, read:
 docs/WORKSPACE_PLUGIN_API.md
 ```
 
-v1.3 keeps the v1.x API additive and adds first-class selection menus plus desktop auxiliary-activity windows. Workspace contributions include:
+v1.4 remains additive: it keeps the v1.3 selection-menu and desktop auxiliary-window contracts and adds plugin-neutral UI/state infrastructure. Workspace contributions include:
 
 ```text
 ui.activities
@@ -548,7 +551,7 @@ The host rejects a second plugin that tries to claim an already registered globa
 
 ## Installable package distribution
 
-Plugin API v1.3 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+Plugin API v1.4 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
 
 ## Dedicated plugin windows
 

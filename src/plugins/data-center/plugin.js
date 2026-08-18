@@ -2,16 +2,25 @@
   DKDSPlugins.define({
     id:'builtin.data-center',
     name:'Data Center',
-    version:'1.0.0',
-    apiVersion:'1.3.0',
+    version:'1.1.0',
+    apiVersion:'1.4.0',
     description:'Generic data model, formula-derived columns, configurable workflows, schema-driven parameters and chart previews.',
     source:'builtin',
     order:20,
-    capabilities:['ui.activity','data.model','data.formula','workflow.processor','workflow.analyzer','workflow.recipe','chart.renderer','ui.page','project.slice','ui.top-workspace'],
+    capabilities:['ui.activity','data.model','data.formula','workflow.processor','workflow.analyzer','workflow.recipe','chart.renderer','ui.page','project.slice','ui.top-workspace','ui.infrastructure','ui.portable','ui.dynamic-actions','ui.shortcuts','state.store'],
     workspace:{role:'top',activity:'data-center',icon:'▦',title:'数据中心'}
   }, async ctx => {
     const D=ctx.data.model,F=ctx.data.formula;
-    let state={schema:1,activeArtifactId:null,recipeName:'我的工作流',steps:[],savedRecipes:[],chart:{provider:'xy-line',parameters:{mode:'lines+markers'}}};
+    const initialState={schema:1,activeArtifactId:null,recipeName:'我的工作流',steps:[],savedRecipes:[],chart:{provider:'xy-line',parameters:{mode:'lines+markers'}}};
+    const stateStore=ctx.state.create(initialState,{
+      projectSlice:'workspace',
+      migrate(data){
+        const d=data&&typeof data==='object'?data:{};
+        return {schema:1,activeArtifactId:d.activeArtifactId||null,recipeName:d.recipeName||'我的工作流',steps:D.deepClone(d.steps||[]),savedRecipes:D.deepClone(d.savedRecipes||[]),chart:D.deepClone(d.chart||initialState.chart)};
+      },
+      serialize(value){return {schema:1,activeArtifactId:value.activeArtifactId,recipeName:value.recipeName,steps:D.deepClone(value.steps),savedRecipes:D.deepClone(value.savedRecipes),chart:D.deepClone(value.chart)};}
+    });
+    let state=stateStore.get();
     let page=null,lastExecution=null,quickPanel=null,chartPanel=null,stepPanels=[];
     const $=(sel,root=page)=>root?.querySelector(sel)||null;
     const $$=(sel,root=page)=>[...(root?.querySelectorAll(sel)||[])];
@@ -115,6 +124,20 @@
         </div>`
     });
 
+    const dcHeader=page.querySelector('.analysis-page-header');
+    const dcHeaderActionsHost=document.createElement('div');
+    dcHeaderActionsHost.className='dkds-plugin-header-actions';
+    dcHeader?.querySelector('.analysis-page-close')?.before(dcHeaderActionsHost);
+    ctx.ui.actions?.mount?.(dcHeaderActionsHost,{
+      activity:'data-center',
+      actions:[
+        {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>page.querySelector('#dcRefreshArtifacts')?.click()},
+        {id:'formula',icon:'ƒ',label:'生成派生列',order:20,onInvoke:()=>page.querySelector('#dcApplyFormula')?.click()},
+        {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>page.querySelector('#dcRunWorkflow')?.click()},
+        {id:'chart',icon:'▥',label:'绘图',order:40,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>page.querySelector('#dcRenderChart')?.click()}
+      ]
+    });
+
     ctx.ui.topWorkspace.register({
       id:'data-center',activity:'data-center',label:'数据中心',icon:'▦',
       layout:{
@@ -124,6 +147,11 @@
         prime:[]
       }
     });
+
+    const chartPane=page.querySelector('.dc-chart-pane');
+    if(chartPane&&ctx.ui.portable?.create){
+      try{ctx.ui.portable.create('data-center-chart',chartPane,{title:'通用图形预览',handle:'.dc-tool-title',useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'});}catch(err){console.warn('[Data Center portable chart]',err);}
+    }
 
     ctx.ui.styles.add('data-center',`
       .data-center-body{display:grid;grid-template-columns:290px minmax(0,1fr);gap:12px;padding:12px;overflow:auto;background:#f5f7fb}.dc-card{background:#fff;border:1px solid #dde4ef;border-radius:10px;min-width:0;overflow:hidden}.dc-artifact-pane{position:sticky;top:0;align-self:start;max-height:calc(100vh - 105px);display:flex;flex-direction:column}.dc-section-head,.dc-tool-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #edf0f5;background:#fbfcfe}.dc-section-head>div,.dc-tool-title>div{display:flex;flex-direction:column;gap:2px}.dc-section-head strong,.dc-tool-title strong{font-size:12px;color:#344054}.dc-section-head span,.dc-tool-title span{font-size:9px;color:#7d8798}.dc-artifact-list{overflow:auto;padding:7px;min-height:180px}.dc-artifact-item{display:block;width:100%;text-align:left;padding:8px;margin-bottom:6px;border:1px solid #e2e7ef;border-radius:8px;background:#fff;cursor:pointer}.dc-artifact-item.active{border-color:#7190ed;background:#eef3ff}.dc-artifact-name{font-size:10px;font-weight:700;color:#344054;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dc-artifact-meta{font-size:8.5px;color:#8a94a6;margin-top:3px}.dc-main{display:flex;flex-direction:column;gap:12px;min-width:0}.dc-tabs{display:flex;gap:4px}.dc-tabs button.active{background:#315efb;color:#fff}.dc-table-preview{max-height:250px;overflow:auto}.dc-json-preview{margin:0;padding:10px 12px;font:9px/1.5 ui-monospace,Consolas,monospace;color:#475467;white-space:pre-wrap;word-break:break-word}.dc-preview-table{width:100%;border-collapse:collapse;font-size:9px;font-variant-numeric:tabular-nums}.dc-preview-table th{position:sticky;top:0;background:#f7f9fc;z-index:2}.dc-preview-table th,.dc-preview-table td{border-bottom:1px solid #edf0f5;padding:5px 7px;text-align:right;white-space:nowrap}.dc-preview-table th:first-child,.dc-preview-table td:first-child{text-align:center}.dc-tool-pane{padding-bottom:10px}.dc-tool-pane>.schema-parameter-panel,.dc-chart-pane>.schema-parameter-panel{padding:10px 12px}.dc-inline-actions{display:flex;gap:5px;align-items:center}.dc-formula-refs{padding:0 12px;display:flex;gap:5px;flex-wrap:wrap}.dc-ref-chip{font-family:ui-monospace,Consolas,monospace;font-size:9px;padding:3px 6px;border:1px solid #dce3ef;border-radius:999px;background:#f7f9fc;cursor:pointer}.dc-recipe-bar,.dc-add-step{display:flex;gap:7px;align-items:end;padding:9px 12px;border-bottom:1px solid #edf0f5}.dc-recipe-bar label{display:flex;flex-direction:column;gap:3px;font-size:9px;color:#667085}.dc-recipe-bar input,.dc-recipe-bar select,.dc-add-step select{height:30px;border:1px solid #cfd7e5;border-radius:6px;padding:3px 7px;min-width:150px}.dc-workflow-steps{padding:10px 12px}.dc-step-card{border:1px solid #dfe5ef;border-radius:8px;margin-bottom:8px;overflow:hidden}.dc-step-head{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;background:#f8faff;border-bottom:1px solid #e8edf4}.dc-step-head strong{font-size:10px}.dc-step-actions{display:flex;gap:4px}.dc-step-params{padding:7px}.dc-workflow-status{margin:0 12px;padding:8px;border:1px solid #e1e6ef;border-radius:7px;background:#f8fafc;font-size:9px;color:#667085}.dc-workflow-status.running{border-color:#9db1ee;background:#f2f6ff}.dc-workflow-status.done{border-color:#a7d7b8;background:#f2fbf5}.dc-workflow-status.error{border-color:#efb8b2;background:#fff5f4;color:#b42318}.dc-provenance-list{padding:10px 12px;max-height:430px;overflow:auto}.dc-prov-item{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px solid #edf0f5}.dc-prov-time{font-size:8px;color:#98a2b3}.dc-prov-main strong{display:block;font-size:10px;color:#344054}.dc-prov-main div{font-size:8.5px;color:#667085;margin-top:2px;word-break:break-word}.dc-chart{height:430px;min-height:320px}.schema-parameter-panel{display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:8px 10px}.schema-param-group{display:contents}.schema-param-group-title{grid-column:1/-1;font-size:10px;font-weight:700;color:#475467}.schema-param-field{display:flex;flex-direction:column;gap:3px;min-width:0}.schema-param-label{font-size:9px;color:#5f6b7d}.schema-param-field input,.schema-param-field select,.schema-param-field textarea{width:100%;box-sizing:border-box;border:1px solid #cfd7e5;border-radius:6px;padding:5px 7px;font-size:10px;background:#fff;min-height:30px}.schema-param-field textarea{resize:vertical}.schema-param-help{font-size:8px;color:#98a2b3;line-height:1.4}.schema-param-error{min-height:10px;font-size:8px;color:#b42318}.schema-param-field.has-error input,.schema-param-field.has-error select,.schema-param-field.has-error textarea{border-color:#e58d84}.required{color:#b42318}@media(max-width:1000px){.data-center-body{grid-template-columns:230px minmax(0,1fr)}.schema-parameter-panel{grid-template-columns:1fr}}.dkds-size-compact .data-center-body{grid-template-columns:1fr;padding:7px}.dkds-size-compact .dc-artifact-pane{position:static;max-height:250px}.dkds-size-compact .dc-recipe-bar,.dkds-size-compact .dc-add-step,.dkds-size-compact .dc-tool-title{flex-wrap:wrap}.dkds-size-compact .dc-chart{height:360px}
@@ -158,10 +186,10 @@
     $('#dcRefreshArtifacts').onclick=()=>{ctx.data.artifacts.syncLegacy();renderAllUi();};$('#dcApplyFormula').onclick=applyFormula;$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcRunWorkflow').onclick=runWorkflow;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=renderChartParams;$('#dcRenderChart').onclick=renderChart;$('#dcExportChart').onclick=()=>ctx.host.savePlotlyImage('dcChart','data_center_chart','png');$('#dcCopyProvenance').onclick=()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON');
     ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});
 
-    ctx.project.registerSlice('workspace',{
-      serialize:()=>({schema:1,activeArtifactId:state.activeArtifactId,recipeName:state.recipeName,steps:D.deepClone(state.steps),savedRecipes:D.deepClone(state.savedRecipes),chart:D.deepClone(state.chart)}),
-      restore:data=>{const d=data&&typeof data==='object'?data:{};state={schema:1,activeArtifactId:d.activeArtifactId||null,recipeName:d.recipeName||'我的工作流',steps:D.deepClone(d.steps||[]),savedRecipes:D.deepClone(d.savedRecipes||[]),chart:D.deepClone(d.chart||{provider:'xy-line',parameters:{mode:'lines+markers'}})};if(page&&!page.classList.contains('hidden'))renderAllUi();},
-      reset:()=>{state={schema:1,activeArtifactId:null,recipeName:'我的工作流',steps:[],savedRecipes:[],chart:{provider:'xy-line',parameters:{mode:'lines+markers'}}};lastExecution=null;}
+    stateStore.subscribe((next,meta)=>{
+      state=next;
+      if(meta?.reason==='project-reset'||meta?.reason==='reset')lastExecution=null;
+      if(page&&!page.classList.contains('hidden')&&(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset'))renderAllUi();
     });
 
     ctx.events.on('analysis:opened',({id})=>{if(id===page.id){ctx.data.artifacts.syncLegacy();renderAllUi();}});

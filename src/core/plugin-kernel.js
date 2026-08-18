@@ -26,7 +26,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.3.0';
+  const API_VERSION = '1.4.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1142,6 +1142,17 @@
 
   function createApi(definition) {
     const pluginId = definition.manifest.id;
+    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmit } }) || null;
+    if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
+    const normalizeShortcutSpec = spec => {
+      const row={order:100,priority:0,...(spec||{}),id:spec?.id};
+      const chord=String(row.chord||row.key||row.shortcut||'').trim();
+      if(!row.match&&chord&&window.DKDSUI?.shortcuts){
+        const normalized=window.DKDSUI.shortcuts.normalizeChord(chord);
+        row.match=event=>window.DKDSUI.shortcuts.eventChord(event)===normalized;
+      }
+      return row;
+    };
     return Object.freeze({
       apiVersion: API_VERSION,
       manifest: Object.freeze({ ...definition.manifest }),
@@ -1163,6 +1174,25 @@
       },
       project: {
         registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
+      },
+      state: {
+        create(initial={}, options={}) {
+          if(!window.DKDSState?.create)throw new Error('DKDS state-store infrastructure is unavailable.');
+          const store=window.DKDSState.create(initial, options);
+          addCleanup(pluginId,()=>store.dispose?.());
+          const slice=String(options.projectSlice||'').trim();
+          if(slice){
+            registerProjectSlice(pluginId,slice,{
+              serialize:()=>typeof options.serialize==='function'?options.serialize(store.get(),store):store.snapshot(),
+              restore:(data,context)=>{
+                const next=typeof options.migrate==='function'?options.migrate(data,context,store):data;
+                store.restore(next===undefined?initial:next,{reason:'project-restore'});
+              },
+              reset:()=>store.reset({reason:'project-reset'})
+            });
+          }
+          return store;
+        }
       },
       data: {
         model: window.DKDSData,
@@ -1213,6 +1243,19 @@
         defaults: (schema, initial) => window.DKDSParameters.defaultValues(schema, initial)
       },
       ui: {
+        // Plugin-neutral UI infrastructure. These primitives are available in
+        // both the main SUPER host and dedicated TOP windows, so feature code
+        // never needs to own drag/dock/shortcut/resize plumbing.
+        infrastructure: infrastructureScope,
+        layout: infrastructureScope?.layout || null,
+        actions: infrastructureScope?.actions || null,
+        portable: infrastructureScope?.panels || null,
+        charts: infrastructureScope?.chartsApi || null,
+        interactions: infrastructureScope?.interactions || null,
+        contextMenus: infrastructureScope?.menus || null,
+        selection: infrastructureScope?.selection || null,
+        views: infrastructureScope?.views || null,
+        workbench: infrastructureScope?.workbench || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),
           activate: id => setActiveActivity(id,{invoke:true}),
@@ -1265,7 +1308,11 @@
           add: spec => addMainOverlay(pluginId,spec)
         },
         shortcuts: {
-          add: spec => registerContribution(pluginId,'ui.shortcuts',spec.id,{order:100,priority:0,...spec,id:spec.id,pluginId})
+          add: spec => {
+            const row=normalizeShortcutSpec(spec);
+            return registerContribution(pluginId,'ui.shortcuts',row.id,{...row,pluginId});
+          },
+          chord: value => window.DKDSUI?.shortcuts?.normalizeChord?.(value) || String(value||'')
         },
         pages: {
           add: spec => addPage(pluginId, spec)

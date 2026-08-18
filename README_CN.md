@@ -1,4 +1,13 @@
-# DK Data Studio — v3.26.0
+# DK Data Studio — v3.27.0
+
+## v3.27 核心 UI / 状态基础设施
+
+- 新增插件无关的 `DKDSUI` 基础设施：布局区域、持久化分栏、动态按钮组、Activity 快捷键、鼠标/指针交互、右键菜单、联动选择、Plotly 生命周期、View/Controller Host 和通用 Workbench。
+- 任意插件图表/数据卡可以注册为 Portable View：恢复原位、固定左/右/底部、悬浮、拖动、缩放、双击切换、右键选择位置，并由核心保存位置。
+- 新增 `DKDSState`，统一插件状态订阅、迁移、撤销/重做和工程命名空间持久化。工程格式仍自包含，不依赖原始 CSV/TXT/DAT。
+- 共振 `super-layout.js` / `window-runtime.js` 已缩减为纯 Host Adapter；科学功能、渲染和交互由共享 Controller / View / `feature-runtime.js` 持有。
+- TER、Pulse、Data Center 开始迁移到同一基础设施：统一动态命令栏和 Portable scientific views；Data Center 同时迁入核心 State Store。
+- Plugin API 升级到 v1.4.0。新插件应以 `docs/PLUGIN_UI_INFRASTRUCTURE.md` 为基础，不再自己实现 docking、全局 keydown 或 resize 框架。
 
 ## v3.24 插件内存 / 共振独立窗口 / 工程兼容性
 

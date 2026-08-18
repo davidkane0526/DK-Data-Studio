@@ -1,17 +1,27 @@
-# Next Session Handoff — v3.26.0
+
+## v3.27 architecture baseline
+
+- Core UI infrastructure: `src/core/ui-infrastructure.js`.
+- Core state/project infrastructure: `src/core/state-store.js`.
+- Plugin API: v1.4.0.
+- Resonance host adapters (`super-layout.js`, `window-runtime.js`) must remain host-only; domain behavior belongs in `feature-runtime.js`, shared Controller and shared Views.
+- TER/Pulse/Data Center now consume core portable-view/action infrastructure. Data Center also consumes `ctx.state.create`.
+- New complex plugins should follow `docs/PLUGIN_UI_INFRASTRUCTURE.md`; do not create plugin-local docking, global keydown or resize frameworks.
+
+# Next Session Handoff — v3.27.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.26.0`
+- Current delivery: `v3.27.0`
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
 Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
 
 
-## v3.26 current continuation: shared Resonance View/Controller
+## v3.27 current continuation: plugin-neutral UI infrastructure
 
 - `src/plugins/resonance-workbench/plugin.js` is intentionally a thin dispatcher. Do not move domain UI back into it.
 - `workbench-shared.js` is the canonical plugin-owned Controller layer shared by SUPER and dedicated TOP. It owns the six-view catalog, workspace normalization, controller facade, trend/group ViewModel and peak-spacing ViewModel. `view-components.js` is the shared View layer and owns reusable feature descriptors/templates plus TOP composition.

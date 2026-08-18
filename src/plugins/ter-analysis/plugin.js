@@ -2,12 +2,12 @@
   DKDSPlugins.define({
     id:'builtin.ter-analysis',
     name:'TER Analysis',
-    version:'2.1.0',
-    apiVersion:'1.3.0',
+    version:'2.2.0',
+    apiVersion:'1.4.0',
     description:'Same-Vd TER matrix and extrema workspace with plugin-owned UI.',
     source:'builtin',
     order:120,
-    capabilities:['ui.activity','ui.page','analysis.ter','chart.heatmap','chart.resistance-voltage','ui.linked-selection','ui.sticky-inspector','ui.chart-layout','ui.keyboard-adjustment','chart.export','ui.top-workspace'],
+    capabilities:['ui.activity','ui.page','analysis.ter','chart.heatmap','chart.resistance-voltage','ui.linked-selection','ui.sticky-inspector','ui.chart-layout','ui.keyboard-adjustment','chart.export','ui.top-workspace','ui.infrastructure','ui.portable','ui.dynamic-actions','ui.shortcuts'],
     workspace:{role:'top',activity:'ter',icon:'▧',title:'TER 分析'}
   }, async ctx => {
     const h=ctx.host;
@@ -21,7 +21,8 @@
     let observer=null;
     const clickBindings=new Map();
     const manualStateByResult=new WeakMap();
-    let keydownHandler=null;
+    let keyboardContributionsBound=false;
+    const portableCharts=new Map();
     let layoutSettings={rows:2,cols:3,sticky:true};
 
     ctx.ui.styles.add('linked-resistance-voltage', `
@@ -364,6 +365,29 @@
       if(!page||page.dataset.terExportBound==='1')return;
       page.dataset.terExportBound='1';
       page.addEventListener('click',handleExportClick);
+    }
+
+
+    function ensurePortableCharts(){
+      if(!ctx.ui.portable?.create)return;
+      const specs=[
+        ...chartSpecs().map(spec=>({...spec,title:document.getElementById(spec.plotId)?.closest('.analysis-chart-card')?.querySelector('.ter-card-title-text,.analysis-chart-title')?.textContent?.trim()||spec.fileBase,handle:'.analysis-chart-title'})),
+        {key:'resistance',plotId:'terResistancePlot',title:'电阻–电压 R–V',handle:'.ter-resistance-card-header'}
+      ];
+      for(const spec of specs){
+        if(portableCharts.has(spec.key))continue;
+        const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
+        if(!card)continue;
+        try{
+          portableCharts.set(spec.key,ctx.ui.portable.create(`ter-chart-${spec.key}`,card,{
+            title:spec.title,
+            handle:spec.handle,
+            useTargetAsWrapper:true,
+            placements:['home','float','left','right','bottom'],
+            defaultPlacement:'home'
+          }));
+        }catch(err){console.warn('[TER portable chart]',spec.key,err);}
+      }
     }
 
     function restorePerChartActions(){
@@ -770,27 +794,21 @@
     }
 
     function bindKeyboardAdjuster(){
-      if(keydownHandler)return;
-      keydownHandler=event=>{
+      if(keyboardContributionsBound)return;
+      keyboardContributionsBound=true;
+      const invoke=step=>{
         const page=document.getElementById('terMaxPage');
-        if(!page||page.classList.contains('hidden')||!selectedTerPoint)return;
-        const target=event.target;
-        const tag=String(target?.tagName||'').toLowerCase();
-        if(tag==='input'||tag==='textarea'||tag==='select'||target?.isContentEditable)return;
-        if(!(event.ctrlKey||event.metaKey)||event.altKey)return;
-        if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation?.();
-        moveSelectedTerPoint(event.key==='ArrowLeft'?-1:1);
+        if(!page||page.classList.contains('hidden')||!selectedTerPoint)return false;
+        return moveSelectedTerPoint(step);
       };
-      window.addEventListener('keydown',keydownHandler,true);
+      ctx.ui.shortcuts.add({id:'ter-manual-max-left',activity:'ter',key:'Ctrl+ArrowLeft',priority:320,handler:()=>invoke(-1)});
+      ctx.ui.shortcuts.add({id:'ter-manual-max-right',activity:'ter',key:'Ctrl+ArrowRight',priority:320,handler:()=>invoke(1)});
     }
 
     function unbindKeyboardAdjuster(){
-      if(!keydownHandler)return;
-      window.removeEventListener('keydown',keydownHandler,true);
-      keydownHandler=null;
+      // Shortcut contributions are owned by the plugin kernel and are removed
+      // atomically with the rest of the plugin lifecycle.
+      keyboardContributionsBound=false;
     }
 
     function updateSelectionText(result){
@@ -1000,6 +1018,7 @@
       ensureLayoutControls();
       ensureResistanceCard();
       ensurePerChartActions();
+      ensurePortableCharts();
       applyLayoutSettings();
       renderResistancePlot();
       bindLinkedPlotClicks();
@@ -1042,6 +1061,20 @@
       onOpen:()=>T.render()
     });
 
+    const terHeader=page.querySelector('.analysis-page-header');
+    const terHeaderActionsHost=document.createElement('div');
+    terHeaderActionsHost.className='dkds-plugin-header-actions';
+    terHeader?.querySelector('.analysis-page-close')?.before(terHeaderActionsHost);
+    const terHeaderActions=ctx.ui.actions?.mount?.(terHeaderActionsHost,{
+      activity:'ter',
+      actions:[
+        {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
+        {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
+        {id:'reset-display',icon:'⌁',label:'自动显示',order:30,onInvoke:()=>T.resetDisplay()},
+        {id:'export',icon:'⇩',label:'导出矩阵',order:40,enabled:()=>!!T.getState?.()?.result,onInvoke:()=>T.exportMatrix()}
+      ]
+    });
+
     ctx.ui.topWorkspace.register({
       id:'ter',activity:'ter',label:'TER 分析',icon:'▧',
       layout:{
@@ -1075,7 +1108,7 @@
     page.querySelector('#terExportMaxVdSvgBtn').onclick=()=>T.exportMaxVdSvg();
     page.querySelector('#terExportMaxVdPngBtn').onclick=()=>T.exportMaxVdPng();
 
-    ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();queueLinkedRender();}});
+    ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();terHeaderActions?.render?.();queueLinkedRender();}});
 
     // Dedicated-window persistence is namespaced by plugin. This slice is the
     // canonical TER cache; legacy root-level TER fields are migration input.
@@ -1115,6 +1148,7 @@
     ensureLayoutControls();
     ensureResistanceCard();
     ensurePerChartActions();
+    ensurePortableCharts();
     applyLayoutSettings();
     bindKeyboardAdjuster();
 

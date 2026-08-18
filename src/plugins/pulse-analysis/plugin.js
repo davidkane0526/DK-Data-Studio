@@ -2,12 +2,12 @@
   DKDSPlugins.define({
     id:'builtin.pulse-analysis',
     name:'Pulse / Read Analysis',
-    version:'2.1.0',
-    apiVersion:'1.3.0',
+    version:'2.2.0',
+    apiVersion:'1.4.0',
     description:'Batch pulse/read transient extraction with waveform, timing-protocol and current-only support.',
     source:'builtin',
     order:140,
-    capabilities:['ui.activity','ui.page','analysis.pulse','project.slice','chart.timeseries','ui.top-workspace'],
+    capabilities:['ui.activity','ui.page','analysis.pulse','project.slice','chart.timeseries','ui.top-workspace','ui.infrastructure','ui.portable','ui.dynamic-actions','ui.shortcuts'],
     workspace:{role:'top',activity:'pulse',icon:'▥',title:'脉冲分析'}
   }, async ctx => {
     const h=ctx.host;
@@ -222,6 +222,20 @@
       label:'脉冲分析',buttonClass:'accent-soft',order:60,html:pageHtml,onOpen:()=>P.render()
     });
 
+    const pulseHeader=page.querySelector('.analysis-page-header');
+    const pulseHeaderActionsHost=document.createElement('div');
+    pulseHeaderActionsHost.className='dkds-plugin-header-actions';
+    pulseHeader?.querySelector('.analysis-page-close')?.before(pulseHeaderActionsHost);
+    ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
+      activity:'pulse',
+      actions:[
+        {id:'add',icon:'＋',label:'添加文件',order:10,onInvoke:()=>P.addFiles()},
+        {id:'current',icon:'▶',label:'分析当前',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
+        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',order:30,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()},
+        {id:'export',icon:'⇩',label:'导出结果',order:40,onInvoke:()=>P.exportResults()}
+      ]
+    });
+
     ctx.ui.topWorkspace.register({
       id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
       layout:{
@@ -231,6 +245,20 @@
         prime:[]
       }
     });
+
+
+    // Core portable-view infrastructure makes every scientific plot movable
+    // without embedding drag/dock logic in the pulse plugin itself.
+    for(const [id,title] of [
+      ['pulseRawPlot','原始波形诊断'],
+      ['pulseReadPlot','脉冲条件 → 读取电流'],
+      ['pulsePulsePlot','脉冲条件 → 脉冲电流']
+    ]){
+      const card=page.querySelector('#'+id)?.closest('.pulse-card');
+      if(!card||!ctx.ui.portable?.create)continue;
+      try{ctx.ui.portable.create(`pulse-chart-${id}`,card,{title,handle:'.pulse-card-heading',useTargetAsWrapper:true,placements:['home','float','left','right','bottom'],defaultPlacement:'home'});}catch(err){console.warn('[Pulse portable chart]',id,err);}
+    }
+
 
     page.querySelector('#pulseAddFilesBtn').onclick=()=>P.addFiles();
     page.querySelector('#pulseCheckAllBtn').onclick=()=>P.setAllChecked(true);

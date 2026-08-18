@@ -9,28 +9,31 @@ const manifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
 const entry=read('src/plugins/resonance-workbench/plugin.js');
 const shared=read('src/plugins/resonance-workbench/workbench-shared.js');
 const views=read('src/plugins/resonance-workbench/view-components.js');
+const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const superLayout=read('src/plugins/resonance-workbench/super-layout.js');
 const runtime=read('src/plugins/resonance-workbench/window-runtime.js');
 const kernel=read('src/core/plugin-kernel.js');
 const generated=read('src/plugins/plugin-index.generated.js');
 
-assert((manifest.scripts||[]).join(',')==='workbench-shared.js,view-components.js,super-layout.js,plugin.js','Resonance main renderer must load Controller, shared Views, SUPER adapter, then thin entry.');
-assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,view-components.js','Resonance TOP must load the same shared Controller and View component layers.');
-assert(entry.split(/\r?\n/).length<48,'Resonance plugin entry must stay a thin layout dispatcher, not regain feature UI.');
-assert(entry.includes('shared.createController')&&entry.includes('views.mountTop')&&entry.includes('layout.mount'),'Resonance entry must dispatch both shells through shared Controller/View layers.');
-assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific view markup.');
+assert((manifest.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-runtime.js,super-layout.js,plugin.js','Resonance main renderer must load Controller, shared Views, feature runtime, SUPER adapter, then thin entry.');
+assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-runtime.js','Resonance TOP must load the same Controller/View/feature layers; runtime is only a host adapter.');
+assert(entry.split(/\r?\n/).length<48,'Resonance plugin entry must stay a thin layout dispatcher.');
+assert(entry.includes('shared.createController')&&entry.includes('views.mountTop')&&entry.includes('layout.mount'),'Resonance entry must dispatch through shared Controller/View layers.');
+assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific markup.');
 for(const token of ['VIEW_CATALOG','createController','normalizeWorkspace','buildTrendModel','computeSpacingRows'])assert(shared.includes(token),`Shared Controller layer missing ${token}.`);
 assert(!shared.includes('reswinMainPlot')&&!shared.includes('gateAnalysisPage'),'Controller layer must not own renderer markup.');
 for(const token of ['topPageHtml','TOP_STYLES','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
 for(const label of ['主图','曲线检查','组图分析','物理机制','峰间距','栅压分析'])assert(shared.includes(label),`Canonical view catalog missing ${label}.`);
-assert(runtime.includes('Shared.normalizeWorkspace')&&runtime.includes('Shared.pluginSliceFromProject'),'TOP runtime must use shared project/workspace normalization.');
-assert(!runtime.includes('function defaultWorkspace(project={}')&&!runtime.includes('function normalizeWorkspace(raw,project={}'),'TOP runtime must not maintain a second workspace schema implementation.');
-assert(runtime.includes('sharedController.buildTrendModel()')&&runtime.includes('sharedController?.computeSpacingRows'),'TOP trend/spacing ViewModels must use the shared Controller.');
-assert(superLayout.includes('controller.buildTrendModel()'),'SUPER group view must use the same shared trend ViewModel.');
-assert(superLayout.includes('DKDSResonanceViewComponents')&&superLayout.includes('viewSet.gate.superPageHtml()')&&superLayout.includes('viewSet.spacing.superPageHtml()'),'SUPER adapter must consume plugin-owned shared View components rather than own gate/spacing page markup.');
-assert(!superLayout.includes('const gatePageHtml=`')&&!superLayout.includes('const spacingPageHtml=`'),'SUPER adapter must not regain full gate/spacing view templates.');
+for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
+  assert(adapter.split(/\r?\n/).length<45,`${name} adapter must remain host-only.`);
+  for(const forbidden of ['Plotly.','detectPeaks','computeTerMatrix','buildTrendModel','computeSpacingRows','gateAnalysisPage','reswinMainPlot'])assert(!adapter.includes(forbidden),`${name} adapter regained feature logic: ${forbidden}`);
+}
+assert(superLayout.includes("mode:'super'")&&superLayout.includes('slots:{')&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only map semantic host slots and resize.');
+assert(runtime.includes("mode:'top'")&&runtime.includes("root:document.querySelector('#app')")&&runtime.includes('statusBar'),'TOP adapter may only map dedicated-window host surfaces.');
+for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSResonanceViewComponents'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
+assert(feature.includes("placements:['right','float']")&&feature.includes("placements:['bottom','float']"),'Feature runtime must own resonance PRIME behavior, not host adapters.');
 assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scripts)await loadScript(script)'),'Built-in plugin loader must support plugin-owned support scripts.');
-assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated built-in plugin index must preserve Controller/View/adapter support-script order.');
+assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/feature-runtime.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated plugin index must preserve Controller/View/feature/adapter support-script order.');
 
 // Execute the shared Controller and View component layers in isolation.
 const context={window:{DKDSScience:{preset:()=>({_preset:'balanced'}),peakMetrics:(p)=>({v:p.v,i:p.i,vg:p.vg,fwhm:p.fwhm||0,amplitude:p.amplitude||0,area:p.area||0,prominence:p.prominence||0}),computeResonantTerForLabel:()=>[]}},structuredClone,console};

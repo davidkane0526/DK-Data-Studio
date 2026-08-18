@@ -34,6 +34,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "scripts": [
       "plugins/resonance-workbench/workbench-shared.js",
       "plugins/resonance-workbench/view-components.js",
+      "plugins/resonance-workbench/feature-runtime.js",
       "plugins/resonance-workbench/super-layout.js",
       "plugins/resonance-workbench/plugin.js"
     ]

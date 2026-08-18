@@ -22,6 +22,7 @@ const pulseRuntime=read('src/plugins/pulse-analysis/window-runtime.js');
 const terRuntime=read('src/plugins/ter-analysis/window-runtime.js');
 const terPlugin=read('src/plugins/ter-analysis/plugin.js');
 const resonanceRuntime=read('src/plugins/resonance-workbench/window-runtime.js');
+const resonanceFeatureRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 
 assert(!shellHtml.includes('../app.js'),'Dedicated plugin window must not load the full src/app.js renderer.');
 assert(!shellHtml.includes('plugin-index'),'Dedicated plugin window must not load the full generated plugin index.');
@@ -80,10 +81,10 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','plugin-kernel']},
-  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','plugin-kernel']},
-  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-ter','platform','plugin-kernel']},
-  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','plugin-kernel']}
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel']},
+  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
+  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-ter','platform','ui-infrastructure','plugin-kernel']},
+  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}
 };
 for(const [folder,spec] of Object.entries(expected)){
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
@@ -179,8 +180,8 @@ assert(withOverride.get('ter-override')?.source==='override','built-in override 
 // Resonance must now use a real dedicated plugin renderer rather than launching
 // a second copy of the full application renderer.
 assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must not load the full application renderer.');
-assert(resonanceRuntime.includes("serviceName:'resonance'"),'Resonance dedicated runtime must expose the normal plugin-window service contract.');
-assert(resonanceRuntime.includes("builtin.resonance-workbench"),'Resonance dedicated runtime must restore only its namespaced plugin state.');
+assert(resonanceFeatureRuntime.includes("serviceName:'resonance'"),'Resonance feature runtime must expose the normal plugin-window service contract while window-runtime stays host-only.');
+assert(resonanceFeatureRuntime.includes("builtin.resonance-workbench"),'Resonance feature runtime must restore only its namespaced plugin state.');
 assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
 for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
@@ -190,7 +191,7 @@ const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.
 assert((resonanceManifest.window?.scripts||[]).includes('workbench-shared.js'),'Resonance TOP runtime must load the same shared View/Controller layer as SUPER.');
 assert((resonanceManifest.scripts||[]).includes('super-layout.js'),'Resonance SUPER layout adapter must be declared as a plugin-owned support script.');
 for(const marker of ['function renderInspection()','function renderGroup()','function renderPhysics()','function renderSpacing()','function renderGate()','analyzePhysicalFamilies','computeResonantTerForLabel','pairGateSeries']){
-  assert(resonanceRuntime.includes(marker),`Resonance dedicated runtime parity marker missing: ${marker}`);
+  assert(resonanceFeatureRuntime.includes(marker),`Resonance feature runtime parity marker missing: ${marker}`);
 }
 
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
@@ -207,6 +208,7 @@ for(const rel of [
   'src/plugins/pulse-analysis/window-runtime.js',
   'src/plugins/ter-analysis/window-runtime.js',
   'src/plugins/resonance-workbench/window-runtime.js',
+  'src/plugins/resonance-workbench/feature-runtime.js',
   'src/plugins/ter-analysis/plugin.js',
   'plugin-window-manager.js',
   'preload.js',

@@ -20,6 +20,8 @@
     'parameter-schema':'../core/parameter-schema.js',
     'workflow-engine':'../core/workflow-engine.js',
     platform:'../core/platform.js',
+    'state-store':'../core/state-store.js',
+    'ui-infrastructure':'../core/ui-infrastructure.js',
     'plugin-kernel':'../core/plugin-kernel.js'
   });
 
@@ -98,11 +100,19 @@
       if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
     }
     if (!ordered.includes('platform')) ordered.push('platform');
+    if (!ordered.includes('state-store')) ordered.push('state-store');
+    if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     ordered.push('plugin-kernel');
 
     for (const id of ordered) await loadScript(DEPENDENCY_SCRIPTS[id]);
     if (window.DKDSScience) window.Analysis = window.DKDSScience;
     if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
+    window.DKDSUI?.host?.configure?.({
+      root:'#app',
+      activity:()=>window.DKDSPlugins?.activities?.active?.()||String(bootstrap?.pluginWindow?.activity||''),
+      status:setStatus,
+      zones:{overlay:'#app',main:'#app',left:'#pluginWindowLeftDock',right:'#pluginWindowRightDock',bottom:'#pluginWindowBottomDock'}
+    });
   }
 
   function safeSegment(value) {
@@ -294,7 +304,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.26.0',
+      appVersion:'3.27.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

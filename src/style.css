@@ -3918,3 +3918,32 @@ body.auxiliary-window .analysis-page{
 .plugin-prewarm-switch input:disabled + .plugin-prewarm-box{opacity:.45}
 #pluginManagerList,.plugin-manager-card{overflow-anchor:none}
 @media(max-width:760px){.plugin-card-switches{grid-column:1/-1;justify-self:end}.plugin-enable-switch{grid-column:auto;margin-top:0}}
+
+/* =========================================================
+   DKDS UI Infrastructure v2 — plugin-neutral workspace layer
+   ========================================================= */
+.dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.dkds-action-button{height:30px;min-width:30px;padding:0 10px;border:1px solid var(--line,#d9e0ea);border-radius:8px;background:var(--panel,#fff);color:var(--text,#263247);display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.dkds-action-button:hover:not(:disabled){background:var(--soft,#f4f7fb);border-color:#bfcbe0}.dkds-action-button.active{background:#eef3ff;border-color:#9bb5ff;color:#2858d8}.dkds-action-button:disabled{opacity:.45;cursor:not-allowed}
+.dkds-action-icon{font-size:12px;line-height:1}.dkds-action-caret{font-size:9px;color:var(--muted,#7a8495)}.dkds-action-separator{width:1px;height:20px;background:var(--line,#e1e6ef);margin:0 2px}
+.dkds-ui-workspace{min-width:0;min-height:0;position:relative}.dkds-ui-region{min-width:0;min-height:0}
+.dkds-portable-view{min-width:260px;min-height:100px;background:var(--panel,#fff);border:1px solid var(--line,#dce3ed);border-radius:10px;overflow:hidden;box-shadow:none;display:flex;flex-direction:column;z-index:20}
+.dkds-portable-header{height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;background:var(--panel,#fff);border-bottom:1px solid var(--line,#e4e8ef);cursor:default;user-select:none}
+.dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dkds-portable-controls{display:flex;align-items:center;gap:3px}.dkds-portable-controls button{width:25px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--muted,#64748b)}.dkds-portable-controls button:hover{background:var(--soft,#f0f4fa);color:var(--text,#1f2937)}
+.dkds-portable-view.is-floating{position:fixed!important;z-index:1100!important;resize:both;min-width:320px;min-height:180px;max-width:calc(100vw - 12px);max-height:calc(100vh - 42px);box-shadow:0 16px 42px rgba(26,39,67,.18)}.dkds-portable-view.is-floating>.dkds-portable-header{cursor:move}
+.dkds-portable-view.is-docked{width:100%;height:auto;border-radius:8px}.dkds-portable-view.dock-right{max-height:100%}.dkds-portable-view.dock-bottom{max-width:100%}
+.dkds-chart-surface{min-width:0;min-height:220px;display:flex;flex-direction:column}.dkds-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:3px 6px 3px 10px;border-bottom:1px solid var(--line,#e5e9f0)}.dkds-chart-title{font-size:12px}.dkds-chart-actions{display:flex;align-items:center}.dkds-chart-plot{flex:1 1 auto;min-height:180px;min-width:0}
+.dkds-workbench{width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--bg,#f6f8fb)}.dkds-workbench-header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--panel,#fff);border-bottom:1px solid var(--line,#e2e8f0)}.dkds-workbench-heading h2{font-size:17px;margin:0}.dkds-workbench-subtitle{font-size:11px;color:var(--muted,#7a8495);margin-top:2px}.dkds-workbench-tabs{display:flex;gap:4px;align-items:center;padding:6px 10px;background:var(--panel,#fff);border-bottom:1px solid var(--line,#e5e9f0);overflow-x:auto}.dkds-workbench-tab{height:30px;padding:0 11px;border:1px solid transparent;border-radius:7px;background:transparent}.dkds-workbench-tab.active{background:#edf3ff;border-color:#bed0ff;color:#2458d3}.dkds-workbench-grid{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(220px,18%) minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;gap:8px;padding:8px;position:relative}.dkds-workbench-left{grid-column:1;grid-row:1;overflow:auto}.dkds-workbench-main{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:auto}.dkds-workbench-right{grid-column:3;grid-row:1;min-width:0;min-height:0;overflow:auto}.dkds-workbench-bottom{grid-column:1/-1;grid-row:2;min-width:0}.dkds-workbench-overlay{position:absolute;inset:0;pointer-events:none}.dkds-workbench-overlay>.dkds-portable-view{pointer-events:auto}
+@media(max-width:900px){.dkds-workbench-grid{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) auto}.dkds-workbench-left{grid-column:1;grid-row:1;max-height:32vh}.dkds-workbench-main{grid-column:1;grid-row:2}.dkds-workbench-right{grid-column:1;grid-row:3}.dkds-workbench-bottom{grid-column:1;grid-row:4}}
+.dkds-portable-inline-header{display:flex!important;align-items:center;justify-content:space-between;gap:8px}.dkds-portable-inline-header>.dkds-portable-controls{margin-left:auto;flex:0 0 auto}
+.analysis-chart-card.dkds-portable-view.is-floating,.pulse-card.dkds-portable-view.is-floating,.dc-card.dkds-portable-view.is-floating{background:var(--panel,#fff);overflow:auto}
+.dkds-plugin-header-actions{margin-left:auto;display:flex;align-items:center;min-width:0}.analysis-page-header>.dkds-plugin-header-actions+.analysis-page-close{margin-left:6px}
+
+/* Core plugin UI infrastructure: shared context menu / pinned scientific surfaces. */
+.dkds-context-menu{position:fixed;z-index:3900;min-width:180px;max-width:min(320px,calc(100vw - 12px));padding:5px;background:var(--panel,#fff);border:1px solid var(--border,#d8deea);border-radius:10px;box-shadow:0 12px 36px rgba(21,34,58,.18);display:grid;gap:2px}
+.dkds-context-item{min-height:32px;border:0;background:transparent;border-radius:7px;padding:5px 8px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left;color:inherit}
+.dkds-context-item:hover:not(:disabled){background:var(--surface-soft,#f2f5fb)}
+.dkds-context-item:disabled{opacity:.45}
+.dkds-context-item kbd{font:inherit;font-size:11px;opacity:.58}
+.dkds-context-separator{height:1px;background:var(--border,#d8deea);margin:3px 5px}
+.dkds-portable-view.is-floating{resize:both;overflow:auto;min-width:300px;min-height:180px}

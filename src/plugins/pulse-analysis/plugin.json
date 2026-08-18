@@ -1,19 +1,23 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.1.0",
-  "apiVersion": "1.3.0",
+  "version": "2.2.0",
+  "apiVersion": "1.4.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 140,
-  "description": "Batch pulse/read transient extraction with unequal write/read widths and current-only data support.",
+  "description": "Pulse/read analysis with portable scientific plots and shared command/shortcut infrastructure.",
   "capabilities": [
     "ui.activity",
     "ui.page",
     "analysis.pulse",
     "project.slice",
     "chart.timeseries",
-    "ui.top-workspace"
+    "ui.top-workspace",
+    "ui.infrastructure",
+    "ui.portable",
+    "ui.dynamic-actions",
+    "ui.shortcuts"
   ],
   "window": {
     "activity": "pulse",
@@ -29,6 +33,7 @@
       "science-import",
       "science-pulse",
       "platform",
+      "ui-infrastructure",
       "plugin-kernel"
     ],
     "prewarm": false,
