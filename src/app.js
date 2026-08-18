@@ -6474,6 +6474,12 @@
     if(IS_AUXILIARY_WINDOW){
       document.body.classList.add('auxiliary-window');
       auxiliaryBootstrapState=await window.electronAPI?.getActivityWindowBootstrap?.();
+      const syncAuxiliaryMode=bootstrap=>{
+        const mode=String(bootstrap?.pluginWindow?.mode||'dedicated').toLowerCase();
+        document.body.dataset.auxiliaryWindowMode=mode;
+        document.body.classList.toggle('auxiliary-compatibility-window',mode==='compatibility');
+      };
+      syncAuxiliaryMode(auxiliaryBootstrapState);
       if(auxiliaryBootstrapState?.project){
         initialTab.id=auxiliaryBootstrapState.projectTabId||initialTab.id;
         initialTab.title=auxiliaryBootstrapState.title||initialTab.title;
@@ -6487,6 +6493,7 @@
         const next=await window.electronAPI?.getActivityWindowBootstrap?.();
         if(!next?.project)return;
         auxiliaryBootstrapState=next;
+        syncAuxiliaryMode(next);
         loadProjectIntoActive(next.project,next.projectPath||null);
         captureActiveProjectTab();
         renderAll();
@@ -6505,6 +6512,9 @@
     if(!IS_AUXILIARY_WINDOW){
       initializeUpdateUi();
       initializeLanWebUi();
+      window.electronAPI?.onPluginLanUpdate?.(info=>{
+        setStatus(`插件 ${info?.name||info?.id||''} v${info?.version||'?'} 已通过局域网接收；重启软件后启用新版本。`);
+      });
     }
     if(IS_AUXILIARY_WINDOW){
       await window.DKDSPlugins?.activities?.set?.(auxiliaryBootstrapState?.activityId||AUX_ACTIVITY_ID);

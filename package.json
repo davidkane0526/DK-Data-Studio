@@ -51,6 +51,7 @@
       "plugin-package.js",
       "update-client.js",
       "lan-web-server.js",
+      "lan-discovery-service.js",
       "windows-network-discovery.js",
       "preload.js",
       "src/**/*",

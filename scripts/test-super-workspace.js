@@ -147,6 +147,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   const managerUi=read('src/core/plugin-manager-ui.js');
   const windowManager=read('plugin-window-manager.js');
   const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
+  const terPlugin=read('src/plugins/ter-analysis/plugin.js');
 
   assert(app.includes("activity?.openMode==='window'&&activity?.isSuper!==true"),'prewarming must exclude the currently embedded SUPER.');
   assert(app.includes("page?.classList.contains('super-workspace-page')"),'SUPER page must not be closable like a transient SUB/tool page.');
@@ -161,6 +162,9 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert(managerUi.includes('topContractReady'),'plugin manager must expose whether a TOP contract is valid.');
   assert(windowManager.includes("WINDOW_MODES = new Set(['dedicated','compatibility'])"),'independent TOP lifecycle must support compatibility windows without special activity whitelists.');
   assert(resonanceManifest.window?.mode==='compatibility','resonance must use the same manifest-driven independent-window lifecycle when it is not SUPER.');
+  assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'compatibility TOP windows must keep the shared .workspace visible instead of rendering blank.');
+  assert(terPlugin.includes("root:{selector:'.ter-workspace-shell'}")&&terPlugin.includes("selector:'.ter-workspace-left'")&&terPlugin.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
+  assert(!terPlugin.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
   assert(read('src/plugins/resonance-workbench/plugin.js').includes("placements:['right','float']")&&read('src/plugins/resonance-workbench/plugin.js').includes("placements:['bottom','float']"),'built-in resonance PRIME declarations must advertise only placements their adapters actually support.');

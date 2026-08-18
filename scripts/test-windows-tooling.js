@@ -6,6 +6,9 @@ const backendPath = path.join(root, 'tools', 'windows', 'dkds-tools.ps1');
 const guiPath = path.join(root, 'tools', 'windows', 'dkds-gui.ps1');
 const cmdPath = path.join(root, 'DKDS.cmd');
 const guiCmdPath = path.join(root, 'DKDS_GUI.cmd');
+const pluginPublisherPath = path.join(root,'tools','windows','publish-plugin-to-lan.ps1');
+const updateServerPath = path.join(root,'services','update-server','server.js');
+const windowsWorkflowPath = path.join(root,'.github','workflows','build-windows.yml');
 const mobilePackagePath = path.join(root, 'mobile', 'package.json');
 const easPath = path.join(root, 'mobile', 'eas.json');
 const mobileAppPath = path.join(root, 'mobile', 'app.json');
@@ -23,6 +26,9 @@ const backend = read(backendPath);
 const gui = read(guiPath);
 const cmd = read(cmdPath);
 const guiCmd = read(guiCmdPath);
+const pluginPublisher = read(pluginPublisherPath);
+const updateServer = read(updateServerPath);
+const windowsWorkflow = read(windowsWorkflowPath);
 const mobilePackage = JSON.parse(read(mobilePackagePath));
 const eas = JSON.parse(read(easPath));
 const mobileApp = JSON.parse(read(mobileAppPath));
@@ -139,7 +145,7 @@ assert(/tools\\windows\\dkds-tools\.ps1/i.test(cmd), 'DKDS.cmd must route to dkd
 assert(/tools\\windows\\dkds-gui\.ps1/i.test(guiCmd), 'DKDS_GUI.cmd must route to dkds-gui.ps1.');
 
 // Windows PowerShell 5.1 needs a BOM to reliably read Chinese source text.
-for (const file of [backendPath, guiPath]) {
+for (const file of [backendPath, guiPath, pluginPublisherPath]) {
   const data = fs.readFileSync(file);
   assert(data.length >= 3 && data[0] === 0xEF && data[1] === 0xBB && data[2] === 0xBF,
     `${path.basename(file)} must be UTF-8 with BOM for Windows PowerShell 5.1.`);

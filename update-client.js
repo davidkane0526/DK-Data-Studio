@@ -66,10 +66,12 @@ function wsUrlFor(baseUrl, wsPath = '/push') {
 }
 
 class LanUpdateClient extends EventEmitter {
-  constructor({ app, BrowserWindow }) {
+  constructor({ app, BrowserWindow, installPluginPackage = null }) {
     super();
     this.app = app;
     this.BrowserWindow = BrowserWindow;
+    this.installPluginPackage = typeof installPluginPackage === 'function' ? installPluginPackage : null;
+    this.pluginDownloads = new Map();
     this.root = __dirname;
     this.defaultConfigPath = path.join(this.root, 'config', 'update-config.default.json');
     this.userSettingsPath = path.join(app.getPath('userData'), 'update-settings.json');
@@ -348,8 +350,13 @@ class LanUpdateClient extends EventEmitter {
         if (payload.currentVersion) {
           this.handleReleasePush(normalized, payload.currentVersion, 'ws-hello').catch(() => {});
         }
+        for(const plugin of (Array.isArray(payload.plugins)?payload.plugins:[])){
+          this.handlePluginRelease(normalized,plugin,'ws-hello').catch(err=>console.warn('[DKDS plugin update]',err.message));
+        }
       } else if (payload?.type === 'release' && payload.version) {
         this.handleReleasePush(normalized, payload.version, 'ws-push').catch(() => {});
+      } else if (payload?.type === 'plugin-release' && payload.plugin) {
+        this.handlePluginRelease(normalized,payload.plugin,'ws-push').catch(err=>console.warn('[DKDS plugin update]',err.message));
       }
     });
 
@@ -391,10 +398,49 @@ class LanUpdateClient extends EventEmitter {
 
       const version = opts.hintedVersion || health.currentVersion;
       if (version) await this.handleReleasePush(base, version, opts.reason || 'probe');
+      await this.syncPluginReleases(base,opts.reason||'probe');
       return true;
     } catch {
       return false;
     }
+  }
+
+  async syncPluginReleases(baseUrl,reason='probe') {
+    if(!this.installPluginPackage)return [];
+    try{
+      const index=await fetchJson(`${baseUrl}/api/plugins`,5000);
+      const results=[];
+      for(const plugin of (Array.isArray(index?.plugins)?index.plugins:[])){
+        results.push(await this.handlePluginRelease(baseUrl,plugin,reason));
+      }
+      return results;
+    }catch{return [];}
+  }
+
+  async handlePluginRelease(baseUrl,plugin,reason='push') {
+    if(!this.installPluginPackage||!plugin)return null;
+    const base=normalizeBaseUrl(baseUrl);
+    const id=String(plugin.id||'').trim();
+    const relative=String(plugin.url||'').trim();
+    const sha256=String(plugin.sha256||'').trim().toLowerCase();
+    if(!base||!id||!relative||!/^[a-f0-9]{64}$/.test(sha256))return null;
+    const target=new URL(relative,`${base}/`);
+    const origin=new URL(base).origin;
+    if(target.origin!==origin||!target.pathname.startsWith('/plugins/'))throw new Error(`Unsafe plugin update URL for ${id}`);
+    const key=`${id}|${sha256}`;
+    if(this.pluginDownloads.has(key))return this.pluginDownloads.get(key);
+    const task=(async()=>{
+      const buffer=await fetchBuffer(target.toString(),10000);
+      if(buffer.length>12*1024*1024)throw new Error(`Plugin update is too large: ${id}`);
+      const result=await this.installPluginPackage(buffer,{...plugin,reason,serverUrl:base});
+      if(result?.installed){
+        this.setStatus({message:`已接收插件更新 ${result.name||id} v${result.version||plugin.version||'?'}；重启软件后生效。`});
+        this.emit('plugin-update',result);
+      }
+      return result;
+    })().finally(()=>this.pluginDownloads.delete(key));
+    this.pluginDownloads.set(key,task);
+    return task;
   }
 
   async resolveLatestVersion(baseUrl) {

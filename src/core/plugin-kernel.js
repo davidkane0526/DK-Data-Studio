@@ -14,6 +14,8 @@
   let loadingPromise = null;
   let externalLoadingPromise = null;
   const externalPackages = new Map();
+  const overridePackages = new Map();
+  const overrideLoadErrors = [];
   const externalLoadErrors = [];
   let activeActivityId = null;
   let superPluginId = null;
@@ -1353,7 +1355,7 @@
     });
   }
 
-  async function loadExternalPackage(pkg){
+  async function loadPackagedPlugin(pkg,source='external'){
     const manifest=pkg?.manifest||{};
     assertId(manifest.id);
     if(definitionById(manifest.id))throw new Error(`Plugin id already loaded: ${manifest.id}`);
@@ -1369,7 +1371,7 @@
       if(unexpected.length)throw new Error(`Plugin package ${manifest.id} registered unexpected ids: ${unexpected.map(d=>d.manifest.id).join(', ')}`);
       const definition=definitionById(manifest.id);
       if(!definition)throw new Error(`Plugin package did not register manifest id: ${manifest.id}`);
-      definition.manifest={...definition.manifest,...manifest,source:'external'};
+      definition.manifest={...definition.manifest,...manifest,source};
 
       const styleFiles=Array.isArray(manifest.styles)?manifest.styles:[];
       if(styleFiles.length){
@@ -1384,7 +1386,8 @@
           return await originalActivate(api);
         };
       }
-      externalPackages.set(manifest.id,pkg);
+      if(source==='override')overridePackages.set(manifest.id,pkg);
+      else externalPackages.set(manifest.id,pkg);
       return definition;
     }catch(err){
       for(const d of definitions.slice()){
@@ -1393,6 +1396,9 @@
       throw err;
     }
   }
+
+  async function loadExternalPackage(pkg){return loadPackagedPlugin(pkg,'external');}
+  async function loadOverridePackage(pkg){return loadPackagedPlugin(pkg,'override');}
 
   async function loadExternalEntries(){
     if(externalLoadingPromise)return externalLoadingPromise;
@@ -1498,7 +1504,28 @@
   async function loadBuiltinEntries(entries = window.DKDS_BUILTIN_PLUGIN_ENTRIES || []) {
     if (loadingPromise) return loadingPromise;
     loadingPromise = (async () => {
-      for (const src of entries) await loadScript(src);
+      const generated=Array.isArray(window.DKDS_BUILTIN_PLUGINS)&&window.DKDS_BUILTIN_PLUGINS.length
+        ? window.DKDS_BUILTIN_PLUGINS
+        : entries.map(src=>({id:'',entry:src}));
+      let overrideResult={packages:[],errors:[]};
+      if(window.electronAPI?.pluginOverrideList&&!window.electronAPI?.isWebClient){
+        try{overrideResult=await window.electronAPI.pluginOverrideList()||overrideResult;}
+        catch(err){overrideLoadErrors.push({file:'<override directory>',error:err.message});}
+      }
+      for(const row of overrideResult?.errors||[])overrideLoadErrors.push(row);
+      const byId=new Map((overrideResult?.packages||[]).map(pkg=>[String(pkg?.manifest?.id||''),pkg]));
+      for (const row of generated) {
+        const id=String(row?.id||'');
+        const override=id?byId.get(id):null;
+        if(override){
+          try{await loadOverridePackage(override);continue;}
+          catch(err){
+            overrideLoadErrors.push({file:id,error:err.message});
+            console.error('[DKDS built-in plugin override fallback]',id,err);
+          }
+        }
+        await loadScript(row.entry);
+      }
       return definitions.length;
     })();
     return loadingPromise;
@@ -1590,6 +1617,7 @@
         preferences:{...readPreferences()},
         workspace:{super:superState(),superStorageKey:superPreferenceStorageKey},
         external:{installed:[...externalPackages.keys()],errors:externalLoadErrors.slice()},
+        overrides:{installed:[...overridePackages.keys()],errors:overrideLoadErrors.slice()},
         registries: Object.fromEntries([...registries].map(([k,v])=>[k,[...v.values()].map(x=>({pluginId:x.pluginId,id:x.id}))]))
       };
     }

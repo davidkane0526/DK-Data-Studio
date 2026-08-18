@@ -142,6 +142,7 @@ jobs:
           Copy-Item -LiteralPath $unpacked -Destination (Join-Path $stage 'win-unpacked') -Recurse
 
           Copy-Item -LiteralPath 'tools\windows\publish-artifact-to-lan.ps1' -Destination (Join-Path $stage 'publish-to-lan.ps1')
+          Copy-Item -LiteralPath 'tools\windows\publish-plugin-to-lan.ps1' -Destination (Join-Path $stage 'publish-plugin-to-lan.ps1')
 
           $serverStage = Join-Path $stage 'update-server'
           New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
@@ -225,7 +226,7 @@ jobs:
               Start-Sleep -Milliseconds 500
               try {
                 $candidate = Invoke-RestMethod -Method Get -Uri $healthUri -TimeoutSec 2
-                if ($candidate.ok -and $candidate.localPublishApi) {
+                if ($candidate.ok -and $candidate.localPublishApi -and $candidate.pluginPublishApi) {
                   $health = $candidate
                   break
                 }

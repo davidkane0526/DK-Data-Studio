@@ -4,12 +4,8 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
-const {
-  WindowsNetworkDiscovery,
-  normalizeDeviceId,
-  extractMessageId,
-  buildMetadataResponse
-} = require('./windows-network-discovery');
+const { normalizeDeviceId, extractMessageId, buildMetadataResponse } = require('./windows-network-discovery');
+const { LanDiscoveryService, BASIC_DEVICE, isPrivateIPv4 } = require('./lan-discovery-service');
 
 function randomPairKey() {
   return String(crypto.randomInt(1000, 10000));
@@ -20,7 +16,7 @@ function lanIPv4Addresses() {
   const nets = os.networkInterfaces();
   for (const list of Object.values(nets)) {
     for (const item of list || []) {
-      if (item.family === 'IPv4' && !item.internal) out.push(item.address);
+      if (item.family === 'IPv4' && !item.internal && isPrivateIPv4(item.address)) out.push(item.address);
     }
   }
   return [...new Set(out)];
@@ -79,15 +75,14 @@ class LanWebServer extends EventEmitter {
     this.pairKey = randomPairKey();
     this.tokens = new Set();
     this.lastError = '';
-    this.discovery = new WindowsNetworkDiscovery({
+    this.discovery = new LanDiscoveryService({
       deviceId: this.settings.deviceId,
       getHttpPort: () => Number(this.settings.port) || 45910,
-      deviceName: 'DK Data Studio'
+      deviceName: 'DK Data Studio',
+      hostnamePrefix: 'dk-data-studio'
     });
-
-    // Persist the generated discovery UUID immediately. This makes Windows see
-    // the LAN web endpoint as the same network device across app restarts.
-    this.settings.deviceId = this.discovery.deviceId;
+    // deviceId is generated once in readSettings() and persisted. SSDP/UPnP
+    // therefore exposes the same UDN after each restart.
     this.persist();
   }
 
@@ -213,12 +208,13 @@ class LanWebServer extends EventEmitter {
 
     this.server = server;
 
-    // Windows Network discovery is an optional convenience layer. Failure to
-    // bind/join WS-Discovery must never stop the actual LAN web server.
+    // Discovery is automatic whenever LAN web access starts. SSDP/UPnP is
+    // used for Windows Network discovery and mDNS/DNS-SD publishes the .local
+    // endpoint. Discovery failures are isolated from the HTTP service.
     try {
       await this.discovery.start();
     } catch (err) {
-      console.warn('LAN web WS-Discovery:', err.message);
+      console.warn('LAN web discovery:', err.message);
     }
 
     this.broadcast();
@@ -234,7 +230,7 @@ class LanWebServer extends EventEmitter {
     this.server = null;
     this.tokens.clear();
 
-    try { await this.discovery.stop(); } catch (err) { console.warn('LAN web WS-Discovery stop:', err.message); }
+    try { await this.discovery.stop(); } catch (err) { console.warn('LAN web discovery stop:', err.message); }
 
     if (server) {
       await new Promise(resolve => server.close(() => resolve()));
@@ -307,8 +303,45 @@ document.getElementById('key')?.addEventListener('keydown',e=>{if(e.key==='Enter
     return null;
   }
 
+  upnpDeviceXml(ip) {
+    const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+    const port=Number(this.settings.port)||45910;
+    const baseUrl=`http://${ip}:${port}/`;
+    const friendlyName=`DK Data Studio - ${os.hostname()}`;
+    return `<?xml version="1.0" encoding="utf-8"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion><major>1</major><minor>0</minor></specVersion>
+  <URLBase>${esc(baseUrl)}</URLBase>
+  <device>
+    <deviceType>${BASIC_DEVICE}</deviceType>
+    <friendlyName>${esc(friendlyName)}</friendlyName>
+    <manufacturer>DK</manufacturer>
+    <modelDescription>DK Data Studio LAN Web Interface</modelDescription>
+    <modelName>DK Data Studio</modelName>
+    <modelNumber>${esc(this.app.getVersion())}</modelNumber>
+    <UDN>uuid:${esc(this.settings.deviceId)}</UDN>
+    <presentationURL>${esc(baseUrl)}</presentationURL>
+  </device>
+</root>`;
+  }
+
   async handleRequest(req, res) {
     const u = new URL(req.url, 'http://localhost');
+
+    // UPnP device description is public discovery metadata, not application
+    // data, so it intentionally stays outside the pairing gate.
+    if (req.method === 'GET' && u.pathname === '/upnp/device.xml') {
+      const ip=requestLocalIPv4(req);
+      const xml=this.upnpDeviceXml(ip);
+      res.writeHead(200,{
+        'Content-Type':'application/xml; charset=utf-8',
+        'Content-Length':Buffer.byteLength(xml),
+        'Cache-Control':'no-store',
+        'X-Content-Type-Options':'nosniff'
+      });
+      res.end(xml);
+      return;
+    }
 
     // WSD metadata exchange is intentionally outside the pairing gate. It only
     // describes the device and provides the same presentation URL users could

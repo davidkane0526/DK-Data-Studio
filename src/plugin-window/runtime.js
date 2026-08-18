@@ -316,7 +316,8 @@
 
   async function loadTargetPlugin() {
     const spec = bootstrap?.pluginWindow;
-    if (!spec?.pluginFolder || !spec?.entry) throw new Error('插件窗口缺少入口信息。');
+    const packagedSource=spec?.source==='external'||spec?.source==='override';
+    if (!spec?.entry || (!packagedSource&&!spec?.pluginFolder)) throw new Error('插件窗口缺少入口信息。');
 
     // Load only the dependencies declared by this top-level plugin. The old
     // host loaded Plotly + all science/workflow modules for every window.
@@ -328,7 +329,7 @@
     // host's shared dependency allowlist for its private implementation.
     const loadedExternalScripts=new Set();
     const loadTargetScript=async file=>{
-      if(spec.source==='external'){
+      if(packagedSource){
         if(loadedExternalScripts.has(file))return;
         await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
         loadedExternalScripts.add(file);
@@ -356,7 +357,7 @@
     }
 
     window.DKDSPlugins.configure(host);
-    if(spec.source==='external'){
+    if(packagedSource){
       for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file);
     }else{

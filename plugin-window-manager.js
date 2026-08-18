@@ -142,33 +142,33 @@ function packageFile(pkg, fileName, label) {
   return file;
 }
 
-function normalizeExternalPluginWindow(pkg) {
+function normalizePackagedPluginWindow(pkg, source='external') {
   const manifest=pkg?.manifest||{};
   const windowSpec=manifest?.window;
   const mode=normalizeWindowMode(windowSpec?.mode);
   const activity=String(windowSpec?.activity||'').trim();
   if(!activity)return null;
-  if(!/^[A-Za-z0-9._-]+$/.test(activity))throw new Error(`Invalid external plugin window activity: ${activity}`);
-  const entry=packageFile(pkg,manifest.entry||'plugin.js','external plugin entry');
-  const runtime=windowSpec.runtime?packageFile(pkg,windowSpec.runtime,'external plugin window runtime'):'';
+  if(!/^[A-Za-z0-9._-]+$/.test(activity))throw new Error(`Invalid packaged plugin window activity: ${activity}`);
+  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged plugin entry');
+  const runtime=windowSpec.runtime?packageFile(pkg,windowSpec.runtime,'packaged plugin window runtime'):'';
   const scripts=[];
   for(const raw of (Array.isArray(windowSpec.scripts)?windowSpec.scripts:[])){
-    const file=packageFile(pkg,raw,'external plugin window script');
+    const file=packageFile(pkg,raw,'packaged plugin window script');
     if(!scripts.includes(file))scripts.push(file);
   }
   const packageScripts=[];
   for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
-    const file=packageFile(pkg,raw,'external plugin package script');
+    const file=packageFile(pkg,raw,'packaged plugin package script');
     if(!packageScripts.includes(file))packageScripts.push(file);
   }
   if(!packageScripts.includes(entry))packageScripts.push(entry);
   const styles=[];
   for(const raw of (Array.isArray(manifest.styles)?manifest.styles:[])){
-    const file=packageFile(pkg,raw,'external plugin package style');
+    const file=packageFile(pkg,raw,'packaged plugin package style');
     if(!styles.includes(file))styles.push(file);
   }
   return Object.freeze({
-    source:'external',
+    source,
     mode,
     pluginId:String(manifest.id||''),
     version:String(manifest.version||''),
@@ -192,6 +192,23 @@ function normalizeExternalPluginWindow(pkg) {
   });
 }
 
+function normalizeExternalPluginWindow(pkg) {
+  return normalizePackagedPluginWindow(pkg,'external');
+}
+
+function normalizeOverridePluginWindow(pkg) {
+  return normalizePackagedPluginWindow(pkg,'override');
+}
+
+function readOverridePluginWindows(packages=[]) {
+  const next=[];
+  for(const pkg of (Array.isArray(packages)?packages:[])){
+    try{next.push({pluginId:String(pkg?.manifest?.id||''),spec:normalizeOverridePluginWindow(pkg)});}
+    catch(err){console.warn(`[DKDS plugin override window] ${pkg?.manifest?.id||'unknown'}: ${err.message}`);}
+  }
+  return next;
+}
+
 function readExternalPluginWindows(packages=[]) {
   const next=new Map();
   for(const pkg of (Array.isArray(packages)?packages:[])){
@@ -207,8 +224,15 @@ function readExternalPluginWindows(packages=[]) {
   return next;
 }
 
-function readPluginWindows(appPath, externalPackages=[]) {
+function readPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
   const combined=new Map(readBuiltinPluginWindows(appPath));
+  // A trusted LAN override replaces the built-in plugin's complete independent
+  // window contract, including the case where the update intentionally removes
+  // manifest.window. External packages still cannot shadow a built-in activity.
+  for(const row of readOverridePluginWindows(overridePackages)){
+    for(const [activity,spec] of [...combined])if(spec.pluginId===row.pluginId)combined.delete(activity);
+    if(row.spec)combined.set(row.spec.activity,row.spec);
+  }
   for(const [activity,spec] of readExternalPluginWindows(externalPackages)){
     if(combined.has(activity)){
       console.warn(`[DKDS plugin window] duplicate activity ignored: ${activity} (${spec.pluginId})`);
@@ -223,16 +247,16 @@ function listBuiltinPluginWindows(appPath) {
   return [...readBuiltinPluginWindows(appPath).values()];
 }
 
-function listPluginWindows(appPath, externalPackages=[]) {
-  return [...readPluginWindows(appPath,externalPackages).values()];
+function listPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
+  return [...readPluginWindows(appPath,externalPackages,overridePackages).values()];
 }
 
 function resolveBuiltinPluginWindow(appPath, activityId) {
   return readBuiltinPluginWindows(appPath).get(String(activityId || '').trim()) || null;
 }
 
-function resolvePluginWindow(appPath, activityId, externalPackages=[]) {
-  return readPluginWindows(appPath,externalPackages).get(String(activityId||'').trim())||null;
+function resolvePluginWindow(appPath, activityId, externalPackages=[], overridePackages=[]) {
+  return readPluginWindows(appPath,externalPackages,overridePackages).get(String(activityId||'').trim())||null;
 }
 
 module.exports = {
@@ -242,9 +266,12 @@ module.exports = {
   normalizeWindowMode,
   normalizeDependencies,
   normalizePersistence,
+  normalizePackagedPluginWindow,
   normalizeExternalPluginWindow,
+  normalizeOverridePluginWindow,
   readBuiltinPluginWindows,
   readExternalPluginWindows,
+  readOverridePluginWindows,
   readPluginWindows,
   listBuiltinPluginWindows,
   listPluginWindows,

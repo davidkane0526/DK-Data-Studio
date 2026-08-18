@@ -312,7 +312,7 @@ assert(!pkgV38.build.files.includes('update-public-key.pem'),'keyless trusted-LA
 assert(!pkgV38.scripts['setup:update-key'],'key setup npm script must be removed');
 assert(!fs.existsSync('./scripts/generate-update-keys.js'),'key generator must be removed');
 assert(!fs.existsSync('./SETUP_UPDATE_KEYS.cmd'),'key setup CMD must be removed');
-assert(mainV38.includes("new LanUpdateClient({ app, BrowserWindow })"),'main process must initialize LAN updater');
+assert(mainV38.includes("new LanUpdateClient({ app, BrowserWindow, installPluginPackage:installLanPluginPackage })"),'main process must initialize LAN updater with plugin-package delivery support');
 assert(preloadV38.includes('updateCheckNow')&&preloadV38.includes('onUpdateStatus'),'renderer bridge must expose updater operations/status');
 assert(!updateClientV38.includes('crypto.verify')&&!updateClientV38.includes('publicKey'),'client must not depend on Ed25519/public keys');
 assert(updateClientV38.includes("new NsisUpdater({"),'client must use NSIS updater');

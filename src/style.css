@@ -3398,9 +3398,17 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px}
 /* Dedicated analysis activities use their own BrowserWindow. */
 body.auxiliary-window .topbar,
 body.auxiliary-window .project-tabs-bar,
-body.auxiliary-window .workspace,
 body.auxiliary-window #importPanel,
 body.auxiliary-window #zoomPanel{display:none!important}
+/* Dedicated windows mount an analysis page; compatibility windows deliberately
+   reuse the mature main workspace DOM. Hiding .workspace for both modes made
+   compatibility TOP plugins (notably resonance) render as a blank window. */
+body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace{display:none!important}
+body.auxiliary-window.auxiliary-compatibility-window .workspace{
+  display:grid!important;
+  height:100vh!important;
+  min-height:0!important;
+}
 body.auxiliary-window #app{height:100vh;min-height:0}
 body.auxiliary-window .analysis-page{
   --dkds-analysis-page-top:0px;
@@ -3675,3 +3683,9 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
   .prime-bottom-dock-slot.active{display:flex}
   .dkds-prime-portable.dkds-prime-docked-right{grid-column:1!important}
 }
+
+/* TER TOP owns a single left stack and a single main stack. Keeping each
+   semantic region in one grid item prevents CSS Grid auto-placement from
+   pushing the chart region several rows below the controls when TER is SUPER. */
+.ter-workspace-shell,.ter-workspace-left,.ter-workspace-main{min-width:0;min-height:0}
+.ter-workspace-left>*{box-sizing:border-box;max-width:100%}

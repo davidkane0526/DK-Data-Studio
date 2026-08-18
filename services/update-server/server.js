@@ -12,6 +12,8 @@ const storageDir = path.resolve(ROOT, config.storageDir || './storage');
 const releaseDir = path.join(storageDir, 'releases');
 const incomingDir = path.join(storageDir, '.incoming');
 const currentPath = path.join(storageDir, 'current.json');
+const pluginDir = path.join(storageDir, 'plugins');
+const currentPluginsPath = path.join(storageDir, 'plugins-current.json');
 
 const logPath = path.join(ROOT, 'server.log');
 
@@ -35,6 +37,7 @@ rotateLogIfNeeded();
 
 fs.mkdirSync(releaseDir, { recursive: true });
 fs.mkdirSync(incomingDir, { recursive: true });
+fs.mkdirSync(pluginDir, { recursive: true });
 
 const serverId = crypto
   .createHash('sha256')
@@ -45,6 +48,7 @@ const serverId = crypto
 const clients = new Set();
 const publishSessions = new Map();
 let currentRelease = readCurrentRelease();
+let currentPlugins = readCurrentPlugins();
 let lastCurrentFingerprint = fingerprintCurrent(currentRelease);
 
 function readCurrentRelease() {
@@ -59,6 +63,31 @@ function readCurrentRelease() {
 
 function fingerprintCurrent(value) {
   return value ? `${value.version}|${value.publishedAt || ''}` : '';
+}
+
+function readCurrentPlugins() {
+  try{
+    const value=JSON.parse(fs.readFileSync(currentPluginsPath,'utf8'));
+    return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  }catch{return {};}
+}
+
+function writeCurrentPlugins(next) {
+  const temp=currentPluginsPath+`.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(temp,JSON.stringify(next,null,2)+'\n','utf8');
+  if(fs.existsSync(currentPluginsPath))fs.rmSync(currentPluginsPath,{force:true});
+  fs.renameSync(temp,currentPluginsPath);
+}
+
+function pluginList(){return Object.values(currentPlugins).sort((a,b)=>String(a.id).localeCompare(String(b.id)));}
+function validPluginId(value){return /^[a-z0-9][a-z0-9._-]{0,119}$/i.test(String(value||''));}
+function readBufferBody(req,limit=12*1024*1024){
+  return new Promise((resolve,reject)=>{
+    const chunks=[];let size=0;
+    req.on('data',chunk=>{size+=chunk.length;if(size>limit){reject(new Error('request_body_too_large'));req.destroy();return;}chunks.push(chunk);});
+    req.on('end',()=>resolve(Buffer.concat(chunks)));
+    req.on('error',reject);
+  });
 }
 
 function lanIPv4Addresses() {
@@ -196,11 +225,12 @@ code{background:#f2f5fa;padding:2px 5px;border-radius:5px}.ok{color:#087443}.mut
 <div>Multicast</div><div><code>${config.multicastGroup}:${config.multicastPort}</code></div>
 <div>WebSocket 客户端</div><div>${clients.size}</div>
 <div>当前版本</div><div>${currentRelease?.version || '尚未发布'}</div>
+<div>插件更新</div><div>${pluginList().length} 个已发布插件通道</div>
 </div>
 <div class="box">
 <b>发布方式</b><br><br>
 GitHub Actions 下载的 Windows Artifact 可直接双击 <code>局域网发布.cmd</code>。发布接口只接受本机 127.0.0.1 请求，局域网其他设备不能上传版本。<br><br>
-本地源码构建仍可使用 <code>DKDS.cmd publish-update</code>。
+本地源码构建仍可使用 <code>DKDS.cmd publish-update</code>；单独推送插件使用 <code>DKDS.cmd plugin-publish-lan</code>。
 </div>
 <p class="muted">简化可信局域网模式：不需要任何公钥/私钥。安装包下载后仍由 electron-updater 按 latest.yml 中的 SHA512 校验完整性。请仅在你信任的实验室/办公室局域网中使用。</p>
 </main></body></html>`;
@@ -257,12 +287,51 @@ function serveRelease(req, res, pathname) {
   return true;
 }
 
+function servePlugin(req,res,pathname) {
+  const match=pathname.match(/^\/plugins\/([^/]+)\/([a-f0-9]{64})\.dkplugin$/i);
+  if(!match)return false;
+  const id=decodeURIComponent(match[1]);const sha=match[2].toLowerCase();
+  if(!validPluginId(id)){sendJson(res,404,{error:'plugin_not_found'});return true;}
+  const filePath=path.join(pluginDir,id,`${sha}.dkplugin`);
+  if(!fs.existsSync(filePath)||!fs.statSync(filePath).isFile()){sendJson(res,404,{error:'plugin_not_found'});return true;}
+  const stat=fs.statSync(filePath);
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Content-Length':stat.size,'Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'});
+  if(req.method==='HEAD')res.end();else fs.createReadStream(filePath).pipe(res);
+  return true;
+}
+
 async function handleLocalPublish(req, res, url) {
   const pathname = url.pathname;
-  if (!pathname.startsWith('/api/publish/')) return false;
+  if (!pathname.startsWith('/api/publish/') && pathname !== '/api/plugins/publish') return false;
 
   if (!isLoopbackRequest(req)) {
     sendJson(res, 403, { error: 'local_publish_only' });
+    return true;
+  }
+
+  if (pathname === '/api/plugins/publish' && req.method === 'PUT') {
+    try{
+      const raw=await readBufferBody(req);
+      const parsed=JSON.parse(raw.toString('utf8'));
+      const manifest=parsed?.manifest||{};
+      const id=String(manifest.id||'').trim();
+      const name=String(manifest.name||id).trim();
+      const version=String(manifest.version||'').trim();
+      if(Number(parsed?.schema)!==1||!validPluginId(id)||!version||!parsed?.files||typeof parsed.files!=='object'){
+        sendJson(res,400,{error:'invalid_plugin_package'});return true;
+      }
+      const sha256=crypto.createHash('sha256').update(raw).digest('hex');
+      const dir=path.join(pluginDir,id);fs.mkdirSync(dir,{recursive:true});
+      const target=path.join(dir,`${sha256}.dkplugin`);
+      if(!fs.existsSync(target)){
+        const temp=`${target}.tmp-${process.pid}-${Date.now()}`;fs.writeFileSync(temp,raw);fs.renameSync(temp,target);
+      }
+      const plugin={id,name,version,sha256,publishedAt:new Date().toISOString(),revision:`${version}+${sha256.slice(0,12)}`,url:`/plugins/${encodeURIComponent(id)}/${sha256}.dkplugin`};
+      currentPlugins={...currentPlugins,[id]:plugin};writeCurrentPlugins(currentPlugins);
+      log(`[plugin-publish] ${id} v${version} ${sha256.slice(0,12)}`);
+      broadcast({type:'plugin-release',schema:1,serverId,plugin});
+      sendJson(res,200,{ok:true,plugin,connectedClients:clients.size});
+    }catch(err){sendJson(res,400,{error:'plugin_publish_failed',message:err.message});}
     return true;
   }
 
@@ -434,8 +503,15 @@ const server = http.createServer(async (req, res) => {
         currentVersion: currentRelease?.version || null,
         connectedClients: clients.size,
         localPublishApi: true,
+        pluginPublishApi: true,
+        pluginCount: pluginList().length,
         time: new Date().toISOString()
       });
+      return;
+    }
+
+    if (pathname === '/api/plugins') {
+      sendJson(res,200,{schema:1,serverId,plugins:pluginList()});
       return;
     }
 
@@ -451,6 +527,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (serveRelease(req, res, pathname)) return;
+    if (servePlugin(req,res,pathname)) return;
 
     sendJson(res, 404, { error: 'not_found' });
   } catch (err) {
@@ -480,7 +557,8 @@ wss.on('connection', ws => {
     schema: 1,
     serverId,
     serverName: config.serverName,
-    currentVersion: currentRelease?.version || null
+    currentVersion: currentRelease?.version || null,
+    plugins: pluginList()
   }));
 });
 
@@ -546,8 +624,10 @@ server.listen(Number(config.port), config.host || '0.0.0.0', () => {
   log(`Storage   : ${storageDir}`);
   log(`Current   : ${currentRelease?.version || '(none)'}`);
   log('Local publish API: http://127.0.0.1:' + config.port + '/api/publish/*');
+  log('Plugin publish API: http://127.0.0.1:' + config.port + '/api/plugins/publish');
   for (const ip of lanIPv4Addresses()) log(`Dashboard : http://${ip}:${config.port}`);
   log('Publish local source build with: DKDS.cmd publish-update');
+  log('Publish one plugin with: DKDS.cmd plugin-publish-lan');
   log('Publish GitHub Artifact by double-clicking: 局域网发布.cmd');
   log('============================================================');
   multicastAnnouncement();

@@ -80,3 +80,74 @@ assert.match(metadata, /DK Data Studio · TEST-PC/);
 assert.ok(metadata.includes(relatesTo));
 
 console.log('Windows network discovery metadata checks passed.');
+
+// The production LAN-web path now uses the independently validated
+// SSDP/UPnP + mDNS/DNS-SD discovery stack. WSD remains covered above as a
+// compatibility implementation but is no longer the only discovery protocol.
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const {
+  LanDiscoveryService,
+  BASIC_DEVICE,
+  SSDP_GROUP,
+  SSDP_PORT,
+  MDNS_GROUP,
+  MDNS_PORT,
+  isPrivateIPv4,
+  sanitizeHostname,
+  buildMdnsPacket
+} = require('../lan-discovery-service');
+const { LanWebServer } = require('../lan-web-server');
+
+assert.strictEqual(isPrivateIPv4('192.168.1.20'), true);
+assert.strictEqual(isPrivateIPv4('10.4.3.2'), true);
+assert.strictEqual(isPrivateIPv4('172.31.9.2'), true);
+assert.strictEqual(isPrivateIPv4('172.32.9.2'), false);
+assert.strictEqual(isPrivateIPv4('169.254.1.2'), false);
+assert.strictEqual(SSDP_GROUP, '239.255.255.250');
+assert.strictEqual(SSDP_PORT, 1900);
+assert.strictEqual(MDNS_GROUP, '224.0.0.251');
+assert.strictEqual(MDNS_PORT, 5353);
+assert.strictEqual(BASIC_DEVICE, 'urn:schemas-upnp-org:device:Basic:1');
+assert.ok(!sanitizeHostname('DK Data Studio TEST PC').includes(' '));
+
+const lanDiscovery = new LanDiscoveryService({
+  deviceId,
+  getHttpPort:()=>45910,
+  deviceName:'DK Data Studio'
+});
+const alive=lanDiscovery.ssdpNotify('upnp:rootdevice','ssdp:alive','192.168.1.23').toString('utf8');
+assert.match(alive,/NOTIFY \* HTTP\/1\.1\r\n/);
+assert.ok(alive.includes(`HOST: ${SSDP_GROUP}:${SSDP_PORT}\r\n`));
+assert.ok(alive.includes('LOCATION: http://192.168.1.23:45910/upnp/device.xml\r\n'));
+assert.ok(alive.includes(`USN: uuid:${deviceId}::upnp:rootdevice\r\n`));
+assert.ok(alive.endsWith('\r\n\r\n'),'SSDP messages must use CRLF framing.');
+const ssdpResponse=lanDiscovery.ssdpResponse(BASIC_DEVICE,'192.168.1.23').toString('utf8');
+assert.match(ssdpResponse,/HTTP\/1\.1 200 OK\r\n/);
+assert.ok(ssdpResponse.includes(`ST: ${BASIC_DEVICE}\r\n`));
+
+const mdns=buildMdnsPacket({
+  hostname:'dk-data-studio-test.local',
+  instance:'DK Data Studio - TEST._http._tcp.local',
+  port:45910,
+  addresses:['192.168.1.23']
+});
+assert.strictEqual(mdns.readUInt16BE(2),0x8400);
+assert.ok(mdns.readUInt16BE(6)>=4,'mDNS announcement must carry PTR/SRV/TXT/A records.');
+assert.ok(mdns.includes(Buffer.from('path=/')),'mDNS TXT record must advertise path=/.');
+
+const tempUser=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-lan-web-test-'));
+try{
+  const fakeApp={getAppPath:()=>path.resolve(__dirname,'..'),getPath:()=>tempUser,getVersion:()=> '3.23.0'};
+  const fakeWindows={getAllWindows:()=>[]};
+  const lanWeb=new LanWebServer({app:fakeApp,BrowserWindow:fakeWindows});
+  const upnp=lanWeb.upnpDeviceXml('192.168.1.23');
+  assert.match(upnp,new RegExp(`<deviceType>${BASIC_DEVICE.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}</deviceType>`));
+  assert.ok(upnp.includes(`<UDN>uuid:${lanWeb.settings.deviceId}</UDN>`));
+  assert.ok(upnp.includes('<presentationURL>http://192.168.1.23:45910/</presentationURL>'));
+  const saved=JSON.parse(fs.readFileSync(path.join(tempUser,'lan-web-settings.json'),'utf8'));
+  assert.strictEqual(saved.deviceId,lanWeb.settings.deviceId,'LAN discovery UUID must persist across restarts.');
+} finally { fs.rmSync(tempUser,{recursive:true,force:true}); }
+
+console.log('SSDP/UPnP/mDNS LAN discovery checks passed.');

@@ -33,6 +33,14 @@ const out=path.join(tmp,'test.dkplugin');
 execFileSync(process.execPath,[path.join(__dirname,'package-plugin.js'),dir,out],{stdio:'pipe'});
 const packed=normalizePluginPackage(JSON.parse(fs.readFileSync(out,'utf8')));
 assert(packed.manifest.id==='com.example.test-package'&&packed.files['plugin.js'],'packaging helper must produce installable .dkplugin');
+// Built-in plugins remain protected for normal external installation, but the
+// trusted LAN update packager can explicitly create an override package from
+// the application-owned src/plugins tree.
+const builtinOut=path.join(tmp,'ter-update.dkplugin');
+execFileSync(process.execPath,[path.join(__dirname,'package-plugin.js'),'--allow-builtin',path.join(__dirname,'..','src','plugins','ter-analysis'),builtinOut],{stdio:'pipe'});
+const builtinPacked=normalizePluginPackage(JSON.parse(fs.readFileSync(builtinOut,'utf8')),{allowBuiltinId:true});
+assert(builtinPacked.manifest.id==='builtin.ter-analysis','trusted update packaging must support built-in plugin ids only with --allow-builtin.');
+
 fs.rmSync(tmp,{recursive:true,force:true});
 
 const main=fs.readFileSync(path.join(__dirname,'..','main.js'),'utf8');
@@ -40,7 +48,8 @@ const preload=fs.readFileSync(path.join(__dirname,'..','preload.js'),'utf8');
 const kernel=fs.readFileSync(path.join(__dirname,'..','src/core/plugin-kernel.js'),'utf8');
 const manager=fs.readFileSync(path.join(__dirname,'..','src/core/plugin-manager-ui.js'),'utf8');
 assert(main.includes("ipcMain.handle('plugins:installPackage'")&&main.includes("ipcMain.handle('plugins:uninstall'"),'desktop main process must own plugin installation/uninstallation IPC');
-assert(preload.includes('pluginInstallPackage')&&preload.includes('pluginExternalList')&&preload.includes('pluginRestorePackage'),'preload must expose external-plugin IPC and rollback without Node access in renderer');
-assert(kernel.includes('loadExternalPackage')&&kernel.includes('uninstallExternalPlugin')&&kernel.includes('pluginRestorePackage'),'plugin kernel must dynamically load/unload installed packages and roll back failed updates');
+assert(preload.includes('pluginInstallPackage')&&preload.includes('pluginExternalList')&&preload.includes('pluginRestorePackage')&&preload.includes('pluginOverrideList'),'preload must expose external-plugin IPC, rollback, and trusted built-in override discovery without Node access in renderer');
+assert(kernel.includes('loadExternalPackage')&&kernel.includes('loadOverridePackage')&&kernel.includes('uninstallExternalPlugin')&&kernel.includes('pluginRestorePackage'),'plugin kernel must load LAN built-in overrides before packaged built-ins while preserving external plugin rollback.');
 assert(manager.includes('pluginManagerInstallBtn')&&manager.includes('plugin-uninstall-btn'),'plugin manager UI must expose install/uninstall actions');
-console.log('External .dkplugin package / installation contracts passed.');
+assert(main.includes("ipcMain.handle('plugins:listOverrides'")&&main.includes('installLanPluginPackage'),'main process must own trusted LAN plugin override storage and installation.');
+console.log('External / trusted-LAN .dkplugin package contracts passed.');

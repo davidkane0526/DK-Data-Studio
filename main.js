@@ -34,6 +34,35 @@ function ensureExternalPluginDirectory() {
   return dir;
 }
 
+function pluginOverrideDirectory() {
+  return path.join(app.getPath('userData'), 'plugin-overrides');
+}
+
+function ensurePluginOverrideDirectory() {
+  const dir=pluginOverrideDirectory();
+  fs.mkdirSync(dir,{recursive:true});
+  return dir;
+}
+
+function pluginLanStatePath(){return path.join(app.getPath('userData'),'plugin-lan-update-state.json');}
+function readPluginLanState(){
+  try{return JSON.parse(fs.readFileSync(pluginLanStatePath(),'utf8'))||{};}catch{return {};}
+}
+function writePluginLanState(state){
+  const target=pluginLanStatePath();fs.mkdirSync(path.dirname(target),{recursive:true});
+  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp,JSON.stringify(state,null,2)+'\n','utf8');
+  if(fs.existsSync(target))fs.rmSync(target,{force:true});
+  fs.renameSync(tmp,target);
+}
+function atomicWritePluginPackage(target,pkg){
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp,JSON.stringify(pkg,null,2)+'\n','utf8');
+  if(fs.existsSync(target))fs.rmSync(target,{force:true});
+  fs.renameSync(tmp,target);
+}
+
 function builtinPluginIds() {
   const base = path.join(app.getAppPath(), 'src', 'plugins');
   const ids = new Set();
@@ -73,12 +102,61 @@ function installedExternalPluginPackages() {
   return readInstalledExternalPlugins().packages || [];
 }
 
+function readInstalledPluginOverrides() {
+  const dir=ensurePluginOverrideDirectory();
+  const packages=[];const errors=[];const builtinIds=builtinPluginIds();
+  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort()){
+    const filePath=path.join(dir,name);
+    try{
+      const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(filePath,'utf8')),{allowBuiltinId:true});
+      if(!pkg.manifest.id.startsWith('builtin.')||!builtinIds.has(pkg.manifest.id))throw new Error(`Override target is not a packaged built-in plugin: ${pkg.manifest.id}`);
+      packages.push({...pkg,installedPath:filePath});
+    }catch(err){errors.push({file:name,error:err?.message||String(err)});}
+  }
+  return {packages,errors,directory:dir};
+}
+function installedPluginOverridePackages(){return readInstalledPluginOverrides().packages||[];}
+
+async function installLanPluginPackage(buffer,metadata={}) {
+  const raw=Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer||'');
+  if(!raw.length)throw new Error('LAN plugin package is empty.');
+  const sha256=crypto.createHash('sha256').update(raw).digest('hex');
+  if(metadata.sha256&&String(metadata.sha256).toLowerCase()!==sha256)throw new Error('LAN plugin package SHA256 mismatch.');
+  const parsed=JSON.parse(raw.toString('utf8'));
+  const id=String(parsed?.manifest?.id||'');
+  if(metadata.id&&String(metadata.id)!==id)throw new Error(`LAN plugin id mismatch: ${id} != ${metadata.id}`);
+  const isBuiltin=id.startsWith('builtin.');
+  const pkg=normalizePluginPackage(parsed,{allowBuiltinId:isBuiltin});
+  const state=readPluginLanState();
+  if(state[id]?.sha256===sha256)return {installed:false,skipped:true,id,version:pkg.manifest.version,sha256};
+
+  let target,kind;
+  if(isBuiltin){
+    if(!builtinPluginIds().has(id))throw new Error(`LAN update cannot introduce unknown built-in plugin: ${id}`);
+    target=path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(id));
+    kind='builtin-override';
+  }else{
+    const existing=readInstalledExternalPlugins().packages.find(row=>row.manifest.id===id);
+    if(!existing)return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'external-plugin-not-installed'};
+    target=existing.installedPath;
+    kind='external-update';
+  }
+
+  const installed={...pkg,installedAt:new Date().toISOString()};
+  atomicWritePluginPackage(target,installed);
+  state[id]={sha256,version:installed.manifest.version,revision:metadata.revision||metadata.publishedAt||installed.installedAt,installedAt:installed.installedAt,kind};
+  writePluginLanState(state);
+  const event={id,name:installed.manifest.name,version:installed.manifest.version,kind,sha256,requiresRestart:true};
+  for(const win of BrowserWindow.getAllWindows())if(!win.isDestroyed())win.webContents.send('plugins:lanUpdate',event);
+  return {installed:true,...event};
+}
+
 function resolveConfiguredPluginWindow(activityId) {
-  return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages());
+  return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
 }
 
 function listConfiguredPluginWindows() {
-  return listPluginWindows(app.getAppPath(), installedExternalPluginPackages());
+  return listPluginWindows(app.getAppPath(), installedExternalPluginPackages(), installedPluginOverridePackages());
 }
 
 const PACKAGED_TRIAL_DAYS = 30;
@@ -440,6 +518,7 @@ app.whenReady().then(() => {
   }
 
   ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
+  ipcMain.handle('plugins:listOverrides', async () => readInstalledPluginOverrides());
   ipcMain.handle('plugins:installPackage', async () => {
     const result = await dialog.showOpenDialog({
       title:'安装 DK Data Studio 插件', properties:['openFile'],
@@ -601,7 +680,7 @@ app.whenReady().then(() => {
     return {path:filePath,project:JSON.parse(fs.readFileSync(filePath, 'utf8'))};
   });
 
-  lanUpdater = new LanUpdateClient({ app, BrowserWindow });
+  lanUpdater = new LanUpdateClient({ app, BrowserWindow, installPluginPackage:installLanPluginPackage });
   lanUpdater.start();
   lanWebServer = new LanWebServer({ app, BrowserWindow });
   if (lanWebServer.getSettings().enabled) lanWebServer.start(false).catch(err => console.error('LAN web server:', err));

@@ -436,6 +436,7 @@ Add-ActionCard -Flow $android -Text '打开 APK 输出' -Description '打开 mob
 $update = New-Page '局域网更新'
 Add-ActionCard -Flow $update -Text '启动更新服务器' -Description '运行可信局域网更新服务。' -Action 'update-server' -Accent
 Add-ActionCard -Flow $update -Text '发布已有构建' -Description '发布 dist/latest.yml 对应的构建。' -Action 'publish-update'
+Add-ActionCard -Flow $update -Text '推送单个插件' -Description '只打包并推送选定插件，不重发整个软件；客户端接收后重启生效。' -Action 'plugin-publish-lan' -Accent
 Add-ActionCard -Flow $update -Text '安装服务器自启动' -Description '创建登录时启动的 Windows 计划任务。' -Action 'update-autostart-install'
 Add-ActionCard -Flow $update -Text '移除服务器自启动' -Description '删除 DKDS LAN Update Server 计划任务。' -Action 'update-autostart-remove'
 Add-VersionCard -Flow $update
@@ -443,6 +444,7 @@ Add-VersionCard -Flow $update
 $plugin = New-Page '插件与维护'
 Add-ActionCard -Flow $plugin -Text '重新生成插件索引' -Description '扫描 src/plugins 并生成内置插件入口。' -Action 'plugin-index'
 Add-ActionCard -Flow $plugin -Text '验证所有插件' -Description '检查 manifest、ID、入口和 API。' -Action 'plugin-validate' -Accent
+Add-ActionCard -Flow $plugin -Text '局域网推送插件' -Description '选择内置插件或 .dkplugin，仅发布插件更新包。' -Action 'plugin-publish-lan'
 Add-ActionCard -Flow $plugin -Text '完整工程检查' -Description '推荐交付前执行。' -Action 'check'
 Add-ActionCard -Flow $plugin -Text '打开插件示例' -Description '打开 examples/external-plugins。' -Action 'open-examples'
 

@@ -72,8 +72,8 @@ assert(shellRuntime.includes('markActivityWindowReady'),'dedicated runtime must 
 assert(shellRuntime.includes('const sameProject = bootstrap?.projectDigest'),'prewarm -> first-open must not restore/re-render an unchanged project.');
 assert(shellRuntime.includes('onActivityWillShow'),'dedicated runtime must relayout Plotly when a prewarmed/cached window becomes visible.');
 assert(manager.includes('manifest?.window'),'plugin-window-manager must read manifest.window.');
-assert(manager.includes("source:'external'")&&manager.includes('packageFiles'),'plugin-window-manager must support packaged external dedicated windows.');
-assert(shellRuntime.includes("spec.source==='external'")&&shellRuntime.includes('packageScripts'),'dedicated runtime must execute external .dkplugin windows without the legacy full-workspace renderer.');
+assert(manager.includes('normalizePackagedPluginWindow')&&manager.includes('packageFiles'),'plugin-window-manager must support packaged external and trusted-override dedicated windows.');
+assert(shellRuntime.includes("spec?.source==='external'||spec?.source==='override'")&&shellRuntime.includes('packageScripts'),'dedicated runtime must execute external and trusted-override .dkplugin windows without the legacy full-workspace renderer.');
 assert(manager.includes('WINDOW_PERSISTENCE_MODES'),'plugin-window-manager must validate persistence policy.');
 assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windowSpec.reuse !== false'),'all dedicated windows must get prewarm/reuse defaults.');
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
@@ -156,6 +156,24 @@ const externalRow=combined.get('external-window');
 assert(externalRow?.source==='external','installed .dkplugin manifest.window must resolve as a dedicated window.');
 assert(externalRow?.runtime==='window-runtime.js'&&externalRow?.scripts?.includes('engine.js'),'external window runtime/support files must be preserved.');
 assert(externalRow?.packageScripts?.includes('plugin.js')&&typeof externalRow?.packageFiles?.['plugin.js']==='string','external window must carry package scripts into the dedicated renderer.');
+
+// Built-in LAN override regression: the package replaces the packaged plugin's
+// window contract rather than colliding with it as an external plugin.
+const overridePkg=normalizePluginPackage({
+  schema:1,
+  manifest:{
+    id:'builtin.ter-analysis',name:'TER Override',version:'2.0.1',apiVersion:'1.3.0',entry:'plugin.js',
+    window:{activity:'ter-override',runtime:'window-runtime.js',dependencies:[],prewarm:true,reuse:true,persistence:'project'}
+  },
+  files:{
+    'plugin.js':'DKDSPlugins.define({id:"builtin.ter-analysis",name:"TER Override",version:"2.0.1"},async()=>({}));',
+    'window-runtime.js':'window.DKDSPluginWindowRuntime={create:async()=>({})};'
+  }
+},{allowBuiltinId:true});
+const withOverride=readPluginWindows(root,[],[overridePkg]);
+assert(!withOverride.has('ter'),'built-in override must remove the packaged window contract for the same plugin id.');
+assert(withOverride.get('ter-override')?.source==='override','built-in override must install its replacement window contract with override source.');
+
 
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
 // results live in namespaced project slices and artifact deltas.

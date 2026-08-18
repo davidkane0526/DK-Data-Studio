@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('windows:activityWillShow', handler);
   },
   pluginExternalList: () => ipcRenderer.invoke('plugins:listExternal'),
+  pluginOverrideList: () => ipcRenderer.invoke('plugins:listOverrides'),
   pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),
   pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
@@ -49,6 +50,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateCheckNow: () => ipcRenderer.invoke('update:checkNow'),
   updateDownloadNow: () => ipcRenderer.invoke('update:downloadNow'),
   updateInstallNow: () => ipcRenderer.invoke('update:installNow'),
+  onPluginLanUpdate: callback => {
+    const handler = (_event, status) => callback(status);
+    ipcRenderer.on('plugins:lanUpdate', handler);
+    return () => ipcRenderer.removeListener('plugins:lanUpdate', handler);
+  },
   onUpdateStatus: callback => {
     const handler = (_event, status) => callback(status);
     ipcRenderer.on('update:status', handler);

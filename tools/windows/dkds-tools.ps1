@@ -742,12 +742,13 @@ function Show-Menu {
   Write-Host ' 15  Validate plugins'
   Write-Host ' 16  Open project folder'
   Write-Host ' 17  Open documentation'
+  Write-Host ' 18  Push one plugin over LAN'
   Write-Host '  0  Exit'
   $choice = Read-Host 'Select'
   $map = @{
     '1'='dev';'2'='install-deps';'3'='doctor';'4'='toolchain';'5'='check';'6'='test';'7'='build-windows';
     '8'='android-check';'9'='android-build';'10'='android-run';'11'='android-install';'12'='update-server';
-    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'0'='exit'
+    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'18'='plugin-publish-lan';'0'='exit'
   }
   if ($map.ContainsKey($choice)) { return $map[$choice] }
   return 'menu'
@@ -816,6 +817,15 @@ try {
       $pluginArguments = @('scripts/package-plugin.js',$PluginPath)
       if ($OutputPath) { $pluginArguments += $OutputPath }
       Invoke-Step -FilePath 'node' -Arguments $pluginArguments
+    }
+    'plugin-publish-lan' {
+      Ensure-NodeDeps -Dir $Root
+      Write-SectionTitle 'Push plugin update over LAN'
+      $publisher = Join-Path $Root 'tools\windows\publish-plugin-to-lan.ps1'
+      $publisherArguments = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$publisher)
+      if ($PluginPath) { $publisherArguments += @('-PluginPath',$PluginPath) }
+      if ($OutputPath) { $publisherArguments += @('-OutputPath',$OutputPath) }
+      Invoke-Step -FilePath 'powershell.exe' -Arguments $publisherArguments
     }
     'open-root' { Start-Process explorer.exe -ArgumentList ('"' + $Root + '"') }
     'open-docs' { Start-Process explorer.exe -ArgumentList ('"' + (Join-Path $Root 'docs') + '"') }
