@@ -74,6 +74,7 @@
       const groupPortables=new Map();
       const groupCards=new Map();
       const groupCharts=new Map();
+      const groupPlotViews=new Map();
       let groupRenderKey='';
       let undoStack=[];
       let committedWorkspace=null;
@@ -665,20 +666,21 @@
         let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
         const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
         const card=document.createElement('div');card.className='reswin-group-card';card.dataset.groupMetric=String(key);
-        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"><button type="button" data-csv>CSV</button><button type="button" data-copy>复制</button></span></div><div class="reswin-group-plot"></div><div class="reswin-group-legend"></div>`;
+        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div><div class="reswin-group-legend"></div>`;
         hostEl.appendChild(card);
         const plot=card.querySelector('.reswin-group-plot');
         const chart=uiRuntime?.charts?.mount?.(plot,{})||null;if(chart)groupCharts.set(String(key),chart);
-        const portable=workspaceRuntime?.portable?.(`resonance-group:${key}`,card,{title,useTargetAsWrapper:true,handle:'.reswin-group-head',controlsHost:'.reswin-group-card-actions',controlsPlacement:'start',placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v2',snap:false,onPlacementChanged:()=>resize()})||null;
-        if(portable)groupPortables.set(String(key),portable);
-        row={key:String(key),title,card,plot,chart,portable,series:[]};groupCards.set(String(key),row);
-        card.querySelector('[data-csv]').onclick=()=>{const csv=groupCsv(row.title,row.series||[]);window.electronAPI?.saveText?.({defaultName:`resonance_${row.key}.csv`,content:csv,filters:[{name:'CSV',extensions:['csv']}]});};
-        card.querySelector('[data-copy]').onclick=()=>copyTextToClipboard(groupCsv(row.title,row.series||[]),`${row.title} CSV`);
+        row={key:String(key),title,card,plot,chart,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
+        const plotView=uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
+          plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
+          placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,portableFactory:(id,node,spec)=>workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
+        })||null;
+        if(plotView){row.plotView=plotView;row.portable=plotView.portable||null;groupPlotViews.set(String(key),plotView);if(row.portable)groupPortables.set(String(key),row.portable);}
         return row;
       }
       function disposeGroupViews(){
         groupRenderKey='';
-        for(const portable of groupPortables.values())try{portable?.dispose?.();}catch{}groupPortables.clear();
+        for(const view of groupPlotViews.values())try{view?.dispose?.();}catch{}groupPlotViews.clear();groupPortables.clear();
         for(const chart of groupCharts.values())try{chart?.dispose?.();}catch{}groupCharts.clear();
         for(const row of groupCards.values())try{row.card?.remove?.();}catch{}groupCards.clear();
       }

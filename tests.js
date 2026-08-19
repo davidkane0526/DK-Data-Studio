@@ -655,13 +655,10 @@ assert(appV312.includes('function loadTrendColumnsPreference()')&&appV312.includ
 assert(htmlV312.includes('data-trend-cols="3" class="active"'),
   'group layout UI must initially highlight three charts per row');
 
-for(const id of [
-  'pulseRawFitBtn','pulseRawCopyBtn','pulseRawExportBtn','pulseRawSvgBtn','pulseRawPngBtn',
-  'pulseReadCopyBtn','pulseReadExportBtn','pulseReadSvgBtn','pulseReadPngBtn',
-  'pulsePulseCopyBtn','pulsePulseExportBtn','pulsePulseSvgBtn','pulsePulsePngBtn'
-]){
-  assert(pulsePluginSource.includes(`id="${id}"`),`pulse plugin plot action ${id} must exist`);
-}
+assert(pulsePluginSource.includes("ctx.ui.plotViews.bind(`pulse:${viewId}`")&&pulsePluginSource.includes("label:'适应全部'"),
+  'pulse raw/read/pulse figures must use Core PlotView chrome while retaining the raw fit domain action');
+assert(!pulsePluginSource.includes('pulseRawExportBtn')&&!pulsePluginSource.includes('pulseReadExportBtn')&&!pulsePluginSource.includes('pulsePulseExportBtn'),
+  'pulse figure export chrome must not be duplicated inside the plugin after PlotView migration');
 assert(!pulsePluginSource.includes('class=\"pulse-advanced\"'),
   'pulse plugin raw diagnostics should be permanently visible rather than hidden in a collapsed details block');
 assert(cssV312.includes('.pulse-raw-plot')&&cssV312.includes('height:530px!important'),

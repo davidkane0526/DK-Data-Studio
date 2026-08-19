@@ -81,7 +81,7 @@ assert(topRuntime.includes("edit?.supports?.('undo')") && topRuntime.includes("e
 assert(ui.includes('document.createComment(`dkds-portable-home:')&&ui.includes('anchor.parentNode.insertBefore(this.wrapper,anchor.nextSibling)'),'PortableView home placement must use a stable anchor so group subplots return to their original slot.');
 
 // Resonance group layout selector is a real Core ContextMenu action, not dead chrome.
-assert(resonanceViews.includes("event.preventDefault();event.stopPropagation();")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`")&&resonanceViews.includes('ctx.ui.contextMenus?.open?.'),'Resonance group column control must open the Core layout menu and expose auto/1-6 columns.');
+assert(resonanceViews.includes('data-respar-group-cols-menu-host')&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`"),'Resonance group column control must use the Core ActionGroup menu and expose auto/1-6 columns.');
 
 // System export menu is contextual: each TOP-capable plugin contributes semantic
 // export targets, and the shell displays the currently active workspace context.

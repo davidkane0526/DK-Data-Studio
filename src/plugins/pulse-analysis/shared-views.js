@@ -141,13 +141,7 @@
               <h3>当前文件 · 原始波形诊断</h3>
               <p id="pulseRawSubtitle">有记录电压时显示电压/电流双轨；仅电流文件只显示电流–时间波形。</p>
             </div>
-            <div class="pulse-plot-actions">
-              <button id="pulseRawFitBtn">适应全部</button>
-              <button id="pulseRawCopyBtn" class="copy-btn">复制数据</button>
-              <button id="pulseRawExportBtn">导出 CSV</button>
-              <button id="pulseRawSvgBtn">导出 SVG</button>
-              <button id="pulseRawPngBtn">导出 PNG</button>
-            </div>
+            <div class="pulse-plot-actions"></div>
           </div>
           <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface"></div>
         </section>
@@ -166,10 +160,7 @@
           <section class="pulse-card pulse-result-card">
             <div class="pulse-card-heading pulse-plot-heading">
               <div><h3>脉冲条件 → 读取电流</h3><p>优先按脉冲电压比较；电压未知时按脉冲序号显示，不虚构电压。</p></div>
-              <div class="pulse-plot-actions">
-                <button id="pulseReadCopyBtn" class="copy-btn">复制可见数据</button><button id="pulseReadExportBtn">导出 CSV</button>
-                <button id="pulseReadSvgBtn">导出 SVG</button><button id="pulseReadPngBtn">导出 PNG</button>
-              </div>
+              <div class="pulse-plot-actions"></div>
             </div>
             <div id="pulseReadPlot" class="pulse-result-plot pulse-plot-surface"></div>
           </section>
@@ -177,10 +168,7 @@
           <section class="pulse-card pulse-result-card">
             <div class="pulse-card-heading pulse-plot-heading">
               <div><h3>脉冲条件 → 脉冲电流</h3><p>支持不同写入/读取宽度；仅电流文件同样可提取并比较。</p></div>
-              <div class="pulse-plot-actions">
-                <button id="pulsePulseCopyBtn" class="copy-btn">复制可见数据</button><button id="pulsePulseExportBtn">导出 CSV</button>
-                <button id="pulsePulseSvgBtn">导出 SVG</button><button id="pulsePulsePngBtn">导出 PNG</button>
-              </div>
+              <div class="pulse-plot-actions"></div>
             </div>
             <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface"></div>
           </section>

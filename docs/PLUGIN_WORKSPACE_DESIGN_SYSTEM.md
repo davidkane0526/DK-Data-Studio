@@ -1,4 +1,4 @@
-# Plugin Workspace Design System — v3.37
+# Plugin Workspace Design System — v3.39
 
 ## Goal
 
@@ -31,6 +31,26 @@ Core Plugin Workspace Design System
 Plugins own domain meaning and data. Core owns reusable interaction mechanics.
 
 
+
+
+## v3.39 standard PlotView and native SUPER navigation
+
+`PlotView` is the standard container for scientific data figures. A plugin supplies the rendered plot and optional domain actions; Core supplies position, CSV, copy, SVG, PNG, PortableView placement and resize lifecycle. Built-in Resonance, TER, Pulse and Data Center figures consume this contract. Plugin-specific copies of generic export/location chrome are architecture regressions.
+
+```text
+PlotView
+├─ semantic title / domain actions
+├─ position (PortableView)
+├─ CSV / copy
+├─ SVG / PNG
+└─ resize lifecycle
+```
+
+Wide horizontal parameter forms may opt into `dkds-inline-form-row`. It keeps a field label such as `V_CNP (V)` in normal inline text flow (including sub/sup markup) while the input remains below the label. Responsive wrapping happens only when the workspace is genuinely narrow.
+
+Group-layout menus use the shared `ActionGroup + ContextMenu` path. Menu triggers are buttons, so portable-header dragging never owns their click lifecycle.
+
+System toolbar commands first restore the active SUPER root. Native PluginWorkspace contracts identify that root with `layout.root.selector`; the shell resolves the selector to its owning `.analysis-page` before invoking PRIME/SUB commands. This makes system pages such as Plugin Manager transient overlays rather than navigation traps.
 
 ## v3.37 workspace ordering and portable-view scopes
 

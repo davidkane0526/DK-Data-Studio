@@ -13,8 +13,7 @@
     const clickBindings=new Map();
     const manualStateByResult=new WeakMap();
     let keyboardContributionsBound=false;
-    const portableCharts=new Map();
-    const chartSurfaces=new Map();
+    const terPlotViews=new Map();
     let workbench=null;
     let gridController=null;
     let layoutSettings={rows:2,cols:3,sticky:true};
@@ -194,11 +193,6 @@
       if(rows)rows.value=String(layoutSettings.rows);
       if(cols)cols.value=String(layoutSettings.cols);
       if(sticky)sticky.checked=!!layoutSettings.sticky;
-      const quick=document.getElementById('terResistanceStickyBtn');
-      if(quick){
-        quick.textContent=layoutSettings.sticky?'取消吸附':'吸附';
-        quick.title=layoutSettings.sticky?'关闭 R–V 随页面滚动吸附':'让 R–V 图在当前滚动区保持可见';
-      }
     }
 
     function resizeTerPlots(){
@@ -261,13 +255,11 @@
       if(card.dataset.terBound!=='1'){
         card.dataset.terBound='1';
         const clearBtn=card.querySelector('#terResistanceClearBtn');
-        const stickyBtn=card.querySelector('#terResistanceStickyBtn');
         if(clearBtn)clearBtn.onclick=()=>{
           selectedTerPoint=null;
           controller?.clearSelection?.({source:'ter-resistance-clear'});
           renderResistancePlot();
         };
-        if(stickyBtn)stickyBtn.onclick=()=>setSticky(!layoutSettings.sticky);
       }
       syncLayoutControls();
       return card;
@@ -283,73 +275,27 @@
       ];
     }
 
-    function decoratePlotCard(spec){
-      const plot=document.getElementById(spec.plotId);
-      const card=plot?.closest('.analysis-chart-card');
-      if(!plot||!card)return;
-      let title=card.querySelector(':scope > .analysis-chart-title');
-      if(!title||title.dataset.terDecorated==='1')return;
-      const text=title.textContent.trim();
-      title.dataset.terOriginalTitle=text;
-      title.dataset.terDecorated='1';
-      title.classList.add('ter-card-title-row');
-      title.innerHTML=`
-        <span class="ter-card-title-text"></span>
-        <span class="ter-chart-actions">
-          <button type="button" data-ter-export="data" data-ter-plot="${spec.key}">CSV</button>
-          <button type="button" data-ter-export="svg" data-ter-plot="${spec.key}">SVG</button>
-          <button type="button" data-ter-export="png" data-ter-plot="${spec.key}">PNG</button>
-        </span>
-      `;
-      title.querySelector('.ter-card-title-text').textContent=text;
-    }
-
-    function ensurePerChartActions(){
-      for(const spec of chartSpecs())decoratePlotCard(spec);
-      const page=document.getElementById('terMaxPage');
-      if(!page||page.dataset.terExportBound==='1')return;
-      page.dataset.terExportBound='1';
-      page.addEventListener('click',handleExportClick);
-    }
-
-
-    function ensurePortableCharts(){
-      if(!ctx.ui.portable?.create)return;
-      const specs=chartSpecs().map(spec=>({...spec,title:document.getElementById(spec.plotId)?.closest('.analysis-chart-card')?.querySelector('.ter-card-title-text,.analysis-chart-title')?.textContent?.trim()||spec.fileBase,handle:'.analysis-chart-title'}));
+    function ensurePlotViews(){
+      if(!ctx.ui.plotViews?.bind)return;
+      const specs=[...chartSpecs(),{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',prime:true}];
       for(const spec of specs){
-        if(portableCharts.has(spec.key))continue;
-        const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
-        if(!card)continue;
+        if(terPlotViews.has(spec.key))continue;
+        const plot=document.getElementById(spec.plotId);
+        const card=plot?.closest('.analysis-chart-card');
+        if(!plot||!card)continue;
+        const header=card.querySelector(spec.prime?'.ter-resistance-card-header':'.analysis-chart-title');
+        const title=(header?.querySelector('.ter-card-title-text')?.textContent||header?.textContent||spec.fileBase).trim();
         try{
-          const placementNames={home:'默认位置',left:'左侧',right:'右侧',bottom:'底部',float:'画布悬浮',global:'全界面悬浮'};
-          const portableSpec={
-            title:spec.title,handle:spec.handle,controlsHost:'.ter-chart-actions',controlsPlacement:'start',useTargetAsWrapper:true,
-            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',
-            onPlacementChanged:({placement})=>{
-              h.setStatus?.(`${spec.title}：${placementNames[placement]||placement}`);
-              requestAnimationFrame(()=>resizeTerPlots());
-            }
-          };
-          const portable=workbench?.portable
-            ? workbench.portable(`ter-chart-${spec.key}`,card,portableSpec)
-            : ctx.ui.portable.create(`ter-chart-${spec.key}`,card,portableSpec);
-          portableCharts.set(spec.key,portable);
-        }catch(err){console.warn('[TER portable chart]',spec.key,err);}
-      }
-    }
-
-    function restorePerChartActions(){
-      const page=document.getElementById('terMaxPage');
-      if(page){
-        page.removeEventListener('click',handleExportClick);
-        delete page.dataset.terExportBound;
-      }
-      for(const title of document.querySelectorAll('#terMaxPage .analysis-chart-title[data-ter-decorated="1"]')){
-        const original=title.dataset.terOriginalTitle||title.textContent.trim();
-        title.classList.remove('ter-card-title-row');
-        title.textContent=original;
-        delete title.dataset.terDecorated;
-        delete title.dataset.terOriginalTitle;
+          const view=ctx.ui.plotViews.bind(`ter:${spec.key}`,card,{
+            plot,header,actionsHost:spec.prime?'.ter-chart-actions':null,portableTitle:title,
+            fileStem:()=>spec.fileBase,
+            csv:()=>exportSpec(spec.key)?.csv||'',
+            portable:!spec.prime,
+            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',
+            portableFactory:(id,node,pSpec)=>workbench?.portable?workbench.portable(id,node,pSpec):ctx.ui.portable.create(id,node,pSpec)
+          });
+          terPlotViews.set(spec.key,view);
+        }catch(err){console.warn('[TER PlotView]',spec.key,err);}
       }
     }
 
@@ -453,17 +399,6 @@
         ['ter-export-maxvd-png','TER_Max–Vd · PNG',160,()=>exportChartImage('maxVd','png')]
       ];
       for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'ter',order,onClick});
-    }
-
-    function handleExportClick(event){
-      const button=event.target?.closest?.('[data-ter-export][data-ter-plot]');
-      if(!button)return;
-      const type=button.dataset.terExport;
-      const key=button.dataset.terPlot;
-      Promise.resolve(type==='data'?exportChartData(key):exportChartImage(key,type)).catch(err=>{
-        console.error('[TER export]',err);
-        h.setStatus?.(`TER 图表导出失败：${err.message}`);
-      });
     }
 
     function groupedResistanceRecords(result){
@@ -987,8 +922,7 @@
     function renderLinkedUi(){
       ensureLayoutControls();
       ensureResistanceCard();
-      ensurePerChartActions();
-      ensurePortableCharts();
+      ensurePlotViews();
       applyLayoutSettings();
       renderResistancePlot();
       bindLinkedPlotClicks();
@@ -1044,10 +978,6 @@
         onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();h.captureActiveProjectTab?.();},
         mount:()=>{ensureResistanceCard();renderResistancePlot();}
       });
-    }
-    for(const plotId of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-      const el=page.querySelector('#'+plotId);if(!el||!ctx.ui.charts?.mount)continue;
-      try{chartSurfaces.set(plotId,ctx.ui.charts.mount(el,{}));}catch(err){console.warn('[TER chart surface]',plotId,err);}
     }
     const terHeader=page.querySelector('.analysis-page-header');
     const terHeaderActionsHost=document.createElement('div');
@@ -1137,8 +1067,7 @@
     ctx.events.on('project:restored',()=>queueLinkedRender());
     ensureLayoutControls();
     ensureResistanceCard();
-    ensurePerChartActions();
-    ensurePortableCharts();
+    ensurePlotViews();
     applyLayoutSettings();
     bindKeyboardAdjuster();
 
@@ -1152,12 +1081,12 @@
       unbindKeyboardAdjuster();
       const plot=document.getElementById('terResistancePlot');
       if(plot&&window.Plotly){try{Plotly.purge(plot);}catch{}}
-      restorePerChartActions();
+      for(const view of terPlotViews.values())view?.dispose?.();
+      terPlotViews.clear();
       const resistanceCard=document.getElementById('terResistanceCard');
       if(resistanceCard){
         const clearBtn=resistanceCard.querySelector('#terResistanceClearBtn');
-        const stickyBtn=resistanceCard.querySelector('#terResistanceStickyBtn');
-        if(clearBtn)clearBtn.onclick=null;if(stickyBtn)stickyBtn.onclick=null;delete resistanceCard.dataset.terBound;
+        if(clearBtn)clearBtn.onclick=null;delete resistanceCard.dataset.terBound;
       }
     }};
   }

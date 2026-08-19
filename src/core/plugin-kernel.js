@@ -918,6 +918,10 @@
 
     button.addEventListener('click', async event => {
       try {
+        // System toolbar commands operate on the active SUPER workspace. If a
+        // transient system page such as Plugin Manager is covering it, restore
+        // the plugin root first; the command can then open its PRIME/SUB view.
+        if(spec.activity)host?.ensurePluginWorkspaceVisible?.(spec.activity);
         if (spec.onClick) await spec.onClick(event);
         else if (spec.command) await runCommand(spec.command, { event });
       } catch (err) {
@@ -1429,6 +1433,7 @@
         actions: infrastructureScope?.actions || null,
         portable: infrastructureScope?.panels || null,
         charts: infrastructureScope?.chartsApi || null,
+        plotViews: infrastructureScope?.plotViews || null,
         interactions: infrastructureScope?.interactions || null,
         interaction: infrastructureScope?.interactionRuntime || null,
         contextMenus: infrastructureScope?.menus || null,
@@ -1456,7 +1461,7 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.2',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.3',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

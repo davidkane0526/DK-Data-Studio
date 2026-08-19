@@ -60,7 +60,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through unified AnalysisWorkbench.`);
   assert(views.includes('wb.compose'),`${folder}: shared views must compose a PRIMARY surface.`);
-  assert(feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume core Chart Surface.`);
+  assert(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume Core PlotView/Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);
   for(const token of ['Plotly.','calculate','analyze','renderChart','innerHTML=`'])assert(!superAdapter.includes(token),`${folder}: SUPER adapter leaked feature logic (${token}).`);

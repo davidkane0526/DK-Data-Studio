@@ -615,6 +615,81 @@
     dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.Plotly?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
   }
 
+  class PlotView {
+    constructor(scope,id,card,spec={}){
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;
+      if(!this.card)throw new Error(`PlotView card not found: ${this.id}`);
+      this.card.classList.add('dkds-plot-view');
+      this.plot=resolveElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.js-plotly-plot',this.card)||this.card.querySelector('.analysis-chart')||this.card;
+      this.header=resolveElement(this.spec.header||'.analysis-chart-title,.reswin-group-head,.ter-chart-header,.pulse-plot-header',this.card);
+      if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
+      this.header.classList.add('dkds-plot-view-head');
+      this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.resize('observer'));this.ro.observe(this.card);}
+    }
+    ensureTitle(){
+      let title=this.header.querySelector('.dkds-plot-view-title');
+      if(title){this.title=title;return;}
+      const actionsExisting=this.header.querySelector('.dkds-plot-view-actions,.reswin-group-card-actions,.ter-chart-actions,.pulse-plot-actions');
+      const wrap=document.createElement('span');wrap.className='dkds-plot-view-title';
+      if(this.spec.titleHtml!==undefined)wrap.innerHTML=String(this.spec.titleHtml||'');
+      else if(this.spec.title!==undefined)wrap.textContent=String(this.spec.title||'');
+      else{
+        const nodes=[...this.header.childNodes].filter(node=>node!==actionsExisting);
+        for(const node of nodes)wrap.appendChild(node);
+      }
+      this.header.insertBefore(wrap,this.header.firstChild||null);this.title=wrap;
+    }
+    ensureActions(){
+      this.actions=resolveElement(this.spec.actionsHost||'.dkds-plot-view-actions,.reswin-group-card-actions,.ter-chart-actions,.pulse-plot-actions',this.header);
+      if(!this.actions){this.actions=document.createElement('span');this.actions.className='dkds-plot-view-actions';this.header.appendChild(this.actions);}
+      this.actions.classList.add('dkds-plot-view-actions');
+    }
+    button(label,title,handler){const b=document.createElement('button');b.type='button';b.textContent=label;b.title=title||label;b.className='dkds-plot-view-action';const fn=e=>{e.preventDefault();e.stopPropagation();Promise.resolve(handler?.(e)).catch(err=>{console.error('[DKDS PlotView]',err);hostState.status?.(`图表操作失败：${err.message}`);});};b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;}
+    plotNode(){return this.spec.getPlot?.()||this.plot;}
+    fileStem(){return String(typeof this.spec.fileStem==='function'?this.spec.fileStem(this):this.spec.fileStem||this.title?.textContent||this.id).trim().replace(/[\\/:*?\"<>|]+/g,'_')||this.id;}
+    traceCsv(){
+      if(typeof this.spec.csv==='function')return String(this.spec.csv(this)||'');
+      const plot=this.plotNode(),traces=Array.from(plot?.data||[]),lines=[];
+      const quote=v=>{const s=String(v??'');return /[\",\r\n]/.test(s)?`\"${s.replace(/\"/g,'\"\"')}\"`:s;};
+      let hasHeatmap=false;
+      for(const tr of traces){if(Array.isArray(tr?.z)&&Array.isArray(tr.z[0])){hasHeatmap=true;break;}}
+      if(hasHeatmap){lines.push('series,x,y,z');for(const tr of traces){if(!Array.isArray(tr?.z)||!Array.isArray(tr.z[0]))continue;const xs=Array.isArray(tr.x)?tr.x:tr.z[0].map((_,i)=>i),ys=Array.isArray(tr.y)?tr.y:tr.z.map((_,i)=>i);for(let r=0;r<tr.z.length;r++)for(let c=0;c<(tr.z[r]||[]).length;c++)lines.push([tr.name||this.title?.textContent||this.id,xs[c],ys[r],tr.z[r][c]].map(quote).join(','));}return lines.join('\n');}
+      lines.push('series,x,y');for(const tr of traces){const xs=Array.from(tr?.x||[]),ys=Array.from(tr?.y||[]),n=Math.max(xs.length,ys.length);for(let i=0;i<n;i++)lines.push([tr?.name||this.title?.textContent||this.id,xs[i]??i,ys[i]??''].map(quote).join(','));}return lines.join('\n');
+    }
+    async saveText(text,name,ext='csv'){
+      if(typeof this.spec.saveText==='function')return this.spec.saveText({content:text,defaultName:name,extension:ext,view:this});
+      if(window.electronAPI?.saveText)return window.electronAPI.saveText({defaultName:name,content:text,filters:[{name:ext.toUpperCase(),extensions:[ext]}]});
+      const blob=new Blob([text],{type:ext==='csv'?'text/csv;charset=utf-8':'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return true;
+    }
+    async exportCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可导出的数据。');return this.saveText(csv,`${this.fileStem()}.csv`,'csv');}
+    async copyCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可复制的数据。');if(typeof this.spec.copyText==='function')return this.spec.copyText(csv,`${this.title?.textContent||this.id} 数据`);if(window.electronAPI?.copyText)return window.electronAPI.copyText(csv);if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(csv);throw new Error('当前环境不支持复制。');}
+    async exportImage(format){
+      const plot=this.plotNode();if(!window.Plotly||!plot)throw new Error('图表尚未渲染。');
+      if(typeof this.spec.exportImage==='function')return this.spec.exportImage({format,plot,fileStem:this.fileStem(),view:this});
+      const data=await Plotly.toImage(plot,{format,width:1500,height:950,scale:format==='png'?2:1});
+      if(format==='svg'){const raw=data.split(',')[1]||'',content=decodeURIComponent(raw);return this.saveText(content,`${this.fileStem()}.svg`,'svg');}
+      const base64=data.split(',')[1]||'';
+      if(window.electronAPI?.saveBase64)return window.electronAPI.saveBase64({defaultName:`${this.fileStem()}.png`,base64,filters:[{name:'PNG',extensions:['png']}]});
+      const a=document.createElement('a');a.href=data;a.download=`${this.fileStem()}.png`;document.body.appendChild(a);a.click();a.remove();return true;
+    }
+    bindStandardActions(){
+      if(this.spec.csv!==false)this.button('CSV','导出当前图数据 CSV',()=>this.exportCsv());
+      if(this.spec.copy!==false)this.button('复制','复制当前图数据',()=>this.copyCsv());
+      if(this.spec.images!==false){this.button('SVG','导出当前图 SVG',()=>this.exportImage('svg'));this.button('PNG','导出当前图 PNG',()=>this.exportImage('png'));}
+      for(const action of this.spec.actions||[])this.button(action.label||action.id,action.title,()=>action.onInvoke?.({view:this,plot:this.plotNode()}));
+    }
+    bindPortable(){
+      if(this.spec.portable===false)return;
+      const placements=Array.isArray(this.spec.placements)?this.spec.placements:['home','global'];
+      const portableSpec={title:this.spec.portableTitle||this.title?.textContent||this.id,useTargetAsWrapper:true,handle:this.header,controlsHost:this.actions,controlsPlacement:'start',placements,defaultPlacement:this.spec.defaultPlacement||'home',stateVersion:this.spec.stateVersion||'plot-view-v1',snap:this.spec.snap,...(this.spec.portableSpec||{})};
+      const factory=this.spec.portableFactory;
+      this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
+    }
+    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(window.Plotly?.Plots?.resize&&plot?.classList?.contains('js-plotly-plot')){try{window.Plotly.Plots.resize(plot);}catch{}}return this;}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
+  }
+
   class ViewHost {
     constructor(scope,container,spec={}){
       this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.controller=spec.controller||null;this.cleanup=null;this.unsubscribe=null;this.ro=null;this.mounted=false;
@@ -1117,6 +1192,7 @@
       this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec))};
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
+      this.plotViews={bind:(id,card,spec={})=>this.trackObject(new PlotView(this,id,card,spec))};
       this.views={mount:(container,spec)=>this.trackObject(new ViewHost(this,container,spec))};
       this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
       const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
@@ -1165,7 +1241,7 @@
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

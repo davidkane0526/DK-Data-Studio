@@ -11,7 +11,7 @@ const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
 const resonanceTop=read('src/plugins/resonance-workbench/window-runtime.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 
-for(const symbol of ['PortableView','ActionGroup','InteractionBinding','SelectionChannel','SelectionModel','InteractionRuntime','DataTypeRegistry','ResizeScheduler','ContextMenu','SplitController','ChartSurface','ViewHost','Workbench','GridController','AnalysisWorkbench']){
+for(const symbol of ['PortableView','ActionGroup','InteractionBinding','SelectionChannel','SelectionModel','InteractionRuntime','DataTypeRegistry','ResizeScheduler','ContextMenu','SplitController','ChartSurface','PlotView','ViewHost','Workbench','GridController','AnalysisWorkbench']){
   assert(ui.includes(`class ${symbol}`),`core UI infrastructure must expose ${symbol}`);
 }
 assert(ui.includes("pin(placement='right')"),'portable views must expose pin placement');
@@ -28,7 +28,7 @@ assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.track
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
 assert(ui.includes('spec.existing===true')&&ui.includes('mountExistingSplit'),'Workbench must be able to adapt mature existing DOM and still provide core split/layout infrastructure');
 assert(kernel.includes("const API_VERSION = '1.7.0'"),'plugin API must be v1.7.0');
-for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','interaction: infrastructureScope?.interactionRuntime','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
+for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','plotViews: infrastructureScope?.plotViews','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','interaction: infrastructureScope?.interactionRuntime','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
   assert(kernel.includes(api),`kernel missing UI API: ${api}`);
 }
 assert(kernel.includes('state: {')&&kernel.includes('projectSlice'),'kernel must provide lifecycle-owned state/project persistence');
@@ -56,7 +56,7 @@ for(const [name,folder] of Object.entries(migrated)){
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${name} controller must use the typed core Selection/Interaction Runtime`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${name} shared views must use the unified Analysis Workbench`);
   assert(views.includes('wb.compose'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
-  assert(feature.includes('ctx.ui.actions')&&feature.includes('ctx.ui.charts'),`${name} feature runtime must use dynamic actions and Chart Surface infrastructure`);
+  assert(feature.includes('ctx.ui.actions')&&(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts')),`${name} feature runtime must use dynamic actions and Core PlotView/Chart infrastructure`);
   assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
   assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);
   for(const forbidden of ['Plotly.','renderChart','calculate','analyze','innerHTML=`'])assert(!adapter.includes(forbidden),`${name} SUPER adapter contains feature logic: ${forbidden}`);

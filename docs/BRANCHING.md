@@ -4,7 +4,9 @@
 
 This delivery contains a reconstructed local Git repository with `refactor/v3.37-workspace-order-runtime-audit` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.38.0**.
+Current development baseline: **v3.39.0**.
+
+`v3.39.0` standardizes scientific data figures on Core PlotView, fixes native SUPER root navigation from system pages, moves Resonance group layout to the shared ActionGroup menu path, and adds a single-line scientific form-row contract.
 
 `v3.38.0` adds stable PortableView Home Anchors, a functional Resonance Group column menu, and activity-scoped semantic system exports.
 

@@ -225,7 +225,7 @@
           </div>
 
           <div id="resparGroupPanel" class="respar-floating-panel respar-group-panel hidden">
-            <div class="respar-floating-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div><button type="button" data-respar-group-cols-menu title="设置每行子图数量">每行：自动 ▾</button><button data-respar-collapse="group">缩小</button><button data-respar-close="group" class="respar-panel-close" title="关闭">×</button></div></div>
+            <div class="respar-floating-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div><span data-respar-group-cols-menu-host></span><button data-respar-collapse="group">缩小</button><button data-respar-close="group" class="respar-panel-close" title="关闭">×</button></div></div>
             <div class="respar-floating-body">
               <div id="reswinGroupGrid" class="reswin-group-grid"></div>
             </div>
@@ -240,7 +240,7 @@
           </section>
           <section class="respar-derived hidden" data-reswin-view-panel="gate">
             <div class="respar-derived-header"><h3>栅压物理分析</h3><button data-reswin-view="main">返回主图</button></div>
-            <div class="analysis-control-card reswin-gate-controls"><label>ridge A<select id="reswinGateA"></select></label><label>ridge B<select id="reswinGateB"></select></label><label>回滞峰<select id="reswinGateHysteresis"></select></label><label>峰宽<select id="reswinGateWidth"><option value="hwhm">HWHM</option><option value="fwhm">FWHM</option></select></label><label class="inline-check"><input id="reswinGateUseDensity" type="checkbox">换算 n<sub>g</sub></label><label>Cg (F/m²)<input id="reswinGateCg" type="number" step="any"></label><label>V<sub>CNP</sub> (V)<input id="reswinGateCnp" type="number" step="any"></label><button id="reswinGateRun" class="primary">刷新分析</button><button id="reswinGateExportCsv">数据 CSV</button><button id="reswinGateExportReport">报告</button></div>
+            <div class="analysis-control-card reswin-gate-controls dkds-inline-form-row"><label>ridge A<select id="reswinGateA"></select></label><label>ridge B<select id="reswinGateB"></select></label><label>回滞峰<select id="reswinGateHysteresis"></select></label><label>峰宽<select id="reswinGateWidth"><option value="hwhm">HWHM</option><option value="fwhm">FWHM</option></select></label><label class="inline-check"><input id="reswinGateUseDensity" type="checkbox">换算 n<sub>g</sub></label><label>Cg (F/m²)<input id="reswinGateCg" type="number" step="any"></label><label>V<sub>CNP</sub> (V)<input id="reswinGateCnp" type="number" step="any"></label><button id="reswinGateRun" class="primary">刷新分析</button><button id="reswinGateExportCsv">数据 CSV</button><button id="reswinGateExportReport">报告</button></div>
             <div id="reswinGateSummary" class="ter-summary reswin-summary"></div><div class="reswin-gate-grid"><div class="analysis-chart-card"><div class="analysis-chart-title">共振 ridge</div><div id="reswinGateRidges" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">共振中心 V0</div><div id="reswinGateV0" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">有效分裂 δ</div><div id="reswinGateDelta" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰宽与 |δ|/w</div><div id="reswinGateWidthPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax</div><div id="reswinGateTer" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">最佳读出偏压 Vd*</div><div id="reswinGateVStar" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">正反扫回滞</div><div id="reswinGateHysteresisPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰高与有效权重</div><div id="reswinGateAmplitude" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax vs |δ|/w</div><div id="reswinGateTerCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">Vd* vs V0</div><div id="reswinGateReadoutCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">局域背景与峰/背景比</div><div id="reswinGateBackground" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">载流子浓度依赖（可选）</div><div id="reswinGateDensity" class="analysis-chart"></div></div></div><div id="reswinGateReport" class="reswin-report"></div><div class="analysis-table-wrap"><table id="reswinGateTable" class="analysis-table"></table></div>
           </section>
         </div>
@@ -285,6 +285,13 @@
     #resonanceDedicatedPage .respar-group-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #edf0f5;font-size:11px;color:#64748b;position:sticky;top:0;background:#fff;z-index:3}#resonanceDedicatedPage .respar-group-cols{display:flex;align-items:center;gap:4px}#resonanceDedicatedPage .respar-group-cols button{min-height:0;padding:3px 7px;font-size:11px}#resonanceDedicatedPage .respar-group-cols button.active{background:#e8efff;border-color:#7c9cff;color:#2147b7;font-weight:650}
     #resonanceDedicatedPage .reswin-group-grid{--reswin-group-cols:3;display:grid;grid-template-columns:repeat(var(--reswin-group-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-card{border:1px solid #d9deea;border-radius:8px;overflow:hidden;background:#fff;min-width:0;display:grid;grid-template-rows:auto minmax(210px,var(--reswin-group-height,240px)) auto}#resonanceDedicatedPage .reswin-group-head{min-height:34px;height:auto;padding:5px 8px;box-sizing:border-box;font-size:12px;font-weight:650;background:#fafbfe;display:flex;justify-content:space-between;align-items:center;gap:8px}#resonanceDedicatedPage .reswin-group-head button{min-height:24px;height:24px;box-sizing:border-box;padding:2px 6px;font-size:11px;display:inline-flex;align-items:center;justify-content:center}#resonanceDedicatedPage .reswin-group-legend{display:flex;flex-wrap:wrap;gap:5px 12px;padding:7px 8px 8px;border-top:1px solid #edf0f5;font-size:11px;color:#475569}
     #resonanceDedicatedPage .respar-derived{position:absolute;inset:0;z-index:130;background:#f5f7fb;overflow:auto;padding:12px}#resonanceDedicatedPage .respar-derived-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#resonanceDedicatedPage .respar-derived-header h3{margin:0;font-size:17px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#resonanceDedicatedPage .reswin-medium-plot{height:380px}#resonanceDedicatedPage .reswin-report{padding:12px;font-size:12px;line-height:1.65;color:#475467}
+    #resonanceDedicatedPage .reswin-gate-controls{flex-flow:row nowrap!important;align-items:flex-end!important;gap:9px!important}
+    #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 150px;min-width:118px}
+    #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>select,#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>input{width:100%;min-width:0!important}
+    #resonanceDedicatedPage .reswin-gate-controls>.inline-check,#resonanceDedicatedPage .reswin-gate-controls>button{flex:0 0 auto;white-space:nowrap}
+    #resonanceDedicatedPage .reswin-gate-controls sub{display:inline;line-height:0}
+    #resonanceDedicatedPage .analysis-chart-title.dkds-plot-view-head{min-height:38px;height:auto;padding:5px 8px}
+    #resonanceDedicatedPage .analysis-chart-title .dkds-plot-view-actions button{font-weight:500}
     /* v3.36: exact GRS-derived data/inspector/range visual language */
     #resonanceDedicatedPage .respar-dataset-list{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow:auto;margin-top:6px}
     #resonanceDedicatedPage .respar-dataset-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;padding:7px;border-radius:7px;border:1px solid transparent;cursor:pointer;background:#fff}
@@ -321,6 +328,7 @@
     #resonanceDedicatedPage .reswin-group-legend-item i{width:10px;height:3px;border-radius:2px;display:inline-block;flex:0 0 auto}
     #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px!important;min-height:300px!important;resize:both!important}
 
+    @media(max-width:1250px){#resonanceDedicatedPage .reswin-gate-controls{flex-wrap:wrap!important}#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 180px}}
     @media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
   `;
 
@@ -371,26 +379,34 @@
     };
     R.setWorkspaceNavigator?.(navigate);
     R.setWorkspaceRuntime?.({portable:(id,node,spec)=>wb.portable(id,node,spec),workbench:wb});
+    // Every Plotly data card in a SUB page consumes the Core PlotView contract.
+    // Plugins only render data; Core owns location/export/copy/resize chrome.
+    page.querySelectorAll('.respar-derived .analysis-chart-card').forEach((card,index)=>{
+      const plot=card.querySelector('.analysis-chart');if(!plot)return;
+      const plotId=String(plot.id||`resonance-sub-plot-${index}`);
+      ctx.ui.plotViews?.bind?.(`resonance-sub:${plotId}`,card,{plot,header:'.analysis-chart-title',fileStem:()=>`resonance_${plotId}`,placements:['home','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',portableFactory:(id,node,spec)=>wb.portable(id,node,spec)});
+    });
     wb.setNavigationPresentation?.('host');
     ctx.ui.edit?.register?.({id:'resonance',order:10,undo:()=>{R.undoLastAction?.();return true;},deselect:()=>{R.clearSelection?.();return true;}});
-    const groupColsBtn=page.querySelector('[data-respar-group-cols-menu]');
-    if(groupColsBtn){
-      const syncGroupColsLabel=()=>{const value=String(R.getGroupColumns?.()||'auto');groupColsBtn.textContent=`每行：${value==='auto'?'自动':value} ▾`;};
-      syncGroupColsLabel();
-      groupColsBtn.onclick=event=>{
-      event.preventDefault();event.stopPropagation();
-      const current=String(R.getGroupColumns?.()||'auto');
-      const rect=groupColsBtn.getBoundingClientRect();
-      const values=['auto','1','2','3','4','5','6'];
-      const items=values.map(value=>({
-        id:`group-cols-${value}`,
-        icon:current===value?'✓':'',
-        label:value==='auto'?'自动排列':`每行 ${value} 个子图`,
-        onInvoke:()=>{R.setGroupColumns?.(value);syncGroupColsLabel();}
-      }));
-      const menu=ctx.ui.contextMenus?.open?.({x:rect.left,y:rect.bottom+4,items});
-      if(!menu)ctx.host?.setStatus?.('组图布局菜单当前不可用。');
-      };
+    const groupColsHost=page.querySelector('[data-respar-group-cols-menu-host]');
+    if(groupColsHost&&ctx.ui.actions?.mount){
+      let groupColumnActions=null;
+      groupColumnActions=ctx.ui.actions.mount(groupColsHost,{
+        activity:'resonance',
+        actions:[{
+          id:'group-columns',menu:true,order:10,
+          label:()=>{const value=String(R.getGroupColumns?.()||'auto');return `每行：${value==='auto'?'自动':value}`;},
+          title:'设置每行子图数量',
+          items:()=>{
+            const current=String(R.getGroupColumns?.()||'auto');
+            return ['auto','1','2','3','4','5','6'].map(value=>({
+              id:`group-cols-${value}`,icon:current===value?'✓':'',
+              label:value==='auto'?'自动排列':`每行 ${value} 个子图`,
+              onInvoke:()=>{R.setGroupColumns?.(value);groupColumnActions?.render?.();}
+            }));
+          }
+        }]
+      });
     }
     const primeIdFor=kind=>kind==='inspect'?'curve-inspector':'group-analysis';
     const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id);kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};

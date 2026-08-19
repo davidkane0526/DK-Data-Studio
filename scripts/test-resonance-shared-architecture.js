@@ -55,7 +55,7 @@ assert(ui.includes('dkds-scientific-width-handle')&&feature.includes('onWidthDra
 assert(feature.includes('uiRuntime?.scientificPlot')&&!feature.includes('d3.drag().clickDistance(7)')&&!feature.includes('wheel.resmain'),'Resonance must consume Core ScientificCurveSurface rather than retain a private D3 interaction implementation.');
 assert(feature.includes('fitVisibleData')&&feature.includes('mainSurface?.fitToData?.')&&feature.includes("fitVisibleData('visibility')")&&feature.includes("fitVisibleData('visibility-all')"),'Visibility changes must auto-fit the main plot to the currently visible sweeps through Core ScientificCurveSurface.');
 assert(feature.includes('respar-dataset-item')&&feature.includes('respar-dataset-vg')&&feature.includes('respar-dataset-transform'),'Resonance dataset rows must use the GRS-derived compact data-list structure.');
-assert(feature.includes("workspaceRuntime?.portable?.(`resonance-group:${key}`")&&feature.includes("placements:['home','left','right','bottom','global']"),'Every group subplot must be independently portable and may leave the scientific canvas through whole-interface free float.');
+assert(feature.includes('uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&feature.includes("placements:['home','left','right','bottom','global']"),'Every group subplot must consume Core PlotView, remain independently portable, and support whole-interface free float.');
 assert(feature.includes("line:{color:sr.color,dash:sr.direction<0?'dash':'solid'}")&&feature.includes('marker:{color:sr.color'),'Group/trend traces must preserve reference peak-family cool/warm color semantics.');
 assert(shared.includes('registerDataTypes'),'Resonance must register domain data/result types through the shared plugin contract.');
 

@@ -3599,7 +3599,22 @@
       console.warn('[DKDS SUPER] left/main pageId mismatch; using main page as root',{left,main,pluginId:contract?.pluginId||''});
       return main;
     }
-    return main||left||'';
+    if(main||left)return main||left;
+    // Native PluginWorkspace contracts identify their root by selector instead
+    // of the legacy split-layout pageId. Resolve that selector back to its
+    // owning analysis page so system navigation (Plugin Manager -> SUB/PRIME)
+    // can restore the active SUPER before invoking the plugin command.
+    const rootSelector=String(layout.root?.selector||layout.rootSelector||'').trim();
+    if(rootSelector){
+      try{
+        const root=document.querySelector(rootSelector);
+        const page=root?.closest?.('.analysis-page');
+        if(page?.id)return page.id;
+      }catch(err){console.warn('[DKDS SUPER] invalid native root selector',rootSelector,err);}
+      const match=rootSelector.match(/^#([A-Za-z_][\w:.-]*)/);
+      if(match?.[1]&&document.getElementById(match[1])?.classList?.contains('analysis-page'))return match[1];
+    }
+    return '';
   }
 
   function applySuperWorkspace(superState){
@@ -3680,6 +3695,20 @@
     syncAnalysisPageViewport();
     syncSuperWorkspaceDivider();
     scheduleMainPlotRelayout();
+  }
+
+  function ensurePluginWorkspaceVisible(activityId){
+    if(IS_AUXILIARY_WINDOW)return true;
+    const activity=String(activityId||'');
+    const superState=window.DKDSPlugins?.workspace?.super?.();
+    if(!activity||!superState?.available||String(superState.activityId||'')!==activity)return false;
+    const rootPageId=superWorkspaceRootPageId(superState.contract||{});
+    if(!rootPageId)return false;
+    const root=$('#'+rootPageId);
+    const visible=[...document.querySelectorAll('.analysis-page')].find(page=>!page.classList.contains('hidden'));
+    if(visible?.id===rootPageId)return true;
+    openAnalysisPage(rootPageId);
+    return !!root&&!root.classList.contains('hidden');
   }
 
   function closeAnalysisPage(id){
@@ -5311,7 +5340,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.38.0',
+      version:'3.39.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6617,7 +6646,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.38.0',
+      appVersion:'3.39.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6638,6 +6667,7 @@
       syncAnalysisPageViewport,
       openAnalysisPage,
       closeAnalysisPage,
+      ensurePluginWorkspaceVisible,
       showMainWorkspace,
       applySuperWorkspace,
       showNoSuperWorkspace,

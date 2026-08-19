@@ -129,7 +129,14 @@
       try{
         if(workbench?.registerPrime)workbench.registerPrime({id:'chart-preview',label:'图形预览',title:'通用图形预览',node:chartPane,inlineHost:'.dc-main',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#dcChart'));}catch{}})});
         else if(ctx.ui.portable?.create)ctx.ui.portable.create('data-center-chart',chartPane,{title:'通用图形预览',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'});
-        const plot=page.querySelector('#dcChart');if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});
+        const plot=page.querySelector('#dcChart');
+        if(plot&&ctx.ui.plotViews?.bind){
+          const chartCard=plot.closest('.dc-chart-pane');
+          if(chartCard)ctx.ui.plotViews.bind('data-center:preview',chartCard,{
+            plot,header:'.dc-tool-title',actionsHost:'.dc-chart-toolbar',portable:false,
+            portableTitle:'通用图形预览',fileStem:()=>`data_center_${state.chart.provider||'chart'}`
+          });
+        }
       }catch(err){console.warn('[Data Center chart view]',err);}
     }
 
@@ -166,7 +173,7 @@
     function switchTab(tab){for(const name of ['formula','workflow','provenance']){$(`#dc${name[0].toUpperCase()+name.slice(1)}Pane`)?.classList.toggle('hidden',name!==tab);}$$('[data-dc-tab]').forEach(b=>b.classList.toggle('active',b.dataset.dcTab===tab));if(tab==='provenance')renderProvenance();}
     function renderAllUi(){renderArtifacts();renderPreview();renderFormula();refreshProviderSelect();renderSteps();renderSavedRecipes();renderProvenance();renderChartControls();requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});}
 
-$('#dcApplyFormula').onclick=applyFormula;$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=renderChartParams;$('#dcRenderChart').onclick=renderChart;$('#dcExportChart').onclick=()=>ctx.host.savePlotlyImage('dcChart','data_center_chart','png');$('#dcCopyProvenance').onclick=()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON');
+$('#dcApplyFormula').onclick=applyFormula;$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=renderChartParams;$('#dcRenderChart').onclick=renderChart;$('#dcCopyProvenance').onclick=()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON');
     ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#dcChart'));}catch{}});});
 
     stateStore.subscribe((next,meta)=>{

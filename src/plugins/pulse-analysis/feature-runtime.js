@@ -40,29 +40,36 @@
     });
 
 
-    // Raw waveform diagnostics are a PRIME surface: inline by default, but
-    // the Core workbench can pin/float it without changing pulse feature code.
+    // Every scientific data figure consumes the Core PlotView contract.
+    // Pulse only contributes domain actions/semantics; location, CSV/copy,
+    // SVG/PNG and resize lifecycle belong to the platform.
+    const pulsePlotViews=[];
     const rawCard=page.querySelector('#pulseRawPlot')?.closest('.pulse-card');
     if(rawCard&&workbench?.registerPrime){
-      workbench.registerPrime({id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})});
+      workbench.registerPrime({
+        id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
+        handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
+        placements:['inline','right','bottom','float','global'],autoOpen:true,
+        mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})
+      });
     }
+    const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
+      const plot=page.querySelector('#'+plotId);
+      const card=plot?.closest('.pulse-card');
+      if(!plot||!card||!ctx.ui.plotViews?.bind)return null;
+      const view=ctx.ui.plotViews.bind(`pulse:${viewId}`,card,{
+        plot,header:'.pulse-card-heading',actionsHost:'.pulse-plot-actions',portableTitle:title,
+        fileStem:()=>`pulse_${viewId}`,actions,portable:!prime,
+        placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',
+        portableFactory:(id,node,spec)=>workbench?.portable?workbench.portable(id,node,spec):ctx.ui.portable.create(id,node,spec)
+      });
+      pulsePlotViews.push(view);
+      return view;
+    };
+    bindPulsePlot('pulseRawPlot','raw','当前文件 · 原始波形诊断',{prime:true,actions:[{id:'fit',label:'适应全部',onInvoke:()=>P.fitRaw()}]});
+    bindPulsePlot('pulseReadPlot','read','脉冲条件 → 读取电流');
+    bindPulsePlot('pulsePulsePlot','pulse','脉冲条件 → 脉冲电流');
 
-    // Result charts stay PRIMARY portable views.
-    for(const [id,title] of [
-      ['pulseReadPlot','脉冲条件 → 读取电流'],
-      ['pulsePulsePlot','脉冲条件 → 脉冲电流']
-    ]){
-      const card=page.querySelector('#'+id)?.closest('.pulse-card');
-      if(!card||!ctx.ui.portable?.create)continue;
-      try{
-        const portableSpec={title,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'};
-        if(workbench?.portable)workbench.portable(`pulse-chart-${id}`,card,portableSpec);else ctx.ui.portable.create(`pulse-chart-${id}`,card,portableSpec);
-        const plot=page.querySelector('#'+id);if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});
-      }catch(err){console.warn('[Pulse portable chart]',id,err);}
-    }
-
-
-    const rawPlot=page.querySelector('#pulseRawPlot');if(rawPlot&&ctx.ui.charts?.mount)try{ctx.ui.charts.mount(rawPlot,{});}catch(err){console.warn('[Pulse raw chart surface]',err);}
 
     page.querySelector('#pulseFileList')?.addEventListener('click',()=>queueMicrotask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});}));
     page.querySelector('#pulseCheckAllBtn').onclick=()=>P.setAllChecked(true);
@@ -83,19 +90,6 @@
     ])page.querySelector('#'+id).onchange=()=>P.syncEditor();
     page.querySelector('#pulseResultScope').onchange=e=>P.setResultScope(e.target.value);
 
-    page.querySelector('#pulseRawFitBtn').onclick=()=>P.fitRaw();
-    page.querySelector('#pulseRawCopyBtn').onclick=()=>P.copyRaw();
-    page.querySelector('#pulseRawExportBtn').onclick=()=>P.exportRawCsv();
-    page.querySelector('#pulseRawSvgBtn').onclick=()=>P.exportRawSvg();
-    page.querySelector('#pulseRawPngBtn').onclick=()=>P.exportRawPng();
-    page.querySelector('#pulseReadCopyBtn').onclick=()=>P.copyRead();
-    page.querySelector('#pulseReadExportBtn').onclick=()=>P.exportReadCsv();
-    page.querySelector('#pulseReadSvgBtn').onclick=()=>P.exportReadSvg();
-    page.querySelector('#pulseReadPngBtn').onclick=()=>P.exportReadPng();
-    page.querySelector('#pulsePulseCopyBtn').onclick=()=>P.copyPulse();
-    page.querySelector('#pulsePulseExportBtn').onclick=()=>P.exportPulseCsv();
-    page.querySelector('#pulsePulseSvgBtn').onclick=()=>P.exportPulseSvg();
-    page.querySelector('#pulsePulsePngBtn').onclick=()=>P.exportPulsePng();
     page.querySelector('#pulseCopyCsvBtn').onclick=()=>P.copyResults();
     page.querySelector('#pulseExportCsvBtn').onclick=()=>P.exportResults();
 
@@ -132,7 +126,7 @@
     ctx.registry.add('analysis.providers','pulse-read',{
       id:'pulse-read',name:'Pulse / read transient extraction',analyze:window.DKDSScience.analyzePulseReadData
     });
-    return {};
+    return {deactivate(){pulsePlotViews.splice(0).forEach(view=>view?.dispose?.());}};
   }
   window.DKDSPulseFeatureRuntime=Object.freeze({mount});
 })();
