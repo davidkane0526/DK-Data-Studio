@@ -4,7 +4,7 @@
 
 This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.31.1**.
+Current development baseline: **v3.31.2**.
 
 ## Recommended future flow
 
@@ -24,6 +24,8 @@ git merge --no-ff feature/<name>
 Do not access, push to, or modify any remote repository unless the user explicitly requests it.
 
 ## Current delivery checkpoint
+
+`v3.31.2` is a runtime-interaction hotfix on top of v3.31.1. It restores the Resonance shared feature-runtime bootstrap and fixes the Core ContextMenu capture-phase bug that made TER layout and portable chart-placement menu items appear but never execute. AnalysisWorkbench now also receives explicit portable-placement callbacks so dock regions and managed grids resynchronize immediately.
 
 `v3.31.1` is a Windows tooling patch on top of the unified runtime. It makes the selected shared dependency/cache folders authoritative, avoids running npm reify through a project `node_modules` Junction, separates Electron binary acquisition from npm package installation, and adds retry/mirror fallback for transient binary download failures.
 

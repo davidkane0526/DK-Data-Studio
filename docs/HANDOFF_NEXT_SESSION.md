@@ -1,11 +1,12 @@
 
-# Next Session Handoff — v3.31.1
+# Next Session Handoff — v3.31.2
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.31.1`
+- Current delivery: `v3.31.2`
+- v3.31.2: fixed the Resonance shared feature-runtime bootstrap (`clone` and the other runtime helpers are now explicit module dependencies); repaired the Core ContextMenu capture bug that removed menus before item clicks, which restores TER layout and per-chart placement commands; explicit TER grid layouts are now authoritative and portable placements synchronously notify AnalysisWorkbench regions.
 - v3.31.1: repaired the Windows dependency/build pipeline: shared node_modules is now an immutable package-signature cache, npm no longer reifies through a project Junction, Electron binary installation is separated from npm package extraction, and official-source network failures can retry through a configurable mirror.
 - v3.31.0: completed AnalysisWorkbench v4 outer-geometry ownership, one PRIMARY/PRIME/SUB view tree across SUPER/TOP, Capability Runtime v2 query/require/watch semantics, and the shared Resonance runtime composition.
 - v3.30.0: unified Core Analysis Workbench with PRIMARY / PRIME / SUB semantics, managed responsive grids and lifecycle-owned dock/floating regions; cross-renderer Capability Runtime; TER/Pulse/Data Center migration to the shared workbench; Resonance TOP migration to the same semantic workbench and provider catalog.

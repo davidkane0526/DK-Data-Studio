@@ -319,7 +319,15 @@
         const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
         if(!card)continue;
         try{
-          const portableSpec={title:spec.title,handle:spec.handle,controlsHost:'.ter-chart-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'};
+          const placementNames={home:'默认位置',left:'左侧',right:'右侧',bottom:'底部',float:'悬浮'};
+          const portableSpec={
+            title:spec.title,handle:spec.handle,controlsHost:'.ter-chart-actions',controlsPlacement:'start',useTargetAsWrapper:true,
+            placements:['home','left','right','bottom','float'],defaultPlacement:'home',
+            onPlacementChanged:({placement})=>{
+              h.setStatus?.(`${spec.title}：${placementNames[placement]||placement}`);
+              requestAnimationFrame(()=>resizeTerPlots());
+            }
+          };
           const portable=workbench?.portable
             ? workbench.portable(`ter-chart-${spec.key}`,card,portableSpec)
             : ctx.ui.portable.create(`ter-chart-${spec.key}`,card,portableSpec);
@@ -1004,7 +1012,10 @@
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
     const terGrid=page.querySelector('.ter-chart-grid');
-    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:330,maxColumns:6});
+    // An explicit TER layout choice is authoritative. Responsive clamping made
+    // e.g. “6 列 × 1 行” silently collapse back to 3 columns on normal screens,
+    // which looked like a dead button. The surrounding workbench owns overflow.
+    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:6,responsive:false});
     if(workbench?.registerPrime){
       workbench.registerPrime({id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>{ensureResistanceCard();renderResistancePlot();}});
     }
@@ -1021,17 +1032,14 @@
       actions:[
         {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
         {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
-        {id:'layout',icon:'▦',label:'布局',menu:true,order:30,onInvoke:({button})=>{
-          const rect=button.getBoundingClientRect();
-          ctx.ui.contextMenus.open({x:rect.left,y:rect.bottom+4,items:[
-            {id:'3x2',icon:'▦',label:'3 列 × 2 行',onInvoke:()=>setCols(3)},
-            {id:'2x3',icon:'▦',label:'2 列 × 3 行',onInvoke:()=>setCols(2)},
-            {id:'1x6',icon:'▤',label:'1 列 × 6 行',onInvoke:()=>setCols(1)},
-            {id:'6x1',icon:'▥',label:'6 列 × 1 行',onInvoke:()=>setCols(6)},
-            {type:'separator'},
-            {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动悬浮：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
-          ]});
-        }}
+        {id:'layout',icon:'▦',label:'布局',menu:true,order:30,items:()=>[
+          {id:'3x2',icon:'▦',label:'3 列 × 2 行',onInvoke:()=>setCols(3)},
+          {id:'2x3',icon:'▦',label:'2 列 × 3 行',onInvoke:()=>setCols(2)},
+          {id:'1x6',icon:'▤',label:'1 列 × 6 行',onInvoke:()=>setCols(1)},
+          {id:'6x1',icon:'▥',label:'6 列 × 1 行',onInvoke:()=>setCols(6)},
+          {type:'separator'},
+          {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动悬浮：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
+        ]}
       ]
     });
 

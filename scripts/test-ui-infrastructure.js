@@ -20,6 +20,10 @@ assert(ui.includes("placementIcons={home:'◫',left:'←'")&&ui.includes("float:
 assert(ui.includes('controlsHost')&&ui.includes("controlsPlacement==='start'"),'portable chrome must be injectable into an existing chart action cluster instead of creating a competing header column');
 assert(ui.includes('createPortableZones()')&&ui.includes('dkds-portable-zone'),'existing-DOM workbenches must own isolated local docking shelves');
 assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use the core context-menu service');
+assert(ui.includes('handleOutsidePointer(event)')&&ui.includes("this.element?.contains?.(event?.target)"),'ContextMenu must ignore pointerdown events originating inside the menu so item clicks can fire.');
+assert(!ui.includes("window.addEventListener('pointerdown',this.boundClose,true)"),'ContextMenu must not close unconditionally in pointerdown capture phase.');
+assert(ui.includes("const rawItems=typeof action.items==='function'")&&ui.includes('action.menu&&Array.isArray(rawItems)'),'ActionGroup must own declarative dropdown menu items.');
+assert(ui.includes('onPlacementChanged')&&ui.includes("this.resize('portable-placement')"),'AnalysisWorkbench portable views must synchronously dispatch placement changes and resync regions.');
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
 assert(ui.includes('spec.existing===true')&&ui.includes('mountExistingSplit'),'Workbench must be able to adapt mature existing DOM and still provide core split/layout infrastructure');

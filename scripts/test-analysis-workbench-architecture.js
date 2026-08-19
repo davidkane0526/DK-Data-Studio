@@ -13,7 +13,7 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'4\.0\.0'/.test(ui),'UI infrastructure must ship the unified v4 workbench.');
+assert(/const VERSION\s*=\s*'4\.0\.1'/.test(ui),'UI infrastructure must ship the unified v4 workbench.');
 for(const token of ['class AnalysisWorkbench','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
@@ -51,7 +51,9 @@ for(const [folder,{prime}] of Object.entries(migrated)){
 
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
 assert(ter.includes('workbench.grid('),'TER chart arrangement must be owned by core GridController.');
-assert(ter.includes("minItemWidth:330"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
+assert(ter.includes('responsive:false'),'Explicit TER grid presets must not be silently clamped by responsive heuristics.');
+assert(ter.includes("items:()=>[")&&ter.includes("id:'layout'"),'TER Layout must use the core declarative ActionGroup menu path.');
+assert(ter.includes("minItemWidth:260"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonanceViews.includes(token),`Resonance unified workbench missing semantic view ${token}.`);

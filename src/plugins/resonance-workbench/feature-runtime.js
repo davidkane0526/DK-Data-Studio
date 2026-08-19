@@ -1,5 +1,22 @@
 (() => {
   // Resonance feature runtime: all functional rendering/event binding lives here.
+  // Keep every runtime helper local to this module. During the v3.31 shared
+  // View/Controller extraction these helpers were accidentally left behind in
+  // the old dedicated-window closure, which made the plugin fail at first use
+  // with `clone is not defined`. SUPER and TOP now execute the exact same
+  // explicit helper prelude.
+  const Shared=window.DKDSResonanceWorkbenchShared;
+  const S=window.DKDSScience;
+  const $=selector=>document.querySelector(selector);
+  const $$=selector=>[...document.querySelectorAll(selector)];
+  const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const finite=value=>value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));
+  const directionName=dir=>Number(dir)>0?'正扫':'反扫';
+  const csvCell=value=>{const text=String(value??'');return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;};
+  const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
+  if(!Shared)throw new Error('Resonance shared workbench layer is unavailable.');
+  if(!S)throw new Error('Resonance science runtime is unavailable.');
   // SUPER/TOP adapters are intentionally limited to container/lifecycle mapping.
   async function mountSuper(ctx,controller,adapter={}){
     const views=window.DKDSResonanceViewComponents;

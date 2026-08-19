@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '4.0.0';
+  const VERSION = '4.0.1';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -114,7 +114,20 @@
   }
 
   class ContextMenu {
-    constructor(owner,spec={}){this.owner=owner;this.spec=spec;this.element=null;this.boundClose=this.close.bind(this);}
+    constructor(owner,spec={}){
+      this.owner=owner;this.spec=spec;this.element=null;
+      this.boundOutsidePointer=this.handleOutsidePointer.bind(this);
+      this.boundBlur=this.close.bind(this);
+    }
+    handleOutsidePointer(event){
+      // The previous implementation closed on *every* window pointerdown in
+      // capture phase. That removed the menu before a menu item's click event
+      // could fire, making all ContextMenu-backed controls look dead (TER
+      // layout and every portable-view placement menu). Only outside presses
+      // may close the menu.
+      if(this.element?.contains?.(event?.target))return;
+      this.close();
+    }
     open({x,y,items=[],context={}}={}){
       this.close();
       const el=document.createElement('div');el.className='dkds-context-menu';el.dataset.owner=this.owner;
@@ -128,16 +141,20 @@
       if(!el.children.length)return null;
       document.body.appendChild(el);this.element=el;
       const rect=el.getBoundingClientRect();const left=Math.max(6,Math.min(window.innerWidth-rect.width-6,Number(x)||0));const top=Math.max(6,Math.min(window.innerHeight-rect.height-6,Number(y)||0));el.style.left=`${left}px`;el.style.top=`${top}px`;
-      queueMicrotask(()=>{window.addEventListener('pointerdown',this.boundClose,true);window.addEventListener('blur',this.boundClose,{once:true});});
+      queueMicrotask(()=>{window.addEventListener('pointerdown',this.boundOutsidePointer,true);window.addEventListener('blur',this.boundBlur,{once:true});});
       return el;
     }
-    close(){window.removeEventListener('pointerdown',this.boundClose,true);if(this.element){this.element.remove();this.element=null;}}
+    close(){
+      window.removeEventListener('pointerdown',this.boundOutsidePointer,true);
+      window.removeEventListener('blur',this.boundBlur);
+      if(this.element){this.element.remove();this.element=null;}
+    }
     dispose(){this.close();}
   }
 
   class ActionGroup {
     constructor(owner,container,spec={}){
-      this.owner=owner;this.container=resolveElement(container);this.spec={...spec};this.actions=[];this.state={};this.cleanups=[];
+      this.owner=owner;this.container=resolveElement(container);this.spec={...spec};this.actions=[];this.state={};this.cleanups=[];this.menu=null;
       if(!this.container)throw new Error('ActionGroup container not found.');
       this.container.classList.add('dkds-action-group');
       if(spec.className)this.container.classList.add(...String(spec.className).split(/\s+/).filter(Boolean));
@@ -162,7 +179,19 @@
         button.classList.toggle('active',active);button.disabled=!enabled;
         button.title=String(this.value(action.title,ctx)||'');
         button.innerHTML=`${icon?`<span class="dkds-action-icon">${esc(icon)}</span>`:''}<span class="dkds-action-label">${esc(label)}</span>${action.menu?'<span class="dkds-action-caret">▾</span>':''}`;
-        button.addEventListener('click',event=>{if(!button.disabled)(action.onInvoke||action.handler)?.({event,action,group:this,state:this.state,button});});
+        button.addEventListener('click',event=>{
+          if(button.disabled)return;
+          const invokeContext={event,action,group:this,state:this.state,button};
+          const rawItems=typeof action.items==='function'?action.items(invokeContext):action.items;
+          if(action.menu&&Array.isArray(rawItems)){
+            this.menu?.dispose?.();
+            const rect=button.getBoundingClientRect();
+            this.menu=new ContextMenu(this.owner);
+            this.menu.open({x:rect.left,y:rect.bottom+4,items:rawItems,context:invokeContext});
+            return;
+          }
+          (action.onInvoke||action.handler)?.(invokeContext);
+        });
         this.container.appendChild(button);
         if(action.shortcut){
           this.cleanups.push(shortcutHub.register(this.owner,`action:${action.id}`,{chord:action.shortcut,activity:action.activity||this.spec.activity,priority:action.priority||0,allowTyping:action.allowTyping,handler:()=>{if(button.disabled||button.offsetParent===null)return false;button.click();return true;}}));
@@ -170,7 +199,7 @@
       }
       return this;
     }
-    dispose(){this.cleanups.splice(0).forEach(cleanupCall);this.container?.replaceChildren();}
+    dispose(){this.menu?.dispose?.();this.menu=null;this.cleanups.splice(0).forEach(cleanupCall);this.container?.replaceChildren();}
   }
 
   class InteractionBinding {
@@ -284,6 +313,7 @@
       this.refreshPlacementButton?.();
       refreshDockZoneState();
       if(persist)this.writeState({placement,bounds:placement==='float'?this.bounds():undefined});
+      try{this.spec.onPlacementChanged?.({id:this.id,placement,portable:this,wrapper:this.wrapper});}catch(err){console.warn('[DKDS portable placement]',err);}
       this.scope.emitResize?.({id:this.id,reason:'portable-place',placement});
       return placement;
     }
@@ -623,11 +653,16 @@
       row.container=container;row.mounted=true;
       const allowed=[...new Set((row.placements||['inline','right','bottom','float']).map(x=>x==='inline'?'home':normalizePlacement(x)))];
       const layout={slot:name=>name==='home'?this.primeHome(row):this.slots[name]};
+      const onPlacementChanged=info=>{
+        try{row.onPlacementChanged?.(info);}catch(err){console.warn('[DKDS PRIME placement]',err);}
+        this.syncRegions();for(const grid of this.grids)grid.apply?.();
+        requestAnimationFrame(()=>{this.syncRegions();for(const grid of this.grids)grid.apply?.();this.resize('prime-placement');});
+      };
       const portableSpec=found.existing?{
         title:row.title||row.label||row.id,useTargetAsWrapper:row.useTargetAsWrapper!==false,
         handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',controlsHost:row.controlsHost,controlsPlacement:row.controlsPlacement||'start',
-        placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout
-      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout};
+        placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout,onPlacementChanged
+      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout,onPlacementChanged};
       row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);this.syncRegions();return row;
     }
     openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);row.portable.place(placement==='inline'?'home':(placement||row.defaultPlacement||'inline'));this.renderNav();this.syncRegions();this.resize('prime-open');return true;}
@@ -658,7 +693,15 @@
       if(!row.mounted||row.remount===true){cleanupCall(row.cleanup);const cleanup=row.mount?.({workbench:this,scope:this.scope,container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;row.mounted=true;}
       row.onShow?.({workbench:this,scope:this.scope,container,slots:this.slots});this.renderNav();this.syncRegions();this.resize('sub-open');return true;
     }
-    portable(id,node,spec={}){const value=this.scope.panels.create(id,node,{...spec,layout:this.layout()});this.portables.set(String(id),value);this.syncRegions();return value;}
+    portable(id,node,spec={}){
+      const userPlacementChanged=spec.onPlacementChanged;
+      const value=this.scope.panels.create(id,node,{...spec,layout:this.layout(),onPlacementChanged:info=>{
+        try{userPlacementChanged?.(info);}catch(err){console.warn('[DKDS workbench portable placement]',err);}
+        this.syncRegions();for(const grid of this.grids)grid.apply?.();
+        requestAnimationFrame(()=>{this.syncRegions();for(const grid of this.grids)grid.apply?.();this.resize('portable-placement');});
+      }});
+      this.portables.set(String(id),value);this.syncRegions();return value;
+    }
     grid(container,spec={}){const value=new GridController(this.scope,container,spec);this.grids.push(value);return value;}
     surfaceState(){return {primary:this.primary?.id||'',activeSub:this.activeSub,primes:Object.fromEntries([...this.primes].map(([id,row])=>[id,{open:!!row.mounted,placement:row.portable?.wrapper?.dataset?.placement||''}]))};}
     resize(reason='resize'){this.syncRegions();this.scope.emitResize?.({reason:`analysis-workbench:${reason}`});return this;}
