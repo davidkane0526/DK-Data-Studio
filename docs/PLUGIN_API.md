@@ -726,3 +726,7 @@ Regression coverage lives in `scripts/test-plugin-windows.js`, including both a 
 Plugin API 1.7 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
 Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
+
+## v3.35 preferred workspace APIs
+
+New scientific plugins should prefer `ctx.ui.pluginWorkspace` / `ctx.ui.workspaceSurface`. `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface` are compatibility aliases. Direct interactive curve canvases should prefer `ctx.ui.scientificPlot`, which exposes the GRS-derived `ScientificCurveSurface` mechanics while leaving scientific meaning in the plugin. SUPER/TOP host level must not select a reduced renderer or alternate plugin DOM.

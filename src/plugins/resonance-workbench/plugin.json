@@ -1,12 +1,12 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.34.0",
+  "version": "3.35.0",
   "apiVersion": "1.7.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
-  "description": "GRS-parity resonance workbench on the shared Controller/Artifact/Selection runtime; SUPER and TOP mount the same D3 interaction surface while Core owns PRIME/SUB placement.",
+  "description": "Reference PluginWorkspace implementation: GRS-parity resonance semantics on Core ScientificCurveSurface; SUPER and TOP mount the same host-invariant workspace.",
   "capabilities": [
     "ui.activity",
     "ui.sidebar",
@@ -28,7 +28,9 @@
     "runtime.capabilities.v2",
     "ui.interaction",
     "data.types",
-    "data.artifacts"
+    "data.artifacts",
+    "ui.plugin-workspace",
+    "ui.scientific-plot"
   ],
   "workspace": {
     "role": "top",

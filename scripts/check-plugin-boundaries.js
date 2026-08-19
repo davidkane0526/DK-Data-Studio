@@ -7,6 +7,7 @@ function fail(msg){console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCo
 const html=read('./src/index.html');
 const app=read('./src/app.js');
 const kernel=read('./src/core/plugin-kernel.js');
+const uiInfrastructure=read('./src/core/ui-infrastructure.js');
 const resonanceManifest=JSON.parse(read('./src/plugins/resonance-workbench/plugin.json'));
 const resonance=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/resonance-workbench/${file}`)).join('\n');
 const detector=read('./src/plugins/resonance-detector-robust/plugin.js');
@@ -64,10 +65,14 @@ for(const token of [
   'ctx.ui.shortcuts.add',
   'peak-category-choice',
   'resparResetView',
-  'reswinMainPlot',
-  'rangeDrag.zoom'
+  'reswinMainPlot'
 ]){
   if(!resonance.includes(token))fail(`resonance unified workbench missing plugin-owned shared surface/control: ${token}`);
+}
+if(!resonance.includes('uiRuntime?.scientificPlot'))fail('resonance must consume Core ScientificCurveSurface instead of owning low-level D3 interaction plumbing');
+for(const token of ['rangeDrag.zoom','wheel.dkdssci','onMarkerDrag','onWidthDrag']){
+  if(!uiInfrastructure.includes(token))fail(`Core ScientificCurveSurface missing shared interaction capability: ${token}`);
+  if(token==='rangeDrag.zoom'&&resonance.includes(token))fail('box-zoom plumbing must live in Core ScientificCurveSurface, not the resonance plugin');
 }
 if(resonance.includes('ctx.ui.sidebar.add')||resonance.includes('ctx.ui.mainViews.register')||resonance.includes('ctx.ui.inspectors.register')||resonance.includes('ctx.ui.groupViews.register')){
   fail('resonance must not fall back to legacy SUPER-only contribution slots after unified workbench migration');

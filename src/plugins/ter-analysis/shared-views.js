@@ -11,7 +11,7 @@
       left.remove();main.remove();legacyShell?.remove();extras.forEach(node=>node.remove());
       body.classList.add('dkds-unified-workbench-body');
       const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-      const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'ter'});
+      const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'ter'});
       const primaryMain=document.createElement('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
       wb.compose({primary:{id:'main',label:'TER 分析',leftNode:left,mainNode:primaryMain}});
       return wb;

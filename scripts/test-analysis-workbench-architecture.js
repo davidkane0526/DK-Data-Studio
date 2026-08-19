@@ -13,13 +13,14 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'5\.0\.0'/.test(ui),'UI infrastructure must ship the unified v5 interaction/workbench runtime.');
-for(const token of ['class AnalysisWorkbench','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
+assert(/const VERSION\s*=\s*'6\.0\.0'/.test(ui),'UI infrastructure must ship the v6 PluginWorkspace/scientific interaction runtime.');
+for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
 assert(kernel.includes("const API_VERSION = '1.7.0'"),'Plugin API must be v1.7.0.');
-assert(kernel.includes('analysisWorkbench: infrastructureScope?.analysisWorkbench'),'Kernel must expose the unified Analysis Workbench.');
+assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&&kernel.includes('workspaceSurface:'),'Kernel must expose the host-invariant PluginWorkspace as the preferred scientific workspace surface.');
+assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
 assert(kernel.includes('layoutResizeDispatching')&&kernel.includes("name !== 'layout:resize'")&&kernel.includes('infrastructureScope.emitResize'),'Plugin kernel must globally coalesce layout:resize and route plugin layout requests through the scoped scheduler.');
 assert(ui.includes('class DataTypeRegistry')&&ui.includes('class SelectionModel')&&ui.includes('class InteractionRuntime'),'Core must own plugin-registered data types and typed interaction selection.');
@@ -42,7 +43,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   const views=read(`src/plugins/${folder}/shared-views.js`);
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
-  assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through AnalysisWorkbench.`);
+  assert(views.includes('workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must prefer the Core PluginWorkspace while retaining compatibility fallback.`);
   assert(views.includes('wb.compose'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
@@ -63,7 +64,7 @@ const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonanceViews.includes(token),`Resonance unified workbench missing semantic view ${token}.`);
 }
-assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes('wb.compose'),'Resonance SUPER/TOP must use one shared semantic AnalysisWorkbench composition.');
+assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes('wb.compose')&&resonanceViews.includes("hostMode:isTop?'top':'super'"),'Resonance SUPER/TOP must use one host-invariant PluginWorkspace composition.');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 assert(resonanceFeature.includes('ctx.analysis.detectors.list()')||resonanceViews.includes('ctx.analysis.detectors.list()'),'Resonance dedicated TOP must consume detector capabilities rather than a private detector list.');
 

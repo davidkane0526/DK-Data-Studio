@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '5.0.0';
+  const VERSION = '6.0.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -675,6 +675,105 @@
     dispose(){this.ro?.disconnect?.();this.container.classList.remove('dkds-managed-grid');this.container.style.removeProperty('--dkds-grid-columns');delete this.container.dataset.dkdsGridColumns;}
   }
 
+
+  class ScientificCurveSurface {
+    constructor(scope,target,spec={}){
+      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;
+      if(!this.target)throw new Error('ScientificCurveSurface target not found.');
+      this.target.classList.add('dkds-scientific-curve-surface');
+      this.container=resolveElement(spec.container)||this.target.parentElement||this.target;
+      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.requestRender('resize')):null;
+      this.resizeObserver?.observe(this.container);
+    }
+    d3(){return window.d3||null;}
+    finite(value){return Number.isFinite(Number(value));}
+    curves(){const rows=this.spec.getCurves?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
+    markers(){const rows=this.spec.getMarkers?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
+    view(){const raw=this.spec.getView?.()||{};return raw&&typeof raw==='object'?raw:{};}
+    setView(next,meta={}){this.spec.setView?.(next,meta);this.spec.onViewChanged?.(next,meta);}
+    selectedCurveId(){return String(this.spec.getSelectedCurveId?.()||'');}
+    selectedMarkerIds(){return new Set((this.spec.getSelectedMarkerIds?.()||[]).map(String));}
+    curveById(id){return this.curves().find(row=>String(row.id)===String(id))||null;}
+    normalizePoint(point){
+      const x=this.spec.xValue?this.spec.xValue(point):point?.x;
+      const y=this.spec.yValue?this.spec.yValue(point):point?.y;
+      return {x:Number(x),y:Number(y),raw:point};
+    }
+    normalizedPoints(curve){return (curve?.points||[]).map(p=>this.normalizePoint(p)).filter(p=>this.finite(p.x)&&this.finite(p.y));}
+    nearestIndex(points,value){
+      if(!points.length)return -1;let lo=0,hi=points.length-1,target=Number(value);
+      while(lo<hi){const mid=(lo+hi)>>1;if(Number(points[mid].x)<target)lo=mid+1;else hi=mid;}
+      if(lo>0&&Math.abs(Number(points[lo-1].x)-target)<=Math.abs(Number(points[lo].x)-target))return lo-1;return lo;
+    }
+    scaleDomainAround(domain,center,factor,minSpan=1e-12){const lo=center+(domain[0]-center)*factor,hi=center+(domain[1]-center)*factor;return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:domain.slice();}
+    symbolType(shape,d3){return ({circle:d3.symbolCircle,diamond:d3.symbolDiamond,triangle:d3.symbolTriangle,square:d3.symbolSquare,cross:d3.symbolCross,star:d3.symbolStar})[String(shape||'circle')]||d3.symbolCircle;}
+    requestRender(reason='request'){if(this.disposed||this.renderQueued)return;this.renderQueued=true;requestAnimationFrame(()=>{this.renderQueued=false;if(!this.disposed)this.render(reason);});}
+    resetView(meta={}){this.setView({xDomain:null,yDomain:null},{reason:'reset',...meta});this.spec.onReset?.(meta);this.render('reset');return true;}
+    nearestCurveAtPixel(px,py,x,y,curves,maxDistancePx=18){
+      let best=null;
+      for(const curve of curves){const points=this.normalizedPoints(curve);if(!points.length)continue;const idx=this.nearestIndex(points,x.invert(px));for(let j=Math.max(0,idx-2);j<=Math.min(points.length-1,idx+2);j++){const p=points[j],dx=x(p.x)-px,dy=y(p.y)-py,dist=Math.hypot(dx,dy);if(!best||dist<best.distance)best={curve,point:p,index:j,distance:dist};}}
+      return best&&best.distance<=maxDistancePx?best:null;
+    }
+    render(reason='render'){
+      const d3=this.d3(),node=this.target,container=this.container;if(!d3||!node||!container)return false;
+      const rect=container.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);
+      const minWidth=Number(this.spec.minWidth)||260,minHeight=Number(this.spec.minHeight)||180;
+      if(width<minWidth||height<minHeight){this.requestRender('await-layout');return false;}
+      const curves=this.curves(),svg=d3.select(node);svg.on('.dkdssci',null).attr('viewBox',null).attr('preserveAspectRatio',null).attr('width',width).attr('height',height).style('width',`${width}px`).style('height',`${height}px`);svg.selectAll('*').remove();
+      if(!curves.length){this.spec.onEmpty?.({svg,width,height});if(!this.spec.onEmpty)svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text(this.spec.emptyText||'没有可显示的数据');return true;}
+      const margin={top:62,right:30,bottom:50,left:78,...(this.spec.margin||{})},innerW=Math.max(60,width-margin.left-margin.right),innerH=Math.max(60,height-margin.top-margin.bottom);
+      const normalized=new Map(curves.map(curve=>[String(curve.id),this.normalizedPoints(curve)]));
+      const xs=[...normalized.values()].flatMap(rows=>rows.map(p=>p.x)),ys=[...normalized.values()].flatMap(rows=>rows.map(p=>p.y));if(!xs.length||!ys.length)return false;
+      const fullX=d3.extent(xs);let fullY=d3.extent(ys),ypad=((fullY[1]-fullY[0])||1)*Number(this.spec.yPaddingFactor??.06);fullY=[fullY[0]-ypad,fullY[1]+ypad];
+      const view=this.view();let xDomain=Array.isArray(view.xDomain)?view.xDomain.slice():d3.scaleLinear().domain(fullX).nice().domain(),yDomain=Array.isArray(view.yDomain)?view.yDomain.slice():d3.scaleLinear().domain(fullY).nice().domain();
+      if(!xDomain.every(Number.isFinite)||xDomain[0]===xDomain[1])xDomain=fullX.slice();if(!yDomain.every(Number.isFinite)||yDomain[0]===yDomain[1])yDomain=fullY.slice();
+      const x=d3.scaleLinear().domain(xDomain).range([margin.left,margin.left+innerW]),y=d3.scaleLinear().domain(yDomain).range([margin.top+innerH,margin.top]);
+      const clipId=`dkds-sci-clip-${Math.random().toString(36).slice(2,9)}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH);
+      const plotBg=svg.append('rect').attr('class','dkds-scientific-plot-bg').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH).style('cursor','crosshair');
+      svg.append('g').attr('class','dkds-scientific-axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).tickFormat(this.spec.xTickFormat||undefined));
+      svg.append('g').attr('class','dkds-scientific-axis').attr('transform',`translate(${margin.left},0)`).call(d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined));
+      if(this.spec.xTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text(this.spec.xTitle||'X');
+      if(this.spec.yTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text(this.spec.yTitle||'Y');
+      const configuredColorValues=this.spec.getColorDomainValues?.();const values=(Array.isArray(configuredColorValues)&&configuredColorValues.some(v=>this.finite(v))?configuredColorValues:curves.map(c=>c.colorValue)).filter(v=>this.finite(v)).map(Number);if(!values.length)values.push(0);const extent=d3.extent(values);if(extent[0]===extent[1]){extent[0]-=1;extent[1]+=1;}const colorScale=this.spec.colorScale?.({d3,extent,curves,values})||d3.scaleSequential(d3.interpolateTurbo).domain(extent);this.spec.onColorScale?.(colorScale,{curves,extent,values});
+      const selectedCurveId=this.selectedCurveId(),hasCurveSelection=!!selectedCurveId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
+      const line=d3.line().defined(p=>this.finite(p.x)&&this.finite(p.y)).x(p=>x(p.x)).y(p=>y(p.y));
+      for(const curve of curves){
+        const points=normalized.get(String(curve.id))||[],active=String(curve.id)===selectedCurveId,color=curve.color||colorScale(this.finite(curve.colorValue)?Number(curve.colorValue):0),dash=curve.dash??(Number(curve.direction)<0?'7 4':null);
+        const opacity=curve.opacity??(hasCurveSelection?(active?1:.10):.74),strokeWidth=curve.strokeWidth??(active?3:1.25);
+        dataLayer.append('path').datum(points).attr('class',`dkds-scientific-curve ${hasCurveSelection&&!active?'is-dimmed':''}`).attr('d',line).attr('stroke',color).attr('stroke-width',strokeWidth).attr('stroke-dasharray',dash).attr('opacity',opacity).style('pointer-events','none');
+        dataLayer.append('path').datum(points).attr('class','dkds-scientific-curve-hit').attr('d',line)
+          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else this.spec.onCurveSelect?.({curve,event,surface:this});})
+          .on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onCurveDoubleClick?.({curve,event,surface:this});});
+      }
+      const selectedMarkerIds=this.selectedMarkerIds(),markers=this.markers();
+      if(this.spec.showMarkers?.()!==false&&markers.length){
+        const marks=dataLayer.append('g').selectAll('path.dkds-scientific-marker').data(markers,m=>m.id).join('path').attr('class',m=>`dkds-scientific-marker ${m.locked?'is-locked':''} ${hasCurveSelection&&String(m.curveId)!==selectedCurveId?'is-dimmed':''}`)
+          .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
+          .attr('stroke',m=>selectedMarkerIds.has(String(m.id))?'#111827':(m.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',m=>selectedMarkerIds.has(String(m.id))?3.2:1.8).attr('opacity',m=>{let o=m.accepted!==false?.98:.34;if(hasCurveSelection&&String(m.curveId)!==selectedCurveId)o*=.11;return o;}).style('pointer-events','none');
+        const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
+          .on('click',(event,marker)=>{event.stopPropagation();this.spec.onMarkerSelect?.({marker,event,surface:this,additive:!!(event.ctrlKey||event.metaKey)});})
+          .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();this.spec.onMarkerDoubleClick?.({marker,event,surface:this});})
+          .on('contextmenu',(event,marker)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.({marker,event,surface:this});else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});})
+          .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
+        hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const curve=curves.find(c=>String(c.id)===String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];this.spec.onMarkerDrag?.({marker,curve,index:idx,point:point?.raw||point,event,surface:this});this.render('marker-drag');}).on('end',(event,marker)=>{if(!marker.locked)this.spec.onMarkerDragEnd?.({marker,event,surface:this});}));
+      }
+      const selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id)));if(selectedMarker&&this.spec.showWidth?.()!==false){const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;if(widthSpec&&this.finite(widthSpec.left)&&this.finite(widthSpec.right)){
+        let left=Number(widthSpec.left),right=Number(widthSpec.right);if(left>right)[left,right]=[right,left];const halfY=this.finite(widthSpec.y)?Number(widthSpec.y):Number(selectedMarker.y),color=selectedMarker.color||'#2563eb',band=svg.append('g').attr('clip-path',`url(#${clipId})`);
+        band.append('rect').attr('class','dkds-scientific-width-band').attr('x',x(left)).attr('width',Math.max(2,x(right)-x(left))).attr('y',margin.top).attr('height',innerH).attr('fill',color);
+        band.append('line').attr('class','dkds-scientific-width-line').attr('x1',x(left)).attr('x2',x(right)).attr('y1',y(halfY)).attr('y2',y(halfY)).attr('stroke',color);
+        for(const side of ['left','right']){const xv=side==='left'?left:right,h=band.append('circle').attr('class','dkds-scientific-width-handle').attr('cx',x(xv)).attr('cy',y(halfY)).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);h.on('click',event=>event.stopPropagation()).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{if(selectedMarker.locked)return;const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[],idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];this.spec.onWidthDrag?.({marker:selectedMarker,curve,side,index:idx,point:point?.raw||point,event,surface:this});this.render('width-drag');}).on('end',event=>this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this})));}
+      }}
+      this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});
+      let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${rangeDrag.zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
+      const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){if(drag.zoom)this.spec.onCurveModifiedClick?.({curve:near.curve,x:near.point.x,event,surface:this,source:'background'});else this.spec.onCurveSelect?.({curve:near.curve,event,surface:this,source:'background'});}else if(!drag.zoom)this.spec.onClearSelection?.({event,surface:this});return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){const next={xDomain:[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b),yDomain:[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b)};this.setView(next,{reason:'box-zoom',event});this.render('box-zoom');return;}this.spec.onRangeSelect?.({xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this});};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
+      plotBg.on('dblclick',event=>{event.preventDefault();this.resetView({event});});
+      svg.on('wheel.dkdssci',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;event.preventDefault();event.stopPropagation();this.spec.onWheelZoomStart?.({event,surface:this});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6),next={xDomain:this.scaleDomainAround(xDomain,cx,factor,minX),yDomain:this.scaleDomainAround(yDomain,cy,factor,minY)};this.setView(next,{reason:'wheel',event});this.render('wheel');});
+      const selectedRange=this.spec.getRangeSelection?.();if(selectedRange&&this.finite(selectedRange.xMin??selectedRange.min)&&this.finite(selectedRange.xMax??selectedRange.max)){const rx0=x(Number(selectedRange.xMin??selectedRange.min)),rx1=x(Number(selectedRange.xMax??selectedRange.max));if(Number.isFinite(rx0)&&Number.isFinite(rx1))svg.append('rect').attr('class','dkds-scientific-persisted-range').attr('x',Math.min(rx0,rx1)).attr('y',margin.top).attr('width',Math.abs(rx1-rx0)).attr('height',innerH);}
+      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId};return true;
+    }
+    dispose(){if(this.disposed)return;this.disposed=true;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');}
+  }
+
   class AnalysisWorkbench {
     constructor(scope,root,spec={}){
       this.scope=scope;this.owner=scope.owner;this.root=resolveElement(root);this.spec={...spec};
@@ -888,6 +987,21 @@
     }
   }
 
+
+  class PluginWorkspace extends AnalysisWorkbench {
+    constructor(scope,root,spec={}){
+      super(scope,root,{...spec});
+      this.shell?.classList.add('dkds-plugin-workspace');
+      this.shell?.setAttribute('data-plugin-workspace-owner',this.owner);
+      this.hostMode=String(spec.hostMode||'embedded');
+      this.shell?.setAttribute('data-host-mode',this.hostMode);
+    }
+    setHostMode(mode='embedded'){
+      this.hostMode=String(mode||'embedded');this.shell?.setAttribute('data-host-mode',this.hostMode);this.resize('host-mode');return this;
+    }
+    capabilityState(){return Object.freeze({owner:this.owner,hostMode:this.hostMode,...this.surfaceState()});}
+  }
+
   class PluginScope {
     constructor(owner,options={}){
       this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.workbenches=[];
@@ -911,7 +1025,10 @@
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
       this.views={mount:(container,spec)=>this.trackObject(new ViewHost(this,container,spec))};
       this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
-      this.analysisWorkbench={create:(root,spec)=>{const obj=new AnalysisWorkbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
+      const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
+      this.pluginWorkspace={create:createPluginWorkspace};
+      this.analysisWorkbench={create:createPluginWorkspace};
+      this.scientificPlot={create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec))};
       this.grid={create:(container,spec)=>this.trackObject(new GridController(this,container,spec))};
       this.dataTypes={register:(id,spec)=>dataTypeRegistry.register(this.owner,id,spec),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),projectSelection:(id,value,context)=>dataTypeRegistry.projectSelection(id,value,context),resolve:(id,item,context)=>dataTypeRegistry.resolve(id,item,context)};
     }
@@ -954,7 +1071,7 @@
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,
+    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

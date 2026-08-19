@@ -479,3 +479,7 @@ Peak detectors and other algorithm providers must be discovered from registries 
 Plugin API 1.7 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
 Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
+
+## v3.35 host-invariant PluginWorkspace
+
+The built-in Resonance workspace is now the design-system reference rather than an exception. Shared scientific UI uses `PluginWorkspace`; reusable direct curve manipulation uses `ScientificCurveSurface`. A plugin promoted/demoted between SUPER and TOP must preserve the same PRIMARY/PRIME/SUB composition, plot appearance, data access and interaction capabilities. Only outer host controls may differ. See `PLUGIN_WORKSPACE_DESIGN_SYSTEM.md`.

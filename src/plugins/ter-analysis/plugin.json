@@ -32,7 +32,8 @@
     "runtime.capabilities.v2",
     "ui.interaction",
     "data.types",
-    "data.artifacts"
+    "data.artifacts",
+    "ui.plugin-workspace"
   ],
   "window": {
     "activity": "ter",

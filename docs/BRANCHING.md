@@ -2,11 +2,11 @@
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository with `refactor/v3.34-plugin-ui-resonance-rebuild` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+This delivery contains a reconstructed local Git repository with `refactor/v3.35-grs-workspace-foundation` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.34.0**.
+Current development baseline: **v3.35.0**.
 
-`v3.34.0` adds a shared plugin visual contract and rebuilds Resonance View/Interaction behavior against the supplied Graphene Resonance Studio D3 workspace while preserving the current Artifact/Selection/AnalysisWorkbench architecture.
+`v3.35.0` promotes the Graphene Resonance Studio workspace and direct-curve interaction model into Core PluginWorkspace/ScientificCurveSurface capabilities while preserving Artifact/Selection contracts.
 
 ## Recommended future flow
 
@@ -27,7 +27,7 @@ Do not access, push to, or modify any remote repository unless the user explicit
 
 ## Current delivery checkpoint
 
-`v3.34.0` establishes the shared non-Resonance plugin visual contract and rebuilds Resonance View/Interaction behavior against the supplied Graphene Resonance Studio D3 reference while retaining the canonical Artifact/Selection/AnalysisWorkbench architecture. SUPER and independent TOP mount the same parity surface.
+`v3.35.0` promotes the GRS workspace model into the common PluginWorkspace design system. Resonance, TER, Pulse and Data Center consume the same workspace foundation; Resonance main-plot direct interaction is supplied by Core ScientificCurveSurface. SUPER and TOP mount the same plugin workspace.
 
 `v3.33.0` remains the canonical live-data bridge baseline: Data Center, TER, Resonance and dedicated plugin windows observe the same imported Artifact/legacy dataset state.
 

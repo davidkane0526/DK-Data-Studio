@@ -42,7 +42,7 @@
       id:'example-page',label:'示例插件',title:'Example plugin page',order:900,
       html:`<div class="analysis-page-header"><div><h2>示例插件</h2><div class="analysis-subtitle">插件提供领域内容；Core 管理 PRIMARY / PRIME / SUB、Dock、快捷键与状态。</div></div></div><div class="analysis-page-body"><div id="exampleWorkbench" style="width:100%;height:100%"></div></div>`
     });
-    const wb=ctx.ui.analysisWorkbench.create(page.querySelector('#exampleWorkbench'),{header:false,activity:'example'});
+    const wb=(ctx.ui.pluginWorkspace||ctx.ui.analysisWorkbench).create(page.querySelector('#exampleWorkbench'),{header:false,activity:'example'});
     wb.mountPrimary({id:'main',label:'主界面',mainHtml:'<section class="analysis-chart-card"><div class="analysis-chart-title">PRIMARY</div><div style="padding:20px">Plugin content</div></section>'});
     wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>{container.innerHTML='<div style="padding:12px">PRIME content</div>';}});
     const actions=document.createElement('div');actions.className='dkds-plugin-header-actions';page.querySelector('.analysis-page-header')?.appendChild(actions);

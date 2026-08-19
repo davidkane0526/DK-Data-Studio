@@ -320,7 +320,7 @@
     const isTop=mode==='top'||ctx.host.isAuxiliaryWindow;
     ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'GRS parity resonance workbench',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');controller.render();}});
     const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(),onOpen:()=>controller.render()});
-    R.bindUi?.(page);R.setDetectorRuntime?.({list:()=>ctx.analysis.detectors.list()});
+    R.bindUi?.(page);R.setUiRuntime?.(ctx.ui);R.setDetectorRuntime?.({list:()=>ctx.analysis.detectors.list()});
     let detectorParamPanel=null;
     const renderDetectorPicker=()=>{const select=page.querySelector('#reswinDetectorSelect'),note=page.querySelector('#reswinDetectorDescription'),paramHost=page.querySelector('#reswinDetectorParams');if(!select)return;const rows=ctx.analysis.detectors.list(),state=R.getState?.(),current=String(state?.workspace?.activeDetector||rows.find(row=>row.default)?.id||rows[0]?.id||'');select.innerHTML=rows.map(row=>`<option value="${String(row.id).replace(/"/g,'&quot;')}">${String(row.shortName||row.name||row.id)}</option>`).join('');if(rows.some(row=>String(row.id)===current))select.value=current;const renderActive=()=>{const row=rows.find(item=>String(item.id)===select.value);if(note)note.textContent=row?.description||'当前工作台通过 Capability Runtime 使用已启用的寻峰提供者。';detectorParamPanel?.dispose?.();detectorParamPanel=null;if(paramHost)paramHost.replaceChildren();if(row?.parameterSchema&&paramHost&&ctx.parameters?.render){const ws=R.getState?.()?.workspace||{},value=ws.detectorSettings?.[row.id]||ws.algorithms||{};detectorParamPanel=ctx.parameters.render(paramHost,row.parameterSchema,{value,onChange:next=>R.setDetectorSettings?.(row.id,next)});}};select.onchange=()=>{R.setActiveDetector?.(select.value);renderActive();};renderActive();};
     renderDetectorPicker();ctx.events.on('plugin:manager-changed',renderDetectorPicker);ctx.capabilities?.watch?.(event=>{if(event?.kind==='analysis.detector'||event?.reason==='remote-import')renderDetectorPicker();});
@@ -330,7 +330,9 @@
     const body=page.querySelector('.resonance-dedicated-body'),parity=page.querySelector('.resonance-parity-root');
     if(!body||!parity)throw new Error('Resonance parity DOM is incomplete.');
     parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=document.createElement('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
-    const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'resonance'});
+    const workspaceFactory=ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench;
+    if(!workspaceFactory?.create)throw new Error('PluginWorkspace Core capability is unavailable.');
+    const wb=workspaceFactory.create(host,{header:false,activity:'resonance',hostMode:isTop?'top':'super'});
     const inspector=parity.querySelector('#resparInspectorPanel'),group=parity.querySelector('#resparGroupPanel');
     const subNodes={physics:parity.querySelector('[data-reswin-view-panel="physics"]'),spacing:parity.querySelector('[data-reswin-view-panel="spacing"]'),gate:parity.querySelector('[data-reswin-view-panel="gate"]')};
     wb.compose({

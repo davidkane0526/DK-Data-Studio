@@ -26,7 +26,8 @@
     "ui.analysis-surface",
     "runtime.capabilities.v2",
     "ui.interaction",
-    "data.types"
+    "data.types",
+    "ui.plugin-workspace"
   ],
   "window": {
     "activity": "pulse",

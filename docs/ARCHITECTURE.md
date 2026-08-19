@@ -393,3 +393,7 @@ The architectural rule is that scientific/workspace state and reusable feature V
 Built-in plugins may declare ordered `manifest.scripts`. The generated plugin index preserves that order, so plugin-private support code stays inside the plugin package rather than becoming a hard-coded core-shell dependency. Dedicated windows use `window.scripts` for the subset needed before their runtime.
 
 `test-resonance-shared-architecture.js` enforces this boundary.
+
+## v3.35 GRS-derived PluginWorkspace foundation
+
+The mature Graphene Resonance Studio interaction model is now a Core UI foundation rather than a Resonance-only exception. `PluginWorkspace` is the preferred scientific workspace primitive and `ScientificCurveSurface` owns reusable direct plot interaction. Resonance remains a normal TOP plugin and is the reference consumer. SUPER/TOP transitions must be host-invariant: the plugin mounts the same workspace and the host may only change outer lifecycle/window controls. See `docs/PLUGIN_WORKSPACE_DESIGN_SYSTEM.md`.

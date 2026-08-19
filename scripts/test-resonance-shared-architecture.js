@@ -32,7 +32,8 @@ assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:document
 assert(runtime.includes("mode:'top'")&&runtime.includes("root:document.querySelector('#app')")&&runtime.includes('statusBar'),'TOP adapter may only map dedicated-window host surfaces.');
 for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSResonanceViewComponents'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
 assert(views.includes('resparInspectorPanel')&&views.includes('resparGroupPanel')&&views.includes('data-respar-dock="inspect"')&&views.includes('data-respar-dock="group"'),'Shared View composition must own the reference floating/docking inspector and group surfaces.');
-assert(views.includes('wb.compose')&&views.includes('existingNode:inspector')&&views.includes('existingNode:group')&&views.includes('wb.setPrimePlacement'),'GRS-parity PRIME surfaces must be hosted by the shared AnalysisWorkbench/PortableView placement system.');
+assert(views.includes('wb.compose')&&views.includes('existingNode:inspector')&&views.includes('existingNode:group')&&views.includes('wb.setPrimePlacement'),'GRS-parity PRIME surfaces must be hosted by the shared PluginWorkspace/PortableView placement system.');
+assert(views.includes('ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace')&&views.includes("hostMode:isTop?'top':'super'"),'Resonance must mount the same PluginWorkspace for SUPER and TOP; host mode may not select a different internal view.');
 assert(!views.includes('const makeDraggable'),'Resonance parity must not reimplement draggable/docking infrastructure inside the plugin.');
 assert((manifest.window?.dependencies||[]).includes('d3'),'Dedicated TOP must explicitly declare D3 because the shared main interaction renderer depends on it.');
 assert(views.includes('reswinUndo')&&views.includes('reswinDeselect')&&views.includes('resparRangeApplyIdentity'),'GRS parity header/range actions must expose undo, cancel-selection, and range identity controls.');
@@ -42,11 +43,13 @@ assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspec
 assert(feature.includes('publishPeakSelection')&&feature.includes('publishSweepSelection')&&feature.includes('publishRangeSelection'),'Resonance feature runtime must use one shared interaction path for main/inspector/group/trend.');
 assert(feature.includes('updateGroupHighlights')&&feature.includes("'resonance-trend'")&&feature.includes("'resonance-group'"),'Resonance trend/group views must link back to the shared peak selection.');
 assert(feature.includes('selectRegion')&&feature.includes('setRangeCategory'),'Resonance range selection must preserve multi-peak operations from the mature workbench.');
-assert(feature.includes('d3.scaleSequential(d3.interpolateTurbo)')&&feature.includes("sw.direction<0?'7 4':null"),'Main curves must reproduce the reference GRS Vg→Turbo palette and reverse-sweep dash pattern.');
-assert(feature.includes('d3.drag().clickDistance(7)')&&feature.includes('resonance-peak-drag')&&feature.includes(".on('contextmenu'"),'Shared D3 runtime must retain direct peak drag and modifier+right-click delete interaction.');
-assert(feature.includes('event.ctrlKey||event.shiftKey')&&feature.includes('addManualPeak(x.invert(px))'),'Ctrl/Shift + direct curve click must add a manual peak on the selected sweep.');
-assert(feature.includes("rangeDrag.zoom")&&feature.includes("wheel.resmain")&&feature.includes('scaleDomainAround'),'Reference direct box zoom and wheel zoom must live in the shared feature runtime.');
-assert(feature.includes('respar-width-handle')&&feature.includes("widthLeft")&&feature.includes("widthRight"),'Reference FWHM width handles must remain directly editable.');
+const ui=read('src/core/ui-infrastructure.js');
+assert(ui.includes('d3.scaleSequential(d3.interpolateTurbo)')&&ui.includes("Number(curve.direction)<0?'7 4':null"),'Core ScientificCurveSurface must own the GRS Turbo palette and reverse-direction dash semantics.');
+assert(ui.includes('d3.drag().clickDistance(7)')&&ui.includes(".on('contextmenu'")&&ui.includes('onMarkerDrag'),'Core ScientificCurveSurface must own direct marker drag and modifier+right-click delete interaction.');
+assert(ui.includes('event.ctrlKey||event.shiftKey')&&feature.includes('onCurveModifiedClick')&&feature.includes('addManualPeak(Number(x))'),'Core must detect modified direct curve clicks while Resonance supplies only the add-peak domain action.');
+assert(ui.includes('rangeDrag.zoom')&&ui.includes('wheel.dkdssci')&&ui.includes('scaleDomainAround'),'Direct box zoom and wheel zoom must be Core ScientificCurveSurface capabilities.');
+assert(ui.includes('dkds-scientific-width-handle')&&feature.includes('onWidthDrag')&&feature.includes('widthLeft')&&feature.includes('widthRight'),'Core must own editable width handles while Resonance supplies peak-width semantics.');
+assert(feature.includes('uiRuntime?.scientificPlot')&&!feature.includes('d3.drag().clickDistance(7)')&&!feature.includes('wheel.resmain'),'Resonance must consume Core ScientificCurveSurface rather than retain a private D3 interaction implementation.');
 assert(feature.includes("line:{color:sr.color,dash:sr.direction<0?'dash':'solid'}")&&feature.includes('marker:{color:sr.color'),'Group/trend traces must preserve reference peak-family cool/warm color semantics.');
 assert(shared.includes('registerDataTypes'),'Resonance must register domain data/result types through the shared plugin contract.');
 

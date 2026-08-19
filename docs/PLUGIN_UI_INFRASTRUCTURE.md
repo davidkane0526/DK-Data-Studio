@@ -234,3 +234,7 @@ Rules:
 - Renderer dependencies are part of the TOP contract. If a shared View uses D3, Plotly or another renderer, declare it in `plugin.json.window.dependencies`; the generic window host must load it rather than relying on libraries that happen to exist in the main renderer.
 
 The visual contract belongs to UI infrastructure. Do not solve inconsistent typography or premature toolbar wrapping by adding per-plugin `!important` patches unless the plugin is deliberately implementing a documented parity surface.
+
+## v3.35 GRS-derived base capabilities
+
+Core UI infrastructure v6 adds `PluginWorkspace` and `ScientificCurveSurface`. `PluginWorkspace` retains the semantic AnalysisWorkbench contract but is now the preferred name and reference design system. `ScientificCurveSurface` extracts reusable GRS main-plot interaction (Turbo palette, directional dashes, direct selection, range/zoom, wheel zoom, marker drag, width handles) so measurement plugins provide domain callbacks instead of duplicating pointer/D3 plumbing.

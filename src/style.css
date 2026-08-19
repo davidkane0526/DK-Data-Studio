@@ -4217,8 +4217,10 @@ body.auxiliary-window .analysis-page{
 }
 
 /* ============================================================
-   v3.34 plugin visual contract — shared by every analysis plugin.
-   Resonance owns a dedicated parity surface and intentionally opts out.
+   v3.34 compatibility typography bridge. In v3.35 the canonical design
+   system is PluginWorkspace below, extracted from GRS. These selectors
+   keep legacy plugin markup readable while it migrates to Core primitives;
+   the reference GRS DOM retains its source dimensions during that migration.
    ============================================================ */
 :root{
   --plugin-font-body:12.5px;
@@ -4333,3 +4335,32 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
   .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-plot-actions,
   .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .ter-chart-actions{overflow-x:auto;scrollbar-width:thin}
 }
+
+/* v3.35 Plugin Workspace Design System — extracted from the mature GRS workspace.
+   These are Core scientific-workspace primitives. Domain plugins provide data and
+   semantics; Core owns typography, layout chrome and direct plot interaction. */
+:root{
+  --plugin-workspace-sidebar-width:260px;
+  --plugin-workspace-panel-radius:8px;
+  --plugin-workspace-panel-border:#d9deea;
+  --plugin-workspace-surface:#fff;
+  --plugin-workspace-muted-surface:#f7f8fb;
+  --plugin-workspace-grid:#edf0f5;
+  --plugin-workspace-shadow:0 14px 40px rgba(20,30,60,.16);
+  --plugin-workspace-tool-gap:4px;
+  --plugin-workspace-panel-gap:8px;
+}
+.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);background:#f5f7fb}
+.dkds-plugin-workspace[data-host-mode="super"],.dkds-plugin-workspace[data-host-mode="top"]{width:100%;height:100%;min-width:0;min-height:0}
+.dkds-scientific-curve-surface{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;touch-action:none;user-select:none}
+.dkds-scientific-plot-bg{fill:var(--plugin-workspace-surface);stroke:var(--plugin-workspace-grid)}
+.dkds-scientific-axis path,.dkds-scientific-axis line{stroke:#aeb6c8}
+.dkds-scientific-axis text{fill:#576176;font-size:11px}
+.dkds-scientific-axis-title{font-size:12px;fill:#374151;font-weight:520}
+.dkds-scientific-curve{fill:none;vector-effect:non-scaling-stroke}
+.dkds-scientific-curve-hit{fill:none;stroke:transparent;stroke-width:14px;pointer-events:stroke;cursor:pointer}
+.dkds-scientific-marker{pointer-events:none}.dkds-scientific-marker.is-dimmed{opacity:.12}
+.dkds-scientific-marker-hit{fill:transparent;stroke:none;pointer-events:all;cursor:pointer}.dkds-scientific-marker-hit:not(.is-locked){cursor:grab}
+.dkds-scientific-width-band{opacity:.075;pointer-events:none}.dkds-scientific-width-line{stroke-width:1.5;pointer-events:none}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all}
+.dkds-scientific-direct-box{pointer-events:none;stroke-width:1.4}.dkds-scientific-direct-box.is-range{fill:rgba(58,96,246,.08);stroke:#3a60f6;stroke-dasharray:5 3}.dkds-scientific-direct-box.is-zoom{fill:rgba(124,58,237,.07);stroke:#7c3aed;stroke-dasharray:3 3}
+.dkds-scientific-persisted-range{fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4;pointer-events:none}

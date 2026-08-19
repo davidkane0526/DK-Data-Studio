@@ -1404,16 +1404,28 @@
         selection: infrastructureScope?.selection || null,
         views: infrastructureScope?.views || null,
         workbench: infrastructureScope?.workbench || null,
-        analysisWorkbench: infrastructureScope?.analysisWorkbench || null,
-        analysisSurface: infrastructureScope?.analysisWorkbench ? Object.freeze({
-          create:(root,spec)=>infrastructureScope.analysisWorkbench.create(root,spec),
+        pluginWorkspace: infrastructureScope?.pluginWorkspace || infrastructureScope?.analysisWorkbench || null,
+        analysisWorkbench: infrastructureScope?.pluginWorkspace || infrastructureScope?.analysisWorkbench || null,
+        workspaceSurface: (infrastructureScope?.pluginWorkspace||infrastructureScope?.analysisWorkbench) ? Object.freeze({
+          create:(root,spec)=> (infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec),
           compose:(root,spec={})=>{
-            const wb=infrastructureScope.analysisWorkbench.create(root,spec);
+            const wb=(infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec);
             wb.compose?.(spec);
             return wb;
           },
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
+        analysisSurface: (infrastructureScope?.pluginWorkspace||infrastructureScope?.analysisWorkbench) ? Object.freeze({
+          create:(root,spec)=> (infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec),
+          compose:(root,spec={})=>{
+            const wb=(infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec);
+            wb.compose?.(spec);
+            return wb;
+          },
+          roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
+        }) : null,
+        scientificPlot: infrastructureScope?.scientificPlot || null,
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.0',hostInvariant:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

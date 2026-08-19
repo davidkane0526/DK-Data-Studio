@@ -14,7 +14,7 @@ const context={window,document,localStorage,structuredClone,console,setTimeout,c
 context.globalThis=context;window.window=window;window.document=document;window.localStorage=localStorage;
 vm.createContext(context);vm.runInContext(code,context,{filename:'ui-infrastructure.js'});
 const UI=window.DKDSUI;
-assert(UI.version==='5.0.0','interaction/resize runtime requires UI infrastructure v5');
+assert(UI.version==='6.0.0','interaction/resize runtime requires UI infrastructure v6');
 for(const token of ['SelectionModel','InteractionRuntime','DataTypeRegistry','ResizeScheduler'])assert(typeof UI[token]==='function',`missing ${token}`);
 
 const emitted=[];let scope;

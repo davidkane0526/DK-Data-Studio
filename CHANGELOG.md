@@ -1,3 +1,12 @@
+# v3.35.0 — GRS-derived PluginWorkspace foundation
+
+- Promotes the Graphene Resonance Studio workspace model into Core `PluginWorkspace` rather than treating Resonance as a UI exception.
+- Adds Core `ScientificCurveSurface` for Turbo curve coloring, direction dash semantics, direct selection, modifier-click actions, range selection, Ctrl box zoom, wheel zoom, double-click reset, draggable snapped markers, modifier-right-click actions, and editable width handles.
+- Resonance now supplies domain data/commands to Core scientific-plot hooks instead of owning low-level D3 interaction plumbing.
+- SUPER and TOP mount one host-invariant Resonance `PluginWorkspace`; host mode is metadata only.
+- Data Center, TER and Pulse shared views now prefer the same `PluginWorkspace` API.
+- Adds `scripts/test-plugin-workspace-foundation.js` and updates plugin-boundary tests to enforce that reusable GRS interaction mechanics stay in Core.
+
 # v3.34.0 — Shared plugin visual contract and GRS-parity Resonance rebuild
 
 - Added a Core-level plugin visual contract for non-Resonance AnalysisWorkbench surfaces: 12.5 px body text, 12 px labels, 11 px minimum auxiliary text, 13.5–14 px section/title text, and 32 px controls. Action/tool rows are single-row-first and scroll horizontally only when the host is genuinely too narrow.

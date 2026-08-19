@@ -61,7 +61,8 @@ assert(resonancePluginSource.includes("ArrowUp")&&resonancePluginSource.includes
 assert(resonancePluginSource.includes("moveSelectedPeakBy")&&resonancePluginSource.includes("ArrowRight"),'resonance plugin must own left/right peak movement shortcuts');
 assert(appSource.includes("showlegend:false"),'small trend charts should use custom per-card legends');
 assert(appSource.includes("scrollZoom:true"),'zoomed trend chart should support wheel zoom');
-assert(!htmlSource.includes('mainBoxZoomBtn')&&!htmlSource.includes('mainResetViewBtn')&&resonancePluginSource.includes('resparResetView')&&resonancePluginSource.includes('rangeDrag.zoom'),'box zoom/reset controls must be owned by the resonance shared View/Interaction runtime rather than hard-coded in core HTML');
+const uiInfrastructureSource=fs.readFileSync('./src/core/ui-infrastructure.js','utf8');
+assert(!htmlSource.includes('mainBoxZoomBtn')&&!htmlSource.includes('mainResetViewBtn')&&resonancePluginSource.includes('resparResetView')&&uiInfrastructureSource.includes('rangeDrag.zoom')&&uiInfrastructureSource.includes('wheel.dkdssci'),'box zoom/reset controls must be owned by Core ScientificCurveSurface and consumed by the resonance workspace rather than hard-coded in core HTML');
 assert(htmlSource.includes('data-trend-cols="3"'),'group panel should support explicit 3-column layout');
 assert(htmlSource.includes('data-trend-cols="auto"'),'group panel should support automatic layout');
 assert(appSource.includes('trend-card-legend'),'each subplot should have its own horizontal legend');

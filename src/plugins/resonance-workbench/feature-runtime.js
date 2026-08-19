@@ -68,6 +68,8 @@
       let selectedRange=null;
       let physicsCache={key:'',value:null};
       let resizeRaf=0;
+      let uiRuntime=null;
+      let mainSurface=null;
       let undoStack=[];
       let committedWorkspace=null;
       const workspaceFingerprint=value=>{try{return JSON.stringify(value);}catch{return '';}};
@@ -521,66 +523,52 @@
           chip.onclick=e=>{e.stopPropagation();if(preferred)publishSweepSelection(preferred,'resonance-main-legend');};host.appendChild(chip);
         }
       }
-      function drawWidthOverlay(svg,p,sw,x,y,plot){
-        const d3=window.d3;if(!d3||!p||!sw)return;const m=peakMetrics(p)||{};
-        let left=finite(p.widthLeft)?Number(p.widthLeft):Number(p.v)-Number(m.fwhm||0)/2,right=finite(p.widthRight)?Number(p.widthRight):Number(p.v)+Number(m.fwhm||0)/2;
-        if(!Number.isFinite(left)||!Number.isFinite(right)||left===right)return;if(left>right)[left,right]=[right,left];
-        const c=peakColor(p),band=svg.append('g').attr('clip-path',`url(#${plot.clipId})`);
-        band.append('rect').attr('class','respar-width-band').attr('x',x(left)).attr('width',Math.max(2,x(right)-x(left))).attr('y',plot.margin.top).attr('height',plot.innerH).attr('fill',c);
-        const amplitude=Number(m.amplitude),half=Number.isFinite(amplitude)?Math.sign(Number(p.i)||1)*(Math.abs(Number(p.i))-amplitude/2):Number(p.i);
-        band.append('line').attr('class','respar-width-line').attr('x1',x(left)).attr('x2',x(right)).attr('y1',y(half)).attr('y2',y(half)).attr('stroke',c);
-        for(const side of ['left','right']){
-          const xv=side==='left'?left:right,h=band.append('circle').attr('class','respar-width-handle').attr('cx',x(xv)).attr('cy',y(half)).attr('r',6).attr('fill','#fff').attr('stroke',c).attr('stroke-width',2);
-          h.on('click',event=>event.stopPropagation()).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{
-            if(p.locked)return;const points=sw.points||[],target=x.invert(event.x),idx=S.nearestIndex?.(points.map(q=>q.v),target)??0,snap=Number(points[idx]?.v);if(!Number.isFinite(snap))return;
-            if(side==='left')p.widthLeft=Math.min(snap,Number(p.v));else p.widthRight=Math.max(snap,Number(p.v));p.manual=true;physicsCache={key:'',value:null};renderMainPlot();if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();
-          }).on('end',()=>scheduleSnapshot()));
-        }
+      function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
+      function mainSurfaceMarkers(){
+        const display=workspace.peakDisplay||{},visibleIds=new Set(visibleSweepIds());if(display.showPoints===false)return [];
+        return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
       }
-      function resetMainView(){workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();renderMainPlot();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');return true;}
-
-      function renderMainPlot(){
-        const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap'),d3=window.d3;if(!node||!wrap||!d3)return;
-        const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);if(width<260||height<180){requestAnimationFrame(()=>{if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();});return;}
-        const svg=d3.select(node);svg.on('.resmain',null).attr('viewBox',null).attr('preserveAspectRatio',null).attr('width',width).attr('height',height).style('width',`${width}px`).style('height',`${height}px`);svg.selectAll('*').remove();
-        const rows=visibleSweeps();if(!rows.length){$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');return;}
-        const margin={top:62,right:30,bottom:50,left:78},innerW=Math.max(60,width-margin.left-margin.right),innerH=Math.max(60,height-margin.top-margin.bottom);
-        const xs=rows.flatMap(sw=>(sw.points||[]).map(p=>Number(p.v)).filter(Number.isFinite)),ys=rows.flatMap(sw=>(sw.points||[]).map(p=>Number(p.i)).filter(Number.isFinite));if(!xs.length||!ys.length)return;
-        const fullX=d3.extent(xs);let fullY=d3.extent(ys),ypad=((fullY[1]-fullY[0])||1)*.06;fullY=[fullY[0]-ypad,fullY[1]+ypad];
-        workspace.mainView=workspace.mainView&&typeof workspace.mainView==='object'?workspace.mainView:{xDomain:null,yDomain:null};
-        let xDomain=Array.isArray(workspace.mainView.xDomain)?workspace.mainView.xDomain.slice():d3.scaleLinear().domain(fullX).nice().domain();let yDomain=Array.isArray(workspace.mainView.yDomain)?workspace.mainView.yDomain.slice():d3.scaleLinear().domain(fullY).nice().domain();
-        if(!xDomain.every(Number.isFinite)||xDomain[0]===xDomain[1])xDomain=fullX.slice();if(!yDomain.every(Number.isFinite)||yDomain[0]===yDomain[1])yDomain=fullY.slice();
-        const x=d3.scaleLinear().domain(xDomain).range([margin.left,margin.left+innerW]),y=d3.scaleLinear().domain(yDomain).range([margin.top+innerH,margin.top]);
-        const clipId=`respar-main-clip-${Math.random().toString(36).slice(2,8)}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH);
-        const plotBg=svg.append('rect').attr('class','respar-plot-bg').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH).attr('fill','#fff').attr('stroke','#edf0f5').style('cursor','crosshair');
-        svg.append('g').attr('class','axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x));
-        svg.append('g').attr('class','axis').attr('transform',`translate(${margin.left},0)`).call(d3.axisLeft(y).tickFormat(v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;}));
-        svg.append('text').attr('class','respar-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text('Vd (V)');svg.append('text').attr('class','respar-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text('I (A)');
-        let vgExtent=d3.extent(datasets.map(d=>finite(d.vg)?Number(d.vg):0));if(vgExtent[0]===vgExtent[1])vgExtent=[vgExtent[0]-1,vgExtent[1]+1];const curveColor=d3.scaleSequential(d3.interpolateTurbo).domain(vgExtent);renderMainLegend(curveColor);
-        const line=d3.line().defined(p=>finite(p.v)&&finite(p.i)).x(p=>x(Number(p.v))).y(p=>y(Number(p.i))),hasSelection=!!selectedSweepId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
-        for(const sw of rows){
-          const active=sw.id===selectedSweepId,c=curveColor(finite(sw.vg)?Number(sw.vg):0);dataLayer.append('path').datum(sw.points||[]).attr('class',`respar-curve ${hasSelection&&!active?'dimmed':''}`).attr('d',line).attr('stroke',c).attr('stroke-width',active?3:1.25).attr('stroke-dasharray',sw.direction<0?'7 4':null).attr('opacity',hasSelection?(active?1:.10):.74).style('pointer-events','none');
-          dataLayer.append('path').datum(sw.points||[]).attr('class','respar-curve-hit').attr('d',line).on('click',(event)=>{event.stopPropagation();clearMainRangeMenu();selectedSweepId=sw.id;if((event.ctrlKey||event.shiftKey)){publishSweepSelection(sw,'resonance-main-manual');const [px]=d3.pointer(event,node);addManualPeak(x.invert(px));workspaceNavigator?.('inspect');}else publishSweepSelection(sw,'resonance-main');}).on('dblclick',event=>{event.preventDefault();event.stopPropagation();publishSweepSelection(sw,'resonance-main');workspaceNavigator?.('inspect');});
-        }
-        const display=workspace.peakDisplay||{};if(display.showPoints!==false){
-          const visIds=new Set(visibleSweepIds()),peakData=(workspace.peaks||[]).filter(p=>visIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true));
-          const marks=dataLayer.append('g').selectAll('path.respar-peak-point').data(peakData,p=>p.id).join('path').attr('class',p=>`respar-peak-point ${p.locked?'locked':''} ${hasSelection&&p.sweepId!==selectedSweepId?'dimmed':''}`).attr('d',p=>markerPath(p,p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))).attr('transform',p=>`translate(${x(Number(p.v))},${y(Number(p.i))})`).attr('fill',peakColor).attr('stroke',p=>selectedPeakIds.has(String(p.id))?'#111827':(p.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',p=>(p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))?3.2:1.8).attr('opacity',p=>{let o=p.accepted!==false?.98:.34;if(hasSelection&&p.sweepId!==selectedSweepId)o*=.11;return o;}).style('pointer-events','none');
-          const hits=dataLayer.append('g').selectAll('circle.respar-peak-hit').data(peakData,p=>p.id).join('circle').attr('class',p=>`respar-peak-hit ${p.locked?'locked':''}`).attr('cx',p=>x(Number(p.v))).attr('cy',p=>y(Number(p.i))).attr('r',p=>(p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))?12:10)
-            .on('click',(event,p)=>{event.stopPropagation();clearMainRangeMenu();publishPeakSelection(p,'resonance-main',{openInspector:true,additive:!!(event.ctrlKey||event.metaKey)});})
-            .on('dblclick',(event,p)=>{event.preventDefault();event.stopPropagation();publishPeakSelection(p,'resonance-main',{openInspector:true});})
-            .on('contextmenu',(event,p)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(p.locked){setStatus('该峰位已锁定。');return;}const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);})
-            .on('mouseenter',(event,p)=>{const tip=$('#resparHoverTip');if(!tip)return;tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');const wr=wrap.getBoundingClientRect();tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`;}).on('mousemove',event=>{const tip=$('#resparHoverTip'),wr=wrap.getBoundingClientRect();if(tip){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`;}}).on('mouseleave',()=>$('#resparHoverTip')?.classList.add('hidden'));
-          hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,p)=>{if(p.locked)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);}).on('drag',(event,p)=>{if(p.locked)return;const sw=sweepById(p.sweepId),pts=sw?.points||[];if(!pts.length)return;const idx=S.nearestIndex?.(pts.map(q=>q.v),x.invert(event.x))??0;movePeakToIndex(p,sw,idx);hits.filter(q=>q.id===p.id).attr('cx',x(Number(p.v))).attr('cy',y(Number(p.i)));marks.filter(q=>q.id===p.id).attr('transform',`translate(${x(Number(p.v))},${y(Number(p.i))})`);if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();}).on('end',(event,p)=>{if(!p.locked){publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);}}));
-          if(workspace.physicsShowLabels!==false){try{const ph=physicalAnalysis(),colors={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'};dataLayer.append('g').selectAll('text.respar-physics-label').data(peakData.filter(p=>p.accepted!==false),p=>p.id).join('text').attr('class','respar-physics-label').attr('x',p=>x(Number(p.v))+8).attr('y',p=>y(Number(p.i))-8).attr('opacity',p=>hasSelection?(p.sweepId===selectedSweepId?1:.08):.92).attr('fill',p=>colors[ph?.peakMap?.get?.(p.id)?.code||'Q']).text(p=>{const code=ph?.peakMap?.get?.(p.id)?.code||'Q';return code==='Q'?'?':code;});}catch{}
-          }
-        }
-        const sp=selectedPeak();if(sp&&display.showWidth!==false&&sp.accepted!==false){const sw=sweepById(sp.sweepId);if(sw&&isVisible(sw))drawWidthOverlay(svg,sp,sw,x,y,{margin,innerW,innerH,clipId});}
-        let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;clearMainRangeMenu();const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false,clientX:event.clientX,clientY:event.clientY};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.clientX=event.clientX;rangeDrag.clientY=event.clientY;rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.respar-direct-box').remove();svg.append('rect').attr('class',`respar-direct-box ${rangeDrag.zoom?'zoom':'range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
-        const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.respar-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=nearestSweepAtPixel(drag.sx,drag.sy,x,y,rows,18);if(near){selectedSweepId=near.sw.id;if(drag.zoom){publishSweepSelection(near.sw,'resonance-main-manual');addManualPeak(Number(near.point.v));workspaceNavigator?.('inspect');}else publishSweepSelection(near.sw,'resonance-main');}else if(!drag.zoom){selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();}return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){workspace.mainView.xDomain=[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b);workspace.mainView.yDomain=[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b);renderMainPlot();scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');return;}const vMin=Math.min(x.invert(sx0),x.invert(sx1)),vMax=Math.max(x.invert(sx0),x.invert(sx1)),iMin=Math.min(y.invert(sy0),y.invert(sy1)),iMax=Math.max(y.invert(sy0),y.invert(sy1));showMainRangeMenu({vMin,vMax,iMin,iMax,min:vMin,max:vMax,sweepId:selectedSweepId||''},event);renderMainPlot();};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.respar-direct-box').remove();});
-        plotBg.on('dblclick',event=>{event.preventDefault();resetMainView();});
-        svg.on('wheel.resmain',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;event.preventDefault();event.stopPropagation();clearMainRangeMenu({keepSelection:true});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6);workspace.mainView.xDomain=scaleDomainAround(xDomain,cx,factor,minX);workspace.mainView.yDomain=scaleDomainAround(yDomain,cy,factor,minY);renderMainPlot();});
-        if(selectedRange&&finite(selectedRange.min)&&finite(selectedRange.max)){const rx0=x(Number(selectedRange.min)),rx1=x(Number(selectedRange.max));if(Number.isFinite(rx0)&&Number.isFinite(rx1))svg.append('rect').attr('class','respar-persisted-range').attr('x',Math.min(rx0,rx1)).attr('y',margin.top).attr('width',Math.abs(rx1-rx0)).attr('height',innerH);}
+      function markerWidthSpec(marker){
+        const p=marker?.source;if(!p)return null;const m=peakMetrics(p)||{};let left=finite(p.widthLeft)?Number(p.widthLeft):Number(p.v)-Number(m.fwhm||0)/2,right=finite(p.widthRight)?Number(p.widthRight):Number(p.v)+Number(m.fwhm||0)/2;if(!Number.isFinite(left)||!Number.isFinite(right)||left===right)return null;if(left>right)[left,right]=[right,left];const amplitude=Number(m.amplitude),half=Number.isFinite(amplitude)?Math.sign(Number(p.i)||1)*(Math.abs(Number(p.i))-amplitude/2):Number(p.i);return {left,right,y:half};
       }
+      function ensureMainSurface(){
+        const node=$('#reswinMainPlot');if(!node)return null;if(mainSurface&&mainSurface.target===node)return mainSurface;mainSurface?.dispose?.();mainSurface=null;
+        const factory=uiRuntime?.scientificPlot;if(!factory?.create)return null;
+        mainSurface=factory.create(node,{
+          container:'#resparMainPlotWrap',minWidth:260,minHeight:180,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
+          yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
+          getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
+          getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
+          getMarkers:()=>mainSurfaceMarkers(),getSelectedCurveId:()=>selectedSweepId,getSelectedMarkerIds:()=>[...new Set([selectedPeakId,...selectedPeakIds].filter(Boolean).map(String))],
+          getView:()=>workspace.mainView||{xDomain:null,yDomain:null},setView:(next,meta)=>{workspace.mainView={xDomain:Array.isArray(next?.xDomain)?next.xDomain.slice():null,yDomain:Array.isArray(next?.yDomain)?next.yDomain.slice():null};if(meta?.reason==='box-zoom'){scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');}},
+          getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
+          getMarkerWidth:marker=>markerWidthSpec(marker),
+          onColorScale:scale=>renderMainLegend(scale),
+          onCurveSelect:({curve})=>{clearMainRangeMenu();const sw=curve?.source;if(sw)publishSweepSelection(sw,'resonance-main');},
+          onCurveModifiedClick:({curve,x,event})=>{clearMainRangeMenu();const sw=curve?.source;if(!sw)return;selectedSweepId=sw.id;publishSweepSelection(sw,'resonance-main-manual');addManualPeak(Number(x));workspaceNavigator?.('inspect');},
+          onCurveDoubleClick:({curve})=>{const sw=curve?.source;if(sw){publishSweepSelection(sw,'resonance-main');workspaceNavigator?.('inspect');}},
+          onMarkerSelect:({marker,additive})=>{const p=marker?.source;if(p){clearMainRangeMenu();publishPeakSelection(p,'resonance-main',{openInspector:true,additive});}},
+          onMarkerDoubleClick:({marker})=>{const p=marker?.source;if(p)publishPeakSelection(p,'resonance-main',{openInspector:true});},
+          onMarkerDelete:({marker})=>{const p=marker?.source;if(!p)return;const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);},
+          onLockedMarkerAction:()=>setStatus('该峰位已锁定。'),
+          onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
+          onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
+          onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();},
+          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
+          onWidthDrag:({marker,side,point})=>{const p=marker?.source;if(!p||!point)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;if(side==='left')p.widthLeft=Math.min(snap,Number(p.v));else p.widthRight=Math.max(snap,Number(p.v));p.manual=true;physicsCache={key:'',value:null};if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();},
+          onWidthDragEnd:()=>scheduleSnapshot(),
+          onRangeStart:()=>clearMainRangeMenu(),
+          onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
+          onRangeSelect:({xMin,xMax,yMin,yMax,event})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:selectedSweepId||''},event),
+          onClearSelection:()=>{selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();},
+          onReset:()=>{workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
+          onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');},
+          afterRender:({dataLayer,x,y,markers})=>{if(workspace.physicsShowLabels===false||workspace.peakDisplay?.showPoints===false)return;try{const ph=physicalAnalysis(),colors={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'},hasSelection=!!selectedSweepId;dataLayer.append('g').selectAll('text.respar-physics-label').data(markers.filter(m=>m.accepted!==false),m=>m.id).join('text').attr('class','respar-physics-label').attr('x',m=>x(Number(m.x))+8).attr('y',m=>y(Number(m.y))-8).attr('opacity',m=>hasSelection?(String(m.curveId)===String(selectedSweepId)?1:.08):.92).attr('fill',m=>colors[ph?.peakMap?.get?.(m.id)?.code||'Q']).text(m=>{const code=ph?.peakMap?.get?.(m.id)?.code||'Q';return code==='Q'?'?':code;});}catch{} }
+        });
+        return mainSurface;
+      }
+      function resetMainView(){workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();const surface=ensureMainSurface();if(surface)surface.resetView();else{renderMainPlot();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');}return true;}
+      function renderMainPlot(){const surface=ensureMainSurface();if(surface){surface.render('resonance');return;}const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap');if(!node||!wrap)return;const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);node.replaceChildren();node.setAttribute('width',String(Math.max(0,width)));node.setAttribute('height',String(Math.max(0,height)));const text=document.createElementNS('http://www.w3.org/2000/svg','text');text.setAttribute('x',String(Math.max(0,width)/2));text.setAttribute('y',String(Math.max(0,height)/2));text.setAttribute('text-anchor','middle');text.setAttribute('fill','#b91c1c');text.textContent='ScientificCurveSurface 基座未就绪';node.appendChild(text);}
 
       function groupSeries(){
         if(!sharedController)return [];
@@ -908,6 +896,7 @@
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
+        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionSelection=runtime.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});},
         selection:()=>interactionSelection?.get?.()||null,
