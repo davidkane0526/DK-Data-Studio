@@ -63,7 +63,9 @@ for(const token of [
   "id:'gate-analysis'",
   'ctx.ui.shortcuts.add',
   'peak-category-choice',
-  'resonanceResetViewTool'
+  'resparResetView',
+  'reswinMainPlot',
+  'rangeDrag.zoom'
 ]){
   if(!resonance.includes(token))fail(`resonance unified workbench missing plugin-owned shared surface/control: ${token}`);
 }

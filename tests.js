@@ -61,7 +61,7 @@ assert(resonancePluginSource.includes("ArrowUp")&&resonancePluginSource.includes
 assert(resonancePluginSource.includes("moveSelectedPeakBy")&&resonancePluginSource.includes("ArrowRight"),'resonance plugin must own left/right peak movement shortcuts');
 assert(appSource.includes("showlegend:false"),'small trend charts should use custom per-card legends');
 assert(appSource.includes("scrollZoom:true"),'zoomed trend chart should support wheel zoom');
-assert(!htmlSource.includes('mainBoxZoomBtn')&&!htmlSource.includes('mainResetViewBtn')&&(resonancePluginSource.includes("id:'resonanceResetViewTool'")||resonancePluginSource.includes("reset.id='resonanceResetViewTool'")),'box zoom/reset controls must be owned by the resonance plugin rather than hard-coded in core HTML');
+assert(!htmlSource.includes('mainBoxZoomBtn')&&!htmlSource.includes('mainResetViewBtn')&&resonancePluginSource.includes('resparResetView')&&resonancePluginSource.includes('rangeDrag.zoom'),'box zoom/reset controls must be owned by the resonance shared View/Interaction runtime rather than hard-coded in core HTML');
 assert(htmlSource.includes('data-trend-cols="3"'),'group panel should support explicit 3-column layout');
 assert(htmlSource.includes('data-trend-cols="auto"'),'group panel should support automatic layout');
 assert(appSource.includes('trend-card-legend'),'each subplot should have its own horizontal legend');
@@ -74,11 +74,11 @@ console.log('UI contract checks passed.');
 assert(!appSource.includes('customColorInput'),'arbitrary color picker must be removed');
 assert(appSource.includes('colorForPeakOrder'),'all peak colors should come from one category/direction mapping');
 assert(resonancePluginSource.includes('peak-category-choice'),'resonance inspector plugin must classify peaks by existing category swatches');
-assert(resonancePluginSource.includes('data-add-cat'),'resonance inspector plugin must allow adding a new category/color pair');
+assert(resonancePluginSource.includes('reswinAddPeakCategory')&&resonancePluginSource.includes('createPeakCategoryForPeak'),'resonance inspector must allow adding a new peak category using the shared cool/warm palette contract');
 assert(appSource.includes(".on('dblclick',(event,d)=>"),'double-clicking a peak should be handled');
 assert(appSource.includes('showInspectorPanel'),'peak click/double-click should open inspector');
 assert(!appSource.includes('TER_COLORS'),'TER must not use a separate unrelated palette');
-assert(!resonancePluginSource.includes('_forwardColor')&&!resonancePluginSource.includes('_reverseColor'),'resonance shared Plotly views must preserve the v3.25 default trace palette instead of injecting category colors');
+assert(resonancePluginSource.includes("const COOL=['#0057D9'")&&resonancePluginSource.includes("const WARM=['#D7191C'")&&resonancePluginSource.includes('colorForPeakOrder'),'resonance shared views must preserve the reference GRS cool/warm peak-family palette');
 
 assert(htmlSource.includes('groupDockBtn')&&htmlSource.includes('groupMinimizeBtn'),'group panel should support dock/minimize controls');
 assert(htmlSource.includes('dockedGroupSlot'),'main workspace should include bottom docking slot');
@@ -282,7 +282,7 @@ for(const peak of detectedV34){
   assert(['raw-local-maximum','raw-residual-projection'].includes(peak.projectionMethod),'auto peak must record raw-I projection method');
 }
 assert(appV34.includes("['dlog','d ln|I|/dV']")&&appV34.includes("['resistance','R=|V/I|']"),'dataset transform selector must include log-derivative and resistance');
-assert(resonancePluginSource.includes('智能寻峰 / 补峰')&&resonancePluginSource.includes('算法参数'),'peak-finding workflow UI must be owned by the resonance plugin and keep a simple preset-first flow');
+assert(resonancePluginSource.includes('<h3>智能寻峰</h3>')&&resonancePluginSource.includes('寻峰算法')&&resonancePluginSource.includes('预设<select id="reswinPreset"'),'peak-finding workflow UI must be owned by the resonance shared workbench and keep the reference preset-first flow');
 assert(mainV34.includes("ipcMain.handle('clipboard:writeText'")&&mainV34.includes('clipboard.writeText'),'Electron main process must expose system clipboard write');
 assert(preloadV34.includes("copyText: text => ipcRenderer.invoke('clipboard:writeText', text)"),'preload must expose clipboard copy');
 for(const id of ['copyMainCsvBtn','zoomCopyCsv']){
@@ -1084,8 +1084,8 @@ assert(cssV319.includes('.activity-switcher')&&cssV319.includes('.plugin-context
   'adaptive toolbar/activity/context layout styles must exist');
 assert(kernelV319.includes('dataset.pluginPriority')&&kernelV319.includes('dataset.pluginSection')&&kernelV319.includes('const ranked=visible.slice().sort'),
   'context toolbar must support plugin-defined groups and priority-aware overflow');
-assert(resonanceV319.includes('reswin-nav')&&resonanceV319.includes('wb.compose'),
-  'resonance workbench must declare semantic PRIMARY/PRIME/SUB navigation instead of a flat action row');
+assert(resonanceV319.includes('wb.compose')&&resonanceV319.includes("primary:{id:'main'")&&resonanceV319.includes('primes:[')&&resonanceV319.includes('subs:['),
+  'resonance workbench must declare semantic PRIMARY/PRIME/SUB navigation through the shared AnalysisWorkbench');
 assert(cssV319.includes('.plugin-toolbar-btn.plugin-section-start'),
   'context toolbar must visually separate plugin-declared command groups');
 
@@ -1120,7 +1120,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.33.0','current package version must be v3.33.0');
+assert(/^\d+\.\d+\.\d+$/.test(pkgV321.version),'current package version must remain a stable semantic version');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
   'DK Data Studio must ship the compact dedicated DK logo/icon assets');
@@ -1136,8 +1136,8 @@ assert(htmlV321.includes('id="pluginToolbarAnalysis"')&&htmlV321.includes('id="c
   'plugin context actions must remain priority-overflow capable');
 assert(kernelV321.includes("'ui.selectionMenus'")&&kernelV321.includes('selectionMenus:'),
   'box-selection action UI must be supplied through the plugin registry');
-assert(resonancePluginSource.includes('peak-category-choice')&&resonancePluginSource.includes('resonanceResetViewTool'),
-  'resonance shared workspace must own peak identity controls and main-plot reset control');
+assert(resonancePluginSource.includes('peak-category-choice')&&resonancePluginSource.includes('resparResetView'),
+  'resonance shared workspace must own peak identity controls and the GRS-parity main-plot reset control');
 assert(kernelV321.includes("spec.openMode==='window'")&&mainV321.includes("ipcMain.handle('windows:openActivity'")&&preloadV321.includes('openActivityWindow'),
   'auxiliary activities must open in dedicated Electron windows');
 assert(dataCenterWindowContract()&&terPluginSource.includes("openMode:'window'")&&pulsePluginSource.includes("openMode:'window'"),

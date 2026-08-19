@@ -39,13 +39,13 @@
 
       .import-duplicate-warning{
         flex:0 0 auto;margin:0;padding:7px 9px;border-top:1px solid #f2d29b;
-        background:#fff8e8;color:#8a4b08;font-size:10px;line-height:1.45;
+        background:#fff8e8;color:#8a4b08;font-size:var(--plugin-font-meta,11px);line-height:1.45;
       }
       .import-file-item.import-name-warning{border-color:#edb45f;background:#fffaf0}
       .import-file-item.import-replace-warning{border-color:#df8b60;background:#fff7f2}
       .import-duplicate-badge{
         flex:0 0 auto;margin-left:auto;padding:2px 5px;border-radius:999px;
-        background:#fff0d5;border:1px solid #efc27c;color:#8a4b08;font-size:9px;font-weight:700;
+        background:#fff0d5;border:1px solid #efc27c;color:#8a4b08;font-size:var(--plugin-font-meta,11px);font-weight:700;
       }
       .import-file-item.import-replace-warning .import-duplicate-badge{
         background:#ffeadf;border-color:#e9a47d;color:#9a3412;

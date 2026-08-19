@@ -4,6 +4,7 @@ const { normalizeRelativeFile } = require('./plugin-package');
 
 const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'plotly',
+  'd3',
   'science-common',
   'science-import',
   'science-presets',

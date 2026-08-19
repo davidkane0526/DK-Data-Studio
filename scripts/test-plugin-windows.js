@@ -83,7 +83,7 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel']},
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel']},
   'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
   'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','science-common','science-ter','platform','ui-infrastructure','plugin-kernel']},
   'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}

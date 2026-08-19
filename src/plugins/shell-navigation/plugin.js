@@ -78,22 +78,22 @@
       .workspace-commandbar[data-nav-density="compact"] .plugin-toolbar-btn{padding-left:7px!important;padding-right:7px!important}
 
       /* Plugin manager uses the same text scale as the rest of the application. */
-      .plugin-manager-stat span{font-size:11px!important}
-      .plugin-manager-search-wrap input{font-size:12px!important}
-      .plugin-manager-toolbar-card>label{font-size:11px!important}
-      .plugin-manager-toolbar-card select{font-size:12px!important}
-      .plugin-manager-visible-count{font-size:10.5px!important}
-      .plugin-manager-note{font-size:11px!important;line-height:1.6!important}
-      .plugin-card-title-line h3{font-size:14px!important;line-height:1.35!important}
-      .plugin-card-id{font-size:10px!important}
-      .plugin-status-badge{font-size:10px!important;padding:3px 7px!important}
-      .plugin-switch-label{font-size:11px!important}
-      .plugin-card-description{font-size:11.5px!important;line-height:1.6!important;min-height:36px!important}
-      .plugin-capability-chip{font-size:10.5px!important;padding:4px 7px!important}
-      .plugin-card-meta{font-size:10.5px!important;gap:10px!important}
-      .plugin-card-actions button{font-size:11px!important;min-height:30px!important}
-      .plugin-card-details{font-size:11px!important;line-height:1.7!important}
-      .plugin-manager-empty{font-size:12px!important}
+      .plugin-manager-stat span{font-size:var(--plugin-font-meta,11px)!important}
+      .plugin-manager-search-wrap input{font-size:var(--plugin-font-body,12.5px)!important}
+      .plugin-manager-toolbar-card>label{font-size:var(--plugin-font-meta,11px)!important}
+      .plugin-manager-toolbar-card select{font-size:var(--plugin-font-body,12.5px)!important}
+      .plugin-manager-visible-count{font-size:var(--plugin-font-meta,11px)!important}
+      .plugin-manager-note{font-size:var(--plugin-font-meta,11px)!important;line-height:1.6!important}
+      .plugin-card-title-line h3{font-size:var(--plugin-font-section,14px)!important;line-height:1.35!important}
+      .plugin-card-id{font-size:var(--plugin-font-meta,11px)!important}
+      .plugin-status-badge{font-size:var(--plugin-font-meta,11px)!important;padding:3px 7px!important}
+      .plugin-switch-label{font-size:var(--plugin-font-meta,11px)!important}
+      .plugin-card-description{font-size:var(--plugin-font-label,12px)!important;line-height:1.6!important;min-height:36px!important}
+      .plugin-capability-chip{font-size:var(--plugin-font-meta,11px)!important;padding:4px 7px!important}
+      .plugin-card-meta{font-size:var(--plugin-font-meta,11px)!important;gap:10px!important}
+      .plugin-card-actions button{font-size:var(--plugin-font-meta,11px)!important;min-height:var(--plugin-control-height,32px)!important}
+      .plugin-card-details{font-size:var(--plugin-font-meta,11px)!important;line-height:1.7!important}
+      .plugin-manager-empty{font-size:var(--plugin-font-body,12.5px)!important}
 
       @media(max-width:820px){
         .primary-activity-cluster{overflow-x:auto!important;scrollbar-width:none}

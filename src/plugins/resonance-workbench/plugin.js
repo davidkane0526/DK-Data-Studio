@@ -2,9 +2,9 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'3.2.0',
+    version:'3.34.0',
     apiVersion:'1.7.0',
-    description:'Resonance workbench composed from plugin-owned shared Controller and View components; SUPER and TOP only adapt presentation/layout.',
+    description:'GRS-parity resonance workbench on the shared Controller/Artifact/Selection runtime; SUPER and TOP mount one interaction surface while Core owns PRIME/SUB placement.',
     source:'builtin',
     order:100,
     capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','data.artifacts'],

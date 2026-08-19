@@ -6,6 +6,7 @@
 
   const DEPENDENCY_SCRIPTS = Object.freeze({
     plotly:'../../node_modules/plotly.js-dist-min/plotly.min.js',
+    d3:'../../node_modules/d3/dist/d3.min.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
     'science-presets':'../science/presets.js',
@@ -316,7 +317,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.33.0',
+      appVersion:'3.34.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -343,6 +344,7 @@
 
   async function loadTargetPlugin() {
     const spec = bootstrap?.pluginWindow;
+    document.body.dataset.pluginId=String(spec?.pluginId||'');
     const packagedSource=spec?.source==='external'||spec?.source==='override';
     if (!spec?.entry || (!packagedSource&&!spec?.pluginFolder)) throw new Error('插件窗口缺少入口信息。');
 

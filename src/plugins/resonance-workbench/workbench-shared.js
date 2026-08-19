@@ -44,6 +44,7 @@
       gateAnalysisSettings:clone(project.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0}),
       transformPreviewByDataset:Array.isArray(project.transformPreviewByDataset)?clone(project.transformPreviewByDataset):[],
       groupColumns:'auto',
+      mainView:{xDomain:null,yDomain:null},
       activeView:'main'
     };
   }
@@ -64,7 +65,8 @@
       spacingSettings:{...(base.spacingSettings||{}),...(source.spacingSettings||{})},
       gateAnalysisSettings:{...(base.gateAnalysisSettings||{}),...(source.gateAnalysisSettings||{})},
       transformPreviewByDataset:Array.isArray(source.transformPreviewByDataset)?clone(source.transformPreviewByDataset):base.transformPreviewByDataset,
-      groupColumns:['auto','1','2','3','4'].includes(String(source.groupColumns))?String(source.groupColumns):'auto',
+      groupColumns:['auto','1','2','3','4','5','6'].includes(String(source.groupColumns))?String(source.groupColumns):'auto',
+      mainView:{xDomain:Array.isArray(source.mainView?.xDomain)?source.mainView.xDomain.map(Number):null,yDomain:Array.isArray(source.mainView?.yDomain)?source.mainView.yDomain.map(Number):null},
       activeView:VIEW_IDS.has(String(source.activeView))?String(source.activeView):'main'
     };
   }

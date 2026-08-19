@@ -209,3 +209,28 @@ Primary commands must be declared once with `ctx.ui.actions`; do not duplicate t
 Portable plot placement is rendered by Core. Plugins declare allowed placements and a controls host; Core owns the placement menu, restoration, docking/floating mechanics, split geometry and persistence. Plugins must not implement a second docking manager.
 
 A TOP promoted to SUPER must behave identically to every other TOP. Core derives the single non-dismissible SUPER root from the registered TOP contract. Plugin-owned derived/SUB pages remain dismissible so controls such as `返回主图` continue to work.
+## v3.34 plugin visual contract
+
+Built-in analysis plugins share a visual contract at the workbench boundary. New plugin UI should consume these Core tokens rather than inventing a private type scale:
+
+```css
+--plugin-font-body: 12.5px;
+--plugin-font-label: 12px;
+--plugin-font-meta: 11px;
+--plugin-font-title: 13.5px;
+--plugin-font-section: 14px;
+--plugin-control-height: 32px;
+--plugin-control-pad-x: 9px;
+--plugin-action-gap: 6px;
+```
+
+Rules:
+
+- Ordinary plugin body text is 12.5 px; form labels are 12 px. Auxiliary/meta/help text must not fall below 11 px in normal desktop layouts.
+- Buttons and compact form controls use a 32 px minimum height and inherit the shared plugin font.
+- Toolbars and action clusters are **single-row-first** (`flex-wrap: nowrap`). If the host is truly narrower than the action set, the row may scroll/overflow horizontally or move low-priority commands into a Core ActionGroup menu; it must not wrap early into two or three rows while usable horizontal space remains.
+- Plugin-owned historical CSS may define older values for legacy/non-workbench pages, but a current `AnalysisWorkbench` surface is normalized by the shared contract. New built-ins should use the variables directly.
+- A parity surface may intentionally opt out only when reproducing an externally defined product UI. The exception must be scoped to a deterministic plugin identity (for dedicated windows `body[data-plugin-id]`) rather than broad selectors. Resonance is the current reference exception because its UI intentionally reproduces the supplied Graphene Resonance Studio workspace.
+- Renderer dependencies are part of the TOP contract. If a shared View uses D3, Plotly or another renderer, declare it in `plugin.json.window.dependencies`; the generic window host must load it rather than relying on libraries that happen to exist in the main renderer.
+
+The visual contract belongs to UI infrastructure. Do not solve inconsistent typography or premature toolbar wrapping by adding per-plugin `!important` patches unless the plugin is deliberately implementing a documented parity surface.

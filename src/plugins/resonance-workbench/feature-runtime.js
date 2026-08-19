@@ -46,7 +46,7 @@
     return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
-  async function createTop({host,project:initialProject,setStatus,scheduleSnapshot,copyTextToClipboard,savePlotlyImage,adapter={}}){
+  async function createTop({host,project:initialProject,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,adapter={}}){
       let project=clone(initialProject||{});
       let datasets=[];
       let sweeps=[];
@@ -68,6 +68,23 @@
       let selectedRange=null;
       let physicsCache={key:'',value:null};
       let resizeRaf=0;
+      let undoStack=[];
+      let committedWorkspace=null;
+      const workspaceFingerprint=value=>{try{return JSON.stringify(value);}catch{return '';}};
+      function resetUndoHistory(){undoStack=[];committedWorkspace=clone(workspace);}
+      function scheduleSnapshot({recordHistory=true}={}){
+        const current=clone(workspace);
+        if(recordHistory&&committedWorkspace&&workspaceFingerprint(committedWorkspace)!==workspaceFingerprint(current)){
+          undoStack.push(committedWorkspace);if(undoStack.length>80)undoStack.shift();
+        }
+        committedWorkspace=current;persistSnapshot?.();
+      }
+      function undoLastAction(){
+        const previous=undoStack.pop();if(!previous){setStatus('没有可回退的共振编辑。');return false;}
+        workspace=normalizeWorkspace(previous,project);committedWorkspace=clone(workspace);currentView=workspace.activeView||'main';physicsCache={key:'',value:null};selectedRange=null;selectedPeakIds.clear();rebuild();
+        if(selectedPeakId&&!peakById(selectedPeakId))selectedPeakId='';if(selectedSweepId&&!sweepById(selectedSweepId))selectedSweepId='';
+        interactionSelection?.clear?.({source:'resonance-undo'});render();persistSnapshot?.();setStatus('已回退上一步共振编辑。');return true;
+      }
 
       function pluginSliceFromProject(p){return Shared.pluginSliceFromProject(p);}
       function sweepById(id){return sweeps.find(sw=>sw.id===id)||null;}
@@ -169,17 +186,33 @@
         for(const p of rows){p.peakOrder=cat.order;p.peakLabel=cat.label;p.orderAnchor=true;}
         physicsCache={key:'',value:null};render();scheduleSnapshot();setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${cat.label}。`);return true;
       }
+      function applyRangeIdentity(order,label=''){
+        const n=Math.max(1,Math.round(Number(order)||1)),rows=peaksInRange();if(!rows.length)return false;normalizeCategories();let c=category(n);const text=String(label||'').trim();
+        if(text){const cat=(workspace.peakCategories||[]).find(row=>Number(row.order)===n);if(cat)cat.label=text;for(const p of workspace.peaks||[])if(Number(p.peakOrder)===n)p.peakLabel=text;c={...c,label:text};}
+        for(const p of rows){p.peakOrder=n;p.peakLabel=c.label;p.manual=true;p.orderAnchor=true;}
+        physicsCache={key:'',value:null};render();scheduleSnapshot();setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${c.label}。`);return true;
+      }
       function deleteRangePeaks(){const ids=new Set(peaksInRange().filter(p=>!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(p.id));if(ids.has(selectedPeakId))selectedPeakId='';for(const id of ids)selectedPeakIds.delete(String(id));physicsCache={key:'',value:null};render();scheduleSnapshot();}
       async function detectRange(range=selectedRange){
-        const sw=sweepById(range?.sweepId)||selectedSweep();if(!sw||!range)return;
+        if(!range)return;
         const lo=Math.min(Number(range.min),Number(range.max)),hi=Math.max(Number(range.min),Number(range.max));
-        const points=(sw.points||[]).filter(p=>Number(p.v)>=lo&&Number(p.v)<=hi);if(points.length<5){setStatus('框选范围内数据点不足。');return;}
+        const targets=range.sweepId?[sweepById(range.sweepId)].filter(Boolean):visibleSweeps();
+        if(!targets.length){setStatus('框选范围内没有可见扫描。');return;}
         const providers=detectorRuntime?.list?.()||[];const activeId=String(workspace.activeDetector||providers.find(p=>p.default)?.id||providers[0]?.id||'');const provider=providers.find(p=>String(p.id)===activeId)||null;
-        const subset={...sw,points};const settings=workspace.detectorSettings?.[activeId]||workspace.algorithms||{};
-        let found=[];try{found=provider?.detect?await provider.detect(subset,settings,{}):S.detectPeaks(subset,workspace.algorithms||{},{});}catch(err){setStatus(`局部寻峰失败：${err.message||err}`);return;}
+        const settings=workspace.detectorSettings?.[activeId]||workspace.algorithms||{};
         const inside=new Set(peaksInRange(range).filter(p=>!p.manual&&!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!inside.has(p.id));
-        const added=assignDetectedOrders(found||[]).map(p=>({...p,sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction}));workspace.peaks.push(...added);normalizeCategories();
-        if(added[0])publishPeakSelection(added[0],'resonance-range');else render();scheduleSnapshot();setStatus(`局部寻峰完成：新增 ${added.length} 个峰。`);
+        const added=[];let insufficient=0;
+        for(const sw of targets){
+          const points=(sw.points||[]).filter(p=>Number(p.v)>=lo&&Number(p.v)<=hi);if(points.length<5){insufficient++;continue;}
+          const subset={...sw,points};
+          try{
+            const found=provider?.detect?await provider.detect(subset,settings,{}):S.detectPeaks(subset,workspace.algorithms||{},{});
+            added.push(...assignDetectedOrders(found||[]).map(p=>({...p,sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction})));
+          }catch(err){console.warn('[resonance range detect]',sw.id,err);}
+        }
+        workspace.peaks.push(...added);normalizeCategories();
+        if(added[0])publishPeakSelection(added[0],'resonance-range');else render();scheduleSnapshot();
+        setStatus(`局部寻峰完成：${targets.length-insufficient}/${targets.length} 条扫描，新增 ${added.length} 个峰。`);
       }
       function openRangeMenu(event){
         if(!interactionMenus?.open||!selectedRange)return;const count=peaksInRange().length;
@@ -342,13 +375,14 @@
         sw.points.forEach((p,index)=>{const dist=Math.abs(Number(p.v)-Number(v));if(dist<bestDist){best=p;bestIndex=index;bestDist=dist;}});
         const existing=(workspace.peaks||[]).filter(p=>p.sweepId===sw.id);
         const order=Math.max(1,...existing.map(p=>Number(p.peakOrder)||0))+1;
-        const c=category(order);
+        const c=category(order),leftIndex=Math.max(0,bestIndex-3),rightIndex=Math.min(sw.points.length-1,bestIndex+3);
+        const widthLeft=Number(sw.points[leftIndex]?.v),widthRight=Number(sw.points[rightIndex]?.v);
         const peak={
           id:`${sw.id}::manual::${Date.now()}::${Math.random().toString(36).slice(2,7)}`,
           sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction,
           index:bestIndex,v:best.v,i:best.i,accepted:true,manual:true,locked:false,
           algorithms:['manual'],primaryAlgorithm:'manual',score:1,confidence:1,
-          widthLeft:best.v,widthRight:best.v,fwhm:0,peakOrder:order,peakLabel:c.label,customColor:null
+          widthLeft,widthRight,fwhm:Math.abs(widthRight-widthLeft),peakOrder:order,peakLabel:c.label,customColor:null
         };
         workspace.peaks.push(peak);normalizeCategories();selectedPeakId=peak.id;
         render();scheduleSnapshot();setStatus(`已在 Vd=${Number(best.v).toPrecision(6)} V 添加手动峰。`);
@@ -431,91 +465,121 @@
         const legend=$('#reswinPeakLegend');if(legend){const cats=(workspace.peakCategories||[]).slice().sort((a,b)=>Number(a.order)-Number(b.order));legend.innerHTML=cats.length?cats.map(cat=>`<span><i style="background:${esc(colorForPeakOrder(cat.order,1))}"></i>${esc(cat.label||`峰${cat.order}`)}</span>`).join(''):'<span>尚无峰类别</span>';}
       }
 
-      function plotTraces(){
-        const selected=selectedSweep(),traces=[];
-        for(const sw of visibleSweeps()){
-          const isSelected=sw.id===selected?.id;
-          const transformed=S.transformSweep?.(sw,currentTransform(sw))||{points:sw.points.map(p=>({v:p.v,y:p.i})),label:'I',unit:'A'};
-          traces.push({x:transformed.points.map(p=>p.v),y:transformed.points.map(p=>p.y),mode:'lines',name:`${sw.datasetName} · ${directionName(sw.direction)}`,line:{width:isSelected?2.6:1.1},opacity:isSelected?1:.28,customdata:transformed.points.map(()=>[null,sw.id]),hovertemplate:'Vd=%{x:.6g}<br>值=%{y:.6g}<extra></extra>'});
-        }
-        const visIds=new Set(visibleSweepIds());const display=workspace.peakDisplay||{};
-        const peaks=(workspace.peaks||[]).filter(p=>visIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true));
-        if(display.showPoints!==false&&peaks.length)traces.push({x:peaks.map(p=>p.v),y:peaks.map(p=>p.i),mode:'markers',name:'峰位',marker:{size:peaks.map(p=>p.id===selectedPeakId?13:(selectedPeakIds.has(String(p.id))?11:9)),symbol:peaks.map(p=>p.manual?'diamond':'circle'),opacity:peaks.map(p=>p.accepted===false?.32:1),line:{width:peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:peaks.map(p=>[p.id,p.sweepId,peakLabel(p),p.vg,directionName(p.direction),p.accepted!==false?'采纳':'未采纳']),hovertemplate:'%{customdata[2]}<br>Vg=%{customdata[3]}<br>%{customdata[4]} · %{customdata[5]}<br>Vd=%{x:.6g}<extra></extra>'});
-        return traces;
-      }
-
-      function bindMainPlot(){
-        const plot=$('#reswinMainPlot');if(!plot||typeof plot.on!=='function')return;
-        let hoveredPeakId='',dragPeakId='',dragPointerId=null,dragTraceIndex=-1,dragPointIndex=-1,dragMoved=false;
-        const nearestPoint=(peak,targetV)=>{
-          const sw=sweepById(peak?.sweepId),points=sw?.points||[];if(!points.length||!finite(targetV))return null;
-          let index=0,best=Math.abs(Number(points[0]?.v)-Number(targetV));
-          for(let i=1;i<points.length;i++){const dist=Math.abs(Number(points[i]?.v)-Number(targetV));if(dist<best){best=dist;index=i;}}
-          return {sw,point:points[index],index};
-        };
-        const plotXFromPointer=event=>{
-          const rect=plot.getBoundingClientRect?.(),layout=plot._fullLayout,size=layout?._size,axis=layout?.xaxis;
-          if(!rect||!size||!axis||typeof axis.p2d!=='function')return null;
-          const px=Number(event.clientX)-Number(rect.left)-Number(size.l||0);
-          const value=axis.p2d(px);return finite(value)?Number(value):null;
-        };
-        const moveDraggedPeak=event=>{
-          const peak=peakById(dragPeakId),targetV=plotXFromPointer(event),nearest=nearestPoint(peak,targetV);if(!peak||peak.locked||!nearest)return false;
-          const oldV=Number(peak.v),point=nearest.point;peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):nearest.index;peak.manual=true;
-          const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;}
-          physicsCache={key:'',value:null};dragMoved=true;
-          if(dragTraceIndex>=0&&dragPointIndex>=0&&window.Plotly?.restyle){
-            const trace=plot.data?.[dragTraceIndex],xs=Array.isArray(trace?.x)?trace.x.slice():[],ys=Array.isArray(trace?.y)?trace.y.slice():[];
-            if(dragPointIndex<xs.length){xs[dragPointIndex]=peak.v;ys[dragPointIndex]=peak.i;window.Plotly.restyle(plot,{x:[xs],y:[ys]},[dragTraceIndex]).catch?.(()=>{});}
+      function nearestSweepAtPixel(px,py,x,y,rows,maxDistancePx=18){
+        if(!rows?.length)return null;
+        const targetV=x.invert(px);let best=null;
+        for(const sw of rows){
+          const points=sw.points||[];if(!points.length)continue;
+          const idx=S.nearestIndex?.(points.map(p=>p.v),targetV)??0;
+          for(let j=Math.max(0,idx-2);j<=Math.min(points.length-1,idx+2);j++){
+            const p=points[j],dx=x(Number(p.v))-px,dy=y(Number(p.i))-py,dist=Math.hypot(dx,dy);
+            if(!best||dist<best.distance)best={sw,point:p,index:j,distance:dist};
           }
-          return true;
-        };
-        const endPeakDrag=event=>{
-          if(!dragPeakId||event?.pointerId!==dragPointerId)return;const peak=peakById(dragPeakId);
-          try{plot.releasePointerCapture?.(dragPointerId);}catch{}
-          dragPeakId='';dragPointerId=null;dragTraceIndex=-1;dragPointIndex=-1;
-          if(dragMoved&&peak){publishPeakSelection(peak,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(peak.direction)} · ${peakLabel(peak)} 至 Vd=${Number(peak.v).toPrecision(6)} V。`);}
-          dragMoved=false;
-        };
-        try{plot.removeAllListeners?.('plotly_click');plot.removeAllListeners?.('plotly_hover');plot.removeAllListeners?.('plotly_unhover');}catch{}
-        plot.on('plotly_click',event=>{
-          const point=event?.points?.[0];const peakId=point?.customdata?.[0],sweepId=point?.customdata?.[1];
-          if(peakId){const p=peakById(peakId);if(p)publishPeakSelection(p,'resonance-main',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});return;}
-          // v3.25 direct interaction parity: Shift+left-click on a curve adds a manual peak.
-          // Select the clicked sweep first, otherwise adding a sweep id to customdata makes
-          // the normal sweep-selection branch swallow the Shift gesture.
-          if(event?.event?.shiftKey&&finite(point?.x)){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main-shift-add');addManualPeak(point.x);return;}
-          if(sweepId){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main');}
-        });
-        plot.on?.('plotly_hover',event=>{const point=event?.points?.[0],id=point?.customdata?.[0];hoveredPeakId=id&&peakById(id)?String(id):'';});
-        plot.on?.('plotly_unhover',()=>{if(!dragPeakId)hoveredPeakId='';});
-        try{plot.removeAllListeners?.('plotly_selected');}catch{}
-        plot.on?.('plotly_selected',event=>{const xs=(event?.points||[]).map(p=>Number(p.x)).filter(Number.isFinite);if(xs.length){publishRangeSelection({axis:'Vd',min:Math.min(...xs),max:Math.max(...xs),sweepId:selectedSweep()?.id||''},'resonance-main');openRangeMenu(event?.event);}});
-
-        // v3.25 SUPER interaction parity: Ctrl+right-click deletes the peak directly.
-        // Shift+right-click is also accepted for compatibility with later user workflows.
-        plot.oncontextmenu=event=>{
-          if(!(event.ctrlKey||event.shiftKey)||!hoveredPeakId)return;const peak=peakById(hoveredPeakId);if(!peak)return;
-          event.preventDefault();event.stopPropagation();const label=`${directionName(peak.direction)} · ${peakLabel(peak)}`;deletePeak(peak.id);setStatus(`已删除 ${label}。`);
-        };
-        plot.onpointerdown=event=>{
-          if(event.button!==0||event.ctrlKey||!hoveredPeakId)return;const peak=peakById(hoveredPeakId);if(!peak||peak.locked)return;
-          const traceIndex=(plot.data||[]).findIndex(trace=>(trace.customdata||[]).some(row=>String(row?.[0]||'')===String(peak.id)));
-          const pointIndex=traceIndex>=0?(plot.data[traceIndex].customdata||[]).findIndex(row=>String(row?.[0]||'')===String(peak.id)):-1;
-          if(traceIndex<0||pointIndex<0)return;dragPeakId=String(peak.id);dragPointerId=event.pointerId;dragTraceIndex=traceIndex;dragPointIndex=pointIndex;dragMoved=false;
-          selectedPeakId=String(peak.id);selectedSweepId=String(peak.sweepId||selectedSweepId);selectedPeakIds=new Set([String(peak.id)]);try{plot.setPointerCapture?.(event.pointerId);}catch{}event.preventDefault();event.stopPropagation();
-        };
-        plot.onpointermove=event=>{if(dragPeakId&&event.pointerId===dragPointerId){moveDraggedPeak(event);event.preventDefault();event.stopPropagation();}};
-        plot.onpointerup=endPeakDrag;plot.onpointercancel=endPeakDrag;
+        }
+        return best&&best.distance<=maxDistancePx?best:null;
       }
+      function scaleDomainAround(domain,center,factor,minSpan=1e-12){
+        const lo=center+(domain[0]-center)*factor,hi=center+(domain[1]-center)*factor;
+        return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:domain.slice();
+      }
+      function peakColor(p){return p?.customColor||colorForPeakOrder(p?.peakOrder||1,p?.direction||1);}
+      function d3SymbolType(algorithm){
+        const d3=window.d3;return ({raw:d3?.symbolCircle,snr:d3?.symbolDiamond,diff:d3?.symbolTriangle,detrend:d3?.symbolSquare,curvature:d3?.symbolCross,matched:d3?.symbolCircle,manual:d3?.symbolStar})[algorithm]||d3?.symbolCircle;
+      }
+      function markerPath(p,selected=false){const d3=window.d3;return d3?.symbol?.().type(d3SymbolType(p?.primaryAlgorithm)).size(selected?180:105)()||'';}
+      function movePeakToIndex(p,sw,index){
+        const points=sw?.points||[];if(!p||!points.length)return;
+        const idx=Math.max(0,Math.min(points.length-1,Number(index)||0)),pt=points[idx],oldV=Number(p.v);
+        p.index=Number.isFinite(Number(pt.index))?Number(pt.index):idx;p.v=Number(pt.v);p.i=Number(pt.i);p.manual=true;
+        const delta=Number(p.v)-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(p.widthLeft)))p.widthLeft=Number(p.widthLeft)+delta;if(Number.isFinite(Number(p.widthRight)))p.widthRight=Number(p.widthRight)+delta;}
+        physicsCache={key:'',value:null};
+      }
+      function clearMainRangeMenu({keepSelection=false}={}){
+        $('#resparRangeMenu')?.classList.add('hidden');
+        if(!keepSelection)selectedRange=null;
+      }
+      function showMainRangeMenu(range,event){
+        selectedRange={...range};publishRangeSelection({axis:'Vd',min:range.vMin,max:range.vMax,sweepId:range.sweepId||''},'resonance-main-range');
+        const menu=$('#resparRangeMenu'),wrap=$('#resparMainPlotWrap');if(!menu||!wrap)return;
+        const count=peaksInRange(selectedRange).length,targets=range.sweepId?1:visibleSweeps().length;
+        const summary=$('#resparRangeSummary');if(summary)summary.textContent=`Vd ${fmt(range.vMin,4)} ~ ${fmt(range.vMax,4)} V · 框内 ${count} 个峰 · 局部寻峰作用于${range.sweepId?'当前曲线':`${targets} 条可见曲线`}`;
+        const orderSelect=$('#resparRangeOrder'),labelInput=$('#resparRangeLabel');normalizeCategories();
+        if(orderSelect){const rows=workspace.peakCategories||[];orderSelect.innerHTML=rows.map(c=>`<option value="${Number(c.order)}">${esc(c.label||`峰${c.order}`)}</option>`).join('');const selected=peaksInRange(range)[0];if(selected&&rows.some(c=>Number(c.order)===Number(selected.peakOrder)))orderSelect.value=String(selected.peakOrder);}
+        if(labelInput){const selected=peaksInRange(range)[0];labelInput.value=selected?peakLabel(selected):'';}
+        menu.classList.remove('hidden');
+        requestAnimationFrame(()=>{const wr=wrap.getBoundingClientRect(),mr=menu.getBoundingClientRect();const cx=Number(event?.clientX)||wr.left+wr.width/2,cy=Number(event?.clientY)||wr.top+90;menu.style.left=`${Math.max(8,Math.min(wr.width-mr.width-8,cx-wr.left+8))}px`;menu.style.top=`${Math.max(42,Math.min(wr.height-mr.height-8,cy-wr.top+8))}px`;});
+      }
+      function renderMainLegend(curveColor){
+        const host=$('#resparMainLegend');if(!host)return;host.innerHTML='';
+        const current=selectedSweep(),selectedPath=current?.datasetPath||'';
+        for(const ds of datasets){
+          const visible=visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
+          const candidates=sweeps.filter(sw=>sw.datasetPath===ds.path&&isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
+          const chip=document.createElement('button');chip.type='button';chip.className=`respar-legend-chip ${selectedPath===ds.path?'selected':''} ${selectedPath&&selectedPath!==ds.path?'dimmed':''}`;
+          const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
+          chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${finite(ds.vg)?fmt(ds.vg,3):'?'} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
+          chip.onclick=e=>{e.stopPropagation();if(preferred)publishSweepSelection(preferred,'resonance-main-legend');};host.appendChild(chip);
+        }
+      }
+      function drawWidthOverlay(svg,p,sw,x,y,plot){
+        const d3=window.d3;if(!d3||!p||!sw)return;const m=peakMetrics(p)||{};
+        let left=finite(p.widthLeft)?Number(p.widthLeft):Number(p.v)-Number(m.fwhm||0)/2,right=finite(p.widthRight)?Number(p.widthRight):Number(p.v)+Number(m.fwhm||0)/2;
+        if(!Number.isFinite(left)||!Number.isFinite(right)||left===right)return;if(left>right)[left,right]=[right,left];
+        const c=peakColor(p),band=svg.append('g').attr('clip-path',`url(#${plot.clipId})`);
+        band.append('rect').attr('class','respar-width-band').attr('x',x(left)).attr('width',Math.max(2,x(right)-x(left))).attr('y',plot.margin.top).attr('height',plot.innerH).attr('fill',c);
+        const amplitude=Number(m.amplitude),half=Number.isFinite(amplitude)?Math.sign(Number(p.i)||1)*(Math.abs(Number(p.i))-amplitude/2):Number(p.i);
+        band.append('line').attr('class','respar-width-line').attr('x1',x(left)).attr('x2',x(right)).attr('y1',y(half)).attr('y2',y(half)).attr('stroke',c);
+        for(const side of ['left','right']){
+          const xv=side==='left'?left:right,h=band.append('circle').attr('class','respar-width-handle').attr('cx',x(xv)).attr('cy',y(half)).attr('r',6).attr('fill','#fff').attr('stroke',c).attr('stroke-width',2);
+          h.on('click',event=>event.stopPropagation()).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{
+            if(p.locked)return;const points=sw.points||[],target=x.invert(event.x),idx=S.nearestIndex?.(points.map(q=>q.v),target)??0,snap=Number(points[idx]?.v);if(!Number.isFinite(snap))return;
+            if(side==='left')p.widthLeft=Math.min(snap,Number(p.v));else p.widthRight=Math.max(snap,Number(p.v));p.manual=true;physicsCache={key:'',value:null};renderMainPlot();if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();
+          }).on('end',()=>scheduleSnapshot()));
+        }
+      }
+      function resetMainView(){workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();renderMainPlot();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');return true;}
 
       function renderMainPlot(){
-        const plot=$('#reswinMainPlot');if(!plot||!window.Plotly)return;
-        const sw=selectedSweep();const transform=currentTransform(sw);const label=sw?(S.transformSweep?.(sw,transform)?.label||'I–V'):'I–V';
-        const shapes=selectedPeakWidthShapes();
-        let annotations=[];
-        if(workspace.physicsShowLabels!==false){try{const ph=physicalAnalysis();const visible=new Set(visibleSweepIds());annotations=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visible.has(p.sweepId)).map(p=>{const code=ph?.peakMap?.get?.(p.id)?.code||'Q';const sweep=sweepById(p.sweepId);const transformed=sweep?(S.transformSweep?.(sweep,currentTransform(sweep))||{points:sweep.points.map(q=>({v:q.v,y:q.i}))}):null;const idx=transformed?.points?.length?S.nearestIndex(transformed.points.map(q=>q.v),p.v):-1;const y=idx>=0?transformed.points[idx]?.y:p.i;return {x:p.v,y,text:code==='Q'?'?':code,showarrow:false,xshift:9,yshift:8,font:{size:10,color:code==='R'?'#167d4a':code==='H'?'#7c3aed':code==='D'?'#d97706':code==='X'?'#b91c1c':'#64748b'}};});}catch{annotations=[];}}
-        Plotly.react(plot,plotTraces(),{margin:{l:72,r:22,t:46,b:58},title:{text:sw?`${sw.datasetName} · Vg=${Number(sw.vg)} · ${directionName(sw.direction)}`:'共振 I–V',font:{size:14}},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5',automargin:true},yaxis:{title:label,gridcolor:'#edf0f5',automargin:true},hovermode:'closest',dragmode:'zoom',showlegend:true,legend:{orientation:'h',y:-.19},shapes,annotations,autosize:true},{responsive:true,scrollZoom:true,displaylogo:false,modeBarButtonsToAdd:['select2d','lasso2d'],toImageButtonOptions:{format:'png',filename:'resonance_iv',scale:2}}).then(bindMainPlot).catch(()=>{});
+        const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap'),d3=window.d3;if(!node||!wrap||!d3)return;
+        const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);if(width<260||height<180){requestAnimationFrame(()=>{if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();});return;}
+        const svg=d3.select(node);svg.on('.resmain',null).attr('viewBox',null).attr('preserveAspectRatio',null).attr('width',width).attr('height',height).style('width',`${width}px`).style('height',`${height}px`);svg.selectAll('*').remove();
+        const rows=visibleSweeps();if(!rows.length){$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');return;}
+        const margin={top:62,right:30,bottom:50,left:78},innerW=Math.max(60,width-margin.left-margin.right),innerH=Math.max(60,height-margin.top-margin.bottom);
+        const xs=rows.flatMap(sw=>(sw.points||[]).map(p=>Number(p.v)).filter(Number.isFinite)),ys=rows.flatMap(sw=>(sw.points||[]).map(p=>Number(p.i)).filter(Number.isFinite));if(!xs.length||!ys.length)return;
+        const fullX=d3.extent(xs);let fullY=d3.extent(ys),ypad=((fullY[1]-fullY[0])||1)*.06;fullY=[fullY[0]-ypad,fullY[1]+ypad];
+        workspace.mainView=workspace.mainView&&typeof workspace.mainView==='object'?workspace.mainView:{xDomain:null,yDomain:null};
+        let xDomain=Array.isArray(workspace.mainView.xDomain)?workspace.mainView.xDomain.slice():d3.scaleLinear().domain(fullX).nice().domain();let yDomain=Array.isArray(workspace.mainView.yDomain)?workspace.mainView.yDomain.slice():d3.scaleLinear().domain(fullY).nice().domain();
+        if(!xDomain.every(Number.isFinite)||xDomain[0]===xDomain[1])xDomain=fullX.slice();if(!yDomain.every(Number.isFinite)||yDomain[0]===yDomain[1])yDomain=fullY.slice();
+        const x=d3.scaleLinear().domain(xDomain).range([margin.left,margin.left+innerW]),y=d3.scaleLinear().domain(yDomain).range([margin.top+innerH,margin.top]);
+        const clipId=`respar-main-clip-${Math.random().toString(36).slice(2,8)}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH);
+        const plotBg=svg.append('rect').attr('class','respar-plot-bg').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH).attr('fill','#fff').attr('stroke','#edf0f5').style('cursor','crosshair');
+        svg.append('g').attr('class','axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x));
+        svg.append('g').attr('class','axis').attr('transform',`translate(${margin.left},0)`).call(d3.axisLeft(y).tickFormat(v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;}));
+        svg.append('text').attr('class','respar-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text('Vd (V)');svg.append('text').attr('class','respar-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text('I (A)');
+        let vgExtent=d3.extent(datasets.map(d=>finite(d.vg)?Number(d.vg):0));if(vgExtent[0]===vgExtent[1])vgExtent=[vgExtent[0]-1,vgExtent[1]+1];const curveColor=d3.scaleSequential(d3.interpolateTurbo).domain(vgExtent);renderMainLegend(curveColor);
+        const line=d3.line().defined(p=>finite(p.v)&&finite(p.i)).x(p=>x(Number(p.v))).y(p=>y(Number(p.i))),hasSelection=!!selectedSweepId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
+        for(const sw of rows){
+          const active=sw.id===selectedSweepId,c=curveColor(finite(sw.vg)?Number(sw.vg):0);dataLayer.append('path').datum(sw.points||[]).attr('class',`respar-curve ${hasSelection&&!active?'dimmed':''}`).attr('d',line).attr('stroke',c).attr('stroke-width',active?3:1.25).attr('stroke-dasharray',sw.direction<0?'7 4':null).attr('opacity',hasSelection?(active?1:.10):.74).style('pointer-events','none');
+          dataLayer.append('path').datum(sw.points||[]).attr('class','respar-curve-hit').attr('d',line).on('click',(event)=>{event.stopPropagation();clearMainRangeMenu();selectedSweepId=sw.id;if((event.ctrlKey||event.shiftKey)){publishSweepSelection(sw,'resonance-main-manual');const [px]=d3.pointer(event,node);addManualPeak(x.invert(px));workspaceNavigator?.('inspect');}else publishSweepSelection(sw,'resonance-main');}).on('dblclick',event=>{event.preventDefault();event.stopPropagation();publishSweepSelection(sw,'resonance-main');workspaceNavigator?.('inspect');});
+        }
+        const display=workspace.peakDisplay||{};if(display.showPoints!==false){
+          const visIds=new Set(visibleSweepIds()),peakData=(workspace.peaks||[]).filter(p=>visIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true));
+          const marks=dataLayer.append('g').selectAll('path.respar-peak-point').data(peakData,p=>p.id).join('path').attr('class',p=>`respar-peak-point ${p.locked?'locked':''} ${hasSelection&&p.sweepId!==selectedSweepId?'dimmed':''}`).attr('d',p=>markerPath(p,p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))).attr('transform',p=>`translate(${x(Number(p.v))},${y(Number(p.i))})`).attr('fill',peakColor).attr('stroke',p=>selectedPeakIds.has(String(p.id))?'#111827':(p.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',p=>(p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))?3.2:1.8).attr('opacity',p=>{let o=p.accepted!==false?.98:.34;if(hasSelection&&p.sweepId!==selectedSweepId)o*=.11;return o;}).style('pointer-events','none');
+          const hits=dataLayer.append('g').selectAll('circle.respar-peak-hit').data(peakData,p=>p.id).join('circle').attr('class',p=>`respar-peak-hit ${p.locked?'locked':''}`).attr('cx',p=>x(Number(p.v))).attr('cy',p=>y(Number(p.i))).attr('r',p=>(p.id===selectedPeakId||selectedPeakIds.has(String(p.id)))?12:10)
+            .on('click',(event,p)=>{event.stopPropagation();clearMainRangeMenu();publishPeakSelection(p,'resonance-main',{openInspector:true,additive:!!(event.ctrlKey||event.metaKey)});})
+            .on('dblclick',(event,p)=>{event.preventDefault();event.stopPropagation();publishPeakSelection(p,'resonance-main',{openInspector:true});})
+            .on('contextmenu',(event,p)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(p.locked){setStatus('该峰位已锁定。');return;}const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);})
+            .on('mouseenter',(event,p)=>{const tip=$('#resparHoverTip');if(!tip)return;tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');const wr=wrap.getBoundingClientRect();tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`;}).on('mousemove',event=>{const tip=$('#resparHoverTip'),wr=wrap.getBoundingClientRect();if(tip){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`;}}).on('mouseleave',()=>$('#resparHoverTip')?.classList.add('hidden'));
+          hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,p)=>{if(p.locked)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);}).on('drag',(event,p)=>{if(p.locked)return;const sw=sweepById(p.sweepId),pts=sw?.points||[];if(!pts.length)return;const idx=S.nearestIndex?.(pts.map(q=>q.v),x.invert(event.x))??0;movePeakToIndex(p,sw,idx);hits.filter(q=>q.id===p.id).attr('cx',x(Number(p.v))).attr('cy',y(Number(p.i)));marks.filter(q=>q.id===p.id).attr('transform',`translate(${x(Number(p.v))},${y(Number(p.i))})`);if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();}).on('end',(event,p)=>{if(!p.locked){publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);}}));
+          if(workspace.physicsShowLabels!==false){try{const ph=physicalAnalysis(),colors={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'};dataLayer.append('g').selectAll('text.respar-physics-label').data(peakData.filter(p=>p.accepted!==false),p=>p.id).join('text').attr('class','respar-physics-label').attr('x',p=>x(Number(p.v))+8).attr('y',p=>y(Number(p.i))-8).attr('opacity',p=>hasSelection?(p.sweepId===selectedSweepId?1:.08):.92).attr('fill',p=>colors[ph?.peakMap?.get?.(p.id)?.code||'Q']).text(p=>{const code=ph?.peakMap?.get?.(p.id)?.code||'Q';return code==='Q'?'?':code;});}catch{}
+          }
+        }
+        const sp=selectedPeak();if(sp&&display.showWidth!==false&&sp.accepted!==false){const sw=sweepById(sp.sweepId);if(sw&&isVisible(sw))drawWidthOverlay(svg,sp,sw,x,y,{margin,innerW,innerH,clipId});}
+        let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;clearMainRangeMenu();const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false,clientX:event.clientX,clientY:event.clientY};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.clientX=event.clientX;rangeDrag.clientY=event.clientY;rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.respar-direct-box').remove();svg.append('rect').attr('class',`respar-direct-box ${rangeDrag.zoom?'zoom':'range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
+        const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.respar-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=nearestSweepAtPixel(drag.sx,drag.sy,x,y,rows,18);if(near){selectedSweepId=near.sw.id;if(drag.zoom){publishSweepSelection(near.sw,'resonance-main-manual');addManualPeak(Number(near.point.v));workspaceNavigator?.('inspect');}else publishSweepSelection(near.sw,'resonance-main');}else if(!drag.zoom){selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();}return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){workspace.mainView.xDomain=[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b);workspace.mainView.yDomain=[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b);renderMainPlot();scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');return;}const vMin=Math.min(x.invert(sx0),x.invert(sx1)),vMax=Math.max(x.invert(sx0),x.invert(sx1)),iMin=Math.min(y.invert(sy0),y.invert(sy1)),iMax=Math.max(y.invert(sy0),y.invert(sy1));showMainRangeMenu({vMin,vMax,iMin,iMax,min:vMin,max:vMax,sweepId:selectedSweepId||''},event);renderMainPlot();};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.respar-direct-box').remove();});
+        plotBg.on('dblclick',event=>{event.preventDefault();resetMainView();});
+        svg.on('wheel.resmain',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;event.preventDefault();event.stopPropagation();clearMainRangeMenu({keepSelection:true});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6);workspace.mainView.xDomain=scaleDomainAround(xDomain,cx,factor,minX);workspace.mainView.yDomain=scaleDomainAround(yDomain,cy,factor,minY);renderMainPlot();});
+        if(selectedRange&&finite(selectedRange.min)&&finite(selectedRange.max)){const rx0=x(Number(selectedRange.min)),rx1=x(Number(selectedRange.max));if(Number.isFinite(rx0)&&Number.isFinite(rx1))svg.append('rect').attr('class','respar-persisted-range').attr('x',Math.min(rx0,rx1)).attr('y',margin.top).attr('width',Math.abs(rx1-rx0)).attr('height',innerH);}
       }
 
       function groupSeries(){
@@ -525,7 +589,7 @@
 
       function renderTrend(){
         const plot=$('#reswinTrendPlot');if(!plot||!window.Plotly)return;
-        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,marker:{size:sr.peaks.map(p=>p.id===selectedPeakId?11:(selectedPeakIds.has(String(p.id))?9:7)),line:{width:sr.peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
+        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:sr.peaks.map(p=>p.id===selectedPeakId?11:(selectedPeakIds.has(String(p.id))?9:7)),line:{width:sr.peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
         Plotly.react(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false}).then(()=>{try{plot.removeAllListeners?.('plotly_click');}catch{}plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];const p=peakById(id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});});}).catch(()=>{});
       }
 
@@ -596,10 +660,10 @@
         const hostEl=$('#reswinGroupGrid');if(!hostEl||!window.Plotly)return;
         const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','Prominence','A']];
         const labels=[...new Set((workspace.peaks||[]).filter(p=>p.accepted!==false).map(peakLabel))];
-        const terSeries=labels.map(label=>({label,points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,visibleSweepIds())||[]})).filter(x=>x.points.length);
+        const terSeries=labels.map(label=>{const representative=(workspace.peaks||[]).find(p=>p.accepted!==false&&peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {label,order,color:colorForPeakOrder(order,1),points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,visibleSweepIds())||[]};}).filter(x=>x.points.length);
         hostEl.innerHTML='';
         const count=defs.length+(terSeries.length?1:0);
-        let cols=workspace.groupColumns==='auto'?Math.max(1,Math.min(4,Math.floor((hostEl.clientWidth||1000)/330))):Number(workspace.groupColumns)||2;
+        let cols=workspace.groupColumns==='auto'?Math.max(1,Math.min(6,Math.floor((hostEl.clientWidth||1000)/330))):Number(workspace.groupColumns)||2;
         cols=Math.min(Math.max(1,cols),Math.max(1,count));
         hostEl.style.setProperty('--reswin-group-cols',String(cols));
         const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);
@@ -611,7 +675,7 @@
           card.innerHTML=`<div class="reswin-group-head"><span>${esc(title)}</span><span><button type="button" data-csv>CSV</button><button type="button" data-copy>复制</button></span></div><div class="reswin-group-plot"></div>`;
           hostEl.appendChild(card);
           const plot=card.querySelector('.reswin-group-plot');
-          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,marker:{size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1))}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
+          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1))}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
           Plotly.newPlot(plot,traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).then(()=>{plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];if(id){const p=peakById(id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});}});}).catch(()=>{});
           const csv=()=>groupCsv(title,series);
           card.querySelector('[data-csv]').onclick=()=>window.electronAPI?.saveText?.({defaultName:`resonance_${metric}.csv`,content:csv(),filters:[{name:'CSV',extensions:['csv']}]});
@@ -619,7 +683,7 @@
         }
         if(terSeries.length){
           const card=document.createElement('div');card.className='reswin-group-card';card.innerHTML='<div class="reswin-group-head"><span>共振 TER</span></div><div class="reswin-group-plot"></div>';hostEl.appendChild(card);
-          const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
+          const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
           Plotly.newPlot(card.querySelector('.reswin-group-plot'),traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).catch(()=>{});
         }
       }
@@ -754,11 +818,18 @@
       function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;if(workspaceNavigator)workspaceNavigator(currentView);else renderView();scheduleSnapshot();}
       function render(){normalizeCategories();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);}else renderView();}
       function resize(){
-        if(resizeRaf)return;resizeRaf=requestAnimationFrame(()=>{resizeRaf=0;$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{Plotly.Plots.resize(el);}catch{}});});
+        if(resizeRaf)return;resizeRaf=requestAnimationFrame(()=>{resizeRaf=0;if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{Plotly.Plots.resize(el);}catch{}});});
       }
 
       function peaksCsv(){const rows=['dataset,vg,direction,peak_order,peak_label,vpk,i,accepted,manual,locked'];for(const p of workspace.peaks||[])rows.push([p.datasetPath,p.vg,directionName(p.direction),p.peakOrder,peakLabel(p),p.v,p.i,p.accepted!==false,p.manual===true,p.locked===true].map(csvCell).join(','));return rows.join('\n');}
       function mainCsv(){const sw=selectedSweep();if(!sw)return '';return ['Vd,I',...(sw.points||[]).map(p=>`${p.v},${p.i}`)].join('\n');}
+
+      function exportMainSvg(){
+        const svg=$('#reswinMainPlot');if(!svg)return false;const serializer=new XMLSerializer(),source=serializer.serializeToString(svg),content=`<?xml version="1.0" encoding="UTF-8"?>\n${source}`;window.electronAPI?.saveText?.({defaultName:'resonance_iv.svg',content,filters:[{name:'SVG',extensions:['svg']}]});return true;
+      }
+      function exportMainPng(){
+        const svg=$('#reswinMainPlot');if(!svg)return false;const rect=svg.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height)),xml=new XMLSerializer().serializeToString(svg),blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=w*2;canvas.height=h*2;const c=canvas.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,w,h);c.drawImage(img,0,0,w,h);URL.revokeObjectURL(url);const dataUrl=canvas.toDataURL('image/png');window.electronAPI?.saveBase64?.({defaultName:'resonance_iv.png',base64:dataUrl.split(',')[1]||'',mimeType:'image/png',filters:[{name:'PNG',extensions:['png']}]});};img.src=url;return true;
+      }
 
       function bindUi(page){
         if(uiBound||!page)return;uiBound=true;
@@ -777,8 +848,11 @@
         page.querySelector('#reswinShowReverse')?.addEventListener('click',()=>setAllVisibility('reverse'));
         page.querySelector('#reswinHideAll').onclick=()=>setAllVisibility('none');
         page.querySelector('#reswinExportMainCsv').onclick=()=>window.electronAPI?.saveText?.({defaultName:'resonance_iv.csv',content:mainCsv(),filters:[{name:'CSV',extensions:['csv']}]});
-        page.querySelector('#reswinExportMainSvg').onclick=()=>savePlotlyImage('reswinMainPlot','resonance_iv','svg');
-        page.querySelector('#reswinExportMainPng').onclick=()=>savePlotlyImage('reswinMainPlot','resonance_iv','png');
+        page.querySelector('#reswinExportMainSvg').onclick=()=>exportMainSvg();
+        page.querySelector('#reswinExportMainPng').onclick=()=>exportMainPng();
+        page.querySelector('#reswinCopyMain')?.addEventListener('click',()=>copyTextToClipboard(mainCsv(),'主图 CSV'));
+        page.querySelector('#reswinUndo')?.addEventListener('click',()=>undoLastAction());
+        page.querySelector('#reswinDeselect')?.addEventListener('click',()=>clearSelection());
         page.querySelector('#reswinExportPeaks').onclick=()=>window.electronAPI?.saveText?.({defaultName:'resonance_peaks.csv',content:peaksCsv(),filters:[{name:'CSV',extensions:['csv']}]});
         page.querySelector('#reswinCopyPeaks').onclick=()=>copyTextToClipboard(peaksCsv(),'峰参数 CSV');
         page.querySelector('#reswinApplyPeakLabel').onclick=()=>renameSelectedCategory(page.querySelector('#reswinPeakLabelInput').value);
@@ -821,14 +895,15 @@
         workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(String(p.id)));selectedPeakIds.clear();selectedPeakId='';physicsCache={key:'',value:null};
         interactionSelection?.clear?.({source:'resonance-delete',keepRanges:true,keepContext:true});render();scheduleSnapshot();setStatus(`已删除 ${ids.size} 个峰。`);return true;
       }
-      function clearSelectedRange(){selectedRange=null;interactionSelection?.clearRange?.({source:'resonance-range-clear'});renderMainPlot();return true;}
+      function clearSelectedRange(){clearMainRangeMenu();interactionSelection?.clearRange?.({source:'resonance-range-clear'});renderMainPlot();return true;}
+      function clearSelection(){selectedPeakId='';selectedPeakIds.clear();selectedSweepId='';clearMainRangeMenu();interactionSelection?.clear?.({source:'resonance-deselect'});renderLinkedSelection({includeGroup:true,controls:true});setStatus('已退出共振选中。');return true;}
       function togglePhysicsLabels(){workspace.physicsShowLabels=workspace.physicsShowLabels===false;renderControls();renderMainPlot();scheduleSnapshot();return workspace.physicsShowLabels;}
 
       const service={
         serialize:()=>clone(workspace),
         selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
         directionName,peakLabel,colorForPeakOrder,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
-        restore(data,{legacyProject}={}){if(legacyProject&&typeof legacyProject==='object')project=clone(legacyProject);workspace=normalizeWorkspace(data,legacyProject||project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();},
+        restore(data,{legacyProject}={}){if(legacyProject&&typeof legacyProject==='object')project=clone(legacyProject);workspace=normalizeWorkspace(data,legacyProject||project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,
@@ -842,18 +917,18 @@
         setActiveDetector(id){workspace.activeDetector=String(id||'');renderControls();scheduleSnapshot();},
         setDetectorSettings(id,value){const key=String(id||workspace.activeDetector||'');if(!key)return;workspace.detectorSettings={...(workspace.detectorSettings||{}),[key]:clone(value||{})};scheduleSnapshot();},
         setPeakDisplay(key,value){workspace.peakDisplay={...(workspace.peakDisplay||{}),[String(key)]:!!value};renderMainPlot();scheduleSnapshot();},
-        switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,togglePhysicsLabels,
+        switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,clearSelection,undoLastAction,togglePhysicsLabels,
         setTransform,setPreset,runDetection,addManualPeak,sortPeakOrderByVd,setAllVisibility,
         exportPeaks:()=>window.electronAPI?.saveText?.({defaultName:'resonance_peaks.csv',content:peaksCsv(),filters:[{name:'CSV',extensions:['csv']}]}),
         copyPeaks:()=>copyTextToClipboard(peaksCsv(),'峰参数 CSV'),
         exportMainCsv:()=>window.electronAPI?.saveText?.({defaultName:'resonance_iv.csv',content:mainCsv(),filters:[{name:'CSV',extensions:['csv']}]}),
-        exportMainSvg:()=>savePlotlyImage('reswinMainPlot','resonance_iv','svg'),
-        exportMainPng:()=>savePlotlyImage('reswinMainPlot','resonance_iv','png'),
+        exportMainSvg,exportMainPng,
+        resetMainView,detectSelectedRange:()=>detectRange(selectedRange),deleteSelectedRangePeaks:()=>deleteRangePeaks(),setSelectedRangeLocked:value=>setRangeLocked(value),applySelectedRangeIdentity:(order,label)=>applyRangeIdentity(order,label),
         getState:()=>({workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult,gateResult})
       };
       sharedController=Shared.createController(service,{mode:'top-runtime',science:S,host});
 
-      function setProject(next){project=clone(next||{});workspace=normalizeWorkspace(pluginSliceFromProject(project),project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();}
+      function setProject(next){project=clone(next||{});workspace=normalizeWorkspace(pluginSliceFromProject(project),project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
       await setProject(project);
       return {
         serviceName:'resonance',service,render,resize,setProject,

@@ -1,11 +1,12 @@
 
-# Next Session Handoff — v3.33.0
+# Next Session Handoff — v3.34.0
 
 ## Repository identity
 
-- Local working branch: `refactor/v3.33-resonance-parity-dataflow`
+- Local working branch: `refactor/v3.34-plugin-ui-resonance-rebuild`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.33.0`
+- Current delivery: `v3.34.0`
+- v3.34.0: establishes the shared plugin typography/control-density contract and rebuilds Resonance UI/interaction against the supplied Graphene Resonance Studio D3 reference; SUPER/TOP share one parity root and Core retains PRIME placement ownership.
 - v3.33.0: restores Resonance v3.25 presentation parity on the unified runtime and fixes canonical imported-data flow for Data Center / TER / Resonance / TOP windows; completed import drafts are cleared after commit.
 - v3.32.0: replaces resize feedback with frame-coalesced Core scheduling; adds plugin-registered typed data/result definitions plus compact typed Interaction/Selection state; separates Sticky from Dock; restores TER R–V sticky inspection and mature Resonance main/trend/inspector/group linkage while reducing selection-time Plotly rerenders.
 - v3.31.2: fixed the Resonance shared feature-runtime bootstrap (`clone` and the other runtime helpers are now explicit module dependencies); repaired the Core ContextMenu capture bug that removed menus before item clicks, which restores TER layout and per-chart placement commands; explicit TER grid layouts are now authoritative and portable placements synchronously notify AnalysisWorkbench regions.
@@ -16,9 +17,9 @@
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
-Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
+Continue from the checked-out local `refactor/v3.34-plugin-ui-resonance-rebuild` branch in this archive unless the user explicitly requests a different branch. Do not access a remote repository without permission.
 
-## v3.32 architecture baseline
+## v3.34 architecture baseline
 
 - Plugin API: **1.7.0**. UI infrastructure: **5.0.0**. Capability Runtime remains **2.x**.
 - `src/core/ui-infrastructure.js` owns AnalysisWorkbench, PRIMARY/PRIME/SUB composition, portable/pinnable/sticky views, managed grids, split sizing, frame-coalesced resize scheduling, shortcuts, context menus, chart lifecycle, plugin-owned data-type registration and typed Interaction/Selection runtime.

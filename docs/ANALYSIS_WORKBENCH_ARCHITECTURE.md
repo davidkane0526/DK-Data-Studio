@@ -189,3 +189,8 @@ Automated checks reject regressions such as:
 - loss of PRIMARY / PRIME / SUB declarations;
 - TER chart layout bypassing Core GridController;
 - dedicated TOP windows lacking Capability Runtime bridging.
+## v3.34 parity surfaces and Core-owned PRIME placement
+
+A plugin may provide an existing DOM node as a PRIME (`existingNode`) when exact visual parity with a mature external/legacy workspace matters. This does **not** transfer window management back to the plugin. `AnalysisWorkbench` / `PortableView` still owns mounting, floating coordinates, right/bottom docking, drag handles, resize dispatch and placement persistence. Native-looking dock buttons in the parity surface should only call `setPrimePlacement`; they must not implement another draggable/docking system.
+
+Resonance uses this pattern for its Curve Inspector and Group Analysis panels. SUPER and independent TOP both compose the same parity root, while the host adapters only map lifecycle/container/resize concerns.

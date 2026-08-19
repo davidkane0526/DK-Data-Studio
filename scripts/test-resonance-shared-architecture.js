@@ -31,14 +31,23 @@ for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
 assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:document.querySelector('#app')")&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only select the common workbench host and resize lifecycle.');
 assert(runtime.includes("mode:'top'")&&runtime.includes("root:document.querySelector('#app')")&&runtime.includes('statusBar'),'TOP adapter may only map dedicated-window host surfaces.');
 for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSResonanceViewComponents'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
-assert(views.includes("defaultPlacement:'right'")&&views.includes("defaultPlacement:'bottom'"),'Shared View composition must own resonance PRIME placement intent.');
+assert(views.includes('resparInspectorPanel')&&views.includes('resparGroupPanel')&&views.includes('data-respar-dock="inspect"')&&views.includes('data-respar-dock="group"'),'Shared View composition must own the reference floating/docking inspector and group surfaces.');
+assert(views.includes('wb.compose')&&views.includes('existingNode:inspector')&&views.includes('existingNode:group')&&views.includes('wb.setPrimePlacement'),'GRS-parity PRIME surfaces must be hosted by the shared AnalysisWorkbench/PortableView placement system.');
+assert(!views.includes('const makeDraggable'),'Resonance parity must not reimplement draggable/docking infrastructure inside the plugin.');
+assert((manifest.window?.dependencies||[]).includes('d3'),'Dedicated TOP must explicitly declare D3 because the shared main interaction renderer depends on it.');
+assert(views.includes('reswinUndo')&&views.includes('reswinDeselect')&&views.includes('resparRangeApplyIdentity'),'GRS parity header/range actions must expose undo, cancel-selection, and range identity controls.');
+assert(feature.includes('undoLastAction')&&feature.includes('applyRangeIdentity')&&feature.includes('applySelectedRangeIdentity'),'Shared feature runtime must own undo and range peak identity operations.');
+assert(views.includes("'resonance-undo','Ctrl+Z',()=>R.undoLastAction?.()"),'Shared workbench keyboard routing must preserve Ctrl+Z undo.');
 assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspectors')&&!feature.includes('ctx.ui.groupViews'),'Feature runtime must not retain the legacy SUPER-only UI composition.');
 assert(feature.includes('publishPeakSelection')&&feature.includes('publishSweepSelection')&&feature.includes('publishRangeSelection'),'Resonance feature runtime must use one shared interaction path for main/inspector/group/trend.');
 assert(feature.includes('updateGroupHighlights')&&feature.includes("'resonance-trend'")&&feature.includes("'resonance-group'"),'Resonance trend/group views must link back to the shared peak selection.');
 assert(feature.includes('selectRegion')&&feature.includes('setRangeCategory'),'Resonance range selection must preserve multi-peak operations from the mature workbench.');
-assert(feature.includes('resonance-main-shift-add')&&feature.indexOf('resonance-main-shift-add')<feature.indexOf("if(sweepId){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main');}"),'Shift+left-click manual peak creation must run before normal sweep selection.');
-assert(feature.includes('plot.oncontextmenu')&&feature.includes('plot.onpointerdown')&&feature.includes('resonance-peak-drag'),'Shared Plotly runtime must retain v3.25 direct peak delete/drag interaction.');
-assert(!feature.includes('color:peaks.map(p=>colorForPeakOrder')&&!feature.includes('line:{color:sr.color'),'Resonance traces must keep the v3.25 Plotly default palette instead of architecture-level recoloring.');
+assert(feature.includes('d3.scaleSequential(d3.interpolateTurbo)')&&feature.includes("sw.direction<0?'7 4':null"),'Main curves must reproduce the reference GRS Vg→Turbo palette and reverse-sweep dash pattern.');
+assert(feature.includes('d3.drag().clickDistance(7)')&&feature.includes('resonance-peak-drag')&&feature.includes(".on('contextmenu'"),'Shared D3 runtime must retain direct peak drag and modifier+right-click delete interaction.');
+assert(feature.includes('event.ctrlKey||event.shiftKey')&&feature.includes('addManualPeak(x.invert(px))'),'Ctrl/Shift + direct curve click must add a manual peak on the selected sweep.');
+assert(feature.includes("rangeDrag.zoom")&&feature.includes("wheel.resmain")&&feature.includes('scaleDomainAround'),'Reference direct box zoom and wheel zoom must live in the shared feature runtime.');
+assert(feature.includes('respar-width-handle')&&feature.includes("widthLeft")&&feature.includes("widthRight"),'Reference FWHM width handles must remain directly editable.');
+assert(feature.includes("line:{color:sr.color,dash:sr.direction<0?'dash':'solid'}")&&feature.includes('marker:{color:sr.color'),'Group/trend traces must preserve reference peak-family cool/warm color semantics.');
 assert(shared.includes('registerDataTypes'),'Resonance must register domain data/result types through the shared plugin contract.');
 
 assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scripts)await loadScript(script)'),'Built-in plugin loader must support plugin-owned support scripts.');
@@ -72,7 +81,7 @@ const controller=W.createController(service,{science:context.window.DKDSScience}
 const viewSet=V.create(controller);
 assert(viewSet.catalog.length===6&&viewSet.main.label==='共振分析'&&viewSet.gate.label==='栅压分析','Both layout adapters must receive the same six shared View descriptors.');
 assert(viewSet.gate.superPageHtml().includes('gateAnalysisPage')&&viewSet.spacing.superPageHtml().includes('spacingPage'),'Shared View components must own mature SUPER page templates.');
-assert(viewSet.topPageHtml().includes('reswinMainPlot')&&viewSet.topPageHtml().includes('data-reswin-view-panel="gate"'),'Shared View components must compose the dedicated TOP surface.');
+assert(viewSet.topPageHtml().includes('reswinMainPlot')&&viewSet.topPageHtml().includes('resparInspectorPanel')&&viewSet.topPageHtml().includes('resparGroupPanel')&&viewSet.topPageHtml().includes('data-reswin-view-panel="gate"'),'Shared View components must compose one GRS-parity surface for SUPER and TOP.');
 const trend=controller.buildTrendModel();
 assert(trend.series.length===2,'Shared trend model must build both peak families from one controller state.');
 const opts=controller.acceptedSeriesOptions();

@@ -2,9 +2,11 @@
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository with `refactor/v3.33-resonance-parity-dataflow` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+This delivery contains a reconstructed local Git repository with `refactor/v3.34-plugin-ui-resonance-rebuild` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.33.0**.
+Current development baseline: **v3.34.0**.
+
+`v3.34.0` adds a shared plugin visual contract and rebuilds Resonance View/Interaction behavior against the supplied Graphene Resonance Studio D3 workspace while preserving the current Artifact/Selection/AnalysisWorkbench architecture.
 
 ## Recommended future flow
 
@@ -25,7 +27,9 @@ Do not access, push to, or modify any remote repository unless the user explicit
 
 ## Current delivery checkpoint
 
-`v3.33.0` restores the v3.25 Resonance presentation contract on the shared SUPER/TOP runtime and makes the Artifact Store the live imported-data bridge used by Data Center, TER, Resonance and dedicated plugin windows.
+`v3.34.0` establishes the shared non-Resonance plugin visual contract and rebuilds Resonance View/Interaction behavior against the supplied Graphene Resonance Studio D3 reference while retaining the canonical Artifact/Selection/AnalysisWorkbench architecture. SUPER and independent TOP mount the same parity surface.
+
+`v3.33.0` remains the canonical live-data bridge baseline: Data Center, TER, Resonance and dedicated plugin windows observe the same imported Artifact/legacy dataset state.
 
 `v3.32.0` is the interaction/performance completion pass: Core coalesces resize notifications and rejects recursive layout feedback; plugins can register heterogeneous raw/derived/result data types; typed selections carry compact references/ranges/context; Sticky is distinct from Dock; TER restores the R–V sticky inspector; Resonance restores shared main/trend/inspector/group selection linkage without rebuilding full plots on each click.
 

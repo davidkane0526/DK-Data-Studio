@@ -4215,3 +4215,121 @@ body.auxiliary-window .analysis-page{
   .dkds-analysis-main{padding:0!important;overflow:visible!important}
   .dkds-analysis-workbench .pulse-results-grid{grid-template-columns:1fr!important}
 }
+
+/* ============================================================
+   v3.34 plugin visual contract — shared by every analysis plugin.
+   Resonance owns a dedicated parity surface and intentionally opts out.
+   ============================================================ */
+:root{
+  --plugin-font-body:12.5px;
+  --plugin-font-label:12px;
+  --plugin-font-meta:11px;
+  --plugin-font-title:13.5px;
+  --plugin-font-section:14px;
+  --plugin-control-height:32px;
+  --plugin-control-pad-x:9px;
+  --plugin-action-gap:6px;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)),
+body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
+  font-size:var(--plugin-font-body);
+  line-height:1.45;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) button,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) input,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) select,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) textarea{
+  font-size:var(--plugin-font-body)!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) button{
+  min-height:var(--plugin-control-height)!important;
+  padding:4px var(--plugin-control-pad-x)!important;
+  white-space:nowrap;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) label,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .schema-param-label{
+  font-size:var(--plugin-font-label)!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-subtitle,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) [class$="-meta"],
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) [class$="-hint"],
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) [class$="-description"],
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .schema-param-help,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .plugin-card-id{
+  font-size:var(--plugin-font-meta)!important;
+  line-height:1.45!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-section-head strong,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-tool-title strong,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-card-heading h3,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-chart-title,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-plot-card-header strong{
+  font-size:var(--plugin-font-title)!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-section-head span,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-tool-title span,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-artifact-name,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-artifact-meta,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-json-preview,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-preview-table,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-ref-chip,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-recipe-bar label,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-step-head strong,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-workflow-status,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-prov-time,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-prov-main strong,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-prov-main div,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .schema-param-group-title,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .schema-param-error{
+  font-size:var(--plugin-font-meta)!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-preview-table th,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-preview-table td,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-result-table th,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-result-table td{
+  font-size:var(--plugin-font-meta)!important;
+  padding:7px 8px!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dkds-plugin-header-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-tabs,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-inline-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-chart-toolbar,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-file-toolbar,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-file-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-plot-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-table-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .ter-chart-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-control-card{
+  gap:var(--plugin-action-gap)!important;
+}
+/* Single-row first: toolbars consume horizontal room before wrapping. */
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dkds-plugin-header-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-tabs,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-inline-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-chart-toolbar,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-file-toolbar,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-file-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-plot-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-table-actions,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .ter-chart-actions{
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  align-items:center!important;
+  min-width:0;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-control-card{
+  display:flex!important;
+  flex-flow:row wrap!important;
+  align-items:flex-end!important;
+}
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-control-card>button,
+.dkds-analysis-workbench:not(:has(.resonance-parity-root)) .analysis-control-card>.dkds-portable-controls{
+  flex:0 0 auto;
+}
+@media(max-width:900px){
+  :root{--plugin-font-body:12px;--plugin-font-label:11.5px;--plugin-font-meta:11px}
+  .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .dc-chart-toolbar,
+  .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-file-actions,
+  .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .pulse-plot-actions,
+  .dkds-analysis-workbench:not(:has(.resonance-parity-root)) .ter-chart-actions{overflow-x:auto;scrollbar-width:thin}
+}
