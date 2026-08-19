@@ -39,7 +39,7 @@ const releaseSigningPluginSource = read(releaseSigningPluginPath);
 assert(!/\[string\[\]\]\s*\$Args\b/i.test(backend), 'Backend must not declare $Args as a parameter.');
 assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args variable.');
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
-assert(/\$installArguments\s*=\s*@\('install','--prefer-offline'\)/.test(backend) && /--cache/.test(backend), 'npm install must prefer offline data and pass the selected cache explicitly.');
+assert(/\$installArguments\s*=\s*@\('install','--ignore-scripts','--prefer-offline'\)/.test(backend) && /--cache/.test(backend), 'npm install must prefer offline data, suppress binary postinstall side effects, and pass the selected cache explicitly.');
 assert(/&\s+\$FilePath\s+@Arguments\s+\|\s+Out-Host/.test(backend), 'Invoke-Step must keep native stdout visible without leaking it into function return values.');
 
 // PowerShell variable names are case-insensitive. Names such as $HOME are
@@ -97,14 +97,25 @@ assert(/electron_config_cache/.test(backend) && /ELECTRON_CACHE/.test(backend),
   'Electron downloads must bind both the current documented cache variable and the compatibility alias.');
 assert(/pnpm_config_store_dir/.test(backend) && /PNPM_CONFIG_STORE_DIR/.test(backend),
   'pnpm must receive a native store-dir configuration binding.');
-assert(backend.includes('currentTarget') && /ReparsePoint/.test(backend) && /Remove-Item\s+-LiteralPath\s+\$link\s+-Force/.test(backend) && /New-Item\s+-ItemType\s+Junction/.test(backend),
-  'shared node_modules Junctions must be inspected and rebound when the selected cache root changes.');
+assert(backend.includes('currentTarget') && /ReparsePoint/.test(backend) && /Remove-NodeModulesPath\s+\$link/.test(backend) && /New-Item\s+-ItemType\s+Junction/.test(backend),
+  'shared node_modules Junctions must be inspected and rebound safely when the selected cache root changes.');
 assert(/Show-EffectiveBuildCaches\s+-VerifyNpm/.test(backend) && /npm\.cmd config get cache/.test(backend),
   'build actions must display effective caches and verify npm resolved the requested path.');
 assert(/New-Item\s+-ItemType\s+Junction/.test(backend) && /SharedNodeModulesRoot/.test(backend),
   'toolbox must support cross-project node_modules reuse through a shared Junction target.');
 assert(/npm_config_prefer_offline/.test(backend),
   'toolbox must tell npm to prefer previously downloaded packages.');
+
+assert(/Get-DependencySignature/.test(backend) && /\.staging-/.test(backend) && /\.dkds-ready\.json/.test(backend),
+  'shared node_modules must use immutable package-signature entries built through staging rather than npm reifying a project Junction.');
+assert(/--ignore-scripts/.test(backend) && /Ensure-ElectronBinary/.test(backend) && /electron\\install\.js/.test(backend),
+  'shared dependency installation must separate npm package extraction from Electron binary installation.');
+assert(/Test-ElectronBinaryReady/.test(backend) && /dist\\electron\.exe/.test(backend),
+  'dependency readiness must require the actual Electron executable, not only electron/package.json.');
+assert(/DK_BINARY_MIRROR_MODE/.test(backend) && backend.includes('https://cdn.npmmirror.com/binaries/electron/'),
+  'Electron binary download must support automatic mirror fallback after official-source network failures.');
+assert(/ELECTRON_BUILDER_BINARIES_MIRROR/.test(backend) && /Invoke-WindowsDist/.test(backend),
+  'Windows packaging must preserve shared caches and retry binary downloads through the configured fallback mirror.');
 assert(/路径与缓存/.test(gui) && /保存路径设置/.test(gui),
   'developer GUI must include a dedicated path/cache settings page.');
 assert(/Check-AndroidEnvironment\s+-RequireJdk\s+\$false\s+-AutoProvisionJdk\s+\$false/.test(backend), 'Installing an already-built APK must not require or download a JDK.');

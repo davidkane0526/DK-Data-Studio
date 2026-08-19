@@ -1,11 +1,12 @@
 
-# Next Session Handoff — v3.31.0
+# Next Session Handoff — v3.31.1
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.31.0`
+- Current delivery: `v3.31.1`
+- v3.31.1: repaired the Windows dependency/build pipeline: shared node_modules is now an immutable package-signature cache, npm no longer reifies through a project Junction, Electron binary installation is separated from npm package extraction, and official-source network failures can retry through a configurable mirror.
 - v3.31.0: completed AnalysisWorkbench v4 outer-geometry ownership, one PRIMARY/PRIME/SUB view tree across SUPER/TOP, Capability Runtime v2 query/require/watch semantics, and the shared Resonance runtime composition.
 - v3.30.0: unified Core Analysis Workbench with PRIMARY / PRIME / SUB semantics, managed responsive grids and lifecycle-owned dock/floating regions; cross-renderer Capability Runtime; TER/Pulse/Data Center migration to the shared workbench; Resonance TOP migration to the same semantic workbench and provider catalog.
 - Cache/toolchain fix in v3.27.1: `cachePathMode=derived` makes the selected shared cache root authoritative; npm/pnpm/Electron/electron-builder/Gradle bindings and stale node_modules Junction rebinding are verified by tooling tests.

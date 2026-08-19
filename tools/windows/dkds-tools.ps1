@@ -106,6 +106,7 @@ $SharedToolRoot = Get-SharedToolRoot
 $SharedCacheRoot = Get-SharedCacheRoot
 $SharedNodeModulesRoot = Get-SharedNodeModulesRoot
 $script:BuildCachePaths = $null
+$script:BinaryMirrorFallbackEnabled = $false
 
 function Write-SectionTitle([string]$Text) {
   Write-Host ''
@@ -152,12 +153,74 @@ function Get-NodeModulesSlot([string]$Dir) {
   return 'desktop'
 }
 
-function Ensure-SharedNodeModulesLink([string]$Dir=$Root) {
-  if (-not $SharedNodeModulesRoot) { return }
+function Get-DependencySignature([string]$Dir=$Root) {
+  $packagePath = Join-Path $Dir 'package.json'
+  if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
+    throw "package.json not found: $Dir"
+  }
+
+  $parts = New-Object System.Collections.Generic.List[string]
+  $parts.Add((Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()) | Out-Null
+  $lockPath = Join-Path $Dir 'package-lock.json'
+  if (Test-Path -LiteralPath $lockPath -PathType Leaf) {
+    $parts.Add((Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash.ToLowerInvariant()) | Out-Null
+  }
+  $parts.Add([string]$env:PROCESSOR_ARCHITECTURE) | Out-Null
+  $parts.Add((Get-NodeModulesSlot $Dir)) | Out-Null
+  $payload = [Text.Encoding]::UTF8.GetBytes(($parts -join '|'))
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $hash = [BitConverter]::ToString($sha.ComputeHash($payload)).Replace('-','').ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+  }
+  return $hash.Substring(0,20)
+}
+
+function Get-SharedDependencyEntry([string]$Dir=$Root) {
+  if (-not $SharedNodeModulesRoot) { return $null }
   $slot = Get-NodeModulesSlot $Dir
-  $target = [IO.Path]::GetFullPath((Join-Path $SharedNodeModulesRoot $slot))
+  $signature = Get-DependencySignature $Dir
+  return (Join-Path (Join-Path $SharedNodeModulesRoot $slot) $signature)
+}
+
+function Get-SharedNodeModulesTarget([string]$Dir=$Root) {
+  $entry = Get-SharedDependencyEntry $Dir
+  if (-not $entry) { return $null }
+  return (Join-Path $entry 'node_modules')
+}
+
+function Remove-NodeModulesPath([string]$PathToRemove) {
+  if (-not (Test-Path -LiteralPath $PathToRemove)) { return }
+  for ($attempt = 1; $attempt -le 4; $attempt++) {
+    try {
+      $existing = Get-Item -LiteralPath $PathToRemove -Force -ErrorAction Stop
+      if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        # Never recurse through a Junction: only remove the link itself.
+        Remove-Item -LiteralPath $PathToRemove -Force -ErrorAction Stop
+      } else {
+        Remove-Item -LiteralPath $PathToRemove -Recurse -Force -ErrorAction Stop
+      }
+      return
+    } catch {
+      if ($attempt -ge 4) {
+        throw "Cannot replace node_modules at $PathToRemove. Close running DK Data Studio / Electron processes and retry. $($_.Exception.Message)"
+      }
+      Start-Sleep -Milliseconds (250 * $attempt)
+    }
+  }
+}
+
+function Ensure-SharedNodeModulesLink([string]$Dir=$Root,[string]$TargetPath='') {
+  if (-not $SharedNodeModulesRoot) { return }
+  if (-not $TargetPath) { $TargetPath = Get-SharedNodeModulesTarget $Dir }
+  if (-not $TargetPath) { return }
+
+  $target = [IO.Path]::GetFullPath($TargetPath)
   $link = Join-Path $Dir 'node_modules'
-  New-Item -ItemType Directory -Force -Path $SharedNodeModulesRoot | Out-Null
+  if (-not (Test-Path -LiteralPath $target -PathType Container)) {
+    throw "Shared node_modules target is not ready: $target"
+  }
 
   if (Test-Path -LiteralPath $link) {
     $item = Get-Item -LiteralPath $link -Force
@@ -173,24 +236,159 @@ function Ensure-SharedNodeModulesLink([string]$Dir=$Root) {
         }
         $currentTarget = [IO.Path]::GetFullPath($currentTarget)
         if ($currentTarget -ieq $target) { return }
-        Write-Host "INFO shared node_modules cache changed; rebinding Junction:" -ForegroundColor Cyan
+        Write-Host "INFO shared dependency version changed; rebinding Junction:" -ForegroundColor Cyan
         Write-Host "     old: $currentTarget" -ForegroundColor DarkGray
         Write-Host "     new: $target" -ForegroundColor DarkGray
-        Remove-Item -LiteralPath $link -Force
       } else {
-        Write-Host "WARN node_modules is a reparse point whose target cannot be inspected; keeping it: $link" -ForegroundColor Yellow
-        return
+        Write-Host "INFO replacing an uninspectable node_modules reparse point: $link" -ForegroundColor Cyan
       }
+      Remove-NodeModulesPath $link
     } else {
-      Write-Host "INFO local node_modules already exists; keeping it instead of replacing it with shared path: $link" -ForegroundColor DarkYellow
-      Write-Host "     Remove that directory once if you want this project copy to use: $target" -ForegroundColor DarkGray
-      return
+      # npm treats a Junction at the project root as a non-directory during reify
+      # and may delete it. Older toolbox releases therefore left a real, partial
+      # node_modules in the extracted project after a failed Electron download.
+      # A configured shared cache is authoritative, so replace that disposable
+      # local dependency tree with the immutable shared entry.
+      Write-Host "INFO replacing local node_modules with shared immutable cache:" -ForegroundColor Cyan
+      Write-Host "     local : $link" -ForegroundColor DarkGray
+      Write-Host "     shared: $target" -ForegroundColor DarkGray
+      Remove-NodeModulesPath $link
     }
   }
 
-  New-Item -ItemType Directory -Force -Path $target | Out-Null
   New-Item -ItemType Junction -Path $link -Target $target | Out-Null
   Write-Host "Shared node_modules: $link -> $target" -ForegroundColor DarkGray
+}
+
+function Test-ElectronBinaryReady([string]$ModulesPath) {
+  $electronDir = Join-Path $ModulesPath 'electron'
+  if (-not (Test-Path -LiteralPath (Join-Path $electronDir 'package.json') -PathType Leaf)) { return $false }
+  if (-not (Test-Path -LiteralPath (Join-Path $electronDir 'path.txt') -PathType Leaf)) { return $false }
+  return (Test-Path -LiteralPath (Join-Path $electronDir 'dist\electron.exe') -PathType Leaf)
+}
+
+function Get-BinaryMirrorMode {
+  $processValue = [Environment]::GetEnvironmentVariable('DK_BINARY_MIRROR_MODE','Process')
+  if ($processValue) { return $processValue.Trim().ToLowerInvariant() }
+  $configured = Get-DeveloperConfigValue 'binaryMirrorMode'
+  if ($configured) { return $configured.Trim().ToLowerInvariant() }
+  return 'auto'
+}
+
+function Enable-BinaryMirrorFallback {
+  if ((Get-BinaryMirrorMode) -eq 'official') { return $false }
+  if (-not $env:ELECTRON_MIRROR) {
+    $configuredElectronMirror = Get-DeveloperConfigValue 'electronMirror'
+    $env:ELECTRON_MIRROR = if ($configuredElectronMirror) { $configuredElectronMirror } else { 'https://cdn.npmmirror.com/binaries/electron/' }
+  }
+  if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR) {
+    $configuredBuilderMirror = Get-DeveloperConfigValue 'electronBuilderMirror'
+    $env:ELECTRON_BUILDER_BINARIES_MIRROR = if ($configuredBuilderMirror) { $configuredBuilderMirror } else { 'https://cdn.npmmirror.com/binaries/electron-builder-binaries/' }
+  }
+  $script:BinaryMirrorFallbackEnabled = $true
+  Write-Host "INFO binary mirror fallback enabled:" -ForegroundColor Yellow
+  Write-Host "     Electron        : $env:ELECTRON_MIRROR" -ForegroundColor DarkGray
+  Write-Host "     electron-builder: $env:ELECTRON_BUILDER_BINARIES_MIRROR" -ForegroundColor DarkGray
+  return $true
+}
+
+function Ensure-ElectronBinary([string]$ModulesPath) {
+  if (Test-ElectronBinaryReady $ModulesPath) { return }
+  $installer = Join-Path $ModulesPath 'electron\install.js'
+  if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
+    throw "Electron npm package is missing its installer: $installer"
+  }
+
+  Write-SectionTitle 'Prepare Electron binary'
+  $mode = Get-BinaryMirrorMode
+  if ($mode -eq 'mirror') { [void](Enable-BinaryMirrorFallback) }
+
+  $lastError = $null
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      Write-Host ("Electron binary attempt {0}/3" -f $attempt) -ForegroundColor DarkGray
+      Invoke-Step -FilePath 'node' -Arguments @($installer) -WorkingDirectory (Split-Path $installer -Parent)
+      if (Test-ElectronBinaryReady $ModulesPath) { return }
+      throw 'Electron installer returned without producing dist\electron.exe.'
+    } catch {
+      $lastError = $_
+      if ($attempt -eq 1 -and $mode -eq 'auto' -and -not $script:BinaryMirrorFallbackEnabled) {
+        [void](Enable-BinaryMirrorFallback)
+      }
+      if ($attempt -lt 3) { Start-Sleep -Seconds $attempt }
+    }
+  }
+
+  throw "Electron binary installation failed after retries. npm package downloads are cached separately from Electron's binary ZIP. Cache=$env:electron_config_cache Mirror=$env:ELECTRON_MIRROR Error=$($lastError.Exception.Message)"
+}
+
+function Install-SharedDependencyEntry([string]$Dir=$Root) {
+  [void](Require-Command 'node' 'Install Node.js first.')
+  [void](Require-Command 'npm.cmd' 'Install Node.js first.')
+  if (-not $SharedNodeModulesRoot) { return $null }
+
+  $entry = Get-SharedDependencyEntry $Dir
+  $modulesTarget = Join-Path $entry 'node_modules'
+  $readyMarker = Join-Path $entry '.dkds-ready.json'
+  $isDesktop = (Get-NodeModulesSlot $Dir) -eq 'desktop'
+  if ((Test-Path -LiteralPath $readyMarker -PathType Leaf) -and
+      (Test-Path -LiteralPath $modulesTarget -PathType Container) -and
+      ((-not $isDesktop) -or (Test-ElectronBinaryReady $modulesTarget))) {
+    return $modulesTarget
+  }
+
+  $slotRoot = Split-Path $entry -Parent
+  New-Item -ItemType Directory -Force -Path $slotRoot | Out-Null
+
+  if (Test-Path -LiteralPath $entry) {
+    Write-Host "INFO removing incomplete shared dependency cache: $entry" -ForegroundColor Yellow
+    Remove-NodeModulesPath $entry
+  }
+
+  $staging = $entry + '.staging-' + $PID.ToString()
+  if (Test-Path -LiteralPath $staging) { Remove-NodeModulesPath $staging }
+  New-Item -ItemType Directory -Force -Path $staging | Out-Null
+
+  try {
+    Copy-Item -LiteralPath (Join-Path $Dir 'package.json') -Destination (Join-Path $staging 'package.json') -Force
+    $sourceLock = Join-Path $Dir 'package-lock.json'
+    $hasLock = Test-Path -LiteralPath $sourceLock -PathType Leaf
+    if ($hasLock) { Copy-Item -LiteralPath $sourceLock -Destination (Join-Path $staging 'package-lock.json') -Force }
+
+    Write-SectionTitle "Install shared dependencies · $(Get-NodeModulesSlot $Dir)"
+    Write-Host "Dependency cache entry: $entry" -ForegroundColor DarkGray
+    $installArguments = if ($hasLock) {
+      @('ci','--ignore-scripts','--prefer-offline')
+    } else {
+      @('install','--ignore-scripts','--prefer-offline','--package-lock=false')
+    }
+    if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
+    Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $staging
+
+    $stagingModules = Join-Path $staging 'node_modules'
+    if (-not (Test-Path -LiteralPath $stagingModules -PathType Container)) {
+      throw "npm did not create node_modules in shared staging workspace: $stagingModules"
+    }
+    if ($isDesktop) { Ensure-ElectronBinary $stagingModules }
+
+    [ordered]@{
+      schema = 1
+      signature = Get-DependencySignature $Dir
+      source = [IO.Path]::GetFullPath($Dir)
+      createdAt = [DateTime]::UtcNow.ToString('o')
+      node = (& node --version | Select-Object -Last 1)
+      npm = (& npm.cmd --version | Select-Object -Last 1)
+    } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $staging '.dkds-ready.json') -Encoding UTF8
+
+    Move-Item -LiteralPath $staging -Destination $entry
+  } catch {
+    if (Test-Path -LiteralPath $staging) {
+      try { Remove-NodeModulesPath $staging } catch {}
+    }
+    throw
+  }
+
+  return (Join-Path $entry 'node_modules')
 }
 
 function Install-NodeDeps([string]$Dir=$Root) {
@@ -199,27 +397,46 @@ function Install-NodeDeps([string]$Dir=$Root) {
   if (-not (Test-Path (Join-Path $Dir 'package.json'))) {
     throw "package.json not found: $Dir"
   }
-  Ensure-SharedNodeModulesLink -Dir $Dir
+
+  if ($SharedNodeModulesRoot) {
+    $target = Install-SharedDependencyEntry $Dir
+    Ensure-SharedNodeModulesLink -Dir $Dir -TargetPath $target
+    return
+  }
+
+  # Fallback for machines that deliberately disable shared node_modules.
+  # Keep Electron's binary download outside npm reify here as well, so a
+  # timeout cannot turn node_modules into a half-installed dependency tree.
   Write-SectionTitle "Install dependencies · $Dir"
-  $installArguments = @('install','--prefer-offline')
+  $installArguments = @('install','--ignore-scripts','--prefer-offline')
   if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
   Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $Dir
+  if ((Get-NodeModulesSlot $Dir) -eq 'desktop') {
+    Ensure-ElectronBinary (Join-Path $Dir 'node_modules')
+  }
 }
 
 function Test-NodeDepsReady([string]$Dir=$Root) {
   $modules = Join-Path $Dir 'node_modules'
   if (-not (Test-Path -LiteralPath $modules -PathType Container)) { return $false }
-  if (Test-Path -LiteralPath (Join-Path $modules '.package-lock.json') -PathType Leaf) { return $true }
   if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) {
     return (Test-Path -LiteralPath (Join-Path $modules 'expo\package.json') -PathType Leaf)
   }
-  return (Test-Path -LiteralPath (Join-Path $modules 'electron\package.json') -PathType Leaf)
+  if (-not (Test-Path -LiteralPath (Join-Path $modules 'electron\package.json') -PathType Leaf)) { return $false }
+  return (Test-ElectronBinaryReady $modules)
 }
 
 function Ensure-NodeDeps([string]$Dir=$Root) {
   [void](Require-Command 'node' 'Install Node.js first.')
   [void](Require-Command 'npm.cmd' 'Install Node.js first.')
-  Ensure-SharedNodeModulesLink -Dir $Dir
+
+  if ($SharedNodeModulesRoot) {
+    $target = Get-SharedNodeModulesTarget $Dir
+    if ($target -and (Test-Path -LiteralPath $target -PathType Container)) {
+      Ensure-SharedNodeModulesLink -Dir $Dir -TargetPath $target
+    }
+  }
+
   if (-not (Test-NodeDepsReady -Dir $Dir)) {
     Install-NodeDeps -Dir $Dir
   }
@@ -326,6 +543,11 @@ function Initialize-SharedBuildEnvironment {
   if ($script:BuildCachePaths.ElectronBuilder) {
     $env:ELECTRON_BUILDER_CACHE = $script:BuildCachePaths.ElectronBuilder
   }
+  $configuredElectronMirror = Get-DeveloperConfigValue 'electronMirror'
+  if (-not $env:ELECTRON_MIRROR -and $configuredElectronMirror) { $env:ELECTRON_MIRROR = $configuredElectronMirror }
+  $configuredBuilderMirror = Get-DeveloperConfigValue 'electronBuilderMirror'
+  if (-not $env:ELECTRON_BUILDER_BINARIES_MIRROR -and $configuredBuilderMirror) { $env:ELECTRON_BUILDER_BINARIES_MIRROR = $configuredBuilderMirror }
+  if ((Get-BinaryMirrorMode) -eq 'mirror') { [void](Enable-BinaryMirrorFallback) }
   if ($script:BuildCachePaths.Gradle) {
     $env:GRADLE_USER_HOME = $script:BuildCachePaths.Gradle
   }
@@ -337,6 +559,9 @@ function Show-EffectiveBuildCaches([switch]$VerifyNpm) {
   Write-Host ("  pnpm store       : {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
   Write-Host ("  Electron         : {0}" -f $env:electron_config_cache) -ForegroundColor DarkGray
   Write-Host ("  electron-builder : {0}" -f $env:ELECTRON_BUILDER_CACHE) -ForegroundColor DarkGray
+  Write-Host ("  mirror mode      : {0}" -f (Get-BinaryMirrorMode)) -ForegroundColor DarkGray
+  Write-Host ("  Electron mirror  : {0}" -f $env:ELECTRON_MIRROR) -ForegroundColor DarkGray
+  Write-Host ("  builder mirror   : {0}" -f $env:ELECTRON_BUILDER_BINARIES_MIRROR) -ForegroundColor DarkGray
   Write-Host ("  Gradle           : {0}" -f $env:GRADLE_USER_HOME) -ForegroundColor DarkGray
   Write-Host ("  node_modules root: {0}" -f $SharedNodeModulesRoot) -ForegroundColor DarkGray
 
@@ -782,6 +1007,24 @@ function Write-AndroidSigningMigrationHint {
   Write-Host 'Then run DKDS.cmd android-install again. This uninstall removes the old app data.' -ForegroundColor Yellow
 }
 
+function Invoke-WindowsDist {
+  try {
+    Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') -WorkingDirectory $Root
+    return
+  } catch {
+    $firstFailure = $_
+    if ((Get-BinaryMirrorMode) -eq 'official' -or $script:BinaryMirrorFallbackEnabled) { throw }
+    Write-Host 'WARN Windows packaging failed once. Retrying with binary mirror fallback; npm package cache and shared node_modules are preserved.' -ForegroundColor Yellow
+    [void](Enable-BinaryMirrorFallback)
+    try {
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') -WorkingDirectory $Root
+      return
+    } catch {
+      throw "Windows packaging failed with both official and fallback binary sources. First=$($firstFailure.Exception.Message) Retry=$($_.Exception.Message)"
+    }
+  }
+}
+
 function Build-AndroidRelease {
   Show-EffectiveBuildCaches -VerifyNpm
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
@@ -868,7 +1111,7 @@ try {
     'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
     'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
     'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }
-    'build-windows' { Show-EffectiveBuildCaches -VerifyNpm; Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist') }
+    'build-windows' { Show-EffectiveBuildCaches -VerifyNpm; Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Windows build'; Invoke-WindowsDist }
     'android-check' { if (-not (Check-AndroidEnvironment)) { exit 2 } }
     'android-build' { Build-AndroidRelease }
     'android-run' {
@@ -903,7 +1146,7 @@ try {
       $release = Resolve-ReleaseVersion
       Write-SectionTitle "Build + publish $release"
       Invoke-Step -FilePath 'node' -Arguments @('scripts/set-version.js',$release)
-      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','dist')
+      Invoke-WindowsDist
       Invoke-Step -FilePath 'node' -Arguments @('services/update-server/publish-release.js','dist')
     }
     'publish-update' {

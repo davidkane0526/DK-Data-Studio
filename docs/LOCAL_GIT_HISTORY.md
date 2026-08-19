@@ -28,3 +28,4 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 
 14. v3.30.0: introduce the unified Analysis Workbench with PRIMARY/PRIME/SUB semantics and managed grids; add a cross-renderer Capability Runtime; migrate TER/Pulse/Data Center to the same workbench composition and move Resonance TOP onto the same semantic workbench/capability contract while preserving self-contained project files.
 15. v3.31.0: complete the unified AnalysisWorkbench v4 runtime, Capability Runtime v2, and one shared Resonance PRIMARY/PRIME/SUB composition across SUPER/TOP; migrate all first-party analysis views to the same Core composition contract.
+16. v3.31.1: make Windows shared dependency caching immutable and authoritative, separate Electron binary installation from npm reify, and add retry/mirror fallback for Electron/electron-builder binary downloads.
