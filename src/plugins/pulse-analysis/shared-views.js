@@ -192,12 +192,12 @@
     const extras=[...body.children].filter(node=>node!==batch);
     left.remove();config.remove();batch?.remove();extras.forEach(node=>node.remove());
     body.classList.add('dkds-unified-workbench-body');
-    const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
+    const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
     const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'pulse',primaryScroll:'auto'});
-    const primaryMain=document.createElement('div');primaryMain.className='pulse-primary-surface';primaryMain.append(config,...extras);
+    const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(config,...extras);
     wb.compose({primary:{id:'main',label:'脉冲分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
     return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}
-  window.DKDSPulseSharedViews=Object.freeze({create});
+  window.DKDSPluginModules.define('builtin.pulse-analysis','shared-views',Object.freeze({create}));
 })();

@@ -5,6 +5,8 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
+const modules=new Map();
+const moduleRuntime={define:(pid,name,value)=>{modules.set(`${pid}/${name}`,value);return value;},get:(pid,name)=>modules.get(`${pid}/${name}`)||null,require:(pid,name)=>{const value=modules.get(`${pid}/${name}`);if(!value)throw new Error(`missing module ${pid}/${name}`);return value;}};
 const context={
   console,
   structuredClone,
@@ -12,6 +14,7 @@ const context={
   clearTimeout,
   requestAnimationFrame:fn=>fn(),
   document:{querySelector:()=>null,querySelectorAll:()=>[]},
+  DKDSPluginModules:moduleRuntime,
 };
 context.window=context;
 context.DKDSScience={
@@ -22,11 +25,12 @@ context.DKDSScience={
 vm.createContext(context);
 vm.runInContext(read('src/plugins/resonance-workbench/workbench-shared.js'),context,{filename:'workbench-shared.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
-assert(context.DKDSResonanceFeatureRuntime?.createTop,'Resonance feature runtime must expose createTop.');
+const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runtime');
+assert(feature?.createTop,'Resonance feature runtime module must expose createTop.');
 
 (async()=>{
-  const runtime=await context.DKDSResonanceFeatureRuntime.createTop({
-    host:{},project:{datasets:[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
+  const runtime=await feature.createTop({
+    project:{datasets:[]},artifacts:{list:()=>[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
   });
   assert.equal(runtime.serviceName,'resonance');
   assert.equal(typeof runtime.service?.serialize,'function');

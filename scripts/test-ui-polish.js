@@ -5,7 +5,8 @@ const assert = require('assert');
 const root = path.resolve(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
-const nav = fs.readFileSync(path.join(root, 'src', 'plugins', 'shell-navigation', 'plugin.js'), 'utf8');
+const navRegistration = fs.readFileSync(path.join(root, 'src', 'plugins', 'shell-navigation', 'plugin.js'), 'utf8');
+const nav = fs.readFileSync(path.join(root, 'src', 'core', 'recipes', 'shell-navigation.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'src', 'style.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
 const pluginManager = fs.readFileSync(path.join(root, 'src', 'core', 'plugin-manager-ui.js'), 'utf8');
@@ -20,6 +21,7 @@ assert(main.includes("app.setName(APP_NAME)"));
 assert(main.includes("app.setAppUserModelId(APP_ID)"));
 assert(main.includes("title: APP_NAME"));
 
+assert(navRegistration.includes("ctx.recipes.use('shell-navigation'"),'shell navigation plugin must only register the Core-owned recipe');
 assert(!nav.includes("const TOP_LEVEL="),'navigation must not whitelist activity ids');
 assert(nav.includes('primaryButtons'),'navigation hierarchy must derive from registered primary activities');
 assert(nav.includes('data-nav-density'));

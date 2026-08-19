@@ -2,7 +2,15 @@
   "id": "builtin.status-monitor",
   "name": "Status Monitor",
   "version": "1.0.0",
-  "apiVersion": "1.3.0",
+  "apiVersion": "1.8.0",
+  "requiresCore": [
+    "runtime",
+    "events",
+    "status",
+    "services",
+    "ui.dom",
+    "ui.status-bar"
+  ],
   "entry": "plugin.js",
   "enabled": true,
   "order": 7,

@@ -1,15 +1,15 @@
 (() => {
   async function mount(ctx,controller=null,views=null,adapter={}){
-    const h=ctx.host;
+    const dom=ctx.ui.dom;
     const P=controller;
-    const sharedViews=views||window.DKDSPulseSharedViews?.create?.(controller)||null;
+    const sharedViews=views||window.DKDSPluginModules.get('builtin.pulse-analysis','shared-views')?.create?.(controller)||null;
     let workbench=null;
     const pageHtml=sharedViews?.pageHtml?.()||'';
 
     ctx.ui.activities.add({
       id:'pulse',label:'脉冲分析',contextLabel:'脉冲 / 读取分析',icon:'▥',order:40,primary:true,openMode:'window',
       description:'多文件脉冲 / 读取瞬态分析',
-      onActivate:()=>{h.openAnalysisPage('pulseAnalysisPage');P.render();}
+      onActivate:()=>{ctx.workspace.openPage('pulseAnalysisPage');P.render();}
     });
 
     const page=ctx.ui.pages.add({
@@ -19,7 +19,7 @@
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
     const pulseHeader=page.querySelector('.analysis-page-header');
-    const pulseHeaderActionsHost=document.createElement('div');
+    const pulseHeaderActionsHost=dom.create('div');
     pulseHeaderActionsHost.className='dkds-plugin-header-actions';
     pulseHeader?.querySelector('.analysis-page-close')?.before(pulseHeaderActionsHost);
     ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
@@ -50,7 +50,7 @@
         id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
         handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
         placements:['inline','right','bottom','float','global'],autoOpen:true,
-        mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})
+        mount:()=>dom.frame(()=>{try{ctx.ui.charts.resize(page.querySelector('#pulseRawPlot'));}catch{}})
       });
     }
     const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
@@ -71,7 +71,7 @@
     bindPulsePlot('pulsePulsePlot','pulse','脉冲条件 → 脉冲电流');
 
 
-    page.querySelector('#pulseFileList')?.addEventListener('click',()=>queueMicrotask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});}));
+    page.querySelector('#pulseFileList')?.addEventListener('click',()=>dom.microtask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});}));
     page.querySelector('#pulseCheckAllBtn').onclick=()=>P.setAllChecked(true);
     page.querySelector('#pulseUncheckAllBtn').onclick=()=>P.setAllChecked(false);
     page.querySelector('#pulseRemoveFilesBtn').onclick=()=>P.removeChecked();
@@ -93,7 +93,7 @@
     page.querySelector('#pulseCopyCsvBtn').onclick=()=>P.copyResults();
     page.querySelector('#pulseExportCsvBtn').onclick=()=>P.exportResults();
 
-    if(!h.isAuxiliaryWindow&&ctx.ui.menus?.add){
+    if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
       const menuRows=[
         ['pulse-export-raw-csv','当前文件 · 原始波形数据 CSV',10,()=>P.exportRawCsv()],
         ['pulse-export-raw-svg','当前文件 · 原始波形 SVG',20,()=>P.exportRawSvg()],
@@ -112,8 +112,8 @@
     ctx.events.on('analysis:refresh',({id})=>{if(id==='pulseAnalysisPage')P.render();});
     ctx.events.on('layout:resize',()=>{
       for(const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']){
-        const el=document.getElementById(id);
-        if(el&&el.offsetParent!==null){try{Plotly.Plots.resize(el);}catch{}}
+        const el=dom.query('#'+id);
+        if(el&&el.offsetParent!==null){try{ctx.ui.charts.resize(el);}catch{}}
       }
     });
 
@@ -123,10 +123,10 @@
       reset:()=>P.reset()
     });
 
-    ctx.registry.add('analysis.providers','pulse-read',{
+    ctx.analysis.providers.register('pulse-read',{
       id:'pulse-read',name:'Pulse / read transient extraction',analyze:window.DKDSScience.analyzePulseReadData
     });
     return {deactivate(){pulsePlotViews.splice(0).forEach(view=>view?.dispose?.());}};
   }
-  window.DKDSPulseFeatureRuntime=Object.freeze({mount});
+  window.DKDSPluginModules.define('builtin.pulse-analysis','feature-runtime',Object.freeze({mount}));
 })();

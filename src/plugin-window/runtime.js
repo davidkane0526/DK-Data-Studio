@@ -22,6 +22,13 @@
     'workflow-engine':'../core/workflow-engine.js',
     platform:'../core/platform.js',
     'state-store':'../core/state-store.js',
+    'io-runtime':'../core/io-runtime.js',
+    'chart-runtime':'../core/chart-runtime.js',
+    'component-runtime':'../core/component-runtime.js',
+    'data-flow-runtime':'../core/data-flow-runtime.js',
+    'service-runtime':'../core/service-runtime.js',
+    'plugin-contract-runtime':'../core/plugin-contract-runtime.js',
+    'plugin-module-runtime':'../core/plugin-module-runtime.js',
     'ui-infrastructure':'../core/ui-infrastructure.js',
     'capability-runtime':'../core/capability-runtime.js',
     'plugin-kernel':'../core/plugin-kernel.js'
@@ -125,6 +132,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
+    for(const id of ['io-runtime','chart-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
@@ -339,7 +347,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.40.0',
+      appVersion:'3.41.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -358,9 +366,7 @@
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
-      resonance:{},
-      pulse:null,
-      ter:null
+      services:{}
     };
   }
 
@@ -386,27 +392,24 @@
         loadedExternalScripts.add(file);
       }else await loadScript(pluginUrl(file));
     };
-    // Start every dedicated-window activation with a clean runtime factory.
-    // Support scripts may intentionally publish service factories consumed by
-    // the thin runtime adapter; never erase them after they have loaded.
-    window.DKDSPluginWindowRuntime = null;
     for(const file of (spec.scripts||[]))await loadTargetScript(file);
 
     if (spec.runtime) await loadTargetScript(spec.runtime);
 
     const host = baseHost();
-    if (window.DKDSPluginWindowRuntime?.create) {
-      pluginRuntime = await window.DKDSPluginWindowRuntime.create({
-        host,
+    const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
+    if (windowRuntime?.create) {
+      pluginRuntime = await windowRuntime.create({
         project,
         bootstrap:clone(bootstrap),
         setStatus,
         scheduleSnapshot,
         copyTextToClipboard,
-        savePlotlyImage
+        savePlotlyImage,
+        artifacts:artifactsApi
       });
       if (pluginRuntime?.serviceName && pluginRuntime?.service) {
-        host[pluginRuntime.serviceName] = pluginRuntime.service;
+        window.DKDSServices?.register?.(String(spec.pluginId||'plugin-window'),pluginRuntime.serviceName,pluginRuntime.service,{replace:true,metadata:{scope:'dedicated-window'}});
       }
     }
 

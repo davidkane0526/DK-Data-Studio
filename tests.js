@@ -253,7 +253,7 @@ assert(appV33.includes('η_eff=A_A/(A_A+A_B)'),'effective electrical weight must
 assert(resonancePluginSource.includes('不把它自动当作 coercive voltage')||appV33.includes('不把它自动当作 coercive voltage'),'hysteresis must not be mislabeled as coercive voltage');
 assert(appV33.includes('当前工程没有独立的“switching step / jump”对象'),'report must explicitly refuse to fabricate Vc from resonance peaks');
 assert(appV33.includes('Pearson r'),'automatic report must include quantitative correlation analysis');
-assert(resonancePluginSource.includes("defaultName:'gate_physics_analysis.csv'")&&resonancePluginSource.includes("defaultName:'gate_physics_analysis_report.md'"),'gate analysis data and report exports must exist in the plugin runtime');
+assert((resonancePluginSource.includes("io.saveCsv(gateCsv(),'gate_physics_analysis.csv')")||resonancePluginSource.includes("defaultName:'gate_physics_analysis.csv'"))&&resonancePluginSource.includes("defaultName:'gate_physics_analysis_report.md'"),'gate analysis data and report exports must exist through the Core IO contract');
 console.log('v3.3 gate-voltage physical analysis checks passed.');
 
 
@@ -1012,7 +1012,7 @@ assert(pulsePluginV319.includes("pageId:'pulseAnalysisPage'")&&pulsePluginV319.i
 assert(terPluginV319.includes("pageId:'terMaxPage'")&&terPluginV319.includes('html:pageHtml'),
   'TER analysis page must be dynamically created by the TER plugin');
 
-assert(kernelV319.includes("const API_VERSION = '1.7.0'"),'workspace extension API must expose the current v1.7 contract');
+assert(kernelV319.includes("const API_VERSION = '1.8.0'"),'workspace extension API must expose the current v1.8 contract');
 for(const token of [
   'function registerActivity','function addSidebarSection','function addMainOverlay',
   "registerTypedContribution(pluginId,'ui.inspectors'",
@@ -1066,8 +1066,8 @@ assert(resonanceV319.includes('function mainCsv()')&&resonanceV319.includes('exp
 
 assert(detectorV319.includes("ctx.analysis.detectors.register('robust-ricker-v1'"),
   'mature robust finder must be an independent detector plugin');
-assert(detectorV319.includes('renderSettings({container,settings,onChange})'),
-  'algorithm-specific settings UI must be supplied by the detector plugin');
+assert(detectorV319.includes('parameterSchema:{fields:parameterFields}')&&resonanceV319.includes('ctx.parameters.render'),
+  'detector plugins must declare parameter schema while Core renders algorithm settings UI');
 assert(detectorV319.includes("evidence.matched")&&detectorV319.includes("symbol:'triangle-down'"),
   'detector plugin must own evidence label/glyph/symbol metadata');
 assert(appV319.includes('peak.detectors')&&appV319.includes('没有启用的寻峰算法插件'),
@@ -1152,7 +1152,7 @@ assert(appSource.includes('async function importFiles(){\n    openImportWorkbenc
   'opening the import workbench must not automatically open a file chooser');
 assert(htmlV321.includes('id="importChooseFilesBtn" class="primary">导入文件</button>'),
   'file dialog must be explicitly initiated by the 导入文件 button');
-assert(kernelV321.includes("const API_VERSION = '1.7.0'"),'plugin API must expose unified workbench/capability contributions');
+assert(kernelV321.includes("const API_VERSION = '1.8.0'"),'plugin API must expose unified workbench/capability contributions');
 assert(mainV321.includes("extensions:['dkplugin']")&&fs.readFileSync('./plugin-package.js','utf8').includes('.dkplugin'),
   'external plugin package extension must be .dkplugin');
 const rootCmds321=fs.readdirSync('.').filter(n=>n.toLowerCase().endsWith('.cmd')).sort();

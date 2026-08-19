@@ -36,11 +36,11 @@ assert(kernel.includes("const opened=await host?.openActivityWindow?.(spec.id)")
 assert(kernel.includes("if(mode==='split'&&(!layout.left||!layout.main))"),'split TOP workspaces must require left/main regions.');
 assert(kernel.includes("if(mode==='native'&&!rootSelector)"),'native TOP workspaces must validate a root selector without requiring split regions.');
 const pluginWindowRuntime=read('src/plugin-window/runtime.js');
-assert(pluginWindowRuntime.indexOf('window.DKDSPluginWindowRuntime = null')<pluginWindowRuntime.indexOf('for(const file of (spec.scripts||[]))'),'dedicated host must clear the runtime factory before support scripts, never after them.');
+assert(pluginWindowRuntime.includes("DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime')"),'dedicated host must resolve TOP runtimes through the Core Module Registry.');
 const pulseDedicated=read('src/plugins/pulse-analysis/analysis-service.js');
 const pulseTopAdapter=read('src/plugins/pulse-analysis/window-runtime.js');
-assert(pulseDedicated.includes('window.DKDSPulseAnalysisService'),'Pulse support script must publish the service factory consumed by its thin TOP adapter.');
-assert(pulseTopAdapter.includes('window.DKDSPulseAnalysisService'),'Pulse TOP adapter and support service must share one explicit runtime contract.');
+assert(pulseDedicated.includes("DKDSPluginModules.define('builtin.pulse-analysis','analysis-service'"),'Pulse support script must publish its service through the Core Module Registry.');
+assert(pulseTopAdapter.includes("modules.require('builtin.pulse-analysis','analysis-service')")&&pulseTopAdapter.includes("modules.define('builtin.pulse-analysis','window-runtime'"),'Pulse TOP adapter and support service must share the Core module contract.');
 assert(kernel.includes('打开失败'),'window-open failures must be surfaced instead of silently leaving another plugin UI visible.');
 assert(manager.includes('resetManagerScrollChain')&&manager.includes('settleManagerAtTop(frames=12)'),'plugin manager must repair late Chromium scroll anchoring after lifecycle changes.');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('new ContextMenu(this.owner)'),'portable charts must expose compact breadcrumb placement through core context menus.');

@@ -1,5 +1,5 @@
 (() => {
-  const Shared=window.DKDSResonanceWorkbenchShared;
+  const Shared=window.DKDSPluginModules.require('builtin.resonance-workbench','workbench-shared');
   if(!Shared)throw new Error('Resonance shared Controller layer is not loaded.');
   const {VIEW_CATALOG}=Shared;
 
@@ -329,10 +329,10 @@
   `;
 
   function mountUnified(ctx,controller,{mode='top',adapter={}}={}){
-    const h=ctx.host,R=controller.service;
+    const R=controller.service;
     ctx.ui.styles.add('resonance-grs-parity',TOP_STYLES);
-    const isTop=mode==='top'||ctx.host.isAuxiliaryWindow;
-    ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振曲线、峰位与物理分析',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');controller.render();}});
+    const isTop=mode==='top'||ctx.runtime.isAuxiliaryWindow;
+    ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振曲线、峰位与物理分析',onActivate:()=>{ctx.workspace.openPage('resonanceDedicatedPage');controller.render();}});
     const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(),onOpen:()=>controller.render()});
     R.bindUi?.(page);R.setUiRuntime?.(ctx.ui);R.setDetectorRuntime?.({list:()=>ctx.analysis.detectors.list()});
     let detectorParamPanel=null;
@@ -343,7 +343,7 @@
 
     const body=page.querySelector('.resonance-dedicated-body'),parity=page.querySelector('.resonance-parity-root');
     if(!body||!parity)throw new Error('Resonance parity DOM is incomplete.');
-    parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=document.createElement('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
+    parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
     const workspaceFactory=ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench;
     if(!workspaceFactory?.create)throw new Error('PluginWorkspace Core capability is unavailable.');
     const wb=workspaceFactory.create(host,{header:false,activity:'resonance',hostMode:isTop?'top':'super',primaryScroll:'contained',leftWidth:280,leftMin:230,canvasLeftWidth:360,canvasRightWidth:390,canvasBottomHeight:360});
@@ -403,7 +403,7 @@
       {id:'inspect',label:'检查',onInvoke:()=>togglePanel('inspect')},{id:'group',label:'组图',onInvoke:()=>togglePanel('group')},
       {type:'separator'},{id:'physics',label:'物理机制',onInvoke:()=>navigate('physics')},{id:'spacing',label:'峰间距',onInvoke:()=>navigate('spacing')},{id:'gate',label:'栅压分析',onInvoke:()=>navigate('gate')},
       {type:'separator'},{id:'export',label:'导出',menu:true,items:exportItems},
-      ...(isTop?[{id:'close',label:'关闭窗口',onInvoke:()=>h.closeCurrentWindow?.()}]:[])
+      ...(isTop?[{id:'close',label:'关闭窗口',onInvoke:()=>ctx.workspace.closeCurrentWindow?.()}]:[])
     ];
     const pageHeader=page.querySelector('.resonance-window-header'),headerActions=page.querySelector('#reswinHeaderActions');
     if(isTop){pageHeader?.classList.remove('hidden');if(headerActions)ctx.ui.actions?.mount?.(headerActions,{activity:'resonance',actions:localActions});}
@@ -434,7 +434,7 @@
     return Object.freeze({controller,catalog:VIEW_CATALOG,byId:id=>components[id]||null,...components,topPageHtml,topStyles:TOP_STYLES});
   }
 
-  window.DKDSResonanceViewComponents=Object.freeze({
+  window.DKDSPluginModules.define('builtin.resonance-workbench','view-components',Object.freeze({
     VIEW_CATALOG,byId,create,topPageHtml,TOP_STYLES,mountUnified,mountTop,superGatePageHtml,superSpacingPageHtml
-  });
+  }));
 })();

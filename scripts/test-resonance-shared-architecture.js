@@ -28,9 +28,9 @@ for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
   assert(adapter.split(/\r?\n/).length<45,`${name} adapter must remain host-only.`);
   for(const forbidden of ['Plotly.','detectPeaks','computeTerMatrix','buildTrendModel','computeSpacingRows','gateAnalysisPage','reswinMainPlot'])assert(!adapter.includes(forbidden),`${name} adapter regained feature logic: ${forbidden}`);
 }
-assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:document.querySelector('#app')")&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only select the common workbench host and resize lifecycle.');
-assert(runtime.includes("mode:'top'")&&runtime.includes("root:document.querySelector('#app')")&&runtime.includes('statusBar'),'TOP adapter may only map dedicated-window host surfaces.');
-for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSResonanceViewComponents'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
+assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:ctx.ui.dom.query('#app')")&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only select the common workbench host and resize lifecycle.');
+assert(runtime.includes("mode:'top'")&&runtime.includes("root:dom?.query?.('#app')")&&runtime.includes("DKDSPluginModules.define('builtin.resonance-workbench','window-runtime'"),'TOP adapter may only map dedicated-window host surfaces through Core Module Registry.');
+for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSPluginModules'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
 assert(views.includes('resparInspectorPanel')&&views.includes('resparGroupPanel')&&!views.includes('data-respar-dock="inspect"')&&!views.includes('data-respar-dock="group"'),'Shared View composition must own the reference inspector/group surfaces while placement chrome comes only from Core PortableView.');
 assert(views.includes('wb.compose')&&views.includes('existingNode:inspector')&&views.includes('existingNode:group')&&views.includes("stateVersion:'workspace-v2'"),'GRS-parity PRIME surfaces must be hosted and placement-persisted by the shared PluginWorkspace/PortableView system.');
 assert(views.includes('ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace')&&views.includes("hostMode:isTop?'top':'super'"),'Resonance must mount the same PluginWorkspace for SUPER and TOP; host mode may not select a different internal view.');
@@ -63,14 +63,20 @@ assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scr
 assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/feature-runtime.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated plugin index must preserve Controller/View/feature/adapter support-script order.');
 
 // Execute the shared Controller and View component layers in isolation.
-const context={window:{DKDSScience:{preset:()=>({_preset:'balanced'}),peakMetrics:(p)=>({v:p.v,i:p.i,vg:p.vg,fwhm:p.fwhm||0,amplitude:p.amplitude||0,area:p.area||0,prominence:p.prominence||0}),computeResonantTerForLabel:()=>[]}},structuredClone,console};
+const modules=new Map();
+const moduleRuntime={
+  define:(pluginId,name,value)=>{modules.set(`${pluginId}/${name}`,value);return value;},
+  get:(pluginId,name)=>modules.get(`${pluginId}/${name}`)||null,
+  require:(pluginId,name)=>{const value=modules.get(`${pluginId}/${name}`);if(!value)throw new Error(`missing module ${pluginId}/${name}`);return value;}
+};
+const context={window:{DKDSPluginModules:moduleRuntime,DKDSScience:{preset:()=>({_preset:'balanced'}),peakMetrics:(p)=>({v:p.v,i:p.i,vg:p.vg,fwhm:p.fwhm||0,amplitude:p.amplitude||0,area:p.area||0,prominence:p.prominence||0}),computeResonantTerForLabel:()=>[]}},structuredClone,console};
 context.window.window=context.window;
 vm.createContext(context);
 vm.runInContext(shared,context,{filename:'workbench-shared.js'});
 vm.runInContext(views,context,{filename:'view-components.js'});
-const W=context.window.DKDSResonanceWorkbenchShared;
-const V=context.window.DKDSResonanceViewComponents;
-assert(W&&W.VIEW_CATALOG.length===6,'Shared Controller global must expose six canonical views.');
+const W=moduleRuntime.require('builtin.resonance-workbench','workbench-shared');
+const V=moduleRuntime.require('builtin.resonance-workbench','view-components');
+assert(W&&W.VIEW_CATALOG.length===6,'Shared Controller module must expose six canonical views.');
 assert(V&&V.VIEW_CATALOG===W.VIEW_CATALOG,'Shared View layer must consume the canonical Controller view catalog instead of defining another one.');
 const sweeps=[{id:'f0',direction:1,vg:0},{id:'f1',direction:1,vg:1}];
 const peaks=[

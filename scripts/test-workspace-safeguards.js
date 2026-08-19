@@ -5,7 +5,7 @@ const {
   makePreservationPlan,
   mergePreservedPeaks,
   findDuplicateImports
-} = require('../src/plugins/workspace-safeguards/plugin.js');
+} = require('../src/core/recipes/workspace-safeguards.js');
 
 const oldA={path:'A'},oldB={path:'B'};
 const baseline={

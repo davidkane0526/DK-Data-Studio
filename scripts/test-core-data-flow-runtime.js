@@ -1,0 +1,25 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+const source=fs.readFileSync(path.join(root,'src/core/data-flow-runtime.js'),'utf8');
+const context={window:{}};context.window.window=context.window;vm.createContext(context);vm.runInContext(source,context,{filename:'data-flow-runtime.js'});
+const flow=context.window.DKDSDataFlow;
+const scope=flow.createScope('test.synthetic');
+const rows=Array.from({length:11},(_,i)=>({x:i-5,y:(i-5)**2}));
+scope.importers.register('synthetic',{extensions:['csv'],outputKinds:['data.table'],run:text=>text.trim().split(/\r?\n/).slice(1).map(line=>{const [x,y]=line.split(',').map(Number);return{x,y};})});
+scope.transformers.register('center',{inputKinds:['data.table'],outputKinds:['data.table'],run:data=>{const mean=data.reduce((s,r)=>s+r.y,0)/data.length;return data.map(r=>({...r,y:r.y-mean}));}});
+scope.exporters.register('csv',{inputKinds:['data.table'],run:data=>['x,y',...data.map(r=>`${r.x},${r.y}`)].join('\n')});
+const csv=['x,y',...rows.map(r=>`${r.x},${r.y}`)].join('\n');
+(async()=>{
+  const imported=await scope.importers.run('synthetic',csv);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(imported)),rows,'Core importer must preserve generated data exactly.');
+  const centered=await scope.transformers.run('center',imported);
+  assert(Math.abs(centered.reduce((s,r)=>s+r.y,0))<1e-10,'Core transformer execution must preserve numeric semantics.');
+  const exported=await scope.exporters.run('csv',imported);
+  assert.strictEqual(exported,csv,'Core exporter round trip must be exact for generated CSV.');
+  flow.removeOwner('test.synthetic');
+  assert.strictEqual(flow.list('importer').length,0,'Owner cleanup must remove data-flow providers.');
+  console.log('Core data-flow importer/transformer/exporter generated-data checks passed.');
+})().catch(err=>{console.error(err);process.exit(1);});

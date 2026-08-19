@@ -193,8 +193,8 @@
     return Object.freeze(controller);
   }
 
-  window.DKDSResonanceWorkbenchShared=Object.freeze({
+  window.DKDSPluginModules.define('builtin.resonance-workbench','workbench-shared',Object.freeze({
     PLUGIN_ID,VIEW_CATALOG,registerDataTypes,pluginSliceFromProject,defaultWorkspace,normalizeWorkspace,
     stateSnapshot,buildTrendModel,acceptedSeriesOptions,computeSpacingRows,createController
-  });
+  }));
 })();

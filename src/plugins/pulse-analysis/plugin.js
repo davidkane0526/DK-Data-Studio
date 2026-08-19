@@ -1,20 +1,20 @@
 (() => {
-  DKDSPlugins.define({id:'builtin.pulse-analysis',name:'Pulse / Read Analysis',version:'2.8.0',apiVersion:'1.7.0',description:'Pulse/read Controller + Shared Views + Feature Runtime using common workbench infrastructure.',source:'builtin',order:140,capabilities:["ui.activity", "ui.page", "analysis.pulse", "project.slice", "chart.timeseries", "ui.top-workspace", "ui.infrastructure", "ui.portable", "ui.dynamic-actions", "ui.shortcuts", "ui.workbench", "ui.selection", "ui.context-menu", "ui.split", "ui.chart-surface",'ui.analysis-workbench','ui.primary','ui.prime','ui.sub','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','ui.plugin-workspace'],workspace:{role:'top',activity:'pulse',icon:'▥',title:'脉冲分析'}},async ctx=>{
-    const C=window.DKDSPulseController,V=window.DKDSPulseSharedViews;if(!C||!V)throw new Error('Pulse / Read Analysis shared Controller/View layer not loaded.');
+  DKDSPlugins.define({id:'builtin.pulse-analysis',name:'Pulse / Read Analysis',version:'2.8.0',apiVersion:'1.8.0',requiresCore:["runtime","events","status","io","science","services","modules","project","workspace","data.types","analysis.providers","charts","ui.dom","ui.workspace","ui.plot-views","ui.actions","ui.selection","ui.interaction","ui.menus","ui.activities","ui.top-workspace","ui.pages","ui.portable"],description:'Pulse/read Controller + Shared Views + Feature Runtime using common workbench infrastructure.',source:'builtin',order:140,capabilities:["ui.activity", "ui.page", "analysis.pulse", "project.slice", "chart.timeseries", "ui.top-workspace", "ui.infrastructure", "ui.portable", "ui.dynamic-actions", "ui.shortcuts", "ui.workbench", "ui.selection", "ui.context-menu", "ui.split", "ui.chart-surface",'ui.analysis-workbench','ui.primary','ui.prime','ui.sub','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','ui.plugin-workspace'],workspace:{role:'top',activity:'pulse',icon:'▥',title:'脉冲分析'}},async ctx=>{
+    const C=ctx.modules.require('controller'),V=ctx.modules.require('shared-views'),analysisService=ctx.modules.require('analysis-service');
     let ownedRuntime=null;
-    let service=ctx.host?.pulse;
-    if(!ctx.host.isAuxiliaryWindow&&window.DKDSPulseAnalysisService?.create){
-      ownedRuntime=await window.DKDSPulseAnalysisService.create({
-        host:ctx.host,
-        setStatus:ctx.host.setStatus||(()=>{}),
-        copyTextToClipboard:ctx.host.copyTextToClipboard||(()=>{}),
-        savePlotlyImage:ctx.host.savePlotlyImage||(()=>{}),
-        scheduleSnapshot:()=>ctx.host.captureActiveProjectTab?.()
+    let service=ctx.services?.get?.('pulse');
+    if(!ctx.runtime.isAuxiliaryWindow&&analysisService?.create){
+      ownedRuntime=await analysisService.create({
+        setStatus:ctx.status.set,
+        copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
+        savePlotlyImage:(plotId,baseName,format)=>ctx.ui.charts.saveImage(plotId,baseName,format),
+        scheduleSnapshot:()=>ctx.project.capture?.(),
+        io:ctx.io,charts:ctx.ui.charts,dom:ctx.ui.dom
       });
       service=ownedRuntime?.service||service;
     }
     const controller=C.create(ctx,{service});const views=V.create(controller);
-    const adapter=window.DKDSPulseSuperLayout;if(!adapter?.mount)throw new Error('Pulse / Read Analysis layout adapter unavailable.');
+    const adapter=ctx.modules.require('super-layout');
     const runtime=await adapter.mount(ctx,controller,views);
     return {...runtime,deactivate(){try{runtime?.deactivate?.();}finally{controller.dispose?.();ownedRuntime?.dispose?.();}}};
   });

@@ -1,18 +1,21 @@
 (() => {
   const $create=(tag,cls='')=>{const el=document.createElement(tag);if(cls)el.className=cls;return el;};
   function clone(v){return window.DKDSData?.deepClone?.(v)??JSON.parse(JSON.stringify(v));}
+  const fieldPath=f=>String(f?.path||f?.id||'');
+  function getPath(obj,path){let cur=obj;for(const part of String(path||'').split('.').filter(Boolean)){if(cur==null)return undefined;cur=cur[part];}return cur;}
+  function setPath(obj,path,value){const parts=String(path||'').split('.').filter(Boolean);if(!parts.length)return value;let cur=obj;for(let i=0;i<parts.length-1;i++){const part=parts[i];if(!cur[part]||typeof cur[part]!=='object'||Array.isArray(cur[part]))cur[part]={};cur=cur[part];}cur[parts.at(-1)]=value;return obj;}
   function fieldsOf(schema){
     if(Array.isArray(schema?.fields))return schema.fields.map(f=>({...f}));
     if(schema?.properties&&typeof schema.properties==='object')return Object.entries(schema.properties).map(([id,f])=>({id,...f}));
     return [];
   }
   function defaultValues(schema,initial={}){
-    const out={...clone(initial||{})};for(const f of fieldsOf(schema))if(out[f.id]===undefined&&f.default!==undefined)out[f.id]=clone(f.default);return out;
+    const out={...clone(initial||{})};for(const f of fieldsOf(schema))if(getPath(out,fieldPath(f))===undefined&&f.default!==undefined)setPath(out,fieldPath(f),clone(f.default));return out;
   }
   function visible(field,values){
     const rule=field.visibleWhen;if(!rule)return true;
     if(typeof rule==='function')return !!rule(values);
-    if(typeof rule==='object')return Object.entries(rule).every(([k,v])=>Array.isArray(v)?v.includes(values[k]):values[k]===v);
+    if(typeof rule==='object')return Object.entries(rule).every(([k,v])=>Array.isArray(v)?v.includes(getPath(values,k)):getPath(values,k)===v);
     return true;
   }
   function resolveOptions(field,context,values){
@@ -30,7 +33,7 @@
   function validate(schema,values,context={}){
     const errors={};
     for(const f of fieldsOf(schema)){
-      if(!visible(f,values))continue;const v=values[f.id];
+      if(!visible(f,values))continue;const v=getPath(values,fieldPath(f));
       if(f.required&&(v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length))){errors[f.id]=`${f.label||f.id} 为必填项。`;continue;}
       if((f.type==='number'||f.type==='integer')&&v!==null&&v!==undefined&&v!==''){
         const n=Number(v);if(!Number.isFinite(n))errors[f.id]=`${f.label||f.id} 必须是有效数字。`;else if(f.min!==undefined&&n<f.min)errors[f.id]=`${f.label||f.id} 不能小于 ${f.min}。`;else if(f.max!==undefined&&n>f.max)errors[f.id]=`${f.label||f.id} 不能大于 ${f.max}。`;
@@ -47,14 +50,14 @@
 
     function inputFor(field){
       const options=resolveOptions(field,context,values);let input;
-      if(field.type==='boolean'){input=$create('input');input.type='checkbox';input.checked=!!values[field.id];}
+      if(field.type==='boolean'){input=$create('input');input.type='checkbox';input.checked=!!getPath(values,fieldPath(field));}
       else if(['select','column','multiselect','columns'].includes(field.type)){
         input=$create('select');if(field.type==='multiselect'||field.type==='columns')input.multiple=true;
         if(!field.required&&!(field.type==='multiselect'||field.type==='columns')){const o=$create('option');o.value='';o.textContent=field.placeholder||'—';input.appendChild(o);}
         for(const opt of options){const o=$create('option');o.value=String(opt.value);o.textContent=String(opt.label??opt.value);input.appendChild(o);}
-        if(input.multiple){const set=new Set(values[field.id]||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=values[field.id]??'';
-      }else if(field.type==='textarea'||field.type==='formula'){input=$create('textarea');input.rows=field.rows||3;input.value=values[field.id]??'';input.placeholder=field.placeholder||'';}
-      else{input=$create('input');input.type=field.type==='number'||field.type==='integer'?'number':field.type==='color'?'color':'text';input.value=values[field.id]??'';if(field.placeholder)input.placeholder=field.placeholder;if(field.min!==undefined)input.min=field.min;if(field.max!==undefined)input.max=field.max;if(field.step!==undefined)input.step=field.step;}
+        if(input.multiple){const set=new Set(getPath(values,fieldPath(field))||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=getPath(values,fieldPath(field))??'';
+      }else if(field.type==='textarea'||field.type==='formula'){input=$create('textarea');input.rows=field.rows||3;input.value=getPath(values,fieldPath(field))??'';input.placeholder=field.placeholder||'';}
+      else{input=$create('input');input.type=field.type==='number'||field.type==='integer'?'number':field.type==='color'?'color':'text';input.value=getPath(values,fieldPath(field))??'';if(field.placeholder)input.placeholder=field.placeholder;if(field.min!==undefined)input.min=field.min;if(field.max!==undefined)input.max=field.max;if(field.step!==undefined)input.step=field.step;}
       input.id=`schema-param-${String(field.id).replace(/[^a-z0-9_-]/gi,'-')}`;input.dataset.paramId=field.id;return input;
     }
 
@@ -71,13 +74,13 @@
       if(!group){group=$create('div','schema-param-group');if(groupName){const title=$create('div','schema-param-group-title');title.textContent=groupName;group.appendChild(title);}container.appendChild(group);groups.set(groupName,group);}
       const wrap=$create('label',`schema-param-field type-${String(field.type||'text').replace(/[^a-z0-9_-]/gi,'-')}`);wrap.dataset.paramId=field.id;const head=$create('div','schema-param-label');head.textContent=field.label||field.id;if(field.required){const req=$create('span','required');req.textContent=' *';head.appendChild(req);}wrap.appendChild(head);
       const input=inputFor(field);wrap.appendChild(input);if(field.description){const help=$create('div','schema-param-help');help.textContent=field.description;wrap.appendChild(help);}const error=$create('div','schema-param-error');wrap.appendChild(error);group.appendChild(wrap);controls.set(field.id,{field,input,wrap,error});
-      input.addEventListener('input',()=>{values[field.id]=readInput(field,input);rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
-      input.addEventListener('change',()=>{values[field.id]=readInput(field,input);rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
+      input.addEventListener('input',()=>{setPath(values,fieldPath(field),readInput(field,input));rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
+      input.addEventListener('change',()=>{setPath(values,fieldPath(field),readInput(field,input));rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
     }
     rerenderVisibility();updateErrors(validate(schema,values,context));
     return {
-      getValue(){for(const {field,input} of controls.values())values[field.id]=readInput(field,input);return clone(values);},
-      setValue(next){values=defaultValues(schema,next||{});for(const [id,{field,input}] of controls){const v=values[id];if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
+      getValue(){for(const {field,input} of controls.values())setPath(values,fieldPath(field),readInput(field,input));return clone(values);},
+      setValue(next){values=defaultValues(schema,next||{});for(const [id,{field,input}] of controls){const v=getPath(values,fieldPath(field));if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
       validate(){const result=validate(schema,this.getValue(),context);updateErrors(result);return result;},
       destroy(){container.innerHTML='';controls.clear();},
       schema,context

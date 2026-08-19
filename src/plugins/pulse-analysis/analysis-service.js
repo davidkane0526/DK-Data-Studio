@@ -1,6 +1,5 @@
 (() => {
   const A = window.Analysis;
-  const $ = s => document.querySelector(s);
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -107,8 +106,9 @@
     return {factor:1e12,unit:'pA'};
   }
 
-  window.DKDSPulseAnalysisService = {
-    async create({host,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}) {
+  window.DKDSPluginModules.define('builtin.pulse-analysis','analysis-service',{
+    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null}) {
+      const $=s=>dom?.query?.(s)||null;
       let state = createState();
 
       const active = () => state.files.find(f=>f.id===state.activeId) || null;
@@ -242,7 +242,7 @@
         if (!state.files.length) el.innerHTML = '<div class="pulse-file-empty">尚未添加脉冲数据文件</div>';
 
         for (const item of state.files) {
-          const row = document.createElement('div');
+          const row = dom.create('div');
           const isActive = item.id === state.activeId;
           row.className = `pulse-batch-file-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`;
           const rv = nullableNumber(item.result?.readVoltage);
@@ -345,8 +345,8 @@
       }
 
       function emptyPlot(id,message) {
-        if (!document.getElementById(id)) return;
-        Plotly.react(id,[],{
+        if (!dom.query('#'+id)) return;
+        charts.react(id,[],{
           margin:{l:25,r:25,t:25,b:25},
           xaxis:{visible:false},yaxis:{visible:false},
           annotations:[{text:message,x:.5,y:.5,xref:'paper',yref:'paper',showarrow:false,font:{size:13,color:'#98a2b3'}}],
@@ -367,7 +367,7 @@
         const hasVoltage = (r.raw.voltage||[]).some(Number.isFinite);
         const config = {responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:true,doubleClick:'reset'};
         if (!hasVoltage) {
-          Plotly.react('pulseRawPlot',[{
+          charts.react('pulseRawPlot',[{
             x:r.raw.time,y:r.raw.current.map(v=>v*scale.factor),mode:'lines',name:'Id',line:{width:1.2},
             hovertemplate:`Time=%{x:.7g}<br>Id=%{y:.7g} ${scale.unit}<extra>Id</extra>`
           }],{
@@ -378,7 +378,7 @@
           },config);
           return;
         }
-        Plotly.react('pulseRawPlot',[
+        charts.react('pulseRawPlot',[
           {x:r.raw.time,y:r.raw.voltage,mode:'lines',name:'Vd',line:{width:1.25},yaxis:'y'},
           {x:r.raw.time,y:r.raw.current.map(v=>v*scale.factor),mode:'lines',name:'Id',line:{width:1.15},yaxis:'y2'}
         ],{
@@ -459,8 +459,8 @@
           });
         }
         const config = {responsive:true,displaylogo:false,displayModeBar:false,scrollZoom:true,doubleClick:'reset'};
-        Plotly.react('pulseReadPlot',readTraces,baseLayout(`读取电流 (${scale.unit})`,showLegend,xTitle),config);
-        Plotly.react('pulsePulsePlot',pulseTraces,baseLayout(`脉冲电流 (${scale.unit})`,showLegend,xTitle),config);
+        charts.react('pulseReadPlot',readTraces,baseLayout(`读取电流 (${scale.unit})`,showLegend,xTitle),config);
+        charts.react('pulsePulsePlot',pulseTraces,baseLayout(`脉冲电流 (${scale.unit})`,showLegend,xTitle),config);
         renderTable();
       }
 
@@ -468,12 +468,15 @@
         renderFileList();
         renderEditor();
         if ($('#pulseResultScope')) $('#pulseResultScope').value = state.resultScope||'checked';
+        // Keep the analysis service usable in headless tests/automation. Graph
+        // rendering is a Core chart capability, not a prerequisite for analysis.
+        if(!charts?.react)return;
         renderRaw();
         renderComparison();
-        requestAnimationFrame(()=>{
+        dom?.frame?.(()=>{
           for (const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']) {
-            const el=document.getElementById(id);
-            if (el) try { Plotly.Plots.resize(el); } catch {}
+            const el=dom?.query?.('#'+id);
+            if (el) try { charts.resize(el); } catch {}
           }
         });
       }
@@ -482,7 +485,7 @@
         if (state.dialogOpen) return;
         state.dialogOpen = true;
         let metas = [];
-        try { metas = await window.electronAPI.openDataFiles(); }
+        try { metas = await io.openDataFiles(); }
         finally { state.dialogOpen = false; }
         if (!metas?.length) return;
         const paths = new Set(state.files.map(f=>f.path));
@@ -490,7 +493,7 @@
         for (const meta of metas) {
           if (paths.has(meta.path)) continue;
           try {
-            const data = await window.electronAPI.readDataText({path:meta.path,encoding:'auto'});
+            const data = await io.readDataText({path:meta.path,encoding:'auto'});
             const item = makeItem(meta,data);
             state.files.push(item); paths.add(meta.path); added++;
             if (!state.activeId) state.activeId=item.id;
@@ -530,7 +533,7 @@
         for (let i=0;i<items.length;i++) {
           const item=items[i]; item.loading=true; renderFileList();
           setStatus(`批量脉冲分析：${i+1}/${items.length} · ${label(item)}`);
-          await new Promise(r=>setTimeout(r,0));
+          await Promise.resolve();
           if (analyzeItem(item)) ok++; else fail++;
           item.loading=false;
         }
@@ -587,7 +590,7 @@
 
       async function saveCsv(name,content) {
         if (!content) return false;
-        return window.electronAPI.saveText({defaultName:name,content,filters:[{name:'CSV',extensions:['csv']}]});
+        return io.saveCsv(content,name);
       }
 
       function serialize() {
@@ -642,7 +645,7 @@
         syncEditor,
         refreshFileAndComparison(){renderFileList();renderComparison();},
         setResultScope(value){state.resultScope=value==='active'?'active':'checked';renderComparison();scheduleSnapshot();},
-        fitRaw(){if(!active()?.result)return false;Plotly.relayout('pulseRawPlot',{'xaxis.autorange':true,'yaxis.autorange':true,'yaxis2.autorange':true});return true;},
+        fitRaw(){if(!active()?.result)return false;charts.relayout('pulseRawPlot',{'xaxis.autorange':true,'yaxis.autorange':true,'yaxis2.autorange':true});return true;},
         copyRaw:()=>copyTextToClipboard(rawCsv(),'当前原始脉冲波形 CSV'),
         exportRawCsv:()=>saveCsv(`${safeName(label(active()))}_raw_waveform.csv`,rawCsv()),
         exportRawSvg:()=>active()?.result&&savePlotlyImage('pulseRawPlot',`${safeName(label(active()))}_raw_waveform`,'svg'),
@@ -665,5 +668,5 @@
 
       return {serviceName:'pulse',service,getState:()=>state,render};
     }
-  };
+  });
 })();

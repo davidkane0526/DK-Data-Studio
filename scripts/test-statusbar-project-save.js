@@ -26,8 +26,8 @@ assert(css.includes('.plugin-status-item'),'status-bar plugin controls need a co
 assert(kernel.includes("registerContribution(pluginId,'ui.statusItems'"),'plugin kernel must register status items generically.');
 assert(kernel.includes('statusBar: {')&&kernel.includes('add: spec => addStatusBarItem(pluginId, spec)'),'plugin API must expose ui.statusBar.add().');
 assert(manifest.capabilities.includes('ui.status-bar'),'status monitor must declare status-bar capability.');
-assert(plugin.includes("id:'memory'")&&plugin.includes('getRuntimeStatus'),'status plugin must show live runtime memory.');
-assert(plugin.includes("id:'lan-web'")&&plugin.includes('openLanWebPanel'),'status plugin must show LAN web state and restore the panel.');
+assert(plugin.includes("id:'memory'")&&plugin.includes("runtimeService.getStatus"),'status plugin must show live runtime memory through Core Service Registry.');
+assert(plugin.includes("id:'lan-web'")&&plugin.includes('lanService.openPanel'),'status plugin must show LAN web state and restore the panel through Core Service Registry.');
 
 for(const id of ['projectSaveChoiceDialog','projectSaveCurrentBtn','projectSaveAsBtn','projectSaveCancelBtn']){
   assert(html.includes(`id="${id}"`),`project save choice UI missing: ${id}`);
@@ -40,7 +40,7 @@ assert(bridge.includes('Plain HTTP LAN pages cannot normally use File System Acc
 
 assert(html.includes('id="lanWebMinimizeBtn"'),'LAN web panel needs an explicit minimize-to-status-bar control.');
 assert(app.includes('function hideLanWebPanel')&&app.includes('function showLanWebPanel'),'LAN panel must have reusable hide/restore lifecycle helpers.');
-assert(app.includes('openLanWebPanel:showLanWebPanel'),'plugins must be able to restore the LAN panel through the host API.');
+assert(app.includes('lanWeb:Object.freeze({getStatus:')&&app.includes('openPanel:showLanWebPanel'),'plugins must restore the LAN panel through the generic Core Service Registry.');
 assert(app.includes("events?.emit?.('lanweb:status',status)"),'LAN state changes must be broadcast to status plugins.');
 
 assert(main.includes("ipcMain.handle('system:getRuntimeStatus'"),'desktop runtime metrics IPC missing.');

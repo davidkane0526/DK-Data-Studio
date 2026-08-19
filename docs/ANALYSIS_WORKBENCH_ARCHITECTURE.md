@@ -123,7 +123,7 @@ Capability registry changes are republished automatically.
 
 ## 6. Shared infrastructure exposed to plugins
 
-Plugin API 1.7 exposes, among other APIs:
+Plugin API 1.8 exposes, among other APIs:
 
 - `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface`;
 - `ctx.ui.grid`;

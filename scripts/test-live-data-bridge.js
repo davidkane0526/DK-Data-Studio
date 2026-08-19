@@ -12,6 +12,7 @@ const context={
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/core/plugin-module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 const D=context.DKDSData;
 
 const legacyA={
@@ -41,8 +42,10 @@ context.Analysis={
 vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{filename:'ter-analysis-service.js'});
 
 (async()=>{
-  const runtime=await context.DKDSTERAnalysisService.create({
-    host:{artifacts:{list:opts=>store.list(opts)}},
+  const terAnalysis=context.DKDSPluginModules.require('builtin.ter-analysis','analysis-service');
+  const runtime=await terAnalysis.create({
+    artifacts:{list:opts=>store.list(opts)},
+    getVisibility:()=>new Map(),
     project:{datasets:[legacyA]},setStatus(){},copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){}
   });
   runtime.service.autoParameters();
@@ -52,8 +55,9 @@ vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{fi
   context.DKDSScience={preset:()=>({_preset:'balanced'}),parseCsv:()=>({points:[]}),buildSweeps:dataset=>[{id:`${dataset.path}:f`,datasetPath:dataset.path,datasetName:dataset.name,vg:dataset.vg,direction:1,points:dataset.points}]};
   vm.runInContext(read('src/plugins/resonance-workbench/workbench-shared.js'),context,{filename:'workbench-shared.js'});
   vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
-  const resonance=await context.DKDSResonanceFeatureRuntime.createTop({
-    host:{artifacts:{list:opts=>store.list(opts)}},project:{datasets:[legacyA]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
+  const resonanceFeature=context.DKDSPluginModules.require('builtin.resonance-workbench','feature-runtime');
+  const resonance=await resonanceFeature.createTop({
+    artifacts:{list:opts=>store.list(opts)},project:{datasets:[legacyA]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
   });
   assert.strictEqual(resonance.getState().datasets[0].path,legacyB.path,'Resonance must consume the same canonical Artifact source');
   D.syncLegacyDatasetArtifacts(store,[legacyA,legacyB]);

@@ -5,8 +5,8 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const css=read('src/style.css');
-const shell=read('src/plugins/shell-navigation/plugin.js');
-const safeguards=read('src/plugins/workspace-safeguards/plugin.js');
+const shell=read('src/core/recipes/shell-navigation.js');
+const safeguards=read('src/core/recipes/workspace-safeguards.js');
 const runtime=read('src/plugin-window/runtime.js');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 const manifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));

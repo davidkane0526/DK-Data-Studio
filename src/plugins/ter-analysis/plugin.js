@@ -1,28 +1,29 @@
 (() => {
   DKDSPlugins.define({
-    id:'builtin.ter-analysis',name:'TER Analysis',version:'3.0.0',apiVersion:'1.7.0',
+    id:'builtin.ter-analysis',name:'TER Analysis',version:'3.0.0',apiVersion:'1.8.0',requiresCore:["runtime","events","status","io","science","services","modules","project","workspace","data.artifacts","data.types","analysis.providers","charts","ui.dom","ui.workspace","ui.plot-views","ui.actions","ui.selection","ui.interaction","ui.menus","ui.activities","ui.top-workspace","ui.shortcuts","ui.pages","ui.styles","ui.portable"],
     description:'TER Controller + Shared Views + Feature Runtime built on DKDS workbench infrastructure.',source:'builtin',order:120,
     capabilities:["ui.activity", "ui.page", "analysis.ter", "chart.heatmap", "chart.resistance-voltage", "ui.linked-selection", "ui.sticky-inspector", "ui.chart-layout", "ui.keyboard-adjustment", "chart.export", "ui.top-workspace", "ui.infrastructure", "ui.portable", "ui.dynamic-actions", "ui.shortcuts", "ui.workbench", "ui.selection", "ui.context-menu", "ui.split", "ui.chart-surface",'ui.analysis-workbench','ui.primary','ui.prime','ui.sub','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','data.artifacts','ui.plugin-workspace'],
     workspace:{role:'top',activity:'ter',icon:'▧',title:'TER分析'}
   },async ctx=>{
-    const C=window.DKDSTERController,V=window.DKDSTERSharedViews;
-    if(!C||!V)throw new Error('TER Analysis shared Controller/View layer not loaded.');
+    const C=ctx.modules.require('controller'),V=ctx.modules.require('shared-views'),analysisService=ctx.modules.require('analysis-service');
     let ownedRuntime=null;
-    let service=ctx.host?.ter;
-    if(!ctx.host.isAuxiliaryWindow&&window.DKDSTERAnalysisService?.create){
-      ownedRuntime=await window.DKDSTERAnalysisService.create({
-        host:ctx.host,
-        project:ctx.host.makeProject?.()||{},
-        bootstrap:{title:ctx.host.getActiveProjectTab?.()?.title||'当前项目'},
-        setStatus:ctx.host.setStatus||(()=>{}),
-        copyTextToClipboard:ctx.host.copyTextToClipboard||(()=>{}),
-        savePlotlyImage:ctx.host.savePlotlyImage||(()=>{}),
-        scheduleSnapshot:()=>ctx.host.captureActiveProjectTab?.()
+    let service=ctx.services?.get?.('ter');
+    if(!ctx.runtime.isAuxiliaryWindow&&analysisService?.create){
+      ownedRuntime=await analysisService.create({
+        project:ctx.project.create?.()||{},
+        bootstrap:{title:ctx.project.current?.()?.title||'当前项目'},
+        getVisibility:()=>ctx.project.create?.()?.scanVisibility||[],
+        artifacts:ctx.data.artifacts,
+        setStatus:ctx.status.set,
+        copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
+        savePlotlyImage:(plotId,baseName,format)=>ctx.ui.charts.saveImage(plotId,baseName,format),
+        scheduleSnapshot:()=>ctx.project.capture?.(),
+        io:ctx.io,charts:ctx.ui.charts,dom:ctx.ui.dom
       });
       service=ownedRuntime?.service||service;
     }
     const controller=C.create(ctx,{service});const views=V.create(controller);
-    const adapter=window.DKDSTERSuperLayout;if(!adapter?.mount)throw new Error('TER Analysis layout adapter unavailable.');
+    const adapter=ctx.modules.require('super-layout');
     const runtime=await adapter.mount(ctx,controller,views);
     return {...runtime,deactivate(){try{runtime?.deactivate?.();}finally{controller.dispose?.();ownedRuntime?.dispose?.();}}};
   });

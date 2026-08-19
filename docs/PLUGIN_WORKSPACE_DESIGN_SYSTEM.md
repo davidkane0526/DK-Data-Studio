@@ -169,7 +169,6 @@ Preferred workspace API:
 const wb = ctx.ui.pluginWorkspace.create(root, {
   header: false,
   activity: 'my-analysis',
-  hostMode: ctx.host.isAuxiliaryWindow ? 'top' : 'super'
 });
 
 wb.compose({

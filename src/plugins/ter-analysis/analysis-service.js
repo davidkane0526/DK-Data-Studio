@@ -1,7 +1,6 @@
 (() => {
   const A=window.Analysis;
   const D=window.DKDSData;
-  const $=s=>document.querySelector(s);
 
   function finite(value){return value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));}
   function numOrNull(value){if(!finite(value))return null;return Number(value);}
@@ -12,8 +11,9 @@
     try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
   }
 
-  window.DKDSTERAnalysisService={
-    async create({host,project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}){
+  window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null}){
+      const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
       let display={};
@@ -34,21 +34,21 @@
       applyProject(project);
 
       function visibilityMap(){
-        const live=host?.getState?.();
-        if(live?.scanVisibility instanceof Map)return new Map(live.scanVisibility);
-        if(Array.isArray(live?.scanVisibility))return new Map(live.scanVisibility);
+        const live=typeof getVisibility==='function'?getVisibility():null;
+        if(live instanceof Map)return new Map(live);
+        if(Array.isArray(live))return new Map(live);
         return new Map(Array.isArray(project.scanVisibility)?project.scanVisibility:[]);
       }
       function datasets(){
         // Imported source data is canonical through the shared Artifact Store.
         // `project.datasets` remains a compatibility fallback for old project
         // files and bootstrap phases before the data-model bridge is available.
-        const artifacts=host?.artifacts?.list?.({includeTransient:true})||[];
-        const canonical=D?.legacyDatasetsFromArtifacts?.(artifacts)||[];
-        const rows=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
-        if(!settings.onlyFullyVisible)return rows.slice();
+        const rows=artifacts?.list?.({includeTransient:true})||[];
+        const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
+        const datasets=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
+        if(!settings.onlyFullyVisible)return datasets.slice();
         const vis=visibilityMap();
-        return rows.filter(ds=>{
+        return datasets.filter(ds=>{
           const v=vis.get(ds.path);
           return !!v?.forward&&!!v?.reverse;
         });
@@ -65,11 +65,12 @@
         if($('#terOnlyFullyVisible'))$('#terOnlyFullyVisible').checked=!!settings.onlyFullyVisible;
       }
       function readInputs(){
-        const read=id=>numOrNull($('#'+id)?.value);
+        const read=(id,current)=>{const el=$('#'+id);return el?numOrNull(el.value):current;};
+        const visibleControl=$('#terOnlyFullyVisible');
         settings={
-          vmin:read('terVmin'),vmax:read('terVmax'),vstep:read('terVstep'),
-          tolerance:read('terTolerance'),currentFloor:read('terCurrentFloor')??1e-15,
-          onlyFullyVisible:!!$('#terOnlyFullyVisible')?.checked
+          vmin:read('terVmin',settings.vmin),vmax:read('terVmax',settings.vmax),vstep:read('terVstep',settings.vstep),
+          tolerance:read('terTolerance',settings.tolerance),currentFloor:read('terCurrentFloor',settings.currentFloor)??1e-15,
+          onlyFullyVisible:visibleControl?!!visibleControl.checked:!!settings.onlyFullyVisible
         };
         scheduleSnapshot();
         return settings;
@@ -139,7 +140,7 @@
       }
       function purge(){
         for(const id of ['terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-          const el=document.getElementById(id);if(el)try{Plotly.purge(el);}catch{}
+          const el=dom?.query?.('#'+id);if(el)try{charts.purge(el);}catch{}
         }
       }
 
@@ -152,11 +153,14 @@
           `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`
         ].map(t=>`<span class="ter-summary-chip">${t}</span>`).join('');
 
+        // Analysis is intentionally headless-safe: chart availability must not
+        // determine whether the scientific result exists or can be persisted.
+        if(!charts?.react)return;
         const vals=r.matrix.flat().filter(Number.isFinite);
         const autoMin=vals.length?Math.min(...vals):0,autoMax=vals.length?Math.max(...vals):1;
         const zmin=finite(display.zmin)?Number(display.zmin):autoMin;
         const zmax=finite(display.zmax)?Number(display.zmax):autoMax;
-        Plotly.react('terHeatmapPlot',[{
+        charts.react('terHeatmapPlot',[{
           x:r.targets,y:r.vgs,z:r.matrix,type:'heatmap',colorscale:display.colorscale||'Viridis',
           zmin,zmax,zsmooth:false,
           colorbar:{title:{text:'TER (%)',side:'right'},thickness:18,len:.86,
@@ -170,20 +174,20 @@
         },plotConfig('TER_heatmap'));
 
         const maxVg=r.terMaxByVg||r.terMax||[],maxVd=r.terMaxByVd||[];
-        Plotly.react('terMaxVgPlot',[{
+        charts.react('terMaxVgPlot',[{
           x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.terMax),mode:'lines+markers',name:'TER_Max–Vg',
           marker:{size:8},line:{width:2},customdata:maxVg.map(d=>d.vdsAtMax),
           hovertemplate:'Vg=%{x}<br>TER_Max=%{y:.5g}%<br>Vd@max=%{customdata:.5g} V<extra></extra>'
         }],baseLayout('Vg (V)','TER_Max–Vg (%)'),plotConfig('TER_Max-Vg'));
-        Plotly.react('terMaxVgArgPlot',[{
+        charts.react('terMaxVgArgPlot',[{
           x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.vdsAtMax),mode:'lines+markers',name:'Vd@max',marker:{size:8}
         }],baseLayout('Vg (V)','Vd @ TER_Max–Vg (V)'),plotConfig('Vd_at_TER_Max-Vg'));
-        Plotly.react('terMaxVdPlot',[{
+        charts.react('terMaxVdPlot',[{
           x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.terMax),mode:'lines+markers',name:'TER_Max–Vd',marker:{size:7},line:{width:2},
           customdata:maxVd.map(d=>d.vgAtMax),
           hovertemplate:'Vd=%{x}<br>TER_Max=%{y:.5g}%<br>Vg@max=%{customdata:.5g} V<extra></extra>'
         }],baseLayout('Vd (V)','TER_Max–Vd (%)'),plotConfig('TER_Max-Vd'));
-        Plotly.react('terMaxVdArgPlot',[{
+        charts.react('terMaxVdArgPlot',[{
           x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.vgAtMax),mode:'lines+markers',name:'Vg@max',marker:{size:7}
         }],baseLayout('Vd (V)','Vg @ TER_Max–Vd (V)'),plotConfig('Vg_at_TER_Max-Vd'));
 
@@ -231,7 +235,7 @@
         for(const d of (result.terMaxByVd||[]))rows.push([d.vds,d.terMax,d.vgAtMax,d.iUp,d.iDown,d.rUp,d.rDown,csvCell(d.sourceFile)].join(','));
         return rows.join('\n');
       }
-      async function saveCsv(name,content){if(!content)return false;return window.electronAPI.saveText({defaultName:name,content,filters:[{name:'CSV',extensions:['csv']}]});}
+      async function saveCsv(name,content){if(!content)return false;return io.saveCsv(content,name);}
 
       const service={
         serialize:()=>({schema:1,settings:cloneSerializable(settings),display:cloneSerializable(display),result:result?cloneSerializable(result):null}),
@@ -289,5 +293,5 @@
         getState:()=>({settings,display,result})
       };
     }
-  };
+  });
 })();

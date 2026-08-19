@@ -3,14 +3,14 @@
     id:'builtin.flexible-import',
     name:'Flexible Text Import',
     version:'1.0.0',
-    apiVersion:'1.0.0',
+    apiVersion:'1.8.0',requiresCore:["science","data.flow","data.model"],
     description:'Generic text/multicolumn import provider used by the import workbench.',
     source:'builtin',
     order:10,
     capabilities:['data.importer','data.inspector']
   }, async ctx => {
-    const A=window.DKDSScience;
-    ctx.registry.add('data.importers','flexible-text',{
+    const A=ctx.science;
+    ctx.data.importers.register('flexible-text',{
       id:'flexible-text',
       name:'Flexible Text / Multi-column',
       extensions:['csv','txt','dat','tsv','asc','xy','iv','prn','out','log'],

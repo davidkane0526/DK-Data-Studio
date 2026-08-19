@@ -18,7 +18,7 @@ for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends Ana
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.7.0'"),'Plugin API must be v1.7.0.');
+assert(kernel.includes("const API_VERSION = '1.8.0'"),'Plugin API must be v1.8.0.');
 assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&&kernel.includes('workspaceSurface:'),'Kernel must expose the host-invariant PluginWorkspace as the preferred scientific workspace surface.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
@@ -48,7 +48,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
-  assert(manifest.apiVersion==='1.7.0',`${folder}: manifest must target plugin API 1.7.0.`);
+  assert(manifest.apiVersion==='1.8.0',`${folder}: manifest must target plugin API 1.8.0.`);
   assert((manifest.capabilities||[]).includes('ui.analysis-workbench'),`${folder}: manifest must declare unified workbench capability.`);
   assert((manifest.capabilities||[]).includes('runtime.capabilities'),`${folder}: manifest must declare Capability Runtime use.`);
 }
@@ -80,12 +80,12 @@ assert(resonanceFeature.includes('ctx.analysis.detectors.list()')||resonanceView
   const pulseTop=read('src/plugins/pulse-analysis/window-runtime.js');
   assert((terManifest.scripts||[]).includes('analysis-service.js')&&(terManifest.window?.scripts||[]).includes('analysis-service.js'),'TER main/SUPER and TOP must load the same plugin-owned analysis service.');
   assert((pulseManifest.scripts||[]).includes('analysis-service.js')&&(pulseManifest.window?.scripts||[]).includes('analysis-service.js'),'Pulse main/SUPER and TOP must load the same plugin-owned analysis service.');
-  assert(terEntry.includes('DKDSTERAnalysisService.create')&&terTop.includes('DKDSTERAnalysisService'),'TER SUPER/TOP must share the same analysis-service factory.');
-  assert(pulseEntry.includes('DKDSPulseAnalysisService.create')&&pulseTop.includes('DKDSPulseAnalysisService'),'Pulse SUPER/TOP must share the same analysis-service factory.');
+  assert(terEntry.includes("ctx.modules.require('analysis-service')")&&terTop.includes("modules.require('builtin.ter-analysis','analysis-service')"),'TER SUPER/TOP must share the same Core-registered analysis-service module.');
+  assert(pulseEntry.includes("ctx.modules.require('analysis-service')")&&pulseTop.includes("modules.require('builtin.pulse-analysis','analysis-service')"),'Pulse SUPER/TOP must share the same Core-registered analysis-service module.');
   const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
-  assert(resonanceEntry.includes('feature.createTop')&&resonanceEntry.includes('applyResonanceWorkspace'),'Resonance SUPER must use the same plugin-owned runtime service as TOP and sync only through the generic project host boundary.');
+  assert(resonanceEntry.includes('feature.createTop')&&resonanceEntry.includes('hostResonance?.restore?.'),'Resonance SUPER must use the same plugin-owned runtime service as TOP and sync through the generic Core Service Registry.');
   const dataCenterEntry=read('src/plugins/data-center/plugin.js');
-  assert(dataCenterEntry.includes('DKDSDataCenterController')&&dataCenterEntry.includes('DKDSDataCenterSharedViews')&&dataCenterEntry.includes('DKDSDataCenterSuperLayout'),'Data Center must stay on the same Controller/Shared Views/Feature Runtime stack.');
+  assert(dataCenterEntry.includes("ctx.modules.require('controller')")&&dataCenterEntry.includes("ctx.modules.require('shared-views')")&&dataCenterEntry.includes("ctx.modules.require('super-layout')"),'Data Center must stay on the same Core-registered Controller/Shared Views/Feature Runtime stack.');
 }
 
 // Exercise the capability bridge contract without Electron: one runtime exports

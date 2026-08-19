@@ -10,12 +10,12 @@
       const extras=[...body.children].filter(node=>node!==legacyShell);
       left.remove();main.remove();legacyShell?.remove();extras.forEach(node=>node.remove());
       body.classList.add('dkds-unified-workbench-body');
-      const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
+      const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
       const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'ter',primaryScroll:'auto'});
-      const primaryMain=document.createElement('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
+      const primaryMain=ctx.ui.dom.create('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
       wb.compose({primary:{id:'main',label:'TER 分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
       return wb;
     }
 
-  window.DKDSTERSharedViews=Object.freeze({create});
+  window.DKDSPluginModules.define('builtin.ter-analysis','shared-views',Object.freeze({create}));
 })();

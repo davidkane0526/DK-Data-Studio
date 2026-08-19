@@ -5340,7 +5340,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.40.0',
+      version:'3.41.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6646,7 +6646,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.40.0',
+      appVersion:'3.41.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6681,13 +6681,11 @@
       savePlotlyImage,
       makeFloating,
       artifacts:artifactHostApi(),
-      resonance:resonanceHostApi(),
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),resonance:resonanceHostApi(),pulse:pulseHostApi(),ter:terHostApi()},
       panels:{
         inspector:{toggle:toggleInspectorVisibility,show:showInspectorPanel,apply:applyInspectorPanelLayout,place:setInspectorPrimePlacement,placement:()=>state.inspectorPanelMode==='right'?'right':'float'},
         group:{toggle:toggleGroupVisibility,apply:applyGroupPanelLayout,updateLayout:updateTrendLayout,place:setGroupPrimePlacement,placement:()=>state.groupPanelMode==='docked'?'bottom':'float'}
       },
-      pulse:pulseHostApi(),
-      ter:terHostApi()
     });
 
     window.electronAPI?.onCapabilityInvokeRequest?.(async request=>{

@@ -14,6 +14,7 @@ const context={
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/core/plugin-module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{filename:'ter-analysis-service.js'});
 
 function sweepDataset(){
@@ -39,8 +40,10 @@ function sweepDataset(){
   const D=context.DKDSData,store=D.createStore(),dataset=sweepDataset();
   D.syncLegacyDatasetArtifacts(store,[dataset]);
   const statuses=[];
-  const runtime=await context.DKDSTERAnalysisService.create({
-    host:{artifacts:{list:opts=>store.list(opts)},getState:()=>({scanVisibility:new Map([[dataset.path,{forward:true,reverse:true}]])})},
+  const terAnalysis=context.DKDSPluginModules.require('builtin.ter-analysis','analysis-service');
+  const runtime=await terAnalysis.create({
+    artifacts:{list:opts=>store.list(opts)},
+    getVisibility:()=>new Map([[dataset.path,{forward:true,reverse:true}]]),
     project:{datasets:[]},setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){}
   });
   assert(runtime.service.autoParameters(),'TER auto detection must work from the live Artifact Store');

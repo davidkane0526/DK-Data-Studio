@@ -1,96 +1,53 @@
 const fs=require('fs');
 const path=require('path');
-
-function read(path){return fs.readFileSync(path,'utf8');}
-function fail(msg){console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCode=2;}
-
-const html=read('./src/index.html');
-const app=read('./src/app.js');
-const kernel=read('./src/core/plugin-kernel.js');
-const uiInfrastructure=read('./src/core/ui-infrastructure.js');
-const resonanceManifest=JSON.parse(read('./src/plugins/resonance-workbench/plugin.json'));
-const resonance=(resonanceManifest.scripts||[resonanceManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/resonance-workbench/${file}`)).join('\n');
-const detector=read('./src/plugins/resonance-detector-robust/plugin.js');
-const pulseManifest=JSON.parse(read('./src/plugins/pulse-analysis/plugin.json'));
-const pulse=(pulseManifest.scripts||[pulseManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/pulse-analysis/${file}`)).join('\n');
-const terManifest=JSON.parse(read('./src/plugins/ter-analysis/plugin.json'));
-const ter=(terManifest.scripts||[terManifest.entry||'plugin.js']).map(file=>read(`./src/plugins/ter-analysis/${file}`)).join('\n');
-
-const forbiddenCoreHtml=[
-  ['智能寻峰','resonance peak UI'],
-  ['手动操作','resonance manual-operation help'],
-  ['id="rangeActionMenu"','resonance range overlay'],
-  ['id="gateAnalysisPage"','resonance gate page'],
-  ['id="spacingPage"','resonance spacing page'],
-  ['id="physicsPanel"','resonance physics panel'],
-  ['dataset-vg-input','resonance dataset metadata UI'],
-  ['id="pulseAnalysisPage"','pulse analysis page'],
-  ['id="terMaxPage"','TER analysis page']
-];
-for(const [token,label] of forbiddenCoreHtml){
-  if(html.includes(token))fail(`${label} must be contributed by a plugin, not hard-coded in src/index.html`);
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const fail=msg=>{console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCode=2;};
+const html=read('src/index.html');
+const app=read('src/app.js');
+const kernel=read('src/core/plugin-kernel.js');
+const ui=read('src/core/ui-infrastructure.js');
+const detector=read('src/plugins/resonance-detector-robust/plugin.js');
+const allPluginFiles=[];
+for(const dirent of fs.readdirSync(path.join(root,'src/plugins'),{withFileTypes:true})){
+  if(!dirent.isDirectory())continue;
+  const dir=path.join(root,'src/plugins',dirent.name);
+  for(const file of fs.readdirSync(dir))if(file.endsWith('.js'))allPluginFiles.push(path.join(dir,file));
 }
-
-for(const token of ['data-plugin-sidebar','data-plugin-main-tools','id="activityBar"','id="pluginToolbarAnalysis"']){
-  if(!html.includes(token))fail(`generic workspace mount missing: ${token}`);
+function stripComments(source){return source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:])\/\/.*$/gm,'$1');}
+for(const file of allPluginFiles){
+  const rel=path.relative(root,file).replace(/\\/g,'/');
+  const src=stripComments(fs.readFileSync(file,'utf8'));
+  const forbidden=[
+    [/window\.electronAPI|\belectronAPI\./,'Electron bridge'],
+    [/window\.Plotly|\bPlotly\./,'raw Plotly'],
+    [/\bdocument\.(?:getElementById|querySelector|querySelectorAll|createElement|createElementNS)/,'raw DOM access'],
+    [/new\s+(?:ResizeObserver|MutationObserver)\s*\(/,'private observer lifecycle'],
+    [/\b(?:requestAnimationFrame|cancelAnimationFrame|setInterval|clearInterval|setTimeout|clearTimeout|queueMicrotask)\s*\(/,'raw scheduler lifecycle'],
+    [/ctx\.registry\.add\s*\(/,'untyped generic registry'],
+    [/\bctx\.host\b/,'raw host bridge'],
+    [/window\.DKDS(?!PluginModules\b)[A-Za-z0-9_]+\s*=/,'private global module export'],
+    [/\bDKDSHostRecipes\./,'raw host recipe registry']
+  ];
+  for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.8.`);
 }
-for(const token of ["'ui.mainViews'","'ui.inspectors'","'ui.groupCharts'","'ui.groupViews'","'ui.selectionMenus'","'ui.shortcuts'","'ui.topWorkspaces'","'ui.prime'","'ui.sub'","'peak.detectors'"]){
-  if(!kernel.includes(token))fail(`plugin kernel registry missing: ${token}`);
+for(const token of ['core/io-runtime.js','core/chart-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
+  if(!html.includes(token))fail(`main renderer must load ${token}`);
 }
-for(const token of ['mainViews:','selectionMenus:','mainOverlays:','inspectors:','groupCharts:','sidebar:','activities:','topWorkspace:','prime:','sub:']){
-  if(!kernel.includes(token))fail(`plugin API extension missing: ${token}`);
+for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
+  if(!kernel.includes(token))fail(`Plugin API v1.8 missing ${token}`);
 }
-
-if(!app.includes("registry?.values?.('ui.mainViews')"))fail('core main canvas must resolve its renderer from ui.mainViews');
-if(!app.includes("detectPeaksViaProvider(sw"))fail('resonance detection must route through a detector provider');
-if(app.includes('function renderPhysicsPanel(){'))fail('physics panel renderer must not remain in core app.js');
-const resizeStart=app.indexOf("window.addEventListener('resize'");
-const resizeEnd=app.indexOf('if(window.ResizeObserver)',resizeStart);
-const resizeBlock=resizeStart>=0&&resizeEnd>resizeStart?app.slice(resizeStart,resizeEnd):'';
-for(const token of ['gateResonancePlot','spacingPlot','terHeatmapPlot','pulseRawPlot']){
-  if(resizeBlock.includes(token))fail(`core resize handler must not know domain plot id: ${token}`);
+if(!app.includes('resonance:resonanceHostApi(),pulse:pulseHostApi(),ter:terHostApi()'))fail('legacy domain services must enter plugins only through the generic Core service registry.');
+for(const token of ['resonance:resonanceHostApi()','pulse:pulseHostApi()','ter:terHostApi()']){
+  const standalone=new RegExp(`^[^\\n]*${token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'m');
+  // services:{...} is permitted; top-level host fields are not.
+  const matches=app.split('\n').filter(line=>line.includes(token));
+  if(matches.some(line=>!line.includes('services:{')))fail(`app host must not expose direct field ${token}`);
 }
-if(app.includes("if(e.key==='p'||e.key==='P')"))fail('resonance physics shortcut must be owned by its plugin, not core app.js');
-if(app.includes("if(e.key==='l'||e.key==='L')"))fail('resonance lock shortcut must be owned by its plugin, not core app.js');
-if(resonance.includes('function renderRobustChannels'))fail('workbench must not special-case the built-in detector settings UI');
-
-for(const token of [
-  'mountUnified',
-  'wb.compose',
-  "id:'curve-inspector'",
-  "id:'group-analysis'",
-  "id:'physics'",
-  "id:'spacing'",
-  "id:'gate-analysis'",
-  'ctx.ui.shortcuts.add',
-  'peak-category-choice',
-  'resparResetView',
-  'reswinMainPlot'
-]){
-  if(!resonance.includes(token))fail(`resonance unified workbench missing plugin-owned shared surface/control: ${token}`);
-}
-if(!resonance.includes('uiRuntime?.scientificPlot'))fail('resonance must consume Core ScientificCurveSurface instead of owning low-level D3 interaction plumbing');
-for(const token of ['rangeDrag.zoom','wheel.dkdssci','onMarkerDrag','onWidthDrag']){
-  if(!uiInfrastructure.includes(token))fail(`Core ScientificCurveSurface missing shared interaction capability: ${token}`);
-  if(token==='rangeDrag.zoom'&&resonance.includes(token))fail('box-zoom plumbing must live in Core ScientificCurveSurface, not the resonance plugin');
-}
-if(resonance.includes('ctx.ui.sidebar.add')||resonance.includes('ctx.ui.mainViews.register')||resonance.includes('ctx.ui.inspectors.register')||resonance.includes('ctx.ui.groupViews.register')){
-  fail('resonance must not fall back to legacy SUPER-only contribution slots after unified workbench migration');
-}
-
-if(!detector.includes("ctx.analysis.detectors.register('robust-ricker-v1'"))fail('robust detector must be an independent detector plugin');
-if(!detector.includes('renderSettings({container,settings,onChange})'))fail('detector plugin must own its algorithm-specific settings UI');
-if(!detector.includes('evidence'))fail('detector plugin must provide evidence/marker metadata');
-
-if(!pulse.includes("pageId:'pulseAnalysisPage'")||!pulse.includes('html:pageHtml'))fail('pulse analysis page must be created and owned by the pulse plugin');
-if(!ter.includes("pageId:'terMaxPage'")||!ter.includes('html:pageHtml'))fail('TER analysis page must be created and owned by the TER plugin');
-if(!resonance.includes('ctx.ui.topWorkspace.register'))fail('resonance must register a TOP workspace contract');
-if(!pulse.includes('ctx.ui.topWorkspace.register'))fail('pulse must register a TOP workspace contract');
-if(!ter.includes('ctx.ui.topWorkspace.register'))fail('TER must register a TOP workspace contract');
-if(!app.includes('applySuperWorkspaceComposition'))fail('core shell must compose SUPER from generic TOP semantic slots');
-for(const token of ['#pulseAnalysisPage.super-workspace-page','#terMaxPage.super-workspace-page','#builtin-data-center-data-center-page.super-workspace-page']){
-  if(read('./src/style.css').includes(token))fail(`core SUPER CSS must not hard-code built-in TOP selector: ${token}`);
-}
-
+if(!detector.includes('parameterSchema')||detector.includes('renderSettings('))fail('detectors must declare parameterSchema; Core renders settings UI.');
+if(!read('src/plugins/shell-navigation/plugin.js').includes("ctx.recipes.use('shell-navigation'"))fail('shell-navigation plugin must consume the Core recipe API.');
+if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use('workspace-safeguards'"))fail('workspace-safeguards plugin must consume the Core recipe API.');
+if(!ui.includes('class ScientificCurveSurface'))fail('Core must own scientific plot interaction surface.');
+if(!kernel.includes("const API_VERSION = '1.8.0'"))fail('Plugin API must be 1.8.0.');
 if(process.exitCode)process.exit(process.exitCode);
-console.log('Plugin boundary check OK: core shell is generic; unified PRIMARY/PRIME/SUB surfaces remain plugin-owned.');
+console.log('Plugin boundary check OK: all first-party plugin infrastructure is routed through Core API v1.8.');

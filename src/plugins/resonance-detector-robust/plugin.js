@@ -3,13 +3,13 @@
     id:'builtin.resonance-detector-robust',
     name:'Robust Resonance Detector',
     version:'1.0.0',
-    apiVersion:'1.2.0',
+    apiVersion:'1.8.0',requiresCore:["science","analysis.detectors"],
     description:'Multichannel + multiscale resonance detector with raw-I/V projection.',
     source:'builtin',
     order:80,
     capabilities:['analysis.peak-detector']
   }, async ctx => {
-    const S=window.DKDSScience;
+    const S=ctx.science;
     const channels=[
       {key:'raw',label:'原始 I–V 峰',glyph:'●',symbol:'circle'},
       {key:'snr',label:'原始 I–V 局部 SNR',glyph:'◆',symbol:'diamond'},
@@ -22,6 +22,14 @@
     ];
     const evidence=Object.fromEntries(channels.map(row=>[row.key,row]));
     evidence.matched={key:'matched',label:'多尺度匹配滤波',glyph:'◎',symbol:'circle'};
+    const parameterFields=[];
+    for(const meta of channels){
+      const preset=S.preset('balanced')?.[meta.key]||{};
+      parameterFields.push(
+        {id:`${meta.key}-enabled`,path:`${meta.key}.enabled`,type:'boolean',label:`${meta.glyph} ${meta.label}`,group:'检测通道',default:preset.enabled!==false},
+        {id:`${meta.key}-threshold`,path:`${meta.key}.threshold`,type:'number',label:`${meta.label}阈值`,group:'检测通道阈值',default:Number(preset.threshold)||0,min:0,step:0.1}
+      );
+    }
     ctx.analysis.detectors.register('robust-ricker-v1',{
       name:'稳健多通道 / 多尺度',
       shortName:'稳健',
@@ -30,37 +38,9 @@
       presets:['strict','balanced','sensitive'],
       channels,
       evidence,
+      parameterSchema:{fields:parameterFields},
       getPreset:name=>S.preset(name),
       defaultSettings:()=>S.preset('balanced'),
-      renderSettings({container,settings,onChange}){
-        container.innerHTML='';
-        const current={...S.preset(settings?._preset||'balanced'),...(settings||{})};
-        for(const meta of channels){
-          const cfg=current[meta.key]||{enabled:true,threshold:1};
-          const row=document.createElement('div');
-          row.className='algorithm-row';
-          row.innerHTML=`<input type="checkbox" ${cfg.enabled?'checked':''} data-enabled="${meta.key}">
-            <div class="algorithm-label"><span class="algorithm-shape">${meta.glyph}</span>${meta.label}</div>
-            <input type="number" step="0.1" min="0" value="${Number(cfg.threshold||0).toFixed(1)}" data-threshold="${meta.key}">`;
-          container.appendChild(row);
-        }
-        const emit=()=>{
-          const next=JSON.parse(JSON.stringify(current));
-          next._preset='custom';
-          onChange?.(next);
-        };
-        container.querySelectorAll('[data-enabled]').forEach(el=>el.onchange=e=>{
-          const key=e.target.dataset.enabled;
-          current[key]={...(current[key]||{}),enabled:!!e.target.checked};
-          emit();
-        });
-        container.querySelectorAll('[data-threshold]').forEach(el=>el.onchange=e=>{
-          const key=e.target.dataset.threshold;
-          current[key]={...(current[key]||{}),threshold:Number(e.target.value)};
-          emit();
-        });
-        return {destroy(){container.innerHTML='';}};
-      },
       detect:(sweep,settings,options)=>S.detectPeaks(sweep,settings,options)
     });
     return {};

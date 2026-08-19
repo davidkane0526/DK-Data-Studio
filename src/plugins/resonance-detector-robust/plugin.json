@@ -2,10 +2,16 @@
   "id": "builtin.resonance-detector-robust",
   "name": "Robust Resonance Detector",
   "version": "1.0.0",
-  "apiVersion": "1.2.0",
+  "apiVersion": "1.8.0",
+  "requiresCore": [
+    "science",
+    "analysis.detectors"
+  ],
   "entry": "plugin.js",
   "enabled": true,
   "order": 80,
   "description": "Built-in multichannel/multiscale robust resonance peak detector. Can be replaced or supplemented by stronger detector plugins.",
-  "capabilities": ["analysis.peak-detector"]
+  "capabilities": [
+    "analysis.peak-detector"
+  ]
 }

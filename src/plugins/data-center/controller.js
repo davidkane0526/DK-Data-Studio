@@ -42,5 +42,5 @@
     };
     return api;
   }
-  window.DKDSDataCenterController=Object.freeze({create});
+  window.DKDSPluginModules.define('builtin.data-center','controller',Object.freeze({create}));
 })();

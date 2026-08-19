@@ -8,7 +8,7 @@
       ['pulse.analysis-result',{title:'脉冲分析结果',parent:'result.analysis',kind:'result',key:v=>v?.id||v?.fileId,selection:v=>({id:v?.id||v?.fileId,ref:{fileId:v?.fileId||v?.id},value:{id:v?.id,fileId:v?.fileId,label:v?.label,summary:v?.summary}})}]
     ])if(!ctx.data.types.get(id))ctx.data.types.register(id,spec);
     const interaction=ctx.ui.interaction?.create?.('pulse',{selection:{multiple:true,defaultType:'pulse.file'},defaultType:'pulse.file'});const selection=interaction?.selection||ctx.ui.selection.model('pulse:selection',{multiple:true,defaultType:'pulse.file'});
-    const service=options.service||ctx.host?.pulse;
+    const service=options.service||ctx.services?.get?.('pulse');
     if(!service)throw new Error('Pulse analysis service is unavailable.');
     const listeners=new Set();
     const api={
@@ -35,5 +35,5 @@
       const value=service?.[prop];return typeof value==='function'?value.bind(service):value;
     }});
   }
-  window.DKDSPulseController=Object.freeze({create});
+  window.DKDSPluginModules.define('builtin.pulse-analysis','controller',Object.freeze({create}));
 })();

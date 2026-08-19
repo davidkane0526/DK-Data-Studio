@@ -53,6 +53,6 @@ assert(ui.includes('z.width-r.width')&&ui.includes('z.height-r.height'),'Floatin
 assert(ui.includes("this.spec.onMarkerDrag?.")&&ui.includes('this.updateMarkerVisual(marker,point)')&&!ui.includes("this.render('marker-drag')"),'Marker dragging must update only the marker geometry and defer full SVG rebuilding until drag end.');
 assert(ui.includes("data-width-side")&&!ui.includes("this.requestRender('width-drag');"),'FWHM dragging must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
 assert(resonanceFeature.includes("onMarkerDragEnd")&&resonanceFeature.includes("renderInspection();scheduleSnapshot()"),'Inspector refresh must be deferred until direct peak drag completes.');
-assert(resonanceFeature.includes('Plotly.react'),'Derived/group plots must reuse Plotly graph objects rather than recreate them with newPlot.');
+assert(resonanceFeature.includes('charts.react'),'Derived/group plots must reuse graph objects through the Core chart runtime rather than recreate them with newPlot.');
 
 console.log('GRS-derived PluginWorkspace + ScientificCurveSurface foundation checks passed.');

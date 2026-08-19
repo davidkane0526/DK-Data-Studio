@@ -1,8 +1,8 @@
 (() => {
   async function mount(ctx,controller=null,views=null,adapter={}){
-    const h=ctx.host;
+    const dom=ctx.ui.dom;
     const T=controller;
-    const sharedViews=views||window.DKDSTERSharedViews?.create?.(controller)||null;
+    const sharedViews=views||window.DKDSPluginModules.get('builtin.ter-analysis','shared-views')?.create?.(controller)||null;
     const CHART_COUNT=6;
     const FACTORS=[1,2,3,6];
     let selectedTerPoint=null;
@@ -187,34 +187,34 @@
     }
 
     function syncLayoutControls(){
-      const rows=document.getElementById('terLayoutRows');
-      const cols=document.getElementById('terLayoutCols');
-      const sticky=document.getElementById('terResistanceStickyToggle');
+      const rows=dom.query('#terLayoutRows');
+      const cols=dom.query('#terLayoutCols');
+      const sticky=dom.query('#terResistanceStickyToggle');
       if(rows)rows.value=String(layoutSettings.rows);
       if(cols)cols.value=String(layoutSettings.cols);
       if(sticky)sticky.checked=!!layoutSettings.sticky;
     }
 
     function resizeTerPlots(){
-      if(!window.Plotly?.Plots?.resize)return;
-      requestAnimationFrame(()=>{
+      if(!ctx.ui.charts?.resize)return;
+      dom.frame(()=>{
         for(const id of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-          const el=document.getElementById(id);
-          if(el)try{ Plotly.Plots.resize(el); }catch(_err){}
+          const el=dom.query('#'+id);
+          if(el)try{ ctx.ui.charts.resize(el); }catch(_err){}
         }
       });
     }
 
     function applyLayoutSettings({capture=false}={}){
       layoutSettings=sanitizeLayout(layoutSettings);
-      const grid=document.querySelector('#terMaxPage .ter-chart-grid');
+      const grid=dom.query('#terMaxPage .ter-chart-grid');
       if(gridController)gridController.setColumns(layoutSettings.cols);
       else if(grid)grid.style.setProperty('--dkds-grid-columns',String(layoutSettings.cols));
-      const card=document.getElementById('terResistanceCard');
+      const card=dom.query('#terResistanceCard');
       card?.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
       syncLayoutControls();
       resizeTerPlots();
-      if(capture)h.captureActiveProjectTab?.();
+      if(capture)ctx.project.capture?.();
     }
 
     function setRows(rows){
@@ -223,7 +223,7 @@
       layoutSettings.rows=n;
       layoutSettings.cols=CHART_COUNT/n;
       applyLayoutSettings({capture:true});
-      h.setStatus?.(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
+      ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
     }
 
     function setCols(cols){
@@ -232,7 +232,7 @@
       layoutSettings.cols=n;
       layoutSettings.rows=CHART_COUNT/n;
       applyLayoutSettings({capture:true});
-      h.setStatus?.(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
+      ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
     }
 
     function setSticky(value){
@@ -240,7 +240,7 @@
       const prime=workbench?.primes?.get?.('resistance-inspector');
       if(prime?.mounted)workbench.setPrimePlacement?.('resistance-inspector',layoutSettings.sticky?'sticky':'inline');
       applyLayoutSettings({capture:true});
-      h.setStatus?.(`R–V 随滚动吸附已${layoutSettings.sticky?'开启':'关闭'}。`);
+      ctx.status.set(`R–V 随滚动吸附已${layoutSettings.sticky?'开启':'关闭'}。`);
     }
 
     function ensureLayoutControls(){
@@ -249,7 +249,7 @@
     }
 
     function ensureResistanceCard(){
-      const card=document.getElementById('terResistanceCard');
+      const card=dom.query('#terResistanceCard');
       if(!card)return null;
       card.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
       if(card.dataset.terBound!=='1'){
@@ -280,7 +280,7 @@
       const specs=[...chartSpecs(),{key:'resistance',plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',prime:true}];
       for(const spec of specs){
         if(terPlotViews.has(spec.key))continue;
-        const plot=document.getElementById(spec.plotId);
+        const plot=dom.query(`#${spec.plotId}`);
         const card=plot?.closest('.analysis-chart-card');
         if(!plot||!card)continue;
         const header=card.querySelector(spec.prime?'.ter-resistance-card-header':'.analysis-chart-title');
@@ -367,22 +367,22 @@
     async function exportChartData(key){
       const spec=exportSpec(key);
       if(!spec?.csv)return;
-      await window.electronAPI.saveText({
+      await ctx.io.saveText({
         defaultName:`${spec.fileBase}.csv`,
         content:spec.csv,
         filters:[{name:'CSV',extensions:['csv']}]
       });
-      h.setStatus?.(`已导出 ${spec.fileBase}.csv。`);
+      ctx.status.set(`已导出 ${spec.fileBase}.csv。`);
     }
 
     async function exportChartImage(key,format){
       const spec=exportSpec(key);
       if(!spec)return;
-      await h.savePlotlyImage?.(spec.plotId,spec.fileBase,format);
-      h.setStatus?.(`已导出 ${spec.fileBase}.${format}。`);
+      await ctx.ui.charts.saveImage(spec.plotId,spec.fileBase,format);
+      ctx.status.set(`已导出 ${spec.fileBase}.${format}。`);
     }
 
-    if(!h.isAuxiliaryWindow&&ctx.ui.menus?.add){
+    if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
       const menuRows=[
         ['ter-export-long','TER 全组合热图 · Long CSV',10,()=>T.exportLong?.()],
         ['ter-export-matrix','TER 全组合热图 · 矩阵 CSV',20,()=>T.exportMatrix?.()],
@@ -613,14 +613,14 @@
     }
 
     function renderReductionPlots(result){
-      if(!result||!window.Plotly)return;
+      if(!result||!ctx.ui.charts)return;
       const maxVg=result.terMaxByVg||result.terMax||[];
       const maxVd=result.terMaxByVd||[];
       const config={responsive:true,scrollZoom:true,displaylogo:false};
       const react=(id,traces,layout)=>{
-        const el=document.getElementById(id);
+        const el=dom.query('#'+id);
         if(!el)return;
-        try{ Plotly.react(el,traces,layout,config); }catch(err){ console.error(`[TER manual render:${id}]`,err); }
+        try{ ctx.ui.charts.react(el,traces,layout,config); }catch(err){ console.error(`[TER manual render:${id}]`,err); }
       };
       react('terMaxVgPlot',[{
         x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.terMax),mode:'lines+markers',line:{width:2},marker:{size:8},
@@ -651,11 +651,11 @@
         margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vg @ TER_Max–Vd (V)',gridcolor:'#edf0f5'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-arg-manual'
       });
 
-      const vgTable=document.getElementById('terMaxVgTable');
+      const vgTable=dom.query('#terMaxVgTable');
       if(vgTable)vgTable.innerHTML=`
         <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
         <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`;
-      const vdTable=document.getElementById('terMaxVdTable');
+      const vdTable=dom.query('#terMaxVdTable');
       if(vdTable)vdTable.innerHTML=`
         <thead><tr><th>Vd (V)</th><th>TER_Max–Vd (%)</th><th>Vg@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th><th>方式</th></tr></thead>
         <tbody>${maxVd.map(d=>`<tr><td>${d.vds}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vgAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td><td>${d.manual?'手动':'自动'}</td></tr>`).join('')}</tbody>`;
@@ -677,7 +677,7 @@
       }
       const next=Math.max(0,Math.min(rows.length-1,index+(step<0?-1:1)));
       if(next===index){
-        h.setStatus?.(`当前 Vg=${formatNumber(selectedTerPoint.vg)} V 的 TER 标记已到 ${step<0?'最左':'最右'}有效 Vds 点。`);
+        ctx.status.set(`当前 Vg=${formatNumber(selectedTerPoint.vg)} V 的 TER 标记已到 ${step<0?'最左':'最右'}有效 Vds 点。`);
         return true;
       }
       const row=rows[next];
@@ -690,8 +690,8 @@
       renderResistancePlot();
       bindLinkedPlotClicks();
       resizeTerPlots();
-      h.captureActiveProjectTab?.();
-      h.setStatus?.(`已手动设定 TER_Max：Vg=${formatNumber(row.vg)} V，Vds=${formatNumber(row.vds)} V，TER=${formatNumber(row.ter)}%。该 Vg 与该 Vd 的 TER_Max 已同步更新。`);
+      ctx.project.capture?.();
+      ctx.status.set(`已手动设定 TER_Max：Vg=${formatNumber(row.vg)} V，Vds=${formatNumber(row.vds)} V，TER=${formatNumber(row.ter)}%。该 Vg 与该 Vd 的 TER_Max 已同步更新。`);
       return true;
     }
 
@@ -699,7 +699,7 @@
       if(keyboardContributionsBound)return;
       keyboardContributionsBound=true;
       const invoke=step=>{
-        const page=document.getElementById('terMaxPage');
+        const page=dom.query('#terMaxPage');
         if(!page||page.classList.contains('hidden')||!selectedTerPoint)return false;
         return moveSelectedTerPoint(step);
       };
@@ -714,7 +714,7 @@
     }
 
     function updateSelectionText(result){
-      const el=document.getElementById('terResistanceSelection');
+      const el=dom.query('#terResistanceSelection');
       if(!el)return;
       if(!selectedTerPoint){
         controller?.clearSelection?.({source:'ter-linked-selection'});
@@ -731,10 +731,10 @@
 
     function renderResistancePlot(){
       const card=ensureResistanceCard();
-      const plot=document.getElementById('terResistancePlot');
+      const plot=dom.query('#terResistancePlot');
       const state=T.getState?.();
       const result=state?.result||null;
-      if(!card||!plot||!window.Plotly)return;
+      if(!card||!plot||!ctx.ui.charts)return;
 
       if(result!==lastResult){
         lastResult=result;
@@ -743,9 +743,9 @@
       }
 
       if(!result){
-        try{ Plotly.purge(plot); }catch(_err){}
+        try{ ctx.ui.charts.purge(plot); }catch(_err){}
         controller?.clearSelection?.({source:'ter-result-cleared'});
-        const label=document.getElementById('terResistanceSelection');
+        const label=dom.query('#terResistanceSelection');
         if(label)label.textContent='计算 TER_max 后显示全部栅压的正扫/反扫 R–V 曲线。';
         return;
       }
@@ -817,7 +817,7 @@
       }
 
       updateSelectionText(result);
-      Plotly.react(plot,traces,{
+      ctx.ui.charts.react(plot,traces,{
         margin:{l:82,r:24,t:22,b:92},
         xaxis:{title:'Vds (V)',gridcolor:'#edf0f5',zeroline:true,zerolinecolor:'#cbd5e1',automargin:true},
         yaxis:{title:'R = |Vds / I| (Ω)',type:'log',gridcolor:'#edf0f5',automargin:true},
@@ -861,7 +861,7 @@
     }
 
     function bindPlotClick(plotId,rowProvider,selectionFactory){
-      const el=document.getElementById(plotId);
+      const el=dom.query('#'+plotId);
       if(!el||typeof el.on!=='function')return;
       const old=clickBindings.get(plotId);
       if(old&&typeof el.removeListener==='function'){
@@ -883,7 +883,7 @@
 
     function bindHeatmapClick(result){
       const plotId='terHeatmapPlot';
-      const el=document.getElementById(plotId);
+      const el=dom.query('#'+plotId);
       if(!el||typeof el.on!=='function')return;
       const old=clickBindings.get(plotId);
       if(old&&typeof el.removeListener==='function'){
@@ -935,14 +935,13 @@
         renderLinkedUi();
         // Plotly.newPlot in the legacy TER renderer is promise-based. Rebind once
         // more after the current frame so links survive a fresh plot rebuild.
-        requestAnimationFrame(()=>{
+        dom.frame(()=>{
           if(ticket!==renderTicket)return;
           bindLinkedPlotClicks();
           resizeTerPlots();
         });
       };
-      if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);
-      else setTimeout(run,0);
+      dom.frame(run);
     }
 
 
@@ -951,7 +950,7 @@
     ctx.ui.activities.add({
       id:'ter',label:'TER分析',contextLabel:'TER 分析',icon:'▧',order:30,openMode:'window',
       description:'同 Vd TER 矩阵与极值分析',
-      onActivate:()=>{h.openAnalysisPage('terMaxPage');T.render();}
+      onActivate:()=>{ctx.workspace.openPage('terMaxPage');T.render();}
     });
 
     const page=ctx.ui.pages.add({
@@ -975,12 +974,12 @@
       workbench.registerPrime({
         id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',
         defaultPlacement:layoutSettings.sticky?'sticky':'inline',placements:['inline','sticky','right','bottom','float','global'],autoOpen:true,
-        onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();h.captureActiveProjectTab?.();},
+        onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();ctx.project.capture?.();},
         mount:()=>{ensureResistanceCard();renderResistancePlot();}
       });
     }
     const terHeader=page.querySelector('.analysis-page-header');
-    const terHeaderActionsHost=document.createElement('div');
+    const terHeaderActionsHost=dom.create('div');
     terHeaderActionsHost.className='dkds-plugin-header-actions';
     terHeader?.querySelector('.analysis-page-close')?.before(terHeaderActionsHost);
     const terHeaderActions=ctx.ui.actions?.mount?.(terHeaderActionsHost,{
@@ -1046,22 +1045,22 @@
 
     ctx.events.on('layout:resize',()=>{
       for(const id of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-        const el=document.getElementById(id);
-        if(el&&el.offsetParent!==null){try{Plotly.Plots.resize(el);}catch{}}
+        const el=dom.query('#'+id);
+        if(el&&el.offsetParent!==null){try{ctx.ui.charts.resize(el);}catch{}}
       }
     });
 
-    ctx.registry.add('analysis.providers','ter',{
+    ctx.analysis.providers.register('ter',{
       id:'ter',
       name:'Same-Vd TER',
       computeMatrix:window.DKDSScience.computeTerMatrix,
       computeResonant:window.DKDSScience.computeResonantTerForLabel
     });
 
-    const summary=document.getElementById('terSummary');
-    if(summary&&typeof MutationObserver!=='undefined'){
-      observer=new MutationObserver(()=>queueLinkedRender());
-      observer.observe(summary,{childList:true,subtree:true,characterData:true});
+    const summary=dom.query('#terSummary');
+    if(summary){
+      const off=dom.observe(summary,()=>queueLinkedRender(),{mutation:{childList:true,subtree:true,characterData:true}});
+      observer={disconnect:off};
     }
     ctx.events.on('analysis:opened',({id})=>{if(id==='terMaxPage')queueLinkedRender();});
     ctx.events.on('project:restored',()=>queueLinkedRender());
@@ -1074,21 +1073,21 @@
     return {deactivate(){
       observer?.disconnect();observer=null;
       for(const [plotId,handler] of clickBindings){
-        const el=document.getElementById(plotId);
+        const el=dom.query('#'+plotId);
         if(el&&typeof el.removeListener==='function'){try{el.removeListener('plotly_click',handler);}catch{}}
       }
       clickBindings.clear();
       unbindKeyboardAdjuster();
-      const plot=document.getElementById('terResistancePlot');
-      if(plot&&window.Plotly){try{Plotly.purge(plot);}catch{}}
+      const plot=dom.query('#terResistancePlot');
+      if(plot&&ctx.ui.charts){try{ctx.ui.charts.purge(plot);}catch{}}
       for(const view of terPlotViews.values())view?.dispose?.();
       terPlotViews.clear();
-      const resistanceCard=document.getElementById('terResistanceCard');
+      const resistanceCard=dom.query('#terResistanceCard');
       if(resistanceCard){
         const clearBtn=resistanceCard.querySelector('#terResistanceClearBtn');
         if(clearBtn)clearBtn.onclick=null;delete resistanceCard.dataset.terBound;
       }
     }};
   }
-  window.DKDSTERFeatureRuntime=Object.freeze({mount});
+  window.DKDSPluginModules.define('builtin.ter-analysis','feature-runtime',Object.freeze({mount}));
 })();

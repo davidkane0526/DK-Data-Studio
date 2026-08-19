@@ -2,7 +2,10 @@
   "id": "builtin.workspace-safeguards",
   "name": "Workspace Safeguards",
   "version": "1.0.0",
-  "apiVersion": "1.3.0",
+  "apiVersion": "1.8.0",
+  "requiresCore": [
+    "recipes"
+  ],
   "entry": "plugin.js",
   "enabled": true,
   "order": 5,

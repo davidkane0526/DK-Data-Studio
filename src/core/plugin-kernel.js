@@ -26,7 +26,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.7.0';
+  const API_VERSION = '1.8.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1265,7 +1265,18 @@
   function createApi(definition) {
     const pluginId = definition.manifest.id;
     const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmitNow } }) || null;
+    const ioScope = window.DKDSIO?.createScope?.(pluginId) || null;
+    const chartScope = window.DKDSCharts?.createScope?.(pluginId) || null;
+    const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
+    const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
+    const serviceScope = window.DKDSServices?.createScope?.(pluginId) || null;
+    const moduleScope = window.DKDSPluginModules?.createScope?.(pluginId) || null;
     if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
+    if (componentScope) addCleanup(pluginId, () => componentScope.dispose?.());
+    if (ioScope) addCleanup(pluginId, () => window.DKDSIO?.disposeOwner?.(pluginId));
+    if (chartScope) addCleanup(pluginId, () => window.DKDSCharts?.disposeOwner?.(pluginId));
+    if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
+    if (serviceScope) addCleanup(pluginId, () => window.DKDSServices?.removeOwner?.(pluginId));
     const normalizeShortcutSpec = spec => {
       const row={order:100,priority:0,...(spec||{}),id:spec?.id};
       const chord=String(row.chord||row.key||row.shortcut||'').trim();
@@ -1275,11 +1286,19 @@
       }
       return row;
     };
-    return Object.freeze({
+    let apiRef=null;
+    const api=Object.freeze({
       apiVersion: API_VERSION,
+      contract: Object.freeze({version:window.DKDSPluginContract?.VERSION||'',requirements:window.DKDSPluginContract?.requirements||[]}),
       manifest: Object.freeze({ ...definition.manifest }),
       host,
       platform: window.DKDSPlatform,
+      runtime: Object.freeze({
+        appVersion:String(host?.appVersion||''),
+        isAuxiliaryWindow:!!host?.isAuxiliaryWindow,
+        isWebClient:!!host?.isWebClient
+      }),
+      status: Object.freeze({set:text=>host?.setStatus?.(String(text??''))}),
       events: {
         on: (name, fn) => addCleanup(pluginId, eventOn(name, fn, pluginId)),
         emit: (name, payload) => {
@@ -1322,8 +1341,27 @@
         snapshot:()=>window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||{schema:2,providers:[]}
       },
       project: {
-        registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
+        registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks),
+        current:()=>host?.getActiveProjectTab?.()||null,
+        create:()=>host?.makeProject?.()||{},
+        capture:()=>host?.captureActiveProjectTab?.()
       },
+      workspace: Object.freeze({
+        openPage:id=>host?.openAnalysisPage?.(id),
+        closeCurrentWindow:()=>host?.closeCurrentWindow?.(),
+        isAuxiliary:()=>!!host?.isAuxiliaryWindow
+      }),
+      io: ioScope,
+      science: window.DKDSScience || window.Analysis || null,
+      services: serviceScope,
+      modules: moduleScope,
+      recipes: Object.freeze({
+        use:(id,options={})=>{
+          if(!window.DKDSHostRecipes?.use)throw new Error('Core Host Recipe Runtime is unavailable.');
+          return window.DKDSHostRecipes.use(id,apiRef,options);
+        },
+        list:()=>window.DKDSHostRecipes?.list?.()||[]
+      }),
       state: {
         create(initial={}, options={}) {
           if(!window.DKDSState?.create)throw new Error('DKDS state-store infrastructure is unavailable.');
@@ -1346,6 +1384,19 @@
       data: {
         model: window.DKDSData,
         formula: window.DKDSFormula,
+        flow: dataFlowScope,
+        importers: Object.freeze({
+          register:(id,spec={})=>{
+            const value={id,...spec,pluginId,version:spec.version||definition.manifest.version||'1.0.0'};
+            registerTypedContribution(pluginId,'data.importers',id,value);
+            window.DKDSDataFlow?.register?.(pluginId,'importer',id,{...spec,run:spec.run||spec.parse||spec.parseArtifacts});
+            return value;
+          },
+          list:()=>listContributions('data.importers').map(row=>row.value)
+        }),
+        exporters: dataFlowScope?.exporters || null,
+        transformers: dataFlowScope?.transformers || null,
+        analyzers: dataFlowScope?.analyzers || null,
         types: infrastructureScope?.dataTypes || Object.freeze({
           register:(id,spec)=>window.DKDSUI?.dataTypes?.register?.(pluginId,id,spec),
           get:id=>window.DKDSUI?.dataTypes?.get?.(id)||null,
@@ -1391,6 +1442,11 @@
         list: () => listProvidersWithCapabilities('charts.renderers')
       },
       analysis: {
+        providers: Object.freeze({
+          register:(id,spec={})=>registerTypedContribution(pluginId,'analysis.providers',id,{id,...spec,pluginId,version:spec.version||definition.manifest.version||'1.0.0'}),
+          list:()=>listContributions('analysis.providers').map(row=>row.value),
+          get:id=>getRegistry('analysis.providers').get(String(id||''))?.value||null
+        }),
         detectors: {
           register: (id, spec) => {
             const value={id,...spec,pluginId,version:spec?.version||definition.manifest.version||'1.0.0'};
@@ -1432,7 +1488,12 @@
         layout: infrastructureScope?.layout || null,
         actions: infrastructureScope?.actions || null,
         portable: infrastructureScope?.panels || null,
-        charts: infrastructureScope?.chartsApi || null,
+        charts: Object.freeze({...(infrastructureScope?.chartsApi||{}),...(chartScope||{})}),
+        dom: componentScope,
+        components: Object.freeze({
+          mount:(container,spec,context)=>window.DKDSComponents?.mount?.(container,spec,context),
+          escape:value=>window.DKDSComponents?.escape?.(value)??String(value??'')
+        }),
         plotViews: infrastructureScope?.plotViews || null,
         interactions: infrastructureScope?.interactions || null,
         interaction: infrastructureScope?.interactionRuntime || null,
@@ -1461,7 +1522,7 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.4',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.4',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),
@@ -1537,6 +1598,8 @@
         }
       }
     });
+    apiRef=api;
+    return api;
   }
 
   function restorePluginProjectState(pluginId, data={}, legacyProject=null) {
@@ -1571,6 +1634,7 @@
     disabled.delete(manifest.id);
     const api = createApi(definition);
     try {
+      window.DKDSPluginContract?.assertApi?.(api,manifest);
       const instance = await definition.activate(api);
       active.set(manifest.id, { manifest, instance: instance || null });
       if (restoreCurrentProject) {
@@ -1930,11 +1994,18 @@
     define(manifest, activate) {
       if (!manifest || typeof manifest !== 'object') throw new Error('Plugin manifest is required.');
       assertId(manifest.id);
+      const contractCheck=window.DKDSPluginContract?.validateManifest?.(manifest);
+      if(contractCheck&&!contractCheck.ok)throw new Error(`Plugin ${manifest.id}: ${contractCheck.errors.join(' ')}`);
       if (definitions.some(d => d.manifest.id === manifest.id)) throw new Error(`Duplicate plugin id: ${manifest.id}`);
       if (typeof activate !== 'function') throw new Error(`Plugin ${manifest.id} must provide activate(api).`);
       definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate });
     },
-    configure(nextHost) { host = nextHost || {}; bindShellOnce(); },
+    configure(nextHost) { host = nextHost || {}; window.DKDSIO?.configure?.(host); window.DKDSServices?.configure?.(host?.services); bindShellOnce(); },
+    services: {
+      registerRuntime:(owner,id,service,options)=>window.DKDSServices?.register?.(owner,id,service,options),
+      get:id=>window.DKDSServices?.get?.(id)||null,
+      list:()=>window.DKDSServices?.list?.()||[]
+    },
     loadBuiltinEntries,
     loadExternalEntries,
     async activateAll() {

@@ -1,388 +1,214 @@
-# AI Plugin Development Guide
+# AI Plugin Development Guide — Plugin API v1.8
 
-This document is written specifically for future AI-assisted development.
+This guide is intended to let another AI implement a complex DK Data Studio plugin without inventing host-specific infrastructure.
 
-## Prime directive
+## 1. Non-negotiable architecture rule
 
-When the user asks for a new scientific function on the `plugin` branch:
+**If a capability is generic enough to be reused by another plugin, it belongs to Core.** A plugin may define domain algorithms, domain data types, domain state and domain view content, but it consumes application mechanisms only through Plugin API v1.8.
 
-> Create a plugin. Do not modify the monolithic host first.
+Before writing code, search `docs/PLUGIN_API.md`, `src/plugins/_template`, the manifest schema and existing Core registries. If the needed generic mechanism is missing, add it to Core first, document it, add a machine check, then consume it from the plugin.
 
-Before coding, classify the request.
+Never solve missing architecture with a plugin-local patch.
 
-## Step 1 — classify the requested feature
+## 2. Classify the requested feature
 
-### A. Data importer
+### Import/export format
+Register `ctx.data.importers/exporters`. Core owns dialogs, reads, saves and clipboard via `ctx.io`.
 
-Examples:
-- a new instrument CSV;
-- HDF5/JSON export;
-- different multi-column convention.
+### Analysis algorithm
+Keep the pure algorithm in a plugin support module and expose it through `ctx.analysis.providers`, `ctx.analysis.detectors`, `ctx.workflow.*` or `ctx.capabilities` depending on its role.
 
-Implement under:
+### Scientific workspace
+Use Core AnalysisWorkbench with PRIMARY / PRIME / SUB, Core PlotViews, Core Actions and Core Interaction Runtime. Do not build another pane/dock/window framework.
 
-```text
-src/plugins/<name>/
-```
+### Generic infrastructure
+If multiple unrelated plugins could need it (file bridge, drag/resize, worker queue, chart export, typed selection, responsive grid, service discovery), implement it in `src/core/` and expose it through `ctx`.
 
-Register a `data.importers` contribution.
+## 3. Start from the template
 
-Do not add parsing branches to `Analysis.parseFlexibleData()` unless the format is universally useful.
+Copy `src/plugins/_template` to `src/plugins/<folder>`. Choose a permanent reverse-domain or project-qualified ID. Set API `1.8.0` and list exact Core dependencies in `requiresCore`.
 
-### B. Analysis algorithm
+`plugin.json` and the runtime manifest inside `plugin.js` must contain identical `requiresCore` arrays. Validation enforces this.
 
-Examples:
-- Hall analysis;
-- FET mobility;
-- Raman peak fitting;
-- hysteresis statistics;
-- endurance/retention;
-- a new TER definition.
-
-Register an `analysis.providers` contribution and a plugin page if needed.
-
-Do not append 500 lines to `app.js`.
-
-### C. New chart or dashboard
-
-Create the page/UI in the plugin.
-Use Plotly/D3 through the shared browser environment.
-Keep data extraction and visualization separate.
-
-Recommended structure:
+## 4. Recommended complex-plugin file layout
 
 ```text
 my-plugin/
-  plugin.json
-  plugin.js
-  analysis.js
-  view.js
-  style.css
+  plugin.json              # machine contract
+  plugin.js                # thin composition/registration entry
+  model.js                 # domain model / pure state helpers
+  analysis.js              # pure scientific algorithms
+  controller.js            # domain commands and state transitions
+  shared-views.js          # domain view content mapped to Core surfaces
+  feature-runtime.js       # shared SUPER/TOP feature composition
+  super-layout.js          # thin SUPER adapter only
+  window-runtime.js        # thin TOP adapter only
+  style.css                # domain-specific visual tokens only
   README.md
 ```
 
-The first version may concatenate these files via script entries later, but keep responsibilities separate inside the folder.
+Support files register into `DKDSPluginModules`; they do not export `window.DKDSMyPlugin...` globals. `plugin.js` obtains them through `ctx.modules.require(...)`.
 
-### D. UI adjustment specific to one workflow
+## 5. Build the data contract before UI
 
-Implement a UI plugin or add CSS in that feature plugin with:
+Define:
+
+```text
+canonical inputs
+→ validation/normalization
+→ pure domain algorithm
+→ serializable result
+→ registered domain data/result type
+→ UI projection
+```
+
+Do not read calculation settings from arbitrary Core DOM. Do not make Plotly traces the canonical result. Do not store a second copy of imported data when Artifacts already owns it.
+
+For large data, selection carries IDs/references/previews, not full arrays.
+
+## 6. Register data flow
+
+Example importer:
 
 ```js
-ctx.ui.styles.add(...)
+ctx.data.importers.register('vendor-x',{
+  extensions:['csv','txt'],
+  async run(input,options){
+    const parsed=parseVendorX(input.text,options);
+    return parsed.map(toArtifact);
+  }
+});
 ```
 
-Use:
-- `.dkds-size-compact`
-- `.dkds-size-medium`
-- `.dkds-size-large`
-- `.dkds-pointer-coarse`
-- `.dkds-orientation-portrait`
-- `.dkds-orientation-landscape`
+Example transform/analyzer/exporter:
 
-Do not use desktop pixel coordinates as the only layout rule.
+```js
+ctx.data.transformers.register('baseline-correct',{run:({value,settings})=>baseline(value,settings)});
+ctx.data.analyzers.register('lorentz-fit',{run:({value,settings})=>fitLorentz(value,settings)});
+ctx.data.exporters.register('fit.csv',{run:({value})=>fitCsv(value)});
+```
 
-### E. Core capability
+Use `ctx.data.model` and `ctx.data.formula` for standard table/column operations. Use `ctx.science` for shared mature scientific primitives.
 
-Only modify core when the request cannot be expressed by the Plugin API.
+## 7. Define domain types and interaction
 
-Examples:
-- a generic dock manager needed by many plugins;
-- a worker service;
-- Android native file picker bridge;
-- generic drag/gesture router.
+Register raw/derived/result types with stable IDs and parent types. Then create one Core interaction context for linked plots/tables/inspectors.
 
-If you extend core, also extend `docs/PLUGIN_API.md` so future plugins can consume the new capability.
+```js
+ctx.data.types.register('raman.peak',{parents:['result.analysis','data.point'],kind:'result',key:p=>p.id,selection:p=>({id:p.id,ref:{peakId:p.id},value:{x:p.x,width:p.width}})});
+const interaction=ctx.ui.interaction.create('raman',{selection:{multiple:true,defaultType:'raman.peak'}});
+```
 
-## Step 2 — create a plugin from the template
+Views bind to semantic types, not each other's DOM IDs.
 
-Copy:
+## 8. Build UI only from Core mechanisms
+
+Core owns the page/workbench, placement, resize, charts, generic controls and lifecycle. Plugins provide domain content.
+
+- page: `ctx.ui.pages.add`;
+- workspace: `ctx.ui.analysisWorkbench` / `workspaceSurface`;
+- PRIMARY/PRIME/SUB: Workbench registration;
+- generic controls: `ctx.ui.components.mount` and `ctx.parameters.render`;
+- persistent DOM listeners/observers/timers: `ctx.ui.dom`;
+- charts: `ctx.ui.charts` and `ctx.ui.plotViews`;
+- actions: `ctx.ui.actions`;
+- menus: `ctx.ui.menus` / `ctx.ui.contextMenus`;
+- shortcuts: `ctx.ui.shortcuts`;
+- selection: `ctx.ui.interaction`;
+- status: `ctx.status.set`.
+
+A plugin-specific panel may contain scientific labels/controls/results, but its docking, floating, drag, z-order, responsive sizing, lifecycle and chart export are Core responsibilities.
+
+## 9. SUPER/TOP parity rule
+
+A complex top-level plugin has exactly one domain implementation. SUPER and TOP adapters map the same Controller/View/Feature modules into different host containers.
+
+Adapter rules:
 
 ```text
-src/plugins/_template
+allowed: container mapping, host lifecycle, snapshot/service wiring
+forbidden: scientific calculation, chart construction, duplicated ViewModels, domain event logic
 ```
 
-to:
+If SUPER and TOP need different scientific code, the architecture is wrong.
 
-```text
-src/plugins/<new-folder>
-```
+## 10. Internal modules vs services vs capabilities
 
-Change:
-- plugin id;
-- name;
-- version;
-- entry;
-- capabilities.
+Use the correct registry:
 
-Then run:
+- `ctx.modules`: private package composition between files of the same plugin;
+- `ctx.services`: runtime service lookup supplied by Core/host;
+- `ctx.capabilities`: behavior that another plugin or dedicated renderer may discover/invoke;
+- `ctx.analysis.providers/detectors`: typed scientific provider catalogs;
+- `ctx.workflow.*`: reusable processing graph nodes.
+
+Do not use a private global as a registry.
+
+## 11. Project persistence
+
+Use `ctx.state.create(...,{projectSlice})` for simple plugin state. Use `ctx.project.registerSlice` for complex serialization/migration. Keep UI placement preferences separate from scientific project results when possible.
+
+Dedicated windows synchronize namespaced plugin slices and artifact deltas. Do not replace the whole project from a TOP window.
+
+## 12. Performance rules
+
+- Keep canonical large arrays in Artifacts/services, not Selection.
+- Coalesce visual resize/render work with Core scheduling.
+- Use Core chart `react/resize/purge`; never construct parallel chart lifecycles.
+- Avoid re-rendering hidden views on every event.
+- Dispose service subscriptions/listeners through Core scopes.
+- Prefer event delegation or stable Core bindings for frequently rebuilt rows.
+- Keep pure computation separate so it can later move to workers without changing UI.
+- Do not split a large file merely by line count; split at stable dependency/lifecycle seams.
+
+## 13. Patch-integration rule
+
+When you find code whose purpose is “fix this host edge case for plugin X”, ask whether it is domain behavior or generic host behavior.
+
+- domain behavior → move into the plugin's model/controller/algorithm;
+- generic shell/layout/import/lifecycle behavior → move into Core service/runtime/recipe;
+- duplicated SUPER/TOP behavior → move into shared plugin feature modules;
+- private utility registry → replace with a typed Core registry.
+
+A patch is not complete until its ownership is explicit and a regression test prevents it returning to the wrong layer.
+
+## 14. Required tests for a complex plugin
+
+At minimum:
+
+1. manifest/schema validation;
+2. boundary scan;
+3. pure algorithm tests using generated deterministic data;
+4. importer/exporter round-trip if applicable;
+5. project serialize/restore test;
+6. SUPER/TOP shared-module architecture test if it has a dedicated window;
+7. interaction/selection test for linked views;
+8. chart/export smoke test through Core APIs;
+9. visual regression or same-layout comparison for mature migrated UI;
+10. `npm run check`.
+
+For modifications to mature scientific engines, compare output against a preserved Git baseline, not merely against a newly generated expected value.
+
+## 15. Validation loop
 
 ```bash
 npm run plugin:index
 npm run plugin:validate
+node scripts/check-plugin-boundaries.js
+npm run check
 ```
 
-No HTML script tag should be manually added.
-
-## Step 3 — define a stable data contract
-
-Do not couple analysis directly to current DOM.
-
-Bad:
-
-```js
-const x = document.querySelector('#someCoreInput').value;
-```
-
-Preferred:
-
-```js
-const settings = pluginState.settings;
-const result = analyze(dataset, settings);
-render(result);
-```
-
-A plugin should have:
-
-```text
-input data
-→ pure analysis
-→ result model
-→ renderer
-```
-
-This makes later Android/web migration much easier.
-
-## Step 4 — keep raw data and derived data distinct
-
-Scientific plugins must preserve:
-- source file identity;
-- raw sample coordinates;
-- processing settings;
-- derived values;
-- manual overrides;
-- algorithm version.
-
-Never overwrite raw samples simply to make visualization easier.
-
-## Step 5 — persistence
-
-If plugin state affects reproducibility, register a project slice.
-
-Always include:
-
-```js
-{ schema: 1, ... }
-```
-
-When schema changes:
-
-```js
-restore(data) {
-  if (data.schema === 1) data = migrateV1toV2(data);
-}
-```
-
-Do not depend on application package version for plugin-state migration.
-
-## Step 6 — UI and interaction
-
-Desktop fine pointer:
-- hover is allowed;
-- right click is allowed;
-- smaller targets are acceptable.
-
-Touch/coarse pointer:
-- no hover-only feature;
-- no right-click-only feature;
-- targets should be at least the platform minimum;
-- use tap, long-press, drag handles, bottom sheets, explicit action menus;
-- do not require modifier keys such as Ctrl for the only path to a feature.
-
-If a desktop shortcut exists, provide a visible touch path.
-
-## Step 7 — tests
-
-Every new plugin should test:
-1. manifest validation;
-2. activation;
-3. core analysis with synthetic data;
-4. persistence serialize/restore;
-5. compact-layout contract if it adds UI;
-6. no dependency on unavailable Electron APIs in web mode.
-
-Tests can remain in `tests.js` initially or move to a future structured test directory.
-
-## Step 8 — documentation
-
-Add:
-- plugin README;
-- formula/algorithm definition;
-- meaning and units of output columns;
-- edge cases;
-- interaction description;
-- whether result is measurement-derived, fitted, inferred, or heuristic.
-
-## Step 9 — Git
-
-Feature work:
-
-```bash
-git switch plugin
-git switch -c feature/<plugin-id>
-```
-
-After tests:
-
-```bash
-git add src/plugins/<plugin> docs tests.js
-git commit -m "plugin(<id>): add <feature>"
-```
-
-Do not commit generated `node_modules`, `dist`, or `build-info.json`.
-
-## AI checklist before finishing
-
-- [ ] Is this actually a plugin?
-- [ ] Did I avoid changing unrelated core code?
-- [ ] Does the plugin have its own manifest?
-- [ ] Is project state namespaced?
-- [ ] Does it work with web bridge?
-- [ ] Does it have a touch path?
-- [ ] Does it adapt to compact portrait and landscape?
-- [ ] Are CSV/image exports owned by the plugin?
-- [ ] Did I preserve scientific definitions?
-- [ ] Did I run `npm run check` and `npm test`?
-
-## Plugin Manager rules for future AI work
-
-Do not add a second feature-specific plugin manager.
-
-Use the existing core lifecycle API:
-
-```js
-DKDSPlugins.manager.list()
-DKDSPlugins.manager.enable(id)
-DKDSPlugins.manager.disable(id)
-DKDSPlugins.manager.reload(id)
-```
-
-When adding a new built-in plugin, make sure its runtime `DKDSPlugins.define()` manifest contains useful:
-- `name`;
-- `version`;
-- `description`;
-- `capabilities`;
-- `source`;
-- `order`.
-
-These fields are displayed by the Plugin Manager.
-
-A plugin must tolerate deactivation and later reactivation. All registrations should use tracked Plugin API methods so cleanup is automatic. Resources created outside the Plugin API must be released from the returned `deactivate()` hook.
-
-Never delete unknown/disabled plugin namespaces from project JSON.
-
-## v3.18 rule: use the Data Center contracts before inventing feature-specific plumbing
-
-For a new plugin, first decide which standard contribution it provides:
-
-```text
-Importer   -> data.importers
-Processor  -> ctx.workflow.processors
-Analyzer   -> ctx.workflow.analyzers
-Chart      -> ctx.charts
-Recipe     -> ctx.workflow.recipes
-```
-
-Use `DKDSData` artifacts as provider inputs/outputs.
-
-Do not invent a private table object if `data.table` is sufficient.
-
-Do not hand-code an ordinary settings form. Declare `parameterSchema` and use `ctx.parameters.render()`.
-
-Do not use arbitrary JavaScript evaluation for user formulas. Use `DKDSFormula`.
-
-Do not make a new analysis page merely because two existing processors need to run in sequence. Prefer a Recipe first. Create a dedicated page when the workflow needs genuinely specialized interaction or visualization.
-
-Every new Processor/Analyzer should document:
-- input artifact kinds;
-- output artifact kinds;
-- parameter schema;
-- units;
-- provenance meaning;
-- whether it mutates source data (normally it must not);
-- numerical edge cases.
-
-## Provider IDs must be globally unique
-
-For Processor / Analyzer / Chart / Recipe and other globally addressed provider registries, never use generic IDs such as `fit`, `summary`, or `chart` in a third-party plugin. Prefer a plugin namespace:
-
-```text
-<plugin-id>.<operation>
-```
-
-Example:
-
-```text
-com.lab.raman.baseline
-com.lab.raman.fit-peaks
-com.lab.raman.spectrum-chart
-```
-
-The plugin host intentionally rejects duplicate provider IDs instead of silently selecting whichever plugin loaded first.
-
-
-## v3.19: Never grow the global toolbar for domain features
-
-The top application bar is now an activity shell.
-
-When adding a top-level scientific workflow:
-
-```js
-ctx.ui.activities.add(...)
-```
-
-Then contribute its activity-scoped tools:
-
-```js
-ctx.ui.toolbar.add({ activity:'...' })
-ctx.ui.mainTools.add({ activity:'...' })
-```
-
-Do not add another permanent button beside Import/Save/Update/Plugins.
-
-When a workflow needs a different central graph, register:
-
-```js
-ctx.ui.mainViews.register(...)
-```
-
-When it needs custom inspection or summary charts:
-
-```js
-ctx.ui.inspectors.register(...)
-ctx.ui.groupViews.register(...)
-ctx.ui.groupCharts.register(...)
-```
-
-When an algorithm can be replaced by a stronger algorithm, define a provider interface rather than hard-code it into the workbench. The built-in robust resonance detector is the reference:
-- detector algorithm = `builtin.resonance-detector-robust`;
-- detector settings UI = detector provider;
-- resonance workbench = generic detector selector/consumer.
-
-See `docs/WORKSPACE_PLUGIN_API.md`.
-
-
-Desktop shortcuts that are specific to a workflow belong to `ctx.ui.shortcuts.add(...)`. Do not append Raman/FET/resonance keys to the global `window.keydown` block.
-
-Plugins that own Plotly/D3 canvases should react to `layout:resize` themselves. Do not put domain plot IDs into core resize handlers.
-
-## Packaging a finished plugin
-
-When a feature should be installable without rebuilding DK Data Studio, give it a non-`builtin.*` id and package it with `npm run plugin:package -- <folder> <name>.dkplugin`. Read `PLUGIN_PACKAGES.md`. For detector plugins, the Resonance Workbench must discover the provider dynamically; do not add detector-name branches to the workbench.
-
-## v3.20 UI/tooling constraints for AI changes
-
-Do not solve toolbar crowding by adding rows. Register plugin actions with meaningful `priority`, `order`, `section`, and `activity`; the host will overflow low-priority actions automatically.
-
-For ordinary UI typography, use the semantic CSS tokens already defined in `src/style.css`. Do not introduce arbitrary 8px/9px/13px control fonts unless the component is genuinely a different semantic level.
-
-Do not create a new `.cmd` for a build or maintenance task. Add a new action to `tools/windows/dkds-tools.ps1`; add a GUI button in `tools/windows/dkds-gui.ps1` if users benefit from it. The repository-wide rule is exactly two CMD launchers: `DKDS.cmd` and `DKDS_GUI.cmd`.
+The boundary checker rejects direct Electron, raw Plotly, raw document infrastructure access, private observers/schedulers, `ctx.host`, untyped generic registries, private DKDS globals and direct host-recipe access.
+
+## 16. Completion checklist
+
+A plugin is ready only when:
+
+- every Core dependency is declared;
+- no host/core source file contains plugin-specific UI or algorithm branches merely to support it;
+- no plugin owns generic infrastructure;
+- no private global/module registry exists;
+- SUPER/TOP share domain implementation;
+- data/import/export/chart/UI lifecycle all route through Core;
+- generated-data and project regression tests pass;
+- existing UI/function behavior is unchanged unless the product requirement explicitly asked to change it.
