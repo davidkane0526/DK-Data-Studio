@@ -16,8 +16,13 @@
         </div>`;
 
   function attach(ctx,page){
-    const shell=page?.querySelector('.data-center-body');if(!shell)return null;
-    return ctx.ui.workbench.create(shell,{existing:true,regions:{left:{target:'.dc-artifact-pane'},main:{target:'.dc-main'},overlay:{target:()=>page.querySelector('.analysis-page-body')||page}},split:ctx.host.isAuxiliaryWindow?{id:'data-center-local-left',region:'left',mainRegion:'main',defaultSize:290,min:220,reserve:520}:null});
+    const body=page?.querySelector('.data-center-body');const left=page?.querySelector('.dc-artifact-pane');const main=page?.querySelector('.dc-main');
+    if(!body||!left||!main)return null;
+    left.remove();main.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');
+    const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
+    const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'data-center'});
+    wb.mountPrimary({id:'main',label:'主界面',mount:({left:leftSlot,main:mainSlot})=>{leftSlot.appendChild(left);mainSlot.appendChild(main);}});
+    return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}
   window.DKDSDataCenterSharedViews=Object.freeze({create});

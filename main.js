@@ -23,6 +23,8 @@ const auxiliaryBootstrap = new Map();
 const auxiliaryReady = new Set();
 const auxiliaryPendingShow = new Set();
 const forcedAuxiliaryClose = new WeakSet();
+const pendingCapabilityInvocations = new Map();
+let capabilityRequestSeq = 0;
 let appQuitting = false;
 
 function externalPluginDirectory() {
@@ -258,6 +260,8 @@ function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
     title:payload.title || '',
     ownerWebContentsId,
     prewarm:payload.prewarm === true,
+    capabilitySnapshot:payload.capabilitySnapshot || null,
+    capabilityRevision:Number(payload.capabilityRevision)||0,
     pluginWindow:pluginWindow ? {...pluginWindow} : null
   };
 }
@@ -315,7 +319,8 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
     const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
       || cachedBootstrap.projectPath !== nextBootstrap.projectPath
-      || cachedBootstrap.prewarm !== nextBootstrap.prewarm;
+      || cachedBootstrap.prewarm !== nextBootstrap.prewarm
+      || cachedBootstrap.capabilityRevision !== nextBootstrap.capabilityRevision;
     auxiliaryBootstrap.set(previous.webContents.id, nextBootstrap);
 
     // A cached plugin renderer keeps its DOM, Plotly state and in-memory results.
@@ -414,6 +419,43 @@ app.whenReady().then(() => {
     return createOrFocusAuxiliaryWindow(owner, { ...(payload || {}), prewarm:true });
   });
   ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
+  ipcMain.handle('capabilities:publishSnapshot', async (event, payload = {}) => {
+    const ownerId=event.sender.id;
+    const snapshot=payload?.snapshot||null;
+    const nextRevision=Number(payload?.revision??snapshot?.revision)||0;
+    let updated=0;
+    for(const win of BrowserWindow.getAllWindows()){
+      if(win.isDestroyed())continue;
+      const current=auxiliaryBootstrap.get(win.webContents.id);
+      if(!current||Number(current.ownerWebContentsId)!==ownerId)continue;
+      if(Number(current.capabilityRevision||0)===nextRevision)continue;
+      auxiliaryBootstrap.set(win.webContents.id,{...current,capabilitySnapshot:snapshot,capabilityRevision:nextRevision});
+      try{win.webContents.send('windows:activityBootstrapChanged');updated+=1;}catch{}
+    }
+    return {updated,revision:nextRevision};
+  });
+  ipcMain.handle('capabilities:invokeOwner', async (event, payload = {}) => {
+    const bootstrap=auxiliaryBootstrap.get(event.sender.id);
+    const ownerId=Number(bootstrap?.ownerWebContentsId)||0;
+    const ownerWindow=BrowserWindow.getAllWindows().find(win=>!win.isDestroyed()&&win.webContents.id===ownerId);
+    if(!ownerWindow)throw new Error('Capability owner window is unavailable.');
+    const requestId=`cap-${process.pid}-${Date.now()}-${++capabilityRequestSeq}`;
+    const request={requestId,id:String(payload.id||''),method:String(payload.method||'invoke'),args:Array.isArray(payload.args)?payload.args:[]};
+    return await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{pendingCapabilityInvocations.delete(requestId);reject(new Error(`Capability invocation timed out: ${request.id}.${request.method}`));},15000);
+      pendingCapabilityInvocations.set(requestId,{resolve,reject,timer,ownerId});
+      try{ownerWindow.webContents.send('capabilities:invokeRequest',request);}
+      catch(err){clearTimeout(timer);pendingCapabilityInvocations.delete(requestId);reject(err);}
+    });
+  });
+  ipcMain.on('capabilities:invokeResponse', (event, payload = {}) => {
+    const requestId=String(payload.requestId||'');
+    const pending=pendingCapabilityInvocations.get(requestId);
+    if(!pending||pending.ownerId!==event.sender.id)return;
+    pendingCapabilityInvocations.delete(requestId);clearTimeout(pending.timer);
+    if(payload.ok===false)pending.reject(new Error(String(payload.error||'Capability invocation failed.')));
+    else pending.resolve(payload.result);
+  });
   ipcMain.handle('windows:disposeProjectActivities', async (event, projectTabId) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
     const ownerId = owner?.webContents?.id;

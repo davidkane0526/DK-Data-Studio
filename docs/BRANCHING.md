@@ -4,7 +4,7 @@
 
 This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.29.0**.
+Current development baseline: **v3.30.0**.
 
 ## Recommended future flow
 
@@ -25,9 +25,10 @@ Do not access, push to, or modify any remote repository unless the user explicit
 
 ## Current delivery checkpoint
 
-`v3.27.0` establishes plugin-neutral UI/state infrastructure in core. Resonance SUPER/TOP adapters are host-only, while feature behavior lives in plugin-owned Controller/View/feature-runtime layers. TER, Pulse and Data Center consume common portable-view and dynamic-action infrastructure; Data Center also uses the core state/project store. This is the baseline for further plugin rewrites without growing `app.js`.
+`v3.30.0` establishes the unified Core analysis surface: `AnalysisWorkbench` owns PRIMARY / PRIME / SUB composition, managed responsive grids, dock/floating regions, resize lifecycle and portable scientific views. `Capability Runtime` publishes serializable plugin providers from the main renderer and makes them available to dedicated TOP renderers through a generic IPC bridge.
 
+TER, Pulse / Read and Data Center mount the same shared Controller + Shared Views + Feature Runtime stack into this workbench regardless of SUPER/TOP hosting. Resonance keeps its mature scientific renderer but now shares the same Controller/View contracts and PRIMARY/PRIME/SUB topology; its TOP renderer receives detector providers and parameter schemas from the same capability registry used by the main renderer. Host adapters are restricted to container/lifecycle mapping.
 
-`v3.29.0` fixes the dedicated TOP runtime contract for native workspaces and Pulse, moves portable charts onto isolated Workbench-local dock shelves, flattens TER into a stable six-chart grid, and integrates compact chart-placement controls into existing chart toolbars.
+Project files remain self-contained: raw imported text, parsed points, plugin state and analysis results are preserved so a copied project remains usable without the original source files.
 
-`v3.27.1` fixes the shared build-cache contract: the Toolbox cache root is authoritative in derived mode, native npm/pnpm/Electron/electron-builder/Gradle cache variables are bound explicitly, and stale shared `node_modules` Junctions are rebound automatically.
+`v3.27.1` remains the authoritative build-cache fix: the selected shared cache root is bound to npm, pnpm, Electron, electron-builder, Gradle and shared `node_modules`.

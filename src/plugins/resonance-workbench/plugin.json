@@ -1,8 +1,8 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "2.7.1",
-  "apiVersion": "1.4.0",
+  "version": "2.8.0",
+  "apiVersion": "1.5.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 100,
@@ -20,7 +20,10 @@
     "ui.prime",
     "ui.sub",
     "ui.infrastructure",
-    "ui.views"
+    "ui.views",
+    "ui.analysis-workbench",
+    "ui.primary",
+    "runtime.capabilities"
   ],
   "workspace": {
     "role": "top",

@@ -25,3 +25,5 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 12. v3.28.0: remove resonance-specific SUPER assumptions; repair plugin-manager/overlay/TOP navigation regressions; replace portable chart icon strips with a compact location menu; and refactor TER/Pulse/Data Center into Controller + Shared Views + Feature Runtime stacks over core Workbench/Selection/Split/Chart infrastructure.
 
 13. v3.29.0: repair native TOP/dedicated runtime contracts; add isolated local portable docking zones; flatten TER six-chart layout; refine Data Center/Pulse portable UI and panel chrome.
+
+14. v3.30.0: introduce the unified Analysis Workbench with PRIMARY/PRIME/SUB semantics and managed grids; add a cross-renderer Capability Runtime; migrate TER/Pulse/Data Center to the same workbench composition and move Resonance TOP onto the same semantic workbench/capability contract while preserving self-contained project files.

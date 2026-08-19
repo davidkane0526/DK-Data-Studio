@@ -22,6 +22,7 @@
     platform:'../core/platform.js',
     'state-store':'../core/state-store.js',
     'ui-infrastructure':'../core/ui-infrastructure.js',
+    'capability-runtime':'../core/capability-runtime.js',
     'plugin-kernel':'../core/plugin-kernel.js'
   });
 
@@ -102,6 +103,7 @@
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
+    if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
 
     for (const id of ordered) await loadScript(DEPENDENCY_SCRIPTS[id]);
@@ -113,6 +115,7 @@
       status:setStatus,
       zones:{overlay:'#app',main:'#app',left:'#pluginWindowLeftDock',right:'#pluginWindowRightDock',bottom:'#pluginWindowBottomDock'}
     });
+    window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
   }
 
   function safeSegment(value) {
@@ -304,7 +307,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.29.0',
+      appVersion:'3.30.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -404,6 +407,7 @@
       && bootstrap.projectDigest === nextBootstrap.projectDigest
       && bootstrap.projectPath === nextBootstrap.projectPath;
     bootstrap = nextBootstrap;
+    window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
     if (sameProject) {
       // Typical prewarm -> first-open transition: dependencies, plugin DOM,
       // Plotly and the project are already mounted. Only the lifecycle flag

@@ -175,11 +175,21 @@
                   <div class="reswin-button-row"><button id="reswinShowAll">全部显示</button><button id="reswinHideAll">全部隐藏</button></div>
                 </div>
                 <div class="analysis-control-card reswin-control-stack">
-                  <strong>寻峰</strong>
-                  <label>预设<select id="reswinPreset"><option value="strict">严格</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
+                  <strong>智能寻峰</strong>
+                  <label>寻峰算法<select id="reswinDetectorSelect"></select></label>
+                  <div id="reswinDetectorDescription" class="analysis-note compact"></div>
+                  <label>预设<select id="reswinPreset"><option value="strict">可靠</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
+                  <div id="reswinDetectorParams" class="reswin-detector-params"></div>
                   <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
                   <button id="reswinSortPeaks">跨 Vg 智能整理峰序</button>
                   <div class="analysis-note compact">Shift + 左键点击曲线：在最近原始采样点添加手动峰。点击峰位后可在“曲线检查”中编辑。</div>
+                </div>
+                <div class="analysis-control-card reswin-control-stack">
+                  <strong>显示与交互</strong>
+                  <label class="reswin-check"><input id="reswinShowRejected" type="checkbox">显示不采纳峰</label>
+                  <label class="reswin-check"><input id="reswinShowWidth" type="checkbox">显示选中峰宽</label>
+                  <label class="reswin-check"><input id="reswinShowPoints" type="checkbox">显示峰位点</label>
+                  <label class="reswin-check"><input id="reswinPhysicsLabels" type="checkbox">显示物理类型标记</label>
                 </div>
                 <div class="analysis-control-card reswin-control-stack reswin-datasets-card"><strong>数据文件</strong><div id="reswinDatasetList"></div></div>
               </aside>
@@ -308,13 +318,76 @@
     ctx.ui.styles.add('resonance-dedicated',TOP_STYLES);
     ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'完整共振 I–V 独立插件工作区',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');controller.render();}});
     const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(),onOpen:()=>controller.render()});
-    ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage'},prime:[]}});
+
+    // Bind all feature controls while the complete DOM tree is still present.
+    // The workbench then moves those SAME nodes into PRIMARY / PRIME / SUB slots;
+    // no second TOP-only UI implementation is created.
+    R.bindUi?.(page);
+    R.setDetectorRuntime?.({list:()=>ctx.analysis.detectors.list()});
+    let detectorParamPanel=null;
+    const renderDetectorPicker=()=>{
+      const select=page.querySelector('#reswinDetectorSelect');const note=page.querySelector('#reswinDetectorDescription');const paramHost=page.querySelector('#reswinDetectorParams');if(!select)return;
+      const rows=ctx.analysis.detectors.list();const state=R.getState?.();const current=String(state?.workspace?.activeDetector||rows.find(row=>row.default)?.id||rows[0]?.id||'');
+      select.innerHTML=rows.map(row=>`<option value="${String(row.id).replace(/"/g,'&quot;')}">${String(row.shortName||row.name||row.id)}</option>`).join('');if(rows.some(row=>String(row.id)===current))select.value=current;
+      const renderActive=()=>{
+        const row=rows.find(item=>String(item.id)===select.value);if(note)note.textContent=row?.description||'当前窗口通过 Capability Runtime 使用已启用的寻峰提供者。';
+        detectorParamPanel?.dispose?.();detectorParamPanel=null;if(paramHost)paramHost.replaceChildren();
+        if(row?.parameterSchema&&paramHost&&ctx.parameters?.render){
+          const ws=R.getState?.()?.workspace||{};const value=ws.detectorSettings?.[row.id]||ws.algorithms||{};
+          detectorParamPanel=ctx.parameters.render(paramHost,row.parameterSchema,{value,onChange:next=>R.setDetectorSettings?.(row.id,next)});
+        }
+      };
+      select.onchange=()=>{R.setActiveDetector?.(select.value);renderActive();};
+      renderActive();
+    };
+    renderDetectorPicker();
+    ctx.events.on('plugin:manager-changed',renderDetectorPicker);
+
+    const body=page.querySelector('.resonance-dedicated-body');
+    const nav=page.querySelector('.reswin-nav');
+    const mainView=page.querySelector('[data-reswin-view-panel="main"]');
+    const shell=mainView?.querySelector('.reswin-shell');
+    const sidebar=shell?.querySelector('.reswin-sidebar');
+    const primary=shell?.querySelector('.reswin-main');
+    const panel=id=>page.querySelector(`[data-reswin-view-panel="${id}"]`);
+    const inspect=panel('inspect'),group=panel('group'),physics=panel('physics'),spacing=panel('spacing'),gate=panel('gate');
+    if(!body||!sidebar||!primary)throw new Error('Resonance unified workbench DOM is incomplete.');
+
+    nav?.remove();
+    sidebar.remove();primary.remove();
+    for(const node of [mainView,inspect,group,physics,spacing,gate])node?.remove();
+    body.classList.add('dkds-unified-workbench-body');
+    body.replaceChildren();
+    const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
+    const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'resonance'});
+    wb.mountPrimary({id:'main',label:'共振分析',mount:({left,main})=>{left.appendChild(sidebar);main.appendChild(primary);}});
+
+    const mountExisting=(node,render)=>({container})=>{
+      node.classList.add('active');container.appendChild(node);render?.();
+      return ()=>{node.classList.remove('active');node.remove();};
+    };
+    wb.registerPrime({id:'curve-inspector',label:'曲线检查',title:'曲线检查',order:10,defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:mountExisting(inspect,()=>R.renderInspection?.())});
+    wb.registerPrime({id:'group-analysis',label:'组图分析',title:'组图分析',order:20,defaultPlacement:'bottom',placements:['inline','right','bottom','float'],mount:mountExisting(group,()=>R.renderGroup?.())});
+    wb.registerSub({id:'physics',label:'物理机制',order:30,keepLeft:true,mount:mountExisting(physics,()=>R.renderPhysics?.())});
+    wb.registerSub({id:'spacing',label:'峰间距',order:40,keepLeft:true,mount:mountExisting(spacing,()=>R.renderSpacing?.())});
+    wb.registerSub({id:'gate-analysis',label:'栅压分析',order:50,keepLeft:true,mount:mountExisting(gate,()=>R.renderGate?.())});
+
+    const navigate=view=>{
+      if(view==='inspect'){wb.openPrime('curve-inspector');R.renderInspection?.();return;}
+      if(view==='group'){wb.openPrime('group-analysis');R.renderGroup?.();return;}
+      if(view==='physics'||view==='spacing'){wb.openSub(view);return;}
+      if(view==='gate'){wb.openSub('gate-analysis');return;}
+      wb.showPrimary();R.renderMain?.();
+    };
+    R.setWorkspaceNavigator?.(navigate);
+
+    ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
     ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});
     page.querySelector('#reswinCloseBtn').onclick=()=>h.closeCurrentWindow?.();
-    R.bindUi?.(page);
     ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});
-    ctx.events.on('layout:resize',()=>controller.resize());
-    return {controller};
+    ctx.events.on('layout:resize',()=>{wb.resize('plugin-layout');controller.resize();});
+    controller.render();
+    return {controller,workbench:wb};
   }
 
   function create(controller){

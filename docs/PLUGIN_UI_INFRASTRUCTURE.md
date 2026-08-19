@@ -1,4 +1,4 @@
-# DK Data Studio Plugin UI Infrastructure v1.4
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.5 / UI Core v3.0
 
 ## Design boundary
 

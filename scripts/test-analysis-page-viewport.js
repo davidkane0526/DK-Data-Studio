@@ -10,7 +10,7 @@ const app=read('src/app.js');
 const manager=read('src/core/plugin-manager-ui.js');
 const pkg=JSON.parse(read('package.json'));
 
-assert(pkg.version==='3.29.0','SUPER/TOP architecture repair build must ship as v3.29.0.');
+assert(pkg.version==='3.30.0','SUPER/TOP architecture repair build must ship as v3.30.0.');
 assert(css.includes('--dkds-analysis-page-top'),'analysis pages must use a measured shell-top CSS variable.');
 assert(app.includes("root.style.setProperty('--dkds-viewport-height'"),'viewport measurement may expose the current visual viewport height for components that need it.');
 assert(css.includes('100dvh'),'analysis pages need a dynamic-viewport fallback.');
@@ -25,7 +25,7 @@ assert(app.includes('window.visualViewport?.height'),'viewport sync must handle 
 assert(app.includes('function syncAnalysisPageViewport()'),'app must expose a reusable viewport repair routine.');
 assert(app.includes("window.addEventListener('resize',()=>{\n    syncAnalysisPageViewport();"),'generic window resize handling must repair open analysis pages.');
 assert(app.includes("window.DKDSPlugins.events.on('plugin:state-changed'"),'plugin lifecycle changes must repair analysis-page geometry.');
-assert(app.includes("window.DKDSPlugins.events.on('plugin:manager-changed',syncAnalysisPageViewport)"),'manager changes must repair analysis-page geometry.');
+assert(app.includes("window.DKDSPlugins.events.on('plugin:manager-changed'")&&app.includes('syncAnalysisPageViewport();'),'manager changes must repair analysis-page geometry.');
 assert(manager.includes('scheduleViewportRepair'),'plugin manager rerender must trigger viewport repair.');
 assert(manager.includes('state.host?.syncAnalysisPageViewport?.()'),'plugin manager must use the shared viewport repair API.');
 assert(manager.includes("renderList({scroll:'top'})"),'plugin lifecycle mutations must return the manager to a valid top-aligned viewport instead of keeping a stale bottom anchor.');

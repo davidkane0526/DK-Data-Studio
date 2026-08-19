@@ -5307,7 +5307,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.29.0',
+      version:'3.30.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6146,6 +6146,9 @@
       peaks:cloneProjectCache(state.peaks||[]),
       peakCategories:cloneProjectCache(state.peakCategories||[]),
       algorithms:cloneProjectCache(state.algorithms||{}),
+      activeDetector:String(state.algorithms?._detectorId||''),
+      detectorSettings:cloneProjectCache(state.algorithms?._detectorSettings||{}),
+      peakDisplay:cloneProjectCache(state.peakDisplay||{}),
       physicsShowLabels:state.physicsShowLabels!==false,
       spacingSettings:cloneProjectCache(state.spacingSettings||{}),
       gateAnalysisSettings:cloneProjectCache(state.gateAnalysisSettings||{}),
@@ -6187,6 +6190,9 @@
     if(Array.isArray(source.peakCategories))state.peakCategories=source.peakCategories.map(c=>({order:Number(c.order),label:String(c.label||defaultPeakLabel(c.order))}));
     if(Array.isArray(source.peaks))state.peaks=source.peaks.map(migratePeak);
     if(source.algorithms&&typeof source.algorithms==='object')state.algorithms=normalizedDetectionSettings(source.algorithms);
+    if(source.activeDetector!==undefined)state.algorithms={...(state.algorithms||{}),_detectorId:String(source.activeDetector||'')};
+    if(source.detectorSettings&&typeof source.detectorSettings==='object')state.algorithms={...(state.algorithms||{}),_detectorSettings:{...(state.algorithms?._detectorSettings||{}),...cloneProjectCache(source.detectorSettings)}};
+    if(source.peakDisplay&&typeof source.peakDisplay==='object')state.peakDisplay={...(state.peakDisplay||{}),...cloneProjectCache(source.peakDisplay)};
     if(source.physicsShowLabels!==undefined)state.physicsShowLabels=source.physicsShowLabels!==false;
     if(source.spacingSettings&&typeof source.spacingSettings==='object')state.spacingSettings={...state.spacingSettings,...source.spacingSettings};
     if(source.gateAnalysisSettings&&typeof source.gateAnalysisSettings==='object')state.gateAnalysisSettings={...state.gateAnalysisSettings,...source.gateAnalysisSettings};
@@ -6391,6 +6397,13 @@
     if(tab)tab.pulseAnalysisState=pulseAnalysisState;
   }
 
+  async function publishCapabilitySnapshot(){
+    if(IS_AUXILIARY_WINDOW||!window.electronAPI?.publishCapabilitySnapshot)return null;
+    const snapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+    try{return await window.electronAPI.publishCapabilitySnapshot({snapshot,revision:Number(snapshot?.revision)||0});}
+    catch(err){console.warn('[DKDS capabilities:publish]',err);return null;}
+  }
+
   async function openPluginActivityWindow(activityId){
     if(IS_AUXILIARY_WINDOW){
       return window.DKDSPlugins?.activities?.set?.(activityId);
@@ -6401,12 +6414,15 @@
     if(!window.electronAPI?.openActivityWindow){
       return window.DKDSPlugins?.activities?.set?.(activityId);
     }
+    const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
     return window.electronAPI.openActivityWindow({
       activityId,
       projectTabId:tab.id,
       title:tab.title,
       projectPath:state.projectPath,
-      project:makeProject()
+      project:makeProject(),
+      capabilitySnapshot,
+      capabilityRevision:Number(capabilitySnapshot?.revision)||0
     });
   }
 
@@ -6447,12 +6463,15 @@
       if(!tab)return;
       captureActiveProjectTab();
       const activityId=activities[index];
+      const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
       const payload={
         activityId,
         projectTabId:tab.id,
         title:tab.title,
         projectPath:state.projectPath,
-        project:makeProject()
+        project:makeProject(),
+        capabilitySnapshot,
+        capabilityRevision:Number(capabilitySnapshot?.revision)||0
       };
       Promise.resolve(window.electronAPI.prewarmActivityWindow(payload)).catch(err=>{
         console.warn(`[DKDS prewarm:${activityId}]`,err);
@@ -6592,7 +6611,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.29.0',
+      appVersion:'3.30.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6633,6 +6652,17 @@
       ter:terHostApi()
     });
 
+    window.electronAPI?.onCapabilityInvokeRequest?.(async request=>{
+      const requestId=String(request?.requestId||'');
+      if(!requestId)return;
+      try{
+        const result=await window.DKDSCapabilities?.invoke?.(request.id,request.method,...(Array.isArray(request.args)?request.args:[]));
+        window.electronAPI?.respondCapabilityInvoke?.({requestId,ok:true,result});
+      }catch(err){
+        window.electronAPI?.respondCapabilityInvoke?.({requestId,ok:false,error:err?.message||String(err)});
+      }
+    });
+
     window.DKDSPluginManagerUI?.configure?.({
       openAnalysisPage,
       closeAnalysisPage,
@@ -6644,12 +6674,15 @@
     await window.DKDSPlugins.loadExternalEntries?.();
     const activated=await window.DKDSPlugins.activateAll();
     console.info('[DKDS plugins] activated',activated);
+    await publishCapabilitySnapshot();
     if(!IS_AUXILIARY_WINDOW){
+      let capabilityPublishTimer=null;
+      window.addEventListener('dkds:capabilities-changed',()=>{clearTimeout(capabilityPublishTimer);capabilityPublishTimer=setTimeout(()=>publishCapabilitySnapshot(),0);});
       window.DKDSPlugins.events.on('plugin:state-changed',()=>{
         syncAnalysisPageViewport();
-        setTimeout(()=>prewarmDedicatedPluginWindows(),0);
+        setTimeout(()=>{publishCapabilitySnapshot();prewarmDedicatedPluginWindows();},0);
       });
-      window.DKDSPlugins.events.on('plugin:manager-changed',syncAnalysisPageViewport);
+      window.DKDSPlugins.events.on('plugin:manager-changed',()=>{syncAnalysisPageViewport();setTimeout(()=>publishCapabilitySnapshot(),0);});
       window.DKDSPlugins.events.on('plugin:prewarm-changed',()=>setTimeout(()=>prewarmDedicatedPluginWindows(),0));
       window.DKDSPlugins.events.on('super:selection-changed',()=>{
         applySuperWorkspace(window.DKDSPlugins.workspace.super());

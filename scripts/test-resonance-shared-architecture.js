@@ -23,7 +23,7 @@ assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'T
 for(const token of ['VIEW_CATALOG','createController','normalizeWorkspace','buildTrendModel','computeSpacingRows'])assert(shared.includes(token),`Shared Controller layer missing ${token}.`);
 assert(!shared.includes('reswinMainPlot')&&!shared.includes('gateAnalysisPage'),'Controller layer must not own renderer markup.');
 for(const token of ['topPageHtml','TOP_STYLES','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
-for(const label of ['主图','曲线检查','组图分析','物理机制','峰间距','栅压分析'])assert(shared.includes(label),`Canonical view catalog missing ${label}.`);
+for(const label of ['共振分析','曲线检查','组图分析','物理机制','峰间距','栅压分析'])assert(shared.includes(label),`Canonical view catalog missing ${label}.`);
 for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
   assert(adapter.split(/\r?\n/).length<45,`${name} adapter must remain host-only.`);
   for(const forbidden of ['Plotly.','detectPeaks','computeTerMatrix','buildTrendModel','computeSpacingRows','gateAnalysisPage','reswinMainPlot'])assert(!adapter.includes(forbidden),`${name} adapter regained feature logic: ${forbidden}`);
@@ -61,7 +61,7 @@ const service={
 };
 const controller=W.createController(service,{science:context.window.DKDSScience});
 const viewSet=V.create(controller);
-assert(viewSet.catalog.length===6&&viewSet.main.label==='主图'&&viewSet.gate.label==='栅压分析','Both layout adapters must receive the same six shared View descriptors.');
+assert(viewSet.catalog.length===6&&viewSet.main.label==='共振分析'&&viewSet.gate.label==='栅压分析','Both layout adapters must receive the same six shared View descriptors.');
 assert(viewSet.gate.superPageHtml().includes('gateAnalysisPage')&&viewSet.spacing.superPageHtml().includes('spacingPage'),'Shared View components must own mature SUPER page templates.');
 assert(viewSet.topPageHtml().includes('reswinMainPlot')&&viewSet.topPageHtml().includes('data-reswin-view-panel="gate"'),'Shared View components must compose the dedicated TOP surface.');
 const trend=controller.buildTrendModel();

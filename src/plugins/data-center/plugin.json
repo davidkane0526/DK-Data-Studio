@@ -1,8 +1,8 @@
 {
   "id": "builtin.data-center",
   "name": "Data Center",
-  "version": "1.3.0",
-  "apiVersion": "1.4.0",
+  "version": "1.4.0",
+  "apiVersion": "1.5.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 20,
@@ -22,7 +22,12 @@
     "ui.portable",
     "ui.dynamic-actions",
     "ui.shortcuts",
-    "state.store"
+    "state.store",
+    "ui.analysis-workbench",
+    "ui.primary",
+    "ui.prime",
+    "ui.sub",
+    "runtime.capabilities"
   ],
   "source": "builtin",
   "window": {

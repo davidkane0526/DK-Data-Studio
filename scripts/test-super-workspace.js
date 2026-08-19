@@ -164,7 +164,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
   assert((resonanceManifest.window?.mode||'dedicated')==='dedicated'&&resonanceManifest.window?.runtime==='window-runtime.js','resonance TOP must use a dedicated plugin renderer instead of the full compatibility renderer.');
   assert(read('src/plugins/resonance-workbench/feature-runtime.js').includes("serviceName:'resonance'"),'resonance feature runtime must provide the plugin-owned resonance service while the TOP adapter stays thin.');
   assert(app.includes("auxiliary-compatibility-window")&&css.includes("body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace"),'generic compatibility-window support must remain for older third-party plugins even though built-in resonance no longer needs it.');
-  assert(terFeature.includes("root:{selector:'.ter-workspace-shell'}")&&terFeature.includes("selector:'.ter-workspace-left'")&&terFeature.includes("selector:'.ter-workspace-main'"),'TER SUPER layout must expose one left stack and one main stack so CSS Grid cannot push plots below multiple left rows.');
+  assert(terFeature.includes("mode:'native'")&&terFeature.includes('dkds-plugin-workbench-root'),'TER SUPER/TOP layout must delegate composition to the unified native Analysis Workbench.');
   assert(!terFeature.includes("selectors:['.ter-controls','.analysis-note','.heatmap-display-controls']"),'TER must not register three independent left grid items in SUPER mode.');
 
   assert(app.includes('function superWorkspaceRootPageId('),'core must derive the one true SUPER root from any TOP workspace contract.');

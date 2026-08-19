@@ -26,9 +26,15 @@
         mode:'native',root:{selector:'.workspace'},
         left:{role:'data-display',mount:'#pluginSidebarSections',defaultFraction:0.20,minFraction:0.14,maxFraction:0.42},
         main:{role:'primary-data',mount:'#mainWorkspace',interaction:'plugin-owned'},
+        primary:{id:'main',role:'analysis-primary'},
         prime:[
           {id:'curve-inspector',placements:['float','right','bottom']},
           {id:'group-analysis',placements:['float','right','bottom']}
+        ],
+        sub:[
+          {id:'physics',kind:'panel'},
+          {id:'spacing',kind:'page'},
+          {id:'gate-analysis',kind:'page'}
         ]
       }
     });
@@ -459,6 +465,8 @@
       let spacingResult=[];
       let gateResult=null;
       let sharedController=null;
+      let workspaceNavigator=null;
+      let detectorRuntime=null;
 
       function pluginSliceFromProject(p){return Shared.pluginSliceFromProject(p);}
       function sweepById(id){return sweeps.find(sw=>sw.id===id)||null;}
@@ -573,15 +581,21 @@
       }
       function setPreset(name){workspace.algorithms={...(S.preset?.(name)||workspace.algorithms||{}),_preset:String(name||'balanced')};renderControls();scheduleSnapshot();}
 
-      function runDetection(scope='selected'){
+      async function runDetection(scope='selected'){
         const targets=scope==='all'?visibleSweeps():[selectedSweep()].filter(Boolean);
         if(!targets.length){setStatus('没有可寻峰的可见扫描。');return;}
         const targetIds=new Set(targets.map(sw=>sw.id));
         const preserved=(workspace.peaks||[]).filter(p=>!targetIds.has(p.sweepId)||p.manual||p.locked);
         const added=[];
+        const providers=detectorRuntime?.list?.()||[];
+        const activeId=String(workspace.activeDetector||providers.find(p=>p.default)?.id||providers[0]?.id||'');
+        const provider=providers.find(p=>String(p.id)===activeId)||null;
         for(const sw of targets){
-          try{added.push(...assignDetectedOrders(S.detectPeaks(sw,workspace.algorithms||{},{})));}
-          catch(err){console.warn('[resonance window detect]',sw.id,err);}
+          try{
+            const settings=workspace.detectorSettings?.[activeId]||workspace.algorithms||{};
+            const peaks=provider?.detect?await provider.detect(sw,settings,{}):S.detectPeaks(sw,workspace.algorithms||{},{});
+            added.push(...assignDetectedOrders(peaks||[]));
+          }catch(err){console.warn('[resonance window detect]',sw.id,err);}
         }
         workspace.peaks=preserved.concat(added);normalizeCategories();selectedPeakId=added[0]?.id||selectedPeakId;
         render();scheduleSnapshot();
@@ -671,6 +685,11 @@
         }
         const preset=$('#reswinPreset');if(preset)preset.value=workspace.algorithms?._preset||'balanced';
         const transform=$('#reswinTransform');if(transform)transform.value=currentTransform(selectedSweep());
+        const display=workspace.peakDisplay||{};
+        const rejected=$('#reswinShowRejected');if(rejected)rejected.checked=display.showRejected===true;
+        const width=$('#reswinShowWidth');if(width)width.checked=display.showWidth!==false;
+        const points=$('#reswinShowPoints');if(points)points.checked=display.showPoints!==false;
+        const physics=$('#reswinPhysicsLabels');if(physics)physics.checked=workspace.physicsShowLabels!==false;
       }
 
       function plotTraces(){
@@ -680,9 +699,9 @@
           const transformed=S.transformSweep?.(sw,currentTransform(sw))||{points:sw.points.map(p=>({v:p.v,y:p.i})),label:'I',unit:'A'};
           traces.push({x:transformed.points.map(p=>p.v),y:transformed.points.map(p=>p.y),mode:'lines',name:`${sw.datasetName} · ${directionName(sw.direction)}`,line:{width:isSelected?2.6:1.1},opacity:isSelected?1:.28,hovertemplate:'Vd=%{x:.6g}<br>值=%{y:.6g}<extra></extra>'});
         }
-        const visIds=new Set(visibleSweepIds());
-        const peaks=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visIds.has(p.sweepId));
-        if(peaks.length)traces.push({x:peaks.map(p=>p.v),y:peaks.map(p=>p.i),mode:'markers',name:'峰位',marker:{size:9,symbol:peaks.map(p=>p.manual?'diamond':'circle'),line:{width:1}},customdata:peaks.map(p=>[p.id,peakLabel(p),p.vg,directionName(p.direction)]),hovertemplate:'%{customdata[1]}<br>Vg=%{customdata[2]}<br>%{customdata[3]}<br>Vd=%{x:.6g}<extra></extra>'});
+        const visIds=new Set(visibleSweepIds());const display=workspace.peakDisplay||{};
+        const peaks=(workspace.peaks||[]).filter(p=>visIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true));
+        if(display.showPoints!==false&&peaks.length)traces.push({x:peaks.map(p=>p.v),y:peaks.map(p=>p.i),mode:'markers',name:'峰位',marker:{size:9,symbol:peaks.map(p=>p.manual?'diamond':'circle'),opacity:peaks.map(p=>p.accepted===false?.32:1),line:{width:1}},customdata:peaks.map(p=>[p.id,peakLabel(p),p.vg,directionName(p.direction),p.accepted!==false?'采纳':'未采纳']),hovertemplate:'%{customdata[1]}<br>Vg=%{customdata[2]}<br>%{customdata[3]} · %{customdata[4]}<br>Vd=%{x:.6g}<extra></extra>'});
         return traces;
       }
 
@@ -691,7 +710,7 @@
         try{plot.removeAllListeners?.('plotly_click');}catch{}
         plot.on('plotly_click',event=>{
           const point=event?.points?.[0];const peakId=point?.customdata?.[0];
-          if(peakId){selectedPeakId=String(peakId);renderInspection();return;}
+          if(peakId){selectedPeakId=String(peakId);setView('inspect');return;}
           if(event?.event?.shiftKey&&finite(point?.x))addManualPeak(point.x);
         });
       }
@@ -699,7 +718,9 @@
       function renderMainPlot(){
         const plot=$('#reswinMainPlot');if(!plot||!window.Plotly)return;
         const sw=selectedSweep();const transform=currentTransform(sw);const label=sw?(S.transformSweep?.(sw,transform)?.label||'I–V'):'I–V';
-        Plotly.react(plot,plotTraces(),{margin:{l:72,r:22,t:46,b:58},title:{text:sw?`${sw.datasetName} · Vg=${Number(sw.vg)} · ${directionName(sw.direction)}`:'共振 I–V',font:{size:14}},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5',automargin:true},yaxis:{title:label,gridcolor:'#edf0f5',automargin:true},hovermode:'closest',dragmode:'zoom',showlegend:true,legend:{orientation:'h',y:-.19},autosize:true},{responsive:true,scrollZoom:true,displaylogo:false,toImageButtonOptions:{format:'png',filename:'resonance_iv',scale:2}}).then(bindMainPlot).catch(()=>{});
+        const selectedP=selectedPeak();const shapes=[];
+        if(selectedP&&(workspace.peakDisplay?.showWidth!==false)){const m=peakMetrics(selectedP)||{};const half=Number(m.fwhm)/2;if(Number.isFinite(half)&&half>0)shapes.push({type:'rect',xref:'x',yref:'paper',x0:selectedP.v-half,x1:selectedP.v+half,y0:0,y1:1,fillcolor:'rgba(58,96,246,.08)',line:{color:'rgba(58,96,246,.38)',width:1,dash:'dot'},layer:'below'});}
+        Plotly.react(plot,plotTraces(),{margin:{l:72,r:22,t:46,b:58},title:{text:sw?`${sw.datasetName} · Vg=${Number(sw.vg)} · ${directionName(sw.direction)}`:'共振 I–V',font:{size:14}},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5',automargin:true},yaxis:{title:label,gridcolor:'#edf0f5',automargin:true},hovermode:'closest',dragmode:'zoom',showlegend:true,legend:{orientation:'h',y:-.19},shapes,autosize:true},{responsive:true,scrollZoom:true,displaylogo:false,toImageButtonOptions:{format:'png',filename:'resonance_iv',scale:2}}).then(bindMainPlot).catch(()=>{});
       }
 
       function groupSeries(){
@@ -899,6 +920,15 @@
       function renderMain(){renderControls();renderSummary();renderMainPlot();renderTrend();}
       function renderView(){
         currentView=workspace.activeView||currentView||'main';
+        if(workspaceNavigator){
+          if(currentView==='main')renderMain();
+          else if(currentView==='inspect'){renderControls();renderInspection();}
+          else if(currentView==='group')renderGroup();
+          else if(currentView==='physics')renderPhysics();
+          else if(currentView==='spacing')renderSpacing();
+          else if(currentView==='gate')renderGate();
+          return;
+        }
         $$('.reswin-view').forEach(el=>el.classList.toggle('active',el.dataset.reswinViewPanel===currentView));
         $$('[data-reswin-view]').forEach(el=>el.classList.toggle('active',el.dataset.reswinView===currentView));
         if(currentView==='main')renderMain();
@@ -908,8 +938,8 @@
         else if(currentView==='spacing')renderSpacing();
         else if(currentView==='gate')renderGate();
       }
-      function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;renderView();scheduleSnapshot();}
-      function render(){normalizeCategories();renderView();}
+      function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;if(workspaceNavigator)workspaceNavigator(currentView);else renderView();scheduleSnapshot();}
+      function render(){normalizeCategories();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);}else renderView();}
       function resize(){requestAnimationFrame(()=>{$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{Plotly.Plots.resize(el);}catch{}});if(currentView==='group')renderGroup();});}
 
       function peaksCsv(){const rows=['dataset,vg,direction,peak_order,peak_label,vpk,i,accepted,manual,locked'];for(const p of workspace.peaks||[])rows.push([p.datasetPath,p.vg,directionName(p.direction),p.peakOrder,peakLabel(p),p.v,p.i,p.accepted!==false,p.manual===true,p.locked===true].map(csvCell).join(','));return rows.join('\n');}
@@ -925,6 +955,8 @@
         page.querySelector('#reswinDetectSelected').onclick=()=>runDetection('selected');
         page.querySelector('#reswinDetectAll').onclick=()=>runDetection('all');
         page.querySelector('#reswinSortPeaks').onclick=sortPeakOrderByVd;
+        for(const [id,key] of [['reswinShowRejected','showRejected'],['reswinShowWidth','showWidth'],['reswinShowPoints','showPoints']])page.querySelector('#'+id)?.addEventListener('change',e=>{workspace.peakDisplay={...(workspace.peakDisplay||{}),[key]:!!e.target.checked};renderMainPlot();scheduleSnapshot();});
+        page.querySelector('#reswinPhysicsLabels')?.addEventListener('change',e=>{workspace.physicsShowLabels=!!e.target.checked;renderMainPlot();scheduleSnapshot();});
         page.querySelector('#reswinShowAll').onclick=()=>setAllVisibility(true);
         page.querySelector('#reswinHideAll').onclick=()=>setAllVisibility(false);
         page.querySelector('#reswinExportMainCsv').onclick=()=>window.electronAPI?.saveText?.({defaultName:'resonance_iv.csv',content:mainCsv(),filters:[{name:'CSV',extensions:['csv']}]});
@@ -949,6 +981,12 @@
         restore(data,{legacyProject}={}){workspace=normalizeWorkspace(data,legacyProject||project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,
+        renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,
+        setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
+        setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
+        setActiveDetector(id){workspace.activeDetector=String(id||'');renderControls();scheduleSnapshot();},
+        setDetectorSettings(id,value){const key=String(id||workspace.activeDetector||'');if(!key)return;workspace.detectorSettings={...(workspace.detectorSettings||{}),[key]:clone(value||{})};scheduleSnapshot();},
+        setPeakDisplay(key,value){workspace.peakDisplay={...(workspace.peakDisplay||{}),[String(key)]:!!value};renderMainPlot();scheduleSnapshot();},
         selectSweep(id){selectedSweepId=String(id||'');selectedPeakId='';render();},
         setTransform,setPreset,runDetection,addManualPeak,sortPeakOrderByVd,setAllVisibility,
         exportPeaks:()=>window.electronAPI?.saveText?.({defaultName:'resonance_peaks.csv',content:peaksCsv(),filters:[{name:'CSV',extensions:['csv']}]}),

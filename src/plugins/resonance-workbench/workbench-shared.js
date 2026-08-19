@@ -1,7 +1,7 @@
 (() => {
   const PLUGIN_ID='builtin.resonance-workbench';
   const VIEW_CATALOG=Object.freeze([
-    Object.freeze({id:'main',label:'主图',role:'primary'}),
+    Object.freeze({id:'main',label:'共振分析',role:'primary'}),
     Object.freeze({id:'inspect',label:'曲线检查',role:'inspector'}),
     Object.freeze({id:'group',label:'组图分析',role:'group'}),
     Object.freeze({id:'physics',label:'物理机制',role:'physics'}),
@@ -24,6 +24,9 @@
       peaks:Array.isArray(project.peaks)?clone(project.peaks):[],
       peakCategories:Array.isArray(project.peakCategories)?clone(project.peakCategories):[],
       algorithms:clone(project.algorithms||science?.preset?.('balanced')||{_preset:'balanced'}),
+      activeDetector:String(project.activeDetector||''),
+      detectorSettings:clone(project.detectorSettings||{}),
+      peakDisplay:{showRejected:project.peakDisplay?.showRejected===true,showWidth:project.peakDisplay?.showWidth!==false,showPoints:project.peakDisplay?.showPoints!==false},
       physicsShowLabels:project.physicsShowLabels!==false,
       spacingSettings:clone(project.spacingSettings||{seriesA:'',seriesB:'',mode:'abs'}),
       gateAnalysisSettings:clone(project.gateAnalysisSettings||{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0}),
@@ -43,6 +46,9 @@
       peaks:Array.isArray(source.peaks)?clone(source.peaks):base.peaks,
       peakCategories:Array.isArray(source.peakCategories)?clone(source.peakCategories):base.peakCategories,
       algorithms:{...(base.algorithms||{}),...(source.algorithms||{})},
+      activeDetector:String(source.activeDetector||base.activeDetector||''),
+      detectorSettings:{...(base.detectorSettings||{}),...(source.detectorSettings||{})},
+      peakDisplay:{...(base.peakDisplay||{}),...(source.peakDisplay||{})},
       spacingSettings:{...(base.spacingSettings||{}),...(source.spacingSettings||{})},
       gateAnalysisSettings:{...(base.gateAnalysisSettings||{}),...(source.gateAnalysisSettings||{})},
       transformPreviewByDataset:Array.isArray(source.transformPreviewByDataset)?clone(source.transformPreviewByDataset):base.transformPreviewByDataset,

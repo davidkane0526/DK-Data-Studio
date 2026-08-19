@@ -34,18 +34,21 @@
     ctx.ui.topWorkspace.register({
       id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
       layout:{
-        mode:'split',root:{selector:'.pulse-analysis-body'},flatten:['.pulse-batch-workspace'],
-        left:{role:'data-display',pageId:page.id,selector:'.pulse-file-manager-card',sticky:true,spanRows:true,defaultFraction:0.20,minFraction:0.14,maxFraction:0.42},
-        main:{role:'primary-data',pageId:page.id,selector:'.pulse-config-card',interaction:'plugin-owned'},
-        prime:[]
+        mode:'native',root:{selector:'#pulseAnalysisPage .dkds-plugin-workbench-root'},
+        primary:{id:'main',role:'analysis-primary'},prime:[{id:'raw-diagnostic'}],sub:[]
       }
     });
 
 
-    // Core portable-view infrastructure makes every scientific plot movable
-    // without embedding drag/dock logic in the pulse plugin itself.
+    // Raw waveform diagnostics are a PRIME surface: inline by default, but
+    // the Core workbench can pin/float it without changing pulse feature code.
+    const rawCard=page.querySelector('#pulseRawPlot')?.closest('.pulse-card');
+    if(rawCard&&workbench?.registerPrime){
+      workbench.registerPrime({id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})});
+    }
+
+    // Result charts stay PRIMARY portable views.
     for(const [id,title] of [
-      ['pulseRawPlot','原始波形诊断'],
       ['pulseReadPlot','脉冲条件 → 读取电流'],
       ['pulsePulsePlot','脉冲条件 → 脉冲电流']
     ]){
@@ -58,6 +61,8 @@
       }catch(err){console.warn('[Pulse portable chart]',id,err);}
     }
 
+
+    const rawPlot=page.querySelector('#pulseRawPlot');if(rawPlot&&ctx.ui.charts?.mount)try{ctx.ui.charts.mount(rawPlot,{});}catch(err){console.warn('[Pulse raw chart surface]',err);}
 
     page.querySelector('#pulseFileList')?.addEventListener('click',()=>queueMicrotask(()=>{const st=P.getState?.();const item=st?.files?.find?.(f=>f.id===st.activeId)||null;controller?.select?.(item?{id:item.id,name:item.name,label:item.label}:null,{source:'pulse-file'});}));
     page.querySelector('#pulseCheckAllBtn').onclick=()=>P.setAllChecked(true);

@@ -39,6 +39,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('windows:activityWillShow', handler);
     return () => ipcRenderer.removeListener('windows:activityWillShow', handler);
   },
+  publishCapabilitySnapshot: payload => ipcRenderer.invoke('capabilities:publishSnapshot', payload),
+  invokeOwnerCapability: payload => ipcRenderer.invoke('capabilities:invokeOwner', payload),
+  onCapabilityInvokeRequest: callback => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('capabilities:invokeRequest', handler);
+    return () => ipcRenderer.removeListener('capabilities:invokeRequest', handler);
+  },
+  respondCapabilityInvoke: payload => ipcRenderer.send('capabilities:invokeResponse', payload),
   pluginExternalList: () => ipcRenderer.invoke('plugins:listExternal'),
   pluginOverrideList: () => ipcRenderer.invoke('plugins:listOverrides'),
   pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),

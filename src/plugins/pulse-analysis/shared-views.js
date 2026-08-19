@@ -196,9 +196,18 @@
       </div>`;
 
   function attach(ctx,page){
-    const shell=page?.querySelector('.pulse-batch-workspace');if(!shell)return null;
-    const body=page.querySelector('.pulse-analysis-body')||page;
-    return ctx.ui.workbench.create(shell,{existing:true,regions:{left:{target:'.pulse-file-manager-card'},main:{target:'.pulse-config-card'},overlay:{target:()=>body}},split:ctx.host.isAuxiliaryWindow?{id:'pulse-local-left',region:'left',mainRegion:'main',defaultSize:310,min:230,reserve:560}:null});
+    const body=page?.querySelector('.pulse-analysis-body');
+    const batch=page?.querySelector('.pulse-batch-workspace');
+    const left=page?.querySelector('.pulse-file-manager-card');
+    const config=page?.querySelector('.pulse-config-card');
+    if(!body||!left||!config)return null;
+    const extras=[...body.children].filter(node=>node!==batch);
+    left.remove();config.remove();batch?.remove();extras.forEach(node=>node.remove());
+    body.classList.add('dkds-unified-workbench-body');
+    const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
+    const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'pulse'});
+    wb.mountPrimary({id:'main',label:'主界面',mount:({left:leftSlot,main:mainSlot})=>{leftSlot.appendChild(left);mainSlot.append(config,...extras);}});
+    return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}
   window.DKDSPulseSharedViews=Object.freeze({create});

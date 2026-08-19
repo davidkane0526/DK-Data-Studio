@@ -1,14 +1,14 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '2.3.0';
+  const VERSION = '3.0.0';
   const scopes = new Map();
   const hostState = {
     root: null,
     zones: new Map(),
     activity: () => '',
     status: () => {},
-    storagePrefix: 'dkds.ui.layout.v3'
+    storagePrefix: 'dkds.ui.layout.v4'
   };
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -288,7 +288,7 @@
     pin(placement='right'){return this.place(placement);}
     float(){return this.place('float');}
     bindFloatDrag(){
-      const head=this.wrapper.querySelector('.dkds-portable-header');let state=null;
+      const head=this.wrapper.querySelector('.drag-handle')||this.wrapper.querySelector('.dkds-portable-header');if(!head)return ()=>{};let state=null;
       const down=e=>{if(e.button!==0||e.target.closest('button'))return;const r=this.wrapper.getBoundingClientRect();state={dx:e.clientX-r.left,dy:e.clientY-r.top};e.preventDefault();};
       const move=e=>{if(!state)return;this.wrapper.style.left=`${Math.max(0,Math.min(window.innerWidth-120,e.clientX-state.dx))}px`;this.wrapper.style.top=`${Math.max(34,Math.min(window.innerHeight-80,e.clientY-state.dy))}px`;};
       const up=()=>{if(!state)return;state=null;
@@ -448,6 +448,142 @@
     dispose(){try{this.views.get(this.active)?.unmount?.({workbench:this,scope:this.scope,container:this.layout.slot('main')});}catch{}this.actions?.dispose?.();this.split?.dispose?.();this.splitter?.remove?.();for(const zone of this.portableZones.values())zone.remove();this.portableZones.clear();this.layout?.dispose?.();if(this.spec.existing===true){this.root.classList.remove('dkds-workbench','dkds-workbench-existing','dkds-workbench-existing-split');}else this.root.replaceChildren();}
   }
 
+
+  class GridController {
+    constructor(scope,container,spec={}){
+      this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.columns=Math.max(1,Number(spec.columns)||3);this.minItemWidth=Math.max(180,Number(spec.minItemWidth)||320);this.maxColumns=Math.max(this.columns,Number(spec.maxColumns)||6);this.ro=null;
+      if(!this.container)throw new Error('GridController container not found.');
+      this.container.classList.add('dkds-managed-grid');
+      this.apply();
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.apply());this.ro.observe(this.container);}
+    }
+    responsiveColumns(){
+      if(this.spec.responsive===false)return this.columns;
+      const width=Math.max(0,this.container.clientWidth||0);
+      if(!width)return this.columns;
+      return Math.max(1,Math.min(this.columns,this.maxColumns,Math.floor((width+10)/(this.minItemWidth+10))||1));
+    }
+    apply(){const cols=this.responsiveColumns();this.container.style.setProperty('--dkds-grid-columns',String(cols));this.container.dataset.dkdsGridColumns=String(cols);this.scope.emitResize?.({reason:'grid',columns:cols});return cols;}
+    setColumns(value){this.columns=Math.max(1,Math.min(this.maxColumns,Number(value)||1));this.apply();return this.columns;}
+    getColumns(){return this.columns;}
+    dispose(){this.ro?.disconnect?.();this.container.classList.remove('dkds-managed-grid');this.container.style.removeProperty('--dkds-grid-columns');delete this.container.dataset.dkdsGridColumns;}
+  }
+
+  class AnalysisWorkbench {
+    constructor(scope,root,spec={}){
+      this.scope=scope;this.owner=scope.owner;this.root=resolveElement(root);this.spec={...spec};this.primary=null;this.primes=new Map();this.subs=new Map();this.activeSub='';this.portables=new Map();this.grids=[];this.resizeObserver=null;this.closed=false;
+      if(!this.root)throw new Error('AnalysisWorkbench root not found.');
+      this.root.classList.add('dkds-analysis-workbench-host');
+      this.build();
+    }
+    build(){
+      const s=this.spec;
+      this.root.innerHTML=`<section class="dkds-analysis-workbench" data-workbench-owner="${esc(this.owner)}">
+        <header class="dkds-analysis-header">
+          <div class="dkds-analysis-heading"><h2></h2><div class="dkds-analysis-subtitle"></div></div>
+          <div class="dkds-analysis-commandbar"></div>
+          <button type="button" class="dkds-analysis-close">关闭窗口</button>
+        </header>
+        <nav class="dkds-analysis-nav" aria-label="分析工作区导航"><div class="dkds-analysis-nav-primary"></div><div class="dkds-analysis-nav-prime"></div><div class="dkds-analysis-nav-sub"></div></nav>
+        <div class="dkds-analysis-frame">
+          <aside class="dkds-analysis-left" data-analysis-slot="left"></aside>
+          <div class="dkds-analysis-left-resizer" role="separator" aria-orientation="vertical" title="拖动调整左侧宽度，双击复位"></div>
+          <main class="dkds-analysis-main" data-analysis-slot="main"><div class="dkds-analysis-primary-host"></div><div class="dkds-analysis-sub-host hidden"></div></main>
+          <aside class="dkds-analysis-right" data-analysis-slot="right"></aside>
+          <section class="dkds-analysis-bottom" data-analysis-slot="bottom"></section>
+          <div class="dkds-analysis-overlay" data-analysis-slot="overlay"></div>
+        </div>
+      </section>`;
+      this.shell=this.root.firstElementChild;
+      this.slots={left:this.shell.querySelector('[data-analysis-slot="left"]'),main:this.shell.querySelector('[data-analysis-slot="main"]'),right:this.shell.querySelector('[data-analysis-slot="right"]'),bottom:this.shell.querySelector('[data-analysis-slot="bottom"]'),overlay:this.shell.querySelector('[data-analysis-slot="overlay"]'),primary:this.shell.querySelector('.dkds-analysis-primary-host'),sub:this.shell.querySelector('.dkds-analysis-sub-host')};
+      const frame=this.shell.querySelector('.dkds-analysis-frame');
+      const leftResizer=this.shell.querySelector('.dkds-analysis-left-resizer');
+      if(s.resizableLeft===false)leftResizer?.remove();
+      else if(frame&&leftResizer){
+        this.leftSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-left`,container:frame,handle:leftResizer,target:this.slots.left,cssVar:'--dkds-analysis-left-width',defaultSize:Number(s.leftWidth)||280,min:Number(s.leftMin)||220,reserve:Number(s.leftReserve)||520});
+      }
+      const header=this.shell.querySelector('.dkds-analysis-header');
+      if(s.header===false)header?.remove();else if(header){
+        header.querySelector('h2').textContent=s.title||'';
+        header.querySelector('.dkds-analysis-subtitle').textContent=s.subtitle||'';
+        const close=header.querySelector('.dkds-analysis-close');
+        if(s.closable===false)close?.remove();else if(close)close.onclick=()=>s.onClose?.();
+        const commandHost=header.querySelector('.dkds-analysis-commandbar');
+        if(Array.isArray(s.actions)&&s.actions.length&&commandHost)this.actions=new ActionGroup(this.owner,commandHost,{activity:s.activity,actions:s.actions});else commandHost?.remove();
+      }
+      if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>this.resize('observer'));this.resizeObserver.observe(this.shell);}
+    }
+    layout(){return {slot:name=>this.slots[String(name)]||null};}
+    setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');}
+    mountPrimary(spec={}){
+      if(this.primary?.dispose)this.primary.dispose();
+      this.primary={...spec,id:String(spec.id||'main')};
+      const left=this.slots.left,main=this.slots.primary;
+      left.replaceChildren();main.replaceChildren();
+      if(spec.leftHtml!==undefined)left.innerHTML=typeof spec.leftHtml==='function'?spec.leftHtml():String(spec.leftHtml||'');
+      if(spec.mainHtml!==undefined)main.innerHTML=typeof spec.mainHtml==='function'?spec.mainHtml():String(spec.mainHtml||'');
+      const ctx={workbench:this,scope:this.scope,slots:this.slots,left,main,root:this.shell};
+      const cleanup=spec.mount?.(ctx);if(typeof cleanup==='function')this.primary.cleanup=cleanup;
+      this.renderNav();this.resize('primary');return this;
+    }
+    registerPrime(spec={}){
+      const id=String(spec.id||'').trim();if(!id)throw new Error('PRIME id required.');
+      const row={placements:['right','bottom','float','inline'],defaultPlacement:'right',...spec,id,container:null,portable:null,mounted:false};this.primes.set(id,row);this.renderNav();
+      if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);
+      return row;
+    }
+    registerSub(spec={}){const id=String(spec.id||'').trim();if(!id)throw new Error('SUB id required.');this.subs.set(id,{...spec,id,mounted:false,container:null,cleanup:null});this.renderNav();return this.subs.get(id);}
+    renderNav(){
+      const primaryHost=this.shell.querySelector('.dkds-analysis-nav-primary');const primeHost=this.shell.querySelector('.dkds-analysis-nav-prime');const subHost=this.shell.querySelector('.dkds-analysis-nav-sub');
+      primaryHost.replaceChildren();primeHost.replaceChildren();subHost.replaceChildren();
+      if(this.primary){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
+      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.togglePrime(row.id);primeHost.appendChild(b);}
+      for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost.appendChild(b);}
+    }
+    primeHome(row){
+      if(row.inlineHost){const el=resolveElement(row.inlineHost,this.shell);if(el)return el;}
+      return this.slots.primary;
+    }
+    ensurePrime(row){
+      if(row.mounted&&row.container?.isConnected)return row;
+      let container=row.existingNode||resolveElement(row.node,this.shell);
+      const existing=!!container;
+      if(existing){
+        row.existingNode=container;
+        container.classList.remove('dkds-prime-hidden');
+        if(!container.isConnected)this.primeHome(row)?.appendChild(container);
+      }else{
+        container=document.createElement('section');container.className='dkds-analysis-prime-panel';container.dataset.primeId=row.id;
+        container.innerHTML=`<div class="dkds-analysis-prime-head"><strong>${esc(row.title||row.label||row.id)}</strong><div class="dkds-analysis-prime-chrome"></div></div><div class="dkds-analysis-prime-body"></div>`;
+        this.primeHome(row)?.appendChild(container);
+      }
+      const body=existing?container:container.querySelector('.dkds-analysis-prime-body');
+      const cleanup=row.mount?.({workbench:this,scope:this.scope,container:body,panel:container,slots:this.slots});
+      row.cleanup=typeof cleanup==='function'?cleanup:null;row.container=container;row.mounted=true;row.existing=existing;
+      const allowed=[...new Set((row.placements||['right','bottom','float','inline']).map(x=>x==='inline'?'home':x))];
+      const layout={slot:name=>name==='home'?this.primeHome(row):this.slots[name]};
+      const portableSpec=existing?{
+        title:row.title||row.label||row.id,
+        useTargetAsWrapper:row.useTargetAsWrapper!==false,
+        handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',
+        controlsHost:row.controlsHost,
+        controlsPlacement:row.controlsPlacement||'start',
+        placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout
+      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout};
+      row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);
+      return row;
+    }
+    openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);row.portable.place(placement==='inline'?'home':(placement||row.defaultPlacement||'right'));this.renderNav();this.resize('prime-open');return true;}
+    togglePrime(id){const row=this.primes.get(String(id));if(!row)return false;if(!row.mounted)return this.openPrime(id,row.defaultPlacement);this.closePrime(id);return true;}
+    closePrime(id){const row=this.primes.get(String(id));if(!row?.mounted)return false;row.portable?.dispose?.();row.portable=null;cleanupCall(row.cleanup);row.cleanup=null;if(row.existing){row.container?.classList?.add('dkds-prime-hidden');}else{row.container?.remove?.();row.container=null;}row.mounted=false;this.renderNav();this.resize('prime-close');return true;}
+    showPrimary(){this.activeSub='';this.slots.primary.classList.remove('hidden');this.slots.sub.classList.add('hidden');this.slots.left.classList.toggle('hidden',this.primary?.showLeft===false);this.renderNav();this.resize('primary-show');return true;}
+    openSub(id){const row=this.subs.get(String(id));if(!row)return false;const previous=this.activeSub&&this.activeSub!==row.id?this.subs.get(this.activeSub):null;if(previous){cleanupCall(previous.cleanup);previous.cleanup=null;previous.container=null;previous.mounted=false;}this.activeSub=row.id;this.slots.primary.classList.add('hidden');this.slots.sub.classList.remove('hidden');this.slots.left.classList.toggle('hidden',row.keepLeft!==true);this.slots.sub.replaceChildren();const container=document.createElement('section');container.className='dkds-analysis-sub-view';container.dataset.subId=row.id;this.slots.sub.appendChild(container);if(row.html!==undefined)container.innerHTML=typeof row.html==='function'?row.html():String(row.html||'');cleanupCall(row.cleanup);const cleanup=row.mount?.({workbench:this,scope:this.scope,container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;row.container=container;row.mounted=true;this.renderNav();this.resize('sub-open');return true;}
+    portable(id,node,spec={}){const value=this.scope.panels.create(id,node,{...spec,layout:this.layout()});this.portables.set(String(id),value);return value;}
+    grid(container,spec={}){const value=new GridController(this.scope,container,spec);this.grids.push(value);return value;}
+    resize(reason='resize'){this.scope.emitResize?.({reason:`analysis-workbench:${reason}`});return this;}
+    dispose(){if(this.closed)return;this.closed=true;cleanupCall(this.primary?.cleanup);for(const row of this.primes.values())this.closePrime(row.id);for(const row of this.subs.values())cleanupCall(row.cleanup);for(const grid of this.grids)grid.dispose?.();for(const portable of this.portables.values())portable.dispose?.();this.actions?.dispose?.();this.resizeObserver?.disconnect?.();this.leftSplit?.dispose?.();this.root.replaceChildren();this.root.classList.remove('dkds-analysis-workbench-host');}
+  }
+
   class PluginScope {
     constructor(owner,options={}){
       this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.workbenches=[];
@@ -466,6 +602,8 @@
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
       this.views={mount:(container,spec)=>this.trackObject(new ViewHost(this,container,spec))};
       this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
+      this.analysisWorkbench={create:(root,spec)=>{const obj=new AnalysisWorkbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
+      this.grid={create:(container,spec)=>this.trackObject(new GridController(this,container,spec))};
     }
     track(cleanup){if(typeof cleanup==='function')this.cleanups.push(cleanup);return cleanup;}
     trackObject(obj){if(obj?.dispose)this.cleanups.push(()=>obj.dispose());return obj;}
@@ -504,7 +642,7 @@
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ViewHost,Workbench,
+    ActionGroup,InteractionBinding,SelectionChannel,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

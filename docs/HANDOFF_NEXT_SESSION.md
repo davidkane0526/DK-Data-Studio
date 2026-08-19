@@ -1,26 +1,30 @@
 
-## v3.27 architecture baseline
-
-- Core UI infrastructure: `src/core/ui-infrastructure.js`.
-- Core state/project infrastructure: `src/core/state-store.js`.
-- Plugin API: v1.4.0.
-- Resonance host adapters (`super-layout.js`, `window-runtime.js`) must remain host-only; domain behavior belongs in `feature-runtime.js`, shared Controller and shared Views.
-- TER/Pulse/Data Center now consume core portable-view/action infrastructure. Data Center also consumes `ctx.state.create`.
-- New complex plugins should follow `docs/PLUGIN_UI_INFRASTRUCTURE.md`; do not create plugin-local docking, global keydown or resize frameworks.
-
-# Next Session Handoff — v3.29.0
+# Next Session Handoff — v3.30.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.29.0`
-- v3.29.0: repair native TOP window validation and Pulse dedicated-runtime handshake; introduce isolated Workbench-local portable docking zones; restore compact `◫ / ← / → / ↓ / ↗` chart placement dropdown; flatten TER into a stable six-chart grid; clean Data Center/Pulse portable toolbars and lightweight panel chrome.
+- Current delivery: `v3.30.0`
+- v3.30.0: unified Core Analysis Workbench with PRIMARY / PRIME / SUB semantics, managed responsive grids and lifecycle-owned dock/floating regions; cross-renderer Capability Runtime; TER/Pulse/Data Center migration to the shared workbench; Resonance TOP migration to the same semantic workbench and provider catalog.
 - Cache/toolchain fix in v3.27.1: `cachePathMode=derived` makes the selected shared cache root authoritative; npm/pnpm/Electron/electron-builder/Gradle bindings and stale node_modules Junction rebinding are verified by tooling tests.
 - Product name: **DK Data Studio**
 - Installable plugin package extension: **`.dkplugin`**
 
 Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
+
+## v3.30 architecture baseline
+
+- Plugin API: **1.5.0**. UI infrastructure: **3.0.0**.
+- `src/core/ui-infrastructure.js` owns AnalysisWorkbench, PRIMARY/PRIME/SUB composition, portable/pinnable views, managed grids, split sizing, shortcuts, context menus, chart resize lifecycle and selection channels.
+- `src/core/capability-runtime.js` is the generic provider catalog. Dedicated TOP renderers import a serializable snapshot and invoke remote-safe provider methods through the main process. Do not load a second full `app.js` to obtain providers.
+- Complex plugins should keep `plugin.js`, `super-layout.js` and `window-runtime.js` thin. Scientific state belongs in Controller; reusable presentation belongs in Shared Views; event/render behavior belongs in Feature Runtime.
+- TER: PRIMARY = TER matrix/max analysis; PRIME = linked R–V inspector. Grid columns are Core-owned.
+- Pulse: PRIMARY = file/protocol/result analysis; PRIME = raw waveform diagnostic.
+- Data Center: PRIMARY = artifacts/formula/workflow; PRIME = chart preview.
+- Resonance: PRIMARY = 共振分析; PRIME = 曲线检查 / 组图分析; SUB = 物理机制 / 峰间距 / 栅压分析. Detector providers must come from the shared detector/capability registry, not a TOP-only hard-coded list.
+- Project format stays self-contained and backward compatible. Never remove embedded source `text` or parsed `points` merely to reduce runtime memory.
+- Regression guards: `test-analysis-workbench-architecture.js`, `test-top-plugin-architecture.js`, `test-resonance-shared-architecture.js`, `test-project-format.js`.
 
 
 ## v3.27 current continuation: plugin-neutral UI infrastructure
@@ -209,3 +213,12 @@ DKDS.cmd test
 ```
 
 Both commands must pass before delivery.
+
+## v3.30 architecture baseline
+
+- Core `AnalysisWorkbench` is the required composition layer for first-party analysis plugins. PRIMARY / PRIME / SUB semantics are explicit.
+- `Capability Runtime` bridges serializable plugin providers into dedicated TOP windows through main/preload IPC.
+- TER, Pulse and Data Center shared views mount PRIMARY through the unified workbench; their high-frequency auxiliary views are PRIME.
+- Resonance TOP uses PRIME for curve inspection/group analysis and SUB for physics/spacing/gate analysis; its detector registry comes from capabilities.
+- Do not reintroduce plugin-owned docking/split/window managers or `existing:true` Workbench composition for these plugins.
+- Project files remain self-contained; UI layout persistence is separate from scientific project data.

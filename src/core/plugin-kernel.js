@@ -26,7 +26,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.4.0';
+  const API_VERSION = '1.5.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -210,7 +210,9 @@
         left,
         main,
         flatten,
-        prime:Object.freeze(Array.isArray(layout.prime)?layout.prime.map(row=>Object.freeze({...row})):[])
+        primary:Object.freeze(layout.primary&&typeof layout.primary==='object'?{...layout.primary}:{}),
+        prime:Object.freeze(Array.isArray(layout.prime)?layout.prime.map(row=>Object.freeze({...row})):[]),
+        sub:Object.freeze(Array.isArray(layout.sub)?layout.sub.map(row=>Object.freeze({...row})):[])
       }),
       pluginId
     });
@@ -922,6 +924,43 @@
     return [...getRegistry(kind).values()];
   }
 
+  function providerCapabilityKind(kind){
+    return kind==='workflow.processors'?'workflow.processor':kind==='workflow.analyzers'?'workflow.analyzer':kind==='charts.renderers'?'chart.renderer':'';
+  }
+
+  function registerProviderCapability(pluginId,kind,id,value){
+    const capKind=providerCapabilityKind(kind);if(!capKind||!window.DKDSCapabilities)return;
+    const methods={};
+    if(typeof value?.run==='function')methods.run=value.run;
+    if(typeof value?.buildSpec==='function')methods.buildSpec=value.buildSpec;
+    if(!Object.keys(methods).length)return;
+    const capId=`${capKind}:${id}`;
+    window.DKDSCapabilities.register(pluginId,capId,{
+      kind:capKind,title:value.name||id,version:value.version||'1.0.0',remote:true,
+      metadata:{id,name:value.name||id,description:value.description||'',inputKinds:value.inputKinds||[],outputKinds:value.outputKinds||[],parameterSchema:value.parameterSchema||{fields:[]},pluginId},
+      methods
+    });
+    addCleanup(pluginId,()=>window.DKDSCapabilities?.unregister?.(capId));
+  }
+
+  function capabilityBackedProviders(kind){
+    const capKind=providerCapabilityKind(kind);if(!capKind)return [];
+    return (window.DKDSCapabilities?.list?.(capKind)||[]).map(cap=>{
+      const meta=cap.metadata||{};const id=String(meta.id||cap.id.split(':').slice(1).join(':'));
+      const proxy=window.DKDSCapabilities.proxy(cap.id);
+      const value={id,name:meta.name||cap.title,description:meta.description||'',version:cap.version||'1.0.0',pluginId:meta.pluginId||cap.owner,inputKinds:meta.inputKinds||[],outputKinds:meta.outputKinds||[],parameterSchema:meta.parameterSchema||{fields:[]},remote:true};
+      if(cap.methods?.includes?.('run'))value.run=(payload)=>proxy.run(payload);
+      if(cap.methods?.includes?.('buildSpec'))value.buildSpec=(payload)=>proxy.buildSpec(payload);
+      return value;
+    });
+  }
+
+  function listProvidersWithCapabilities(kind){
+    const local=listContributions(kind).map(row=>row.value);const seen=new Set(local.map(row=>String(row.id)));
+    for(const value of capabilityBackedProviders(kind))if(!seen.has(String(value.id))){local.push(value);seen.add(String(value.id));}
+    return local;
+  }
+
   function statusBarZone(side='right') {
     const normalized=String(side||'right').toLowerCase()==='left'?'left':'right';
     return document.querySelector(normalized==='left'?'#statusBarPluginLeft':'#statusBarPluginRight');
@@ -1189,6 +1228,19 @@
         list: kind => listContributions(kind),
         own: kind => listContributions(kind).filter(x => x.pluginId === pluginId)
       },
+      capabilities: {
+        register(id,spec={}) {
+          if(!window.DKDSCapabilities?.register)throw new Error('Capability Runtime is unavailable.');
+          const value=window.DKDSCapabilities.register(pluginId,id,{...spec,owner:pluginId,version:spec.version||definition.manifest.version||'1.0.0'});
+          addCleanup(pluginId,()=>window.DKDSCapabilities?.unregister?.(id));
+          return value;
+        },
+        get:id=>window.DKDSCapabilities?.get?.(id)||null,
+        proxy:id=>window.DKDSCapabilities?.proxy?.(id)||null,
+        list:kind=>window.DKDSCapabilities?.list?.(kind)||[],
+        invoke:(id,method,...args)=>window.DKDSCapabilities?.invoke?.(id,method,...args),
+        snapshot:()=>window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||{schema:1,providers:[]}
+      },
       project: {
         registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
       },
@@ -1227,12 +1279,12 @@
         run: (recipe, options) => window.DKDSWorkflow.run(recipe, options),
         buildSequentialRecipe: spec => window.DKDSWorkflow.buildSequentialRecipe(spec),
         processors: {
-          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.processors', id, window.DKDSWorkflow.normalizeProvider('processor', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
-          list: () => listContributions('workflow.processors').map(x=>x.value)
+          register: (id, spec) => {const value=window.DKDSWorkflow.normalizeProvider('processor', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'});registerTypedContribution(pluginId,'workflow.processors',id,value);registerProviderCapability(pluginId,'workflow.processors',id,value);return value;},
+          list: () => listProvidersWithCapabilities('workflow.processors')
         },
         analyzers: {
-          register: (id, spec) => registerTypedContribution(pluginId, 'workflow.analyzers', id, window.DKDSWorkflow.normalizeProvider('analyzer', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
-          list: () => listContributions('workflow.analyzers').map(x=>x.value)
+          register: (id, spec) => {const value=window.DKDSWorkflow.normalizeProvider('analyzer', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'});registerTypedContribution(pluginId,'workflow.analyzers',id,value);registerProviderCapability(pluginId,'workflow.analyzers',id,value);return value;},
+          list: () => listProvidersWithCapabilities('workflow.analyzers')
         },
         recipes: {
           register: (id, recipe) => {
@@ -1245,13 +1297,36 @@
         }
       },
       charts: {
-        register: (id, spec) => registerTypedContribution(pluginId, 'charts.renderers', id, window.DKDSWorkflow.normalizeProvider('chart', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'})),
-        list: () => listContributions('charts.renderers').map(x=>x.value)
+        register: (id, spec) => {const value=window.DKDSWorkflow.normalizeProvider('chart', id, {...spec, pluginId, version:spec?.version||definition.manifest.version||'1.0.0'});registerTypedContribution(pluginId,'charts.renderers',id,value);registerProviderCapability(pluginId,'charts.renderers',id,value);return value;},
+        list: () => listProvidersWithCapabilities('charts.renderers')
       },
       analysis: {
         detectors: {
-          register: (id, spec) => registerTypedContribution(pluginId, 'peak.detectors', id, {id,...spec,pluginId,version:spec?.version||definition.manifest.version||'1.0.0'}),
-          list: () => listContributions('peak.detectors').map(x=>x.value)
+          register: (id, spec) => {
+            const value={id,...spec,pluginId,version:spec?.version||definition.manifest.version||'1.0.0'};
+            registerTypedContribution(pluginId,'peak.detectors',id,value);
+            if(typeof spec?.detect==='function'){
+              const capabilityId=`analysis.detector:${id}`;
+              const methods={detect:spec.detect};
+              if(typeof spec.getPreset==='function')methods.getPreset=spec.getPreset;
+              if(typeof spec.defaultSettings==='function')methods.defaultSettings=spec.defaultSettings;
+              window.DKDSCapabilities?.register?.(pluginId,capabilityId,{kind:'analysis.detector',title:spec.name||id,version:value.version,metadata:{id,name:spec.name||id,shortName:spec.shortName||'',description:spec.description||'',parameterSchema:spec.parameterSchema||null,presets:Array.isArray(spec.presets)?spec.presets:[],default:spec.default===true,pluginId},methods,remote:true});
+              addCleanup(pluginId,()=>window.DKDSCapabilities?.unregister?.(capabilityId));
+            }
+            return value;
+          },
+          list: () => {
+            const rows=listContributions('peak.detectors').map(x=>x.value);
+            const ids=new Set(rows.map(row=>String(row.id)));
+            for(const cap of (window.DKDSCapabilities?.list?.('analysis.detector')||[])){
+              const id=String(cap.metadata?.id||cap.id.replace(/^analysis\.detector:/,''));
+              if(ids.has(id))continue;
+              const proxy=window.DKDSCapabilities.proxy(cap.id);
+              rows.push({id,name:cap.metadata?.name||cap.title,shortName:cap.metadata?.shortName||'',description:cap.metadata?.description||'',parameterSchema:cap.metadata?.parameterSchema||null,presets:cap.metadata?.presets||[],default:cap.metadata?.default===true,pluginId:cap.owner,version:cap.version,detect:(...args)=>proxy.detect(...args),getPreset:cap.methods?.includes?.('getPreset')?((...args)=>proxy.getPreset(...args)):undefined,defaultSettings:cap.methods?.includes?.('defaultSettings')?((...args)=>proxy.defaultSettings(...args)):undefined,remote:true});
+              ids.add(id);
+            }
+            return rows;
+          }
         }
       },
       parameters: {
@@ -1273,6 +1348,12 @@
         selection: infrastructureScope?.selection || null,
         views: infrastructureScope?.views || null,
         workbench: infrastructureScope?.workbench || null,
+        analysisWorkbench: infrastructureScope?.analysisWorkbench || null,
+        analysisSurface: infrastructureScope?.analysisWorkbench ? Object.freeze({
+          create:(root,spec)=>infrastructureScope.analysisWorkbench.create(root,spec),
+          roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
+        }) : null,
+        grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),
           activate: id => setActiveActivity(id,{invoke:true}),
@@ -1820,11 +1901,9 @@
 
   window.DKDSWorkflow?.configure?.({
     getProvider(kind,id){
-      const rows=listContributions(kind);
-      const exact=rows.find(row=>row.value?.id===id||row.id===id);
-      return exact?.value||null;
+      return listProvidersWithCapabilities(kind).find(value=>String(value?.id)===String(id))||null;
     },
-    listProviders(kind){ return listContributions(kind).map(row=>row.value); },
+    listProviders(kind){ return listProvidersWithCapabilities(kind); },
     emit:eventEmit
   });
 })();

@@ -58,7 +58,8 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(entry.split(/\r?\n/).length<40,`${folder}: plugin.js must be a thin composition entry.`);
   assert(controller.includes('selection.channel'),`${folder}: controller must own shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
-  assert(views.includes('ctx.ui.workbench.create'),`${folder}: shared views must mount through core Workbench.`);
+  assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through unified AnalysisWorkbench.`);
+  assert(views.includes('mountPrimary'),`${folder}: shared views must mount a PRIMARY surface.`);
   assert(feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume core Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);

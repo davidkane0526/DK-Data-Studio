@@ -16,15 +16,15 @@
     const portableCharts=new Map();
     const chartSurfaces=new Map();
     let workbench=null;
+    let gridController=null;
     let layoutSettings={rows:2,cols:3,sticky:true};
 
     ctx.ui.styles.add('linked-resistance-voltage', `
       #terMaxPage .ter-chart-grid{
-        --ter-grid-cols:3;
-        --ter-grid-rows:2;
+        --dkds-grid-columns:3;
         display:grid!important;
-        grid-template-columns:repeat(var(--ter-grid-cols),minmax(0,1fr))!important;
-        grid-template-rows:repeat(var(--ter-grid-rows),auto);
+        grid-template-columns:repeat(var(--dkds-grid-columns),minmax(0,1fr))!important;
+        grid-auto-rows:auto!important;
         align-items:start;
         gap:14px;
       }
@@ -141,7 +141,6 @@
         #terMaxPage .ter-resistance-card .analysis-chart{height:500px}
       }
       @media(max-width:850px){
-        #terMaxPage .ter-chart-grid{grid-template-columns:1fr!important;grid-template-rows:none}
         #terMaxPage .ter-resistance-card .analysis-chart{height:450px}
       }
       @media(max-width:680px){
@@ -215,10 +214,8 @@
     function applyLayoutSettings({capture=false}={}){
       layoutSettings=sanitizeLayout(layoutSettings);
       const grid=document.querySelector('#terMaxPage .ter-chart-grid');
-      if(grid){
-        grid.style.setProperty('--ter-grid-cols',String(layoutSettings.cols));
-        grid.style.setProperty('--ter-grid-rows',String(layoutSettings.rows));
-      }
+      if(gridController)gridController.setColumns(layoutSettings.cols);
+      else if(grid)grid.style.setProperty('--dkds-grid-columns',String(layoutSettings.cols));
       const card=document.getElementById('terResistanceCard');
       card?.classList.toggle('ter-sticky-enabled',!!layoutSettings.sticky);
       syncLayoutControls();
@@ -316,10 +313,7 @@
 
     function ensurePortableCharts(){
       if(!ctx.ui.portable?.create)return;
-      const specs=[
-        ...chartSpecs().map(spec=>({...spec,title:document.getElementById(spec.plotId)?.closest('.analysis-chart-card')?.querySelector('.ter-card-title-text,.analysis-chart-title')?.textContent?.trim()||spec.fileBase,handle:'.analysis-chart-title'})),
-        {key:'resistance',plotId:'terResistancePlot',title:'电阻–电压 R–V',handle:'.ter-resistance-card-header'}
-      ];
+      const specs=chartSpecs().map(spec=>({...spec,title:document.getElementById(spec.plotId)?.closest('.analysis-chart-card')?.querySelector('.ter-card-title-text,.analysis-chart-title')?.textContent?.trim()||spec.fileBase,handle:'.analysis-chart-title'}));
       for(const spec of specs){
         if(portableCharts.has(spec.key))continue;
         const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
@@ -1009,6 +1003,11 @@
     });
 
     workbench=sharedViews?.attach?.(ctx,page)||null;
+    const terGrid=page.querySelector('.ter-chart-grid');
+    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:330,maxColumns:6});
+    if(workbench?.registerPrime){
+      workbench.registerPrime({id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>{ensureResistanceCard();renderResistancePlot();}});
+    }
     for(const plotId of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
       const el=page.querySelector('#'+plotId);if(!el||!ctx.ui.charts?.mount)continue;
       try{chartSurfaces.set(plotId,ctx.ui.charts.mount(el,{}));}catch(err){console.warn('[TER chart surface]',plotId,err);}
@@ -1039,10 +1038,8 @@
     ctx.ui.topWorkspace.register({
       id:'ter',activity:'ter',label:'TER 分析',icon:'▧',
       layout:{
-        mode:'split',root:{selector:'.ter-workspace-shell'},
-        left:{role:'data-display',pageId:page.id,selector:'.ter-workspace-left',stack:true,defaultFraction:0.20,minFraction:0.14,maxFraction:0.42},
-        main:{role:'primary-data',pageId:page.id,selector:'.ter-workspace-main',interaction:'plugin-owned'},
-        prime:[]
+        mode:'native',root:{selector:'#terMaxPage .dkds-plugin-workbench-root'},
+        primary:{id:'main',role:'analysis-primary'},prime:[{id:'resistance-inspector'}],sub:[]
       }
     });
 

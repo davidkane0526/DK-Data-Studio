@@ -1,4 +1,4 @@
-# Workspace / UI Plugin API v1.4
+# Workspace / UI Plugin API v1.5
 
 This document defines how a plugin owns an entire scientific workspace without adding domain UI to `src/index.html` or `src/app.js`.
 

@@ -1,4 +1,4 @@
-# Plugin API v1.4
+# Plugin API v1.5
 
 Global runtime:
 
@@ -26,7 +26,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
   "version": "0.1.0",
-  "apiVersion": "1.4.0",
+  "apiVersion": "1.5.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 300,
@@ -38,11 +38,11 @@ DKDSPlugins.define(manifest, async ctx => {
 Plugin ids are permanent. Do not rename an id after project files have stored state under it.
 
 
-## Workspace UI API v1.4
+## Workspace UI API v1.5
 
 
 
-v1.4 adds plugin-neutral infrastructure for lifecycle-owned state, portable/pinnable views, dynamic action groups, chart surfaces, View/Controller hosts, mouse/pointer interaction, context menus and linked-selection channels. Complex plugins should consume these primitives instead of implementing their own window-layout framework. See `docs/PLUGIN_UI_INFRASTRUCTURE.md`.
+v1.5 keeps the lifecycle-owned state, portable/pinnable views, dynamic actions, chart surfaces, interaction bindings and linked-selection channels introduced in v1.4, and adds the unified **Analysis Workbench**, explicit **PRIMARY / PRIME / SUB** view semantics, managed responsive grids, plus the cross-renderer **Capability Runtime**. Complex plugins should consume these Core primitives instead of implementing plugin-local window/layout/capability frameworks. See `docs/ANALYSIS_WORKBENCH_ARCHITECTURE.md` and `docs/PLUGIN_UI_INFRASTRUCTURE.md`.
 Activity-scoped keyboard behavior must use `ctx.ui.shortcuts.add(...)`; plugins should listen to the generic `layout:resize` event to resize their own canvases. Core must not know domain shortcut keys or domain plot IDs.
 
 For full scientific-workspace customization, read:
@@ -51,7 +51,7 @@ For full scientific-workspace customization, read:
 docs/WORKSPACE_PLUGIN_API.md
 ```
 
-v1.4 remains additive: it keeps the v1.3 selection-menu and desktop auxiliary-window contracts and adds plugin-neutral UI/state infrastructure. Workspace contributions include:
+v1.5 remains additive: legacy contribution points are retained for compatibility, while new analysis plugins should prefer `ctx.ui.analysisWorkbench` and `ctx.capabilities`. Workspace contributions still include:
 
 ```text
 ui.activities
@@ -71,6 +71,79 @@ peak.detectors
 
 This is the preferred route for scientific UI. A feature plugin should own its activity, sidebar, main-view contract, inspector, group charts and domain pages rather than append permanent controls to the global shell.
 
+
+
+## Unified Analysis Workbench
+
+The Core-owned workbench is available as:
+
+```js
+const wb = ctx.ui.analysisWorkbench.create(root, {
+  header: false,
+  activity: 'my-analysis'
+});
+
+wb.mountPrimary({
+  id: 'main',
+  label: '主界面',
+  mount({left, main}) {
+    left.append(myNavigator);
+    main.append(myPrimaryView);
+  }
+});
+
+wb.registerPrime({
+  id: 'inspector',
+  label: '曲线检查',
+  defaultPlacement: 'right',
+  placements: ['inline', 'right', 'bottom', 'float'],
+  mount({container}) { /* render auxiliary interactive view */ }
+});
+
+wb.registerSub({
+  id: 'physics',
+  label: '物理机制',
+  mount({container}) { /* render full derived analysis */ }
+});
+```
+
+Semantic roles:
+
+- **PRIMARY**: the plugin's persistent main scientific workspace.
+- **PRIME**: high-frequency auxiliary views that remain part of the PRIMARY task and may be inline, pinned or floating.
+- **SUB**: full derived analysis surfaces that temporarily occupy the main analysis area and can return to PRIMARY.
+
+SUPER and dedicated TOP windows use the same semantic contract. Host adapters may map lifecycle/window containers differently, but must not reimplement scientific state, ViewModels or domain behavior.
+
+Managed chart/card grids are Core-owned:
+
+```js
+const grid = wb.grid(container, { columns: 3, minItemWidth: 320, maxColumns: 6 });
+grid.setColumns(2);
+```
+
+## Capability Runtime
+
+Cross-plugin providers can be registered without coupling a plugin to the full main renderer:
+
+```js
+ctx.capabilities.register('my.detector', {
+  kind: 'analysis.detector',
+  title: 'My detector',
+  metadata: { parameterSchema },
+  methods: { detect }
+});
+```
+
+A dedicated TOP renderer receives the serializable provider catalog from the main renderer and invokes remote-safe methods through the Core IPC bridge. Use:
+
+```js
+ctx.capabilities.list('analysis.detector');
+ctx.capabilities.proxy('my.detector');
+await ctx.capabilities.invoke('my.detector', 'detect', input, settings);
+```
+
+The same bridge is used by the built-in detector/workflow registries where a provider declares a serializable remote-safe method. DOM-only render functions are deliberately not proxied.
 
 ## `ctx.host`
 
@@ -551,7 +624,7 @@ The host rejects a second plugin that tries to claim an already registered globa
 
 ## Installable package distribution
 
-Plugin API v1.4 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+Plugin API v1.5 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
 
 ## Dedicated plugin windows
 
