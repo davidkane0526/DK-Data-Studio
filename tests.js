@@ -295,7 +295,7 @@ for(const id of ['gateAnalysisCopyCsvBtn','spacingCopyCsvBtn']){
 for(const id of ['terCopyLongBtn','terCopyMatrixBtn','terCopyMaxVgBtn','terCopyMaxVdBtn']){
   assert(terPluginSource.includes(`id=\\\"${id}\\\"`),`missing TER-plugin CSV clipboard button ${id}`);
 }
-assert(resonancePluginSource.includes('id="reswinCopyPeaks"'),'resonance shared workbench must provide peak CSV copy');
+assert(resonancePluginSource.includes("id:'peaks-copy'")&&resonancePluginSource.includes('copyPeaks'),'resonance shared workbench must provide peak CSV copy through the unified export command model');
 assert(appV34.includes('trend-copy-btn'),'dynamic group-plot CSV must also have copy action');
 console.log('v3.4 smart detection / transform / clipboard checks passed.');
 

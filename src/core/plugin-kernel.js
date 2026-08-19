@@ -537,6 +537,13 @@
     sortContributions(hostEl,'.plugin-toolbar-btn,.plugin-main-tool-btn,.plugin-menu-item');
   }
 
+  function refreshExportMenuPresentation(){
+    const pluginMenu=document.querySelector('#pluginExportMenu');
+    const hasPluginExport=[...(pluginMenu?.querySelectorAll('.plugin-menu-item')||[])].some(el=>!el.classList.contains('plugin-activity-hidden')&&!el.classList.contains('hidden'));
+    document.querySelectorAll('[data-legacy-plot-export]').forEach(el=>el.classList.toggle('hidden',hasPluginExport));
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger)trigger.textContent=hasPluginExport?'导出 ▾':'导出数据 ▾';
+  }
+
   function refreshActivityVisibility() {
     const id=activeActivityId;
     document.querySelectorAll('[data-plugin-activity]').forEach(el=>{
@@ -553,6 +560,7 @@
     if(title)title.textContent=active?.contextLabel||active?.label||'工作区';
     document.querySelectorAll('#activityBar .activity-tab,#primaryActivityBar .activity-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.activityId===id));
     reflowContextToolbar();
+    refreshExportMenuPresentation();
     eventEmit('activity:changed',{id,activity:active});
   }
 
@@ -702,6 +710,7 @@
     if(!mount)throw new Error(`Plugin menu mount not found: ${spec.menu||'export'}`);
     const button=createScopedButton(pluginId,spec,`[data-plugin-menu="${spec.menu||'export'}"]`,'plugin-menu-item');
     button.addEventListener('click',()=>button.closest('.command-menu')?.classList.add('hidden'));
+    queueMicrotask(refreshExportMenuPresentation);
     return button;
   }
 
@@ -1078,14 +1087,11 @@
   }
 
   function restoreProject(data={}, legacyProject=null) {
-    for (const [pluginId, slices] of projectSlices) {
-      const pluginData = data?.[pluginId] || {};
-      for (const [key, hooks] of slices) {
-        if (typeof hooks.restore !== 'function') continue;
-        try { hooks.restore(pluginData?.[key], { pluginData, legacyProject }); }
-        catch (err) { console.error(`[DKDS plugin project restore:${pluginId}/${key}]`, err); }
-      }
-    }
+    // Route full-project restoration through the same missing-slice contract as
+    // plugin activation/reload. With no legacy root, absence means a fresh tab
+    // and must reset. With a legacy/current project root, restore(undefined)
+    // lets plugins migrate root-level data without inheriting prior-tab memory.
+    for (const pluginId of projectSlices.keys()) restorePluginProjectState(pluginId, data, legacyProject);
     eventEmit('project:restored', { data, legacyProject });
   }
 
@@ -1425,7 +1431,7 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.0',hostInvariant:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.1',hostInvariant:true,canvasDocking:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),
@@ -1504,8 +1510,18 @@
     if (!slices) return;
     const pluginData = data?.[pluginId] || {};
     for (const [key, hooks] of slices) {
-      if (typeof hooks.restore !== 'function') continue;
-      try { hooks.restore(pluginData?.[key], { pluginData, legacyProject }); }
+      const hasSlice = Object.prototype.hasOwnProperty.call(pluginData, key);
+      try {
+        // A brand-new project tab has no plugin slice by design. Restoring
+        // `undefined` lets stateful controllers accidentally reuse the previous
+        // tab's in-memory project. Reset instead. Legacy-project migration is the
+        // only case where an absent slice is still meaningful input to restore().
+        if (!hasSlice && legacyProject == null) {
+          hooks.reset?.({ pluginData, legacyProject:null, reason:'missing-project-slice' });
+          continue;
+        }
+        if (typeof hooks.restore === 'function') hooks.restore(pluginData?.[key], { pluginData, legacyProject });
+      }
       catch (err) { console.error(`[DKDS plugin project restore:${pluginId}/${key}]`, err); }
     }
   }

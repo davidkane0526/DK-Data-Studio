@@ -44,9 +44,23 @@ P.define({
   activations++;
   ctx.project.registerSlice('settings',{
     serialize:()=>({schema:1,value}),
-    restore:data=>{if(data&&Number.isFinite(data.value))value=data.value;}
+    restore:data=>{if(data&&Number.isFinite(data.value))value=data.value;},
+    reset:()=>{value=-1;}
   });
   ctx.registry.add('analysis.providers','stateful',{id:'stateful'});
+  return {};
+});
+
+
+let migrationMarker='stale';
+P.define({
+  id:'test.project-root-migration',name:'Project root migration',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
+},async ctx=>{
+  ctx.project.registerSlice('workspace',{
+    serialize:()=>({marker:migrationMarker}),
+    restore:(data,{legacyProject}={})=>{migrationMarker=data?.marker||legacyProject?.marker||'empty-root';},
+    reset:()=>{migrationMarker='reset';}
+  });
   return {};
 });
 
@@ -87,6 +101,13 @@ P.configure({
   await P.activateAll();
   assert(P.manager.get('test.stateful').active,'default-enabled plugin should activate');
   assert(!P.manager.get('test.default-off').active,'default-disabled plugin should stay inactive');
+  P.project.restore({}, null);
+  assert(migrationMarker==='reset','activating into a brand-new tab with no slice must reset plugin memory instead of inheriting stale state.');
+  P.project.restore({}, {marker:'fresh-project-root'});
+  assert(migrationMarker==='fresh-project-root','missing plugin slices may migrate from the explicitly supplied current project root.');
+  migrationMarker='stale-again';
+  P.project.restore({}, null);
+  assert(migrationMarker==='reset','restoring a truly blank project with no legacy root must reset all missing plugin slices.');
 
   value=23;
   await P.manager.disable('test.stateful');

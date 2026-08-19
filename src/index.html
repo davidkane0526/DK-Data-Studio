@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.35.0</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.36.0</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -54,11 +54,11 @@
           <div class="menu-anchor">
             <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出数据 ▾</button>
             <div id="exportMenu" class="command-menu hidden">
-              <button id="exportMainSvgBtn" type="button">主图 SVG</button>
-              <button id="exportMainPngBtn" type="button">主图 PNG</button>
-              <button id="exportMainCsvBtn" type="button">主图数据 CSV</button>
-              <button id="copyMainCsvBtn" class="copy-btn" type="button">复制主图数据</button>
-              <div class="command-menu-separator"></div>
+              <button id="exportMainSvgBtn" data-legacy-plot-export type="button">主图 SVG</button>
+              <button id="exportMainPngBtn" data-legacy-plot-export type="button">主图 PNG</button>
+              <button id="exportMainCsvBtn" data-legacy-plot-export type="button">主图数据 CSV</button>
+              <button id="copyMainCsvBtn" data-legacy-plot-export class="copy-btn" type="button">复制主图数据</button>
+              <div class="command-menu-separator" data-legacy-plot-export></div>
               <div id="pluginExportMenu" data-plugin-menu="export"></div>
             </div>
           </div>

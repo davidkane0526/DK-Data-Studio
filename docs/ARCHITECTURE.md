@@ -397,3 +397,13 @@ Built-in plugins may declare ordered `manifest.scripts`. The generated plugin in
 ## v3.35 GRS-derived PluginWorkspace foundation
 
 The mature Graphene Resonance Studio interaction model is now a Core UI foundation rather than a Resonance-only exception. `PluginWorkspace` is the preferred scientific workspace primitive and `ScientificCurveSurface` owns reusable direct plot interaction. Resonance remains a normal TOP plugin and is the reference consumer. SUPER/TOP transitions must be host-invariant: the plugin mounts the same workspace and the host may only change outer lifecycle/window controls. See `docs/PLUGIN_WORKSPACE_DESIGN_SYSTEM.md`.
+
+## v3.36 scientific-canvas docking and host command projection
+
+`PluginWorkspace` now distinguishes the outer plugin control rail from an inner scientific canvas. Core portable fixed positions (`left`, `right`, `bottom`) are resolved against this scientific canvas. This keeps PRIME/SUB/child scientific views out of the GRS-derived control/data rail while preserving flexible floating and snap behavior in the plotting workspace.
+
+SUPER/TOP is a host presentation concern. A SUPER plugin contributes semantic PRIME/SUB commands to the shell toolbar; an independent TOP renders the same commands locally. The plugin's Workspace/View/Controller tree is unchanged.
+
+Project slice restore also obeys project identity: an absent plugin slice resets the controller unless the selected project's root is explicitly supplied for legacy/root-data migration. Previous-tab controller state is never a fallback for a new project.
+
+Pointer-frequency scientific interactions use direct geometry fast paths in Core. Expensive full renders occur at drag completion or through frame-coalesced scheduling.

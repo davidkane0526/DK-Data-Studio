@@ -730,3 +730,7 @@ Capabilities may be discovered with `ctx.capabilities.list(query)`, required by 
 ## v3.35 preferred workspace APIs
 
 New scientific plugins should prefer `ctx.ui.pluginWorkspace` / `ctx.ui.workspaceSurface`. `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface` are compatibility aliases. Direct interactive curve canvases should prefer `ctx.ui.scientificPlot`, which exposes the GRS-derived `ScientificCurveSurface` mechanics while leaving scientific meaning in the plugin. SUPER/TOP host level must not select a reduced renderer or alternate plugin DOM.
+
+## v3.36 workspace placement guidance
+
+For scientific plugins, use `ctx.ui.pluginWorkspace`/`ctx.ui.workspaceSurface` and Core portable placements. Fixed left/right/bottom positions are scientific-canvas-local. Do not manually place child scientific plots into the application left rail. When SUPER, project PRIME/SUB commands through the host action contribution API instead of duplicating the plugin-local toolbar; TOP may render the same semantic command model in its own header.

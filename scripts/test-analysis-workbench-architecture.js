@@ -13,7 +13,7 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'6\.0\.0'/.test(ui),'UI infrastructure must ship the v6 PluginWorkspace/scientific interaction runtime.');
+assert(/const VERSION\s*=\s*'6\.[0-9]+\.[0-9]+'/.test(ui),'UI infrastructure must ship the v6 PluginWorkspace/scientific interaction runtime.');
 for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }

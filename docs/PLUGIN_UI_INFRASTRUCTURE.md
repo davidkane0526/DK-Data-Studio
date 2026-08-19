@@ -238,3 +238,9 @@ The visual contract belongs to UI infrastructure. Do not solve inconsistent typo
 ## v3.35 GRS-derived base capabilities
 
 Core UI infrastructure v6 adds `PluginWorkspace` and `ScientificCurveSurface`. `PluginWorkspace` retains the semantic AnalysisWorkbench contract but is now the preferred name and reference design system. `ScientificCurveSurface` extracts reusable GRS main-plot interaction (Turbo palette, directional dashes, direct selection, range/zoom, wheel zoom, marker drag, width handles) so measurement plugins provide domain callbacks instead of duplicating pointer/D3 plumbing.
+
+## v3.36 canvas-local portable views and drag fast paths
+
+The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with local left/right/bottom/overlay zones. This is the canonical docking coordinate space for scientific PRIME/SUB/child plots. `PortableView.stateVersion` can invalidate obsolete geometry persistence.
+
+`ScientificCurveSurface` marker/FWHM drag paths update the affected SVG geometry directly during pointer movement and defer expensive complete rendering to drag completion or an animation-frame request.

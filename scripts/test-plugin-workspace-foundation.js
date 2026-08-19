@@ -38,4 +38,21 @@ for(const folder of ['data-center','ter-analysis','pulse-analysis']){
   assert(views.includes('ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace'),`${folder} must prefer the same PluginWorkspace foundation.`);
 }
 
+
+// v3.36 canvas-local docking / performance invariants.
+for(const token of ['installCanvasDocking(spec)', 'dkds-plugin-canvas-frame', "['left','right','bottom','overlay','main'].includes(key)", 'stateVersion']){
+  assert(ui.includes(token),`PluginWorkspace canvas docking missing ${token}`);
+}
+for(const token of ['.dkds-plugin-canvas-frame{','.dkds-plugin-canvas-left{','.dkds-plugin-canvas-right{','.dkds-plugin-canvas-bottom{','.dkds-plugin-canvas-overlay{']){
+  assert(css.includes(token),`PluginWorkspace canvas docking style missing ${token}`);
+}
+assert(css.includes('.dkds-plugin-canvas-center>.dkds-analysis-primary-host>*{flex:1 1 auto'),'PluginWorkspace primary main node must fill the scientific canvas instead of collapsing to content height.');
+
+assert(ui.includes('avoidFloatOverlap()')&&ui.includes('collisionGap'),'PortableView must keep manually floated scientific panels inside the canvas and avoid accidental overlap.');
+assert(ui.includes('z.width-r.width')&&ui.includes('z.height-r.height'),'Floating drag must keep the full panel inside the scientific canvas instead of allowing most of it to leave the workspace.');
+assert(ui.includes("this.spec.onMarkerDrag?.")&&ui.includes('this.updateMarkerVisual(marker,point)')&&!ui.includes("this.render('marker-drag')"),'Marker dragging must update only the marker geometry and defer full SVG rebuilding until drag end.');
+assert(ui.includes("data-width-side")&&!ui.includes("this.requestRender('width-drag');"),'FWHM dragging must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
+assert(resonanceFeature.includes("onMarkerDragEnd")&&resonanceFeature.includes("renderInspection();scheduleSnapshot()"),'Inspector refresh must be deferred until direct peak drag completes.');
+assert(resonanceFeature.includes('Plotly.react'),'Derived/group plots must reuse Plotly graph objects rather than recreate them with newPlot.');
+
 console.log('GRS-derived PluginWorkspace + ScientificCurveSurface foundation checks passed.');

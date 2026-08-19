@@ -1,4 +1,4 @@
-# Plugin Workspace Design System — v3.35
+# Plugin Workspace Design System — v3.36
 
 ## Goal
 
@@ -29,6 +29,40 @@ Core Plugin Workspace Design System
 ```
 
 Plugins own domain meaning and data. Core owns reusable interaction mechanics.
+
+
+## v3.36 scientific-canvas geometry
+
+GRS is the reference implementation for the common control/science split. Fixed placement commands use a **scientific canvas**, not the entire plugin rectangle:
+
+```text
+PluginWorkspace
+├─ control rail (~1/5)
+└─ scientific canvas (~4/5)
+   ├─ canvas-left
+   ├─ canvas-main
+   ├─ canvas-right
+   ├─ canvas-bottom
+   └─ canvas-overlay / floating
+```
+
+The ~1/5 and ~4/5 ratio is a default visual language rather than an absolute prohibition. Splitters remain resizable. Explicit Left/Right/Bottom placement buttons stay inside the scientific canvas; manual floating can be moved more freely within that canvas and snaps to its edges. Core prevents a fixed scientific child from being interpreted as an application-side panel.
+
+A PRIME or portable scientific child therefore uses the same coordinate system in SUPER and TOP. A host transition must not rewrite its internal placement. Persisted placement keys may use `stateVersion` when geometry semantics change, so obsolete coordinates are not restored into a new workspace model.
+
+### Host command projection
+
+Plugin commands have one semantic definition and different **presentation hosts**:
+
+- SUPER: PRIME/SUB commands are contributed to the DKDS top toolbar; the plugin does not render a duplicate local command strip.
+- TOP: the same commands are rendered in the independent plugin-window header.
+- Export is a single semantic menu in either host.
+
+This is presentation transformation only. The underlying PRIME/SUB views, controller state and capabilities are identical.
+
+### Performance boundary
+
+Direct-manipulation surfaces must separate pointer-frequency visual updates from state/render commits. During drag, Core updates the affected SVG marker/band/handle directly. Domain state is committed continuously as needed, but expensive full surface/Plotly rebuilds are deferred until drag end or a coalesced animation frame.
 
 ## Host invariance
 

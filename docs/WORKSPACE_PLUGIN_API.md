@@ -483,3 +483,9 @@ Capabilities may be discovered with `ctx.capabilities.list(query)`, required by 
 ## v3.35 host-invariant PluginWorkspace
 
 The built-in Resonance workspace is now the design-system reference rather than an exception. Shared scientific UI uses `PluginWorkspace`; reusable direct curve manipulation uses `ScientificCurveSurface`. A plugin promoted/demoted between SUPER and TOP must preserve the same PRIMARY/PRIME/SUB composition, plot appearance, data access and interaction capabilities. Only outer host controls may differ. See `PLUGIN_WORKSPACE_DESIGN_SYSTEM.md`.
+
+## v3.36 scientific-canvas placement
+
+`PluginWorkspace` resolves fixed portable placements against its inner scientific canvas. Use normal portable placements (`home`, `left`, `right`, `bottom`, `float`); plugins should not calculate application-level coordinates. Use `stateVersion` when a plugin changes placement geometry semantics so obsolete saved coordinates are not restored.
+
+A plugin may project PRIME/SUB commands to the SUPER host toolbar while using the same semantic actions locally in TOP. This must not create a second view implementation.

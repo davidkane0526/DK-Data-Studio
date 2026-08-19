@@ -154,24 +154,7 @@
     return `
       <div class="analysis-page-header resonance-window-header">
         <div><h2>共振分析</h2><div class="analysis-subtitle">GRS 工作台交互 · SUPER / TOP 共用同一渲染器</div></div>
-        <div class="respar-header-actions">
-          <button type="button" id="reswinUndo" title="回退上一步 · Ctrl+Z">↶</button>
-          <button type="button" id="reswinDeselect" title="退出选中 · Esc">取消</button>
-          <button type="button" data-respar-panel="inspect">检查</button>
-          <button type="button" data-respar-panel="group">组图</button>
-          <span class="respar-header-divider"></span>
-          <button type="button" id="reswinExportMainSvg">SVG</button>
-          <button type="button" id="reswinExportMainPng">PNG</button>
-          <button type="button" id="reswinExportMainCsv">数据</button>
-          <button type="button" id="reswinCopyMain">复制图</button>
-          <button type="button" id="reswinExportPeaks">峰参数</button>
-          <button type="button" id="reswinCopyPeaks">复制峰</button>
-          <span class="respar-header-divider"></span>
-          <button type="button" data-reswin-view="physics">物理机制</button>
-          <button type="button" data-reswin-view="spacing">峰间距</button>
-          <button type="button" data-reswin-view="gate">栅压分析</button>
-          <button class="analysis-page-close" id="reswinCloseBtn">关闭窗口</button>
-        </div>
+        <div id="reswinHeaderActions" class="respar-header-actions" aria-label="共振分析命令"></div>
       </div>
       <div class="analysis-page-body resonance-dedicated-body">
         <div class="resonance-parity-root">
@@ -183,7 +166,7 @@
                   <button id="reswinShowAll">全部扫描</button><button id="reswinShowForward">仅正扫</button>
                   <button id="reswinShowReverse">仅反扫</button><button id="reswinHideAll">全不选</button>
                 </div>
-                <label class="respar-select-label">当前扫描<select id="reswinSweepSelect"></select></label>
+                <select id="reswinSweepSelect" class="hidden" aria-hidden="true" tabindex="-1"></select>
                 <div id="reswinDatasetList" class="respar-dataset-list"></div>
               </section>
               <section>
@@ -237,19 +220,12 @@
           </section>
 
           <div id="resparInspectorPanel" class="respar-floating-panel respar-inspector-panel hidden">
-            <div class="respar-floating-header"><span>曲线检查器</span><div><button data-respar-dock="inspect">停靠右侧</button><button data-respar-close="inspect" class="respar-panel-close">×</button></div></div>
-            <div class="respar-floating-body">
-              <div class="respar-inspect-controls"><label>当前扫描<select id="reswinInspectSweepSelect"></select></label><div id="reswinInspectorSummary" class="reswin-kv"></div></div>
-              <div id="reswinPeakCategoryPalette" class="peak-category-palette"></div>
-              <div class="respar-inline-actions"><button id="reswinAddPeakCategory">＋ 新增类别</button><button id="reswinDeletePeak" class="danger-soft">删除选中峰</button></div>
-              <div class="respar-label-editor"><label>类别标签<input id="reswinPeakLabelInput" type="text"></label><button id="reswinApplyPeakLabel">重命名类别</button></div>
-              <div id="reswinInspectPlot" class="analysis-chart respar-inspect-plot"></div>
-              <div class="analysis-table-wrap"><table id="reswinPeakTable" class="analysis-table"></table></div>
-            </div>
+            <div class="respar-floating-header"><span>曲线检查器</span><div><button data-respar-close="inspect" class="respar-panel-close" title="关闭">×</button></div></div>
+            <div class="respar-floating-body"><div id="reswinInspectorBody" class="respar-inspector-body"></div></div>
           </div>
 
           <div id="resparGroupPanel" class="respar-floating-panel respar-group-panel hidden">
-            <div class="respar-floating-header"><span>组图面板</span><div><button data-respar-dock="group">停靠底部</button><button data-respar-collapse="group">缩小</button><button data-respar-close="group" class="respar-panel-close">×</button></div></div>
+            <div class="respar-floating-header"><span>组图面板</span><div><button data-respar-collapse="group">缩小</button><button data-respar-close="group" class="respar-panel-close" title="关闭">×</button></div></div>
             <div class="respar-floating-body">
               <div class="respar-group-toolbar"><span>双击任意小图可放大查看</span><div class="respar-group-cols"><span>每行</span><button data-reswin-cols="auto" class="active">自动</button><button data-reswin-cols="1">1</button><button data-reswin-cols="2">2</button><button data-reswin-cols="3">3</button><button data-reswin-cols="4">4</button><button data-reswin-cols="5">5</button><button data-reswin-cols="6">6</button></div></div>
               <div id="reswinGroupGrid" class="reswin-group-grid"></div>
@@ -310,6 +286,31 @@
     #resonanceDedicatedPage .respar-group-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #edf0f5;font-size:11px;color:#64748b;position:sticky;top:0;background:#fff;z-index:3}#resonanceDedicatedPage .respar-group-cols{display:flex;align-items:center;gap:4px}#resonanceDedicatedPage .respar-group-cols button{min-height:0;padding:3px 7px;font-size:11px}#resonanceDedicatedPage .respar-group-cols button.active{background:#e8efff;border-color:#7c9cff;color:#2147b7;font-weight:650}
     #resonanceDedicatedPage .reswin-group-grid{--reswin-group-cols:3;display:grid;grid-template-columns:repeat(var(--reswin-group-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-card{border:1px solid #d9deea;border-radius:8px;overflow:hidden;background:#fff;min-width:0;display:grid;grid-template-rows:auto minmax(210px,var(--reswin-group-height,240px)) auto}#resonanceDedicatedPage .reswin-group-head{height:32px;padding:5px 8px;font-size:12px;font-weight:650;background:#fafbfe;display:flex;justify-content:space-between;align-items:center}#resonanceDedicatedPage .reswin-group-head button{min-height:0;padding:2px 5px;font-size:11px}#resonanceDedicatedPage .reswin-group-legend{display:flex;flex-wrap:wrap;gap:5px 12px;padding:7px 8px 8px;border-top:1px solid #edf0f5;font-size:11px;color:#475569}
     #resonanceDedicatedPage .respar-derived{position:absolute;inset:0;z-index:130;background:#f5f7fb;overflow:auto;padding:12px}#resonanceDedicatedPage .respar-derived-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#resonanceDedicatedPage .respar-derived-header h3{margin:0;font-size:17px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#resonanceDedicatedPage .reswin-medium-plot{height:380px}#resonanceDedicatedPage .reswin-report{padding:12px;font-size:12px;line-height:1.65;color:#475467}
+    /* v3.36: exact GRS-derived data/inspector/range visual language */
+    #resonanceDedicatedPage .respar-dataset-list{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow:auto;margin-top:6px}
+    #resonanceDedicatedPage .respar-dataset-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;padding:7px;border-radius:7px;border:1px solid transparent;cursor:pointer;background:#fff}
+    #resonanceDedicatedPage .respar-dataset-item:hover{background:#f7f8fc}#resonanceDedicatedPage .respar-dataset-item.selected{border-color:#9db2ff;background:#eef2ff}#resonanceDedicatedPage .respar-dataset-item>.reswin-master{align-self:start;margin-top:2px}
+    #resonanceDedicatedPage .respar-dataset-content{min-width:0}#resonanceDedicatedPage .respar-dataset-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#25324a}
+    #resonanceDedicatedPage .respar-dataset-vg{display:flex;align-items:center;gap:4px;margin-top:3px;color:#667085;font-size:11px}
+    #resonanceDedicatedPage .respar-dataset-vg input{width:76px;height:24px;padding:2px 5px;border:1px solid #d7ddea;border-radius:5px;color:#334155;background:#fff;font-size:11px;box-shadow:none}
+    #resonanceDedicatedPage .respar-dataset-vg input:focus{outline:2px solid rgba(49,94,251,.16);border-color:#7795ed}
+    #resonanceDedicatedPage .respar-scan-toggle{display:flex;gap:12px;margin-top:5px;font-size:11px;color:#4b5563}#resonanceDedicatedPage .respar-scan-toggle label{display:flex;align-items:center;gap:4px;cursor:pointer}
+    #resonanceDedicatedPage .respar-dataset-transform{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:5px;margin-top:5px;font-size:10px;color:#64748b}#resonanceDedicatedPage .respar-dataset-transform select{min-width:0;width:100%;height:24px;padding:2px 4px;border:1px solid #d9deea;border-radius:5px;background:#fff;color:#475569;font-size:10px}
+    #resonanceDedicatedPage .respar-range-menu{position:absolute;z-index:150;width:260px;padding:8px;border:1px solid #cfd8e6;border-radius:9px;background:rgba(255,255,255,.98);box-shadow:0 10px 30px rgba(29,41,57,.16);backdrop-filter:blur(4px)}
+    #resonanceDedicatedPage .respar-range-summary{font-size:11px;font-weight:700;color:#344054;padding:2px 3px 7px;margin:0}#resonanceDedicatedPage .respar-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}#resonanceDedicatedPage .respar-range-grid button{min-height:29px;font-size:11px}
+    #resonanceDedicatedPage .respar-range-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:7px;padding-top:6px;border-top:1px solid #edf0f5;font-size:9px;color:#7a8497}
+    #resonanceDedicatedPage .respar-range-identity{margin-top:7px;padding-top:7px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:86px minmax(0,1fr);gap:5px;font-size:10px;color:#475467}
+    #resonanceDedicatedPage .respar-range-identity>div{grid-column:1/-1;font-size:10px;font-weight:750}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input{min-width:0;width:auto;height:29px;border:1px solid #d4dce8;border-radius:5px;padding:3px 6px;font-size:10px;background:#fff}#resonanceDedicatedPage .respar-range-identity button{grid-column:1/-1;min-height:29px;font-size:11px}
+    #resonanceDedicatedPage .respar-inspector-body{font-size:12px;color:#25324a}#resonanceDedicatedPage .respar-inspector-section{border-bottom:1px solid #edf0f6;padding-bottom:10px;margin-bottom:10px}#resonanceDedicatedPage .respar-inspector-section h4{margin:0 0 7px;font-size:13px}
+    #resonanceDedicatedPage .respar-inspector-kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:4px 8px;font-size:12px}#resonanceDedicatedPage .respar-inspector-kv .k{color:#667085}
+    #resonanceDedicatedPage .respar-inspector-hint{font-size:12px;line-height:1.7;color:#667085;margin-bottom:7px}
+    #resonanceDedicatedPage .respar-inspector-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+    #resonanceDedicatedPage .respar-peak-class-grid{display:grid;grid-template-columns:110px minmax(0,1fr);gap:7px;margin-top:8px}#resonanceDedicatedPage .respar-peak-class-grid label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#667085;min-width:0}#resonanceDedicatedPage .respar-peak-class-grid input{min-width:0;width:100%;height:auto;border:1px solid #d9deea;border-radius:6px;padding:5px;color:#25324a;background:#fff;font-size:11px;box-shadow:none}
+    #resonanceDedicatedPage .respar-inspector-row{display:flex;align-items:center;gap:6px;margin-top:7px}#resonanceDedicatedPage .respar-inspector-row button{font-size:11px}
+    #resonanceDedicatedPage .respar-inspector-transform{margin-top:10px;border-top:1px solid #edf0f6;padding-top:10px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
+    #resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start;padding:6px 8px;min-width:0;font-size:11px}#resonanceDedicatedPage .peak-category-choice.selected{background:#eef4ff;border-color:#668cff;box-shadow:inset 0 0 0 1px #668cff}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px!important;height:18px!important;border-radius:5px!important;box-shadow:0 0 0 1px #cfd5df!important}
+    #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px!important;min-height:280px!important;resize:both!important}
+    #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px!important}
     #resonanceDedicatedPage .hidden{display:none!important}
     @media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
   `;
@@ -332,14 +333,17 @@
     parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=document.createElement('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
     const workspaceFactory=ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench;
     if(!workspaceFactory?.create)throw new Error('PluginWorkspace Core capability is unavailable.');
-    const wb=workspaceFactory.create(host,{header:false,activity:'resonance',hostMode:isTop?'top':'super'});
+    const wb=workspaceFactory.create(host,{header:false,activity:'resonance',hostMode:isTop?'top':'super',leftWidth:280,leftMin:230,canvasLeftWidth:360,canvasRightWidth:390,canvasBottomHeight:360});
+    const primaryShell=parity.querySelector('.respar-primary'),leftPanel=primaryShell?.querySelector('.respar-left-panel'),mainArea=primaryShell?.querySelector('.respar-main-area');
     const inspector=parity.querySelector('#resparInspectorPanel'),group=parity.querySelector('#resparGroupPanel');
     const subNodes={physics:parity.querySelector('[data-reswin-view-panel="physics"]'),spacing:parity.querySelector('[data-reswin-view-panel="spacing"]'),gate:parity.querySelector('[data-reswin-view-panel="gate"]')};
+    if(!leftPanel||!mainArea)throw new Error('Resonance GRS primary layout is incomplete.');
+    leftPanel.remove();mainArea.remove();
     wb.compose({
-      primary:{id:'main',label:'共振分析',mainNode:parity},
+      primary:{id:'main',label:'共振分析',leftNode:leftPanel,mainNode:mainArea},
       primes:[
-        {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:'float',placements:['float','right','bottom'],handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
-        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:'float',placements:['float','bottom','right'],handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',mount:({container})=>{container.classList.remove('hidden');R.renderGroup?.();},onPlacementChanged:()=>controller.resize?.()}
+        {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:'float',placements:['float','left','right','bottom'],stateVersion:'canvas-v1',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
+        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:'bottom',placements:['float','left','right','bottom'],stateVersion:'canvas-v1',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',mount:({container})=>{container.classList.remove('hidden');R.renderGroup?.();},onPlacementChanged:()=>controller.resize?.()}
       ],
       subs:[
         {id:'physics',label:'物理机制',existingNode:subNodes.physics,onShow:({container})=>{container.classList.remove('hidden');R.renderPhysics?.();}},
@@ -350,25 +354,54 @@
     const showMain=()=>wb.showPrimary();
     const navigate=view=>{
       if(view==='main'){showMain();R.renderMain?.();return;}
-      if(view==='inspect'){showMain();const row=wb.primes?.get?.('curve-inspector');if(!row?.mounted)wb.openPrime('curve-inspector','float');R.renderInspection?.();return;}
-      if(view==='group'){showMain();const row=wb.primes?.get?.('group-analysis');if(!row?.mounted)wb.openPrime('group-analysis','float');R.renderGroup?.();return;}
+      if(view==='inspect'){showMain();const row=wb.primes?.get?.('curve-inspector');if(!row?.mounted)wb.openPrime('curve-inspector');R.renderInspection?.();return;}
+      if(view==='group'){showMain();const row=wb.primes?.get?.('group-analysis');if(!row?.mounted)wb.openPrime('group-analysis');R.renderGroup?.();return;}
       if(view==='physics'){wb.openSub('physics');return;}
       if(view==='spacing'){wb.openSub('spacing');return;}
       if(view==='gate'){wb.openSub('gate-analysis');return;}
     };
     R.setWorkspaceNavigator?.(navigate);
+    R.setWorkspaceRuntime?.({portable:(id,node,spec)=>wb.portable(id,node,spec),workbench:wb});
+    wb.setNavigationPresentation?.('host');
     const primeIdFor=kind=>kind==='inspect'?'curve-inspector':'group-analysis';
-    const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id,'float');kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};
+    const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id);kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};
     page.querySelectorAll('[data-respar-panel]').forEach(btn=>btn.onclick=()=>togglePanel(btn.dataset.resparPanel));
     page.querySelectorAll('[data-respar-close]').forEach(btn=>btn.onclick=()=>togglePanel(btn.dataset.resparClose,false));
     page.querySelectorAll('[data-respar-collapse]').forEach(btn=>btn.onclick=()=>{const panel=group;if(!panel)return;panel.classList.toggle('collapsed');btn.textContent=panel.classList.contains('collapsed')?'展开':'缩小';controller.resize?.();});
-    const togglePrimePlacement=(id,placement)=>{const row=wb.primes?.get?.(id);const current=row?.portable?.wrapper?.dataset?.placement||'';wb.setPrimePlacement(id,current===placement?'float':placement);};
-    page.querySelector('[data-respar-dock="inspect"]')?.addEventListener('click',()=>togglePrimePlacement('curve-inspector','right'));
-    page.querySelector('[data-respar-dock="group"]')?.addEventListener('click',()=>togglePrimePlacement('group-analysis','bottom'));
     page.querySelector('[data-respar-lock="1"]')?.addEventListener('click',()=>R.lockSelectedPeaks?.(true));page.querySelector('[data-respar-lock="0"]')?.addEventListener('click',()=>R.lockSelectedPeaks?.(false));page.querySelector('#resparSortPeakOrder')?.addEventListener('click',()=>R.sortPeakOrderByVd?.());page.querySelector('#resparTogglePhysics')?.addEventListener('click',()=>R.togglePhysicsLabels?.());page.querySelector('#resparResetView')?.addEventListener('click',()=>R.resetMainView?.());
     page.querySelector('#resparRangeDetect')?.addEventListener('click',()=>R.detectSelectedRange?.());page.querySelector('#resparRangeDelete')?.addEventListener('click',()=>R.deleteSelectedRangePeaks?.());page.querySelector('#resparRangeLock')?.addEventListener('click',()=>R.setSelectedRangeLocked?.(true));page.querySelector('#resparRangeUnlock')?.addEventListener('click',()=>R.setSelectedRangeLocked?.(false));page.querySelector('#resparRangeApplyIdentity')?.addEventListener('click',()=>R.applySelectedRangeIdentity?.(page.querySelector('#resparRangeOrder')?.value,page.querySelector('#resparRangeLabel')?.value));page.querySelector('#resparRangeClose')?.addEventListener('click',()=>R.clearSelectedRange?.());
-    ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .resonance-parity-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
-    ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});page.querySelector('#reswinCloseBtn').onclick=()=>{if(isTop)h.closeCurrentWindow?.();else showMain();};ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());ctx.events.on('layout:resize',()=>controller.resize());controller.render();adapter?.resize?.();return {controller,workbench:wb,mode};
+    const exportItems=()=>[
+      {id:'main-svg',label:'主图 SVG',onInvoke:()=>R.exportMainSvg?.()},
+      {id:'main-png',label:'主图 PNG',onInvoke:()=>R.exportMainPng?.()},
+      {id:'main-csv',label:'主图数据 CSV',onInvoke:()=>R.exportMainCsv?.()},
+      {id:'main-copy',label:'复制主图数据',onInvoke:()=>R.copyMainCsv?.()},
+      {type:'separator'},
+      {id:'peaks-csv',label:'峰参数 CSV',onInvoke:()=>R.exportPeaks?.()},
+      {id:'peaks-copy',label:'复制峰参数',onInvoke:()=>R.copyPeaks?.()}
+    ];
+    const localActions=[
+      {id:'undo',label:'↶',title:'回退上一步 · Ctrl+Z',onInvoke:()=>R.undoLastAction?.()},
+      {id:'deselect',label:'取消',title:'退出选中 · Esc',onInvoke:()=>R.clearSelection?.()},
+      {id:'inspect',label:'检查',onInvoke:()=>togglePanel('inspect')},{id:'group',label:'组图',onInvoke:()=>togglePanel('group')},
+      {type:'separator'},{id:'physics',label:'物理机制',onInvoke:()=>navigate('physics')},{id:'spacing',label:'峰间距',onInvoke:()=>navigate('spacing')},{id:'gate',label:'栅压分析',onInvoke:()=>navigate('gate')},
+      {type:'separator'},{id:'export',label:'导出',menu:true,items:exportItems},
+      ...(isTop?[{id:'close',label:'关闭窗口',onInvoke:()=>h.closeCurrentWindow?.()}]:[])
+    ];
+    const pageHeader=page.querySelector('.resonance-window-header'),headerActions=page.querySelector('#reswinHeaderActions');
+    if(isTop){pageHeader?.classList.remove('hidden');if(headerActions)ctx.ui.actions?.mount?.(headerActions,{activity:'resonance',actions:localActions});}
+    else{
+      pageHeader?.classList.add('hidden');
+      const toolbarActions=[
+        ['res-undo','↶','编辑',10,()=>R.undoLastAction?.()],['res-cancel','取消','编辑',20,()=>R.clearSelection?.()],
+        ['res-inspect','检查','PRIME',40,()=>togglePanel('inspect')],['res-group','组图','PRIME',50,()=>togglePanel('group')],
+        ['res-physics','物理机制','SUB',70,()=>navigate('physics')],['res-spacing','峰间距','SUB',80,()=>navigate('spacing')],['res-gate','栅压分析','SUB',90,()=>navigate('gate')]
+      ];
+      for(const [id,label,section,order,onClick] of toolbarActions)ctx.ui.toolbar.add({id,label,activity:'resonance',section,order,priority:section==='PRIME'?20:10,onClick});
+      const menuRows=[['res-export-main-svg','主图 SVG',10,()=>R.exportMainSvg?.()],['res-export-main-png','主图 PNG',20,()=>R.exportMainPng?.()],['res-export-main-csv','主图数据 CSV',30,()=>R.exportMainCsv?.()],['res-export-main-copy','复制主图数据',40,()=>R.copyMainCsv?.()],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.()],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.()]];
+      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'resonance',order,onClick});
+    }
+    ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
+    ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());ctx.events.on('layout:resize',()=>controller.resize());controller.render();adapter?.resize?.();return {controller,workbench:wb,mode};
   }
 
   function mountTop(ctx,controller){return mountUnified(ctx,controller,{mode:'top'});}

@@ -720,7 +720,11 @@
     // Every project tab owns an isolated snapshot for every registered plugin,
     // not only the historical built-in pulse workspace.
     if(window.DKDSPlugins?.project?.restore){
-      window.DKDSPlugins.project.restore(t.pluginState||{},null);
+      // Give every plugin the newly mounted tab's project root as migration/reset
+      // context. A missing plugin slice must never mean "keep the previous tab's
+      // controller state".
+      const tabProject=makeProject();tabProject.plugins=t.pluginState||{};
+      window.DKDSPlugins.project.restore(t.pluginState||{},tabProject);
     }
   }
 
@@ -5307,7 +5311,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.35.0',
+      version:'3.36.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6611,7 +6615,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.35.0',
+      appVersion:'3.36.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

@@ -2,11 +2,11 @@
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository with `refactor/v3.35-grs-workspace-foundation` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+This delivery contains a reconstructed local Git repository with `refactor/v3.36-workspace-docking-grs-parity` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.35.0**.
+Current development baseline: **v3.36.0**.
 
-`v3.35.0` promotes the Graphene Resonance Studio workspace and direct-curve interaction model into Core PluginWorkspace/ScientificCurveSurface capabilities while preserving Artifact/Selection contracts.
+`v3.36.0` refines that GRS-derived foundation with scientific-canvas-local docking, host command projection, project-tab state isolation and pointer-frequency rendering fast paths.
 
 ## Recommended future flow
 
@@ -26,6 +26,8 @@ git merge --no-ff feature/<name>
 Do not access, push to, or modify any remote repository unless the user explicitly requests it.
 
 ## Current delivery checkpoint
+
+`v3.36.0` makes fixed PRIME/SUB/subplot placement relative to the right-side scientific canvas rather than the whole plugin rectangle, keeps flexible floating/snap behavior inside that canvas, removes SUPER/TOP command duplication, fixes absent-slice project leakage, and eliminates full Resonance redraws from peak/FWHM pointer-move loops.
 
 `v3.35.0` promotes the GRS workspace model into the common PluginWorkspace design system. Resonance, TER, Pulse and Data Center consume the same workspace foundation; Resonance main-plot direct interaction is supplied by Core ScientificCurveSurface. SUPER and TOP mount the same plugin workspace.
 

@@ -4364,3 +4364,63 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-scientific-width-band{opacity:.075;pointer-events:none}.dkds-scientific-width-line{stroke-width:1.5;pointer-events:none}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all}
 .dkds-scientific-direct-box{pointer-events:none;stroke-width:1.4}.dkds-scientific-direct-box.is-range{fill:rgba(58,96,246,.08);stroke:#3a60f6;stroke-dasharray:5 3}.dkds-scientific-direct-box.is-zoom{fill:rgba(124,58,237,.07);stroke:#7c3aed;stroke-dasharray:3 3}
 .dkds-scientific-persisted-range{fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4;pointer-events:none}
+
+/* ============================================================
+   v3.36 PluginWorkspace canvas docking
+   Fixed PRIME/SUB/plot placements live inside the right-side scientific
+   canvas, while the outer left 1/5 remains the plugin control rail.
+   ============================================================ */
+.dkds-plugin-workspace .dkds-analysis-main{overflow:hidden!important;padding:0!important}
+.dkds-plugin-canvas-frame{
+  --dkds-plugin-canvas-left-width:320px;
+  --dkds-plugin-canvas-right-width:390px;
+  --dkds-plugin-canvas-bottom-height:320px;
+  width:100%;height:100%;min-width:0;min-height:0;position:relative;overflow:hidden;
+  display:grid;
+  grid-template-columns:0 0 minmax(0,1fr) 0 0;
+  grid-template-rows:minmax(0,1fr) 0 0;
+  grid-template-areas:"cleft clsplit center crsplit cright" "cbsplit cbsplit cbsplit cbsplit cbsplit" "cbottom cbottom cbottom cbottom cbottom";
+  background:var(--plugin-surface-bg,#fff);
+}
+.dkds-plugin-canvas-frame.has-canvas-left{grid-template-columns:var(--dkds-plugin-canvas-left-width) 7px minmax(0,1fr) 0 0}
+.dkds-plugin-canvas-frame.has-canvas-right{grid-template-columns:0 0 minmax(0,1fr) 7px var(--dkds-plugin-canvas-right-width)}
+.dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right{grid-template-columns:var(--dkds-plugin-canvas-left-width) 7px minmax(0,1fr) 7px var(--dkds-plugin-canvas-right-width)}
+.dkds-plugin-canvas-frame.has-canvas-bottom{grid-template-rows:minmax(0,1fr) 7px var(--dkds-plugin-canvas-bottom-height)}
+.dkds-plugin-canvas-left{grid-area:cleft;display:none;min-width:0;min-height:0;overflow:auto;padding-right:4px}
+.dkds-plugin-canvas-right{grid-area:cright;display:none;min-width:0;min-height:0;overflow:auto;padding-left:4px}
+.dkds-plugin-canvas-bottom{grid-area:cbottom;display:none;min-width:0;min-height:0;overflow:auto;padding-top:4px;gap:8px;align-items:stretch}
+.dkds-plugin-canvas-frame.has-canvas-left>.dkds-plugin-canvas-left,.dkds-plugin-canvas-frame.has-canvas-right>.dkds-plugin-canvas-right{display:flex;flex-direction:column;gap:8px}
+.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{display:flex;flex-wrap:wrap}
+.dkds-plugin-canvas-center{grid-area:center;min-width:0;min-height:0;position:relative;overflow:auto;display:flex;flex-direction:column}
+.dkds-plugin-canvas-center>.dkds-analysis-primary-host,.dkds-plugin-canvas-center>.dkds-analysis-sub-host{flex:1 1 auto;min-height:0!important}
+.dkds-plugin-canvas-center>.dkds-analysis-primary-host{height:100%;overflow:hidden!important}.dkds-plugin-canvas-center>.dkds-analysis-primary-host>*{flex:1 1 auto;min-height:0;min-width:0}
+.dkds-plugin-canvas-overlay{grid-column:1/-1;grid-row:1/-1;position:relative;z-index:120;min-width:0;min-height:0;pointer-events:none}
+.dkds-plugin-canvas-overlay>.dkds-portable-view,.dkds-plugin-canvas-overlay>.dkds-analysis-prime-panel{pointer-events:auto}
+.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer{display:none;position:relative;z-index:40;background:transparent;touch-action:none}
+.dkds-plugin-canvas-left-resizer.active{display:block;grid-area:clsplit;cursor:col-resize}
+.dkds-plugin-canvas-right-resizer.active{display:block;grid-area:crsplit;cursor:col-resize}
+.dkds-plugin-canvas-bottom-resizer.active{display:block;grid-area:cbsplit;cursor:row-resize}
+.dkds-plugin-canvas-left-resizer::before,.dkds-plugin-canvas-right-resizer::before{content:'';position:absolute;top:0;bottom:0;left:3px;width:1px;background:#dfe5ee}
+.dkds-plugin-canvas-bottom-resizer::before{content:'';position:absolute;left:0;right:0;top:3px;height:1px;background:#dfe5ee}
+.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view{width:100%!important;min-width:0!important}
+.dkds-plugin-canvas-bottom>.dkds-portable-view,.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%)!important;flex:1 1 520px!important;max-width:none!important}
+.dkds-analysis-nav.host-presented{display:none!important}
+@media(max-width:1000px){
+  .dkds-plugin-canvas-frame,.dkds-plugin-canvas-frame.has-canvas-left,.dkds-plugin-canvas-frame.has-canvas-right,.dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right{
+    grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"cleft" "center" "cright" "cbottom";overflow:auto
+  }
+  .dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom{width:100%;max-width:none;padding:0}
+  .dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer{display:none!important}
+  .dkds-plugin-canvas-center{overflow:visible}
+}
+
+/* v3.36 docked scientific panels consume their PluginWorkspace canvas slot.
+   Floating bounds remain GRS-like; docked bounds are owned by Core. */
+#resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked,
+#resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked{
+  position:relative!important;inset:auto!important;width:100%!important;height:100%!important;
+  min-width:0!important;min-height:0!important;max-width:none!important;resize:none!important;
+}
+#resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked .respar-floating-body,
+#resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked .respar-floating-body{min-height:0}
+#resonanceDedicatedPage .dkds-plugin-canvas-bottom>.respar-group-panel.dkds-portable-view{flex:1 1 100%!important;min-width:0!important}
