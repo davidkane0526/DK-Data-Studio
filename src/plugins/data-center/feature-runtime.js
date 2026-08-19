@@ -118,8 +118,8 @@
     const chartPane=page.querySelector('.dc-chart-pane');
     if(chartPane){
       try{
-        if(workbench?.registerPrime)workbench.registerPrime({id:'chart-preview',label:'图形预览',title:'通用图形预览',node:chartPane,inlineHost:'.dc-main',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#dcChart'));}catch{}})});
-        else if(ctx.ui.portable?.create)ctx.ui.portable.create('data-center-chart',chartPane,{title:'通用图形预览',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'});
+        if(workbench?.registerPrime)workbench.registerPrime({id:'chart-preview',label:'图形预览',title:'通用图形预览',node:chartPane,inlineHost:'.dc-main',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#dcChart'));}catch{}})});
+        else if(ctx.ui.portable?.create)ctx.ui.portable.create('data-center-chart',chartPane,{title:'通用图形预览',handle:'.dc-tool-title',controlsHost:'.dc-chart-toolbar',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'});
         const plot=page.querySelector('#dcChart');if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});
       }catch(err){console.warn('[Data Center chart view]',err);}
     }

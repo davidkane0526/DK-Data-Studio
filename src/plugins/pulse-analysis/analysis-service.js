@@ -169,7 +169,7 @@
 
       function analysisOptions(item) {
         const s = {...defaultSettings(item.inspection,item.name),...(item.settings||{})};
-        return {
+        const options={
           segmentationMode:s.segmentationMode||'auto',
           timeCol:Number(s.timeCol),
           currentCol:Number(s.currentCol),
@@ -191,24 +191,46 @@
           windowEndFraction:Number.isFinite(Number(s.windowEndFraction))?Number(s.windowEndFraction):.75,
           readPairMode:s.readPairMode||'after'
         };
+        // The editor has always advertised “0 = automatic cycle estimate”.
+        // Make that UI contract real without mutating the user's saved protocol.
+        if(options.segmentationMode==='auto'&&options.cycleSamples<=1){
+          const estimate=A.estimatePulseCycleSamples?.(item.inspection,{currentCol:options.currentCol,voltageCol:options.voltageCol})||0;
+          if(Number(estimate)>1){options.cycleSamples=Math.round(Number(estimate));options.__autoEstimatedCycle=true;}
+        }
+        return options;
       }
 
       function analyzeItem(item) {
+        const previousResult=item?.result||null,previousAnalyzedAt=item?.analyzedAt||'';
         if (!item?.text || !item.inspection) {
-          item.error = item?.error || '文件内容不可用。';
-          item.result = null;
+          item.error = '文件内容不可用。';
+          if(!previousResult)item.result=null;
           return false;
         }
+        const file={name:item.name,path:item.path,text:item.text,encoding:item.encoding};
+        const options=analysisOptions(item);
         try {
-          item.result = A.analyzePulseReadData({
-            name:item.name,path:item.path,text:item.text,encoding:item.encoding
-          },analysisOptions(item));
-          item.error = '';
-          item.analyzedAt = new Date().toISOString();
+          let nextResult;
+          try{nextResult=A.analyzePulseReadData(file,options);}
+          catch(firstError){
+            // An automatic periodic estimate may occasionally be ambiguous. If
+            // it fails, retry the mature auto path instead of turning a
+            // previously usable file into a permanent error state.
+            if(options.segmentationMode==='auto'&&options.__autoEstimatedCycle===true){
+              const fallback={...options,cycleSamples:0};delete fallback.__autoEstimatedCycle;
+              try{nextResult=A.analyzePulseReadData(file,fallback);}catch{throw firstError;}
+            }else throw firstError;
+          }
+          if(!nextResult||!Array.isArray(nextResult.points))throw new Error('脉冲分析没有返回有效结果。');
+          item.result=nextResult;
+          item.error='';
+          item.analyzedAt=new Date().toISOString();
+          item.lastResolvedAnalysis={segmentationMode:nextResult.segmentationMode||options.segmentationMode,cycleSamples:Number(nextResult.cycleSamples||options.cycleSamples)||0};
           return true;
         } catch (err) {
-          item.result = null;
-          item.error = err?.message || String(err);
+          item.result=previousResult;
+          item.analyzedAt=previousAnalyzedAt;
+          item.error=err?.message||String(err);
           return false;
         }
       }
@@ -222,10 +244,10 @@
         for (const item of state.files) {
           const row = document.createElement('div');
           const isActive = item.id === state.activeId;
-          row.className = `pulse-batch-file-item ${isActive?'active':''} ${item.error?'error':''}`;
+          row.className = `pulse-batch-file-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`;
           const rv = nullableNumber(item.result?.readVoltage);
           const meta = item.result
-            ? `${modeName(resultMode(item.result))} · ${rv!==null?`读取≈${rv.toFixed(4)} V`:'未记录读取电压'} · ${item.result.points.length} 组`
+            ? `${modeName(resultMode(item.result))} · ${rv!==null?`读取≈${rv.toFixed(4)} V`:'未记录读取电压'} · ${item.result.points.length} 组${item.error?' · 重算失败，保留上次结果':''}`
             : item.error ? item.error : item.loading ? '读取中…' : '待分析';
           row.innerHTML = `
             <div class="pulse-batch-file-main">

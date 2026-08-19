@@ -4367,8 +4367,8 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 
 /* ============================================================
    v3.36 PluginWorkspace canvas docking
-   Fixed PRIME/SUB/plot placements live inside the right-side scientific
-   canvas, while the outer left 1/5 remains the plugin control rail.
+   Fixed PRIME/plot placements live inside the scientific canvas, while a
+   resizable control rail remains visually distinct. No fixed width ratio is implied.
    ============================================================ */
 .dkds-plugin-workspace .dkds-analysis-main{overflow:hidden!important;padding:0!important}
 .dkds-plugin-canvas-frame{
@@ -4424,3 +4424,50 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 #resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked .respar-floating-body,
 #resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked .respar-floating-body{min-height:0}
 #resonanceDedicatedPage .dkds-plugin-canvas-bottom>.respar-group-panel.dkds-portable-view{flex:1 1 100%!important;min-width:0!important}
+
+/* ============================================================
+   v3.37 PluginWorkspace ordering / viewport contract
+   The workspace distinguishes a resizable control rail from a scientific
+   canvas. No fixed 1/5 : 4/5 ratio is prescribed. PRIMARY chooses whether
+   its scientific canvas is contained or scrollable; SUB pages are full
+   workspace pages outside the scientific-canvas docking boundary.
+   ============================================================ */
+.dkds-plugin-workspace .dkds-analysis-main{display:flex!important;flex-direction:column;min-width:0;min-height:0}
+.dkds-plugin-workspace .dkds-plugin-canvas-frame{flex:1 1 auto;min-width:0;min-height:0}
+.dkds-plugin-workspace .dkds-plugin-sub-page-host{flex:1 1 0%;height:0;max-height:100%;width:100%;min-width:0;min-height:0;overflow:auto!important;padding:0!important}
+.dkds-plugin-workspace .dkds-plugin-sub-page-host.hidden{display:none!important}
+.dkds-plugin-workspace .dkds-plugin-canvas-frame.hidden{display:none!important}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center{overflow:hidden}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host{height:100%;min-height:0!important;overflow:hidden!important}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host>*{height:100%;min-height:0;min-width:0}
+.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto;align-items:stretch}
+.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host{height:auto!important;min-height:100%!important;overflow:visible!important;flex:0 0 auto!important}
+.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host>*{height:auto!important;min-height:100%;min-width:0}
+
+/* A dock slot is a stack, never a pile. Multiple PRIME/plot panels assigned
+   to the same location flow next to/after one another and may scroll; they
+   are not absolutely overlaid. */
+.dkds-plugin-canvas-left,.dkds-plugin-canvas-right{align-content:start}
+.dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view,
+.dkds-plugin-canvas-left>.dkds-analysis-prime-panel,.dkds-plugin-canvas-right>.dkds-analysis-prime-panel{
+  position:relative!important;inset:auto!important;flex:0 0 auto!important;height:auto!important;max-height:none!important;min-height:180px;overflow:hidden
+}
+.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{
+  display:flex!important;flex-flow:column nowrap!important;align-items:stretch!important;overflow:auto!important;gap:8px
+}
+.dkds-plugin-canvas-bottom>.dkds-portable-view,.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
+  position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;min-width:0!important;min-height:180px!important;height:auto!important;max-height:none!important;flex:0 0 auto!important;resize:none!important
+}
+
+/* Whole-workspace floating is deliberately different from scientific-canvas
+   floating: it uses the outer analysis overlay, never edge-snaps into canvas
+   docks, and therefore can cross the control-rail / plot boundary. */
+.dkds-analysis-overlay>.dkds-portable-view.is-global-floating{pointer-events:auto;z-index:260}
+.dkds-portable-view.is-global-floating{box-shadow:0 18px 48px rgba(20,30,60,.20)}
+.dkds-portable-view.is-collapsed .respar-floating-body,
+.dkds-portable-view.is-collapsed .dkds-analysis-prime-body,
+.dkds-portable-view.is-collapsed .reswin-group-plot,
+.dkds-portable-view.is-collapsed .reswin-group-legend{display:none!important}
+#resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked,
+#resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked{height:auto!important;max-height:none!important}
+#resonanceDedicatedPage .dkds-plugin-canvas-bottom>.respar-group-panel.dkds-portable-view{flex:0 0 auto!important}

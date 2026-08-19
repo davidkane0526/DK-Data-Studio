@@ -321,10 +321,10 @@
         const card=document.getElementById(spec.plotId)?.closest('.analysis-chart-card');
         if(!card)continue;
         try{
-          const placementNames={home:'默认位置',left:'左侧',right:'右侧',bottom:'底部',float:'悬浮'};
+          const placementNames={home:'默认位置',left:'左侧',right:'右侧',bottom:'底部',float:'画布悬浮',global:'全界面悬浮'};
           const portableSpec={
             title:spec.title,handle:spec.handle,controlsHost:'.ter-chart-actions',controlsPlacement:'start',useTargetAsWrapper:true,
-            placements:['home','left','right','bottom','float'],defaultPlacement:'home',
+            placements:['home','left','right','bottom','float','global'],defaultPlacement:'home',
             onPlacementChanged:({placement})=>{
               h.setStatus?.(`${spec.title}：${placementNames[placement]||placement}`);
               requestAnimationFrame(()=>resizeTerPlots());
@@ -1021,7 +1021,7 @@
     if(workbench?.registerPrime){
       workbench.registerPrime({
         id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',
-        defaultPlacement:layoutSettings.sticky?'sticky':'inline',placements:['inline','sticky','right','bottom','float'],autoOpen:true,
+        defaultPlacement:layoutSettings.sticky?'sticky':'inline',placements:['inline','sticky','right','bottom','float','global'],autoOpen:true,
         onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();h.captureActiveProjectTab?.();},
         mount:()=>{ensureResistanceCard();renderResistancePlot();}
       });

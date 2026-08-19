@@ -407,3 +407,16 @@ SUPER/TOP is a host presentation concern. A SUPER plugin contributes semantic PR
 Project slice restore also obeys project identity: an absent plugin slice resets the controller unless the selected project's root is explicitly supplied for legacy/root-data migration. Previous-tab controller state is never a fallback for a new project.
 
 Pointer-frequency scientific interactions use direct geometry fast paths in Core. Expensive full renders occur at drag completion or through frame-coalesced scheduling.
+
+
+## v3.37 workspace ordering and active-plugin runtime contracts
+
+- PRIMARY scrolling is explicit (`contained` vs `auto`) rather than globally forcing `overflow:hidden`.
+- The control rail/scientific canvas split is semantic and resizable, not a fixed percentage contract.
+- PortableView `float` is canvas-managed/snappable; `global` is whole-plugin free floating.
+- Same-zone docks are flow/stack containers and must not overlap occupants.
+- SUB pages live at PluginWorkspace level outside the scientific-canvas coordinate system.
+- PortableView owns close/collapse and descendant chart resize lifecycle.
+- Shell edit actions dispatch to the active plugin through `ctx.ui.edit` before any legacy fallback.
+- Resonance group plots consume live visible/accepted-peak state and preserve PortableView identity across `Plotly.react` updates.
+- Pulse optional sample bounds preserve null/blank semantics in the science core; rerun failure must not destroy a previous valid analysis result.

@@ -59,7 +59,7 @@ assert(ter.includes('responsive:false'),'Explicit TER grid presets must not be s
 assert(ter.includes("items:()=>[")&&ter.includes("id:'layout'"),'TER Layout must use the core declarative ActionGroup menu path.');
 assert(ter.includes("minItemWidth:260"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
 assert(ui.includes("classList.add('is-sticky')")&&ui.includes("case 'sticky'")===false,'Portable placement grammar must support sticky as a home-layout state rather than a dock region.');
-assert(ter.includes("defaultPlacement:layoutSettings.sticky?'sticky':'inline'")&&ter.includes("placements:['inline','sticky','right','bottom','float']"),'TER R–V PRIME must restore sticky as its default pin behavior.');
+assert(ter.includes("defaultPlacement:layoutSettings.sticky?'sticky':'inline'")&&ter.includes("'global'"),'TER R–V PRIME must restore sticky as its default pin behavior and expose whole-interface free float.');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonanceViews.includes(token),`Resonance unified workbench missing semantic view ${token}.`);

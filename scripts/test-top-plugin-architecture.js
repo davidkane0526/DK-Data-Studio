@@ -44,7 +44,7 @@ assert(pulseTopAdapter.includes('window.DKDSPulseAnalysisService'),'Pulse TOP ad
 assert(kernel.includes('打开失败'),'window-open failures must be surfaced instead of silently leaving another plugin UI visible.');
 assert(manager.includes('resetManagerScrollChain')&&manager.includes('settleManagerAtTop(frames=12)'),'plugin manager must repair late Chromium scroll anchoring after lifecycle changes.');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('new ContextMenu(this.owner)'),'portable charts must expose compact breadcrumb placement through core context menus.');
-assert(ui.includes("placementIcons={home:'◫',sticky:'⌖',left:'←'")&&ui.includes("right:'→',bottom:'↓',float:'↗'"),'portable chart trigger/menu must expose the compact ◫ ← → ↓ ↗ placement grammar.');
+assert(ui.includes("placementIcons={home:'◫',sticky:'⌖',left:'←'")&&ui.includes("right:'→',bottom:'↓',float:'↗',global:'⤢'"),'portable chart trigger/menu must distinguish canvas float from whole-interface free float.');
 assert(ui.includes('createPortableZones()')&&ui.includes('portable(id,node,spec={})'),'core Workbench must own dedicated local portable zones and a portable() API.');
 
 // TER/Pulse/Data Center are no longer monolithic plugins. Their feature logic is

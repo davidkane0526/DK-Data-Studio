@@ -734,3 +734,13 @@ New scientific plugins should prefer `ctx.ui.pluginWorkspace` / `ctx.ui.workspac
 ## v3.36 workspace placement guidance
 
 For scientific plugins, use `ctx.ui.pluginWorkspace`/`ctx.ui.workspaceSurface` and Core portable placements. Fixed left/right/bottom positions are scientific-canvas-local. Do not manually place child scientific plots into the application left rail. When SUPER, project PRIME/SUB commands through the host action contribution API instead of duplicating the plugin-local toolbar; TOP may render the same semantic command model in its own header.
+
+
+## v3.37 workspace/floating/edit contracts
+
+- `PluginWorkspace.create(..., { primaryScroll: 'contained' | 'auto' })` defines PRIMARY viewport ownership. A PRIMARY entry may also declare `scroll`.
+- Portable placement `float` is scientific-canvas managed and edge-snappable; `global` is whole-plugin free floating and never auto-snaps to canvas docks.
+- Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
+- Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
+- SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
+- `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.

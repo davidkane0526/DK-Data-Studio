@@ -72,6 +72,9 @@
       let workspaceRuntime=null;
       let mainSurface=null;
       const groupPortables=new Map();
+      const groupCards=new Map();
+      const groupCharts=new Map();
+      let groupRenderKey='';
       let undoStack=[];
       let committedWorkspace=null;
       const workspaceFingerprint=value=>{try{return JSON.stringify(value);}catch{return '';}};
@@ -137,7 +140,7 @@
         if($('#reswinMainPlot')?.offsetParent!==null&&!updateMainSelectionHighlights())renderMainPlot();
         if($('#reswinTrendPlot')?.offsetParent!==null&&!updateTrendSelectionHighlights())renderTrend();
         if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();
-        if(includeGroup)updateGroupHighlights();
+        if(includeGroup&&$('#resparGroupPanel')?.offsetParent!==null)renderGroup();else if(includeGroup)updateGroupHighlights();
       }
       function publishSweepSelection(sw,source='resonance-main'){
         if(!sw)return false;selectedSweepId=String(sw.id);selectedPeakId='';selectedPeakIds.clear();
@@ -640,7 +643,7 @@
       }
       function groupCsv(title,series){
         const rows=['series,label,direction,Vg,value'];
-        for(const sr of series)for(const r of sr.rows)rows.push([sr.name,sr.label,directionName(sr.direction),r.p.vg,r.value].map(csvCell).join(','));
+        for(const sr of series)for(const r of sr.rows){const direction=Number.isFinite(Number(sr.direction))?directionName(sr.direction):'';rows.push([sr.name,sr.label,direction,r.p.vg,r.value].map(csvCell).join(','));}
         return rows.join('\n');
       }
       function updateGroupHighlights(){
@@ -649,39 +652,80 @@
           plot.data.forEach((trace,index)=>{if(!Array.isArray(trace.customdata))return;const sizes=trace.customdata.map(row=>{const id=String(row?.[0]||'');return id===String(selectedPeakId)?11:(selectedPeakIds.has(id)?9:7);});const widths=trace.customdata.map(row=>{const id=String(row?.[0]||'');return id===String(selectedPeakId)?3:(selectedPeakIds.has(id)?2:1);});try{Plotly.restyle(plot,{'marker.size':[sizes],'marker.line.width':[widths]},[index]);}catch{}});
         }
       }
+      function groupContextText(){
+        const p=selectedPeak(),sw=selectedSweep(),visible=visibleSweeps().length;
+        if(p)return `主图可见数据：${directionName(p.direction)} · ${peakLabel(p)} · ${visible} 条扫描`;
+        if(sw)return `主图可见数据：${directionName(sw.direction)} · 当前曲线峰族 · ${visible} 条扫描`;
+        return `主图可见数据：全部已采纳峰族 · ${visible} 条扫描`;
+      }
+      function groupLegendHtml(series=[]){
+        return series.map(sr=>`<span class="reswin-group-legend-item"><i style="background:${esc(sr.color||'#64748b')}"></i>${esc(sr.name||sr.label||'序列')}</span>`).join('');
+      }
+      function ensureGroupCard(key,title){
+        let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
+        const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
+        const card=document.createElement('div');card.className='reswin-group-card';card.dataset.groupMetric=String(key);
+        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"><button type="button" data-csv>CSV</button><button type="button" data-copy>复制</button></span></div><div class="reswin-group-plot"></div><div class="reswin-group-legend"></div>`;
+        hostEl.appendChild(card);
+        const plot=card.querySelector('.reswin-group-plot');
+        const chart=uiRuntime?.charts?.mount?.(plot,{})||null;if(chart)groupCharts.set(String(key),chart);
+        const portable=workspaceRuntime?.portable?.(`resonance-group:${key}`,card,{title,useTargetAsWrapper:true,handle:'.reswin-group-head',controlsHost:'.reswin-group-card-actions',controlsPlacement:'start',placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v2',snap:false,onPlacementChanged:()=>resize()})||null;
+        if(portable)groupPortables.set(String(key),portable);
+        row={key:String(key),title,card,plot,chart,portable,series:[]};groupCards.set(String(key),row);
+        card.querySelector('[data-csv]').onclick=()=>{const csv=groupCsv(row.title,row.series||[]);window.electronAPI?.saveText?.({defaultName:`resonance_${row.key}.csv`,content:csv,filters:[{name:'CSV',extensions:['csv']}]});};
+        card.querySelector('[data-copy]').onclick=()=>copyTextToClipboard(groupCsv(row.title,row.series||[]),`${row.title} CSV`);
+        return row;
+      }
+      function disposeGroupViews(){
+        groupRenderKey='';
+        for(const portable of groupPortables.values())try{portable?.dispose?.();}catch{}groupPortables.clear();
+        for(const chart of groupCharts.values())try{chart?.dispose?.();}catch{}groupCharts.clear();
+        for(const row of groupCards.values())try{row.card?.remove?.();}catch{}groupCards.clear();
+      }
+      function groupDataFingerprint(){
+        const visibleIds=visibleSweepIds().map(String).sort();
+        const selected=selectedPeak();
+        const sweep=selectedSweep();
+        const contextKey=selected?`peak:${Number(selected.direction)||0}:${peakLabel(selected)}`:(sweep?`sweep:${String(sweep.id)}`:'all');
+        const peaks=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.includes(String(p.sweepId))).map(p=>[
+          p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,peakLabel(p),p.prominence,p.widthLeft,p.widthRight,p.manual?1:0,p.locked?1:0
+        ].join(':')).join('|');
+        return `${workspace.groupColumns||'auto'}##${contextKey}##${visibleIds.join(',')}##${peaks}`;
+      }
       function renderGroup(){
         const hostEl=$('#reswinGroupGrid');if(!hostEl||!window.Plotly)return;
-        for(const portable of groupPortables.values())portable?.dispose?.();groupPortables.clear();
-        const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','Prominence','A']];
-        const labels=[...new Set((workspace.peaks||[]).filter(p=>p.accepted!==false).map(peakLabel))];
-        const terSeries=labels.map(label=>{const representative=(workspace.peaks||[]).find(p=>p.accepted!==false&&peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {label,order,color:colorForPeakOrder(order,1),points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,visibleSweepIds())||[]};}).filter(x=>x.points.length);
-        hostEl.innerHTML='';
+        const context=$('#reswinGroupContext');if(context)context.textContent=groupContextText();
+        const nextKey=groupDataFingerprint();
+        if(nextKey===groupRenderKey&&groupCards.size){updateGroupHighlights();uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-highlight'});return;}
+        groupRenderKey=nextKey;
+        const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','峰突出度','A']];
+        const visibleIds=new Set(visibleSweepIds().map(String));
+        const acceptedVisible=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.has(String(p.sweepId)));
+        const labels=[...new Set(acceptedVisible.map(peakLabel))];
+        const terSeries=labels.map(label=>{const representative=acceptedVisible.find(p=>peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {name:`共振TER·${label}`,label,order,color:colorForPeakOrder(order,1),points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,[...visibleIds])||[]};}).filter(x=>x.points.length);
         const count=defs.length+(terSeries.length?1:0);
         let cols=workspace.groupColumns==='auto'?Math.max(1,Math.min(6,Math.floor((hostEl.clientWidth||1000)/330))):Number(workspace.groupColumns)||2;
         cols=Math.min(Math.max(1,cols),Math.max(1,count));
         hostEl.style.setProperty('--reswin-group-cols',String(cols));
-        const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);
-        hostEl.style.setProperty('--reswin-group-height',`${Math.max(230,Math.min(360,Math.round(cardWidth*.62)))}px`);
-        $$('[data-reswin-cols]').forEach(b=>b.classList.toggle('active',String(b.dataset.reswinCols)===String(workspace.groupColumns)));
+        const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(230,Math.min(360,Math.round(cardWidth*.62)))}px`);
+        const activeKeys=new Set();
         for(const [metric,title,unit] of defs){
-          const series=groupMetricRows(metric);
-          const card=document.createElement('div');card.className='reswin-group-card';
-          card.dataset.groupMetric=metric;card.innerHTML=`<div class="reswin-group-head"><span>${esc(title)}</span><span class="reswin-group-card-actions"><button type="button" data-csv>CSV</button><button type="button" data-copy>复制</button></span></div><div class="reswin-group-plot"></div>`;
-          hostEl.appendChild(card);
-          const plot=card.querySelector('.reswin-group-plot');
+          activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(series);
           const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1))}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
-          Plotly.react(plot,traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).then(()=>{try{plot.removeAllListeners?.('plotly_click');}catch{}plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];if(id){const p=peakById(id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});}});}).catch(()=>{});
-          const csv=()=>groupCsv(title,series);
-          card.querySelector('[data-csv]').onclick=()=>window.electronAPI?.saveText?.({defaultName:`resonance_${metric}.csv`,content:csv(),filters:[{name:'CSV',extensions:['csv']}]});
-          card.querySelector('[data-copy]').onclick=()=>copyTextToClipboard(csv(),`${title} CSV`);
-          if(workspaceRuntime?.portable){const portable=workspaceRuntime.portable(`resonance-group:${metric}`,card,{title,useTargetAsWrapper:true,handle:'.reswin-group-head',controlsHost:'.reswin-group-card-actions',controlsPlacement:'start',placements:['home','left','right','bottom','float'],defaultPlacement:'home',stateVersion:'canvas-v1',snapDistance:54,onPlacementChanged:()=>resize()});if(portable)groupPortables.set(metric,portable);}
+          const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true};
+          const onClick=e=>{const id=e?.points?.[0]?.customdata?.[0];if(id){const p=peakById(id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});}};
+          if(row.chart)row.chart.set({data:traces,layout,config:{responsive:true,displayModeBar:false},onClick}).catch(()=>{});else Plotly.react(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
         }
+        const terKey='ter';
         if(terSeries.length){
-          const card=document.createElement('div');card.className='reswin-group-card';card.dataset.groupMetric='ter';card.innerHTML='<div class="reswin-group-head"><span>共振 TER</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div>';hostEl.appendChild(card);
-          const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
-          Plotly.react(card.querySelector('.reswin-group-plot'),traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).catch(()=>{});
-          if(workspaceRuntime?.portable){const portable=workspaceRuntime.portable('resonance-group:ter',card,{title:'共振 TER',useTargetAsWrapper:true,handle:'.reswin-group-head',controlsHost:'.reswin-group-card-actions',controlsPlacement:'start',placements:['home','left','right','bottom','float'],defaultPlacement:'home',stateVersion:'canvas-v1',snapDistance:54,onPlacementChanged:()=>resize()});if(portable)groupPortables.set('ter',portable);}
+          activeKeys.add(terKey);const row=ensureGroupCard(terKey,'共振 TER');if(row){row.card.classList.remove('hidden');row.title='共振 TER';row.series=terSeries.map(sr=>({...sr,rows:sr.points.map(p=>({p:{vg:p.vg},value:p.ter}))}));row.card.querySelector('.reswin-group-title').textContent='共振 TER';row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(terSeries);
+            const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
+            const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true};
+            if(row.chart)row.chart.set({data:traces,layout,config:{responsive:true,displayModeBar:false}}).catch(()=>{});else Plotly.react(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
+          }
         }
+        for(const [key,row] of groupCards)row.card.classList.toggle('hidden',!activeKeys.has(key));
+        uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-render'});requestAnimationFrame(()=>resize());
       }
 
       function physicalAnalysis(){
@@ -812,7 +856,7 @@
         else if(currentView==='gate')renderGate();
       }
       function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;if(workspaceNavigator)workspaceNavigator(currentView);else renderView();scheduleSnapshot();}
-      function render(){normalizeCategories();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);}else renderView();}
+      function render(){normalizeCategories();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);if($('#resparGroupPanel')?.offsetParent!==null&&currentView!=='group')renderGroup();}else renderView();}
       function resize(){
         if(resizeRaf)return;resizeRaf=requestAnimationFrame(()=>{resizeRaf=0;if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{Plotly.Plots.resize(el);}catch{}});});
       }
@@ -853,7 +897,6 @@
         page.querySelector('#reswinCopyPeaks')?.addEventListener('click',()=>copyTextToClipboard(peaksCsv(),'峰参数 CSV'));
         page.querySelector('#reswinApplyPeakLabel')?.addEventListener('click',()=>renameSelectedCategory(page.querySelector('#reswinPeakLabelInput')?.value));
         page.querySelector('#reswinDeletePeak')?.addEventListener('click',()=>{const p=selectedPeak();if(p)deletePeak(p.id);});
-        page.querySelectorAll('[data-reswin-cols]').forEach(btn=>btn.onclick=()=>{workspace.groupColumns=btn.dataset.reswinCols;renderGroup();scheduleSnapshot();});
         for(const id of ['reswinSpacingA','reswinSpacingB','reswinSpacingMode'])page.querySelector('#'+id).onchange=()=>{workspace.spacingSettings={seriesA:$('#reswinSpacingA').value,seriesB:$('#reswinSpacingB').value,mode:$('#reswinSpacingMode').value};renderSpacing();scheduleSnapshot();};
         page.querySelector('#reswinSpacingExport').onclick=()=>window.electronAPI?.saveText?.({defaultName:'resonance_peak_spacing.csv',content:spacingCsv(),filters:[{name:'CSV',extensions:['csv']}]});
         page.querySelector('#reswinGateRun').onclick=()=>{renderGate();scheduleSnapshot();};
@@ -903,6 +946,7 @@
         reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,
+        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;renderGroup();scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
         setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;},

@@ -5311,7 +5311,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.36.0',
+      version:'3.37.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -5913,7 +5913,9 @@
   };
 
   $('#newProjectTabBtn').onclick=()=>createProjectTab(null,true);
-  $('#undoBtn').onclick=undo; $('#deselectBtn').onclick=deselect;
+  const systemUndo=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()){if(edit.supports?.('undo'))return edit.invoke('undo');setStatus('当前插件没有可撤销的编辑。');return false;}return undo();};
+  const systemDeselect=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()){if(edit.supports?.('deselect'))return edit.invoke('deselect');setStatus('当前插件没有活动选择。');return false;}return deselect();};
+  $('#undoBtn').onclick=systemUndo; $('#deselectBtn').onclick=systemDeselect;
 
   document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>{if(IS_AUXILIARY_WINDOW)window.electronAPI?.closeCurrentWindow?.();else closeAnalysisPage(b.dataset.analysisTarget);});
 
@@ -5942,14 +5944,14 @@
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject();return;}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='o'){e.preventDefault();openProject();return;}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){e.preventDefault();createProjectTab(null,true);return;}
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();systemUndo();return;}
     if(e.key==='Escape'){
       e.preventDefault();
       if(!$('#importPanel').classList.contains('hidden')){
         closeImportWorkbench();
         return;
       }
-      deselect();return;
+      systemDeselect();return;
     }
     if(e.key==='r'||e.key==='R'){e.preventDefault();resetMainView();return;}
   });
@@ -6615,7 +6617,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.36.0',
+      appVersion:'3.37.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

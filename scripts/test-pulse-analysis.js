@@ -80,6 +80,12 @@ const periodic=A.analyzePulseReadData(periodicFile,{
 assert.strictEqual(periodic.segmentationMode,'cycle');
 assert.strictEqual(periodic.cycleSamples,300);
 assert.strictEqual(periodic.points.length,4);
+const periodicAutoWithNullRanges=A.analyzePulseReadData(periodicFile,{
+  segmentationMode:'auto',timeCol:0,currentCol:1,voltageCol:2,cycleSamples:300,
+  writeStartSample:null,writeEndSample:null,readStartSample:null,readEndSample:null
+});
+assert.strictEqual(periodicAutoWithNullRanges.segmentationMode,'cycle');
+assert.strictEqual(periodicAutoWithNullRanges.points.length,4,'Null optional cycle ranges must remain unspecified rather than becoming an invalid 0→0 explicit range.');
 assert.strictEqual(periodic.points[2].pulseCurrent,12);
 assert.strictEqual(periodic.points[2].readCurrent,102);
 

@@ -2,11 +2,11 @@
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository with `refactor/v3.36-workspace-docking-grs-parity` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+This delivery contains a reconstructed local Git repository with `refactor/v3.37-workspace-order-runtime-audit` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.36.0**.
+Current development baseline: **v3.37.0**.
 
-`v3.36.0` refines that GRS-derived foundation with scientific-canvas-local docking, host command projection, project-tab state isolation and pointer-frequency rendering fast paths.
+`v3.37.0` audits workspace/runtime ordering: explicit PRIMARY scrolling modes, independent SUB pages, two portable floating scopes, dock conflict stacking, active-plugin edit routing, live stable Resonance group plots and Pulse repeat-analysis reliability.
 
 ## Recommended future flow
 
@@ -26,6 +26,8 @@ git merge --no-ff feature/<name>
 Do not access, push to, or modify any remote repository unless the user explicitly requests it.
 
 ## Current delivery checkpoint
+
+`v3.37.0` separates scientific-canvas docking from whole-plugin floating, makes same-zone docks stack instead of overlap, moves SUB pages outside the scientific canvas, gives TER/Pulse/Data Center auto-scrolling PRIMARY workspaces, routes system Edit operations to the active plugin, keeps Resonance group PortableViews stable/live, and fixes Pulse optional-range null handling plus rerun state preservation. The control/science split is semantic and resizable; no fixed 1/5:4/5 ratio is an architecture requirement.
 
 `v3.36.0` makes fixed PRIME/SUB/subplot placement relative to the right-side scientific canvas rather than the whole plugin rectangle, keeps flexible floating/snap behavior inside that canvas, removes SUPER/TOP command duplication, fixes absent-slice project leakage, and eliminates full Resonance redraws from peak/FWHM pointer-move loops.
 

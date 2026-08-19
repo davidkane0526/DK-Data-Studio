@@ -404,7 +404,7 @@
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
-  function normalizePlacement(value){const p=String(value||'').toLowerCase();return ['home','sticky','left','right','bottom','main','float'].includes(p)?p:'home';}
+  function normalizePlacement(value){const p=String(value||'').toLowerCase();return ['home','sticky','left','right','bottom','main','float','global'].includes(p)?p:'home';}
   function refreshDockZoneState(){
     const zones=new Set();
     for(const name of ['left','right','bottom']){const zone=hostState.zones.get(name);if(zone)zones.add(zone);}
@@ -417,7 +417,7 @@
   class PortableView {
     constructor(scope,id,node,spec={}){
       this.scope=scope;this.owner=scope.owner;this.id=String(id);this.node=resolveElement(node);this.spec={...spec};this.allowed=[...new Set((spec.placements||['home','float','right','bottom']).map(normalizePlacement))];
-      this.original={parent:this.node?.parentNode||null,next:this.node?.nextSibling||null};this.wrapper=null;this.dragCleanup=null;this.resizeObserver=null;this.chromeCleanups=[];this.contextMenu=null;
+      this.original={parent:this.node?.parentNode||null,next:this.node?.nextSibling||null};this.wrapper=null;this.dragCleanup=null;this.resizeObserver=null;this.resizeFrame=0;this.chromeCleanups=[];this.contextMenu=null;
       if(!this.node)throw new Error(`Portable view target not found: ${id}`);
       this.ensureWrapper();
       const saved=this.readState();
@@ -437,8 +437,8 @@
       let title=header.querySelector?.('.dkds-portable-title');
       if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
       const controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb';controls.dataset.dkdsPortableControls=this.id;
-      const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗'};
-      const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'悬浮'};
+      const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗',global:'⤢'};
+      const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'画布悬浮 / 边缘吸附',global:'全界面自由悬浮'};
       const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';placementButton.title='图表位置';
       const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location-icon">${esc(placementIcons[current]||'◫')}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
       const menuItems=()=>this.allowed.map(placement=>({id:placement,icon:placementIcons[placement]||'◫',label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}));
@@ -447,13 +447,18 @@
       const controlsHost=resolveElement(this.spec.controlsHost,wrapper)||header;
       if(this.spec.controlsPlacement==='start')controlsHost.prepend(controls);else controlsHost.appendChild(controls);
       this.refreshPlacementButton=refreshPlacementButton;refreshPlacementButton();
-      const toggleFloat=e=>{if(e.target.closest('button'))return;e.preventDefault();this.place(this.wrapper.dataset.placement==='float'?'home':'float');};
+      const toggleFloat=e=>{if(e.target.closest('button'))return;e.preventDefault();const preferred=this.allowed.includes('global')&&!this.allowed.includes('float')?'global':'float';this.place(this.wrapper.dataset.placement===preferred?'home':preferred);};
       const openPlacementMenu=e=>{if(e.target.closest('button'))return;e.preventDefault();this.contextMenu?.dispose?.();const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x:e.clientX,y:e.clientY,items:menuItems()});};
       header.addEventListener('dblclick',toggleFloat);header.addEventListener('contextmenu',openPlacementMenu);
       this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat),()=>header.removeEventListener('contextmenu',openPlacementMenu));
       if(!useTarget){wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
       this.wrapper=wrapper;this.injectedHeader=useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
-      const ro=window.ResizeObserver?new ResizeObserver(()=>this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'})):null;ro?.observe(wrapper);this.resizeObserver=ro;
+      const bindChromeAction=(selector,handler)=>{const el=resolveElement(selector,wrapper);if(!el||typeof handler!=='function')return;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));};
+      bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
+      bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
+      const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});
+      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;if(!window.Plotly?.Plots?.resize)return;for(const plot of this.wrapper.querySelectorAll?.('.js-plotly-plot')||[]){try{window.Plotly.Plots.resize(plot);}catch{}}});};
+      const ro=window.ResizeObserver?new ResizeObserver(requestPortableResize):null;ro?.observe(wrapper);this.resizeObserver=ro;
     }
     zone(placement){return this.spec.layout?.slot?.(placement)||hostState.zones.get(placement)||null;}
     restoreHome(){
@@ -461,13 +466,13 @@
     }
     place(value,{persist=true,bounds=null}={}){
       let placement=normalizePlacement(value);if(!this.allowed.includes(placement))placement=this.allowed[0]||'home';
-      this.wrapper.classList.remove('is-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');
+      this.wrapper.classList.remove('is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');
       this.wrapper.style.removeProperty('left');this.wrapper.style.removeProperty('top');this.wrapper.style.removeProperty('width');this.wrapper.style.removeProperty('height');
       cleanupCall(this.dragCleanup);this.dragCleanup=null;
       if(placement==='home')this.restoreHome();
       else if(placement==='sticky'){this.restoreHome();this.wrapper.classList.add('is-sticky');}
-      else if(placement==='float'){
-        const zone=this.zone('overlay')||hostState.root||document.body;zone.appendChild(this.wrapper);this.wrapper.classList.add('is-floating');
+      else if(placement==='float'||placement==='global'){
+        const zone=placement==='global'?(this.zone('global')||hostState.root||document.body):(this.zone('overlay')||hostState.root||document.body);zone.appendChild(this.wrapper);this.wrapper.classList.add('is-floating');if(placement==='global')this.wrapper.classList.add('is-global-floating');this.wrapper.dataset.placement=placement;
         const saved=bounds||this.readState().bounds||{};
         const zoneRect=zone.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight};
         const rect=this.wrapper.getBoundingClientRect();
@@ -478,7 +483,7 @@
         this.wrapper.style.width=`${Number(saved.width)||Math.max(360,Math.min(zoneRect.width||window.innerWidth,rect.width||520))}px`;
         if(Number(saved.height)>160)this.wrapper.style.height=`${Number(saved.height)}px`;
         this.avoidFloatOverlap();
-        this.dragCleanup=this.bindFloatDrag();
+        this.dragCleanup=this.bindFloatDrag(placement);
       }else{
         const zone=this.zone(placement);if(zone)zone.appendChild(this.wrapper);else this.restoreHome();
         this.wrapper.classList.add('is-docked',`dock-${placement}`);
@@ -486,14 +491,14 @@
       this.wrapper.dataset.placement=placement;
       this.refreshPlacementButton?.();
       refreshDockZoneState();
-      if(persist)this.writeState({placement,bounds:placement==='float'?this.bounds():undefined});
+      if(persist)this.writeState({placement,bounds:(placement==='float'||placement==='global')?this.bounds():undefined});
       try{this.spec.onPlacementChanged?.({id:this.id,placement,portable:this,wrapper:this.wrapper});}catch(err){console.warn('[DKDS portable placement]',err);}
       this.scope.emitResize?.({id:this.id,reason:'portable-place',placement});
       return placement;
     }
-    bounds(){const r=this.wrapper.getBoundingClientRect();const zone=this.zone('overlay');const z=zone?.getBoundingClientRect?.()||{left:0,top:0};return {left:Math.round(r.left-z.left),top:Math.round(r.top-z.top),width:Math.round(r.width),height:Math.round(r.height)};}
+    bounds(){const r=this.wrapper.getBoundingClientRect();const placement=normalizePlacement(this.wrapper?.dataset?.placement);const zone=placement==='global'?(this.zone('global')||hostState.root):(this.zone('overlay')||hostState.root);const z=zone?.getBoundingClientRect?.()||{left:0,top:0};return {left:Math.round(r.left-z.left),top:Math.round(r.top-z.top),width:Math.round(r.width),height:Math.round(r.height)};}
     avoidFloatOverlap(){
-      const zone=this.zone('overlay');if(!zone||this.wrapper.dataset.placement!=='float'&&!this.wrapper.classList.contains('is-floating'))return this.bounds();
+      const placement=normalizePlacement(this.wrapper?.dataset?.placement);const zone=placement==='global'?(this.zone('global')||hostState.root):this.zone('overlay');if(!zone||!['float','global'].includes(placement)&&!this.wrapper.classList.contains('is-floating'))return this.bounds();
       const z=zone.getBoundingClientRect?.();if(!z?.width||!z?.height)return this.bounds();
       const gap=Math.max(6,Number(this.spec.collisionGap)||10),current=this.bounds(),width=Math.min(current.width,z.width),height=Math.min(current.height,z.height);
       const clamp=(left,top)=>({left:Math.max(0,Math.min(Math.max(0,z.width-width),left)),top:Math.max(0,Math.min(Math.max(0,z.height-height),top)),width,height});
@@ -507,23 +512,26 @@
     }
     pin(placement='right'){return this.place(placement);}
     float(){return this.place('float');}
-    bindFloatDrag(){
+    globalFloat(){return this.place('global');}
+    setCollapsed(value,{persist=true}={}){const collapsed=!!value;this.wrapper?.classList?.toggle('is-collapsed',collapsed);this.wrapper?.classList?.toggle('collapsed',collapsed);const button=resolveElement(this.spec.collapseSelector,this.wrapper);if(button)button.textContent=collapsed?String(this.spec.expandLabel||'展开'):String(this.spec.collapseLabel||'缩小');if(persist)this.writeState({collapsed});try{this.spec.onCollapse?.({id:this.id,collapsed,portable:this,wrapper:this.wrapper});}catch{}this.scope.emitResize?.({id:this.id,reason:'portable-collapse',collapsed});return collapsed;}
+    toggleCollapsed(){return this.setCollapsed(!this.wrapper?.classList?.contains('is-collapsed'));}
+    bindFloatDrag(mode='float'){
       const head=this.wrapper.querySelector('.drag-handle')||this.wrapper.querySelector('.dkds-portable-header');if(!head)return ()=>{};let state=null;
       const down=e=>{if(e.button!==0||e.target.closest('button'))return;const r=this.wrapper.getBoundingClientRect();state={dx:e.clientX-r.left,dy:e.clientY-r.top};e.preventDefault();};
-      const move=e=>{if(!state)return;const zone=this.zone('overlay');const z=zone?.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight},r=this.wrapper.getBoundingClientRect();this.wrapper.style.left=`${Math.max(0,Math.min(Math.max(0,z.width-r.width),e.clientX-state.dx-z.left))}px`;this.wrapper.style.top=`${Math.max(0,Math.min(Math.max(0,z.height-r.height),e.clientY-state.dy-z.top))}px`;};
+      const move=e=>{if(!state)return;const zone=mode==='global'?(this.zone('global')||hostState.root||document.body):(this.zone('overlay')||hostState.root||document.body);const z=zone?.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight},r=this.wrapper.getBoundingClientRect();this.wrapper.style.left=`${Math.max(0,Math.min(Math.max(0,z.width-r.width),e.clientX-state.dx-z.left))}px`;this.wrapper.style.top=`${Math.max(0,Math.min(Math.max(0,z.height-r.height),e.clientY-state.dy-z.top))}px`;};
       const up=()=>{if(!state)return;state=null;
-        const r=this.wrapper.getBoundingClientRect(),snap=Math.max(24,Number(this.spec.snapDistance)||44),zone=this.zone('overlay'),z=zone?.getBoundingClientRect?.()||{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight};
-        if(this.spec.snap!==false){
+        const r=this.wrapper.getBoundingClientRect(),snap=Math.max(24,Number(this.spec.snapDistance)||44),zone=mode==='global'?(this.zone('global')||hostState.root||document.body):(this.zone('overlay')||hostState.root||document.body),z=zone?.getBoundingClientRect?.()||{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight};
+        if(mode==='float'&&this.spec.snap!==false){
           if(r.left-z.left<=snap&&this.allowed.includes('left')){this.place('left');return;}
           if(z.right-r.right<=snap&&this.allowed.includes('right')){this.place('right');return;}
           if(z.bottom-r.bottom<=snap&&this.allowed.includes('bottom')){this.place('bottom');return;}
         }
-        this.avoidFloatOverlap();this.writeState({placement:'float',bounds:this.bounds()});
+        this.avoidFloatOverlap();this.writeState({placement:mode,bounds:this.bounds()});
       };
       head.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
       return ()=>{head.removeEventListener('mousedown',down);window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);};
     }
-    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();this.restoreHome();this.controls?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}refreshDockZoneState();}
+    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=0;this.restoreHome();this.controls?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main','is-collapsed','collapsed');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}if(this.scope?.portables?.get?.(this.id)===this)this.scope.portables.delete(this.id);refreshDockZoneState();}
   }
 
   class SplitController {
@@ -571,7 +579,7 @@
 
   class ChartSurface {
     constructor(scope,container,spec={}){
-      this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.plot=null;this.toolbar=null;this.ro=null;this.boundPlotEvents=[];
+      this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.plot=null;this.toolbar=null;this.ro=null;this.boundPlotEvents=[];this.disposed=false;
       if(!this.container)throw new Error('Chart container not found.');
       this.container.classList.add('dkds-chart-surface');
       if(spec.title||spec.actions?.length)this.buildChrome();
@@ -599,7 +607,7 @@
     }
     resize(){try{window.Plotly?.Plots?.resize?.(this.plot);}catch{}}
     portable(id,spec={}){return this.scope.panels.create(id,this.container,{title:this.spec.title||spec.title,...spec});}
-    dispose(){this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.Plotly?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.Plotly?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
   }
 
   class ViewHost {
@@ -953,11 +961,12 @@
         this.syncRegions();for(const grid of this.grids)grid.apply?.();
         requestAnimationFrame(()=>{this.syncRegions();for(const grid of this.grids)grid.apply?.();this.resize('prime-placement');});
       };
+      const lifecycle={closeSelector:row.closeSelector,onClose:()=>this.closePrime(row.id),collapseSelector:row.collapseSelector,onCollapse:info=>{try{row.onCollapse?.(info);}catch(err){console.warn('[DKDS PRIME collapse]',err);}this.resize('prime-collapse');}};
       const portableSpec=found.existing?{
         title:row.title||row.label||row.id,useTargetAsWrapper:row.useTargetAsWrapper!==false,
         handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',controlsHost:row.controlsHost,controlsPlacement:row.controlsPlacement||'start',
-        placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged
-      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged};
+        placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged,...lifecycle
+      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged,...lifecycle};
       row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);this.syncRegions();return row;
     }
     openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);if(placement!==undefined&&placement!==null&&placement!=='')row.portable.place(placement==='inline'?'home':placement);this.renderNav();this.syncRegions();this.resize('prime-open');return true;}
@@ -965,6 +974,7 @@
     togglePrime(id){const row=this.primes.get(String(id));if(!row)return false;if(!row.mounted)return this.openPrime(id);this.closePrime(id);return true;}
     closePrime(id){
       const row=this.primes.get(String(id));if(!row?.mounted)return false;
+      try{row.onClose?.({workbench:this,scope:this.scope,container:row.container,row});}catch(err){console.warn('[DKDS PRIME close]',err);}
       row.portable?.dispose?.();row.portable=null;cleanupCall(row.cleanup);row.cleanup=null;
       if(row.container){row.container.classList.add('dkds-prime-hidden');this.park(row.container);}
       row.mounted=false;this.renderNav();this.syncRegions();this.resize('prime-close');return true;
@@ -1019,14 +1029,17 @@
       this.hostMode=String(spec.hostMode||'embedded');
       this.shell?.setAttribute('data-host-mode',this.hostMode);
       this.navigationPresentation='inline';
+      this.primaryScrollMode=String(spec.primaryScroll||'auto')==='contained'?'contained':'auto';
       this.canvasSlots=null;this.canvasObserver=null;this.canvasLeftSplit=null;this.canvasRightSplit=null;this.canvasBottomSplit=null;
       this.installCanvasDocking(spec);
+      this.setPrimaryScrollMode(this.primaryScrollMode);
     }
     installCanvasDocking(spec={}){
       const main=this.slots?.main,primary=this.slots?.primary,sub=this.slots?.sub;if(!main||!primary||!sub)return;
       const frame=document.createElement('div');frame.className='dkds-plugin-canvas-frame';
       frame.innerHTML=`<aside class="dkds-plugin-canvas-left" data-plugin-canvas-slot="left"></aside><div class="dkds-plugin-canvas-left-resizer" role="separator" aria-orientation="vertical"></div><div class="dkds-plugin-canvas-center" data-plugin-canvas-slot="main"></div><div class="dkds-plugin-canvas-right-resizer" role="separator" aria-orientation="vertical"></div><aside class="dkds-plugin-canvas-right" data-plugin-canvas-slot="right"></aside><div class="dkds-plugin-canvas-bottom-resizer" role="separator" aria-orientation="horizontal"></div><section class="dkds-plugin-canvas-bottom" data-plugin-canvas-slot="bottom"></section><div class="dkds-plugin-canvas-overlay" data-plugin-canvas-slot="overlay"></div>`;
-      const center=frame.querySelector('[data-plugin-canvas-slot="main"]');center.append(primary,sub);main.replaceChildren(frame);
+      const center=frame.querySelector('[data-plugin-canvas-slot="main"]');center.append(primary);main.replaceChildren(frame,sub);
+      sub.classList.add('dkds-plugin-sub-page-host');
       this.canvasFrame=frame;this.canvasSlots={main:center,left:frame.querySelector('[data-plugin-canvas-slot="left"]'),right:frame.querySelector('[data-plugin-canvas-slot="right"]'),bottom:frame.querySelector('[data-plugin-canvas-slot="bottom"]'),overlay:frame.querySelector('[data-plugin-canvas-slot="overlay"]')};
       const id=String(spec.activity||spec.id||'main');
       this.canvasLeftSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-left`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-left-resizer'),target:this.canvasSlots.left,cssVar:'--dkds-plugin-canvas-left-width',defaultSize:Number(spec.canvasLeftWidth)||320,min:Number(spec.canvasLeftMin)||240,reserve:Number(spec.canvasLeftReserve)||520});
@@ -1036,8 +1049,17 @@
       if(window.MutationObserver){this.canvasObserver=new MutationObserver(sync);for(const el of [this.canvasSlots.left,this.canvasSlots.right,this.canvasSlots.bottom])this.canvasObserver.observe(el,{childList:true,subtree:false});}
       this.syncCanvasRegions();
     }
+    setPrimaryScrollMode(mode='auto'){
+      this.primaryScrollMode=String(mode||'auto')==='contained'?'contained':'auto';
+      this.canvasFrame?.setAttribute('data-primary-scroll',this.primaryScrollMode);
+      this.slots?.primary?.setAttribute('data-primary-scroll',this.primaryScrollMode);
+      return this;
+    }
+    mountPrimary(spec={}){const value=super.mountPrimary(spec);this.setPrimaryScrollMode(spec.scroll||spec.scrollMode||this.spec.primaryScroll||'auto');return value;}
     portableSlot(name,row=null){
-      const key=String(name||'');if(this.canvasSlots&&['left','right','bottom','overlay','main'].includes(key))return this.canvasSlots[key]||null;
+      const key=String(name||'');
+      if(key==='global')return super.portableSlot('overlay',row);
+      if(this.canvasSlots&&['left','right','bottom','overlay','main'].includes(key))return this.canvasSlots[key]||null;
       return super.portableSlot(name,row);
     }
     layout(){return {slot:name=>this.portableSlot(name)};}
@@ -1051,6 +1073,8 @@
       this.canvasFrame.querySelector('.dkds-plugin-canvas-bottom-resizer')?.classList.toggle('active',state.bottom);return state;
     }
     syncRegions(){const state=super.syncRegions();this.syncCanvasRegions?.();return state;}
+    showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');return value;}
+    openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden');return ok;}
     setNavigationPresentation(mode='inline'){
       this.navigationPresentation=String(mode||'inline');const nav=this.shell?.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('host-presented',this.navigationPresentation!=='inline');return this;
     }
@@ -1063,7 +1087,7 @@
       this.hostMode=String(mode||'embedded');this.shell?.setAttribute('data-host-mode',this.hostMode);this.resize('host-mode');return this;
     }
     resize(reason='resize'){this.syncCanvasRegions();return super.resize(reason);}
-    capabilityState(){return Object.freeze({owner:this.owner,hostMode:this.hostMode,...this.surfaceState()});}
+    capabilityState(){return Object.freeze({owner:this.owner,hostMode:this.hostMode,primaryScroll:this.primaryScrollMode,...this.surfaceState()});}
     dispose(){this.canvasObserver?.disconnect?.();this.canvasLeftSplit?.dispose?.();this.canvasRightSplit?.dispose?.();this.canvasBottomSplit?.dispose?.();super.dispose();}
   }
 

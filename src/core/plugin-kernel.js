@@ -443,6 +443,23 @@
     return activityRows().find(row=>row.value?.id===activeActivityId)?.value || null;
   }
 
+  function activePluginId() {
+    return activityRows().find(row=>row.value?.id===activeActivityId)?.pluginId || superPluginId || '';
+  }
+
+  function invokeEditAction(action,payload={}) {
+    const name=String(action||'').trim();if(!name)return false;
+    const pluginId=activePluginId();
+    const rows=listContributions('ui.editActions').filter(row=>row.pluginId===pluginId).sort((a,b)=>(Number(a.value?.order)||100)-(Number(b.value?.order)||100));
+    for(const row of rows){const fn=row.value?.[name]||row.value?.actions?.[name];if(typeof fn!=='function')continue;try{return fn({action:name,payload,host,pluginId,activityId:activeActivityId})!==false;}catch(err){console.error(`[DKDS edit:${pluginId}:${name}]`,err);return false;}}
+    return false;
+  }
+
+  function supportsEditAction(action) {
+    const name=String(action||'').trim(),pluginId=activePluginId();if(!name||!pluginId)return false;
+    return listContributions('ui.editActions').some(row=>row.pluginId===pluginId&&typeof (row.value?.[name]||row.value?.actions?.[name])==='function');
+  }
+
   function reflowActivities(){
     const bar=document.querySelector('#activityBar');
     const menu=document.querySelector('#activityMoreMenu');
@@ -1438,6 +1455,10 @@
           activate: id => setActiveActivity(id,{invoke:true}),
           active: () => activeActivityId
         },
+        edit: {
+          register: spec => {const row=spec&&typeof spec==='object'?spec:{};const id=String(row.id||'default');return registerTypedContribution(pluginId,'ui.editActions',id,{...row,id,pluginId});},
+          invoke: (action,payload) => invokeEditAction(action,payload)
+        },
         topWorkspace: {
           register: spec => registerTopWorkspace(pluginId,spec),
           isSuper: () => superPluginId===pluginId
@@ -1960,6 +1981,12 @@
       sub:()=>listContributions('ui.sub').map(row=>({...row.value,pluginId:row.pluginId}))
     },
     commands: { run: runCommand },
+    edit: {
+      invoke:(action,payload)=>invokeEditAction(action,payload),
+      supports:action=>supportsEditAction(action),
+      activePlugin:()=>activePluginId(),
+      providers:()=>listContributions('ui.editActions').map(row=>({pluginId:row.pluginId,id:row.id}))
+    },
     registry: {
       list: listContributions,
       values: kind => listContributions(kind).map(x => x.value),

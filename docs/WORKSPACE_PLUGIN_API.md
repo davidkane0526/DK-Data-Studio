@@ -489,3 +489,13 @@ The built-in Resonance workspace is now the design-system reference rather than 
 `PluginWorkspace` resolves fixed portable placements against its inner scientific canvas. Use normal portable placements (`home`, `left`, `right`, `bottom`, `float`); plugins should not calculate application-level coordinates. Use `stateVersion` when a plugin changes placement geometry semantics so obsolete saved coordinates are not restored.
 
 A plugin may project PRIME/SUB commands to the SUPER host toolbar while using the same semantic actions locally in TOP. This must not create a second view implementation.
+
+
+## v3.37 workspace/floating/edit contracts
+
+- `PluginWorkspace.create(..., { primaryScroll: 'contained' | 'auto' })` defines PRIMARY viewport ownership. A PRIMARY entry may also declare `scroll`.
+- Portable placement `float` is scientific-canvas managed and edge-snappable; `global` is whole-plugin free floating and never auto-snaps to canvas docks.
+- Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
+- Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
+- SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
+- `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.

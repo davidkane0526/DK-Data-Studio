@@ -244,3 +244,13 @@ Core UI infrastructure v6 adds `PluginWorkspace` and `ScientificCurveSurface`. `
 The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with local left/right/bottom/overlay zones. This is the canonical docking coordinate space for scientific PRIME/SUB/child plots. `PortableView.stateVersion` can invalidate obsolete geometry persistence.
 
 `ScientificCurveSurface` marker/FWHM drag paths update the affected SVG geometry directly during pointer movement and defer expensive complete rendering to drag completion or an animation-frame request.
+
+
+## v3.37 workspace/floating/edit contracts
+
+- `PluginWorkspace.create(..., { primaryScroll: 'contained' | 'auto' })` defines PRIMARY viewport ownership. A PRIMARY entry may also declare `scroll`.
+- Portable placement `float` is scientific-canvas managed and edge-snappable; `global` is whole-plugin free floating and never auto-snaps to canvas docks.
+- Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
+- Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
+- SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
+- `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.

@@ -1,4 +1,4 @@
-# Plugin Workspace Design System — v3.36
+# Plugin Workspace Design System — v3.37
 
 ## Goal
 
@@ -30,6 +30,21 @@ Core Plugin Workspace Design System
 
 Plugins own domain meaning and data. Core owns reusable interaction mechanics.
 
+
+
+## v3.37 workspace ordering and portable-view scopes
+
+The control/data rail and scientific canvas express responsibility, not a mandatory percentage. Splitters and responsive hosts may change their actual widths.
+
+PRIMARY declares scrolling explicitly: `contained` is for direct-manipulation canvases whose inner renderer owns zoom/pan; `auto` is for long analysis workspaces whose content must remain vertically reachable.
+
+Portable views distinguish two floating scopes. `float` is scientific-canvas managed and participates in edge docking. `global` is whole-plugin free floating and never auto-snaps into the scientific dock zones. Left/right/bottom dock zones stack multiple occupants instead of placing them at the same absolute coordinates.
+
+SUB is a workspace-level page, not a scientific-canvas child. Opening a SUB hides the PRIMARY canvas and gives the SUB the full plugin content region with independent scrolling.
+
+Core PortableView owns close/collapse and plot-resize lifecycle. Plugins provide domain callbacks, not duplicate window mechanics.
+
+System edit commands use the active-plugin edit provider contract. Undo/deselect are shell commands whose implementation is supplied by the active plugin when supported.
 
 ## v3.36 scientific-canvas geometry
 

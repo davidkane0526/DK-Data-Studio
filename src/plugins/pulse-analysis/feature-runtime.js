@@ -44,7 +44,7 @@
     // the Core workbench can pin/float it without changing pulse feature code.
     const rawCard=page.querySelector('#pulseRawPlot')?.closest('.pulse-card');
     if(rawCard&&workbench?.registerPrime){
-      workbench.registerPrime({id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})});
+      workbench.registerPrime({id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float','global'],autoOpen:true,mount:()=>requestAnimationFrame(()=>{try{Plotly.Plots.resize(page.querySelector('#pulseRawPlot'));}catch{}})});
     }
 
     // Result charts stay PRIMARY portable views.
@@ -55,7 +55,7 @@
       const card=page.querySelector('#'+id)?.closest('.pulse-card');
       if(!card||!ctx.ui.portable?.create)continue;
       try{
-        const portableSpec={title,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float'],defaultPlacement:'home'};
+        const portableSpec={title,handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',controlsPlacement:'start',useTargetAsWrapper:true,placements:['home','left','right','bottom','float','global'],defaultPlacement:'home'};
         if(workbench?.portable)workbench.portable(`pulse-chart-${id}`,card,portableSpec);else ctx.ui.portable.create(`pulse-chart-${id}`,card,portableSpec);
         const plot=page.querySelector('#'+id);if(plot&&ctx.ui.charts?.mount)ctx.ui.charts.mount(plot,{});
       }catch(err){console.warn('[Pulse portable chart]',id,err);}

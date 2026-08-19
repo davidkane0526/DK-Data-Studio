@@ -36,6 +36,28 @@
   let artifactUpserts = new Map();
   let artifactRemovals = new Set();
 
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = String(el.tagName || '').toLowerCase();
+    return ['input','textarea','select'].includes(tag) || !!el.isContentEditable;
+  }
+
+  // Dedicated TOP windows do not load the main shell toolbar, but system edit
+  // semantics must remain host-invariant. Route the same keyboard operations
+  // through the active-plugin Edit Contract instead of reimplementing them in
+  // each plugin header.
+  window.addEventListener('keydown', event => {
+    if (isTypingTarget(event.target)) return;
+    const edit = window.DKDSPlugins?.edit;
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'z') {
+      if (edit?.supports?.('undo')) { event.preventDefault(); edit.invoke('undo'); }
+      return;
+    }
+    if (event.key === 'Escape' && edit?.supports?.('deselect')) {
+      event.preventDefault(); edit.invoke('deselect');
+    }
+  });
+
   function clone(value) {
     if (value === undefined) return undefined;
     try { return structuredClone(value); }
@@ -317,7 +339,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.36.0',
+      appVersion:'3.37.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
