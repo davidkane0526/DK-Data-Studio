@@ -12,7 +12,8 @@
       body.classList.add('dkds-unified-workbench-body');
       const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
       const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'ter'});
-      wb.mountPrimary({id:'main',label:'主界面',mount:({left:leftSlot,main:mainSlot})=>{leftSlot.appendChild(left);mainSlot.append(main,...extras);}});
+      const primaryMain=document.createElement('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
+      wb.compose({primary:{id:'main',label:'TER 分析',leftNode:left,mainNode:primaryMain}});
       return wb;
     }
 

@@ -22,16 +22,17 @@ assert(entry.includes('shared.createController')&&entry.includes('views.mountTop
 assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific markup.');
 for(const token of ['VIEW_CATALOG','createController','normalizeWorkspace','buildTrendModel','computeSpacingRows'])assert(shared.includes(token),`Shared Controller layer missing ${token}.`);
 assert(!shared.includes('reswinMainPlot')&&!shared.includes('gateAnalysisPage'),'Controller layer must not own renderer markup.');
-for(const token of ['topPageHtml','TOP_STYLES','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
+for(const token of ['topPageHtml','TOP_STYLES','mountUnified','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
 for(const label of ['共振分析','曲线检查','组图分析','物理机制','峰间距','栅压分析'])assert(shared.includes(label),`Canonical view catalog missing ${label}.`);
 for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
   assert(adapter.split(/\r?\n/).length<45,`${name} adapter must remain host-only.`);
   for(const forbidden of ['Plotly.','detectPeaks','computeTerMatrix','buildTrendModel','computeSpacingRows','gateAnalysisPage','reswinMainPlot'])assert(!adapter.includes(forbidden),`${name} adapter regained feature logic: ${forbidden}`);
 }
-assert(superLayout.includes("mode:'super'")&&superLayout.includes('slots:{')&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only map semantic host slots and resize.');
+assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:document.querySelector('#app')")&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only select the common workbench host and resize lifecycle.');
 assert(runtime.includes("mode:'top'")&&runtime.includes("root:document.querySelector('#app')")&&runtime.includes('statusBar'),'TOP adapter may only map dedicated-window host surfaces.');
 for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSResonanceViewComponents'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
-assert(feature.includes("placements:['right','float']")&&feature.includes("placements:['bottom','float']"),'Feature runtime must own resonance PRIME behavior, not host adapters.');
+assert(views.includes("defaultPlacement:'right'")&&views.includes("defaultPlacement:'bottom'"),'Shared View composition must own resonance PRIME placement intent.');
+assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspectors')&&!feature.includes('ctx.ui.groupViews'),'Feature runtime must not retain the legacy SUPER-only UI composition.');
 assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scripts)await loadScript(script)'),'Built-in plugin loader must support plugin-owned support scripts.');
 assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/feature-runtime.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated plugin index must preserve Controller/View/feature/adapter support-script order.');
 

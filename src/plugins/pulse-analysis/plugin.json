@@ -1,8 +1,8 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.4.0",
-  "apiVersion": "1.5.0",
+  "version": "2.6.0",
+  "apiVersion": "1.6.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 140,
@@ -22,7 +22,9 @@
     "ui.primary",
     "ui.prime",
     "ui.sub",
-    "runtime.capabilities"
+    "runtime.capabilities",
+    "ui.analysis-surface",
+    "runtime.capabilities.v2"
   ],
   "window": {
     "activity": "pulse",
@@ -48,7 +50,7 @@
       "controller.js",
       "shared-views.js",
       "feature-runtime.js",
-      "dedicated-service.js",
+      "analysis-service.js",
       "super-layout.js"
     ]
   },
@@ -61,6 +63,7 @@
   "scripts": [
     "controller.js",
     "shared-views.js",
+    "analysis-service.js",
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"

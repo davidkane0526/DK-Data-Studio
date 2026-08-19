@@ -1,6 +1,6 @@
 (() => {
   DKDSPlugins.define({
-    id:'example.plugin',name:'Example Plugin',version:'0.3.0',apiVersion:'1.5.0',order:900,
+    id:'example.plugin',name:'Example Plugin',version:'0.3.0',apiVersion:'1.6.0',order:900,
     capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.shortcuts','state.store','workflow.processor']
   }, async ctx => {
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});

@@ -182,8 +182,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
 
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');
-  const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
-  assert(resonanceFeature.includes("placements:['right','float']")&&resonanceFeature.includes("placements:['bottom','float']"),'built-in resonance feature runtime must advertise only PRIME placements its host infrastructure supports.');
+  const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+  assert(resonanceViews.includes("placements:['inline','right','bottom','float']"),'resonance shared View composition must advertise portable PRIME placements through AnalysisWorkbench.');
 
   console.log('SUPER/TOP/PRIME/SUB workspace contract checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

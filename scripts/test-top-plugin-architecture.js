@@ -37,10 +37,10 @@ assert(kernel.includes("if(mode==='split'&&(!layout.left||!layout.main))"),'spli
 assert(kernel.includes("if(mode==='native'&&!rootSelector)"),'native TOP workspaces must validate a root selector without requiring split regions.');
 const pluginWindowRuntime=read('src/plugin-window/runtime.js');
 assert(pluginWindowRuntime.indexOf('window.DKDSPluginWindowRuntime = null')<pluginWindowRuntime.indexOf('for(const file of (spec.scripts||[]))'),'dedicated host must clear the runtime factory before support scripts, never after them.');
-const pulseDedicated=read('src/plugins/pulse-analysis/dedicated-service.js');
+const pulseDedicated=read('src/plugins/pulse-analysis/analysis-service.js');
 const pulseTopAdapter=read('src/plugins/pulse-analysis/window-runtime.js');
-assert(pulseDedicated.includes('window.DKDSPulseDedicatedService'),'Pulse support script must publish the service factory consumed by its thin TOP adapter.');
-assert(pulseTopAdapter.includes('window.DKDSPulseDedicatedService'),'Pulse TOP adapter and support service must share one explicit runtime contract.');
+assert(pulseDedicated.includes('window.DKDSPulseAnalysisService'),'Pulse support script must publish the service factory consumed by its thin TOP adapter.');
+assert(pulseTopAdapter.includes('window.DKDSPulseAnalysisService'),'Pulse TOP adapter and support service must share one explicit runtime contract.');
 assert(kernel.includes('打开失败'),'window-open failures must be surfaced instead of silently leaving another plugin UI visible.');
 assert(manager.includes('resetManagerScrollChain')&&manager.includes('settleManagerAtTop(frames=12)'),'plugin manager must repair late Chromium scroll anchoring after lifecycle changes.');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('new ContextMenu(this.owner)'),'portable charts must expose compact breadcrumb placement through core context menus.');
@@ -59,7 +59,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(controller.includes('selection.channel'),`${folder}: controller must own shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through unified AnalysisWorkbench.`);
-  assert(views.includes('mountPrimary'),`${folder}: shared views must mount a PRIMARY surface.`);
+  assert(views.includes('wb.compose'),`${folder}: shared views must compose a PRIMARY surface.`);
   assert(feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume core Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);

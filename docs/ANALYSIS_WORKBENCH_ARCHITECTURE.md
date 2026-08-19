@@ -1,4 +1,4 @@
-# DK Data Studio Analysis Workbench Architecture (v3.30)
+# DK Data Studio Analysis Workbench Architecture (v3.31)
 
 ## 1. Rule of ownership
 
@@ -27,14 +27,15 @@ Host adapter
 
 ## 2. Analysis Workbench
 
-`src/core/ui-infrastructure.js` provides `AnalysisWorkbench`.
+`src/core/ui-infrastructure.js` provides **AnalysisWorkbench v4**. The shell owns all outer geometry; plugin roots are mounted as content and are never rewritten into a second Grid/Flex layout by Core.
 
 The workbench owns:
 
 - responsive left rail and persisted splitter;
+- independent right/bottom splitters that activate only when a PRIME surface is docked;
 - primary content surface;
 - right and bottom dock rails;
-- floating overlay layer;
+- workbench-local floating overlay layer whose coordinates are relative to the workbench, not the browser viewport;
 - PRIMARY / PRIME / SUB navigation;
 - portable view placement;
 - responsive grid management;
@@ -81,7 +82,7 @@ SUPER and TOP are hosting modes, not different plugin implementations.
 
 A TOP plugin registers one `ui.topWorkspace` contract. The contract includes semantic `primary`, `prime`, and `sub` metadata. If that plugin is selected as SUPER, the main shell embeds its registered workbench. Otherwise, activating it opens its dedicated window.
 
-Dedicated windows load the same plugin Controller / Shared Views / Feature Runtime layers declared by the plugin manifest. The adapter only provides the host boundary.
+Dedicated windows load the same plugin Controller / Shared Views / Feature Runtime layers declared by the plugin manifest. The adapter only provides the host boundary. Resonance now uses the same plugin-owned runtime service in SUPER and TOP; TER/Pulse/Data Center use the same shared Workbench composition and controllers, while legacy host APIs remain compatibility/migration shims rather than layout owners.
 
 ## 4. Capability Runtime
 
@@ -96,7 +97,7 @@ A provider is described by:
 - serializable metadata;
 - callable method names.
 
-The main renderer publishes a serializable provider snapshot to each dedicated TOP window. A TOP window imports remote provider descriptors and invokes methods through Electron IPC. Therefore a dedicated window can consume providers registered by other enabled plugins without loading the entire main application or re-implementing those providers.
+The main renderer publishes a serializable provider snapshot to each dedicated TOP window. Capability Runtime v2 adds provider queries, priorities/tags, `require()`, revision tracking and `watch()` notifications so TOP windows can react to providers being enabled, disabled or reloaded without rebuilding the whole plugin UI. A TOP window imports remote provider descriptors and invokes methods through Electron IPC. Therefore a dedicated window can consume providers registered by other enabled plugins without loading the entire main application or re-implementing those providers.
 
 Current capability-backed registries include:
 
@@ -110,7 +111,7 @@ Capability registry changes are republished automatically.
 
 ## 5. Shared infrastructure exposed to plugins
 
-Plugin API 1.5 exposes, among other APIs:
+Plugin API 1.6 exposes, among other APIs:
 
 - `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface`;
 - `ctx.ui.grid`;
@@ -122,7 +123,7 @@ Plugin API 1.5 exposes, among other APIs:
 - `ctx.ui.selection`;
 - `ctx.ui.charts`;
 - `ctx.state.create()`;
-- `ctx.capabilities`;
+- `ctx.capabilities` (`list/query`, `require`, `proxy`, `invoke`, `watch`);
 - `ctx.analysis.detectors`;
 - `ctx.workflow.processors/analyzers/charts`.
 
@@ -169,6 +170,8 @@ Automated checks reject regressions such as:
 
 - feature logic inside SUPER/TOP host adapters;
 - migrated plugins using the transitional existing-DOM Workbench as layout owner;
+- Core mutating a plugin's internal Grid/Flex structure;
+- SUPER and TOP composing different PRIMARY/PRIME/SUB view trees;
 - TOP workspaces falling back to separate split compositions;
 - loss of PRIMARY / PRIME / SUB declarations;
 - TER chart layout bypassing Core GridController;

@@ -5307,7 +5307,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.30.0',
+      version:'3.31.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6611,7 +6611,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.30.0',
+      appVersion:'3.31.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6622,8 +6622,10 @@
       openActivityWindow:openPluginActivityWindow,
       closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
       getState:()=>state,
+      makeProject:()=>makeProject(),
       getActiveProjectTab:()=>activeProjectTab(),
       captureActiveProjectTab,
+      applyResonanceWorkspace:workspace=>{restoreResonanceWorkspace(workspace,{legacyProject:makeProject()});captureActiveProjectTab();window.DKDSPlugins?.events?.emit?.('resonance:workspace-synced',{source:'plugin-runtime'});},
       setStatus,
       renderAll,
       scheduleMainPlotRelayout,

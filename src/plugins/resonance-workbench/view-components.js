@@ -175,11 +175,11 @@
                   <div class="reswin-button-row"><button id="reswinShowAll">全部显示</button><button id="reswinHideAll">全部隐藏</button></div>
                 </div>
                 <div class="analysis-control-card reswin-control-stack">
-                  <strong>智能寻峰</strong>
+                  <strong>智能寻峰 / 补峰</strong>
                   <label>寻峰算法<select id="reswinDetectorSelect"></select></label>
                   <div id="reswinDetectorDescription" class="analysis-note compact"></div>
                   <label>预设<select id="reswinPreset"><option value="strict">可靠</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label>
-                  <div id="reswinDetectorParams" class="reswin-detector-params"></div>
+                  <div class="analysis-note compact">算法参数</div><div id="reswinDetectorParams" class="reswin-detector-params"></div>
                   <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
                   <button id="reswinSortPeaks">跨 Vg 智能整理峰序</button>
                   <div class="analysis-note compact">Shift + 左键点击曲线：在最近原始采样点添加手动峰。点击峰位后可在“曲线检查”中编辑。</div>
@@ -206,7 +206,7 @@
             <div class="reswin-inspect-grid">
               <div class="reswin-inspect-column">
                 <div class="analysis-control-card reswin-control-stack"><strong>当前对象</strong><div id="reswinInspectorSummary" class="reswin-kv"></div></div>
-                <div class="analysis-control-card reswin-control-stack"><strong>峰类别</strong><label>类别标签<input id="reswinPeakLabelInput" type="text"></label><div class="reswin-button-row"><button id="reswinApplyPeakLabel">重命名类别</button><button id="reswinDeletePeak" class="danger-soft">删除选中峰</button></div></div>
+                <div class="analysis-control-card reswin-control-stack"><strong>峰类别</strong><div id="reswinPeakCategoryPalette" class="peak-category-palette"></div><div class="reswin-button-row"><button id="reswinAddPeakCategory" data-add-cat>＋ 新增类别</button><button id="reswinDeletePeak" class="danger-soft">删除选中峰</button></div><label>类别标签<input id="reswinPeakLabelInput" type="text"></label><button id="reswinApplyPeakLabel">重命名当前类别</button></div>
                 <div class="analysis-control-card reswin-control-stack"><strong>扫描选择</strong><label>当前扫描<select id="reswinInspectSweepSelect"></select></label></div>
               </div>
               <div class="reswin-inspect-main">
@@ -253,6 +253,10 @@
               <div class="analysis-chart-card"><div class="analysis-chart-title">最佳读出偏压 Vd*</div><div id="reswinGateVStar" class="analysis-chart"></div></div>
               <div class="analysis-chart-card"><div class="analysis-chart-title">正反扫回滞</div><div id="reswinGateHysteresisPlot" class="analysis-chart"></div></div>
               <div class="analysis-chart-card"><div class="analysis-chart-title">峰高与有效权重</div><div id="reswinGateAmplitude" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">TERmax vs |δ|/w</div><div id="reswinGateTerCorrelation" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">Vd* vs V0</div><div id="reswinGateReadoutCorrelation" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">局域背景与峰/背景比</div><div id="reswinGateBackground" class="analysis-chart"></div></div>
+              <div class="analysis-chart-card"><div class="analysis-chart-title">载流子浓度依赖（可选）</div><div id="reswinGateDensity" class="analysis-chart"></div></div>
             </div>
             <div id="reswinGateReport" class="reswin-report"></div>
             <div class="analysis-table-wrap"><table id="reswinGateTable" class="analysis-table"></table></div>
@@ -312,12 +316,13 @@
         @media(max-width:1050px){#resonanceDedicatedPage .resonance-window-header{flex-wrap:wrap}#resonanceDedicatedPage .reswin-nav{order:3;width:100%}#resonanceDedicatedPage .reswin-shell,#resonanceDedicatedPage .reswin-inspect-grid{grid-template-columns:1fr}#resonanceDedicatedPage .reswin-sidebar,#resonanceDedicatedPage .reswin-inspect-column{position:static}#resonanceDedicatedPage .reswin-datasets-card{max-height:none}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
       `;
 
-  function mountTop(ctx,controller){
+  function mountUnified(ctx,controller,{mode='top',adapter={}}={}){
     const h=ctx.host;
     const R=controller.service;
     ctx.ui.styles.add('resonance-dedicated',TOP_STYLES);
-    ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'完整共振 I–V 独立插件工作区',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');controller.render();}});
-    const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(),onOpen:()=>controller.render()});
+    const isTop=mode==='top'||ctx.host.isAuxiliaryWindow;
+    ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'统一共振 I–V 分析工作区',onActivate:()=>{h.openAnalysisPage('resonanceDedicatedPage');controller.render();}});
+    const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml().replace('独立 TOP 插件窗口 · 完整共振工作区 · 工程数据来自自包含项目快照',isTop?'独立 TOP 插件窗口 · 完整共振工作区 · 工程数据来自自包含项目快照':'SUPER 工作区 · 与 TOP 使用同一套 PRIMARY / PRIME / SUB 视图'),onOpen:()=>controller.render()});
 
     // Bind all feature controls while the complete DOM tree is still present.
     // The workbench then moves those SAME nodes into PRIMARY / PRIME / SUB slots;
@@ -342,6 +347,18 @@
     };
     renderDetectorPicker();
     ctx.events.on('plugin:manager-changed',renderDetectorPicker);
+    ctx.capabilities?.watch?.(event=>{if(event?.kind==='analysis.detector'||event?.reason==='remote-import')renderDetectorPicker();});
+
+    for(const [id,key,handler] of [
+      ['resonance-sweep-up','ArrowUp',()=>R.switchSelectedSweep?.(-1)],
+      ['resonance-sweep-down','ArrowDown',()=>R.switchSelectedSweep?.(1)],
+      ['resonance-peak-left','ArrowLeft',()=>R.moveSelectedPeakBy?.(-1)],
+      ['resonance-peak-right','ArrowRight',()=>R.moveSelectedPeakBy?.(1)],
+      ['resonance-select-prev','Ctrl+ArrowLeft',()=>R.selectAdjacentPeak?.(-1)],
+      ['resonance-select-next','Ctrl+ArrowRight',()=>R.selectAdjacentPeak?.(1)],
+      ['resonance-lock','L',()=>R.lockSelectedPeaks?.(true)],
+      ['resonance-physics-labels','P',()=>R.togglePhysicsLabels?.()]
+    ])ctx.ui.shortcuts.add({id,activity:'resonance',key,priority:250,handler});
 
     const body=page.querySelector('.resonance-dedicated-body');
     const nav=page.querySelector('.reswin-nav');
@@ -360,17 +377,29 @@
     body.replaceChildren();
     const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
     const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'resonance'});
-    wb.mountPrimary({id:'main',label:'共振分析',mount:({left,main})=>{left.appendChild(sidebar);main.appendChild(primary);}});
-
     const mountExisting=(node,render)=>({container})=>{
       node.classList.add('active');container.appendChild(node);render?.();
       return ()=>{node.classList.remove('active');node.remove();};
     };
-    wb.registerPrime({id:'curve-inspector',label:'曲线检查',title:'曲线检查',order:10,defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:mountExisting(inspect,()=>R.renderInspection?.())});
-    wb.registerPrime({id:'group-analysis',label:'组图分析',title:'组图分析',order:20,defaultPlacement:'bottom',placements:['inline','right','bottom','float'],mount:mountExisting(group,()=>R.renderGroup?.())});
-    wb.registerSub({id:'physics',label:'物理机制',order:30,keepLeft:true,mount:mountExisting(physics,()=>R.renderPhysics?.())});
-    wb.registerSub({id:'spacing',label:'峰间距',order:40,keepLeft:true,mount:mountExisting(spacing,()=>R.renderSpacing?.())});
-    wb.registerSub({id:'gate-analysis',label:'栅压分析',order:50,keepLeft:true,mount:mountExisting(gate,()=>R.renderGate?.())});
+    wb.compose({
+      primary:{id:'main',label:'共振分析',leftNode:sidebar,mainNode:primary},
+      primes:[
+        {id:'curve-inspector',label:'曲线检查',title:'曲线检查',order:10,defaultPlacement:'right',placements:['inline','right','bottom','float'],autoOpen:true,mount:mountExisting(inspect,()=>R.renderInspection?.())},
+        {id:'group-analysis',label:'组图分析',title:'组图分析',order:20,defaultPlacement:'bottom',placements:['inline','right','bottom','float'],mount:mountExisting(group,()=>R.renderGroup?.())}
+      ],
+      subs:[
+        {id:'physics',label:'物理机制',order:30,keepLeft:true,mount:mountExisting(physics,()=>R.renderPhysics?.())},
+        {id:'spacing',label:'峰间距',order:40,keepLeft:true,mount:mountExisting(spacing,()=>R.renderSpacing?.())},
+        {id:'gate-analysis',label:'栅压分析',order:50,keepLeft:true,mount:mountExisting(gate,()=>R.renderGate?.())}
+      ]
+    });
+
+    const exportBar=page.querySelector('#reswinExportMainCsv')?.parentElement;
+    if(exportBar&&!page.querySelector('#resonanceResetViewTool')){
+      const reset=document.createElement('button');reset.id='resonanceResetViewTool';reset.type='button';reset.textContent='重置视图';reset.title='恢复共振主图自动坐标范围';
+      reset.onclick=()=>{const plot=page.querySelector('#reswinMainPlot');try{if(plot&&window.Plotly)Plotly.relayout(plot,{'xaxis.autorange':true,'yaxis.autorange':true});}catch{} controller.resize?.();};
+      exportBar.appendChild(reset);
+    }
 
     const navigate=view=>{
       if(view==='inspect'){wb.openPrime('curve-inspector');R.renderInspection?.();return;}
@@ -383,12 +412,15 @@
 
     ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
     ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});
-    page.querySelector('#reswinCloseBtn').onclick=()=>h.closeCurrentWindow?.();
+    page.querySelector('#reswinCloseBtn').onclick=()=>{if(isTop)h.closeCurrentWindow?.();else wb.showPrimary?.();};
     ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});
     ctx.events.on('layout:resize',()=>{wb.resize('plugin-layout');controller.resize();});
     controller.render();
-    return {controller,workbench:wb};
+    adapter?.resize?.();
+    return {controller,workbench:wb,mode};
   }
+
+  function mountTop(ctx,controller){return mountUnified(ctx,controller,{mode:'top'});}
 
   function create(controller){
     if(!controller)throw new Error('Resonance View components require a shared controller.');
@@ -402,6 +434,6 @@
   }
 
   window.DKDSResonanceViewComponents=Object.freeze({
-    VIEW_CATALOG,byId,create,topPageHtml,TOP_STYLES,mountTop,superGatePageHtml,superSpacingPageHtml
+    VIEW_CATALOG,byId,create,topPageHtml,TOP_STYLES,mountUnified,mountTop,superGatePageHtml,superSpacingPageHtml
   });
 })();

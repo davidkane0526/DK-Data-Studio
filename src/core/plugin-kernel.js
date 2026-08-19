@@ -26,7 +26,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.5.0';
+  const API_VERSION = '1.6.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1236,10 +1236,17 @@
           return value;
         },
         get:id=>window.DKDSCapabilities?.get?.(id)||null,
+        require:(id,options)=>window.DKDSCapabilities?.require?.(id,options),
         proxy:id=>window.DKDSCapabilities?.proxy?.(id)||null,
-        list:kind=>window.DKDSCapabilities?.list?.(kind)||[],
+        list:query=>window.DKDSCapabilities?.list?.(query)||[],
         invoke:(id,method,...args)=>window.DKDSCapabilities?.invoke?.(id,method,...args),
-        snapshot:()=>window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||{schema:1,providers:[]}
+        watch:(fn,options={})=>{
+          if(!window.DKDSCapabilities?.subscribe)return ()=>{};
+          const off=window.DKDSCapabilities.subscribe(fn,options);
+          addCleanup(pluginId,off);
+          return off;
+        },
+        snapshot:()=>window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||{schema:2,providers:[]}
       },
       project: {
         registerSlice: (key, hooks) => registerProjectSlice(pluginId, key, hooks)
@@ -1351,6 +1358,11 @@
         analysisWorkbench: infrastructureScope?.analysisWorkbench || null,
         analysisSurface: infrastructureScope?.analysisWorkbench ? Object.freeze({
           create:(root,spec)=>infrastructureScope.analysisWorkbench.create(root,spec),
+          compose:(root,spec={})=>{
+            const wb=infrastructureScope.analysisWorkbench.create(root,spec);
+            wb.compose?.(spec);
+            return wb;
+          },
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         grid: infrastructureScope?.grid || null,

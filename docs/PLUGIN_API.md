@@ -1,4 +1,4 @@
-# Plugin API v1.5
+# Plugin API v1.6
 
 Global runtime:
 
@@ -26,7 +26,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
   "version": "0.1.0",
-  "apiVersion": "1.5.0",
+  "apiVersion": "1.6.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 300,
@@ -624,7 +624,7 @@ The host rejects a second plugin that tries to claim an already registered globa
 
 ## Installable package distribution
 
-Plugin API v1.5 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+Plugin API v1.6 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
 
 ## Dedicated plugin windows
 
@@ -688,3 +688,10 @@ For every enabled built-in **or installed `.dkplugin`** with `manifest.window` a
 8. cached-window disposal when the plugin is disabled or its project tab is closed.
 
 Regression coverage lives in `scripts/test-plugin-windows.js`, including both a synthetic future built-in plugin and an installed external `.dkplugin` fixture. New independent plugins must not require edits to `main.js` or `src/app.js` merely to participate in this lifecycle. External package updates carry an installation revision; cached windows using an older revision are destroyed and recreated before reuse.
+
+
+## AnalysisWorkbench v4 / Capability Runtime v2
+
+Plugin API 1.6 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
+
+Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, floating, split geometry, selection, chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.

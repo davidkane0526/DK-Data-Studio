@@ -1,4 +1,4 @@
-# DK Data Studio Plugin UI Infrastructure — Plugin API v1.5 / UI Core v3.0
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.6 / UI Core v4.0
 
 ## Design boundary
 
@@ -19,6 +19,28 @@ Core owns:
 - Data Model, Formula, Workflow, Parameter Schema and project portability.
 
 Plugins should not reimplement those mechanisms.
+
+
+## Unified AnalysisWorkbench v4
+
+Complex analysis plugins must mount their content through `ctx.ui.analysisSurface.create(...)` and call `compose({primary, primes, subs})`. Core owns the outer frame and does **not** rewrite the plugin's internal DOM layout.
+
+```js
+const wb=ctx.ui.analysisSurface.create(host,{header:false,activity:'example'});
+wb.compose({
+  primary:{id:'main',label:'主分析',leftNode:controls,mainNode:main},
+  primes:[{id:'inspector',label:'检查器',defaultPlacement:'right',mount:mountInspector}],
+  subs:[{id:'physics',label:'物理分析',keepLeft:true,mount:mountPhysics}]
+});
+```
+
+`PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
+
+Right/bottom docking is real layout geometry: docking a PRIME reduces the main surface rather than overlaying it. Floating coordinates are local to the workbench overlay. Split sizes and portable placement are UI preferences, not scientific project state.
+
+## Capability Runtime v2
+
+Plugins register portable providers with `ctx.capabilities.register`. Other plugins can use `list(query)`, `require(id, options)`, `proxy(id)`, `invoke(...)`, and `watch(...)`. Dedicated TOP windows receive provider snapshots and invoke main-renderer providers over the generic IPC bridge, so detector/workflow/chart/service capabilities do not need a second implementation in the TOP renderer.
 
 ## Resizable workspace splits
 
@@ -153,6 +175,6 @@ plugin.js           registration/composition only
 
 Primary commands must be declared once with `ctx.ui.actions`; do not duplicate the same action in a page header and again inside the body. Contextual/export commands may remain beside the data they affect.
 
-Portable plot placement is rendered by core as one compact location breadcrumb/menu (`原位 / 左侧 / 右侧 / 底部 / 悬浮`) backed by `ContextMenu`. Plugins must not render their own row of opaque docking icons.
+Portable plot placement is rendered by Core. Plugins declare allowed placements and a controls host; Core owns the placement menu, restoration, docking/floating mechanics, split geometry and persistence. Plugins must not implement a second docking manager.
 
 A TOP promoted to SUPER must behave identically to every other TOP. Core derives the single non-dismissible SUPER root from the registered TOP contract. Plugin-owned derived/SUB pages remain dismissible so controls such as `返回主图` continue to work.

@@ -1,14 +1,14 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '3.0.0';
+  const VERSION = '4.0.0';
   const scopes = new Map();
   const hostState = {
     root: null,
     zones: new Map(),
     activity: () => '',
     status: () => {},
-    storagePrefix: 'dkds.ui.layout.v4'
+    storagePrefix: 'dkds.ui.layout.v5'
   };
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -267,10 +267,13 @@
       else if(placement==='float'){
         const zone=this.zone('overlay')||hostState.root||document.body;zone.appendChild(this.wrapper);this.wrapper.classList.add('is-floating');
         const saved=bounds||this.readState().bounds||{};
+        const zoneRect=zone.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight};
         const rect=this.wrapper.getBoundingClientRect();
-        this.wrapper.style.left=`${Number(saved.left)||Math.max(12,Math.min(window.innerWidth-420,rect.left||80))}px`;
-        this.wrapper.style.top=`${Number(saved.top)||Math.max(60,rect.top||100)}px`;
-        this.wrapper.style.width=`${Number(saved.width)||Math.max(360,rect.width||520)}px`;
+        const defaultLeft=Math.max(8,Math.min(Math.max(8,(zoneRect.width||window.innerWidth)-420),(rect.left||zoneRect.left+80)-zoneRect.left));
+        const defaultTop=Math.max(8,Math.min(Math.max(8,(zoneRect.height||window.innerHeight)-180),(rect.top||zoneRect.top+60)-zoneRect.top));
+        this.wrapper.style.left=`${Number.isFinite(Number(saved.left))?Number(saved.left):defaultLeft}px`;
+        this.wrapper.style.top=`${Number.isFinite(Number(saved.top))?Number(saved.top):defaultTop}px`;
+        this.wrapper.style.width=`${Number(saved.width)||Math.max(360,Math.min(zoneRect.width||window.innerWidth,rect.width||520))}px`;
         if(Number(saved.height)>160)this.wrapper.style.height=`${Number(saved.height)}px`;
         this.dragCleanup=this.bindFloatDrag();
       }else{
@@ -284,13 +287,13 @@
       this.scope.emitResize?.({id:this.id,reason:'portable-place',placement});
       return placement;
     }
-    bounds(){const r=this.wrapper.getBoundingClientRect();return {left:Math.round(r.left),top:Math.round(r.top),width:Math.round(r.width),height:Math.round(r.height)};}
+    bounds(){const r=this.wrapper.getBoundingClientRect();const zone=this.zone('overlay');const z=zone?.getBoundingClientRect?.()||{left:0,top:0};return {left:Math.round(r.left-z.left),top:Math.round(r.top-z.top),width:Math.round(r.width),height:Math.round(r.height)};}
     pin(placement='right'){return this.place(placement);}
     float(){return this.place('float');}
     bindFloatDrag(){
       const head=this.wrapper.querySelector('.drag-handle')||this.wrapper.querySelector('.dkds-portable-header');if(!head)return ()=>{};let state=null;
       const down=e=>{if(e.button!==0||e.target.closest('button'))return;const r=this.wrapper.getBoundingClientRect();state={dx:e.clientX-r.left,dy:e.clientY-r.top};e.preventDefault();};
-      const move=e=>{if(!state)return;this.wrapper.style.left=`${Math.max(0,Math.min(window.innerWidth-120,e.clientX-state.dx))}px`;this.wrapper.style.top=`${Math.max(34,Math.min(window.innerHeight-80,e.clientY-state.dy))}px`;};
+      const move=e=>{if(!state)return;const zone=this.zone('overlay');const z=zone?.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight};this.wrapper.style.left=`${Math.max(0,Math.min(Math.max(0,z.width-120),e.clientX-state.dx-z.left))}px`;this.wrapper.style.top=`${Math.max(0,Math.min(Math.max(0,z.height-80),e.clientY-state.dy-z.top))}px`;};
       const up=()=>{if(!state)return;state=null;
         const r=this.wrapper.getBoundingClientRect(),snap=Math.max(24,Number(this.spec.snapDistance)||44);
         if(this.spec.snap!==false){
@@ -471,7 +474,9 @@
 
   class AnalysisWorkbench {
     constructor(scope,root,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.root=resolveElement(root);this.spec={...spec};this.primary=null;this.primes=new Map();this.subs=new Map();this.activeSub='';this.portables=new Map();this.grids=[];this.resizeObserver=null;this.closed=false;
+      this.scope=scope;this.owner=scope.owner;this.root=resolveElement(root);this.spec={...spec};
+      this.primary=null;this.primes=new Map();this.subs=new Map();this.activeSub='';this.portables=new Map();this.grids=[];this.closed=false;
+      this.resizeObserver=null;this.regionObserver=null;this.leftSplit=null;this.rightSplit=null;this.bottomSplit=null;
       if(!this.root)throw new Error('AnalysisWorkbench root not found.');
       this.root.classList.add('dkds-analysis-workbench-host');
       this.build();
@@ -484,23 +489,42 @@
           <div class="dkds-analysis-commandbar"></div>
           <button type="button" class="dkds-analysis-close">关闭窗口</button>
         </header>
-        <nav class="dkds-analysis-nav" aria-label="分析工作区导航"><div class="dkds-analysis-nav-primary"></div><div class="dkds-analysis-nav-prime"></div><div class="dkds-analysis-nav-sub"></div></nav>
+        <nav class="dkds-analysis-nav" aria-label="分析工作区导航">
+          <div class="dkds-analysis-nav-primary"></div><div class="dkds-analysis-nav-prime"></div><div class="dkds-analysis-nav-sub"></div>
+        </nav>
         <div class="dkds-analysis-frame">
           <aside class="dkds-analysis-left" data-analysis-slot="left"></aside>
-          <div class="dkds-analysis-left-resizer" role="separator" aria-orientation="vertical" title="拖动调整左侧宽度，双击复位"></div>
-          <main class="dkds-analysis-main" data-analysis-slot="main"><div class="dkds-analysis-primary-host"></div><div class="dkds-analysis-sub-host hidden"></div></main>
+          <div class="dkds-analysis-left-resizer" role="separator" aria-orientation="vertical" title="拖动调整左侧宽度；双击复位"></div>
+          <main class="dkds-analysis-main" data-analysis-slot="main">
+            <div class="dkds-analysis-primary-host"></div><div class="dkds-analysis-sub-host hidden"></div>
+          </main>
+          <div class="dkds-analysis-right-resizer" role="separator" aria-orientation="vertical" title="拖动调整右侧宽度；双击复位"></div>
           <aside class="dkds-analysis-right" data-analysis-slot="right"></aside>
+          <div class="dkds-analysis-bottom-resizer" role="separator" aria-orientation="horizontal" title="拖动调整底部高度；双击复位"></div>
           <section class="dkds-analysis-bottom" data-analysis-slot="bottom"></section>
           <div class="dkds-analysis-overlay" data-analysis-slot="overlay"></div>
         </div>
+        <div class="dkds-analysis-parking" aria-hidden="true"></div>
       </section>`;
       this.shell=this.root.firstElementChild;
-      this.slots={left:this.shell.querySelector('[data-analysis-slot="left"]'),main:this.shell.querySelector('[data-analysis-slot="main"]'),right:this.shell.querySelector('[data-analysis-slot="right"]'),bottom:this.shell.querySelector('[data-analysis-slot="bottom"]'),overlay:this.shell.querySelector('[data-analysis-slot="overlay"]'),primary:this.shell.querySelector('.dkds-analysis-primary-host'),sub:this.shell.querySelector('.dkds-analysis-sub-host')};
+      this.slots={
+        left:this.shell.querySelector('[data-analysis-slot="left"]'),main:this.shell.querySelector('[data-analysis-slot="main"]'),
+        right:this.shell.querySelector('[data-analysis-slot="right"]'),bottom:this.shell.querySelector('[data-analysis-slot="bottom"]'),
+        overlay:this.shell.querySelector('[data-analysis-slot="overlay"]'),primary:this.shell.querySelector('.dkds-analysis-primary-host'),
+        sub:this.shell.querySelector('.dkds-analysis-sub-host'),parking:this.shell.querySelector('.dkds-analysis-parking')
+      };
       const frame=this.shell.querySelector('.dkds-analysis-frame');
-      const leftResizer=this.shell.querySelector('.dkds-analysis-left-resizer');
-      if(s.resizableLeft===false)leftResizer?.remove();
-      else if(frame&&leftResizer){
-        this.leftSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-left`,container:frame,handle:leftResizer,target:this.slots.left,cssVar:'--dkds-analysis-left-width',defaultSize:Number(s.leftWidth)||280,min:Number(s.leftMin)||220,reserve:Number(s.leftReserve)||520});
+      const leftHandle=this.shell.querySelector('.dkds-analysis-left-resizer');
+      const rightHandle=this.shell.querySelector('.dkds-analysis-right-resizer');
+      const bottomHandle=this.shell.querySelector('.dkds-analysis-bottom-resizer');
+      if(s.resizableLeft===false)leftHandle?.remove();else if(frame&&leftHandle){
+        this.leftSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-left`,container:frame,handle:leftHandle,target:this.slots.left,cssVar:'--dkds-analysis-left-width',defaultSize:Number(s.leftWidth)||280,min:Number(s.leftMin)||210,reserve:Number(s.leftReserve)||520});
+      }
+      if(s.resizableRight===false)rightHandle?.remove();else if(frame&&rightHandle){
+        this.rightSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-right`,container:frame,handle:rightHandle,target:this.slots.right,cssVar:'--dkds-analysis-right-width',defaultSize:Number(s.rightWidth)||390,min:Number(s.rightMin)||280,reserve:Number(s.rightReserve)||520,reverse:true});
+      }
+      if(s.resizableBottom===false)bottomHandle?.remove();else if(frame&&bottomHandle){
+        this.bottomSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-bottom`,container:frame,handle:bottomHandle,target:this.slots.bottom,cssVar:'--dkds-analysis-bottom-height',axis:'y',defaultSize:Number(s.bottomHeight)||320,min:Number(s.bottomMin)||190,reserve:Number(s.bottomReserve)||260,reverse:true});
       }
       const header=this.shell.querySelector('.dkds-analysis-header');
       if(s.header===false)header?.remove();else if(header){
@@ -509,79 +533,143 @@
         const close=header.querySelector('.dkds-analysis-close');
         if(s.closable===false)close?.remove();else if(close)close.onclick=()=>s.onClose?.();
         const commandHost=header.querySelector('.dkds-analysis-commandbar');
-        if(Array.isArray(s.actions)&&s.actions.length&&commandHost)this.actions=new ActionGroup(this.owner,commandHost,{activity:s.activity,actions:s.actions});else commandHost?.remove();
+        if(Array.isArray(s.actions)&&s.actions.length&&commandHost)this.actions=new ActionGroup(this.owner,commandHost,{activity:s.activity,actions:s.actions});
+        else commandHost?.remove();
+      }
+      this.syncRegions();
+      if(window.MutationObserver){
+        this.regionObserver=new MutationObserver(()=>this.syncRegions());
+        for(const el of [this.slots.left,this.slots.right,this.slots.bottom])this.regionObserver.observe(el,{childList:true,subtree:false});
       }
       if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>this.resize('observer'));this.resizeObserver.observe(this.shell);}
     }
     layout(){return {slot:name=>this.slots[String(name)]||null};}
-    setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');}
+    setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');return this;}
+    syncRegions(){
+      if(!this.shell)return;
+      const visibleChildren=el=>[...(el?.children||[])].some(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));
+      const left=visibleChildren(this.slots.left)&&!this.slots.left.classList.contains('hidden');
+      const right=visibleChildren(this.slots.right);const bottom=visibleChildren(this.slots.bottom);
+      this.shell.classList.toggle('has-left',left);this.shell.classList.toggle('has-right',right);this.shell.classList.toggle('has-bottom',bottom);
+      this.shell.querySelector('.dkds-analysis-left-resizer')?.classList.toggle('active',left);
+      this.shell.querySelector('.dkds-analysis-right-resizer')?.classList.toggle('active',right);
+      this.shell.querySelector('.dkds-analysis-bottom-resizer')?.classList.toggle('active',bottom);
+      return {left,right,bottom};
+    }
+    park(node){if(node&&this.slots.parking&&!this.slots.parking.contains(node))this.slots.parking.appendChild(node);return node;}
     mountPrimary(spec={}){
-      if(this.primary?.dispose)this.primary.dispose();
+      cleanupCall(this.primary?.cleanup);
       this.primary={...spec,id:String(spec.id||'main')};
       const left=this.slots.left,main=this.slots.primary;
       left.replaceChildren();main.replaceChildren();
-      if(spec.leftHtml!==undefined)left.innerHTML=typeof spec.leftHtml==='function'?spec.leftHtml():String(spec.leftHtml||'');
-      if(spec.mainHtml!==undefined)main.innerHTML=typeof spec.mainHtml==='function'?spec.mainHtml():String(spec.mainHtml||'');
+      if(spec.leftNode){const node=resolveElement(spec.leftNode,this.root)||spec.leftNode;if(node)left.appendChild(node);}
+      else if(spec.leftHtml!==undefined)left.innerHTML=typeof spec.leftHtml==='function'?spec.leftHtml():String(spec.leftHtml||'');
+      if(spec.mainNode){const node=resolveElement(spec.mainNode,this.root)||spec.mainNode;if(node)main.appendChild(node);}
+      else if(spec.mainHtml!==undefined)main.innerHTML=typeof spec.mainHtml==='function'?spec.mainHtml():String(spec.mainHtml||'');
       const ctx={workbench:this,scope:this.scope,slots:this.slots,left,main,root:this.shell};
       const cleanup=spec.mount?.(ctx);if(typeof cleanup==='function')this.primary.cleanup=cleanup;
-      this.renderNav();this.resize('primary');return this;
+      this.renderNav();this.syncRegions();this.resize('primary');return this;
+    }
+    registerSurface(spec={}){
+      const role=String(spec.role||'').toLowerCase();
+      if(role==='primary')return this.mountPrimary(spec);
+      if(role==='prime')return this.registerPrime(spec);
+      if(role==='sub')return this.registerSub(spec);
+      throw new Error(`Unknown AnalysisWorkbench surface role: ${role||'(empty)'}`);
+    }
+    compose(spec={}){
+      if(spec.primary)this.mountPrimary({...spec.primary,role:'primary'});
+      for(const prime of spec.primes||[])this.registerPrime({...prime,role:'prime'});
+      for(const sub of spec.subs||[])this.registerSub({...sub,role:'sub'});
+      if(spec.openPrime)for(const entry of (Array.isArray(spec.openPrime)?spec.openPrime:[spec.openPrime]))this.openPrime(typeof entry==='string'?entry:entry.id,typeof entry==='string'?undefined:entry.placement);
+      if(spec.openSub)this.openSub(typeof spec.openSub==='string'?spec.openSub:spec.openSub.id);
+      return this;
     }
     registerPrime(spec={}){
       const id=String(spec.id||'').trim();if(!id)throw new Error('PRIME id required.');
-      const row={placements:['right','bottom','float','inline'],defaultPlacement:'right',...spec,id,container:null,portable:null,mounted:false};this.primes.set(id,row);this.renderNav();
-      if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);
-      return row;
+      const row={role:'prime',placements:['inline','right','bottom','float'],defaultPlacement:'inline',...spec,id,container:null,portable:null,mounted:false,cleanup:null};
+      this.primes.set(id,row);this.renderNav();if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);return row;
     }
-    registerSub(spec={}){const id=String(spec.id||'').trim();if(!id)throw new Error('SUB id required.');this.subs.set(id,{...spec,id,mounted:false,container:null,cleanup:null});this.renderNav();return this.subs.get(id);}
+    registerSub(spec={}){
+      const id=String(spec.id||'').trim();if(!id)throw new Error('SUB id required.');
+      const row={role:'sub',keepLeft:false,persistent:true,...spec,id,mounted:false,container:null,cleanup:null};this.subs.set(id,row);this.renderNav();return row;
+    }
     renderNav(){
-      const primaryHost=this.shell.querySelector('.dkds-analysis-nav-primary');const primeHost=this.shell.querySelector('.dkds-analysis-nav-prime');const subHost=this.shell.querySelector('.dkds-analysis-nav-sub');
-      primaryHost.replaceChildren();primeHost.replaceChildren();subHost.replaceChildren();
-      if(this.primary){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
-      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.togglePrime(row.id);primeHost.appendChild(b);}
-      for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost.appendChild(b);}
+      const primaryHost=this.shell.querySelector('.dkds-analysis-nav-primary'),primeHost=this.shell.querySelector('.dkds-analysis-nav-prime'),subHost=this.shell.querySelector('.dkds-analysis-nav-sub');
+      primaryHost?.replaceChildren();primeHost?.replaceChildren();subHost?.replaceChildren();
+      if(this.primary&&primaryHost){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
+      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.title='PRIME：可嵌入、固定或悬浮';b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
+      for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-sub-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost?.appendChild(b);}
+      const nav=this.shell.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('empty',!(primaryHost?.children.length||primeHost?.children.length||subHost?.children.length));
     }
     primeHome(row){
-      if(row.inlineHost){const el=resolveElement(row.inlineHost,this.shell);if(el)return el;}
+      if(row.inlineHost){const el=resolveElement(row.inlineHost,this.shell)||resolveElement(row.inlineHost,this.root);if(el)return el;}
       return this.slots.primary;
     }
+    resolvePrimeNode(row){
+      let container=row.existingNode||resolveElement(row.node,this.shell)||resolveElement(row.node,this.root);
+      if(container){row.existingNode=container;return {container,existing:true};}
+      container=document.createElement('section');container.className='dkds-analysis-prime-panel';container.dataset.primeId=row.id;
+      container.innerHTML=`<div class="dkds-analysis-prime-head"><strong>${esc(row.title||row.label||row.id)}</strong><div class="dkds-analysis-prime-chrome"></div></div><div class="dkds-analysis-prime-body"></div>`;
+      return {container,existing:false};
+    }
     ensurePrime(row){
-      if(row.mounted&&row.container?.isConnected)return row;
-      let container=row.existingNode||resolveElement(row.node,this.shell);
-      const existing=!!container;
-      if(existing){
-        row.existingNode=container;
-        container.classList.remove('dkds-prime-hidden');
-        if(!container.isConnected)this.primeHome(row)?.appendChild(container);
-      }else{
-        container=document.createElement('section');container.className='dkds-analysis-prime-panel';container.dataset.primeId=row.id;
-        container.innerHTML=`<div class="dkds-analysis-prime-head"><strong>${esc(row.title||row.label||row.id)}</strong><div class="dkds-analysis-prime-chrome"></div></div><div class="dkds-analysis-prime-body"></div>`;
-        this.primeHome(row)?.appendChild(container);
-      }
-      const body=existing?container:container.querySelector('.dkds-analysis-prime-body');
-      const cleanup=row.mount?.({workbench:this,scope:this.scope,container:body,panel:container,slots:this.slots});
-      row.cleanup=typeof cleanup==='function'?cleanup:null;row.container=container;row.mounted=true;row.existing=existing;
-      const allowed=[...new Set((row.placements||['right','bottom','float','inline']).map(x=>x==='inline'?'home':x))];
+      if(row.mounted&&row.container)return row;
+      const found=this.resolvePrimeNode(row);const container=found.container;row.existing=found.existing;
+      container.classList.remove('dkds-prime-hidden');
+      if(!container.isConnected)this.primeHome(row)?.appendChild(container);
+      const body=found.existing?container:container.querySelector('.dkds-analysis-prime-body');
+      const cleanup=row.mount?.({workbench:this,scope:this.scope,container:body,panel:container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;
+      row.container=container;row.mounted=true;
+      const allowed=[...new Set((row.placements||['inline','right','bottom','float']).map(x=>x==='inline'?'home':normalizePlacement(x)))];
       const layout={slot:name=>name==='home'?this.primeHome(row):this.slots[name]};
-      const portableSpec=existing?{
-        title:row.title||row.label||row.id,
-        useTargetAsWrapper:row.useTargetAsWrapper!==false,
-        handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',
-        controlsHost:row.controlsHost,
-        controlsPlacement:row.controlsPlacement||'start',
+      const portableSpec=found.existing?{
+        title:row.title||row.label||row.id,useTargetAsWrapper:row.useTargetAsWrapper!==false,
+        handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',controlsHost:row.controlsHost,controlsPlacement:row.controlsPlacement||'start',
         placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout
       }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,layout};
-      row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);
-      return row;
+      row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);this.syncRegions();return row;
     }
-    openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);row.portable.place(placement==='inline'?'home':(placement||row.defaultPlacement||'right'));this.renderNav();this.resize('prime-open');return true;}
+    openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);row.portable.place(placement==='inline'?'home':(placement||row.defaultPlacement||'inline'));this.renderNav();this.syncRegions();this.resize('prime-open');return true;}
+    setPrimePlacement(id,placement){return this.openPrime(id,placement);}
     togglePrime(id){const row=this.primes.get(String(id));if(!row)return false;if(!row.mounted)return this.openPrime(id,row.defaultPlacement);this.closePrime(id);return true;}
-    closePrime(id){const row=this.primes.get(String(id));if(!row?.mounted)return false;row.portable?.dispose?.();row.portable=null;cleanupCall(row.cleanup);row.cleanup=null;if(row.existing){row.container?.classList?.add('dkds-prime-hidden');}else{row.container?.remove?.();row.container=null;}row.mounted=false;this.renderNav();this.resize('prime-close');return true;}
-    showPrimary(){this.activeSub='';this.slots.primary.classList.remove('hidden');this.slots.sub.classList.add('hidden');this.slots.left.classList.toggle('hidden',this.primary?.showLeft===false);this.renderNav();this.resize('primary-show');return true;}
-    openSub(id){const row=this.subs.get(String(id));if(!row)return false;const previous=this.activeSub&&this.activeSub!==row.id?this.subs.get(this.activeSub):null;if(previous){cleanupCall(previous.cleanup);previous.cleanup=null;previous.container=null;previous.mounted=false;}this.activeSub=row.id;this.slots.primary.classList.add('hidden');this.slots.sub.classList.remove('hidden');this.slots.left.classList.toggle('hidden',row.keepLeft!==true);this.slots.sub.replaceChildren();const container=document.createElement('section');container.className='dkds-analysis-sub-view';container.dataset.subId=row.id;this.slots.sub.appendChild(container);if(row.html!==undefined)container.innerHTML=typeof row.html==='function'?row.html():String(row.html||'');cleanupCall(row.cleanup);const cleanup=row.mount?.({workbench:this,scope:this.scope,container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;row.container=container;row.mounted=true;this.renderNav();this.resize('sub-open');return true;}
-    portable(id,node,spec={}){const value=this.scope.panels.create(id,node,{...spec,layout:this.layout()});this.portables.set(String(id),value);return value;}
+    closePrime(id){
+      const row=this.primes.get(String(id));if(!row?.mounted)return false;
+      row.portable?.dispose?.();row.portable=null;cleanupCall(row.cleanup);row.cleanup=null;
+      if(row.container){row.container.classList.add('dkds-prime-hidden');this.park(row.container);}
+      row.mounted=false;this.renderNav();this.syncRegions();this.resize('prime-close');return true;
+    }
+    showPrimary(){
+      const active=this.activeSub?this.subs.get(this.activeSub):null;if(active?.container)this.park(active.container);
+      this.activeSub='';this.slots.primary.classList.remove('hidden');this.slots.sub.classList.add('hidden');this.slots.sub.replaceChildren();
+      this.slots.left.classList.toggle('hidden',this.primary?.showLeft===false);this.renderNav();this.syncRegions();this.resize('primary-show');return true;
+    }
+    ensureSub(row){
+      if(row.container)return row.container;
+      let container=row.existingNode||resolveElement(row.node,this.shell)||resolveElement(row.node,this.root);
+      if(container){row.existingNode=container;}else{container=document.createElement('section');container.className='dkds-analysis-sub-view';container.dataset.subId=row.id;if(row.html!==undefined)container.innerHTML=typeof row.html==='function'?row.html():String(row.html||'');}
+      row.container=container;return container;
+    }
+    openSub(id){
+      const row=this.subs.get(String(id));if(!row)return false;
+      if(this.activeSub&&this.activeSub!==row.id){const previous=this.subs.get(this.activeSub);if(previous?.container)this.park(previous.container);if(previous&&previous.persistent===false){cleanupCall(previous.cleanup);previous.cleanup=null;previous.container=null;previous.mounted=false;}}
+      this.activeSub=row.id;this.slots.primary.classList.add('hidden');this.slots.sub.classList.remove('hidden');this.slots.left.classList.toggle('hidden',row.keepLeft!==true);this.slots.sub.replaceChildren();
+      const container=this.ensureSub(row);this.slots.sub.appendChild(container);
+      if(!row.mounted||row.remount===true){cleanupCall(row.cleanup);const cleanup=row.mount?.({workbench:this,scope:this.scope,container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;row.mounted=true;}
+      row.onShow?.({workbench:this,scope:this.scope,container,slots:this.slots});this.renderNav();this.syncRegions();this.resize('sub-open');return true;
+    }
+    portable(id,node,spec={}){const value=this.scope.panels.create(id,node,{...spec,layout:this.layout()});this.portables.set(String(id),value);this.syncRegions();return value;}
     grid(container,spec={}){const value=new GridController(this.scope,container,spec);this.grids.push(value);return value;}
-    resize(reason='resize'){this.scope.emitResize?.({reason:`analysis-workbench:${reason}`});return this;}
-    dispose(){if(this.closed)return;this.closed=true;cleanupCall(this.primary?.cleanup);for(const row of this.primes.values())this.closePrime(row.id);for(const row of this.subs.values())cleanupCall(row.cleanup);for(const grid of this.grids)grid.dispose?.();for(const portable of this.portables.values())portable.dispose?.();this.actions?.dispose?.();this.resizeObserver?.disconnect?.();this.leftSplit?.dispose?.();this.root.replaceChildren();this.root.classList.remove('dkds-analysis-workbench-host');}
+    surfaceState(){return {primary:this.primary?.id||'',activeSub:this.activeSub,primes:Object.fromEntries([...this.primes].map(([id,row])=>[id,{open:!!row.mounted,placement:row.portable?.wrapper?.dataset?.placement||''}]))};}
+    resize(reason='resize'){this.syncRegions();this.scope.emitResize?.({reason:`analysis-workbench:${reason}`});return this;}
+    dispose(){
+      if(this.closed)return;this.closed=true;cleanupCall(this.primary?.cleanup);
+      for(const row of this.primes.values()){if(row.portable)row.portable.dispose?.();cleanupCall(row.cleanup);}
+      for(const row of this.subs.values())cleanupCall(row.cleanup);
+      for(const grid of this.grids)grid.dispose?.();for(const portable of this.portables.values())portable.dispose?.();
+      this.actions?.dispose?.();this.regionObserver?.disconnect?.();this.resizeObserver?.disconnect?.();this.leftSplit?.dispose?.();this.rightSplit?.dispose?.();this.bottomSplit?.dispose?.();
+      this.root.replaceChildren();this.root.classList.remove('dkds-analysis-workbench-host');
+    }
   }
 
   class PluginScope {

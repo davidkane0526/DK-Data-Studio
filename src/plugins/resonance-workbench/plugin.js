@@ -2,17 +2,32 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'2.8.0',
-    apiVersion:'1.5.0',
+    version:'3.0.0',
+    apiVersion:'1.6.0',
     description:'Resonance workbench composed from plugin-owned shared Controller and View components; SUPER and TOP only adapt presentation/layout.',
     source:'builtin',
     order:100,
-    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities'],
+    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2'],
     workspace:{role:'top',activity:'resonance',icon:'∿',title:'共振分析'}
   }, async ctx => {
     const shared=window.DKDSResonanceWorkbenchShared;
     if(!shared)throw new Error('Resonance shared workbench layer is not loaded.');
-    const service=ctx.host?.resonance;
+    let runtime=null;
+    let service=ctx.host?.resonance;
+    if(!ctx.host.isAuxiliaryWindow){
+      const feature=window.DKDSResonanceFeatureRuntime;
+      if(!feature?.createTop)throw new Error('Resonance shared feature runtime is unavailable.');
+      runtime=await feature.createTop({
+        host:ctx.host,
+        project:ctx.host.makeProject?.()||{},
+        setStatus:ctx.host.setStatus||(()=>{}),
+        scheduleSnapshot:()=>{const workspace=runtime?.service?.serialize?.();if(workspace)ctx.host.applyResonanceWorkspace?.(workspace);},
+        copyTextToClipboard:ctx.host.copyTextToClipboard||(()=>{}),
+        savePlotlyImage:ctx.host.savePlotlyImage||(()=>{}),
+        adapter:{mode:'super',root:document.querySelector('#app')}
+      });
+      service=runtime.service;
+    }
     if(!service)throw new Error('Resonance service is unavailable.');
     const controller=shared.createController(service,{
       mode:ctx.host.isAuxiliaryWindow?'top':'super',

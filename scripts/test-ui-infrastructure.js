@@ -23,7 +23,7 @@ assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use t
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
 assert(ui.includes('spec.existing===true')&&ui.includes('mountExistingSplit'),'Workbench must be able to adapt mature existing DOM and still provide core split/layout infrastructure');
-assert(kernel.includes("const API_VERSION = '1.5.0'"),'plugin API must be v1.5.0');
+assert(kernel.includes("const API_VERSION = '1.6.0'"),'plugin API must be v1.6.0');
 for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
   assert(kernel.includes(api),`kernel missing UI API: ${api}`);
 }
@@ -51,7 +51,7 @@ for(const [name,folder] of Object.entries(migrated)){
   assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
   assert(controller.includes('selection.channel'),`${name} controller must use the core Selection Channel`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${name} shared views must use the unified Analysis Workbench`);
-  assert(views.includes('mountPrimary'),`${name} must mount its semantic PRIMARY through the Analysis Workbench`);
+  assert(views.includes('wb.compose'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
   assert(feature.includes('ctx.ui.actions')&&feature.includes('ctx.ui.charts'),`${name} feature runtime must use dynamic actions and Chart Surface infrastructure`);
   assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
   assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);

@@ -24,6 +24,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "scripts": [
       "plugins/pulse-analysis/controller.js",
       "plugins/pulse-analysis/shared-views.js",
+      "plugins/pulse-analysis/analysis-service.js",
       "plugins/pulse-analysis/feature-runtime.js",
       "plugins/pulse-analysis/super-layout.js",
       "plugins/pulse-analysis/plugin.js"
@@ -67,6 +68,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "scripts": [
       "plugins/ter-analysis/controller.js",
       "plugins/ter-analysis/shared-views.js",
+      "plugins/ter-analysis/analysis-service.js",
       "plugins/ter-analysis/feature-runtime.js",
       "plugins/ter-analysis/super-layout.js",
       "plugins/ter-analysis/plugin.js"

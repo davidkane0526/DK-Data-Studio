@@ -206,7 +206,8 @@
     body.classList.add('dkds-unified-workbench-body');
     const host=document.createElement('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
     const wb=(ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'pulse'});
-    wb.mountPrimary({id:'main',label:'主界面',mount:({left:leftSlot,main:mainSlot})=>{leftSlot.appendChild(left);mainSlot.append(config,...extras);}});
+    const primaryMain=document.createElement('div');primaryMain.className='pulse-primary-surface';primaryMain.append(config,...extras);
+    wb.compose({primary:{id:'main',label:'脉冲分析',leftNode:left,mainNode:primaryMain}});
     return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}

@@ -11,7 +11,7 @@
     try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
   }
 
-  window.DKDSTERDedicatedService={
+  window.DKDSTERAnalysisService={
     async create({host,project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}){
       let project=initialProject||{};
       let settings={};

@@ -13,15 +13,15 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'3\.0\.0'/.test(ui),'UI infrastructure must ship the unified v3 workbench.');
-for(const token of ['class AnalysisWorkbench','mountPrimary(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
+assert(/const VERSION\s*=\s*'4\.0\.0'/.test(ui),'UI infrastructure must ship the unified v4 workbench.');
+for(const token of ['class AnalysisWorkbench','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.5.0'"),'Plugin API must be v1.5.0.');
+assert(kernel.includes("const API_VERSION = '1.6.0'"),'Plugin API must be v1.6.0.');
 assert(kernel.includes('analysisWorkbench: infrastructureScope?.analysisWorkbench'),'Kernel must expose the unified Analysis Workbench.');
 assert(kernel.includes('capabilities: {'),'Kernel must expose Capability Runtime to plugins.');
-for(const token of ['function register(owner, id, spec={})','function importRemote(payload, invoker)','async function invoke(id, method=','function proxy(id)','function snapshot({remoteOnly=false}={})']){
+for(const token of ['function register(owner, id, spec={})','function importRemote(payload, invoker)','async function invoke(id, method=','function proxy(id)','function requireCapability(id, options={})','function subscribe(fn,','function snapshot({remoteOnly=false}={})']){
   assert(cap.includes(token),`Capability Runtime missing ${token}`);
 }
 for(const token of ['capabilities:publishSnapshot','capabilities:invokeOwner','capabilities:invokeResponse'])assert(main.includes(token),`Main-process capability bridge missing ${token}.`);
@@ -40,11 +40,11 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through AnalysisWorkbench.`);
-  assert(views.includes('mountPrimary'),`${folder}: shared views must define a PRIMARY surface.`);
+  assert(views.includes('wb.compose'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
-  assert(manifest.apiVersion==='1.5.0',`${folder}: manifest must target plugin API 1.5.0.`);
+  assert(manifest.apiVersion==='1.6.0',`${folder}: manifest must target plugin API 1.6.0.`);
   assert((manifest.capabilities||[]).includes('ui.analysis-workbench'),`${folder}: manifest must declare unified workbench capability.`);
   assert((manifest.capabilities||[]).includes('runtime.capabilities'),`${folder}: manifest must declare Capability Runtime use.`);
 }
@@ -56,10 +56,29 @@ const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonanceViews.includes(token),`Resonance unified workbench missing semantic view ${token}.`);
 }
-assert(resonanceViews.includes('registerPrime')&&resonanceViews.includes('registerSub'),'Resonance TOP must compose PRIME/SUB through AnalysisWorkbench.');
+assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes('wb.compose'),'Resonance SUPER/TOP must use one shared semantic AnalysisWorkbench composition.');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 assert(resonanceFeature.includes('ctx.analysis.detectors.list()')||resonanceViews.includes('ctx.analysis.detectors.list()'),'Resonance dedicated TOP must consume detector capabilities rather than a private detector list.');
 
+
+
+// SUPER and TOP must consume the same plugin-owned runtime/service layers.
+{
+  const terManifest=JSON.parse(read('src/plugins/ter-analysis/plugin.json'));
+  const pulseManifest=JSON.parse(read('src/plugins/pulse-analysis/plugin.json'));
+  const terEntry=read('src/plugins/ter-analysis/plugin.js');
+  const pulseEntry=read('src/plugins/pulse-analysis/plugin.js');
+  const terTop=read('src/plugins/ter-analysis/window-runtime.js');
+  const pulseTop=read('src/plugins/pulse-analysis/window-runtime.js');
+  assert((terManifest.scripts||[]).includes('analysis-service.js')&&(terManifest.window?.scripts||[]).includes('analysis-service.js'),'TER main/SUPER and TOP must load the same plugin-owned analysis service.');
+  assert((pulseManifest.scripts||[]).includes('analysis-service.js')&&(pulseManifest.window?.scripts||[]).includes('analysis-service.js'),'Pulse main/SUPER and TOP must load the same plugin-owned analysis service.');
+  assert(terEntry.includes('DKDSTERAnalysisService.create')&&terTop.includes('DKDSTERAnalysisService'),'TER SUPER/TOP must share the same analysis-service factory.');
+  assert(pulseEntry.includes('DKDSPulseAnalysisService.create')&&pulseTop.includes('DKDSPulseAnalysisService'),'Pulse SUPER/TOP must share the same analysis-service factory.');
+  const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
+  assert(resonanceEntry.includes('feature.createTop')&&resonanceEntry.includes('applyResonanceWorkspace'),'Resonance SUPER must use the same plugin-owned runtime service as TOP and sync only through the generic project host boundary.');
+  const dataCenterEntry=read('src/plugins/data-center/plugin.js');
+  assert(dataCenterEntry.includes('DKDSDataCenterController')&&dataCenterEntry.includes('DKDSDataCenterSharedViews')&&dataCenterEntry.includes('DKDSDataCenterSuperLayout'),'Data Center must stay on the same Controller/Shared Views/Feature Runtime stack.');
+}
 
 // Exercise the capability bridge contract without Electron: one runtime exports
 // a provider, a second imports its serializable descriptor and invokes it through

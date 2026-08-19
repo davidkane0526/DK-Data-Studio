@@ -27,3 +27,4 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 13. v3.29.0: repair native TOP/dedicated runtime contracts; add isolated local portable docking zones; flatten TER six-chart layout; refine Data Center/Pulse portable UI and panel chrome.
 
 14. v3.30.0: introduce the unified Analysis Workbench with PRIMARY/PRIME/SUB semantics and managed grids; add a cross-renderer Capability Runtime; migrate TER/Pulse/Data Center to the same workbench composition and move Resonance TOP onto the same semantic workbench/capability contract while preserving self-contained project files.
+15. v3.31.0: complete the unified AnalysisWorkbench v4 runtime, Capability Runtime v2, and one shared Resonance PRIMARY/PRIME/SUB composition across SUPER/TOP; migrate all first-party analysis views to the same Core composition contract.

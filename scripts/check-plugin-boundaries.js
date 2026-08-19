@@ -54,18 +54,21 @@ if(app.includes("if(e.key==='l'||e.key==='L')"))fail('resonance lock shortcut mu
 if(resonance.includes('function renderRobustChannels'))fail('workbench must not special-case the built-in detector settings UI');
 
 for(const token of [
-  "ctx.ui.activities.add",
-  "ctx.ui.sidebar.add",
-  "ctx.ui.mainViews.register",
-  "ctx.ui.shortcuts.add",
-  "ctx.ui.selectionMenus.register",
-  "ctx.ui.inspectors.register",
-  "ctx.ui.groupCharts.register",
-  "ctx.ui.groupViews.register",
-  "ctx.ui.panels.add",
-  "ctx.ui.pages.add"
+  'mountUnified',
+  'wb.compose',
+  "id:'curve-inspector'",
+  "id:'group-analysis'",
+  "id:'physics'",
+  "id:'spacing'",
+  "id:'gate-analysis'",
+  'ctx.ui.shortcuts.add',
+  'peak-category-choice',
+  'resonanceResetViewTool'
 ]){
-  if(!resonance.includes(token))fail(`resonance workbench missing plugin-owned UI contribution: ${token}`);
+  if(!resonance.includes(token))fail(`resonance unified workbench missing plugin-owned shared surface/control: ${token}`);
+}
+if(resonance.includes('ctx.ui.sidebar.add')||resonance.includes('ctx.ui.mainViews.register')||resonance.includes('ctx.ui.inspectors.register')||resonance.includes('ctx.ui.groupViews.register')){
+  fail('resonance must not fall back to legacy SUPER-only contribution slots after unified workbench migration');
 }
 
 if(!detector.includes("ctx.analysis.detectors.register('robust-ricker-v1'"))fail('robust detector must be an independent detector plugin');
@@ -83,4 +86,4 @@ for(const token of ['#pulseAnalysisPage.super-workspace-page','#terMaxPage.super
 }
 
 if(process.exitCode)process.exit(process.exitCode);
-console.log('Plugin boundary check OK: core shell is generic and resonance UI is plugin-owned.');
+console.log('Plugin boundary check OK: core shell is generic; unified PRIMARY/PRIME/SUB surfaces remain plugin-owned.');

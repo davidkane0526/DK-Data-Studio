@@ -107,7 +107,7 @@
     return {factor:1e12,unit:'pA'};
   }
 
-  window.DKDSPulseDedicatedService = {
+  window.DKDSPulseAnalysisService = {
     async create({host,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot}) {
       let state = createState();
 

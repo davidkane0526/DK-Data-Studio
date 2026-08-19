@@ -2,7 +2,7 @@
   "id": "example.plugin",
   "name": "Example Plugin",
   "version": "0.3.0",
-  "apiVersion": "1.5.0",
+  "apiVersion": "1.6.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 900,
