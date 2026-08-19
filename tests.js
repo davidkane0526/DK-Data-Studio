@@ -209,7 +209,7 @@ const analysisV32 = require('./src/analysis.js');
 assert(terPluginSource.includes('TER(Vd, Vg) 全组合热图'),'TER plugin page must explicitly describe full Vd-Vg matrix');
 assert(cssV32.includes('aspect-ratio:1 / 1'),'TER heatmap canvas must be square');
 assert(terPluginSource.includes('id=\\\"terMaxVgPlot\\\"')&&terPluginSource.includes('id=\\\"terMaxVdPlot\\\"'),'TER plugin must contain both Max-Vg and Max-Vd plots');
-assert(terPluginSource.includes('id=\\\"terExportMaxVgBtn\\\"')&&terPluginSource.includes('id=\\\"terExportMaxVdBtn\\\"'),'TER plugin must expose both max-reduction exports');
+assert(terPluginSource.includes('ctx.ui.plotViews.bind(`ter:${spec.key}`')&&fs.readFileSync('./src/core/ui-infrastructure.js','utf8').includes('exportCsv()'),'TER max-reduction figures must inherit CSV/image export from Core PlotView rather than duplicate per-chart buttons');
 assert(appV32.includes("savePlotlyImage('terMaxVgPlot','TER_Max-Vg','svg')"),'TER_Max-Vg must export SVG');
 assert(appV32.includes("savePlotlyImage('terMaxVdPlot','TER_Max-Vd','png')"),'TER_Max-Vd must export PNG');
 
@@ -289,12 +289,12 @@ assert(preloadV34.includes("copyText: text => ipcRenderer.invoke('clipboard:writ
 for(const id of ['copyMainCsvBtn','zoomCopyCsv']){
   assert(htmlV34.includes(`id="${id}"`),`missing core CSV clipboard button ${id}`);
 }
-for(const id of ['gateAnalysisCopyCsvBtn','spacingCopyCsvBtn']){
-  assert(resonancePluginSource.includes(`id="${id}"`),`missing resonance-plugin CSV clipboard button ${id}`);
+assert(resonancePluginSource.includes('id="gateAnalysisCopyCsvBtn"'),'missing resonance gate-analysis domain CSV clipboard button');
+assert(!resonancePluginSource.includes('spacingCopyCsvBtn')&&!resonancePluginSource.includes('spacingExportSvgBtn')&&!resonancePluginSource.includes('spacingExportPngBtn'),'resonance spacing chart must rely on Core PlotView generic copy/SVG/PNG chrome.');
+for(const id of ['terCopyLongBtn','terCopyMatrixBtn']){
+  assert(terPluginSource.includes(String.raw`id=\"${id}\"`),`missing TER matrix clipboard button ${id}`);
 }
-for(const id of ['terCopyLongBtn','terCopyMatrixBtn','terCopyMaxVgBtn','terCopyMaxVdBtn']){
-  assert(terPluginSource.includes(`id=\\\"${id}\\\"`),`missing TER-plugin CSV clipboard button ${id}`);
-}
+assert(fs.readFileSync('./src/core/ui-infrastructure.js','utf8').includes('copyCsv()')&&terPluginSource.includes('ctx.ui.plotViews.bind(`ter:${spec.key}`'),'TER plot CSV copy must come from Core PlotView rather than per-chart duplicate buttons.');
 assert(resonancePluginSource.includes("id:'peaks-copy'")&&resonancePluginSource.includes('copyPeaks'),'resonance shared workbench must provide peak CSV copy through the unified export command model');
 assert(appV34.includes('trend-copy-btn'),'dynamic group-plot CSV must also have copy action');
 console.log('v3.4 smart detection / transform / clipboard checks passed.');

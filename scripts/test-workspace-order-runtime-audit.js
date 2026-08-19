@@ -94,4 +94,9 @@ assert(pulseFeature.includes('当前文件 · 原始波形数据 CSV')&&pulseFea
 assert(terFeature.includes('TER 全组合热图 · Long CSV')&&terFeature.includes('R–V 联动图 · SVG')&&terFeature.includes("activity:'ter'"),'TER must dynamically register semantically named system export items.');
 assert(dataCenterFeature.includes('当前数据表 · CSV')&&dataCenterFeature.includes('数据中心图形预览 · PNG')&&dataCenterFeature.includes("activity:'data-center'"),'Data Center must dynamically register its own system export items.');
 
-console.log('v3.38 workspace ordering/export semantics checks passed.');
+
+assert(ui.includes('raiseLayer()')&&ui.includes("global?'globalSeq':'canvasSeq'"),'PortableView must maintain Core-owned canvas/global floating layers and raise active floating views.');
+assert(css.includes('--dkds-layer-global-float:2400')&&css.includes('--dkds-layer-canvas-float:1400'),'Whole-interface floats must always live above scientific-canvas floats/docks.');
+assert(ui.includes("collapseButton.textContent='−'")&&ui.includes("this.spec.expandIcon||'+'"),'Portable collapse chrome must use the shared icon-only minus/plus contract.');
+assert(ui.includes('bottomCollapsedOnly')&&css.includes('canvas-bottom-collapsed-only'),'Dock geometry must collapse to title-bar height when every bottom view is minimized.');
+console.log('v3.40 workspace ordering/export semantics checks passed.');

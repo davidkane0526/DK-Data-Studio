@@ -1,14 +1,15 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.2.0';
+  const VERSION = '6.3.0';
   const scopes = new Map();
   const hostState = {
     root: null,
     zones: new Map(),
     activity: () => '',
     status: () => {},
-    storagePrefix: 'dkds.ui.layout.v6'
+    storagePrefix: 'dkds.ui.layout.v6',
+    layers: { canvasBase: 1400, globalBase: 2400, canvasSeq: 0, globalSeq: 0 }
   };
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,6 +22,19 @@
     const selector = String(value || '').trim();
     if (!selector) return null;
     try { return root.querySelector(selector) || document.querySelector(selector); } catch { return null; }
+  };
+  // Strict local resolver for reusable view chrome. Unlike resolveElement(), this
+  // never falls back to document.querySelector when a selector is absent from
+  // its own card/panel. Cross-card fallback caused standard controls from many
+  // PlotViews to accumulate in one unrelated chart header.
+  const resolveScopedElement = (value, root=document) => {
+    if (isElement(value)) return value;
+    if (typeof value === 'function') {
+      try { return resolveScopedElement(value(), root); } catch { return null; }
+    }
+    const selector=String(value||'').trim();
+    if(!selector||!root?.querySelector)return null;
+    try{return root.querySelector(selector);}catch{return null;}
   };
   const isTypingTarget = target => {
     if (!target) return false;
@@ -456,9 +470,13 @@
       this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat),()=>header.removeEventListener('contextmenu',openPlacementMenu));
       if(!useTarget){wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
       this.wrapper=wrapper;this.injectedHeader=useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
-      const bindChromeAction=(selector,handler)=>{const el=resolveElement(selector,wrapper);if(!el||typeof handler!=='function')return;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));};
-      bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
-      bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
+      const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
+      const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
+      if(closeButton){closeButton.classList.add('dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.title=String(this.spec.closeTitle||'关闭');closeButton.setAttribute('aria-label',closeButton.title);}
+      const collapseButton=bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
+      if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.textContent='−';collapseButton.title=String(this.spec.collapseTitle||'缩小');collapseButton.setAttribute('aria-label',collapseButton.title);}
+      const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
+      wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));
       const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});
       const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;if(!window.Plotly?.Plots?.resize)return;for(const plot of this.wrapper.querySelectorAll?.('.js-plotly-plot')||[]){try{window.Plotly.Plots.resize(plot);}catch{}}});};
       const ro=window.ResizeObserver?new ResizeObserver(requestPortableResize):null;ro?.observe(wrapper);this.resizeObserver=ro;
@@ -472,7 +490,7 @@
     place(value,{persist=true,bounds=null}={}){
       let placement=normalizePlacement(value);if(!this.allowed.includes(placement))placement=this.allowed[0]||'home';
       this.wrapper.classList.remove('is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');
-      this.wrapper.style.removeProperty('left');this.wrapper.style.removeProperty('top');this.wrapper.style.removeProperty('width');this.wrapper.style.removeProperty('height');
+      this.wrapper.style.removeProperty('left');this.wrapper.style.removeProperty('top');this.wrapper.style.removeProperty('width');this.wrapper.style.removeProperty('height');this.wrapper.style.removeProperty('--dkds-portable-z');
       cleanupCall(this.dragCleanup);this.dragCleanup=null;
       if(placement==='home')this.restoreHome();
       else if(placement==='sticky'){this.restoreHome();this.wrapper.classList.add('is-sticky');}
@@ -487,7 +505,7 @@
         this.wrapper.style.top=`${Number.isFinite(Number(saved.top))?Number(saved.top):defaultTop}px`;
         this.wrapper.style.width=`${Number(saved.width)||Math.max(360,Math.min(zoneRect.width||window.innerWidth,rect.width||520))}px`;
         if(Number(saved.height)>160)this.wrapper.style.height=`${Number(saved.height)}px`;
-        this.avoidFloatOverlap();
+        this.avoidFloatOverlap();this.raiseLayer();
         this.dragCleanup=this.bindFloatDrag(placement);
       }else{
         const zone=this.zone(placement);if(zone)zone.appendChild(this.wrapper);else this.restoreHome();
@@ -502,6 +520,10 @@
       return placement;
     }
     bounds(){const r=this.wrapper.getBoundingClientRect();const placement=normalizePlacement(this.wrapper?.dataset?.placement);const zone=placement==='global'?(this.zone('global')||hostState.root):(this.zone('overlay')||hostState.root);const z=zone?.getBoundingClientRect?.()||{left:0,top:0};return {left:Math.round(r.left-z.left),top:Math.round(r.top-z.top),width:Math.round(r.width),height:Math.round(r.height)};}
+    raiseLayer(){
+      if(!this.wrapper?.classList?.contains('is-floating'))return 0;
+      const global=this.wrapper.classList.contains('is-global-floating');const layers=hostState.layers||{};const key=global?'globalSeq':'canvasSeq';const base=Number(global?layers.globalBase:layers.canvasBase)||(global?2400:1400);let seq=(Number(layers[key])||0)+1;if(seq>360)seq=1;layers[key]=seq;const z=base+seq;this.wrapper.style.setProperty('--dkds-portable-z',String(z));return z;
+    }
     avoidFloatOverlap(){
       const placement=normalizePlacement(this.wrapper?.dataset?.placement);const zone=placement==='global'?(this.zone('global')||hostState.root):this.zone('overlay');if(!zone||!['float','global'].includes(placement)&&!this.wrapper.classList.contains('is-floating'))return this.bounds();
       const z=zone.getBoundingClientRect?.();if(!z?.width||!z?.height)return this.bounds();
@@ -518,11 +540,11 @@
     pin(placement='right'){return this.place(placement);}
     float(){return this.place('float');}
     globalFloat(){return this.place('global');}
-    setCollapsed(value,{persist=true}={}){const collapsed=!!value;this.wrapper?.classList?.toggle('is-collapsed',collapsed);this.wrapper?.classList?.toggle('collapsed',collapsed);const button=resolveElement(this.spec.collapseSelector,this.wrapper);if(button)button.textContent=collapsed?String(this.spec.expandLabel||'展开'):String(this.spec.collapseLabel||'缩小');if(persist)this.writeState({collapsed});try{this.spec.onCollapse?.({id:this.id,collapsed,portable:this,wrapper:this.wrapper});}catch{}this.scope.emitResize?.({id:this.id,reason:'portable-collapse',collapsed});return collapsed;}
+    setCollapsed(value,{persist=true}={}){const collapsed=!!value;this.wrapper?.classList?.toggle('is-collapsed',collapsed);this.wrapper?.classList?.toggle('collapsed',collapsed);const button=resolveScopedElement(this.spec.collapseSelector,this.wrapper);if(button){button.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');button.textContent=collapsed?String(this.spec.expandIcon||'+'):String(this.spec.collapseIcon||'−');button.title=collapsed?String(this.spec.expandTitle||'展开'):String(this.spec.collapseTitle||'缩小');button.setAttribute('aria-label',button.title);}if(persist)this.writeState({collapsed});try{this.spec.onCollapse?.({id:this.id,collapsed,portable:this,wrapper:this.wrapper});}catch{}this.scope.emitResize?.({id:this.id,reason:'portable-collapse',collapsed});return collapsed;}
     toggleCollapsed(){return this.setCollapsed(!this.wrapper?.classList?.contains('is-collapsed'));}
     bindFloatDrag(mode='float'){
       const head=this.wrapper.querySelector('.drag-handle')||this.wrapper.querySelector('.dkds-portable-header');if(!head)return ()=>{};let state=null;
-      const down=e=>{if(e.button!==0||e.target.closest('button'))return;const r=this.wrapper.getBoundingClientRect();state={dx:e.clientX-r.left,dy:e.clientY-r.top};e.preventDefault();};
+      const down=e=>{if(e.button!==0||e.target.closest('button'))return;this.raiseLayer();const r=this.wrapper.getBoundingClientRect();state={dx:e.clientX-r.left,dy:e.clientY-r.top};e.preventDefault();};
       const move=e=>{if(!state)return;const zone=mode==='global'?(this.zone('global')||hostState.root||document.body):(this.zone('overlay')||hostState.root||document.body);const z=zone?.getBoundingClientRect?.()||{left:0,top:0,width:window.innerWidth,height:window.innerHeight},r=this.wrapper.getBoundingClientRect();this.wrapper.style.left=`${Math.max(0,Math.min(Math.max(0,z.width-r.width),e.clientX-state.dx-z.left))}px`;this.wrapper.style.top=`${Math.max(0,Math.min(Math.max(0,z.height-r.height),e.clientY-state.dy-z.top))}px`;};
       const up=()=>{if(!state)return;state=null;
         const r=this.wrapper.getBoundingClientRect(),snap=Math.max(24,Number(this.spec.snapDistance)||44),zone=mode==='global'?(this.zone('global')||hostState.root||document.body):(this.zone('overlay')||hostState.root||document.body),z=zone?.getBoundingClientRect?.()||{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight};
@@ -620,12 +642,21 @@
       this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;
       if(!this.card)throw new Error(`PlotView card not found: ${this.id}`);
       this.card.classList.add('dkds-plot-view');
-      this.plot=resolveElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.js-plotly-plot',this.card)||this.card.querySelector('.analysis-chart')||this.card;
-      this.header=resolveElement(this.spec.header||'.analysis-chart-title,.reswin-group-head,.ter-chart-header,.pulse-plot-header',this.card);
+      this.plot=resolveScopedElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.js-plotly-plot',this.card)||this.card.querySelector('.analysis-chart')||this.card;
+      this.header=resolveScopedElement(this.spec.header||'.analysis-chart-title,.reswin-group-head,.ter-resistance-card-header,.ter-chart-header,.pulse-card-heading,.pulse-plot-header,.dc-tool-title',this.card);
       if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
       this.header.classList.add('dkds-plot-view-head');
       this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.resize('observer'));this.ro.observe(this.card);}
+    }
+    configure(spec={}){
+      this.spec={...this.spec,...spec};
+      if(spec.plot!==undefined){const next=resolveScopedElement(spec.plot,this.card)||resolveElement(spec.plot);if(next)this.plot=next;}
+      if(spec.fileStem!==undefined||spec.csv!==undefined||spec.copyText!==undefined||spec.exportImage!==undefined||spec.actions!==undefined){
+        this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());
+        this.bindStandardActions();
+      }
+      return this;
     }
     ensureTitle(){
       let title=this.header.querySelector('.dkds-plot-view-title');
@@ -641,7 +672,7 @@
       this.header.insertBefore(wrap,this.header.firstChild||null);this.title=wrap;
     }
     ensureActions(){
-      this.actions=resolveElement(this.spec.actionsHost||'.dkds-plot-view-actions,.reswin-group-card-actions,.ter-chart-actions,.pulse-plot-actions',this.header);
+      this.actions=resolveScopedElement(this.spec.actionsHost||'.dkds-plot-view-actions,.reswin-group-card-actions,.ter-chart-actions,.pulse-plot-actions,.dc-chart-toolbar',this.header);
       if(!this.actions){this.actions=document.createElement('span');this.actions.className='dkds-plot-view-actions';this.header.appendChild(this.actions);}
       this.actions.classList.add('dkds-plot-view-actions');
     }
@@ -688,6 +719,37 @@
     }
     resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(window.Plotly?.Plots?.resize&&plot?.classList?.contains('js-plotly-plot')){try{window.Plotly.Plots.resize(plot);}catch{}}return this;}
     dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
+  }
+
+  class PlotViewRegistry {
+    constructor(scope){this.scope=scope;this.byId=new Map();this.byCard=new WeakMap();this.observers=[];}
+    bind(id,card,spec={}){
+      const node=resolveElement(card);if(!node)throw new Error(`PlotView card not found: ${id}`);
+      const key=String(id||node.dataset?.plotViewId||'plot');let view=this.byCard.get(node)||this.byId.get(key)||null;
+      if(view&&(view.disposed||view.card!==node))view=null;
+      if(view){view.configure?.(spec);this.byId.set(key,view);return view;}
+      view=this.scope.trackObject(new PlotView(this.scope,key,node,spec));this.byCard.set(node,view);this.byId.set(key,view);node.dataset.dkdsPlotViewBound='1';return view;
+    }
+    cards(root){
+      const node=resolveElement(root);if(!node)return[];const selector='.analysis-chart-card,.reswin-group-card,.pulse-card,.dc-chart-pane,[data-dkds-plot-card]';const rows=[];
+      if(node.matches?.(selector))rows.push(node);for(const el of node.querySelectorAll?.(selector)||[])rows.push(el);return [...new Set(rows)];
+    }
+    hydrate(root,spec={}){
+      const rows=[];for(const card of this.cards(root)){
+        const bound=this.byCard.get(card);if(bound&&!bound.disposed){rows.push(bound);continue;}
+        const plot=resolveScopedElement(spec.plotSelector||'.analysis-chart,.reswin-group-plot,.dkds-chart-plot,.js-plotly-plot,#dcChart',card);if(!plot)continue;
+        const header=resolveScopedElement(spec.headerSelector||'.analysis-chart-title,.reswin-group-head,.ter-resistance-card-header,.pulse-card-heading,.dc-tool-title,.dkds-chart-head',card);
+        const plotId=String(plot.id||card.dataset?.plotId||card.dataset?.groupMetric||`plot-${this.byId.size+1}`);const alreadyPrime=card.dataset.dkdsPrimeOwned==='1'||card.classList.contains('dkds-portable-view');
+        const base={plot,header,portable:alreadyPrime?false:spec.portable!==false,placements:spec.placements||['home','left','right','bottom','global'],defaultPlacement:spec.defaultPlacement||'home',stateVersion:spec.stateVersion||'plot-view-v2',portableFactory:spec.portableFactory};
+        try{rows.push(this.bind(`auto:${plotId}`,card,base));}catch(err){console.warn('[DKDS PlotView hydrate]',plotId,err);}
+      }return rows;
+    }
+    observe(root,spec={}){
+      const node=resolveElement(root);if(!node)return()=>{};let queued=false;const run=()=>{queued=false;this.hydrate(node,spec);};const schedule=()=>{if(queued)return;queued=true;queueMicrotask(run);};schedule();
+      if(!window.MutationObserver)return()=>{};const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});this.observers.push(observer);return()=>{observer.disconnect();const i=this.observers.indexOf(observer);if(i>=0)this.observers.splice(i,1);};
+    }
+    get(id){return this.byId.get(String(id||''))||null;}
+    dispose(){for(const observer of this.observers)observer.disconnect();this.observers=[];this.byId.clear();this.byCard=new WeakMap();}
   }
 
   class ViewHost {
@@ -981,6 +1043,7 @@
       else if(spec.mainHtml!==undefined)main.innerHTML=typeof spec.mainHtml==='function'?spec.mainHtml():String(spec.mainHtml||'');
       const ctx={workbench:this,scope:this.scope,slots:this.slots,left,main,root:this.shell};
       const cleanup=spec.mount?.(ctx);if(typeof cleanup==='function')this.primary.cleanup=cleanup;
+      queueMicrotask(()=>this.scope.plotViews?.hydrate?.(this.slots.primary,{portableFactory:(id,node,pSpec)=>this.portable(id,node,pSpec)}));
       this.renderNav();this.syncRegions();this.resize('primary');return this;
     }
     registerSurface(spec={}){
@@ -1000,7 +1063,8 @@
     }
     registerPrime(spec={}){
       const id=String(spec.id||'').trim();if(!id)throw new Error('PRIME id required.');
-      const row={role:'prime',placements:['inline','right','bottom','float'],defaultPlacement:'inline',...spec,id,container:null,portable:null,mounted:false,cleanup:null};
+      const row={role:'prime',placements:['inline','right','bottom','float'],defaultPlacement:'inline',...spec,id,container:null,portable:null,mounted:false,cleanup:null,actionGroup:null};
+      const owned=spec.existingNode||resolveElement(spec.node,this.shell)||resolveElement(spec.node,this.root);if(owned?.dataset)owned.dataset.dkdsPrimeOwned='1';
       this.primes.set(id,row);this.renderNav();if(spec.autoOpen===true)this.openPrime(id,spec.defaultPlacement);return row;
     }
     registerSub(spec={}){
@@ -1047,7 +1111,13 @@
         handle:row.handle||'.analysis-chart-title,.pulse-card-heading,.dc-tool-title,.dkds-analysis-prime-head',controlsHost:row.controlsHost,controlsPlacement:row.controlsPlacement||'start',
         placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged,...lifecycle
       }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,layout,onPlacementChanged,...lifecycle};
-      row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);this.syncRegions();return row;
+      row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);
+      if(Array.isArray(row.actions)&&row.actions.length){
+        const actionHost=resolveScopedElement(row.actionHost||row.actionsHost,container)||resolveScopedElement('[data-dkds-prime-actions]',container);
+        if(actionHost){row.actionGroup?.dispose?.();row.actionGroup=new ActionGroup(this.owner,actionHost,{activity:this.spec.activity,actions:row.actions});}
+      }
+      this.scope.plotViews?.hydrate?.(container,{portableFactory:(id,node,pSpec)=>this.portable(id,node,pSpec)});
+      this.syncRegions();return row;
     }
     openPrime(id,placement){const row=this.primes.get(String(id));if(!row)return false;this.ensurePrime(row);if(placement!==undefined&&placement!==null&&placement!=='')row.portable.place(placement==='inline'?'home':placement);this.renderNav();this.syncRegions();this.resize('prime-open');return true;}
     setPrimePlacement(id,placement){return this.openPrime(id,placement);}
@@ -1055,7 +1125,7 @@
     closePrime(id){
       const row=this.primes.get(String(id));if(!row?.mounted)return false;
       try{row.onClose?.({workbench:this,scope:this.scope,container:row.container,row});}catch(err){console.warn('[DKDS PRIME close]',err);}
-      row.portable?.dispose?.();row.portable=null;cleanupCall(row.cleanup);row.cleanup=null;
+      row.portable?.dispose?.();row.portable=null;row.actionGroup?.dispose?.();row.actionGroup=null;cleanupCall(row.cleanup);row.cleanup=null;
       if(row.container){row.container.classList.add('dkds-prime-hidden');this.park(row.container);}
       row.mounted=false;this.renderNav();this.syncRegions();this.resize('prime-close');return true;
     }
@@ -1076,7 +1146,9 @@
       this.activeSub=row.id;this.slots.primary.classList.add('hidden');this.slots.sub.classList.remove('hidden');this.slots.left.classList.toggle('hidden',row.keepLeft!==true);this.slots.sub.replaceChildren();
       const container=this.ensureSub(row);this.slots.sub.appendChild(container);
       if(!row.mounted||row.remount===true){cleanupCall(row.cleanup);const cleanup=row.mount?.({workbench:this,scope:this.scope,container,slots:this.slots});row.cleanup=typeof cleanup==='function'?cleanup:null;row.mounted=true;}
-      row.onShow?.({workbench:this,scope:this.scope,container,slots:this.slots});this.renderNav();this.syncRegions();this.resize('sub-open');return true;
+      row.onShow?.({workbench:this,scope:this.scope,container,slots:this.slots});
+      queueMicrotask(()=>this.scope.plotViews?.hydrate?.(container,{portableFactory:(id,node,pSpec)=>this.portable(id,node,pSpec)}));
+      this.renderNav();this.syncRegions();this.resize('sub-open');return true;
     }
     portable(id,node,spec={}){
       const userPlacementChanged=spec.onPlacementChanged;
@@ -1092,7 +1164,7 @@
     resize(reason='resize'){this.syncRegions();this.scope.requestChartResize?.({reason:`analysis-workbench:${reason}`});return this;}
     dispose(){
       if(this.closed)return;this.closed=true;cleanupCall(this.primary?.cleanup);
-      for(const row of this.primes.values()){if(row.portable)row.portable.dispose?.();cleanupCall(row.cleanup);}
+      for(const row of this.primes.values()){row.actionGroup?.dispose?.();if(row.portable)row.portable.dispose?.();cleanupCall(row.cleanup);}
       for(const row of this.subs.values())cleanupCall(row.cleanup);
       for(const grid of this.grids)grid.dispose?.();for(const portable of this.portables.values())portable.dispose?.();
       this.actions?.dispose?.();this.regionObserver?.disconnect?.();this.resizeObserver?.disconnect?.();this.leftSplit?.dispose?.();this.rightSplit?.dispose?.();this.bottomSplit?.dispose?.();
@@ -1113,6 +1185,7 @@
       this.canvasSlots=null;this.canvasObserver=null;this.canvasLeftSplit=null;this.canvasRightSplit=null;this.canvasBottomSplit=null;
       this.installCanvasDocking(spec);
       this.setPrimaryScrollMode(this.primaryScrollMode);
+      this.plotViewObserverCleanup=this.scope.plotViews?.observe?.(this.shell,{portableFactory:(id,node,pSpec)=>this.portable(id,node,pSpec),placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'plot-view-v2'});
     }
     installCanvasDocking(spec={}){
       const main=this.slots?.main,primary=this.slots?.primary,sub=this.slots?.sub;if(!main||!primary||!sub)return;
@@ -1144,13 +1217,14 @@
     }
     layout(){return {slot:name=>this.portableSlot(name)};}
     syncCanvasRegions(){
-      if(!this.canvasFrame||!this.canvasSlots)return {left:false,right:false,bottom:false};
-      const has=el=>[...(el?.children||[])].some(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));
-      const state={left:has(this.canvasSlots.left),right:has(this.canvasSlots.right),bottom:has(this.canvasSlots.bottom)};
-      this.canvasFrame.classList.toggle('has-canvas-left',state.left);this.canvasFrame.classList.toggle('has-canvas-right',state.right);this.canvasFrame.classList.toggle('has-canvas-bottom',state.bottom);
+      if(!this.canvasFrame||!this.canvasSlots)return {left:false,right:false,bottom:false,bottomCollapsedOnly:false};
+      const visible=el=>[...(el?.children||[])].filter(node=>!node.classList?.contains('hidden')&&!node.classList?.contains('dkds-prime-hidden'));
+      const leftRows=visible(this.canvasSlots.left),rightRows=visible(this.canvasSlots.right),bottomRows=visible(this.canvasSlots.bottom);
+      const state={left:leftRows.length>0,right:rightRows.length>0,bottom:bottomRows.length>0,bottomCollapsedOnly:bottomRows.length>0&&bottomRows.every(node=>node.classList?.contains('is-collapsed')||node.classList?.contains('collapsed'))};
+      this.canvasFrame.classList.toggle('has-canvas-left',state.left);this.canvasFrame.classList.toggle('has-canvas-right',state.right);this.canvasFrame.classList.toggle('has-canvas-bottom',state.bottom);this.canvasFrame.classList.toggle('canvas-bottom-collapsed-only',state.bottomCollapsedOnly);
       this.canvasFrame.querySelector('.dkds-plugin-canvas-left-resizer')?.classList.toggle('active',state.left);
       this.canvasFrame.querySelector('.dkds-plugin-canvas-right-resizer')?.classList.toggle('active',state.right);
-      this.canvasFrame.querySelector('.dkds-plugin-canvas-bottom-resizer')?.classList.toggle('active',state.bottom);return state;
+      this.canvasFrame.querySelector('.dkds-plugin-canvas-bottom-resizer')?.classList.toggle('active',state.bottom&&!state.bottomCollapsedOnly);return state;
     }
     syncRegions(){const state=super.syncRegions();this.syncCanvasRegions?.();return state;}
     showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');return value;}
@@ -1168,7 +1242,7 @@
     }
     resize(reason='resize'){this.syncCanvasRegions();return super.resize(reason);}
     capabilityState(){return Object.freeze({owner:this.owner,hostMode:this.hostMode,primaryScroll:this.primaryScrollMode,...this.surfaceState()});}
-    dispose(){this.canvasObserver?.disconnect?.();this.canvasLeftSplit?.dispose?.();this.canvasRightSplit?.dispose?.();this.canvasBottomSplit?.dispose?.();super.dispose();}
+    dispose(){cleanupCall(this.plotViewObserverCleanup);this.plotViewObserverCleanup=null;this.canvasObserver?.disconnect?.();this.canvasLeftSplit?.dispose?.();this.canvasRightSplit?.dispose?.();this.canvasBottomSplit?.dispose?.();super.dispose();}
   }
 
   class PluginScope {
@@ -1192,7 +1266,8 @@
       this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec))};
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
-      this.plotViews={bind:(id,card,spec={})=>this.trackObject(new PlotView(this,id,card,spec))};
+      this.plotViewRegistry=new PlotViewRegistry(this);this.cleanups.push(()=>this.plotViewRegistry.dispose());
+      this.plotViews={bind:(id,card,spec={})=>this.plotViewRegistry.bind(id,card,spec),hydrate:(root,spec={})=>this.plotViewRegistry.hydrate(root,spec),observe:(root,spec={})=>this.plotViewRegistry.observe(root,spec),get:id=>this.plotViewRegistry.get(id)};
       this.views={mount:(container,spec)=>this.trackObject(new ViewHost(this,container,spec))};
       this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
       const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
@@ -1241,7 +1316,7 @@
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

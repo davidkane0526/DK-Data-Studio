@@ -1,4 +1,4 @@
-# Plugin Workspace Design System — v3.39
+# Plugin Workspace Design System — v3.40
 
 ## Goal
 
@@ -30,7 +30,40 @@ Core Plugin Workspace Design System
 
 Plugins own domain meaning and data. Core owns reusable interaction mechanics.
 
+## v3.40 strong View Contract and layer model
 
+`PlotView` is no longer an optional helper that a plugin must remember to bind at the right time. `PluginWorkspace` owns a `PlotViewRegistry` and observes its live PRIMARY / PRIME / SUB tree. Standard scientific cards are hydrated automatically when they become connected, including SUB pages that were parked/detached during initial plugin mount. Binding is idempotent. A plugin may configure domain CSV semantics or extra domain actions, but it does not own whether standard plot chrome exists.
+
+The standard figure contract is:
+
+```text
+PluginWorkspace lifecycle
+└─ PlotViewRegistry
+   └─ PlotView
+      ├─ local title/action host only
+      ├─ position / home restoration
+      ├─ CSV / copy
+      ├─ SVG / PNG
+      ├─ resize lifecycle
+      └─ PortableView when the figure is independently movable
+```
+
+Reusable view chrome uses strict card-local lookup. It must never fall back to a selector elsewhere in `document`; this prevents one TER card from accidentally receiving the controls belonging to neighboring figures. If a plot is already owned by a PRIME PortableView, PlotView reuses that ownership and must not create a second position control.
+
+Portable layers are also a Core contract rather than plugin z-index guesses:
+
+```text
+base / fixed docks
+    < canvas floating views
+    < whole-workspace global floating views
+    < context menus / modal overlays
+```
+
+A floating view is raised when focused or dragged. `global` therefore remains above scientific-canvas docks and canvas floats. Plugins must not define private z-index stacks for normal scientific views.
+
+Collapse is geometry, not only visibility. When every occupant of the bottom scientific dock is collapsed, the dock shrinks to title-bar height and PRIMARY receives the released space immediately. Core standardized close/collapse chrome as icon actions (`×`, `−` / `+`).
+
+The architectural rule for built-in plugins is now: **plugins own scientific rendering, domain state, domain calculations and domain-only actions; Core owns standard view chrome, layer ordering, docking/floating, close/collapse, resize and generic figure export.** Private domain tables/reports may still have their own export commands because they are not generic figure chrome.
 
 
 ## v3.39 standard PlotView and native SUPER navigation

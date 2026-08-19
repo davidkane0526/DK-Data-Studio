@@ -17,17 +17,28 @@ const app=read('src/app.js');
 
 assert(ui.includes('class PlotView'),'Core must expose PlotView as the standard scientific data-figure contract.');
 for(const token of ['dkds-plot-view-actions','exportCsv()','copyCsv()','exportImage(format)','Plotly.toImage','traceCsv()','bindPortable()'])assert(ui.includes(token),`PlotView missing ${token}`);
-assert(ui.includes("this.plotViews={bind:(id,card,spec={})=>this.trackObject(new PlotView"),'PluginScope must expose PlotView registration.');
+assert(ui.includes('class PlotViewRegistry')&&ui.includes('this.plotViewRegistry=new PlotViewRegistry(this)')&&ui.includes('hydrate:(root,spec={})=>this.plotViewRegistry.hydrate'),'PluginScope must expose an idempotent PlotView registry with automatic hydration.');
 assert(kernel.includes('plotViews: infrastructureScope?.plotViews'),'Plugin API must expose Core PlotView to every plugin host.');
-assert(kernel.includes('standardPlotViews:true'),'Design-system metadata must declare standard PlotView support.');
+assert(kernel.includes('standardPlotViews:true')&&kernel.includes('strongViewContract:true')&&kernel.includes('autoPlotHydration:true'),'Design-system metadata must declare strong automatic PlotView support.');
 assert(css.includes('.dkds-plot-view-head')&&css.includes('.dkds-plot-view-actions'),'Core stylesheet must own PlotView title/action geometry.');
-assert(resonanceViews.includes("page.querySelectorAll('.respar-derived .analysis-chart-card')")&&resonanceViews.includes('ctx.ui.plotViews?.bind?.'),'Resonance SUB charts must consume Core PlotView rather than hand-built chart buttons.');
+assert(!resonanceViews.includes("page.querySelectorAll('.respar-derived .analysis-chart-card')")&&ui.includes('queueMicrotask(()=>this.scope.plotViews?.hydrate?.(container'),'Resonance SUB charts must be hydrated by the PluginWorkspace lifecycle rather than a plugin-side one-shot DOM scan.');
 assert(resonanceFeature.includes('uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&!resonanceFeature.includes('<button type="button" data-csv>CSV</button>'),'Resonance group child plots must consume Core PlotView rather than duplicate CSV/copy chrome.');
-assert(resonanceViews.includes("data-respar-group-cols-menu-host")&&resonanceViews.includes("menu:true")&&resonanceViews.includes("每行 ${value} 个子图"),'Group layout must use the Core ActionGroup menu contract rather than a custom draggable-header listener.');
+assert(resonanceViews.includes("actionHost:'[data-respar-group-cols-menu-host]'")&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("每行 ${value} 个子图"),'Group layout must be a PRIME action supplied through the Core ActionGroup lifecycle.');
 assert(app.includes('function ensurePluginWorkspaceVisible(activityId)')&&kernel.includes('host?.ensurePluginWorkspaceVisible?.(spec.activity)'),'System plugin-toolbar commands must restore the active SUPER workspace before opening PRIME/SUB content.');
 assert(app.includes("layout.root?.selector")&&app.includes("closest?.('.analysis-page')"),'SUPER root resolution must support native PluginWorkspace root.selector contracts.');
 assert(resonanceViews.includes('reswin-gate-controls dkds-inline-form-row')&&css.includes('.dkds-inline-form-row>label:not(.inline-check)')&&css.includes('display:block!important'),'Wide scientific forms must use the Core inline-form contract so labels containing sub/sup stay on one text line.');
 assert(terFeature.includes("ctx.ui.plotViews.bind(`ter:${spec.key}`")&&!terFeature.includes('decoratePlotCard(spec)'),'TER data figures must consume Core PlotView instead of hand-built per-chart export chrome.');
 assert(pulseFeature.includes("ctx.ui.plotViews.bind(`pulse:${viewId}`")&&!pulseViews.includes('pulseRawExportBtn'),'Pulse data figures must consume Core PlotView instead of hand-built CSV/SVG/PNG buttons.');
 assert(dataCenterFeature.includes("ctx.ui.plotViews.bind('data-center:preview'")&&!dataCenterViews.includes('dcExportChart'),'Data Center chart preview must consume Core PlotView instead of a plugin-specific PNG button.');
+
+assert(ui.includes('resolveScopedElement')&&ui.includes("this.actions=resolveScopedElement"),'PlotView controls must resolve strictly inside their own chart card and never fall back to another chart.');
+assert(ui.includes("this.plotViewObserverCleanup=this.scope.plotViews?.observe?.(this.shell"),'PluginWorkspace must automatically hydrate PlotViews as PRIMARY/PRIME/SUB DOM becomes connected.');
+assert(ui.includes("card.dataset.dkdsPrimeOwned==='1'")&&ui.includes("portable:alreadyPrime?false"),'Automatic PlotView hydration must reuse PRIME portability instead of creating duplicate position controls.');
+assert(css.includes('--dkds-layer-global-float:2400')&&css.includes('--dkds-layer-canvas-float:1400'),'Core must define separate global/canvas floating layers.');
+assert(css.includes('.canvas-bottom-collapsed-only')&&ui.includes('bottomCollapsedOnly'),'Collapsed bottom docks must return unused height to the scientific canvas.');
+
+assert(!resonanceViews.includes('spacingExportSvgBtn')&&!resonanceViews.includes('spacingExportPngBtn'),'Resonance spacing views must not retain private SVG/PNG chart buttons after automatic PlotView hydration.');
+const terViews=read('src/plugins/ter-analysis/shared-views.js');
+for(const legacyId of ['terExportHeatmapSvgBtn','terExportHeatmapPngBtn','terExportMaxVgSvgBtn','terExportMaxVgPngBtn','terExportMaxVdSvgBtn','terExportMaxVdPngBtn'])assert(!terViews.includes(legacyId),`TER must not retain private generic chart control ${legacyId}.`);
+assert(ui.includes("globalBase: 2400")&&ui.includes("canvasBase: 1400")&&ui.includes("raiseLayer()"),'PortableView layer ordering must be owned by Core with global free-float above canvas float/dock content.');
 console.log('Core PlotView / menu / SUPER navigation foundation checks passed.');

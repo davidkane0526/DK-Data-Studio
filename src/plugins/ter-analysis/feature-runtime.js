@@ -1015,18 +1015,18 @@
     page.querySelector('#terCopyLongBtn').onclick=()=>T.copyLong();
     page.querySelector('#terExportMatrixBtn').onclick=()=>T.exportMatrix();
     page.querySelector('#terCopyMatrixBtn').onclick=()=>T.copyMatrix();
-    page.querySelector('#terExportHeatmapSvgBtn').onclick=()=>T.exportHeatmapSvg();
-    page.querySelector('#terExportHeatmapPngBtn').onclick=()=>T.exportHeatmapPng();
+    page.querySelector('#terExportHeatmapSvgBtn')?.addEventListener('click',()=>T.exportHeatmapSvg());
+    page.querySelector('#terExportHeatmapPngBtn')?.addEventListener('click',()=>T.exportHeatmapPng());
 
-    page.querySelector('#terExportMaxVgBtn').onclick=()=>T.exportMaxVg();
-    page.querySelector('#terCopyMaxVgBtn').onclick=()=>T.copyMaxVg();
-    page.querySelector('#terExportMaxVgSvgBtn').onclick=()=>T.exportMaxVgSvg();
-    page.querySelector('#terExportMaxVgPngBtn').onclick=()=>T.exportMaxVgPng();
+    page.querySelector('#terExportMaxVgBtn')?.addEventListener('click',()=>T.exportMaxVg());
+    page.querySelector('#terCopyMaxVgBtn')?.addEventListener('click',()=>T.copyMaxVg());
+    page.querySelector('#terExportMaxVgSvgBtn')?.addEventListener('click',()=>T.exportMaxVgSvg());
+    page.querySelector('#terExportMaxVgPngBtn')?.addEventListener('click',()=>T.exportMaxVgPng());
 
-    page.querySelector('#terExportMaxVdBtn').onclick=()=>T.exportMaxVd();
-    page.querySelector('#terCopyMaxVdBtn').onclick=()=>T.copyMaxVd();
-    page.querySelector('#terExportMaxVdSvgBtn').onclick=()=>T.exportMaxVdSvg();
-    page.querySelector('#terExportMaxVdPngBtn').onclick=()=>T.exportMaxVdPng();
+    page.querySelector('#terExportMaxVdBtn')?.addEventListener('click',()=>T.exportMaxVd());
+    page.querySelector('#terCopyMaxVdBtn')?.addEventListener('click',()=>T.copyMaxVd());
+    page.querySelector('#terExportMaxVdSvgBtn')?.addEventListener('click',()=>T.exportMaxVdSvg());
+    page.querySelector('#terExportMaxVdPngBtn')?.addEventListener('click',()=>T.exportMaxVdPng());
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();terHeaderActions?.render?.();queueLinkedRender();}});
 

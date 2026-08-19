@@ -136,10 +136,6 @@
 </select>
 </label>
 <button class="primary" id="spacingRefreshBtn">计算 / 刷新</button>
-<button id="spacingExportCsvBtn">导出 CSV</button>
-<button class="copy-btn" id="spacingCopyCsvBtn">复制数据</button>
-<button id="spacingExportSvgBtn">导出 SVG</button>
-<button id="spacingExportPngBtn">导出 PNG</button>
 </div>
 <div class="analysis-note">
           下拉框中的“正扫·峰1”和“反扫·峰1”是两个独立序列。仅在两个序列具有相同 Vg 数据点时计算间距。
@@ -225,7 +221,7 @@
           </div>
 
           <div id="resparGroupPanel" class="respar-floating-panel respar-group-panel hidden">
-            <div class="respar-floating-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div><span data-respar-group-cols-menu-host></span><button data-respar-collapse="group">缩小</button><button data-respar-close="group" class="respar-panel-close" title="关闭">×</button></div></div>
+            <div class="respar-floating-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div><span data-respar-group-cols-menu-host></span><button data-respar-collapse="group" title="缩小">−</button><button data-respar-close="group" class="respar-panel-close" title="关闭">×</button></div></div>
             <div class="respar-floating-body">
               <div id="reswinGroupGrid" class="reswin-group-grid"></div>
             </div>
@@ -236,7 +232,7 @@
             <div id="reswinPhysicsSummary" class="reswin-physics-summary"></div><div class="reswin-two-col"><div class="analysis-chart-card"><div class="analysis-chart-title">稳定 ridge：V0 与有效分裂 δ</div><div id="reswinPhysicsPlot" class="analysis-chart reswin-medium-plot"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">物理机制判据</div><div id="reswinPhysicsModel" class="reswin-report"></div></div></div><div class="analysis-table-wrap"><table id="reswinPhysicsTable" class="analysis-table"></table></div>
           </section>
           <section class="respar-derived hidden" data-reswin-view-panel="spacing">
-            <div class="respar-derived-header"><h3>两峰间距分析</h3><button data-reswin-view="main">返回主图</button></div><div class="analysis-control-card reswin-spacing-controls"><label>峰序列 A<select id="reswinSpacingA"></select></label><label>峰序列 B<select id="reswinSpacingB"></select></label><label>显示<select id="reswinSpacingMode"><option value="abs">|VB − VA|</option><option value="signed">VB − VA</option></select></label><button id="reswinSpacingExport">导出 CSV</button></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰间距随 Vg 变化</div><div id="reswinSpacingPlot" class="analysis-chart reswin-medium-plot"></div></div><div class="analysis-table-wrap"><table id="reswinSpacingTable" class="analysis-table"></table></div>
+            <div class="respar-derived-header"><h3>两峰间距分析</h3><button data-reswin-view="main">返回主图</button></div><div class="analysis-control-card reswin-spacing-controls"><label>峰序列 A<select id="reswinSpacingA"></select></label><label>峰序列 B<select id="reswinSpacingB"></select></label><label>显示<select id="reswinSpacingMode"><option value="abs">|VB − VA|</option><option value="signed">VB − VA</option></select></label><button id="reswinSpacingExport">分析数据 CSV</button></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰间距随 Vg 变化</div><div id="reswinSpacingPlot" class="analysis-chart reswin-medium-plot"></div></div><div class="analysis-table-wrap"><table id="reswinSpacingTable" class="analysis-table"></table></div>
           </section>
           <section class="respar-derived hidden" data-reswin-view-panel="gate">
             <div class="respar-derived-header"><h3>栅压物理分析</h3><button data-reswin-view="main">返回主图</button></div>
@@ -360,7 +356,12 @@
       primary:{id:'main',label:'共振分析',scroll:'contained',leftNode:leftPanel,mainNode:mainArea},
       primes:[
         {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:'float',placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
-        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:'bottom',placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',collapseLabel:'缩小',expandLabel:'展开',mount:({container})=>{container.classList.remove('hidden');R.renderGroup?.();},onClose:()=>R.closeGroupViews?.(),onPlacementChanged:()=>controller.resize?.()}
+        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:'bottom',placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
+          id:'group-columns',menu:true,order:10,
+          label:()=>{const value=String(R.getGroupColumns?.()||'auto');return `每行：${value==='auto'?'自动':value}`;},
+          title:'设置每行子图数量',
+          items:()=>{const current=String(R.getGroupColumns?.()||'auto');return ['auto','1','2','3','4','5','6'].map(value=>({id:`group-cols-${value}`,icon:current===value?'✓':'',label:value==='auto'?'自动排列':`每行 ${value} 个子图`,onInvoke:()=>{R.setGroupColumns?.(value);const row=wb.primes?.get?.('group-analysis');row?.actionGroup?.render?.();}}));}
+        }],mount:({container})=>{container.classList.remove('hidden');R.renderGroup?.();},onClose:()=>R.closeGroupViews?.(),onPlacementChanged:()=>controller.resize?.()}
       ],
       subs:[
         {id:'physics',label:'物理机制',existingNode:subNodes.physics,onShow:({container})=>{container.classList.remove('hidden');R.renderPhysics?.();}},
@@ -379,35 +380,11 @@
     };
     R.setWorkspaceNavigator?.(navigate);
     R.setWorkspaceRuntime?.({portable:(id,node,spec)=>wb.portable(id,node,spec),workbench:wb});
-    // Every Plotly data card in a SUB page consumes the Core PlotView contract.
-    // Plugins only render data; Core owns location/export/copy/resize chrome.
-    page.querySelectorAll('.respar-derived .analysis-chart-card').forEach((card,index)=>{
-      const plot=card.querySelector('.analysis-chart');if(!plot)return;
-      const plotId=String(plot.id||`resonance-sub-plot-${index}`);
-      ctx.ui.plotViews?.bind?.(`resonance-sub:${plotId}`,card,{plot,header:'.analysis-chart-title',fileStem:()=>`resonance_${plotId}`,placements:['home','global'],defaultPlacement:'home',stateVersion:'plot-view-v1',portableFactory:(id,node,spec)=>wb.portable(id,node,spec)});
-    });
+    // PlotView chrome is now hydrated by PluginWorkspace whenever a PRIMARY,
+    // PRIME or SUB surface becomes connected. Detached SUB pages no longer
+    // need plugin-side one-shot DOM scans.
     wb.setNavigationPresentation?.('host');
     ctx.ui.edit?.register?.({id:'resonance',order:10,undo:()=>{R.undoLastAction?.();return true;},deselect:()=>{R.clearSelection?.();return true;}});
-    const groupColsHost=page.querySelector('[data-respar-group-cols-menu-host]');
-    if(groupColsHost&&ctx.ui.actions?.mount){
-      let groupColumnActions=null;
-      groupColumnActions=ctx.ui.actions.mount(groupColsHost,{
-        activity:'resonance',
-        actions:[{
-          id:'group-columns',menu:true,order:10,
-          label:()=>{const value=String(R.getGroupColumns?.()||'auto');return `每行：${value==='auto'?'自动':value}`;},
-          title:'设置每行子图数量',
-          items:()=>{
-            const current=String(R.getGroupColumns?.()||'auto');
-            return ['auto','1','2','3','4','5','6'].map(value=>({
-              id:`group-cols-${value}`,icon:current===value?'✓':'',
-              label:value==='auto'?'自动排列':`每行 ${value} 个子图`,
-              onInvoke:()=>{R.setGroupColumns?.(value);groupColumnActions?.render?.();}
-            }));
-          }
-        }]
-      });
-    }
     const primeIdFor=kind=>kind==='inspect'?'curve-inspector':'group-analysis';
     const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id);kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};
     page.querySelectorAll('[data-respar-panel]').forEach(btn=>btn.onclick=()=>togglePanel(btn.dataset.resparPanel));

@@ -1,4 +1,4 @@
-# DK Data Studio Plugin UI Infrastructure — Plugin API v1.7 / UI Core v5.0
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.8 / UI Core v6.3
 
 ## Design boundary
 
@@ -254,3 +254,12 @@ The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with
 - Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
 - SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
 - `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.
+## v3.40 automatic PlotView lifecycle and layered PortableView
+
+`PluginWorkspace` automatically observes its connected view tree and hydrates standard scientific figure cards through the Core `PlotViewRegistry`. Plugins no longer need one-shot `querySelectorAll(...).bind(...)` passes for generic plot capabilities. This matters for PRIME/SUB content because those nodes can be detached at plugin initialization and connected only later.
+
+`PlotViewRegistry.bind()` is idempotent, and generic chrome is resolved strictly within the owning card. Standard capabilities are position, CSV, copy, SVG, PNG and resize. A PRIME-owned figure does not receive a second PortableView/position control. Plugins may provide domain actions such as TER `清除高亮`, but these are composed next to rather than replacing Core figure chrome.
+
+PortableView has a Core layer policy: fixed dock < canvas float < global float < context menu/modal. Global free-floating views can cross the control/science boundary and are raised on focus/drag; they must not be hidden below group docks. Close/collapse actions use the shared icon chrome and collapsed dock geometry returns unused space to PRIMARY.
+
+Architecture guards in `scripts/test-plot-view-foundation.js` treat plugin-private generic SVG/PNG/location chrome, document-wide PlotView action-host fallback, and one-shot SUB PlotView scans as regressions.

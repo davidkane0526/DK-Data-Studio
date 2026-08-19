@@ -1,9 +1,9 @@
-# Next Session Handoff — v3.38.0
+# Next Session Handoff — v3.40.0
 
 ## Current checkout
 
-- Local working branch: `refactor/v3.38-portable-home-contextual-export`
-- Current delivery: `v3.38.0`
+- Local working branch: `refactor/v3.40-strong-view-contract-layering`
+- Current delivery: `v3.40.0`
 - `main` remains the local v3.32.0 baseline until an explicit merge is requested.
 - Do not access or modify a remote repository unless the user explicitly asks.
 
@@ -56,3 +56,12 @@ node scripts/test-ter-live-artifact-integration.js
 ```
 
 Linux Chromium runtime geometry/event verification is documented in `docs/VERIFICATION_V3.38.0.md`.
+## v3.40 delta
+
+The previous v3.39 PlotView abstraction was not yet strong enough: plugins could still miss hydration timing and Core reusable chrome could fall back to a matching selector elsewhere in the document. v3.40 moves standard scientific-figure assembly into the live PluginWorkspace lifecycle. PRIMARY/PRIME/SUB nodes are observed as they connect, binding is idempotent, and action hosts are strictly local to their own cards.
+
+PortableView layer order is now explicit: fixed/dock content < canvas float < global free float < context menu/modal. Global free-float views raise on focus/drag and cannot be hidden under the resonance group dock. Bottom-dock collapse participates in workspace geometry and returns unused height to PRIMARY. Close/collapse buttons use shared icon chrome.
+
+Resonance group layout is a PRIME ActionGroup and is mounted when the PRIME actually opens, so `每行：自动` does not depend on querying detached DOM. Standard plots across Resonance, TER, Pulse and Data Center are expected to receive generic plot controls through the Core registry.
+
+Linux Chromium runtime verification is documented in `docs/VERIFICATION_V3.40.0.md`.

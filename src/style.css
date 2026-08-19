@@ -4523,3 +4523,50 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-plugin-workbench-root .dkds-inline-form-row sub,
 .dkds-plugin-workbench-root .dkds-inline-form-row sup{display:inline;line-height:0}
 @media(max-width:1250px){.dkds-plugin-workbench-root .dkds-inline-form-row{flex-wrap:wrap}}
+
+/* ============================================================
+   v3.40 Strong View Contract
+   Core owns floating layers, portable chrome, collapsed dock geometry and
+   standard PlotView chrome. Plugin CSS must not invent competing z-index or
+   collapse geometry for reusable scientific views.
+   ============================================================ */
+.dkds-analysis-workbench,.dkds-plugin-workspace{
+  --dkds-layer-canvas-float:1400;
+  --dkds-layer-global-float:2400;
+  --dkds-layer-context-menu:3900;
+}
+.dkds-analysis-workbench .dkds-portable-view.is-floating,
+.dkds-plugin-workspace .dkds-portable-view.is-floating{
+  z-index:var(--dkds-portable-z,var(--dkds-layer-canvas-float))!important;
+}
+.dkds-analysis-overlay>.dkds-portable-view.is-global-floating,
+.dkds-plugin-workspace .dkds-portable-view.is-global-floating{
+  z-index:var(--dkds-portable-z,var(--dkds-layer-global-float))!important;
+}
+.dkds-context-menu{z-index:var(--dkds-layer-context-menu,3900)!important}
+.dkds-portable-icon-action{
+  width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important;
+  padding:0!important;border:0!important;background:transparent!important;border-radius:6px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  font-size:18px!important;line-height:1!important;font-weight:500!important;color:#40506a!important
+}
+.dkds-portable-icon-action:hover{background:#eef3fb!important;color:#1f3f7a!important}
+.dkds-portable-close-action{font-size:20px!important}
+
+/* A collapsed bottom dock consumes only its title bars. The scientific canvas
+   immediately reclaims the former fixed split height. */
+.dkds-plugin-canvas-frame.has-canvas-bottom.canvas-bottom-collapsed-only{
+  grid-template-rows:minmax(0,1fr) 0 auto!important;
+}
+.dkds-plugin-canvas-frame.canvas-bottom-collapsed-only>.dkds-plugin-canvas-bottom-resizer{display:none!important}
+.dkds-plugin-canvas-bottom>.dkds-portable-view.is-collapsed,
+.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel.is-collapsed{
+  min-height:0!important;height:auto!important;max-height:none!important;flex:0 0 auto!important;overflow:hidden!important
+}
+.dkds-portable-view.is-collapsed>.respar-floating-header,
+.dkds-portable-view.is-collapsed>.dkds-portable-header,
+.dkds-portable-view.is-collapsed>.dkds-analysis-prime-head{min-height:36px}
+
+/* Standard plot chrome is card-local. It may never spill into another chart. */
+.dkds-plot-view-head>.dkds-plot-view-actions{margin-left:auto}
+.dkds-plot-view-actions:empty{display:none!important}
