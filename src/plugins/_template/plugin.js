@@ -1,9 +1,22 @@
 (() => {
   DKDSPlugins.define({
-    id:'example.plugin',name:'Example Plugin',version:'0.3.0',apiVersion:'1.6.0',order:900,
-    capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.shortcuts','state.store','workflow.processor']
+    id:'example.plugin',name:'Example Plugin',version:'0.3.0',apiVersion:'1.7.0',order:900,
+    capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.shortcuts','ui.interaction','data.types','state.store','workflow.processor']
   }, async ctx => {
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});
+
+    // Domain data/result types belong to plugins. Keep selections compact: the
+    // canonical data can be arbitrarily large and remains in the artifact or
+    // project store while the interaction document carries an id/ref/preview.
+    ctx.data.types.register('example.result',{
+      title:'Example derived result',parents:['result.analysis','data.point'],kind:'result',
+      key:value=>value?.id,
+      selection:value=>({id:value?.id,ref:{resultId:value?.id},value:{id:value?.id,label:value?.label,x:value?.x,y:value?.y}})
+    });
+    const interaction=ctx.ui.interaction.create('example',{selection:{multiple:true,defaultType:'example.result'}});
+    interaction.bind('details',{types:['result.analysis'],onSelection:snapshot=>{
+      const focus=snapshot.focus;if(focus)ctx.host.setStatus(`Selected ${ctx.data.types.describe(focus.type,focus.value)}`);
+    }});
 
     ctx.workflow.processors.register('example.scale-column',{
       name:'Example: scale column',inputKinds:['data.table'],outputKinds:['data.table'],

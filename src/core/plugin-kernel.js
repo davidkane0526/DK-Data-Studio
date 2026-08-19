@@ -26,7 +26,7 @@
   let shellBound = false;
   let shellResizeObserver = null;
 
-  const API_VERSION = '1.6.0';
+  const API_VERSION = '1.7.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -388,10 +388,41 @@
     return () => eventListeners.get(name)?.delete(row);
   }
 
-  function eventEmit(name, payload) {
-    for (const row of eventListeners.get(name) || []) {
-      try { row.fn(payload); } catch (err) { console.error(`[DKDS event:${name}]`, err); }
+  let layoutResizePending = null;
+  let layoutResizeFrame = 0;
+  let layoutResizeDispatching = false;
+
+  function eventEmitNow(name, payload) {
+    const isLayout = name === 'layout:resize';
+    const previousDispatching = layoutResizeDispatching;
+    if (isLayout) layoutResizeDispatching = true;
+    try {
+      for (const row of eventListeners.get(name) || []) {
+        try { row.fn(payload); } catch (err) { console.error(`[DKDS event:${name}]`, err); }
+      }
+    } finally {
+      if (isLayout) layoutResizeDispatching = previousDispatching;
     }
+  }
+
+  function eventEmit(name, payload) {
+    if (name !== 'layout:resize') return eventEmitNow(name, payload);
+    // layout:resize is a frame signal, not a synchronous command. Window
+    // resize, splitters, grids and Plotly ResizeObservers may all report the
+    // same geometry change. Coalesce them globally and reject recursive
+    // layout notifications from listeners so a plugin can never create a
+    // frame-by-frame feedback loop.
+    if (layoutResizeDispatching) return false;
+    layoutResizePending = { ...(layoutResizePending || {}), ...(payload || {}) };
+    if (layoutResizeFrame) return true;
+    const raf = globalThis.requestAnimationFrame || (fn => setTimeout(fn, 16));
+    layoutResizeFrame = raf(() => {
+      layoutResizeFrame = 0;
+      const next = layoutResizePending || {};
+      layoutResizePending = null;
+      eventEmitNow('layout:resize', next);
+    });
+    return true;
   }
 
   function addCleanup(pluginId, fn) {
@@ -1198,7 +1229,7 @@
 
   function createApi(definition) {
     const pluginId = definition.manifest.id;
-    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmit } }) || null;
+    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmitNow } }) || null;
     if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
     const normalizeShortcutSpec = spec => {
       const row={order:100,priority:0,...(spec||{}),id:spec?.id};
@@ -1216,7 +1247,14 @@
       platform: window.DKDSPlatform,
       events: {
         on: (name, fn) => addCleanup(pluginId, eventOn(name, fn, pluginId)),
-        emit: eventEmit
+        emit: (name, payload) => {
+          if (name === 'layout:resize' && infrastructureScope) {
+            if (layoutResizeDispatching) return false;
+            infrastructureScope.emitResize(payload || {});
+            return true;
+          }
+          return eventEmit(name, payload);
+        }
       },
       commands: {
         register: (id, handler, meta) => registerCommand(pluginId, id, handler, meta),
@@ -1273,6 +1311,16 @@
       data: {
         model: window.DKDSData,
         formula: window.DKDSFormula,
+        types: infrastructureScope?.dataTypes || Object.freeze({
+          register:(id,spec)=>window.DKDSUI?.dataTypes?.register?.(pluginId,id,spec),
+          get:id=>window.DKDSUI?.dataTypes?.get?.(id)||null,
+          list:q=>window.DKDSUI?.dataTypes?.list?.(q)||[],
+          isA:(id,parent)=>window.DKDSUI?.dataTypes?.isA?.(id,parent)||false,
+          infer:(value,q)=>window.DKDSUI?.dataTypes?.infer?.(value,q)||null,
+          describe:(id,value)=>window.DKDSUI?.dataTypes?.describe?.(id,value)||'',
+          projectSelection:(id,value,context)=>window.DKDSUI?.dataTypes?.projectSelection?.(id,value,context)||{value},
+          resolve:(id,item,context)=>window.DKDSUI?.dataTypes?.resolve?.(id,item,context)
+        }),
         artifacts: {
           list: options => host?.artifacts?.list?.(options) || [],
           get: id => host?.artifacts?.get?.(id) || null,
@@ -1351,6 +1399,7 @@
         portable: infrastructureScope?.panels || null,
         charts: infrastructureScope?.chartsApi || null,
         interactions: infrastructureScope?.interactions || null,
+        interaction: infrastructureScope?.interactionRuntime || null,
         contextMenus: infrastructureScope?.menus || null,
         selection: infrastructureScope?.selection || null,
         views: infrastructureScope?.views || null,

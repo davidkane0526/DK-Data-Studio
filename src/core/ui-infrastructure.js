@@ -1,14 +1,14 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '4.0.1';
+  const VERSION = '5.0.0';
   const scopes = new Map();
   const hostState = {
     root: null,
     zones: new Map(),
     activity: () => '',
     status: () => {},
-    storagePrefix: 'dkds.ui.layout.v5'
+    storagePrefix: 'dkds.ui.layout.v6'
   };
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -111,6 +111,178 @@
     clear(meta={}){return this.set(null,{reason:'clear',...meta});}
     subscribe(fn,{immediate=false}={}){if(typeof fn!=='function')return()=>{};this.listeners.add(fn);if(immediate)fn(this.value,{reason:'subscribe'},this);return()=>this.listeners.delete(fn);}
     dispose(){this.listeners.clear();this.value=null;}
+  }
+
+  class DataTypeRegistry {
+    constructor(){this.rows=new Map();this.ownerIndex=new Map();}
+    register(owner,id,spec={}){
+      const key=String(id||'').trim();if(!key)throw new Error('Data type id required.');
+      const ownerId=String(owner||'core');
+      const previous=this.rows.get(key);
+      if(previous&&previous.owner!==ownerId)throw new Error(`Data type ${key} is already owned by ${previous.owner}.`);
+      if(previous)this.unregister(key);
+      const parents=[...new Set([...(Array.isArray(spec.parents)?spec.parents:[]),spec.parent].filter(Boolean).map(String))];
+      const value=Object.freeze({id:key,owner:ownerId,title:String(spec.title||key),parent:parents[0]||'',parents:Object.freeze(parents),kind:String(spec.kind||'entity'),schema:spec.schema||null,key:typeof spec.key==='function'?spec.key:null,normalize:typeof spec.normalize==='function'?spec.normalize:null,selection:typeof spec.selection==='function'?spec.selection:null,resolve:typeof spec.resolve==='function'?spec.resolve:null,serialize:typeof spec.serialize==='function'?spec.serialize:null,deserialize:typeof spec.deserialize==='function'?spec.deserialize:null,describe:typeof spec.describe==='function'?spec.describe:null,match:typeof spec.match==='function'?spec.match:null,metadata:spec.metadata&&typeof spec.metadata==='object'?{...spec.metadata}:{}});
+      this.rows.set(key,value);if(!this.ownerIndex.has(ownerId))this.ownerIndex.set(ownerId,new Set());this.ownerIndex.get(ownerId).add(key);return value;
+    }
+    unregister(id){const key=String(id||'');const row=this.rows.get(key);if(!row)return false;this.rows.delete(key);this.ownerIndex.get(row.owner)?.delete(key);if(!this.ownerIndex.get(row.owner)?.size)this.ownerIndex.delete(row.owner);return true;}
+    unregisterOwner(owner){for(const id of [...(this.ownerIndex.get(String(owner||''))||[])])this.unregister(id);}
+    get(id){return this.rows.get(String(id||''))||null;}
+    list(query={}){const q=typeof query==='string'?{kind:query}:query||{};return [...this.rows.values()].filter(row=>(!q.owner||row.owner===q.owner)&&(!q.kind||row.kind===q.kind)&&(!q.parent||this.isA(row.id,q.parent)));}
+    isA(id,parent){
+      const target=String(parent||'');if(!target)return true;const start=String(id||'');if(start===target)return true;
+      const seen=new Set(),queue=[start];let guard=0;
+      while(queue.length&&guard++<128){const currentId=queue.shift();if(seen.has(currentId))continue;seen.add(currentId);const current=this.get(currentId);if(!current)continue;for(const next of current.parents||(current.parent?[current.parent]:[])){if(next===target)return true;if(!seen.has(next))queue.push(next);}}
+      return false;
+    }
+    infer(value,query={}){for(const row of this.list(query)){try{if(row.match?.(value,{registry:this,type:row}))return row;}catch{}}return null;}
+    describe(id,value){const row=this.get(id);if(!row)return String(value?.name||value?.id||id||'');try{return row.describe?String(row.describe(value,{registry:this,type:row})||''):String(value?.label||value?.name||value?.id||row.title);}catch{return String(value?.label||value?.name||value?.id||row.title);}}
+    normalize(type,value,context={}){const row=this.get(type);if(!row)return value;try{return row.normalize?row.normalize(value,{...context,type:row}):value;}catch(err){console.warn('[DKDS data type normalize]',type,err);return value;}}
+    key(type,value,context={}){const row=this.get(type);if(row?.key){try{const k=row.key(value,{...context,type:row});if(k!==undefined&&k!==null&&String(k)!=='')return String(k);}catch(err){console.warn('[DKDS data type key]',type,err);}}const direct=value?.id??value?.key??value?.path??value?.name;return direct!==undefined&&direct!==null&&String(direct)!==''?String(direct):'';}
+    projectSelection(type,value,context={}){
+      const row=this.get(type);if(!row?.selection)return {value};
+      try{
+        const projected=row.selection(value,{...context,type:row,registry:this});
+        if(projected&&typeof projected==='object'&&!Array.isArray(projected)&&('value' in projected||'ref' in projected||'id' in projected||'meta' in projected))return projected;
+        return {value:projected};
+      }catch(err){console.warn('[DKDS data type selection]',type,err);return {value};}
+    }
+    resolve(type,item,context={}){
+      const row=this.get(type);if(!row?.resolve)return item?.value;
+      try{return row.resolve(item?.ref??item?.value,{...context,type:row,item,registry:this});}
+      catch(err){console.warn('[DKDS data type resolve]',type,err);return undefined;}
+    }
+  }
+  const dataTypeRegistry=new DataTypeRegistry();
+  dataTypeRegistry.register('core','core.entity',{title:'Entity'});
+  dataTypeRegistry.register('core','data.artifact',{title:'Data artifact',parent:'core.entity',kind:'data'});
+  dataTypeRegistry.register('core','data.series',{title:'Series',parent:'data.artifact',kind:'data'});
+  dataTypeRegistry.register('core','data.sweep',{title:'Sweep',parent:'data.series',kind:'data'});
+  dataTypeRegistry.register('core','data.point',{title:'Point',parent:'core.entity',kind:'data'});
+  dataTypeRegistry.register('core','data.range',{title:'Range',parent:'core.entity',kind:'region'});
+  dataTypeRegistry.register('core','result.analysis',{title:'Analysis result',parent:'data.artifact',kind:'result'});
+
+  class SelectionModel {
+    constructor(owner,id,spec={}){
+      this.owner=String(owner||'');this.id=String(id||'selection');this.spec={multiple:true,...spec};this.listeners=new Set();this.revision=0;
+      this.value={schema:1,revision:0,items:[],focus:null,ranges:[],context:{},source:null};
+      if(spec.initial)this.restore(spec.initial,{reason:'initial'});
+    }
+    normalizeItem(input,options={}){
+      if(input===null||input===undefined)return null;
+      const raw=(input&&typeof input==='object'&&!Array.isArray(input))?input:{value:input};
+      const type=String(options.type||raw.type||this.spec.defaultType||'core.entity');
+      const normalized=dataTypeRegistry.normalize(type,raw.value!==undefined?raw.value:raw,{selection:this,owner:this.owner});
+      // Selection is an interaction document, not a second data store. A type
+      // may project large tables/sweeps/results into a compact value + ref while
+      // the canonical data remains in the plugin/project artifact store.
+      const projected=dataTypeRegistry.projectSelection(type,normalized,{selection:this,owner:this.owner});
+      const projectedValue='value' in projected?projected.value:normalized;
+      const id=String(raw.id||projected.id||dataTypeRegistry.key(type,normalized,{selection:this,owner:this.owner})||dataTypeRegistry.key(type,projectedValue,{selection:this,owner:this.owner})||`${type}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,8)}`);
+      const projectedRef=projected.ref&&typeof projected.ref==='object'?projected.ref:null;
+      const rawRef=raw.ref&&typeof raw.ref==='object'?raw.ref:null;
+      return {type,id,role:String(raw.role||options.role||''),ref:rawRef?{...rawRef}:projectedRef?{...projectedRef}:null,value:projectedValue,meta:{...(projected.meta&&typeof projected.meta==='object'?projected.meta:{}),...(raw.meta&&typeof raw.meta==='object'?raw.meta:{})}};
+    }
+    snapshot(){try{return structuredClone(this.value);}catch{return JSON.parse(JSON.stringify(this.value));}}
+    get(){return this.snapshot();}
+    items(type=''){const rows=this.value.items.slice();return type?rows.filter(row=>dataTypeRegistry.isA(row.type,type)):rows;}
+    focus(){if(!this.value.focus)return null;try{return structuredClone(this.value.focus);}catch{return {...this.value.focus};}}
+    emit(meta={}){this.revision+=1;this.value.revision=this.revision;const snap=this.get();for(const fn of [...this.listeners]){try{fn(snap,meta,this);}catch(err){console.warn('[DKDS typed selection]',err);}}return snap;}
+    select(input,options={}){
+      const item=this.normalizeItem(input,options);if(!item)return this.clear(options);
+      const key=`${item.type}::${item.id}`;let rows=this.value.items.slice();const idx=rows.findIndex(row=>`${row.type}::${row.id}`===key);
+      if(options.toggle&&idx>=0)rows.splice(idx,1);else if(options.additive&&this.spec.multiple!==false){if(idx>=0)rows[idx]=item;else rows.push(item);}else rows=[item];
+      this.value.items=rows;this.value.focus=rows.find(row=>`${row.type}::${row.id}`===key)||rows.at(-1)||null;
+      this.value.source=options.source||options.sourceView||this.value.source||null;if(options.context)this.value.context={...this.value.context,...options.context};return this.emit({reason:'select',...options});
+    }
+    selectMany(inputs=[],options={}){const rows=(Array.isArray(inputs)?inputs:[inputs]).map(v=>this.normalizeItem(v,options)).filter(Boolean);this.value.items=this.spec.multiple===false?rows.slice(-1):rows;this.value.focus=this.value.items.at(-1)||null;this.value.source=options.source||options.sourceView||this.value.source||null;return this.emit({reason:'select-many',...options});}
+    setRange(range,options={}){const item=this.normalizeItem({type:options.type||range?.type||'data.range',id:range?.id||'range',value:range,role:options.role||'range'});if(options.append)this.value.ranges=[...this.value.ranges,item];else this.value.ranges=item?[item]:[];this.value.source=options.source||options.sourceView||this.value.source||null;return this.emit({reason:'range',...options});}
+    selectRegion(range,inputs=[],options={}){
+      const rangeItem=this.normalizeItem({type:options.rangeType||range?.type||'data.range',id:range?.id||'range',value:range,role:options.rangeRole||'range'});
+      const rows=(Array.isArray(inputs)?inputs:[inputs]).map(v=>this.normalizeItem(v,options)).filter(Boolean);
+      if(options.appendRange&&rangeItem)this.value.ranges=[...this.value.ranges,rangeItem];else this.value.ranges=rangeItem?[rangeItem]:[];
+      if(rows.length){this.value.items=this.spec.multiple===false?rows.slice(-1):rows;this.value.focus=this.value.items.at(-1)||null;}
+      this.value.source=options.source||options.sourceView||this.value.source||null;if(options.context)this.value.context={...this.value.context,...options.context};
+      return this.emit({reason:'region-select',...options});
+    }
+    clearRange(options={}){this.value.ranges=[];return this.emit({reason:'range-clear',...options});}
+    setContext(context={},options={}){this.value.context={...this.value.context,...(context||{})};return this.emit({reason:'context',...options});}
+    clear(options={}){this.value.items=[];this.value.focus=null;if(options.keepRanges!==true)this.value.ranges=[];if(options.keepContext!==true)this.value.context={};this.value.source=options.source||null;return this.emit({reason:'clear',...options});}
+    restore(snapshot,meta={}){const source=snapshot&&typeof snapshot==='object'?snapshot:{};this.value={schema:1,revision:Number(source.revision)||0,items:(source.items||[]).map(v=>this.normalizeItem(v)).filter(Boolean),focus:source.focus?this.normalizeItem(source.focus):null,ranges:(source.ranges||[]).map(v=>this.normalizeItem(v)).filter(Boolean),context:source.context&&typeof source.context==='object'?{...source.context}:{},source:source.source||null};this.revision=this.value.revision;return this.emit({reason:'restore',...meta});}
+    subscribe(fn,{immediate=false}={}){if(typeof fn!=='function')return()=>{};this.listeners.add(fn);if(immediate)fn(this.get(),{reason:'subscribe'},this);return()=>this.listeners.delete(fn);}
+    dispose(){this.listeners.clear();this.value={schema:1,revision:0,items:[],focus:null,ranges:[],context:{},source:null};}
+  }
+
+  class InteractionRuntime {
+    constructor(scope,id,spec={}){
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction');this.spec=spec||{};this.bindings=new Map();
+      this.selection=scope.selection.model(`${this.id}:selection`,spec.selection||spec.selectionSpec||{});
+      this.off=this.selection.subscribe((snapshot,meta)=>this.dispatch(snapshot,meta));
+    }
+    itemMatches(binding,item,snapshot){
+      if(!item)return false;
+      const types=[...(binding.types||[])].map(String),roles=[...(binding.roles||[])].map(String),kinds=[...(binding.kinds||[])].map(String);
+      if(types.length&&!types.some(type=>dataTypeRegistry.isA(item.type,type)))return false;
+      if(roles.length&&!roles.includes(String(item.role||'')))return false;
+      if(kinds.length){const kind=dataTypeRegistry.get(item.type)?.kind||'';if(!kinds.includes(kind))return false;}
+      if(typeof binding.where==='function'&&!binding.where(item,snapshot,this))return false;
+      return true;
+    }
+    matches(binding,snapshot){
+      const mode=String(binding.mode||'focus');
+      const focus=snapshot?.focus||snapshot?.items?.at?.(-1)||null;
+      if(mode==='range'){const rows=snapshot?.ranges||[];return rows.length?rows.some(item=>this.itemMatches(binding,item,snapshot)):binding.empty===true;}
+      if(mode==='any'){const rows=snapshot?.items||[];return rows.length?rows.some(item=>this.itemMatches(binding,item,snapshot)):binding.empty===true;}
+      if(mode==='all'){const rows=snapshot?.items||[];return rows.length?rows.every(item=>this.itemMatches(binding,item,snapshot)):binding.empty===true;}
+      if(!focus)return binding.empty===true;
+      return this.itemMatches(binding,focus,snapshot);
+    }
+    bind(id,spec={}){
+      const key=String(id||`binding-${this.bindings.size+1}`);const row={id:key,types:Array.isArray(spec.types)?spec.types:(spec.type?[spec.type]:[]),roles:Array.isArray(spec.roles)?spec.roles:(spec.role?[spec.role]:[]),kinds:Array.isArray(spec.kinds)?spec.kinds:(spec.kind?[spec.kind]:[]),mode:['focus','any','all','range'].includes(String(spec.mode))?String(spec.mode):'focus',where:typeof spec.where==='function'?spec.where:null,empty:spec.empty===true,onSelection:spec.onSelection||spec.handler};
+      this.bindings.set(key,row);
+      if(spec.immediate&&this.matches(row,this.selection.get()))try{row.onSelection?.(this.selection.get(),{reason:'bind-immediate'},this);}catch(err){console.warn('[DKDS interaction binding]',err);}
+      return()=>this.bindings.delete(key);
+    }
+    dispatch(snapshot,meta={}){for(const row of this.bindings.values()){if(!this.matches(row,snapshot))continue;try{row.onSelection?.(snapshot,meta,this);}catch(err){console.warn('[DKDS interaction runtime]',row.id,err);}}}
+    resolveType(value,options={}){if(options.type)return String(options.type);if(value?.type&&dataTypeRegistry.get(value.type))return String(value.type);return dataTypeRegistry.infer(value,options.query||{})?.id||this.spec.defaultType||this.selection.spec.defaultType||'core.entity';}
+    select(value,options={}){const type=this.resolveType(value,options);return this.selection.select(value?.type?value:{type,id:options.id,value,role:options.role,meta:options.meta},{...options,type});}
+    selectMany(values=[],options={}){return this.selection.selectMany((values||[]).map(value=>value?.type?value:{type:this.resolveType(value,options),id:options.key?.(value),value,role:options.role}),options);}
+    range(value,options={}){const inferred=options.type||value?.type||dataTypeRegistry.infer(value,{kind:'region'})?.id||'data.range';return this.selection.setRange(value,{...options,type:inferred});}
+    region(value,items=[],options={}){const inferred=options.rangeType||value?.type||dataTypeRegistry.infer(value,{kind:'region'})?.id||'data.range';return this.selection.selectRegion(value,items,{...options,rangeType:inferred});}
+    context(value,options={}){return this.selection.setContext(value,options);}
+    clear(options={}){return this.selection.clear(options);}
+    get(){return this.selection.get();}
+    items(type=''){return this.selection.items(type);}
+    focus(){return this.selection.focus();}
+    resolve(item=this.selection.focus(),context={}){return item?dataTypeRegistry.resolve(item.type,item,{runtime:this,...context}):undefined;}
+    subscribe(fn,options={}){return this.selection.subscribe(fn,options);}
+    dispose(){this.off?.();this.off=null;this.bindings.clear();}
+  }
+
+  class ResizeScheduler {
+    constructor(scope){this.scope=scope;this.pending=null;this.raf=0;this.dispatching=false;this.disposed=false;}
+    request(payload={},options={}){
+      if(this.disposed)return;
+      const emit=options.emit!==false;
+      // Never allow a listener handling layout:resize to synchronously create
+      // another layout event. Such requests are reduced to a chart-only refresh.
+      const effectiveEmit=this.dispatching?false:emit;
+      const previous=this.pending||{};
+      this.pending={...previous,...payload,_emit:previous._emit===true||effectiveEmit};
+      if(this.raf)return;
+      const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));
+      this.raf=raf(()=>this.flush());
+    }
+    flush(){
+      if(this.disposed)return;this.raf=0;
+      const payload=this.pending||{};this.pending=null;this.dispatching=true;
+      try{
+        if(payload._emit===true)this.scope.options.events?.emit?.('layout:resize',{pluginId:this.scope.owner,...Object.fromEntries(Object.entries(payload).filter(([k])=>k!=='_emit'))});
+      }catch{}finally{this.dispatching=false;}
+      for(const chart of this.scope.charts){try{if(!chart?.container||chart.container.offsetParent===null)continue;chart.resize?.();}catch{}}
+      if(this.pending&&!this.raf){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.raf=raf(()=>this.flush());}
+    }
+    dispose(){this.disposed=true;if(this.raf){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.raf);}catch{}}this.raf=0;this.pending=null;}
   }
 
   class ContextMenu {
@@ -232,7 +404,7 @@
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
-  function normalizePlacement(value){const p=String(value||'').toLowerCase();return ['home','left','right','bottom','main','float'].includes(p)?p:'home';}
+  function normalizePlacement(value){const p=String(value||'').toLowerCase();return ['home','sticky','left','right','bottom','main','float'].includes(p)?p:'home';}
   function refreshDockZoneState(){
     const zones=new Set();
     for(const name of ['left','right','bottom']){const zone=hostState.zones.get(name);if(zone)zones.add(zone);}
@@ -265,8 +437,8 @@
       let title=header.querySelector?.('.dkds-portable-title');
       if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
       const controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb';controls.dataset.dkdsPortableControls=this.id;
-      const placementIcons={home:'◫',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗'};
-      const placementLongLabels={home:'恢复默认位置',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'悬浮'};
+      const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗'};
+      const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'悬浮'};
       const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';placementButton.title='图表位置';
       const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location-icon">${esc(placementIcons[current]||'◫')}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
       const menuItems=()=>this.allowed.map(placement=>({id:placement,icon:placementIcons[placement]||'◫',label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}));
@@ -281,7 +453,7 @@
       this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat),()=>header.removeEventListener('contextmenu',openPlacementMenu));
       if(!useTarget){wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
       this.wrapper=wrapper;this.injectedHeader=useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
-      const ro=window.ResizeObserver?new ResizeObserver(()=>this.scope.emitResize?.({id:this.id,reason:'portable-resize'})):null;ro?.observe(wrapper);this.resizeObserver=ro;
+      const ro=window.ResizeObserver?new ResizeObserver(()=>this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'})):null;ro?.observe(wrapper);this.resizeObserver=ro;
     }
     zone(placement){return this.spec.layout?.slot?.(placement)||hostState.zones.get(placement)||null;}
     restoreHome(){
@@ -289,10 +461,11 @@
     }
     place(value,{persist=true,bounds=null}={}){
       let placement=normalizePlacement(value);if(!this.allowed.includes(placement))placement=this.allowed[0]||'home';
-      this.wrapper.classList.remove('is-floating','is-docked','dock-left','dock-right','dock-bottom','dock-main');
+      this.wrapper.classList.remove('is-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');
       this.wrapper.style.removeProperty('left');this.wrapper.style.removeProperty('top');this.wrapper.style.removeProperty('width');this.wrapper.style.removeProperty('height');
       cleanupCall(this.dragCleanup);this.dragCleanup=null;
       if(placement==='home')this.restoreHome();
+      else if(placement==='sticky'){this.restoreHome();this.wrapper.classList.add('is-sticky');}
       else if(placement==='float'){
         const zone=this.zone('overlay')||hostState.root||document.body;zone.appendChild(this.wrapper);this.wrapper.classList.add('is-floating');
         const saved=bounds||this.readState().bounds||{};
@@ -336,7 +509,7 @@
       head.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
       return ()=>{head.removeEventListener('mousedown',down);window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);};
     }
-    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();this.restoreHome();this.controls?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-docked','dock-left','dock-right','dock-bottom','dock-main');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}refreshDockZoneState();}
+    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();this.restoreHome();this.controls?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}refreshDockZoneState();}
   }
 
   class SplitController {
@@ -345,10 +518,10 @@
       if(!this.container||!this.handle||!this.target)throw new Error('SplitController container/handle/target not found.');
       this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}`;
       const saved=readJson(this.key,{});this.apply(Number(saved.size)||Number(this.spec.defaultSize)||320,{persist:false});this.bind();
-      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.apply(this.size,{persist:false}));this.ro.observe(this.container);}
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.apply(this.size,{persist:false,emit:false}));this.ro.observe(this.container);}
     }
     limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const max=Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220));return {min,max:Math.max(min,max)};}
-    apply(value,{persist=true}={}){const {min,max}=this.limits();const next=Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});return next;}
+    apply(value,{persist=true,emit=true}={}){const {min,max}=this.limits();const next=Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});return next;}
     bind(){
       const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{if(!this.drag)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.apply(this.drag.size+(point-this.drag.start)*sign,{persist:false});};
@@ -389,7 +562,7 @@
       this.container.classList.add('dkds-chart-surface');
       if(spec.title||spec.actions?.length)this.buildChrome();
       else this.plot=this.container;
-      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.resize());this.ro.observe(this.container);}
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.scope.requestChartResize?.({reason:'chart-surface-observer'}));this.ro.observe(this.container);}
       if(spec.data||spec.layout)this.set(spec);
     }
     buildChrome(){
@@ -484,7 +657,7 @@
 
   class GridController {
     constructor(scope,container,spec={}){
-      this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.columns=Math.max(1,Number(spec.columns)||3);this.minItemWidth=Math.max(180,Number(spec.minItemWidth)||320);this.maxColumns=Math.max(this.columns,Number(spec.maxColumns)||6);this.ro=null;
+      this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.columns=Math.max(1,Number(spec.columns)||3);this.minItemWidth=Math.max(180,Number(spec.minItemWidth)||320);this.maxColumns=Math.max(this.columns,Number(spec.maxColumns)||6);this.ro=null;this.appliedColumns=0;
       if(!this.container)throw new Error('GridController container not found.');
       this.container.classList.add('dkds-managed-grid');
       this.apply();
@@ -496,7 +669,7 @@
       if(!width)return this.columns;
       return Math.max(1,Math.min(this.columns,this.maxColumns,Math.floor((width+10)/(this.minItemWidth+10))||1));
     }
-    apply(){const cols=this.responsiveColumns();this.container.style.setProperty('--dkds-grid-columns',String(cols));this.container.dataset.dkdsGridColumns=String(cols);this.scope.emitResize?.({reason:'grid',columns:cols});return cols;}
+    apply(){const cols=this.responsiveColumns();const changed=cols!==this.appliedColumns;this.appliedColumns=cols;this.container.style.setProperty('--dkds-grid-columns',String(cols));this.container.dataset.dkdsGridColumns=String(cols);if(changed)this.scope.emitResize?.({reason:'grid',columns:cols});else this.scope.requestChartResize?.({reason:'grid-observer',columns:cols});return cols;}
     setColumns(value){this.columns=Math.max(1,Math.min(this.maxColumns,Number(value)||1));this.apply();return this.columns;}
     getColumns(){return this.columns;}
     dispose(){this.ro?.disconnect?.();this.container.classList.remove('dkds-managed-grid');this.container.style.removeProperty('--dkds-grid-columns');delete this.container.dataset.dkdsGridColumns;}
@@ -571,7 +744,7 @@
         this.regionObserver=new MutationObserver(()=>this.syncRegions());
         for(const el of [this.slots.left,this.slots.right,this.slots.bottom])this.regionObserver.observe(el,{childList:true,subtree:false});
       }
-      if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>this.resize('observer'));this.resizeObserver.observe(this.shell);}
+      if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>{this.syncRegions();this.scope.emitResize?.({reason:'analysis-workbench-observer'});});this.resizeObserver.observe(this.shell);}
     }
     layout(){return {slot:name=>this.slots[String(name)]||null};}
     setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');return this;}
@@ -704,7 +877,7 @@
     }
     grid(container,spec={}){const value=new GridController(this.scope,container,spec);this.grids.push(value);return value;}
     surfaceState(){return {primary:this.primary?.id||'',activeSub:this.activeSub,primes:Object.fromEntries([...this.primes].map(([id,row])=>[id,{open:!!row.mounted,placement:row.portable?.wrapper?.dataset?.placement||''}]))};}
-    resize(reason='resize'){this.syncRegions();this.scope.emitResize?.({reason:`analysis-workbench:${reason}`});return this;}
+    resize(reason='resize'){this.syncRegions();this.scope.requestChartResize?.({reason:`analysis-workbench:${reason}`});return this;}
     dispose(){
       if(this.closed)return;this.closed=true;cleanupCall(this.primary?.cleanup);
       for(const row of this.primes.values()){if(row.portable)row.portable.dispose?.();cleanupCall(row.cleanup);}
@@ -726,8 +899,13 @@
       this.actions={mount:(container,spec)=>this.trackObject(new ActionGroup(this.owner,container,spec))};
       this.interactions={bind:(target,spec)=>this.trackObject(new InteractionBinding(this.owner,target,spec))};
       this.menus={create:spec=>this.trackObject(new ContextMenu(this.owner,spec)),open:(spec={})=>{const menu=this.trackObject(new ContextMenu(this.owner,spec));menu.open(spec);return menu;}};
-      this.selectionChannels=new Map();
-      this.selection={channel:(id,initial=null)=>{const key=String(id);if(!this.selectionChannels.has(key))this.selectionChannels.set(key,this.trackObject(new SelectionChannel(this.owner,key,initial)));return this.selectionChannels.get(key);}};
+      this.selectionChannels=new Map();this.selectionModels=new Map();this.interactionRuntimes=new Map();
+      this.selection={
+        channel:(id,initial=null)=>{const key=String(id);if(!this.selectionChannels.has(key))this.selectionChannels.set(key,this.trackObject(new SelectionChannel(this.owner,key,initial)));return this.selectionChannels.get(key);},
+        model:(id,spec={})=>{const key=String(id);if(!this.selectionModels.has(key))this.selectionModels.set(key,this.trackObject(new SelectionModel(this.owner,key,spec)));return this.selectionModels.get(key);}
+      };
+      this.interactionRuntime={create:(id,spec={})=>{const key=String(id||'interaction');if(!this.interactionRuntimes.has(key))this.interactionRuntimes.set(key,this.trackObject(new InteractionRuntime(this,key,spec)));return this.interactionRuntimes.get(key);},get:id=>this.interactionRuntimes.get(String(id||''))||null};
+      this.resizeScheduler=new ResizeScheduler(this);
       this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec))};
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
@@ -735,11 +913,13 @@
       this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
       this.analysisWorkbench={create:(root,spec)=>{const obj=new AnalysisWorkbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
       this.grid={create:(container,spec)=>this.trackObject(new GridController(this,container,spec))};
+      this.dataTypes={register:(id,spec)=>dataTypeRegistry.register(this.owner,id,spec),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),projectSelection:(id,value,context)=>dataTypeRegistry.projectSelection(id,value,context),resolve:(id,item,context)=>dataTypeRegistry.resolve(id,item,context)};
     }
     track(cleanup){if(typeof cleanup==='function')this.cleanups.push(cleanup);return cleanup;}
     trackObject(obj){if(obj?.dispose)this.cleanups.push(()=>obj.dispose());return obj;}
-    emitResize(payload={}){try{this.options.events?.emit?.('layout:resize',{pluginId:this.owner,...payload});}catch{}requestAnimationFrame(()=>{for(const chart of this.charts)chart.resize?.();});}
-    dispose(){const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);this.portables.clear();this.selectionChannels.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
+    emitResize(payload={}){this.resizeScheduler?.request?.(payload,{emit:true});}
+    requestChartResize(payload={}){this.resizeScheduler?.request?.(payload,{emit:false});}
+    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
   }
 
   function configureHost(options={}){
@@ -772,8 +952,9 @@
     },
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
+    dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,
+    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

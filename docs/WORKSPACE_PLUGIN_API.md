@@ -1,4 +1,4 @@
-# Workspace / UI Plugin API v1.6
+# Workspace / UI Plugin API v1.7
 
 This document defines how a plugin owns an entire scientific workspace without adding domain UI to `src/index.html` or `src/app.js`.
 
@@ -474,8 +474,8 @@ This makes toolbar growth scale with plugins without returning to a single long 
 Peak detectors and other algorithm providers must be discovered from registries rather than hard-coded ids. Desktop `.dkplugin` packages can add stronger algorithms at runtime. See `PLUGIN_PACKAGES.md`. The surrounding workbench owns workflow/UI semantics, while the detector plugin owns its algorithm, parameter UI/schema, presets and evidence metadata.
 
 
-## AnalysisWorkbench v4 / Capability Runtime v2
+## AnalysisWorkbench v5 / Typed Interaction / Capability Runtime v2
 
-Plugin API 1.6 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
+Plugin API 1.7 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
-Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, floating, split geometry, selection, chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
+Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.

@@ -1,4 +1,4 @@
-# DK Data Studio Analysis Workbench Architecture (v3.31)
+# DK Data Studio Analysis Workbench Architecture (v3.32)
 
 ## 1. Rule of ownership
 
@@ -27,7 +27,7 @@ Host adapter
 
 ## 2. Analysis Workbench
 
-`src/core/ui-infrastructure.js` provides **AnalysisWorkbench v4**. The shell owns all outer geometry; plugin roots are mounted as content and are never rewritten into a second Grid/Flex layout by Core.
+`src/core/ui-infrastructure.js` provides **AnalysisWorkbench v5**. The shell owns all outer geometry; plugin roots are mounted as content and are never rewritten into a second Grid/Flex layout by Core.
 
 The workbench owns:
 
@@ -84,7 +84,19 @@ A TOP plugin registers one `ui.topWorkspace` contract. The contract includes sem
 
 Dedicated windows load the same plugin Controller / Shared Views / Feature Runtime layers declared by the plugin manifest. The adapter only provides the host boundary. Resonance now uses the same plugin-owned runtime service in SUPER and TOP; TER/Pulse/Data Center use the same shared Workbench composition and controllers, while legacy host APIs remain compatibility/migration shims rather than layout owners.
 
-## 4. Capability Runtime
+## 4. Typed data and Interaction Runtime
+
+Core does not define scientific records such as resonance peaks, TER maxima, pulse protocol points, spectra or fitted results. Plugins register those domain types with `ctx.data.types.register(...)`. A type can inherit from multiple generic parents (for example both `data.series` and `result.analysis`) and can define identity, normalization, description, matching, compact-selection and reference-resolution hooks.
+
+The shared `InteractionRuntime` owns one heterogeneous Selection document for a workbench. The document contains typed selected items, one focus item, typed regions/ranges, source view and context. Views bind by exact type, parent type, semantic role or kind, so a main plot, table, inspector and processed-result view can synchronize without depending on each other's DOM.
+
+Selection is deliberately **not** a data store. Large sweeps/tables/results stay in artifacts, project state or a plugin service. Type-specific `selection(value)` projects them to compact `id/ref/value` records; optional `resolve(ref)` can obtain the canonical object only when a consumer needs it. This avoids copying large data arrays on every mouse selection.
+
+`sticky` and Dock are also separate semantics. Sticky keeps a PRIME in its home scroll layout; right/bottom docking reparents it into a workbench region. TER R–V uses sticky by default.
+
+Resize is a frame signal. Plugin-scope and global dispatch coalesce resize reports, reject recursive `layout:resize` emission, and resize visible chart surfaces once per frame. Plugins must never emit another layout event from a layout listener.
+
+## 5. Capability Runtime
 
 `src/core/capability-runtime.js` provides the generic Capability Runtime.
 
@@ -109,9 +121,9 @@ Current capability-backed registries include:
 
 Capability registry changes are republished automatically.
 
-## 5. Shared infrastructure exposed to plugins
+## 6. Shared infrastructure exposed to plugins
 
-Plugin API 1.6 exposes, among other APIs:
+Plugin API 1.7 exposes, among other APIs:
 
 - `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface`;
 - `ctx.ui.grid`;
@@ -120,7 +132,8 @@ Plugin API 1.6 exposes, among other APIs:
 - `ctx.ui.shortcuts`;
 - `ctx.ui.interactions`;
 - `ctx.ui.contextMenus`;
-- `ctx.ui.selection`;
+- `ctx.ui.selection` and `ctx.ui.interaction`;
+- `ctx.data.types` for plugin-owned raw/derived/result type registration;
 - `ctx.ui.charts`;
 - `ctx.state.create()`;
 - `ctx.capabilities` (`list/query`, `require`, `proxy`, `invoke`, `watch`);
@@ -129,7 +142,7 @@ Plugin API 1.6 exposes, among other APIs:
 
 A plugin scope owns every registered listener, ResizeObserver, shortcut, chart surface and portable panel and releases them at deactivation.
 
-## 6. Migrated first-party plugins
+## 7. Migrated first-party plugins
 
 ### Resonance
 
@@ -158,13 +171,13 @@ The dedicated window consumes detector providers through the Capability Runtime.
 - PRIME: general chart preview;
 - Controller uses the Core state/project store.
 
-## 7. Project compatibility
+## 8. Project compatibility
 
 The workbench refactor does not change the self-contained project principle. Project files continue to carry imported source text/data, parsed points, analysis state and plugin project slices. A project copied to another computer can still be opened and analysed without the original CSV/TXT/DAT source files.
 
 The UI layout store is intentionally separate from scientific project data. Dock positions and splitter widths are local UI preferences; scientific results remain in the project.
 
-## 8. Architecture guardrails
+## 9. Architecture guardrails
 
 Automated checks reject regressions such as:
 

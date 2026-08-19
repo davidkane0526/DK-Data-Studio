@@ -1,11 +1,12 @@
 
-# Next Session Handoff — v3.31.2
+# Next Session Handoff — v3.32.0
 
 ## Repository identity
 
 - Local working branch: `main`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.31.2`
+- Current delivery: `v3.32.0`
+- v3.32.0: replaces resize feedback with frame-coalesced Core scheduling; adds plugin-registered typed data/result definitions plus compact typed Interaction/Selection state; separates Sticky from Dock; restores TER R–V sticky inspection and mature Resonance main/trend/inspector/group linkage while reducing selection-time Plotly rerenders.
 - v3.31.2: fixed the Resonance shared feature-runtime bootstrap (`clone` and the other runtime helpers are now explicit module dependencies); repaired the Core ContextMenu capture bug that removed menus before item clicks, which restores TER layout and per-chart placement commands; explicit TER grid layouts are now authoritative and portable placements synchronously notify AnalysisWorkbench regions.
 - v3.31.1: repaired the Windows dependency/build pipeline: shared node_modules is now an immutable package-signature cache, npm no longer reifies through a project Junction, Electron binary installation is separated from npm package extraction, and official-source network failures can retry through a configurable mirror.
 - v3.31.0: completed AnalysisWorkbench v4 outer-geometry ownership, one PRIMARY/PRIME/SUB view tree across SUPER/TOP, Capability Runtime v2 query/require/watch semantics, and the shared Resonance runtime composition.
@@ -16,10 +17,11 @@
 
 Continue from the checked-out local `main` in this archive unless the user explicitly requests a new branch. Do not access a remote repository without permission.
 
-## v3.30 architecture baseline
+## v3.32 architecture baseline
 
-- Plugin API: **1.5.0**. UI infrastructure: **3.0.0**.
-- `src/core/ui-infrastructure.js` owns AnalysisWorkbench, PRIMARY/PRIME/SUB composition, portable/pinnable views, managed grids, split sizing, shortcuts, context menus, chart resize lifecycle and selection channels.
+- Plugin API: **1.7.0**. UI infrastructure: **5.0.0**. Capability Runtime remains **2.x**.
+- `src/core/ui-infrastructure.js` owns AnalysisWorkbench, PRIMARY/PRIME/SUB composition, portable/pinnable/sticky views, managed grids, split sizing, frame-coalesced resize scheduling, shortcuts, context menus, chart lifecycle, plugin-owned data-type registration and typed Interaction/Selection runtime.
+- Selection state is intentionally schema-light: plugins register domain types with `ctx.data.types.register(...)`; types may inherit from multiple generic parents such as `data.sweep`, `data.point` and `result.analysis`. Large domain objects should project to compact `id/ref/value` selections rather than copying raw arrays into interaction state.
 - `src/core/capability-runtime.js` is the generic provider catalog. Dedicated TOP renderers import a serializable snapshot and invoke remote-safe provider methods through the main process. Do not load a second full `app.js` to obtain providers.
 - Complex plugins should keep `plugin.js`, `super-layout.js` and `window-runtime.js` thin. Scientific state belongs in Controller; reusable presentation belongs in Shared Views; event/render behavior belongs in Feature Runtime.
 - TER: PRIMARY = TER matrix/max analysis; PRIME = linked R–V inspector. Grid columns are Core-owned.

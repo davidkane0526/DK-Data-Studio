@@ -30,3 +30,4 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 15. v3.31.0: complete the unified AnalysisWorkbench v4 runtime, Capability Runtime v2, and one shared Resonance PRIMARY/PRIME/SUB composition across SUPER/TOP; migrate all first-party analysis views to the same Core composition contract.
 16. v3.31.1: make Windows shared dependency caching immutable and authoritative, separate Electron binary installation from npm reify, and add retry/mirror fallback for Electron/electron-builder binary downloads.
 17. v3.31.2: repair Resonance runtime bootstrap and Core ContextMenu/AnalysisWorkbench placement dispatch; restore TER layout and chart-placement commands.
+18. v3.32.0: add typed plugin data/result registration and shared Interaction Runtime, coalesce resize dispatch, separate sticky pinning from Dock, restore TER R–V sticky behavior, and rebuild mature Resonance cross-view selection linkage on the unified SUPER/TOP runtime.

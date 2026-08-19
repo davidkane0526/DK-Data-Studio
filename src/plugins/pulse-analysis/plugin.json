@@ -1,8 +1,8 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.6.0",
-  "apiVersion": "1.6.0",
+  "version": "2.7.0",
+  "apiVersion": "1.7.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 140,
@@ -24,7 +24,9 @@
     "ui.sub",
     "runtime.capabilities",
     "ui.analysis-surface",
-    "runtime.capabilities.v2"
+    "runtime.capabilities.v2",
+    "ui.interaction",
+    "data.types"
   ],
   "window": {
     "activity": "pulse",

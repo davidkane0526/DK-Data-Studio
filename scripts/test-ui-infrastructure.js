@@ -11,12 +11,12 @@ const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
 const resonanceTop=read('src/plugins/resonance-workbench/window-runtime.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 
-for(const symbol of ['PortableView','ActionGroup','InteractionBinding','SelectionChannel','ContextMenu','SplitController','ChartSurface','ViewHost','Workbench','GridController','AnalysisWorkbench']){
+for(const symbol of ['PortableView','ActionGroup','InteractionBinding','SelectionChannel','SelectionModel','InteractionRuntime','DataTypeRegistry','ResizeScheduler','ContextMenu','SplitController','ChartSurface','ViewHost','Workbench','GridController','AnalysisWorkbench']){
   assert(ui.includes(`class ${symbol}`),`core UI infrastructure must expose ${symbol}`);
 }
 assert(ui.includes("pin(placement='right')"),'portable views must expose pin placement');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('placementLongLabels'),'portable views must use one compact placement breadcrumb/menu rather than a six-button strip');
-assert(ui.includes("placementIcons={home:'◫',left:'←'")&&ui.includes("float:'↗'"),'portable placement must show ◫ at home and expose directional icons through its dropdown');
+assert(ui.includes("placementIcons={home:'◫',sticky:'⌖',left:'←'")&&ui.includes("float:'↗'"),'portable placement must show ◫ at home and expose directional icons through its dropdown');
 assert(ui.includes('controlsHost')&&ui.includes("controlsPlacement==='start'"),'portable chrome must be injectable into an existing chart action cluster instead of creating a competing header column');
 assert(ui.includes('createPortableZones()')&&ui.includes('dkds-portable-zone'),'existing-DOM workbenches must own isolated local docking shelves');
 assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use the core context-menu service');
@@ -27,8 +27,8 @@ assert(ui.includes('onPlacementChanged')&&ui.includes("this.resize('portable-pla
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
 assert(ui.includes('spec.existing===true')&&ui.includes('mountExistingSplit'),'Workbench must be able to adapt mature existing DOM and still provide core split/layout infrastructure');
-assert(kernel.includes("const API_VERSION = '1.6.0'"),'plugin API must be v1.6.0');
-for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
+assert(kernel.includes("const API_VERSION = '1.7.0'"),'plugin API must be v1.7.0');
+for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: infrastructureScope?.chartsApi','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','interaction: infrastructureScope?.interactionRuntime','views: infrastructureScope?.views','workbench: infrastructureScope?.workbench']){
   assert(kernel.includes(api),`kernel missing UI API: ${api}`);
 }
 assert(kernel.includes('state: {')&&kernel.includes('projectSlice'),'kernel must provide lifecycle-owned state/project persistence');
@@ -53,7 +53,7 @@ for(const [name,folder] of Object.entries(migrated)){
   const adapter=read(`src/plugins/${folder}/super-layout.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
-  assert(controller.includes('selection.channel'),`${name} controller must use the core Selection Channel`);
+  assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${name} controller must use the typed core Selection/Interaction Runtime`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${name} shared views must use the unified Analysis Workbench`);
   assert(views.includes('wb.compose'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
   assert(feature.includes('ctx.ui.actions')&&feature.includes('ctx.ui.charts'),`${name} feature runtime must use dynamic actions and Chart Surface infrastructure`);
@@ -68,7 +68,7 @@ const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
 const dataCenterController=read('src/plugins/data-center/controller.js');
 assert(!terFeature.includes("window.addEventListener('keydown'"),'TER must not own a global keydown listener');
-assert(terFeature.includes('controller?.select?.')&&terFeature.includes('controller?.clearSelection?.'),'TER linked chart selection must flow through the shared Selection Channel');
-assert(pulseFeature.includes("source:'pulse-file'"),'Pulse current-file selection must flow through the shared Selection Channel');
+assert(terFeature.includes('controller?.select?.')&&terFeature.includes('controller?.clearSelection?.'),'TER linked chart selection must flow through the shared typed Selection Runtime');
+assert(pulseFeature.includes("source:'pulse-file'"),'Pulse current-file selection must flow through the shared typed Selection Runtime');
 assert(dataCenterController.includes('ctx.state.create')&&dataCenterController.includes("projectSlice:'workspace'"),'Data Center Controller must own core state/project infrastructure rather than its view runtime.');
 console.log('UI infrastructure architecture checks passed.');

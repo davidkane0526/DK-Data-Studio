@@ -1,4 +1,4 @@
-# DK Data Studio Plugin UI Infrastructure — Plugin API v1.6 / UI Core v4.0
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.7 / UI Core v5.0
 
 ## Design boundary
 
@@ -12,7 +12,7 @@ Core owns:
 - dynamic action/button groups;
 - activity-aware shortcuts;
 - mouse / pointer / wheel / context-menu bindings;
-- linked-selection channels between views;
+- typed Interaction/Selection runtime and plugin-owned data/result type registry;
 - common context menus;
 - View/Controller mounting lifecycle;
 - plugin state stores, project-slice persistence and migration;
@@ -21,7 +21,7 @@ Core owns:
 Plugins should not reimplement those mechanisms.
 
 
-## Unified AnalysisWorkbench v4
+## Unified AnalysisWorkbench v5
 
 Complex analysis plugins must mount their content through `ctx.ui.analysisSurface.create(...)` and call `compose({primary, primes, subs})`. Core owns the outer frame and does **not** rewrite the plugin's internal DOM layout.
 
@@ -34,7 +34,7 @@ wb.compose({
 });
 ```
 
-`PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
+`PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/sticky/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
 
 Right/bottom docking is real layout geometry: docking a PRIME reduces the main surface rather than overlaying it. Floating coordinates are local to the workbench overlay. Split sizes and portable placement are UI preferences, not scientific project state.
 
@@ -64,9 +64,10 @@ const panel = ctx.ui.portable.create('result-map', card, {
   title: 'Result map',
   useTargetAsWrapper: true,
   handle: '.analysis-chart-title',
-  placements: ['home', 'left', 'right', 'bottom', 'float']
+  placements: ['home', 'sticky', 'left', 'right', 'bottom', 'float']
 });
 
+panel.place('sticky'); // remains in its home scroll layout and sticks while scrolling
 panel.float();
 panel.pin('right');
 ```
@@ -103,15 +104,45 @@ ctx.ui.interactions.bind(plot, {
 
 Plugins should not install permanent global mouse listeners merely to implement a local plot interaction.
 
-## Linked selections
+## Plugin-registered data types and typed interaction
+
+Core deliberately does not prescribe one scientific data schema. Plugins register types and relationships:
 
 ```js
-const selection = ctx.ui.selection.channel('active-peak');
-selection.subscribe(value => updateInspector(value));
-selection.set({datasetId, peakIndex});
+ctx.data.types.register('example.spectrum', {
+  parent:'data.series', kind:'data', key:v=>v.id,
+  selection:v=>({id:v.id, ref:{artifactId:v.id}, value:{id:v.id,name:v.name}})
+});
+ctx.data.types.register('example.fit', {
+  parents:['result.analysis','data.point'], kind:'result', key:v=>v.id
+});
 ```
 
-This is intended for linked plots, tables and inspectors inside one plugin.
+Multiple parents are supported. This lets processed data participate in more than one semantic family without Core knowing the domain. Registered types may also define `normalize`, `describe`, `match`, compact `selection` projection and optional `resolve` hooks. Cross-plugin type ids are owner-protected and cannot be silently overwritten.
+
+Create one interaction runtime for a scientific workbench:
+
+```js
+const interaction=ctx.ui.interaction.create('analysis',{
+  selection:{multiple:true,defaultType:'example.spectrum'}
+});
+interaction.bind('inspector',{
+  types:['result.analysis','data.series'],
+  onSelection:(selection,meta)=>renderInspector(selection,meta)
+});
+```
+
+A Selection document contains heterogeneous `items`, one `focus`, typed `ranges`, `context` and `source`. Consumers can bind to an exact type, any registered parent type, role or kind. `interaction.region(...)` atomically publishes a box/lasso range together with the selected raw or processed items.
+
+**Keep selection state compact.** Selection is an interaction document, not a second data store. Large arrays, tables and raw sweep points remain in the canonical artifact/project/plugin store; a data type should project them to `id + ref + small preview value`, and resolve the ref only when a consumer really needs the complete object.
+
+## Sticky versus Dock
+
+`sticky` is intentionally different from `right` / `bottom` docking. A sticky view remains in its home layout and follows its own scroll container. Docking reparents the view into a workbench region and changes main-surface geometry. TER's R–V inspector is the reference use case.
+
+## Resize scheduling
+
+`layout:resize` is a frame signal, not a synchronous command. Core coalesces resize sources and refuses recursive layout emissions while dispatching one. Plugins should resize visible custom canvases in response, but must never emit another `layout:resize` from that listener. `ctx.ui.charts` surfaces are resized by Core automatically.
 
 ## State and project persistence
 

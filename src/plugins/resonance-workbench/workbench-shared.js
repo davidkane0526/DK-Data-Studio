@@ -12,6 +12,18 @@
   const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
   const directionName=dir=>Number(dir)>0?'正扫':'反扫';
 
+  function registerDataTypes(ctx){
+    if(!ctx?.data?.types)return;
+    for(const [id,spec] of [
+      ['resonance.dataset',{title:'共振数据集',parent:'data.artifact',kind:'data',key:v=>v?.path||v?.id,selection:v=>({id:v?.path||v?.id,ref:{datasetPath:v?.path||''},value:{id:v?.id,path:v?.path,name:v?.name,vg:v?.vg}})}],
+      ['resonance.sweep',{title:'共振扫描',parent:'data.sweep',kind:'data',key:v=>v?.id,selection:v=>({id:v?.id,ref:{sweepId:v?.id,datasetPath:v?.datasetPath},value:{id:v?.id,datasetPath:v?.datasetPath,datasetName:v?.datasetName,vg:v?.vg,direction:v?.direction}})}],
+      ['resonance.peak',{title:'共振峰',parent:'data.point',kind:'result',key:v=>v?.id,selection:v=>({id:v?.id,ref:{peakId:v?.id,sweepId:v?.sweepId},value:{id:v?.id,sweepId:v?.sweepId,datasetPath:v?.datasetPath,vg:v?.vg,direction:v?.direction,v:v?.v,i:v?.i,peakOrder:v?.peakOrder,peakLabel:v?.peakLabel}})}],
+      ['resonance.peak-family',{title:'共振峰族',parent:'result.analysis',kind:'result',key:v=>v?.id||`${v?.direction||0}:${v?.label||''}`,selection:v=>({id:v?.id||`${v?.direction||0}:${v?.label||''}`,value:{id:v?.id,direction:v?.direction,label:v?.label,order:v?.order,summary:v?.summary}})}],
+      ['resonance.range',{title:'共振电压选区',parent:'data.range',kind:'region',key:v=>v?.id||`${v?.sweepId||''}:${v?.min||''}:${v?.max||''}`}],
+      ['resonance.analysis-result',{title:'共振派生分析',parent:'result.analysis',kind:'result',key:v=>v?.id,selection:v=>({id:v?.id,ref:{resultId:v?.id||''},value:{id:v?.id,name:v?.name,kind:v?.kind,summary:v?.summary}})}]
+    ])if(!ctx.data.types.get(id))ctx.data.types.register(id,spec);
+  }
+
   function pluginSliceFromProject(project){
     return project?.plugins?.[PLUGIN_ID]?.workspace||null;
   }
@@ -180,7 +192,7 @@
   }
 
   window.DKDSResonanceWorkbenchShared=Object.freeze({
-    PLUGIN_ID,VIEW_CATALOG,pluginSliceFromProject,defaultWorkspace,normalizeWorkspace,
+    PLUGIN_ID,VIEW_CATALOG,registerDataTypes,pluginSliceFromProject,defaultWorkspace,normalizeWorkspace,
     stateSnapshot,buildTrendModel,acceptedSeriesOptions,computeSpacingRows,createController
   });
 })();

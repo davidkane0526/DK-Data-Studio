@@ -196,8 +196,8 @@
       if(sticky)sticky.checked=!!layoutSettings.sticky;
       const quick=document.getElementById('terResistanceStickyBtn');
       if(quick){
-        quick.textContent=layoutSettings.sticky?'取消悬浮':'悬浮';
-        quick.title=layoutSettings.sticky?'关闭 R–V 随页面滚动吸附':'让 R–V 图随页面滚动保持可见';
+        quick.textContent=layoutSettings.sticky?'取消吸附':'吸附';
+        quick.title=layoutSettings.sticky?'关闭 R–V 随页面滚动吸附':'让 R–V 图在当前滚动区保持可见';
       }
     }
 
@@ -243,8 +243,10 @@
 
     function setSticky(value){
       layoutSettings.sticky=!!value;
+      const prime=workbench?.primes?.get?.('resistance-inspector');
+      if(prime?.mounted)workbench.setPrimePlacement?.('resistance-inspector',layoutSettings.sticky?'sticky':'inline');
       applyLayoutSettings({capture:true});
-      h.setStatus?.(`R–V 悬浮显示已${layoutSettings.sticky?'开启':'关闭'}。`);
+      h.setStatus?.(`R–V 随滚动吸附已${layoutSettings.sticky?'开启':'关闭'}。`);
     }
 
     function ensureLayoutControls(){
@@ -1017,7 +1019,12 @@
     // which looked like a dead button. The surrounding workbench owns overflow.
     if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:6,responsive:false});
     if(workbench?.registerPrime){
-      workbench.registerPrime({id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',defaultPlacement:'inline',placements:['inline','right','bottom','float'],autoOpen:true,mount:()=>{ensureResistanceCard();renderResistancePlot();}});
+      workbench.registerPrime({
+        id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',
+        defaultPlacement:layoutSettings.sticky?'sticky':'inline',placements:['inline','sticky','right','bottom','float'],autoOpen:true,
+        onPlacementChanged:({placement})=>{layoutSettings.sticky=placement==='sticky';syncLayoutControls();h.captureActiveProjectTab?.();},
+        mount:()=>{ensureResistanceCard();renderResistancePlot();}
+      });
     }
     for(const plotId of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
       const el=page.querySelector('#'+plotId);if(!el||!ctx.ui.charts?.mount)continue;
@@ -1038,7 +1045,7 @@
           {id:'1x6',icon:'▤',label:'1 列 × 6 行',onInvoke:()=>setCols(1)},
           {id:'6x1',icon:'▥',label:'6 列 × 1 行',onInvoke:()=>setCols(6)},
           {type:'separator'},
-          {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动悬浮：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
+          {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动吸附：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
         ]}
       ]
     });

@@ -379,7 +379,7 @@ assert(appV37.includes('dragThresholdPx||7'),'peak drag must use a nonzero platf
 assert(appV37.includes("if(event.ctrlKey){")&&appV37.includes("if(!event.ctrlKey)return;"),'manual add/delete mouse modifiers must use Ctrl');
 assert(resonancePluginSource.includes("'resonance-select-prev','Ctrl+ArrowLeft'")&&resonancePluginSource.includes('selectAdjacentPeak?.(-1)'),'Ctrl+left must be plugin-owned and select previous peak');
 assert(resonancePluginSource.includes("'resonance-select-next','Ctrl+ArrowRight'")&&resonancePluginSource.includes('selectAdjacentPeak?.(1)'),'Ctrl+right must be plugin-owned and select next peak');
-assert(resonancePluginSource.includes("setView('inspect')")&&resonancePluginSource.includes('plotly_click'),'group PRIME points must navigate to the shared curve inspector');
+assert(resonancePluginSource.includes("publishPeakSelection(p,'resonance-group'")&&resonancePluginSource.includes('openInspector:true')&&resonancePluginSource.includes('plotly_click'),'group PRIME points must publish shared selection and open the curve inspector');
 assert(appV37.includes("main-legend-chip ${selected?'selected':''} ${selectedPath&&!selected?'dimmed':''}"),'main legend must follow curve highlight/dimming');
 assert(appV37.includes('function smartAssignPeakOrders'),'cross-Vg smart peak identity assignment must exist');
 assert(fs.readFileSync('./src/science/identity.js','utf8').includes('enumerateTrackAssignments'),'smart identity must permit missing track indices rather than compress every curve');
@@ -1014,7 +1014,7 @@ assert(pulsePluginV319.includes("pageId:'pulseAnalysisPage'")&&pulsePluginV319.i
 assert(terPluginV319.includes("pageId:'terMaxPage'")&&terPluginV319.includes('html:pageHtml'),
   'TER analysis page must be dynamically created by the TER plugin');
 
-assert(kernelV319.includes("const API_VERSION = '1.6.0'"),'workspace extension API must expose the current v1.6 contract');
+assert(kernelV319.includes("const API_VERSION = '1.7.0'"),'workspace extension API must expose the current v1.7 contract');
 for(const token of [
   'function registerActivity','function addSidebarSection','function addMainOverlay',
   "registerTypedContribution(pluginId,'ui.inspectors'",
@@ -1120,7 +1120,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.31.2','current package version must be v3.31.2');
+assert(pkgV321.version==='3.32.0','current package version must be v3.32.0');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
   'DK Data Studio must ship the compact dedicated DK logo/icon assets');
@@ -1154,7 +1154,7 @@ assert(appSource.includes('async function importFiles(){\n    openImportWorkbenc
   'opening the import workbench must not automatically open a file chooser');
 assert(htmlV321.includes('id="importChooseFilesBtn" class="primary">导入文件</button>'),
   'file dialog must be explicitly initiated by the 导入文件 button');
-assert(kernelV321.includes("const API_VERSION = '1.6.0'"),'plugin API must expose unified workbench/capability contributions');
+assert(kernelV321.includes("const API_VERSION = '1.7.0'"),'plugin API must expose unified workbench/capability contributions');
 assert(mainV321.includes("extensions:['dkplugin']")&&fs.readFileSync('./plugin-package.js','utf8').includes('.dkplugin'),
   'external plugin package extension must be .dkplugin');
 const rootCmds321=fs.readdirSync('.').filter(n=>n.toLowerCase().endsWith('.cmd')).sort();

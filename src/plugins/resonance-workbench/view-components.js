@@ -172,7 +172,7 @@
                     <option value="raw">原始 I–V</option><option value="detrend">去背景</option><option value="didv">dI/dV</option>
                     <option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option>
                   </select></label>
-                  <div class="reswin-button-row"><button id="reswinShowAll">全部显示</button><button id="reswinHideAll">全部隐藏</button></div>
+                  <div class="reswin-button-row reswin-visibility-grid"><button id="reswinShowAll">全部扫描</button><button id="reswinShowForward">仅正扫</button><button id="reswinShowReverse">仅反扫</button><button id="reswinHideAll">全不选</button></div>
                 </div>
                 <div class="analysis-control-card reswin-control-stack">
                   <strong>智能寻峰 / 补峰</strong>
@@ -182,7 +182,7 @@
                   <div class="analysis-note compact">算法参数</div><div id="reswinDetectorParams" class="reswin-detector-params"></div>
                   <div class="reswin-button-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
                   <button id="reswinSortPeaks">跨 Vg 智能整理峰序</button>
-                  <div class="analysis-note compact">Shift + 左键点击曲线：在最近原始采样点添加手动峰。点击峰位后可在“曲线检查”中编辑。</div>
+                  <div class="analysis-note compact">点击曲线切换当前扫描；点击峰位会同步主图、曲线检查和组图。Shift + 左键在最近原始采样点添加手动峰；框选可批量锁定/删除或局部寻峰。←/→ 移动峰，Shift 加速，Ctrl+←/→ 切峰。</div>
                 </div>
                 <div class="analysis-control-card reswin-control-stack">
                   <strong>显示与交互</strong>
@@ -190,6 +190,7 @@
                   <label class="reswin-check"><input id="reswinShowWidth" type="checkbox">显示选中峰宽</label>
                   <label class="reswin-check"><input id="reswinShowPoints" type="checkbox">显示峰位点</label>
                   <label class="reswin-check"><input id="reswinPhysicsLabels" type="checkbox">显示物理类型标记</label>
+                  <div class="analysis-note compact">峰类别</div><div id="reswinPeakLegend" class="reswin-peak-legend"></div>
                 </div>
                 <div class="analysis-control-card reswin-control-stack reswin-datasets-card"><strong>数据文件</strong><div id="reswinDatasetList"></div></div>
               </aside>
@@ -278,7 +279,10 @@
         #resonanceDedicatedPage .reswin-control-stack{display:flex;flex-direction:column;align-items:stretch;margin:0;gap:8px}
         #resonanceDedicatedPage .reswin-control-stack label{display:flex;flex-direction:column;align-items:stretch;gap:4px;font-size:9px;color:#667085}
         #resonanceDedicatedPage .reswin-control-stack select,#resonanceDedicatedPage .reswin-control-stack input{width:100%;min-width:0}
-        #resonanceDedicatedPage .reswin-button-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        #resonanceDedicatedPage .reswin-button-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}#resonanceDedicatedPage .reswin-visibility-grid{grid-template-columns:1fr 1fr}
+        #resonanceDedicatedPage .reswin-peak-legend{display:flex;flex-wrap:wrap;gap:5px}
+        #resonanceDedicatedPage .reswin-peak-legend span{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:#5b6678}
+        #resonanceDedicatedPage .reswin-peak-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
         #resonanceDedicatedPage .reswin-datasets-card{max-height:48vh;overflow:auto}
         #resonanceDedicatedPage .reswin-dataset{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:5px 7px;padding:8px 0;border-top:1px solid #edf0f5}
         #resonanceDedicatedPage .reswin-dataset:first-child{border-top:0}
@@ -354,9 +358,14 @@
       ['resonance-sweep-down','ArrowDown',()=>R.switchSelectedSweep?.(1)],
       ['resonance-peak-left','ArrowLeft',()=>R.moveSelectedPeakBy?.(-1)],
       ['resonance-peak-right','ArrowRight',()=>R.moveSelectedPeakBy?.(1)],
+      ['resonance-peak-left-fast','Shift+ArrowLeft',()=>R.moveSelectedPeakBy?.(-5)],
+      ['resonance-peak-right-fast','Shift+ArrowRight',()=>R.moveSelectedPeakBy?.(5)],
       ['resonance-select-prev','Ctrl+ArrowLeft',()=>R.selectAdjacentPeak?.(-1)],
       ['resonance-select-next','Ctrl+ArrowRight',()=>R.selectAdjacentPeak?.(1)],
       ['resonance-lock','L',()=>R.lockSelectedPeaks?.(true)],
+      ['resonance-unlock','Shift+L',()=>R.lockSelectedPeaks?.(false)],
+      ['resonance-delete','Delete',()=>R.deleteSelectedPeaks?.()],
+      ['resonance-clear-range','Escape',()=>R.clearSelectedRange?.()],
       ['resonance-physics-labels','P',()=>R.togglePhysicsLabels?.()]
     ])ctx.ui.shortcuts.add({id,activity:'resonance',key,priority:250,handler});
 
@@ -414,7 +423,10 @@
     ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});
     page.querySelector('#reswinCloseBtn').onclick=()=>{if(isTop)h.closeCurrentWindow?.();else wb.showPrimary?.();};
     ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});
-    ctx.events.on('layout:resize',()=>{wb.resize('plugin-layout');controller.resize();});
+    // Core AnalysisWorkbench owns region measurement. Plugin views only resize
+    // their visible charts when the coalesced layout event arrives; feeding the
+    // event back into wb.resize() created a layout:resize feedback loop.
+    ctx.events.on('layout:resize',()=>controller.resize());
     controller.render();
     adapter?.resize?.();
     return {controller,workbench:wb,mode};

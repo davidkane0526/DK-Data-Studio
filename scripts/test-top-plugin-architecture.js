@@ -44,7 +44,7 @@ assert(pulseTopAdapter.includes('window.DKDSPulseAnalysisService'),'Pulse TOP ad
 assert(kernel.includes('打开失败'),'window-open failures must be surfaced instead of silently leaving another plugin UI visible.');
 assert(manager.includes('resetManagerScrollChain')&&manager.includes('settleManagerAtTop(frames=12)'),'plugin manager must repair late Chromium scroll anchoring after lifecycle changes.');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('new ContextMenu(this.owner)'),'portable charts must expose compact breadcrumb placement through core context menus.');
-assert(ui.includes("placementIcons={home:'◫',left:'←'")&&ui.includes("right:'→',bottom:'↓',float:'↗'"),'portable chart trigger/menu must expose the compact ◫ ← → ↓ ↗ placement grammar.');
+assert(ui.includes("placementIcons={home:'◫',sticky:'⌖',left:'←'")&&ui.includes("right:'→',bottom:'↓',float:'↗'"),'portable chart trigger/menu must expose the compact ◫ ← → ↓ ↗ placement grammar.');
 assert(ui.includes('createPortableZones()')&&ui.includes('portable(id,node,spec={})'),'core Workbench must own dedicated local portable zones and a portable() API.');
 
 // TER/Pulse/Data Center are no longer monolithic plugins. Their feature logic is
@@ -56,7 +56,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const superAdapter=read(`src/plugins/${folder}/super-layout.js`);
   assert(entry.split(/\r?\n/).length<40,`${folder}: plugin.js must be a thin composition entry.`);
-  assert(controller.includes('selection.channel'),`${folder}: controller must own shared selection state.`);
+  assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${folder}: controller must own typed shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
   assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through unified AnalysisWorkbench.`);
   assert(views.includes('wb.compose'),`${folder}: shared views must compose a PRIMARY surface.`);

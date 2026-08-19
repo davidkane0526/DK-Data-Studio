@@ -2,8 +2,8 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'3.0.1',
-    apiVersion:'1.6.0',
+    version:'3.1.0',
+    apiVersion:'1.7.0',
     description:'Resonance workbench composed from plugin-owned shared Controller and View components; SUPER and TOP only adapt presentation/layout.',
     source:'builtin',
     order:100,
@@ -12,6 +12,10 @@
   }, async ctx => {
     const shared=window.DKDSResonanceWorkbenchShared;
     if(!shared)throw new Error('Resonance shared workbench layer is not loaded.');
+    // Domain types live with the shared feature contract, not with the shell.
+    shared.registerDataTypes?.(ctx);
+    const interactionRuntime=ctx.ui.interaction?.create?.('resonance',{selection:{multiple:true,defaultType:'resonance.peak'},defaultType:'resonance.peak'});
+    const interactionSelection=interactionRuntime?.selection||ctx.ui.selection.model('resonance:interaction',{multiple:true,defaultType:'resonance.peak'});
     let runtime=null;
     let service=ctx.host?.resonance;
     if(!ctx.host.isAuxiliaryWindow){
@@ -29,6 +33,7 @@
       service=runtime.service;
     }
     if(!service)throw new Error('Resonance service is unavailable.');
+    service.setInteractionRuntime?.({runtime:interactionRuntime,selection:interactionSelection,dataTypes:ctx.data.types,contextMenus:ctx.ui.contextMenus});
     const controller=shared.createController(service,{
       mode:ctx.host.isAuxiliaryWindow?'top':'super',
       science:window.DKDSScience,

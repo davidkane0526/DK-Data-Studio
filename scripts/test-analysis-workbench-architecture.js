@@ -13,13 +13,16 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'4\.0\.1'/.test(ui),'UI infrastructure must ship the unified v4 workbench.');
+assert(/const VERSION\s*=\s*'5\.0\.0'/.test(ui),'UI infrastructure must ship the unified v5 interaction/workbench runtime.');
 for(const token of ['class AnalysisWorkbench','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.6.0'"),'Plugin API must be v1.6.0.');
+assert(kernel.includes("const API_VERSION = '1.7.0'"),'Plugin API must be v1.7.0.');
 assert(kernel.includes('analysisWorkbench: infrastructureScope?.analysisWorkbench'),'Kernel must expose the unified Analysis Workbench.');
+assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
+assert(kernel.includes('layoutResizeDispatching')&&kernel.includes("name !== 'layout:resize'")&&kernel.includes('infrastructureScope.emitResize'),'Plugin kernel must globally coalesce layout:resize and route plugin layout requests through the scoped scheduler.');
+assert(ui.includes('class DataTypeRegistry')&&ui.includes('class SelectionModel')&&ui.includes('class InteractionRuntime'),'Core must own plugin-registered data types and typed interaction selection.');
 assert(kernel.includes('capabilities: {'),'Kernel must expose Capability Runtime to plugins.');
 for(const token of ['function register(owner, id, spec={})','function importRemote(payload, invoker)','async function invoke(id, method=','function proxy(id)','function requireCapability(id, options={})','function subscribe(fn,','function snapshot({remoteOnly=false}={})']){
   assert(cap.includes(token),`Capability Runtime missing ${token}`);
@@ -44,7 +47,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
-  assert(manifest.apiVersion==='1.6.0',`${folder}: manifest must target plugin API 1.6.0.`);
+  assert(manifest.apiVersion==='1.7.0',`${folder}: manifest must target plugin API 1.7.0.`);
   assert((manifest.capabilities||[]).includes('ui.analysis-workbench'),`${folder}: manifest must declare unified workbench capability.`);
   assert((manifest.capabilities||[]).includes('runtime.capabilities'),`${folder}: manifest must declare Capability Runtime use.`);
 }
@@ -54,6 +57,8 @@ assert(ter.includes('workbench.grid('),'TER chart arrangement must be owned by c
 assert(ter.includes('responsive:false'),'Explicit TER grid presets must not be silently clamped by responsive heuristics.');
 assert(ter.includes("items:()=>[")&&ter.includes("id:'layout'"),'TER Layout must use the core declarative ActionGroup menu path.');
 assert(ter.includes("minItemWidth:260"),'TER must declare responsive grid intent instead of hard-coded DOM coordinates.');
+assert(ui.includes("classList.add('is-sticky')")&&ui.includes("case 'sticky'")===false,'Portable placement grammar must support sticky as a home-layout state rather than a dock region.');
+assert(ter.includes("defaultPlacement:layoutSettings.sticky?'sticky':'inline'")&&ter.includes("placements:['inline','sticky','right','bottom','float']"),'TER R–V PRIME must restore sticky as its default pin behavior.');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'","id:'spacing'","id:'gate-analysis'"]){
   assert(resonanceViews.includes(token),`Resonance unified workbench missing semantic view ${token}.`);

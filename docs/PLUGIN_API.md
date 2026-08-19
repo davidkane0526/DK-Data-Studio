@@ -1,4 +1,4 @@
-# Plugin API v1.6
+# Plugin API v1.7
 
 Global runtime:
 
@@ -26,7 +26,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "id": "com.example.my-plugin",
   "name": "My Plugin",
   "version": "0.1.0",
-  "apiVersion": "1.6.0",
+  "apiVersion": "1.7.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 300,
@@ -38,11 +38,11 @@ DKDSPlugins.define(manifest, async ctx => {
 Plugin ids are permanent. Do not rename an id after project files have stored state under it.
 
 
-## Workspace UI API v1.5
+## Workspace / Interaction API v1.7
 
 
 
-v1.5 keeps the lifecycle-owned state, portable/pinnable views, dynamic actions, chart surfaces, interaction bindings and linked-selection channels introduced in v1.4, and adds the unified **Analysis Workbench**, explicit **PRIMARY / PRIME / SUB** view semantics, managed responsive grids, plus the cross-renderer **Capability Runtime**. Complex plugins should consume these Core primitives instead of implementing plugin-local window/layout/capability frameworks. See `docs/ANALYSIS_WORKBENCH_ARCHITECTURE.md` and `docs/PLUGIN_UI_INFRASTRUCTURE.md`.
+v1.7 keeps the unified **Analysis Workbench**, explicit **PRIMARY / PRIME / SUB** view semantics and cross-renderer **Capability Runtime**, and adds plugin-registered data/result types plus a typed **Interaction Runtime**. Selection state is heterogeneous and schema-light: Core understands identity/type/range/context mechanics while plugins define scientific data types and compact selection projections. Complex plugins should consume these Core primitives instead of implementing plugin-local window/layout/capability frameworks. See `docs/ANALYSIS_WORKBENCH_ARCHITECTURE.md` and `docs/PLUGIN_UI_INFRASTRUCTURE.md`.
 Activity-scoped keyboard behavior must use `ctx.ui.shortcuts.add(...)`; plugins should listen to the generic `layout:resize` event to resize their own canvases. Core must not know domain shortcut keys or domain plot IDs.
 
 For full scientific-workspace customization, read:
@@ -51,7 +51,7 @@ For full scientific-workspace customization, read:
 docs/WORKSPACE_PLUGIN_API.md
 ```
 
-v1.5 remains additive: legacy contribution points are retained for compatibility, while new analysis plugins should prefer `ctx.ui.analysisWorkbench` and `ctx.capabilities`. Workspace contributions still include:
+v1.7 remains additive: legacy contribution points are retained for compatibility, while new analysis plugins should prefer `ctx.ui.analysisWorkbench` and `ctx.capabilities`. Workspace contributions still include:
 
 ```text
 ui.activities
@@ -72,6 +72,37 @@ peak.detectors
 This is the preferred route for scientific UI. A feature plugin should own its activity, sidebar, main-view contract, inspector, group charts and domain pages rather than append permanent controls to the global shell.
 
 
+
+## Registered data types and typed selection
+
+Plugins may register domain data and processed-result types without teaching Core the scientific schema:
+
+```js
+ctx.data.types.register('my-plugin.fit-result', {
+  title: 'Fit result',
+  parents: ['result.analysis', 'data.point'],
+  kind: 'result',
+  key: value => value.id,
+  selection: value => ({
+    id: value.id,
+    ref: { resultId: value.id },
+    value: { id:value.id, x:value.x, y:value.y, quality:value.quality }
+  }),
+  resolve: ref => myResultStore.get(ref.resultId)
+});
+
+const interaction = ctx.ui.interaction.create('analysis', {
+  selection:{multiple:true, defaultType:'my-plugin.fit-result'}
+});
+interaction.bind('inspector', {
+  types:['result.analysis'],
+  onSelection:snapshot => renderInspector(snapshot.focus)
+});
+```
+
+A type may have multiple parents, so a derived column can simultaneously be a data series and an analysis result. `selection(...)` should return a compact interaction representation; do not copy a million-row table or complete sweep into Selection state. `ref` can point back to the canonical artifact/result and `resolve(...)` can rehydrate it when needed.
+
+The typed selection document can contain multiple item types, a focus item, one or more typed ranges, source view and arbitrary context. Use `selectRegion(...)`/`interaction.region(...)` when a lasso/box selection produces both a region and selected data/result items.
 
 ## Unified Analysis Workbench
 
@@ -624,7 +655,7 @@ The host rejects a second plugin that tries to claim an already registered globa
 
 ## Installable package distribution
 
-Plugin API v1.6 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
+Plugin API v1.7 can be distributed as desktop `.dkplugin` packages. See `PLUGIN_PACKAGES.md`. External packages use exactly the same contribution APIs as built-ins; a packaged detector, activity, inspector, group-chart set, or workflow should not require a core source modification.
 
 ## Dedicated plugin windows
 
@@ -690,8 +721,8 @@ For every enabled built-in **or installed `.dkplugin`** with `manifest.window` a
 Regression coverage lives in `scripts/test-plugin-windows.js`, including both a synthetic future built-in plugin and an installed external `.dkplugin` fixture. New independent plugins must not require edits to `main.js` or `src/app.js` merely to participate in this lifecycle. External package updates carry an installation revision; cached windows using an older revision are destroyed and recreated before reuse.
 
 
-## AnalysisWorkbench v4 / Capability Runtime v2
+## AnalysisWorkbench v5 / Typed Interaction / Capability Runtime v2
 
-Plugin API 1.6 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
+Plugin API 1.7 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
-Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, floating, split geometry, selection, chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
+Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
