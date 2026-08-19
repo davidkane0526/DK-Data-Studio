@@ -99,6 +99,22 @@
     page.querySelector('#pulseCopyCsvBtn').onclick=()=>P.copyResults();
     page.querySelector('#pulseExportCsvBtn').onclick=()=>P.exportResults();
 
+    if(!h.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const menuRows=[
+        ['pulse-export-raw-csv','当前文件 · 原始波形数据 CSV',10,()=>P.exportRawCsv()],
+        ['pulse-export-raw-svg','当前文件 · 原始波形 SVG',20,()=>P.exportRawSvg()],
+        ['pulse-export-raw-png','当前文件 · 原始波形 PNG',30,()=>P.exportRawPng()],
+        ['pulse-export-read-csv','当前可见结果 · 读取电流 CSV',50,()=>P.exportReadCsv()],
+        ['pulse-export-read-svg','当前可见结果 · 读取电流图 SVG',60,()=>P.exportReadSvg()],
+        ['pulse-export-read-png','当前可见结果 · 读取电流图 PNG',70,()=>P.exportReadPng()],
+        ['pulse-export-pulse-csv','当前可见结果 · 脉冲电流 CSV',90,()=>P.exportPulseCsv()],
+        ['pulse-export-pulse-svg','当前可见结果 · 脉冲电流图 SVG',100,()=>P.exportPulseSvg()],
+        ['pulse-export-pulse-png','当前可见结果 · 脉冲电流图 PNG',110,()=>P.exportPulsePng()],
+        ['pulse-export-summary-csv','当前可见结果 · 分析汇总 CSV',130,()=>P.exportResults()]
+      ];
+      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'pulse',order,onClick});
+    }
+
     ctx.events.on('analysis:refresh',({id})=>{if(id==='pulseAnalysisPage')P.render();});
     ctx.events.on('layout:resize',()=>{
       for(const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']){

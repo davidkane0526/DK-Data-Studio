@@ -75,4 +75,23 @@ for(const phrase of ['GRS 工作台交互 · SUPER / TOP 共用同一渲染器',
 const topRuntime=read('src/plugin-window/runtime.js');
 assert(topRuntime.includes("edit?.supports?.('undo')") && topRuntime.includes("edit?.supports?.('deselect')"), 'TOP window routes Ctrl+Z/Escape through the active-plugin Edit Contract');
 
-console.log('v3.37 workspace ordering, runtime and performance audit checks passed.');
+
+// Restoring a portable view must return to its stable original slot, not append
+// after siblings that happened to remain in the home container.
+assert(ui.includes('document.createComment(`dkds-portable-home:')&&ui.includes('anchor.parentNode.insertBefore(this.wrapper,anchor.nextSibling)'),'PortableView home placement must use a stable anchor so group subplots return to their original slot.');
+
+// Resonance group layout selector is a real Core ContextMenu action, not dead chrome.
+assert(resonanceViews.includes("event.preventDefault();event.stopPropagation();")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`")&&resonanceViews.includes('ctx.ui.contextMenus?.open?.'),'Resonance group column control must open the Core layout menu and expose auto/1-6 columns.');
+
+// System export menu is contextual: each TOP-capable plugin contributes semantic
+// export targets, and the shell displays the currently active workspace context.
+const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
+const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
+const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
+assert(kernel.includes('data-plugin-export-context')&&kernel.includes('active?.contextLabel||active?.label')&&kernel.includes("trigger.textContent='导出数据 ▾'"),'System export menu must identify the current active plugin workspace and keep one consistent shell trigger.');
+assert(resonanceViews.includes('共振 I–V 主图 · SVG')&&!resonanceViews.includes("label:'主图 SVG'"),'Resonance exports must name the actual I–V plot rather than an ambiguous main plot.');
+assert(pulseFeature.includes('当前文件 · 原始波形数据 CSV')&&pulseFeature.includes('当前可见结果 · 读取电流图 SVG')&&pulseFeature.includes("activity:'pulse'"),'Pulse must dynamically register semantically named system export items.');
+assert(terFeature.includes('TER 全组合热图 · Long CSV')&&terFeature.includes('R–V 联动图 · SVG')&&terFeature.includes("activity:'ter'"),'TER must dynamically register semantically named system export items.');
+assert(dataCenterFeature.includes('当前数据表 · CSV')&&dataCenterFeature.includes('数据中心图形预览 · PNG')&&dataCenterFeature.includes("activity:'data-center'"),'Data Center must dynamically register its own system export items.');
+
+console.log('v3.38 workspace ordering/export semantics checks passed.');

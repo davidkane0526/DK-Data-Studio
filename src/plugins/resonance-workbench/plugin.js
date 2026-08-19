@@ -2,7 +2,7 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'3.37.0',
+    version:'3.38.0',
     apiVersion:'1.7.0',
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
     source:'builtin',

@@ -556,9 +556,17 @@
 
   function refreshExportMenuPresentation(){
     const pluginMenu=document.querySelector('#pluginExportMenu');
-    const hasPluginExport=[...(pluginMenu?.querySelectorAll('.plugin-menu-item')||[])].some(el=>!el.classList.contains('plugin-activity-hidden')&&!el.classList.contains('hidden'));
+    const visiblePluginItems=[...(pluginMenu?.querySelectorAll('.plugin-menu-item')||[])].filter(el=>!el.classList.contains('plugin-activity-hidden')&&!el.classList.contains('hidden'));
+    const hasPluginExport=visiblePluginItems.length>0;
     document.querySelectorAll('[data-legacy-plot-export]').forEach(el=>el.classList.toggle('hidden',hasPluginExport));
-    const trigger=document.querySelector('#exportMenuBtn');if(trigger)trigger.textContent=hasPluginExport?'导出 ▾':'导出数据 ▾';
+    const active=activeActivity();
+    let context=pluginMenu?.querySelector?.('[data-plugin-export-context]')||null;
+    if(hasPluginExport&&pluginMenu){
+      if(!context){context=document.createElement('div');context.className='plugin-export-context';context.dataset.pluginExportContext='1';pluginMenu.prepend(context);}
+      context.textContent=`当前：${active?.contextLabel||active?.label||'当前插件'}`;
+      context.classList.remove('hidden');
+    }else context?.classList?.add('hidden');
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.title=hasPluginExport?`导出 ${active?.contextLabel||active?.label||'当前插件'} 的数据或图形`:'导出当前数据或图形';}
   }
 
   function refreshActivityVisibility() {
@@ -1448,7 +1456,7 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.1',hostInvariant:true,canvasDocking:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.2',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

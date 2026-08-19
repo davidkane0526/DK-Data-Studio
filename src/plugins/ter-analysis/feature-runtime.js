@@ -436,6 +436,25 @@
       h.setStatus?.(`已导出 ${spec.fileBase}.${format}。`);
     }
 
+    if(!h.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const menuRows=[
+        ['ter-export-long','TER 全组合热图 · Long CSV',10,()=>T.exportLong?.()],
+        ['ter-export-matrix','TER 全组合热图 · 矩阵 CSV',20,()=>T.exportMatrix?.()],
+        ['ter-export-heatmap-svg','TER 全组合热图 · SVG',30,()=>T.exportHeatmapSvg?.()],
+        ['ter-export-heatmap-png','TER 全组合热图 · PNG',40,()=>T.exportHeatmapPng?.()],
+        ['ter-export-rv-csv','R–V 联动图 · CSV',60,()=>exportChartData('resistance')],
+        ['ter-export-rv-svg','R–V 联动图 · SVG',70,()=>exportChartImage('resistance','svg')],
+        ['ter-export-rv-png','R–V 联动图 · PNG',80,()=>exportChartImage('resistance','png')],
+        ['ter-export-maxvg-csv','TER_Max–Vg · CSV',100,()=>exportChartData('maxVg')],
+        ['ter-export-maxvg-svg','TER_Max–Vg · SVG',110,()=>exportChartImage('maxVg','svg')],
+        ['ter-export-maxvg-png','TER_Max–Vg · PNG',120,()=>exportChartImage('maxVg','png')],
+        ['ter-export-maxvd-csv','TER_Max–Vd · CSV',140,()=>exportChartData('maxVd')],
+        ['ter-export-maxvd-svg','TER_Max–Vd · SVG',150,()=>exportChartImage('maxVd','svg')],
+        ['ter-export-maxvd-png','TER_Max–Vd · PNG',160,()=>exportChartImage('maxVd','png')]
+      ];
+      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'ter',order,onClick});
+    }
+
     function handleExportClick(event){
       const button=event.target?.closest?.('[data-ter-export][data-ter-plot]');
       if(!button)return;

@@ -1,9 +1,9 @@
-# Next Session Handoff — v3.37.0
+# Next Session Handoff — v3.38.0
 
 ## Current checkout
 
-- Local working branch: `refactor/v3.37-workspace-order-runtime-audit`
-- Current delivery: `v3.37.0`
+- Local working branch: `refactor/v3.38-portable-home-contextual-export`
+- Current delivery: `v3.38.0`
 - `main` remains the local v3.32.0 baseline until an explicit merge is requested.
 - Do not access or modify a remote repository unless the user explicitly asks.
 
@@ -31,6 +31,17 @@ Resonance Group uses stable child PortableViews and live visible/accepted-peak d
 
 Pulse repeat-analysis reliability was fixed in the science core: `null`/blank optional sample ranges no longer coerce to zero. A failed rerun preserves the last valid result; a later successful rerun replaces it and clears the error.
 
+
+## v3.38 delta
+
+PortableView `home` now means the original semantic slot, not “append back to the current home container”. Core leaves a stable Home Anchor at construction, so Resonance group child plots return to the exact original sequence after any combination of dock/global-float moves.
+
+Resonance Group's `每行` control uses the Core ContextMenu and supports Auto/1–6 columns. Its label is synchronized from persisted workspace state.
+
+The system `导出数据` menu is activity-contextual. Resonance, Pulse, TER and Data Center register semantic export targets; switching the active SUPER workspace changes the visible submenu automatically. Generic words such as `主图` are not used for Pulse/TER/Data Center.
+
+Linux Chromium runtime verification is documented in `docs/VERIFICATION_V3.38.0.md`.
+
 ## Validation
 
 Before delivery/future merge, rerun:
@@ -44,4 +55,4 @@ node scripts/test-resonance-shared-architecture.js
 node scripts/test-ter-live-artifact-integration.js
 ```
 
-Linux Chromium runtime geometry/event verification is documented in `docs/VERIFICATION_V3.37.0.md`.
+Linux Chromium runtime geometry/event verification is documented in `docs/VERIFICATION_V3.38.0.md`.

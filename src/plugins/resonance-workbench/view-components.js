@@ -374,17 +374,34 @@
     wb.setNavigationPresentation?.('host');
     ctx.ui.edit?.register?.({id:'resonance',order:10,undo:()=>{R.undoLastAction?.();return true;},deselect:()=>{R.clearSelection?.();return true;}});
     const groupColsBtn=page.querySelector('[data-respar-group-cols-menu]');
-    if(groupColsBtn)groupColsBtn.onclick=event=>{const current=String(R.getGroupColumns?.()||'auto');const rect=groupColsBtn.getBoundingClientRect();ctx.ui.contextMenus?.open?.({x:rect.left,y:rect.bottom+4,items:['auto','1','2','3','4','5','6'].map(value=>({id:`group-cols-${value}`,label:value==='auto'?'每行：自动':`每行：${value}`,checked:()=>current===value,onInvoke:()=>{R.setGroupColumns?.(value);groupColsBtn.textContent=`每行：${value==='auto'?'自动':value} ▾`;}}))});};
+    if(groupColsBtn){
+      const syncGroupColsLabel=()=>{const value=String(R.getGroupColumns?.()||'auto');groupColsBtn.textContent=`每行：${value==='auto'?'自动':value} ▾`;};
+      syncGroupColsLabel();
+      groupColsBtn.onclick=event=>{
+      event.preventDefault();event.stopPropagation();
+      const current=String(R.getGroupColumns?.()||'auto');
+      const rect=groupColsBtn.getBoundingClientRect();
+      const values=['auto','1','2','3','4','5','6'];
+      const items=values.map(value=>({
+        id:`group-cols-${value}`,
+        icon:current===value?'✓':'',
+        label:value==='auto'?'自动排列':`每行 ${value} 个子图`,
+        onInvoke:()=>{R.setGroupColumns?.(value);syncGroupColsLabel();}
+      }));
+      const menu=ctx.ui.contextMenus?.open?.({x:rect.left,y:rect.bottom+4,items});
+      if(!menu)ctx.host?.setStatus?.('组图布局菜单当前不可用。');
+      };
+    }
     const primeIdFor=kind=>kind==='inspect'?'curve-inspector':'group-analysis';
     const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id);kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};
     page.querySelectorAll('[data-respar-panel]').forEach(btn=>btn.onclick=()=>togglePanel(btn.dataset.resparPanel));
     page.querySelector('[data-respar-lock="1"]')?.addEventListener('click',()=>R.lockSelectedPeaks?.(true));page.querySelector('[data-respar-lock="0"]')?.addEventListener('click',()=>R.lockSelectedPeaks?.(false));page.querySelector('#resparSortPeakOrder')?.addEventListener('click',()=>R.sortPeakOrderByVd?.());page.querySelector('#resparTogglePhysics')?.addEventListener('click',()=>R.togglePhysicsLabels?.());page.querySelector('#resparResetView')?.addEventListener('click',()=>R.resetMainView?.());
     page.querySelector('#resparRangeDetect')?.addEventListener('click',()=>R.detectSelectedRange?.());page.querySelector('#resparRangeDelete')?.addEventListener('click',()=>R.deleteSelectedRangePeaks?.());page.querySelector('#resparRangeLock')?.addEventListener('click',()=>R.setSelectedRangeLocked?.(true));page.querySelector('#resparRangeUnlock')?.addEventListener('click',()=>R.setSelectedRangeLocked?.(false));page.querySelector('#resparRangeApplyIdentity')?.addEventListener('click',()=>R.applySelectedRangeIdentity?.(page.querySelector('#resparRangeOrder')?.value,page.querySelector('#resparRangeLabel')?.value));page.querySelector('#resparRangeClose')?.addEventListener('click',()=>R.clearSelectedRange?.());
     const exportItems=()=>[
-      {id:'main-svg',label:'主图 SVG',onInvoke:()=>R.exportMainSvg?.()},
-      {id:'main-png',label:'主图 PNG',onInvoke:()=>R.exportMainPng?.()},
-      {id:'main-csv',label:'主图数据 CSV',onInvoke:()=>R.exportMainCsv?.()},
-      {id:'main-copy',label:'复制主图数据',onInvoke:()=>R.copyMainCsv?.()},
+      {id:'main-svg',label:'共振 I–V 主图 · SVG',onInvoke:()=>R.exportMainSvg?.()},
+      {id:'main-png',label:'共振 I–V 主图 · PNG',onInvoke:()=>R.exportMainPng?.()},
+      {id:'main-csv',label:'共振 I–V 主图数据 · CSV',onInvoke:()=>R.exportMainCsv?.()},
+      {id:'main-copy',label:'复制共振 I–V 主图数据',onInvoke:()=>R.copyMainCsv?.()},
       {type:'separator'},
       {id:'peaks-csv',label:'峰参数 CSV',onInvoke:()=>R.exportPeaks?.()},
       {id:'peaks-copy',label:'复制峰参数',onInvoke:()=>R.copyPeaks?.()}
@@ -404,7 +421,7 @@
         ['res-physics','物理机制','SUB',70,()=>navigate('physics')],['res-spacing','峰间距','SUB',80,()=>navigate('spacing')],['res-gate','栅压分析','SUB',90,()=>navigate('gate')]
       ];
       for(const [id,label,section,order,onClick] of toolbarActions)ctx.ui.toolbar.add({id,label,activity:'resonance',section,order,priority:section==='PRIME'?20:10,onClick});
-      const menuRows=[['res-export-main-svg','主图 SVG',10,()=>R.exportMainSvg?.()],['res-export-main-png','主图 PNG',20,()=>R.exportMainPng?.()],['res-export-main-csv','主图数据 CSV',30,()=>R.exportMainCsv?.()],['res-export-main-copy','复制主图数据',40,()=>R.copyMainCsv?.()],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.()],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.()]];
+      const menuRows=[['res-export-main-svg','共振 I–V 主图 · SVG',10,()=>R.exportMainSvg?.()],['res-export-main-png','共振 I–V 主图 · PNG',20,()=>R.exportMainPng?.()],['res-export-main-csv','共振 I–V 主图数据 · CSV',30,()=>R.exportMainCsv?.()],['res-export-main-copy','复制共振 I–V 主图数据',40,()=>R.copyMainCsv?.()],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.()],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.()]];
       for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'resonance',order,onClick});
     }
     ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});

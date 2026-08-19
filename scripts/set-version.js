@@ -84,6 +84,22 @@ html = html.replace(
 );
 fs.writeFileSync(indexPath, html, 'utf8');
 
+// Keep every user-visible/runtime application version source synchronized.
+// Built-in Resonance intentionally follows the application release version;
+// other built-in plugins maintain their own semantic versions.
+for (const relative of [
+  path.join('src','app.js'),
+  path.join('src','plugin-window','runtime.js'),
+  path.join('src','plugins','resonance-workbench','plugin.js'),
+  path.join('src','plugins','resonance-workbench','plugin.json')
+]) {
+  const target = path.join(root, relative);
+  if (!fs.existsSync(target)) continue;
+  const before = fs.readFileSync(target, 'utf8');
+  const after = before.split(current).join(version);
+  if (after !== before) fs.writeFileSync(target, after, 'utf8');
+}
+
 console.log(`Current source version : ${current}`);
 console.log(`Requested version      : ${input}`);
 console.log(`Resolved release       : ${version}`);

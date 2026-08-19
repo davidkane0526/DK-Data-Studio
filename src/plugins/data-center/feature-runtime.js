@@ -115,6 +115,15 @@
       }
     });
 
+    if(!ctx.host.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const menuRows=[
+        ['dc-export-table-csv','当前数据表 · CSV',10,()=>exportActiveTableCsv()],
+        ['dc-export-chart-png','数据中心图形预览 · PNG',30,()=>ctx.host.savePlotlyImage('dcChart','data_center_chart','png')],
+        ['dc-copy-provenance','当前数据对象 · 复制来源链 JSON',50,()=>ctx.host.copyTextToClipboard(JSON.stringify(activeArtifact()?.provenance||[],null,2),'Provenance JSON')]
+      ];
+      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'data-center',order,onClick});
+    }
+
     const chartPane=page.querySelector('.dc-chart-pane');
     if(chartPane){
       try{
@@ -132,6 +141,9 @@
     function activeArtifact(){const rows=artifacts();let a=rows.find(x=>x.id===state.activeArtifactId)||rows.find(x=>x.kind==='data.table')||rows[0]||null;if(a&&a.id!==state.activeArtifactId)state.activeArtifactId=a.id;return a;}
     function provider(type,id){const list=type==='processor'?ctx.workflow.processors.list():ctx.workflow.analyzers.list();return list.find(p=>p.id===id)||null;}
     function currentOutputArtifact(){const result=lastExecution?.outputs?.result;if(D.isArtifact(result)&&result.kind==='data.table')return result;if(lastExecution?.nodeResults){const candidates=Object.values(lastExecution.nodeResults).flatMap(v=>D.isArtifact(v)?[v]:v&&typeof v==='object'?Object.values(v).filter(D.isArtifact):[]).filter(a=>a.kind==='data.table');if(candidates.length)return candidates.at(-1);}return activeArtifact();}
+    function csvCell(value){const text=String(value??'');return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
+    function activeTableCsv(){const table=currentOutputArtifact();if(!table||table.kind!=='data.table')throw new Error('当前没有可导出的 DataTable。');const columns=Array.isArray(table.columns)?table.columns:[];if(!columns.length)throw new Error('当前 DataTable 没有列。');const rows=[columns.map(c=>csvCell(c.name||c.key||'column')).join(',')];for(let r=0;r<Number(table.rowCount||0);r++)rows.push(columns.map(c=>csvCell(c.values?.[r]??'')).join(','));return {table,text:rows.join('\n')};}
+    async function exportActiveTableCsv(){const {table,text}=activeTableCsv();const safe=String(table.name||'data_table').replace(/[\/:*?"<>|]+/g,'_');await window.electronAPI?.saveText?.({defaultName:`${safe}.csv`,content:text,filters:[{name:'CSV',extensions:['csv']}]});ctx.host.setStatus?.(`已导出 ${safe}.csv。`);}
 
     function renderArtifacts(){const list=$('#dcArtifactList');if(!list)return;const rows=artifacts();$('#dcArtifactCount').textContent=`${rows.length} 个`;list.innerHTML='';if(!rows.length){list.innerHTML='<div class="empty-state">先从主界面导入数据。导入结果会自动映射为标准 DataTable。</div>';return;}for(const a of rows){const sum=D.summarize(a);const b=document.createElement('button');b.type='button';b.className=`dc-artifact-item ${a.id===state.activeArtifactId?'active':''}`;const dimensions=a.kind==='data.table'?`${sum.rows??'—'} 行 · ${sum.columns??'—'} 列`:a.kind==='data.series'||a.kind==='data.sweep'?`${sum.length??'—'} 点`:a.kind;b.innerHTML=`<div class="dc-artifact-name">${esc(a.name)}</div><div class="dc-artifact-meta">${esc(a.kind)} · ${esc(dimensions)} · provenance ${sum.provenance}</div>`;b.onclick=()=>{state.activeArtifactId=a.id;lastExecution=null;controller?.select?.({id:a.id,kind:a.kind,name:a.name},{source:'data-center-artifact'});renderAllUi();};list.appendChild(b);}}
     function renderPreview(){const a=activeArtifact();$('#dcActiveName').textContent=a?.name||'未选择数据';$('#dcActiveMeta').textContent=a?`${a.kind} · ${a.id}`:'—';const host=$('#dcTablePreview');if(!a){host.innerHTML='<div class="empty-state">暂无数据对象</div>';return;}if(a.kind==='data.table'){const n=Math.min(a.rowCount,18);host.innerHTML=`<table class="dc-preview-table"><thead><tr><th>#</th>${a.columns.map(c=>`<th>${esc(c.name)}${c.unit?` (${esc(c.unit)})`:''}</th>`).join('')}</tr></thead><tbody>${Array.from({length:n},(_,r)=>`<tr><td>${r+1}</td>${a.columns.map(c=>`<td>${Number.isFinite(c.values[r])?Number(c.values[r]).toPrecision(7):esc(c.values[r])}</td>`).join('')}</tr>`).join('')}</tbody></table>${a.rowCount>n?`<div class="import-diagnosis">预览前 ${n} / ${a.rowCount} 行</div>`:''}`;return;}if(a.kind==='result.analysis'){const table=a.tables?.[0],rows=table?.rows||[];if(rows.length){const keys=Object.keys(rows[0]);const n=Math.min(rows.length,18);host.innerHTML=`<div class="import-diagnosis">${esc(JSON.stringify(a.summary||{}))}</div><table class="dc-preview-table"><thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,n).map(row=>`<tr>${keys.map(k=>`<td>${Number.isFinite(row[k])?Number(row[k]).toPrecision(7):esc(row[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;return;}}host.innerHTML=`<pre class="dc-json-preview">${esc(JSON.stringify(D.summarize(a),null,2))}</pre>`;}

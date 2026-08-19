@@ -4,7 +4,9 @@
 
 This delivery contains a reconstructed local Git repository with `refactor/v3.37-workspace-order-runtime-audit` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.37.0**.
+Current development baseline: **v3.38.0**.
+
+`v3.38.0` adds stable PortableView Home Anchors, a functional Resonance Group column menu, and activity-scoped semantic system exports.
 
 `v3.37.0` audits workspace/runtime ordering: explicit PRIMARY scrolling modes, independent SUB pages, two portable floating scopes, dock conflict stacking, active-plugin edit routing, live stable Resonance group plots and Pulse repeat-analysis reliability.
 
