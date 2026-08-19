@@ -78,7 +78,7 @@ assert(resonancePluginSource.includes('data-add-cat'),'resonance inspector plugi
 assert(appSource.includes(".on('dblclick',(event,d)=>"),'double-clicking a peak should be handled');
 assert(appSource.includes('showInspectorPanel'),'peak click/double-click should open inspector');
 assert(!appSource.includes('TER_COLORS'),'TER must not use a separate unrelated palette');
-assert(resonancePluginSource.includes('_forwardColor')&&resonancePluginSource.includes('_reverseColor'),'resonance TER chart plugin must carry exact forward/reverse peak colors');
+assert(!resonancePluginSource.includes('_forwardColor')&&!resonancePluginSource.includes('_reverseColor'),'resonance shared Plotly views must preserve the v3.25 default trace palette instead of injecting category colors');
 
 assert(htmlSource.includes('groupDockBtn')&&htmlSource.includes('groupMinimizeBtn'),'group panel should support dock/minimize controls');
 assert(htmlSource.includes('dockedGroupSlot'),'main workspace should include bottom docking slot');
@@ -1120,7 +1120,7 @@ const preloadV321=fs.readFileSync('./preload.js','utf8');
 const pkgV321=JSON.parse(fs.readFileSync('./package.json','utf8'));
 const dkdsTools321=fs.readFileSync('./tools/windows/dkds-tools.ps1','utf8');
 const dkdsGui321=fs.readFileSync('./tools/windows/dkds-gui.ps1','utf8');
-assert(pkgV321.version==='3.32.0','current package version must be v3.32.0');
+assert(pkgV321.version==='3.33.0','current package version must be v3.33.0');
 assert(pkgV321.name==='dk-data-studio'&&pkgV321.build?.productName==='DK Data Studio','application branding must be DK Data Studio');
 assert(pkgV321.build?.win?.icon==='assets/dkds-icon.ico'&&fs.existsSync('./assets/dkds-mark.svg')&&fs.existsSync('./assets/dkds-icon.png'),
   'DK Data Studio must ship the compact dedicated DK logo/icon assets');

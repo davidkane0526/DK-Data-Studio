@@ -233,6 +233,59 @@
     return table;
   }
 
+  function syncLegacyDatasetArtifacts(store,datasets,{prune=true}={}){
+    if(!store?.upsert)return store;
+    const rows=safeArray(datasets);
+    const live=new Set(rows.map(d=>String(d?.path||d?.name||'dataset')));
+    if(prune&&store.list&&store.remove){
+      for(const artifact of store.list({includeTransient:true})){
+        if(artifact?.transient&&artifact.metadata?.adapter==='legacy-dataset'&&!live.has(String(artifact.metadata?.legacyDatasetPath||'')))store.remove(artifact.id);
+      }
+    }
+    for(const dataset of rows)store.upsert(fromLegacyDataset(dataset));
+    return store;
+  }
+
+  function toLegacyDataset(artifact){
+    const table=rehydrateArtifact(artifact);
+    if(!table||table.kind!=='data.table'||table.metadata?.adapter!=='legacy-dataset')return null;
+    const x=column(table,'Vd')||table.columns?.find(c=>c.role==='x')||table.columns?.[0];
+    const y=column(table,'Id')||table.columns?.find(c=>c.role==='y')||table.columns?.[1];
+    if(!x||!y)return null;
+    const vgColumn=column(table,'Vg')||table.columns?.find(c=>c.role==='group');
+    const sourceLineColumn=column(table,'sourceLine')||table.columns?.find(c=>c.role==='index');
+    const length=Math.min(safeArray(x.values).length,safeArray(y.values).length);
+    const vgRaw=table.metadata?.vg;
+    const vgMeta=vgRaw!==null&&vgRaw!==undefined&&String(vgRaw).trim()!==''&&Number.isFinite(Number(vgRaw))?Number(vgRaw):NaN;
+    const vgValues=safeArray(vgColumn?.values).map(Number).filter(Number.isFinite);
+    const vg=Number.isFinite(vgMeta)?vgMeta:(vgValues.length?vgValues[0]:null);
+    const path=String(table.metadata?.legacyDatasetPath||table.source?.path||table.id);
+    const importSpec=deepClone(table.metadata?.importSpec||null);
+    const points=[];
+    for(let index=0;index<length;index++){
+      const v=Number(x.values[index]),i=Number(y.values[index]);
+      if(!Number.isFinite(v)||!Number.isFinite(i))continue;
+      const sourceLine=Number(sourceLineColumn?.values?.[index]);
+      points.push({v,i,index,sourceLine:Number.isFinite(sourceLine)?sourceLine:index+1});
+    }
+    return {
+      path,
+      name:String(table.name||table.source?.name||'I-V data'),
+      sourcePath:String(table.source?.path||path),
+      sourceName:String(table.source?.name||table.name||''),
+      encoding:String(table.source?.encoding||''),
+      vg:Number.isFinite(vg)?vg:null,
+      points,
+      importSpec,
+      importedAt:table.createdAt||undefined,
+      dataProvenance:safeArray(table.provenance).slice(1).map(deepClone)
+    };
+  }
+
+  function legacyDatasetsFromArtifacts(artifacts){
+    return safeArray(artifacts).map(toLegacyDataset).filter(Boolean);
+  }
+
   function summarize(a){
     if(!a)return null;
     if(a.kind==='data.table')return {id:a.id,kind:a.kind,name:a.name,rows:a.rowCount,columns:a.columns.length,provenance:a.provenance?.length||0};
@@ -283,7 +336,7 @@
     ARTIFACT_VERSION,STORE_VERSION,nowIso,deepClone,hashString,makeId,stableId,
     provenanceStep,createTable,createSeries,createSweep,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
-    column,columnValues,rows,withProvenance,derive,fromLegacyDataset,summarize,
+    column,columnValues,rows,withProvenance,derive,fromLegacyDataset,syncLegacyDatasetArtifacts,toLegacyDataset,legacyDatasetsFromArtifacts,summarize,
     rehydrateArtifact,createStore,serializeStore,restoreStore
   };
 })();

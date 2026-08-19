@@ -1775,6 +1775,12 @@
         renderProjectTabs();
       }
 
+      // A successful import ends the import session. Keeping the previous
+      // pending-file draft caused reopening the panel to look like a second
+      // automatic import and triggered duplicate/replacement warnings before
+      // the user selected any files.
+      importDraft.files=[];
+      importDraft.activePath=null;
       closeImportWorkbench();
       setStatus(
         `导入完成：${selected.length} 个源文件生成 ${parsed.length} 组数据、${state.sweeps.length} 条完整扫描。`
@@ -1792,13 +1798,7 @@
 
   function syncLegacyArtifacts({emit=true}={}){
     if(!state.artifactStore)state.artifactStore=window.DKDSData.createStore();
-    const live=new Set(state.datasets.map(d=>d.path));
-    for(const artifact of state.artifactStore.list({includeTransient:true})){
-      if(artifact.transient&&artifact.metadata?.adapter==='legacy-dataset'&&!live.has(artifact.metadata?.legacyDatasetPath)){
-        state.artifactStore.remove(artifact.id);
-      }
-    }
-    for(const ds of state.datasets)state.artifactStore.upsert(window.DKDSData.fromLegacyDataset(ds));
+    window.DKDSData.syncLegacyDatasetArtifacts(state.artifactStore,state.datasets);
     const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
     if(emit)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{artifacts:state.artifactStore.list()});
     return state.artifactStore;
@@ -5307,7 +5307,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.32.0',
+      version:'3.33.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6185,7 +6185,7 @@
       if(Number.isFinite(Number(row.vg))&&Number(row.vg)!==Number(dataset.vg)){dataset.vg=Number(row.vg);rebuild=true;}
       if(row.name&&row.name!==dataset.name)dataset.name=String(row.name);
     }
-    if(rebuild)rebuildSweeps();
+    if(rebuild){rebuildSweeps();syncLegacyArtifacts();}
     if(Array.isArray(source.scanVisibility))state.scanVisibility=new Map(source.scanVisibility.map(([path,value])=>[path,{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
     if(Array.isArray(source.peakCategories))state.peakCategories=source.peakCategories.map(c=>({order:Number(c.order),label:String(c.label||defaultPeakLabel(c.order))}));
     if(Array.isArray(source.peaks))state.peaks=source.peaks.map(migratePeak);
@@ -6611,7 +6611,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.32.0',
+      appVersion:'3.33.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

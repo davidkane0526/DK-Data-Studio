@@ -36,6 +36,9 @@ assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspec
 assert(feature.includes('publishPeakSelection')&&feature.includes('publishSweepSelection')&&feature.includes('publishRangeSelection'),'Resonance feature runtime must use one shared interaction path for main/inspector/group/trend.');
 assert(feature.includes('updateGroupHighlights')&&feature.includes("'resonance-trend'")&&feature.includes("'resonance-group'"),'Resonance trend/group views must link back to the shared peak selection.');
 assert(feature.includes('selectRegion')&&feature.includes('setRangeCategory'),'Resonance range selection must preserve multi-peak operations from the mature workbench.');
+assert(feature.includes('resonance-main-shift-add')&&feature.indexOf('resonance-main-shift-add')<feature.indexOf("if(sweepId){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main');}"),'Shift+left-click manual peak creation must run before normal sweep selection.');
+assert(feature.includes('plot.oncontextmenu')&&feature.includes('plot.onpointerdown')&&feature.includes('resonance-peak-drag'),'Shared Plotly runtime must retain v3.25 direct peak delete/drag interaction.');
+assert(!feature.includes('color:peaks.map(p=>colorForPeakOrder')&&!feature.includes('line:{color:sr.color'),'Resonance traces must keep the v3.25 Plotly default palette instead of architecture-level recoloring.');
 assert(shared.includes('registerDataTypes'),'Resonance must register domain data/result types through the shared plugin contract.');
 
 assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scripts)await loadScript(script)'),'Built-in plugin loader must support plugin-owned support scripts.');

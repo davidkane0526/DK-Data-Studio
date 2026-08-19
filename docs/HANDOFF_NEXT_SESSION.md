@@ -1,11 +1,12 @@
 
-# Next Session Handoff — v3.32.0
+# Next Session Handoff — v3.33.0
 
 ## Repository identity
 
-- Local working branch: `main`
+- Local working branch: `refactor/v3.33-resonance-parity-dataflow`
 - This archive contains reconstructed local Git history only; no remote repository is required or assumed.
-- Current delivery: `v3.32.0`
+- Current delivery: `v3.33.0`
+- v3.33.0: restores Resonance v3.25 presentation parity on the unified runtime and fixes canonical imported-data flow for Data Center / TER / Resonance / TOP windows; completed import drafts are cleared after commit.
 - v3.32.0: replaces resize feedback with frame-coalesced Core scheduling; adds plugin-registered typed data/result definitions plus compact typed Interaction/Selection state; separates Sticky from Dock; restores TER R–V sticky inspection and mature Resonance main/trend/inspector/group linkage while reducing selection-time Plotly rerenders.
 - v3.31.2: fixed the Resonance shared feature-runtime bootstrap (`clone` and the other runtime helpers are now explicit module dependencies); repaired the Core ContextMenu capture bug that removed menus before item clicks, which restores TER layout and per-chart placement commands; explicit TER grid layouts are now authoritative and portable placements synchronously notify AnalysisWorkbench regions.
 - v3.31.1: repaired the Windows dependency/build pipeline: shared node_modules is now an immutable package-signature cache, npm no longer reifies through a project Junction, Electron binary installation is separated from npm package extraction, and official-source network failures can retry through a configurable mirror.
@@ -38,7 +39,7 @@ Continue from the checked-out local `main` in this archive unless the user expli
 - `workbench-shared.js` is the canonical plugin-owned Controller layer shared by SUPER and dedicated TOP. It owns the six-view catalog, workspace normalization, controller facade, trend/group ViewModel and peak-spacing ViewModel. `view-components.js` is the shared View layer and owns reusable feature descriptors/templates plus TOP composition.
 - `super-layout.js` is the SUPER presentation/layout adapter. `window-runtime.js` is the dedicated TOP runtime adapter. Both must consume the shared Controller/View layers instead of implementing a second schema, analytical ViewModel, or mature spacing/gate feature template.
 - Built-in plugin manifests can now declare ordered `scripts`; the generated plugin index and plugin kernel load those scripts in order. This is generic infrastructure and must remain plugin-name agnostic.
-- Resonance main scripts are `workbench-shared.js → view-components.js → super-layout.js → plugin.js`; dedicated TOP loads both shared Controller and View layers through `window.scripts` before `window-runtime.js`.
+- Resonance main scripts are `workbench-shared.js → view-components.js → feature-runtime.js → super-layout.js → plugin.js`; dedicated TOP loads both shared Controller and View layers through `window.scripts` before `window-runtime.js`.
 - Project serialization remains unchanged/self-contained. Do not trade project portability for runtime memory savings.
 - Regression guard: `node scripts/test-resonance-shared-architecture.js` plus the existing SUPER/TOP and plugin-window tests.
 

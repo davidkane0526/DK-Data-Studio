@@ -7,6 +7,7 @@
   // explicit helper prelude.
   const Shared=window.DKDSResonanceWorkbenchShared;
   const S=window.DKDSScience;
+  const D=window.DKDSData;
   const $=selector=>document.querySelector(selector);
   const $$=selector=>[...document.querySelectorAll(selector)];
   const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
@@ -27,16 +28,22 @@
   const defaultWorkspace=(project={})=>Shared.defaultWorkspace(project,S);
   const normalizeWorkspace=(raw,project={})=>Shared.normalizeWorkspace(raw,project,S);
 
-  function parseDatasets(project={}){
-    return (project.datasets||[]).flatMap(d=>{
-      if(Array.isArray(d.points)&&d.points.length){
+  function normalizeLegacyDatasets(rows=[]){
+    return rows.flatMap(d=>{
+      if(Array.isArray(d?.points)&&d.points.length){
         return [{...clone(d),points:d.points.map((p,index)=>({...p,index:Number.isFinite(Number(p.index))?Number(p.index):index}))}];
       }
-      if(typeof d.text==='string'&&d.text.trim()&&typeof S.parseCsv==='function'){
+      if(typeof d?.text==='string'&&d.text.trim()&&typeof S.parseCsv==='function'){
         try{return [{...S.parseCsv({name:d.name,path:d.path,text:d.text}),...clone(d)}];}catch{}
       }
       return [];
     });
+  }
+
+  function parseDatasets(project={},host=null){
+    const artifacts=host?.artifacts?.list?.({includeTransient:true})||[];
+    const canonical=D?.legacyDatasetsFromArtifacts?.(artifacts)||[];
+    return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
   async function createTop({host,project:initialProject,setStatus,scheduleSnapshot,copyTextToClipboard,savePlotlyImage,adapter={}}){
@@ -197,7 +204,7 @@
       }
 
       function rebuild(){
-        datasets=parseDatasets(project);
+        datasets=parseDatasets(project,host);
         applyWorkspaceToDatasets();
         sweeps=[];
         for(const dataset of datasets){
@@ -205,6 +212,12 @@
         }
         if(!sweeps.some(sw=>sw.id===selectedSweepId))selectedSweepId=visibleSweeps()[0]?.id||sweeps[0]?.id||'';
         if(selectedPeakId&&!peakById(selectedPeakId))selectedPeakId='';
+      }
+
+      function refreshData(){
+        rebuild();
+        if($('#reswinMainPlot'))render();
+        return datasets.length;
       }
 
       function visibilityMap(){
@@ -427,21 +440,73 @@
         }
         const visIds=new Set(visibleSweepIds());const display=workspace.peakDisplay||{};
         const peaks=(workspace.peaks||[]).filter(p=>visIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true));
-        if(display.showPoints!==false&&peaks.length)traces.push({x:peaks.map(p=>p.v),y:peaks.map(p=>p.i),mode:'markers',name:'峰位',marker:{size:peaks.map(p=>p.id===selectedPeakId?13:(selectedPeakIds.has(String(p.id))?11:9)),color:peaks.map(p=>colorForPeakOrder(p.peakOrder,p.direction)),symbol:peaks.map(p=>p.manual?'diamond':'circle'),opacity:peaks.map(p=>p.accepted===false?.32:1),line:{width:peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1)),color:peaks.map(p=>selectedPeakIds.has(String(p.id))?'#111827':'#ffffff')}},customdata:peaks.map(p=>[p.id,p.sweepId,peakLabel(p),p.vg,directionName(p.direction),p.accepted!==false?'采纳':'未采纳']),hovertemplate:'%{customdata[2]}<br>Vg=%{customdata[3]}<br>%{customdata[4]} · %{customdata[5]}<br>Vd=%{x:.6g}<extra></extra>'});
+        if(display.showPoints!==false&&peaks.length)traces.push({x:peaks.map(p=>p.v),y:peaks.map(p=>p.i),mode:'markers',name:'峰位',marker:{size:peaks.map(p=>p.id===selectedPeakId?13:(selectedPeakIds.has(String(p.id))?11:9)),symbol:peaks.map(p=>p.manual?'diamond':'circle'),opacity:peaks.map(p=>p.accepted===false?.32:1),line:{width:peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:peaks.map(p=>[p.id,p.sweepId,peakLabel(p),p.vg,directionName(p.direction),p.accepted!==false?'采纳':'未采纳']),hovertemplate:'%{customdata[2]}<br>Vg=%{customdata[3]}<br>%{customdata[4]} · %{customdata[5]}<br>Vd=%{x:.6g}<extra></extra>'});
         return traces;
       }
 
       function bindMainPlot(){
         const plot=$('#reswinMainPlot');if(!plot||typeof plot.on!=='function')return;
-        try{plot.removeAllListeners?.('plotly_click');}catch{}
+        let hoveredPeakId='',dragPeakId='',dragPointerId=null,dragTraceIndex=-1,dragPointIndex=-1,dragMoved=false;
+        const nearestPoint=(peak,targetV)=>{
+          const sw=sweepById(peak?.sweepId),points=sw?.points||[];if(!points.length||!finite(targetV))return null;
+          let index=0,best=Math.abs(Number(points[0]?.v)-Number(targetV));
+          for(let i=1;i<points.length;i++){const dist=Math.abs(Number(points[i]?.v)-Number(targetV));if(dist<best){best=dist;index=i;}}
+          return {sw,point:points[index],index};
+        };
+        const plotXFromPointer=event=>{
+          const rect=plot.getBoundingClientRect?.(),layout=plot._fullLayout,size=layout?._size,axis=layout?.xaxis;
+          if(!rect||!size||!axis||typeof axis.p2d!=='function')return null;
+          const px=Number(event.clientX)-Number(rect.left)-Number(size.l||0);
+          const value=axis.p2d(px);return finite(value)?Number(value):null;
+        };
+        const moveDraggedPeak=event=>{
+          const peak=peakById(dragPeakId),targetV=plotXFromPointer(event),nearest=nearestPoint(peak,targetV);if(!peak||peak.locked||!nearest)return false;
+          const oldV=Number(peak.v),point=nearest.point;peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):nearest.index;peak.manual=true;
+          const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;}
+          physicsCache={key:'',value:null};dragMoved=true;
+          if(dragTraceIndex>=0&&dragPointIndex>=0&&window.Plotly?.restyle){
+            const trace=plot.data?.[dragTraceIndex],xs=Array.isArray(trace?.x)?trace.x.slice():[],ys=Array.isArray(trace?.y)?trace.y.slice():[];
+            if(dragPointIndex<xs.length){xs[dragPointIndex]=peak.v;ys[dragPointIndex]=peak.i;window.Plotly.restyle(plot,{x:[xs],y:[ys]},[dragTraceIndex]).catch?.(()=>{});}
+          }
+          return true;
+        };
+        const endPeakDrag=event=>{
+          if(!dragPeakId||event?.pointerId!==dragPointerId)return;const peak=peakById(dragPeakId);
+          try{plot.releasePointerCapture?.(dragPointerId);}catch{}
+          dragPeakId='';dragPointerId=null;dragTraceIndex=-1;dragPointIndex=-1;
+          if(dragMoved&&peak){publishPeakSelection(peak,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(peak.direction)} · ${peakLabel(peak)} 至 Vd=${Number(peak.v).toPrecision(6)} V。`);}
+          dragMoved=false;
+        };
+        try{plot.removeAllListeners?.('plotly_click');plot.removeAllListeners?.('plotly_hover');plot.removeAllListeners?.('plotly_unhover');}catch{}
         plot.on('plotly_click',event=>{
           const point=event?.points?.[0];const peakId=point?.customdata?.[0],sweepId=point?.customdata?.[1];
           if(peakId){const p=peakById(peakId);if(p)publishPeakSelection(p,'resonance-main',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});return;}
+          // v3.25 direct interaction parity: Shift+left-click on a curve adds a manual peak.
+          // Select the clicked sweep first, otherwise adding a sweep id to customdata makes
+          // the normal sweep-selection branch swallow the Shift gesture.
+          if(event?.event?.shiftKey&&finite(point?.x)){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main-shift-add');addManualPeak(point.x);return;}
           if(sweepId){const sw=sweepById(sweepId);if(sw)publishSweepSelection(sw,'resonance-main');}
-          if(event?.event?.shiftKey&&finite(point?.x))addManualPeak(point.x);
         });
+        plot.on?.('plotly_hover',event=>{const point=event?.points?.[0],id=point?.customdata?.[0];hoveredPeakId=id&&peakById(id)?String(id):'';});
+        plot.on?.('plotly_unhover',()=>{if(!dragPeakId)hoveredPeakId='';});
         try{plot.removeAllListeners?.('plotly_selected');}catch{}
         plot.on?.('plotly_selected',event=>{const xs=(event?.points||[]).map(p=>Number(p.x)).filter(Number.isFinite);if(xs.length){publishRangeSelection({axis:'Vd',min:Math.min(...xs),max:Math.max(...xs),sweepId:selectedSweep()?.id||''},'resonance-main');openRangeMenu(event?.event);}});
+
+        // v3.25 SUPER interaction parity: Ctrl+right-click deletes the peak directly.
+        // Shift+right-click is also accepted for compatibility with later user workflows.
+        plot.oncontextmenu=event=>{
+          if(!(event.ctrlKey||event.shiftKey)||!hoveredPeakId)return;const peak=peakById(hoveredPeakId);if(!peak)return;
+          event.preventDefault();event.stopPropagation();const label=`${directionName(peak.direction)} · ${peakLabel(peak)}`;deletePeak(peak.id);setStatus(`已删除 ${label}。`);
+        };
+        plot.onpointerdown=event=>{
+          if(event.button!==0||event.ctrlKey||!hoveredPeakId)return;const peak=peakById(hoveredPeakId);if(!peak||peak.locked)return;
+          const traceIndex=(plot.data||[]).findIndex(trace=>(trace.customdata||[]).some(row=>String(row?.[0]||'')===String(peak.id)));
+          const pointIndex=traceIndex>=0?(plot.data[traceIndex].customdata||[]).findIndex(row=>String(row?.[0]||'')===String(peak.id)):-1;
+          if(traceIndex<0||pointIndex<0)return;dragPeakId=String(peak.id);dragPointerId=event.pointerId;dragTraceIndex=traceIndex;dragPointIndex=pointIndex;dragMoved=false;
+          selectedPeakId=String(peak.id);selectedSweepId=String(peak.sweepId||selectedSweepId);selectedPeakIds=new Set([String(peak.id)]);try{plot.setPointerCapture?.(event.pointerId);}catch{}event.preventDefault();event.stopPropagation();
+        };
+        plot.onpointermove=event=>{if(dragPeakId&&event.pointerId===dragPointerId){moveDraggedPeak(event);event.preventDefault();event.stopPropagation();}};
+        plot.onpointerup=endPeakDrag;plot.onpointercancel=endPeakDrag;
       }
 
       function renderMainPlot(){
@@ -460,7 +525,7 @@
 
       function renderTrend(){
         const plot=$('#reswinTrendPlot');if(!plot||!window.Plotly)return;
-        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,line:{color:sr.color,width:2,dash:sr.direction>0?'solid':'dash'},marker:{color:sr.color,size:sr.peaks.map(p=>p.id===selectedPeakId?11:(selectedPeakIds.has(String(p.id))?9:7)),line:{width:sr.peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1)),color:'#ffffff'}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
+        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,marker:{size:sr.peaks.map(p=>p.id===selectedPeakId?11:(selectedPeakIds.has(String(p.id))?9:7)),line:{width:sr.peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
         Plotly.react(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false}).then(()=>{try{plot.removeAllListeners?.('plotly_click');}catch{}plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];const p=peakById(id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});});}).catch(()=>{});
       }
 
@@ -546,7 +611,7 @@
           card.innerHTML=`<div class="reswin-group-head"><span>${esc(title)}</span><span><button type="button" data-csv>CSV</button><button type="button" data-copy>复制</button></span></div><div class="reswin-group-plot"></div>`;
           hostEl.appendChild(card);
           const plot=card.querySelector('.reswin-group-plot');
-          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,marker:{size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1)),color:'#ffffff'}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
+          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,marker:{size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1))}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
           Plotly.newPlot(plot,traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).then(()=>{plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];if(id){const p=peakById(id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});}});}).catch(()=>{});
           const csv=()=>groupCsv(title,series);
           card.querySelector('[data-csv]').onclick=()=>window.electronAPI?.saveText?.({defaultName:`resonance_${metric}.csv`,content:csv(),filters:[{name:'CSV',extensions:['csv']}]});
@@ -554,7 +619,7 @@
         }
         if(terSeries.length){
           const card=document.createElement('div');card.className='reswin-group-card';card.innerHTML='<div class="reswin-group-head"><span>共振 TER</span></div><div class="reswin-group-plot"></div>';hostEl.appendChild(card);
-          const traces=terSeries.map((sr,index)=>{const cat=(workspace.peakCategories||[]).find(c=>String(c.label)===String(sr.label))||{order:index+1};const _forwardColor=colorForPeakOrder(cat.order,1),_reverseColor=colorForPeakOrder(cat.order,-1);return {x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:_forwardColor,width:2},marker:{color:_forwardColor,size:8,line:{color:_reverseColor,width:3}},_forwardColor,_reverseColor,hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'};});
+          const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
           Plotly.newPlot(card.querySelector('.reswin-group-plot'),traces,{margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true},{responsive:true,displayModeBar:false}).catch(()=>{});
         }
       }
@@ -765,7 +830,7 @@
         directionName,peakLabel,colorForPeakOrder,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
         restore(data,{legacyProject}={}){if(legacyProject&&typeof legacyProject==='object')project=clone(legacyProject);workspace=normalizeWorkspace(data,legacyProject||project);currentView=workspace.activeView||'main';rebuild();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
-        render,resize,bindUi,setView,
+        render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},

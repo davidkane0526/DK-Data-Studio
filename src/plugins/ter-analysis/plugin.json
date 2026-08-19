@@ -1,7 +1,7 @@
 {
   "id": "builtin.ter-analysis",
   "name": "TER Analysis",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "apiVersion": "1.7.0",
   "entry": "plugin.js",
   "enabled": true,
@@ -31,7 +31,8 @@
     "ui.analysis-surface",
     "runtime.capabilities.v2",
     "ui.interaction",
-    "data.types"
+    "data.types",
+    "data.artifacts"
   ],
   "window": {
     "activity": "ter",
@@ -42,6 +43,7 @@
     "minWidth": 920,
     "minHeight": 650,
     "dependencies": [
+      "data-model",
       "plotly",
       "science-common",
       "science-ter",

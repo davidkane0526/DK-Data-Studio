@@ -31,3 +31,4 @@ The reconstructed commits preserve the file contents of those delivered snapshot
 16. v3.31.1: make Windows shared dependency caching immutable and authoritative, separate Electron binary installation from npm reify, and add retry/mirror fallback for Electron/electron-builder binary downloads.
 17. v3.31.2: repair Resonance runtime bootstrap and Core ContextMenu/AnalysisWorkbench placement dispatch; restore TER layout and chart-placement commands.
 18. v3.32.0: add typed plugin data/result registration and shared Interaction Runtime, coalesce resize dispatch, separate sticky pinning from Dock, restore TER R–V sticky behavior, and rebuild mature Resonance cross-view selection linkage on the unified SUPER/TOP runtime.
+19. v3.33.0: restore Resonance v3.25 presentation parity and replace plugin-local dataset snapshots with the shared live Artifact/legacy bridge across Data Center, TER, Resonance and TOP windows; clear completed import drafts.

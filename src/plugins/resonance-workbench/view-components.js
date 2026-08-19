@@ -423,6 +423,7 @@
     ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});
     page.querySelector('#reswinCloseBtn').onclick=()=>{if(isTop)h.closeCurrentWindow?.();else wb.showPrimary?.();};
     ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});
+    ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());
     // Core AnalysisWorkbench owns region measurement. Plugin views only resize
     // their visible charts when the coalesced layout event arrives; feeding the
     // event back into wb.resize() created a layout:resize feedback loop.

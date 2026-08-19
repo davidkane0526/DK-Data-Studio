@@ -2,9 +2,9 @@
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository on branch `main`. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+This delivery contains a reconstructed local Git repository with `refactor/v3.33-resonance-parity-dataflow` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
 
-Current development baseline: **v3.32.0**.
+Current development baseline: **v3.33.0**.
 
 ## Recommended future flow
 
@@ -24,6 +24,8 @@ git merge --no-ff feature/<name>
 Do not access, push to, or modify any remote repository unless the user explicitly requests it.
 
 ## Current delivery checkpoint
+
+`v3.33.0` restores the v3.25 Resonance presentation contract on the shared SUPER/TOP runtime and makes the Artifact Store the live imported-data bridge used by Data Center, TER, Resonance and dedicated plugin windows.
 
 `v3.32.0` is the interaction/performance completion pass: Core coalesces resize notifications and rejects recursive layout feedback; plugins can register heterogeneous raw/derived/result data types; typed selections carry compact references/ranges/context; Sticky is distinct from Dock; TER restores the R–V sticky inspector; Resonance restores shared main/trend/inspector/group selection linkage without rebuilding full plots on each click.
 

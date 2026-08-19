@@ -1,5 +1,6 @@
 (() => {
   const A=window.Analysis;
+  const D=window.DKDSData;
   const $=s=>document.querySelector(s);
 
   function finite(value){return value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));}
@@ -33,10 +34,18 @@
       applyProject(project);
 
       function visibilityMap(){
+        const live=host?.getState?.();
+        if(live?.scanVisibility instanceof Map)return new Map(live.scanVisibility);
+        if(Array.isArray(live?.scanVisibility))return new Map(live.scanVisibility);
         return new Map(Array.isArray(project.scanVisibility)?project.scanVisibility:[]);
       }
       function datasets(){
-        const rows=Array.isArray(project.datasets)?project.datasets:[];
+        // Imported source data is canonical through the shared Artifact Store.
+        // `project.datasets` remains a compatibility fallback for old project
+        // files and bootstrap phases before the data-model bridge is available.
+        const artifacts=host?.artifacts?.list?.({includeTransient:true})||[];
+        const canonical=D?.legacyDatasetsFromArtifacts?.(artifacts)||[];
+        const rows=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
         if(!settings.onlyFullyVisible)return rows.slice();
         const vis=visibilityMap();
         return rows.filter(ds=>{

@@ -147,6 +147,15 @@
     artifactStore = window.DKDSData?.restoreStore
       ? window.DKDSData.restoreStore(project.dataModel || { schema:1, artifacts:[] })
       : null;
+    // Root project datasets remain the compatibility persistence source for
+    // imported text data. They are deliberately excluded from dataModel when
+    // serialized because their Artifact representation is transient. Rebuild
+    // those adapters here so TOP windows observe the same live data contract as
+    // the main renderer instead of receiving an empty Artifact Store.
+    if (artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
+      try { window.DKDSData.syncLegacyDatasetArtifacts(artifactStore,project.datasets); }
+      catch (err) { console.warn('[DKDS plugin window legacy artifact bridge]', err); }
+    }
     artifactUpserts = new Map();
     artifactRemovals = new Set();
   }
@@ -307,7 +316,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.32.0',
+      appVersion:'3.33.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
