@@ -25,7 +25,9 @@ const auxiliaryFailures = new Map();
 const auxiliaryPendingShow = new Set();
 const forcedAuxiliaryClose = new WeakSet();
 const pendingCapabilityInvocations = new Map();
+const pendingAuxiliaryRoleSnapshots = new Map();
 let capabilityRequestSeq = 0;
+let auxiliaryRoleSnapshotSeq = 0;
 let appQuitting = false;
 
 function externalPluginDirectory() {
@@ -316,6 +318,41 @@ function markAuxiliaryWindowFailed(win,payload={}) {
   try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
 }
 
+function requestAuxiliaryRoleSnapshot(win, reason='host-role-change', timeoutMs=1800) {
+  if (!win || win.isDestroyed()) return Promise.resolve(null);
+  const webContentsId=win.webContents.id;
+  if(!auxiliaryReady.has(webContentsId)||auxiliaryFailures.has(webContentsId))return Promise.resolve(null);
+  const bootstrap=auxiliaryBootstrap.get(webContentsId)||null;
+  if(!bootstrap)return Promise.resolve(null);
+  const requestId=`role-${process.pid}-${Date.now()}-${++auxiliaryRoleSnapshotSeq}`;
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>{
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      resolve(null);
+    },Math.max(250,Number(timeoutMs)||1800));
+    pendingAuxiliaryRoleSnapshots.set(requestId,{resolve,timer,webContentsId,bootstrap});
+    try{win.webContents.send('windows:activityRoleSnapshotRequest',{requestId,reason});}
+    catch{
+      clearTimeout(timer);
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      resolve(null);
+    }
+  });
+}
+
+function wrapAuxiliaryRoleSnapshot(bootstrap,snapshot={}) {
+  return {
+    projectTabId:String(bootstrap?.projectTabId||''),
+    activityId:String(bootstrap?.activityId||''),
+    pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+    persistence:bootstrap?.pluginWindow?.persistence||'project',
+    project:snapshot?.project||null,
+    pluginState:snapshot?.pluginState??null,
+    artifactDelta:snapshot?.artifactDelta||null,
+    final:true
+  };
+}
+
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const activityId = String(payload.activityId || '').trim();
   const projectTabId = String(payload.projectTabId || '').trim();
@@ -408,8 +445,30 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryReady.delete(auxiliaryWebContentsId);
     auxiliaryFailures.delete(auxiliaryWebContentsId);
     auxiliaryPendingShow.delete(auxiliaryWebContentsId);
+    for(const [requestId,pending] of pendingAuxiliaryRoleSnapshots){
+      if(pending.webContentsId!==auxiliaryWebContentsId)continue;
+      clearTimeout(pending.timer);
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      pending.resolve(null);
+    }
   });
   ownerWindow.once('closed', () => closeAuxiliaryWindowForReal(win));
+  win.webContents.on('render-process-gone', (_event, details={}) => {
+    if(appQuitting||forcedAuxiliaryClose.has(win)||win.isDestroyed())return;
+    const reason=String(details?.reason||'unknown');
+    const bootstrap=auxiliaryBootstrap.get(auxiliaryWebContentsId)||{};
+    const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
+    try{owner?.webContents?.send?.('windows:activityFailed',{
+      activityId:String(bootstrap.activityId||''),
+      projectTabId:String(bootstrap.projectTabId||''),
+      pluginId:String(bootstrap.pluginWindow?.pluginId||''),
+      error:`插件独立窗口异常退出（${reason}），再次打开时将自动重建。`
+    });}catch{}
+    auxiliaryReady.delete(auxiliaryWebContentsId);
+    auxiliaryFailures.delete(auxiliaryWebContentsId);
+    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
+    closeAuxiliaryWindowForReal(win);
+  });
 
   if (pluginWindow?.mode !== 'compatibility' && pluginWindow) {
     if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
@@ -489,6 +548,34 @@ app.whenReady().then(() => {
     pendingCapabilityInvocations.delete(requestId);clearTimeout(pending.timer);
     if(payload.ok===false)pending.reject(new Error(String(payload.error||'Capability invocation failed.')));
     else pending.resolve(payload.result);
+  });
+  ipcMain.handle('windows:prepareSuperTransition', async (event, payload = {}) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId=owner?.webContents?.id;
+    const activityId=String(payload?.activityId||'').trim();
+    if(!ownerId||!activityId)return {activityId,snapshots:[],closed:0};
+    const targets=[];
+    for(const win of auxiliaryWindows.values()){
+      if(!win||win.isDestroyed())continue;
+      const row=auxiliaryBootstrap.get(win.webContents.id);
+      if(row?.ownerWebContentsId===ownerId&&String(row?.activityId||'')===activityId)targets.push(win);
+    }
+    const snapshots=[];
+    for(const win of targets){
+      const row=auxiliaryBootstrap.get(win.webContents.id);
+      const snapshot=await requestAuxiliaryRoleSnapshot(win,'promote-to-super');
+      if(snapshot&&row)snapshots.push(wrapAuxiliaryRoleSnapshot(row,snapshot));
+    }
+    for(const win of targets)closeAuxiliaryWindowForReal(win);
+    return {activityId,snapshots,closed:targets.length};
+  });
+  ipcMain.on('windows:activityRoleSnapshotResponse', (event, payload = {}) => {
+    const requestId=String(payload?.requestId||'');
+    const pending=pendingAuxiliaryRoleSnapshots.get(requestId);
+    if(!pending||pending.webContentsId!==event.sender.id)return;
+    pendingAuxiliaryRoleSnapshots.delete(requestId);
+    clearTimeout(pending.timer);
+    pending.resolve(payload?.snapshot||null);
   });
   ipcMain.handle('windows:disposeProjectActivities', async (event, projectTabId) => {
     const owner = BrowserWindow.fromWebContents(event.sender);

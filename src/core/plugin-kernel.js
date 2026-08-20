@@ -321,8 +321,10 @@
     }
     host?.applySuperWorkspace?.(current);
     const ok=await setActiveActivity(current.activityId,{invoke,forceEmbedded:true});
-    if(ok)await applySuperPrimePlacements();
-    eventEmit('super:changed',superState());
+    if(ok){
+      await applySuperPrimePlacements();
+      eventEmit('super:changed',superState());
+    }
     return ok;
   }
 
@@ -335,14 +337,36 @@
     if(!isDefinitionEnabled(definition)||!active.has(id))throw new Error(`请先启用插件 ${definition.manifest.name||id}。`);
     if(!topWorkspaceForPlugin(id))throw new Error(`插件 ${definition.manifest.name||id} 未注册完整 TOP 工作区契约。`);
     const previous=superPluginId;
+    if(previous===id)return superState();
+    const activityId=topActivityIdForPlugin(id);
+
+    // Host-role changes are transactional. Before a TOP becomes embedded as
+    // SUPER, the host must flush and retire any dedicated renderer of that
+    // same plugin so two live instances can never own the same project state.
+    await host?.prepareSuperTransition?.({previous,pluginId:id,activityId});
+
     superPluginId=id;
     superSelectionInitialized=true;
-    if(persist)writeSuperPreference(id);
-    await activateSuperWorkspace({invoke});
-    renderActivityBar();
-    eventEmit('super:selection-changed',{previous,pluginId:id,state:superState()});
-    eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
-    return superState();
+    try{
+      const activated=await activateSuperWorkspace({invoke});
+      if(!activated)throw new Error(`插件 ${definition.manifest.name||id} 的 SUPER 工作区启动失败。`);
+      if(persist)writeSuperPreference(id);
+      renderActivityBar();
+      eventEmit('super:selection-changed',{previous,pluginId:id,state:superState()});
+      eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+      return superState();
+    }catch(err){
+      superPluginId=previous;
+      if(previous&&topDefinitionReady(previous)){
+        try{await activateSuperWorkspace({invoke:true});}catch(rollbackErr){console.error('[DKDS SUPER rollback]',rollbackErr);}
+      }else{
+        activeActivityId=null;
+        renderActivityBar();
+        refreshActivityVisibility();
+        host?.showNoSuperWorkspace?.(superState());
+      }
+      throw err;
+    }
   }
 
   async function initializeSuperSelection() {
@@ -607,6 +631,7 @@
       catch(err){
         console.error(`[DKDS activity:${id}]`,err);
         host?.setStatus?.(`工作区 ${row.value?.label||id} 打开失败：${err.message}`);
+        return false;
       }
     }
     return true;

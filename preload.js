@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
   listPluginWindows: () => ipcRenderer.invoke('windows:listPluginWindows'),
   prewarmActivityWindow: payload => ipcRenderer.invoke('windows:prewarmActivity', payload),
+  prepareSuperTransition: payload => ipcRenderer.invoke('windows:prepareSuperTransition', payload),
   getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
   markActivityWindowReady: () => ipcRenderer.send('windows:activityReady'),
   markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed', payload || {}),
@@ -35,6 +36,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('windows:activityBootstrapChanged', handler);
     return () => ipcRenderer.removeListener('windows:activityBootstrapChanged', handler);
   },
+  onActivityRoleSnapshotRequest: callback => {
+    const handler = (_event, payload) => callback(payload || {});
+    ipcRenderer.on('windows:activityRoleSnapshotRequest', handler);
+    return () => ipcRenderer.removeListener('windows:activityRoleSnapshotRequest', handler);
+  },
+  respondActivityRoleSnapshot: payload => ipcRenderer.send('windows:activityRoleSnapshotResponse', payload || {}),
+
   onActivityWillHide: callback => {
     const handler = () => callback();
     ipcRenderer.on('windows:activityWillHide', handler);

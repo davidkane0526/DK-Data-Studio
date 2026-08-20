@@ -42,12 +42,12 @@ function makeSandbox(initial={}){
   return {sandbox,P:sandbox.DKDSPlugins,store};
 }
 
-function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}={}){
+function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,failActivate=false}={}){
   P.define({
     id,name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.3.0',
     workspace:{role:'top',activity,icon:'T',title:id}
   },async ctx=>{
-    ctx.ui.activities.add({id:activity,label:activity,openMode:'window'});
+    ctx.ui.activities.add({id:activity,label:activity,openMode:'window',onActivate:failActivate?async()=>{throw new Error(`activate failed: ${id}`);}:undefined});
     if(complete){
       ctx.ui.topWorkspace.register({
         id:activity,activity,label:activity,
@@ -64,12 +64,15 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
     const {P,store}=makeSandbox();
     const opened=[];
     const placed=[];
+    const transitions=[];
     defineTop(P,'builtin.resonance-workbench','resonance',{prime:true});
     defineTop(P,'test.top-b','top-b');
     defineTop(P,'test.incomplete','broken',{complete:false});
+    defineTop(P,'test.fail-top','fail-top',{failActivate:true});
     P.define({id:'test.support',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.3.0'},async()=>({}));
     P.configure({
       openActivityWindow:async id=>opened.push(id),
+      prepareSuperTransition:async change=>{transitions.push({...change});return {snapshots:[],closed:0};},
       placePrime:(value,placement)=>{placed.push(`${value.pluginId}:${value.id}:${placement}`);return true;},
       applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{},setStatus:()=>{},
       getActiveProjectTab:()=>({pluginState:{}}),captureActiveProjectTab:()=>{}
@@ -96,10 +99,17 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
 
     await P.manager.setSuper('test.top-b');
     assert(P.workspace.super().pluginId==='test.top-b'&&P.activities.active()==='top-b','explicit SUPER switch must replace the embedded main workspace.');
+    assert(transitions.at(-1)?.pluginId==='test.top-b'&&transitions.at(-1)?.activityId==='top-b','SUPER promotion must ask the host to retire/synchronize the target TOP renderer before embedding it.');
     let foreignPrimeBlocked=false;
     try{await P.workspace.placePrime('builtin.resonance-workbench','inspector','float');}catch(err){foreignPrimeBlocked=/当前 SUPER/.test(err.message);}
     assert(foreignPrimeBlocked,'main-window PRIME placement must be scoped to the current SUPER.');
     assert(store.get(P.manager.superStorageKey)==='test.top-b','explicit SUPER switch must persist.');
+
+    let activationRolledBack=false;
+    try{await P.manager.setSuper('test.fail-top');}catch(err){activationRolledBack=/SUPER 工作区启动失败/.test(err.message);}
+    assert(activationRolledBack,'a TOP whose embedded activation fails must reject SUPER promotion.');
+    assert(P.workspace.super().pluginId==='test.top-b'&&P.activities.active()==='top-b','failed SUPER promotion must restore the previous embedded SUPER workspace.');
+    assert(store.get(P.manager.superStorageKey)==='test.top-b','failed SUPER promotion must not corrupt the persisted SUPER preference.');
 
     let blocked=false;
     try{await P.manager.disable('test.top-b');}catch(err){blocked=/SUPER/.test(err.message);}
@@ -179,6 +189,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true}
     assert(combined.includes('ctx.ui.topWorkspace.register'),`${folder} must register a complete generic TOP contract before it can become SUPER.`);
   }
   assert(source.includes('const opened=await host?.openActivityWindow?.(spec.id)'),'non-SUPER TOP navigation must await the generic window host and surface failures instead of silently doing nothing.');
+  assert(source.includes('await host?.prepareSuperTransition?.({previous,pluginId:id,activityId})'),'SUPER promotion must execute the host transition barrier before changing role ownership.');
+  assert(source.includes('superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
 
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');

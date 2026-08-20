@@ -7,6 +7,7 @@
   const AUX_ACTIVITY_ID = new URLSearchParams(window.location.search).get('aux') || '';
   const IS_AUXILIARY_WINDOW = !!AUX_ACTIVITY_ID;
   let auxiliaryBootstrapState = null;
+  let auxiliaryRoleTransitionSnapshotTaken = false;
   const primePortableState = new Map();
 
   // v2.4: high-separation categorical palettes. Forward stays cool, reverse stays warm,
@@ -5346,7 +5347,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.43.0',
+      version:'3.44.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6627,12 +6628,27 @@
     }
   }
 
+  function buildAuxiliaryProjectSnapshot(final=true){
+    if(!IS_AUXILIARY_WINDOW||!auxiliaryBootstrapState)return null;
+    captureActiveProjectTab();
+    return {project:makeProject(),final:!!final};
+  }
+
   function pushAuxiliaryProjectSnapshot(final=true){
-    if(!IS_AUXILIARY_WINDOW||!auxiliaryBootstrapState||!window.electronAPI?.pushActivityProjectSnapshot)return;
+    if(auxiliaryRoleTransitionSnapshotTaken||!window.electronAPI?.pushActivityProjectSnapshot)return;
     try{
-      captureActiveProjectTab();
-      window.electronAPI.pushActivityProjectSnapshot({project:makeProject(),final});
+      const payload=buildAuxiliaryProjectSnapshot(final);
+      if(payload)window.electronAPI.pushActivityProjectSnapshot(payload);
     }catch(err){console.warn('[DKDS auxiliary snapshot]',err);}
+  }
+
+  async function preparePluginSuperTransition(change={}){
+    if(IS_AUXILIARY_WINDOW||!window.electronAPI?.prepareSuperTransition)return {snapshots:[],closed:0};
+    const activityId=String(change?.activityId||'').trim();
+    if(!activityId)return {snapshots:[],closed:0};
+    const result=await window.electronAPI.prepareSuperTransition({activityId,pluginId:String(change?.pluginId||'')});
+    for(const snapshot of (result?.snapshots||[]))applyActivityProjectSnapshot(snapshot);
+    return result||{snapshots:[],closed:0};
   }
 
   async function initializePluginArchitecture(){
@@ -6652,7 +6668,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.43.0',
+      appVersion:'3.44.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6661,6 +6677,7 @@
       openLanWebPanel:showLanWebPanel,
       hideLanWebPanel,
       openActivityWindow:openPluginActivityWindow,
+      prepareSuperTransition:preparePluginSuperTransition,
       closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
       getState:()=>state,
       makeProject:()=>makeProject(),
@@ -6765,6 +6782,13 @@
       }
       window.addEventListener('beforeunload',()=>pushAuxiliaryProjectSnapshot(true));
       window.electronAPI?.onActivityWillHide?.(()=>pushAuxiliaryProjectSnapshot(true));
+      window.electronAPI?.onActivityRoleSnapshotRequest?.(request=>{
+        const requestId=String(request?.requestId||'');
+        if(!requestId)return;
+        let snapshot=null;
+        try{snapshot=buildAuxiliaryProjectSnapshot(true);auxiliaryRoleTransitionSnapshotTaken=true;}catch(err){console.warn('[DKDS auxiliary role snapshot]',err);}
+        window.electronAPI?.respondActivityRoleSnapshot?.({requestId,snapshot});
+      });
       window.electronAPI?.onActivityBootstrapChanged?.(async()=>{
         const next=await window.electronAPI?.getActivityWindowBootstrap?.();
         if(!next?.project)return;

@@ -42,6 +42,7 @@
   let pluginRuntime = null;
   let ready = false;
   let snapshotTimer = null;
+  let roleTransitionSnapshotTaken = false;
   let artifactUpserts = new Map();
   let artifactRemovals = new Set();
 
@@ -341,21 +342,27 @@
     return project;
   }
 
+  function buildSnapshotPayload(final=false) {
+    if (!bootstrap) return null;
+    const persistence=bootstrap?.pluginWindow?.persistence||'project';
+    if(persistence!=='project')return null;
+    syncProjectFromWindow();
+    const pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+    return {
+      project:clone(project),
+      pluginState:pluginId ? clone(project.plugins?.[pluginId] ?? null) : null,
+      artifactDelta:artifactDeltaPayload(),
+      final:!!final
+    };
+  }
+
   function pushSnapshot(final=false) {
     clearTimeout(snapshotTimer);
     snapshotTimer = null;
-    if (!bootstrap || bootstrap.prewarm === true || !window.electronAPI?.pushActivityProjectSnapshot) return;
-    const persistence=bootstrap?.pluginWindow?.persistence||'project';
-    if(persistence!=='project')return;
+    if (!bootstrap || bootstrap.prewarm === true || roleTransitionSnapshotTaken || !window.electronAPI?.pushActivityProjectSnapshot) return;
     try {
-      syncProjectFromWindow();
-      const pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
-      window.electronAPI.pushActivityProjectSnapshot({
-        project:clone(project),
-        pluginState:pluginId ? clone(project.plugins?.[pluginId] ?? null) : null,
-        artifactDelta:artifactDeltaPayload(),
-        final:!!final
-      });
+      const payload=buildSnapshotPayload(final);
+      if(payload)window.electronAPI.pushActivityProjectSnapshot(payload);
     } catch (err) {
       console.warn('[DKDS plugin window snapshot]', err);
     }
@@ -368,7 +375,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.43.0',
+      appVersion:'3.44.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -501,6 +508,13 @@
         if (next) await replaceProjectFromBootstrap(next);
       });
       window.electronAPI?.onActivityWillHide?.(() => pushSnapshot(true));
+      window.electronAPI?.onActivityRoleSnapshotRequest?.(request=>{
+        const requestId=String(request?.requestId||'');
+        if(!requestId)return;
+        let snapshot=null;
+        try{snapshot=buildSnapshotPayload(true);roleTransitionSnapshotTaken=true;}catch(err){console.warn('[DKDS plugin window role snapshot]',err);}
+        window.electronAPI?.respondActivityRoleSnapshot?.({requestId,snapshot});
+      });
       window.electronAPI?.onActivityWillShow?.(() => {
         requestAnimationFrame(() => {
           window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show'});

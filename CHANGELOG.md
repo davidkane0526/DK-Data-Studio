@@ -1,3 +1,13 @@
+# v3.44.0 — Transactional SUPER/TOP host-role switching
+
+- Made TOP → SUPER promotion an explicit host transaction instead of relying on delayed prewarm cleanup.
+- Added a final auxiliary role-transition snapshot handshake before retiring a promoted TOP renderer.
+- Main renderer now merges the returned project/plugin/artifact state before embedding the new SUPER.
+- Suppressed duplicate unload snapshots after a successful role snapshot to prevent late stale-state rollback.
+- Added activation rollback: a failing SUPER restores the previous SUPER and leaves the persisted preference unchanged.
+- Added renderer-crash invalidation so a crashed TOP is removed from the reuse cache and rebuilt on reopen.
+- Extended SUPER/TOP and dedicated-window regression tests for transition barriers, rollback, snapshot handoff, and crash recovery.
+
 # v3.43.0 — Host-invariant TOP lifecycle hardening
 
 - Fixed Resonance Workbench failing to open after it is demoted from SUPER to TOP.

@@ -32,4 +32,15 @@ assert(main.includes('const failure=auxiliaryFailures.get(previous.webContents.i
 assert(preload.includes('onActivityWindowFailed'),'Failure state must reach the owner renderer.');
 assert(app.includes('onActivityWindowFailed?.(payload=>'),'Main renderer must surface TOP startup failure in the host status area.');
 
+
+assert(main.includes("ipcMain.handle('windows:prepareSuperTransition'"),'Main process must expose an explicit host-role transition barrier.');
+assert(main.includes("windows:activityRoleSnapshotRequest")&&main.includes("windows:activityRoleSnapshotResponse"),'SUPER promotion must request and await a final TOP renderer snapshot before retiring it.');
+assert(main.includes("win.webContents.on('render-process-gone'"),'A crashed dedicated TOP renderer must be detected by the main process.');
+assert(main.includes('forcedAuxiliaryClose.has(win)'),'Intentional role-transition/window teardown must not be reported as a renderer crash.');
+assert(runtime.includes('roleTransitionSnapshotTaken')&&app.includes('auxiliaryRoleTransitionSnapshotTaken'),'A completed role snapshot must suppress duplicate unload snapshots that could arrive after SUPER embedding.');
+assert(main.includes('再次打开时将自动重建'),'Renderer crash handling must explicitly make the cached TOP reconstructable.');
+assert(preload.includes('prepareSuperTransition')&&preload.includes('onActivityRoleSnapshotRequest')&&preload.includes('respondActivityRoleSnapshot'),'Preload must bridge the host-transition snapshot handshake.');
+assert(runtime.includes('function buildSnapshotPayload(final=false)')&&runtime.includes('onActivityRoleSnapshotRequest?.(request=>'),'Dedicated TOP runtime must provide a synchronous role-transition snapshot payload.');
+assert(app.includes('function preparePluginSuperTransition(change={})')&&app.includes('applyActivityProjectSnapshot(snapshot)'),'The owner renderer must merge returned TOP snapshots before embedding the promoted plugin.');
+
 console.log('TOP host-transition / dedicated-window lifecycle regression checks passed.');
