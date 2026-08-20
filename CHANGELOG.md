@@ -1,3 +1,9 @@
+# v3.41.2 — Polished PlotView export trigger
+
+- Refines the Core `PlotView` export trigger into a cleaner, more polished pill button with a soft icon badge, clearer visual hierarchy and active/open state feedback.
+- Keeps the export actions unified under the same Core menu and does not reintroduce per-plugin private export buttons.
+- Leaves the existing chart-position breadcrumb and all plugin functionality unchanged.
+
 # v3.41.1 — Compact chart export breadcrumb and responsive toolbar menu repair
 
 - Collapses the Core `PlotView` generic CSV / copy / SVG / PNG controls into one compact export breadcrumb beside the existing chart-position breadcrumb. Domain-specific chart actions remain separate and plugins do not gain private export UI.

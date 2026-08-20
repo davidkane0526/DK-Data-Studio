@@ -681,10 +681,12 @@
     }
     invokeAction(handler,event){return Promise.resolve(handler?.(event)).catch(err=>{console.error('[DKDS PlotView]',err);hostState.status?.(`图表操作失败：${err.message}`);});}
     button(label,title,handler){const b=document.createElement('button');b.type='button';b.textContent=label;b.title=title||label;b.className='dkds-plot-view-action';const fn=e=>{e.preventDefault();e.stopPropagation();this.invokeAction(handler,e);};b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;}
-    menuButton({icon='⋯',title='图表操作',items=[]}={}){
+    menuButton({icon='⋯',label='',title='图表操作',items=[]}={}){
       if(!Array.isArray(items)||!items.length)return null;
       const b=document.createElement('button');b.type='button';b.className='dkds-plot-view-action dkds-plot-view-menu-trigger';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('aria-haspopup','menu');b.setAttribute('aria-expanded','false');
-      b.innerHTML=`<span class="dkds-plot-view-menu-icon">${esc(icon)}</span><span class="dkds-portable-caret">▾</span>`;
+      const labelText=String(label||'').trim();
+      b.classList.toggle('has-label',!!labelText);
+      b.innerHTML=`<span class="dkds-plot-view-menu-badge"><span class="dkds-plot-view-menu-icon">${esc(icon)}</span></span>${labelText?`<span class="dkds-plot-view-menu-label">${esc(labelText)}</span>`:''}<span class="dkds-portable-caret">▾</span>`;
       const fn=e=>{
         e.preventDefault();e.stopPropagation();
         this.exportMenu?.dispose?.();
@@ -727,7 +729,7 @@
       if(this.spec.csv!==false)exportItems.push({id:'csv',label:'数据 CSV',onInvoke:e=>this.invokeAction(()=>this.exportCsv(),e)});
       if(this.spec.copy!==false)exportItems.push({id:'copy',label:'复制数据',onInvoke:e=>this.invokeAction(()=>this.copyCsv(),e)});
       if(this.spec.images!==false){exportItems.push({id:'svg',label:'图形 SVG',onInvoke:e=>this.invokeAction(()=>this.exportImage('svg'),e)},{id:'png',label:'图形 PNG',onInvoke:e=>this.invokeAction(()=>this.exportImage('png'),e)});}
-      this.menuButton({icon:'⇩',title:'图表数据与图像',items:exportItems});
+      this.menuButton({icon:'⇩',label:'导出',title:'图表数据与图像',items:exportItems});
       for(const action of this.spec.actions||[])this.button(action.label||action.id,action.title,()=>action.onInvoke?.({view:this,plot:this.plotNode()}));
     }
     bindPortable(){
