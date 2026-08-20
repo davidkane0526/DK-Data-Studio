@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.2.0';
+  const VERSION='1.3.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -105,6 +105,19 @@
     return {hits:row.hits,misses:row.misses,computes:row.computes,hitRate:row.hitRate};
   }
 
+  function performanceLifecycleSmoke(){
+    const perf=window.DKDSPerformance;assert(perf?.stage&&perf?.configure&&perf?.trim,'Performance lifecycle API unavailable.');
+    const ns='automation.lifecycle';perf.clear(ns);perf.resetMetrics(ns);
+    const configured=perf.configure(ns,{limit:3,ttlMs:0});assert(configured.limit===3,'Namespace cache policy was not applied.');
+    let calls=0;for(let i=0;i<4;i++)perf.stage(ns,`rev-${i}`,'params',()=>{calls+=1;return {i};});
+    assert(calls===4,'Stage cache did not compute each distinct source revision.');
+    const before=perf.metric(ns);assert(before.entries===3&&before.evictions>=1,'LRU entry budget did not evict the oldest stage result.');
+    const trimmed=perf.trim(ns,{targetEntries:1,reason:'automation'});const after=perf.metric(ns);
+    assert(trimmed.removed===2&&after.entries===1,'Explicit cache trim did not reduce the namespace to its target budget.');
+    assert(after.trims>=1&&after.trimmedEntries>=2,'Trim metrics were not recorded.');
+    return {policy:configured,entriesBefore:before.entries,entriesAfter:after.entries,evictions:after.evictions,trims:after.trims,trimmedEntries:after.trimmedEntries};
+  }
+
   function selectionContractSmoke(){
     const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
     const scope=ui.createScope('core.automation-test');
@@ -194,6 +207,7 @@
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
     await runCase('performance.cache','Performance cache & render dedupe','Performance',performanceCacheSmoke);
+    await runCase('performance.lifecycle','Performance cache policy & lifecycle trim','Performance',performanceLifecycleSmoke);
 
     const tops=enabledTopActivities();let testedTopCount=0,passedTopCount=0;const topOutcomes=[];
     if(window.electronAPI?.diagnosticsRunActivitySmoke){
@@ -226,7 +240,10 @@
     // the user's scientific data.
     const topReadyMs=state.results.filter(row=>row.id?.startsWith?.('top.')&&row.id!=='top.coverage'&&row.status==='pass'&&Number.isFinite(Number(row.data?.durationMs))).map(row=>Number(row.data.durationMs));
     const performanceSnapshot=window.DKDSPerformance?.snapshot?.()||null;
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
+    const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
+    const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

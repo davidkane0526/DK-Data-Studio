@@ -1,0 +1,18 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const perf=read('src/core/performance-runtime.js');
+const kernel=read('src/core/plugin-kernel.js');
+const runtime=read('src/plugin-window/runtime.js');
+const automation=read('src/core/automation-test-runtime.js');
+const ter=read('src/plugins/ter-analysis/analysis-service.js');
+const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+assert(perf.includes("const VERSION='1.1.0'")&&perf.includes('function configure(')&&perf.includes('function stage(')&&perf.includes('function trimPrefix(')&&perf.includes('function lifecycle('),'Core performance runtime must own cache policies, stages and lifecycle trim');
+assert(kernel.includes('stage:(namespace,revision,parameterKey')&&kernel.includes('trimAll:(options={})')&&kernel.includes('snapshot:()=>window.DKDSPerformance?.snapshot'),'plugin context must expose namespaced stage/budget diagnostics without global coupling');
+assert(runtime.includes("DKDSPerformance?.lifecycle?.('hidden'")&&runtime.includes('retainRatio:0.25')&&runtime.includes('dropWeak:true'),'dedicated TOP hide lifecycle must shrink shared caches');
+assert(ter.includes("performance?.stage?.('datasets'")&&ter.includes("performance?.stage?.('sweeps'")&&ter.includes("performance?.stage?.('transform-matrix'")&&!ter.includes('let transformCache='),'TER must declare pipeline stages through Core instead of private transform caches');
+assert(resonance.includes("performance?.stage?.('gate-compute'")&&!resonance.includes('gateComputeCache={'),'resonance gate analysis must use the shared stage cache contract');
+assert(automation.includes("const VERSION='1.3.0'")&&automation.includes("'performance.lifecycle'")&&automation.includes('memoryTrend'),'built-app automation must verify cache lifecycle policy and report same-run memory trend');
+console.log('v3.48 performance architecture integration checks passed.');

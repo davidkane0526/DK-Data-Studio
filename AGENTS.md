@@ -190,6 +190,8 @@ Repository layout is documented in `docs/PROJECT_STRUCTURE.md`. Operational upda
 Before adding plugin-private memoization, inspect `docs/PERFORMANCE_RUNTIME.md`.
 
 - Reusable cache/measurement plumbing belongs to Core `DKDSPerformance`; scientific definitions remain in `src/science/*`.
+- Reusable plugin computations should use namespaced `ctx.performance.stage()`; do not add plugin-private memo Maps when Core stage caching is sufficient.
+- Cache budgets, TTL, trim and hidden-TOP cache contraction are Core lifecycle policy. Plugins may trim only their own namespace.
 - A cache key must contain every scientific input that changes the result. Prefer `artifacts.revision(kind)` over invalidating on every project/Artifact mutation.
 - Never improve performance by reducing numerical precision, silently downsampling scientific data, or changing a published scientific definition.
 - Plot plugins using `ScientificPlot` may provide `renderKey`/`revisionKey`, but that key must change whenever the rendered trace/layout result changes.

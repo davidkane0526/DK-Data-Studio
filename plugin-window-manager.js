@@ -17,6 +17,7 @@ const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'data-model',
   'formula-engine',
   'parameter-schema',
+  'performance-runtime',
   'workflow-engine',
   'platform',
   'state-store',
@@ -26,6 +27,7 @@ const ALLOWED_WINDOW_DEPENDENCIES = new Set([
 
 const CORE_REQUIREMENT_WINDOW_DEPENDENCIES = Object.freeze({
   'parameters':Object.freeze(['parameter-schema']),
+  'performance':Object.freeze(['performance-runtime']),
   'data.model':Object.freeze(['data-model']),
   'data.formula':Object.freeze(['formula-engine']),
   'workflow':Object.freeze(['workflow-engine']),

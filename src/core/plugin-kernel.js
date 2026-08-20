@@ -1425,6 +1425,11 @@
       performance: Object.freeze({
         memoWeak:(namespace,target,key,compute,options={})=>window.DKDSPerformance?.memoWeak?.(`${pluginId}.${String(namespace||'core')}`,target,key,compute,options)??compute?.(),
         memo:(namespace,key,compute,options={})=>window.DKDSPerformance?.memo?.(`${pluginId}.${String(namespace||'core')}`,key,compute,options)??compute?.(),
+        stage:(namespace,revision,parameterKey,compute,options={})=>window.DKDSPerformance?.stage?.(`${pluginId}.${String(namespace||'core')}`,revision,parameterKey,compute,options)??compute?.(),
+        configure:(namespace,spec={})=>window.DKDSPerformance?.configure?.(`${pluginId}.${String(namespace||'core')}`,spec)||null,
+        trim:(namespace,options={})=>window.DKDSPerformance?.trim?.(`${pluginId}.${String(namespace||'core')}`,options)||null,
+        trimAll:(options={})=>window.DKDSPerformance?.trimPrefix?.(`${pluginId}.`,options)||null,
+        snapshot:()=>window.DKDSPerformance?.snapshot?.(`${pluginId}.`)||null,
         measure:(namespace,fn)=>window.DKDSPerformance?.measure?.(`${pluginId}.${String(namespace||'core')}`,fn)??fn?.(),
         skip:(namespace,count=1)=>window.DKDSPerformance?.skip?.(`${pluginId}.${String(namespace||'core')}`,count),
         metric:namespace=>window.DKDSPerformance?.metric?.(`${pluginId}.${String(namespace||'core')}`)||null

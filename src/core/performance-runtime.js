@@ -1,55 +1,122 @@
 (() => {
   if (window.DKDSPerformance) return;
-  const VERSION='1.0.0';
+  const VERSION='1.1.0';
+  const DEFAULT_POLICY=Object.freeze({limit:32,ttlMs:0});
   const weakNamespaces=new Map();
+  const weakEntryCounts=new Map();
   const valueNamespaces=new Map();
+  const policies=new Map();
   const metrics=new Map();
   const now=()=>globalThis.performance?.now?.()??Date.now();
-  const finite=value=>Number.isFinite(Number(value));
+  const clamp=(value,min,max)=>Math.min(max,Math.max(min,Number(value)||0));
+  const clone=value=>{try{return structuredClone(value);}catch{try{return JSON.parse(JSON.stringify(value));}catch{return value;}}};
+  const namespaceId=value=>String(value||'core');
+
   function metric(namespace){
-    const id=String(namespace||'core');
-    if(!metrics.has(id))metrics.set(id,{namespace:id,hits:0,misses:0,computes:0,evictions:0,skips:0,computeMs:0,lastComputeMs:0,entries:0});
+    const id=namespaceId(namespace);
+    if(!metrics.has(id))metrics.set(id,{namespace:id,hits:0,misses:0,computes:0,evictions:0,expirations:0,trims:0,trimmedEntries:0,weakResets:0,skips:0,computeMs:0,lastComputeMs:0,entries:0});
     return metrics.get(id);
   }
-  function clone(value){try{return structuredClone(value);}catch{try{return JSON.parse(JSON.stringify(value));}catch{return value;}}}
-  function updateEntries(namespace,count){metric(namespace).entries=Math.max(0,Number(count)||0);}
+  function normalizedPolicy(spec={}){
+    return {
+      limit:Math.max(1,Number(spec.limit)||DEFAULT_POLICY.limit),
+      ttlMs:Math.max(0,Number(spec.ttlMs)||0)
+    };
+  }
+  function policy(namespace,overrides={}){
+    const stored=policies.get(namespaceId(namespace))||DEFAULT_POLICY;
+    return normalizedPolicy({...stored,...overrides});
+  }
+  function configure(namespace,spec={}){
+    const id=namespaceId(namespace),next=normalizedPolicy({...policy(id),...spec});
+    policies.set(id,next);
+    return clone(next);
+  }
+  function updateEntries(namespace){const ns=namespaceId(namespace);metric(ns).entries=(valueNamespaces.get(ns)?.size||0)+(weakEntryCounts.get(ns)||0);}
+  function recordCompute(m,started){const elapsed=Math.max(0,now()-started);m.computeMs+=elapsed;m.lastComputeMs=elapsed;}
+  function expired(row,ttlMs){return !!(row&&ttlMs&&Date.now()-Number(row.at||0)>ttlMs);}
+
   function memoWeak(namespace,target,key,compute,options={}){
     if(!target||(typeof target!=='object'&&typeof target!=='function')||typeof compute!=='function')return compute?.();
-    const ns=String(namespace||'core'),cache=weakNamespaces.get(ns)||new WeakMap();if(!weakNamespaces.has(ns))weakNamespaces.set(ns,cache);
+    const ns=namespaceId(namespace),cfg=policy(ns,options),m=metric(ns);
+    let cache=weakNamespaces.get(ns);if(!cache){cache=new WeakMap();weakNamespaces.set(ns,cache);}
     let bucket=cache.get(target);if(!bucket){bucket={entries:new Map(),signature:options.signature??null};cache.set(target,bucket);}
     const signature=options.signature??null;
-    const m=metric(ns);
-    if(signature!==null&&bucket.signature!==signature){m.entries=Math.max(0,m.entries-bucket.entries.size);bucket.entries.clear();bucket.signature=signature;}
-    const id=String(key??'');
-    if(bucket.entries.has(id)){m.hits+=1;return bucket.entries.get(id).value;}
-    m.misses+=1;m.computes+=1;const started=now();const value=compute();const elapsed=Math.max(0,now()-started);m.computeMs+=elapsed;m.lastComputeMs=elapsed;
-    bucket.entries.set(id,{value,at:Date.now()});m.entries+=1;
-    const limit=Math.max(1,Number(options.limit)||16);
-    while(bucket.entries.size>limit){bucket.entries.delete(bucket.entries.keys().next().value);m.evictions+=1;m.entries=Math.max(0,m.entries-1);}
+    if(signature!==null&&bucket.signature!==signature){weakEntryCounts.set(ns,Math.max(0,(weakEntryCounts.get(ns)||0)-bucket.entries.size));bucket.entries.clear();bucket.signature=signature;updateEntries(ns);}
+    const id=String(key??''),row=bucket.entries.get(id);
+    if(row&&!expired(row,cfg.ttlMs)){bucket.entries.delete(id);bucket.entries.set(id,row);m.hits+=1;return row.value;}
+    if(row){bucket.entries.delete(id);weakEntryCounts.set(ns,Math.max(0,(weakEntryCounts.get(ns)||0)-1));m.expirations+=1;updateEntries(ns);}
+    m.misses+=1;m.computes+=1;const started=now();const value=compute();recordCompute(m,started);
+    bucket.entries.set(id,{value,at:Date.now()});weakEntryCounts.set(ns,(weakEntryCounts.get(ns)||0)+1);updateEntries(ns);
+    while(bucket.entries.size>cfg.limit){bucket.entries.delete(bucket.entries.keys().next().value);weakEntryCounts.set(ns,Math.max(0,(weakEntryCounts.get(ns)||0)-1));m.evictions+=1;updateEntries(ns);}
     return value;
   }
+
   function memo(namespace,key,compute,options={}){
     if(typeof compute!=='function')return undefined;
-    const ns=String(namespace||'core'),id=String(key??''),m=metric(ns),ttl=Math.max(0,Number(options.ttlMs)||0),limit=Math.max(1,Number(options.limit)||32);
+    const ns=namespaceId(namespace),id=String(key??''),cfg=policy(ns,options),m=metric(ns);
     let cache=valueNamespaces.get(ns);if(!cache){cache=new Map();valueNamespaces.set(ns,cache);}
-    const row=cache.get(id);if(row&&(!ttl||Date.now()-row.at<=ttl)){cache.delete(id);cache.set(id,row);m.hits+=1;updateEntries(ns,cache.size);return row.value;}
-    if(row)cache.delete(id);m.misses+=1;m.computes+=1;const started=now();const value=compute();const elapsed=Math.max(0,now()-started);m.computeMs+=elapsed;m.lastComputeMs=elapsed;cache.set(id,{value,at:Date.now()});
-    while(cache.size>limit){cache.delete(cache.keys().next().value);m.evictions+=1;}updateEntries(ns,cache.size);return value;
+    const row=cache.get(id);
+    if(row&&!expired(row,cfg.ttlMs)){cache.delete(id);cache.set(id,row);m.hits+=1;updateEntries(ns);return row.value;}
+    if(row){cache.delete(id);m.expirations+=1;}
+    m.misses+=1;m.computes+=1;const started=now();const value=compute();recordCompute(m,started);cache.set(id,{value,at:Date.now()});
+    while(cache.size>cfg.limit){cache.delete(cache.keys().next().value);m.evictions+=1;}updateEntries(ns);return value;
   }
-  function measure(namespace,fn){const ns=String(namespace||'core'),m=metric(ns),started=now();try{return fn?.();}finally{const elapsed=Math.max(0,now()-started);m.computes+=1;m.computeMs+=elapsed;m.lastComputeMs=elapsed;}}
+
+  function stage(namespace,revision,parameterKey,compute,options={}){
+    const rev=String(revision??'0'),params=String(parameterKey??'');
+    return memo(namespace,`${rev}::${params}`,compute,options);
+  }
+
+  function trimNamespace(namespace,options={}){
+    const ns=namespaceId(namespace),m=metric(ns),cache=valueNamespaces.get(ns);
+    const ratio=clamp(options.retainRatio??options.ratio??0.5,0,1);
+    let removed=0;
+    if(cache){
+      const requested=Number.isFinite(Number(options.targetEntries))?Math.max(0,Math.floor(Number(options.targetEntries))):Math.floor(cache.size*ratio);
+      const target=Math.min(cache.size,requested);
+      while(cache.size>target){cache.delete(cache.keys().next().value);removed+=1;}
+      updateEntries(ns);
+      if(!cache.size)valueNamespaces.delete(ns);
+    }
+    if(options.dropWeak===true&&weakNamespaces.has(ns)){
+      weakNamespaces.delete(ns);weakEntryCounts.delete(ns);m.weakResets+=1;updateEntries(ns);
+    }
+    m.trims+=1;m.trimmedEntries+=removed;
+    return {namespace:ns,removed,entries:metric(ns).entries,dropWeak:options.dropWeak===true,reason:String(options.reason||'manual')};
+  }
+
+  function trimPrefix(prefix='',options={}){
+    const p=String(prefix||'');
+    const ids=new Set([...valueNamespaces.keys(),...weakNamespaces.keys()].filter(id=>!p||id.startsWith(p)));
+    const rows=[...ids].map(id=>trimNamespace(id,options));
+    return {prefix:p,removed:rows.reduce((sum,row)=>sum+row.removed,0),namespaces:rows};
+  }
+  function trimAll(options={}){return trimPrefix('',options);}
+  function lifecycle(state,options={}){
+    const value=String(state||'').toLowerCase();
+    if(value==='hidden'||value==='suspended')return trimAll({retainRatio:0.25,dropWeak:true,reason:value,...options});
+    return {state:value||'active',removed:0,namespaces:[]};
+  }
+
+  function measure(namespace,fn){const ns=namespaceId(namespace),m=metric(ns),started=now();try{return fn?.();}finally{m.computes+=1;recordCompute(m,started);}}
   function skip(namespace,count=1){metric(namespace).skips+=Math.max(1,Number(count)||1);}
   function clear(namespace=''){
     const id=String(namespace||'');
-    if(id){valueNamespaces.delete(id);weakNamespaces.delete(id);const m=metrics.get(id);if(m)m.entries=0;return true;}
-    valueNamespaces.clear();weakNamespaces.clear();for(const m of metrics.values())m.entries=0;return true;
+    if(id){valueNamespaces.delete(id);weakNamespaces.delete(id);weakEntryCounts.delete(id);const m=metrics.get(id);if(m)m.entries=0;return true;}
+    valueNamespaces.clear();weakNamespaces.clear();weakEntryCounts.clear();for(const m of metrics.values())m.entries=0;return true;
   }
   function resetMetrics(namespace=''){
-    const reset=m=>Object.assign(m,{hits:0,misses:0,computes:0,evictions:0,skips:0,computeMs:0,lastComputeMs:0});
+    const reset=m=>Object.assign(m,{hits:0,misses:0,computes:0,evictions:0,expirations:0,trims:0,trimmedEntries:0,weakResets:0,skips:0,computeMs:0,lastComputeMs:0});
     const id=String(namespace||'');if(id){if(metrics.has(id))reset(metrics.get(id));return true;}for(const m of metrics.values())reset(m);return true;
   }
-  function snapshot(){
-    const namespaces=[...metrics.values()].map(row=>({...row,hitRate:(row.hits+row.misses)?row.hits/(row.hits+row.misses):null,computeMs:Number(row.computeMs.toFixed(3)),lastComputeMs:Number(row.lastComputeMs.toFixed(3))})).sort((a,b)=>a.namespace.localeCompare(b.namespace));
-    return {version:VERSION,namespaces,totals:namespaces.reduce((out,row)=>{for(const key of ['hits','misses','computes','evictions','skips','entries'])out[key]+=Number(row[key])||0;out.computeMs+=Number(row.computeMs)||0;return out;},{hits:0,misses:0,computes:0,evictions:0,skips:0,entries:0,computeMs:0})};
+  function snapshot(prefix=''){
+    const p=String(prefix||'');
+    const namespaces=[...metrics.values()].filter(row=>!p||row.namespace.startsWith(p)).map(row=>({...row,policy:policy(row.namespace),hitRate:(row.hits+row.misses)?row.hits/(row.hits+row.misses):null,computeMs:Number(row.computeMs.toFixed(3)),lastComputeMs:Number(row.lastComputeMs.toFixed(3))})).sort((a,b)=>a.namespace.localeCompare(b.namespace));
+    const totals=namespaces.reduce((out,row)=>{for(const key of ['hits','misses','computes','evictions','expirations','trims','trimmedEntries','weakResets','skips','entries'])out[key]+=Number(row[key])||0;out.computeMs+=Number(row.computeMs)||0;return out;},{hits:0,misses:0,computes:0,evictions:0,expirations:0,trims:0,trimmedEntries:0,weakResets:0,skips:0,entries:0,computeMs:0});
+    totals.computeMs=Number(totals.computeMs.toFixed(3));
+    return {version:VERSION,prefix:p,namespaces,totals};
   }
-  window.DKDSPerformance=Object.freeze({VERSION,memoWeak,memo,measure,skip,clear,resetMetrics,snapshot,metric:namespace=>clone(metric(namespace))});
+
+  window.DKDSPerformance=Object.freeze({VERSION,DEFAULT_POLICY,configure,policy,memoWeak,memo,stage,measure,skip,trim:trimNamespace,trimPrefix,trimAll,lifecycle,clear,resetMetrics,snapshot,metric:namespace=>clone({...metric(namespace),policy:policy(namespace)})});
 })();

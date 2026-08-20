@@ -377,7 +377,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.47.0',
+      appVersion:'3.48.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -522,7 +522,14 @@
         const next = await window.electronAPI?.getActivityWindowBootstrap?.();
         if (next) await replaceProjectFromBootstrap(next);
       });
-      window.electronAPI?.onActivityWillHide?.(() => pushSnapshot(true));
+      window.electronAPI?.onActivityWillHide?.(() => {
+        pushSnapshot(true);
+        // Dedicated TOP renderers are reusable, but hidden windows must not
+        // retain an unbounded scientific cache. Core owns the policy so every
+        // plugin receives the same lifecycle behavior. Weak object caches are
+        // reset and bounded value caches retain only a small hot working set.
+        window.DKDSPerformance?.lifecycle?.('hidden',{retainRatio:0.25,dropWeak:true,reason:'top-window-hide'});
+      });
       window.electronAPI?.onActivityRoleSnapshotRequest?.(request=>{
         const requestId=String(request?.requestId||'');
         if(!requestId)return;
@@ -540,7 +547,10 @@
       window.addEventListener('resize', () => {
         if (ready) window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
       });
-      window.addEventListener('beforeunload', () => pushSnapshot(true));
+      window.addEventListener('beforeunload', () => {
+        pushSnapshot(true);
+        window.DKDSPerformance?.clear?.();
+      });
 
       await loadTargetPlugin();
     } catch (err) {

@@ -20,9 +20,7 @@
       let transform={type:'didv',direction:1};
       let result=null;
       let projectEpoch=0;
-      let inputCache={key:'',rows:null,datasets:null,sweeps:null};
-      let transformCache={key:'',value:null};
-      function invalidateComputeCaches({inputs=true}={}){if(inputs)inputCache={key:'',rows:null,datasets:null,sweeps:null};transformCache={key:'',value:null};}
+      function invalidateComputeCaches(){performance?.trimAll?.({targetEntries:0,dropWeak:true,reason:'ter-project-change'});}
 
       function applyProject(next){
         project=next||{};projectEpoch+=1;invalidateComputeCaches();
@@ -56,23 +54,23 @@
         // Imported source data is canonical through the shared Artifact Store.
         // `project.datasets` remains a compatibility fallback for old project
         // files and bootstrap phases before the data-model bridge is available.
-        const key=inputCacheKey();
-        if(inputCache.key===key&&inputCache.datasets){performance?.skip?.('datasets-rebuild');return inputCache.datasets;}
-        const rows=artifacts?.list?.({includeTransient:true})||[];
-        const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-        const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
-        let next=source.slice();
-        if(settings.onlyFullyVisible){const vis=visibilityMap();next=next.filter(ds=>{const v=vis.get(ds.path);return !!v?.forward&&!!v?.reverse;});}
-        inputCache={key,rows,datasets:next,sweeps:null};
-        return next;
+        const revision=inputCacheKey();
+        const compute=()=>{
+          const rows=artifacts?.list?.({includeTransient:true})||[];
+          const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
+          const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
+          let next=source.slice();
+          if(settings.onlyFullyVisible){const vis=visibilityMap();next=next.filter(ds=>{const v=vis.get(ds.path);return !!v?.forward&&!!v?.reverse;});}
+          return next;
+        };
+        return performance?.stage?.('datasets',revision,'legacy-adapter',compute,{limit:4})||compute();
       }
 
       function allSweeps(){
         if(typeof A?.buildSweeps!=='function')return [];
-        const rows=datasets();
-        if(inputCache.sweeps){performance?.skip?.('sweeps-rebuild');return inputCache.sweeps;}
-        inputCache.sweeps=rows.flatMap(ds=>A.buildSweeps(ds)||[]);
-        return inputCache.sweeps;
+        const revision=inputCacheKey();
+        const compute=()=>datasets().flatMap(ds=>A.buildSweeps(ds)||[]);
+        return performance?.stage?.('sweeps',revision,'buildSweeps',compute,{limit:4})||compute();
       }
       function sourceFileByVg(){
         const out={};if(!result)return out;
@@ -84,14 +82,12 @@
       }
       function transformMatrix(){
         if(!result||typeof A?.computeSweepTransformMatrix!=='function')return null;
-        const key=[inputCacheKey(),transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
-        if(transformCache.key===key&&transformCache.value){performance?.skip?.('transform-matrix');return transformCache.value;}
-        const value=performance?.measure?.('transform-matrix',()=>A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
-          type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,sourceFileByVg:sourceFileByVg()
-        }))||A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
+        const revision=inputCacheKey();
+        const parameterKey=[transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
+        const compute=()=>A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
           type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,sourceFileByVg:sourceFileByVg()
         });
-        transformCache={key,value};return value;
+        return performance?.stage?.('transform-matrix',revision,parameterKey,compute,{limit:6})||compute();
       }
       function transformCsv(){
         const matrix=transformMatrix();if(!matrix)return '';
@@ -100,7 +96,7 @@
         return rows.join('\n');
       }
       function sourceArtifactIds(){
-        datasets();const ids=[];for(const artifact of inputCache.rows||[]){if(artifact?.metadata?.adapter==='legacy-dataset')ids.push(String(artifact.id));}return ids;
+        const ids=[];for(const artifact of (artifacts?.list?.({includeTransient:true})||[])){if(artifact?.metadata?.adapter==='legacy-dataset')ids.push(String(artifact.id));}return ids;
       }
       function publishDerivedArtifacts(){
         if(!result||!D||!artifacts)return false;

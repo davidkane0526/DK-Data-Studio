@@ -9,7 +9,7 @@ const context={console,performance,structuredClone,setTimeout,clearTimeout,Map,S
 context.window=context;context.globalThis=context;vm.createContext(context);
 for(const file of ['src/science/common.js','src/core/performance-runtime.js','src/science/peaks.js','src/core/data-model.js'])vm.runInContext(read(file),context,{filename:file});
 const perf=context.DKDSPerformance;
-assert(perf&&perf.VERSION==='1.0.0','Performance Runtime v1.0.0 must load.');
+assert(perf&&Number(String(perf.VERSION||'0').split('.')[0])>=1,'Performance Runtime v1+ must load.');
 perf.clear('test.memo');perf.resetMetrics('test.memo');let computeCount=0;
 assert.strictEqual(perf.memo('test.memo','x',()=>{computeCount+=1;return 7;}),7);
 assert.strictEqual(perf.memo('test.memo','x',()=>{computeCount+=1;return 9;}),7);

@@ -1,6 +1,6 @@
 # DK Data Studio Plugin API v1.8
 
-Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
 
 Starting with DK Data Studio v3.42, API 1.8 gains backward-compatible Core surfaces for Entity identity, Artifact lineage and ScientificPlot. The API version remains `1.8.0` so existing v1.8 plugins continue to load unchanged; new plugins should consume the stronger surfaces instead of older compatibility shortcuts.
 
@@ -89,7 +89,7 @@ Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge
 The exact list is machine-readable through `DKDSPluginContract.requirements` and the manifest schema. Main groups are:
 
 - runtime/lifecycle: `runtime`, `events`, `status`, `state`, `project`, `workspace`;
-- base services: `io`, `science`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
+- base services: `io`, `science`, `performance`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
 - data: `data.flow`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
@@ -187,7 +187,23 @@ ctx.data.entities.upsert({id:'peak:9',type:'my.peak',parents:['sweep:42'],locked
 
 Artifact-backed entities survive plugin deactivation as Core-owned data entities, so another plugin can continue to discover the data lineage.
 
-## 7. Scientific plots
+## 7. Performance and scientific cache stages
+
+Use `ctx.performance` for reusable computation caching and measurement. Plugins declare cache identity; Core owns storage, LRU/TTL budgets, lifecycle trim and diagnostics.
+
+```js
+const result = ctx.performance.stage(
+  'fit-matrix',
+  ctx.data.artifacts.revision('data.table'),
+  JSON.stringify({model, tolerance}),
+  () => computeFitMatrix(source, {model, tolerance}),
+  {limit:6}
+);
+```
+
+A plugin may inspect only its own namespace through `ctx.performance.snapshot()` and may trim only its own caches through `ctx.performance.trim()` / `trimAll()`. Do not create a plugin-private memoization Map for reusable scientific stages and do not access `window.DKDSPerformance` directly. Cache identity must contain every scientific input that changes the output.
+
+## 8. Scientific plots
 
 First-party and new plugins use `ctx.ui.scientificPlot` for Plotly/D3 scientific interaction. Do not bind `plotly_click` yourself and do not manually restyle focused traces.
 
@@ -218,7 +234,7 @@ ctx.ui.plotViews.bind('fit:main', card, {
 
 A reusable chart **provider** is still registered with `ctx.charts.register(...)`; a plugin must not create its own renderer registry. `ctx.ui.charts` is retained only as a compatibility path and must not be used by new first-party code.
 
-## 8. DOM, components and scheduling
+## 9. DOM, components and scheduling
 
 Use the plugin-scoped DOM runtime for infrastructure-facing DOM work:
 
@@ -238,7 +254,7 @@ All registered listeners/observers/timers are disposed with the plugin scope. Co
 
 For generic controls use `ctx.ui.components.mount(...)` or `ctx.parameters.render(...)` rather than creating a plugin-local UI framework.
 
-## 9. Workspaces and view roles
+## 10. Workspaces and view roles
 
 SUPER and dedicated TOP are hosting modes of the same plugin UI. The semantic model is:
 
@@ -259,7 +275,7 @@ Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Po
 
 Core Chart Runtime owns the visual tooltip theme for Plotly charts, and Core `.dkds-tooltip` owns the matching custom D3/SVG tooltip appearance. Plugins may define semantic hover content and formatting, but must not define independent tooltip background colors, opacity, borders, shadows or typography.
 
-## 10. Actions, shortcuts and interaction
+## 11. Actions, shortcuts and interaction
 
 ```js
 ctx.ui.actions.mount(actionsHost,{actions:[
@@ -282,7 +298,7 @@ interaction.bindView('legend', legendHost, {
 
 Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal, Entity relationship projection and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. A list/legend item should expose the same Entity ID as its curve/point; `bindView(...,{entityLinked:true})` lets Core resolve a focused child Entity to the nearest displayed ancestor automatically. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state. Linked-view reveal is remount-safe: if a legend/list rebuilds while the focus entity is unchanged, Core must reveal the replacement element again. Horizontal projections use local scrolling so focusing an item never shifts the outer page.
 
-## 11. Project/state/service/module contracts
+## 12. Project/state/service/module contracts
 
 Project-local state:
 
@@ -309,7 +325,7 @@ const analysis=ctx.modules.require('analysis');
 
 `modules` is packaging/internal composition; `services` is runtime service discovery; `capabilities` is cross-plugin/cross-renderer callable behavior.
 
-## 12. Analysis providers, detectors and workflows
+## 13. Analysis providers, detectors and workflows
 
 ```js
 ctx.analysis.providers.register('my.analysis',{name:'My analysis',run});
@@ -319,13 +335,13 @@ ctx.workflow.processors.register('my.processor',{name:'Processor',inputKinds:['d
 
 Parameter UI is schema-driven. A detector/provider should not ship its own settings-widget framework.
 
-## 13. Dedicated TOP windows
+## 14. Dedicated TOP windows
 
 A top-level plugin declares `workspace.role="top"` and a `window` contract in `plugin.json`. The dedicated renderer loads only Core dependencies and that plugin's declared support files. `window-runtime.js` is a thin lifecycle/service adapter; domain algorithms and domain rendering stay in shared modules used by SUPER and TOP alike.
 
 `window-runtime.js` must be registered as the plugin's `window-runtime` Core module. It must not duplicate feature logic.
 
-## 14. Validation commands
+## 15. Validation commands
 
 Run before delivery:
 

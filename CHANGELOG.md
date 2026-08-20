@@ -1,3 +1,14 @@
+# v3.48.0 — Cache lifecycle budgets and declarative scientific stages
+
+- Upgrades Core `DKDSPerformance` to v1.1.0 with namespace policies, LRU entry budgets, optional TTL expiry, explicit trim operations, scoped snapshots, and lifecycle-aware weak-cache resets.
+- Adds the declarative `performance.stage(namespace, sourceRevision, parameterKey, compute)` contract so plugins describe scientific cache identity while Core owns storage and eviction mechanics.
+- Extends plugin `ctx.performance` with namespaced stage/configure/trim/snapshot APIs; plugins remain isolated from global cache state.
+- Migrates TER dataset adaptation, sweep reconstruction, and transformed-matrix caching from plugin-private Maps to shared Core stages without changing TER numerical definitions.
+- Migrates Resonance gate-analysis caching to the same shared stage contract while preserving existing render revision keys.
+- Dedicated reusable TOP renderers now shrink bounded value caches and reset weak scientific caches when hidden; final close clears renderer-local caches.
+- Automation Test runner 1.3.0 adds cache-policy/lifecycle validation and same-run working-set/private-memory/process-count trends instead of comparing unrelated process snapshots.
+- Adds v3.48 budget/lifecycle architecture tests while preserving v3.47 cache regressions, TER Python parity, scientific-engine parity, Plugin Boundary, and SUPER/TOP lifecycle coverage.
+
 # v3.47.0 — Observable scientific caching and render de-duplication
 
 - Adds Core `DKDSPerformance`, a bounded observable memoization/measurement runtime shared by the main renderer and dedicated TOP renderers.

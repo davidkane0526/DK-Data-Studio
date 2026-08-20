@@ -8,6 +8,7 @@
     'status':api=>!!api?.status,
     'io':api=>!!api?.io,
     'science':api=>!!api?.science,
+    'performance':api=>!!api?.performance,
     'services':api=>!!api?.services,
     'modules':api=>!!api?.modules,
     'recipes':api=>!!api?.recipes,

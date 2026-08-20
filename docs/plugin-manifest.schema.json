@@ -19,7 +19,7 @@
       "uniqueItems":true,
       "items": {
         "enum": [
-          "runtime", "events", "status", "io", "science", "services", "modules", "recipes",
+          "runtime", "events", "status", "io", "science", "performance", "services", "modules", "recipes",
           "capabilities", "state", "project", "workspace", "parameters",
           "data.flow", "data.artifacts", "data.entities", "data.types", "data.model", "data.formula",
           "workflow", "analysis.providers", "analysis.detectors", "charts", "charts.providers",

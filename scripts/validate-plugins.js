@@ -14,7 +14,7 @@ const coreRequirements=new Set(manifestSchema.properties.requiresCore.items.enum
 
 const requirementUsage=[
   ['runtime',/ctx\.runtime\b/],['events',/ctx\.events\b/],['status',/ctx\.status\b/],['io',/ctx\.io\b/],
-  ['science',/ctx\.science\b|window\.DKDSScience\b/],['services',/ctx\.services\b/],['modules',/ctx\.modules\b|window\.DKDSPluginModules\b/],
+  ['science',/ctx\.science\b|window\.DKDSScience\b/],['performance',/ctx\.performance\b/],['services',/ctx\.services\b/],['modules',/ctx\.modules\b|window\.DKDSPluginModules\b/],
   ['recipes',/ctx\.recipes\b/],['capabilities',/ctx\.capabilities\b/],['state',/ctx\.state\b/],['project',/ctx\.project\b/],
   ['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],
   ['data.artifacts',/ctx\.data\.artifacts\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
