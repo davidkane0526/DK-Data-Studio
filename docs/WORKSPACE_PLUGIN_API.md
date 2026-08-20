@@ -257,7 +257,7 @@ Peak-finding algorithms are independently installable contributions:
 ```js
 ctx.analysis.detectors.register('my-detector-v2', {
   name: 'My Detector',
-  version: '2.0.0',
+  version: '2.1.0',
   description: '...',
   default: false,
 

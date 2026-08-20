@@ -427,7 +427,7 @@
   }
 
   class ResizeScheduler {
-    constructor(scope){this.scope=scope;this.pending=null;this.raf=0;this.dispatching=false;this.disposed=false;}
+    constructor(scope){this.scope=scope;this.pending=null;this.raf=0;this.dispatching=false;this.disposed=false;this.suspended=false;}
     request(payload={},options={}){
       if(this.disposed)return;
       const emit=options.emit!==false;
@@ -436,13 +436,14 @@
       const effectiveEmit=this.dispatching?false:emit;
       const previous=this.pending||{};
       this.pending={...previous,...payload,_emit:previous._emit===true||effectiveEmit};
+      if(this.suspended){window.DKDSPerformance?.skip?.('ui.suspended-resize');return;}
       if(typeof document!=='undefined'&&document.hidden){window.DKDSPerformance?.skip?.('ui.hidden-resize');return;}
       if(this.raf)return;
       const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));
       this.raf=raf(()=>this.flush());
     }
     flush(){
-      if(this.disposed)return;this.raf=0;
+      if(this.disposed||this.suspended){this.raf=0;return;}this.raf=0;
       const payload=this.pending||{};this.pending=null;this.dispatching=true;
       try{
         if(payload._emit===true)this.scope.options.events?.emit?.('layout:resize',{pluginId:this.scope.owner,...Object.fromEntries(Object.entries(payload).filter(([k])=>k!=='_emit'))});
@@ -450,7 +451,10 @@
       for(const chart of this.scope.charts){try{if(!chart?.container||chart.container.offsetParent===null)continue;chart.resize?.();}catch{}}
       if(this.pending&&!this.raf){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.raf=raf(()=>this.flush());}
     }
-    dispose(){this.disposed=true;if(this.raf){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.raf);}catch{}}this.raf=0;this.pending=null;}
+    suspend(){if(this.disposed||this.suspended)return false;this.suspended=true;if(this.raf){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.raf);}catch{}}this.raf=0;return true;}
+    resume(){if(this.disposed||!this.suspended)return false;this.suspended=false;if(this.pending&&!this.raf){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.raf=raf(()=>this.flush());}return true;}
+    state(){return {suspended:this.suspended,pending:!!this.pending,scheduled:!!this.raf};}
+    dispose(){this.disposed=true;if(this.raf){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.raf);}catch{}}this.raf=0;this.pending=null;this.suspended=false;}
   }
 
   class ContextMenu {
@@ -1513,6 +1517,9 @@
         unpin:(target,id,meta={})=>this.scientificPlotly?.unpin?.(target,id,meta)||false,
         pins:target=>this.scientificPlotly?.pins?.(target)||[],
         stats:target=>this.scientificPlotly?.stats?.(target)||null,
+        suspend:(target,options={})=>this.scientificPlotly?.get?.(target)?.suspend?.(options)||false,
+        resume:(target,options={})=>this.scientificPlotly?.get?.(target)?.resume?.(options)||false,
+        lifecycleState:()=>this.scientificPlotly?.lifecycleState?.()||null,
         saveImage:(target,baseName,format='svg',options={})=>this.scientificPlotly?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
         purge:target=>this.scientificPlotly?.purge?.(target)||window.DKDSCharts?.purge?.(target)
       };
@@ -1523,6 +1530,12 @@
     trackObject(obj){if(obj?.dispose)this.cleanups.push(()=>obj.dispose());return obj;}
     emitResize(payload={}){this.resizeScheduler?.request?.(payload,{emit:true});}
     requestChartResize(payload={}){this.resizeScheduler?.request?.(payload,{emit:false});}
+    async lifecycle(state,options={}){
+      const value=String(state||'').toLowerCase();
+      if(value==='hidden'||value==='suspended'){this.resizeScheduler?.suspend?.();const plots=await this.scientificPlotly?.lifecycle?.('hidden',{purgeManaged:true,...options});return {owner:this.owner,state:'hidden',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
+      if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificPlotly?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
+      return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificPlotly?.lifecycleState?.()||null};
+    }
     dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
   }
 
@@ -1557,6 +1570,8 @@
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),resolveId:id=>dataTypeRegistry.resolveId(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),lineage:id=>dataTypeRegistry.lineage(id),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx),validate:()=>dataTypeRegistry.validate()},
+    async lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle?.(state,options));return {state:String(state||''),scopes:rows.length,rows};},
+    lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificPlotly?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
     ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}

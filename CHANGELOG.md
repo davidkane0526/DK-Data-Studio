@@ -1,3 +1,12 @@
+# v3.49.0 — Core renderer and UI resource lifecycle
+
+- Adds ScientificPlot v2.1 suspend/resume so Core-managed Plotly renderers can release DOM/event resources while reusable TOP windows are hidden and rebuild with Selection, Pin and Viewport state preserved.
+- Adds Core UI lifecycle propagation and ResizeScheduler suspension; hidden TOPs no longer accumulate resize work.
+- Adds Performance Runtime v1.2 resource disposers and automatic per-plugin cache release on plugin deactivation.
+- Extends real Electron automation from initial TOP readiness to ready -> hide -> reuse -> show lifecycle validation for every TOP.
+- Automation Test runner v1.4 adds renderer/resource lifecycle coverage and disposal diagnostics; normal desktop coverage is now 20 cases.
+- Keeps scientific definitions and numerical precision unchanged.
+
 # v3.48.0 — Cache lifecycle budgets and declarative scientific stages
 
 - Upgrades Core `DKDSPerformance` to v1.1.0 with namespace policies, LRU entry budgets, optional TTL expiry, explicit trim operations, scoped snapshots, and lifecycle-aware weak-cache resets.

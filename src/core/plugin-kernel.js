@@ -1346,6 +1346,7 @@
     if (chartScope) addCleanup(pluginId, () => window.DKDSCharts?.disposeOwner?.(pluginId));
     if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
     if (serviceScope) addCleanup(pluginId, () => window.DKDSServices?.removeOwner?.(pluginId));
+    if (window.DKDSPerformance) addCleanup(pluginId, () => window.DKDSPerformance?.trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'}));
     const normalizeShortcutSpec = spec => {
       const row={order:100,priority:0,...(spec||{}),id:spec?.id};
       const chord=String(row.chord||row.key||row.shortcut||'').trim();

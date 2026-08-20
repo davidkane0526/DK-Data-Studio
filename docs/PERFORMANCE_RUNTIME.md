@@ -1,6 +1,6 @@
 # Performance Runtime
 
-DK Data Studio v3.47 introduced a shared, observable performance layer. v3.48 adds cache budgets and lifecycle ownership so performance improvements cannot grow renderer memory without an explicit Core policy. The goal remains to eliminate repeated scientific and renderer work without changing numerical definitions or lowering plotting fidelity.
+DK Data Studio v3.47 introduced a shared, observable performance layer. v3.48 added cache budgets and lifecycle ownership. v3.49 extends that policy to renderer/UI resources so reusable windows can release expensive renderer state while hidden without plugin-specific cleanup. The goal remains to eliminate repeated scientific and renderer work without changing numerical definitions or lowering plotting fidelity.
 
 ## Core API
 
@@ -16,6 +16,7 @@ DK Data Studio v3.47 introduced a shared, observable performance layer. v3.48 ad
 - `skip(namespace, count)` — record work deliberately avoided by a higher-level cache/deduper.
 - `snapshot(prefix)` — diagnostics-safe aggregate metrics, policy, eviction/expiry/trim counters and optional namespace-prefix filtering. It contains counters/timings only, never project values.
 - `clear()` / `resetMetrics()` — invalidate caches or counters explicitly.
+- Bounded value/stage entries may provide `options.dispose(value, meta)`; Core invokes it when an entry is evicted, expired, trimmed or cleared and records disposal diagnostics. Use this for cached resource wrappers, not ordinary immutable numeric arrays.
 
 Caches are an optimization only. Scientific outputs remain owned by `src/science/*` and existing reference/parity tests remain authoritative.
 
@@ -71,3 +72,12 @@ Software Management → Automation Test exports a Performance section containing
 - start/end working-set, private-memory, and process-count trend from the same automation run.
 
 Performance measurements are trend indicators for the same machine/build setup, not cross-machine pass/fail thresholds.
+
+
+## UI / renderer lifecycle (v3.49+)
+
+Performance caching and renderer lifetime are separate Core policies. `DKDSUI.lifecycle()` propagates hidden/visible state through plugin UI scopes. Hidden scopes suspend their `ResizeScheduler` and ask Core ScientificPlot to suspend managed Plotly renderers. Managed renderers may purge Plotly DOM/event state while retaining the plugin's declarative render spec plus Core Selection/Pin/Viewport state. On resume, Core rebuilds the renderer before the normal layout settle sequence.
+
+Plugins must not implement their own TOP hide/show Plotly cleanup. If a plugin renders through `ctx.ui.scientificPlot.react`, it receives this behavior automatically. `attach()` views that Core cannot safely reconstruct remain attached rather than being purged.
+
+Plugin deactivation trims only that plugin's `ctx.performance` namespace to zero, so cached plugin closures/resources cannot survive a full deactivation.

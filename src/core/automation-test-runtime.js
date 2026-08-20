@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.3.0';
+  const VERSION='1.4.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -118,6 +118,35 @@
     return {policy:configured,entriesBefore:before.entries,entriesAfter:after.entries,evictions:after.evictions,trims:after.trims,trimmedEntries:after.trimmedEntries};
   }
 
+  async function performanceResourceLifecycleSmoke(){
+    const perf=window.DKDSPerformance,ui=window.DKDSUI;assert(perf?.memo&&ui?.createScope,'Resource lifecycle runtime unavailable.');
+    const ns='automation.resource-dispose';perf.clear(ns);perf.resetMetrics(ns);perf.configure(ns,{limit:1,ttlMs:0});
+    const disposed=[];const dispose=(value,meta)=>disposed.push({id:value?.id||'',reason:meta?.reason||''});
+    perf.memo(ns,'a',()=>({id:'a'}),{dispose});perf.memo(ns,'b',()=>({id:'b'}),{dispose});
+    assert(disposed.some(row=>row.id==='a'&&row.reason==='lru'),'Cache eviction did not dispose the released resource.');
+    perf.trim(ns,{targetEntries:0,reason:'automation-trim'});const metric=perf.metric(ns);
+    assert(disposed.some(row=>row.id==='b'&&row.reason==='automation-trim'),'Cache trim did not dispose the retained resource.');
+    assert(metric.disposedEntries>=2&&!metric.disposeErrors,'Resource disposal metrics are incomplete.');
+
+    const host=document.createElement('div');host.id=`automationResourcePlot-${Date.now()}`;host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';document.body.appendChild(host);
+    const scope=ui.createScope('core.automation-resource-lifecycle');
+    try{
+      const interaction=scope.interactionRuntime.create('plot',{selection:{multiple:true,defaultType:'data.series'},defaultType:'data.series'});
+      const data=[{x:[0,1,2],y:[1,2,1],mode:'lines+markers',name:'A',entityId:'automation.resource:A'},{x:[0,1,2],y:[2,1,3],mode:'lines+markers',name:'B',entityId:'automation.resource:B'}];
+      const spec={interaction,renderKey:'automation-resource-v1',traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),pinPolicy:{enabled:true}};
+      const view=await scope.scientificPlot.react(host,data,{width:360,height:240,margin:{l:40,r:20,t:20,b:35}},{displayModeBar:false,staticPlot:true},spec);
+      view.controllers.pin.pin('automation.resource:A',{source:'automation'});await view.controllers.viewport.set({xRange:[0.2,1.8]},{source:'automation'});
+      const before=view.lifecycleState();await view.suspend({purgeManaged:true,reason:'automation'});const hidden=view.lifecycleState();
+      assert(hidden.suspended&&hidden.purged,'Managed ScientificPlot renderer was not purged during suspend.');assert(view.controllers.pin.has('automation.resource:A'),'Pin state was lost during renderer suspend.');
+      await view.resume({reason:'automation'});const visible=view.lifecycleState();const viewport=view.controllers.viewport.get();
+      assert(!visible.suspended&&!visible.purged&&visible.traceCount===2,'ScientificPlot renderer did not rebuild after resume.');assert(view.controllers.pin.has('automation.resource:A'),'Pin state was lost after renderer resume.');assert(Array.isArray(viewport.xRange)&&viewport.xRange[0]===0.2&&viewport.xRange[1]===1.8,'Viewport state was lost across renderer lifecycle.');
+      await scope.lifecycle('hidden',{reason:'automation-scope'});const scopeHidden=scope.resizeScheduler?.state?.()||null;assert(scopeHidden?.suspended===true,'ResizeScheduler did not suspend with the UI scope.');
+      await scope.lifecycle('visible',{reason:'automation-scope'});const scopeVisible=scope.resizeScheduler?.state?.()||null;assert(scopeVisible?.suspended===false,'ResizeScheduler did not resume with the UI scope.');
+      const stats=view.performance();assert(stats.rendererPurges>=2&&stats.resumeRenders>=2,'ScientificPlot lifecycle metrics did not record renderer release/rebuild.');
+      return {disposedEntries:metric.disposedEntries,disposeErrors:metric.disposeErrors,before,hidden,visible,resize:{hidden:scopeHidden,visible:scopeVisible},plotStats:stats};
+    }finally{try{scope.dispose?.();}catch{}host.remove();perf.clear(ns);}
+  }
+
   function selectionContractSmoke(){
     const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
     const scope=ui.createScope('core.automation-test');
@@ -208,6 +237,7 @@
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
     await runCase('performance.cache','Performance cache & render dedupe','Performance',performanceCacheSmoke);
     await runCase('performance.lifecycle','Performance cache policy & lifecycle trim','Performance',performanceLifecycleSmoke);
+    await runCase('performance.resources','Renderer & resource lifecycle','Performance',performanceResourceLifecycleSmoke);
 
     const tops=enabledTopActivities();let testedTopCount=0,passedTopCount=0;const topOutcomes=[];
     if(window.electronAPI?.diagnosticsRunActivitySmoke){
@@ -215,7 +245,7 @@
       for(const top of tops){
         const row=await runCase(`top.${top.activityId}`,`TOP renderer · ${top.name||top.pluginId}`,'TOP / Electron',async()=>{
           testedTopCount+=1;const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
-          assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow};
+          assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);assert(out?.lifecycle?.tested&&out?.lifecycle?.ok,`${out?.pluginId||top.pluginId}: TOP hide/reuse lifecycle failed.`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow};
         });
         if(row.status==='pass')passedTopCount+=1;
         topOutcomes.push({pluginId:top.pluginId,activityId:top.activityId,status:row.status,detail:row.detail||''});
@@ -243,7 +273,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

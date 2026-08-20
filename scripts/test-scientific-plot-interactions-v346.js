@@ -6,13 +6,13 @@ const root=path.resolve(__dirname,'..');
 const code=fs.readFileSync(path.join(root,'src/core/scientific-plot-runtime.js'),'utf8');
 function classList(){const s=new Set();return {add:(...xs)=>xs.forEach(x=>s.add(x)),remove:(...xs)=>xs.forEach(x=>s.delete(x)),toggle(x,on){if(on===undefined)on=!s.has(x);on?s.add(x):s.delete(x);return on;},contains:x=>s.has(x)};}
 const target={nodeType:1,id:'plot',dataset:{},classList:classList(),data:[],handlers:new Map(),on(name,fn){this.handlers.set(name,fn);},removeListener(name,fn){if(this.handlers.get(name)===fn)this.handlers.delete(name);}};
-const calls={react:0,restyle:[],relayout:[],save:[]};
+const calls={react:0,restyle:[],relayout:[],save:[],purge:0};
 const chartScope={
   tooltipTheme:{bgcolor:'rgba(31,41,55,0.90)',bordercolor:'rgba(255,255,255,0.22)',font:{color:'#fff',size:12}},
   async react(t,data){calls.react++;t.data=structuredClone(data);},
   restyle(t,update,traces){calls.restyle.push({update,traces});return true;},
   relayout(t,update){calls.relayout.push(update);return true;},
-  resize(){return true;},purge(){return true;},saveImage(t,base,format,options){calls.save.push({base,format,options});return {base,format};},toImage(){return 'data:image/png;base64,AA==';}
+  resize(){return true;},purge(t){calls.purge++;t.data=[];return true;},saveImage(t,base,format,options){calls.save.push({base,format,options});return {base,format};},toImage(){return 'data:image/png;base64,AA==';}
 };
 const entityRows=new Map();
 const entityScope={upsert(row){entityRows.set(row.id,{...row});return entityRows.get(row.id);},get:id=>entityRows.get(id)||null,related:(a,b)=>a===b};
@@ -33,7 +33,7 @@ const interaction={
     {x:[0,1],y:[2,3],mode:'lines+markers',name:'B',entityId:'trace:B',line:{width:2},marker:{size:6}}
   ];
   const view=await scope.react(target,traces,{}, {},{interaction,traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),legendPolicy:{selectOnClick:true},pinPolicy:{enabled:true},selectionPolicy:{area:true}});
-  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.0.0');
+  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.1.0');
   for(const name of context.DKDSScientificPlot.CONTROLLERS)assert(view.controllers[name],`missing ${name} controller`);
   for(const event of ['plotly_click','plotly_legendclick','plotly_legenddoubleclick','plotly_relayout','plotly_hover','plotly_unhover','plotly_selected','plotly_deselect'])assert(target.handlers.has(event),`missing ${event}`);
   const clickHandler=target.handlers.get('plotly_click');
@@ -55,6 +55,9 @@ const interaction={
   await scope.react(target,traces,{}, {},{interaction,traceEntity:trace=>({id:trace.entityId,type:'data.series'}),legendPolicy:{selectOnClick:true}});
   assert.strictEqual(target.handlers.get('plotly_click'),clickHandler,'react must not duplicate or replace shared event handlers');
   assert.strictEqual(scope.controller(target,'pin'),view.controllers.pin,'scope.controller must expose shared controller');
+  view.controllers.pin.pin('trace:A',{source:'test'});await view.controllers.viewport.set({xRange:[0,1]},{source:'lifecycle-test'});
+  const reactBeforeSuspend=calls.react;await view.suspend({purgeManaged:true,reason:'test'});assert(view.lifecycleState().suspended&&view.lifecycleState().purged,'managed plot must enter purged suspended state');assert.strictEqual(target.data.length,0,'suspend must release Plotly renderer data');assert.strictEqual(target.handlers.size,0,'suspend must release Plotly handlers');
+  await view.resume({reason:'test'});assert(!view.lifecycleState().suspended&&!view.lifecycleState().purged,'resume must rebuild managed plot');assert.strictEqual(calls.react,reactBeforeSuspend+1,'resume must rebuild a purged renderer exactly once');assert.strictEqual(target.data.length,2);assert(view.controllers.pin.has('trace:A'),'pin state must survive renderer lifecycle');assert.deepStrictEqual(view.controllers.viewport.get().xRange,[0,1],'viewport must survive renderer lifecycle');
   scope.dispose();
   assert.strictEqual(target.handlers.size,0,'dispose must remove every shared Plotly handler');
   console.log('v3.46 ScientificPlot shared Selection/Legend/Tooltip/Focus/Pin/Viewport/Export controller checks passed.');

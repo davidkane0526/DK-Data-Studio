@@ -377,7 +377,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.48.0',
+      appVersion:'3.49.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -524,11 +524,13 @@
       });
       window.electronAPI?.onActivityWillHide?.(() => {
         pushSnapshot(true);
-        // Dedicated TOP renderers are reusable, but hidden windows must not
-        // retain an unbounded scientific cache. Core owns the policy so every
-        // plugin receives the same lifecycle behavior. Weak object caches are
-        // reset and bounded value caches retain only a small hot working set.
-        window.DKDSPerformance?.lifecycle?.('hidden',{retainRatio:0.25,dropWeak:true,reason:'top-window-hide'});
+        // TOP reuse is a Core resource lifecycle, not a plugin-specific optimization.
+        // Suspend generic UI schedulers and release managed Plotly renderer state
+        // before contracting scientific caches. Domain state/Selection/Viewport stay
+        // in the shared Controller/View model and are restored on show.
+        void Promise.resolve(window.DKDSUI?.lifecycle?.('hidden',{reason:'top-window-hide'})).catch(err=>console.warn('[DKDS plugin window UI suspend]',err)).finally(()=>{
+          window.DKDSPerformance?.lifecycle?.('hidden',{retainRatio:0.25,dropWeak:true,reason:'top-window-hide'});
+        });
       });
       window.electronAPI?.onActivityRoleSnapshotRequest?.(request=>{
         const requestId=String(request?.requestId||'');
@@ -538,9 +540,11 @@
         window.electronAPI?.respondActivityRoleSnapshot?.({requestId,snapshot});
       });
       window.electronAPI?.onActivityWillShow?.(() => {
-        requestAnimationFrame(() => {
-          window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show'});
-          requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show-settled'}));
+        void Promise.resolve(window.DKDSUI?.lifecycle?.('visible',{reason:'top-window-show'})).catch(err=>console.warn('[DKDS plugin window UI resume]',err)).finally(()=>{
+          requestAnimationFrame(() => {
+            window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show'});
+            requestAnimationFrame(() => window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window-show-settled'}));
+          });
         });
       });
 

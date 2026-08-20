@@ -1,6 +1,6 @@
 (() => {
   if (window.DKDSScientificPlot) return;
-  const VERSION='2.0.0';
+  const VERSION='2.1.0';
   const CONTROLLERS=Object.freeze(['selection','legend','tooltip','focus','pin','viewport','export']);
   const resolve=value=>{
     if(value?.nodeType===1)return value;
@@ -28,7 +28,7 @@
   class ScientificPlotView {
     constructor(owner,target,spec={}){
       this.owner=String(owner||'core');this.target=resolve(target);this.spec={...spec};this.disposed=false;this.bound=false;this.selectionOff=null;this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.lastSelection=null;
-      this.pinnedIds=new Set();this.pinListeners=new Set();this.viewportListeners=new Set();this.viewportState={xRange:null,yRange:null,revision:0,source:'initial'};this.hoverState=null;this.eventHandlers=new Map();this.controllerSpec=normalizeControllerSpec(spec);this.lastRenderKey='';this.appliedStyleKey='';this.renderStats={reacts:0,skippedReacts:0,selectionApplies:0,selectionSkips:0,styleRestores:0};
+      this.pinnedIds=new Set();this.pinListeners=new Set();this.viewportListeners=new Set();this.viewportState={xRange:null,yRange:null,revision:0,source:'initial'};this.hoverState=null;this.eventHandlers=new Map();this.controllerSpec=normalizeControllerSpec(spec);this.lastRenderKey='';this.appliedStyleKey='';this.suspended=false;this.purged=false;this.managedRender=false;this.pendingRender=false;this.renderStats={reacts:0,skippedReacts:0,selectionApplies:0,selectionSkips:0,styleRestores:0,suspends:0,resumes:0,rendererPurges:0,resumeRenders:0,hiddenRenderSkips:0};
       if(!this.target)throw new Error('ScientificPlot target not found.');
       this.chart=window.DKDSCharts?.createScope?.(this.owner)||window.DKDSCharts;
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
@@ -74,6 +74,7 @@
     selectTrace(index,options={}){const entity=this.entityFromTrace(index);return entity?this.selectEntity(entity,{curveNumber:Number(index),pointNumber:null},options):null;}
     modifierMatches(event,modifier){const raw=String(modifier||'shift').toLowerCase();const e=event?.event||event||{};if(raw==='none')return true;if(raw==='ctrl'||raw==='control')return !!(e.ctrlKey||e.metaKey);if(raw==='alt')return !!e.altKey;if(raw==='meta'||raw==='cmd')return !!e.metaKey;return !!e.shiftKey;}
     bindEvent(name,handler){if(!this.target?.on||this.eventHandlers.has(name))return;this.eventHandlers.set(name,handler);this.target.on(name,handler);}
+    unbindPlotEvents(){for(const [name,handler] of this.eventHandlers)try{this.target?.removeListener?.(name,handler);}catch{}this.eventHandlers.clear();this.bound=false;}
     bindPlotEvents(){
       if(this.bound||!this.target?.on)return;this.bound=true;
       this.bindEvent('plotly_click',event=>{
@@ -156,17 +157,31 @@
     attach(spec={}){
       // attach() adopts an already-rendered graph. Mapping/click callbacks belong
       // to that current attachment and must not leak from a previous render.
-      this.spec={...this.spec,...spec,traceEntity:spec.traceEntity??null,pointEntity:spec.pointEntity??null,onEntitySelect:spec.onEntitySelect??null,onClick:spec.onClick??null,onLegendAction:spec.onLegendAction??null,onAreaSelect:spec.onAreaSelect??null};this.controllerSpec=normalizeControllerSpec(this.spec);if(spec.interaction!==undefined)this.setInteraction(spec.interaction);const traces=clone(this.target?.data||this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);this.bindPlotEvents();this.applyTooltipTheme();void this.applyViewportState({reason:'plot-attach'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-attach'});return this;
+      this.spec={...this.spec,...spec,traceEntity:spec.traceEntity??null,pointEntity:spec.pointEntity??null,onEntitySelect:spec.onEntitySelect??null,onClick:spec.onClick??null,onLegendAction:spec.onLegendAction??null,onAreaSelect:spec.onAreaSelect??null};this.controllerSpec=normalizeControllerSpec(this.spec);if(spec.interaction!==undefined)this.setInteraction(spec.interaction);this.managedRender=false;this.suspended=false;this.purged=false;const traces=clone(this.target?.data||this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);this.bindPlotEvents();this.applyTooltipTheme();void this.applyViewportState({reason:'plot-attach'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-attach'});return this;
     }
     async set(spec={}){
-      this.prepareSpec(spec);const renderKey=asId(this.spec.renderKey||this.spec.revisionKey||'');
+      this.prepareSpec(spec);this.managedRender=true;const renderKey=asId(this.spec.renderKey||this.spec.revisionKey||'');
+      if(this.suspended){this.pendingRender=true;this.renderStats.hiddenRenderSkips+=1;window.DKDSPerformance?.skip?.('plot.hidden-react');return this;}
       if(renderKey&&renderKey===this.lastRenderKey&&this.target?.data?.length){this.renderStats.skippedReacts+=1;window.DKDSPerformance?.skip?.('plot.react');this.bindPlotEvents();this.applyTooltipTheme();return this;}
       const traces=clone(this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);
-      await this.chart.react(this.target,traces,this.spec.layout||{},this.spec.config||{});this.renderStats.reacts+=1;if(renderKey)this.lastRenderKey=renderKey;else this.lastRenderKey='';this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
+      await this.chart.react(this.target,traces,this.spec.layout||{},this.spec.config||{});this.renderStats.reacts+=1;this.purged=false;this.pendingRender=false;if(renderKey)this.lastRenderKey=renderKey;else this.lastRenderKey='';this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
     }
-    performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0});}
-    resize(){return this.chart?.resize?.(this.target);}
-    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;for(const [name,handler] of this.eventHandlers)try{this.target?.removeListener?.(name,handler);}catch{}this.eventHandlers.clear();this.bound=false;this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
+    async suspend(options={}){
+      if(this.disposed||this.suspended)return this.lifecycleState();this.suspended=true;this.renderStats.suspends+=1;
+      const purge=options.purge!==false&&options.purgeManaged!==false&&this.managedRender&&!!this.target?.data?.length;
+      if(purge){this.unbindPlotEvents();try{await Promise.resolve(this.chart?.purge?.(this.target));this.purged=true;this.renderStats.rendererPurges+=1;if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}catch(err){console.warn('[DKDS ScientificPlot suspend]',err);}}
+      return this.lifecycleState();
+    }
+    async resume(options={}){
+      if(this.disposed)return this.lifecycleState();const wasSuspended=this.suspended;this.suspended=false;if(wasSuspended)this.renderStats.resumes+=1;
+      if(this.purged&&this.managedRender){this.purged=false;this.renderStats.resumeRenders+=1;await this.set({...this.spec});}
+      else{this.bindPlotEvents();this.applyTooltipTheme();if(options.resize!==false)try{await Promise.resolve(this.resize());}catch{}if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-resume'});}
+      return this.lifecycleState();
+    }
+    lifecycleState(){return {owner:this.owner,targetId:this.target?.id||this.target?.dataset?.dkdsScientificPlotId||'',managedRender:this.managedRender,suspended:this.suspended,purged:this.purged,pendingRender:this.pendingRender,traceCount:this.target?.data?.length||0,pins:this.pinnedIds.size,viewportRevision:Number(this.viewportState?.revision)||0};}
+    performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0,suspended:this.suspended,purged:this.purged,managedRender:this.managedRender});}
+    resize(){if(this.suspended){window.DKDSPerformance?.skip?.('plot.hidden-resize');return false;}return this.chart?.resize?.(this.target);}
+    dispose(options={}){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
   }
 
   class ScientificPlotScope {
@@ -187,12 +202,18 @@
     unpin(target,id,meta={}){return this.get(target)?.unpin?.(id,meta)||false;}
     pins(target){return this.get(target)?.controllers?.pin?.list?.()||[];}
     stats(target){return this.get(target)?.performance?.()||null;}
+    lifecycleState(){const rows=[...this.views.values()].map(view=>view.lifecycleState());return {owner:this.owner,views:rows.length,suspended:rows.filter(row=>row.suspended).length,purged:rows.filter(row=>row.purged).length,managed:rows.filter(row=>row.managedRender).length,rows};}
+    async suspend(options={}){return Promise.all([...this.views.values()].map(view=>view.suspend(options)));}
+    async resume(options={}){return Promise.all([...this.views.values()].map(view=>view.resume(options)));}
+    async lifecycle(state,options={}){const value=String(state||'').toLowerCase();if(value==='hidden'||value==='suspended')return this.suspend(options);if(value==='visible'||value==='active'||value==='resumed')return this.resume(options);return this.lifecycleState();}
     saveImage(target,baseName,format='svg',options={}){return this.get(target)?.exportImage?.(baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options);}
-    purge(target){const key=this.key(target),view=this.views.get(key),chart=view?.chart||window.DKDSCharts;view?.dispose?.();this.views.delete(key);return chart?.purge?.(target);}
-    dispose(){for(const view of this.views.values())view.dispose?.();this.views.clear();}
+    purge(target){const key=this.key(target),view=this.views.get(key);if(!view)return window.DKDSCharts?.purge?.(target);view.dispose?.({purge:true});this.views.delete(key);return true;}
+    dispose(){for(const view of this.views.values())view.dispose?.({purge:true});this.views.clear();}
   }
   const scopes=new Map();
   function createScope(owner){const id=String(owner||'core');const scope=new ScientificPlotScope(id);if(!scopes.has(id))scopes.set(id,new Set());scopes.get(id).add(scope);const original=scope.dispose.bind(scope);scope.dispose=()=>{original();scopes.get(id)?.delete(scope);if(!scopes.get(id)?.size)scopes.delete(id);};return scope;}
   function disposeOwner(owner){const id=String(owner||'');for(const scope of [...(scopes.get(id)||[])])scope.dispose();scopes.delete(id);}
-  window.DKDSScientificPlot=Object.freeze({VERSION,CONTROLLERS,ScientificPlotView,ScientificPlotScope,createScope,disposeOwner});
+  async function lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle(state,options));return {state:String(state||''),scopes:rows.length,views:rows.reduce((sum,row)=>sum+Number(row?.length??row?.views??0),0)};}
+  function snapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(scope.lifecycleState());return {version:VERSION,scopes:rows.length,views:rows.reduce((sum,row)=>sum+row.views,0),managed:rows.reduce((sum,row)=>sum+row.managed,0),suspended:rows.reduce((sum,row)=>sum+row.suspended,0),purged:rows.reduce((sum,row)=>sum+row.purged,0),rows};}
+  window.DKDSScientificPlot=Object.freeze({VERSION,CONTROLLERS,ScientificPlotView,ScientificPlotScope,createScope,disposeOwner,lifecycle,snapshot});
 })();

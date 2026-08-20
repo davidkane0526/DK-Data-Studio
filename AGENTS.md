@@ -195,5 +195,7 @@ Before adding plugin-private memoization, inspect `docs/PERFORMANCE_RUNTIME.md`.
 - A cache key must contain every scientific input that changes the result. Prefer `artifacts.revision(kind)` over invalidating on every project/Artifact mutation.
 - Never improve performance by reducing numerical precision, silently downsampling scientific data, or changing a published scientific definition.
 - Plot plugins using `ScientificPlot` may provide `renderKey`/`revisionKey`, but that key must change whenever the rendered trace/layout result changes.
+- Reusable TOP renderer hide/show is Core-owned. Do not add plugin-private Plotly purge/rebuild or resize-suspension code; route plots through ScientificPlot and keep recoverable state in Controller/ViewModel/Core interaction state.
+- Plugin disable/reload must not depend on Core performance caches surviving deactivation; Core trims the plugin namespace as part of cleanup.
 - Keep Performance Runtime metrics diagnostics-safe: counters and timing only, never experiment values or source paths.
 - Run `npm run performance:test` together with the normal `npm test` / `npm run check` regression suites.
