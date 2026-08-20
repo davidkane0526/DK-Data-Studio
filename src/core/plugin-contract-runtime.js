@@ -27,6 +27,7 @@
     'data.formula':api=>!!api?.data?.formula,
     'workflow':api=>!!api?.workflow,
     'analysis.providers':api=>!!api?.analysis?.providers,
+    'analysis.algorithms':api=>!!api?.analysis?.algorithms,
     'analysis.detectors':api=>!!api?.analysis?.detectors,
     'charts':api=>!!api?.ui?.charts,
     'charts.providers':api=>!!api?.charts,

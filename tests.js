@@ -1064,8 +1064,8 @@ assert(resonanceV319.includes('renderPhysics')&&resonanceV319.includes('togglePh
 assert(resonanceV319.includes('function mainCsv()')&&resonanceV319.includes('exportMainPng'),
   'resonance shared runtime must own its main data/image export contract');
 
-assert(detectorV319.includes("ctx.analysis.detectors.register('robust-ricker-v1'"),
-  'mature robust finder must be an independent detector plugin');
+assert(detectorV319.includes("ctx.analysis.algorithms.register('robust-ricker-v1'")&&detectorV319.includes("category:'peak-detector'"),
+  'mature robust finder must be an independent versioned algorithm plugin');
 assert(detectorV319.includes('parameterSchema:{fields:parameterFields}')&&resonanceV319.includes('ctx.parameters.render'),
   'detector plugins must declare parameter schema while Core renders algorithm settings UI');
 assert(detectorV319.includes("evidence.matched")&&detectorV319.includes("symbol:'triangle-down'"),

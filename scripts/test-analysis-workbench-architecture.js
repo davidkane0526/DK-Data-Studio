@@ -66,7 +66,7 @@ for(const token of ["id:'curve-inspector'","id:'group-analysis'","id:'physics'",
 }
 assert(resonanceViews.includes('mountUnified')&&resonanceViews.includes('wb.compose')&&resonanceViews.includes("hostMode:isTop?'top':'super'"),'Resonance SUPER/TOP must use one host-invariant PluginWorkspace composition.');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
-assert(resonanceFeature.includes('ctx.analysis.detectors.list()')||resonanceViews.includes('ctx.analysis.detectors.list()'),'Resonance dedicated TOP must consume detector capabilities rather than a private detector list.');
+assert(resonanceViews.includes("ctx.analysis.algorithms?.list?.({category:'peak-detector'})"),'Resonance dedicated TOP must consume versioned Algorithm Providers rather than a private detector list.');
 
 
 

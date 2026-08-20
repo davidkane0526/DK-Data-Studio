@@ -16,7 +16,7 @@ Never solve missing architecture with a plugin-local patch.
 Register `ctx.data.importers/exporters`. Core owns dialogs, reads, saves and clipboard via `ctx.io`.
 
 ### Analysis algorithm
-Keep the pure algorithm in a plugin support module and expose it through `ctx.analysis.providers`, `ctx.analysis.detectors`, `ctx.workflow.*` or `ctx.capabilities` depending on its role.
+Keep the pure algorithm in a plugin support module. If it is replaceable/versioned scientific computation, expose it through `ctx.analysis.algorithms`; use providers/workflow/capabilities only when those contracts are the better semantic fit.
 
 ### Scientific workspace
 Use Core AnalysisWorkbench with PRIMARY / PRIME / SUB, Core PlotViews, Core ScientificPlot, the Entity Registry, Core Actions and Core Interaction Runtime. Do not build another pane/dock/window framework.

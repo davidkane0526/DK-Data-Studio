@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.6.0';
+  const VERSION='1.7.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -207,6 +207,19 @@
     return {version:T.VERSION,registered:rows.length,curveType:curve.semanticType,fieldType:field.semanticType,fieldShape:[field.vgs.length,field.targets.length],terPipeline:true,resonancePipeline:true};
   }
 
+  function scientificAlgorithmRegistrySmoke(){
+    const A=window.DKDSScientificAlgorithms,S=window.DKDSScience;assert(A?.list&&A?.resolve&&A?.run,'Scientific Algorithm Registry unavailable.');
+    const detectors=A.list({category:'peak-detector'}),metrics=A.list({category:'peak-metrics'});
+    const detector=detectors.find(row=>row.id==='robust-ricker-v1'&&row.version==='1.0.0');const metric=metrics.find(row=>row.id==='baseline-fwhm-v1'&&row.version==='1.0.0');
+    assert(detector,'Versioned robust peak-detector algorithm plugin is unavailable.');assert(metric,'Versioned FWHM/peak-metrics algorithm plugin is unavailable.');
+    const points=[];for(let k=0;k<=160;k++){const v=-.8+k*.01;const baseline=(2e-9+0.7e-9*v);const peak=9e-9*Math.exp(-0.5*((v-.18)/.075)**2);points.push({v,i:baseline+peak});}
+    const sweep={id:'automation:algorithm-sweep',datasetPath:'automation',datasetName:'automation',vg:0,direction:1,step:.01,points};
+    const peaks=A.run({id:'robust-ricker-v1',version:'1.0.0',category:'peak-detector'},sweep,{parameters:S.preset?.('balanced')||{}});assert(Array.isArray(peaks)&&peaks.length>=1,'Algorithm plugin peak detector did not return a peak.');
+    const chosen=peaks.slice().sort((a,b)=>Math.abs(a.v-.18)-Math.abs(b.v-.18))[0];const m=A.run({id:'baseline-fwhm-v1',version:'1.0.0',category:'peak-metrics'},{peak:chosen,sweep},{parameters:{}});assert(Number.isFinite(Number(m?.fwhm))&&m.fwhm>0,'Algorithm plugin FWHM provider returned an invalid width.');
+    const owner='core.automation-algorithm-versioning';try{A.register(owner,'version-probe',{category:'automation',version:'1.0.0',run:()=>1});A.register(owner,'version-probe',{category:'automation',version:'2.0.0',default:true,run:()=>2});assert(A.resolve('version-probe',{category:'automation'})?.version==='2.0.0','Algorithm resolver did not choose the configured default version.');assert(A.resolve('version-probe@1.0.0',{category:'automation'})?.version==='1.0.0','Algorithm resolver could not lock an exact historical version.');}finally{A.removeOwner(owner);}
+    return {version:A.VERSION,registered:A.list().length,detector:`${detector.id}@${detector.version}`,metric:`${metric.id}@${metric.version}`,peakCount:peaks.length,fwhm:m.fwhm,provenance:A.provenance({id:metric.id,version:metric.version,category:metric.category})};
+  }
+
   function scienceTransformSmoke(){
     const science=window.DKDSScience;assert(science?.transformSweep,'Science transform runtime unavailable.');
     const points=[];for(let k=0;k<=40;k++){const v=-1+k*0.05;points.push({v,i:2e-9*v+8e-9*Math.exp(-(((v-.2)/.12)**2))});}
@@ -227,7 +240,7 @@
 
   function dataTypeSmoke(){
     const types=window.DKDSUI?.dataTypes;assert(types,'Data Type Registry unavailable.');
-    const required=['science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.transport.current-field','science.transport.background-removed-current-field','science.transport.conductance-field','science.transport.second-derivative-current-field','science.transport.log-current-slope-field','science.transport.differential-resistance-field','science.transport.resistance-field','science.resonance.peak','science.resonance.fwhm','science.ter.value','science.ter.matrix'];
+    const required=['science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.transport.current-field','science.transport.background-removed-current-field','science.transport.conductance-field','science.transport.second-derivative-current-field','science.transport.log-current-slope-field','science.transport.differential-resistance-field','science.transport.resistance-field','science.resonance.peak','science.resonance.peak-set','science.resonance.peak-metrics','science.resonance.fwhm','science.ter.value','science.ter.matrix'];
     for(const id of required)assert(types.get(id),`Missing canonical data type: ${id}`);
     assert(types.isA('resonance.peak','science.resonance.peak'),'Resonance peak is not compatible with canonical resonance peak.');
     assert(types.isA('ter.matrix-point','science.ter.value'),'TER point is not compatible with canonical TER value.');
@@ -252,7 +265,7 @@
 
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
-      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificPipeline','DKDSScientificTransforms','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
+      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificPipeline','DKDSScientificTransforms','DKDSScientificAlgorithms','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
@@ -264,6 +277,7 @@
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
+    await runCase('algorithms.registry','Scientific Algorithm Registry & Version Lock','Data Contract',scientificAlgorithmRegistrySmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
@@ -306,7 +320,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

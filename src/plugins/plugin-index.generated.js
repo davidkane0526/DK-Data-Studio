@@ -34,6 +34,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "id": "builtin.resonance-detector-robust",
     "entry": "plugins/resonance-detector-robust/plugin.js",
     "scripts": [
+      "plugins/resonance-detector-robust/algorithm.js",
       "plugins/resonance-detector-robust/plugin.js"
     ]
   },

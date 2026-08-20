@@ -1340,6 +1340,7 @@
     const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
     const scientificPipelineScope = window.DKDSScientificPipeline?.createScope?.(pluginId) || null;
     const scientificTransformScope = window.DKDSScientificTransforms?.createScope?.(pluginId) || null;
+    const scientificAlgorithmScope = window.DKDSScientificAlgorithms?.createScope?.(pluginId) || null;
     const serviceScope = window.DKDSServices?.createScope?.(pluginId) || null;
     const moduleScope = window.DKDSPluginModules?.createScope?.(pluginId) || null;
     if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
@@ -1349,6 +1350,7 @@
     if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
     if (scientificPipelineScope) addCleanup(pluginId, () => window.DKDSScientificPipeline?.removeOwner?.(pluginId));
     if (scientificTransformScope) addCleanup(pluginId, () => window.DKDSScientificTransforms?.removeOwner?.(pluginId));
+    if (scientificAlgorithmScope) addCleanup(pluginId, () => window.DKDSScientificAlgorithms?.removeOwner?.(pluginId));
     if (scientificTransformScope && scientificPipelineScope && (definition.manifest.requiresCore||[]).includes('data.transforms')) scientificTransformScope.installPipeline?.(scientificPipelineScope);
     if (serviceScope) addCleanup(pluginId, () => window.DKDSServices?.removeOwner?.(pluginId));
     if (window.DKDSPerformance) addCleanup(pluginId, () => window.DKDSPerformance?.trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'}));
@@ -1361,6 +1363,39 @@
       }
       return row;
     };
+    const algorithmList=(query={})=>{
+      const q=typeof query==='string'?{category:query}:query||{};
+      const local=(window.DKDSScientificAlgorithms?.list?.(q)||[]).map(row=>({...row,remote:false,run:(input,options={})=>window.DKDSScientificAlgorithms.run({id:row.id,version:row.version,category:row.category},input,options)}));
+      const keys=new Set(local.map(row=>`${row.category}::${row.id}@${row.version}`));
+      for(const cap of (window.DKDSCapabilities?.list?.('analysis.algorithm')||[])){
+        const meta=cap.metadata||{},id=String(meta.id||meta.algorithmId||''),version=String(meta.version||meta.algorithmVersion||cap.version||'1.0.0'),category=String(meta.category||'');
+        if(!id||!category)continue;
+        const key=`${category}::${id}@${version}`;if(keys.has(key))continue;
+        if(q.category&&category!==String(q.category))continue;if(q.id&&id!==String(q.id))continue;if(q.version&&version!==String(q.version))continue;
+        const proxy=window.DKDSCapabilities.proxy(cap.id);
+        local.push({id,algorithmId:id,version,algorithmVersion:version,category,owner:cap.owner,title:meta.title||meta.name||cap.title||id,description:meta.description||'',default:meta.default===true,priority:Number(meta.priority)||Number(cap.priority)||0,inputTypes:meta.inputTypes||[],outputTypes:meta.outputTypes||[],parameterSchema:meta.parameterSchema||null,tags:meta.tags||[],metadata:meta.metadata||{},remote:true,run:(input,options={})=>proxy.run(input,options),defaultSettings:cap.methods?.includes?.('defaultSettings')?(()=>proxy.defaultSettings()):undefined,getPreset:cap.methods?.includes?.('getPreset')?((name)=>proxy.getPreset(name)):undefined,migrateParameters:cap.methods?.includes?.('migrateParameters')?((value,fromVersion)=>proxy.migrateParameters(value,fromVersion)):undefined});
+        keys.add(key);
+      }
+      const cmp=window.DKDSScientificAlgorithms?.compareVersion||(()=>0);
+      return local.sort((a,b)=>(Number(b.default)-Number(a.default))||((Number(b.priority)||0)-(Number(a.priority)||0))||cmp(b.version,a.version)||String(a.title).localeCompare(String(b.title)));
+    };
+    const algorithmResolve=(ref,query={})=>{
+      const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref,query)||{id:String(ref||''),version:'',category:String(query.category||'')};
+      return algorithmList(query).find(row=>(!wanted.category||row.category===wanted.category)&&(!wanted.id||row.id===wanted.id)&&(!wanted.version||row.version===wanted.version))||null;
+    };
+    const registerAlgorithm=(id,spec={})=>{
+      if(!scientificAlgorithmScope)throw new Error('Scientific Algorithm Runtime unavailable.');
+      const version=String(spec.version||definition.manifest.version||'1.0.0'),category=String(spec.category||'').trim();
+      const descriptor=scientificAlgorithmScope.register(id,{...spec,version});
+      if(window.DKDSCapabilities&&typeof (spec.run||spec.compute||spec.detect)==='function'){
+        const capId=`analysis.algorithm:${category}:${id}@${version}`,methods={run:spec.run||spec.compute||spec.detect};
+        if(typeof spec.defaultSettings==='function')methods.defaultSettings=spec.defaultSettings;if(typeof spec.getPreset==='function')methods.getPreset=spec.getPreset;if(typeof spec.migrateParameters==='function')methods.migrateParameters=spec.migrateParameters;
+        window.DKDSCapabilities.register(pluginId,capId,{kind:'analysis.algorithm',title:spec.title||spec.name||id,version,remote:true,priority:Number(spec.priority)||0,tags:spec.tags||[],metadata:{id,version,category,title:spec.title||spec.name||id,description:spec.description||'',default:spec.default===true,priority:Number(spec.priority)||0,inputTypes:spec.inputTypes||spec.inputType||[],outputTypes:spec.outputTypes||spec.outputType||[],parameterSchema:spec.parameterSchema||null,tags:spec.tags||[],metadata:spec.metadata||{},pluginId},methods});
+        addCleanup(pluginId,()=>window.DKDSCapabilities?.unregister?.(capId));
+      }
+      return descriptor;
+    };
+    const runAlgorithm=(ref,input,options={})=>{const row=algorithmResolve(ref,options);if(!row)throw new Error(`Scientific algorithm unavailable: ${typeof ref==='string'?ref:JSON.stringify(ref)}`);return row.run(input,{...options,parameters:options.parameters||{}});};
     let apiRef=null;
     const api=Object.freeze({
       apiVersion: API_VERSION,
@@ -1573,32 +1608,23 @@
           list:()=>listContributions('analysis.providers').map(row=>row.value),
           get:id=>getRegistry('analysis.providers').get(String(id||''))?.value||null
         }),
+        algorithms: scientificAlgorithmScope ? Object.freeze({
+          version:scientificAlgorithmScope.version,
+          register:registerAlgorithm,
+          unregister:(id,version,category)=>scientificAlgorithmScope.unregister(id,version,category),
+          list:algorithmList,
+          resolve:algorithmResolve,
+          run:runAlgorithm,
+          provenance:(ref,query={})=>{const row=algorithmResolve(ref,query);return row?Object.freeze({pluginId:row.owner,algorithmId:row.id,algorithmVersion:row.version,category:row.category,title:row.title}):null;},
+          snapshot:()=>window.DKDSScientificAlgorithms?.snapshot?.()||{version:'',count:0,algorithms:[]}
+        }) : null,
         detectors: {
-          register: (id, spec) => {
-            const value={id,...spec,pluginId,version:spec?.version||definition.manifest.version||'1.0.0'};
-            registerTypedContribution(pluginId,'peak.detectors',id,value);
-            if(typeof spec?.detect==='function'){
-              const capabilityId=`analysis.detector:${id}`;
-              const methods={detect:spec.detect};
-              if(typeof spec.getPreset==='function')methods.getPreset=spec.getPreset;
-              if(typeof spec.defaultSettings==='function')methods.defaultSettings=spec.defaultSettings;
-              window.DKDSCapabilities?.register?.(pluginId,capabilityId,{kind:'analysis.detector',title:spec.name||id,version:value.version,metadata:{id,name:spec.name||id,shortName:spec.shortName||'',description:spec.description||'',parameterSchema:spec.parameterSchema||null,presets:Array.isArray(spec.presets)?spec.presets:[],default:spec.default===true,pluginId},methods,remote:true});
-              addCleanup(pluginId,()=>window.DKDSCapabilities?.unregister?.(capabilityId));
-            }
-            return value;
+          // Compatibility facade: detector providers are now versioned Scientific Algorithms.
+          register: (id, spec={}) => {
+            const descriptor=registerAlgorithm(id,{...spec,category:'peak-detector',run:spec.run||spec.detect,inputTypes:spec.inputTypes||['science.iv.raw'],outputTypes:spec.outputTypes||['science.resonance.peak']});
+            return {...descriptor,name:spec.name||spec.title||id,shortName:spec.shortName||'',presets:spec.presets||[],detect:(input,settings,options={})=>runAlgorithm({id,version:descriptor.version,category:'peak-detector'},input,{...options,parameters:settings||{}}),getPreset:spec.getPreset,defaultSettings:spec.defaultSettings};
           },
-          list: () => {
-            const rows=listContributions('peak.detectors').map(x=>x.value);
-            const ids=new Set(rows.map(row=>String(row.id)));
-            for(const cap of (window.DKDSCapabilities?.list?.('analysis.detector')||[])){
-              const id=String(cap.metadata?.id||cap.id.replace(/^analysis\.detector:/,''));
-              if(ids.has(id))continue;
-              const proxy=window.DKDSCapabilities.proxy(cap.id);
-              rows.push({id,name:cap.metadata?.name||cap.title,shortName:cap.metadata?.shortName||'',description:cap.metadata?.description||'',parameterSchema:cap.metadata?.parameterSchema||null,presets:cap.metadata?.presets||[],default:cap.metadata?.default===true,pluginId:cap.owner,version:cap.version,detect:(...args)=>proxy.detect(...args),getPreset:cap.methods?.includes?.('getPreset')?((...args)=>proxy.getPreset(...args)):undefined,defaultSettings:cap.methods?.includes?.('defaultSettings')?((...args)=>proxy.defaultSettings(...args)):undefined,remote:true});
-              ids.add(id);
-            }
-            return rows;
-          }
+          list: () => algorithmList({category:'peak-detector'}).map(row=>({...row,name:row.title,shortName:row.metadata?.shortName||row.title,description:row.description,presets:row.metadata?.presets||[],detect:(input,settings,options={})=>row.run(input,{...options,parameters:settings||{}})}))
         }
       },
       parameters: {

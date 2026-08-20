@@ -1,17 +1,23 @@
 {
   "id": "builtin.resonance-detector-robust",
-  "name": "Robust Resonance Detector",
-  "version": "1.0.0",
+  "name": "Standard Resonance Algorithms",
+  "version": "2.0.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "science",
-    "analysis.detectors"
+    "analysis.algorithms"
   ],
   "entry": "plugin.js",
+  "scripts": [
+    "algorithm.js",
+    "plugin.js"
+  ],
   "enabled": true,
   "order": 80,
-  "description": "Built-in multichannel/multiscale robust resonance peak detector. Can be replaced or supplemented by stronger detector plugins.",
+  "description": "Versioned built-in resonance peak detection and FWHM/peak-metrics algorithm providers. Implementations are plugin-local and replaceable.",
   "capabilities": [
-    "analysis.peak-detector"
+    "analysis.algorithm",
+    "analysis.peak-detector",
+    "analysis.peak-metrics"
   ]
 }

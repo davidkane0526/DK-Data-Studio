@@ -1,0 +1,13 @@
+const assert=require('assert');const fs=require('fs');const vm=require('vm');
+const read=f=>fs.readFileSync(f,'utf8');
+const context={window:{},console,structuredClone,performance:{now:()=>0},setTimeout,clearTimeout};context.window=context;context.globalThis=context;vm.createContext(context);
+vm.runInContext(read('src/core/scientific-algorithm-runtime.js'),context,{filename:'scientific-algorithm-runtime.js'});
+const A=context.DKDSScientificAlgorithms;assert(A?.register&&A?.resolve&&A?.run,'Algorithm Registry missing.');
+A.register('plugin.a','same',{category:'probe',version:'1.0.0',run:()=>1});A.register('plugin.a','same',{category:'probe',version:'2.0.0',default:true,run:()=>2});
+assert.strictEqual(A.list({category:'probe'}).length,2,'Multiple algorithm versions must coexist.');
+assert.strictEqual(A.resolve('same',{category:'probe'}).version,'2.0.0','Default algorithm version not resolved.');
+assert.strictEqual(A.resolve('same@1.0.0',{category:'probe'}).version,'1.0.0','Exact historical algorithm version not resolved.');
+assert.strictEqual(A.run({id:'same',version:'1.0.0',category:'probe'},null),1,'Exact algorithm execution mismatch.');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(A.provenance({id:'same',version:'2.0.0',category:'probe'}))),{pluginId:'plugin.a',algorithmId:'same',algorithmVersion:'2.0.0',category:'probe',title:'same'},'Algorithm provenance descriptor mismatch.');
+A.removeOwner('plugin.a');assert.strictEqual(A.list({category:'probe'}).length,0,'Algorithm owner cleanup failed.');
+console.log('Scientific Algorithm Registry v3.52 checks passed.');

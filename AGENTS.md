@@ -76,9 +76,9 @@ A plugin is complete only when it has:
 
 Run `npm run plugin:index` after adding/removing plugin folders. Normal `npm start`, `npm test`, `npm run check`, and `npm run dist` already regenerate the index.
 
-## Shared science rule
+## Shared science and algorithm-provider rule (v3.52+)
 
-Pure, runtime-independent calculations that are useful across desktop/web/Android live in `src/science/`.
+Stable runtime-independent mathematical primitives and legacy compatibility APIs may live in `src/science/`. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
 
 Examples already moved there:
 - import/parser primitives;
@@ -89,7 +89,7 @@ Examples already moved there:
 - TER;
 - pulse/read extraction.
 
-A plugin should call `window.DKDSScience`; it must not copy these algorithms.
+Do not copy an algorithm between feature plugins. A versioned Algorithm Plugin owns the implementation; Workbench plugins resolve it through `ctx.analysis.algorithms`. Existing `DKDSScience` algorithm entry points are compatibility/reference APIs while migrations are completed.
 
 Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
 
@@ -151,7 +151,7 @@ For a measurement plugin, the plugin should normally own:
 - domain floating panels;
 - domain export actions.
 
-Algorithms that are alternatives to one another should be separate providers/plugins. In particular, a peak detector should register `peak.detectors`; its algorithm-specific parameter UI belongs to the detector provider through `renderSettings` or `parameterSchema`.
+Algorithms that are alternatives to one another should be separate versioned Algorithm Providers/plugins. In particular, peak detectors and peak-metrics/FWHM implementations register `ctx.analysis.algorithms` with a category, algorithm id and version; algorithm-specific parameters belong to the provider through `parameterSchema`.
 
 The generic workbench may select a detector; it must not contain special-case controls for a particular detector implementation.
 

@@ -1,3 +1,17 @@
+# v3.52.0 — Versioned Scientific Algorithm Providers
+
+- Added `src/core/scientific-algorithm-runtime.js`, a Core registry/resolver whose stable scientific algorithm identity is `category + algorithmId + algorithmVersion`; multiple versions can coexist and exact historical versions can be resolved and executed.
+- Added Plugin API 1.8 `analysis.algorithms` and automatic dedicated-TOP `scientific-algorithm-runtime` dependency derivation. Algorithm implementations remain plugin-owned while SUPER/TOP discover and invoke the same providers.
+- Algorithm Providers are also exported through Capability Runtime, allowing dedicated TOP renderers to invoke version-locked algorithms without embedding implementation scripts into every analysis window.
+- Converted `builtin.resonance-detector-robust` into the `Standard Resonance Algorithms` plugin v2.0.0. Its robust multi-channel/Ricker peak detector and local-baseline FWHM/peak-metrics implementation now live in plugin-local `algorithm.js`, rather than being owned by Resonance Workbench.
+- Registered `robust-ricker-v1@1.0.0` (`peak-detector`) and `baseline-fwhm-v1@1.0.0` (`peak-metrics`) with input/output semantic types, parameter schema/metadata, exact provenance and independent version identity.
+- Added stable Scientific Data Pipeline bridges `peaks.detect` and `peaks.metrics`; Pipeline execution resolves the selected Algorithm Provider and records the exact provider identity in produced peak/metric metadata and PeakSet lineage.
+- Resonance Workbench detector and peak-metrics/FWHM selectors now enumerate Algorithm Providers and display explicit algorithm versions. Legacy detector IDs are resolved to an exact compatible version on first use instead of silently following future defaults.
+- Retained `ctx.analysis.detectors` and `DKDSScience` peak entry points as migration/compatibility facades; new replaceable algorithms must register through `ctx.analysis.algorithms` rather than being hard-coded into Core or a Workbench plugin.
+- Added canonical `science.resonance.peak-set` and `science.resonance.peak-metrics` types.
+- Automation Runner 1.7.0 adds Scientific Algorithm Registry/version-lock coverage, including real built-in detector/FWHM execution and multiple-version coexistence. The default desktop suite now contains 23 cases.
+- Added v3.52 registry/integration tests plus deterministic migration-parity checks proving the plugin-owned detector and FWHM definitions match the prior mature implementation (excluding non-scientific generated IDs).
+
 # v3.51.0 — Core Scientific Transform Registry and generic Scalar Fields
 
 - Added `src/core/scientific-transform-runtime.js`, a plugin-scoped registry for reusable scientific curve transforms and scalar-field projections.

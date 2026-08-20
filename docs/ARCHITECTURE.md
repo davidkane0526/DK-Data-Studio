@@ -19,14 +19,16 @@ Generic application host
 ├─ generic toolbar/page/panel mounting
 └─ responsive/touch profile
         ↓
-Shared scientific engine
+Shared scientific primitives / compatibility engine
 ├─ import / sweep reconstruction
-├─ peak transforms and detection
-├─ smart peak identity tracking
-├─ physical-family classification
-├─ gate-voltage mathematics
-├─ TER
-└─ pulse/read extraction
+├─ stable numerical helpers
+├─ compatibility science APIs
+└─ cross-runtime deterministic primitives
+        ↓
+Versioned Algorithm Providers
+├─ peak detection
+├─ peak metrics / FWHM
+└─ future replaceable scientific algorithms
         ↓
 Plugins
 ├─ flexible-import
@@ -155,7 +157,7 @@ Provides the generic text/multicolumn importer provider. The core import workben
 
 ### `builtin.resonance-workbench`
 
-Owns resonance-specific feature entry points and registers the shared resonance analysis provider. Peak detection/tracking/physics calculations come from `DKDSScience` rather than a private plugin copy.
+Owns resonance-specific feature entry points and registers the shared resonance analysis provider. Peak detection and peak metrics/FWHM are resolved from versioned Algorithm Providers. Stable compatibility/scientific primitives remain available through `DKDSScience`.
 
 ### `builtin.ter-analysis`
 
@@ -174,13 +176,14 @@ Owns pulse feature entry, shared pulse-analysis provider, and its namespaced pro
 | generic project container | yes | no | no |
 | generic panel/page mounting | yes | no | no |
 | generic responsive/touch profile | yes | no | consume |
-| numerical/statistical reusable algorithm | no | yes | consume |
+| stable numerical/statistical primitive | no | yes | consume |
+| replaceable/versioned scientific algorithm | registry only | compatibility only | provider plugin owns |
 | domain workflow/UI | no | consume | yes |
 | feature-specific project state | no | no | yes |
 | data format provider | host acquisition only | parser if reusable | yes |
 | chart dashboard | primitive only | data math | yes |
 
-Rule: if an algorithm is useful to more than one plugin/runtime, put the pure calculation in `src/science`. If it is a workflow/UI for one measurement type, put it in a plugin.
+Rule: stable low-level numerical primitives shared by runtimes may live in `src/science`. A scientific algorithm whose behavior/version can change independently belongs to a versioned Algorithm Provider plugin. Workbench plugins own workflow/UI, not algorithm implementations.
 
 ## 7. Project files
 

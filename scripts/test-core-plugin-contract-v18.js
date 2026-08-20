@@ -13,7 +13,7 @@ const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(
 const contract=sandbox.window.DKDSPluginContract;
 assert(contract&&contract.API_VERSION==='1.8.0','Core contract must target Plugin API 1.8.0.');
 assert.deepStrictEqual([...contract.requirements].sort(),[...allowed].sort(),'Runtime and JSON schema Core requirement catalogs must stay identical.');
-assert(contract.validateManifest({apiVersion:'1.8.0',requiresCore:['io','charts','data.pipeline','data.entities','ui.scientific-plot']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');
+assert(contract.validateManifest({apiVersion:'1.8.0',requiresCore:['io','charts','data.pipeline','data.entities','analysis.algorithms','ui.scientific-plot']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');
 assert(!contract.validateManifest({apiVersion:'1.8.0',requiresCore:['private.magic']}).ok,'Unknown private infrastructure requirements must be rejected.');
 
 for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){

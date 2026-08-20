@@ -225,6 +225,8 @@
   dataTypeRegistry.register('core','science.transport.differential-resistance-field',{title:'dV/dI(Vd,Vg)',parent:'science.scalar-field',kind:'result',quantity:'differential-resistance',shape:'matrix',unit:'V/A',tags:['transport','resistance','field','heatmap']});
   dataTypeRegistry.register('core','science.transport.resistance-field',{title:'R(Vd,Vg)',parent:'science.scalar-field',kind:'result',quantity:'resistance',shape:'matrix',unit:'Ω',tags:['transport','resistance','field','heatmap']});
   dataTypeRegistry.register('core','science.resonance.peak',{title:'共振峰',parents:['data.point','science.scalar'],kind:'result',quantity:'resonance-peak',shape:'point',tags:['resonance','peak']});
+  dataTypeRegistry.register('core','science.resonance.peak-set',{title:'共振峰集合',parent:'result.analysis',kind:'result',quantity:'resonance-peaks',shape:'collection',tags:['resonance','peak','collection']});
+  dataTypeRegistry.register('core','science.resonance.peak-metrics',{title:'共振峰度量',parent:'result.analysis',kind:'result',quantity:'resonance-peak-metrics',shape:'record',tags:['resonance','peak','metrics']});
   dataTypeRegistry.register('core','science.resonance.fwhm',{title:'FWHM',parent:'science.scalar',kind:'result',quantity:'width',shape:'scalar',unit:'V',tags:['resonance','width']});
   dataTypeRegistry.register('core','science.ter.value',{title:'TER',parent:'science.scalar',kind:'result',quantity:'ter',shape:'scalar',tags:['ter','transport']});
   dataTypeRegistry.register('core','science.ter.matrix',{title:'TER heatmap',parents:['science.scalar-field','result.matrix'],kind:'result',quantity:'ter',shape:'matrix',tags:['ter','transport','heatmap']});

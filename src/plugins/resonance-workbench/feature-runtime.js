@@ -44,7 +44,7 @@
     return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -62,6 +62,11 @@
       let sharedController=null;
       let workspaceNavigator=null;
       let detectorRuntime=null;
+      let algorithmRuntime=algorithms||null;
+      let pipelineRuntime=pipeline||null;
+      let algorithmPipelineInstalled=false;
+      let peakMetricCache=new WeakMap();
+      let metricRenderFrame=null;
       let interactionRuntime=null;
       let interactionSelection=null;
       let interactionSelectionOff=null;
@@ -114,7 +119,7 @@
       }
       function syncDerivedArtifacts(){
         if(!artifacts?.publish||!D?.createSweep||!D?.createPeakSet)return false;const sourceRows=artifacts.list?.({includeTransient:true})||[];const rawByPath=new Map(sourceRows.filter(a=>a?.metadata?.adapter==='legacy-dataset').map(a=>[String(a.metadata.legacyDatasetPath||''),a.id]));
-        const publishAll=api=>{for(const sw of sweeps){const parentId=rawByPath.get(String(sw.datasetPath||''))||'';api.publish(D.createSweep({id:String(sw.id),name:`${sw.datasetName||'Sweep'} · ${directionName(sw.direction)}`,x:(sw.points||[]).map(p=>p.v),y:(sw.points||[]).map(p=>p.i),xName:'Vd',yName:'Id',xUnit:'V',yUnit:'A',direction:sw.direction,scanAxis:'Vd',transient:true,metadata:{datasetPath:sw.datasetPath,vg:sw.vg},lineage:{parents:parentId?[parentId]:[],role:'sweep',producer:'builtin.resonance-workbench',operation:'split-sweep'}}));const peaks=(workspace.peaks||[]).filter(p=>String(p.sweepId)===String(sw.id));api.publish(D.createPeakSet({id:`resonance.peaks:${sw.id}`,name:`${sw.datasetName||'Sweep'} · 峰`,peaks,transient:true,metadata:{sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction},lineage:{parents:[String(sw.id)],role:'analysis',producer:'builtin.resonance-workbench',operation:'peak-detection',parameters:workspace.algorithms||{}}}));}};
+        const publishAll=api=>{for(const sw of sweeps){const parentId=rawByPath.get(String(sw.datasetPath||''))||'';api.publish(D.createSweep({id:String(sw.id),name:`${sw.datasetName||'Sweep'} · ${directionName(sw.direction)}`,x:(sw.points||[]).map(p=>p.v),y:(sw.points||[]).map(p=>p.i),xName:'Vd',yName:'Id',xUnit:'V',yUnit:'A',direction:sw.direction,scanAxis:'Vd',transient:true,metadata:{datasetPath:sw.datasetPath,vg:sw.vg},lineage:{parents:parentId?[parentId]:[],role:'sweep',producer:'builtin.resonance-workbench',operation:'split-sweep'}}));const peaks=(workspace.peaks||[]).filter(p=>String(p.sweepId)===String(sw.id));api.publish(D.createPeakSet({id:`resonance.peaks:${sw.id}`,name:`${sw.datasetName||'Sweep'} · 峰`,peaks,transient:true,metadata:{sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction,algorithmRef:workspace.activeDetector||'',metricAlgorithmRef:workspace.activeMetricAlgorithm||''},lineage:{parents:[String(sw.id)],role:'analysis',producer:'builtin.resonance-workbench',operation:'peak-detection',parameters:{algorithmRef:workspace.activeDetector||'',settings:workspace.detectorSettings?.[workspace.activeDetector]||workspace.algorithms||{},metricAlgorithmRef:workspace.activeMetricAlgorithm||''}}}));}};
         if(artifacts.batch)artifacts.batch(publishAll);else publishAll(artifacts);return true;
       }
 
@@ -208,21 +213,52 @@
         physicsCache={key:'',value:null};render();scheduleSnapshot();setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${c.label}。`);return true;
       }
       function deleteRangePeaks(){const ids=new Set(peaksInRange().filter(p=>!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(p.id));if(ids.has(selectedPeakId))selectedPeakId='';for(const id of ids)selectedPeakIds.delete(String(id));physicsCache={key:'',value:null};render();scheduleSnapshot();}
+      function installAlgorithmPipeline(){
+        if(!pipelineRuntime?.register||!algorithmRuntime||algorithmPipelineInstalled)return false;
+        if(!pipelineRuntime.get?.('peaks.detect'))pipelineRuntime.register('peaks.detect',{
+          title:'Peak detection via Algorithm Provider',kind:'analysis',execution:'async',allowEmptyInput:true,cache:false,outputTypes:['science.resonance.peak-set'],
+          run:async(input,{parameters})=>{const ref=parameters?.algorithmRef||{};const peaks=await algorithmRuntime.run(ref,input,{parameters:parameters?.settings||{},range:parameters?.range||null});return {value:{peaks:Array.isArray(peaks)?peaks:[],algorithm:algorithmRuntime.provenance?.(ref)||null},metadata:{algorithm:algorithmRuntime.provenance?.(ref)||null}};}
+        });
+        if(!pipelineRuntime.get?.('peaks.metrics'))pipelineRuntime.register('peaks.metrics',{
+          title:'Peak metrics via Algorithm Provider',kind:'analysis',execution:'async',allowEmptyInput:true,cache:false,outputTypes:['science.resonance.peak-metrics'],
+          run:async(input,{parameters})=>{const ref=parameters?.algorithmRef||{};const metrics=await algorithmRuntime.run(ref,input,{parameters:parameters?.settings||{}});return {value:metrics,metadata:{algorithm:algorithmRuntime.provenance?.(ref)||null}};}
+        });
+        algorithmPipelineInstalled=true;return true;
+      }
+      function selectDetectorProvider(providers=[]){
+        const active=String(workspace.activeDetector||'');let provider=providers.find(p=>String(p.id)===active)||providers.find(p=>String(p.algorithmId||'')===active)||null;
+        if(!provider)provider=providers.find(p=>p.default)||providers[0]||null;
+        if(provider&&String(provider.id||'').includes('@')&&String(workspace.activeDetector||'')!==String(provider.id))workspace.activeDetector=String(provider.id);
+        return provider;
+      }
+      async function runPeakDetector(provider,sweep,settings,options={}){
+        if(!provider)return S.detectPeaks(sweep,workspace.algorithms||{},options||{});
+        const algorithmId=String(provider.algorithmId||provider.id||'').split('@')[0],ref={id:algorithmId,version:String(provider.version||''),category:'peak-detector'};
+        installAlgorithmPipeline();
+        if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.detect',sweep,{parameters:{algorithmRef:ref,settings:settings||{},range:options?.range||null},publish:false});return result?.value?.peaks||[];}
+        if(provider.detect)return await provider.detect(sweep,settings||{},options||{});
+        if(provider.run)return await provider.run(sweep,{parameters:settings||{},...options});
+        return S.detectPeaks(sweep,workspace.algorithms||{},options||{});
+      }
+      function detectorSettingsKey(provider,activeId){return String(provider?.algorithmId||provider?.id||activeId||'').split('@')[0];}
+      function detectorSettingsFor(provider,activeId){const base=detectorSettingsKey(provider,activeId);return workspace.detectorSettings?.[activeId]||workspace.detectorSettings?.[base]||workspace.algorithms||{};}
+      function algorithmProvenance(provider,category='peak-detector'){const algorithmId=String(provider?.algorithmId||provider?.id||'').split('@')[0],version=String(provider?.version||'');return algorithmRuntime?.provenance?.({id:algorithmId,version,category})||{pluginId:provider?.owner||provider?.pluginId||'',algorithmId,algorithmVersion:version,category,title:provider?.title||provider?.name||algorithmId};}
       async function detectRange(range=selectedRange){
         if(!range)return;
         const lo=Math.min(Number(range.min),Number(range.max)),hi=Math.max(Number(range.min),Number(range.max));
         const targets=range.sweepId?[sweepById(range.sweepId)].filter(Boolean):visibleSweeps();
         if(!targets.length){setStatus('框选范围内没有可见扫描。');return;}
-        const providers=detectorRuntime?.list?.()||[];const activeId=String(workspace.activeDetector||providers.find(p=>p.default)?.id||providers[0]?.id||'');const provider=providers.find(p=>String(p.id)===activeId)||null;
-        const settings=workspace.detectorSettings?.[activeId]||workspace.algorithms||{};
+        const providers=detectorRuntime?.list?.()||[];const provider=selectDetectorProvider(providers);const activeId=String(provider?.id||workspace.activeDetector||'');
+        const settings=detectorSettingsFor(provider,activeId);
         const inside=new Set(peaksInRange(range).filter(p=>!p.manual&&!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!inside.has(p.id));
         const added=[];let insufficient=0;
         for(const sw of targets){
           const points=(sw.points||[]).filter(p=>Number(p.v)>=lo&&Number(p.v)<=hi);if(points.length<5){insufficient++;continue;}
           const subset={...sw,points};
           try{
-            const found=provider?.detect?await provider.detect(subset,settings,{}):S.detectPeaks(subset,workspace.algorithms||{},{});
-            added.push(...assignDetectedOrders(found||[]).map(p=>({...p,sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction})));
+            const found=await runPeakDetector(provider,subset,settings,{range:{vMin:lo,vMax:hi}});
+            const provenance=algorithmProvenance(provider);
+            added.push(...assignDetectedOrders(found||[]).map(p=>({...p,sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction,algorithm:provenance,algorithmRef:`${provenance.algorithmId}@${provenance.algorithmVersion}`})));
           }catch(err){console.warn('[resonance range detect]',sw.id,err);}
         }
         workspace.peaks.push(...added);normalizeCategories();
@@ -377,13 +413,14 @@
         const preserved=(workspace.peaks||[]).filter(p=>!targetIds.has(p.sweepId)||p.manual||p.locked);
         const added=[];
         const providers=detectorRuntime?.list?.()||[];
-        const activeId=String(workspace.activeDetector||providers.find(p=>p.default)?.id||providers[0]?.id||'');
-        const provider=providers.find(p=>String(p.id)===activeId)||null;
+        const provider=selectDetectorProvider(providers);
+        const activeId=String(provider?.id||workspace.activeDetector||'');
         for(const sw of targets){
           try{
-            const settings=workspace.detectorSettings?.[activeId]||workspace.algorithms||{};
-            const peaks=provider?.detect?await provider.detect(sw,settings,{}):S.detectPeaks(sw,workspace.algorithms||{},{});
-            added.push(...assignDetectedOrders(peaks||[]));
+            const settings=detectorSettingsFor(provider,activeId);
+            const peaks=await runPeakDetector(provider,sw,settings,{});
+            const provenance=algorithmProvenance(provider);
+            added.push(...assignDetectedOrders(peaks||[]).map(p=>({...p,algorithm:provenance,algorithmRef:`${provenance.algorithmId}@${provenance.algorithmVersion}`})));
           }catch(err){console.warn('[resonance window detect]',sw.id,err);}
         }
         workspace.peaks=preserved.concat(added);normalizeCategories();selectedPeakId=added[0]?.id||selectedPeakId;
@@ -553,7 +590,7 @@
         return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),entityId:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
       }
       function markerWidthSpec(marker){
-        const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return null;const m=S.peakMetrics?.(p,sw)||peakMetrics(p)||{};
+        const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return null;const m=peakMetrics(p)||{};
         const sign=Math.sign(Number(p.i)||1)||1,baselineAt=xv=>Math.max(0,(Number(m.baselineSlope)||0)*Number(xv)+(Number.isFinite(Number(m.baselineIntercept))?Number(m.baselineIntercept):Number(m.baseline)||0));
         const left=Number(m.fwhmLeft),right=Number(m.fwhmRight),halfResidual=Number(m.halfResidual);
         const windowLeft=Number(m.analysisLeft),windowRight=Number(m.analysisRight);if(!Number.isFinite(windowLeft)||!Number.isFinite(windowRight)||windowRight<=windowLeft)return null;
@@ -584,7 +621,7 @@
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
           onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));const m=S.peakMetrics?.(p,sw)||peakMetrics(p)||{};if(!Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(m.analysisLeft);if(!Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(m.analysisRight);p.analysisManual=true;physicsCache={key:'',value:null};},
+          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));const m=peakMetrics(p)||{};if(!Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(m.analysisLeft);if(!Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(m.analysisRight);p.analysisManual=true;physicsCache={key:'',value:null};},
           onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
           onWidthDragEnd:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
@@ -611,7 +648,17 @@
         scientificReact(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
       }
 
-      function peakMetrics(p){const sw=sweepById(p?.sweepId);return sw&&p?S.peakMetrics?.(p,sw):null;}
+      function metricProvider(){const rows=algorithmRuntime?.list?.({category:'peak-metrics'})||[];const active=String(workspace.activeMetricAlgorithm||'');let row=rows.find(x=>`${x.id}@${x.version}`===active)||rows.find(x=>x.id===active)||rows.find(x=>x.default)||rows[0]||null;if(row&&!workspace.activeMetricAlgorithm)workspace.activeMetricAlgorithm=`${row.id}@${row.version}`;return row;}
+      function metricSignature(p,sw,row){return [p?.id,p?.v,p?.i,p?.analysisLeft,p?.analysisRight,p?.analysisManual,sw?.id,sw?.step,row?.id,row?.version].join('|');}
+      function scheduleMetricRefresh(rows=[]){for(const p of rows||[])void refreshPeakMetric(p);}
+      async function refreshPeakMetric(p){
+        const sw=sweepById(p?.sweepId),provider=metricProvider();if(!p||!sw||!provider)return null;
+        const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature){if(cached.value)return cached.value;if(cached.promise)return cached.promise;}
+        const ref={id:provider.id,version:provider.version,category:'peak-metrics'};installAlgorithmPipeline();
+        const promise=(async()=>{try{let value;if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.metrics',{peak:p,sweep:sw},{parameters:{algorithmRef:ref,settings:{}},publish:false});value=result?.value;}else value=await provider.run?.({peak:p,sweep:sw},{parameters:{}});if(value&&typeof value==='object'){value={...value,algorithm:algorithmRuntime?.provenance?.(ref)||{pluginId:provider.owner||'',algorithmId:provider.id,algorithmVersion:provider.version,category:'peak-metrics',title:provider.title||provider.id}};peakMetricCache.set(p,{signature,value,promise:null});if(!metricRenderFrame){const flushMetricRender=()=>{metricRenderFrame=null;if($('#reswinMainPlot'))render();};if(dom?.frame)metricRenderFrame=dom.frame(flushMetricRender);else flushMetricRender();}return value;}}catch(err){console.warn('[resonance peak metrics algorithm]',p?.id,err);}peakMetricCache.set(p,{signature,value:null,promise:null});return null;})();
+        peakMetricCache.set(p,{signature,value:null,promise});return promise;
+      }
+      function peakMetrics(p){const sw=sweepById(p?.sweepId);if(!sw||!p)return null;const provider=metricProvider();if(provider){const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature&&cached.value)return cached.value;if(!cached||cached.signature!==signature||!cached.promise)void refreshPeakMetric(p);return null;}return S.peakMetrics?.(p,sw)||null;}
       function renderPeakTable(){
         const table=$('#reswinPeakTable');if(!table)return;
         const sw=selectedSweep();const rows=(workspace.peaks||[]).filter(p=>!sw||p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));
@@ -746,7 +793,7 @@
         const key=`${peakKey}##${dataKey}`;
         if(physicsCache.key===key&&physicsCache.value)return physicsCache.value;
         try{
-          const value=S.analyzePhysicalFamilies?.({peaks:workspace.peaks||[],sweepById,peakMetrics:S.peakMetrics,labelForOrder:o=>category(o).label})||{families:[],modelCode:'M0',modelTitle:'数据不足',modelText:'当前稳定峰轨迹不足。',v0Delta:null};
+          const value=S.analyzePhysicalFamilies?.({peaks:workspace.peaks||[],sweepById,peakMetrics:p=>peakMetrics(p)||{},labelForOrder:o=>category(o).label})||{families:[],modelCode:'M0',modelTitle:'数据不足',modelText:'当前稳定峰轨迹不足。',v0Delta:null};
           physicsCache={key,value};return value;
         }catch(err){console.warn('[resonance physical analysis]',err);const value={families:[],modelCode:'M0',modelTitle:'计算失败',modelText:err.message||String(err),v0Delta:null};physicsCache={key,value};return value;}
       }
@@ -786,7 +833,7 @@
         const grouped=new Map();
         for(const p of (workspace.peaks||[]).filter(p=>p.accepted!==false&&p.direction===direction&&peakLabel(p)===label)){if(!grouped.has(String(p.vg)))grouped.set(String(p.vg),[]);grouped.get(String(p.vg)).push(p);}
         const rows=[];
-        for(const list of grouped.values()){const p=chooseRepresentativePeak(list),sw=sweepById(p?.sweepId);if(!p||!sw)continue;const m=S.peakMetrics(p,sw);rows.push({vg:p.vg,peak:p,v:p.v,i:p.i,fwhm:m.fwhm,hwhm:m.fwhm/2,amplitude:m.amplitude,baseline:m.baseline,area:m.area,prominence:Number(p.prominence),peakToBg:m.baseline>0?Math.abs(p.i)/m.baseline:NaN});}
+        for(const list of grouped.values()){const p=chooseRepresentativePeak(list),sw=sweepById(p?.sweepId);if(!p||!sw)continue;const m=peakMetrics(p)||{};rows.push({vg:p.vg,peak:p,v:p.v,i:p.i,fwhm:m.fwhm,hwhm:Number(m.fwhm)/2,amplitude:m.amplitude,baseline:m.baseline,area:m.area,prominence:Number(p.prominence),peakToBg:Number(m.baseline)>0?Math.abs(p.i)/Number(m.baseline):NaN});}
         return rows.sort((a,b)=>a.vg-b.vg);
       }
       function gateHysteresisRows(label){
@@ -813,8 +860,8 @@
         workspace.gateAnalysisSettings={seriesA:$('#reswinGateA')?.value||'',seriesB:$('#reswinGateB')?.value||'',hysteresisLabel:$('#reswinGateHysteresis')?.value||'',widthMode:$('#reswinGateWidth')?.value||'hwhm',useCarrierDensity:!!$('#reswinGateUseDensity')?.checked,cg:num('reswinGateCg'),cnp:num('reswinGateCnp')??0};
       }
       function gateOption(key){return acceptedSeriesOptions().find(o=>o.key===key)||null;}
-      if(pipeline?.register){
-        pipeline.register('gate-analysis',{
+      if(pipelineRuntime?.register){
+        pipelineRuntime.register('gate-analysis',{
           title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['data.table'],outputTypes:['resonance.gate-analysis'],allowEmptyInput:true,cacheLimit:6,
           run:(_input,{parameters})=>{
             const s={...(parameters?.settings||workspace.gateAnalysisSettings||{})};
@@ -839,9 +886,9 @@
         const key=`${dataRevision}::${JSON.stringify(s)}::${JSON.stringify(project.terMaxSettings||{})}::${peakKey}`;
         const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=S.computeTerMatrix?.(datasets,project.terMaxSettings||{})||null;}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};};
         gateComputeKey=key;
-        if(pipeline?.runSync){
+        if(pipelineRuntime?.runSync){
           const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>a?.metadata?.adapter==='legacy-dataset');
-          const executed=pipeline.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...(project.terMaxSettings||{})},peakKey},publish:true,revision:dataRevision});
+          const executed=pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...(project.terMaxSettings||{})},peakKey},publish:true,revision:dataRevision});
           gateResult=executed?.value||null;
         }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
         return gateResult;
@@ -991,12 +1038,15 @@
         setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;syncDerivedArtifacts();},
         setEntityRuntime(runtime){entityRuntime=runtime||null;syncEntities();},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
+        setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},
+        setPipelineRuntime(runtime){pipelineRuntime=runtime||null;installAlgorithmPipeline();},
         setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
         selection:()=>interactionSelection?.get?.()||null,
         selectPeak:(id,options={})=>{const p=peakById(id);return p?publishPeakSelection(p,options.source||'resonance-api',options):false;},
         selectSweep:(id,options={})=>{const sw=sweepById(id);return sw?publishSweepSelection(sw,options.source||'resonance-api'):false;},
         selectRange:(range,options={})=>publishRangeSelection(range,options.source||'resonance-api'),
         setActiveDetector(id){workspace.activeDetector=String(id||'');renderControls();scheduleSnapshot();},
+        setActiveMetricAlgorithm(id){workspace.activeMetricAlgorithm=String(id||'');peakMetricCache=new WeakMap();physicsCache={key:'',value:null};render();scheduleSnapshot();},
         setDetectorSettings(id,value){const key=String(id||workspace.activeDetector||'');if(!key)return;workspace.detectorSettings={...(workspace.detectorSettings||{}),[key]:clone(value||{})};scheduleSnapshot();},
         setPeakDisplay(key,value){workspace.peakDisplay={...(workspace.peakDisplay||{}),[String(key)]:!!value};renderMainPlot();scheduleSnapshot();},
         switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,clearSelection,undoLastAction,togglePhysicsLabels,

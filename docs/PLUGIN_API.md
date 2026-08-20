@@ -91,7 +91,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 - runtime/lifecycle: `runtime`, `events`, `status`, `state`, `project`, `workspace`;
 - base services: `io`, `science`, `performance`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
 - data: `data.flow`, `data.pipeline`, `data.transforms`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
-- analysis/workflow: `workflow`, `analysis.providers`, `analysis.detectors`;
+- analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
 - UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`.
 
@@ -355,11 +355,42 @@ const analysis=ctx.modules.require('analysis');
 
 `modules` is packaging/internal composition; `services` is runtime service discovery; `capabilities` is cross-plugin/cross-renderer callable behavior.
 
+## Scientific Algorithm Providers (v3.52+)
+
+Algorithms that may evolve independently from DK Data Studio are versioned plugin providers. Core owns `DKDSScientificAlgorithms`, the Plugin API surface `ctx.analysis.algorithms`, version resolution, remote TOP transport, Pipeline composition and provenance. Core does **not** choose or silently upgrade a scientific algorithm.
+
+An algorithm identity is the tuple:
+
+```text
+category + algorithmId + algorithmVersion
+```
+
+Multiple versions may coexist. New results should record the exact algorithm identity and parameters. Existing results are not silently recomputed when a newer version is installed.
+
+```js
+ctx.analysis.algorithms.register('my-detector', {
+  category: 'peak-detector',
+  version: '2.0.0',
+  title: 'My Detector',
+  inputTypes: ['science.iv.raw'],
+  outputTypes: ['science.resonance.peak-set'],
+  parameterSchema,
+  run(input, {parameters}) { /* pure algorithm */ }
+});
+```
+
+Dedicated TOP renderers discover algorithms through Capability Runtime, so an algorithm plugin does not need to be hard-coded into a Workbench window dependency list. Pipelines should resolve an exact algorithm version and include it in Artifact lineage/provenance.
+
+`ctx.analysis.detectors` remains a compatibility facade for older detector plugins. New detector implementations should register `analysis.algorithms` with `category:'peak-detector'`.
+
 ## 14. Analysis providers, detectors and workflows
 
 ```js
 ctx.analysis.providers.register('my.analysis',{name:'My analysis',run});
-ctx.analysis.detectors.register('my.detector',{name:'Detector',parameterSchema,detect});
+ctx.analysis.algorithms.register('my.detector',{category:'peak-detector',version:'1.0.0',title:'Detector',parameterSchema,run});
+
+// Legacy compatibility only:
+ctx.analysis.detectors.register('legacy.detector',{name:'Detector',parameterSchema,detect});
 ctx.workflow.processors.register('my.processor',{name:'Processor',inputKinds:['data.table'],outputKinds:['data.table'],parameterSchema,run});
 ```
 

@@ -1,15 +1,17 @@
 (() => {
   DKDSPlugins.define({
     id:'builtin.resonance-detector-robust',
-    name:'Robust Resonance Detector',
-    version:'1.0.0',
-    apiVersion:'1.8.0',requiresCore:["science","analysis.detectors"],
-    description:'Multichannel + multiscale resonance detector with raw-I/V projection.',
+    name:'Standard Resonance Algorithms',
+    version:'2.0.0',
+    apiVersion:'1.8.0',requiresCore:["science","analysis.algorithms"],
+    description:'Versioned resonance peak detection and baseline-aware peak metrics algorithms.',
     source:'builtin',
     order:80,
-    capabilities:['analysis.peak-detector']
+    capabilities:['analysis.algorithm','analysis.peak-detector','analysis.peak-metrics']
   }, async ctx => {
     const S=ctx.science;
+    const A=window.DKDSResonanceStandardAlgorithms;
+    if(!A?.detectPeaks||!A?.peakMetrics)throw new Error('Standard resonance algorithm implementation is unavailable.');
     const channels=[
       {key:'raw',label:'原始 I–V 峰',glyph:'●',symbol:'circle'},
       {key:'snr',label:'原始 I–V 局部 SNR',glyph:'◆',symbol:'diamond'},
@@ -30,18 +32,17 @@
         {id:`${meta.key}-threshold`,path:`${meta.key}.threshold`,type:'number',label:`${meta.label}阈值`,group:'检测通道阈值',default:Number(preset.threshold)||0,min:0,step:0.1}
       );
     }
-    ctx.analysis.detectors.register('robust-ricker-v1',{
-      name:'稳健多通道 / 多尺度',
-      shortName:'稳健',
-      description:'融合原始 I–V、去背景、导数、dln|I|/dV、dV/dI 与 R；多尺度 Ricker 匹配滤波只负责候选发现，最终 Vd 回投影到原始采样点。',
-      default:true,
-      presets:['strict','balanced','sensitive'],
-      channels,
-      evidence,
-      parameterSchema:{fields:parameterFields},
-      getPreset:name=>S.preset(name),
-      defaultSettings:()=>S.preset('balanced'),
-      detect:(sweep,settings,options)=>S.detectPeaks(sweep,settings,options)
+    ctx.analysis.algorithms.register('robust-ricker-v1',{
+      category:'peak-detector',version:'1.0.0',title:'稳健多通道 / 多尺度',description:'融合原始 I–V、去背景、导数、dln|I|/dV、dV/dI 与 R；多尺度 Ricker 匹配滤波发现候选，最终 Vd 回投影到原始采样点。',default:true,priority:100,
+      inputTypes:['science.iv.raw'],outputTypes:['science.resonance.peak-set'],parameterSchema:{fields:parameterFields},
+      tags:['resonance','peak','multiscale'],metadata:{shortName:'稳健',presets:['strict','balanced','sensitive'],channels,evidence,definition:'robust-multichannel-ricker-v1'},
+      getPreset:name=>S.preset(name),defaultSettings:()=>S.preset('balanced'),
+      run:(sweep,{parameters={},range=null}={})=>A.detectPeaks(sweep,parameters,{range})
+    });
+    ctx.analysis.algorithms.register('baseline-fwhm-v1',{
+      category:'peak-metrics',version:'1.0.0',title:'局部基线 FWHM',description:'在峰附近分析窗口内鲁棒拟合常数或线性局部基线，并由残差半高交点计算 FWHM、峰高与面积。',default:true,priority:100,
+      inputTypes:['science.resonance.peak','science.iv.raw'],outputTypes:['science.resonance.peak-metrics'],parameterSchema:{fields:[]},tags:['resonance','fwhm','baseline'],metadata:{shortName:'局部基线',baselineModes:['constant','linear'],definition:'local-robust-baseline-half-height-v1'},
+      run:(input)=>A.peakMetrics(input?.peak,input?.sweep)
     });
     return {};
   });
