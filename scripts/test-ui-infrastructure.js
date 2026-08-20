@@ -21,6 +21,8 @@ assert(ui.includes('controlsHost')&&ui.includes("controlsPlacement==='start'"),'
 assert(ui.includes('createPortableZones()')&&ui.includes('dkds-portable-zone'),'existing-DOM workbenches must own isolated local docking shelves');
 assert(ui.includes('new ContextMenu(this.owner)'),'portable placement must use the core context-menu service');
 assert(ui.includes('handleOutsidePointer(event)')&&ui.includes("this.element?.contains?.(event?.target)"),'ContextMenu must ignore pointerdown events originating inside the menu so item clicks can fire.');
+assert(ui.includes('this.spec.onClose?.()'),'ContextMenu must expose a lifecycle close hook so shell/menu triggers keep aria-expanded state synchronized.');
+assert(ui.includes('menuButton({icon=')&&ui.includes("this.menuButton({icon:'⇩'"),'PlotView generic export actions must use a Core-owned compact dropdown trigger.');
 assert(!ui.includes("window.addEventListener('pointerdown',this.boundClose,true)"),'ContextMenu must not close unconditionally in pointerdown capture phase.');
 assert(ui.includes("const rawItems=typeof action.items==='function'")&&ui.includes('action.menu&&Array.isArray(rawItems)'),'ActionGroup must own declarative dropdown menu items.');
 assert(ui.includes('onPlacementChanged')&&ui.includes("this.resize('portable-placement')"),'AnalysisWorkbench portable views must synchronously dispatch placement changes and resync regions.');

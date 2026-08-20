@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.3.0';
+  const VERSION = '6.3.1';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -333,7 +333,9 @@
     close(){
       window.removeEventListener('pointerdown',this.boundOutsidePointer,true);
       window.removeEventListener('blur',this.boundBlur);
+      const hadElement=!!this.element;
       if(this.element){this.element.remove();this.element=null;}
+      if(hadElement){try{this.spec.onClose?.();}catch{}}
     }
     dispose(){this.close();}
   }
@@ -653,6 +655,7 @@
       this.spec={...this.spec,...spec};
       if(spec.plot!==undefined){const next=resolveScopedElement(spec.plot,this.card)||resolveElement(spec.plot);if(next)this.plot=next;}
       if(spec.fileStem!==undefined||spec.csv!==undefined||spec.copyText!==undefined||spec.exportImage!==undefined||spec.actions!==undefined){
+        this.exportMenu?.dispose?.();this.exportMenu=null;
         this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());
         this.bindStandardActions();
       }
@@ -676,7 +679,22 @@
       if(!this.actions){this.actions=document.createElement('span');this.actions.className='dkds-plot-view-actions';this.header.appendChild(this.actions);}
       this.actions.classList.add('dkds-plot-view-actions');
     }
-    button(label,title,handler){const b=document.createElement('button');b.type='button';b.textContent=label;b.title=title||label;b.className='dkds-plot-view-action';const fn=e=>{e.preventDefault();e.stopPropagation();Promise.resolve(handler?.(e)).catch(err=>{console.error('[DKDS PlotView]',err);hostState.status?.(`图表操作失败：${err.message}`);});};b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;}
+    invokeAction(handler,event){return Promise.resolve(handler?.(event)).catch(err=>{console.error('[DKDS PlotView]',err);hostState.status?.(`图表操作失败：${err.message}`);});}
+    button(label,title,handler){const b=document.createElement('button');b.type='button';b.textContent=label;b.title=title||label;b.className='dkds-plot-view-action';const fn=e=>{e.preventDefault();e.stopPropagation();this.invokeAction(handler,e);};b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;}
+    menuButton({icon='⋯',title='图表操作',items=[]}={}){
+      if(!Array.isArray(items)||!items.length)return null;
+      const b=document.createElement('button');b.type='button';b.className='dkds-plot-view-action dkds-plot-view-menu-trigger';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('aria-haspopup','menu');b.setAttribute('aria-expanded','false');
+      b.innerHTML=`<span class="dkds-plot-view-menu-icon">${esc(icon)}</span><span class="dkds-portable-caret">▾</span>`;
+      const fn=e=>{
+        e.preventDefault();e.stopPropagation();
+        this.exportMenu?.dispose?.();
+        const rect=b.getBoundingClientRect();
+        const menu=this.exportMenu=new ContextMenu(this.owner,{onClose:()=>b.setAttribute('aria-expanded','false')});
+        b.setAttribute('aria-expanded','true');
+        menu.open({x:rect.left,y:rect.bottom+4,items});
+      };
+      b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;
+    }
     plotNode(){return this.spec.getPlot?.()||this.plot;}
     fileStem(){return String(typeof this.spec.fileStem==='function'?this.spec.fileStem(this):this.spec.fileStem||this.title?.textContent||this.id).trim().replace(/[\\/:*?\"<>|]+/g,'_')||this.id;}
     traceCsv(){
@@ -705,9 +723,11 @@
       const a=document.createElement('a');a.href=data;a.download=`${this.fileStem()}.png`;document.body.appendChild(a);a.click();a.remove();return true;
     }
     bindStandardActions(){
-      if(this.spec.csv!==false)this.button('CSV','导出当前图数据 CSV',()=>this.exportCsv());
-      if(this.spec.copy!==false)this.button('复制','复制当前图数据',()=>this.copyCsv());
-      if(this.spec.images!==false){this.button('SVG','导出当前图 SVG',()=>this.exportImage('svg'));this.button('PNG','导出当前图 PNG',()=>this.exportImage('png'));}
+      const exportItems=[];
+      if(this.spec.csv!==false)exportItems.push({id:'csv',label:'数据 CSV',onInvoke:e=>this.invokeAction(()=>this.exportCsv(),e)});
+      if(this.spec.copy!==false)exportItems.push({id:'copy',label:'复制数据',onInvoke:e=>this.invokeAction(()=>this.copyCsv(),e)});
+      if(this.spec.images!==false){exportItems.push({id:'svg',label:'图形 SVG',onInvoke:e=>this.invokeAction(()=>this.exportImage('svg'),e)},{id:'png',label:'图形 PNG',onInvoke:e=>this.invokeAction(()=>this.exportImage('png'),e)});}
+      this.menuButton({icon:'⇩',title:'图表数据与图像',items:exportItems});
       for(const action of this.spec.actions||[])this.button(action.label||action.id,action.title,()=>action.onInvoke?.({view:this,plot:this.plotNode()}));
     }
     bindPortable(){
@@ -718,7 +738,7 @@
       this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
     }
     resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(window.Plotly?.Plots?.resize&&plot?.classList?.contains('js-plotly-plot')){try{window.Plotly.Plots.resize(plot);}catch{}}return this;}
-    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
   }
 
   class PlotViewRegistry {

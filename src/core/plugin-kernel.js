@@ -25,6 +25,7 @@
   let primePlacements = null;
   let shellBound = false;
   let shellResizeObserver = null;
+  let contextOverflowPopup = null;
 
   const API_VERSION = '1.8.0';
 
@@ -753,7 +754,48 @@
     }
   }
 
+  function closeContextOverflowPopup(){
+    contextOverflowPopup?.dispose?.();
+    contextOverflowPopup=null;
+    document.querySelector('#contextOverflowBtn')?.setAttribute('aria-expanded','false');
+  }
+
+  function contextOverflowItems(container){
+    const buttons=[...container.querySelectorAll(':scope > .plugin-toolbar-btn')]
+      .filter(button=>!button.classList.contains('plugin-activity-hidden'));
+    const items=[];
+    let lastSection='';
+    for(const button of buttons){
+      const section=String(button.dataset.pluginSection||'');
+      if(items.length&&section&&lastSection&&section!==lastSection)items.push({type:'separator'});
+      items.push({
+        id:button.id||`overflow-${items.length}`,
+        label:String(button.textContent||button.title||'功能').trim(),
+        enabled:()=>!button.disabled,
+        onInvoke:()=>button.click()
+      });
+      if(section)lastSection=section;
+    }
+    return items;
+  }
+
+  function openContextOverflowPopup(button,container){
+    if(!button||!container)return;
+    closeContextOverflowPopup();
+    const items=contextOverflowItems(container);
+    if(!items.length)return;
+    document.querySelectorAll('.command-menu').forEach(menu=>menu.classList.add('hidden'));
+    document.querySelectorAll('[aria-expanded="true"]').forEach(node=>{if(node!==button)node.setAttribute('aria-expanded','false');});
+    const Menu=window.DKDSUI?.ContextMenu;
+    if(!Menu){container.classList.remove('hidden');button.setAttribute('aria-expanded','true');return;}
+    const rect=button.getBoundingClientRect();
+    const menu=contextOverflowPopup=new Menu('core.shell',{onClose:()=>{button.setAttribute('aria-expanded','false');if(contextOverflowPopup===menu)contextOverflowPopup=null;}});
+    button.setAttribute('aria-expanded','true');
+    menu.open({x:Math.max(6,rect.right-184),y:rect.bottom+4,items});
+  }
+
   function reflowContextToolbar() {
+    closeContextOverflowPopup();
     const toolbar=document.querySelector('#pluginToolbarAnalysis');
     const overflow=document.querySelector('#contextOverflowMenu');
     const overflowBtn=document.querySelector('#contextOverflowBtn');
@@ -859,7 +901,9 @@
       const menu=document.getElementById(button.dataset.menuTarget||'');
       toggle(button,menu);
     });
-    toggle(overflowBtn,overflowMenu);
+    if(overflowBtn&&overflowMenu){
+      overflowBtn.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openContextOverflowPopup(overflowBtn,overflowMenu);});
+    }
     toggle(activityMoreBtn,activityMoreMenu);
 
     document.querySelectorAll('.menu-anchor .command-menu').forEach(menu=>{
@@ -877,7 +921,7 @@
         document.querySelectorAll('.menu-anchor .command-menu').forEach(m=>m.classList.add('hidden'));
         document.querySelectorAll('.menu-anchor [aria-expanded]').forEach(b=>b.setAttribute('aria-expanded','false'));
       }
-      if(!event.target.closest('.context-overflow-anchor'))overflowMenu?.classList.add('hidden');
+      if(!event.target.closest('.context-overflow-anchor')&&!event.target.closest('.dkds-context-menu'))closeContextOverflowPopup();
       if(!event.target.closest('.activity-more-anchor'))activityMoreMenu?.classList.add('hidden');
     });
     if(window.ResizeObserver){

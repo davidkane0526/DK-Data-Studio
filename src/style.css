@@ -4496,6 +4496,9 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-plot-view-actions{display:flex!important;align-items:center!important;gap:4px!important;white-space:nowrap!important;flex:0 0 auto;min-width:0}
 .dkds-plot-view-actions>.dkds-portable-controls{display:flex;align-items:center;gap:2px;margin:0;padding:0;flex:0 0 auto}
 .dkds-plot-view-action,.dkds-plot-view-actions .dkds-portable-placement-trigger{height:28px!important;min-height:28px!important;padding:3px 8px!important;font-size:11.5px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important}
+.dkds-plot-view-actions .dkds-plot-view-menu-trigger{min-width:30px!important;width:auto!important;padding:0 5px!important;border:0!important;border-radius:6px!important;background:transparent!important;color:#627086!important;gap:2px!important;box-shadow:none!important}
+.dkds-plot-view-actions .dkds-plot-view-menu-trigger:hover{background:#f0f4fa!important;color:#315efb!important}
+.dkds-plot-view-menu-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1}
 
 /* Scientific forms are single-line first. Labels are semantic units and must
    not collapse into letter-by-letter stacks when horizontal room exists. */
