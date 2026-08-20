@@ -1,10 +1,10 @@
 (() => {
   function create(ctx,options={}){
     for(const [id,spec] of [
-      ['ter.matrix-point',{title:'TER 矩阵点',parent:'data.point',kind:'result',key:v=>v?.id||`${v?.vg??''}:${v?.vd??''}`,selection:v=>({id:v?.id,ref:{vg:v?.vg,vd:v?.vd},value:{id:v?.id,vg:v?.vg,vd:v?.vd,ter:v?.ter,value:v?.value,axis:v?.axis}})}],
+      ['ter.matrix-point',{title:'TER 矩阵点',parents:['data.point','science.ter.value'],kind:'result',key:v=>v?.id||`${v?.vg??''}:${v?.vd??''}`,selection:v=>({id:v?.id,ref:{vg:v?.vg,vd:v?.vd},value:{id:v?.id,vg:v?.vg,vd:v?.vd,ter:v?.ter,value:v?.value,axis:v?.axis}})}],
       ['ter.max-point',{title:'TER 极值点',parent:'ter.matrix-point',kind:'result',key:v=>v?.id||`${v?.axis||''}:${v?.vg??''}:${v?.vd??''}`,selection:v=>({id:v?.id,ref:{axis:v?.axis,vg:v?.vg,vd:v?.vd},value:{id:v?.id,axis:v?.axis,vg:v?.vg,vd:v?.vd,ter:v?.ter,value:v?.value}})}],
-      ['ter.rv-point',{title:'R–V 联动点',parent:'data.point',kind:'result',key:v=>v?.id||`${v?.vg??''}:${v?.vd??''}:${v?.direction??''}`,selection:v=>({id:v?.id,ref:{vg:v?.vg,vd:v?.vd,direction:v?.direction},value:{id:v?.id,vg:v?.vg,vd:v?.vd,direction:v?.direction,r:v?.r,value:v?.value}})}],
-      ['ter.matrix-result',{title:'TER 矩阵结果',parent:'result.analysis',kind:'result',key:v=>v?.id||'ter-matrix',selection:v=>({id:v?.id||'ter-matrix',ref:{resultId:v?.id||'ter-matrix'},value:{id:v?.id||'ter-matrix',rows:v?.rows??v?.matrix?.length,cols:v?.cols??v?.matrix?.[0]?.length}})}]
+      ['ter.rv-point',{title:'R–V 联动点',parents:['data.point','science.transport.resistance'],kind:'result',key:v=>v?.id||`${v?.vg??''}:${v?.vd??''}:${v?.direction??''}`,selection:v=>({id:v?.id,ref:{vg:v?.vg,vd:v?.vd,direction:v?.direction},value:{id:v?.id,vg:v?.vg,vd:v?.vd,direction:v?.direction,r:v?.r,value:v?.value}})}],
+      ['ter.matrix-result',{title:'TER 矩阵结果',parents:['result.analysis','science.ter.matrix'],kind:'result',key:v=>v?.id||'ter-matrix',selection:v=>({id:v?.id||'ter-matrix',ref:{resultId:v?.id||'ter-matrix'},value:{id:v?.id||'ter-matrix',rows:v?.rows??v?.matrix?.length,cols:v?.cols??v?.matrix?.[0]?.length}})}]
     ]){if(!ctx.data.types.get(id))ctx.data.types.register(id,spec);}
     const interaction=ctx.ui.interaction?.create?.('ter',{selection:{multiple:true,defaultType:'ter.matrix-point'},defaultType:'ter.matrix-point'});const selection=interaction?.selection||ctx.ui.selection.model('ter:selection',{multiple:true,defaultType:'ter.matrix-point'});
     const service=options.service||ctx.services?.get?.('ter');

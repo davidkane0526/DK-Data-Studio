@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.44.0</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.45.0</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -66,6 +66,7 @@
             <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
             <div id="manageMenu" class="command-menu hidden">
               <button id="pluginManagerBtn" type="button">插件管理</button>
+              <button id="automationTestBtn" type="button">自动化测试</button>
               <button id="lanWebBtn" type="button">局域网网页版</button>
               <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
             </div>
@@ -166,6 +167,32 @@
 
 
 
+
+    <section id="automationTestPage" class="analysis-page hidden core-analysis-page">
+      <div class="analysis-page-header automation-test-header">
+        <div>
+          <h2>自动化测试</h2>
+          <div class="analysis-subtitle">在当前构建出的真实运行环境中检查 Core、插件、数据契约、绘图和 TOP 独立窗口。测试日志不包含当前工程的实验数据。</div>
+        </div>
+        <div class="automation-test-header-actions">
+          <button id="automationTestCopyBtn" disabled>复制日志</button>
+          <button id="automationTestFolderBtn">日志目录</button>
+          <button class="analysis-page-close" data-analysis-target="automationTestPage">返回主图</button>
+        </div>
+      </div>
+      <div class="analysis-page-body automation-test-body">
+        <div class="automation-test-hero">
+          <div>
+            <strong>构建后验收</strong>
+            <p id="automationTestSummary">测试不会读取或导出当前工程中的实验数据。</p>
+          </div>
+          <button id="automationTestRunBtn" class="primary">运行全部自动化测试</button>
+        </div>
+        <div class="automation-test-note">桌面版会逐个创建已启用 TOP 的独立 renderer，等待其真正进入 ready / failed，再自动关闭测试窗口。测试结束后 JSON 日志会自动保存到应用诊断目录。</div>
+        <div id="automationTestResults" class="automation-test-results"><div class="automation-empty">尚未运行测试。</div></div>
+        <div id="automationTestLogPath" class="automation-test-log-path"></div>
+      </div>
+    </section>
 
     <div id="importPanel" class="import-panel-overlay hidden">
       <div class="import-workbench">
@@ -649,6 +676,7 @@
   <script src="core/capability-runtime.js"></script>
   <script src="core/plugin-kernel.js"></script>
   <script src="core/plugin-manager-ui.js"></script>
+  <script src="core/automation-test-runtime.js"></script>
   <script src="plugins/plugin-index.generated.js"></script>
   <script src="app.js"></script>
 </body>

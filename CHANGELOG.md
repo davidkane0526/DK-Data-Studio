@@ -1,3 +1,14 @@
+# v3.45.0 — Canonical scientific data contracts and built-in automation test center
+
+- Upgrades the Core Data Type Registry from plugin-local labels to canonical scientific semantics for raw/background-removed I–V, derivatives, dI/dV, d²I/dV², dln|I|/dV, dV/dI, resistance, resonance peaks/FWHM and TER values/matrices.
+- Adds parent-type compatibility, aliases, lineage queries, metadata, validation and inheritance-cycle detection so plugins can exchange typed scientific objects without knowing each other's private IDs.
+- Extends the shared Interaction Runtime with typed Selection acceptance/import and cross-plugin selection observation through canonical parent types.
+- Maps Resonance and TER private selection/data types onto the canonical scientific taxonomy while preserving their plugin-specific identities and project compatibility.
+- Adds Software Management → Automation Test, a built-runtime acceptance center that checks Core globals, plugin activation, scientific data/Selection contracts, Artifact lineage, project serialization, science transforms and a real Plotly render.
+- On desktop, the test center launches every enabled TOP activity in an isolated blank project using the real Electron independent-renderer path, waits for ready/failed, records crash/startup reasons, then destroys the diagnostic window.
+- Automation reports are saved as structured JSON under the application diagnostics directory and deliberately exclude active project contents, imported experimental values and dataset file paths.
+- Adds source regressions for the canonical Data Type / Selection contract and for the automation-test-center architecture.
+
 # v3.44.0 — Transactional SUPER/TOP host-role switching
 
 - Made TOP → SUPER promotion an explicit host transaction instead of relying on delayed prewarm cleanup.

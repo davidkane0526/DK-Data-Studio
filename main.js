@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
 
 const DKDSProjectFormat = require('./src/core/project-format');
@@ -265,6 +266,7 @@ function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
     prewarm:payload.prewarm === true,
     capabilitySnapshot:payload.capabilitySnapshot || null,
     capabilityRevision:Number(payload.capabilityRevision)||0,
+    diagnosticRun:payload.diagnosticRun===true,
     pluginWindow:pluginWindow ? {...pluginWindow} : null
   };
 }
@@ -315,7 +317,53 @@ function markAuxiliaryWindowFailed(win,payload={}) {
   }
 
   const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
-  try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
+  if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
+}
+
+function waitForAuxiliaryDiagnosticOutcome(win,timeoutMs=15000){
+  if(!win||win.isDestroyed())return Promise.resolve({ok:false,error:'Diagnostic TOP window was not created.'});
+  const webContentsId=win.webContents.id;
+  const started=Date.now();
+  return new Promise(resolve=>{
+    const tick=()=>{
+      const failure=auxiliaryFailures.get(webContentsId);
+      if(failure)return resolve({ok:false,error:String(failure.error||'TOP renderer failed.'),durationMs:Date.now()-started});
+      if(!win||win.isDestroyed())return resolve({ok:false,error:'Diagnostic TOP window closed before ready.',durationMs:Date.now()-started});
+      if(auxiliaryReady.has(webContentsId))return resolve({ok:true,durationMs:Date.now()-started});
+      if(Date.now()-started>=timeoutMs)return resolve({ok:false,error:`TOP renderer did not reach ready within ${timeoutMs} ms.`,durationMs:Date.now()-started,timeout:true});
+      setTimeout(tick,50);
+    };
+    tick();
+  });
+}
+
+async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
+  const activityId=String(payload?.activityId||'').trim();
+  if(!ownerWindow||ownerWindow.isDestroyed())throw new Error('Main application window is unavailable.');
+  if(!activityId)throw new Error('Diagnostic activity id is required.');
+  const spec=resolveConfiguredPluginWindow(activityId);
+  if(!spec)return {ok:false,activityId,error:'No independent TOP window is configured for this activity.'};
+  const projectTabId=`__dkds_automation__${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const project={version:app.getVersion(),datasets:[],plugins:{},dataModel:{schema:2,artifacts:[]}};
+  const created=createOrFocusAuxiliaryWindow(ownerWindow,{activityId,projectTabId,project,projectPath:null,title:'自动化测试',prewarm:true,diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0});
+  const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId);
+  const win=auxiliaryWindows.get(key);
+  const outcome=await waitForAuxiliaryDiagnosticOutcome(win,Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000)));
+  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',created};
+  closeAuxiliaryWindowForReal(win);
+  return details;
+}
+
+function diagnosticsDirectory(){
+  const dir=path.join(app.getPath('userData'),'diagnostics');
+  fs.mkdirSync(dir,{recursive:true});
+  return dir;
+}
+
+function diagnosticEnvironment(){
+  const metrics=app.getAppMetrics();
+  const memory=metrics.reduce((sum,row)=>{const m=row?.memory||{};sum.workingSetBytes+=(Number(m.workingSetSize)||0)*1024;sum.privateBytes+=(Number(m.privateBytes)||0)*1024;return sum;},{workingSetBytes:0,privateBytes:0});
+  return {runtime:'desktop',appVersion:app.getVersion(),platform:process.platform,arch:process.arch,osRelease:os.release(),isPackaged:app.isPackaged,locale:app.getLocale?.()||'',processVersions:{electron:process.versions.electron||'',chrome:process.versions.chrome||'',node:process.versions.node||''},processCount:metrics.length,memory,windowCount:BrowserWindow.getAllWindows().filter(win=>!win.isDestroyed()).length,configuredTopWindows:listConfiguredPluginWindows().map(row=>({pluginId:row.pluginId,activity:row.activity,mode:row.mode||'dedicated',version:row.version,prewarm:row.prewarm,reuse:row.reuse,persistence:row.persistence}))};
 }
 
 function requestAuxiliaryRoleSnapshot(win, reason='host-role-change', timeoutMs=1800) {
@@ -458,14 +506,16 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     const reason=String(details?.reason||'unknown');
     const bootstrap=auxiliaryBootstrap.get(auxiliaryWebContentsId)||{};
     const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
-    try{owner?.webContents?.send?.('windows:activityFailed',{
+    const failure={
       activityId:String(bootstrap.activityId||''),
       projectTabId:String(bootstrap.projectTabId||''),
       pluginId:String(bootstrap.pluginWindow?.pluginId||''),
       error:`插件独立窗口异常退出（${reason}），再次打开时将自动重建。`
-    });}catch{}
+    };
+    if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
     auxiliaryReady.delete(auxiliaryWebContentsId);
-    auxiliaryFailures.delete(auxiliaryWebContentsId);
+    if(bootstrap.diagnosticRun)auxiliaryFailures.set(auxiliaryWebContentsId,failure);
+    else auxiliaryFailures.delete(auxiliaryWebContentsId);
     auxiliaryPendingShow.delete(auxiliaryWebContentsId);
     closeAuxiliaryWindowForReal(win);
   });
@@ -503,6 +553,29 @@ app.whenReady().then(() => {
     reuse:spec.reuse,
     persistence:spec.persistence
   })));
+  ipcMain.handle('diagnostics:getEnvironment', async () => diagnosticEnvironment());
+  ipcMain.handle('diagnostics:runActivitySmoke', async (event,payload={}) => {
+    const owner=BrowserWindow.fromWebContents(event.sender);
+    if(!owner)throw new Error('Unable to resolve the main application window.');
+    return runDiagnosticActivitySmoke(owner,payload);
+  });
+  ipcMain.handle('diagnostics:writeAutomationReport', async (_event,report={}) => {
+    const dir=diagnosticsDirectory();
+    const appVersion=String(report?.appVersion||app.getVersion()||'runtime').replace(/[^0-9A-Za-z._-]+/g,'-');
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const name=`dkds-automation-${appVersion}-${stamp}.json`;
+    const target=path.join(dir,name);
+    const payload={...report,desktopEnvironment:diagnosticEnvironment()};
+    fs.writeFileSync(target,JSON.stringify(payload,null,2)+'\n','utf8');
+    return {name,path:target,size:fs.statSync(target).size};
+  });
+  ipcMain.handle('diagnostics:openFolder', async () => {
+    const dir=diagnosticsDirectory();
+    const error=await shell.openPath(dir);
+    if(error)throw new Error(error);
+    return true;
+  });
+
   ipcMain.handle('windows:prewarmActivity', async (event, payload) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
     if (!owner) throw new Error('Unable to resolve the main application window.');

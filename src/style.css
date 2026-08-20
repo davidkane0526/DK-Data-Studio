@@ -4592,3 +4592,31 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 /* Standard plot chrome is card-local. It may never spill into another chart. */
 .dkds-plot-view-head>.dkds-plot-view-actions{margin-left:auto}
 .dkds-plot-view-actions:empty{display:none!important}
+
+/* v3.45 built-in automation test center */
+.automation-test-header-actions{display:flex;align-items:center;gap:6px}
+.automation-test-body{display:flex;flex-direction:column;gap:10px;overflow:auto}
+.automation-test-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;border:1px solid var(--border,#dbe2ec);border-radius:12px;background:var(--panel,#fff)}
+.automation-test-hero strong{font-size:15px}.automation-test-hero p{margin:4px 0 0;color:var(--muted,#6f7b8e);font-size:11px}
+.automation-test-note,.automation-test-log-path{padding:10px 12px;border-radius:9px;background:var(--surface-soft,#f4f7fb);color:var(--muted,#68758a);font-size:11px;line-height:1.55}
+.automation-test-results{display:grid;gap:6px}
+.automation-empty{padding:24px;text-align:center;color:var(--muted,#7a8495);border:1px dashed var(--border,#dbe2ec);border-radius:10px}
+.automation-test-row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;border:1px solid var(--border,#dbe2ec);border-radius:9px;background:var(--panel,#fff)}
+.automation-test-status{display:inline-flex;align-items:center;justify-content:center;height:24px;border-radius:999px;background:#eef2f7;color:#667085;font-size:10px;font-weight:700}
+.automation-test-row.pass .automation-test-status{background:#ecfdf3;color:#027a48}.automation-test-row.fail .automation-test-status{background:#fef3f2;color:#b42318}.automation-test-row.skip .automation-test-status{background:#fffaeb;color:#b54708}.automation-test-row.running .automation-test-status{background:#eef4ff;color:#3538cd}
+.automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px}.automation-test-main strong{font-size:12px}.automation-test-main span{font-size:10px;color:var(--muted,#7a8495)}.automation-test-main small{font-size:10px;color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}
+
+/* v3.45 built-in automation test center */
+.automation-test-header-actions{display:flex;align-items:center;gap:6px}
+.automation-test-body{display:flex;flex-direction:column;gap:10px;overflow:auto}
+.automation-test-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;border:1px solid var(--border,#dbe2ec);border-radius:12px;background:var(--panel,#fff)}
+.automation-test-hero strong{font-size:15px}.automation-test-hero p{margin:4px 0 0;color:var(--muted,#6f7b8e);font-size:11px}
+.automation-test-note,.automation-test-log-path{padding:10px 12px;border-radius:9px;background:var(--surface-soft,#f4f7fb);color:var(--muted,#68758a);font-size:11px;line-height:1.55}
+.automation-test-results{display:grid;gap:6px}
+.automation-empty{padding:24px;text-align:center;color:var(--muted,#7a8495);border:1px dashed var(--border,#dbe2ec);border-radius:10px}
+.automation-test-row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;border:1px solid var(--border,#dbe2ec);border-radius:9px;background:var(--panel,#fff)}
+.automation-test-status{display:inline-flex;align-items:center;justify-content:center;height:24px;border-radius:999px;background:#eef2f7;color:#667085;font-size:10px;font-weight:700}
+.automation-test-row.pass .automation-test-status{background:#ecfdf3;color:#027a48}.automation-test-row.fail .automation-test-status{background:#fef3f2;color:#b42318}.automation-test-row.skip .automation-test-status{background:#fffaeb;color:#b54708}.automation-test-row.running .automation-test-status{background:#eef4ff;color:#3538cd}
+.automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px}.automation-test-main strong{font-size:12px}.automation-test-main span{font-size:10px;color:var(--muted,#7a8495)}.automation-test-main small{font-size:10px;color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}

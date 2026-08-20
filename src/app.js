@@ -5347,7 +5347,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.44.0',
+      version:'3.45.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6668,7 +6668,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.44.0',
+      appVersion:'3.45.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6723,6 +6723,13 @@
     });
 
     window.DKDSPluginManagerUI?.configure?.({
+      openAnalysisPage,
+      closeAnalysisPage,
+      syncAnalysisPageViewport,
+      setStatus
+    });
+
+    window.DKDSAutomationTests?.configure?.({
       openAnalysisPage,
       closeAnalysisPage,
       syncAnalysisPageViewport,
