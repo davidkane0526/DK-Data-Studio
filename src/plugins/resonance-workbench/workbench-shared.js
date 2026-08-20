@@ -101,18 +101,15 @@
     const snapshot=stateSnapshot(service);
     const visibleIds=new Set(snapshot.visibleSweepIds);
     const accepted=snapshot.peaks.filter(p=>p.accepted!==false&&visibleIds.has(p.sweepId));
-    const p=snapshot.selectedPeak,sw=snapshot.selectedSweep;
-    let wanted=[];
-    if(p) wanted=[{direction:p.direction,label:categoryLabel(service,p)}];
-    else if(sw){
-      const labels=[...new Set(snapshot.peaks.filter(q=>q.accepted!==false&&q.sweepId===sw.id).map(q=>categoryLabel(service,q)))];
-      wanted=labels.map(label=>({direction:sw.direction,label}));
-    }else{
-      const seen=new Set();
-      for(const q of accepted){
-        const label=categoryLabel(service,q),key=`${q.direction}::${label}`;
-        if(!seen.has(key)){seen.add(key);wanted.push({direction:q.direction,label});}
-      }
+    // Group/trend figures are projections of the complete VISIBLE data set.
+    // A focused sweep/peak is an interaction focus only and must never collapse
+    // the series to one scan direction. Selection may style a point, but the
+    // visibility contract alone decides which forward/reverse families exist.
+    const wanted=[];
+    const seen=new Set();
+    for(const q of accepted){
+      const label=categoryLabel(service,q),key=`${q.direction}::${label}`;
+      if(!seen.has(key)){seen.add(key);wanted.push({direction:q.direction,label});}
     }
     const sweepById=id=>service?.sweepById?.(id)||snapshot.sweeps.find(x=>x.id===id)||null;
     const series=[];
@@ -126,7 +123,7 @@
       const color=service?.colorForPeakOrder?.(order,w.direction)||undefined;
       series.push({key:`${w.direction}::${w.label}`,name:`${service?.directionName?.(w.direction)||directionName(w.direction)}·${w.label}`,direction:w.direction,label:w.label,order,color,points});
     }
-    const labels=p?[categoryLabel(service,p)]:[...new Set(accepted.map(q=>categoryLabel(service,q)))];
+    const labels=[...new Set(accepted.map(q=>categoryLabel(service,q)))];
     const terSeries=[];
     for(const label of labels){
       const reps=accepted.filter(q=>categoryLabel(service,q)===label);

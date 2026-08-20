@@ -2351,9 +2351,9 @@
         ? current
         : (sws.find(s=>s.direction>0)||sws[0]);
       const chip=document.createElement('button');
-      const selected=selectedPath===ds.path;
       chip.type='button';
-      chip.className=`main-legend-chip ${selected?'selected':''} ${selectedPath&&!selected?'dimmed':''}`;
+      chip.className='main-legend-chip';
+      if(selectedPath===ds.path)chip.setAttribute('aria-current','true');
       const color=curveColor(Number.isFinite(ds.vg)?ds.vg:0);
       const dirClass=preferred?.direction<0?'reverse':'';
       chip.innerHTML=`<i class="main-legend-line ${dirClass}" style="color:${color}"></i><span>${Number.isFinite(ds.vg)?ds.vg:'?'} V</span>`;
@@ -5340,7 +5340,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.41.3',
+      version:'3.41.4',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6646,7 +6646,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.41.3',
+      appVersion:'3.41.4',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

@@ -1,3 +1,12 @@
+# v3.41.4 — Visible-series group projection and Core selection polish
+
+- Makes checkbox/radio selected state use the Core accent blue by default across the application and plugin windows.
+- Fixes Resonance group/trend projection so every visible accepted forward/reverse peak family is included; the focused sweep/peak no longer acts as an accidental direction filter.
+- Separates Resonance legend visibility from interaction focus: visible datasets are no longer dimmed simply because one sweep is focused.
+- Formats legend Vg values without meaningless trailing zeros while retaining meaningful decimal precision.
+- Adds the Core `dkds-scroll-x-compact` utility for light horizontal legend/tab scrolling and removes bulky native scrollbar arrow buttons.
+- Adds regressions proving that a focused forward sweep cannot suppress visible reverse trend series.
+
 # v3.41.3 — Plot export trigger aligned with chart-position chrome
 
 - Removes the v3.41.2 pill/label treatment from the Core `PlotView` export trigger.

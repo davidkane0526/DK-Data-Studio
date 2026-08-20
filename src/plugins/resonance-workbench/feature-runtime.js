@@ -521,15 +521,21 @@
         menu.classList.remove('hidden');
         dom.frame(()=>{const wr=wrap.getBoundingClientRect(),mr=menu.getBoundingClientRect();const cx=Number(event?.clientX)||wr.left+wr.width/2,cy=Number(event?.clientY)||wr.top+90;menu.style.left=`${Math.max(8,Math.min(wr.width-mr.width-8,cx-wr.left+8))}px`;menu.style.top=`${Math.max(42,Math.min(wr.height-mr.height-8,cy-wr.top+8))}px`;});
       }
+      function compactLegendNumber(value,maxDigits=6){
+        const n=Number(value);if(!Number.isFinite(n))return '?';
+        const normalized=Object.is(n,-0)?0:n;
+        return new Intl.NumberFormat('zh-CN',{useGrouping:false,maximumSignificantDigits:Math.max(1,Math.min(12,Number(maxDigits)||6))}).format(normalized);
+      }
       function renderMainLegend(curveColor){
         const host=$('#resparMainLegend');if(!host)return;host.innerHTML='';
-        const current=selectedSweep(),selectedPath=current?.datasetPath||'';
+        const current=selectedSweep();
         for(const ds of datasets){
           const visible=visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
           const candidates=sweeps.filter(sw=>sw.datasetPath===ds.path&&isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
-          const chip=dom.create('button');chip.type='button';chip.className=`respar-legend-chip ${selectedPath===ds.path?'selected':''} ${selectedPath&&selectedPath!==ds.path?'dimmed':''}`;
+          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';
+          if(current?.datasetPath===ds.path)chip.setAttribute('aria-current','true');
           const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
-          chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${finite(ds.vg)?fmt(ds.vg,3):'?'} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
+          chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
           chip.onclick=e=>{e.stopPropagation();if(preferred)publishSweepSelection(preferred,'resonance-main-legend');};host.appendChild(chip);
         }
       }

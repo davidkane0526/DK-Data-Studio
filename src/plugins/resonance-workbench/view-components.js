@@ -199,7 +199,7 @@
                       <button type="button" id="resparTogglePhysics">物理标记</button>
                       <button type="button" id="resparResetView">重新居中</button>
                     </div>
-                    <div id="resparMainLegend" class="respar-main-legend"></div>
+                    <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact"></div>
                   </div>
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
                   <div id="resparRangeMenu" class="respar-range-menu hidden">

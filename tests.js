@@ -381,7 +381,7 @@ assert(appV37.includes("if(event.ctrlKey){")&&appV37.includes("if(!event.ctrlKey
 assert(resonancePluginSource.includes("'resonance-select-prev','Ctrl+ArrowLeft'")&&resonancePluginSource.includes('selectAdjacentPeak?.(-1)'),'Ctrl+left must be plugin-owned and select previous peak');
 assert(resonancePluginSource.includes("'resonance-select-next','Ctrl+ArrowRight'")&&resonancePluginSource.includes('selectAdjacentPeak?.(1)'),'Ctrl+right must be plugin-owned and select next peak');
 assert(resonancePluginSource.includes("publishPeakSelection(p,'resonance-group'")&&resonancePluginSource.includes('openInspector:true')&&resonancePluginSource.includes('plotly_click'),'group PRIME points must publish shared selection and open the curve inspector');
-assert(appV37.includes("main-legend-chip ${selected?'selected':''} ${selectedPath&&!selected?'dimmed':''}"),'main legend must follow curve highlight/dimming');
+assert(appV37.includes("chip.className='main-legend-chip'")&&!appV37.includes("selectedPath&&!selected?'dimmed':''"),'main legend must represent visible datasets without focus-driven dimming');
 assert(appV37.includes('function smartAssignPeakOrders'),'cross-Vg smart peak identity assignment must exist');
 assert(fs.readFileSync('./src/science/identity.js','utf8').includes('enumerateTrackAssignments'),'smart identity must permit missing track indices rather than compress every curve');
 assert(fs.readFileSync('./src/science/identity.js','utf8').includes("cost+=30"),'smart identity must strongly discourage crossing positive/negative Vd track regions');

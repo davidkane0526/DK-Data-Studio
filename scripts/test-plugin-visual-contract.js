@@ -9,6 +9,7 @@ const shell=read('src/core/recipes/shell-navigation.js');
 const safeguards=read('src/core/recipes/workspace-safeguards.js');
 const runtime=read('src/plugin-window/runtime.js');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 const manifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
 
 for(const token of ['--plugin-font-body:12.5px','--plugin-font-label:12px','--plugin-font-meta:11px','--plugin-font-title:13.5px','--plugin-font-section:14px','--plugin-control-height:32px']){
@@ -26,5 +27,7 @@ assert(runtime.includes('document.body.dataset.pluginId'),'Dedicated TOP windows
 assert(runtime.includes("d3:'../../node_modules/d3/dist/d3.min.js'"),'Dedicated plugin dependency loader must support D3 for the GRS main renderer.');
 assert((manifest.window?.dependencies||[]).includes('d3'),'Resonance TOP must explicitly declare its D3 dependency.');
 assert(resonance.includes('display:grid;grid-template-columns:minmax(0,1fr);height:100%'),'GRS main-workspace must preserve a non-zero chart surface inside AnalysisWorkbench.');
+assert(resonance.includes('respar-main-legend dkds-scroll-x-compact'),'Resonance legend must consume the Core compact horizontal-scroll utility.');
+assert(resonanceRuntime.includes('compactLegendNumber')&&resonanceRuntime.includes("chip.className='respar-legend-chip'"),'Resonance legend must format compact Vg labels without focus-driven dimming.');
 
 console.log('Plugin visual contract checks passed.');

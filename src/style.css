@@ -11,6 +11,7 @@
 * { box-sizing: border-box; }
 html, body, #app { width:100%; height:100%; margin:0; overflow:hidden; font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; color:var(--text); background:var(--bg); }
 button, input, select { font: inherit; }
+input[type="checkbox"],input[type="radio"]{accent-color:var(--accent);}
 button { border:1px solid var(--border); background:#fff; padding:6px 10px; border-radius:7px; cursor:pointer; }
 button:hover { background:#f0f3ff; }
 button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -3563,6 +3564,14 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
 *::-webkit-scrollbar-track{background:transparent}
 *::-webkit-scrollbar-thumb{background:#b9c2cf;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
 *::-webkit-scrollbar-thumb:hover{background:#9eabbc;background-clip:padding-box}
+/* Core compact horizontal strip: legends/tab-like scrollers can opt into a
+   lighter horizontal thumb without defining plugin-local scrollbar chrome. */
+.dkds-scroll-x-compact{scrollbar-width:thin;scrollbar-color:#b7c1cf transparent}
+.dkds-scroll-x-compact::-webkit-scrollbar{height:3px}
+.dkds-scroll-x-compact::-webkit-scrollbar-track{background:transparent}
+.dkds-scroll-x-compact::-webkit-scrollbar-button{display:none;width:0;height:0}
+.dkds-scroll-x-compact::-webkit-scrollbar-thumb{background:#b7c1cf;border:0;border-radius:999px;background-clip:border-box}
+.dkds-scroll-x-compact::-webkit-scrollbar-thumb:hover{background:#98a6b9}
 
 @media(max-width:1160px){
   :root{--ui-font-size:11.5px;--ui-font-small:10.5px;--ui-font-title:12.5px}

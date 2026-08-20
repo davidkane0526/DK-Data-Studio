@@ -78,16 +78,20 @@ const W=moduleRuntime.require('builtin.resonance-workbench','workbench-shared');
 const V=moduleRuntime.require('builtin.resonance-workbench','view-components');
 assert(W&&W.VIEW_CATALOG.length===6,'Shared Controller module must expose six canonical views.');
 assert(V&&V.VIEW_CATALOG===W.VIEW_CATALOG,'Shared View layer must consume the canonical Controller view catalog instead of defining another one.');
-const sweeps=[{id:'f0',direction:1,vg:0},{id:'f1',direction:1,vg:1}];
+const sweeps=[{id:'f0',direction:1,vg:0},{id:'f1',direction:1,vg:1},{id:'r0',direction:-1,vg:0},{id:'r1',direction:-1,vg:1}];
 const peaks=[
   {id:'a0',sweepId:'f0',direction:1,vg:0,v:.1,i:1,peakOrder:1,peakLabel:'A',accepted:true},
   {id:'b0',sweepId:'f0',direction:1,vg:0,v:.4,i:1,peakOrder:2,peakLabel:'B',accepted:true},
   {id:'a1',sweepId:'f1',direction:1,vg:1,v:.2,i:1,peakOrder:1,peakLabel:'A',accepted:true},
-  {id:'b1',sweepId:'f1',direction:1,vg:1,v:.6,i:1,peakOrder:2,peakLabel:'B',accepted:true}
+  {id:'b1',sweepId:'f1',direction:1,vg:1,v:.6,i:1,peakOrder:2,peakLabel:'B',accepted:true},
+  {id:'ar0',sweepId:'r0',direction:-1,vg:0,v:.12,i:1,peakOrder:1,peakLabel:'A',accepted:true},
+  {id:'br0',sweepId:'r0',direction:-1,vg:0,v:.43,i:1,peakOrder:2,peakLabel:'B',accepted:true},
+  {id:'ar1',sweepId:'r1',direction:-1,vg:1,v:.23,i:1,peakOrder:1,peakLabel:'A',accepted:true},
+  {id:'br1',sweepId:'r1',direction:-1,vg:1,v:.64,i:1,peakOrder:2,peakLabel:'B',accepted:true}
 ];
 const service={
   getState:()=>({sweeps,peaks,datasets:[]}),
-  selectedPeak:()=>null,selectedSweep:()=>null,
+  selectedPeak:()=>null,selectedSweep:()=>sweeps[0],
   visibleSweepIds:()=>sweeps.map(s=>s.id),
   sweepById:id=>sweeps.find(s=>s.id===id),
   peakLabel:p=>p.peakLabel,directionName:()=> '正扫',metrics:(p)=>({v:p.v,i:p.i,vg:p.vg,fwhm:0,amplitude:0,area:0,prominence:0})
@@ -98,9 +102,9 @@ assert(viewSet.catalog.length===6&&viewSet.main.label==='共振分析'&&viewSet.
 assert(viewSet.gate.superPageHtml().includes('gateAnalysisPage')&&viewSet.spacing.superPageHtml().includes('spacingPage'),'Shared View components must own mature SUPER page templates.');
 assert(viewSet.topPageHtml().includes('reswinMainPlot')&&viewSet.topPageHtml().includes('resparInspectorPanel')&&viewSet.topPageHtml().includes('resparGroupPanel')&&viewSet.topPageHtml().includes('data-reswin-view-panel="gate"'),'Shared View components must compose one GRS-parity surface for SUPER and TOP.');
 const trend=controller.buildTrendModel();
-assert(trend.series.length===2,'Shared trend model must build both peak families from one controller state.');
+assert(trend.series.length===4&&trend.series.some(s=>s.direction>0)&&trend.series.some(s=>s.direction<0),'Shared trend model must project every visible forward/reverse peak family even when one forward sweep is focused.');
 const opts=controller.acceptedSeriesOptions();
-const a=opts.find(o=>o.label==='A'),b=opts.find(o=>o.label==='B');
+const a=opts.find(o=>o.label==='A'&&o.direction>0),b=opts.find(o=>o.label==='B'&&o.direction>0);
 const spacing=controller.computeSpacingRows(a.key,b.key);
 assert(spacing.length===2&&Math.abs(spacing[0].spacing-.3)<1e-12&&Math.abs(spacing[1].spacing-.4)<1e-12,'Shared spacing model must be deterministic and reusable by SUPER/TOP.');
 
