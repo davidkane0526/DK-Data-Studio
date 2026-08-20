@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.4.0';
+  const VERSION='1.5.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -176,6 +176,22 @@
     return {artifacts:restored.size(),lineageParent:sweep.id};
   }
 
+  function scientificPipelineSmoke(){
+    const P=window.DKDSScientificPipeline,D=window.DKDSData,types=window.DKDSUI?.dataTypes,perf=window.DKDSPerformance;
+    assert(P?.createScope&&D?.createStore&&types&&perf?.stage,'Scientific Pipeline Runtime unavailable.');
+    const scope=P.createScope('core.automation-pipeline');const store=D.createStore();let computes=0;
+    const source=D.createSweep({id:'automation:pipeline-source',name:'I–V',semanticType:'science.iv.raw',x:[0,0.1,0.2],y:[1e-9,2e-9,4e-9],xUnit:'V',yUnit:'A',direction:1});store.upsert(source);
+    const performance={stage:(namespace,revision,key,compute,options)=>perf.stage(`automation.pipeline.${namespace}`,revision,key,compute,options)};
+    try{
+      scope.register('didv',{kind:'transform',inputTypes:['science.iv.raw'],outputTypes:['science.transport.didv'],outputKinds:['data.transform'],cacheLimit:2,
+        run:input=>{computes+=1;const row=input[0];return D.createTransform({id:'automation:pipeline-didv',name:'dI/dV',x:row.x,y:[1e-8,2e-8,2e-8],xUnit:'V',yUnit:'A/V',transform:'didv'});},
+        selection:({artifacts})=>artifacts.map(a=>({type:'science.transport.didv',id:a.id,ref:{artifactId:a.id}})),project:({artifacts})=>({kind:'curve',artifactId:artifacts[0]?.id})});
+      const options={artifacts:store,dataTypes:types,performance,publish:true};const first=scope.runSync('didv',[store.get(source.id)],options);const second=scope.runSync('didv',[store.get(source.id)],options);
+      assert(computes===1,'Scientific Pipeline did not cache an unchanged stage input.');assert(first.artifacts[0]?.semanticType==='science.transport.didv','Pipeline output semanticType missing.');assert(first.artifacts[0]?.lineage?.parents?.includes(source.id),'Pipeline lineage missing source artifact.');assert(first.artifacts[0]?.provenance?.some(step=>step.providerId==='didv'),'Pipeline provenance missing stage provider.');assert(store.get('automation:pipeline-didv')?.semanticType==='science.transport.didv','Published pipeline artifact lost semanticType.');assert(first.selection?.[0]?.type==='science.transport.didv'&&first.viewModel?.kind==='curve','Pipeline selection/view projection missing.');assert(second.artifacts[0]?.id===first.artifacts[0]?.id,'Pipeline cache returned a different artifact identity.');
+      const snapshot=scope.snapshot();return {version:P.VERSION,stageCount:snapshot.stages.length,runs:snapshot.stages[0]?.runs||0,computes,semanticType:first.artifacts[0].semanticType,lineageParents:first.artifacts[0].lineage.parents.length,selectionType:first.selection[0].type,viewKind:first.viewModel.kind};
+    }finally{P.removeOwner?.('core.automation-pipeline');perf.clear?.('automation.pipeline.pipeline.didv');}
+  }
+
   function scienceTransformSmoke(){
     const science=window.DKDSScience;assert(science?.transformSweep,'Science transform runtime unavailable.');
     const points=[];for(let k=0;k<=40;k++){const v=-1+k*0.05;points.push({v,i:2e-9*v+8e-9*Math.exp(-(((v-.2)/.12)**2))});}
@@ -221,7 +237,7 @@
 
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
-      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
+      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificPipeline','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
@@ -231,6 +247,7 @@
     await runCase('types.contract','Scientific Data Type Registry','Data Contract',dataTypeSmoke);
     await runCase('selection.contract','Typed Selection Contract','Data Contract',selectionContractSmoke);
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
+    await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
@@ -273,7 +290,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

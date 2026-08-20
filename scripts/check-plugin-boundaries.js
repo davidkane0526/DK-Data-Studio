@@ -35,10 +35,10 @@ for(const file of allPluginFiles){
   ];
   for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.8.`);
 }
-for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-runtime.js','core/scientific-plot-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
+for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-runtime.js','core/scientific-plot-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/scientific-pipeline-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
   if(!html.includes(token))fail(`main renderer must load ${token}`);
 }
-for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
+for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','pipeline: scientificPipelineScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
   if(!kernel.includes(token))fail(`Plugin API v1.8 missing ${token}`);
 }
 if(!app.includes('resonance:resonanceHostApi(),pulse:pulseHostApi(),ter:terHostApi()'))fail('legacy domain services must enter plugins only through the generic Core service registry.');

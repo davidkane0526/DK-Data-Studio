@@ -61,7 +61,7 @@
   }
 
   function envelope(kind,spec={}){
-    return {
+    const out={
       artifactVersion:ARTIFACT_VERSION,
       id:spec.id||makeId(kind.replace(/[^a-z0-9]+/gi,'-')),
       kind,
@@ -75,6 +75,8 @@
       lineage:normalizeLineage(spec.lineage||{parents:spec.parents,parentId:spec.parentId,parent:spec.parent,role:spec.role,producer:spec.producer,operation:spec.operation,parameters:spec.parameters}),
       transient:!!spec.transient
     };
+    const semanticType=String(spec.semanticType||spec.dataType||spec.metadata?.dataType||'').trim();if(semanticType)out.semanticType=semanticType;
+    return out;
   }
 
   function normalizeColumn(column,index,rowCountHint=0){

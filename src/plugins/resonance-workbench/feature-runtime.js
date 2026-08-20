@@ -44,7 +44,7 @@
     return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -810,6 +810,25 @@
         workspace.gateAnalysisSettings={seriesA:$('#reswinGateA')?.value||'',seriesB:$('#reswinGateB')?.value||'',hysteresisLabel:$('#reswinGateHysteresis')?.value||'',widthMode:$('#reswinGateWidth')?.value||'hwhm',useCarrierDensity:!!$('#reswinGateUseDensity')?.checked,cg:num('reswinGateCg'),cnp:num('reswinGateCnp')??0};
       }
       function gateOption(key){return acceptedSeriesOptions().find(o=>o.key===key)||null;}
+      if(pipeline?.register){
+        pipeline.register('gate-analysis',{
+          title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['data.table'],outputTypes:['resonance.gate-analysis'],allowEmptyInput:true,cacheLimit:6,
+          run:(_input,{parameters})=>{
+            const s={...(parameters?.settings||workspace.gateAnalysisSettings||{})};
+            const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;
+            try{terResult=S.computeTerMatrix?.(datasets,parameters?.terSettings||project.terMaxSettings||{})||null;}catch{}
+            const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];
+            const hysteresis=gateHysteresisRows(s.hysteresisLabel);
+            const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};
+            const value={settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};
+            const artifact=D.createAnalysisResult({id:'resonance.analysis:gate',name:'栅压依赖共振分析',summary:{rows:rows.length,hysteresis:hysteresis.length,hasTer:!!terResult},payload:value,transient:true});
+            return {artifacts:[artifact],value};
+          },
+          selection:({artifacts,value})=>artifacts[0]?[{type:'resonance.gate-analysis',id:artifacts[0].id,ref:{artifactId:artifacts[0].id},value:{id:artifacts[0].id,rows:value?.rows?.length||0}}]:[],
+          project:({value})=>({kind:'series-group',series:{A:value?.Arows||[],B:value?.Brows||[],hysteresis:value?.hysteresis||[],paired:value?.rows||[]}})
+        });
+      }
+
       function computeGate(){
         readGate();const s=workspace.gateAnalysisSettings;
         const peakKey=(workspace.peaks||[]).filter(p=>p.accepted!==false).map(p=>[p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,p.peakLabel,p.analysisLeft,p.analysisRight]).flat().join('|');
@@ -817,7 +836,12 @@
         const key=`${dataRevision}::${JSON.stringify(s)}::${JSON.stringify(project.terMaxSettings||{})}::${peakKey}`;
         const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=S.computeTerMatrix?.(datasets,project.terMaxSettings||{})||null;}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};};
         gateComputeKey=key;
-        gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();return gateResult;
+        if(pipeline?.runSync){
+          const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>a?.metadata?.adapter==='legacy-dataset');
+          const executed=pipeline.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...(project.terMaxSettings||{})},peakKey},publish:true,revision:dataRevision});
+          gateResult=executed?.value||null;
+        }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
+        return gateResult;
       }
       function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x,gridcolor:'#edf0f5'},yaxis:{title:y,gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true};}
       function renderGate(){

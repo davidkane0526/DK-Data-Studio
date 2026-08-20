@@ -1338,6 +1338,7 @@
     const chartScope = window.DKDSCharts?.createScope?.(pluginId) || null;
     const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
     const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
+    const scientificPipelineScope = window.DKDSScientificPipeline?.createScope?.(pluginId) || null;
     const serviceScope = window.DKDSServices?.createScope?.(pluginId) || null;
     const moduleScope = window.DKDSPluginModules?.createScope?.(pluginId) || null;
     if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
@@ -1345,6 +1346,7 @@
     if (ioScope) addCleanup(pluginId, () => window.DKDSIO?.disposeOwner?.(pluginId));
     if (chartScope) addCleanup(pluginId, () => window.DKDSCharts?.disposeOwner?.(pluginId));
     if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
+    if (scientificPipelineScope) addCleanup(pluginId, () => window.DKDSScientificPipeline?.removeOwner?.(pluginId));
     if (serviceScope) addCleanup(pluginId, () => window.DKDSServices?.removeOwner?.(pluginId));
     if (window.DKDSPerformance) addCleanup(pluginId, () => window.DKDSPerformance?.trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'}));
     const normalizeShortcutSpec = spec => {
@@ -1467,6 +1469,17 @@
         model: window.DKDSData,
         formula: window.DKDSFormula,
         flow: dataFlowScope,
+        pipeline: scientificPipelineScope ? Object.freeze({
+          version:scientificPipelineScope.version,
+          register:(id,spec)=>scientificPipelineScope.register(id,spec),
+          unregister:id=>scientificPipelineScope.unregister(id),
+          get:id=>scientificPipelineScope.get(id),
+          list:q=>scientificPipelineScope.list(q),
+          run:(id,input,options={})=>scientificPipelineScope.run(id,input,{...options,artifacts:options.artifacts||apiRef?.data?.artifacts,dataTypes:options.dataTypes||apiRef?.data?.types,performance:options.performance||apiRef?.performance,selectionModel:options.selectionModel}),
+          runSync:(id,input,options={})=>scientificPipelineScope.runSync(id,input,{...options,artifacts:options.artifacts||apiRef?.data?.artifacts,dataTypes:options.dataTypes||apiRef?.data?.types,performance:options.performance||apiRef?.performance,selectionModel:options.selectionModel}),
+          runPlan:(plan,input,options={})=>scientificPipelineScope.runPlan(plan,input,{...options,artifacts:options.artifacts||apiRef?.data?.artifacts,dataTypes:options.dataTypes||apiRef?.data?.types,performance:options.performance||apiRef?.performance,selectionModel:options.selectionModel}),
+          snapshot:()=>scientificPipelineScope.snapshot()
+        }) : null,
         importers: Object.freeze({
           register:(id,spec={})=>{
             const value={id,...spec,pluginId,version:spec.version||definition.manifest.version||'1.0.0'};
@@ -1492,6 +1505,7 @@
         artifacts: {
           list: options => {const rows=host?.artifacts?.list?.(options)||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return rows;},
           revision: kind => host?.artifacts?.revision?.(kind)||0,
+          fingerprint: id => host?.artifacts?.fingerprint?.(id)||'',
           get: id => {const row=host?.artifacts?.get?.(id)||null;if(row)infrastructureScope?.entities?.projectArtifact?.(row);return row;},
           add: (artifact, options) => {const result=host?.artifacts?.add?.(artifact, options);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
           upsert: artifact => {const result=host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},

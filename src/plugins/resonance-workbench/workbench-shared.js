@@ -21,7 +21,8 @@
       ['resonance.fwhm',{title:'共振半峰全宽',parent:'science.resonance.fwhm',kind:'result',key:v=>v?.id||`${v?.peakId||''}:fwhm`,selection:v=>({id:v?.id||`${v?.peakId||''}:fwhm`,ref:{peakId:v?.peakId||''},value:{id:v?.id,peakId:v?.peakId,fwhm:v?.fwhm,left:v?.left,right:v?.right,unit:v?.unit||'V'}})}],
       ['resonance.peak-family',{title:'共振峰族',parent:'result.analysis',kind:'result',key:v=>v?.id||`${v?.direction||0}:${v?.label||''}`,selection:v=>({id:v?.id||`${v?.direction||0}:${v?.label||''}`,value:{id:v?.id,direction:v?.direction,label:v?.label,order:v?.order,summary:v?.summary}})}],
       ['resonance.range',{title:'共振电压选区',parent:'data.range',kind:'region',key:v=>v?.id||`${v?.sweepId||''}:${v?.min||''}:${v?.max||''}`}],
-      ['resonance.analysis-result',{title:'共振派生分析',parent:'result.analysis',kind:'result',key:v=>v?.id,selection:v=>({id:v?.id,ref:{resultId:v?.id||''},value:{id:v?.id,name:v?.name,kind:v?.kind,summary:v?.summary}})}]
+      ['resonance.analysis-result',{title:'共振派生分析',parent:'result.analysis',kind:'result',key:v=>v?.id,selection:v=>({id:v?.id,ref:{resultId:v?.id||''},value:{id:v?.id,name:v?.name,kind:v?.kind,summary:v?.summary}})}],
+      ['resonance.gate-analysis',{title:'栅压依赖共振分析',parent:'resonance.analysis-result',kind:'result',tags:['resonance','gate'],key:v=>v?.id||'resonance.gate-analysis'}]
     ])if(!ctx.data.types.get(id))ctx.data.types.register(id,spec);
   }
 

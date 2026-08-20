@@ -1,3 +1,13 @@
+# v3.50.0 — Core Scientific Data Pipeline
+
+- Added `src/core/scientific-pipeline-runtime.js` with plugin-scoped synchronous/asynchronous scientific stages, typed inputs/outputs, parameter-aware caching, provenance/lineage, Artifact publication, typed Selection projection and presentation ViewModels.
+- Added the explicit Plugin API 1.8 `data.pipeline` requirement and automatic dedicated-TOP dependency derivation.
+- Artifact envelopes now preserve an optional non-empty `semanticType` without changing the serialized shape of legacy untyped Artifacts.
+- Migrated TER matrix and transformed scalar-field derivations to the Core pipeline while retaining the existing scientific numerical implementations.
+- Migrated Resonance gate-dependent analysis to the Core pipeline and registered the canonical `resonance.gate-analysis` result type.
+- Automation Runner 1.5.0 adds a real Scientific Data Pipeline smoke test; the default desktop suite now contains 21 cases.
+- Added v3.50 pipeline unit/integration tests and upgraded TER live-Artifact integration to require a typed pipeline-produced matrix.
+
 # v3.49.0 — Core renderer and UI resource lifecycle
 
 - Adds ScientificPlot v2.1 suspend/resume so Core-managed Plotly renderers can release DOM/event resources while reusable TOP windows are hidden and rebuild with Selection, Pin and Viewport state preserved.

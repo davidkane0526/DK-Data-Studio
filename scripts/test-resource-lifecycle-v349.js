@@ -27,7 +27,8 @@ assert(main.includes('hideDedicatedAuxiliaryWindow(win)')&&main.includes('reused
 
 assert(kernel.includes("trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'})"),'Plugin deactivation must release its Core performance namespace.');
 
-assert(automation.includes("const VERSION='1.4.0'"),'Automation runner must be v1.4.0.');
+const automationVersion=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);
+assert(automationVersion.length===3&&(automationVersion[0]>1||(automationVersion[0]===1&&automationVersion[1]>=4)),'Automation runner must preserve v1.4+ resource lifecycle coverage.');
 assert(automation.includes("'performance.resources'")&&automation.includes('Renderer & resource lifecycle'),'Built-app automation must exercise renderer/resource lifecycle.');
 assert(automation.includes('out?.lifecycle?.tested&&out?.lifecycle?.ok'),'TOP automation must require hide/reuse lifecycle success for every renderer.');
 console.log('v3.49 Core UI/renderer resource lifecycle architecture checks passed.');

@@ -29,6 +29,7 @@
     'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
     'component-runtime':'../core/component-runtime.js',
     'data-flow-runtime':'../core/data-flow-runtime.js',
+    'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js',
     'service-runtime':'../core/service-runtime.js',
     'plugin-contract-runtime':'../core/plugin-contract-runtime.js',
     'plugin-module-runtime':'../core/plugin-module-runtime.js',
@@ -136,7 +137,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','scientific-pipeline-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
@@ -377,7 +378,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.49.0',
+      appVersion:'3.50.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

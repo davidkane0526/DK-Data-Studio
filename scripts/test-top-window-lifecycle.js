@@ -13,8 +13,8 @@ assert(resonanceWindow,'Resonance dedicated TOP window must resolve.');
 assert(resonanceWindow.dependencies.includes('parameter-schema'),'requiresCore.parameters must automatically materialize parameter-schema in the dedicated TOP renderer.');
 assert(resonanceWindow.dependencies.indexOf('parameter-schema')<resonanceWindow.dependencies.length,'Derived parameter dependency must be part of the resolved window contract.');
 
-const derived=normalizeDependencies([],['parameters','data.model','data.formula','workflow','state']);
-for(const dependency of ['parameter-schema','data-model','formula-engine','workflow-engine','state-store']){
+const derived=normalizeDependencies([],['parameters','performance','data.pipeline','data.model','data.formula','workflow','state']);
+for(const dependency of ['parameter-schema','performance-runtime','scientific-pipeline-runtime','data-model','formula-engine','workflow-engine','state-store']){
   assert(derived.includes(dependency),`requiresCore must derive ${dependency} for dedicated TOP windows.`);
 }
 assert(derived.includes('platform')&&derived.includes('plugin-kernel'),'All dedicated TOP windows must still receive the generic host/kernel floor.');
@@ -24,6 +24,7 @@ const main=read('main.js');
 const preload=read('preload.js');
 const app=read('src/app.js');
 assert(runtime.includes("'parameter-schema':'../core/parameter-schema.js'"),'Dedicated runtime allowlist must include parameter-schema.');
+assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js'"),'Dedicated runtime allowlist must include Scientific Pipeline Runtime.');
 assert(runtime.includes('window.electronAPI?.markActivityWindowFailed?.'),'Dedicated startup catch must report failure to the main process.');
 assert(main.includes('const auxiliaryFailures = new Map()'),'Main process must retain explicit failed-window state.');
 assert(main.includes("ipcMain.on('windows:activityFailed'"),'Main process must receive dedicated startup failures.');

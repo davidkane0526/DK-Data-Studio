@@ -14,6 +14,8 @@ const context={
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/core/performance-runtime.js'),context,{filename:'performance-runtime.js'});
+vm.runInContext(read('src/core/scientific-pipeline-runtime.js'),context,{filename:'scientific-pipeline-runtime.js'});
 vm.runInContext(read('src/core/plugin-module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{filename:'ter-analysis-service.js'});
 
@@ -40,9 +42,13 @@ function sweepDataset(){
   const D=context.DKDSData,store=D.createStore(),dataset=sweepDataset();
   D.syncLegacyDatasetArtifacts(store,[dataset]);
   const statuses=[];
+  const perf=context.DKDSPerformance,scope=context.DKDSScientificPipeline.createScope('builtin.ter-analysis');
+  const dataTypes={get:id=>({id}),infer:value=>value?.semanticType?{id:value.semanticType}:(value?.kind?{id:value.kind}:null),accepts:(actual,accepted)=>accepted.includes(actual)};
+  const performance={stage:(ns,revision,key,compute,options)=>perf.stage(`builtin.ter-analysis.${ns}`,revision,key,compute,options),trimAll:options=>perf.trimPrefix('builtin.ter-analysis.',options)};
+  const pipeline={register:(id,spec)=>scope.register(id,spec),runSync:(id,input,options={})=>scope.runSync(id,input,{...options,artifacts:store,dataTypes,performance}),snapshot:()=>scope.snapshot()};
   const terAnalysis=context.DKDSPluginModules.require('builtin.ter-analysis','analysis-service');
   const runtime=await terAnalysis.create({
-    artifacts:{list:opts=>store.list(opts)},
+    artifacts:store,pipeline,performance,
     getVisibility:()=>new Map([[dataset.path,{forward:true,reverse:true}]]),
     project:{datasets:[]},setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){}
   });
@@ -53,5 +59,8 @@ function sweepDataset(){
   assert(result.targets.length>=30,'TER voltage grid should contain the expected sweep targets');
   assert(result.matrix.flat().some(Number.isFinite),'TER matrix must contain finite values');
   assert(statuses.some(text=>text.includes('TER 热图计算完成')),'TER service should reach the successful calculation path');
+  assert.strictEqual(store.get('ter.matrix:main')?.semanticType,'science.ter.matrix','TER pipeline must publish a canonical typed matrix Artifact.');
+  assert(store.get('ter.matrix:main')?.lineage?.parents?.length===1,'TER pipeline matrix must retain source Artifact lineage.');
+  assert(pipeline.snapshot().stages.some(row=>row.id==='ter-matrix'&&row.runs>=1),'TER live calculation must execute through Scientific Pipeline.');
   console.log(`TER live Artifact integration passed: ${result.vgs.length} Vg x ${result.targets.length} Vd.`);
 })().catch(err=>{console.error(err);process.exit(1);});

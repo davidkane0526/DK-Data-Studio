@@ -1,0 +1,18 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const index=read('src/index.html'),runtime=read('src/plugin-window/runtime.js'),manager=read('plugin-window-manager.js'),kernel=read('src/core/plugin-kernel.js'),contract=read('src/core/plugin-contract-runtime.js'),data=read('src/core/data-model.js'),automation=read('src/core/automation-test-runtime.js');
+const terPlugin=read('src/plugins/ter-analysis/plugin.js'),terService=read('src/plugins/ter-analysis/analysis-service.js'),resPlugin=read('src/plugins/resonance-workbench/plugin.js'),resFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+assert(index.includes('core/scientific-pipeline-runtime.js'),'Main renderer must load Scientific Pipeline Runtime.');
+assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js'")&&runtime.includes("'data-flow-runtime','scientific-pipeline-runtime','service-runtime'"),'Dedicated TOP renderer must load Scientific Pipeline Runtime.');
+assert(manager.includes("'data.pipeline':Object.freeze(['scientific-pipeline-runtime'])"),'requiresCore.data.pipeline must materialize the TOP pipeline dependency.');
+assert(contract.includes("'data.pipeline':api=>!!api?.data?.pipeline"),'Plugin Contract must expose data.pipeline as an explicit requirement.');
+for(const token of ['scientificPipelineScope = window.DKDSScientificPipeline','pipeline: scientificPipelineScope','runSync:(id,input,options={})','fingerprint: id => host?.artifacts?.fingerprint'])assert(kernel.includes(token),`Plugin kernel pipeline surface missing: ${token}`);
+assert(data.includes("const semanticType=String(spec.semanticType||spec.dataType||spec.metadata?.dataType||'').trim();if(semanticType)out.semanticType=semanticType;"),'Artifact envelope must preserve canonical semanticType across Store round-trips.');
+assert(terPlugin.includes('"data.pipeline"')&&terService.includes("pipeline.register('ter-matrix'")&&terService.includes("pipeline.register('transform-matrix'")&&terService.includes("pipeline.runSync('ter-matrix'")&&terService.includes("pipeline.runSync('transform-matrix'"),'TER must execute matrix/scalar-field derivations through Core Scientific Pipeline.');
+assert(resPlugin.includes('"data.pipeline"')&&resFeature.includes("pipeline.register('gate-analysis'")&&resFeature.includes("pipeline.runSync('gate-analysis'"),'Resonance gate analysis must execute through Core Scientific Pipeline.');
+const version=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);assert(version.length===3&&(version[0]>1||(version[0]===1&&version[1]>=5)),'Automation runner must be v1.5+ for Scientific Pipeline coverage.');
+assert(automation.includes("'pipeline.contract'")&&automation.includes('Scientific Data Pipeline')&&automation.includes('scientificPipeline:'),'Built-app automation must verify and export Scientific Pipeline coverage.');
+console.log('v3.50 Scientific Data Pipeline integration checks passed.');
