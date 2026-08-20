@@ -44,7 +44,7 @@
     return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -58,6 +58,7 @@
       let currentView='main';
       let spacingResult=[];
       let gateResult=null;
+      let gateComputeCache={key:'',value:null};
       let sharedController=null;
       let workspaceNavigator=null;
       let detectorRuntime=null;
@@ -810,11 +811,13 @@
       }
       function gateOption(key){return acceptedSeriesOptions().find(o=>o.key===key)||null;}
       function computeGate(){
-        readGate();const s=workspace.gateAnalysisSettings,Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);
-        let terResult=null;try{terResult=S.computeTerMatrix?.(datasets,project.terMaxSettings||{})||null;}catch{}
-        const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];
-        const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};
-        gateResult={settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};return gateResult;
+        readGate();const s=workspace.gateAnalysisSettings;
+        const peakKey=(workspace.peaks||[]).filter(p=>p.accepted!==false).map(p=>[p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,p.peakLabel,p.analysisLeft,p.analysisRight]).flat().join('|');
+        const dataRevision=artifacts?.revision?.('data.table')||0;
+        const key=`${dataRevision}::${JSON.stringify(s)}::${JSON.stringify(project.terMaxSettings||{})}::${peakKey}`;
+        if(gateComputeCache.key===key&&gateComputeCache.value){performance?.skip?.('gate-compute');gateResult=gateComputeCache.value;return gateResult;}
+        const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=S.computeTerMatrix?.(datasets,project.terMaxSettings||{})||null;}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};};
+        gateResult=performance?.measure?.('gate-compute',compute)||compute();gateComputeCache={key,value:gateResult};return gateResult;
       }
       function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x,gridcolor:'#edf0f5'},yaxis:{title:y,gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true};}
       function renderGate(){
@@ -834,7 +837,7 @@
           reswinGateBackground:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineA),mode:'lines+markers',name:'背景 A'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineB),mode:'lines+markers',name:'背景 B'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgA),mode:'lines+markers',name:'峰/背景 A',yaxis:'y2'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgB),mode:'lines+markers',name:'峰/背景 B',yaxis:'y2'}],layout:{...gateBase('Vg (V)','局域背景 (A)'),yaxis2:{title:'峰/背景比',overlaying:'y',side:'right',showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
           reswinGateDensity:{traces:r.settings.useCarrierDensity?[{x:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.delta),mode:'lines+markers',name:'δ'},{x:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.terMax),mode:'lines+markers',name:'TERmax',yaxis:'y2'}]:[],layout:{...gateBase('n_g (cm⁻²)','δ (V)'),yaxis2:{title:'TERmax (%)',overlaying:'y',side:'right',showgrid:false},margin:{l:74,r:64,t:20,b:52}}}
         };
-        for(const [id,spec] of Object.entries(plots)){const el=$('#'+id);if(el)scientificReact(el,spec.traces,spec.layout,{responsive:true,displaylogo:false}).catch(()=>{});}
+        for(const [id,spec] of Object.entries(plots)){const el=$('#'+id);if(el)scientificReact(el,spec.traces,spec.layout,{responsive:true,displaylogo:false},{renderKey:`gate:${gateComputeCache.key}:${id}`}).catch(()=>{});}
         const report=$('#reswinGateReport');if(report){const f=r.fits||{},c=r.correlations||{};report.innerHTML=`<strong>栅压物理分析摘要</strong><p>V0 表示两条所选共振 ridge 的共模位置；δ=(VB−VA)/2 表示有效分裂。用于可分辨度比较时使用 |δ|/w。</p><p>dV0/dVg=${fmt(f.V0?.slope,6)}，R²=${fmt(f.V0?.r2,4)}；d|δ|/dVg=${fmt(f.deltaAbs?.slope,6)}；r[TERmax, |δ|/w]=${fmt(c.terVsDeltaOverW,4)}；r[Vd*, V0]=${fmt(c.vStarVsV0,4)}。</p><p>这些相关量用于检验机制假设，不把 η_eff 直接解释为畴面积，也不把正反扫峰位差直接等同于 coercive voltage。</p>`;}
         const table=$('#reswinGateTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>V0</th><th>δ</th><th>|δ|/w</th><th>TERmax</th><th>Vd*</th><th>η_eff</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.V0,6)}</td><td>${fmt(d.delta,6)}</td><td>${fmt(d.deltaOverW,5)}</td><td>${fmt(d.terMax,4)}</td><td>${fmt(d.vStar,6)}</td><td>${fmt(d.etaEff,4)}</td></tr>`).join('')}</tbody>`;
       }

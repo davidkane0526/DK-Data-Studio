@@ -324,7 +324,7 @@
         colorbar:{title:{text:`${matrix.label||matrix.type}${matrix.unit?` (${matrix.unit})`:''}`,side:'right'},thickness:18,len:.86},
         hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`};
       if(signed)trace.zmid=0;
-      ctx.ui.scientificPlot.react(plot,[trace],{margin:{l:76,r:98,t:26,b:66},xaxis:{title:'Vds (V)',automargin:true,constrain:'domain'},yaxis:{title:'Vg (V)',automargin:true,constrain:'domain'},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},{responsive:true,displaylogo:false,scrollZoom:true},{interaction:T.interaction,source:'ter-transform-heatmap',onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')})
+      ctx.ui.scientificPlot.react(plot,[trace],{margin:{l:76,r:98,t:26,b:66},xaxis:{title:'Vds (V)',automargin:true,constrain:'domain'},yaxis:{title:'Vg (V)',automargin:true,constrain:'domain'},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},{responsive:true,displaylogo:false,scrollZoom:true},{interaction:T.interaction,source:'ter-transform-heatmap',renderKey:`ter-transform:${resultRevision}:${matrix.type}:${matrix.direction}:${matrix.missing}`,onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')})
         .catch?.(err=>console.warn('[TER transformed heatmap]',err));
       return matrix;
     }
@@ -805,11 +805,7 @@
       const result=state?.result||null;
       if(!card||!plot||!ctx.ui.scientificPlot)return;
 
-      if(result!==lastResult){
-        lastResult=result;
-        resultRevision++;
-        selectedTerPoint=null;
-      }
+      syncResultRevision();
 
       if(!result){
         try{ ctx.ui.scientificPlot.purge(plot); }catch(_err){}
@@ -900,7 +896,7 @@
         responsive:true,scrollZoom:true,displaylogo:false,
         modeBarButtonsToAdd:['select2d'],
         toImageButtonOptions:{format:'png',filename:'TER_resistance_voltage',width:1400,height:1000,scale:2}
-      },{interaction:T.interaction,source:'ter-resistance'});
+      },{interaction:T.interaction,source:'ter-resistance',renderKey:`ter-resistance:${resultRevision}:${selectedTerPoint?.id||''}`});
     }
 
     function selectionFromMaxVg(row){
@@ -959,7 +955,18 @@
       attachHeatmapSelection(result);
     }
 
+    function syncResultRevision(){
+      const result=T.getState?.()?.result||null;
+      if(result!==lastResult){
+        lastResult=result;
+        resultRevision++;
+        selectedTerPoint=null;
+      }
+      return result;
+    }
+
     function renderLinkedUi(){
+      syncResultRevision();
       ensureLayoutControls();
       ensureTransformControls();
       ensureResistanceCard();

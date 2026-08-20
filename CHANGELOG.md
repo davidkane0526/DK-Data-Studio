@@ -1,3 +1,15 @@
+# v3.47.0 — Observable scientific caching and render de-duplication
+
+- Adds Core `DKDSPerformance`, a bounded observable memoization/measurement runtime shared by the main renderer and dedicated TOP renderers.
+- Adds Artifact Store global/per-kind revisions so source-data caches invalidate on relevant Artifact changes instead of every derived publication.
+- Memoizes repeated `transformSweep` work by sweep identity and transform parameters without changing the shared science implementation or numerical definitions.
+- Caches TER Artifact conversion, sweep reconstruction and transformed Vg–Vd matrix computation; parameter/source revisions invalidate the appropriate layer.
+- Caches Resonance gate-analysis computation against source-table revisions, accepted peaks and gate/TER settings.
+- Adds ScientificPlot render revision keys and de-duplicates identical `Plotly.react`, Selection focus restyle and tooltip relayout work.
+- Suppresses hidden-document resize animation frames until the window is visible again.
+- Extends the built-in Automation Test runner to 1.2.0 with cache/render-dedupe smoke tests, Performance Runtime metrics and TOP ready-time aggregates.
+- Adds v3.47 performance cache/integration regressions while preserving TER Python parity, scientific-engine parity and plugin boundaries.
+
 # v3.46.1 — Pulse TOP renderer hotfix and strict TOP readiness coverage
 
 - Fixed Pulse TOP startup on an empty project after the header actions migrated to Core ActionGroup and the legacy `#pulseAnalyzeCurrentBtn` DOM id disappeared.

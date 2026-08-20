@@ -334,7 +334,9 @@
     const map=new Map();
     const listeners=new Set();
     const childrenIndex=new Map();
-    let batchDepth=0,batchEvents=[];
+    let batchDepth=0,batchEvents=[],revision=0;
+    const kindRevisions=new Map();
+    function bumpRevision(kind,previousKind=''){revision+=1;for(const raw of new Set([kind,previousKind])){const key=String(raw||'');if(key)kindRevisions.set(key,(kindRevisions.get(key)||0)+1);}}
     function rebuildRelations(){childrenIndex.clear();for(const artifact of map.values())for(const parent of artifact?.lineage?.parents||[]){if(!childrenIndex.has(parent))childrenIndex.set(parent,new Set());childrenIndex.get(parent).add(artifact.id);}}
     function emit(type,artifact,extra={}){const event={type,artifact:artifact?deepClone(artifact):null,...extra};if(batchDepth){batchEvents.push(event);return;}for(const fn of listeners){try{fn(event);}catch(err){console.error(err);}}}
     function begin(){batchDepth++;return()=>endBatch();}
@@ -344,11 +346,11 @@
       version:STORE_VERSION,
       add(artifact,{replace=false}={}){
         const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));
-        const existed=map.has(hydrated.id);if(existed&&!replace)throw new Error(`Artifact already exists: ${hydrated.id}`);
-        map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit(existed?'upsert':'add',hydrated);return hydrated.id;
+        const previous=map.get(hydrated.id),existed=!!previous;if(existed&&!replace)throw new Error(`Artifact already exists: ${hydrated.id}`);
+        map.set(hydrated.id,deepClone(hydrated));bumpRevision(hydrated.kind,previous?.kind);rebuildRelations();emit(existed?'upsert':'add',hydrated);return hydrated.id;
       },
-      upsert(artifact){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit('upsert',hydrated);return hydrated.id;},
-      publish(artifact,{dedupe=true}={}){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));const previous=map.get(hydrated.id);if(dedupe&&previous&&fingerprintArtifact(previous)===fingerprintArtifact(hydrated))return {id:hydrated.id,changed:false,artifact:deepClone(previous)};map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit(previous?'upsert':'add',hydrated,{published:true});return {id:hydrated.id,changed:true,artifact:deepClone(hydrated)};},
+      upsert(artifact){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));const previous=map.get(hydrated.id);map.set(hydrated.id,deepClone(hydrated));bumpRevision(hydrated.kind,previous?.kind);rebuildRelations();emit('upsert',hydrated);return hydrated.id;},
+      publish(artifact,{dedupe=true}={}){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));const previous=map.get(hydrated.id);if(dedupe&&previous&&fingerprintArtifact(previous)===fingerprintArtifact(hydrated))return {id:hydrated.id,changed:false,artifact:deepClone(previous)};map.set(hydrated.id,deepClone(hydrated));bumpRevision(hydrated.kind,previous?.kind);rebuildRelations();emit(previous?'upsert':'add',hydrated,{published:true});return {id:hydrated.id,changed:true,artifact:deepClone(hydrated)};},
       batch(fn){const done=begin();try{return fn?.(api);}finally{done();}},
       get(id){const a=map.get(String(id));return a?deepClone(a):null;},
       getMutable(id){return map.get(String(id))||null;},
@@ -357,10 +359,11 @@
       parents(id){return (map.get(String(id))?.lineage?.parents||[]).map(key=>map.get(key)?deepClone(map.get(key)):null).filter(Boolean);},
       children(id){return [...(childrenIndex.get(String(id))||[])].map(key=>map.get(key)?deepClone(map.get(key)):null).filter(Boolean);},
       lineage,
-      remove(id){const a=map.get(String(id));const ok=map.delete(String(id));if(ok){rebuildRelations();emit('remove',a);}return ok;},
-      clear({includeTransient=true}={}){const removed=[];for(const [id,a] of [...map])if(includeTransient||!a.transient){map.delete(id);removed.push(a);}rebuildRelations();if(removed.length){if(removed.length===1)emit('remove',removed[0]);else emit('clear',null,{ids:removed.map(a=>a.id)});}},
+      remove(id){const a=map.get(String(id));const ok=map.delete(String(id));if(ok){bumpRevision(a?.kind);rebuildRelations();emit('remove',a);}return ok;},
+      clear({includeTransient=true}={}){const removed=[];for(const [id,a] of [...map])if(includeTransient||!a.transient){map.delete(id);removed.push(a);}if(removed.length){revision+=1;for(const a of removed){const key=String(a?.kind||'');if(key)kindRevisions.set(key,(kindRevisions.get(key)||0)+1);}}rebuildRelations();if(removed.length){if(removed.length===1)emit('remove',removed[0]);else emit('clear',null,{ids:removed.map(a=>a.id)});}},
       onChange(fn){listeners.add(fn);return()=>listeners.delete(fn);},
       size(){return map.size;},
+      revision:kind=>{const key=String(kind||'');return key?(kindRevisions.get(key)||0):revision;},
       fingerprint:id=>{const a=map.get(String(id));return a?fingerprintArtifact(a):'';}
     };
     api.batch(()=>{for(const a of safeArray(initial))api.upsert(a);});

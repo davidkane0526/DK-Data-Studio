@@ -28,7 +28,7 @@
   class ScientificPlotView {
     constructor(owner,target,spec={}){
       this.owner=String(owner||'core');this.target=resolve(target);this.spec={...spec};this.disposed=false;this.bound=false;this.selectionOff=null;this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.lastSelection=null;
-      this.pinnedIds=new Set();this.pinListeners=new Set();this.viewportListeners=new Set();this.viewportState={xRange:null,yRange:null,revision:0,source:'initial'};this.hoverState=null;this.eventHandlers=new Map();this.controllerSpec=normalizeControllerSpec(spec);
+      this.pinnedIds=new Set();this.pinListeners=new Set();this.viewportListeners=new Set();this.viewportState={xRange:null,yRange:null,revision:0,source:'initial'};this.hoverState=null;this.eventHandlers=new Map();this.controllerSpec=normalizeControllerSpec(spec);this.lastRenderKey='';this.appliedStyleKey='';this.renderStats={reacts:0,skippedReacts:0,selectionApplies:0,selectionSkips:0,styleRestores:0};
       if(!this.target)throw new Error('ScientificPlot target not found.');
       this.chart=window.DKDSCharts?.createScope?.(this.owner)||window.DKDSCharts;
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
@@ -50,11 +50,11 @@
       });
     }
     controller(name){return this.controllers?.[String(name||'')]||null;}
-    configureController(name,spec={}){const key=String(name||'');if(!this.controllerSpec[key])return null;this.controllerSpec[key]={...this.controllerSpec[key],...(spec||{})};if(key==='viewport')this.restoreViewportPreference();if(key==='focus')this.applySelection(this.lastSelection);return clone(this.controllerSpec[key]);}
+    configureController(name,spec={}){const key=String(name||'');if(!this.controllerSpec[key])return null;this.controllerSpec[key]={...this.controllerSpec[key],...(spec||{})};if(key==='viewport')this.restoreViewportPreference();if(key==='focus'){this.appliedStyleKey='';this.applySelection(this.lastSelection);}return clone(this.controllerSpec[key]);}
     setInteraction(interaction){if(this.interaction===interaction)return;this.selectionOff?.();this.selectionOff=null;this.interaction=interaction||null;if(this.interaction?.subscribe)this.selectionOff=this.interaction.subscribe((snapshot,meta)=>{this.lastSelection=snapshot;this.applySelection(snapshot,meta);},{immediate:true});}
     registerEntity(input,parentIds=[]){if(!input)return null;const raw=typeof input==='string'?{id:input}:input;if(!raw?.id)return null;try{return this.entities?.upsert?.({...raw,parents:raw.parents||raw.parentId||parentIds})||raw;}catch{return raw;}}
     normalizeMappings(traces,spec){
-      this.traceEntities=[];this.pointEntities=[];this.baseStyles=traces.map(baseTraceStyle);
+      this.traceEntities=[];this.pointEntities=[];this.baseStyles=traces.map(baseTraceStyle);this.appliedStyleKey='';
       traces.forEach((trace,ti)=>{
         let traceEntity=null;
         try{traceEntity=typeof spec.traceEntity==='function'?spec.traceEntity(trace,ti,this):(trace.entity||trace.entityId||trace.meta?.entityId||null);}catch{}
@@ -109,26 +109,30 @@
     hoverSnapshot(event){const point=event?.points?.[0];const entity=point?this.entityFromPoint(point):null;return {entityId:entity?.id||'',curveNumber:point?.curveNumber??null,pointNumber:point?.pointNumber??point?.pointIndex??null,x:point?.x,y:point?.y,z:point?.z};}
     applyTooltipTheme(){
       if(this.controllerSpec.tooltip.enabled===false)return false;const theme=this.chart?.tooltipTheme||window.DKDSCharts?.tooltipTheme||null;if(!theme||!this.chart?.relayout)return false;
+      const themeKey=[theme.bgcolor||'',theme.bordercolor||'',theme.align||'',theme.font?.color||'',finite(theme.font?.size)?Number(theme.font.size):''].join('|');
+      if(this.target.dataset.dkdsTooltipTheme===themeKey){window.DKDSPerformance?.skip?.('plot.tooltip-relayout');return false;}
       const update={};if(theme.bgcolor)update['hoverlabel.bgcolor']=theme.bgcolor;if(theme.bordercolor)update['hoverlabel.bordercolor']=theme.bordercolor;if(theme.align)update['hoverlabel.align']=theme.align;if(theme.font?.color)update['hoverlabel.font.color']=theme.font.color;if(finite(theme.font?.size))update['hoverlabel.font.size']=Number(theme.font.size);
-      if(!Object.keys(update).length)return false;try{this.chart.relayout(this.target,update);this.target.dataset.dkdsTooltipTheme='core';return true;}catch{return false;}
+      if(!Object.keys(update).length)return false;try{this.chart.relayout(this.target,update);this.target.dataset.dkdsTooltipTheme=themeKey;return true;}catch{return false;}
     }
     legendState(){return (this.target?.data||[]).map((trace,index)=>({index,entityId:this.traceEntities[index]||'',name:String(trace?.name||''),visible:trace?.visible!==false&&trace?.visible!=='legendonly',legendgroup:String(trace?.legendgroup||'')}));}
     related(entityId,focusId){if(!entityId||!focusId)return false;if(entityId===focusId)return true;return !!this.entities?.related?.(entityId,focusId);}
     isEntityActive(entityId,focusId){if(!entityId)return false;if(this.pinnedIds.has(entityId))return true;return this.related(entityId,focusId);}
     applySelection(snapshot){
       if(this.disposed||!this.target?.data?.length||!this.chart?.restyle)return false;const focusId=asId(snapshot?.focus?.id||snapshot?.items?.at?.(-1)?.id||'');
+      const styleKey=`focus:${focusId}|pins:${[...this.pinnedIds].sort().join(',')}`;
+      if(this.appliedStyleKey===styleKey){this.renderStats.selectionSkips+=1;window.DKDSPerformance?.skip?.('plot.selection-restyle');return false;}
       if(!focusId&&!this.pinnedIds.size)return this.restoreStyles();
       const traceActive=this.traceEntities.map(id=>this.isEntityActive(id,focusId));const pointActive=this.pointEntities.map(ids=>ids.map(id=>this.isEntityActive(id,focusId)));
       const any=traceActive.some(Boolean)||pointActive.some(row=>row.some(Boolean));if(!any)return this.restoreStyles();
-      const policy=this.controllerSpec.focus;
+      const policy=this.controllerSpec.focus;this.renderStats.selectionApplies+=1;
       this.target.data.forEach((trace,ti)=>{
         const activeTrace=traceActive[ti]||pointActive[ti]?.some(Boolean);const base=this.baseStyles[ti]||baseTraceStyle(trace);const update={'opacity':[activeTrace?Math.max(Number(policy.activeOpacity)||.96,Number(base.opacity)||1):Number(policy.inactiveOpacity)]};
         if(trace?.line)update['line.width']=[activeTrace?Math.max(Number(policy.activeLineWidth)||2.6,Number(base.lineWidth)||1.5):Math.max(.5,(Number(base.lineWidth)||1.5)*Number(policy.inactiveLineFactor||.8))];
         const pointFlags=pointActive[ti]||[];if(pointFlags.some(Boolean)&&trace?.marker){const count=Math.max(pointFlags.length,Array.isArray(trace.x)?trace.x.length:0);const sizes=[];const opacities=[];for(let i=0;i<count;i++){const active=pointFlags[i]||this.pinnedIds.has(this.pointEntities?.[ti]?.[i]||'');const raw=Array.isArray(base.markerSize)?Number(base.markerSize[i]):Number(base.markerSize)||7;sizes.push(active?Math.max(raw+Number(policy.pointSizeBoost||3),Number(policy.pointMinSize||10)):Math.max(3,raw));opacities.push(active?1:Number(policy.pointInactiveOpacity||.18));}update['marker.size']=[sizes];update['marker.opacity']=[opacities];update['opacity']=[1];}
         try{this.chart.restyle(this.target,update,[ti]);}catch{}
-      });return true;
+      });this.appliedStyleKey=styleKey;return true;
     }
-    restoreStyles(){if(this.disposed||!this.target?.data?.length)return false;this.target.data.forEach((trace,ti)=>{const base=this.baseStyles[ti]||baseTraceStyle(trace),update={'opacity':[base.opacity]};if(trace?.line)update['line.width']=[base.lineWidth];if(trace?.marker){update['marker.opacity']=[base.markerOpacity];if(base.markerSize!==undefined)update['marker.size']=[clone(base.markerSize)];}try{this.chart.restyle(this.target,update,[ti]);}catch{}});return true;}
+    restoreStyles(){if(this.disposed||!this.target?.data?.length)return false;if(this.appliedStyleKey==='restored'){this.renderStats.selectionSkips+=1;window.DKDSPerformance?.skip?.('plot.selection-restyle');return false;}this.target.data.forEach((trace,ti)=>{const base=this.baseStyles[ti]||baseTraceStyle(trace),update={'opacity':[base.opacity]};if(trace?.line)update['line.width']=[base.lineWidth];if(trace?.marker){update['marker.opacity']=[base.markerOpacity];if(base.markerSize!==undefined)update['marker.size']=[clone(base.markerSize)];}try{this.chart.restyle(this.target,update,[ti]);}catch{}});this.appliedStyleKey='restored';this.renderStats.styleRestores+=1;return true;}
     pin(id,meta={}){const key=asId(id);if(!key)return false;const changed=!this.pinnedIds.has(key);this.pinnedIds.add(key);if(changed)this.emitPins({reason:'pin',id:key,...meta});this.applySelection(this.lastSelection);return changed;}
     unpin(id,meta={}){const key=asId(id);if(!key)return false;const changed=this.pinnedIds.delete(key);if(changed)this.emitPins({reason:'unpin',id:key,...meta});this.applySelection(this.lastSelection);return changed;}
     togglePin(id,meta={}){return this.pinnedIds.has(asId(id))?(this.unpin(id,meta),false):(this.pin(id,meta),true);}
@@ -155,9 +159,12 @@
       this.spec={...this.spec,...spec,traceEntity:spec.traceEntity??null,pointEntity:spec.pointEntity??null,onEntitySelect:spec.onEntitySelect??null,onClick:spec.onClick??null,onLegendAction:spec.onLegendAction??null,onAreaSelect:spec.onAreaSelect??null};this.controllerSpec=normalizeControllerSpec(this.spec);if(spec.interaction!==undefined)this.setInteraction(spec.interaction);const traces=clone(this.target?.data||this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);this.bindPlotEvents();this.applyTooltipTheme();void this.applyViewportState({reason:'plot-attach'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-attach'});return this;
     }
     async set(spec={}){
-      this.prepareSpec(spec);const traces=clone(this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);
-      await this.chart.react(this.target,traces,this.spec.layout||{},this.spec.config||{});this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
+      this.prepareSpec(spec);const renderKey=asId(this.spec.renderKey||this.spec.revisionKey||'');
+      if(renderKey&&renderKey===this.lastRenderKey&&this.target?.data?.length){this.renderStats.skippedReacts+=1;window.DKDSPerformance?.skip?.('plot.react');this.bindPlotEvents();this.applyTooltipTheme();return this;}
+      const traces=clone(this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);
+      await this.chart.react(this.target,traces,this.spec.layout||{},this.spec.config||{});this.renderStats.reacts+=1;if(renderKey)this.lastRenderKey=renderKey;else this.lastRenderKey='';this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
     }
+    performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0});}
     resize(){return this.chart?.resize?.(this.target);}
     dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;for(const [name,handler] of this.eventHandlers)try{this.target?.removeListener?.(name,handler);}catch{}this.eventHandlers.clear();this.bound=false;this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
   }
@@ -179,6 +186,7 @@
     pin(target,id,meta={}){return this.get(target)?.pin?.(id,meta)||false;}
     unpin(target,id,meta={}){return this.get(target)?.unpin?.(id,meta)||false;}
     pins(target){return this.get(target)?.controllers?.pin?.list?.()||[];}
+    stats(target){return this.get(target)?.performance?.()||null;}
     saveImage(target,baseName,format='svg',options={}){return this.get(target)?.exportImage?.(baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options);}
     purge(target){const key=this.key(target),view=this.views.get(key),chart=view?.chart||window.DKDSCharts;view?.dispose?.();this.views.delete(key);return chart?.purge?.(target);}
     dispose(){for(const view of this.views.values())view.dispose?.();this.views.clear();}

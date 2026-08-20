@@ -138,7 +138,7 @@
     return out;
   }
 
-  function transformSweep(sweep,type='raw',options={}){
+  function computeTransformSweep(sweep,type='raw',options={}){
     const pts=sweep?.points||[];
     if(!pts.length)return {type,points:[],unit:'',label:type};
     const x=pts.map(p=>p.v);
@@ -191,6 +191,13 @@
       dvdi,
       resistance
     };
+  }
+
+  function transformSweep(sweep,type='raw',options={}){
+    const perf=globalThis.DKDSPerformance;
+    if(!perf?.memoWeak||!sweep||typeof sweep!=='object')return computeTransformSweep(sweep,type,options);
+    const key=[String(type||'raw'),Number(options?.radius??2),Number(options?.currentFloor??0),Number(sweep?.step??0)].join('|');
+    return perf.memoWeak('science.transformSweep',sweep,key,()=>computeTransformSweep(sweep,type,options),{signature:sweep.points,limit:12});
   }
 
   function localExtremaScore(y,j,kind='max',window=5){

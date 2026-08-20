@@ -25,6 +25,7 @@
     'state-store':'../core/state-store.js',
     'io-runtime':'../core/io-runtime.js',
     'chart-runtime':'../core/chart-runtime.js',
+    'performance-runtime':'../core/performance-runtime.js',
     'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
     'component-runtime':'../core/component-runtime.js',
     'data-flow-runtime':'../core/data-flow-runtime.js',
@@ -135,7 +136,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['entity-runtime','io-runtime','chart-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
@@ -230,6 +231,7 @@
 
   const artifactsApi = {
     list: options => artifactStore?.list?.(options) || [],
+    revision: kind => artifactStore?.revision?.(kind) || 0,
     get: id => artifactStore?.get?.(id) || null,
     parents: id => artifactStore?.parents?.(id) || [],
     children: id => artifactStore?.children?.(id) || [],
@@ -375,7 +377,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.46.1',
+      appVersion:'3.47.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

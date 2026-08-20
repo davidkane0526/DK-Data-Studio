@@ -436,6 +436,7 @@
       const effectiveEmit=this.dispatching?false:emit;
       const previous=this.pending||{};
       this.pending={...previous,...payload,_emit:previous._emit===true||effectiveEmit};
+      if(typeof document!=='undefined'&&document.hidden){window.DKDSPerformance?.skip?.('ui.hidden-resize');return;}
       if(this.raf)return;
       const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));
       this.raf=raf(()=>this.flush());
@@ -1511,6 +1512,7 @@
         pin:(target,id,meta={})=>this.scientificPlotly?.pin?.(target,id,meta)||false,
         unpin:(target,id,meta={})=>this.scientificPlotly?.unpin?.(target,id,meta)||false,
         pins:target=>this.scientificPlotly?.pins?.(target)||[],
+        stats:target=>this.scientificPlotly?.stats?.(target)||null,
         saveImage:(target,baseName,format='svg',options={})=>this.scientificPlotly?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
         purge:target=>this.scientificPlotly?.purge?.(target)||window.DKDSCharts?.purge?.(target)
       };

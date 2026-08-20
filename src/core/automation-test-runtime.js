@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.1.1';
+  const VERSION='1.2.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -77,7 +77,12 @@
     const scope=ui.createScope('core.automation-scientific-plot');
     try{
       const interaction=scope.interactionRuntime.create('plot',{selection:{multiple:true,defaultType:'data.series'},defaultType:'data.series'});
-      const view=await scope.scientificPlot.react(host,[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'A',entityId:'automation.plot:A'},{x:[0,1,2],y:[2,1,4],mode:'lines+markers',name:'B',entityId:'automation.plot:B'}],{width:360,height:240,margin:{l:40,r:20,t:20,b:35},showlegend:true},{displayModeBar:false,staticPlot:true},{interaction,source:'automation-scientific-plot',traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),pinPolicy:{enabled:true}});
+      const plotData=[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'A',entityId:'automation.plot:A'},{x:[0,1,2],y:[2,1,4],mode:'lines+markers',name:'B',entityId:'automation.plot:B'}];
+      const plotLayout={width:360,height:240,margin:{l:40,r:20,t:20,b:35},showlegend:true};
+      const plotSpec={interaction,source:'automation-scientific-plot',renderKey:'automation-static-v1',traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),pinPolicy:{enabled:true}};
+      const view=await scope.scientificPlot.react(host,plotData,plotLayout,{displayModeBar:false,staticPlot:true},plotSpec);
+      await scope.scientificPlot.react(host,plotData,plotLayout,{displayModeBar:false,staticPlot:true},plotSpec);
+      const renderStats=scope.scientificPlot.stats(host);assert(renderStats?.skippedReacts>=1,'ScientificPlot did not skip an unchanged renderKey.');
       assert(view?.controllers,'ScientificPlot controller surface unavailable.');
       const required=['selection','legend','tooltip','focus','pin','viewport','export'];for(const name of required)assert(view.controllers[name],`ScientificPlot controller missing: ${name}`);
       view.controllers.pin.pin('automation.plot:A',{source:'automation'});assert(view.controllers.pin.has('automation.plot:A'),'Pin controller did not retain the entity.');
@@ -86,8 +91,18 @@
       await view.controllers.viewport.reset({source:'automation'});assert(view.controllers.viewport.get()?.xRange===null,'Viewport reset did not restore autorange state.');
       assert(view.controllers.legend.state().length===2,'Legend controller did not expose rendered traces.');
       assert(view.controllers.tooltip.theme()?.bgcolor,'Tooltip controller did not expose the Core theme.');
-      return {controllers:required,pins:view.controllers.pin.list().length,legendEntries:view.controllers.legend.state().length,viewportRevision:view.controllers.viewport.get()?.revision||0};
+      return {controllers:required,pins:view.controllers.pin.list().length,legendEntries:view.controllers.legend.state().length,viewportRevision:view.controllers.viewport.get()?.revision||0,renderStats};
     }finally{try{scope.dispose?.();}catch{}try{window.Plotly?.purge?.(host);}catch{}host.remove();}
+  }
+
+  function performanceCacheSmoke(){
+    const perf=window.DKDSPerformance;assert(perf?.memo&&perf?.snapshot,'Performance Runtime unavailable.');
+    perf.clear('automation.memo');perf.resetMetrics('automation.memo');let calls=0;
+    const first=perf.memo('automation.memo','same-input',()=>{calls+=1;return {value:42};},{limit:4});
+    const second=perf.memo('automation.memo','same-input',()=>{calls+=1;return {value:99};},{limit:4});
+    assert(calls===1,'Memo cache recomputed an unchanged input.');assert(first?.value===42&&second?.value===42,'Memo cache did not preserve the cached result.');
+    const row=perf.snapshot().namespaces.find(item=>item.namespace==='automation.memo');assert(row?.hits>=1&&row?.misses>=1,'Performance cache metrics are incomplete.');
+    return {hits:row.hits,misses:row.misses,computes:row.computes,hitRate:row.hitRate};
   }
 
   function selectionContractSmoke(){
@@ -164,7 +179,7 @@
 
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
-      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
+      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
@@ -178,6 +193,7 @@
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
+    await runCase('performance.cache','Performance cache & render dedupe','Performance',performanceCacheSmoke);
 
     const tops=enabledTopActivities();let testedTopCount=0,passedTopCount=0;const topOutcomes=[];
     if(window.electronAPI?.diagnosticsRunActivitySmoke){
@@ -208,7 +224,9 @@
     // Deliberately exclude project contents, imported experimental values and
     // file paths. The report is safe to send for debugging without exporting
     // the user's scientific data.
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])]},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const topReadyMs=state.results.filter(row=>row.id?.startsWith?.('top.')&&row.id!=='top.coverage'&&row.status==='pass'&&Number.isFinite(Number(row.data?.durationMs))).map(row=>Number(row.data.durationMs));
+    const performanceSnapshot=window.DKDSPerformance?.snapshot?.()||null;
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

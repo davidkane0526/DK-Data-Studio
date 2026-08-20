@@ -12,16 +12,20 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
       let display={};
       let transform={type:'didv',direction:1};
       let result=null;
+      let projectEpoch=0;
+      let inputCache={key:'',rows:null,datasets:null,sweeps:null};
+      let transformCache={key:'',value:null};
+      function invalidateComputeCaches({inputs=true}={}){if(inputs)inputCache={key:'',rows:null,datasets:null,sweeps:null};transformCache={key:'',value:null};}
 
       function applyProject(next){
-        project=next||{};
+        project=next||{};projectEpoch+=1;invalidateComputeCaches();
         settings={
           vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,
           ...(project.terMaxSettings||{})
@@ -43,24 +47,32 @@
         if(Array.isArray(live))return new Map(live);
         return new Map(Array.isArray(project.scanVisibility)?project.scanVisibility:[]);
       }
+      function inputCacheKey(){
+        const tableRevision=Number(artifacts?.revision?.('data.table'))||0;
+        const visibility=settings.onlyFullyVisible?[...visibilityMap().entries()].map(([path,row])=>`${path}:${row?.forward!==false?1:0}${row?.reverse!==false?1:0}`).sort().join('|'):'all';
+        return `${projectEpoch}|table:${tableRevision}|visible:${settings.onlyFullyVisible?1:0}|${visibility}`;
+      }
       function datasets(){
         // Imported source data is canonical through the shared Artifact Store.
         // `project.datasets` remains a compatibility fallback for old project
         // files and bootstrap phases before the data-model bridge is available.
+        const key=inputCacheKey();
+        if(inputCache.key===key&&inputCache.datasets){performance?.skip?.('datasets-rebuild');return inputCache.datasets;}
         const rows=artifacts?.list?.({includeTransient:true})||[];
         const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-        const datasets=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
-        if(!settings.onlyFullyVisible)return datasets.slice();
-        const vis=visibilityMap();
-        return datasets.filter(ds=>{
-          const v=vis.get(ds.path);
-          return !!v?.forward&&!!v?.reverse;
-        });
+        const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
+        let next=source.slice();
+        if(settings.onlyFullyVisible){const vis=visibilityMap();next=next.filter(ds=>{const v=vis.get(ds.path);return !!v?.forward&&!!v?.reverse;});}
+        inputCache={key,rows,datasets:next,sweeps:null};
+        return next;
       }
 
       function allSweeps(){
         if(typeof A?.buildSweeps!=='function')return [];
-        return datasets().flatMap(ds=>A.buildSweeps(ds)||[]);
+        const rows=datasets();
+        if(inputCache.sweeps){performance?.skip?.('sweeps-rebuild');return inputCache.sweeps;}
+        inputCache.sweeps=rows.flatMap(ds=>A.buildSweeps(ds)||[]);
+        return inputCache.sweeps;
       }
       function sourceFileByVg(){
         const out={};if(!result)return out;
@@ -72,12 +84,14 @@
       }
       function transformMatrix(){
         if(!result||typeof A?.computeSweepTransformMatrix!=='function')return null;
-        return A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
-          type:transform.type,
-          direction:transform.direction,
-          tolerance:result.used?.tolerance,
-          sourceFileByVg:sourceFileByVg()
+        const key=[inputCacheKey(),transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
+        if(transformCache.key===key&&transformCache.value){performance?.skip?.('transform-matrix');return transformCache.value;}
+        const value=performance?.measure?.('transform-matrix',()=>A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
+          type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,sourceFileByVg:sourceFileByVg()
+        }))||A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
+          type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,sourceFileByVg:sourceFileByVg()
         });
+        transformCache={key,value};return value;
       }
       function transformCsv(){
         const matrix=transformMatrix();if(!matrix)return '';
@@ -86,7 +100,7 @@
         return rows.join('\n');
       }
       function sourceArtifactIds(){
-        const ids=[];for(const artifact of artifacts?.list?.({includeTransient:true})||[]){if(artifact?.metadata?.adapter==='legacy-dataset')ids.push(String(artifact.id));}return ids;
+        datasets();const ids=[];for(const artifact of inputCache.rows||[]){if(artifact?.metadata?.adapter==='legacy-dataset')ids.push(String(artifact.id));}return ids;
       }
       function publishDerivedArtifacts(){
         if(!result||!D||!artifacts)return false;
@@ -100,7 +114,7 @@
       }
       function setTransformSettings(next={}){
         const type=String(next.type??transform.type??'didv'),direction=Number(next.direction??transform.direction)<0?-1:1;
-        transform={type:['raw','detrend','didv','dlog','dvdi','resistance'].includes(type)?type:'didv',direction};
+        transform={type:['raw','detrend','didv','dlog','dvdi','resistance'].includes(type)?type:'didv',direction};invalidateComputeCaches({inputs:false});
         if(result)publishDerivedArtifacts();
         scheduleSnapshot();
         return cloneSerializable(transform);
@@ -161,7 +175,7 @@
       }
 
       function calculate(){
-        readInputs();
+        readInputs();invalidateComputeCaches({inputs:false});
         try{
           result=A.computeTerMatrix(datasets(),settings);
           settings={...settings,
@@ -305,14 +319,14 @@
           transform={type:'didv',direction:1,...(source.transform||{})};
           transform.type=['raw','detrend','didv','dlog','dvdi','resistance'].includes(String(transform.type))?String(transform.type):'didv';
           transform.direction=Number(transform.direction)<0?-1:1;
-          result=source.result?cloneSerializable(source.result):null;
+          result=source.result?cloneSerializable(source.result):null;invalidateComputeCaches();
           if($('#terSummary'))render();
         },
         reset(){
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
           transform={type:'didv',direction:1};
-          result=null;
+          result=null;invalidateComputeCaches();
           if($('#terSummary'))render();
           scheduleSnapshot();
         },
@@ -323,7 +337,7 @@
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
           syncDisplay();if(result)renderResult();scheduleSnapshot();setStatus('TER 热图色阶和坐标刻度已恢复自动。');
         },
-        setOnlyFullyVisible(value){settings.onlyFullyVisible=!!value;autoParameters();},
+        setOnlyFullyVisible(value){settings.onlyFullyVisible=!!value;invalidateComputeCaches();autoParameters();},
         exportLong:()=>saveCsv('TER_long.csv',longCsv()),
         copyLong:()=>copyTextToClipboard(longCsv(),'TER_long CSV'),
         exportMatrix:()=>saveCsv('TER_matrix.csv',matrixCsv()),

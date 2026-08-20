@@ -1,7 +1,7 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.46.1",
+  "version": "3.47.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "runtime",

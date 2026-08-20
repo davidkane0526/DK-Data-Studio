@@ -1813,6 +1813,7 @@
     const emit=payload=>window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',payload);
     const api={
       list:options=>state.artifactStore?.list?.(options)||[],
+      revision:kind=>state.artifactStore?.revision?.(kind)||0,
       get:id=>state.artifactStore?.get?.(id)||null,
       parents:id=>state.artifactStore?.parents?.(id)||[],
       children:id=>state.artifactStore?.children?.(id)||[],
@@ -5347,7 +5348,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.46.1',
+      version:'3.47.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6668,7 +6669,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.46.1',
+      appVersion:'3.47.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,

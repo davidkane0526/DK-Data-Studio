@@ -1422,6 +1422,13 @@
       }),
       io: ioScope,
       science: window.DKDSScience || window.Analysis || null,
+      performance: Object.freeze({
+        memoWeak:(namespace,target,key,compute,options={})=>window.DKDSPerformance?.memoWeak?.(`${pluginId}.${String(namespace||'core')}`,target,key,compute,options)??compute?.(),
+        memo:(namespace,key,compute,options={})=>window.DKDSPerformance?.memo?.(`${pluginId}.${String(namespace||'core')}`,key,compute,options)??compute?.(),
+        measure:(namespace,fn)=>window.DKDSPerformance?.measure?.(`${pluginId}.${String(namespace||'core')}`,fn)??fn?.(),
+        skip:(namespace,count=1)=>window.DKDSPerformance?.skip?.(`${pluginId}.${String(namespace||'core')}`,count),
+        metric:namespace=>window.DKDSPerformance?.metric?.(`${pluginId}.${String(namespace||'core')}`)||null
+      }),
       services: serviceScope,
       modules: moduleScope,
       recipes: Object.freeze({
@@ -1478,6 +1485,7 @@
         }),
         artifacts: {
           list: options => {const rows=host?.artifacts?.list?.(options)||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return rows;},
+          revision: kind => host?.artifacts?.revision?.(kind)||0,
           get: id => {const row=host?.artifacts?.get?.(id)||null;if(row)infrastructureScope?.entities?.projectArtifact?.(row);return row;},
           add: (artifact, options) => {const result=host?.artifacts?.add?.(artifact, options);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
           upsert: artifact => {const result=host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
