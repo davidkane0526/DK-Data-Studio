@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.5.0';
+  const VERSION='1.6.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -192,6 +192,21 @@
     }finally{P.removeOwner?.('core.automation-pipeline');perf.clear?.('automation.pipeline.pipeline.didv');}
   }
 
+  function scientificTransformRegistrySmoke(){
+    const T=window.DKDSScientificTransforms,D=window.DKDSData,P=window.DKDSScientificPipeline;
+    assert(T?.list&&T?.runCurve&&T?.runScalarField,'Scientific Transform Registry unavailable.');
+    const rows=T.list({public:true});const ids=rows.map(row=>row.id);
+    for(const id of ['raw','detrend','didv','d2idv2','dlog','dvdi','resistance'])assert(ids.includes(id),`Missing canonical transform: ${id}`);
+    const make=(id,vg,scale)=>D.createSweep({id,name:id,semanticType:'science.iv.raw',x:[-0.2,-0.1,0,0.1,0.2],y:[-2,-1,0.2,1.4,2.2].map(v=>v*1e-9*scale),xUnit:'V',yUnit:'A',direction:1,scanAxis:'Vd',metadata:{vg}});
+    const a=make('automation:transform-a',0,1),b=make('automation:transform-b',1,1.2);
+    const curve=T.runCurve('didv',a);assert(curve.semanticType==='science.transport.didv'&&curve.points.length===a.x.length,'Canonical curve transform failed.');
+    const field=T.runScalarField('didv',[a,b],{targets:[-0.2,0,0.2],vgs:[0,1],direction:1,tolerance:.03});
+    assert(field.semanticType==='science.transport.conductance-field'&&field.matrix.length===2&&field.matrix[0].length===3,'Canonical scalar-field projection failed.');
+    assert(P?.list?.({owner:'builtin.ter-analysis'}).some(row=>row.id==='scalar-field.didv'),'TER did not receive Core transform Pipeline stages.');
+    assert(P?.list?.({owner:'builtin.resonance-workbench'}).some(row=>row.id==='transform.didv'),'Resonance did not receive Core transform Pipeline stages.');
+    return {version:T.VERSION,registered:rows.length,curveType:curve.semanticType,fieldType:field.semanticType,fieldShape:[field.vgs.length,field.targets.length],terPipeline:true,resonancePipeline:true};
+  }
+
   function scienceTransformSmoke(){
     const science=window.DKDSScience;assert(science?.transformSweep,'Science transform runtime unavailable.');
     const points=[];for(let k=0;k<=40;k++){const v=-1+k*0.05;points.push({v,i:2e-9*v+8e-9*Math.exp(-(((v-.2)/.12)**2))});}
@@ -212,7 +227,7 @@
 
   function dataTypeSmoke(){
     const types=window.DKDSUI?.dataTypes;assert(types,'Data Type Registry unavailable.');
-    const required=['science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.resonance.peak','science.resonance.fwhm','science.ter.value','science.ter.matrix'];
+    const required=['science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.transport.current-field','science.transport.background-removed-current-field','science.transport.conductance-field','science.transport.second-derivative-current-field','science.transport.log-current-slope-field','science.transport.differential-resistance-field','science.transport.resistance-field','science.resonance.peak','science.resonance.fwhm','science.ter.value','science.ter.matrix'];
     for(const id of required)assert(types.get(id),`Missing canonical data type: ${id}`);
     assert(types.isA('resonance.peak','science.resonance.peak'),'Resonance peak is not compatible with canonical resonance peak.');
     assert(types.isA('ter.matrix-point','science.ter.value'),'TER point is not compatible with canonical TER value.');
@@ -237,7 +252,7 @@
 
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
-      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificPipeline','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
+      const names=['DKDSData','DKDSEntities','DKDSUI','DKDSPerformance','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSScientificPipeline','DKDSScientificTransforms','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
@@ -248,6 +263,7 @@
     await runCase('selection.contract','Typed Selection Contract','Data Contract',selectionContractSmoke);
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
+    await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
@@ -290,7 +306,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

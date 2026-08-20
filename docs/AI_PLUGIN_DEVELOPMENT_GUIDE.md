@@ -92,6 +92,8 @@ ctx.data.exporters.register('fit.csv',{run:({value})=>fitCsv(value)});
 
 Use `ctx.data.model` and `ctx.data.formula` for standard table/column operations. Use `ctx.science` for shared mature scientific primitives.
 
+For reusable scientific curve transforms and transform-driven scalar fields, use `ctx.data.transforms` + `ctx.data.pipeline` instead of a plugin-local transform list. Query the registry to populate UI choices. Registering a public transform should be enough for another compatible plugin to discover it; do not add transform-specific branches to TER, Resonance, or the shell. Built-in transport IDs are `raw`, `detrend`, `didv`, `d2idv2`, `dlog`, `dvdi`, and `resistance`.
+
 ## 7. Define domain types and interaction
 
 Register raw/derived/result types with stable IDs and parent types. Then create one Core interaction context for linked plots/tables/inspectors.

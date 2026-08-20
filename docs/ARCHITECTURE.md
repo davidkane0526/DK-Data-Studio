@@ -424,3 +424,21 @@ Pointer-frequency scientific interactions use direct geometry fast paths in Core
 ## v3.41 Core-owned plugin infrastructure
 
 Plugin API v1.8 establishes an enforceable Core-first boundary. New IO, Data Flow, Chart, scoped DOM/Component, Service, Plugin Module, Plugin Contract and Host Recipe runtimes centralize reusable application capabilities. First-party plugins must declare `requiresCore` and cannot directly access Electron, raw Plotly, raw document infrastructure, private observers/schedulers, `ctx.host`, private DKDS globals or the generic untyped registry. See `docs/ARCHITECTURE_V3.41.md` and `docs/PLUGIN_API.md` for the authoritative model.
+
+## v3.50–v3.51 scientific pipeline and transform registry
+
+Scientific derivations use a Core-owned composition path instead of plugin-to-plugin knowledge:
+
+```text
+typed Artifact / Sweep
+        ↓
+Scientific Transform Registry
+        ↓
+Scientific Data Pipeline
+        ↓
+provenance + lineage + typed Artifact
+        ↓
+Selection / ViewModel / ScientificPlot
+```
+
+`ctx.data.pipeline` owns execution metadata, caching, publication and projections. `ctx.data.transforms` owns discoverable transform semantics. Every public transform receives a canonical curve stage `transform.<id>` and may receive a scalar-field stage `scalar-field.<id>`. TER and Resonance consume this registry rather than maintaining independent transform catalogs. Adding a new reusable transform must not require a host change or a TER-specific heatmap branch. SUPER and dedicated TOP derive the same transform/pipeline runtimes from `requiresCore`, preserving host invariance.

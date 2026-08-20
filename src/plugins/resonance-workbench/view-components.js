@@ -4,6 +4,7 @@
   const {VIEW_CATALOG}=Shared;
 
   const byId=id=>VIEW_CATALOG.find(view=>view.id===id)||null;
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function superGatePageHtml(){return `<div class="analysis-page-header">
 <div>
@@ -146,7 +147,9 @@
 </div>
 </div>`;}
 
-  function topPageHtml(){
+  function transformOptionsHtml(ctx){const rows=ctx?.data?.transforms?.list?.({supportsScalarField:true})?.filter?.(row=>row?.public!==false&&(!row.tags?.length||row.tags.includes('transport')))||[];const source=rows.length?rows:[{id:'raw',title:'原始 I–V'},{id:'detrend',title:'去背景 I−Ibg'},{id:'didv',title:'dI/dV'},{id:'d2idv2',title:'d²I/dV²'},{id:'dlog',title:'d ln|I|/dV'},{id:'dvdi',title:'dV/dI'},{id:'resistance',title:'R=|V/I|'}];return source.map(row=>`<option value="${esc(row.id)}">${esc(row.title||row.label||row.id)}</option>`).join('');}
+
+  function topPageHtml(ctx=null){
     return `
       <div class="analysis-page-header resonance-window-header">
         <div><h2>共振分析</h2></div>
@@ -181,7 +184,7 @@
                 <label><input id="reswinShowWidth" type="checkbox"> 显示选中峰宽</label>
                 <label><input id="reswinShowPoints" type="checkbox"> 显示峰位点</label>
                 <label><input id="reswinPhysicsLabels" type="checkbox"> 主图标注物理类型</label>
-                <label class="respar-select-label">辅助视图<select id="reswinTransform"><option value="raw">原始 I–V</option><option value="detrend">去背景 I−Ibg</option><option value="didv">dI/dV</option><option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option></select></label>
+                <label class="respar-select-label">辅助视图<select id="reswinTransform">${transformOptionsHtml(ctx)}</select></label>
               </section>
               <section>
                 <h3>手动操作</h3>
@@ -333,7 +336,7 @@
     ctx.ui.styles.add('resonance-grs-parity',TOP_STYLES);
     const isTop=mode==='top'||ctx.runtime.isAuxiliaryWindow;
     ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振曲线、峰位与物理分析',onActivate:()=>{ctx.workspace.openPage('resonanceDedicatedPage');controller.render();}});
-    const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(),onOpen:()=>controller.render()});
+    const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(ctx),onOpen:()=>controller.render()});
     R.bindUi?.(page);R.setUiRuntime?.(ctx.ui);R.setEntityRuntime?.(ctx.data.entities);R.setDetectorRuntime?.({list:()=>ctx.analysis.detectors.list()});
     let detectorParamPanel=null;
     const renderDetectorPicker=()=>{const select=page.querySelector('#reswinDetectorSelect'),note=page.querySelector('#reswinDetectorDescription'),paramHost=page.querySelector('#reswinDetectorParams');if(!select)return;const rows=ctx.analysis.detectors.list(),state=R.getState?.(),current=String(state?.workspace?.activeDetector||rows.find(row=>row.default)?.id||rows[0]?.id||'');select.innerHTML=rows.map(row=>`<option value="${String(row.id).replace(/"/g,'&quot;')}">${String(row.shortName||row.name||row.id)}</option>`).join('');if(rows.some(row=>String(row.id)===current))select.value=current;const renderActive=()=>{const row=rows.find(item=>String(item.id)===select.value);if(note)note.textContent=row?.description||'选择当前使用的寻峰算法。';detectorParamPanel?.dispose?.();detectorParamPanel=null;if(paramHost)paramHost.replaceChildren();if(row?.parameterSchema&&paramHost&&ctx.parameters?.render){const ws=R.getState?.()?.workspace||{},value=ws.detectorSettings?.[row.id]||ws.algorithms||{};detectorParamPanel=ctx.parameters.render(paramHost,row.parameterSchema,{value,onChange:next=>R.setDetectorSettings?.(row.id,next)});}};select.onchange=()=>{R.setActiveDetector?.(select.value);renderActive();};renderActive();};

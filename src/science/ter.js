@@ -318,9 +318,9 @@
     });
   }
 
-  const TER_TRANSFORM_HEATMAP_TYPES=new Set(['raw','detrend','didv','dlog','dvdi','resistance']);
+  const TER_TRANSFORM_HEATMAP_TYPES=new Set(['raw','detrend','didv','d2idv2','dlog','dvdi','resistance']);
 
-  function computeSweepTransformMatrix(sweeps,targets,vgs,options={}){
+  function computeSweepScalarField(sweeps,targets,vgs,options={}){
     if(typeof transformSweep!=='function')throw new Error('当前科学引擎未提供 transformSweep。');
     const type=TER_TRANSFORM_HEATMAP_TYPES.has(String(options.type||''))?String(options.type):'didv';
     const direction=Number(options.direction)<0?-1:1;
@@ -366,8 +366,14 @@
     return {type,direction,label,unit,targets:requestedTargets,vgs:requestedVgs,matrix,sources,missing};
   }
 
+  // Backward-compatible name retained for TER projects/plugins. The implementation
+  // is transport-generic and is also consumed by Core Scientific Transform Runtime.
+  function computeSweepTransformMatrix(sweeps,targets,vgs,options={}){
+    return computeSweepScalarField(sweeps,targets,vgs,options);
+  }
+
   function computeTerForLabel(peaks,sweeps,label,visibleSweepIds=null){
     return computeResonantTerForLabel(peaks,sweeps,label,visibleSweepIds);
   }
-  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeSweepTransformMatrix,computeTerForLabel};
+  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeSweepScalarField,computeSweepTransformMatrix,computeTerForLabel};
 });

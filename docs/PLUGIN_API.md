@@ -90,7 +90,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 
 - runtime/lifecycle: `runtime`, `events`, `status`, `state`, `project`, `workspace`;
 - base services: `io`, `science`, `performance`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
-- data: `data.flow`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
+- data: `data.flow`, `data.pipeline`, `data.transforms`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
 - UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`.
@@ -187,7 +187,37 @@ ctx.data.entities.upsert({id:'peak:9',type:'my.peak',parents:['sweep:42'],locked
 
 Artifact-backed entities survive plugin deactivation as Core-owned data entities, so another plugin can continue to discover the data lineage.
 
-## 7. Performance and scientific cache stages
+## 7. Scientific pipeline and transform registry
+
+Use `ctx.data.pipeline` when a scientific operation should produce a typed, reproducible derived result. The plugin supplies the domain calculation; Core owns input/output validation, cache identity, provenance, lineage, Artifact publication, typed Selection and ViewModel projection.
+
+Reusable curve transforms must be registered through `ctx.data.transforms`, not copied into plugin-local dropdowns or `if/else` chains. Core ships the canonical transport transforms `raw`, `detrend`, `didv`, `d2idv2`, `dlog`, `dvdi` and `resistance`. A public transform automatically exposes a curve Pipeline stage `transform.<id>` and, when `supportsScalarField` is true, a 2D stage `scalar-field.<id>`.
+
+```js
+const rows = ctx.data.transforms.list({public:true, supportsScalarField:true});
+const fieldStage = ctx.data.transforms.fieldStageId('didv');
+const result = ctx.data.pipeline.runSync(fieldStage, sourceArtifacts, {
+  parameters:{targets, vgs, direction:1}
+});
+```
+
+A plugin may add a reusable domain transform without changing TER, Resonance or the host:
+
+```js
+ctx.data.transforms.register('normalized-conductance', {
+  title:'Normalized conductance',
+  outputType:'my.normalized-conductance',
+  fieldType:'my.normalized-conductance-field',
+  quantity:'conductance',
+  unit:'1',
+  tags:['transport','transform'],
+  run:(sweep,{parameters})=>computeNormalizedConductance(sweep,parameters)
+});
+```
+
+If a transform is only meaningful as a curve, set `supportsScalarField:false`. Keep numerical algorithms in shared science/domain code; the registry describes scientific semantics and execution composition rather than replacing the algorithm implementation. Plugins using this API must declare both `data.transforms` and, when executing the generated stages, `data.pipeline`. Dedicated TOP dependencies are derived from `requiresCore`; do not repeat `scientific-transform-runtime` in `window.dependencies`.
+
+## 8. Performance and scientific cache stages
 
 Use `ctx.performance` for reusable computation caching and measurement. Plugins declare cache identity; Core owns storage, LRU/TTL budgets, lifecycle trim and diagnostics.
 
@@ -203,7 +233,7 @@ const result = ctx.performance.stage(
 
 A plugin may inspect only its own namespace through `ctx.performance.snapshot()` and may trim only its own caches through `ctx.performance.trim()` / `trimAll()`. Do not create a plugin-private memoization Map for reusable scientific stages and do not access `window.DKDSPerformance` directly. Cache identity must contain every scientific input that changes the output.
 
-## 8. Scientific plots
+## 9. Scientific plots
 
 First-party and new plugins use `ctx.ui.scientificPlot` for Plotly/D3 scientific interaction. Do not bind `plotly_click` yourself and do not manually restyle focused traces.
 
@@ -234,7 +264,7 @@ ctx.ui.plotViews.bind('fit:main', card, {
 
 A reusable chart **provider** is still registered with `ctx.charts.register(...)`; a plugin must not create its own renderer registry. `ctx.ui.charts` is retained only as a compatibility path and must not be used by new first-party code.
 
-## 9. DOM, components and scheduling
+## 10. DOM, components and scheduling
 
 Use the plugin-scoped DOM runtime for infrastructure-facing DOM work:
 
@@ -254,7 +284,7 @@ All registered listeners/observers/timers are disposed with the plugin scope. Co
 
 For generic controls use `ctx.ui.components.mount(...)` or `ctx.parameters.render(...)` rather than creating a plugin-local UI framework.
 
-## 10. Workspaces and view roles
+## 11. Workspaces and view roles
 
 SUPER and dedicated TOP are hosting modes of the same plugin UI. The semantic model is:
 
@@ -275,7 +305,7 @@ Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Po
 
 Core Chart Runtime owns the visual tooltip theme for Plotly charts, and Core `.dkds-tooltip` owns the matching custom D3/SVG tooltip appearance. Plugins may define semantic hover content and formatting, but must not define independent tooltip background colors, opacity, borders, shadows or typography.
 
-## 11. Actions, shortcuts and interaction
+## 12. Actions, shortcuts and interaction
 
 ```js
 ctx.ui.actions.mount(actionsHost,{actions:[
@@ -298,7 +328,7 @@ interaction.bindView('legend', legendHost, {
 
 Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal, Entity relationship projection and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. A list/legend item should expose the same Entity ID as its curve/point; `bindView(...,{entityLinked:true})` lets Core resolve a focused child Entity to the nearest displayed ancestor automatically. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state. Linked-view reveal is remount-safe: if a legend/list rebuilds while the focus entity is unchanged, Core must reveal the replacement element again. Horizontal projections use local scrolling so focusing an item never shifts the outer page.
 
-## 12. Project/state/service/module contracts
+## 13. Project/state/service/module contracts
 
 Project-local state:
 
@@ -325,7 +355,7 @@ const analysis=ctx.modules.require('analysis');
 
 `modules` is packaging/internal composition; `services` is runtime service discovery; `capabilities` is cross-plugin/cross-renderer callable behavior.
 
-## 13. Analysis providers, detectors and workflows
+## 14. Analysis providers, detectors and workflows
 
 ```js
 ctx.analysis.providers.register('my.analysis',{name:'My analysis',run});
@@ -335,13 +365,13 @@ ctx.workflow.processors.register('my.processor',{name:'Processor',inputKinds:['d
 
 Parameter UI is schema-driven. A detector/provider should not ship its own settings-widget framework.
 
-## 14. Dedicated TOP windows
+## 15. Dedicated TOP windows
 
 A top-level plugin declares `workspace.role="top"` and a `window` contract in `plugin.json`. The dedicated renderer loads only Core dependencies and that plugin's declared support files. `window-runtime.js` is a thin lifecycle/service adapter; domain algorithms and domain rendering stay in shared modules used by SUPER and TOP alike.
 
 `window-runtime.js` must be registered as the plugin's `window-runtime` Core module. It must not duplicate feature logic.
 
-## 15. Validation commands
+## 16. Validation commands
 
 Run before delivery:
 

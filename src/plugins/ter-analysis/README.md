@@ -6,7 +6,7 @@ Same-Vd TER matrix, extrema, linked R–V inspection and selectable transformed-
 
 ## Selectable Vg–Vd transformed-data heatmap
 
-The second heatmap uses the exact Vg/Vd target grid and source-file choice already established by TER analysis. Shared Science Runtime provides `computeSweepTransformMatrix()` and reuses the same `transformSweep()` implementation used by resonance analysis. Available transforms are raw I–V, detrended I−Ibg, dI/dV, d ln|I|/dV, dV/dI and R=|V/I|. Forward and reverse sweeps are selected explicitly and are never mixed. Missing unmatched Vd samples stay missing.
+The second heatmap uses the exact Vg/Vd target grid and source-file choice already established by TER analysis. Core Scientific Transform Registry supplies the selectable transform catalog and generic `scalar-field.<id>` Pipeline stages. Shared Science Runtime provides `computeSweepScalarField()` (with `computeSweepTransformMatrix()` retained as a compatibility alias) and reuses the same numerical transform primitives used by resonance analysis. Built-in transforms are raw I–V, detrended I−Ibg, dI/dV, d²I/dV², d ln|I|/dV, dV/dI and R=|V/I|; compatible public transforms registered by plugins can be discovered without adding TER-specific branches. Forward and reverse sweeps are selected explicitly and are never mixed. Missing unmatched Vd samples stay missing.
 
 The controls are generated through Core Parameter Schema. Rendering, responsive resize, CSV/copy/SVG/PNG actions and portable placement are supplied by Core Chart Runtime / PlotView. Clicking a transformed heatmap cell uses the same linked TER selection path as the ordinary TER heatmap and R–V inspector. The selected transform/direction is stored in the TER project slice.
 

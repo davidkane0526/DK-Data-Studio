@@ -1,3 +1,16 @@
+# v3.51.0 — Core Scientific Transform Registry and generic Scalar Fields
+
+- Added `src/core/scientific-transform-runtime.js`, a plugin-scoped registry for reusable scientific curve transforms and scalar-field projections.
+- Added Plugin API 1.8 `data.transforms` with automatic dedicated-TOP `scientific-transform-runtime` dependency derivation; plugins do not duplicate the Core module in `window.dependencies`.
+- Registered canonical `raw`, `detrend`, `didv`, `d2idv2`, `dlog`, `dvdi`, and `resistance` transport transforms with semantic types, units, quantity metadata and color-divergence policy.
+- Public transforms automatically expose Scientific Data Pipeline stages `transform.<id>` and `scalar-field.<id>` when scalar-field projection is supported.
+- Generalized shared TER science from `computeSweepTransformMatrix` to `computeSweepScalarField` while retaining the old API as a compatibility wrapper and preserving numerical definitions.
+- Migrated TER transform heatmap choices/execution to the registry and generic scalar-field Pipeline stages; d²I/dV² is now available through the same discoverable contract rather than a TER-specific branch.
+- Migrated Resonance auxiliary transform choices and curve transformation to the same Core registry.
+- Added canonical scalar-field data types for current, background-removed current, conductance, second derivative, log-current slope, differential resistance and resistance.
+- Automation Runner 1.6.0 adds real Scientific Transform Registry/scalar-field coverage; the default desktop suite now contains 22 cases.
+- Added v3.51 unit/integration tests and documentation for transform registration, Pipeline bridging and plugin ownership rules.
+
 # v3.50.0 — Core Scientific Data Pipeline
 
 - Added `src/core/scientific-pipeline-runtime.js` with plugin-scoped synchronous/asynchronous scientific stages, typed inputs/outputs, parameter-aware caching, provenance/lineage, Artifact publication, typed Selection projection and presentation ViewModels.

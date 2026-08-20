@@ -12,12 +12,15 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
       let display={};
       let transform={type:'didv',direction:1};
+      const fallbackTransformIds=new Set(['raw','detrend','didv','d2idv2','dlog','dvdi','resistance']);
+      function normalizeTransformType(value){const id=String(value||'didv');const row=transforms?.resolve?.(id)||transforms?.get?.(id);return row?.supportsScalarField!==false&&row?.id?row.id:(fallbackTransformIds.has(id)?id:'didv');}
+      function transformDefinition(value=transform.type){return transforms?.resolve?.(value)||transforms?.get?.(value)||null;}
       let result=null;
       let matrixViewModel=null;
       let transformViewModel=null;
@@ -35,7 +38,7 @@
           ...(project.terHeatmapDisplay||{})
         };
         transform={type:'didv',direction:1,...(project.terTransformSettings||{})};
-        transform.type=['raw','detrend','didv','dlog','dvdi','resistance'].includes(String(transform.type))?String(transform.type):'didv';
+        transform.type=normalizeTransformType(transform.type);
         transform.direction=Number(transform.direction)<0?-1:1;
         result=project.terMaxResult?cloneSerializable(project.terMaxResult):null;
       }
@@ -88,13 +91,14 @@
       function transformMatrix(){
         if(!result||typeof A?.computeSweepTransformMatrix!=='function')return null;
         const parameters={type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,targets:result.targets||[],vgs:result.vgs||[],sourceFileByVg:sourceFileByVg()};
-        if(pipeline?.runSync){
-          const executed=pipeline.runSync('transform-matrix',sourceArtifacts(),{parameters,publish:true,revision:inputCacheKey()});
+        if(pipeline?.runSync&&transforms?.fieldStageId){
+          const stageId=transforms.fieldStageId(transform.type);
+          const executed=pipeline.runSync(stageId,sourceArtifacts(),{parameters,publish:true,revision:inputCacheKey()});
           transformViewModel=executed?.viewModel||null;
           return executed?.value||null;
         }
         const parameterKey=[transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
-        const compute=()=>A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],parameters);
+        const compute=()=>transforms?.runScalarField?.(transform.type,allSweeps(),parameters)||A.computeSweepScalarField?.(allSweeps(),result.targets||[],result.vgs||[],parameters)||A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],parameters);
         return performance?.stage?.('transform-matrix',inputCacheKey(),parameterKey,compute,{limit:6})||compute();
       }
       function transformCsv(){
@@ -119,8 +123,8 @@
         if(artifacts.batch)artifacts.batch(publish);else publish(artifacts);return true;
       }
       function setTransformSettings(next={}){
-        const type=String(next.type??transform.type??'didv'),direction=Number(next.direction??transform.direction)<0?-1:1;
-        transform={type:['raw','detrend','didv','dlog','dvdi','resistance'].includes(type)?type:'didv',direction};invalidateComputeCaches({inputs:false});
+        const type=normalizeTransformType(next.type??transform.type??'didv'),direction=Number(next.direction??transform.direction)<0?-1:1;
+        transform={type,direction};invalidateComputeCaches({inputs:false});
         if(result)publishDerivedArtifacts();
         scheduleSnapshot();
         return cloneSerializable(transform);
@@ -327,18 +331,7 @@
           selection:({artifacts,value})=>artifacts[0]?[{type:'ter.matrix-result',id:artifacts[0].id,ref:{artifactId:artifacts[0].id},value:{id:artifacts[0].id,rows:value?.vgs?.length||0,cols:value?.targets?.length||0}}]:[],
           project:({value})=>({kind:'heatmap',traces:[{x:value?.targets||[],y:value?.vgs||[],z:value?.matrix||[],type:'heatmap',hovertemplate:'Vg=%{y}<br>Vds=%{x}<br>TER=%{z:.4g}%<extra></extra>'}],axes:{x:{name:'Vd',unit:'V'},y:{name:'Vg',unit:'V'},z:{name:'TER',unit:'%'}}})
         });
-        pipeline.register('transform-matrix',{
-          title:'Transport scalar-field transform',kind:'transform',inputTypes:['data.table'],outputTypes:['science.scalar-field'],allowEmptyInput:true,cacheLimit:6,
-          run:(input,{parameters})=>{
-            const canonical=D?.legacyDatasetsFromArtifacts?.(Array.isArray(input)?input:[])||[];
-            const source=canonical.length?canonical:datasets();
-            const sweeps=source.flatMap(ds=>A.buildSweeps(ds)||[]);
-            const computed=A.computeSweepTransformMatrix(sweeps,parameters?.targets||[],parameters?.vgs||[],parameters||{});
-            const artifact=D.createMatrix({id:`ter.transform:${computed.type}:${computed.direction}`,name:`${computed.label||computed.type} · ${Number(computed.direction)<0?'反扫':'正扫'}`,x:computed.targets,y:computed.vgs,z:computed.matrix,xName:'Vd',yName:'Vg',valueName:computed.label||computed.type,xUnit:'V',yUnit:'V',valueUnit:computed.unit||'',parameters:{type:computed.type,direction:computed.direction,tolerance:parameters?.tolerance}});
-            return {artifacts:[artifact],value:computed};
-          },
-          project:({value})=>({kind:'heatmap',traces:[{x:value?.targets||[],y:value?.vgs||[],z:value?.matrix||[],type:'heatmap'}],axes:{x:{name:'Vd',unit:'V'},y:{name:'Vg',unit:'V'},z:{name:value?.label||value?.type||'value',unit:value?.unit||''}}})
-        });
+
       }
 
       const service={
@@ -355,7 +348,7 @@
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(source.settings||{})};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,...(source.display||{})};
           transform={type:'didv',direction:1,...(source.transform||{})};
-          transform.type=['raw','detrend','didv','dlog','dvdi','resistance'].includes(String(transform.type))?String(transform.type):'didv';
+          transform.type=normalizeTransformType(transform.type);
           transform.direction=Number(transform.direction)<0?-1:1;
           result=source.result?cloneSerializable(source.result):null;invalidateComputeCaches();
           if($('#terSummary'))render();
@@ -369,7 +362,7 @@
           scheduleSnapshot();
         },
         render,getState:()=>({settings,display,transform,result}),autoParameters,calculate,
-        getTransformSettings:()=>cloneSerializable(transform),setTransformSettings,getTransformMatrix:transformMatrix,transformCsv,
+        getTransformSettings:()=>cloneSerializable(transform),getTransformDefinition:()=>cloneSerializable(transformDefinition()),listTransforms:()=>transforms?.list?.({supportsScalarField:true})||[],setTransformSettings,getTransformMatrix:transformMatrix,transformCsv,
         applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};

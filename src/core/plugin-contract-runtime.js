@@ -19,6 +19,7 @@
     'parameters':api=>!!api?.parameters,
     'data.flow':api=>!!api?.data?.flow,
     'data.pipeline':api=>!!api?.data?.pipeline,
+    'data.transforms':api=>!!api?.data?.transforms,
     'data.artifacts':api=>!!api?.data?.artifacts,
     'data.entities':api=>!!api?.data?.entities,
     'data.types':api=>!!api?.data?.types,

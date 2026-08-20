@@ -1339,6 +1339,7 @@
     const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
     const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
     const scientificPipelineScope = window.DKDSScientificPipeline?.createScope?.(pluginId) || null;
+    const scientificTransformScope = window.DKDSScientificTransforms?.createScope?.(pluginId) || null;
     const serviceScope = window.DKDSServices?.createScope?.(pluginId) || null;
     const moduleScope = window.DKDSPluginModules?.createScope?.(pluginId) || null;
     if (infrastructureScope) addCleanup(pluginId, () => infrastructureScope.dispose());
@@ -1347,6 +1348,8 @@
     if (chartScope) addCleanup(pluginId, () => window.DKDSCharts?.disposeOwner?.(pluginId));
     if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
     if (scientificPipelineScope) addCleanup(pluginId, () => window.DKDSScientificPipeline?.removeOwner?.(pluginId));
+    if (scientificTransformScope) addCleanup(pluginId, () => window.DKDSScientificTransforms?.removeOwner?.(pluginId));
+    if (scientificTransformScope && scientificPipelineScope && (definition.manifest.requiresCore||[]).includes('data.transforms')) scientificTransformScope.installPipeline?.(scientificPipelineScope);
     if (serviceScope) addCleanup(pluginId, () => window.DKDSServices?.removeOwner?.(pluginId));
     if (window.DKDSPerformance) addCleanup(pluginId, () => window.DKDSPerformance?.trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'}));
     const normalizeShortcutSpec = spec => {
@@ -1469,6 +1472,18 @@
         model: window.DKDSData,
         formula: window.DKDSFormula,
         flow: dataFlowScope,
+        transforms: scientificTransformScope ? Object.freeze({
+          version:scientificTransformScope.version,
+          register:(id,spec)=>scientificTransformScope.register(id,spec),
+          unregister:id=>scientificTransformScope.unregister(id),
+          get:id=>scientificTransformScope.get(id),
+          resolve:value=>scientificTransformScope.resolve(value),
+          list:q=>scientificTransformScope.list(q),
+          runCurve:(id,input,options={})=>scientificTransformScope.runCurve(id,input,options),
+          runScalarField:(id,input,options={})=>scientificTransformScope.runScalarField(id,input,options),
+          curveStageId:id=>scientificTransformScope.curveStageId(id),
+          fieldStageId:id=>scientificTransformScope.fieldStageId(id)
+        }) : null,
         pipeline: scientificPipelineScope ? Object.freeze({
           version:scientificPipelineScope.version,
           register:(id,spec)=>scientificPipelineScope.register(id,spec),

@@ -263,23 +263,24 @@
       return card;
     }
 
-    const transformSchema={fields:[
-      {id:'type',type:'select',label:'处理量',required:true,default:'didv',options:[
-        {value:'raw',label:'原始 I–V'},
-        {value:'detrend',label:'去背景 I−Ibg'},
-        {value:'didv',label:'dI/dV（微分电导）'},
-        {value:'dlog',label:'d ln|I| / dV'},
-        {value:'dvdi',label:'dV/dI（微分电阻）'},
-        {value:'resistance',label:'R = |V/I|'}]},
-      {id:'direction',type:'select',label:'扫描方向',required:true,default:'1',options:[
-        {value:'1',label:'正扫（Vds 递增）'},{value:'-1',label:'反扫（Vds 递减）'}]}
-    ]};
+    function transformOptions(){
+      const rows=ctx.data.transforms?.list?.({supportsScalarField:true})||T.listTransforms?.()||[];
+      return rows.filter(row=>row?.id&&row?.public!==false&&(!row.tags?.length||row.tags.includes('transport'))).map(row=>({value:String(row.id),label:String(row.title||row.label||row.id)}));
+    }
+    function transformSchema(){
+      const options=transformOptions();
+      return {fields:[
+        {id:'type',type:'select',label:'处理量',required:true,default:'didv',options:options.length?options:[{value:'didv',label:'dI/dV（微分电导）'}]},
+        {id:'direction',type:'select',label:'扫描方向',required:true,default:'1',options:[
+          {value:'1',label:'正扫（Vds 递增）'},{value:'-1',label:'反扫（Vds 递减）'}]}
+      ]};
+    }
 
     function ensureTransformControls(){
       const host=dom.query('#terTransformSettings');if(!host||!ctx.parameters?.render)return null;
       if(transformPanel)return transformPanel;
       const current=T.getTransformSettings?.()||T.getState?.()?.transform||{type:'didv',direction:1};
-      transformPanel=ctx.parameters.render(host,transformSchema,{
+      transformPanel=ctx.parameters.render(host,transformSchema(),{
         value:{type:String(current.type||'didv'),direction:String(Number(current.direction)<0?-1:1)},
         compact:true,
         onChange:(next,result)=>{
@@ -319,7 +320,8 @@
       const directionLabel=Number(matrix.direction)<0?'反扫':'正扫';
       if(title)title.textContent=`${matrix.label||matrix.type} · ${directionLabel}`;
       if(meta)meta.textContent=`${matrix.vgs.length} × ${matrix.targets.length} 网格 · 缺失 ${matrix.missing} · 与 TER 的 Vg/Vd 网格和源文件选择保持一致`;
-      const signed=matrix.type!=='resistance';
+      const definition=ctx.data.transforms?.resolve?.(matrix.transformId||matrix.type)||T.getTransformDefinition?.()||null;
+      const signed=definition?.diverging!==false;
       const trace={x:matrix.targets,y:matrix.vgs,z:matrix.matrix,type:'heatmap',colorscale:signed?'RdBu':'Viridis',reversescale:signed,zsmooth:false,
         colorbar:{title:{text:`${matrix.label||matrix.type}${matrix.unit?` (${matrix.unit})`:''}`,side:'right'},thickness:18,len:.86},
         hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`};

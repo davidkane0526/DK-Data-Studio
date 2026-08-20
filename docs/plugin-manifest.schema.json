@@ -21,7 +21,7 @@
         "enum": [
           "runtime", "events", "status", "io", "science", "performance", "services", "modules", "recipes",
           "capabilities", "state", "project", "workspace", "parameters",
-          "data.flow", "data.pipeline", "data.artifacts", "data.entities", "data.types", "data.model", "data.formula",
+          "data.flow", "data.pipeline", "data.transforms", "data.artifacts", "data.entities", "data.types", "data.model", "data.formula",
           "workflow", "analysis.providers", "analysis.detectors", "charts", "charts.providers",
           "ui.dom", "ui.components", "ui.workspace", "ui.scientific-plot", "ui.plot-views",
           "ui.actions", "ui.selection", "ui.interaction", "ui.menus", "ui.context-menus",
