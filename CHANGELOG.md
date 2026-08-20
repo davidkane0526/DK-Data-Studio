@@ -1,3 +1,12 @@
+# v3.52.2 — Lazy Plotly TOP Startup
+
+- Moved dedicated-TOP Plotly from a blocking physical script dependency to the Core Chart Runtime lazy loader while preserving `plotly` as the plugin's resolved logical dependency.
+- Upgraded `DKDSCharts` to v1.2.0 with one shared `ensurePlotly()` promise, runtime state/diagnostics, contract-aware loading and lazy image-export support.
+- Dedicated TOP startup profiles now include the Chart Runtime state and must show no eager `plotly` dependency before the ready signal.
+- Migrated remaining Core UI `Plotly.react` / `Plotly.toImage` / Plotly resize ownership to `DKDSCharts`, so plugin/UI code does not bypass renderer lifecycle control.
+- Automation Runner 1.7.2 adds a real `TOP lazy Plotly runtime contract` check and exports `coverage.performance.topLazyPlotly`. The default desktop suite now contains 25 cases.
+- This patch changes renderer startup scheduling only; Scientific Pipeline, Transform Registry, Algorithm Providers, TER/FWHM definitions and scientific numerical results are unchanged.
+
 # v3.52.1 — Selective TOP Runtime Loading & Startup Profiling
 
 - Fixed a dedicated-TOP startup regression where v3.50+ Scientific Pipeline, Transform and Algorithm runtimes were appended to every TOP renderer even when the plugin did not declare those Core contracts. Data Center and Pulse no longer pay for unused scientific domain runtimes; TER loads Pipeline + Transform, while Resonance loads Pipeline + Transform + Algorithm through `requiresCore` derivation.

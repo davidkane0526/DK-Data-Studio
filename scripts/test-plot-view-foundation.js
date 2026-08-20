@@ -16,7 +16,7 @@ const css=read('src/style.css');
 const app=read('src/app.js');
 
 assert(ui.includes('class PlotView'),'Core must expose PlotView as the standard scientific data-figure contract.');
-for(const token of ['dkds-plot-view-actions','exportCsv()','copyCsv()','exportImage(format)','Plotly.toImage','traceCsv()','bindPortable()'])assert(ui.includes(token),`PlotView missing ${token}`);
+for(const token of ['dkds-plot-view-actions','exportCsv()','copyCsv()','exportImage(format)','DKDSCharts.toImage','traceCsv()','bindPortable()'])assert(ui.includes(token),`PlotView missing ${token}`);
 assert(ui.includes('class PlotViewRegistry')&&ui.includes('this.plotViewRegistry=new PlotViewRegistry(this)')&&ui.includes('hydrate:(root,spec={})=>this.plotViewRegistry.hydrate'),'PluginScope must expose an idempotent PlotView registry with automatic hydration.');
 assert(kernel.includes('plotViews: infrastructureScope?.plotViews'),'Plugin API must expose Core PlotView to every plugin host.');
 assert(kernel.includes('standardPlotViews:true')&&kernel.includes('strongViewContract:true')&&kernel.includes('autoPlotHydration:true'),'Design-system metadata must declare strong automatic PlotView support.');

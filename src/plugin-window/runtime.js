@@ -1,5 +1,5 @@
 (() => {
-  const STARTUP_PROFILE_VERSION='1.0.0';
+  const STARTUP_PROFILE_VERSION='1.1.0';
   const startupStartedAt=performance.now();
   const startupProfile={version:STARTUP_PROFILE_VERSION,startedAt:0,totalMs:0,phases:[],dependencies:[],scripts:[]};
   const roundMs=value=>Math.round(Number(value||0)*10)/10;
@@ -137,10 +137,16 @@
 
   async function loadDependencies(spec) {
     const requested = Array.isArray(spec?.dependencies) ? spec.dependencies : [];
+    const requestedPlotly=requested.map(id=>String(id||'').trim()).includes('plotly');
     const ordered = [];
     for (const id of requested) {
       const key = String(id || '').trim();
       if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
+      // Plotly is a large renderer runtime (~0.6 s parse/eval on the reference
+      // Windows machine). Keep the logical dependency contract, but let the
+      // Core Chart Runtime load it once on first actual chart use instead of
+      // blocking every dedicated TOP's first interactive frame.
+      if (key==='plotly') continue;
       if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
     }
     if (!ordered.includes('platform')) ordered.push('platform');
@@ -156,6 +162,7 @@
     ordered.push('plugin-kernel');
 
     for (const id of ordered) await measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies,{src:DEPENDENCY_SCRIPTS[id]});
+    window.DKDSCharts?.configureRuntime?.({plotlyAllowed:requestedPlotly,plotlySource:new URL(DEPENDENCY_SCRIPTS.plotly,location.href).href,host:'dedicated-top'});
     if (window.DKDSScience) window.Analysis = window.DKDSScience;
     if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
     window.DKDSUI?.host?.configure?.({
@@ -391,7 +398,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.52.1',
+      appVersion:'3.52.2',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -496,6 +503,7 @@
     startupProfile.activityId=String(bootstrap.activityId||'');
     startupProfile.dependencyCount=startupProfile.dependencies.length;
     startupProfile.scriptCount=startupProfile.scripts.length;
+    startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     window.electronAPI?.markActivityWindowReady?.({startupProfile});
   }
 
@@ -508,7 +516,7 @@
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
     if (sameProject) {
       // Typical prewarm -> first-open transition: dependencies, plugin DOM,
-      // Plotly and the project are already mounted. Only the lifecycle flag
+      // Core/plugin state and the project are already mounted. Plotly may still be lazy. Only the lifecycle flag
       // changed, so do not restore/re-render the project a second time.
       setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
       return;
@@ -584,6 +592,7 @@
       startupProfile.activityId=String(bootstrap?.activityId||'');
       startupProfile.dependencyCount=startupProfile.dependencies.length;
       startupProfile.scriptCount=startupProfile.scripts.length;
+      startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
       window.electronAPI?.markActivityWindowFailed?.({
         activityId:String(bootstrap?.activityId||''),
         pluginId:String(bootstrap?.pluginWindow?.pluginId||''),

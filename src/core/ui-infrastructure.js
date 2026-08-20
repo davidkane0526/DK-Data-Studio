@@ -647,7 +647,7 @@
       const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
       wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));
       const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});
-      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;if(!window.Plotly?.Plots?.resize)return;for(const plot of this.wrapper.querySelectorAll?.('.js-plotly-plot')||[]){try{window.Plotly.Plots.resize(plot);}catch{}}});};
+      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;for(const plot of this.wrapper.querySelectorAll?.('.js-plotly-plot')||[]){try{window.DKDSCharts?.resize?.(plot);}catch{}}});};
       const ro=window.ResizeObserver?new ResizeObserver(requestPortableResize):null;ro?.observe(wrapper);this.resizeObserver=ro;
     }
     zone(placement){return this.spec.layout?.slot?.(placement)||hostState.zones.get(placement)||null;}
@@ -789,10 +789,10 @@
       if(this.spec.actions?.length)this.toolbar=new ActionGroup(this.scope.owner,actions,{activity:this.spec.activity,actions:this.spec.actions});
     }
     async set(spec={}){
-      this.spec={...this.spec,...spec};if(!window.Plotly||!this.plot)return false;
+      this.spec={...this.spec,...spec};if(!this.plot||!window.DKDSCharts?.react)return false;
       const config={responsive:true,displaylogo:false,...(this.spec.config||{})};
       const layout={autosize:true,...(this.spec.layout||{})};
-      await Plotly.react(this.plot,this.spec.data||this.spec.traces||[],window.DKDSCharts?.themeLayout?.(layout)||layout,config);
+      await window.DKDSCharts.react(this.plot,this.spec.data||this.spec.traces||[],layout,config);
       this.bindPlotEvents();return true;
     }
     bindPlotEvents(){
@@ -802,9 +802,9 @@
       const events={plotly_click:'onClick',plotly_doubleclick:'onDoubleClick',plotly_hover:'onHover',plotly_unhover:'onUnhover',plotly_selected:'onSelected',plotly_relayout:'onRelayout'};
       for(const [eventName,key] of Object.entries(events)){const fn=this.spec[key];if(typeof fn!=='function')continue;const handler=payload=>fn(payload,this);this.plot.on(eventName,handler);this.boundPlotEvents.push([eventName,handler]);}
     }
-    resize(){try{window.Plotly?.Plots?.resize?.(this.plot);}catch{}}
+    resize(){try{window.DKDSCharts?.resize?.(this.plot);}catch{}}
     portable(id,spec={}){return this.scope.panels.create(id,this.container,{title:this.spec.title||spec.title,...spec});}
-    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.Plotly?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.DKDSCharts?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
   }
 
   class PlotView {
@@ -883,9 +883,9 @@
     async exportCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可导出的数据。');return this.saveText(csv,`${this.fileStem()}.csv`,'csv');}
     async copyCsv(){const csv=this.traceCsv();if(!csv.trim())throw new Error('当前图没有可复制的数据。');if(typeof this.spec.copyText==='function')return this.spec.copyText(csv,`${this.title?.textContent||this.id} 数据`);if(window.electronAPI?.copyText)return window.electronAPI.copyText(csv);if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(csv);throw new Error('当前环境不支持复制。');}
     async exportImage(format){
-      const plot=this.plotNode();if(!window.Plotly||!plot)throw new Error('图表尚未渲染。');
+      const plot=this.plotNode();if(!plot)throw new Error('图表尚未渲染。');
       if(typeof this.spec.exportImage==='function')return this.spec.exportImage({format,plot,fileStem:this.fileStem(),view:this});
-      const data=await Plotly.toImage(plot,{format,width:1500,height:950,scale:format==='png'?2:1});
+      const data=await window.DKDSCharts.toImage(plot,{format,width:1500,height:950,scale:format==='png'?2:1});
       if(format==='svg'){const raw=data.split(',')[1]||'',content=decodeURIComponent(raw);return this.saveText(content,`${this.fileStem()}.svg`,'svg');}
       const base64=data.split(',')[1]||'';
       if(window.electronAPI?.saveBase64)return window.electronAPI.saveBase64({defaultName:`${this.fileStem()}.png`,base64,filters:[{name:'PNG',extensions:['png']}]});
@@ -906,7 +906,7 @@
       const factory=this.spec.portableFactory;
       this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
     }
-    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(window.Plotly?.Plots?.resize&&plot?.classList?.contains('js-plotly-plot')){try{window.Plotly.Plots.resize(plot);}catch{}}return this;}
+    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot?.classList?.contains('js-plotly-plot')){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
     dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
   }
 

@@ -59,7 +59,7 @@ assert(resonanceFeature.includes('groupDataFingerprint()')&&resonanceFeature.inc
 assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
 assert(resonanceFeature.includes('visibleSweepIds().map(String)')&&resonanceFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
 assert(resonanceFeature.includes("if(includeGroup){const context=$('#reswinGroupContext')")&&!resonanceFeature.includes('updateGroupHighlights()'),'Selection changes must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
-assert(ui.includes("this.wrapper.querySelectorAll?.('.js-plotly-plot')")&&ui.includes('window.Plotly.Plots.resize(plot)'),'PortableView resize must resize Plotly graphs by default.');
+assert(ui.includes("this.wrapper.querySelectorAll?.('.js-plotly-plot')")&&ui.includes('window.DKDSCharts?.resize?.(plot)'),'PortableView resize must resize Plotly graphs by default.');
 
 // Pulse analysis must be repeatable and must not destroy the last valid result on a failed rerun.
 assert(pulse.includes("A.estimatePulseCycleSamples?.")&&pulse.includes('options.__autoEstimatedCycle=true'),'Pulse auto mode must honor the UI-promised automatic cycle estimate.');
