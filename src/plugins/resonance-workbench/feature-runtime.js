@@ -61,8 +61,10 @@
       let sharedController=null;
       let workspaceNavigator=null;
       let detectorRuntime=null;
+      let interactionRuntime=null;
       let interactionSelection=null;
       let interactionSelectionOff=null;
+      const linkedSelectionViewIds=['resonance-dataset-list','resonance-main-legend'];
       let applyingExternalSelection=false;
       let interactionMenus=null;
       let selectedRange=null;
@@ -100,6 +102,14 @@
 
       function selectionSweepItem(sw){return sw?{type:'resonance.sweep',id:String(sw.id),role:'sweep',value:{id:sw.id,datasetPath:sw.datasetPath,datasetName:sw.datasetName,vg:sw.vg,direction:sw.direction}}:null;}
       function selectionPeakItem(p){return p?{type:'resonance.peak',id:String(p.id),role:'peak',value:{id:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction,v:p.v,i:p.i,peakOrder:p.peakOrder,peakLabel:peakLabel(p)}}:null;}
+      function focusedDatasetPath(snapshot){const focus=snapshot?.focus||snapshot?.items?.at?.(-1)||null;return String(focus?.ref?.datasetPath||focus?.value?.datasetPath||'');}
+      function bindLinkedSelectionViews(){
+        if(!uiBound||!interactionRuntime?.bindView)return false;
+        const list=$('#reswinDatasetList'),legend=$('#resparMainLegend');
+        if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.datasetPath,focusKey:focusedDatasetPath,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');const current=selectedSweep();const rows=(visibleSweeps().length?visibleSweeps():sweeps).filter(sw=>String(sw.datasetPath)===path);const preferred=current&&String(current.datasetPath)===path?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]);if(preferred)publishSweepSelection(preferred,'resonance-dataset');}});
+        if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.datasetPath,focusKey:focusedDatasetPath,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
+        return true;
+      }
       function selectedPeakWidthShapes(){
         const selectedP=selectedPeak();if(!selectedP||workspace.peakDisplay?.showWidth===false)return [];
         const m=peakMetrics(selectedP)||{},half=Number(m.fwhm)/2;if(!Number.isFinite(half)||half<=0)return [];
@@ -440,10 +450,10 @@
       }
 
       function datasetRowsHtml(){
-        const vis=visibilityMap(),current=selectedSweep();
+        const vis=visibilityMap();
         return datasets.map(d=>{
-          const row=vis.get(String(d.path))||{forward:true,reverse:true},selected=String(current?.datasetPath||'')===String(d.path),transform=new Map(workspace.transformPreviewByDataset||[]).get(String(d.path))||'raw';
-          return `<div class="respar-dataset-item ${selected?'selected':''}" data-dataset-path="${esc(d.path)}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform"><option value="raw">原始 I–V</option><option value="detrend">去背景 I−Ibg</option><option value="didv">dI/dV</option><option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option></select></label></div></div>`;
+          const row=vis.get(String(d.path))||{forward:true,reverse:true},transform=new Map(workspace.transformPreviewByDataset||[]).get(String(d.path))||'raw';
+          return `<div class="respar-dataset-item" data-dataset-path="${esc(d.path)}" data-selection-key="${esc(d.path)}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform"><option value="raw">原始 I–V</option><option value="detrend">去背景 I−Ibg</option><option value="didv">dI/dV</option><option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option></select></label></div></div>`;
         }).join('')||'<div class="empty-state">工程中没有数据。</div>';
       }
 
@@ -458,7 +468,6 @@
             row.querySelector('.reswin-forward')?.addEventListener('change',e=>setVisibility(path,1,e.target.checked));
             row.querySelector('.reswin-reverse')?.addEventListener('change',e=>setVisibility(path,-1,e.target.checked));
             const tr=row.querySelector('.reswin-dataset-transform');if(tr){tr.value=new Map(workspace.transformPreviewByDataset||[]).get(String(path))||'raw';tr.addEventListener('change',e=>{const map=new Map(workspace.transformPreviewByDataset||[]);map.set(String(path),String(e.target.value||'raw'));workspace.transformPreviewByDataset=[...map.entries()];renderLinkedSelection({includeGroup:false});scheduleSnapshot();});}
-            row.addEventListener('click',e=>{if(e.target.closest('input,select,label,button'))return;const sw=(visibleSweeps().length?visibleSweeps():sweeps).find(item=>String(item.datasetPath)===String(path));if(sw)publishSweepSelection(sw,'resonance-dataset');});
           });
         }
         for(const id of ['reswinSweepSelect','reswinInspectSweepSelect']){
@@ -532,11 +541,10 @@
         for(const ds of datasets){
           const visible=visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
           const candidates=sweeps.filter(sw=>sw.datasetPath===ds.path&&isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
-          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';
-          if(current?.datasetPath===ds.path)chip.setAttribute('aria-current','true');
+          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.selectionKey=String(ds.path||'');chip.dataset.sweepId=String(preferred?.id||'');
           const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
           chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
-          chip.onclick=e=>{e.stopPropagation();if(preferred)publishSweepSelection(preferred,'resonance-main-legend');};host.appendChild(chip);
+          host.appendChild(chip);
         }
       }
       function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
@@ -910,6 +918,7 @@
         page.querySelector('#reswinGateRun').onclick=()=>{renderGate();scheduleSnapshot();};
         page.querySelector('#reswinGateExportCsv').onclick=()=>io.saveCsv(gateCsv(),'gate_physics_analysis.csv');
         page.querySelector('#reswinGateExportReport').onclick=()=>io.saveText({defaultName:'gate_physics_analysis_report.md',content:gateReportText(),filters:[{name:'Markdown',extensions:['md']},{name:'Text',extensions:['txt']}]});
+        bindLinkedSelectionViews();
       }
 
       function switchSelectedSweep(step){
@@ -959,7 +968,7 @@
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
         setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
-        setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionSelection=runtime.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});},
+        setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
         selection:()=>interactionSelection?.get?.()||null,
         selectPeak:(id,options={})=>{const p=peakById(id);return p?publishPeakSelection(p,options.source||'resonance-api',options):false;},
         selectSweep:(id,options={})=>{const sw=sweepById(id);return sw?publishSweepSelection(sw,options.source||'resonance-api'):false;},

@@ -1,3 +1,12 @@
+# v3.41.5 — Core linked-selection views and wheel-driven legend navigation
+
+- Adds Core `SelectionViewBinding` to project one Interaction Runtime focus/selection document into legends, data lists and other semantic views without plugin-local selected-state styling.
+- Adds Core `HorizontalWheelScroller`: overflowing horizontal strips can hide scrollbar chrome and translate an ordinary mouse wheel into horizontal scrolling while the pointer is over the strip.
+- Restores Resonance linked focus semantics without reintroducing the v3.41.4 visibility bug: all visible forward/reverse sweeps remain plotted, while one focused sweep is emphasized and the corresponding legend/data-list representation follows it.
+- Resonance legend and data list now register dataset projections with the shared Interaction Runtime. Selecting a curve, peak, legend item or dataset row updates the same focus document; the legend dims non-focused entries and the data list automatically reveals and marks the focused dataset in Core accent blue.
+- Removes Resonance-private legend/list selection CSS. Focus, selected, dimmed, reveal and horizontal-scroll behavior are now platform-owned defaults.
+- Advances the GRS Plugin Workspace design-system contract to 1.5 with `linkedSelectionViews` and `horizontalWheelStrips` capabilities.
+
 # v3.41.4 — Visible-series group projection and Core selection polish
 
 - Makes checkbox/radio selected state use the Core accent blue by default across the application and plugin windows.

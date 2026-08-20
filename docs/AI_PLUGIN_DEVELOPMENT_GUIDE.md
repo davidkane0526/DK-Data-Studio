@@ -97,9 +97,16 @@ Register raw/derived/result types with stable IDs and parent types. Then create 
 ```js
 ctx.data.types.register('raman.peak',{parents:['result.analysis','data.point'],kind:'result',key:p=>p.id,selection:p=>({id:p.id,ref:{peakId:p.id},value:{x:p.x,width:p.width}})});
 const interaction=ctx.ui.interaction.create('raman',{selection:{multiple:true,defaultType:'raman.peak'}});
+interaction.bindView('result-list', listHost, {
+  selector:'.result-row',
+  itemKey:el=>el.dataset.entityKey,
+  focusKey:selection=>selection.focus?.id||'',
+  itemVariant:'row',
+  revealFocus:true
+});
 ```
 
-Views bind to semantic types, not each other's DOM IDs.
+Views bind to semantic types, not each other's DOM IDs. When one domain entity is represented by a curve, legend item, list row and inspector, all representations must use the same Core interaction runtime. Use `bindView()` for focus/selected/dimmed UI and automatic reveal; use `horizontalWheel:true` for overflowing legend/tab strips instead of plugin-local wheel or scrollbar code.
 
 ## 8. Build UI only from Core mechanisms
 

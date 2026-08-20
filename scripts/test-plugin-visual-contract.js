@@ -28,6 +28,9 @@ assert(runtime.includes("d3:'../../node_modules/d3/dist/d3.min.js'"),'Dedicated 
 assert((manifest.window?.dependencies||[]).includes('d3'),'Resonance TOP must explicitly declare its D3 dependency.');
 assert(resonance.includes('display:grid;grid-template-columns:minmax(0,1fr);height:100%'),'GRS main-workspace must preserve a non-zero chart surface inside AnalysisWorkbench.');
 assert(resonance.includes('respar-main-legend dkds-scroll-x-compact'),'Resonance legend must consume the Core compact horizontal-scroll utility.');
-assert(resonanceRuntime.includes('compactLegendNumber')&&resonanceRuntime.includes("chip.className='respar-legend-chip'"),'Resonance legend must format compact Vg labels without focus-driven dimming.');
+assert(resonanceRuntime.includes('compactLegendNumber')&&resonanceRuntime.includes("chip.className='respar-legend-chip'"),'Resonance legend must format compact Vg labels.');
+assert(resonanceRuntime.includes("bindView('resonance-dataset-list'")&&resonanceRuntime.includes("bindView('resonance-main-legend'"),'Resonance data list and legend must register with Core linked-selection views.');
+assert(resonanceRuntime.includes('horizontalWheel:true')&&resonanceRuntime.includes('dimOthers:true'),'Resonance legend must delegate horizontal wheel scrolling and focus dimming to Core.');
+assert(!resonance.includes('.respar-legend-chip.selected')&&!resonance.includes('.respar-legend-chip.dimmed'),'Resonance must not own private legend selection/dimming CSS.');
 
 console.log('Plugin visual contract checks passed.');

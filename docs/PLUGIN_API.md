@@ -203,9 +203,18 @@ ctx.ui.shortcuts.add({id:'delete-peak',chord:'Delete',activity:'my-analysis',han
 
 const interaction=ctx.ui.interaction.create('analysis',{selection:{multiple:true}});
 interaction.bind('inspector',{types:['result.analysis'],onSelection:renderInspector});
+interaction.bindView('legend', legendHost, {
+  selector:'.legend-chip',
+  itemKey:el=>el.dataset.entityKey,
+  focusKey:selection=>selection.focus?.ref?.datasetPath||'',
+  dimOthers:true,
+  revealFocus:true,
+  horizontalWheel:true,
+  hideScrollbar:true
+});
 ```
 
-Core owns keyboard routing and selection lifecycle. Plugins only describe domain behavior.
+Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state.
 
 ## 11. Project/state/service/module contracts
 

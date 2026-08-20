@@ -15,7 +15,7 @@ context.globalThis=context;window.window=window;window.document=document;window.
 vm.createContext(context);vm.runInContext(code,context,{filename:'ui-infrastructure.js'});
 const UI=window.DKDSUI;
 assert(/^6\./.test(UI.version),'interaction/resize runtime requires UI infrastructure v6');
-for(const token of ['SelectionModel','InteractionRuntime','DataTypeRegistry','ResizeScheduler'])assert(typeof UI[token]==='function',`missing ${token}`);
+for(const token of ['SelectionModel','InteractionRuntime','SelectionViewBinding','HorizontalWheelScroller','DataTypeRegistry','ResizeScheduler'])assert(typeof UI[token]==='function',`missing ${token}`);
 
 const emitted=[];let scope;
 const events={emit(name,payload){emitted.push([name,payload]);if(name==='layout:resize'&&emitted.filter(row=>row[0]===name).length===1)scope.emitResize({reason:'recursive-listener'});}};
@@ -33,6 +33,7 @@ assert(compactSnap.focus.ref.resultId==='huge-1'&&compactSnap.focus.value.rowCou
 assert(scope.dataTypes.resolve('demo.large',compactSnap.focus).resolved==='huge-1','data type resolver must rehydrate a selection ref through the owning type');
 assert.throws(()=>UI.dataTypes.register('other.plugin','demo.large',{}),/already owned/,'plugins must not silently overwrite another owner data type');
 const runtime=scope.interactionRuntime.create('analysis',{selection:{multiple:true,defaultType:'demo.result'},defaultType:'demo.result'});
+assert(typeof runtime.bindView==='function','interaction runtime must expose Core linked-selection view binding.');
 let resultEvents=0;
 runtime.bind('result-consumer',{types:['result.analysis'],onSelection(){resultEvents++;}});
 runtime.select({id:'r1',value:42},{type:'demo.result',source:'unit-test'});

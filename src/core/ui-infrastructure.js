@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.3.1';
+  const VERSION = '6.4.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -229,7 +229,7 @@
 
   class InteractionRuntime {
     constructor(scope,id,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction');this.spec=spec||{};this.bindings=new Map();
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction');this.spec=spec||{};this.bindings=new Map();this.viewBindings=new Map();
       this.selection=scope.selection.model(`${this.id}:selection`,spec.selection||spec.selectionSpec||{});
       this.off=this.selection.subscribe((snapshot,meta)=>this.dispatch(snapshot,meta));
     }
@@ -270,7 +270,76 @@
     focus(){return this.selection.focus();}
     resolve(item=this.selection.focus(),context={}){return item?dataTypeRegistry.resolve(item.type,item,{runtime:this,...context}):undefined;}
     subscribe(fn,options={}){return this.selection.subscribe(fn,options);}
-    dispose(){this.off?.();this.off=null;this.bindings.clear();}
+    bindView(id,target,spec={}){
+      const key=String(id||`view-${this.viewBindings.size+1}`);this.viewBindings.get(key)?.dispose?.();
+      const view=new SelectionViewBinding(this,key,target,spec);this.viewBindings.set(key,view);return view;
+    }
+    view(id){return this.viewBindings.get(String(id||''))||null;}
+    dispose(){this.off?.();this.off=null;this.bindings.clear();for(const view of this.viewBindings.values())view.dispose?.();this.viewBindings.clear();}
+  }
+
+  class HorizontalWheelScroller {
+    constructor(owner,target,spec={}){
+      this.owner=String(owner||'');this.target=resolveElement(target);this.spec={hideScrollbar:true,multiplier:1,...spec};this.cleanups=[];
+      if(!this.target)throw new Error('HorizontalWheelScroller target not found.');
+      this.target.classList.add('dkds-horizontal-wheel-scroll');if(this.spec.hideScrollbar!==false)this.target.classList.add('dkds-scrollbar-hidden');
+      const wheel=event=>{
+        if(this.spec.enabled===false||this.target.scrollWidth<=this.target.clientWidth+1)return;
+        const dx=Number(event.deltaX)||0,dy=Number(event.deltaY)||0;
+        const delta=(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>0?dx:dy)*Number(this.spec.multiplier||1);if(!delta)return;
+        const before=this.target.scrollLeft;this.target.scrollLeft+=delta;
+        if(this.target.scrollLeft!==before){event.preventDefault();event.stopPropagation();}
+      };
+      this.target.addEventListener('wheel',wheel,{passive:false});this.cleanups.push(()=>this.target.removeEventListener('wheel',wheel,{passive:false}));
+    }
+    dispose(){this.cleanups.splice(0).forEach(cleanupCall);this.target?.classList?.remove('dkds-horizontal-wheel-scroll','dkds-scrollbar-hidden');}
+  }
+
+  class SelectionViewBinding {
+    constructor(runtime,id,target,spec={}){
+      this.runtime=runtime;this.owner=runtime.owner;this.id=String(id||'selection-view');this.root=resolveElement(target);this.spec={selector:'[data-selection-key]',revealFocus:true,dimOthers:false,itemVariant:'',...spec};this.snapshot=runtime.get();this.lastFocusKey='';this.cleanups=[];this.scroller=null;
+      if(!this.root)throw new Error(`Selection view target not found: ${this.id}`);
+      this.root.classList.add('dkds-selection-view');this.root.dataset.dkdsSelectionView=this.id;
+      if(this.spec.horizontalWheel===true)this.scroller=new HorizontalWheelScroller(this.owner,this.root,{hideScrollbar:this.spec.hideScrollbar!==false,multiplier:this.spec.wheelMultiplier||1});
+      const click=event=>{
+        if(typeof this.spec.onActivate!=='function')return;
+        if(this.spec.ignore&&event.target?.closest?.(this.spec.ignore))return;
+        const element=event.target?.closest?.(this.spec.selector);if(!element||!this.root.contains(element))return;
+        try{this.spec.onActivate({event,element,key:this.itemKey(element,this.snapshot),snapshot:this.snapshot,runtime:this.runtime,view:this});}catch(err){console.warn('[DKDS selection view activate]',this.id,err);}
+      };
+      this.root.addEventListener('click',click);this.cleanups.push(()=>this.root.removeEventListener('click',click));
+      this.off=runtime.subscribe((snapshot,meta)=>{this.snapshot=snapshot;this.apply(snapshot,meta);},{immediate:true});
+      if(window.MutationObserver){this.observer=new MutationObserver(()=>this.apply(this.snapshot,{reason:'view-mutation',reveal:false}));this.observer.observe(this.root,{childList:true,subtree:true});}
+    }
+    elements(){try{return [...this.root.querySelectorAll(this.spec.selector)];}catch{return [];}}
+    itemKey(element,snapshot){
+      try{if(typeof this.spec.itemKey==='function')return String(this.spec.itemKey(element,snapshot,this)||'');}catch(err){console.warn('[DKDS selection view itemKey]',this.id,err);}
+      return String(element?.dataset?.selectionKey||element?.dataset?.selectionId||'');
+    }
+    focusKey(snapshot){
+      try{if(typeof this.spec.focusKey==='function')return String(this.spec.focusKey(snapshot,this)||'');}catch(err){console.warn('[DKDS selection view focusKey]',this.id,err);}
+      const focus=snapshot?.focus||snapshot?.items?.at?.(-1)||null;return String(focus?.id||'');
+    }
+    selectedKeys(snapshot){
+      try{if(typeof this.spec.selectedKeys==='function')return new Set([...(this.spec.selectedKeys(snapshot,this)||[])].map(String));}catch(err){console.warn('[DKDS selection view selectedKeys]',this.id,err);}
+      return new Set((snapshot?.items||[]).map(item=>String(item?.id||'')).filter(Boolean));
+    }
+    apply(snapshot=this.snapshot,meta={}){
+      const focusKey=this.focusKey(snapshot),selected=this.selectedKeys(snapshot),hasFocus=!!focusKey,variant=String(this.spec.itemVariant||'').trim();let focusElement=null;
+      for(const element of this.elements()){
+        const key=this.itemKey(element,snapshot),focused=!!key&&key===focusKey,isSelected=!!key&&(selected.has(key)||focused),dimmed=!!(this.spec.dimOthers&&hasFocus&&!focused);
+        element.classList.add('dkds-selection-item');if(variant)element.classList.add(`dkds-selection-${variant}`);
+        element.classList.toggle('dkds-selection-focused',focused);element.classList.toggle('dkds-selection-selected',isSelected);element.classList.toggle('dkds-selection-dimmed',dimmed);
+        if(focused){element.setAttribute('aria-current','true');focusElement=element;}else element.removeAttribute('aria-current');
+        element.setAttribute('aria-selected',isSelected?'true':'false');
+      }
+      const shouldReveal=this.spec.revealFocus!==false&&focusElement&&focusKey!==this.lastFocusKey&&meta?.reveal!==false;
+      this.lastFocusKey=focusKey;
+      if(shouldReveal){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,0));raf(()=>{try{focusElement.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}catch{}});}
+      return focusElement;
+    }
+    refresh(options={}){return this.apply(this.snapshot,{reason:'refresh',...options});}
+    dispose(){this.off?.();this.off=null;this.observer?.disconnect?.();this.scroller?.dispose?.();this.scroller=null;this.cleanups.splice(0).forEach(cleanupCall);for(const element of this.elements()){element.classList.remove('dkds-selection-item','dkds-selection-focused','dkds-selection-selected','dkds-selection-dimmed');element.removeAttribute('aria-current');element.removeAttribute('aria-selected');}delete this.root?.dataset?.dkdsSelectionView;if(this.runtime?.viewBindings?.get?.(this.id)===this)this.runtime.viewBindings.delete(this.id);}
   }
 
   class ResizeScheduler {
@@ -1337,7 +1406,7 @@
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

@@ -3566,12 +3566,19 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
 *::-webkit-scrollbar-thumb:hover{background:#9eabbc;background-clip:padding-box}
 /* Core compact horizontal strip: legends/tab-like scrollers can opt into a
    lighter horizontal thumb without defining plugin-local scrollbar chrome. */
-.dkds-scroll-x-compact{scrollbar-width:thin;scrollbar-color:#b7c1cf transparent}
-.dkds-scroll-x-compact::-webkit-scrollbar{height:3px}
-.dkds-scroll-x-compact::-webkit-scrollbar-track{background:transparent}
-.dkds-scroll-x-compact::-webkit-scrollbar-button{display:none;width:0;height:0}
-.dkds-scroll-x-compact::-webkit-scrollbar-thumb{background:#b7c1cf;border:0;border-radius:999px;background-clip:border-box}
-.dkds-scroll-x-compact::-webkit-scrollbar-thumb:hover{background:#98a6b9}
+.dkds-scroll-x-compact{scrollbar-width:none;-ms-overflow-style:none}
+.dkds-scroll-x-compact::-webkit-scrollbar{display:none;width:0;height:0}
+.dkds-horizontal-wheel-scroll{overscroll-behavior-inline:contain}
+.dkds-scrollbar-hidden{scrollbar-width:none;-ms-overflow-style:none}
+.dkds-scrollbar-hidden::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* Core linked-selection presentation. Plugins register semantic entities with
+   SelectionViewBinding; the platform owns focus/selection/dimming/reveal UI. */
+.dkds-selection-item{transition:opacity .14s ease,background-color .14s ease,border-color .14s ease,box-shadow .14s ease}
+.dkds-selection-item.dkds-selection-focused{border-color:color-mix(in srgb,var(--accent) 52%,#d9deea)!important;background:color-mix(in srgb,var(--accent) 8%,#fff)!important;color:color-mix(in srgb,var(--accent) 72%,#243047)!important}
+.dkds-selection-item.dkds-selection-row.dkds-selection-focused{box-shadow:inset 3px 0 0 var(--accent)!important}
+.dkds-selection-item.dkds-selection-chip.dkds-selection-focused{font-weight:700!important}
+.dkds-selection-item.dkds-selection-dimmed{opacity:.20!important}
 
 @media(max-width:1160px){
   :root{--ui-font-size:11.5px;--ui-font-small:10.5px;--ui-font-title:12.5px}

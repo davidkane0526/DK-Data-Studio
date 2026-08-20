@@ -1566,7 +1566,7 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.4',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.5',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

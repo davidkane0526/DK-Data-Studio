@@ -23,7 +23,7 @@ assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
 assert(kernel.includes('layoutResizeDispatching')&&kernel.includes("name !== 'layout:resize'")&&kernel.includes('infrastructureScope.emitResize'),'Plugin kernel must globally coalesce layout:resize and route plugin layout requests through the scoped scheduler.');
-assert(ui.includes('class DataTypeRegistry')&&ui.includes('class SelectionModel')&&ui.includes('class InteractionRuntime'),'Core must own plugin-registered data types and typed interaction selection.');
+assert(ui.includes('class DataTypeRegistry')&&ui.includes('class SelectionModel')&&ui.includes('class InteractionRuntime')&&ui.includes('class SelectionViewBinding')&&ui.includes('class HorizontalWheelScroller'),'Core must own plugin-registered data types, typed selection, linked view focus and horizontal strip interaction.');
 assert(kernel.includes('capabilities: {'),'Kernel must expose Capability Runtime to plugins.');
 for(const token of ['function register(owner, id, spec={})','function importRemote(payload, invoker)','async function invoke(id, method=','function proxy(id)','function requireCapability(id, options={})','function subscribe(fn,','function snapshot({remoteOnly=false}={})']){
   assert(cap.includes(token),`Capability Runtime missing ${token}`);

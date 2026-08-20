@@ -40,7 +40,8 @@ assert(pluginManager.includes('captureManagerScroll')&&pluginManager.includes('r
 assert(pluginManager.includes("renderList({scroll:'top'})"), 'opening or filtering plugin manager should deliberately reset to the top instead of inheriting a stale scroll position');
 assert(css.includes('.system-commandbar>.menu-anchor>#manageMenuBtn{\n  height:42px!important;') && css.includes('min-height:42px!important;'), 'standalone shell menus must override the shared 34px toolbar rule and match the file-command group outer height');
 assert(css.includes('input[type="checkbox"],input[type="radio"]{accent-color:var(--accent);}'), 'Core must provide the default blue native checkbox/radio selected state.');
-assert(css.includes('.dkds-scroll-x-compact::-webkit-scrollbar{height:3px}')&&css.includes('.dkds-scroll-x-compact::-webkit-scrollbar-button{display:none;width:0;height:0}'), 'Core must provide a compact horizontal scrollbar utility without bulky native arrow buttons for legend/tab strips.');
+assert(css.includes('.dkds-scroll-x-compact{scrollbar-width:none')&&css.includes('.dkds-scroll-x-compact::-webkit-scrollbar{display:none;width:0;height:0}'), 'Core horizontal strips must hide scrollbar chrome.');
+assert(css.includes('.dkds-horizontal-wheel-scroll{overscroll-behavior-inline:contain}')&&css.includes('.dkds-selection-item.dkds-selection-focused'), 'Core must own wheel-to-horizontal scrolling and linked-selection focus presentation.');
 
 const pathCount = (svg.match(/<path\b/g) || []).length;
 assert.equal(pathCount, 1, 'brand mark should contain one resonance trace');

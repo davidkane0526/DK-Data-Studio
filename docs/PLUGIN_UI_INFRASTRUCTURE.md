@@ -134,6 +134,31 @@ interaction.bind('inspector',{
 
 A Selection document contains heterogeneous `items`, one `focus`, typed `ranges`, `context` and `source`. Consumers can bind to an exact type, any registered parent type, role or kind. `interaction.region(...)` atomically publishes a box/lasso range together with the selected raw or processed items.
 
+### Linked selection views
+
+Do not make charts, legends and data lists keep independent `selected` state. Register every visual projection of the same semantic entity with the Core interaction runtime:
+
+```js
+const datasetKey = selection => String(selection?.focus?.ref?.datasetPath || selection?.focus?.value?.datasetPath || '');
+interaction.bindView('dataset-list', listElement, {
+  selector:'.dataset-row', itemVariant:'row',
+  itemKey:el=>el.dataset.datasetPath,
+  focusKey:datasetKey,
+  revealFocus:true
+});
+interaction.bindView('legend', legendElement, {
+  selector:'.legend-chip', itemVariant:'chip',
+  itemKey:el=>el.dataset.datasetPath,
+  focusKey:datasetKey,
+  dimOthers:true, revealFocus:true,
+  horizontalWheel:true, hideScrollbar:true
+});
+```
+
+Core owns `dkds-selection-focused / selected / dimmed`, focus reveal and DOM-mutation refresh. A plugin only declares how one domain entity maps to a view item. Clicking a chart, legend or list should publish to the **same** `InteractionRuntime`; subscribers and linked views then synchronize automatically. This is required for complex plugins and prevents a chart from showing one focused curve while its legend/list still indicates another.
+
+For horizontally overflowing legend/tab strips, prefer `horizontalWheel:true`. Core hides the scrollbar and converts a normal mouse wheel over the strip into horizontal scrolling; plugins must not add private scrollbar CSS or wheel handlers.
+
 **Keep selection state compact.** Selection is an interaction document, not a second data store. Large arrays, tables and raw sweep points remain in the canonical artifact/project/plugin store; a data type should project them to `id + ref + small preview value`, and resolve the ref only when a consumer really needs the complete object.
 
 ## Sticky versus Dock
