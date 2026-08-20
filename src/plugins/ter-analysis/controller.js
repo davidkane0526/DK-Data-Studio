@@ -11,7 +11,7 @@
     if(!service)throw new Error('TER service is unavailable.');
     const listeners=new Set();
     const api={
-      id:'builtin.ter-analysis',service,selection,
+      id:'builtin.ter-analysis',service,interaction,selection,
       getSelection:()=>selection.get(),
       select(value,meta={}){const type=String(value?.selectionType||value?.type||'ter.matrix-point');const id=String(value?.id||`${value?.vg??''}:${value?.vd??''}:${value?.axis||''}`);selection.select({type,id,value},{...meta,source:meta.source||'ter'});for(const fn of [...listeners])try{fn(value,meta);}catch{}return value;},
       clearSelection(meta={}){return selection.clear(meta);},

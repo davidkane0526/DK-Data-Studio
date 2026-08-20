@@ -54,11 +54,11 @@ assert(app.includes('const systemUndo=')&&app.includes('const systemDeselect=')&
 assert(resonanceViews.includes('ctx.ui.edit?.register?.')&&!resonanceViews.includes("id:'undo',label:'↶'")&&!resonanceViews.includes("id:'deselect',label:'取消'"),'Resonance must consume system edit commands instead of duplicating them among PRIME/SUB actions.');
 
 // Group plots are live reusable chart surfaces rather than snapshot/recreate UI.
-assert(resonanceFeature.includes('const groupCards=new Map()')&&resonanceFeature.includes('const groupCharts=new Map()'),'Group subplot instances must be stable.');
+assert(resonanceFeature.includes('const groupCards=new Map()')&&!resonanceFeature.includes('const groupCharts=new Map()'),'Group cards stay stable while Plotly ownership belongs to Core ScientificPlot, not a plugin-local groupCharts registry.');
 assert(resonanceFeature.includes('groupDataFingerprint()')&&resonanceFeature.includes('nextKey===groupRenderKey'),'Group data refresh must avoid redundant Plotly work when only selection emphasis changes.');
-assert(resonanceFeature.includes('charts.react')&&!resonanceFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through the Core chart runtime.');
+assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
 assert(resonanceFeature.includes('visibleSweepIds().map(String)')&&resonanceFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
-assert(resonanceFeature.includes('renderGroup();else if(includeGroup)updateGroupHighlights()'),'Main/selection changes must drive the open group view.');
+assert(resonanceFeature.includes("if(includeGroup){const context=$('#reswinGroupContext')")&&!resonanceFeature.includes('updateGroupHighlights()'),'Selection changes must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
 assert(ui.includes("this.wrapper.querySelectorAll?.('.js-plotly-plot')")&&ui.includes('window.Plotly.Plots.resize(plot)'),'PortableView resize must resize Plotly graphs by default.');
 
 // Pulse analysis must be repeatable and must not destroy the last valid result on a failed rerun.

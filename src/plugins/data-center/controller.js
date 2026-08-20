@@ -20,7 +20,7 @@
       serialize(value){return {schema:1,activeArtifactId:value.activeArtifactId,recipeName:value.recipeName,steps:D.deepClone(value.steps),savedRecipes:D.deepClone(value.savedRecipes),chart:D.deepClone(value.chart)};}
     });
     const api={
-      id:'builtin.data-center',selection,store,
+      id:'builtin.data-center',interaction,selection,store,
       getState:()=>store.get(),snapshot:()=>store.snapshot(),
       update(mutator,meta={}){return store.update(mutator,meta);},
       patch(delta,meta={}){return store.patch(delta,meta);},

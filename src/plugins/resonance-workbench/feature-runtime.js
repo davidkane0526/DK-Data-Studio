@@ -71,12 +71,13 @@
       let physicsCache={key:'',value:null};
       let resizeRaf=0;
       let uiRuntime=null;
+      let entityRuntime=null;
       let workspaceRuntime=null;
       let mainSurface=null;
       const groupPortables=new Map();
       const groupCards=new Map();
-      const groupCharts=new Map();
       const groupPlotViews=new Map();
+      const registeredEntityIds=new Set();
       let groupRenderKey='';
       let undoStack=[];
       let committedWorkspace=null;
@@ -100,14 +101,36 @@
       function sweepById(id){return sweeps.find(sw=>sw.id===id)||null;}
       function peakById(id){return (workspace.peaks||[]).find(p=>p.id===id)||null;}
 
+      const datasetEntityId=path=>`resonance.dataset:${String(path||'')}`;
+      function syncEntities(){
+        const entities=entityRuntime;if(!entities?.upsert)return false;const live=new Set();
+        entities.transact?.(()=>{
+          for(const ds of datasets){const id=datasetEntityId(ds.path);live.add(id);entities.upsert({id,type:'resonance.dataset',label:ds.name||ds.path,ref:{datasetPath:ds.path},value:{path:ds.path,name:ds.name,vg:ds.vg},metadata:{vg:ds.vg,sourcePath:ds.sourcePath||''},visible:true,hidden:false});}
+          for(const sw of sweeps){live.add(String(sw.id));const visible=isVisible(sw);entities.upsert({id:String(sw.id),type:'resonance.sweep',label:`${sw.datasetName||sw.datasetPath} · ${directionName(sw.direction)}`,parents:[datasetEntityId(sw.datasetPath)],ref:{sweepId:sw.id,datasetPath:sw.datasetPath},value:{id:sw.id,datasetPath:sw.datasetPath,datasetName:sw.datasetName,vg:sw.vg,direction:sw.direction},metadata:{vg:sw.vg,direction:sw.direction},visible,hidden:!visible});}
+          for(const peak of workspace.peaks||[]){live.add(String(peak.id));const sw=sweepById(peak.sweepId),visible=!!sw&&isVisible(sw)&&peak.accepted!==false;entities.upsert({id:String(peak.id),type:'resonance.peak',label:peakLabel(peak),parents:[String(peak.sweepId||'')],ref:{peakId:peak.id,sweepId:peak.sweepId,datasetPath:peak.datasetPath},value:{id:peak.id,sweepId:peak.sweepId,datasetPath:peak.datasetPath,vg:peak.vg,direction:peak.direction,v:peak.v,i:peak.i,peakOrder:peak.peakOrder,peakLabel:peakLabel(peak)},metadata:{accepted:peak.accepted!==false,manual:!!peak.manual},visible,hidden:!visible,locked:!!peak.locked});}
+        });
+        for(const id of [...registeredEntityIds])if(!live.has(id))entities.remove?.(id);registeredEntityIds.clear();for(const id of live)registeredEntityIds.add(id);return true;
+      }
+      function syncDerivedArtifacts(){
+        if(!artifacts?.publish||!D?.createSweep||!D?.createPeakSet)return false;const sourceRows=artifacts.list?.({includeTransient:true})||[];const rawByPath=new Map(sourceRows.filter(a=>a?.metadata?.adapter==='legacy-dataset').map(a=>[String(a.metadata.legacyDatasetPath||''),a.id]));
+        const publishAll=api=>{for(const sw of sweeps){const parentId=rawByPath.get(String(sw.datasetPath||''))||'';api.publish(D.createSweep({id:String(sw.id),name:`${sw.datasetName||'Sweep'} · ${directionName(sw.direction)}`,x:(sw.points||[]).map(p=>p.v),y:(sw.points||[]).map(p=>p.i),xName:'Vd',yName:'Id',xUnit:'V',yUnit:'A',direction:sw.direction,scanAxis:'Vd',transient:true,metadata:{datasetPath:sw.datasetPath,vg:sw.vg},lineage:{parents:parentId?[parentId]:[],role:'sweep',producer:'builtin.resonance-workbench',operation:'split-sweep'}}));const peaks=(workspace.peaks||[]).filter(p=>String(p.sweepId)===String(sw.id));api.publish(D.createPeakSet({id:`resonance.peaks:${sw.id}`,name:`${sw.datasetName||'Sweep'} · 峰`,peaks,transient:true,metadata:{sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction},lineage:{parents:[String(sw.id)],role:'analysis',producer:'builtin.resonance-workbench',operation:'peak-detection',parameters:workspace.algorithms||{}}}));}};
+        if(artifacts.batch)artifacts.batch(publishAll);else publishAll(artifacts);return true;
+      }
+
+      function scientificReact(target,traces,layout,config={},spec={}){
+        const runtime=uiRuntime?.scientificPlot;if(runtime?.react)return runtime.react(target,traces,layout,config,{interaction:interactionRuntime,source:'resonance-plot',...spec});
+        return charts?.react?.(target,traces,layout,config);
+      }
+      function peakPointEntity({customdata}){const id=String(customdata?.[0]||'');const p=peakById(id);return p?{id:String(p.id),type:'resonance.peak',parents:[String(p.sweepId||'')],label:peakLabel(p),ref:{peakId:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath},value:{id:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction,v:p.v,i:p.i}}:null;}
+
       function selectionSweepItem(sw){return sw?{type:'resonance.sweep',id:String(sw.id),role:'sweep',value:{id:sw.id,datasetPath:sw.datasetPath,datasetName:sw.datasetName,vg:sw.vg,direction:sw.direction}}:null;}
       function selectionPeakItem(p){return p?{type:'resonance.peak',id:String(p.id),role:'peak',value:{id:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction,v:p.v,i:p.i,peakOrder:p.peakOrder,peakLabel:peakLabel(p)}}:null;}
       function focusedDatasetPath(snapshot){const focus=snapshot?.focus||snapshot?.items?.at?.(-1)||null;return String(focus?.ref?.datasetPath||focus?.value?.datasetPath||'');}
       function bindLinkedSelectionViews(){
         if(!uiBound||!interactionRuntime?.bindView)return false;
         const list=$('#reswinDatasetList'),legend=$('#resparMainLegend');
-        if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.datasetPath,focusKey:focusedDatasetPath,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');const current=selectedSweep();const rows=(visibleSweeps().length?visibleSweeps():sweeps).filter(sw=>String(sw.datasetPath)===path);const preferred=current&&String(current.datasetPath)===path?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]);if(preferred)publishSweepSelection(preferred,'resonance-dataset');}});
-        if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.datasetPath,focusKey:focusedDatasetPath,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
+        if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.entityId||datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');const current=selectedSweep();const rows=(visibleSweeps().length?visibleSweeps():sweeps).filter(sw=>String(sw.datasetPath)===path);const preferred=current&&String(current.datasetPath)===path?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]);if(preferred)publishSweepSelection(preferred,'resonance-dataset');}});
+        if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.entityId||datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
         return true;
       }
       function selectedPeakWidthShapes(){
@@ -115,43 +138,16 @@
         const m=peakMetrics(selectedP)||{},left=Number(m.fwhmLeft),right=Number(m.fwhmRight);if(!Number.isFinite(left)||!Number.isFinite(right)||right<=left)return [];
         return [{type:'rect',xref:'x',yref:'paper',x0:left,x1:right,y0:0,y1:1,fillcolor:'rgba(58,96,246,.08)',line:{color:'rgba(58,96,246,.38)',width:1,dash:'dot'},layer:'below'}];
       }
-      function updateMainSelectionHighlights(){
-        const plot=$('#reswinMainPlot');if(!plot||plot.offsetParent===null||!charts||!Array.isArray(plot.data)||!plot.data.length)return false;
-        try{
-          plot.data.forEach((trace,index)=>{
-            if(trace?.name==='峰位'&&Array.isArray(trace.customdata)){
-              const ids=trace.customdata.map(row=>String(row?.[0]||''));
-              const sizes=ids.map(id=>id===String(selectedPeakId)?13:(selectedPeakIds.has(id)?11:9));
-              const widths=ids.map(id=>id===String(selectedPeakId)?3:(selectedPeakIds.has(id)?2:1));
-              const lineColors=ids.map(id=>selectedPeakIds.has(id)?'#111827':'#ffffff');
-              charts.restyle(plot,{'marker.size':[sizes],'marker.line.width':[widths],'marker.line.color':[lineColors]},[index]);
-              return;
-            }
-            const sweepId=String(trace?.customdata?.[0]?.[1]||'');if(!sweepId)return;
-            const active=sweepId===String(selectedSweepId);charts.restyle(plot,{'line.width':[active?2.6:1.1],'opacity':[active?1:.28]},[index]);
-          });
-          const sw=selectedSweep();const transform=currentTransform(sw);const label=sw?(S.transformSweep?.(sw,transform)?.label||'I–V'):'I–V';
-          charts.relayout(plot,{'title.text':sw?`${sw.datasetName} · Vg=${Number(sw.vg)} · ${directionName(sw.direction)}`:'共振 I–V','yaxis.title.text':label,shapes:selectedPeakWidthShapes()});
-          return true;
-        }catch(err){console.warn('[resonance selection highlight]',err);return false;}
-      }
-      function updateTrendSelectionHighlights(){
-        const plot=$('#reswinTrendPlot');if(!plot||plot.offsetParent===null||!charts||!Array.isArray(plot.data)||!plot.data.length)return false;
-        try{
-          plot.data.forEach((trace,index)=>{if(!Array.isArray(trace.customdata))return;const ids=trace.customdata.map(row=>String(row?.[0]||''));const sizes=ids.map(id=>id===String(selectedPeakId)?11:(selectedPeakIds.has(id)?9:7));const widths=ids.map(id=>id===String(selectedPeakId)?3:(selectedPeakIds.has(id)?2:1));charts.restyle(plot,{'marker.size':[sizes],'marker.line.width':[widths]},[index]);});
-          return true;
-        }catch(err){console.warn('[resonance trend selection highlight]',err);return false;}
-      }
       function renderLinkedSelection({includeGroup=true,controls=false}={}){
-        // Selection changes are frequent. Keep the canonical Plotly traces and
-        // update only selection styling; rebuilding every curve on every click
-        // was one of the major regressions introduced by the unified runtime.
+        // Selection is Core-owned. D3 main surface receives the current entity IDs
+        // through its declarative selection getters, while Plotly ScientificPlot
+        // views subscribe to the same Interaction Runtime and restyle themselves.
+        // Do not rebuild or privately restyle trend/group plots on focus changes.
         if(controls)renderControls();
         renderSummary();
-        if($('#reswinMainPlot')?.offsetParent!==null&&!updateMainSelectionHighlights())renderMainPlot();
-        if($('#reswinTrendPlot')?.offsetParent!==null&&!updateTrendSelectionHighlights())renderTrend();
+        if($('#reswinMainPlot')?.offsetParent!==null){const surface=ensureMainSurface();surface?.requestRender?.('entity-selection');}
         if($('#reswinInspectPlot')?.offsetParent!==null)renderInspection();
-        if(includeGroup&&$('#resparGroupPanel')?.offsetParent!==null)renderGroup();else if(includeGroup)updateGroupHighlights();
+        if(includeGroup){const context=$('#reswinGroupContext');if(context)context.textContent=groupContextText();}
       }
       function publishSweepSelection(sw,source='resonance-main'){
         if(!sw)return false;selectedSweepId=String(sw.id);selectedPeakId='';selectedPeakIds.clear();
@@ -263,6 +259,7 @@
         }
         if(!sweeps.some(sw=>sw.id===selectedSweepId))selectedSweepId=visibleSweeps()[0]?.id||sweeps[0]?.id||'';
         if(selectedPeakId&&!peakById(selectedPeakId))selectedPeakId='';
+        syncEntities();syncDerivedArtifacts();
       }
 
       function refreshData(){
@@ -453,7 +450,7 @@
         const vis=visibilityMap();
         return datasets.map(d=>{
           const row=vis.get(String(d.path))||{forward:true,reverse:true},transform=new Map(workspace.transformPreviewByDataset||[]).get(String(d.path))||'raw';
-          return `<div class="respar-dataset-item" data-dataset-path="${esc(d.path)}" data-selection-key="${esc(d.path)}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform"><option value="raw">原始 I–V</option><option value="detrend">去背景 I−Ibg</option><option value="didv">dI/dV</option><option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option></select></label></div></div>`;
+          return `<div class="respar-dataset-item" data-dataset-path="${esc(d.path)}" data-entity-id="${esc(datasetEntityId(d.path))}" data-selection-key="${esc(datasetEntityId(d.path))}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform"><option value="raw">原始 I–V</option><option value="detrend">去背景 I−Ibg</option><option value="didv">dI/dV</option><option value="d2idv2">d²I/dV²</option><option value="dlog">d ln|I|/dV</option><option value="dvdi">dV/dI</option><option value="resistance">R=|V/I|</option></select></label></div></div>`;
         }).join('')||'<div class="empty-state">工程中没有数据。</div>';
       }
 
@@ -541,7 +538,7 @@
         for(const ds of datasets){
           const visible=visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
           const candidates=sweeps.filter(sw=>sw.datasetPath===ds.path&&isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
-          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.selectionKey=String(ds.path||'');chip.dataset.sweepId=String(preferred?.id||'');
+          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=datasetEntityId(ds.path);chip.dataset.selectionKey=datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
           const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
           chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
           host.appendChild(chip);
@@ -550,7 +547,7 @@
       function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
       function mainSurfaceMarkers(){
         const display=workspace.peakDisplay||{},visibleIds=new Set(visibleSweepIds());if(display.showPoints===false)return [];
-        return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
+        return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),entityId:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
       }
       function markerWidthSpec(marker){
         const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return null;const m=S.peakMetrics?.(p,sw)||peakMetrics(p)||{};
@@ -565,9 +562,10 @@
         mainSurface=factory.create(node,{
           container:'#resparMainPlotWrap',minWidth:260,minHeight:180,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
           yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
-          getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
+          interaction:interactionRuntime,source:'resonance-main',
+          getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),entityId:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
           getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
-          getMarkers:()=>mainSurfaceMarkers(),getSelectedCurveId:()=>selectedSweepId,getSelectedMarkerIds:()=>[...new Set([selectedPeakId,...selectedPeakIds].filter(Boolean).map(String))],
+          getMarkers:()=>mainSurfaceMarkers(),
           getView:()=>workspace.mainView||{xDomain:null,yDomain:null},setView:(next,meta)=>{workspace.mainView={xDomain:Array.isArray(next?.xDomain)?next.xDomain.slice():null,yDomain:Array.isArray(next?.yDomain)?next.yDomain.slice():null};if(meta?.reason==='box-zoom'){scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');}},
           getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
           getMarkerWidth:marker=>markerWidthSpec(marker),
@@ -606,8 +604,8 @@
 
       function renderTrend(){
         const plot=$('#reswinTrendPlot');if(!plot||!charts)return;
-        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:sr.peaks.map(p=>p.id===selectedPeakId?11:(selectedPeakIds.has(String(p.id))?9:7)),line:{width:sr.peaks.map(p=>p.id===selectedPeakId?3:(selectedPeakIds.has(String(p.id))?2:1))}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
-        charts.react(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false}).then(()=>{try{plot.removeAllListeners?.('plotly_click');}catch{}plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0];const p=peakById(id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});});}).catch(()=>{});
+        const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
+        scientificReact(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
       }
 
       function peakMetrics(p){const sw=sweepById(p?.sweepId);return sw&&p?S.peakMetrics?.(p,sw):null;}
@@ -651,7 +649,7 @@
           const traces=[{x:t.points.map(q=>q.v),y:t.points.map(q=>q.y),mode:'lines',name:t.label,line:{width:1.8,color:'#315efb'}}];
           const peaks=(workspace.peaks||[]).filter(q=>q.sweepId===sw.id&&q.accepted!==false);
           if(peaks.length){const xs=t.points.map(q=>q.v),ys=peaks.map(q=>t.points[S.nearestIndex(xs,q.v)]?.y);traces.push({x:peaks.map(q=>q.v),y:ys,mode:'markers',name:'原始峰位投影',marker:{size:9,color:peaks.map(q=>peakColor(q)),symbol:peaks.map(q=>q.manual?'diamond':'circle-open')},customdata:peaks.map(q=>[q.id]),hovertemplate:'Vpk=%{x:.6g} V<extra></extra>'});}
-          charts.react(plot,traces,{margin:{l:62,r:16,t:20,b:50},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:t.label||'',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false,displayModeBar:false}).then(()=>{try{plot.removeAllListeners?.('plotly_click');}catch{}plot.on?.('plotly_click',e=>{const id=e?.points?.[0]?.customdata?.[0],peak=peakById(id);if(peak)publishPeakSelection(peak,'resonance-inspector',{additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});});}).catch(()=>{});
+          scientificReact(plot,traces,{margin:{l:62,r:16,t:20,b:50},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:t.label||'',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false,displayModeBar:false},{traceEntity:(trace,index)=>index===0?{id:String(sw.id),type:'resonance.sweep',parents:[datasetEntityId(sw.datasetPath)]}:null,pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const peak=peakById(entity?.id);if(peak)publishPeakSelection(peak,'resonance-inspector',{additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
         }
       }
 
@@ -666,12 +664,6 @@
         const rows=['series,label,direction,Vg,value'];
         for(const sr of series)for(const r of sr.rows){const direction=Number.isFinite(Number(sr.direction))?directionName(sr.direction):'';rows.push([sr.name,sr.label,direction,r.p.vg,r.value].map(csvCell).join(','));}
         return rows.join('\n');
-      }
-      function updateGroupHighlights(){
-        for(const plot of $$('.reswin-group-plot')){
-          if(!plot?.data?.length||!charts)continue;
-          plot.data.forEach((trace,index)=>{if(!Array.isArray(trace.customdata))return;const sizes=trace.customdata.map(row=>{const id=String(row?.[0]||'');return id===String(selectedPeakId)?11:(selectedPeakIds.has(id)?9:7);});const widths=trace.customdata.map(row=>{const id=String(row?.[0]||'');return id===String(selectedPeakId)?3:(selectedPeakIds.has(id)?2:1);});try{charts.restyle(plot,{'marker.size':[sizes],'marker.line.width':[widths]},[index]);}catch{}});
-        }
       }
       function groupContextText(){
         const p=selectedPeak(),sw=selectedSweep(),visible=visibleSweeps().length;
@@ -689,8 +681,7 @@
         card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div><div class="reswin-group-legend"></div>`;
         hostEl.appendChild(card);
         const plot=card.querySelector('.reswin-group-plot');
-        const chart=uiRuntime?.charts?.mount?.(plot,{})||null;if(chart)groupCharts.set(String(key),chart);
-        row={key:String(key),title,card,plot,chart,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
+        row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
         const plotView=uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
           plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
           placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,portableFactory:(id,node,spec)=>workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
@@ -701,24 +692,20 @@
       function disposeGroupViews(){
         groupRenderKey='';
         for(const view of groupPlotViews.values())try{view?.dispose?.();}catch{}groupPlotViews.clear();groupPortables.clear();
-        for(const chart of groupCharts.values())try{chart?.dispose?.();}catch{}groupCharts.clear();
         for(const row of groupCards.values())try{row.card?.remove?.();}catch{}groupCards.clear();
       }
       function groupDataFingerprint(){
         const visibleIds=visibleSweepIds().map(String).sort();
-        const selected=selectedPeak();
-        const sweep=selectedSweep();
-        const contextKey=selected?`peak:${Number(selected.direction)||0}:${peakLabel(selected)}`:(sweep?`sweep:${String(sweep.id)}`:'all');
         const peaks=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.includes(String(p.sweepId))).map(p=>[
           p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,peakLabel(p),p.prominence,p.widthLeft,p.widthRight,p.analysisLeft,p.analysisRight,p.manual?1:0,p.locked?1:0
         ].join(':')).join('|');
-        return `${workspace.groupColumns||'auto'}##${contextKey}##${visibleIds.join(',')}##${peaks}`;
+        return `${workspace.groupColumns||'auto'}##${visibleIds.join(',')}##${peaks}`;
       }
       function renderGroup(){
         const hostEl=$('#reswinGroupGrid');if(!hostEl||!charts)return;
         const context=$('#reswinGroupContext');if(context)context.textContent=groupContextText();
         const nextKey=groupDataFingerprint();
-        if(nextKey===groupRenderKey&&groupCards.size){updateGroupHighlights();uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-highlight'});return;}
+        if(nextKey===groupRenderKey&&groupCards.size){uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-focus'});return;}
         groupRenderKey=nextKey;
         const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','峰突出度','A']];
         const visibleIds=new Set(visibleSweepIds().map(String));
@@ -733,17 +720,16 @@
         const activeKeys=new Set();
         for(const [metric,title,unit] of defs){
           activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(series);
-          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:sr.rows.map(r=>r.p.id===selectedPeakId?11:(selectedPeakIds.has(String(r.p.id))?9:7)),line:{width:sr.rows.map(r=>r.p.id===selectedPeakId?3:(selectedPeakIds.has(String(r.p.id))?2:1))}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
+          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
           const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true};
-          const onClick=e=>{const id=e?.points?.[0]?.customdata?.[0];if(id){const p=peakById(id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(e?.event?.ctrlKey||e?.event?.metaKey)});}};
-          if(row.chart)row.chart.set({data:traces,layout,config:{responsive:true,displayModeBar:false},onClick}).catch(()=>{});else charts.react(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
+          scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
         }
         const terKey='ter';
         if(terSeries.length){
           activeKeys.add(terKey);const row=ensureGroupCard(terKey,'共振 TER');if(row){row.card.classList.remove('hidden');row.title='共振 TER';row.series=terSeries.map(sr=>({...sr,rows:sr.points.map(p=>({p:{vg:p.vg},value:p.ter}))}));row.card.querySelector('.reswin-group-title').textContent='共振 TER';row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(terSeries);
             const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
             const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true};
-            if(row.chart)row.chart.set({data:traces,layout,config:{responsive:true,displayModeBar:false}}).catch(()=>{});else charts.react(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
+            scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
           }
         }
         for(const [key,row] of groupCards)row.card.classList.toggle('hidden',!activeKeys.has(key));
@@ -768,7 +754,7 @@
         const plot=$('#reswinPhysicsPlot');if(plot&&charts){
           const rows=Array.isArray(r.v0Delta)?r.v0Delta:[];
           const traces=rows.length?[{x:rows.map(x=>x.vg),y:rows.map(x=>x.V0),mode:'lines+markers',name:'V0'},{x:rows.map(x=>x.vg),y:rows.map(x=>x.delta),mode:'lines+markers',name:'|δ|',yaxis:'y2'}]:[];
-          charts.react(plot,traces,{margin:{l:64,r:66,t:26,b:54},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'V0 (V)',gridcolor:'#edf0f5'},yaxis2:{title:'|δ| (V)',overlaying:'y',side:'right',showgrid:false},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});
+          scientificReact(plot,traces,{margin:{l:64,r:66,t:26,b:54},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'V0 (V)',gridcolor:'#edf0f5'},yaxis2:{title:'|δ| (V)',overlaying:'y',side:'right',showgrid:false},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});
         }
       }
 
@@ -786,7 +772,7 @@
       }
       function renderSpacing(){
         populateSpacing();const s=workspace.spacingSettings;spacingResult=computeSpacingResult(s.seriesA,s.seriesB);
-        const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';charts.react(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)',gridcolor:'#edf0f5'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
+        const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';scientificReact(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)',gridcolor:'#edf0f5'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
         const table=$('#reswinSpacingTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>VB−VA</th><th>|ΔV|</th></tr></thead><tbody>${spacingResult.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.deltaV,6)}</td><td>${fmt(d.spacing,6)}</td></tr>`).join('')}</tbody>`;
       }
       function spacingCsv(){const rows=['Vg_V,series_A,V_A_V,series_B,V_B_V,delta_V_B_minus_A_V,absolute_spacing_V'];for(const d of spacingResult)rows.push([d.vg,csvCell(d.labelA),d.vA,csvCell(d.labelB),d.vB,d.deltaV,d.spacing].join(','));return rows.join('\n');}
@@ -848,7 +834,7 @@
           reswinGateBackground:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineA),mode:'lines+markers',name:'背景 A'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineB),mode:'lines+markers',name:'背景 B'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgA),mode:'lines+markers',name:'峰/背景 A',yaxis:'y2'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgB),mode:'lines+markers',name:'峰/背景 B',yaxis:'y2'}],layout:{...gateBase('Vg (V)','局域背景 (A)'),yaxis2:{title:'峰/背景比',overlaying:'y',side:'right',showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
           reswinGateDensity:{traces:r.settings.useCarrierDensity?[{x:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.delta),mode:'lines+markers',name:'δ'},{x:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.terMax),mode:'lines+markers',name:'TERmax',yaxis:'y2'}]:[],layout:{...gateBase('n_g (cm⁻²)','δ (V)'),yaxis2:{title:'TERmax (%)',overlaying:'y',side:'right',showgrid:false},margin:{l:74,r:64,t:20,b:52}}}
         };
-        for(const [id,spec] of Object.entries(plots)){const el=$('#'+id);if(el)charts.react(el,spec.traces,spec.layout,{responsive:true,displaylogo:false}).catch(()=>{});}
+        for(const [id,spec] of Object.entries(plots)){const el=$('#'+id);if(el)scientificReact(el,spec.traces,spec.layout,{responsive:true,displaylogo:false}).catch(()=>{});}
         const report=$('#reswinGateReport');if(report){const f=r.fits||{},c=r.correlations||{};report.innerHTML=`<strong>栅压物理分析摘要</strong><p>V0 表示两条所选共振 ridge 的共模位置；δ=(VB−VA)/2 表示有效分裂。用于可分辨度比较时使用 |δ|/w。</p><p>dV0/dVg=${fmt(f.V0?.slope,6)}，R²=${fmt(f.V0?.r2,4)}；d|δ|/dVg=${fmt(f.deltaAbs?.slope,6)}；r[TERmax, |δ|/w]=${fmt(c.terVsDeltaOverW,4)}；r[Vd*, V0]=${fmt(c.vStarVsV0,4)}。</p><p>这些相关量用于检验机制假设，不把 η_eff 直接解释为畴面积，也不把正反扫峰位差直接等同于 coercive voltage。</p>`;}
         const table=$('#reswinGateTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>V0</th><th>δ</th><th>|δ|/w</th><th>TERmax</th><th>Vd*</th><th>η_eff</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.V0,6)}</td><td>${fmt(d.delta,6)}</td><td>${fmt(d.deltaOverW,5)}</td><td>${fmt(d.terMax,4)}</td><td>${fmt(d.vStar,6)}</td><td>${fmt(d.etaEff,4)}</td></tr>`).join('')}</tbody>`;
       }
@@ -878,7 +864,7 @@
         else if(currentView==='gate')renderGate();
       }
       function setView(view){if(!['main','inspect','group','physics','spacing','gate'].includes(String(view)))return;workspace.activeView=String(view);currentView=workspace.activeView;if(workspaceNavigator)workspaceNavigator(currentView);else renderView();scheduleSnapshot();}
-      function render(){normalizeCategories();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);if($('#resparGroupPanel')?.offsetParent!==null&&currentView!=='group')renderGroup();}else renderView();}
+      function render(){normalizeCategories();syncEntities();syncDerivedArtifacts();if(workspaceNavigator){renderMain();if(currentView!=='main')workspaceNavigator(currentView);if($('#resparGroupPanel')?.offsetParent!==null&&currentView!=='group')renderGroup();}else renderView();}
       function resize(){
         if(resizeRaf)return;resizeRaf=dom.frame(()=>{resizeRaf=0;if($('#reswinMainPlot')?.offsetParent!==null)renderMainPlot();$$('.analysis-chart,.reswin-group-plot').filter(el=>el.offsetParent!==null).forEach(el=>{try{charts.resize(el);}catch{}});});
       }
@@ -972,7 +958,8 @@
         getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;renderGroup();scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
-        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;},
+        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;syncDerivedArtifacts();},
+        setEntityRuntime(runtime){entityRuntime=runtime||null;syncEntities();},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
         selection:()=>interactionSelection?.get?.()||null,

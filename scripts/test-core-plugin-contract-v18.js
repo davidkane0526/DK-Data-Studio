@@ -13,7 +13,7 @@ const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(
 const contract=sandbox.window.DKDSPluginContract;
 assert(contract&&contract.API_VERSION==='1.8.0','Core contract must target Plugin API 1.8.0.');
 assert.deepStrictEqual([...contract.requirements].sort(),[...allowed].sort(),'Runtime and JSON schema Core requirement catalogs must stay identical.');
-assert(contract.validateManifest({apiVersion:'1.8.0',requiresCore:['io','charts']}).ok,'Known Core requirements must validate.');
+assert(contract.validateManifest({apiVersion:'1.8.0',requiresCore:['io','charts','data.entities','ui.scientific-plot']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');
 assert(!contract.validateManifest({apiVersion:'1.8.0',requiresCore:['private.magic']}).ok,'Unknown private infrastructure requirements must be rejected.');
 
 for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){
@@ -29,11 +29,11 @@ for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){
 }
 
 const kernel=read('src/core/plugin-kernel.js');
-for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','dom: componentScope','providers: Object.freeze','status: Object.freeze','workspace: Object.freeze','DKDSPluginContract?.assertApi']){
+for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','entities: infrastructureScope?.entities','scientificPlot: infrastructureScope?.scientificPlot','dom: componentScope','providers: Object.freeze','status: Object.freeze','workspace: Object.freeze','DKDSPluginContract?.assertApi']){
   assert(kernel.includes(token),`Kernel v1.8 surface missing ${token}`);
 }
 const dedicated=read('src/plugin-window/runtime.js');
-for(const id of ['io-runtime','chart-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])assert(dedicated.includes(id),`Dedicated TOP host must load ${id}.`);
+for(const id of ['entity-runtime','io-runtime','chart-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])assert(dedicated.includes(id),`Dedicated TOP host must load ${id}.`);
 assert(dedicated.includes('DKDSServices?.register?.'),'Dedicated TOP runtime services must enter Core Service Registry.');
 
 console.log('Core Plugin Contract v1.8 checks passed.');

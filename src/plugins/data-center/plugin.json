@@ -1,7 +1,7 @@
 {
   "id": "builtin.data-center",
   "name": "Data Center",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "runtime",
@@ -13,6 +13,7 @@
     "workspace",
     "parameters",
     "data.artifacts",
+    "data.entities",
     "data.types",
     "data.model",
     "data.formula",
@@ -30,7 +31,8 @@
     "ui.top-workspace",
     "ui.pages",
     "ui.styles",
-    "ui.portable"
+    "ui.portable",
+    "ui.scientific-plot"
   ],
   "entry": "plugin.js",
   "enabled": true,
@@ -61,7 +63,8 @@
     "runtime.capabilities.v2",
     "ui.interaction",
     "data.types",
-    "ui.plugin-workspace"
+    "ui.plugin-workspace",
+    "ui.scientific-plot"
   ],
   "source": "builtin",
   "window": {

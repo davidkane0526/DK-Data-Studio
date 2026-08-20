@@ -1,3 +1,15 @@
+# v3.42.0 — Unified Entity, ScientificPlot and Artifact lineage runtime
+
+- Adds the Core Entity Runtime as the canonical identity/state graph for scientific objects across charts, legends, data lists, inspectors and derived analysis views. Entities have stable IDs, parent/child relations and distinct `visible / focused / selected / locked / hidden / disabled` semantics.
+- Projects shared Interaction Runtime selections into the Entity graph, including parent projection such as Peak → Sweep → Dataset, while keeping focus independent from scientific visibility.
+- Adds the Core ScientificPlot Runtime for Plotly and extends Core ScientificCurveSurface for D3/SVG entity-aware interaction. Plugins declare trace/point/curve/marker Entity IDs; Core owns Plotly listeners, focus emphasis/dimming, lifecycle, resize, purge and image export.
+- Upgrades the Core Artifact/Data Model to v2 with lineage (`parents`, role, producer, operation, parameters), relation queries, batched publication and semantic deduplication. Adds standard Transform and Matrix artifact factories.
+- Automatically projects live Artifacts into the Entity graph and preserves plugin-enriched domain entity types across Artifact refreshes and plugin deactivation/reactivation.
+- Migrates Resonance, TER, Pulse and Data Center away from remaining plugin-private Plotly selection/lifecycle or list-focus plumbing. Resonance publishes Dataset/Sweep/PeakSet relationships; TER publishes Raw → TER/Transform Matrix → Maxima lineage.
+- Formalizes `data.entities` as a backward-compatible Plugin API v1.8 Core requirement. Plugin API stays `1.8.0`; existing v1.8 plugins remain loadable while new plugins can opt into Entity/ScientificPlot/lineage surfaces.
+- Strengthens first-party plugin boundary checks to reject private `plotly_click` listeners, private focus `scrollIntoView`, legacy `ctx.ui.charts` bypasses and other infrastructure ownership leaks.
+- Adds executable v3.42 Entity/ScientificPlot regression suites and a real legacy-project regression covering 21 datasets, 42 sweeps, 93 saved peaks, 4,200 TER cells, six transforms, project save/reopen and Artifact/Entity lineage parity.
+
 # v3.41.6 — Linked-view reveal, unified tooltips, FWHM science and transformed TER heatmap
 
 - Makes Core linked-selection reveal remount-safe: rebuilt legends/lists automatically reveal the still-focused entity, and horizontal views reveal by local scrolling without moving the outer page.

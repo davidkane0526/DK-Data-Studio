@@ -12,7 +12,7 @@
     if(!service)throw new Error('Pulse analysis service is unavailable.');
     const listeners=new Set();
     const api={
-      id:'builtin.pulse-analysis',service,selection,
+      id:'builtin.pulse-analysis',service,interaction,selection,
       getSelection:()=>selection.get(),
       select(value,meta={}){
         const type=String(meta.type||value?.selectionType||value?.type||'pulse.file');

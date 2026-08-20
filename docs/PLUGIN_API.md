@@ -1,6 +1,8 @@
 # DK Data Studio Plugin API v1.8
 
-Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, charts, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+
+Starting with DK Data Studio v3.42, API 1.8 gains backward-compatible Core surfaces for Entity identity, Artifact lineage and ScientificPlot. The API version remains `1.8.0` so existing v1.8 plugins continue to load unchanged; new plugins should consume the stronger surfaces instead of older compatibility shortcuts.
 
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
@@ -24,7 +26,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
   "requiresCore": [
-    "io", "data.flow", "data.artifacts", "data.types",
+    "io", "data.flow", "data.artifacts", "data.entities", "data.types",
     "charts", "ui.dom", "ui.workspace", "ui.actions",
     "state", "project", "status", "modules"
   ]
@@ -40,8 +42,9 @@ Plugin IDs are permanent once project files persist state under them.
 **Core owns:**
 
 - desktop/web file dialogs, text/binary reads, save/export, clipboard and image export;
-- canonical Artifact/Data Model and typed data-flow registries;
-- Plotly/D3 access, chart lifecycle, resize and purge;
+- canonical Artifact/Data Model, lineage/provenance graph and typed data-flow registries;
+- canonical Entity Registry for identity/relationship/state projection (`visible / focused / selected / locked / hidden / disabled`);
+- Plotly/D3 access through ScientificPlot, including focus styling, chart lifecycle, resize, purge and export;
 - DOM creation/query helpers, persistent listener/observer cleanup, animation-frame/timer scheduling and declarative component primitives;
 - PRIMARY / PRIME / SUB workspaces, Grid, portable/dock/floating surfaces, z-order and resize propagation;
 - actions, shortcuts, menus, status bar, typed selection and Interaction Runtime;
@@ -68,6 +71,9 @@ New code must not use these infrastructure shortcuts:
 ctx.host
 window.electronAPI / electronAPI.*
 Plotly.* / window.Plotly
+private plotly_click listeners or listener cleanup
+private scrollIntoView focus/reveal logic
+ctx.ui.charts (legacy first-party bypass; use ctx.ui.scientificPlot)
 raw document.querySelector/createElement...
 new ResizeObserver / new MutationObserver
 requestAnimationFrame / setTimeout / setInterval / queueMicrotask
@@ -84,7 +90,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 
 - runtime/lifecycle: `runtime`, `events`, `status`, `state`, `project`, `workspace`;
 - base services: `io`, `science`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
-- data: `data.flow`, `data.artifacts`, `data.types`, `data.model`, `data.formula`;
+- data: `data.flow`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
 - UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`.
@@ -117,7 +123,42 @@ ctx.data.exporters.register('fit.csv', { run:({value}) => toCsv(value) });
 
 `ctx.data.artifacts` is the canonical live project data source. `project.datasets` is compatibility data, not a new plugin-local store.
 
-## 6. Domain data types and selection
+Derived results should be published with lineage rather than copied into plugin-private caches:
+
+```js
+const sweep = ctx.data.model.createSweep({
+  id:'sweep:42', x, y, direction:1, scanAxis:'Vd',
+  lineage:{parents:['dataset:7'],role:'sweep',producer:'com.example.spectroscopy',operation:'split-sweep'}
+});
+const transformed = ctx.data.model.createTransform({
+  id:'transform:42:didv', x:tx, y:ty, transform:'didv',
+  lineage:{parents:[sweep.id],role:'transform',producer:'com.example.spectroscopy',operation:'didv',parameters}
+});
+ctx.data.artifacts.batch(api=>{
+  api.publish(sweep);
+  api.publish(transformed);
+});
+const lineage = ctx.data.artifacts.lineage(transformed.id);
+```
+
+`publish()` is content-aware and may return `{changed:false}` for an identical scientific result. `batch()` coalesces publication events so one analysis run does not trigger dozens of unrelated UI redraws.
+
+## 6. Domain data types, entities and selection
+
+Every scientific object that appears in more than one view should have one stable Entity ID. Artifacts, sweeps, curves, peaks, matrix points and annotations can form parent/child relationships in `ctx.data.entities`. Core projects Artifact lineage into the Entity graph automatically.
+
+Entity state has six distinct semantics:
+
+```text
+visible   participates in the current scientific view
+focused   current interaction target
+selected  member of the current multi-selection
+locked    domain object cannot be edited/moved/deleted
+hidden    explicitly suppressed from rendering
+disabled  visible UI representation is not actionable
+```
+
+Do not encode `focused` as `visible`, and do not use focus to filter scientific data. A selected peak may focus its parent Sweep/Dataset views through Entity relationships without hiding other visible data.
 
 Register types so heterogeneous raw/derived/result data can participate in one Core selection document:
 
@@ -136,25 +177,46 @@ ctx.data.types.register('my.fit-result', {
 });
 ```
 
-Keep selection payloads compact. Large arrays stay in Artifacts/project/service state.
-
-## 7. Charts
-
-All Plotly interaction goes through `ctx.ui.charts` / `ctx.ui.plotViews`:
+Keep selection payloads compact. Large arrays stay in Artifacts/project/service state. Register or update domain entities once, then let Core project focus into each view:
 
 ```js
-await ctx.ui.charts.react(plot, traces, layout, config);
-ctx.ui.charts.resize(plot);
-await ctx.ui.charts.saveImage(plot, 'fit_result', 'png');
+ctx.data.entities.upsert({id:'dataset:7',type:'my.dataset',label:'Vg=5 V'});
+ctx.data.entities.upsert({id:'sweep:42',type:'my.sweep',parents:['dataset:7'],visible:true});
+ctx.data.entities.upsert({id:'peak:9',type:'my.peak',parents:['sweep:42'],locked:false});
+```
 
+Artifact-backed entities survive plugin deactivation as Core-owned data entities, so another plugin can continue to discover the data lineage.
+
+## 7. Scientific plots
+
+First-party and new plugins use `ctx.ui.scientificPlot` for Plotly/D3 scientific interaction. Do not bind `plotly_click` yourself and do not manually restyle focused traces.
+
+Plotly example:
+
+```js
+await ctx.ui.scientificPlot.react(plot, traces, layout, config, {
+  interaction,
+  source:'fit-result',
+  traceEntity:trace=>trace.entityId,
+  pointEntity:({customdata})=>customdata?.entityId
+});
+ctx.ui.scientificPlot.resize(plot);
+await ctx.ui.scientificPlot.saveImage(plot,'fit_result','png');
+```
+
+When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing rendered Plotly graphs may be adopted with `attach()`.
+
+For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Domain callbacks remain optional for special commands such as “open inspector” or “create manual peak”.
+
+Use `ctx.ui.plotViews.bind(...)` for generic chart chrome, placement and CSV/image export:
+
+```js
 ctx.ui.plotViews.bind('fit:main', card, {
-  plot,
-  header:'.analysis-chart-title',
-  fileStem:()=>`fit_${sampleId}`
+  plot, header:'.analysis-chart-title', fileStem:()=>`fit_${sampleId}`
 });
 ```
 
-A reusable chart **provider** is registered with `ctx.charts.register(...)`; a plugin must not create its own renderer registry.
+A reusable chart **provider** is still registered with `ctx.charts.register(...)`; a plugin must not create its own renderer registry. `ctx.ui.charts` is retained only as a compatibility path and must not be used by new first-party code.
 
 ## 8. DOM, components and scheduling
 
@@ -218,7 +280,7 @@ interaction.bindView('legend', legendHost, {
 });
 ```
 
-Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state. Linked-view reveal is remount-safe: if a legend/list rebuilds while the focus entity is unchanged, Core must reveal the replacement element again. Horizontal projections use local scrolling so focusing an item never shifts the outer page.
+Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal, Entity relationship projection and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. A list/legend item should expose the same Entity ID as its curve/point; `bindView(...,{entityLinked:true})` lets Core resolve a focused child Entity to the nearest displayed ancestor automatically. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state. Linked-view reveal is remount-safe: if a legend/list rebuilds while the focus entity is unchanged, Core must reveal the replacement element again. Horizontal projections use local scrolling so focusing an item never shifts the outer page.
 
 ## 11. Project/state/service/module contracts
 

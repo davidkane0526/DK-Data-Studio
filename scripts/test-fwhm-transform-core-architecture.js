@@ -23,7 +23,7 @@ assert(terService.includes('A.computeSweepTransformMatrix')&&terService.includes
   'TER service must own transformed-matrix domain state/project persistence');
 assert(terFeature.includes("const CHART_COUNT=7")&&terFeature.includes("plotId:'terTransformHeatmapPlot'")&&terFeature.includes('ctx.parameters.render'),
   'TER transformed heatmap must be integrated into the seven-card dashboard using Core Parameter Schema');
-assert(terFeature.includes('ctx.ui.charts.react')&&terFeature.includes('ensurePlotViews()'),
+assert(terFeature.includes('ctx.ui.scientificPlot.react')&&terFeature.includes('ensurePlotViews()'),
   'TER transformed heatmap must render/export through Core chart/PlotView infrastructure');
 assert(!terView.includes('id="terTransformType"')&&!terView.includes('id="terTransformDirection"'),
   'TER view must not reintroduce plugin-private transform select controls');

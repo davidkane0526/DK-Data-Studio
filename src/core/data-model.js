@@ -1,6 +1,6 @@
 (() => {
-  const ARTIFACT_VERSION=1;
-  const STORE_VERSION=1;
+  const ARTIFACT_VERSION=2;
+  const STORE_VERSION=2;
 
   function nowIso(){ return new Date().toISOString(); }
   function deepClone(value){
@@ -26,6 +26,20 @@
   function stableId(prefix,value){ return `${prefix}:${hashString(value)}`; }
   function safeArray(v){ return Array.isArray(v)?v:[]; }
   function normalizeMetadata(v){ return v&&typeof v==='object'&&!Array.isArray(v)?deepClone(v):{}; }
+
+  function normalizeLineage(spec={}){
+    const source=spec&&typeof spec==='object'?spec:{};
+    const parents=[...new Set([...(Array.isArray(source.parents)?source.parents:[]),source.parentId,source.parent].filter(Boolean).map(String))];
+    return {parents,role:String(source.role||''),producer:String(source.producer||source.providerId||''),operation:String(source.operation||source.type||''),parameters:normalizeMetadata(source.parameters),metadata:normalizeMetadata(source.metadata)};
+  }
+  function canonicalize(value){
+    if(value===null||value===undefined)return value;
+    if(Array.isArray(value))return value.map(canonicalize);
+    if(typeof value==='object'){const out={};for(const key of Object.keys(value).sort()){if(['createdAt','updatedAt'].includes(key))continue;out[key]=canonicalize(value[key]);}return out;}
+    if(typeof value==='number'&&Number.isNaN(value))return null;
+    return value;
+  }
+  function fingerprintArtifact(value){return hashString(JSON.stringify(canonicalize(value)));}
 
   function provenanceStep(spec={}){
     return {
@@ -58,6 +72,7 @@
       tags:safeArray(spec.tags).map(String),
       source:normalizeMetadata(spec.source),
       provenance:safeArray(spec.provenance).map(p=>provenanceStep(p)),
+      lineage:normalizeLineage(spec.lineage||{parents:spec.parents,parentId:spec.parentId,parent:spec.parent,role:spec.role,producer:spec.producer,operation:spec.operation,parameters:spec.parameters}),
       transient:!!spec.transient
     };
   }
@@ -110,6 +125,17 @@
   function createSweep(spec={}){
     const series=createSeries(spec);
     return {...series,kind:'data.sweep',direction:Number(spec.direction)||0,scanAxis:String(spec.scanAxis||series.xName)};
+  }
+
+
+  function createTransform(spec={}){
+    const series=createSeries(spec);
+    return {...series,kind:'data.transform',transform:String(spec.transform||spec.operation||''),parameters:normalizeMetadata(spec.parameters),inputKind:String(spec.inputKind||''),lineage:normalizeLineage(spec.lineage||{parents:spec.parents||spec.parentId,role:'transform',producer:spec.producer,operation:spec.transform||spec.operation,parameters:spec.parameters})};
+  }
+
+  function createMatrix(spec={}){
+    const x=safeArray(spec.x),y=safeArray(spec.y),z=safeArray(spec.z).map(row=>safeArray(row));
+    return {...envelope('result.matrix',spec),schemaVersion:1,x,y,z,xName:String(spec.xName||'x'),yName:String(spec.yName||'y'),valueName:String(spec.valueName||'value'),xUnit:String(spec.xUnit||''),yUnit:String(spec.yUnit||''),valueUnit:String(spec.valueUnit||''),parameters:normalizeMetadata(spec.parameters)};
   }
 
   function createEventSeries(spec={}){
@@ -200,6 +226,7 @@
     Object.assign(out,deepClone(spec.patch||{}));
     out.provenance=safeArray(parent.provenance).map(provenanceStep);
     out.provenance.push(provenanceStep({...step,inputs:[...(step.inputs||[]),parent.id],outputs:[out.id]}));
+    out.lineage=normalizeLineage(spec.lineage||{parents:[parent.id,...safeArray(step.inputs)],role:spec.role||step.role||'derived',producer:step.providerId||step.pluginId||'',operation:step.type||'derive',parameters:step.parameters});
     return out;
   }
 
@@ -298,31 +325,45 @@
     if(artifact.kind==='data.table')return createTable({...artifact,columns:safeArray(artifact.columns).map(c=>({...c,values:safeArray(c.values).map(v=>v===null?NaN:v)}))});
     if(artifact.kind==='data.series')return createSeries({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v)});
     if(artifact.kind==='data.sweep')return createSweep({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v)});
-    return deepClone(artifact);
+    if(artifact.kind==='data.transform')return createTransform({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v)});
+    if(artifact.kind==='result.matrix')return createMatrix({...artifact,x:safeArray(artifact.x).map(v=>v===null?NaN:v),y:safeArray(artifact.y).map(v=>v===null?NaN:v),z:safeArray(artifact.z).map(row=>safeArray(row).map(v=>v===null?NaN:v))});
+    const out=deepClone(artifact);out.lineage=normalizeLineage(out.lineage||{parents:out.parents||out.parentId});return out;
   }
 
   function createStore(initial=[]){
     const map=new Map();
     const listeners=new Set();
-    function emit(type,artifact){ for(const fn of listeners){try{fn({type,artifact});}catch(err){console.error(err);}} }
+    const childrenIndex=new Map();
+    let batchDepth=0,batchEvents=[];
+    function rebuildRelations(){childrenIndex.clear();for(const artifact of map.values())for(const parent of artifact?.lineage?.parents||[]){if(!childrenIndex.has(parent))childrenIndex.set(parent,new Set());childrenIndex.get(parent).add(artifact.id);}}
+    function emit(type,artifact,extra={}){const event={type,artifact:artifact?deepClone(artifact):null,...extra};if(batchDepth){batchEvents.push(event);return;}for(const fn of listeners){try{fn(event);}catch(err){console.error(err);}}}
+    function begin(){batchDepth++;return()=>endBatch();}
+    function endBatch(){if(batchDepth>0)batchDepth--;if(!batchDepth&&batchEvents.length){const events=batchEvents.splice(0);for(const fn of listeners){try{fn({type:'batch',events});}catch(err){console.error(err);}}}}
+    function lineage(id){const root=String(id||''),ancestors=[],descendants=[],seenUp=new Set(),seenDown=new Set(),up=[...(map.get(root)?.lineage?.parents||[])],down=[...(childrenIndex.get(root)||[])];while(up.length){const cur=up.shift();if(!cur||seenUp.has(cur))continue;seenUp.add(cur);const row=map.get(cur);if(row){ancestors.push(deepClone(row));up.push(...(row.lineage?.parents||[]));}}while(down.length){const cur=down.shift();if(!cur||seenDown.has(cur))continue;seenDown.add(cur);const row=map.get(cur);if(row){descendants.push(deepClone(row));down.push(...(childrenIndex.get(cur)||[]));}}return {id:root,artifact:map.has(root)?deepClone(map.get(root)):null,parents:(map.get(root)?.lineage?.parents||[]).map(id=>map.get(id)?deepClone(map.get(id)):null).filter(Boolean),children:[...(childrenIndex.get(root)||[])].map(id=>map.get(id)?deepClone(map.get(id)):null).filter(Boolean),ancestors,descendants};}
     const api={
       version:STORE_VERSION,
       add(artifact,{replace=false}={}){
         const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));
         const existed=map.has(hydrated.id);if(existed&&!replace)throw new Error(`Artifact already exists: ${hydrated.id}`);
-        map.set(hydrated.id,deepClone(hydrated));emit(existed?'upsert':'add',hydrated);return hydrated.id;
+        map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit(existed?'upsert':'add',hydrated);return hydrated.id;
       },
-      upsert(artifact){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));map.set(hydrated.id,deepClone(hydrated));emit('upsert',hydrated);return hydrated.id;},
+      upsert(artifact){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit('upsert',hydrated);return hydrated.id;},
+      publish(artifact,{dedupe=true}={}){const hydrated=rehydrateArtifact(artifact);const v=validateArtifact(hydrated);if(!v.ok)throw new Error(v.errors.join(' '));const previous=map.get(hydrated.id);if(dedupe&&previous&&fingerprintArtifact(previous)===fingerprintArtifact(hydrated))return {id:hydrated.id,changed:false,artifact:deepClone(previous)};map.set(hydrated.id,deepClone(hydrated));rebuildRelations();emit(previous?'upsert':'add',hydrated,{published:true});return {id:hydrated.id,changed:true,artifact:deepClone(hydrated)};},
+      batch(fn){const done=begin();try{return fn?.(api);}finally{done();}},
       get(id){const a=map.get(String(id));return a?deepClone(a):null;},
       getMutable(id){return map.get(String(id))||null;},
       has(id){return map.has(String(id));},
-      list({kind=null,includeTransient=true}={}){return [...map.values()].filter(a=>(!kind||a.kind===kind)&&(includeTransient||!a.transient)).map(deepClone);},
-      remove(id){const a=map.get(String(id));const ok=map.delete(String(id));if(ok)emit('remove',a);return ok;},
-      clear({includeTransient=true}={}){for(const [id,a] of [...map])if(includeTransient||!a.transient){map.delete(id);emit('remove',a);}},
+      list({kind=null,includeTransient=true,parent=null}={}){return [...map.values()].filter(a=>(!kind||a.kind===kind)&&(includeTransient||!a.transient)&&(!parent||(a.lineage?.parents||[]).includes(String(parent)))).map(deepClone);},
+      parents(id){return (map.get(String(id))?.lineage?.parents||[]).map(key=>map.get(key)?deepClone(map.get(key)):null).filter(Boolean);},
+      children(id){return [...(childrenIndex.get(String(id))||[])].map(key=>map.get(key)?deepClone(map.get(key)):null).filter(Boolean);},
+      lineage,
+      remove(id){const a=map.get(String(id));const ok=map.delete(String(id));if(ok){rebuildRelations();emit('remove',a);}return ok;},
+      clear({includeTransient=true}={}){const removed=[];for(const [id,a] of [...map])if(includeTransient||!a.transient){map.delete(id);removed.push(a);}rebuildRelations();if(removed.length){if(removed.length===1)emit('remove',removed[0]);else emit('clear',null,{ids:removed.map(a=>a.id)});}},
       onChange(fn){listeners.add(fn);return()=>listeners.delete(fn);},
-      size(){return map.size;}
+      size(){return map.size;},
+      fingerprint:id=>{const a=map.get(String(id));return a?fingerprintArtifact(a):'';}
     };
-    for(const a of safeArray(initial))api.upsert(a);
+    api.batch(()=>{for(const a of safeArray(initial))api.upsert(a);});
     return api;
   }
 
@@ -334,7 +375,7 @@
 
   window.DKDSData={
     ARTIFACT_VERSION,STORE_VERSION,nowIso,deepClone,hashString,makeId,stableId,
-    provenanceStep,createTable,createSeries,createSweep,createEventSeries,createPeakSet,
+    provenanceStep,normalizeLineage,fingerprintArtifact,createTable,createSeries,createSweep,createTransform,createMatrix,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
     column,columnValues,rows,withProvenance,derive,fromLegacyDataset,syncLegacyDatasetArtifacts,toLegacyDataset,legacyDatasetsFromArtifacts,summarize,
     rehydrateArtifact,createStore,serializeStore,restoreStore

@@ -50,7 +50,7 @@
         id:'raw-diagnostic',label:'原始波形',title:'当前文件 · 原始波形诊断',node:rawCard,
         handle:'.pulse-card-heading',controlsHost:'.pulse-plot-actions',defaultPlacement:'inline',
         placements:['inline','right','bottom','float','global'],autoOpen:true,
-        mount:()=>dom.frame(()=>{try{ctx.ui.charts.resize(page.querySelector('#pulseRawPlot'));}catch{}})
+        mount:()=>dom.frame(()=>{try{ctx.ui.scientificPlot.resize(page.querySelector('#pulseRawPlot'));}catch{}})
       });
     }
     const bindPulsePlot=(plotId,viewId,title,{prime=false,actions=[]}={})=>{
@@ -113,7 +113,7 @@
     ctx.events.on('layout:resize',()=>{
       for(const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']){
         const el=dom.query('#'+id);
-        if(el&&el.offsetParent!==null){try{ctx.ui.charts.resize(el);}catch{}}
+        if(el&&el.offsetParent!==null){try{ctx.ui.scientificPlot.resize(el);}catch{}}
       }
     });
 

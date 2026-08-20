@@ -10,7 +10,7 @@ const kernel=read('src/core/plugin-kernel.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 
-for(const token of ['class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','this.pluginWorkspace={create:createPluginWorkspace}','this.scientificPlot={create:']){
+for(const token of ['class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','this.pluginWorkspace={create:createPluginWorkspace}','this.scientificPlot={']){
   assert(ui.includes(token),`Core PluginWorkspace foundation missing ${token}`);
 }
 for(const token of ['workspaceSurface:','pluginWorkspace: infrastructureScope?.pluginWorkspace','scientificPlot: infrastructureScope?.scientificPlot',"name:'GRS Plugin Workspace'",'hostInvariant:true']){
@@ -24,10 +24,13 @@ assert(ui.includes("Number(curve.direction)<0?'7 4':null"),'ScientificCurveSurfa
 assert(ui.includes('onRangeSelect')&&ui.includes('onCurveModifiedClick')&&ui.includes('onMarkerDrag')&&ui.includes('onWidthDrag'),'ScientificCurveSurface must expose range, modified-click, marker-drag and width-drag semantic hooks.');
 assert(ui.includes('wheel.dkdssci')&&ui.includes('rangeDrag.zoom')&&ui.includes("plotBg.on('dblclick'"),'ScientificCurveSurface must own wheel zoom, box zoom and double-click reset.');
 assert(ui.includes('getColorDomainValues')&&ui.includes('onWheelZoomStart'),'ScientificCurveSurface must preserve stable color domains and expose pre-wheel semantic hooks.');
+assert(ui.includes('setInteraction(interaction)')&&ui.includes('closestInSet')&&ui.includes('this.selectEntity('),'ScientificCurveSurface must consume Core Entity/Interaction state and provide automatic entity selection for declarative curves/markers.');
 
 assert(resonanceViews.includes('ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace'),'Resonance must consume the shared PluginWorkspace rather than a private shell.');
 assert(resonanceViews.includes("hostMode:isTop?'top':'super'"),'SUPER/TOP may only annotate the host mode; they must mount the same internal workspace.');
 assert(resonanceFeature.includes('uiRuntime?.scientificPlot'),'Resonance must consume Core ScientificCurveSurface.');
+assert(resonanceFeature.includes('interaction:interactionRuntime')&&resonanceFeature.includes('entityId:String(sw.id)'),'Resonance main D3 surface must declare entity identity to Core rather than privately restyle selection.');
+assert(!resonanceFeature.includes('charts.restyle('),'Resonance must not own Plotly selection restyling; Core ScientificPlot owns focus visuals.');
 assert(resonanceFeature.includes('getColorDomainValues:()=>datasets.map'),'Resonance must keep the GRS color mapping stable against visibility changes through the Core color-domain contract.');
 assert(resonanceFeature.includes('onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true})'),'Resonance domain UI must use the Core wheel lifecycle hook rather than private wheel plumbing.');
 for(const forbidden of ['d3.drag().clickDistance(7)','wheel.resmain','rangeDrag={pointerId']){
@@ -53,6 +56,6 @@ assert(ui.includes('z.width-r.width')&&ui.includes('z.height-r.height'),'Floatin
 assert(ui.includes("this.spec.onMarkerDrag?.")&&ui.includes('this.updateMarkerVisual(marker,point)')&&!ui.includes("this.render('marker-drag')"),'Marker dragging must update only the marker geometry and defer full SVG rebuilding until drag end.');
 assert(ui.includes("data-width-side")&&!ui.includes("this.requestRender('width-drag');"),'FWHM dragging must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
 assert(resonanceFeature.includes("onMarkerDragEnd")&&resonanceFeature.includes("renderInspection();scheduleSnapshot()"),'Inspector refresh must be deferred until direct peak drag completes.');
-assert(resonanceFeature.includes('charts.react'),'Derived/group plots must reuse graph objects through the Core chart runtime rather than recreate them with newPlot.');
+assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot'),'Derived/group plots must reuse graph objects through the Core ScientificPlot runtime rather than recreate them privately.');
 
 console.log('GRS-derived PluginWorkspace + ScientificCurveSurface foundation checks passed.');

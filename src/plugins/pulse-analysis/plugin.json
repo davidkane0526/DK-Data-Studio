@@ -1,7 +1,7 @@
 {
   "id": "builtin.pulse-analysis",
   "name": "Pulse / Read Analysis",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "runtime",
@@ -26,7 +26,8 @@
     "ui.activities",
     "ui.top-workspace",
     "ui.pages",
-    "ui.portable"
+    "ui.portable",
+    "ui.scientific-plot"
   ],
   "entry": "plugin.js",
   "enabled": true,
@@ -52,7 +53,8 @@
     "runtime.capabilities.v2",
     "ui.interaction",
     "data.types",
-    "ui.plugin-workspace"
+    "ui.plugin-workspace",
+    "ui.scientific-plot"
   ],
   "window": {
     "activity": "pulse",

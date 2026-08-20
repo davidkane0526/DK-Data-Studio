@@ -1452,13 +1452,27 @@
           resolve:(id,item,context)=>window.DKDSUI?.dataTypes?.resolve?.(id,item,context)
         }),
         artifacts: {
-          list: options => host?.artifacts?.list?.(options) || [],
-          get: id => host?.artifacts?.get?.(id) || null,
-          add: (artifact, options) => host?.artifacts?.add?.(artifact, options),
-          upsert: artifact => host?.artifacts?.upsert?.(artifact),
+          list: options => {const rows=host?.artifacts?.list?.(options)||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return rows;},
+          get: id => {const row=host?.artifacts?.get?.(id)||null;if(row)infrastructureScope?.entities?.projectArtifact?.(row);return row;},
+          add: (artifact, options) => {const result=host?.artifacts?.add?.(artifact, options);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
+          upsert: artifact => {const result=host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
+          publish: (artifact, options={}) => {const result=host?.artifacts?.publish?.(artifact, options) || host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
+          batch: fn => host?.artifacts?.batch?.(batchApi=>fn?.(Object.freeze({...batchApi,projectArtifact:artifact=>infrastructureScope?.entities?.projectArtifact?.(artifact)}))) || fn?.(host?.artifacts),
+          lineage: id => host?.artifacts?.lineage?.(id) || null,
+          children: id => host?.artifacts?.children?.(id) || [],
+          parents: id => host?.artifacts?.parents?.(id) || [],
           remove: id => host?.artifacts?.remove?.(id),
-          syncLegacy: () => host?.artifacts?.syncLegacy?.()
-        }
+          syncLegacy: () => {const store=host?.artifacts?.syncLegacy?.();const rows=host?.artifacts?.list?.({includeTransient:true})||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return store;}
+        },
+        entities: infrastructureScope?.entities || Object.freeze({
+          upsert: entity => window.DKDSEntities?.registry?.upsert?.(entity,{owner:pluginId}),
+          get: id => window.DKDSEntities?.registry?.get?.(id)||null,
+          list: q => window.DKDSEntities?.registry?.list?.(q)||[],
+          children: (id,options) => window.DKDSEntities?.registry?.childrenOf?.(id,options)||[],
+          ancestors: (id,options) => window.DKDSEntities?.registry?.ancestorsOf?.(id,options)||[],
+          related: (a,b) => window.DKDSEntities?.registry?.isRelated?.(a,b)||false,
+          setState: (id,patch,meta) => window.DKDSEntities?.registry?.setState?.(id,patch,meta)
+        })
       },
       workflow: {
         run: (recipe, options) => window.DKDSWorkflow.run(recipe, options),
@@ -1566,7 +1580,8 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.5',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true}),
+        entities: infrastructureScope?.entities || null,
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.6',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,artifactLineage:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),
@@ -1679,6 +1694,11 @@
     const api = createApi(definition);
     try {
       window.DKDSPluginContract?.assertApi?.(api,manifest);
+      // Project the already-loaded project data into the Core Entity graph before
+      // plugin activation. Plugins can therefore bind views to canonical artifact
+      // IDs immediately instead of rebuilding identity maps during mount.
+      try { api.data?.artifacts?.list?.({includeTransient:true}); }
+      catch (err) { console.warn(`[DKDS entity bootstrap:${manifest.id}]`,err); }
       const instance = await definition.activate(api);
       active.set(manifest.id, { manifest, instance: instance || null });
       if (restoreCurrentProject) {

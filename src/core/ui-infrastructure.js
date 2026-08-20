@@ -172,9 +172,12 @@
   dataTypeRegistry.register('core','data.artifact',{title:'Data artifact',parent:'core.entity',kind:'data'});
   dataTypeRegistry.register('core','data.series',{title:'Series',parent:'data.artifact',kind:'data'});
   dataTypeRegistry.register('core','data.sweep',{title:'Sweep',parent:'data.series',kind:'data'});
+  dataTypeRegistry.register('core','data.transform',{title:'Transformed series',parent:'data.series',kind:'data'});
   dataTypeRegistry.register('core','data.point',{title:'Point',parent:'core.entity',kind:'data'});
   dataTypeRegistry.register('core','data.range',{title:'Range',parent:'core.entity',kind:'region'});
   dataTypeRegistry.register('core','result.analysis',{title:'Analysis result',parent:'data.artifact',kind:'result'});
+  dataTypeRegistry.register('core','result.matrix',{title:'Derived matrix',parent:'result.analysis',kind:'result'});
+  dataTypeRegistry.register('core','annotation',{title:'Annotation',parent:'core.entity',kind:'annotation'});
 
   class SelectionModel {
     constructor(owner,id,spec={}){
@@ -229,9 +232,15 @@
 
   class InteractionRuntime {
     constructor(scope,id,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction');this.spec=spec||{};this.bindings=new Map();this.viewBindings=new Map();
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction');this.spec=spec||{};this.bindings=new Map();this.viewBindings=new Map();this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.selection=scope.selection.model(`${this.id}:selection`,spec.selection||spec.selectionSpec||{});
-      this.off=this.selection.subscribe((snapshot,meta)=>this.dispatch(snapshot,meta));
+      this.entityChannel=`${this.owner}:${this.id}`;
+      this.off=this.selection.subscribe((snapshot,meta)=>{this.syncEntities(snapshot,meta);this.dispatch(snapshot,meta);});
+    }
+    syncEntities(snapshot,meta={}){
+      if(!this.entities)return;
+      for(const item of snapshot?.items||[]){if(!item?.id)continue;try{this.entities.upsert({id:item.id,type:item.type||'core.entity',label:item.meta?.label||item.value?.label||item.value?.name||item.id,ref:item.ref||null,value:item.value,metadata:{...(item.meta||{}),selectionRole:item.role||''}});}catch{}}
+      try{window.DKDSEntities?.registry?.applySelection?.(this.entityChannel,snapshot,meta);}catch{}
     }
     itemMatches(binding,item,snapshot){
       if(!item)return false;
@@ -275,7 +284,7 @@
       const view=new SelectionViewBinding(this,key,target,spec);this.viewBindings.set(key,view);return view;
     }
     view(id){return this.viewBindings.get(String(id||''))||null;}
-    dispose(){this.off?.();this.off=null;this.bindings.clear();for(const view of this.viewBindings.values())view.dispose?.();this.viewBindings.clear();}
+    dispose(){this.off?.();this.off=null;try{window.DKDSEntities?.registry?.clearSelectionChannel?.(this.entityChannel);}catch{}this.bindings.clear();for(const view of this.viewBindings.values())view.dispose?.();this.viewBindings.clear();}
   }
 
   class HorizontalWheelScroller {
@@ -345,8 +354,11 @@
       return new Set((snapshot?.items||[]).map(item=>String(item?.id||'')).filter(Boolean));
     }
     apply(snapshot=this.snapshot,meta={}){
-      const focusKey=this.focusKey(snapshot),selected=this.selectedKeys(snapshot),hasFocus=!!focusKey,variant=String(this.spec.itemVariant||'').trim();let focusElement=null;
-      for(const element of this.elements()){
+      const elements=this.elements(),elementKeys=new Set(elements.map(element=>this.itemKey(element,snapshot)).filter(Boolean));
+      let focusKey=this.focusKey(snapshot);const rawFocusId=String(snapshot?.focus?.id||snapshot?.items?.at?.(-1)?.id||'');
+      if(this.spec.entityLinked!==false&&rawFocusId&&(!focusKey||!elementKeys.has(focusKey))){const related=window.DKDSEntities?.registry?.closestInSet?.(rawFocusId,elementKeys);if(related)focusKey=related;}
+      const selected=this.selectedKeys(snapshot),hasFocus=!!focusKey,variant=String(this.spec.itemVariant||'').trim();let focusElement=null;
+      for(const element of elements){
         const key=this.itemKey(element,snapshot),focused=!!key&&key===focusKey,isSelected=!!key&&(selected.has(key)||focused),dimmed=!!(this.spec.dimOthers&&hasFocus&&!focused);
         element.classList.add('dkds-selection-item');if(variant)element.classList.add(`dkds-selection-${variant}`);
         element.classList.toggle('dkds-selection-focused',focused);element.classList.toggle('dkds-selection-selected',isSelected);element.classList.toggle('dkds-selection-dimmed',dimmed);
@@ -960,12 +972,14 @@
 
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;
+      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;
       if(!this.target)throw new Error('ScientificCurveSurface target not found.');
+      this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.target.classList.add('dkds-scientific-curve-surface');
       this.container=resolveElement(spec.container)||this.target.parentElement||this.target;
       this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.requestRender('resize')):null;
       this.resizeObserver?.observe(this.container);
+      this.setInteraction(spec.interaction||null);
     }
     d3(){return window.d3||null;}
     finite(value){return Number.isFinite(Number(value));}
@@ -973,8 +987,12 @@
     markers(){const rows=this.spec.getMarkers?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     view(){const raw=this.spec.getView?.()||{};return raw&&typeof raw==='object'?raw:{};}
     setView(next,meta={}){this.spec.setView?.(next,meta);this.spec.onViewChanged?.(next,meta);}
-    selectedCurveId(){return String(this.spec.getSelectedCurveId?.()||'');}
-    selectedMarkerIds(){return new Set((this.spec.getSelectedMarkerIds?.()||[]).map(String));}
+    setInteraction(interaction){if(this.interaction===interaction)return;this.selectionOff?.();this.selectionOff=null;this.interaction=interaction||null;if(this.interaction?.subscribe)this.selectionOff=this.interaction.subscribe(snapshot=>{this.selectionSnapshot=snapshot;this.requestRender('entity-selection');},{immediate:true});}
+    focusEntityId(){return String(this.selectionSnapshot?.focus?.id||this.selectionSnapshot?.items?.at?.(-1)?.id||'');}
+    ensureEntity(id,parentId=''){const key=String(id||'');if(!key)return null;try{return this.entities?.ensure?.({id:key,parents:parentId?[String(parentId)]:[]})||{id:key};}catch{return {id:key};}}
+    selectedCurveId(){const explicit=String(this.spec.getSelectedCurveId?.()||'');if(explicit)return explicit;const focus=this.focusEntityId();if(!focus)return '';const ids=this.curves().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean),set=new Set(ids);if(set.has(focus))return focus;return String(this.entities?.closestInSet?.(focus,set)||'');}
+    selectedMarkerIds(){const explicit=(this.spec.getSelectedMarkerIds?.()||[]).map(String).filter(Boolean);if(explicit.length)return new Set(explicit);const markerIds=new Set(this.markers().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean)),selected=new Set((this.selectionSnapshot?.items||[]).map(item=>String(item?.id||'')).filter(id=>markerIds.has(id)));const focus=this.focusEntityId();if(markerIds.has(focus))selected.add(focus);return selected;}
+    selectEntity(id,{source='scientific-curve',additive=false,value=null,type='core.entity'}={}){const key=String(id||'');if(!key||!this.interaction?.select)return false;const entity=this.entities?.get?.(key)||{id:key,type,value};try{this.interaction.select({type:entity.type||type,id:key,ref:entity.ref||null,value:entity.value??value??entity,meta:{...(entity.metadata||{})}},{source,additive});return true;}catch{return false;}}
     curveById(id){return this.curves().find(row=>String(row.id)===String(id))||null;}
     normalizePoint(point){
       const x=this.spec.xValue?this.spec.xValue(point):point?.x;
@@ -1025,17 +1043,17 @@
       if(this.spec.xTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text(this.spec.xTitle||'X');
       if(this.spec.yTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text(this.spec.yTitle||'Y');
       const configuredColorValues=this.spec.getColorDomainValues?.();const values=(Array.isArray(configuredColorValues)&&configuredColorValues.some(v=>this.finite(v))?configuredColorValues:curves.map(c=>c.colorValue)).filter(v=>this.finite(v)).map(Number);if(!values.length)values.push(0);const extent=d3.extent(values);if(extent[0]===extent[1]){extent[0]-=1;extent[1]+=1;}const colorScale=this.spec.colorScale?.({d3,extent,curves,values})||d3.scaleSequential(d3.interpolateTurbo).domain(extent);this.spec.onColorScale?.(colorScale,{curves,extent,values});
-      const selectedCurveId=this.selectedCurveId(),hasCurveSelection=!!selectedCurveId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
+      for(const curve of curves)this.ensureEntity(curve?.entityId||curve?.id);const selectedCurveId=this.selectedCurveId(),hasCurveSelection=!!selectedCurveId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
       const line=d3.line().defined(p=>this.finite(p.x)&&this.finite(p.y)).x(p=>x(p.x)).y(p=>y(p.y));
       for(const curve of curves){
         const points=normalized.get(String(curve.id))||[],active=String(curve.id)===selectedCurveId,color=curve.color||colorScale(this.finite(curve.colorValue)?Number(curve.colorValue):0),dash=curve.dash??(Number(curve.direction)<0?'7 4':null);
         const opacity=curve.opacity??(hasCurveSelection?(active?1:.10):.74),strokeWidth=curve.strokeWidth??(active?3:1.25);
         dataLayer.append('path').datum(points).attr('class',`dkds-scientific-curve ${hasCurveSelection&&!active?'is-dimmed':''}`).attr('d',line).attr('stroke',color).attr('stroke-width',strokeWidth).attr('stroke-dasharray',dash).attr('opacity',opacity).style('pointer-events','none');
         dataLayer.append('path').datum(points).attr('class','dkds-scientific-curve-hit').attr('d',line)
-          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else this.spec.onCurveSelect?.({curve,event,surface:this});})
-          .on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onCurveDoubleClick?.({curve,event,surface:this});});
+          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',value:curve?.source||curve});})
+          .on('dblclick',event=>{event.preventDefault();event.stopPropagation();if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});});
       }
-      const selectedMarkerIds=this.selectedMarkerIds(),markers=this.markers();
+      const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds();
       if(this.spec.showMarkers?.()!==false&&markers.length){
         const marks=dataLayer.append('g').selectAll('path.dkds-scientific-marker').data(markers,m=>m.id).join('path').attr('class',m=>`dkds-scientific-marker ${m.locked?'is-locked':''} ${hasCurveSelection&&String(m.curveId)!==selectedCurveId?'is-dimmed':''}`)
           .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
@@ -1092,13 +1110,13 @@
       }
       this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});
       let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${rangeDrag.zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
-      const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){if(drag.zoom)this.spec.onCurveModifiedClick?.({curve:near.curve,x:near.point.x,event,surface:this,source:'background'});else this.spec.onCurveSelect?.({curve:near.curve,event,surface:this,source:'background'});}else if(!drag.zoom)this.spec.onClearSelection?.({event,surface:this});return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){const next={xDomain:[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b),yDomain:[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b)};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}this.spec.onRangeSelect?.({xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this});};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
+      const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){if(drag.zoom)this.spec.onCurveModifiedClick?.({curve:near.curve,x:near.point.x,event,surface:this,source:'background'});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve:near.curve,event,surface:this,source:'background'});else this.selectEntity(near.curve?.entityId||near.curve?.id,{source:this.spec.source||'scientific-curve-background',value:near.curve?.source||near.curve});}else if(!drag.zoom){if(this.spec.onClearSelection)this.spec.onClearSelection({event,surface:this});else this.interaction?.clear?.({source:this.spec.source||'scientific-curve-background'});}return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){const next={xDomain:[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b),yDomain:[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b)};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}this.spec.onRangeSelect?.({xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this});};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
       plotBg.on('dblclick',event=>{event.preventDefault();this.resetView({event});});
       svg.on('wheel.dkdssci',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;event.preventDefault();event.stopPropagation();this.spec.onWheelZoomStart?.({event,surface:this});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6),next={xDomain:this.scaleDomainAround(xDomain,cx,factor,minX),yDomain:this.scaleDomainAround(yDomain,cy,factor,minY)};this.setView(next,{reason:'wheel',event});this.requestRender('wheel');});
       const selectedRange=this.spec.getRangeSelection?.();if(selectedRange&&this.finite(selectedRange.xMin??selectedRange.min)&&this.finite(selectedRange.xMax??selectedRange.max)){const rx0=x(Number(selectedRange.xMin??selectedRange.min)),rx1=x(Number(selectedRange.xMax??selectedRange.max));if(Number.isFinite(rx0)&&Number.isFinite(rx1))svg.append('rect').attr('class','dkds-scientific-persisted-range').attr('x',Math.min(rx0,rx1)).attr('y',margin.top).attr('width',Math.abs(rx1-rx0)).attr('height',innerH);}
       this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer};return true;
     }
-    dispose(){if(this.disposed)return;this.disposed=true;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');}
   }
 
   class AnalysisWorkbench {
@@ -1411,6 +1429,7 @@
       this.actions={mount:(container,spec)=>this.trackObject(new ActionGroup(this.owner,container,spec))};
       this.interactions={bind:(target,spec)=>this.trackObject(new InteractionBinding(this.owner,target,spec))};
       this.menus={create:spec=>this.trackObject(new ContextMenu(this.owner,spec)),open:(spec={})=>{const menu=this.trackObject(new ContextMenu(this.owner,spec));menu.open(spec);return menu;}};
+      this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
       this.selectionChannels=new Map();this.selectionModels=new Map();this.interactionRuntimes=new Map();
       this.selection={
         channel:(id,initial=null)=>{const key=String(id);if(!this.selectionChannels.has(key))this.selectionChannels.set(key,this.trackObject(new SelectionChannel(this.owner,key,initial)));return this.selectionChannels.get(key);},
@@ -1428,7 +1447,19 @@
       const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
       this.pluginWorkspace={create:createPluginWorkspace};
       this.analysisWorkbench={create:createPluginWorkspace};
-      this.scientificPlot={create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec))};
+      this.scientificPlotly=window.DKDSScientificPlot?.createScope?.(this.owner)||null;if(this.scientificPlotly)this.cleanups.push(()=>this.scientificPlotly.dispose?.());
+      this.scientificPlot={
+        create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec)),
+        createPlotly:(target,spec={})=>this.scientificPlotly?.create?.(target,spec)||null,
+        attach:(target,spec={})=>this.scientificPlotly?.attach?.(target,spec)||null,
+        react:(target,data=[],layout={},config={},spec={})=>this.scientificPlotly?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
+        get:target=>this.scientificPlotly?.get?.(target)||null,
+        resize:target=>this.scientificPlotly?.resize?.(target)||window.DKDSCharts?.resize?.(target),
+        restyle:(target,update,traces)=>this.scientificPlotly?.restyle?.(target,update,traces)||window.DKDSCharts?.restyle?.(target,update,traces),
+        relayout:(target,update)=>this.scientificPlotly?.relayout?.(target,update)||window.DKDSCharts?.relayout?.(target,update),
+        saveImage:(target,baseName,format='svg',options={})=>this.scientificPlotly?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
+        purge:target=>this.scientificPlotly?.purge?.(target)||window.DKDSCharts?.purge?.(target)
+      };
       this.grid={create:(container,spec)=>this.trackObject(new GridController(this,container,spec))};
       this.dataTypes={register:(id,spec)=>dataTypeRegistry.register(this.owner,id,spec),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),projectSelection:(id,value,context)=>dataTypeRegistry.projectSelection(id,value,context),resolve:(id,item,context)=>dataTypeRegistry.resolve(id,item,context)};
     }
@@ -1470,7 +1501,7 @@
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx)},
-    disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));},
+    disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
     ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };

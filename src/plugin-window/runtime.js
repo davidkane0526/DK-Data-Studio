@@ -17,6 +17,7 @@
     'science-pulse':'../science/pulse.js',
     'science-ter':'../science/ter.js',
     'data-model':'../core/data-model.js',
+    'entity-runtime':'../core/entity-runtime.js',
     'formula-engine':'../core/formula-engine.js',
     'parameter-schema':'../core/parameter-schema.js',
     'workflow-engine':'../core/workflow-engine.js',
@@ -24,6 +25,7 @@
     'state-store':'../core/state-store.js',
     'io-runtime':'../core/io-runtime.js',
     'chart-runtime':'../core/chart-runtime.js',
+    'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
     'component-runtime':'../core/component-runtime.js',
     'data-flow-runtime':'../core/data-flow-runtime.js',
     'service-runtime':'../core/service-runtime.js',
@@ -132,7 +134,7 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['io-runtime','chart-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['entity-runtime','io-runtime','chart-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
@@ -193,6 +195,10 @@
 
   function recordArtifactChange(payload={}) {
     const type=String(payload.type||'');
+    if(type==='batch'){
+      for(const entry of payload.events||payload.changes||[])recordArtifactChange(entry);
+      return;
+    }
     if((type==='add'||type==='upsert')&&payload.artifact?.id){
       artifactRemovals.delete(String(payload.artifact.id));
       artifactUpserts.set(String(payload.artifact.id),clone(payload.artifact));
@@ -224,6 +230,9 @@
   const artifactsApi = {
     list: options => artifactStore?.list?.(options) || [],
     get: id => artifactStore?.get?.(id) || null,
+    parents: id => artifactStore?.parents?.(id) || [],
+    children: id => artifactStore?.children?.(id) || [],
+    lineage: id => artifactStore?.lineage?.(id) || null,
     add(artifact, options) {
       if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
       const id = artifactStore.add(artifact, options);
@@ -235,6 +244,18 @@
       const id = artifactStore.upsert(artifact);
       emitArtifactsChanged({type:'upsert', artifact:artifactStore.get(id)});
       return id;
+    },
+    publish(artifact, options={}) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const result=artifactStore.publish?.(artifact,options)||{id:artifactStore.upsert(artifact),changed:true};
+      if(result.changed)emitArtifactsChanged({type:'publish',artifact:artifactStore.get(result.id)});
+      return result;
+    },
+    batch(fn) {
+      if (!artifactStore) throw new Error('当前插件窗口未加载数据对象存储。');
+      const events=[];
+      const batchApi={...artifactsApi,add(artifact,options){const id=artifactStore.add(artifact,options);events.push({type:'add',artifact:artifactStore.get(id)});return id;},upsert(artifact){const id=artifactStore.upsert(artifact);events.push({type:'upsert',artifact:artifactStore.get(id)});return id;},publish(artifact,options={}){const result=artifactStore.publish?.(artifact,options)||{id:artifactStore.upsert(artifact),changed:true};if(result.changed)events.push({type:'publish',artifact:artifactStore.get(result.id)});return result;},remove(id){const ok=artifactStore.remove(id);if(ok)events.push({type:'remove',id});return ok;}};
+      const result=artifactStore.batch?artifactStore.batch(()=>fn?.(batchApi)):fn?.(batchApi);if(events.length)emitArtifactsChanged({type:'batch',events});return result;
     },
     remove(id) {
       const ok = artifactStore?.remove?.(id) || false;
@@ -347,7 +368,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.41.6',
+      appVersion:'3.42.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

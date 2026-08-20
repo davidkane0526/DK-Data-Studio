@@ -19,7 +19,7 @@ Register `ctx.data.importers/exporters`. Core owns dialogs, reads, saves and cli
 Keep the pure algorithm in a plugin support module and expose it through `ctx.analysis.providers`, `ctx.analysis.detectors`, `ctx.workflow.*` or `ctx.capabilities` depending on its role.
 
 ### Scientific workspace
-Use Core AnalysisWorkbench with PRIMARY / PRIME / SUB, Core PlotViews, Core Actions and Core Interaction Runtime. Do not build another pane/dock/window framework.
+Use Core AnalysisWorkbench with PRIMARY / PRIME / SUB, Core PlotViews, Core ScientificPlot, the Entity Registry, Core Actions and Core Interaction Runtime. Do not build another pane/dock/window framework.
 
 ### Generic infrastructure
 If multiple unrelated plugins could need it (file bridge, drag/resize, worker queue, chart export, typed selection, responsive grid, service discovery), implement it in `src/core/` and expose it through `ctx`.
@@ -64,7 +64,9 @@ canonical inputs
 
 Do not read calculation settings from arbitrary Core DOM. Do not make Plotly traces the canonical result. Do not store a second copy of imported data when Artifacts already owns it.
 
-For large data, selection carries IDs/references/previews, not full arrays.
+Build a lineage chain for every derived scientific result: `Raw Dataset → Sweep → Transform → Analysis/Matrix → Annotation`. Use `ctx.data.artifacts.publish()` and `batch()`; do not invent plugin-local “result changed” event buses.
+
+For large data, selection carries IDs/references/previews, not full arrays. Every object that appears in multiple views gets one stable Entity ID and parent relations in `ctx.data.entities`.
 
 ## 6. Register data flow
 
@@ -106,7 +108,11 @@ interaction.bindView('result-list', listHost, {
 });
 ```
 
-Views bind to semantic types, not each other's DOM IDs. When one domain entity is represented by a curve, legend item, list row and inspector, all representations must use the same Core interaction runtime. Use `bindView()` for focus/selected/dimmed UI and automatic reveal; use `horizontalWheel:true` for overflowing legend/tab strips instead of plugin-local wheel or scrollbar code.
+Views bind to semantic types, not each other's DOM IDs. When one domain entity is represented by a curve, legend item, list row and inspector, all representations must use the same Core interaction runtime and the same Entity ID.
+
+Use the state meanings literally: `visible` controls scientific participation; `focused` is the current interaction target; `selected` is a multi-selection member; `locked`, `hidden` and `disabled` are independent. Never filter a plot merely because another entity is focused.
+
+Use `bindView()` for focus/selected/dimmed UI and automatic reveal; `entityLinked:true` lets a focused Peak resolve to its Sweep/Dataset representation. Use `horizontalWheel:true` for overflowing legend/tab strips instead of plugin-local wheel or scrollbar code.
 
 ## 8. Build UI only from Core mechanisms
 
@@ -117,11 +123,12 @@ Core owns the page/workbench, placement, resize, charts, generic controls and li
 - PRIMARY/PRIME/SUB: Workbench registration;
 - generic controls: `ctx.ui.components.mount` and `ctx.parameters.render`;
 - persistent DOM listeners/observers/timers: `ctx.ui.dom`;
-- charts: `ctx.ui.charts` and `ctx.ui.plotViews`;
+- scientific charts: `ctx.ui.scientificPlot` and `ctx.ui.plotViews`;
 - actions: `ctx.ui.actions`;
 - menus: `ctx.ui.menus` / `ctx.ui.contextMenus`;
 - shortcuts: `ctx.ui.shortcuts`;
-- selection: `ctx.ui.interaction`;
+- entity identity/state: `ctx.data.entities`;
+- selection/focus: `ctx.ui.interaction`;
 - status: `ctx.status.set`.
 
 A plugin-specific panel may contain scientific labels/controls/results, but its docking, floating, drag, z-order, responsive sizing, lifecycle and chart export are Core responsibilities.
@@ -159,12 +166,12 @@ Dedicated windows synchronize namespaced plugin slices and artifact deltas. Do n
 
 ## 12. Performance rules
 
-- Keep canonical large arrays in Artifacts/services, not Selection.
-- Treat chart, legend, data-list and inspector focus as projections of one Core `InteractionRuntime`; never keep private focus state. Core reveal is remount-safe and horizontal projections use local wheel/reveal scrolling.
+- Keep canonical large arrays in Artifacts/services, not Selection. Publish derived results with lineage and use Artifact batching/deduplication.
+- Treat chart, legend, data-list and inspector focus as projections of one Core `InteractionRuntime` + Entity graph; never keep private focus state. Core reveal is remount-safe and horizontal projections use local wheel/reveal scrolling.
 - Let Core own tooltip visuals. Plotly hover labels are normalized by Chart Runtime; custom SVG/D3 hover content should use `.dkds-tooltip`. Plugins provide content, not private tooltip colors/opacity/shadows.
 
 - Coalesce visual resize/render work with Core scheduling.
-- Use Core chart `react/resize/purge`; never construct parallel chart lifecycles.
+- Use Core ScientificPlot `react/attach/resize/purge/saveImage`; never construct parallel Plotly/D3 event or chart lifecycles.
 - Avoid re-rendering hidden views on every event.
 - Dispose service subscriptions/listeners through Core scopes.
 - Prefer event delegation or stable Core bindings for frequently rebuilt rows.
@@ -192,10 +199,11 @@ At minimum:
 4. importer/exporter round-trip if applicable;
 5. project serialize/restore test;
 6. SUPER/TOP shared-module architecture test if it has a dedicated window;
-7. interaction/selection test for linked views;
-8. chart/export smoke test through Core APIs;
-9. visual regression or same-layout comparison for mature migrated UI;
-10. `npm run check`.
+7. Entity/interaction/selection test for linked views and parent projection;
+8. ScientificPlot/export smoke test through Core APIs;
+9. Artifact lineage + publish/batch/dedupe test when the plugin produces derived results;
+10. visual regression or same-layout comparison for mature migrated UI;
+11. `npm run check`.
 
 For modifications to mature scientific engines, compare output against a preserved Git baseline, not merely against a newly generated expected value.
 
@@ -208,7 +216,7 @@ node scripts/check-plugin-boundaries.js
 npm run check
 ```
 
-The boundary checker rejects direct Electron, raw Plotly, raw document infrastructure access, private observers/schedulers, `ctx.host`, untyped generic registries, private DKDS globals and direct host-recipe access.
+The boundary checker rejects direct Electron, raw Plotly, private `plotly_click` lifecycles, private `scrollIntoView` focus logic, `ctx.ui.charts` bypasses in first-party plugins, raw document infrastructure access, private observers/schedulers, `ctx.host`, untyped generic registries, private DKDS globals and direct host-recipe access.
 
 ## 16. Completion checklist
 

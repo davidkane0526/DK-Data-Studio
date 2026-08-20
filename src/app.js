@@ -1809,15 +1809,21 @@
   }
 
   function artifactHostApi(){
-    return {
+    const emit=payload=>window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',payload);
+    const api={
       list:options=>state.artifactStore?.list?.(options)||[],
       get:id=>state.artifactStore?.get?.(id)||null,
-      add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'add',artifact:state.artifactStore.get(id)});return id;},
-      upsert:artifact=>{const id=state.artifactStore.upsert(artifact);window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'upsert',artifact:state.artifactStore.get(id)});return id;},
-      remove:id=>{const ok=state.artifactStore.remove(id);if(ok)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'remove',id});return ok;},
+      parents:id=>state.artifactStore?.parents?.(id)||[],
+      children:id=>state.artifactStore?.children?.(id)||[],
+      lineage:id=>state.artifactStore?.lineage?.(id)||null,
+      add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);emit({type:'add',artifact:state.artifactStore.get(id)});return id;},
+      upsert:artifact=>{const id=state.artifactStore.upsert(artifact);emit({type:'upsert',artifact:state.artifactStore.get(id)});return id;},
+      publish:(artifact,options={})=>{const result=state.artifactStore.publish?.(artifact,options)||{id:state.artifactStore.upsert(artifact),changed:true};if(result.changed)emit({type:'publish',artifact:state.artifactStore.get(result.id)});return result;},
+      batch:fn=>{const events=[];const batchApi={...api,add:(artifact,options)=>{const id=state.artifactStore.add(artifact,options);events.push({type:'add',artifact:state.artifactStore.get(id)});return id;},upsert:artifact=>{const id=state.artifactStore.upsert(artifact);events.push({type:'upsert',artifact:state.artifactStore.get(id)});return id;},publish:(artifact,options={})=>{const result=state.artifactStore.publish?.(artifact,options)||{id:state.artifactStore.upsert(artifact),changed:true};if(result.changed)events.push({type:'publish',artifact:state.artifactStore.get(result.id)});return result;},remove:id=>{const ok=state.artifactStore.remove(id);if(ok)events.push({type:'remove',id});return ok;}};const result=state.artifactStore.batch?state.artifactStore.batch(()=>fn?.(batchApi)):fn?.(batchApi);if(events.length)emit({type:'batch',events});return result;},
+      remove:id=>{const ok=state.artifactStore.remove(id);if(ok)emit({type:'remove',id});return ok;},
       syncLegacy:()=>syncLegacyArtifacts(),
       serialize:()=>window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false})
-    };
+    };return api;
   }
 
   function rebuildSweeps(){
@@ -5340,7 +5346,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.41.6',
+      version:'3.42.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6646,7 +6652,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.41.6',
+      appVersion:'3.42.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
