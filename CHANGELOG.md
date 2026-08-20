@@ -1,3 +1,10 @@
+# v3.46.1 — Pulse TOP renderer hotfix and strict TOP readiness coverage
+
+- Fixed Pulse TOP startup on an empty project after the header actions migrated to Core ActionGroup and the legacy `#pulseAnalyzeCurrentBtn` DOM id disappeared.
+- Dedicated TOP startup now surfaces the target plugin activation error instead of masking it as a missing workspace.
+- Automation TOP coverage now distinguishes discovered, exercised and successfully-ready renderers and fails coverage when any TOP fails.
+- Added a Pulse empty-state dedicated-renderer regression test.
+
 # v3.46.0 — ScientificPlot shared interaction controllers and real TOP automation coverage
 
 - Promoted Plotly ScientificPlot to a shared controller surface for Selection, Legend, Tooltip, Focus, Pin, Viewport, and Export.

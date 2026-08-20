@@ -309,7 +309,13 @@
         if (!noActive || !editor) return;
         noActive.classList.toggle('hidden',!!item);
         editor.classList.toggle('hidden',!item);
-        $('#pulseAnalyzeCurrentBtn').disabled = !item;
+        // The legacy #pulseAnalyzeCurrentBtn was removed when header actions
+        // moved to Core ActionGroup. Dedicated TOP renderers activate Pulse
+        // immediately, so an unconditional lookup here used to throw before
+        // the workspace could reach ready. Commands already handle an empty
+        // selection safely; only update a legacy control when it exists.
+        const analyzeCurrentBtn=$('#pulseAnalyzeCurrentBtn');
+        if(analyzeCurrentBtn)analyzeCurrentBtn.disabled=!item;
         if (!item) return;
 
         const s = {...defaultSettings(item.inspection,item.name),...(item.settings||{})};

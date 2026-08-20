@@ -375,7 +375,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.46.0',
+      appVersion:'3.46.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -450,6 +450,13 @@
     }
 
     await window.DKDSPlugins.activateAll();
+    const targetPluginState=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||null;
+    if(targetPluginState && !targetPluginState.active){
+      const activationError=String(targetPluginState.error||'').trim();
+      throw new Error(activationError
+        ? `插件激活失败：${spec.pluginId} · ${activationError}`
+        : `插件激活失败：${spec.pluginId}`);
+    }
     // Mount legacy/base project data first, then let namespaced plugin slices
     // override it. This makes plugin project state canonical without breaking
     // older project files that only contain root-level analysis fields.
@@ -457,7 +464,13 @@
     await window.DKDSPlugins.project.restore(project.plugins || {}, project);
 
     const opened = await window.DKDSPlugins.activities.set(bootstrap.activityId);
-    if (!opened) throw new Error(`插件没有注册工作区：${bootstrap.activityId}`);
+    if (!opened) {
+      const state=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||targetPluginState;
+      const activationError=String(state?.error||'').trim();
+      throw new Error(activationError
+        ? `插件工作区不可用：${bootstrap.activityId} · ${activationError}`
+        : `插件没有注册工作区：${bootstrap.activityId}`);
+    }
 
     ready = true;
     setStatus(`${spec.title || bootstrap.activityId} 已就绪`);
