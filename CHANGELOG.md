@@ -1,3 +1,10 @@
+# v3.41.3 — Plot export trigger aligned with chart-position chrome
+
+- Removes the v3.41.2 pill/label treatment from the Core `PlotView` export trigger.
+- Reuses the exact `dkds-portable-placement-trigger` chrome used by the chart-position control, so size, spacing, transparent background, hover state and caret are identical.
+- Replaces the previous download arrow with a restrained outline file glyph whose size and stroke weight match the neighboring chart-position icon.
+- Keeps CSV / copy / SVG / PNG behavior and menu structure unchanged.
+
 # v3.41.2 — Polished PlotView export trigger
 
 - Refines the Core `PlotView` export trigger into a cleaner, more polished pill button with a soft icon badge, clearer visual hierarchy and active/open state feedback.

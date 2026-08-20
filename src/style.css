@@ -4496,13 +4496,8 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-plot-view-actions{display:flex!important;align-items:center!important;gap:4px!important;white-space:nowrap!important;flex:0 0 auto;min-width:0}
 .dkds-plot-view-actions>.dkds-portable-controls{display:flex;align-items:center;gap:2px;margin:0;padding:0;flex:0 0 auto}
 .dkds-plot-view-action,.dkds-plot-view-actions .dkds-portable-placement-trigger{height:28px!important;min-height:28px!important;padding:3px 8px!important;font-size:11.5px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important}
-.dkds-plot-view-actions .dkds-plot-view-menu-trigger{min-width:30px!important;width:auto!important;padding:0 8px 0 6px!important;border:1px solid #dbe3f1!important;border-radius:9px!important;background:linear-gradient(180deg,#ffffff 0%,#f7faff 100%)!important;color:#526078!important;gap:6px!important;box-shadow:0 1px 2px rgba(15,23,42,.04)!important;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,color .16s ease,transform .16s ease!important}
-.dkds-plot-view-actions .dkds-plot-view-menu-trigger:hover{background:linear-gradient(180deg,#ffffff 0%,#eef4ff 100%)!important;border-color:#bfd0ec!important;color:#315efb!important;box-shadow:0 2px 6px rgba(49,94,251,.10)!important}
-.dkds-plot-view-actions .dkds-plot-view-menu-trigger[aria-expanded="true"]{background:linear-gradient(180deg,#f8fbff 0%,#eaf1ff 100%)!important;border-color:#b5c9ec!important;color:#315efb!important;box-shadow:0 2px 8px rgba(49,94,251,.12)!important}
-.dkds-plot-view-menu-badge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:999px;background:#edf3ff;color:inherit;flex:0 0 auto}
 .dkds-plot-view-menu-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1}
-.dkds-plot-view-menu-label{font-weight:600;letter-spacing:.01em}
-.dkds-plot-view-actions .dkds-plot-view-menu-trigger.has-label .dkds-portable-caret{margin-left:-1px}
+.dkds-plot-view-file-svg{display:block;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 
 /* Scientific forms are single-line first. Labels are semantic units and must
    not collapse into letter-by-letter stacks when horizontal room exists. */
