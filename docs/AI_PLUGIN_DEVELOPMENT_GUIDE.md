@@ -160,6 +160,9 @@ Dedicated windows synchronize namespaced plugin slices and artifact deltas. Do n
 ## 12. Performance rules
 
 - Keep canonical large arrays in Artifacts/services, not Selection.
+- Treat chart, legend, data-list and inspector focus as projections of one Core `InteractionRuntime`; never keep private focus state. Core reveal is remount-safe and horizontal projections use local wheel/reveal scrolling.
+- Let Core own tooltip visuals. Plotly hover labels are normalized by Chart Runtime; custom SVG/D3 hover content should use `.dkds-tooltip`. Plugins provide content, not private tooltip colors/opacity/shadows.
+
 - Coalesce visual resize/render work with Core scheduling.
 - Use Core chart `react/resize/purge`; never construct parallel chart lifecycles.
 - Avoid re-rendering hidden views on every event.

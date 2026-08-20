@@ -3,8 +3,8 @@
     const dom=ctx.ui.dom;
     const T=controller;
     const sharedViews=views||window.DKDSPluginModules.get('builtin.ter-analysis','shared-views')?.create?.(controller)||null;
-    const CHART_COUNT=6;
-    const FACTORS=[1,2,3,6];
+    const CHART_COUNT=7;
+    const GRID_COLUMNS=[1,2,3,4,7];
     let selectedTerPoint=null;
     let lastResult=null;
     let resultRevision=0;
@@ -16,7 +16,8 @@
     const terPlotViews=new Map();
     let workbench=null;
     let gridController=null;
-    let layoutSettings={rows:2,cols:3,sticky:true};
+    let layoutSettings={rows:3,cols:3,sticky:true};
+    let transformPanel=null;
 
     ctx.ui.styles.add('linked-resistance-voltage', `
       #terMaxPage .ter-chart-grid{
@@ -176,12 +177,11 @@
 
     function sanitizeLayout(raw){
       const input=raw&&typeof raw==='object'?raw:{};
-      let rows=FACTORS.includes(Number(input.rows))?Number(input.rows):2;
-      let cols=FACTORS.includes(Number(input.cols))?Number(input.cols):3;
-      if(rows*cols!==CHART_COUNT){
-        if(CHART_COUNT%rows===0)cols=CHART_COUNT/rows;
-        else if(CHART_COUNT%cols===0)rows=CHART_COUNT/cols;
-        else {rows=2;cols=3;}
+      let cols=GRID_COLUMNS.includes(Number(input.cols))?Number(input.cols):3;
+      let rows=Math.max(1,Math.ceil(CHART_COUNT/cols));
+      if(Number.isFinite(Number(input.rows))&&Number(input.rows)>0&&Number(input.cols)<=0){
+        rows=Math.max(1,Math.min(CHART_COUNT,Math.round(Number(input.rows))));
+        cols=Math.max(1,Math.ceil(CHART_COUNT/rows));
       }
       return {rows,cols,sticky:input.sticky!==false};
     }
@@ -198,7 +198,7 @@
     function resizeTerPlots(){
       if(!ctx.ui.charts?.resize)return;
       dom.frame(()=>{
-        for(const id of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
+        for(const id of ['terHeatmapPlot','terTransformHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
           const el=dom.query('#'+id);
           if(el)try{ ctx.ui.charts.resize(el); }catch(_err){}
         }
@@ -218,19 +218,18 @@
     }
 
     function setRows(rows){
-      const n=Number(rows);
-      if(!FACTORS.includes(n)||CHART_COUNT%n!==0)return;
+      const n=Math.max(1,Math.min(CHART_COUNT,Math.round(Number(rows)||1)));
       layoutSettings.rows=n;
-      layoutSettings.cols=CHART_COUNT/n;
+      layoutSettings.cols=Math.max(1,Math.ceil(CHART_COUNT/n));
       applyLayoutSettings({capture:true});
       ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
     }
 
     function setCols(cols){
       const n=Number(cols);
-      if(!FACTORS.includes(n)||CHART_COUNT%n!==0)return;
+      if(!GRID_COLUMNS.includes(n))return;
       layoutSettings.cols=n;
-      layoutSettings.rows=CHART_COUNT/n;
+      layoutSettings.rows=Math.max(1,Math.ceil(CHART_COUNT/n));
       applyLayoutSettings({capture:true});
       ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
     }
@@ -265,9 +264,77 @@
       return card;
     }
 
+    const transformSchema={fields:[
+      {id:'type',type:'select',label:'处理量',required:true,default:'didv',options:[
+        {value:'raw',label:'原始 I–V'},
+        {value:'detrend',label:'去背景 I−Ibg'},
+        {value:'didv',label:'dI/dV（微分电导）'},
+        {value:'dlog',label:'d ln|I| / dV'},
+        {value:'dvdi',label:'dV/dI（微分电阻）'},
+        {value:'resistance',label:'R = |V/I|'}]},
+      {id:'direction',type:'select',label:'扫描方向',required:true,default:'1',options:[
+        {value:'1',label:'正扫（Vds 递增）'},{value:'-1',label:'反扫（Vds 递减）'}]}
+    ]};
+
+    function ensureTransformControls(){
+      const host=dom.query('#terTransformSettings');if(!host||!ctx.parameters?.render)return null;
+      if(transformPanel)return transformPanel;
+      const current=T.getTransformSettings?.()||T.getState?.()?.transform||{type:'didv',direction:1};
+      transformPanel=ctx.parameters.render(host,transformSchema,{
+        value:{type:String(current.type||'didv'),direction:String(Number(current.direction)<0?-1:1)},
+        compact:true,
+        onChange:(next,result)=>{
+          if(result&&!result.ok)return;
+          T.setTransformSettings?.({type:next.type,direction:Number(next.direction)<0?-1:1});
+          renderTransformHeatmap();
+          ctx.project.capture?.();
+        }
+      });
+      return transformPanel;
+    }
+
+    function bindTransformHeatmapClick(matrix){
+      const plotId='terTransformHeatmapPlot';
+      const el=dom.query('#'+plotId);if(!el||typeof el.on!=='function')return;
+      const old=clickBindings.get(plotId);
+      if(old&&typeof el.removeListener==='function'){try{el.removeListener('plotly_click',old);}catch(_err){}}
+      const handler=event=>{
+        const point=event?.points?.[0],vg=finiteNumber(point?.y),vds=finiteNumber(point?.x);
+        if(vg===null||vds===null)return;
+        const result=T.getState?.()?.result;
+        let rows=(result?.records||[]).filter(item=>nearlyEqual(item.vg,vg)&&nearlyEqual(item.vds,vds));
+        const source=String(matrix?.sources?.[(matrix?.vgs||[]).findIndex(value=>nearlyEqual(value,vg))]||'');
+        if(source){const exact=rows.filter(item=>String(item.sourceFile||'')===source);if(exact.length)rows=exact;}
+        const row=rows[0];
+        selectedTerPoint={vg,vds,rUp:row?.rUp,rDown:row?.rDown,ter:row?.ter,sourceFile:String(row?.sourceFile||source||'')};
+        controller?.select?.({...selectedTerPoint,selectionType:'ter.matrix-point',id:`transform:${vg}:${vds}`},{source:'ter-transform-heatmap'});
+        renderResistancePlot();
+      };
+      el.on('plotly_click',handler);clickBindings.set(plotId,handler);
+    }
+
+    function renderTransformHeatmap(){
+      const plot=dom.query('#terTransformHeatmapPlot'),title=dom.query('#terTransformHeatmapTitle'),meta=dom.query('#terTransformHeatmapMeta');
+      if(!plot||!ctx.ui.charts)return null;
+      const matrix=T.getTransformMatrix?.();
+      if(!matrix){try{ctx.ui.charts.purge(plot);}catch{}if(meta)meta.textContent='计算 TER 后生成与 TER 网格严格对齐的变换数据热图。';return null;}
+      const directionLabel=Number(matrix.direction)<0?'反扫':'正扫';
+      if(title)title.textContent=`${matrix.label||matrix.type} · ${directionLabel}`;
+      if(meta)meta.textContent=`${matrix.vgs.length} × ${matrix.targets.length} 网格 · 缺失 ${matrix.missing} · 与 TER 的 Vg/Vd 网格和源文件选择保持一致`;
+      const signed=matrix.type!=='resistance';
+      const trace={x:matrix.targets,y:matrix.vgs,z:matrix.matrix,type:'heatmap',colorscale:signed?'RdBu':'Viridis',reversescale:signed,zsmooth:false,
+        colorbar:{title:{text:`${matrix.label||matrix.type}${matrix.unit?` (${matrix.unit})`:''}`,side:'right'},thickness:18,len:.86},
+        hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`};
+      if(signed)trace.zmid=0;
+      ctx.ui.charts.react(plot,[trace],{margin:{l:76,r:98,t:26,b:66},xaxis:{title:'Vds (V)',automargin:true,constrain:'domain'},yaxis:{title:'Vg (V)',automargin:true,constrain:'domain'},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},{responsive:true,displaylogo:false,scrollZoom:true})
+        .then?.(()=>bindTransformHeatmapClick(matrix))?.catch?.(err=>console.warn('[TER transformed heatmap]',err));
+      return matrix;
+    }
+
     function chartSpecs(){
       return [
         {key:'heatmap',plotId:'terHeatmapPlot',fileBase:'TER_heatmap'},
+        {key:'transform',plotId:'terTransformHeatmapPlot',fileBase:'TER_transformed_heatmap'},
         {key:'maxVg',plotId:'terMaxVgPlot',fileBase:'TER_Max-Vg'},
         {key:'maxVgArg',plotId:'terMaxVgArgPlot',fileBase:'Vd_at_TER_Max-Vg'},
         {key:'maxVd',plotId:'terMaxVdPlot',fileBase:'TER_Max-Vd'},
@@ -355,6 +422,7 @@
       if(!result)return null;
       const map={
         heatmap:{plotId:'terHeatmapPlot',fileBase:'TER_heatmap',csv:heatmapCsv(result)},
+        transform:{plotId:'terTransformHeatmapPlot',fileBase:'TER_transformed_heatmap',csv:T.transformCsv?.()||''},
         resistance:{plotId:'terResistancePlot',fileBase:'TER_resistance_voltage_all_Vg',csv:resistanceCsv(result)},
         maxVg:{plotId:'terMaxVgPlot',fileBase:'TER_Max-Vg',csv:maxVgCsv(result)},
         maxVgArg:{plotId:'terMaxVgArgPlot',fileBase:'Vd_at_TER_Max-Vg',csv:maxVgArgCsv(result)},
@@ -388,6 +456,9 @@
         ['ter-export-matrix','TER 全组合热图 · 矩阵 CSV',20,()=>T.exportMatrix?.()],
         ['ter-export-heatmap-svg','TER 全组合热图 · SVG',30,()=>T.exportHeatmapSvg?.()],
         ['ter-export-heatmap-png','TER 全组合热图 · PNG',40,()=>T.exportHeatmapPng?.()],
+        ['ter-export-transform-csv','Vg–Vd 变换热图 · CSV',45,()=>exportChartData('transform')],
+        ['ter-export-transform-svg','Vg–Vd 变换热图 · SVG',46,()=>exportChartImage('transform','svg')],
+        ['ter-export-transform-png','Vg–Vd 变换热图 · PNG',47,()=>exportChartImage('transform','png')],
         ['ter-export-rv-csv','R–V 联动图 · CSV',60,()=>exportChartData('resistance')],
         ['ter-export-rv-svg','R–V 联动图 · SVG',70,()=>exportChartImage('resistance','svg')],
         ['ter-export-rv-png','R–V 联动图 · PNG',80,()=>exportChartImage('resistance','png')],
@@ -921,9 +992,11 @@
 
     function renderLinkedUi(){
       ensureLayoutControls();
+      ensureTransformControls();
       ensureResistanceCard();
       ensurePlotViews();
       applyLayoutSettings();
+      renderTransformHeatmap();
       renderResistancePlot();
       bindLinkedPlotClicks();
     }
@@ -969,7 +1042,7 @@
     // An explicit TER layout choice is authoritative. Responsive clamping made
     // e.g. “6 列 × 1 行” silently collapse back to 3 columns on normal screens,
     // which looked like a dead button. The surrounding workbench owns overflow.
-    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:6,responsive:false});
+    if(workbench?.grid&&terGrid)gridController=workbench.grid(terGrid,{columns:layoutSettings.cols,minItemWidth:260,maxColumns:7,responsive:false});
     if(workbench?.registerPrime){
       workbench.registerPrime({
         id:'resistance-inspector',label:'R–V 联动',title:'全部 Vg 的电阻–电压',node:'#terResistanceCard',inlineHost:'.ter-chart-grid',handle:'.ter-resistance-card-header',controlsHost:'.ter-chart-actions',
@@ -988,10 +1061,11 @@
         {id:'auto',icon:'↻',label:'自动参数',order:10,onInvoke:()=>T.autoParameters()},
         {id:'calculate',icon:'∑',label:'计算 TER',className:'primary',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>T.calculate()},
         {id:'layout',icon:'▦',label:'布局',menu:true,order:30,items:()=>[
-          {id:'3x2',icon:'▦',label:'3 列 × 2 行',onInvoke:()=>setCols(3)},
-          {id:'2x3',icon:'▦',label:'2 列 × 3 行',onInvoke:()=>setCols(2)},
-          {id:'1x6',icon:'▤',label:'1 列 × 6 行',onInvoke:()=>setCols(1)},
-          {id:'6x1',icon:'▥',label:'6 列 × 1 行',onInvoke:()=>setCols(6)},
+          {id:'3x3',icon:'▦',label:'3 列 × 3 行（默认）',onInvoke:()=>setCols(3)},
+          {id:'4x2',icon:'▦',label:'4 列 × 2 行',onInvoke:()=>setCols(4)},
+          {id:'2x4',icon:'▦',label:'2 列 × 4 行',onInvoke:()=>setCols(2)},
+          {id:'1x7',icon:'▤',label:'1 列 × 7 行',onInvoke:()=>setCols(1)},
+          {id:'7x1',icon:'▥',label:'7 列 × 1 行',onInvoke:()=>setCols(7)},
           {type:'separator'},
           {id:'sticky',icon:layoutSettings.sticky?'✓':'',label:`R–V 随滚动吸附：${layoutSettings.sticky?'开':'关'}`,onInvoke:()=>setSticky(!layoutSettings.sticky)}
         ]}
@@ -1040,11 +1114,11 @@
     ctx.project.registerSlice('layout',{
       serialize:()=>({...layoutSettings}),
       restore:saved=>{layoutSettings=sanitizeLayout(saved);applyLayoutSettings();},
-      reset:()=>{layoutSettings={rows:2,cols:3,sticky:true};applyLayoutSettings();}
+      reset:()=>{layoutSettings={rows:3,cols:3,sticky:true};applyLayoutSettings();}
     });
 
     ctx.events.on('layout:resize',()=>{
-      for(const id of ['terHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
+      for(const id of ['terHeatmapPlot','terTransformHeatmapPlot','terResistancePlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
         const el=dom.query('#'+id);
         if(el&&el.offsetParent!==null){try{ctx.ui.charts.resize(el);}catch{}}
       }
@@ -1065,6 +1139,7 @@
     ctx.events.on('analysis:opened',({id})=>{if(id==='terMaxPage')queueLinkedRender();});
     ctx.events.on('project:restored',()=>queueLinkedRender());
     ensureLayoutControls();
+    ensureTransformControls();
     ensureResistanceCard();
     ensurePlotViews();
     applyLayoutSettings();
@@ -1077,6 +1152,7 @@
         if(el&&typeof el.removeListener==='function'){try{el.removeListener('plotly_click',handler);}catch{}}
       }
       clickBindings.clear();
+      transformPanel?.destroy?.();transformPanel?.dispose?.();transformPanel=null;
       unbindKeyboardAdjuster();
       const plot=dom.query('#terResistancePlot');
       if(plot&&ctx.ui.charts){try{ctx.ui.charts.purge(plot);}catch{}}

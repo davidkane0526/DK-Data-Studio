@@ -193,6 +193,10 @@ wb.registerSub({ id:'physics', label:'物理分析', mount:({container})=>{/* do
 
 Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Portable/PlotView APIs.
 
+### Tooltip ownership
+
+Core Chart Runtime owns the visual tooltip theme for Plotly charts, and Core `.dkds-tooltip` owns the matching custom D3/SVG tooltip appearance. Plugins may define semantic hover content and formatting, but must not define independent tooltip background colors, opacity, borders, shadows or typography.
+
 ## 10. Actions, shortcuts and interaction
 
 ```js
@@ -214,7 +218,7 @@ interaction.bindView('legend', legendHost, {
 });
 ```
 
-Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state.
+Core owns keyboard routing, selection lifecycle, linked-view focus styling/reveal and wheel-to-horizontal scrolling. Plugins only describe domain mapping and behavior. If the same entity appears in a chart, legend, data list and inspector, all of those views must subscribe to the same `InteractionRuntime`; they must not keep private selected/focused state. Linked-view reveal is remount-safe: if a legend/list rebuilds while the focus entity is unchanged, Core must reveal the replacement element again. Horizontal projections use local scrolling so focusing an item never shifts the outer page.
 
 ## 11. Project/state/service/module contracts
 

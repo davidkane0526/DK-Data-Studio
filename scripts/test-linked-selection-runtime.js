@@ -55,8 +55,11 @@ assert(legend.classList.contains('dkds-scrollbar-hidden'),'horizontal linked vie
 let prevented=false,stopped=false;legend.dispatch('wheel',{deltaX:0,deltaY:60,preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
 assert.equal(legend.scrollLeft,60,'ordinary vertical wheel input must advance an overflowing horizontal strip');
 assert(prevented&&stopped,'handled horizontal wheel input must not also scroll the outer page');
-legend.dispatch('click',{target:legendItems[2]});
+legend.children=[];const rebuiltLegendItems=makeItems();legend.append(...rebuiltLegendItems);
+runtime.view('legend').refresh({reveal:'if-needed'});while(raf.length)raf.shift()();
+assert(rebuiltLegendItems[1].revealed,'rebuilt horizontal legend must reveal the still-focused entity');
+legend.dispatch('click',{target:rebuiltLegendItems[2]});
 assert.equal(runtime.get().focus.ref.datasetPath,'c','activating a linked view item must publish back to the shared interaction focus');
-assert(legendItems[2].classList.contains('dkds-selection-focused')&&listItems[2].classList.contains('dkds-selection-focused'),'all linked projections must update after activation from any linked view');
+assert(rebuiltLegendItems[2].classList.contains('dkds-selection-focused')&&listItems[2].classList.contains('dkds-selection-focused'),'all linked projections must update after activation from any linked view');
 scope.dispose();
 console.log('Core linked-selection views + wheel-driven horizontal strip checks passed.');

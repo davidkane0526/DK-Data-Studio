@@ -1,6 +1,6 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.0.0';
+  const VERSION='1.1.0';
   const ownerBindings=new Map();
   const element=value=>{
     if(value?.nodeType===1)return value;
@@ -10,7 +10,12 @@
   const plotly=()=>window.Plotly;
   function requirePlotly(){const P=plotly();if(!P)throw new Error('Plotly runtime is unavailable.');return P;}
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
-  function react(target,data=[],layout={},config={}){const el=element(target)||target;return Promise.resolve(requirePlotly().react(el,data,layout,{responsive:true,displaylogo:false,...config}));}
+  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.90)',bordercolor:'rgba(255,255,255,0.22)',align:'left',font:Object.freeze({color:'#ffffff',size:12})});
+  function themeLayout(layout={}){
+    const source=layout&&typeof layout==='object'?layout:{};const hover=source.hoverlabel&&typeof source.hoverlabel==='object'?source.hoverlabel:{};
+    return {...source,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
+  }
+  function react(target,data=[],layout={},config={}){const el=element(target)||target;return Promise.resolve(requirePlotly().react(el,data,themeLayout(layout),{responsive:true,displaylogo:false,...config}));}
   function restyle(target,update,traces){return requirePlotly().restyle(element(target)||target,update,traces);}
   function relayout(target,update){return requirePlotly().relayout(element(target)||target,update);}
   function resize(target){const el=element(target);if(!el||el.offsetParent===null)return false;try{requirePlotly().Plots.resize(el);return true;}catch{return false;}}
@@ -46,12 +51,12 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,
-      react,restyle,relayout,resize,purge,toImage,saveImage,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,tooltipTheme:TOOLTIP_THEME,
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
     });
   }
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

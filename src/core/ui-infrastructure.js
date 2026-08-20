@@ -280,7 +280,7 @@
 
   class HorizontalWheelScroller {
     constructor(owner,target,spec={}){
-      this.owner=String(owner||'');this.target=resolveElement(target);this.spec={hideScrollbar:true,multiplier:1,...spec};this.cleanups=[];
+      this.owner=String(owner||'');this.target=resolveElement(target);this.spec={hideScrollbar:true,multiplier:1,revealPadding:12,...spec};this.cleanups=[];
       if(!this.target)throw new Error('HorizontalWheelScroller target not found.');
       this.target.classList.add('dkds-horizontal-wheel-scroll');if(this.spec.hideScrollbar!==false)this.target.classList.add('dkds-scrollbar-hidden');
       const wheel=event=>{
@@ -292,12 +292,32 @@
       };
       this.target.addEventListener('wheel',wheel,{passive:false});this.cleanups.push(()=>this.target.removeEventListener('wheel',wheel,{passive:false}));
     }
+    reveal(element,{padding=this.spec.revealPadding,behavior='auto'}={}){
+      const target=this.target,node=resolveElement(element);if(!target||!node||!target.contains?.(node))return false;
+      const pad=Math.max(0,Number(padding)||0);
+      // Prefer local geometry so revealing an item never scrolls the entire page.
+      try{
+        const tr=target.getBoundingClientRect?.(),er=node.getBoundingClientRect?.();
+        if(tr&&er&&Number.isFinite(tr.left)&&Number.isFinite(er.left)){
+          let delta=0;
+          if(er.left<tr.left+pad)delta=er.left-(tr.left+pad);
+          else if(er.right>tr.right-pad)delta=er.right-(tr.right-pad);
+          if(Math.abs(delta)>.5){
+            if(typeof target.scrollBy==='function')target.scrollBy({left:delta,top:0,behavior});
+            else target.scrollLeft=(Number(target.scrollLeft)||0)+delta;
+            return true;
+          }
+          return false;
+        }
+      }catch{}
+      try{node.scrollIntoView({block:'nearest',inline:'nearest',behavior});return true;}catch{return false;}
+    }
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);this.target?.classList?.remove('dkds-horizontal-wheel-scroll','dkds-scrollbar-hidden');}
   }
 
   class SelectionViewBinding {
     constructor(runtime,id,target,spec={}){
-      this.runtime=runtime;this.owner=runtime.owner;this.id=String(id||'selection-view');this.root=resolveElement(target);this.spec={selector:'[data-selection-key]',revealFocus:true,dimOthers:false,itemVariant:'',...spec};this.snapshot=runtime.get();this.lastFocusKey='';this.cleanups=[];this.scroller=null;
+      this.runtime=runtime;this.owner=runtime.owner;this.id=String(id||'selection-view');this.root=resolveElement(target);this.spec={selector:'[data-selection-key]',revealFocus:true,dimOthers:false,itemVariant:'',...spec};this.snapshot=runtime.get();this.lastFocusKey='';this.lastFocusElement=null;this.cleanups=[];this.scroller=null;
       if(!this.root)throw new Error(`Selection view target not found: ${this.id}`);
       this.root.classList.add('dkds-selection-view');this.root.dataset.dkdsSelectionView=this.id;
       if(this.spec.horizontalWheel===true)this.scroller=new HorizontalWheelScroller(this.owner,this.root,{hideScrollbar:this.spec.hideScrollbar!==false,multiplier:this.spec.wheelMultiplier||1});
@@ -309,7 +329,7 @@
       };
       this.root.addEventListener('click',click);this.cleanups.push(()=>this.root.removeEventListener('click',click));
       this.off=runtime.subscribe((snapshot,meta)=>{this.snapshot=snapshot;this.apply(snapshot,meta);},{immediate:true});
-      if(window.MutationObserver){this.observer=new MutationObserver(()=>this.apply(this.snapshot,{reason:'view-mutation',reveal:false}));this.observer.observe(this.root,{childList:true,subtree:true});}
+      if(window.MutationObserver){this.observer=new MutationObserver(()=>this.apply(this.snapshot,{reason:'view-mutation',reveal:'if-needed'}));this.observer.observe(this.root,{childList:true,subtree:true});}
     }
     elements(){try{return [...this.root.querySelectorAll(this.spec.selector)];}catch{return [];}}
     itemKey(element,snapshot){
@@ -333,9 +353,16 @@
         if(focused){element.setAttribute('aria-current','true');focusElement=element;}else element.removeAttribute('aria-current');
         element.setAttribute('aria-selected',isSelected?'true':'false');
       }
-      const shouldReveal=this.spec.revealFocus!==false&&focusElement&&focusKey!==this.lastFocusKey&&meta?.reveal!==false;
-      this.lastFocusKey=focusKey;
-      if(shouldReveal){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,0));raf(()=>{try{focusElement.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}catch{}});}
+      const elementReplaced=!!focusElement&&focusElement!==this.lastFocusElement;
+      const focusChanged=focusKey!==this.lastFocusKey;
+      const revealMode=meta?.reveal;
+      const shouldReveal=this.spec.revealFocus!==false&&focusElement&&revealMode!==false&&(focusChanged||elementReplaced||revealMode===true||revealMode==='if-needed');
+      this.lastFocusKey=focusKey;this.lastFocusElement=focusElement;
+      if(shouldReveal){const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,0));raf(()=>{
+        if(!focusElement?.isConnected&&typeof focusElement?.isConnected==='boolean')return;
+        if(this.scroller){this.scroller.reveal(focusElement,{padding:this.spec.revealPadding,behavior:'auto'});return;}
+        try{focusElement.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});}catch{}
+      });}
       return focusElement;
     }
     refresh(options={}){return this.apply(this.snapshot,{reason:'refresh',...options});}
@@ -693,7 +720,8 @@
     async set(spec={}){
       this.spec={...this.spec,...spec};if(!window.Plotly||!this.plot)return false;
       const config={responsive:true,displaylogo:false,...(this.spec.config||{})};
-      await Plotly.react(this.plot,this.spec.data||this.spec.traces||[],{autosize:true,...(this.spec.layout||{})},config);
+      const layout={autosize:true,...(this.spec.layout||{})};
+      await Plotly.react(this.plot,this.spec.data||this.spec.traces||[],window.DKDSCharts?.themeLayout?.(layout)||layout,config);
       this.bindPlotEvents();return true;
     }
     bindPlotEvents(){
@@ -1019,12 +1047,49 @@
           .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
         hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const curve=curves.find(c=>String(c.id)===String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];this.spec.onMarkerDrag?.({marker,curve,index:idx,point:point?.raw||point,event,surface:this});this.updateMarkerVisual(marker,point);}).on('end',(event,marker)=>{if(marker.locked)return;this.spec.onMarkerDragEnd?.({marker,event,surface:this});this.requestRender('marker-drag-end');}));
       }
-      const selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id)));if(selectedMarker&&this.spec.showWidth?.()!==false){const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;if(widthSpec&&this.finite(widthSpec.left)&&this.finite(widthSpec.right)){
-        let left=Number(widthSpec.left),right=Number(widthSpec.right);if(left>right)[left,right]=[right,left];const halfY=this.finite(widthSpec.y)?Number(widthSpec.y):Number(selectedMarker.y),color=selectedMarker.color||'#2563eb',band=svg.append('g').attr('clip-path',`url(#${clipId})`);
-        band.append('rect').attr('class','dkds-scientific-width-band').attr('x',x(left)).attr('width',Math.max(2,x(right)-x(left))).attr('y',margin.top).attr('height',innerH).attr('fill',color);
-        band.append('line').attr('class','dkds-scientific-width-line').attr('x1',x(left)).attr('x2',x(right)).attr('y1',y(halfY)).attr('y2',y(halfY)).attr('stroke',color);
-        for(const side of ['left','right']){const xv=side==='left'?left:right,h=band.append('circle').attr('class','dkds-scientific-width-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',y(halfY)).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);h.on('click',event=>event.stopPropagation()).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{if(selectedMarker.locked)return;const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[],idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];this.spec.onWidthDrag?.({marker:selectedMarker,curve,side,index:idx,point:point?.raw||point,event,surface:this});const next=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;if(next&&this.finite(next.left)&&this.finite(next.right)){let nl=Number(next.left),nr=Number(next.right);if(nl>nr)[nl,nr]=[nr,nl];const ny=this.finite(next.y)?Number(next.y):halfY;band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.select('line.dkds-scientific-width-line').attr('x1',x(nl)).attr('x2',x(nr)).attr('y1',y(ny)).attr('y2',y(ny));band.selectAll('circle.dkds-scientific-width-handle').attr('cy',y(ny)).attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}}).on('end',event=>{this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this});this.requestRender('width-drag-end');}));}
-      }}
+      const selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id)));
+      if(selectedMarker&&this.spec.showWidth?.()!==false){
+        const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
+        if(widthSpec){
+          const finite=v=>this.finite(v),color=selectedMarker.color||'#2563eb';
+          let measureLeft=finite(widthSpec.left)?Number(widthSpec.left):NaN,measureRight=finite(widthSpec.right)?Number(widthSpec.right):NaN;
+          if(finite(measureLeft)&&finite(measureRight)&&measureLeft>measureRight)[measureLeft,measureRight]=[measureRight,measureLeft];
+          let windowLeft=finite(widthSpec.windowLeft)?Number(widthSpec.windowLeft):measureLeft,windowRight=finite(widthSpec.windowRight)?Number(widthSpec.windowRight):measureRight;
+          if(finite(windowLeft)&&finite(windowRight)&&windowLeft>windowRight)[windowLeft,windowRight]=[windowRight,windowLeft];
+          if(finite(windowLeft)&&finite(windowRight)&&windowRight>windowLeft){
+            const band=svg.append('g').attr('clip-path',`url(#${clipId})`);
+            band.append('rect').attr('class','dkds-scientific-width-band').attr('x',x(windowLeft)).attr('width',Math.max(2,x(windowRight)-x(windowLeft))).attr('y',margin.top).attr('height',innerH).attr('fill',color);
+            const baseline=widthSpec.baseline;
+            if(baseline&&finite(baseline.x1)&&finite(baseline.x2)&&finite(baseline.y1)&&finite(baseline.y2)){
+              band.append('line').attr('class','dkds-scientific-baseline-line').attr('x1',x(Number(baseline.x1))).attr('x2',x(Number(baseline.x2))).attr('y1',y(Number(baseline.y1))).attr('y2',y(Number(baseline.y2))).attr('stroke',color);
+            }
+            if(finite(measureLeft)&&finite(measureRight)&&measureRight>measureLeft){
+              const yLeft=finite(widthSpec.yLeft)?Number(widthSpec.yLeft):(finite(widthSpec.y)?Number(widthSpec.y):Number(selectedMarker.y));
+              const yRight=finite(widthSpec.yRight)?Number(widthSpec.yRight):yLeft;
+              band.append('line').attr('class','dkds-scientific-width-line').attr('x1',x(measureLeft)).attr('x2',x(measureRight)).attr('y1',y(yLeft)).attr('y2',y(yRight)).attr('stroke',color);
+              for(const row of [{x:measureLeft,y:yLeft},{x:measureRight,y:yRight}])band.append('circle').attr('class','dkds-scientific-width-crossing').attr('cx',x(row.x)).attr('cy',y(row.y)).attr('r',3.5).attr('fill','#fff').attr('stroke',color).attr('stroke-width',1.6);
+            }
+            const handleY=String(widthSpec.handlePosition||'').toLowerCase()==='top'?margin.top+10:(finite(widthSpec.handleY)?y(Number(widthSpec.handleY)):margin.top+10);
+            for(const side of ['left','right']){
+              const xv=side==='left'?windowLeft:windowRight;
+              const h=band.append('circle').attr('class','dkds-scientific-width-handle dkds-scientific-window-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',handleY).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);
+              h.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onWidthReset?.({marker:selectedMarker,side,event,surface:this});this.requestRender('width-reset');})
+                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{
+                  if(selectedMarker.locked)return;
+                  const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[];
+                  if(!curve||!points.length)return;
+                  const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];
+                  this.spec.onWidthDrag?.({marker:selectedMarker,curve,side,index:idx,point:point?.raw||point,event,surface:this});
+                  const next=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
+                  if(!next)return;
+                  let nl=finite(next.windowLeft)?Number(next.windowLeft):(finite(next.left)?Number(next.left):windowLeft),nr=finite(next.windowRight)?Number(next.windowRight):(finite(next.right)?Number(next.right):windowRight);
+                  if(nl>nr)[nl,nr]=[nr,nl];
+                  if(finite(nl)&&finite(nr)&&nr>nl){band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.selectAll('circle.dkds-scientific-window-handle').attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}
+                }).on('end',event=>{this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this});this.requestRender('width-drag-end');}));
+            }
+          }
+        }
+      }
       this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});
       let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${rangeDrag.zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
       const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){if(drag.zoom)this.spec.onCurveModifiedClick?.({curve:near.curve,x:near.point.x,event,surface:this,source:'background'});else this.spec.onCurveSelect?.({curve:near.curve,event,surface:this,source:'background'});}else if(!drag.zoom)this.spec.onClearSelection?.({event,surface:this});return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){const next={xDomain:[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b),yDomain:[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b)};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}this.spec.onRangeSelect?.({xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this});};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});

@@ -17,6 +17,7 @@
       let project=initialProject||{};
       let settings={};
       let display={};
+      let transform={type:'didv',direction:1};
       let result=null;
 
       function applyProject(next){
@@ -29,6 +30,9 @@
           colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,
           ...(project.terHeatmapDisplay||{})
         };
+        transform={type:'didv',direction:1,...(project.terTransformSettings||{})};
+        transform.type=['raw','detrend','didv','dlog','dvdi','resistance'].includes(String(transform.type))?String(transform.type):'didv';
+        transform.direction=Number(transform.direction)<0?-1:1;
         result=project.terMaxResult?cloneSerializable(project.terMaxResult):null;
       }
       applyProject(project);
@@ -52,6 +56,40 @@
           const v=vis.get(ds.path);
           return !!v?.forward&&!!v?.reverse;
         });
+      }
+
+      function allSweeps(){
+        if(typeof A?.buildSweeps!=='function')return [];
+        return datasets().flatMap(ds=>A.buildSweeps(ds)||[]);
+      }
+      function sourceFileByVg(){
+        const out={};if(!result)return out;
+        for(const vg of result.vgs||[]){
+          const row=(result.records||[]).find(item=>Number(item?.vg)===Number(vg)&&String(item?.sourceFile||''));
+          if(row)out[String(vg)]=String(row.sourceFile||'');
+        }
+        return out;
+      }
+      function transformMatrix(){
+        if(!result||typeof A?.computeSweepTransformMatrix!=='function')return null;
+        return A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],{
+          type:transform.type,
+          direction:transform.direction,
+          tolerance:result.used?.tolerance,
+          sourceFileByVg:sourceFileByVg()
+        });
+      }
+      function transformCsv(){
+        const matrix=transformMatrix();if(!matrix)return '';
+        const rows=[['Vg_V',...matrix.targets].join(',')];
+        matrix.vgs.forEach((vg,i)=>rows.push([vg,...matrix.matrix[i].map(v=>Number.isFinite(v)?v:'')].join(',')));
+        return rows.join('\n');
+      }
+      function setTransformSettings(next={}){
+        const type=String(next.type??transform.type??'didv'),direction=Number(next.direction??transform.direction)<0?-1:1;
+        transform={type:['raw','detrend','didv','dlog','dvdi','resistance'].includes(type)?type:'didv',direction};
+        scheduleSnapshot();
+        return cloneSerializable(transform);
       }
 
       function setInput(id,value){
@@ -238,28 +276,34 @@
       async function saveCsv(name,content){if(!content)return false;return io.saveCsv(content,name);}
 
       const service={
-        serialize:()=>({schema:1,settings:cloneSerializable(settings),display:cloneSerializable(display),result:result?cloneSerializable(result):null}),
+        serialize:()=>({schema:2,settings:cloneSerializable(settings),display:cloneSerializable(display),transform:cloneSerializable(transform),result:result?cloneSerializable(result):null}),
         restore(data,{legacyProject}={}){
           const legacy=legacyProject&&typeof legacyProject==='object'?{
             settings:legacyProject.terMaxSettings,
             display:legacyProject.terHeatmapDisplay,
+            transform:legacyProject.terTransformSettings,
             result:legacyProject.terMaxResult
           }:null;
           const source=data&&typeof data==='object'?data:legacy;
           if(!source)return;
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(source.settings||{})};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,...(source.display||{})};
+          transform={type:'didv',direction:1,...(source.transform||{})};
+          transform.type=['raw','detrend','didv','dlog','dvdi','resistance'].includes(String(transform.type))?String(transform.type):'didv';
+          transform.direction=Number(transform.direction)<0?-1:1;
           result=source.result?cloneSerializable(source.result):null;
           if($('#terSummary'))render();
         },
         reset(){
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
+          transform={type:'didv',direction:1};
           result=null;
           if($('#terSummary'))render();
           scheduleSnapshot();
         },
-        render,getState:()=>({settings,display,result}),autoParameters,calculate,
+        render,getState:()=>({settings,display,transform,result}),autoParameters,calculate,
+        getTransformSettings:()=>cloneSerializable(transform),setTransformSettings,getTransformMatrix:transformMatrix,transformCsv,
         applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
@@ -288,9 +332,10 @@
         syncProject(target){
           target.terMaxSettings={...settings};
           target.terHeatmapDisplay={...display};
+          target.terTransformSettings={...transform};
           target.terMaxResult=result?cloneSerializable(result):null;
         },
-        getState:()=>({settings,display,result})
+        getState:()=>({settings,display,transform,result})
       };
     }
   });

@@ -112,8 +112,8 @@
       }
       function selectedPeakWidthShapes(){
         const selectedP=selectedPeak();if(!selectedP||workspace.peakDisplay?.showWidth===false)return [];
-        const m=peakMetrics(selectedP)||{},half=Number(m.fwhm)/2;if(!Number.isFinite(half)||half<=0)return [];
-        return [{type:'rect',xref:'x',yref:'paper',x0:selectedP.v-half,x1:selectedP.v+half,y0:0,y1:1,fillcolor:'rgba(58,96,246,.08)',line:{color:'rgba(58,96,246,.38)',width:1,dash:'dot'},layer:'below'}];
+        const m=peakMetrics(selectedP)||{},left=Number(m.fwhmLeft),right=Number(m.fwhmRight);if(!Number.isFinite(left)||!Number.isFinite(right)||right<=left)return [];
+        return [{type:'rect',xref:'x',yref:'paper',x0:left,x1:right,y0:0,y1:1,fillcolor:'rgba(58,96,246,.08)',line:{color:'rgba(58,96,246,.38)',width:1,dash:'dot'},layer:'below'}];
       }
       function updateMainSelectionHighlights(){
         const plot=$('#reswinMainPlot');if(!plot||plot.offsetParent===null||!charts||!Array.isArray(plot.data)||!plot.data.length)return false;
@@ -512,7 +512,7 @@
         const points=sw?.points||[];if(!p||!points.length)return;
         const idx=Math.max(0,Math.min(points.length-1,Number(index)||0)),pt=points[idx],oldV=Number(p.v);
         p.index=Number.isFinite(Number(pt.index))?Number(pt.index):idx;p.v=Number(pt.v);p.i=Number(pt.i);p.manual=true;
-        const delta=Number(p.v)-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(p.widthLeft)))p.widthLeft=Number(p.widthLeft)+delta;if(Number.isFinite(Number(p.widthRight)))p.widthRight=Number(p.widthRight)+delta;}
+        const delta=Number(p.v)-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(p.widthLeft)))p.widthLeft=Number(p.widthLeft)+delta;if(Number.isFinite(Number(p.widthRight)))p.widthRight=Number(p.widthRight)+delta;if(Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(p.analysisLeft)+delta;if(Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(p.analysisRight)+delta;}
         physicsCache={key:'',value:null};
       }
       function clearMainRangeMenu({keepSelection=false}={}){
@@ -553,7 +553,11 @@
         return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
       }
       function markerWidthSpec(marker){
-        const p=marker?.source;if(!p)return null;const m=peakMetrics(p)||{};let left=finite(p.widthLeft)?Number(p.widthLeft):Number(p.v)-Number(m.fwhm||0)/2,right=finite(p.widthRight)?Number(p.widthRight):Number(p.v)+Number(m.fwhm||0)/2;if(!Number.isFinite(left)||!Number.isFinite(right)||left===right)return null;if(left>right)[left,right]=[right,left];const amplitude=Number(m.amplitude),half=Number.isFinite(amplitude)?Math.sign(Number(p.i)||1)*(Math.abs(Number(p.i))-amplitude/2):Number(p.i);return {left,right,y:half};
+        const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return null;const m=S.peakMetrics?.(p,sw)||peakMetrics(p)||{};
+        const sign=Math.sign(Number(p.i)||1)||1,baselineAt=xv=>Math.max(0,(Number(m.baselineSlope)||0)*Number(xv)+(Number.isFinite(Number(m.baselineIntercept))?Number(m.baselineIntercept):Number(m.baseline)||0));
+        const left=Number(m.fwhmLeft),right=Number(m.fwhmRight),halfResidual=Number(m.halfResidual);
+        const windowLeft=Number(m.analysisLeft),windowRight=Number(m.analysisRight);if(!Number.isFinite(windowLeft)||!Number.isFinite(windowRight)||windowRight<=windowLeft)return null;
+        return {left,right,yLeft:Number.isFinite(left)&&Number.isFinite(halfResidual)?sign*(baselineAt(left)+halfResidual):NaN,yRight:Number.isFinite(right)&&Number.isFinite(halfResidual)?sign*(baselineAt(right)+halfResidual):NaN,windowLeft,windowRight,baseline:{x1:windowLeft,y1:sign*baselineAt(windowLeft),x2:windowRight,y2:sign*baselineAt(windowRight)},handlePosition:'top'};
       }
       function ensureMainSurface(){
         const node=$('#reswinMainPlot');if(!node)return null;if(mainSurface&&mainSurface.target===node)return mainSurface;mainSurface?.dispose?.();mainSurface=null;
@@ -579,7 +583,8 @@
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
           onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          onWidthDrag:({marker,side,point})=>{const p=marker?.source;if(!p||!point)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;if(side==='left')p.widthLeft=Math.min(snap,Number(p.v));else p.widthRight=Math.max(snap,Number(p.v));p.manual=true;physicsCache={key:'',value:null};},
+          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));const m=S.peakMetrics?.(p,sw)||peakMetrics(p)||{};if(!Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(m.analysisLeft);if(!Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(m.analysisRight);p.analysisManual=true;physicsCache={key:'',value:null};},
+          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
           onWidthDragEnd:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
@@ -627,12 +632,13 @@
         if(p){
           const psw=sweepById(p.sweepId)||sw,m=peakMetrics(p)||{};
           const categoryButtons=(workspace.peakCategories||[]).map(c=>`<button type="button" class="peak-category-choice ${Number(c.order)===Number(p.peakOrder)?'selected':''}" data-peak-category="${Number(c.order)}"><span class="category-pair-swatch"><i style="background:${esc(colorForPeakOrder(c.order,1))}"></i><i style="background:${esc(colorForPeakOrder(c.order,-1))}"></i></span><span>${esc(c.label)}</span></button>`).join('');
-          host.innerHTML=`<div class="respar-inspector-section"><h4>选中峰</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(psw?.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(p.vg,5)} V</div><div class="k">扫描</div><div>${directionName(p.direction)}</div><div class="k">Vpk</div><div>${fmt(p.v,6)} V</div><div class="k">Ipk</div><div>${fmt(p.i,6)} A</div><div class="k">FWHM</div><div>${fmt(m.fwhm,6)} V</div><div class="k">Amplitude</div><div>${fmt(m.amplitude,6)} A</div><div class="k">Area</div><div>${fmt(m.area,6)} A·V</div><div class="k">寻峰证据</div><div>${esc((p.supportChannels||p.algorithms||[]).join('、')||'手动')}</div><div class="k">置信度</div><div>${finite(p.confidence)?`${Math.round(Number(p.confidence)*100)}%`:'—'}</div><div class="k">状态</div><div>${p.accepted!==false?'采纳':'不采纳'}${p.locked?' · 已锁定':''}${p.manual?' · 手动':''}</div></div></div><div class="respar-inspector-section"><h4>峰类别 / 峰标签</h4><div class="respar-inspector-hint">点击已有颜色即可把该峰归入现有类别；新增类别会自动分配下一组正扫冷色/反扫暖色。</div><div class="peak-category-palette">${categoryButtons}</div><div class="respar-inspector-row"><button id="reswinAddPeakCategory">＋ 新增类别/颜色</button></div><div class="respar-peak-class-grid"><label>当前类别<input type="text" value="峰${Math.max(1,Number(p.peakOrder)||1)}" disabled></label><label>类别标签<input id="reswinPeakLabelInput" type="text" value="${esc(peakLabel(p))}"></label></div><div class="respar-inspector-row"><button id="reswinApplyPeakLabel">重命名当前类别</button></div></div><div class="respar-inspector-action-grid"><button id="reswinAcceptPeak">${p.accepted!==false?'不采纳':'恢复采纳'}</button><button id="reswinLockPeak">${p.locked?'解除锁定':'锁定峰位'}</button><button id="reswinDeletePeak" class="danger-soft">删除峰</button><button id="reswinSelectCurve">选中所属曲线</button></div>${transformMarkup}`;
+          host.innerHTML=`<div class="respar-inspector-section"><h4>选中峰</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(psw?.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(p.vg,5)} V</div><div class="k">扫描</div><div>${directionName(p.direction)}</div><div class="k">Vpk</div><div>${fmt(p.v,6)} V</div><div class="k">Ipk</div><div>${fmt(p.i,6)} A</div><div class="k">FWHM</div><div>${finite(m.fwhm)?`${fmt(m.fwhm,6)} V`:'—（半高交点不完整）'}</div><div class="k">半高交点</div><div>${finite(m.fwhmLeft)&&finite(m.fwhmRight)?`${fmt(m.fwhmLeft,6)} ~ ${fmt(m.fwhmRight,6)} V`:'—'}</div><div class="k">局部基线</div><div>${m.baselineMode==='linear'?`线性 · ${fmt(m.baselineSlope,6)} A/V`:(m.baselineMode==='constant'?'常数':'—')}</div><div class="k">分析窗口</div><div>${finite(m.analysisLeft)&&finite(m.analysisRight)?`${fmt(m.analysisLeft,5)} ~ ${fmt(m.analysisRight,5)} V`:'—'}${p.analysisManual?' · 手动范围':' · 自动范围'}</div><div class="k">Amplitude</div><div>${fmt(m.amplitude,6)} A</div><div class="k">Area</div><div>${fmt(m.area,6)} A·V</div><div class="k">寻峰证据</div><div>${esc((p.supportChannels||p.algorithms||[]).join('、')||'手动')}</div><div class="k">置信度</div><div>${finite(p.confidence)?`${Math.round(Number(p.confidence)*100)}%`:'—'}</div><div class="k">状态</div><div>${p.accepted!==false?'采纳':'不采纳'}${p.locked?' · 已锁定':''}${p.manual?' · 手动':''}</div></div></div><div class="respar-inspector-section"><h4>峰类别 / 峰标签</h4><div class="respar-inspector-hint">点击已有颜色即可把该峰归入现有类别；新增类别会自动分配下一组正扫冷色/反扫暖色。</div><div class="peak-category-palette">${categoryButtons}</div><div class="respar-inspector-row"><button id="reswinAddPeakCategory">＋ 新增类别/颜色</button></div><div class="respar-peak-class-grid"><label>当前类别<input type="text" value="峰${Math.max(1,Number(p.peakOrder)||1)}" disabled></label><label>类别标签<input id="reswinPeakLabelInput" type="text" value="${esc(peakLabel(p))}"></label></div><div class="respar-inspector-row"><button id="reswinApplyPeakLabel">重命名当前类别</button></div></div><div class="respar-inspector-action-grid"><button id="reswinAcceptPeak">${p.accepted!==false?'不采纳':'恢复采纳'}</button><button id="reswinLockPeak">${p.locked?'解除锁定':'锁定峰位'}</button><button id="reswinResetFwhmWindow">FWHM 自动窗口</button><button id="reswinDeletePeak" class="danger-soft">删除峰</button><button id="reswinSelectCurve">选中所属曲线</button></div>${transformMarkup}`;
           host.querySelectorAll('[data-peak-category]').forEach(btn=>btn.onclick=()=>assignPeakCategory(p,btn.dataset.peakCategory));
           host.querySelector('#reswinAddPeakCategory').onclick=()=>createPeakCategoryForPeak(p);
           host.querySelector('#reswinApplyPeakLabel').onclick=()=>renameSelectedCategory(host.querySelector('#reswinPeakLabelInput')?.value);
           host.querySelector('#reswinAcceptPeak').onclick=()=>updatePeak(p.id,{accepted:p.accepted===false});
           host.querySelector('#reswinLockPeak').onclick=()=>updatePeak(p.id,{locked:!p.locked});
+          host.querySelector('#reswinResetFwhmWindow').onclick=()=>{delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();renderInspection();renderGroup();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');};
           host.querySelector('#reswinDeletePeak').onclick=()=>deletePeak(p.id);
           host.querySelector('#reswinSelectCurve').onclick=()=>{const row=sweepById(p.sweepId);if(row)publishSweepSelection(row,'resonance-inspector');};
         }else{
@@ -704,7 +710,7 @@
         const sweep=selectedSweep();
         const contextKey=selected?`peak:${Number(selected.direction)||0}:${peakLabel(selected)}`:(sweep?`sweep:${String(sweep.id)}`:'all');
         const peaks=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.includes(String(p.sweepId))).map(p=>[
-          p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,peakLabel(p),p.prominence,p.widthLeft,p.widthRight,p.manual?1:0,p.locked?1:0
+          p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,peakLabel(p),p.prominence,p.widthLeft,p.widthRight,p.analysisLeft,p.analysisRight,p.manual?1:0,p.locked?1:0
         ].join(':')).join('|');
         return `${workspace.groupColumns||'auto'}##${contextKey}##${visibleIds.join(',')}##${peaks}`;
       }
@@ -934,7 +940,7 @@
         let index=points.reduce((best,p,i)=>Math.abs(Number(p.v)-Number(peak.v))<Math.abs(Number(points[best]?.v)-Number(peak.v))?i:best,0);
         index=Math.max(0,Math.min(points.length-1,index+(Number(step)||0)));
         const point=points[index],oldV=Number(peak.v);peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):index;peak.manual=true;
-        const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;}
+        const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;if(Number.isFinite(Number(peak.analysisLeft)))peak.analysisLeft=Number(peak.analysisLeft)+delta;if(Number.isFinite(Number(peak.analysisRight)))peak.analysisRight=Number(peak.analysisRight)+delta;}
         physicsCache={key:'',value:null};publishPeakSelection(peak,'resonance-peak-move');scheduleSnapshot();return true;
       }
       function selectAdjacentPeak(step){

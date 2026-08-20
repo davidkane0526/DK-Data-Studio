@@ -1,3 +1,14 @@
+# v3.41.6 — Linked-view reveal, unified tooltips, FWHM science and transformed TER heatmap
+
+- Makes Core linked-selection reveal remount-safe: rebuilt legends/lists automatically reveal the still-focused entity, and horizontal views reveal by local scrolling without moving the outer page.
+- Simplifies Core focused-row styling to a uniform light-blue highlight without the previous left accent strip.
+- Centralizes Plotly and custom D3/SVG tooltip visuals in Core with one slightly translucent neutral-dark theme; plugins supply content only.
+- Absorbs the supplied GRS v3.17.2 FWHM model into shared Science Runtime: local constant/linear baseline selection, interpolated half-height crossings and analysis-window semantics replace draggable endpoints as the FWHM definition.
+- Extends Core `ScientificCurveSurface` with a generic analysis-window/baseline/FWHM-crossing presentation so scientific plugins do not implement private measurement handles.
+- Absorbs the supplied selectable Vg–Vd transformed heatmap into shared TER science and the TER plugin using Core Parameter Schema, Chart Runtime, PlotView, linked selection and project state.
+- Expands the TER dashboard to seven charts with a 3×3 default layout while preserving existing TER definitions and Python-reference parity.
+- Adds regression coverage for rebuilt linked views, Core tooltip theming, tilted-baseline FWHM and forward/reverse transformed matrices.
+
 # v3.41.5 — Core linked-selection views and wheel-driven legend navigation
 
 - Adds Core `SelectionViewBinding` to project one Interaction Runtime focus/selection document into legends, data lists and other semantic views without plugin-local selected-state styling.

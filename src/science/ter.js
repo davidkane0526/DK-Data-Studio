@@ -4,7 +4,7 @@
   Object.assign(core,api);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis,function(core){
-  const {nearestIndex}=core;
+  const {nearestIndex,transformSweep}=core;
   function detectTerVoltageParameters(datasets){
     let globalMin=Infinity, globalMax=-Infinity, globalStep=Infinity;
     for(const ds of datasets||[]){
@@ -318,8 +318,56 @@
     });
   }
 
+  const TER_TRANSFORM_HEATMAP_TYPES=new Set(['raw','detrend','didv','dlog','dvdi','resistance']);
+
+  function computeSweepTransformMatrix(sweeps,targets,vgs,options={}){
+    if(typeof transformSweep!=='function')throw new Error('当前科学引擎未提供 transformSweep。');
+    const type=TER_TRANSFORM_HEATMAP_TYPES.has(String(options.type||''))?String(options.type):'didv';
+    const direction=Number(options.direction)<0?-1:1;
+    const requestedTargets=(targets||[]).map(Number).filter(Number.isFinite);
+    const requestedVgs=(vgs||[]).map(Number).filter(Number.isFinite);
+    const optionTolerance=Number(options.tolerance);
+    const hasTolerance=Number.isFinite(optionTolerance)&&optionTolerance>=0;
+    const sourceFileByVg=options.sourceFileByVg&&typeof options.sourceFileByVg==='object'?options.sourceFileByVg:{};
+    const transformOptions=options.transformOptions&&typeof options.transformOptions==='object'?options.transformOptions:{};
+    let label=type,unit='';
+    const sources=[];
+    const matrix=requestedVgs.map(vg=>{
+      let candidates=(sweeps||[]).filter(sw=>
+        Number(sw?.direction)===direction&&Number.isFinite(Number(sw?.vg))&&
+        Math.abs(Number(sw.vg)-vg)<=Math.max(1e-10,Math.abs(vg)*1e-9)
+      );
+      const preferred=String(sourceFileByVg[String(vg)]??sourceFileByVg[vg]??'');
+      if(preferred){
+        const exact=candidates.filter(sw=>String(sw?.datasetName||'')===preferred);
+        if(exact.length)candidates=exact;
+      }
+      const sweep=candidates[0]||null;
+      if(!sweep){
+        sources.push('');
+        return requestedTargets.map(()=>NaN);
+      }
+      sources.push(String(sweep.datasetName||''));
+      const transformed=transformSweep(sweep,type,transformOptions);
+      label=transformed?.label||label;
+      unit=transformed?.unit||unit;
+      const points=transformed?.points||[];
+      const xs=points.map(p=>Number(p.v));
+      const tol=hasTolerance?optionTolerance:Math.max(1e-12,Math.abs(Number(sweep.step)||0)*0.05);
+      return requestedTargets.map(target=>{
+        if(!points.length)return NaN;
+        const j=nearestIndex(xs,target);
+        const point=points[j];
+        if(!point||!Number.isFinite(point.v)||Math.abs(point.v-target)>tol)return NaN;
+        return Number.isFinite(Number(point.y))?Number(point.y):NaN;
+      });
+    });
+    const missing=matrix.reduce((sum,row)=>sum+row.filter(v=>!Number.isFinite(v)).length,0);
+    return {type,direction,label,unit,targets:requestedTargets,vgs:requestedVgs,matrix,sources,missing};
+  }
+
   function computeTerForLabel(peaks,sweeps,label,visibleSweepIds=null){
     return computeResonantTerForLabel(peaks,sweeps,label,visibleSweepIds);
   }
-  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeTerForLabel};
+  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeSweepTransformMatrix,computeTerForLabel};
 });

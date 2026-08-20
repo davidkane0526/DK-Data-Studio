@@ -657,13 +657,182 @@
     return kept.sort((x,y)=>x.v-y.v);
   }
 
-  function peakMetrics(peak,sweep){
-    const pts=sweep.points; const j=nearestIndex(pts.map(p=>p.v),peak.v); const p=pts[j];
-    const leftIdx=nearestIndex(pts.map(p=>p.v),peak.widthLeft), rightIdx=nearestIndex(pts.map(p=>p.v),peak.widthRight);
-    const lo=Math.min(leftIdx,rightIdx),hi=Math.max(leftIdx,rightIdx); const baseline=0.5*(Math.abs(pts[lo].i)+Math.abs(pts[hi].i));
-    const amplitude=Math.max(0,Math.abs(p.i)-baseline); let area=0;
-    for(let k=lo;k<hi;k++){const y1=Math.max(0,Math.abs(pts[k].i)-baseline),y2=Math.max(0,Math.abs(pts[k+1].i)-baseline);area+=0.5*(y1+y2)*(pts[k+1].v-pts[k].v);}
-    return {...peak,amplitude,area,baseline,fwhm:Math.abs(peak.widthRight-peak.widthLeft)};
+  function finiteNumber(value){
+    const n=Number(value);
+    return Number.isFinite(n)?n:NaN;
   }
-  return {buildSweeps,transformSweep,detectPeaks,peakMetrics};
+
+  function peakAnalysisWindow(peak,sweep){
+    const pts=sweep?.points||[];
+    if(!pts.length)return {left:NaN,right:NaN,source:'none'};
+    const xs=pts.map(p=>p.v);
+    const dataLo=Math.min(...xs),dataHi=Math.max(...xs);
+    const step=Math.max(Math.abs(sweep?.step||median(xs.slice(1).map((v,i)=>v-xs[i]))||0.01),1e-12);
+    const center=clamp(finiteNumber(peak?.v),dataLo,dataHi);
+
+    let left=finiteNumber(peak?.analysisLeft),right=finiteNumber(peak?.analysisRight);
+    if(Number.isFinite(left)&&Number.isFinite(right)){
+      const savedLeft=Math.min(left,right),savedRight=Math.max(left,right);
+      left=clamp(savedLeft,dataLo,dataHi);
+      right=clamp(savedRight,dataLo,dataHi);
+      if(left<center&&right>center)return {left,right,source:'saved'};
+    }
+
+    // Legacy projects stored the draggable FWHM endpoints as widthLeft/widthRight.
+    // They are preserved as a seed only; the new analysis window is expanded so
+    // baseline fitting uses shoulder/background data outside the half-height region.
+    const legacyLeft=finiteNumber(peak?.widthLeft),legacyRight=finiteNumber(peak?.widthRight);
+    let seedLeft=Number.isFinite(legacyLeft)?Math.min(legacyLeft,center):center-3*step;
+    let seedRight=Number.isFinite(legacyRight)?Math.max(legacyRight,center):center+3*step;
+    let leftHalf=Math.max(center-seedLeft,3*step);
+    let rightHalf=Math.max(seedRight-center,3*step);
+    const seedSpan=Math.max(seedRight-seedLeft,6*step);
+    leftHalf=Math.max(leftHalf*3.5,seedSpan*1.6,10*step);
+    rightHalf=Math.max(rightHalf*3.5,seedSpan*1.6,10*step);
+    left=clamp(center-leftHalf,dataLo,dataHi);
+    right=clamp(center+rightHalf,dataLo,dataHi);
+    return {left,right,source:'legacy-auto'};
+  }
+
+  function leastSquaresLine(samples){
+    if(!samples.length)return null;
+    const mx=samples.reduce((s,p)=>s+p.x,0)/samples.length;
+    const my=samples.reduce((s,p)=>s+p.y,0)/samples.length;
+    let sxx=0,sxy=0;
+    for(const p of samples){sxx+=(p.x-mx)*(p.x-mx);sxy+=(p.x-mx)*(p.y-my);}
+    const slope=sxx>1e-30?sxy/sxx:0;
+    return {slope,intercept:my-slope*mx};
+  }
+
+  function robustLine(samples){
+    if(samples.length<2)return null;
+    let keep=samples.slice();
+    let model=leastSquaresLine(keep);
+    for(let pass=0;pass<4&&model&&keep.length>=4;pass++){
+      const residuals=keep.map(p=>p.y-(model.slope*p.x+model.intercept));
+      const center=median(residuals);
+      const scale=Math.max(mad(residuals)||0,1e-30);
+      if(!(scale>1e-30))break;
+      const next=keep.filter((p,idx)=>{
+        const r=residuals[idx]-center;
+        // Resonances are positive excursions in |I|, so reject upward
+        // contamination more aggressively than downward noise.
+        return r<=2.4*scale&&r>=-3.5*scale;
+      });
+      if(next.length<Math.max(4,Math.ceil(samples.length*0.45))||next.length===keep.length)break;
+      keep=next;model=leastSquaresLine(keep);
+    }
+    if(!model)return null;
+    const residuals=keep.map(p=>p.y-(model.slope*p.x+model.intercept));
+    return {...model,error:mad(residuals)||0,n:keep.length};
+  }
+
+  function baselineForWindow(pts,lo,j,hi){
+    const leftCount=Math.max(0,j-lo),rightCount=Math.max(0,hi-j);
+    const edgeLeft=Math.max(2,Math.ceil(leftCount*0.34));
+    const edgeRight=Math.max(2,Math.ceil(rightCount*0.34));
+    const samples=[];
+    for(let k=lo;k<Math.min(j,lo+edgeLeft);k++)samples.push({x:pts[k].v,y:Math.abs(pts[k].i)});
+    for(let k=Math.max(j+1,hi-edgeRight+1);k<=hi;k++)samples.push({x:pts[k].v,y:Math.abs(pts[k].i)});
+
+    if(samples.length<3){
+      const y0=0.5*(Math.abs(pts[lo]?.i||0)+Math.abs(pts[hi]?.i||0));
+      return {mode:'constant',slope:0,intercept:y0,error:0,n:samples.length};
+    }
+
+    const constant=median(samples.map(p=>p.y));
+    const constError=mad(samples.map(p=>p.y-constant))||0;
+    const line=robustLine(samples);
+    if(!line)return {mode:'constant',slope:0,intercept:constant,error:constError,n:samples.length};
+
+    const span=Math.abs(pts[hi].v-pts[lo].v);
+    const excursion=Math.abs(line.slope)*span;
+    const noise=Math.max(line.error,constError*0.15,Math.abs(constant)*1e-9,1e-30);
+    const materiallySloped=excursion>2.5*noise;
+    const fitImproves=constError<=1e-30?excursion>noise:line.error<constError*0.98;
+    if(materiallySloped&&fitImproves)return {mode:'linear',...line};
+    return {mode:'constant',slope:0,intercept:constant,error:constError,n:samples.length};
+  }
+
+  function interpolateCrossing(x1,r1,x2,r2,target){
+    if(![x1,r1,x2,r2,target].every(Number.isFinite))return NaN;
+    const d=r2-r1;
+    if(Math.abs(d)<1e-30)return 0.5*(x1+x2);
+    const t=clamp((target-r1)/d,0,1);
+    return x1+t*(x2-x1);
+  }
+
+  function integratePositiveResidual(pts,baselineAt,left,right){
+    if(!Number.isFinite(left)||!Number.isFinite(right)||right<=left)return NaN;
+    const samples=[];
+    function residualAtPoint(p){return Math.max(0,Math.abs(p.i)-baselineAt(p.v));}
+    const li=nearestIndex(pts.map(p=>p.v),left),ri=nearestIndex(pts.map(p=>p.v),right);
+    const lo=Math.min(li,ri),hi=Math.max(li,ri);
+    const interpResidual=x=>{
+      let k=Math.max(0,Math.min(pts.length-2,nearestIndex(pts.map(p=>p.v),x)));
+      if(pts[k].v>x&&k>0)k--;
+      if(pts[k+1]?.v<x&&k<pts.length-2)k++;
+      const a=pts[k],b=pts[k+1]||a;
+      if(Math.abs(b.v-a.v)<1e-30)return residualAtPoint(a);
+      const t=clamp((x-a.v)/(b.v-a.v),0,1);
+      const yi=Math.abs(a.i)+t*(Math.abs(b.i)-Math.abs(a.i));
+      return Math.max(0,yi-baselineAt(x));
+    };
+    samples.push({x:left,y:interpResidual(left)});
+    for(let k=lo;k<=hi;k++)if(pts[k].v>left&&pts[k].v<right)samples.push({x:pts[k].v,y:residualAtPoint(pts[k])});
+    samples.push({x:right,y:interpResidual(right)});
+    samples.sort((a,b)=>a.x-b.x);
+    let area=0;
+    for(let k=0;k<samples.length-1;k++)area+=0.5*(samples[k].y+samples[k+1].y)*(samples[k+1].x-samples[k].x);
+    return area;
+  }
+
+  function peakMetrics(peak,sweep){
+    const pts=sweep?.points||[];
+    if(!pts.length)return {...peak,amplitude:NaN,area:NaN,baseline:NaN,fwhm:NaN,fwhmLeft:NaN,fwhmRight:NaN,fwhmValid:false};
+    const xs=pts.map(p=>p.v);
+    const j=nearestIndex(xs,peak.v);
+    const p=pts[j];
+    const window=peakAnalysisWindow(peak,sweep);
+    const leftIdx=nearestIndex(xs,window.left),rightIdx=nearestIndex(xs,window.right);
+    const lo=Math.min(leftIdx,rightIdx),hi=Math.max(leftIdx,rightIdx);
+    if(!(lo<j&&j<hi))return {...peak,analysisLeft:window.left,analysisRight:window.right,amplitude:NaN,area:NaN,baseline:NaN,fwhm:NaN,fwhmLeft:NaN,fwhmRight:NaN,fwhmValid:false,baselineMode:'invalid'};
+
+    const fit=baselineForWindow(pts,lo,j,hi);
+    const baselineAt=x=>Math.max(0,fit.slope*x+fit.intercept);
+    const baseline=baselineAt(p.v);
+    const amplitude=Math.max(0,Math.abs(p.i)-baseline);
+    const halfResidual=amplitude/2;
+    const residual=pts.map(q=>Math.abs(q.i)-baselineAt(q.v));
+
+    let fwhmLeft=NaN,fwhmRight=NaN;
+    if(amplitude>0){
+      for(let k=j-1;k>=lo;k--){
+        const a=residual[k]-halfResidual,b=residual[k+1]-halfResidual;
+        if(a===0||b===0||a*b<0){
+          fwhmLeft=interpolateCrossing(pts[k].v,residual[k],pts[k+1].v,residual[k+1],halfResidual);
+          break;
+        }
+      }
+      for(let k=j;k<hi;k++){
+        const a=residual[k]-halfResidual,b=residual[k+1]-halfResidual;
+        if(a===0||b===0||a*b<0){
+          fwhmRight=interpolateCrossing(pts[k].v,residual[k],pts[k+1].v,residual[k+1],halfResidual);
+          break;
+        }
+      }
+    }
+    const fwhmValid=Number.isFinite(fwhmLeft)&&Number.isFinite(fwhmRight)&&fwhmRight>fwhmLeft;
+    const fwhm=fwhmValid?fwhmRight-fwhmLeft:NaN;
+    const area=fwhmValid?integratePositiveResidual(pts,baselineAt,fwhmLeft,fwhmRight):NaN;
+    return {
+      ...peak,
+      analysisLeft:window.left,analysisRight:window.right,analysisWindowSource:window.source,
+      amplitude,area,baseline,
+      baselineMode:fit.mode,baselineSlope:fit.slope,baselineIntercept:fit.intercept,baselineError:fit.error,
+      halfResidual,halfHeightAtPeak:baseline+halfResidual,
+      fwhmLeft,fwhmRight,fwhm,fwhmValid
+    };
+  }
+  return {buildSweeps,transformSweep,detectPeaks,peakAnalysisWindow,peakMetrics};
 });

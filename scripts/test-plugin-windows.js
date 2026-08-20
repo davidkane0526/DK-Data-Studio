@@ -85,7 +85,7 @@ assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be abl
 const expected={
   'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel']},
   'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
-  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','science-common','science-ter','platform','ui-infrastructure','plugin-kernel']},
+  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel']},
   'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}
 };
 for(const [folder,spec] of Object.entries(expected)){
@@ -201,7 +201,7 @@ for(const marker of ['function renderInspection()','function renderGroup()','fun
 assert(pulseService.includes('result:item.result ? cloneSerializable(item.result) : null'),'Pulse window project slice must persist computed result payloads.');
 assert(pulseService.includes('if(source.analyzed && !item.result)analyzeItem(item);'),'Pulse restore must recompute only legacy projects without cached results.');
 assert(terFeature.includes("ctx.project.registerSlice('workspace'"),'TER must use the same namespaced project-slice contract as other independent plugins.');
-assert(terService.includes('serialize:()=>({schema:1,settings:cloneSerializable(settings)'),'TER window must serialize its expensive result into the namespaced slice.');
+assert(terService.includes('serialize:()=>({schema:2,settings:cloneSerializable(settings)'),'TER window must serialize its expensive result into the namespaced slice.');
 assert(terService.includes('result=source.result?cloneSerializable(source.result):null'),'TER restore must reuse cached result payloads rather than recompute.');
 assert(app.includes('serialize:()=>({')&&app.includes('result:state.terMaxResult?cloneProjectCache(state.terMaxResult):null'),'main TER service must expose namespaced serialization for project files.');
 
