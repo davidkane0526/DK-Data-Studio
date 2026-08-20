@@ -24,6 +24,7 @@ const auxiliaryBootstrap = new Map();
 const auxiliaryReady = new Set();
 const auxiliaryFailures = new Map();
 const auxiliaryPendingShow = new Set();
+const auxiliaryStartupProfiles = new Map();
 const forcedAuxiliaryClose = new WeakSet();
 const pendingCapabilityInvocations = new Map();
 const pendingAuxiliaryRoleSnapshots = new Map();
@@ -284,9 +285,15 @@ function closeAuxiliaryWindowForReal(win) {
   win.close();
 }
 
-function markAuxiliaryWindowReady(win) {
+function markAuxiliaryWindowReady(win,payload={}) {
   if(!win||win.isDestroyed())return;
   const id=win.webContents.id;
+  const profile=auxiliaryStartupProfiles.get(id)||{};
+  profile.readyAtMs=Date.now();
+  profile.main=profile.main||{};
+  profile.main.createToReadyMs=Math.max(0,profile.readyAtMs-Number(profile.createdAtMs||profile.readyAtMs));
+  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
+  auxiliaryStartupProfiles.set(id,profile);
   auxiliaryFailures.delete(id);
   auxiliaryReady.add(id);
   if(!auxiliaryPendingShow.has(id))return;
@@ -300,11 +307,15 @@ function markAuxiliaryWindowFailed(win,payload={}) {
   if(!win||win.isDestroyed())return;
   const id=win.webContents.id;
   const bootstrap=auxiliaryBootstrap.get(id)||{};
+  const profile=auxiliaryStartupProfiles.get(id)||{};
+  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
+  profile.failedAtMs=Date.now();auxiliaryStartupProfiles.set(id,profile);
   const failure={
     activityId:String(bootstrap.activityId||payload.activityId||''),
     projectTabId:String(bootstrap.projectTabId||payload.projectTabId||''),
     pluginId:String(bootstrap.pluginWindow?.pluginId||payload.pluginId||''),
-    error:String(payload.error||payload.message||'插件独立窗口启动失败。')
+    error:String(payload.error||payload.message||'插件独立窗口启动失败。'),
+    startupProfile:profile
   };
   auxiliaryReady.delete(id);
   auxiliaryFailures.set(id,failure);
@@ -377,7 +388,8 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
       lifecycle.ok=lifecycle.hidden&&lifecycle.reused&&lifecycle.alive&&lifecycle.hiddenContract&&lifecycle.visibleContract;
     }catch(err){lifecycle={tested:true,ok:false,error:String(err?.message||err)};}
   }
-  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',created,lifecycle};
+  const startupProfile=win&&!win.isDestroyed()?structuredClone(auxiliaryStartupProfiles.get(win.webContents.id)||null):null;
+  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',created,startupProfile,lifecycle};
   closeAuxiliaryWindowForReal(win);
   return details;
 }
@@ -430,6 +442,7 @@ function wrapAuxiliaryRoleSnapshot(bootstrap,snapshot={}) {
 }
 
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
+  const startupRequestedAtMs=Date.now();
   const activityId = String(payload.activityId || '').trim();
   const projectTabId = String(payload.projectTabId || '').trim();
   if (!activityId || !projectTabId) throw new Error('Missing auxiliary activity/project id.');
@@ -437,7 +450,9 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const ownerWebContentsId = ownerWindow?.webContents?.id;
   if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
 
+  const resolveStartedAtMs=Date.now();
   const pluginWindow = resolveConfiguredPluginWindow(activityId);
+  const resolveSpecMs=Date.now()-resolveStartedAtMs;
   const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
   let previous = auxiliaryWindows.get(key);
   if (previous && !previous.isDestroyed()) {
@@ -489,6 +504,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:true };
   }
 
+  const browserWindowStartedAtMs=Date.now();
   const win = new BrowserWindow({
     show: pluginWindow ? false : payload.prewarm !== true,
     width: pluginWindow?.width || 1480,
@@ -502,8 +518,11 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     webPreferences: commonWindowPreferences()
   });
   win.setMenuBarVisibility(false);
+  const browserWindowCreateMs=Date.now()-browserWindowStartedAtMs;
   auxiliaryWindows.set(key, win);
   const auxiliaryWebContentsId = win.webContents.id;
+  const startupProfile={version:'1.0.0',createdAtMs:startupRequestedAtMs,activityId,pluginId:String(pluginWindow?.pluginId||''),main:{resolveSpecMs,browserWindowCreateMs,navigationMs:null,createToReadyMs:null}};
+  auxiliaryStartupProfiles.set(auxiliaryWebContentsId,startupProfile);
   auxiliaryBootstrap.set(
     auxiliaryWebContentsId,
     makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
@@ -521,6 +540,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryReady.delete(auxiliaryWebContentsId);
     auxiliaryFailures.delete(auxiliaryWebContentsId);
     auxiliaryPendingShow.delete(auxiliaryWebContentsId);
+    auxiliaryStartupProfiles.delete(auxiliaryWebContentsId);
     for(const [requestId,pending] of pendingAuxiliaryRoleSnapshots){
       if(pending.webContentsId!==auxiliaryWebContentsId)continue;
       clearTimeout(pending.timer);
@@ -548,6 +568,11 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     closeAuxiliaryWindowForReal(win);
   });
 
+  const navigationStartedAtMs=Date.now();
+  win.webContents.once('did-finish-load',()=>{
+    const profile=auxiliaryStartupProfiles.get(auxiliaryWebContentsId);
+    if(profile){profile.main=profile.main||{};profile.main.navigationMs=Date.now()-navigationStartedAtMs;}
+  });
   if (pluginWindow?.mode !== 'compatibility' && pluginWindow) {
     if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
     win.loadFile(path.join(__dirname, 'src', 'plugin-window', 'index.html'));
@@ -711,8 +736,8 @@ app.whenReady().then(() => {
     for (const win of doomed) closeAuxiliaryWindowForReal(win);
     return doomed.length;
   });
-  ipcMain.on('windows:activityReady', event => {
-    markAuxiliaryWindowReady(BrowserWindow.fromWebContents(event.sender));
+  ipcMain.on('windows:activityReady', (event,payload={}) => {
+    markAuxiliaryWindowReady(BrowserWindow.fromWebContents(event.sender),payload);
   });
   ipcMain.on('windows:activityFailed', (event,payload={}) => {
     markAuxiliaryWindowFailed(BrowserWindow.fromWebContents(event.sender),payload);

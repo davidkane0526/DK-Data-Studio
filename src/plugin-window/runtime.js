@@ -1,4 +1,10 @@
 (() => {
+  const STARTUP_PROFILE_VERSION='1.0.0';
+  const startupStartedAt=performance.now();
+  const startupProfile={version:STARTUP_PROFILE_VERSION,startedAt:0,totalMs:0,phases:[],dependencies:[],scripts:[]};
+  const roundMs=value=>Math.round(Number(value||0)*10)/10;
+  const measure=async(name,fn,bucket=startupProfile.phases,meta={})=>{const started=performance.now();try{return await fn();}finally{bucket.push({name,...meta,startMs:roundMs(started-startupStartedAt),durationMs:roundMs(performance.now()-started)});}};
+  const measureSync=(name,fn,bucket=startupProfile.phases,meta={})=>{const started=performance.now();try{return fn();}finally{bucket.push({name,...meta,startMs:roundMs(started-startupStartedAt),durationMs:roundMs(performance.now()-started)});}};
   const $ = selector => document.querySelector(selector);
   const statusEl = $('#statusBarMessage') || $('#statusBar');
   const errorEl = $('#pluginWindowError');
@@ -139,12 +145,17 @@
     }
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
-    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    // Stable host infrastructure remains available to every dedicated TOP, but
+    // domain runtimes added by v3.50+ must only load when requiresCore/window
+    // dependencies requested them. Loading Pipeline/Transform/Algorithm in every
+    // TOP made unrelated Data Center/Pulse windows pay the cost of new science
+    // features and caused startup time to grow as the platform evolved.
+    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
 
-    for (const id of ordered) await loadScript(DEPENDENCY_SCRIPTS[id]);
+    for (const id of ordered) await measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies,{src:DEPENDENCY_SCRIPTS[id]});
     if (window.DKDSScience) window.Analysis = window.DKDSScience;
     if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
     window.DKDSUI?.host?.configure?.({
@@ -380,7 +391,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.52.0',
+      appVersion:'3.52.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -411,28 +422,28 @@
 
     // Load only the dependencies declared by this top-level plugin. The old
     // host loaded Plotly + all science/workflow modules for every window.
-    await loadDependencies(spec);
-    restoreArtifactStore();
+    await measure('dependencies',()=>loadDependencies(spec));
+    measureSync('artifact-store-restore',()=>restoreArtifactStore());
 
     // Optional plugin-local support scripts make a dedicated plugin
     // self-contained: adding a new analysis does not require extending the
     // host's shared dependency allowlist for its private implementation.
     const loadedExternalScripts=new Set();
-    const loadTargetScript=async file=>{
+    const loadTargetScript=async(file,kind='support')=>measure(file,async()=>{
       if(packagedSource){
         if(loadedExternalScripts.has(file))return;
         await loadInlineScript(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
         loadedExternalScripts.add(file);
       }else await loadScript(pluginUrl(file));
-    };
-    for(const file of (spec.scripts||[]))await loadTargetScript(file);
+    },startupProfile.scripts,{kind});
+    for(const file of (spec.scripts||[]))await loadTargetScript(file,'support');
 
-    if (spec.runtime) await loadTargetScript(spec.runtime);
+    if (spec.runtime) await loadTargetScript(spec.runtime,'window-runtime');
 
     const host = baseHost();
     const windowRuntime=window.DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime') || window.DKDSPluginWindowRuntime;
     if (windowRuntime?.create) {
-      pluginRuntime = await windowRuntime.create({
+      pluginRuntime = await measure('window-runtime-create',()=>windowRuntime.create({
         project,
         bootstrap:clone(bootstrap),
         setStatus,
@@ -440,7 +451,7 @@
         copyTextToClipboard,
         savePlotlyImage,
         artifacts:artifactsApi
-      });
+      }));
       if (pluginRuntime?.serviceName && pluginRuntime?.service) {
         window.DKDSServices?.register?.(String(spec.pluginId||'plugin-window'),pluginRuntime.serviceName,pluginRuntime.service,{replace:true,metadata:{scope:'dedicated-window'}});
       }
@@ -449,12 +460,12 @@
     window.DKDSPlugins.configure(host);
     if(packagedSource){
       for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
-      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file);
+      for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
     }else{
-      await loadScript(pluginUrl(spec.entry));
+      await loadTargetScript(spec.entry,'entry');
     }
 
-    await window.DKDSPlugins.activateAll();
+    await measure('plugins-activate',()=>window.DKDSPlugins.activateAll());
     const targetPluginState=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||null;
     if(targetPluginState && !targetPluginState.active){
       const activationError=String(targetPluginState.error||'').trim();
@@ -465,10 +476,10 @@
     // Mount legacy/base project data first, then let namespaced plugin slices
     // override it. This makes plugin project state canonical without breaking
     // older project files that only contain root-level analysis fields.
-    await pluginRuntime?.setProject?.(project);
-    await window.DKDSPlugins.project.restore(project.plugins || {}, project);
+    await measure('plugin-project-set',()=>pluginRuntime?.setProject?.(project));
+    await measure('project-restore',()=>window.DKDSPlugins.project.restore(project.plugins || {}, project));
 
-    const opened = await window.DKDSPlugins.activities.set(bootstrap.activityId);
+    const opened = await measure('activity-open',()=>window.DKDSPlugins.activities.set(bootstrap.activityId));
     if (!opened) {
       const state=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||targetPluginState;
       const activationError=String(state?.error||'').trim();
@@ -480,7 +491,12 @@
     ready = true;
     setStatus(`${spec.title || bootstrap.activityId} 已就绪`);
     requestAnimationFrame(() => window.DKDSPlugins.events.emit('layout:resize',{reason:'initial'}));
-    window.electronAPI?.markActivityWindowReady?.();
+    startupProfile.totalMs=roundMs(performance.now()-startupStartedAt);
+    startupProfile.pluginId=String(spec.pluginId||'');
+    startupProfile.activityId=String(bootstrap.activityId||'');
+    startupProfile.dependencyCount=startupProfile.dependencies.length;
+    startupProfile.scriptCount=startupProfile.scripts.length;
+    window.electronAPI?.markActivityWindowReady?.({startupProfile});
   }
 
   async function replaceProjectFromBootstrap(nextBootstrap) {
@@ -514,7 +530,7 @@
 
   async function start() {
     try {
-      bootstrap = await window.electronAPI?.getActivityWindowBootstrap?.();
+      bootstrap = await measure('bootstrap',()=>window.electronAPI?.getActivityWindowBootstrap?.());
       if (!bootstrap?.project) throw new Error('没有收到主窗口项目快照。');
       if (!bootstrap?.pluginWindow) throw new Error('当前插件没有独立窗口定义。');
 
@@ -563,10 +579,16 @@
     } catch (err) {
       console.error('[DKDS plugin window startup]', err);
       showStartupError(err);
+      startupProfile.totalMs=roundMs(performance.now()-startupStartedAt);
+      startupProfile.pluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+      startupProfile.activityId=String(bootstrap?.activityId||'');
+      startupProfile.dependencyCount=startupProfile.dependencies.length;
+      startupProfile.scriptCount=startupProfile.scripts.length;
       window.electronAPI?.markActivityWindowFailed?.({
         activityId:String(bootstrap?.activityId||''),
         pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
-        error:err?.stack||err?.message||String(err||'插件独立窗口启动失败。')
+        error:err?.stack||err?.message||String(err||'插件独立窗口启动失败。'),
+        startupProfile
       });
     }
   }

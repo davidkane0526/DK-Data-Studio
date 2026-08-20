@@ -1,3 +1,10 @@
+# v3.52.1 — Selective TOP Runtime Loading & Startup Profiling
+
+- Fixed a dedicated-TOP startup regression where v3.50+ Scientific Pipeline, Transform and Algorithm runtimes were appended to every TOP renderer even when the plugin did not declare those Core contracts. Data Center and Pulse no longer pay for unused scientific domain runtimes; TER loads Pipeline + Transform, while Resonance loads Pipeline + Transform + Algorithm through `requiresCore` derivation.
+- Added renderer startup phase profiling for bootstrap, dependency scripts, plugin support/runtime/entry scripts, plugin activation, project restore and activity open. Main-process diagnostics also record BrowserWindow creation, navigation and create-to-ready time.
+- Automation Runner 1.7.1 adds `TOP startup phase profiling`, validates that real renderer domain-runtime loads exactly match resolved plugin contracts, and exports per-TOP slow dependencies/phases for version-to-version diagnosis. Startup profiles are also attached to failed TOP diagnostics so first-failure timing is preserved.
+- No scientific algorithm, transform, TER or FWHM definitions were changed in this patch.
+
 # v3.52.0 — Versioned Scientific Algorithm Providers
 
 - Added `src/core/scientific-algorithm-runtime.js`, a Core registry/resolver whose stable scientific algorithm identity is `category + algorithmId + algorithmVersion`; multiple versions can coexist and exact historical versions can be resolved and executed.

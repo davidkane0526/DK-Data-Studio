@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   prewarmActivityWindow: payload => ipcRenderer.invoke('windows:prewarmActivity', payload),
   prepareSuperTransition: payload => ipcRenderer.invoke('windows:prepareSuperTransition', payload),
   getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
-  markActivityWindowReady: () => ipcRenderer.send('windows:activityReady'),
+  markActivityWindowReady: payload => ipcRenderer.send('windows:activityReady', payload || {}),
   markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed', payload || {}),
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
