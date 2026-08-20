@@ -348,8 +348,9 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
   const created=createOrFocusAuxiliaryWindow(ownerWindow,{activityId,projectTabId,project,projectPath:null,title:'自动化测试',prewarm:true,diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0});
   const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId);
   const win=auxiliaryWindows.get(key);
+  const rendererProcessId=(()=>{try{return Number(win?.webContents?.getOSProcessId?.())||0;}catch{return 0;}})();
   const outcome=await waitForAuxiliaryDiagnosticOutcome(win,Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000)));
-  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',created};
+  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',created};
   closeAuxiliaryWindowForReal(win);
   return details;
 }

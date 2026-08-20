@@ -1,0 +1,18 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
+const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const terEntry=read('src/plugins/ter-analysis/plugin.js');
+const pulseEntry=read('src/plugins/pulse-analysis/plugin.js');
+const dataCenter=read('src/plugins/data-center/feature-runtime.js');
+assert(resonance.includes('uiRuntime?.scientificPlot')&&resonance.includes('runtime.react(target,traces,layout,config'),'Resonance Plotly views must route through Core ScientificPlot.');
+assert(resonanceEntry.includes('charts:ctx.ui.scientificPlot'),'Resonance services must receive the Core ScientificPlot facade.');
+assert(ter.includes('ctx.ui.scientificPlot.react')&&terEntry.includes('charts:ctx.ui.scientificPlot'),'TER rendering and services must route through Core ScientificPlot.');
+assert(pulseEntry.includes('charts:ctx.ui.scientificPlot'),'Pulse analysis service must receive the Core ScientificPlot facade.');
+assert(dataCenter.includes('ctx.ui.scientificPlot.react'),'Data Center preview must use Core ScientificPlot.');
+for(const [name,source] of [['resonance',resonance],['ter',ter],['data-center',dataCenter]])assert(!source.includes('window.Plotly.newPlot')&&!source.includes('window.Plotly.react'),`${name} must not bypass Core with direct window.Plotly rendering.`);
+console.log('v3.46 analysis-plugin ScientificPlot adoption checks passed.');

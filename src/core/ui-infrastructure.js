@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.5.0';
+  const VERSION = '6.6.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -1501,9 +1501,16 @@
         attach:(target,spec={})=>this.scientificPlotly?.attach?.(target,spec)||null,
         react:(target,data=[],layout={},config={},spec={})=>this.scientificPlotly?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
         get:target=>this.scientificPlotly?.get?.(target)||null,
+        controller:(target,name)=>this.scientificPlotly?.controller?.(target,name)||null,
         resize:target=>this.scientificPlotly?.resize?.(target)||window.DKDSCharts?.resize?.(target),
         restyle:(target,update,traces)=>this.scientificPlotly?.restyle?.(target,update,traces)||window.DKDSCharts?.restyle?.(target,update,traces),
         relayout:(target,update)=>this.scientificPlotly?.relayout?.(target,update)||window.DKDSCharts?.relayout?.(target,update),
+        viewport:target=>this.scientificPlotly?.viewport?.(target)||null,
+        setViewport:(target,state,meta={})=>this.scientificPlotly?.setViewport?.(target,state,meta)||false,
+        resetViewport:(target,meta={})=>this.scientificPlotly?.resetViewport?.(target,meta)||false,
+        pin:(target,id,meta={})=>this.scientificPlotly?.pin?.(target,id,meta)||false,
+        unpin:(target,id,meta={})=>this.scientificPlotly?.unpin?.(target,id,meta)||false,
+        pins:target=>this.scientificPlotly?.pins?.(target)||[],
         saveImage:(target,baseName,format='svg',options={})=>this.scientificPlotly?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
         purge:target=>this.scientificPlotly?.purge?.(target)||window.DKDSCharts?.purge?.(target)
       };

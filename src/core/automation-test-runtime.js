@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.0.0';
+  const VERSION='1.1.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -47,9 +47,13 @@
 
   function enabledTopActivities(){
     const diag=window.DKDSPlugins?.diagnostics?.()||{};
+    // A TOP smoke test must create a fresh independent renderer. Requiring an
+    // already-open window (`hasWindow`) silently skipped every TOP in a normal
+    // clean session, producing a misleading all-green report. The eligibility
+    // contract is the enabled/active TOP workspace plus a resolvable activity.
     return (diag.plugins||[])
-      .filter(row=>row?.enabled&&row?.active&&row?.workspaceRole==='top'&&row?.workspaceActivity&&row?.hasWindow)
-      .map(row=>({pluginId:row.id,activityId:row.workspaceActivity,name:row.name||row.id,isSuper:!!row.isSuper}));
+      .filter(row=>row?.enabled&&row?.active&&row?.workspaceRole==='top'&&row?.workspaceActivity&&row?.topContractReady!==false)
+      .map(row=>({pluginId:row.id,activityId:row.workspaceActivity,name:row.name||row.id,isSuper:!!row.isSuper,hadWindow:!!row.hasWindow}));
   }
 
   async function rendererPlotSmoke(){
@@ -65,6 +69,25 @@
       try{window.Plotly.purge?.(host);}catch{}
       host.remove();
     }
+  }
+
+  async function scientificPlotInteractionSmoke(){
+    const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
+    const host=document.createElement('div');host.id=`automationScientificPlot-${Date.now()}`;host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';document.body.appendChild(host);
+    const scope=ui.createScope('core.automation-scientific-plot');
+    try{
+      const interaction=scope.interactionRuntime.create('plot',{selection:{multiple:true,defaultType:'data.series'},defaultType:'data.series'});
+      const view=await scope.scientificPlot.react(host,[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'A',entityId:'automation.plot:A'},{x:[0,1,2],y:[2,1,4],mode:'lines+markers',name:'B',entityId:'automation.plot:B'}],{width:360,height:240,margin:{l:40,r:20,t:20,b:35},showlegend:true},{displayModeBar:false,staticPlot:true},{interaction,source:'automation-scientific-plot',traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),pinPolicy:{enabled:true}});
+      assert(view?.controllers,'ScientificPlot controller surface unavailable.');
+      const required=['selection','legend','tooltip','focus','pin','viewport','export'];for(const name of required)assert(view.controllers[name],`ScientificPlot controller missing: ${name}`);
+      view.controllers.pin.pin('automation.plot:A',{source:'automation'});assert(view.controllers.pin.has('automation.plot:A'),'Pin controller did not retain the entity.');
+      view.controllers.pin.unpin('automation.plot:A',{source:'automation'});assert(!view.controllers.pin.has('automation.plot:A'),'Pin controller did not release the entity.');
+      await view.controllers.viewport.set({xRange:[0.25,1.75]},{source:'automation'});const viewport=view.controllers.viewport.get();assert(Array.isArray(viewport.xRange)&&viewport.xRange.length===2,'Viewport controller did not retain the X range.');
+      await view.controllers.viewport.reset({source:'automation'});assert(view.controllers.viewport.get()?.xRange===null,'Viewport reset did not restore autorange state.');
+      assert(view.controllers.legend.state().length===2,'Legend controller did not expose rendered traces.');
+      assert(view.controllers.tooltip.theme()?.bgcolor,'Tooltip controller did not expose the Core theme.');
+      return {controllers:required,pins:view.controllers.pin.list().length,legendEntries:view.controllers.legend.state().length,viewportRevision:view.controllers.viewport.get()?.revision||0};
+    }finally{try{scope.dispose?.();}catch{}try{window.Plotly?.purge?.(host);}catch{}host.remove();}
   }
 
   function selectionContractSmoke(){
@@ -139,6 +162,7 @@
     let environment={};
     try{environment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||window.electronAPI?.getRuntimeStatus?.()||Promise.resolve({runtime:'unknown'}));}catch(err){environment={runtime:'unknown',error:sanitizeText(err.message)};}
 
+    await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
     await runCase('runtime.core','Core Runtime','Core',async()=>{
       const names=['DKDSData','DKDSEntities','DKDSUI','DKDSScientificPlot','DKDSComponents','DKDSDataFlow','DKDSPluginContract','DKDSCapabilities','DKDSPlugins'];
       const missing=names.filter(name=>!window[name]);assert(!missing.length,`Missing runtime globals: ${missing.join(', ')}`);return {globals:names.length};
@@ -153,15 +177,18 @@
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
+    await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
 
-    const tops=enabledTopActivities();
+    const tops=enabledTopActivities();let testedTopCount=0;
     if(window.electronAPI?.diagnosticsRunActivitySmoke){
+      if(!tops.length)await runCase('top.none','TOP independent renderer discovery','TOP / Electron',async()=>{throw new Error('No enabled TOP activity was discovered; this would leave the independent renderer path untested.');});
       for(const top of tops){
         await runCase(`top.${top.activityId}`,`TOP renderer · ${top.name||top.pluginId}`,'TOP / Electron',async()=>{
-          const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
-          assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);return out;
+          testedTopCount+=1;const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
+          assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow};
         });
       }
+      await runCase('top.coverage','TOP renderer coverage','TOP / Electron',async()=>{assert(testedTopCount===tops.length,`Only ${testedTopCount}/${tops.length} TOP renderers were exercised.`);return {discovered:tops.length,tested:testedTopCount,activities:tops.map(row=>row.activityId)};});
     }else{
       await runCase('top.unsupported','TOP independent renderer smoke','TOP / Electron',async()=>{}, {skip:true,skipReason:'当前运行环境没有 Electron 独立窗口测试接口。'});
     }
@@ -175,7 +202,7 @@
     // Deliberately exclude project contents, imported experimental values and
     // file paths. The report is safe to send for debugging without exporting
     // the user's scientific data.
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow}))},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])]},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

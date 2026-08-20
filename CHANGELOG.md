@@ -1,3 +1,15 @@
+# v3.46.0 — ScientificPlot shared interaction controllers and real TOP automation coverage
+
+- Promoted Plotly ScientificPlot to a shared controller surface for Selection, Legend, Tooltip, Focus, Pin, Viewport, and Export.
+- Kept existing `ctx.ui.scientificPlot.react/attach/saveImage` APIs compatible while making the common interaction lifecycle automatic for migrated analysis plugins.
+- Preserved viewport state across ScientificPlot rerenders and exposed explicit viewport/pin/controller APIs through the plugin UI scope.
+- Unified tooltip enforcement for both freshly rendered and attached Plotly graphs.
+- Fixed the built-in Automation Test Center bug that silently skipped every TOP renderer when no TOP window was already open. TOP discovery now follows the enabled/active TOP workspace contract instead of `hasWindow`.
+- Added explicit TOP coverage results and report metadata; the default desktop configuration now exercises Data Center, Pulse, Resonance, and TER through real independent Electron renderers.
+- Added packaged-build identity reporting so development Electron runs are clearly distinguished from installer/portable validation.
+- Extended TOP diagnostic records with renderer process id, resolved dependencies, runtime scripts, and persistence mode.
+- Added v3.46 regression tests for ScientificPlot controllers, analysis-plugin adoption, Automation Test TOP coverage, event de-duplication, pin state, viewport state, and export delegation.
+
 # v3.45.0 — Canonical scientific data contracts and built-in automation test center
 
 - Upgrades the Core Data Type Registry from plugin-local labels to canonical scientific semantics for raw/background-removed I–V, derivatives, dI/dV, d²I/dV², dln|I|/dV, dV/dI, resistance, resonance peaks/FWHM and TER values/matrices.
