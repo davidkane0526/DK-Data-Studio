@@ -1,3 +1,10 @@
+# v3.43.0 — Host-invariant TOP lifecycle hardening
+
+- Fixed Resonance Workbench failing to open after it is demoted from SUPER to TOP.
+- Made `requiresCore` the canonical source for dedicated-window Core infrastructure dependencies; `parameters`, `data.model`, `data.formula`, `workflow`, and `state` now derive their required renderer modules automatically.
+- Added explicit dedicated-window startup failure reporting. User-requested failed TOP windows are surfaced instead of remaining invisible behind `show:false`, and the owner window receives a status error.
+- Added regression coverage for SUPER/TOP host transitions and the Resonance parameter-schema dependency path.
+
 # v3.42.0 — Unified Entity, ScientificPlot and Artifact lineage runtime
 
 - Adds the Core Entity Runtime as the canonical identity/state graph for scientific objects across charts, legends, data lists, inspectors and derived analysis views. Entities have stable IDs, parent/child relations and distinct `visible / focused / selected / locked / hidden / disabled` semantics.

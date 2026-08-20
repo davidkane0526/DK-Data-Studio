@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   prewarmActivityWindow: payload => ipcRenderer.invoke('windows:prewarmActivity', payload),
   getActivityWindowBootstrap: () => ipcRenderer.invoke('windows:getActivityBootstrap'),
   markActivityWindowReady: () => ipcRenderer.send('windows:activityReady'),
+  markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed', payload || {}),
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
@@ -23,6 +24,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('windows:activityProjectSnapshot', handler);
     return () => ipcRenderer.removeListener('windows:activityProjectSnapshot', handler);
+  },
+  onActivityWindowFailed: callback => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('windows:activityFailed', handler);
+    return () => ipcRenderer.removeListener('windows:activityFailed', handler);
   },
   onActivityBootstrapChanged: callback => {
     const handler = () => callback();

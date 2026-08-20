@@ -21,6 +21,7 @@ let lanWebServer = null;
 const auxiliaryWindows = new Map();
 const auxiliaryBootstrap = new Map();
 const auxiliaryReady = new Set();
+const auxiliaryFailures = new Map();
 const auxiliaryPendingShow = new Set();
 const forcedAuxiliaryClose = new WeakSet();
 const pendingCapabilityInvocations = new Map();
@@ -282,12 +283,37 @@ function closeAuxiliaryWindowForReal(win) {
 function markAuxiliaryWindowReady(win) {
   if(!win||win.isDestroyed())return;
   const id=win.webContents.id;
+  auxiliaryFailures.delete(id);
   auxiliaryReady.add(id);
   if(!auxiliaryPendingShow.has(id))return;
   auxiliaryPendingShow.delete(id);
   try { win.webContents.send('windows:activityWillShow'); } catch {}
   win.show();
   win.focus();
+}
+
+function markAuxiliaryWindowFailed(win,payload={}) {
+  if(!win||win.isDestroyed())return;
+  const id=win.webContents.id;
+  const bootstrap=auxiliaryBootstrap.get(id)||{};
+  const failure={
+    activityId:String(bootstrap.activityId||payload.activityId||''),
+    projectTabId:String(bootstrap.projectTabId||payload.projectTabId||''),
+    pluginId:String(bootstrap.pluginWindow?.pluginId||payload.pluginId||''),
+    error:String(payload.error||payload.message||'插件独立窗口启动失败。')
+  };
+  auxiliaryReady.delete(id);
+  auxiliaryFailures.set(id,failure);
+
+  // A user-requested window must never fail invisibly behind `show:false`.
+  // Prewarmed failures stay hidden until the user actually opens the TOP.
+  if(auxiliaryPendingShow.has(id)){
+    auxiliaryPendingShow.delete(id);
+    try{win.show();win.focus();}catch{}
+  }
+
+  const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
+  try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
 }
 
 function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
@@ -333,6 +359,13 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
 
     if (previous.isMinimized()) previous.restore();
     if (pluginWindow && !auxiliaryReady.has(previous.webContents.id)) {
+      const failure=auxiliaryFailures.get(previous.webContents.id);
+      if(failure){
+        try { previous.webContents.send('windows:activityWillShow'); } catch {}
+        previous.show();
+        previous.focus();
+        return { reused:true, dedicated:true, synchronized:projectChanged, failed:true, error:failure.error };
+      }
       auxiliaryPendingShow.add(previous.webContents.id);
       return { reused:true, dedicated:true, synchronized:projectChanged, warming:true };
     }
@@ -373,6 +406,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     auxiliaryWindows.delete(key);
     auxiliaryBootstrap.delete(auxiliaryWebContentsId);
     auxiliaryReady.delete(auxiliaryWebContentsId);
+    auxiliaryFailures.delete(auxiliaryWebContentsId);
     auxiliaryPendingShow.delete(auxiliaryWebContentsId);
   });
   ownerWindow.once('closed', () => closeAuxiliaryWindowForReal(win));
@@ -491,6 +525,9 @@ app.whenReady().then(() => {
   });
   ipcMain.on('windows:activityReady', event => {
     markAuxiliaryWindowReady(BrowserWindow.fromWebContents(event.sender));
+  });
+  ipcMain.on('windows:activityFailed', (event,payload={}) => {
+    markAuxiliaryWindowFailed(BrowserWindow.fromWebContents(event.sender),payload);
   });
   ipcMain.handle('windows:closeCurrent', async event => {
     const win = BrowserWindow.fromWebContents(event.sender);

@@ -73,6 +73,10 @@ assert(app.includes('merged.dataModel=window.DKDSData.serializeStore(tab?.artifa
 assert(kernel.includes("if(value.primary===undefined&&(role==='top'||value.openMode==='window'))value.primary=true"),'TOP/independent activities must default to first-level navigation without shell whitelists.');
 
 assert(shellRuntime.includes('markActivityWindowReady'),'dedicated runtime must signal completion after the target plugin is mounted.');
+assert(shellRuntime.includes('markActivityWindowFailed'),'dedicated runtime must report startup failure instead of remaining hidden forever.');
+assert(preload.includes("markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed'"),'preload must expose dedicated-window startup failure reporting.');
+assert(preload.includes('onActivityWindowFailed'),'owner renderer must receive dedicated-window startup failures.');
+assert(main.includes('markAuxiliaryWindowFailed')&&main.includes('auxiliaryFailures'),'main process must track failed dedicated windows separately from ready windows.');
 assert(shellRuntime.includes('const sameProject = bootstrap?.projectDigest'),'prewarm -> first-open must not restore/re-render an unchanged project.');
 assert(shellRuntime.includes('onActivityWillShow'),'dedicated runtime must relayout Plotly when a prewarmed/cached window becomes visible.');
 assert(manager.includes('manifest?.window'),'plugin-window-manager must read manifest.window.');
@@ -83,7 +87,7 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel']},
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,manifestDeps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel','parameter-schema']},
   'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
   'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel']},
   'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}

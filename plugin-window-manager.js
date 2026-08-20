@@ -24,6 +24,14 @@ const ALLOWED_WINDOW_DEPENDENCIES = new Set([
   'plugin-kernel'
 ]);
 
+const CORE_REQUIREMENT_WINDOW_DEPENDENCIES = Object.freeze({
+  'parameters':Object.freeze(['parameter-schema']),
+  'data.model':Object.freeze(['data-model']),
+  'data.formula':Object.freeze(['formula-engine']),
+  'workflow':Object.freeze(['workflow-engine']),
+  'state':Object.freeze(['state-store'])
+});
+
 
 const WINDOW_PERSISTENCE_MODES = new Set(['project','memory','none']);
 const WINDOW_MODES = new Set(['dedicated','compatibility']);
@@ -70,16 +78,26 @@ function safeRelativeFile(baseDir, fileName, label) {
   return file;
 }
 
-function normalizeDependencies(value) {
+function normalizeDependencies(value, requiresCore=[]) {
   const rows = Array.isArray(value) ? value : [];
   const out = [];
-  for (const raw of rows) {
+  const append = raw => {
     const id = String(raw || '').trim();
     if (!ALLOWED_WINDOW_DEPENDENCIES.has(id)) {
       throw new Error(`Unsupported plugin window dependency: ${id || '(empty)'}`);
     }
     if (!out.includes(id)) out.push(id);
+  };
+  for (const raw of rows) append(raw);
+
+  // `requiresCore` is the canonical plugin/Core contract. Dedicated TOP
+  // renderers must not maintain a second, drifting declaration for Core
+  // infrastructure that is already implied by that contract. Domain/vendor
+  // libraries (Plotly, D3, science modules) remain explicit window choices.
+  for (const requirement of (Array.isArray(requiresCore) ? requiresCore : [])) {
+    for (const dependency of (CORE_REQUIREMENT_WINDOW_DEPENDENCIES[String(requirement || '').trim()] || [])) append(dependency);
   }
+
   if (!out.includes('platform')) out.push('platform');
   if (!out.includes('plugin-kernel')) out.push('plugin-kernel');
   return Object.freeze(out);
@@ -122,7 +140,7 @@ function readBuiltinPluginWindows(appPath) {
           entry,
           runtime,
           activity,
-          dependencies:normalizeDependencies(windowSpec.dependencies),
+          dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
           scripts:normalizePluginScripts(pluginDir, windowSpec.scripts),
           title:String(windowSpec.title || manifest.name || activity),
           prewarm:windowSpec.prewarm !== false,
@@ -184,7 +202,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     entry,
     runtime,
     activity,
-    dependencies:normalizeDependencies(windowSpec.dependencies),
+    dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
     scripts:Object.freeze(scripts),
     packageScripts:Object.freeze(packageScripts),
     styles:Object.freeze(styles),

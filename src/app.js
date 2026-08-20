@@ -5346,7 +5346,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.42.0',
+      version:'3.43.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6652,7 +6652,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.42.0',
+      appVersion:'3.43.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6777,6 +6777,12 @@
       });
     }else{
       window.electronAPI?.onActivityProjectSnapshot?.(applyActivityProjectSnapshot);
+      window.electronAPI?.onActivityWindowFailed?.(payload=>{
+        const activity=String(payload?.activityId||'插件工作区');
+        const error=String(payload?.error||'独立窗口启动失败。').split('\n')[0];
+        setStatus(`工作区 ${activity} 打开失败：${error}`);
+        console.error('[DKDS activity-window startup]',payload);
+      });
     }
 
     syncPhysicsLabelControls();

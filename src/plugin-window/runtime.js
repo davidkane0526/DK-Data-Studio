@@ -368,7 +368,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.42.0',
+      appVersion:'3.43.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -517,6 +517,11 @@
     } catch (err) {
       console.error('[DKDS plugin window startup]', err);
       showStartupError(err);
+      window.electronAPI?.markActivityWindowFailed?.({
+        activityId:String(bootstrap?.activityId||''),
+        pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+        error:err?.stack||err?.message||String(err||'插件独立窗口启动失败。')
+      });
     }
   }
 
