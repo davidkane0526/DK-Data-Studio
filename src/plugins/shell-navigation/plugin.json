@@ -13,5 +13,6 @@
   "capabilities": [
     "ui.styles",
     "ui.activity"
-  ]
+  ],
+  "pluginType": "foundation"
 }

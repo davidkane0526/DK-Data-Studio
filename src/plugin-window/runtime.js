@@ -52,6 +52,8 @@
   let artifactStore = null;
   let pluginRuntime = null;
   let ready = false;
+  let projectHydrated = false;
+  let activityOpened = false;
   let plotlyRequested = false;
   let snapshotTimer = null;
   let roleTransitionSnapshotTaken = false;
@@ -203,7 +205,8 @@
     };
     // Post-ready warmup remains as a fallback/reuse point. In the normal path
     // it simply reuses the preload promise (or the ready renderer) and adds no
-    // second script. TOP readiness still never awaits Plotly.
+    // second script. Ordinary cold-open readiness remains non-blocking; a
+    // manifest-declared runtime-only prewarm explicitly awaits the same promise.
     if (typeof requestIdleCallback === 'function') requestIdleCallback(warm,{timeout:350});
     else setTimeout(warm,120);
   }
@@ -432,7 +435,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.2',
+      appVersion:'3.61.3',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -455,6 +458,30 @@
     };
   }
 
+  async function hydrateProjectAndOpenActivity(nextProject,{reason='project-hydrate'}={}) {
+    project=ensureProjectShape(nextProject||{});
+    measureSync(`${reason}:artifact-store`,()=>restoreArtifactStore());
+    await measure(`${reason}:plugin-project-set`,()=>pluginRuntime?.setProject?.(project));
+    await measure(`${reason}:project-restore`,()=>window.DKDSPlugins.project.restore(project.plugins || {}));
+    projectHydrated=true;
+    const opened=await measure(`${reason}:activity-open`,()=>window.DKDSPlugins.activities.set(bootstrap.activityId));
+    if(!opened){
+      const state=window.DKDSPlugins?.manager?.get?.(String(bootstrap?.pluginWindow?.pluginId||''))||null;
+      const activationError=String(state?.error||'').trim();
+      throw new Error(activationError?`插件工作区不可用：${bootstrap.activityId} · ${activationError}`:`插件没有注册工作区：${bootstrap.activityId}`);
+    }
+    activityOpened=true;
+    window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
+    window.DKDSPlugins?.events?.emit?.('layout:resize',{reason});
+    return true;
+  }
+
+  async function ensureDeclaredChartWarm() {
+    if(!plotlyRequested||!window.DKDSCharts?.ensurePlotly)return false;
+    await window.DKDSCharts.ensurePlotly({reason:'dedicated-prewarm-runtime'});
+    return true;
+  }
+
   async function loadTargetPlugin() {
     const spec = bootstrap?.pluginWindow;
     document.body.dataset.pluginId=String(spec?.pluginId||'');
@@ -465,7 +492,6 @@
     // host loaded Plotly + all science/workflow modules for every window.
     await measure('dependencies',()=>loadDependencies(spec));
     beginDeclaredChartPreload();
-    measureSync('artifact-store-restore',()=>restoreArtifactStore());
 
     // Optional plugin-local support scripts make a dedicated plugin
     // self-contained: adding a new analysis does not require extending the
@@ -529,18 +555,18 @@
         ? `插件激活失败：${spec.pluginId} · ${activationError}`
         : `插件激活失败：${spec.pluginId}`);
     }
-    // Project-format migration has already canonicalized historical projects.
-    // Dedicated renderers restore only namespaced plugin slices.
-    await measure('plugin-project-set',()=>pluginRuntime?.setProject?.(project));
-    await measure('project-restore',()=>window.DKDSPlugins.project.restore(project.plugins || {}));
-
-    const opened = await measure('activity-open',()=>window.DKDSPlugins.activities.set(bootstrap.activityId));
-    if (!opened) {
-      const state=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||targetPluginState;
-      const activationError=String(state?.error||'').trim();
-      throw new Error(activationError
-        ? `插件工作区不可用：${bootstrap.activityId} · ${activationError}`
-        : `插件没有注册工作区：${bootstrap.activityId}`);
+    // Prewarm is intentionally runtime-only. Hidden dedicated windows load Core,
+    // Plugin SDK/runtime code, algorithm providers and declared chart runtimes,
+    // but they do not restore domain project slices, activate an analysis page,
+    // calculate results or render charts. First user open performs the project
+    // hydration behind the still-hidden window and is shown only after that step.
+    if(bootstrap.prewarm===true){
+      await measure('declared-chart-prewarm',()=>ensureDeclaredChartWarm());
+      startupProfile.prewarmMode='runtime-only';
+      projectHydrated=false;activityOpened=false;
+    }else{
+      await hydrateProjectAndOpenActivity(project,{reason:'initial'});
+      startupProfile.prewarmMode='full-open';
     }
 
     ready = true;
@@ -559,30 +585,29 @@
 
   async function replaceProjectFromBootstrap(nextBootstrap) {
     if (!nextBootstrap?.project) return;
-    const sameProject = bootstrap?.projectDigest
-      && bootstrap.projectDigest === nextBootstrap.projectDigest
-      && bootstrap.projectPath === nextBootstrap.projectPath;
+    const previousBootstrap=bootstrap;
+    const sameProject = previousBootstrap?.projectDigest
+      && previousBootstrap.projectDigest === nextBootstrap.projectDigest
+      && previousBootstrap.projectPath === nextBootstrap.projectPath;
+    const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true;
     bootstrap = nextBootstrap;
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
-    if (sameProject) {
-      // Typical prewarm -> first-open transition: dependencies, plugin DOM,
-      // Core/plugin state and the project are already mounted. Plotly may still be lazy. Only the lifecycle flag
-      // changed, so do not restore/re-render the project a second time.
-      setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
-      return;
-    }
-    project = ensureProjectShape(nextBootstrap.project);
-    restoreArtifactStore();
     try {
-      await pluginRuntime?.setProject?.(project);
-      await window.DKDSPlugins?.project?.restore?.(project.plugins || {});
-      await window.DKDSPlugins?.activities?.set?.(bootstrap.activityId);
-      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
-      window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'project-replace'});
+      if(promoteFromPrewarm||!projectHydrated||!activityOpened){
+        await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:promoteFromPrewarm?'prewarm-open':'project-hydrate'});
+        setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);
+        // Main keeps a runtime-only prewarmed window hidden until this second
+        // readiness signal, so users never see a half-hydrated analysis page.
+        window.electronAPI?.markActivityWindowReady?.({startupProfile:{...startupProfile,prewarmMode:'hydrated-open'}});
+        return;
+      }
+      if(sameProject){setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);return;}
+      await hydrateProjectAndOpenActivity(nextBootstrap.project,{reason:'project-replace'});
       setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 项目已同步`);
     } catch (err) {
       console.error('[DKDS plugin window project replace]',err);
       setStatus(`项目同步失败：${err.message}`);
+      if(promoteFromPrewarm)window.electronAPI?.markActivityWindowFailed?.({activityId:String(bootstrap?.activityId||''),pluginId:String(bootstrap?.pluginWindow?.pluginId||''),error:err?.stack||err?.message||String(err),startupProfile});
     }
   }
 

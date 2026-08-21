@@ -33,5 +33,6 @@
     "ui.actions",
     "ui.interaction",
     "ui.pages"
-  ]
+  ],
+  "pluginType": "developer"
 }

@@ -1256,7 +1256,7 @@
 
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();
+      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.markerClickSuppressUntil=new Map();
       if(!this.target)throw new Error('ScientificCurveSurface target not found.');
       this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.target.classList.add('dkds-scientific-curve-surface');
@@ -1353,7 +1353,12 @@
       svg.append('g').attr('class','dkds-scientific-axis').attr('transform',`translate(${margin.left},0)`).call(d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined));
       if(this.spec.xTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text(this.spec.xTitle||'X');
       if(this.spec.yTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text(this.spec.yTitle||'Y');
-      const configuredColorValues=this.spec.getColorDomainValues?.();const values=(Array.isArray(configuredColorValues)&&configuredColorValues.some(v=>this.finite(v))?configuredColorValues:curves.map(c=>c.colorValue)).filter(v=>this.finite(v)).map(Number);if(!values.length)values.push(0);const extent=d3.extent(values);if(extent[0]===extent[1]){extent[0]-=1;extent[1]+=1;}const colorScale=this.spec.colorScale?.({d3,extent,curves,values})||d3.scaleSequential(d3.interpolateTurbo).domain(extent);this.spec.onColorScale?.(colorScale,{curves,extent,values});
+      const configuredColorValues=this.spec.getColorDomainValues?.();const values=(Array.isArray(configuredColorValues)&&configuredColorValues.some(v=>this.finite(v))?configuredColorValues:curves.map(c=>c.colorValue)).filter(v=>this.finite(v)).map(Number);if(!values.length)values.push(0);const extent=d3.extent(values);if(extent[0]===extent[1]){extent[0]-=1;extent[1]+=1;}
+      // Color-domain changes are semantic data changes, not selection/drag changes.
+      // Keep the scale stable across geometry-only renders so external legends do
+      // not rebuild or flicker when a marker is dragged or focus changes.
+      const colorScaleKey=`${extent[0]}|${extent[1]}|${values.join(',')}`;let colorScale=this.colorScaleState?.key===colorScaleKey?this.colorScaleState.scale:null;
+      if(!colorScale){colorScale=this.spec.colorScale?.({d3,extent,curves,values})||d3.scaleSequential(d3.interpolateTurbo).domain(extent);this.colorScaleState={key:colorScaleKey,scale:colorScale};this.spec.onColorScale?.(colorScale,{curves,extent,values});}
       for(const curve of curves)this.ensureEntity(curve?.entityId||curve?.id);const selectedCurveId=this.selectedCurveId(),hasCurveSelection=!!selectedCurveId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
       const line=d3.line().defined(p=>this.finite(p.x)&&this.finite(p.y)).x(p=>x(p.x)).y(p=>y(p.y));
       for(const curve of curves){
@@ -1370,14 +1375,14 @@
           .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
           .attr('stroke',m=>selectedMarkerIds.has(String(m.id))?'#111827':(m.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',m=>selectedMarkerIds.has(String(m.id))?3.2:1.8).attr('opacity',m=>{let o=m.accepted!==false?.98:.34;if(hasCurveSelection&&String(m.curveId)!==selectedCurveId)o*=.11;return o;}).style('pointer-events','none');
         const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
-          .on('click',(event,marker)=>{event.stopPropagation();this.spec.onMarkerSelect?.({marker,event,surface:this,additive:!!(event.ctrlKey||event.metaKey)});})
+          .on('click',(event,marker)=>{event.stopPropagation();const id=String(marker?.id||'');if((this.markerClickSuppressUntil.get(id)||0)>Date.now()){event.preventDefault();return;}this.spec.onMarkerSelect?.({marker,event,surface:this,additive:!!(event.ctrlKey||event.metaKey)});})
           .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();this.spec.onMarkerDoubleClick?.({marker,event,surface:this});})
           .on('contextmenu',(event,marker)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.({marker,event,surface:this});else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});})
           .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
         marks.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.mark=this;markerNodes.set(id,row);});
         hits.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.hit=this;markerNodes.set(id,row);});
-        const markerDragState=new Map();
-        hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;markerDragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false});this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));if(state&&!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}const curve=curves.find(c=>String(c.id)===String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx],sourceIndex=Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx;this.spec.onMarkerDrag?.({marker,curve,index:sourceIndex,point:point?.raw||point,event,surface:this});this.updateMarkerVisual(marker,point);}).on('end',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));markerDragState.delete(String(marker.id));if(!state?.moved)return;this.spec.onMarkerDragEnd?.({marker,event,surface:this});this.requestRender('marker-drag-end');}));
+        const markerDragState=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
+        hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;markerDragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false,curve:null,index:-1,point:null});this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));if(state&&!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}const curve=curveById.get(String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx],sourceIndex=Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx;if(state){state.curve=curve;state.index=sourceIndex;state.point=point?.raw||point;}const payload={marker,curve,index:sourceIndex,point:point?.raw||point,event,surface:this};this.spec.onMarkerDragPreview?.(payload);this.spec.onMarkerDrag?.(payload);this.updateMarkerVisual(marker,point);}).on('end',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));markerDragState.delete(String(marker.id));if(!state?.moved)return;const payload={marker,curve:state.curve,index:state.index,point:state.point,event,surface:this};this.markerClickSuppressUntil.set(String(marker.id),Date.now()+160);this.spec.onMarkerDragCommit?.(payload);this.spec.onMarkerDragEnd?.(payload);this.requestRender('marker-drag-end');}));
       }
       const selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id)));
       if(selectedMarker&&this.spec.showWidth?.()!==false){
@@ -1405,19 +1410,17 @@
             for(const side of ['left','right']){
               const xv=side==='left'?windowLeft:windowRight;
               const h=band.append('circle').attr('class','dkds-scientific-width-handle dkds-scientific-window-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',handleY).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);let widthDragMoved=false;
+              const initialWindowLeft=windowLeft,initialWindowRight=windowRight;
               h.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onWidthReset?.({marker:selectedMarker,side,event,surface:this});this.requestRender('width-reset');})
-                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',()=>{widthDragMoved=false;}).on('drag',event=>{
+                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{widthDragMoved=false;this.spec.onWidthDragStart?.({marker:selectedMarker,side,windowLeft,windowRight,event,surface:this});}).on('drag',event=>{
                   if(selectedMarker.locked)return;
                   const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[];
                   if(!curve||!points.length)return;
                   const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];
-                  // Width-handle drag is a visual interaction. Do not call getMarkerWidth()
-                  // again here: for scientific plugins that getter may derive FWHM/baseline
-                  // metrics and would otherwise recompute them on every pointer move.
-                  // The plugin updates its raw analysis-window state in onWidthDrag(); Core
-                  // previews only the snapped geometry and performs one authoritative render
-                  // after onWidthDragEnd commits the scientific edit.
-                  this.spec.onWidthDrag?.({marker:selectedMarker,curve,side,index:Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx,point:point?.raw||point,event,surface:this});
+                  // The analysis window is a Core-owned atomic edit draft. Pointermove
+                  // updates only SVG geometry. Domain state is committed once at end,
+                  // with both endpoints present, so a one-sided drag can never be
+                  // interpreted as an incomplete scientific window.
                   const previewX=Number(point?.x),anchorX=Number(selectedMarker?.x);widthDragMoved=true;
                   let nl=windowLeft,nr=windowRight;
                   if(finite(previewX)){
@@ -1425,7 +1428,8 @@
                   }
                   if(nl>nr)[nl,nr]=[nr,nl];
                   if(finite(nl)&&finite(nr)&&nr>nl){windowLeft=nl;windowRight=nr;band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.selectAll('circle.dkds-scientific-window-handle').attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}
-                }).on('end',event=>{if(!widthDragMoved)return;this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this});this.requestRender('width-drag-end');}));
+                  const payload={marker:selectedMarker,curve,side,index:Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx,point:point?.raw||point,windowLeft,windowRight,initialWindowLeft,initialWindowRight,event,surface:this};this.spec.onWidthDragPreview?.(payload);this.spec.onWidthDrag?.(payload);
+                }).on('end',event=>{if(!widthDragMoved)return;const payload={marker:selectedMarker,side,windowLeft,windowRight,initialWindowLeft,initialWindowRight,event,surface:this};this.spec.onWidthWindowCommit?.(payload);this.spec.onWidthDragEnd?.(payload);this.requestRender('width-drag-end');}));
             }
           }
         }

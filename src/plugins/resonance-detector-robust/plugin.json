@@ -43,5 +43,6 @@
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
     "pluginApi": "^1.8.0"
-  }
+  },
+  "pluginType": "algorithm"
 }

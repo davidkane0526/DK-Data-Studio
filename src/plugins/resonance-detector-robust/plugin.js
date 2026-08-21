@@ -1,6 +1,6 @@
 (() => {
   DKDSPlugins.define({
-    id:'builtin.resonance-detector-robust',
+    id:'builtin.resonance-detector-robust',pluginType:'algorithm',
     name:'Standard Resonance Algorithms',
     version:'2.2.0',
     apiVersion:'1.9.0',requiresCore:["science","analysis.algorithms","modules"],

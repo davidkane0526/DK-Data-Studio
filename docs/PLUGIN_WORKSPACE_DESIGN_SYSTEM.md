@@ -195,13 +195,14 @@ const plot = ctx.ui.scientificPlot.create(svg, {
   setView: next => state.view = next,
   onCurveSelect({curve}) { ... },
   onCurveModifiedClick({curve, x}) { ... },
-  onMarkerDrag({marker, curve, index, point}) { ... },
+  onMarkerDragCommit({marker, curve, index, point}) { /* commit once */ ... },
+  onWidthWindowCommit({marker, windowLeft, windowRight}) { /* atomic pair */ ... },
   onRangeSelect(range) { ... },
   onWheelZoomStart() { ... }
 });
 ```
 
-Core supplies geometry, stable color-domain handling, pointer interaction and zoom lifecycle. A plugin maps those neutral events to scientific operations.
+Core supplies geometry, stable color-domain handling, pointer interaction, drag-vs-click suppression, curve snapping, two-ended width/FWHM editing and zoom lifecycle. Pointer movement remains a Core visual fast path; a plugin maps the one-shot commit callbacks to scientific operations.
 
 ## Visual tokens
 

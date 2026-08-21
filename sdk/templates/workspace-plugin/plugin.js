@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['status','state','project','data.types','ui.dom','ui.components','ui.workspace','ui.actions','ui.pages'];
   DKDSPlugins.define({
-    id:'com.example.workspace',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.10.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
+    id:'com.example.workspace',pluginType:'workbench',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.10.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
     description:'Standalone SDK example using Core workbench/state/data-type APIs.',requiresCore,
     capabilities:['ui.page','ui.analysis-workbench','state.store','data.types'],
     compatibility:{app:'>=3.60.0 <4.0.0',pluginApi:'^1.10.0'}

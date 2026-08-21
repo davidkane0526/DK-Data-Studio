@@ -54,6 +54,8 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
   if (!['1.9.0','1.10.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0 or 1.10.0`);
+  const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
+  if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);
   else for(const requirement of m.requiresCore)if(!coreRequirements.has(String(requirement)))fail(`${name}: unknown Core requirement ${requirement}`);
   const algorithmCategories=Array.isArray(m.algorithmCategories)?m.algorithmCategories.map(value=>String(value||'').trim()).filter(Boolean):[];
@@ -104,6 +106,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
     vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:`${name}/${m.entry||'plugin.js'}`,timeout:500});
     if(!runtimeManifest)fail(`${name}: entry did not register a runtime manifest`);
     else {
+      if(String(runtimeManifest.pluginType||'')!==String(m.pluginType||''))fail(`${name}: runtime pluginType must exactly match plugin.json`);
       if(JSON.stringify(runtimeManifest.requiresCore||[])!==JSON.stringify(m.requiresCore||[]))fail(`${name}: runtime requiresCore must exactly match plugin.json`);
       if(Boolean(runtimeManifest.algorithmProvider) !== Boolean(m.algorithmProvider))fail(`${name}: runtime algorithmProvider must exactly match plugin.json`);
       if(JSON.stringify(runtimeManifest.algorithmCategories||[])!==JSON.stringify(m.algorithmCategories||[]))fail(`${name}: runtime algorithmCategories must exactly match plugin.json`);

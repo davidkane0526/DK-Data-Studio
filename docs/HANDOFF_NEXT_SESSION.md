@@ -1,39 +1,64 @@
-# Next Session Handoff — v3.61.2
+# Next Session Handoff — v3.61.3
 
 ## Current baseline
 
-- Application: `3.61.2`
-- Intended branch: `fix/v3.61.2-interaction-latency`
-- Architecture baseline: v3.58 Host Neutralization, v3.59 Table/Interaction foundation and v3.60 Scientific Reactive Dependency remain intact. Core stays domain-neutral; scientific consistency is transaction/dependency-driven rather than plugin-local refresh chains.
-- Public Plugin API / standalone SDK remains `1.10.0`; v3.61 changes renderer/runtime performance, not the public plugin contract. SDK minimum application version therefore remains `3.60.0`.
+- Application: `3.61.3`
+- Intended branch: `fix/v3.61.3-core-interaction-sdk`
+- Public Plugin API / standalone SDK: `1.10.0`
+- Architecture baseline remains Host Neutralization + Table/Interaction foundation + Scientific Reactive Dependency. Core owns interaction mechanics and rendering infrastructure; plugins own domain state, scientific intent and algorithm selection.
 
+## Core direct-manipulation contract
 
-## v3.61.2 interaction correction
+1. `ScientificCurveSurface` owns pointer capture, curve snapping, marker geometry, FWHM handle geometry, zoom/range behavior and post-drag click suppression.
+2. Pointer-rate movement is visual only. It must not mutate scientific state, change curve selection/focus, rebuild legends, or run algorithms.
+3. Peak edits are committed once through `onMarkerDragCommit()` at gesture end. A marker drag must not implicitly select its curve.
+4. Width/FWHM editing is an atomic full-window transaction. Core passes both `windowLeft` and `windowRight` through `onWidthWindowCommit()` even when only one handle moved.
+5. Color-scale/legend notification is semantic-domain driven. Focus/highlight/drag renders must reuse the existing scale and must not notify the plugin unless the color domain actually changed.
+6. Plugins must not create private D3/Plotly/DOM/timer interaction paths. First-party boundary checks reject raw `window.d3`, raw Plotly, direct DOM access, direct timers and host/Electron bridges.
+7. Legacy preview callbacks remain for compatibility, but new plugins should implement commit callbacks and let Core provide the interaction loop.
 
-- Resonance `Ctrl+Z` is a plugin-owned `ui.shortcuts` contribution and calls the same `undoLastAction()` command as the UI undo action. Keep the host Edit Contract as a universal fallback, but do not make domain undo correctness depend on active-window routing.
-- `ScientificCurveSurface.nearestIndex()` caches ascending/descending/unordered metadata per normalized point array. Never reintroduce a full sweep-order scan inside pointermove.
-- Marker pointermove uses cached rendered marker nodes. High-frequency visual feedback must update only the active geometry, not reselect/filter the full marker layer.
-- Interactive peak/FWHM commits invalidate metric state with `refresh:false` first, then resolve through `peakMetrics()`. Synchronous providers therefore commit before the authoritative end render; async providers remain supported. Manual FWHM window coordinates are also used as visual fallback while an async provider is pending.
-- Dedicated-window prewarm is a plugin-owned manifest policy, not a global built-in memory rule. TER declares `window.prewarm: true` because its renderer + Plotly cold-start cost is material; plugins with lower first-open cost may keep prewarm disabled. Explicit user prewarm preferences continue to override manifest defaults.
+## Dedicated TOP prewarm contract
 
-## v3.61.1 runtime correction
+- Prewarm is manifest-driven and generic; no TER-specific branch exists in Core.
+- Hidden prewarm is **runtime-only**: load Core dependencies, plugin code/activation, algorithm providers and declared heavy chart runtime such as Plotly.
+- Hidden prewarm must **not** restore the project, open/activate the analysis activity, calculate domain results or render project views.
+- Promotion from a prewarmed hidden renderer to a real open is two-stage: send the real bootstrap, hydrate/open activity, then emit a second ready before the window is shown.
+- Ordinary non-prewarmed cold-open retains non-blocking Plotly preload so light startup is not unnecessarily serialized behind chart parsing.
+- Dedicated auxiliary windows use `backgroundThrottling:false` so hidden runtime warmup can actually finish before first user open.
 
-- `plotly.js-cartesian-dist-min` must be loaded from `plotly-cartesian.min.js`. Do not use the full distribution filename `plotly.min.js` with the Cartesian package.
-- Main renderer, Chart Runtime, dedicated TOP and mobile vendor sync must keep the exact same Cartesian entry contract.
-- `scripts/test-plotly-cartesian-entry-v3611.js` is a required regression gate; when dependencies are installed it also asserts the actual bundle file exists.
+## TER calculation semantics
 
-## v3.61 performance rules
+- TER calculation has one first-party invocation path: the `计算 TER` action / `Ctrl+Enter` shortcut calls `T.calculate()`.
+- Project restore may contain and display a previously persisted TER result. That is result restoration, not recalculation.
+- Runtime-only hidden prewarm does not restore or draw persisted TER data. If a fresh project with no saved TER result executes calculation before the explicit action, treat that as a regression.
 
-1. High-frequency pointer movement must not run scientific algorithms. D3 edit surfaces provide immediate geometric feedback during drag and commit one scientific edit when the gesture ends.
-2. FWHM-window dragging must never call `getMarkerWidth()` from the pointermove loop. The metric getter may be evaluated for authoritative render state, but not for every drag event.
-3. Repeated immutable/source geometry used only for clamping or lookup should be cached by source object identity when it is on an interaction hot path; do not create project-wide caches for trivial values.
-4. Multiple heavy Plotly views must render through Core `ScientificPlot`. Plugins may declare relative `renderPriority` (`immediate`, `frame`, `idle`); plugins must not create their own timers/queues to serialize charts.
-5. The primary user-visible result should be immediate. Secondary expensive views are frame/idle work and are coalesced by view so obsolete queued renders are replaced rather than all executed.
-6. Selection/highlight remains lightweight `restyle/relayout`; do not use the render scheduler as an excuse to rebuild a full multi-trace topology for ordinary linked selection.
-7. Desktop/mobile use `plotly.js-cartesian-dist-min` while DKDS only requires Cartesian scatter/heatmap Plotly traces. If a future plugin genuinely requires a trace outside that bundle, extend renderer capability loading deliberately rather than silently restoring the full bundle for every plugin.
-8. Dedicated TOP starts a non-awaited Plotly preload immediately after lightweight dependency setup, before plugin activity-open, while ready still never awaits Plotly. Post-ready idle warmup remains a fallback/reuse point. Do not move Plotly back into the blocking dependency phase or add plugin-specific preload code.
+## Plugin manifest and manager categories
 
-## Validation gates
+Built-in and external plugins use the explicit `pluginType` contract:
+
+- `foundation` — 基座/系统能力
+- `data` — 数据接入与数据管理
+- `algorithm` — 科学/分析算法 Provider
+- `workbench` — 交互式分析工作台
+- `task` — 任务/自动化能力
+- `extension` — 通用扩展
+- `developer` — 开发模板/内部开发能力
+
+`plugin.json` / packaged manifest is the machine-readable metadata source of truth. The generated built-in plugin index carries that manifest and Core merges it into the executable `plugin.js` registration before activation, matching the external package model. `plugin.js` registers executable behavior; it must not become a second independent policy database.
+
+## SDK interaction requirement
+
+A third-party plugin using `ctx.ui.scientificPlot.ScientificCurveSurface` must be able to obtain the same base interaction mechanics as first-party scientific plugins without copying resonance-specific code. The public declarations include:
+
+- `DKDSScientificCurveSurfaceSpec`
+- `onMarkerDragPreview`
+- `onMarkerDragCommit`
+- `onWidthDragPreview`
+- `onWidthWindowCommit`
+
+The plugin supplies curves/markers and domain commit handlers; Core supplies direct manipulation, snapping, visual feedback, handle editing and selection-safe gesture mechanics.
+
+## Required validation gates
 
 - `npm run check`
 - `npm test`
@@ -43,6 +68,7 @@
 - `npm run table-surface:test`
 - `npm run host-neutralization:test`
 - `git diff --check`
-- Built-in Automation Test Center: `Performance / Scientific multi-view render scheduling`
+- `node scripts/check-plugin-boundaries.js`
+- `node scripts/validate-plugins.js`
 
-Performance work must be justified by a measured/identified hot path. Avoid speculative cache layers, worker abstractions, renderer pools or fallback branches unless a real first-party/external plugin workload demonstrates the need.
+Do not solve future interaction regressions by adding plugin-specific timers, caches, selection flags or Plotly/D3 paths. First determine which Core Surface/SDK contract is missing and fix it there.

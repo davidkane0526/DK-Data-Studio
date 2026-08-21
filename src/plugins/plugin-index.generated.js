@@ -9,14 +9,151 @@ window.DKDS_BUILTIN_PLUGINS = [
       "plugins/data-center/feature-runtime.js",
       "plugins/data-center/super-layout.js",
       "plugins/data-center/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.data-center",
+      "name": "Data Center",
+      "version": "1.11.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "runtime",
+        "events",
+        "status",
+        "io",
+        "modules",
+        "capabilities",
+        "state",
+        "workspace",
+        "parameters",
+        "data.artifacts",
+        "data.entities",
+        "data.types",
+        "data.model",
+        "data.formula",
+        "workflow",
+        "charts",
+        "charts.providers",
+        "ui.dom",
+        "ui.workspace",
+        "ui.plot-views",
+        "ui.table",
+        "ui.actions",
+        "ui.selection",
+        "ui.interaction",
+        "ui.menus",
+        "ui.context-menus",
+        "ui.activities",
+        "ui.top-workspace",
+        "ui.pages",
+        "ui.styles",
+        "ui.portable",
+        "ui.scientific-plot"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 20,
+      "description": "Data/workflow center using shared Controller/View/Feature runtime and core workbench infrastructure.",
+      "capabilities": [
+        "ui.activity",
+        "ui.page",
+        "data.artifacts",
+        "data.formula",
+        "workflow.processor",
+        "workflow.analyzer",
+        "workflow.recipe",
+        "chart.provider",
+        "project.slice",
+        "ui.top-workspace",
+        "ui.infrastructure",
+        "ui.portable",
+        "ui.dynamic-actions",
+        "ui.shortcuts",
+        "state.store",
+        "ui.analysis-workbench",
+        "ui.primary",
+        "ui.prime",
+        "ui.sub",
+        "runtime.capabilities",
+        "ui.analysis-surface",
+        "runtime.capabilities.v2",
+        "ui.interaction",
+        "data.types",
+        "ui.plugin-workspace",
+        "ui.scientific-plot",
+        "ui.table"
+      ],
+      "source": "builtin",
+      "window": {
+        "activity": "data-center",
+        "title": "数据中心",
+        "width": 1480,
+        "height": 940,
+        "minWidth": 920,
+        "minHeight": 650,
+        "dependencies": [
+          "plotly",
+          "data-model",
+          "formula-engine",
+          "parameter-schema",
+          "workflow-engine",
+          "platform",
+          "state-store",
+          "ui-infrastructure",
+          "plugin-kernel"
+        ],
+        "prewarm": false,
+        "reuse": true,
+        "persistence": "project",
+        "scripts": [
+          "controller.js",
+          "shared-views.js",
+          "feature-runtime.js",
+          "super-layout.js"
+        ]
+      },
+      "workspace": {
+        "role": "top",
+        "activity": "data-center",
+        "icon": "▦",
+        "title": "数据中心"
+      },
+      "scripts": [
+        "controller.js",
+        "shared-views.js",
+        "feature-runtime.js",
+        "super-layout.js",
+        "plugin.js"
+      ],
+      "pluginType": "data"
+    }
   },
   {
     "id": "builtin.flexible-import",
     "entry": "plugins/flexible-import/plugin.js",
     "scripts": [
       "plugins/flexible-import/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.flexible-import",
+      "name": "Flexible Text Import",
+      "version": "1.0.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "science",
+        "data.flow",
+        "data.model"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 10,
+      "description": "Generic text/multicolumn import provider used by the import workbench.",
+      "capabilities": [
+        "data.importer",
+        "data.inspector"
+      ],
+      "pluginType": "data",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.pulse-analysis",
@@ -28,7 +165,110 @@ window.DKDS_BUILTIN_PLUGINS = [
       "plugins/pulse-analysis/feature-runtime.js",
       "plugins/pulse-analysis/super-layout.js",
       "plugins/pulse-analysis/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.pulse-analysis",
+      "name": "Pulse / Read Analysis",
+      "version": "2.9.1",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "runtime",
+        "events",
+        "status",
+        "io",
+        "science",
+        "services",
+        "modules",
+        "project",
+        "workspace",
+        "data.types",
+        "analysis.providers",
+        "charts",
+        "ui.dom",
+        "ui.workspace",
+        "ui.plot-views",
+        "ui.actions",
+        "ui.selection",
+        "ui.interaction",
+        "ui.menus",
+        "ui.activities",
+        "ui.top-workspace",
+        "ui.pages",
+        "ui.portable",
+        "ui.scientific-plot"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 140,
+      "description": "Pulse/read analysis using shared Controller/View/Feature runtime and core workbench infrastructure.",
+      "capabilities": [
+        "ui.activity",
+        "ui.page",
+        "analysis.pulse",
+        "project.slice",
+        "chart.timeseries",
+        "ui.top-workspace",
+        "ui.infrastructure",
+        "ui.portable",
+        "ui.dynamic-actions",
+        "ui.shortcuts",
+        "ui.analysis-workbench",
+        "ui.primary",
+        "ui.prime",
+        "ui.sub",
+        "runtime.capabilities",
+        "ui.analysis-surface",
+        "runtime.capabilities.v2",
+        "ui.interaction",
+        "data.types",
+        "ui.plugin-workspace",
+        "ui.scientific-plot"
+      ],
+      "window": {
+        "activity": "pulse",
+        "runtime": "window-runtime.js",
+        "title": "脉冲分析",
+        "width": 1480,
+        "height": 940,
+        "minWidth": 920,
+        "minHeight": 650,
+        "dependencies": [
+          "plotly",
+          "science-common",
+          "science-import",
+          "science-pulse",
+          "platform",
+          "ui-infrastructure",
+          "plugin-kernel"
+        ],
+        "prewarm": false,
+        "reuse": true,
+        "persistence": "project",
+        "scripts": [
+          "controller.js",
+          "shared-views.js",
+          "feature-runtime.js",
+          "analysis-service.js",
+          "super-layout.js"
+        ]
+      },
+      "workspace": {
+        "role": "top",
+        "activity": "pulse",
+        "icon": "▥",
+        "title": "脉冲分析"
+      },
+      "scripts": [
+        "controller.js",
+        "shared-views.js",
+        "analysis-service.js",
+        "feature-runtime.js",
+        "super-layout.js",
+        "plugin.js"
+      ],
+      "pluginType": "workbench",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.resonance-detector-robust",
@@ -36,7 +276,56 @@ window.DKDS_BUILTIN_PLUGINS = [
     "scripts": [
       "plugins/resonance-detector-robust/algorithm.js",
       "plugins/resonance-detector-robust/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.resonance-detector-robust",
+      "name": "Standard Resonance Algorithms",
+      "version": "2.2.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "science",
+        "analysis.algorithms",
+        "modules"
+      ],
+      "entry": "plugin.js",
+      "scripts": [
+        "algorithm.js",
+        "plugin.js"
+      ],
+      "enabled": true,
+      "order": 80,
+      "description": "Versioned built-in resonance peak detection and FWHM/peak-metrics algorithm providers. Implementations are plugin-local and replaceable.",
+      "capabilities": [
+        "analysis.algorithm",
+        "analysis.peak-detector",
+        "analysis.peak-metrics"
+      ],
+      "algorithmProvider": true,
+      "algorithmCategories": [
+        "peak-detector",
+        "peak-metrics"
+      ],
+      "algorithmProvides": [
+        {
+          "category": "peak-detector",
+          "id": "robust-ricker-v1",
+          "version": "1.0.0",
+          "title": "稳健多通道 / 多尺度"
+        },
+        {
+          "category": "peak-metrics",
+          "id": "baseline-fwhm-v1",
+          "version": "1.0.0",
+          "title": "局部基线 FWHM"
+        }
+      ],
+      "compatibility": {
+        "app": ">=3.55.0 <4.0.0",
+        "pluginApi": "^1.8.0"
+      },
+      "pluginType": "algorithm",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.resonance-workbench",
@@ -47,14 +336,164 @@ window.DKDS_BUILTIN_PLUGINS = [
       "plugins/resonance-workbench/feature-runtime.js",
       "plugins/resonance-workbench/super-layout.js",
       "plugins/resonance-workbench/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.resonance-workbench",
+      "name": "Resonance Workbench",
+      "version": "3.61.3",
+      "apiVersion": "1.10.0",
+      "requiresCore": [
+        "runtime",
+        "events",
+        "status",
+        "io",
+        "science",
+        "performance",
+        "services",
+        "modules",
+        "capabilities",
+        "project",
+        "workspace",
+        "parameters",
+        "data.artifacts",
+        "data.entities",
+        "data.types",
+        "data.reactive",
+        "data.pipeline",
+        "data.transforms",
+        "analysis.algorithms",
+        "charts",
+        "ui.dom",
+        "ui.workspace",
+        "ui.actions",
+        "ui.selection",
+        "ui.interaction",
+        "ui.menus",
+        "ui.context-menus",
+        "ui.activities",
+        "ui.top-workspace",
+        "ui.toolbar",
+        "ui.shortcuts",
+        "ui.pages",
+        "ui.styles",
+        "ui.edit",
+        "ui.scientific-plot",
+        "ui.settings"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 100,
+      "description": "Reference PluginWorkspace implementation: GRS-parity resonance semantics on Core ScientificCurveSurface; SUPER and TOP mount the same host-invariant workspace.",
+      "capabilities": [
+        "ui.activity",
+        "ui.sidebar",
+        "ui.inspector",
+        "ui.group-charts",
+        "ui.main-tools",
+        "analysis.resonance",
+        "chart.trend",
+        "ui.selection-menu",
+        "ui.top-workspace",
+        "ui.prime",
+        "ui.sub",
+        "ui.infrastructure",
+        "ui.views",
+        "ui.analysis-workbench",
+        "ui.primary",
+        "runtime.capabilities",
+        "ui.analysis-surface",
+        "runtime.capabilities.v2",
+        "ui.interaction",
+        "data.types",
+        "data.artifacts",
+        "data.pipeline",
+        "ui.plugin-workspace",
+        "ui.scientific-plot",
+        "ui.settings"
+      ],
+      "workspace": {
+        "role": "top",
+        "activity": "resonance",
+        "icon": "∿",
+        "title": "共振分析",
+        "defaultSuper": true
+      },
+      "window": {
+        "activity": "resonance",
+        "title": "共振分析",
+        "width": 1480,
+        "height": 940,
+        "minWidth": 920,
+        "minHeight": 650,
+        "prewarm": false,
+        "reuse": true,
+        "persistence": "project",
+        "runtime": "window-runtime.js",
+        "dependencies": [
+          "data-model",
+          "plotly",
+          "d3",
+          "science-common",
+          "science-presets",
+          "science-import",
+          "science-peaks",
+          "science-identity",
+          "science-physics",
+          "science-gate",
+          "science-ter",
+          "platform",
+          "ui-infrastructure",
+          "plugin-kernel"
+        ],
+        "scripts": [
+          "workbench-shared.js",
+          "view-components.js",
+          "feature-runtime.js"
+        ]
+      },
+      "scripts": [
+        "workbench-shared.js",
+        "view-components.js",
+        "feature-runtime.js",
+        "super-layout.js",
+        "plugin.js"
+      ],
+      "algorithmCategories": [
+        "peak-detector",
+        "peak-metrics",
+        "transport-transform",
+        "transport-scalar-field",
+        "ter-analysis"
+      ],
+      "pluginType": "workbench",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.shell-navigation",
     "entry": "plugins/shell-navigation/plugin.js",
     "scripts": [
       "plugins/shell-navigation/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.shell-navigation",
+      "name": "Shell Navigation",
+      "version": "1.0.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "recipes"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 6,
+      "description": "Unified top-level workspace navigation, responsive child-action overflow, and plugin-manager readability polish.",
+      "capabilities": [
+        "ui.styles",
+        "ui.activity"
+      ],
+      "pluginType": "foundation",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.standard-transport-algorithms",
@@ -62,14 +501,131 @@ window.DKDS_BUILTIN_PLUGINS = [
     "scripts": [
       "plugins/standard-transport-algorithms/algorithm.js",
       "plugins/standard-transport-algorithms/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.standard-transport-algorithms",
+      "name": "Standard Transport Algorithms",
+      "version": "1.1.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "analysis.algorithms",
+        "modules"
+      ],
+      "entry": "plugin.js",
+      "scripts": [
+        "algorithm.js",
+        "plugin.js"
+      ],
+      "enabled": true,
+      "order": 70,
+      "description": "Versioned local transport transform, scalar-field and TER numerical Algorithm Providers.",
+      "capabilities": [
+        "analysis.algorithm",
+        "analysis.transport-transform",
+        "analysis.transport-scalar-field",
+        "analysis.ter"
+      ],
+      "algorithmProvider": true,
+      "algorithmCategories": [
+        "transport-transform",
+        "transport-scalar-field",
+        "ter-analysis"
+      ],
+      "algorithmProvides": [
+        {
+          "category": "transport-transform",
+          "id": "transport.raw",
+          "version": "1.0.0",
+          "title": "原始 I–V"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.detrend",
+          "version": "1.0.0",
+          "title": "去背景 I−Ibg"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.didv",
+          "version": "1.0.0",
+          "title": "dI/dV（微分电导）"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.d2idv2",
+          "version": "1.0.0",
+          "title": "d²I/dV²"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.dlog",
+          "version": "1.0.0",
+          "title": "d ln|I|/dV"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.dvdi",
+          "version": "1.0.0",
+          "title": "dV/dI（微分电阻）"
+        },
+        {
+          "category": "transport-transform",
+          "id": "transport.resistance",
+          "version": "1.0.0",
+          "title": "R = |V/I|"
+        },
+        {
+          "category": "transport-scalar-field",
+          "id": "transport.scalar-field",
+          "version": "1.0.0",
+          "title": "标准 Vg–Vd 标量场投影"
+        },
+        {
+          "category": "ter-analysis",
+          "id": "ter.high-low-ratio",
+          "version": "1.0.0",
+          "title": "TER 高低电阻比"
+        }
+      ],
+      "compatibility": {
+        "app": ">=3.55.0 <4.0.0",
+        "pluginApi": "^1.8.0"
+      },
+      "pluginType": "algorithm",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.status-monitor",
     "entry": "plugins/status-monitor/plugin.js",
     "scripts": [
       "plugins/status-monitor/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.status-monitor",
+      "name": "Status Monitor",
+      "version": "1.0.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "runtime",
+        "events",
+        "status",
+        "services",
+        "ui.dom",
+        "ui.status-bar"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 7,
+      "description": "Unified bottom status-bar monitor for runtime memory, client mode, and LAN web service state.",
+      "capabilities": [
+        "ui.status-bar",
+        "system.runtime-status",
+        "lan.web-status"
+      ],
+      "source": "builtin",
+      "pluginType": "foundation"
+    }
   },
   {
     "id": "builtin.ter-analysis",
@@ -81,14 +637,161 @@ window.DKDS_BUILTIN_PLUGINS = [
       "plugins/ter-analysis/feature-runtime.js",
       "plugins/ter-analysis/super-layout.js",
       "plugins/ter-analysis/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.ter-analysis",
+      "name": "TER Analysis",
+      "version": "3.12.1",
+      "apiVersion": "1.10.0",
+      "requiresCore": [
+        "runtime",
+        "events",
+        "status",
+        "io",
+        "science",
+        "performance",
+        "services",
+        "modules",
+        "project",
+        "workspace",
+        "data.artifacts",
+        "data.types",
+        "data.reactive",
+        "data.pipeline",
+        "data.transforms",
+        "analysis.providers",
+        "analysis.algorithms",
+        "charts",
+        "parameters",
+        "ui.dom",
+        "ui.workspace",
+        "ui.plot-views",
+        "ui.actions",
+        "ui.selection",
+        "ui.interaction",
+        "ui.menus",
+        "ui.activities",
+        "ui.top-workspace",
+        "ui.shortcuts",
+        "ui.pages",
+        "ui.styles",
+        "ui.portable",
+        "ui.scientific-plot"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 120,
+      "description": "TER analysis using shared Controller/View/Feature runtime and core workbench infrastructure.",
+      "capabilities": [
+        "ui.activity",
+        "ui.page",
+        "analysis.ter",
+        "chart.heatmap",
+        "chart.transformed-heatmap",
+        "ui.top-workspace",
+        "chart.resistance-voltage",
+        "ui.linked-selection",
+        "ui.sticky-inspector",
+        "ui.chart-layout",
+        "ui.keyboard-adjustment",
+        "chart.export",
+        "ui.infrastructure",
+        "ui.portable",
+        "ui.dynamic-actions",
+        "ui.shortcuts",
+        "ui.analysis-workbench",
+        "ui.primary",
+        "ui.prime",
+        "ui.sub",
+        "runtime.capabilities",
+        "ui.analysis-surface",
+        "runtime.capabilities.v2",
+        "ui.interaction",
+        "data.types",
+        "data.artifacts",
+        "data.pipeline",
+        "ui.plugin-workspace",
+        "ui.scientific-plot"
+      ],
+      "window": {
+        "activity": "ter",
+        "runtime": "window-runtime.js",
+        "title": "TER 分析",
+        "width": 1480,
+        "height": 940,
+        "minWidth": 920,
+        "minHeight": 650,
+        "dependencies": [
+          "data-model",
+          "plotly",
+          "science-common",
+          "science-peaks",
+          "science-ter",
+          "parameter-schema",
+          "platform",
+          "ui-infrastructure",
+          "plugin-kernel"
+        ],
+        "prewarm": true,
+        "reuse": true,
+        "persistence": "project",
+        "scripts": [
+          "controller.js",
+          "shared-views.js",
+          "feature-runtime.js",
+          "analysis-service.js",
+          "super-layout.js"
+        ]
+      },
+      "workspace": {
+        "role": "top",
+        "activity": "ter",
+        "icon": "▧",
+        "title": "TER 分析"
+      },
+      "scripts": [
+        "controller.js",
+        "shared-views.js",
+        "analysis-service.js",
+        "feature-runtime.js",
+        "super-layout.js",
+        "plugin.js"
+      ],
+      "algorithmCategories": [
+        "transport-transform",
+        "transport-scalar-field",
+        "ter-analysis"
+      ],
+      "pluginType": "workbench",
+      "source": "builtin"
+    }
   },
   {
     "id": "builtin.workspace-safeguards",
     "entry": "plugins/workspace-safeguards/plugin.js",
     "scripts": [
       "plugins/workspace-safeguards/plugin.js"
-    ]
+    ],
+    "manifest": {
+      "id": "builtin.workspace-safeguards",
+      "name": "Workspace Safeguards",
+      "version": "1.0.0",
+      "apiVersion": "1.9.0",
+      "requiresCore": [
+        "recipes"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 5,
+      "description": "Adaptive shell layout, incremental-import result preservation, and duplicate-name warnings.",
+      "capabilities": [
+        "ui.styles",
+        "workspace.integrity",
+        "data.import"
+      ],
+      "pluginType": "foundation",
+      "source": "builtin"
+    }
   }
 ];
 window.DKDS_BUILTIN_PLUGIN_ENTRIES = [

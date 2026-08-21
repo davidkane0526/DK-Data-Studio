@@ -20,5 +20,6 @@
     "system.runtime-status",
     "lan.web-status"
   ],
-  "source": "builtin"
+  "source": "builtin",
+  "pluginType": "foundation"
 }

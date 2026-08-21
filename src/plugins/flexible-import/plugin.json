@@ -15,5 +15,6 @@
   "capabilities": [
     "data.importer",
     "data.inspector"
-  ]
+  ],
+  "pluginType": "data"
 }

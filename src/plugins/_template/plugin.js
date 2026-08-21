@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.pages'];
   DKDSPlugins.define({
-    id:'example.plugin',name:'Example Plugin',version:'0.4.0',apiVersion:'1.10.0',requiresCore,order:900,
+    id:'example.plugin',pluginType:'developer',name:'Example Plugin',version:'0.4.0',apiVersion:'1.10.0',requiresCore,order:900,
     capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.interaction','data.types','state.store','workflow.processor']
   }, async ctx => {
     const dom=ctx.ui.dom;

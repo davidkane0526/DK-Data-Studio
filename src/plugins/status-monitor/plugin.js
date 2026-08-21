@@ -1,6 +1,6 @@
 (() => {
   DKDSPlugins.define({
-    id:'builtin.status-monitor',
+    id:'builtin.status-monitor',pluginType:'foundation',
     name:'Status Monitor',
     version:'1.0.0',
     apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar"],

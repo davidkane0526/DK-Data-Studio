@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.10.0"` and declare every Core surface they use in `requiresCore`.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.10.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Validate
 
@@ -41,6 +41,8 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 - `contract.json` — SDK/API/package versions.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
+
+For direct scientific curve interaction, use `ctx.ui.scientificPlot.create(...)`. Core owns pointer-rate marker movement, nearest-point snapping, range/zoom gestures, focus styling and width/FWHM handle geometry. Use `onMarkerDragCommit` and `onWidthWindowCommit` to persist domain changes once at gesture end; `onWidthWindowCommit` always provides both window endpoints, so plugins must not implement private one-handle drag state.
 
 Persistent plugin state must be registered through `ctx.project.registerSlice(...)`. `restore` receives only the plugin's canonical namespaced slice; old application root fields are migrated by DK Data Studio before plugin runtime starts. A missing slice is fresh/reset state, not a signal to inspect the project root.
 

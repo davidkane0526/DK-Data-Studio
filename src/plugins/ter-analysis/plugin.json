@@ -121,5 +121,6 @@
     "transport-transform",
     "transport-scalar-field",
     "ter-analysis"
-  ]
+  ],
+  "pluginType": "workbench"
 }

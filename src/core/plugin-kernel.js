@@ -1859,6 +1859,19 @@
     eventEmit('plugin:state-changed', { id, reason:'deactivated' });
   }
 
+  function pluginTypeForManifest(manifest={}) {
+    const declared=String(manifest?.pluginType||'').trim().toLowerCase();
+    const allowed=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
+    if(allowed.has(declared))return declared;
+    // Backward compatibility for older external packages that predate pluginType.
+    // New SDK packages should declare it explicitly; inference is only a safe UI fallback.
+    const caps=Array.isArray(manifest?.capabilities)?manifest.capabilities:[];
+    if(manifest?.algorithmProvider===true||caps.some(cap=>String(cap).startsWith('analysis.algorithm')))return 'algorithm';
+    if(caps.some(cap=>String(cap).startsWith('data.import')||String(cap)==='data.model'||String(cap)==='data.formula'))return 'data';
+    if(manifest?.workspace?.role==='top')return 'workbench';
+    return manifest?.source==='builtin'?'foundation':'extension';
+  }
+
   function pluginStateRow(definition) {
     const m = definition.manifest;
     const enabled = isDefinitionEnabled(definition);
@@ -1881,6 +1894,7 @@
       status,
       error,
       source:m.source || 'builtin',
+      pluginType:pluginTypeForManifest(m),
       capabilities:Array.isArray(m.capabilities)?m.capabilities.slice():[],
       contributionCounts,
       preference:preferenceFor(m.id),
@@ -2140,6 +2154,13 @@
         }
         const scripts=Array.isArray(row?.scripts)&&row.scripts.length?row.scripts:[row.entry];
         for(const script of scripts)await loadScript(script);
+        // Built-ins and .dkplugin packages use the same two-layer manifest model:
+        // plugin.js registers executable behavior, while plugin.json is the
+        // machine-readable source of truth for window/category/package metadata.
+        // Merge it before activation so Plugin Manager and Core lifecycle never
+        // depend on hand-duplicated runtime-only fields.
+        const definition=id?definitionById(id):null;
+        if(definition&&row?.manifest&&typeof row.manifest==='object')definition.manifest={...definition.manifest,...row.manifest,source:'builtin'};
       }
       return definitions.length;
     })();

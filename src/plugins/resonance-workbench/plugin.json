@@ -1,7 +1,7 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.61.2",
+  "version": "3.61.3",
   "apiVersion": "1.10.0",
   "requiresCore": [
     "runtime",
@@ -125,5 +125,6 @@
     "transport-transform",
     "transport-scalar-field",
     "ter-analysis"
-  ]
+  ],
+  "pluginType": "workbench"
 }

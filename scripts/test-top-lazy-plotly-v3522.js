@@ -9,7 +9,9 @@ const charts=read('src/core/chart-runtime.js');
 const ui=read('src/core/ui-infrastructure.js');
 const automation=read('src/core/automation-test-runtime.js');
 assert(runtime.includes("if (key==='plotly') continue"),'Dedicated TOP must keep Plotly out of blocking dependency loads.');
-assert(runtime.includes('beginDeclaredChartPreload')&&runtime.includes("ensurePlotly({reason:'startup-parallel-preload'})")&&runtime.includes('scheduleDeclaredChartWarmup')&&runtime.includes("ensurePlotly({reason:'idle-preload'})"),'Dedicated TOP must start a non-awaited Plotly preload before activity-open and retain post-ready warmup fallback.');
+assert(runtime.includes('beginDeclaredChartPreload')&&runtime.includes("ensurePlotly({reason:'startup-parallel-preload'})")&&runtime.includes('scheduleDeclaredChartWarmup')&&runtime.includes("ensurePlotly({reason:'idle-preload'})"),'Ordinary dedicated TOP cold-open must retain non-blocking Plotly preload plus post-ready warmup fallback.');
+assert(runtime.includes('ensureDeclaredChartWarm')&&runtime.includes("ensurePlotly({reason:'dedicated-prewarm-runtime'})")&&runtime.includes('if(bootstrap.prewarm===true)'),'Declared hidden prewarm must explicitly await the shared chart runtime.');
+assert(/if\(bootstrap\.prewarm===true\)\s*\{[\s\S]*ensureDeclaredChartWarm[\s\S]*prewarmMode='runtime-only'[\s\S]*\}else\{[\s\S]*hydrateProjectAndOpenActivity/.test(runtime),'Runtime-only prewarm must branch before project hydration/activity open.');
 assert(runtime.includes("configureRuntime?.({plotlyAllowed:requestedPlotly")&&runtime.includes('startupProfile.chartRuntime'),'Dedicated TOP must preserve the logical Plotly contract and report lazy runtime state.');
 assert(charts.includes("const VERSION='1.4.0'")&&charts.includes('function ensurePlotly(options={})')&&charts.includes('plotlyPromise'),'Core Chart Runtime v1.4.0 must own one shared lazy Plotly loader promise.');
 assert(runtime.includes('plotly.js-cartesian-dist-min')&&charts.includes('plotly.js-cartesian-dist-min'),'Dedicated TOP and Core Chart Runtime must use the smaller Cartesian Plotly bundle for DKDS 2D scientific views.');
@@ -21,4 +23,4 @@ for(const activity of ['data-center','pulse','ter','resonance'])assert(windows.g
 const version=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);
 assert(version.length===3&&(version[0]>1||(version[0]===1&&(version[1]>7||(version[1]===7&&version[2]>=2)))),'Automation runner must be v1.7.2+ for lazy Plotly verification.');
 assert(automation.includes("'top.plotly-lazy'")&&automation.includes('topLazyPlotly:'),'Built-app automation must verify and export the TOP lazy Plotly contract.');
-console.log('v3.52.2 dedicated TOP lazy Plotly architecture checks passed.');
+console.log('v3.61.3 dedicated TOP lazy/runtime-only Plotly architecture checks passed.');

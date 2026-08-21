@@ -601,10 +601,6 @@
         return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:domain.slice();
       }
       function peakColor(p){return p?.customColor||colorForPeakOrder(p?.peakOrder||1,p?.direction||1);}
-      function d3SymbolType(algorithm){
-        const d3=window.d3;return ({raw:d3?.symbolCircle,snr:d3?.symbolDiamond,diff:d3?.symbolTriangle,detrend:d3?.symbolSquare,curvature:d3?.symbolCross,matched:d3?.symbolCircle,manual:d3?.symbolStar})[algorithm]||d3?.symbolCircle;
-      }
-      function markerPath(p,selected=false){const d3=window.d3;return d3?.symbol?.().type(d3SymbolType(p?.primaryAlgorithm)).size(selected?180:105)()||'';}
       function movePeakToIndex(p,sw,index){
         const points=sw?.points||[];if(!p||!points.length)return;
         const idx=Math.max(0,Math.min(points.length-1,Number(index)||0)),pt=points[idx],oldV=Number(p.v);
@@ -687,12 +683,14 @@
           onMarkerDelete:({marker})=>{const p=marker?.source;if(!p)return;const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);},
           onLockedMarkerAction:()=>setStatus('该峰位已锁定。'),
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
-          onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
-          onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
-          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;commitPeakMetricEdit(p,{geometry:true,reason:'peak-drag'});publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v),bounds=sweepVoltageBounds(sw);if(!Number.isFinite(snap)||!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(bounds.lo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(bounds.hi,Math.max(snap,Number(p.v)+minGap));p.analysisManual=true;},
+          // Core owns high-frequency marker geometry. The workbench receives one
+          // semantic commit at gesture end and does not mutate Selection/legend state.
+          onMarkerDragCommit:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);commitPeakMetricEdit(p,{geometry:true,reason:'peak-drag'});scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
+          // Core submits the complete analysis window atomically. This avoids the
+          // old one-sided state where the metric provider rejected a lone endpoint
+          // and restored its automatic window after pointerup.
+          onWidthWindowCommit:({marker,windowLeft,windowRight})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return;const bounds=sweepVoltageBounds(sw);if(!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12),center=Number(p.v);let left=Math.max(bounds.lo,Math.min(Number(windowLeft),center-minGap)),right=Math.min(bounds.hi,Math.max(Number(windowRight),center+minGap));if(!(Number.isFinite(left)&&Number.isFinite(right)&&left<center&&right>center))return;p.analysisLeft=left;p.analysisRight=right;p.analysisManual=true;commitPeakMetricEdit(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
           onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
-          onWidthDragEnd:({marker})=>{const p=marker?.source;if(p)commitPeakMetricEdit(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
           onRangeSelect:({xMin,xMax,yMin,yMax,event,markers,markerIds,target,targetType})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:markers||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),

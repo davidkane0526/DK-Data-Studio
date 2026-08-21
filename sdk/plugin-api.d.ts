@@ -6,6 +6,7 @@ export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath
 export interface DKDSDataSourcesCapability { list():Promise<DKDSDataSourceDescriptor[]>; rename(ref:{path?:string;sourcePath?:string}|string,label:string):Promise<any>; setExcluded(ref:{path?:string;sourcePath?:string}|string,value?:boolean):Promise<any>; remove(refs:Array<{path?:string;sourcePath?:string}>|{path?:string;sourcePath?:string}):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}> }
 export interface DKDSManifest {
   id:string; name:string; version:string; apiVersion:'1.10.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
+  pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
   window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';width?:number;height?:number;minWidth?:number;minHeight?:number};
@@ -31,6 +32,41 @@ export interface DKDSTableRuntime {
 export interface DKDSSettingsSurface<T=Record<string,any>> { get(key?:string):T|any; set(patch:Partial<T>,meta?:any):T; reset(meta?:any):T; subscribe(fn:(value:T,meta?:any)=>void,options?:{immediate?:boolean}):()=>void; open(options?:any):HTMLElement|null; button(container:any,options?:any):HTMLButtonElement|null; dispose():void }
 export interface DKDSSettingsRuntime { define<T=Record<string,any>>(id:string,spec:{title?:string;description?:string;defaults?:Partial<T>;fields?:Array<{id:string;label?:string;description?:string;type?:'text'|'number'|'select'|'boolean'|'checkbox';options?:any[];min?:number;max?:number;step?:number}>;onApply?:(value:T,meta?:any)=>void}):DKDSSettingsSurface<T>; get(id?:string):DKDSSettingsSurface|null }
 
+
+export interface DKDSScientificCurve { id:string; entityId?:string; points:any[]; color?:string; colorValue?:number; direction?:number; dash?:string|null; opacity?:number; strokeWidth?:number; source?:any }
+export interface DKDSScientificMarker { id:string; entityId?:string; curveId:string; x:number; y:number; color?:string; shape?:string; locked?:boolean; accepted?:boolean; source?:any }
+export interface DKDSScientificMarkerDragPayload { marker:DKDSScientificMarker; curve:DKDSScientificCurve|null; index:number; point:any; event:any; surface:DKDSScientificCurveSurface }
+export interface DKDSScientificWidthWindowPayload { marker:DKDSScientificMarker; side:'left'|'right'; windowLeft:number; windowRight:number; initialWindowLeft:number; initialWindowRight:number; event:any; surface:DKDSScientificCurveSurface }
+export interface DKDSScientificCurveSurfaceSpec {
+  container?:any; minWidth?:number; minHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string;
+  xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; navigationTools?:boolean;
+  getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
+  getView?:()=>{xDomain?:number[]|null;yDomain?:number[]|null}; setView?:(view:{xDomain?:number[]|null;yDomain?:number[]|null},meta?:any)=>void;
+  getRangeSelection?:()=>any; rangeSelectionTarget?:string; rangeSelectionType?:string; showMarkers?:()=>boolean; showWidth?:()=>boolean; getMarkerWidth?:(marker:DKDSScientificMarker)=>any;
+  onColorScale?:(scale:any,meta?:any)=>void; onCurveSelect?:(payload:any)=>void; onCurveModifiedClick?:(payload:any)=>void; onCurveDoubleClick?:(payload:any)=>void;
+  onMarkerSelect?:(payload:any)=>void; onMarkerDoubleClick?:(payload:any)=>void; onMarkerDelete?:(payload:any)=>void; onLockedMarkerAction?:(payload:any)=>void; onMarkerHover?:(payload:any)=>void;
+  /** Pointer-rate visual preview only. Do not commit domain/project state here. */
+  onMarkerDragPreview?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** Preferred semantic marker edit hook. Called once at gesture end. */
+  onMarkerDragCommit?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  onWidthDragStart?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** Pointer-rate visual preview only. Core owns the temporary two-ended geometry. */
+  onWidthDragPreview?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** Preferred semantic FWHM/window edit hook. Always supplies a complete [left,right] window atomically. */
+  onWidthWindowCommit?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  onWidthReset?:(payload:any)=>void; onRangeStart?:(payload:any)=>void; onWheelZoomStart?:(payload:any)=>void; onRangeSelect?:(payload:any)=>void; onClearSelection?:(payload:any)=>void; onReset?:(payload?:any)=>void; onEmpty?:(payload:any)=>void; afterRender?:(payload:any)=>void;
+  /** @deprecated v1.10 compatibility hook; prefer onMarkerDragPreview. */ onMarkerDrag?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.10 compatibility hook; prefer onMarkerDragCommit. */ onMarkerDragEnd?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.10 compatibility hook; prefer onWidthDragPreview. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** @deprecated v1.10 compatibility hook; prefer onWidthWindowCommit. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
+}
+export interface DKDSScientificCurveSurface { readonly target:any; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
+export interface DKDSScientificPlotRuntime {
+  create(target:any,spec:DKDSScientificCurveSurfaceSpec):DKDSScientificCurveSurface; createPlotly(target:any,spec?:any):any; attach(target:any,spec?:any):any;
+  react(target:any,data?:any[],layout?:any,config?:any,spec?:any):any; scalarField(target:any,field?:any,options?:any):any; get(target:any):any; controller(target:any,name:string):any;
+  resize(target:any):any; restyle(target:any,update:any,traces?:any):any; relayout(target:any,update:any):any; viewport(target:any):any; setViewport(target:any,state:any,meta?:any):boolean; resetViewport(target:any,meta?:any):boolean;
+  pin(target:any,id:string,meta?:any):boolean; unpin(target:any,id:string,meta?:any):boolean; pins(target:any):any[]; stats(target:any):any; suspend(target:any,options?:any):boolean; resume(target:any,options?:any):boolean; lifecycleState():any; saveImage(target:any,baseName:string,format?:string,options?:any):any; purge(target:any):any;
+}
 
 export interface DKDSReactiveTaskResult<T=any>{accepted:boolean;stale:boolean;token:number;value:T}
 export interface DKDSReactiveEntry { id:string; kind:'derived'|'effect'; dependsOn:readonly string[]; dispose():void }
@@ -76,7 +112,7 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:any; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
-    scientificPlot:any; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; contextMenus:any;
+    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; contextMenus:any;
     analysisWorkbench:any; pluginWorkspace:any; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:any; actions:any;
     activities:{add(spec:any):any;activate(id:string):any;active():string};
     topWorkspace:{register(spec:any):any;isSuper():boolean}; prime:any; sub:any; toolbar:any; statusBar:any; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;

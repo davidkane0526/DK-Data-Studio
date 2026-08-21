@@ -527,10 +527,21 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
       || cachedBootstrap.projectPath !== nextBootstrap.projectPath
       || cachedBootstrap.prewarm !== nextBootstrap.prewarm
       || cachedBootstrap.capabilityRevision !== nextBootstrap.capabilityRevision;
+    const promoteFromPrewarm = cachedBootstrap?.prewarm === true && nextBootstrap.prewarm !== true;
     auxiliaryBootstrap.set(previous.webContents.id, nextBootstrap);
 
-    // A cached plugin renderer keeps its DOM, Plotly state and in-memory results.
-    // Only replace its project snapshot when the main project actually changed.
+    // Runtime-only prewarm marks the hidden renderer ready after Core/plugin/chart
+    // code is loaded, but before domain project state or the activity is mounted.
+    // First user open must therefore wait for a second, hydrated readiness signal.
+    // Never show the prewarmed DOM early just because the runtime shell is warm.
+    if (promoteFromPrewarm) {
+      auxiliaryReady.delete(previous.webContents.id);
+      auxiliaryFailures.delete(previous.webContents.id);
+      auxiliaryPendingShow.add(previous.webContents.id);
+    }
+
+    // A cached plugin renderer keeps its runtime and chart libraries. Only push
+    // bootstrap replacement when project/capability/prewarm state changed.
     if (projectChanged) previous.webContents.send('windows:activityBootstrapChanged');
 
     if (payload.prewarm === true) {
@@ -538,6 +549,9 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     }
 
     if (previous.isMinimized()) previous.restore();
+    if (promoteFromPrewarm) {
+      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, warming:true, prewarmed:true };
+    }
     if (pluginWindow && !auxiliaryReady.has(previous.webContents.id)) {
       const failure=auxiliaryFailures.get(previous.webContents.id);
       if(failure){
@@ -567,7 +581,13 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
     title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
-    webPreferences: commonWindowPreferences()
+    webPreferences: {
+      ...commonWindowPreferences(),
+      // A hidden dedicated TOP may be intentionally warming its declared Core,
+      // SDK and chart runtimes. Chromium background throttling must not postpone
+      // that generic warmup until the user finally opens the window.
+      backgroundThrottling:false
+    }
   });
   win.setMenuBarVisibility(false);
   const browserWindowCreateMs=Date.now()-browserWindowStartedAtMs;

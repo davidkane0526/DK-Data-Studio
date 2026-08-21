@@ -1,6 +1,6 @@
 (() => {
   const manifest={
-    id:'builtin.standard-transport-algorithms',name:'Standard Transport Algorithms',version:'1.1.0',apiVersion:'1.9.0',
+    id:'builtin.standard-transport-algorithms',pluginType:'algorithm',name:'Standard Transport Algorithms',version:'1.1.0',apiVersion:'1.9.0',
     requiresCore:['analysis.algorithms','modules'],entry:'plugin.js',enabled:true,order:70,
     description:'Versioned local transport transform, scalar-field and TER numerical Algorithm Providers.',
     capabilities:['analysis.algorithm','analysis.transport-transform','analysis.transport-scalar-field','analysis.ter'],

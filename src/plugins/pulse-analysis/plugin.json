@@ -97,5 +97,6 @@
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"
-  ]
+  ],
+  "pluginType": "workbench"
 }

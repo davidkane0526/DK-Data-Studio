@@ -86,6 +86,21 @@
     return `<div class="plugin-algorithm-version-block"><strong>新分析默认算法版本：</strong>${rows}</div>`;
   }
 
+  const PLUGIN_TYPE_META = {
+    foundation:{label:'基座与系统',description:'Core 基座配套、宿主导航、状态与工作区安全能力。'},
+    data:{label:'数据能力',description:'数据导入、数据模型、数据中心与数据组织能力。'},
+    algorithm:{label:'算法',description:'可版本化科学算法 Provider；可被任意兼容分析插件调用。'},
+    workbench:{label:'分析工作台',description:'面向具体分析任务的 TOP/页面插件，交互由统一 SDK 与基座提供。'},
+    task:{label:'任务与自动化',description:'批处理、后台任务、自动化流程与可复用任务执行器。'},
+    extension:{label:'其他扩展',description:'不属于上述类型的通用扩展能力。'},
+    developer:{label:'开发与示例',description:'SDK 示例、开发辅助与验证插件。'}
+  };
+  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','extension','developer'];
+  function pluginTypeMeta(plugin){
+    const id=String(plugin?.pluginType||'extension');
+    return {id,...(PLUGIN_TYPE_META[id]||PLUGIN_TYPE_META.extension)};
+  }
+
   function statusMeta(plugin) {
     if (plugin.status === 'error') return {label:'加载错误', className:'error'};
     if (plugin.active) return {label:'已启用', className:'active'};
@@ -182,7 +197,8 @@
       if(state.filter==='error'&&plugin.status!=='error')return false;
       if(!q)return true;
       const display=displayMeta(plugin);
-      const hay=[display.name,display.description,plugin.name,plugin.id,plugin.description,...(plugin.capabilities||[]),(plugin.capabilities||[]).map(capabilityLabel).join(' ')].join(' ').toLowerCase();
+      const typeMeta=pluginTypeMeta(plugin);
+      const hay=[display.name,display.description,plugin.name,plugin.id,plugin.description,typeMeta.label,typeMeta.description,...(plugin.capabilities||[]),(plugin.capabilities||[]).map(capabilityLabel).join(' ')].join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
@@ -323,10 +339,7 @@
     }
 
     list.innerHTML='';
-    const grouped=[
-      {id:'system',label:'系统插件',description:'随 DK Data Studio 提供的内置基座与第一方插件。',rows:plugins.filter(plugin=>plugin.source==='builtin')},
-      {id:'user',label:'用户插件',description:'通过 .dkplugin 安装的本地插件。',rows:plugins.filter(plugin=>plugin.source!=='builtin')}
-    ];
+    const grouped=PLUGIN_TYPE_ORDER.map(id=>({id,...PLUGIN_TYPE_META[id],rows:plugins.filter(plugin=>pluginTypeMeta(plugin).id===id)}));
     const groupHosts=new Map();
     for(const group of grouped){
       if(!group.rows.length)continue;
@@ -343,6 +356,7 @@
       card.dataset.pluginId=plugin.id;
       const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
       const source=plugin.source==='builtin'?'内置插件':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
+      const typeMeta=pluginTypeMeta(plugin);
       const actionLabel=plugin.status==='error'?'重试':plugin.active?'重新加载':'加载';
       const localizedCaps=(plugin.capabilities||[]).map(capabilityLabel).join('、')||'—';
       card.innerHTML=`
@@ -379,6 +393,7 @@
         </div>
         <div class="plugin-card-footer">
           <div class="plugin-card-meta">
+            <span>${escapeHtml(typeMeta.label)}</span>
             <span>${source}</span>
             <span>插件 API ${escapeHtml(plugin.apiVersion||'?')}</span>
             <span>优先级 ${Number(plugin.order)||100}</span>
@@ -390,6 +405,7 @@
           </div>
         </div>
         <div class="plugin-card-details hidden">
+          <div><strong>插件类别：</strong>${escapeHtml(typeMeta.label)} · ${escapeHtml(typeMeta.description)}</div>
           <div><strong>注册贡献：</strong>${escapeHtml(contributionText(plugin.contributionCounts))}</div>
           <div><strong>启用来源：</strong>${plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
@@ -481,7 +497,7 @@
         details.classList.toggle('hidden');
         card.querySelector('.plugin-details-btn').textContent=details.classList.contains('hidden')?'详情':'收起';
       };
-      const groupId=plugin.source==='builtin'?'system':'user';
+      const groupId=pluginTypeMeta(plugin).id;
       (groupHosts.get(groupId)||list).appendChild(card);
     }
     restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});

@@ -41,6 +41,17 @@
     "description": {
       "type": "string"
     },
+    "pluginType": {
+      "enum": [
+        "foundation",
+        "data",
+        "algorithm",
+        "workbench",
+        "task",
+        "extension",
+        "developer"
+      ]
+    },
     "requiresCore": {
       "type": "array",
       "uniqueItems": true,

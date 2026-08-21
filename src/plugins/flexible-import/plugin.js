@@ -1,6 +1,6 @@
 (() => {
   DKDSPlugins.define({
-    id:'builtin.flexible-import',
+    id:'builtin.flexible-import',pluginType:'data',
     name:'Flexible Text Import',
     version:'1.0.0',
     apiVersion:'1.9.0',requiresCore:["science","data.flow","data.model"],

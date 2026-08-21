@@ -77,7 +77,9 @@ assert(shellRuntime.includes('markActivityWindowFailed'),'dedicated runtime must
 assert(preload.includes("markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed'"),'preload must expose dedicated-window startup failure reporting.');
 assert(preload.includes('onActivityWindowFailed'),'owner renderer must receive dedicated-window startup failures.');
 assert(main.includes('markAuxiliaryWindowFailed')&&main.includes('auxiliaryFailures'),'main process must track failed dedicated windows separately from ready windows.');
-assert(shellRuntime.includes('const sameProject = bootstrap?.projectDigest'),'prewarm -> first-open must not restore/re-render an unchanged project.');
+assert(shellRuntime.includes('const previousBootstrap=bootstrap')&&shellRuntime.includes('const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true')&&shellRuntime.includes("reason:promoteFromPrewarm?'prewarm-open':'project-hydrate'"),'Runtime-only prewarm -> first-open must hydrate the project exactly when the hidden renderer is promoted to a real activity.');
+assert(shellRuntime.includes("if(bootstrap.prewarm===true)")&&shellRuntime.includes("startupProfile.prewarmMode='runtime-only'"),'Hidden prewarm must stop before domain project/activity rendering.');
+assert(main.includes('if (promoteFromPrewarm)')&&main.includes('auxiliaryReady.delete(previous.webContents.id)')&&main.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'Main must wait for a second hydrated ready signal before showing a runtime-only prewarmed window.');
 assert(shellRuntime.includes('onActivityWillShow'),'dedicated runtime must relayout Plotly when a prewarmed/cached window becomes visible.');
 assert(manager.includes('manifest?.window'),'plugin-window-manager must read manifest.window.');
 assert(manager.includes('normalizePackagedPluginWindow')&&manager.includes('packageFiles'),'plugin-window-manager must support packaged external and trusted-override dedicated windows.');

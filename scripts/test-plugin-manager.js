@@ -31,6 +31,10 @@ sandbox.document = {
 sandbox.window.dispatchEvent=()=>{};
 
 const source = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-kernel.js'),'utf8');
+const managerUi = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-manager-ui.js'),'utf8');
+assert(managerUi.includes("PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','extension','developer']"),'Plugin Manager must render explicit capability/domain sections instead of only builtin/user source groups.');
+assert(!managerUi.includes("label:'系统插件'")&&!managerUi.includes("label:'用户插件'"),'Plugin Manager must not use source-only sections as its primary information architecture.');
+assert(managerUi.includes('const groupId=pluginTypeMeta(plugin).id')&&!managerUi.includes("plugin.source==='builtin'?'system':'user'"),'Plugin cards must mount into the explicit pluginType section rather than the legacy source group.');
 vm.runInNewContext(source,sandbox,{filename:'plugin-kernel.js'});
 const P=sandbox.DKDSPlugins;
 
@@ -80,7 +84,7 @@ P.define({
 
 
 P.define({
-  id:'test.windowed',name:'Windowed',version:'1.0.0',enabled:true,apiVersion:'1.0.0',
+  id:'test.windowed',name:'Windowed',version:'1.0.0',enabled:true,apiVersion:'1.0.0',pluginType:'task',
   window:{activity:'windowed',prewarm:false,reuse:true,persistence:'project'}
 },async()=>({}));
 
@@ -143,6 +147,8 @@ P.configure({
   assert(statefulProviders.length===1&&statefulProviders[0].pluginId==='test.stateful','duplicate provider activation must not replace the original owner');
 
   const windowed=P.manager.get('test.windowed');
+  assert(windowed.pluginType==='task','plugin manager state must expose the SDK-declared pluginType category.');
+  assert(P.manager.get('test.stateful').pluginType==='extension','legacy/third-party manifests without pluginType must receive a safe compatibility fallback.');
   assert(windowed.hasWindow,'windowed plugin should expose an independent-window state row');
   assert(windowed.prewarmDefault===false&&windowed.prewarmEnabled===false,'built-in/default prewarm=false should remain off until user opts in');
   P.manager.setPrewarm('test.windowed',true);

@@ -14,7 +14,11 @@ assert(contract.pluginApiVersion==='1.10.0','SDK must target Plugin API 1.10.0.'
 assert(contract.packageSchema===1,'SDK package schema must match .dkplugin schema 1.');
 assert(schema.properties.apiVersion.const===contract.pluginApiVersion,'SDK schema/API version mismatch.');
 assert(JSON.stringify(schema.properties.requiresCore.items.enum)===JSON.stringify(appSchema.properties.requiresCore.items.enum),'SDK requiresCore catalog must match application manifest schema.');
-assert(read('sdk/plugin-api.d.ts').includes("apiVersion:'1.10.0'")&&read('sdk/plugin-api.d.ts').includes('DKDSPluginContext'),'SDK must ship editor-readable Plugin API declarations.');
+const sdkTypes=read('sdk/plugin-api.d.ts');
+assert(sdkTypes.includes("apiVersion:'1.10.0'")&&sdkTypes.includes('DKDSPluginContext'),'SDK must ship editor-readable Plugin API declarations.');
+assert(Array.isArray(schema.properties.pluginType.enum)&&schema.properties.pluginType.enum.includes('algorithm')&&schema.properties.pluginType.enum.includes('task'),'SDK manifest must expose explicit plugin categories used by Plugin Manager.');
+assert(JSON.stringify(schema.properties.pluginType)===JSON.stringify(appSchema.properties.pluginType),'SDK and application pluginType schemas must remain identical.');
+assert(sdkTypes.includes('DKDSScientificCurveSurfaceSpec')&&sdkTypes.includes('onMarkerDragCommit?')&&sdkTypes.includes('onWidthWindowCommit?')&&sdkTypes.includes('scientificPlot:DKDSScientificPlotRuntime'),'Standalone SDK must expose Core-owned scientific direct-manipulation contracts to third-party plugins.');
 
 // Copy the SDK outside the repository and use only that copy. This is the
 // release gate for "no application source tree required" plugin development.
@@ -29,6 +33,7 @@ for(const name of ['workspace-plugin','algorithm-provider']){
   execFileSync(process.execPath,[cli,'package',pluginDir,output],{stdio:'pipe'});
   const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(output,'utf8')));
   assert(pkg.manifest.apiVersion==='1.10.0'&&pkg.manifest.source==='external',`${name} SDK package must be installable by the application normalizer.`);
+  assert(['workbench','algorithm'].includes(pkg.manifest.pluginType),`${name} SDK template must declare its Plugin Manager category explicitly.`);
 }
 fs.rmSync(tmp,{recursive:true,force:true});
 

@@ -1,3 +1,14 @@
+# v3.61.3 — Core Interaction Contract, Runtime-only Prewarm & Plugin Taxonomy
+
+- ScientificCurveSurface marker dragging now stays on a Core-owned visual fast path and commits domain state once at gesture end; post-drag synthetic clicks are suppressed so dragging cannot silently alter Selection or dim unrelated curves.
+- Scientific color scales/legend callbacks are cached by semantic domain, preventing geometry-only or focus renders from rebuilding plugin legends.
+- FWHM analysis-window handles now commit one complete `[left, right]` edit atomically, fixing first-one-sided-drag rollback without changing the FWHM definition.
+- Dedicated TOP prewarm is runtime-only: Core/plugin/algorithm/chart runtimes (including declared Plotly) are warmed while project restore, activity mount, scientific calculation and chart drawing stay off until the user opens the window.
+- First real open after prewarm waits for a second hydrated-ready signal, and hidden dedicated renderers are exempt from Chromium background throttling during declared warmup.
+- Plugin Manager now groups plugins by explicit SDK `pluginType`: base/system, data, algorithms, analysis workbenches, tasks/automation, extensions and developer/example.
+- Built-in plugin.json metadata is merged as the machine-readable runtime source of truth, matching the external `.dkplugin` package model and exposing window/prewarm/category metadata consistently.
+- SDK 1.10 declarations now expose ScientificCurveSurface direct-manipulation commit contracts to third-party plugins. First-party boundary checks now reject raw `window.d3` in addition to raw Plotly/DOM/host infrastructure.
+
 # v3.61.2 — Interaction Hot-Path & First-Open Latency Fixes
 
 - Routed Resonance `Ctrl+Z` through the plugin-owned shortcut contribution so keyboard undo invokes the same undo stack as the visible undo action in both SUPER and dedicated TOP hosts.

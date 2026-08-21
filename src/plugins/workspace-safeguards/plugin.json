@@ -14,5 +14,6 @@
     "ui.styles",
     "workspace.integrity",
     "data.import"
-  ]
+  ],
+  "pluginType": "foundation"
 }

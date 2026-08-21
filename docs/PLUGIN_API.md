@@ -24,6 +24,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "id": "com.example.spectroscopy",
   "name": "Spectroscopy",
   "version": "1.0.0",
+  "pluginType": "workbench",
   "apiVersion": "1.10.0",
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
@@ -36,6 +37,8 @@ DKDSPlugins.define(manifest, async ctx => {
 ```
 
 The authoritative schema is `docs/plugin-manifest.schema.json`. `npm run plugin:validate` verifies IDs/files, Core requirement names, runtime-manifest parity and statically detectable undeclared Core usage. `npm run check` additionally runs architecture boundary checks.
+
+`pluginType` controls the Plugin Manager information architecture and should be declared explicitly by new packages: `foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`. It is descriptive metadata only; privileges still come exclusively from `requiresCore` and registered capabilities.
 
 Plugin IDs are permanent once project files persist state under them.
 
@@ -73,6 +76,7 @@ New code must not use these infrastructure shortcuts:
 ctx.host
 window.electronAPI / electronAPI.*
 Plotly.* / window.Plotly
+window.d3
 private plotly_click listeners or listener cleanup
 private scrollIntoView focus/reveal logic
 ctx.ui.charts (legacy first-party bypass; use ctx.ui.scientificPlot)
@@ -299,7 +303,7 @@ await ctx.ui.scientificPlot.scalarField(plot, {
 
 When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing rendered Plotly graphs may be adopted with `attach()`.
 
-For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Domain callbacks remain optional for special commands such as “open inspector” or “create manual peak”.
+For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Core also owns curve snapping, marker drag geometry, post-drag click suppression, zoom/range gestures and FWHM/window handle geometry. Plugins should commit scientific state only from `onMarkerDragCommit` and `onWidthWindowCommit`; the latter always supplies a complete atomic `[windowLeft, windowRight]` pair even when the user drags only one handle. Pointer-rate preview callbacks are optional and must not mutate project/scientific state. Domain callbacks remain optional for commands such as “open inspector” or “create manual peak”.
 
 Use `ctx.ui.plotViews.bind(...)` for generic chart chrome, placement and CSV/image export:
 

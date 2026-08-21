@@ -21,7 +21,8 @@ for(const file of allPluginFiles){
   const forbidden=[
     [/window\.electronAPI|\belectronAPI\./,'Electron bridge'],
     [/window\.Plotly|\bPlotly\./,'raw Plotly'],
-    [/\bdocument\.(?:getElementById|querySelector|querySelectorAll|createElement|createElementNS)/,'raw DOM access'],
+    [/window\.d3\b|\bd3\./,'raw D3 global'],
+    [/\bdocument\./,'raw DOM access'],
     [/new\s+(?:ResizeObserver|MutationObserver)\s*\(/,'private observer lifecycle'],
     [/\b(?:requestAnimationFrame|cancelAnimationFrame|setInterval|clearInterval|setTimeout|clearTimeout|queueMicrotask)\s*\(/,'raw scheduler lifecycle'],
     [/ctx\.registry\.add\s*\(/,'untyped generic registry'],

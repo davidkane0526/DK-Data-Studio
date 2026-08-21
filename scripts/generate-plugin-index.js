@@ -22,7 +22,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   const entry = normalizeFile(manifest.entry || 'plugin.js');
   const scriptFiles = Array.isArray(manifest.scripts)&&manifest.scripts.length ? manifest.scripts.map(normalizeFile) : [entry];
   if(!scriptFiles.includes(entry))scriptFiles.push(entry);
-  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`,scripts:[...new Set(scriptFiles)].map(file=>`plugins/${name}/${file}`)});
+  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`,scripts:[...new Set(scriptFiles)].map(file=>`plugins/${name}/${file}`),manifest:{...manifest,source:'builtin'}});
 }
 
 const entries=plugins.map(row=>row.entry);
