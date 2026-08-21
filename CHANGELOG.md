@@ -1,3 +1,12 @@
+# v3.61.2 — Interaction Hot-Path & First-Open Latency Fixes
+
+- Routed Resonance `Ctrl+Z` through the plugin-owned shortcut contribution so keyboard undo invokes the same undo stack as the visible undo action in both SUPER and dedicated TOP hosts.
+- Removed an O(n) per-pointermove sweep-order scan from `ScientificCurveSurface`; normalized curve order is now cached for the lifetime of each render, keeping ordered peak/FWHM snapping on the binary-search hot path.
+- Cached rendered marker DOM nodes so peak dragging updates only the active marker and hit target rather than filtering all marker elements on every move.
+- Changed interactive peak/FWHM metric commits to invalidate without installing an async placeholder first, then synchronously resolve synchronous metric providers before the authoritative end-of-drag redraw. This removes the preview-to-authoritative FWHM snap-back caused by the previous commit ordering while retaining async provider support.
+- TER now opts into the existing manifest-driven dedicated-window prewarm contract. Its hidden TOP renderer can create and parse Plotly before the user's first open instead of paying renderer + Plotly cold-start latency on the click path. Users who explicitly disabled TER prewarm keep that preference.
+- Added regression assertions for shortcut ownership, drag hot-path caches, synchronous FWHM commit ordering, and TER prewarm declaration.
+
 # v3.61.1 — Plotly Cartesian Runtime Entry Fix
 
 - Fixed the v3.61.0 regression where every Plotly-backed view rendered blank even though scientific computation completed. The Cartesian npm distribution exposes `plotly-cartesian.min.js`; v3.61.0 incorrectly retained the full-bundle filename `plotly.min.js`.

@@ -102,6 +102,16 @@
         if(refresh)void refreshPeakMetric(p);
       }
       function publishPeakMetricValue(p,reason='metric-resolved'){reactiveTouch([reactivePeakMetricValue(p),'resonance.peak.metrics'],{peakId:p?.id||'',reason});}
+      function commitPeakMetricEdit(p,{geometry=false,reason='peak-edit'}={}){
+        if(!p)return null;
+        // Invalidate inputs without installing an async placeholder first. The
+        // built-in metric pipeline is synchronous, so resolve it immediately
+        // before ScientificCurveSurface performs its authoritative end render.
+        // Async third-party providers still fall back through peakMetrics() to
+        // refreshPeakMetric(), preserving the provider contract.
+        invalidatePeakMetric(p,{geometry,reason,refresh:false});
+        return peakMetrics(p);
+      }
       function installReactiveViews(){
         if(reactiveViewsInstalled||!reactiveRuntime?.effect)return;reactiveViewsInstalled=true;
         reactiveRuntime.effect('resonance.view.main',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.visibility'],scheduler:'frame',effect:()=>{if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.('reactive');}});
@@ -647,7 +657,12 @@
         const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return null;const m=peakMetrics(p)||{};
         const sign=Math.sign(Number(p.i)||1)||1,baselineAt=xv=>Math.max(0,(Number(m.baselineSlope)||0)*Number(xv)+(Number.isFinite(Number(m.baselineIntercept))?Number(m.baselineIntercept):Number(m.baseline)||0));
         const left=Number(m.fwhmLeft),right=Number(m.fwhmRight),halfResidual=Number(m.halfResidual);
-        const windowLeft=Number(m.analysisLeft),windowRight=Number(m.analysisRight);if(!Number.isFinite(windowLeft)||!Number.isFinite(windowRight)||windowRight<=windowLeft)return null;
+        // Keep a manually committed analysis window authoritative even while an
+        // asynchronous third-party metric provider is still resolving. The
+        // measurement line may appear after the metric arrives, but the user's
+        // handles must never jump back to an obsolete window in the meantime.
+        const metricWindowLeft=Number(m.analysisLeft),metricWindowRight=Number(m.analysisRight),rawWindowLeft=Number(p.analysisLeft),rawWindowRight=Number(p.analysisRight);
+        const windowLeft=Number.isFinite(metricWindowLeft)?metricWindowLeft:rawWindowLeft,windowRight=Number.isFinite(metricWindowRight)?metricWindowRight:rawWindowRight;if(!Number.isFinite(windowLeft)||!Number.isFinite(windowRight)||windowRight<=windowLeft)return null;
         return {left,right,yLeft:Number.isFinite(left)&&Number.isFinite(halfResidual)?sign*(baselineAt(left)+halfResidual):NaN,yRight:Number.isFinite(right)&&Number.isFinite(halfResidual)?sign*(baselineAt(right)+halfResidual):NaN,windowLeft,windowRight,baseline:{x1:windowLeft,y1:sign*baselineAt(windowLeft),x2:windowRight,y2:sign*baselineAt(windowRight)},handlePosition:'top'};
       }
       function ensureMainSurface(){
@@ -674,10 +689,10 @@
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
-          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;invalidatePeakMetric(p,{geometry:true,reason:'peak-drag'});publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
+          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;commitPeakMetricEdit(p,{geometry:true,reason:'peak-drag'});publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
           onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v),bounds=sweepVoltageBounds(sw);if(!Number.isFinite(snap)||!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(bounds.lo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(bounds.hi,Math.max(snap,Number(p.v)+minGap));p.analysisManual=true;},
-          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;invalidatePeakMetric(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
-          onWidthDragEnd:({marker})=>{const p=marker?.source;if(p)invalidatePeakMetric(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
+          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
+          onWidthDragEnd:({marker})=>{const p=marker?.source;if(p)commitPeakMetricEdit(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
           onRangeSelect:({xMin,xMax,yMin,yMax,event,markers,markerIds,target,targetType})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:markers||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),
@@ -755,7 +770,7 @@
           host.querySelector('#reswinApplyPeakLabel').onclick=()=>renameSelectedCategory(host.querySelector('#reswinPeakLabelInput')?.value);
           host.querySelector('#reswinAcceptPeak').onclick=()=>updatePeak(p.id,{accepted:p.accepted===false});
           host.querySelector('#reswinLockPeak').onclick=()=>updatePeak(p.id,{locked:!p.locked});
-          host.querySelector('#reswinResetFwhmWindow').onclick=()=>{delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;invalidatePeakMetric(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');};
+          host.querySelector('#reswinResetFwhmWindow').onclick=()=>{delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');};
           host.querySelector('#reswinDeletePeak').onclick=()=>deletePeak(p.id);
           host.querySelector('#reswinSelectCurve').onclick=()=>{const row=sweepById(p.sweepId);if(row)publishSweepSelection(row,'resonance-inspector');};
         }else{
@@ -1122,7 +1137,7 @@
         index=Math.max(0,Math.min(points.length-1,index+(Number(step)||0)));
         const point=points[index],oldV=Number(peak.v);peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):index;peak.manual=true;
         const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;if(Number.isFinite(Number(peak.analysisLeft)))peak.analysisLeft=Number(peak.analysisLeft)+delta;if(Number.isFinite(Number(peak.analysisRight)))peak.analysisRight=Number(peak.analysisRight)+delta;}
-        invalidatePeakMetric(peak,{geometry:true,reason:'peak-keyboard-move'});publishPeakSelection(peak,'resonance-peak-move');scheduleSnapshot();return true;
+        commitPeakMetricEdit(peak,{geometry:true,reason:'peak-keyboard-move'});publishPeakSelection(peak,'resonance-peak-move');scheduleSnapshot();return true;
       }
       function selectAdjacentPeak(step){
         const sw=selectedSweep();if(!sw)return false;const rows=(workspace.peaks||[]).filter(p=>p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));if(!rows.length)return false;

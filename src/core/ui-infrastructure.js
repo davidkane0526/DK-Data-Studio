@@ -1256,7 +1256,7 @@
 
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;
+      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();
       if(!this.target)throw new Error('ScientificCurveSurface target not found.');
       this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.target.classList.add('dkds-scientific-curve-surface');
@@ -1287,15 +1287,21 @@
     }
     normalizedPoints(curve){return (curve?.points||[]).map((p,index)=>this.normalizePoint(p,index)).filter(p=>this.finite(p.x)&&this.finite(p.y));}
     nearestIndex(points,value){
-      if(!points.length)return -1;const target=Number(value),first=Number(points[0].x),last=Number(points.at(-1).x);
+      if(!points.length)return -1;const target=Number(value);
       if(!Number.isFinite(target))return 0;
-      const ascending=last>=first;
-      // Sweep axes may be either ascending or descending. A binary search that
-      // assumes ascending X can snap a clicked/dragged marker to a distant point.
-      let ordered=true;for(let i=1;i<points.length;i++){const a=Number(points[i-1].x),b=Number(points[i].x);if((ascending&&b<a)||(!ascending&&b>a)){ordered=false;break;}}
-      if(!ordered){let best=0,dist=Infinity;for(let i=0;i<points.length;i++){const d=Math.abs(Number(points[i].x)-target);if(d<dist){dist=d;best=i;}}return best;}
+      // A normalized point array is immutable for the lifetime of one render.
+      // Determine its sweep order once, then reuse that metadata throughout
+      // pointermove. This keeps ordered sweeps on the O(log n) hot path instead
+      // of rescanning every sample on every drag event.
+      let order=this.pointOrderCache.get(points);
+      if(!order){
+        const first=Number(points[0].x),last=Number(points.at(-1).x),ascending=last>=first;let ordered=true;
+        for(let i=1;i<points.length;i++){const a=Number(points[i-1].x),b=Number(points[i].x);if((ascending&&b<a)||(!ascending&&b>a)){ordered=false;break;}}
+        order={ascending,ordered};this.pointOrderCache.set(points,order);
+      }
+      if(!order.ordered){let best=0,dist=Infinity;for(let i=0;i<points.length;i++){const d=Math.abs(Number(points[i].x)-target);if(d<dist){dist=d;best=i;}}return best;}
       let lo=0,hi=points.length-1;
-      while(lo<hi){const mid=(lo+hi)>>1,x=Number(points[mid].x);if(ascending?(x<target):(x>target))lo=mid+1;else hi=mid;}
+      while(lo<hi){const mid=(lo+hi)>>1,x=Number(points[mid].x);if(order.ascending?(x<target):(x>target))lo=mid+1;else hi=mid;}
       if(lo>0&&Math.abs(Number(points[lo-1].x)-target)<=Math.abs(Number(points[lo].x)-target))return lo-1;return lo;
     }
     installNavigationTools(){
@@ -1317,8 +1323,9 @@
     updateMarkerVisual(marker,point){
       const last=this.lastRender;if(!last||!marker||!point)return false;const id=String(marker.id),xv=Number(point.x??point.v),yv=Number(point.y??point.i);if(!Number.isFinite(xv)||!Number.isFinite(yv))return false;
       marker.x=xv;marker.y=yv;const {dataLayer,x,y}=last;if(!dataLayer||!x||!y)return false;
-      dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).attr('transform',`translate(${x(xv)},${y(yv)})`);
-      dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).attr('cx',x(xv)).attr('cy',y(yv));
+      const nodes=last.markerNodes?.get?.(id);
+      if(nodes?.mark)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(yv)})`);else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).attr('transform',`translate(${x(xv)},${y(yv)})`);
+      if(nodes?.hit){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(yv)));}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).attr('cx',x(xv)).attr('cy',y(yv));
       return true;
     }
     nearestCurveAtPixel(px,py,x,y,curves,maxDistancePx=18){
@@ -1357,7 +1364,7 @@
           .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',value:curve?.source||curve});})
           .on('dblclick',event=>{event.preventDefault();event.stopPropagation();if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});});
       }
-      const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds();
+      const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),markerNodes=new Map();
       if(this.spec.showMarkers?.()!==false&&markers.length){
         const marks=dataLayer.append('g').selectAll('path.dkds-scientific-marker').data(markers,m=>m.id).join('path').attr('class',m=>`dkds-scientific-marker ${m.locked?'is-locked':''} ${hasCurveSelection&&String(m.curveId)!==selectedCurveId?'is-dimmed':''}`)
           .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
@@ -1367,6 +1374,8 @@
           .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();this.spec.onMarkerDoubleClick?.({marker,event,surface:this});})
           .on('contextmenu',(event,marker)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.({marker,event,surface:this});else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});})
           .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
+        marks.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.mark=this;markerNodes.set(id,row);});
+        hits.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.hit=this;markerNodes.set(id,row);});
         const markerDragState=new Map();
         hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;markerDragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false});this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));if(state&&!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}const curve=curves.find(c=>String(c.id)===String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx],sourceIndex=Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx;this.spec.onMarkerDrag?.({marker,curve,index:sourceIndex,point:point?.raw||point,event,surface:this});this.updateMarkerVisual(marker,point);}).on('end',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));markerDragState.delete(String(marker.id));if(!state?.moved)return;this.spec.onMarkerDragEnd?.({marker,event,surface:this});this.requestRender('marker-drag-end');}));
       }
@@ -1442,7 +1451,7 @@
           }
         }
       }
-      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer};return true;
+      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes};return true;
     }
     dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
   }

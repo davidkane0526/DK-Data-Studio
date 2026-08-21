@@ -432,7 +432,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.0',
+      appVersion:'3.61.2',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

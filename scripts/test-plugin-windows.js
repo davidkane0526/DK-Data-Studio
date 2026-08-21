@@ -87,16 +87,18 @@ assert(manager.includes('windowSpec.prewarm !== false')&&manager.includes('windo
 assert(manager.includes('normalizePluginScripts'),'dedicated plugins must be able to carry private support scripts.');
 
 const expected={
-  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,manifestDeps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel','performance-runtime','parameter-schema','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
-  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',prewarm:false,deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
-  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,manifestDeps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel','performance-runtime','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
-  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',prewarm:false,deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}
+  'resonance-workbench':{activity:'resonance',mode:'dedicated',runtime:'window-runtime.js',manifestDeps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','plotly','d3','science-common','science-presets','science-import','science-peaks','science-identity','science-physics','science-gate','science-ter','platform','ui-infrastructure','plugin-kernel','performance-runtime','parameter-schema','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
+  'data-center':{activity:'data-center',mode:'dedicated',runtime:'',deps:['plotly','data-model','formula-engine','parameter-schema','workflow-engine','platform','state-store','ui-infrastructure','plugin-kernel']},
+  'ter-analysis':{activity:'ter',mode:'dedicated',runtime:'window-runtime.js',manifestDeps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel'],deps:['data-model','plotly','science-common','science-peaks','science-ter','parameter-schema','platform','ui-infrastructure','plugin-kernel','performance-runtime','scientific-reactive-runtime','scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']},
+  'pulse-analysis':{activity:'pulse',mode:'dedicated',runtime:'window-runtime.js',deps:['plotly','science-common','science-import','science-pulse','platform','ui-infrastructure','plugin-kernel']}
 };
+const builtinPrewarmByActivity=new Map();
 for(const [folder,spec] of Object.entries(expected)){
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(manifest.window?.activity===spec.activity,`${folder}: window.activity must be ${spec.activity}`);
   assert((manifest.window?.mode||'dedicated')===spec.mode,`${folder}: window.mode must be ${spec.mode}`);
-  assert(manifest.window?.prewarm===spec.prewarm,`${folder}: window.prewarm must match the built-in memory policy`);
+  assert(typeof manifest.window?.prewarm==='boolean',`${folder}: window.prewarm must be declared explicitly so startup latency vs memory remains plugin-owned`);
+  builtinPrewarmByActivity.set(spec.activity,manifest.window.prewarm);
   assert(manifest.window?.reuse===true,`${folder}: window.reuse must explicitly use the generic hide/reuse contract`);
   assert(manifest.window?.persistence==='project',`${folder}: project result persistence must be enabled`);
   assert(JSON.stringify(manifest.window?.dependencies||[])===JSON.stringify(spec.manifestDeps||spec.deps),`${folder}: unexpected dedicated-window dependency set`);
@@ -111,7 +113,7 @@ const resolved=readBuiltinPluginWindows(root);
 for(const spec of Object.values(expected)){
   const row=resolved.get(spec.activity);
   assert(!!row,`manager failed to resolve ${spec.activity}`);
-  assert(row.prewarm===spec.prewarm&&row.reuse===true&&row.persistence==='project',`${spec.activity}: generic lifecycle policy missing`);
+  assert(row.prewarm===builtinPrewarmByActivity.get(spec.activity)&&row.reuse===true&&row.persistence==='project',`${spec.activity}: resolved lifecycle must preserve the plugin manifest policy`);
   assert(row.mode===spec.mode,`${spec.activity}: resolved window mode differs from manifest`);
   assert(JSON.stringify(row?.dependencies||[])===JSON.stringify(spec.deps),`${spec.activity}: resolved dependencies differ from manifest`);
 }

@@ -1,11 +1,20 @@
-# Next Session Handoff — v3.61.1
+# Next Session Handoff — v3.61.2
 
 ## Current baseline
 
-- Application: `3.61.1`
-- Intended branch: `fix/v3.61.1-plotly-cartesian-entry`
+- Application: `3.61.2`
+- Intended branch: `fix/v3.61.2-interaction-latency`
 - Architecture baseline: v3.58 Host Neutralization, v3.59 Table/Interaction foundation and v3.60 Scientific Reactive Dependency remain intact. Core stays domain-neutral; scientific consistency is transaction/dependency-driven rather than plugin-local refresh chains.
 - Public Plugin API / standalone SDK remains `1.10.0`; v3.61 changes renderer/runtime performance, not the public plugin contract. SDK minimum application version therefore remains `3.60.0`.
+
+
+## v3.61.2 interaction correction
+
+- Resonance `Ctrl+Z` is a plugin-owned `ui.shortcuts` contribution and calls the same `undoLastAction()` command as the UI undo action. Keep the host Edit Contract as a universal fallback, but do not make domain undo correctness depend on active-window routing.
+- `ScientificCurveSurface.nearestIndex()` caches ascending/descending/unordered metadata per normalized point array. Never reintroduce a full sweep-order scan inside pointermove.
+- Marker pointermove uses cached rendered marker nodes. High-frequency visual feedback must update only the active geometry, not reselect/filter the full marker layer.
+- Interactive peak/FWHM commits invalidate metric state with `refresh:false` first, then resolve through `peakMetrics()`. Synchronous providers therefore commit before the authoritative end render; async providers remain supported. Manual FWHM window coordinates are also used as visual fallback while an async provider is pending.
+- Dedicated-window prewarm is a plugin-owned manifest policy, not a global built-in memory rule. TER declares `window.prewarm: true` because its renderer + Plotly cold-start cost is material; plugins with lower first-open cost may keep prewarm disabled. Explicit user prewarm preferences continue to override manifest defaults.
 
 ## v3.61.1 runtime correction
 
