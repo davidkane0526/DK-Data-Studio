@@ -2,7 +2,7 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'3.56.0',
+    version:'3.57.0',
     apiVersion:'1.8.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
@@ -17,15 +17,16 @@
     const interactionRuntime=ctx.ui.interaction?.create?.('resonance',{selection:{multiple:true,defaultType:'resonance.peak'},defaultType:'resonance.peak'});
     const interactionSelection=interactionRuntime?.selection||ctx.ui.selection.model('resonance:interaction',{multiple:true,defaultType:'resonance.peak'});
     let runtime=null;
-    const hostResonance=ctx.services?.get?.('resonance');
-    let service=hostResonance;
-    if(!ctx.runtime.isAuxiliaryWindow){
+    let service=null;
+    if(ctx.runtime.isAuxiliaryWindow){
+      service=ctx.services.require('builtin.resonance-workbench.runtime');
+    }else{
       const feature=ctx.modules.require('feature-runtime');
       runtime=await feature.createTop({
         project:ctx.project.create?.()||{},
         artifacts:ctx.data.artifacts,
         setStatus:ctx.status.set,
-        scheduleSnapshot:()=>{const workspace=runtime?.service?.serialize?.();if(workspace)hostResonance?.restore?.(workspace,{legacyProject:ctx.project.create?.()||{}});ctx.project.capture?.();},
+        scheduleSnapshot:()=>ctx.project.capture?.(),
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
         savePlotlyImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
         io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,

@@ -672,7 +672,7 @@
         getState:()=>state
       };
 
-      return {serviceName:'pulse',service,getState:()=>state,render};
+      return {serviceName:'builtin.pulse-analysis.runtime',service,getState:()=>state,render};
     }
   });
 })();

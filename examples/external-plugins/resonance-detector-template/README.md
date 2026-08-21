@@ -4,11 +4,14 @@ This is an SDK example, not a recommended scientific replacement for the built-i
 
 It demonstrates that a resonance peak algorithm can be installed as an external `.dkplugin` and discovered by the existing Resonance Workbench without changing core source.
 
-Package it from the repository root:
+With the standalone SDK, validate and package it without the DK Data Studio source tree:
 
 ```bash
-npm run plugin:package -- examples/external-plugins/resonance-detector-template raw-prominence.dkplugin
+node sdk/tools/dkds-plugin.js validate resonance-detector-template
+node sdk/tools/dkds-plugin.js package resonance-detector-template raw-prominence.dkplugin
 ```
+
+Inside the application repository, `npm run plugin:package -- ...` remains available for maintainers.
 
 Then install it from **Plugins → Install Plugin**.
 

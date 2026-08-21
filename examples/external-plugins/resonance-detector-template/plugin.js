@@ -2,16 +2,18 @@
   DKDSPlugins.define({
     id:'com.example.raw-prominence-detector',
     name:'Raw Prominence Detector Example',
-    version:'0.1.0',
-    apiVersion:'1.2.0',
+    version:'1.0.0',
+    apiVersion:'1.8.0',
     source:'external',
     enabled:false,
     order:500,
     description:'SDK example: raw-sample local maxima with a prominence threshold.',
-    capabilities:['analysis.peak-detector']
+    requiresCore:['analysis.algorithms','analysis.detectors'],
+    capabilities:['analysis.peak-detector'],
+    algorithmProvider:true,algorithmCategories:['peak-detector'],
+    algorithmProvides:[{category:'peak-detector',id:'example-raw-prominence-v1',version:'1.0.0',title:'Example · Raw Prominence'}],
+    compatibility:{app:'>=3.57.0 <4.0.0',pluginApi:'^1.8.0'}
   }, async ctx => {
-    const S=window.DKDSScience;
-
     ctx.analysis.detectors.register('example-raw-prominence-v1',{
       name:'Example · Raw Prominence',
       shortName:'Example',

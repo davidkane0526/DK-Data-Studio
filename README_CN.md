@@ -1,4 +1,14 @@
-# DK Data Studio — v3.56.0
+# DK Data Studio — v3.57.0
+
+
+## v3.57 独立 Plugin SDK 与插件运行时去宿主依赖
+
+- 新增可脱离项目源码单独分发的 `sdk/`：包含 Plugin API 1.8 类型声明、manifest schema、独立校验/打包 CLI，以及完整 UI Workspace 与 Algorithm Provider 两类模板。
+- 第三方开发者只需要 SDK 和已安装的 DK Data Studio，即可生成可安装的 `.dkplugin`，不再需要复制 `src/` 或使用项目内构建脚本。
+- Resonance、TER、Pulse 的 TOP 运行时 Service 改为插件命名空间所有，不再回退到主宿主提供的 `resonance / ter / pulse` 领域 Service。
+- 主宿主 `DKDSPlugins.configure(...)` 不再公开 Resonance/TER/Pulse 领域服务或领域页面回调。
+- 新增 `sdk:test`：把 SDK 复制到仓库外临时目录后完成 validate → package，再由真实应用 `.dkplugin` normalizer 验证安装包契约。
+- 下一阶段的架构重点是清理 `app.js` 中仍保留的历史领域状态/工程根字段，使兼容迁移变成单向适配，而不是长期双状态。
 
 ## v3.56 共享 Scientific Scalar Field 与共振跨曲线特征场
 

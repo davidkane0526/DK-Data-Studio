@@ -1126,7 +1126,7 @@
       function setProject(next){project=clone(next||{});workspace=normalizeWorkspace(pluginSliceFromProject(project),project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
       await setProject(project);
       return {
-        serviceName:'resonance',service,render,resize,setProject,
+        serviceName:'builtin.resonance-workbench.runtime',service,render,resize,setProject,
         syncProject(target){target.plugins=target.plugins&&typeof target.plugins==='object'?target.plugins:{};const plugin=target.plugins['builtin.resonance-workbench']&&typeof target.plugins['builtin.resonance-workbench']==='object'?target.plugins['builtin.resonance-workbench']:{};plugin.workspace=clone(workspace);target.plugins['builtin.resonance-workbench']=plugin;},
         getState:service.getState
       };

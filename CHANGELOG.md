@@ -1,3 +1,12 @@
+# v3.57.0 — Standalone Plugin SDK & Host-Independent Plugin Runtime
+
+- Added a standalone `sdk/` that can be distributed without the DK Data Studio source tree. It contains Plugin API 1.8 declarations, the manifest schema, an independent validator/packager and workspace/algorithm templates.
+- Added an SDK conformance gate that copies the SDK outside the repository, validates/packages both templates there, then feeds the resulting `.dkplugin` files into the application's real package normalizer.
+- Removed host-provided Resonance/TER/Pulse domain services from `DKDSPlugins.configure(...)`. First-party analysis plugins now use their own runtime in SUPER and plugin-owned namespaced services in dedicated TOP renderers.
+- Updated the external detector example and package documentation from the obsolete API 1.2 sample to Plugin API 1.8.
+- Extended the manifest schema with explicit `scripts` and `styles` contracts.
+- Kept backward project migration code for now, but marked the remaining `app.js` domain-state/project-root compatibility layer as the next architecture debt rather than expanding security or permission infrastructure.
+
 # v3.56.0 — Shared Scientific Scalar Fields & Resonance Feature Maps
 
 - Upgraded `DKDSScientificPlot` to v2.2.0 with the shared `scalarField()` surface. Core now owns heatmap axes/units, colorbar metadata, diverging `zmid`, hover defaults, viewport/export behavior and renderer lifecycle; plugins provide typed scalar-field data instead of managing Plotly heatmap lifecycle themselves.

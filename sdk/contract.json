@@ -1,0 +1,13 @@
+{
+  "sdkVersion": "1.8.0",
+  "pluginApiVersion": "1.8.0",
+  "packageSchema": 1,
+  "minimumAppVersion": "3.57.0",
+  "manifestSchema": "plugin-manifest.schema.json",
+  "entryGlobal": "DKDSPlugins",
+  "notes": [
+    "New plugins target Plugin API 1.8.0.",
+    "The SDK is standalone and does not require DK Data Studio source code.",
+    "Domain logic belongs to plugins; application infrastructure is consumed through ctx.* Core APIs."
+  ]
+}

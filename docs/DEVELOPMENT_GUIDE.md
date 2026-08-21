@@ -66,7 +66,14 @@ For a new built-in plugin, add a folder below `src/plugins/`, then run:
 DKDS.cmd plugin-validate
 ```
 
-For an installable external plugin, use `examples/external-plugins/` as the starting point.
+For an installable external plugin, application source is no longer required. Distribute/copy only `sdk/` and use:
+
+```bash
+node sdk/tools/dkds-plugin.js validate my-plugin
+node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
+```
+
+Start from `sdk/templates/workspace-plugin/` for a UI/workbench plugin or `sdk/templates/algorithm-provider/` for a versioned scientific algorithm. `examples/external-plugins/` remains an application-repository integration example.
 
 ## UI shell rule
 

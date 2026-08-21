@@ -1,0 +1,15 @@
+{
+  "id": "com.example.algorithm-provider",
+  "name": "SDK Algorithm Provider Example",
+  "version": "1.0.0",
+  "apiVersion": "1.8.0",
+  "entry": "plugin.js",
+  "scripts": ["plugin.js"],
+  "enabled": true,
+  "description": "Standalone SDK example for a versioned scientific algorithm provider.",
+  "requiresCore": ["analysis.algorithms"],
+  "algorithmProvider": true,
+  "algorithmCategories": ["example-transform"],
+  "algorithmProvides": [{"category":"example-transform","id":"example.scale-y","version":"1.0.0","title":"Scale Y"}],
+  "compatibility": {"app": ">=3.57.0 <4.0.0", "pluginApi": "^1.8.0"}
+}

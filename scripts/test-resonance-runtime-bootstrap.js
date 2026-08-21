@@ -32,7 +32,7 @@ assert(feature?.createTop,'Resonance feature runtime module must expose createTo
   const runtime=await feature.createTop({
     project:{datasets:[]},artifacts:{list:()=>[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
   });
-  assert.equal(runtime.serviceName,'resonance');
+  assert.equal(runtime.serviceName,'builtin.resonance-workbench.runtime');
   assert.equal(typeof runtime.service?.serialize,'function');
   assert.equal(runtime.service.serialize()?.schema,1);
   // Regression: the shared extraction must not depend on helpers from a former

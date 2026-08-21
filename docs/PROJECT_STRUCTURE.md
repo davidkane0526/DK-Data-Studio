@@ -37,6 +37,7 @@ DK Data Studio/
 │     └─ dkds-gui.ps1       # WinForms launcher for dkds-tools.ps1
 ├─ scripts/                 # cross-platform Node maintenance/test/build scripts
 ├─ examples/                # external plugin examples
+├─ sdk/                     # standalone third-party Plugin SDK; no app source required
 └─ docs/
    ├─ guides/               # practical build/update/toolbox guides
    ├─ releases/             # release snapshots

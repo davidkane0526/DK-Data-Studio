@@ -404,7 +404,7 @@
       };
 
       return {
-        serviceName:'ter',service,render,
+        serviceName:'builtin.ter-analysis.runtime',service,render,
         setProject(next){applyProject(next);if($('#terSummary'))render();},
         syncProject(target){
           target.terMaxSettings={...settings};

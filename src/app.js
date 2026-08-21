@@ -5348,7 +5348,7 @@
     if(state.groupPanelMode==='floating')captureGroupFloatRect();
     if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
     return {
-      version:'3.56.0',
+      version:'3.57.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -6669,7 +6669,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.56.0',
+      appVersion:'3.57.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:IS_AUXILIARY_WINDOW,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -6684,7 +6684,6 @@
       makeProject:()=>makeProject(),
       getActiveProjectTab:()=>activeProjectTab(),
       captureActiveProjectTab,
-      applyResonanceWorkspace:workspace=>{restoreResonanceWorkspace(workspace,{legacyProject:makeProject()});captureActiveProjectTab();window.DKDSPlugins?.events?.emit?.('resonance:workspace-synced',{source:'plugin-runtime'});},
       setStatus,
       renderAll,
       scheduleMainPlotRelayout,
@@ -6696,16 +6695,11 @@
       applySuperWorkspace,
       showNoSuperWorkspace,
       placePrime:placePrimeContribution,
-      renderSpacingPage,
-      renderGateAnalysis,
-      renderTerMaxPage,
-      renderPulseAnalysis:renderPulseAnalysisResult,
-      togglePhysicsPanel:pluginTogglePhysicsPanel,
       copyTextToClipboard,
       savePlotlyImage,
       makeFloating,
       artifacts:artifactHostApi(),
-      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),resonance:resonanceHostApi(),pulse:pulseHostApi(),ter:terHostApi()},
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel})},
       panels:{
         inspector:{toggle:toggleInspectorVisibility,show:showInspectorPanel,apply:applyInspectorPanelLayout,place:setInspectorPrimePlacement,placement:()=>state.inspectorPanelMode==='right'?'right':'float'},
         group:{toggle:toggleGroupVisibility,apply:applyGroupPanelLayout,updateLayout:updateTrendLayout,place:setGroupPrimePlacement,placement:()=>state.groupPanelMode==='docked'?'bottom':'float'}

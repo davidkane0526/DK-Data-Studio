@@ -41,13 +41,11 @@ for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-ru
 for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','pipeline: scientificPipelineScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
   if(!kernel.includes(token))fail(`Plugin API v1.8 missing ${token}`);
 }
-if(!app.includes('resonance:resonanceHostApi(),pulse:pulseHostApi(),ter:terHostApi()'))fail('legacy domain services must enter plugins only through the generic Core service registry.');
-for(const token of ['resonance:resonanceHostApi()','pulse:pulseHostApi()','ter:terHostApi()']){
-  const standalone=new RegExp(`^[^\\n]*${token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'m');
-  // services:{...} is permitted; top-level host fields are not.
-  const matches=app.split('\n').filter(line=>line.includes(token));
-  if(matches.some(line=>!line.includes('services:{')))fail(`app host must not expose direct field ${token}`);
-}
+const configureStart=app.indexOf('window.DKDSPlugins.configure({');
+const configureEnd=configureStart>=0?app.indexOf('\n    });',configureStart):-1;
+const hostConfigure=configureStart>=0&&configureEnd>configureStart?app.slice(configureStart,configureEnd):'';
+for(const token of ['resonance:resonanceHostApi()','pulse:pulseHostApi()','ter:terHostApi()'])if(hostConfigure.includes(token))fail(`Core host must not expose legacy domain service ${token}`);
+for(const token of ['applyResonanceWorkspace:','renderSpacingPage,','renderGateAnalysis,','renderTerMaxPage,','renderPulseAnalysis:','togglePhysicsPanel:'])if(hostConfigure.includes(token))fail(`Core host configure block must not expose domain field ${token}`);
 if(!detector.includes('parameterSchema')||detector.includes('renderSettings('))fail('detectors must declare parameterSchema; Core renders settings UI.');
 if(!read('src/plugins/shell-navigation/plugin.js').includes("ctx.recipes.use('shell-navigation'"))fail('shell-navigation plugin must consume the Core recipe API.');
 if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use('workspace-safeguards'"))fail('workspace-safeguards plugin must consume the Core recipe API.');

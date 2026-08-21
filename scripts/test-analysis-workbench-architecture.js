@@ -83,7 +83,7 @@ assert(resonanceViews.includes("ctx.analysis.algorithms?.list?.({category:'peak-
   assert(terEntry.includes("ctx.modules.require('analysis-service')")&&terTop.includes("modules.require('builtin.ter-analysis','analysis-service')"),'TER SUPER/TOP must share the same Core-registered analysis-service module.');
   assert(pulseEntry.includes("ctx.modules.require('analysis-service')")&&pulseTop.includes("modules.require('builtin.pulse-analysis','analysis-service')"),'Pulse SUPER/TOP must share the same Core-registered analysis-service module.');
   const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
-  assert(resonanceEntry.includes('feature.createTop')&&resonanceEntry.includes('hostResonance?.restore?.'),'Resonance SUPER must use the same plugin-owned runtime service as TOP and sync through the generic Core Service Registry.');
+  assert(resonanceEntry.includes('feature.createTop')&&resonanceEntry.includes("ctx.services.require('builtin.resonance-workbench.runtime')"),'Resonance SUPER/TOP must use the plugin-owned runtime and must not mirror state through a host domain service.');
   const dataCenterEntry=read('src/plugins/data-center/plugin.js');
   assert(dataCenterEntry.includes("ctx.modules.require('controller')")&&dataCenterEntry.includes("ctx.modules.require('shared-views')")&&dataCenterEntry.includes("ctx.modules.require('super-layout')"),'Data Center must stay on the same Core-registered Controller/Shared Views/Feature Runtime stack.');
 }

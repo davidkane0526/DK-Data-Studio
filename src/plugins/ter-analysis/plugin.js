@@ -8,8 +8,10 @@
   },async ctx=>{
     const C=ctx.modules.require('controller'),V=ctx.modules.require('shared-views'),analysisService=ctx.modules.require('analysis-service');
     let ownedRuntime=null;
-    let service=ctx.services?.get?.('ter');
-    if(!ctx.runtime.isAuxiliaryWindow&&analysisService?.create){
+    let service=null;
+    if(ctx.runtime.isAuxiliaryWindow){
+      service=ctx.services.require('builtin.ter-analysis.runtime');
+    }else if(analysisService?.create){
       ownedRuntime=await analysisService.create({
         project:ctx.project.create?.()||{},
         bootstrap:{title:ctx.project.current?.()?.title||'当前项目'},

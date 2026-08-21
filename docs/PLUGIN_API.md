@@ -4,6 +4,8 @@ Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definiti
 
 Starting with DK Data Studio v3.42, API 1.8 gains backward-compatible Core surfaces for Entity identity, Artifact lineage and ScientificPlot. The API version remains `1.8.0` so existing v1.8 plugins continue to load unchanged; new plugins should consume the stronger surfaces instead of older compatibility shortcuts.
 
+For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.8 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
+
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
 ```js

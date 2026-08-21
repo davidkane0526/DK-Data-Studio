@@ -186,7 +186,7 @@ assert(withOverride.get('ter-override')?.source==='override','built-in override 
 // Resonance must now use a real dedicated plugin renderer rather than launching
 // a second copy of the full application renderer.
 assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must not load the full application renderer.');
-assert(resonanceFeatureRuntime.includes("serviceName:'resonance'"),'Resonance feature runtime must expose the normal plugin-window service contract while window-runtime stays host-only.');
+assert(resonanceFeatureRuntime.includes("serviceName:'builtin.resonance-workbench.runtime'"),'Resonance feature runtime must expose the normal plugin-window service contract while window-runtime stays host-only.');
 assert(resonanceFeatureRuntime.includes("builtin.resonance-workbench"),'Resonance feature runtime must restore only its namespaced plugin state.');
 assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');

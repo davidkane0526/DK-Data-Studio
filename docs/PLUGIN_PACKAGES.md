@@ -29,12 +29,13 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.2.0",
+    "apiVersion": "1.8.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
     "enabled": true,
-    "capabilities": ["analysis.peak-detector"]
+    "requiresCore": ["analysis.algorithms", "analysis.detectors"],
+  "capabilities": ["analysis.peak-detector"]
   },
   "files": {
     "plugin.js": "...JavaScript source...",
@@ -61,11 +62,20 @@ A complete external detector template is in:
 examples/external-plugins/resonance-detector-template/
 ```
 
-Package any external plugin folder with:
+For application maintainers, package any external plugin folder with:
 
 ```bash
 npm run plugin:package -- examples/external-plugins/resonance-detector-template detector.dkplugin
 ```
+
+For third-party developers, the standalone SDK requires no application source tree:
+
+```bash
+node sdk/tools/dkds-plugin.js validate my-plugin
+node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
+```
+
+The distributable SDK contains the manifest schema, API declarations, validator/packager and workspace/algorithm templates.
 
 The folder must contain `plugin.json` and its declared source/style files.
 

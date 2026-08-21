@@ -1,67 +1,74 @@
-# Next Session Handoff — v3.40.0
+# Next Session Handoff — v3.57.0
 
 ## Current checkout
 
-- Local working branch: `refactor/v3.40-strong-view-contract-layering`
-- Current delivery: `v3.40.0`
-- `main` remains the local v3.32.0 baseline until an explicit merge is requested.
-- Do not access or modify a remote repository unless the user explicitly asks.
+- Branch: `feat/v3.57-plugin-sdk-readiness`
+- Application: `3.57.0`
+- Plugin API: `1.8.0`
+- Standalone SDK: `sdk/`
 
 ## Architecture checkpoint
 
-GRS remains the mother design for the common DKDS Plugin Workspace Design System, but Resonance is not a special shell. Shared geometry, portable views, chart resize, direct scientific interaction and host command routing belong to Core.
+The current architecture target is strict **Host/Core/Plugin separation**.
 
-The control/data rail and scientific canvas are a **semantic separation, not a fixed 1/5:4/5 ratio**. The rail remains resizable. Fixed scientific left/right/bottom positions are canvas-relative.
+Core owns application infrastructure: project lifecycle, Artifact/Entity/Selection contracts, data/pipeline/transform/algorithm registries, ScientificPlot lifecycle, workspace geometry, I/O, scheduling and plugin lifecycle.
 
-Portable views now have two distinct floating meanings:
+Plugins own domain logic, domain state, domain types and domain views. Resonance, TER and Pulse no longer use host-provided `resonance / ter / pulse` services as a runtime fallback. Their dedicated TOP runtimes publish plugin-owned namespaced services:
 
-- `float`: managed scientific-canvas floating; can snap to scientific left/right/bottom docks;
-- `global`: whole-plugin free floating; can cross the control/science boundary and never auto-snaps into scientific docks.
+```text
+builtin.resonance-workbench.runtime
+builtin.ter-analysis.runtime
+builtin.pulse-analysis.runtime
+```
 
-Same-zone dock placements stack sequentially instead of overlapping. SUB pages are siblings of the scientific canvas and may use the whole plugin content area with independent scrolling. SUPER/TOP still mount the same internal Workspace/View/Controller tree.
+The main host no longer exposes those three domain services through `DKDSPlugins.configure(...)`.
 
-PRIMARY scrolling is explicit:
+## Standalone Plugin SDK
 
-- Resonance: `contained` interactive scientific canvas;
-- TER, Pulse and Data Center: `auto` long-workspace scrolling.
+`sdk/` is deliberately usable without the application source tree. It contains:
 
-The system “编辑操作” menu is now an active-plugin contract. Resonance registers undo/deselect there rather than duplicating those operations in PRIME/SUB command presentation. Dedicated TOP windows route Ctrl+Z/Escape through the same contract even though they do not load the main shell toolbar.
+```text
+sdk/
+├─ README.md
+├─ contract.json
+├─ plugin-api.d.ts
+├─ plugin-manifest.schema.json
+├─ tools/dkds-plugin.js
+└─ templates/
+   ├─ workspace-plugin/
+   └─ algorithm-provider/
+```
 
-Resonance Group uses stable child PortableViews and live visible/accepted-peak data. Group refresh uses `Plotly.react`, preserves child placement, has one compact header, and each child can use whole-interface free floating. Core PortableView owns close/collapse and automatic chart resize.
+A third-party developer can copy only `sdk/` and run:
 
-Pulse repeat-analysis reliability was fixed in the science core: `null`/blank optional sample ranges no longer coerce to zero. A failed rerun preserves the last valid result; a later successful rerun replaces it and clears the error.
+```bash
+node sdk/tools/dkds-plugin.js validate my-plugin
+node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
+```
 
+`node scripts/test-plugin-sdk-v357.js` copies the SDK to a temporary directory outside the repository before validating and packaging both templates. The generated packages are then accepted by the application's real `.dkplugin` normalizer. This is the release gate for “SDK does not depend on application source”.
 
-## v3.38 delta
+## Remaining architecture debt
 
-PortableView `home` now means the original semantic slot, not “append back to the current home container”. Core leaves a stable Home Anchor at construction, so Resonance group child plots return to the exact original sequence after any combination of dock/global-float moves.
+The **public plugin runtime path is now independent**, but `src/app.js` still contains historical domain state and legacy project-root fields for Resonance/TER migration and old shell compatibility. This is not a dependency of the SDK, but it is still host baggage.
 
-Resonance Group's `每行` control uses the Core ContextMenu and supports Auto/1–6 columns. Its label is synchronized from persisted workspace state.
+The next architecture stage should therefore be **Project Host Neutralization**, not new security infrastructure:
 
-The system `导出数据` menu is activity-contextual. Resonance, Pulse, TER and Data Center register semantic export targets; switching the active SUPER workspace changes the visible submenu automatically. Generic words such as `主图` are not used for Pulse/TER/Data Center.
+1. make current project saves canonical around `dataModel + plugins + generic panel/project metadata`;
+2. move legacy root-field migration into isolated compatibility readers rather than keeping dual live domain state;
+3. remove dead Resonance/TER/Pulse renderer/state code from `app.js` once no current path consumes it;
+4. add a host-neutral fixture that loads first-party TOP/SUPER plugins using only public Core contracts.
 
-Linux Chromium runtime verification is documented in `docs/VERIFICATION_V3.38.0.md`.
+Do not add capability permission/sandbox systems unless a real product requirement appears. The expected deployment is primarily trusted/local use.
 
 ## Validation
 
-Before delivery/future merge, rerun:
+Run before delivery:
 
 ```bash
-npm test
 npm run check
-node scripts/test-workspace-order-runtime-audit.js
-node scripts/test-pulse-service-repeatability.js
-node scripts/test-resonance-shared-architecture.js
-node scripts/test-ter-live-artifact-integration.js
+npm run test
+npm run sdk:test
 ```
 
-Linux Chromium runtime geometry/event verification is documented in `docs/VERIFICATION_V3.38.0.md`.
-## v3.40 delta
-
-The previous v3.39 PlotView abstraction was not yet strong enough: plugins could still miss hydration timing and Core reusable chrome could fall back to a matching selector elsewhere in the document. v3.40 moves standard scientific-figure assembly into the live PluginWorkspace lifecycle. PRIMARY/PRIME/SUB nodes are observed as they connect, binding is idempotent, and action hosts are strictly local to their own cards.
-
-PortableView layer order is now explicit: fixed/dock content < canvas float < global free float < context menu/modal. Global free-float views raise on focus/drag and cannot be hidden under the resonance group dock. Bottom-dock collapse participates in workspace geometry and returns unused height to PRIMARY. Close/collapse buttons use shared icon chrome.
-
-Resonance group layout is a PRIME ActionGroup and is mounted when the PRIME actually opens, so `每行：自动` does not depend on querying detached DOM. Standard plots across Resonance, TER, Pulse and Data Center are expected to receive generic plot controls through the Core registry.
-
-Linux Chromium runtime verification is documented in `docs/VERIFICATION_V3.40.0.md`.
+For built-runtime acceptance, run Software Management → Automation Test. Development Electron may still skip packaged-build identity; installer/portable validation is a separate release gate.

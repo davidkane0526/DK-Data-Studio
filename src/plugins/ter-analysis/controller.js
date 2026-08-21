@@ -7,7 +7,7 @@
       ['ter.matrix-result',{title:'TER 矩阵结果',parents:['result.analysis','science.ter.matrix'],kind:'result',key:v=>v?.id||'ter-matrix',selection:v=>({id:v?.id||'ter-matrix',ref:{resultId:v?.id||'ter-matrix'},value:{id:v?.id||'ter-matrix',rows:v?.rows??v?.matrix?.length,cols:v?.cols??v?.matrix?.[0]?.length}})}]
     ]){if(!ctx.data.types.get(id))ctx.data.types.register(id,spec);}
     const interaction=ctx.ui.interaction?.create?.('ter',{selection:{multiple:true,defaultType:'ter.matrix-point'},defaultType:'ter.matrix-point'});const selection=interaction?.selection||ctx.ui.selection.model('ter:selection',{multiple:true,defaultType:'ter.matrix-point'});
-    const service=options.service||ctx.services?.get?.('ter');
+    const service=options.service;
     if(!service)throw new Error('TER service is unavailable.');
     const listeners=new Set();
     const api={
