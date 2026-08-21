@@ -44,7 +44,7 @@
     return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
   }
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -67,7 +67,6 @@
       let algorithmPipelineInstalled=false;
       let peakMetricCache=new WeakMap();
       let peakMetricRevision=0;
-      let metricRenderFrame=null;
       let interactionRuntime=null;
       let interactionSelection=null;
       let interactionSelectionOff=null;
@@ -88,6 +87,26 @@
       const registeredEntityIds=new Set();
       let groupRenderKey='';
       let runtimeDefaults={groupColumns:'auto'};
+      let reactiveRuntime=reactive||null;
+      let reactiveViewsInstalled=false;
+      const reactivePeakGeometry=p=>`resonance.peak.geometry:${String(p?.id||'')}`;
+      const reactivePeakMetricInput=p=>`resonance.peak.metric-input:${String(p?.id||'')}`;
+      const reactivePeakMetricValue=p=>`resonance.peak.metrics:${String(p?.id||'')}`;
+      function reactiveTouch(keys,meta={}){try{return reactiveRuntime?.touch?.(keys,meta)||null;}catch(err){console.warn('[resonance reactive touch]',err);return null;}}
+      function invalidatePeakMetric(p,{geometry=false,reason='peak-edit',refresh=true}={}){
+        if(!p)return;peakMetricCache.delete(p);peakMetricRevision+=1;physicsCache={key:'',value:null};
+        const keys=[reactivePeakMetricInput(p),'resonance.peak.metric-input'];
+        if(geometry)keys.push(reactivePeakGeometry(p),'resonance.peak.geometry');
+        if(reactiveRuntime?.transact)reactiveRuntime.transact(`resonance:${reason}`,tx=>tx.touch(keys,{peakId:p.id,reason}));else reactiveTouch(keys,{peakId:p.id,reason});
+        if(refresh)void refreshPeakMetric(p);
+      }
+      function publishPeakMetricValue(p,reason='metric-resolved'){reactiveTouch([reactivePeakMetricValue(p),'resonance.peak.metrics'],{peakId:p?.id||'',reason});}
+      function installReactiveViews(){
+        if(reactiveViewsInstalled||!reactiveRuntime?.effect)return;reactiveViewsInstalled=true;
+        reactiveRuntime.effect('resonance.view.main',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.visibility'],scheduler:'frame',effect:()=>{if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.('reactive');}});
+        reactiveRuntime.effect('resonance.view.inspector',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.selection'],scheduler:'frame',effect:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();}});
+        reactiveRuntime.effect('resonance.view.group',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.visibility','resonance.group.settings'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null){groupRenderKey='';renderGroup();}}});
+      }
       let undoStack=[];
       let committedWorkspace=null;
       const workspaceFingerprint=value=>{try{return JSON.stringify(value);}catch{return '';}};
@@ -580,14 +599,13 @@
         const idx=Math.max(0,Math.min(points.length-1,Number(index)||0)),pt=points[idx],oldV=Number(p.v);
         p.index=Number.isFinite(Number(pt.index))?Number(pt.index):idx;p.v=Number(pt.v);p.i=Number(pt.i);p.manual=true;
         const delta=Number(p.v)-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(p.widthLeft)))p.widthLeft=Number(p.widthLeft)+delta;if(Number.isFinite(Number(p.widthRight)))p.widthRight=Number(p.widthRight)+delta;if(Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(p.analysisLeft)+delta;if(Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(p.analysisRight)+delta;}
-        peakMetricCache.delete(p);peakMetricRevision+=1;physicsCache={key:'',value:null};groupRenderKey='';
       }
       function clearMainRangeMenu({keepSelection=false}={}){
         $('#resparRangeMenu')?.classList.add('hidden');
         if(!keepSelection)selectedRange=null;
       }
       function showMainRangeMenu(range,event){
-        selectedRange={...range};publishRangeSelection({axis:'Vd',min:range.vMin,max:range.vMax,sweepId:range.sweepId||''},'resonance-main-range');
+        selectedRange={...range,target:'markers',targetType:'resonance.peak'};publishRangeSelection(selectedRange,'resonance-main-range');
         const menu=$('#resparRangeMenu'),wrap=$('#resparMainPlotWrap');if(!menu||!wrap)return;
         const count=peaksInRange(selectedRange).length,targets=range.sweepId?1:visibleSweeps().length;
         const summary=$('#resparRangeSummary');if(summary)summary.textContent=`Vd ${fmt(range.vMin,4)} ~ ${fmt(range.vMax,4)} V · 框内 ${count} 个峰 · 局部寻峰作用于${range.sweepId?'当前曲线':`${targets} 条可见曲线`}`;
@@ -632,7 +650,7 @@
         mainSurface=factory.create(node,{
           container:'#resparMainPlotWrap',minWidth:260,minHeight:180,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
           yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
-          interaction:interactionRuntime,source:'resonance-main',
+          interaction:interactionRuntime,source:'resonance-main',rangeSelectionTarget:'markers',rangeSelectionType:'resonance.peak',
           getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),entityId:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
           getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
           getMarkers:()=>mainSurfaceMarkers(),
@@ -650,13 +668,13 @@
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
-          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));const m=peakMetrics(p)||{};if(!Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(m.analysisLeft);if(!Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(m.analysisRight);p.analysisManual=true;physicsCache={key:'',value:null};},
-          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
-          onWidthDragEnd:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();},
+          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;invalidatePeakMetric(p,{geometry:true,reason:'peak-drag'});publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
+          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));p.analysisManual=true;},
+          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;invalidatePeakMetric(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
+          onWidthDragEnd:({marker})=>{const p=marker?.source;if(p)invalidatePeakMetric(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
-          onRangeSelect:({xMin,xMax,yMin,yMax,event})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:''},event),
+          onRangeSelect:({xMin,xMax,yMin,yMax,event,markers,markerIds,target,targetType})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:markers||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),
           onClearSelection:()=>{selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();},
           onReset:()=>{workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
           onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');},
@@ -683,8 +701,10 @@
       function scheduleMetricRefresh(rows=[]){for(const p of rows||[])void refreshPeakMetric(p);}
       function storePeakMetric(p,signature,value,provider){
         if(!value||typeof value!=='object')return null;
+        const sw=sweepById(p?.sweepId),current=metricProvider();
+        if(!sw||!current||metricSignature(p,sw,current)!==signature)return null;
         const ref={id:provider.id,version:provider.version,category:'peak-metrics'},next={...value,algorithm:algorithmRuntime?.provenance?.(ref)||{pluginId:provider.owner||'',algorithmId:provider.id,algorithmVersion:provider.version,category:'peak-metrics',title:provider.title||provider.id}};
-        peakMetricCache.set(p,{signature,value:next,promise:null});peakMetricRevision+=1;physicsCache={key:'',value:null};return next;
+        peakMetricCache.set(p,{signature,value:next,promise:null});peakMetricRevision+=1;physicsCache={key:'',value:null};publishPeakMetricValue(p);return next;
       }
       function tryPeakMetricSync(p,sw,provider,signature){
         const ref={id:provider.id,version:provider.version,category:'peak-metrics'};installAlgorithmPipeline();
@@ -698,7 +718,7 @@
         const sw=sweepById(p?.sweepId),provider=metricProvider();if(!p||!sw||!provider)return null;
         const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature){if(cached.value)return cached.value;if(cached.promise)return cached.promise;}
         const ref={id:provider.id,version:provider.version,category:'peak-metrics'};installAlgorithmPipeline();
-        const promise=(async()=>{try{let value;if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.metrics',{peak:p,sweep:sw},{parameters:{algorithmRef:ref,settings:{}},publish:false});value=result?.value;}else value=await provider.run?.({peak:p,sweep:sw},{parameters:{}});const stored=storePeakMetric(p,signature,value,provider);if(stored){if(!metricRenderFrame){const flushMetricRender=()=>{metricRenderFrame=null;if($('#reswinMainPlot'))render();};if(dom?.frame)metricRenderFrame=dom.frame(flushMetricRender);else flushMetricRender();}return stored;}}catch(err){console.warn('[resonance peak metrics algorithm]',p?.id,err);}peakMetricCache.set(p,{signature,value:null,promise:null});return null;})();
+        const promise=(async()=>{try{const compute=async()=>{if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.metrics',{peak:p,sweep:sw},{parameters:{algorithmRef:ref,settings:{}},publish:false});return result?.value;}return provider.run?.({peak:p,sweep:sw},{parameters:{}});};const task=reactiveRuntime?.runLatest?await reactiveRuntime.runLatest(`resonance.metric:${p.id}`,compute,{dependsOn:[reactivePeakGeometry(p),reactivePeakMetricInput(p)]}):{accepted:true,value:await compute()};if(!task?.accepted)return null;return storePeakMetric(p,signature,task.value,provider);}catch(err){console.warn('[resonance peak metrics algorithm]',p?.id,err);}if(metricSignature(p,sweepById(p?.sweepId),metricProvider()||provider)===signature)peakMetricCache.set(p,{signature,value:null,promise:null});return null;})();
         peakMetricCache.set(p,{signature,value:null,promise});return promise;
       }
       function peakMetrics(p){const sw=sweepById(p?.sweepId);if(!sw||!p)return null;const provider=metricProvider();if(!provider&&missingLockedAlgorithm('peak-metrics',workspace.activeMetricAlgorithm))return null;if(provider){const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature&&cached.value)return cached.value;if(!cached||cached.signature!==signature||!cached.promise){const sync=tryPeakMetricSync(p,sw,provider,signature);if(sync)return sync;void refreshPeakMetric(p);}return null;}return S.peakMetrics?.(p,sw)||null;}
@@ -1096,7 +1116,7 @@
         index=Math.max(0,Math.min(points.length-1,index+(Number(step)||0)));
         const point=points[index],oldV=Number(peak.v);peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):index;peak.manual=true;
         const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;if(Number.isFinite(Number(peak.analysisLeft)))peak.analysisLeft=Number(peak.analysisLeft)+delta;if(Number.isFinite(Number(peak.analysisRight)))peak.analysisRight=Number(peak.analysisRight)+delta;}
-        peakMetricCache.delete(peak);peakMetricRevision+=1;physicsCache={key:'',value:null};groupRenderKey='';publishPeakSelection(peak,'resonance-peak-move');if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();scheduleSnapshot();return true;
+        invalidatePeakMetric(peak,{geometry:true,reason:'peak-keyboard-move'});publishPeakSelection(peak,'resonance-peak-move');scheduleSnapshot();return true;
       }
       function selectAdjacentPeak(step){
         const sw=selectedSweep();if(!sw)return false;const rows=(workspace.peaks||[]).filter(p=>p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));if(!rows.length)return false;
@@ -1124,11 +1144,11 @@
         reset(){workspace=defaultWorkspace(project);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(gateResult?.featureField||gateFeatureField()),gateFeatureFieldCsv,
-        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;groupRenderKey='';renderGroup();scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
+        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRenderKey='';if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
-        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;syncDerivedArtifacts();},
+        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;installReactiveViews();syncDerivedArtifacts();},
         setEntityRuntime(runtime){entityRuntime=runtime||null;syncEntities();},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},
@@ -1140,7 +1160,7 @@
         selectSweep:(id,options={})=>{const sw=sweepById(id);return sw?publishSweepSelection(sw,options.source||'resonance-api'):false;},
         selectRange:(range,options={})=>publishRangeSelection(range,options.source||'resonance-api'),
         setActiveDetector(id){workspace.activeDetector=String(id||'');renderControls();scheduleSnapshot();},
-        setActiveMetricAlgorithm(id){workspace.activeMetricAlgorithm=String(id||'');peakMetricCache=new WeakMap();peakMetricRevision+=1;physicsCache={key:'',value:null};render();scheduleSnapshot();},
+        setActiveMetricAlgorithm(id){workspace.activeMetricAlgorithm=String(id||'');peakMetricCache=new WeakMap();peakMetricRevision+=1;physicsCache={key:'',value:null};reactiveTouch(['resonance.peak.metric-input','resonance.peak.metrics'],{reason:'metric-algorithm'});scheduleMetricRefresh(workspace.peaks||[]);renderControls();scheduleSnapshot();},
         setDetectorSettings(id,value){const key=String(id||workspace.activeDetector||'');if(!key)return;workspace.detectorSettings={...(workspace.detectorSettings||{}),[key]:clone(value||{})};scheduleSnapshot();},
         setPeakDisplay(key,value){workspace.peakDisplay={...(workspace.peakDisplay||{}),[String(key)]:!!value};renderMainPlot();scheduleSnapshot();},
         switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,clearSelection,undoLastAction,togglePhysicsLabels,

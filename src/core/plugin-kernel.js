@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.9.0';
+  const API_VERSION = '1.10.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1337,6 +1337,7 @@
     const chartScope = window.DKDSCharts?.createScope?.(pluginId) || null;
     const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
     const dataFlowScope = window.DKDSDataFlow?.createScope?.(pluginId) || null;
+    const scientificReactiveScope = window.DKDSScientificReactive?.createScope?.(pluginId) || null;
     const scientificPipelineScope = window.DKDSScientificPipeline?.createScope?.(pluginId) || null;
     const scientificTransformScope = window.DKDSScientificTransforms?.createScope?.(pluginId) || null;
     const scientificAlgorithmScope = window.DKDSScientificAlgorithms?.createScope?.(pluginId) || null;
@@ -1347,6 +1348,7 @@
     if (ioScope) addCleanup(pluginId, () => window.DKDSIO?.disposeOwner?.(pluginId));
     if (chartScope) addCleanup(pluginId, () => window.DKDSCharts?.disposeOwner?.(pluginId));
     if (dataFlowScope) addCleanup(pluginId, () => window.DKDSDataFlow?.removeOwner?.(pluginId));
+    if (scientificReactiveScope) addCleanup(pluginId, () => window.DKDSScientificReactive?.removeOwner?.(pluginId));
     if (scientificPipelineScope) addCleanup(pluginId, () => window.DKDSScientificPipeline?.removeOwner?.(pluginId));
     if (scientificTransformScope) addCleanup(pluginId, () => window.DKDSScientificTransforms?.removeOwner?.(pluginId));
     if (scientificAlgorithmScope) addCleanup(pluginId, () => window.DKDSScientificAlgorithms?.removeOwner?.(pluginId));
@@ -1534,6 +1536,7 @@
           curveStageId:id=>scientificTransformScope.curveStageId(id),
           fieldStageId:id=>scientificTransformScope.fieldStageId(id)
         }) : null,
+        reactive: scientificReactiveScope || null,
         pipeline: scientificPipelineScope ? Object.freeze({
           version:scientificPipelineScope.version,
           register:(id,spec)=>scientificPipelineScope.register(id,spec),

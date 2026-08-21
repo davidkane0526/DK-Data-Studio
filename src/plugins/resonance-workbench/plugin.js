@@ -2,8 +2,8 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',
     name:'Resonance Workbench',
-    version:'3.59.0',
-    apiVersion:'1.9.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
+    version:'3.60.0',
+    apiVersion:'1.10.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
     source:'builtin',
@@ -29,7 +29,7 @@
         scheduleSnapshot:()=>ctx.project.capture?.(),
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
         savePlotlyImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
-        io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,
+        io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,reactive:ctx.data.reactive,
         adapter:{mode:'super',root:ctx.ui.dom.query('#app')}
       });
       service=runtime.service;

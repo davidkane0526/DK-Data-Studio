@@ -5,7 +5,7 @@ export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[
 export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; artifactId:string }
 export interface DKDSDataSourcesCapability { list():Promise<DKDSDataSourceDescriptor[]>; rename(ref:{path?:string;sourcePath?:string}|string,label:string):Promise<any>; setExcluded(ref:{path?:string;sourcePath?:string}|string,value?:boolean):Promise<any>; remove(refs:Array<{path?:string;sourcePath?:string}>|{path?:string;sourcePath?:string}):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}> }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.9.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
   window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';width?:number;height?:number;minWidth?:number;minHeight?:number};
@@ -31,8 +31,20 @@ export interface DKDSTableRuntime {
 export interface DKDSSettingsSurface<T=Record<string,any>> { get(key?:string):T|any; set(patch:Partial<T>,meta?:any):T; reset(meta?:any):T; subscribe(fn:(value:T,meta?:any)=>void,options?:{immediate?:boolean}):()=>void; open(options?:any):HTMLElement|null; button(container:any,options?:any):HTMLButtonElement|null; dispose():void }
 export interface DKDSSettingsRuntime { define<T=Record<string,any>>(id:string,spec:{title?:string;description?:string;defaults?:Partial<T>;fields?:Array<{id:string;label?:string;description?:string;type?:'text'|'number'|'select'|'boolean'|'checkbox';options?:any[];min?:number;max?:number;step?:number}>;onApply?:(value:T,meta?:any)=>void}):DKDSSettingsSurface<T>; get(id?:string):DKDSSettingsSurface|null }
 
+
+export interface DKDSReactiveTaskResult<T=any>{accepted:boolean;stale:boolean;token:number;value:T}
+export interface DKDSReactiveEntry { id:string; kind:'derived'|'effect'; dependsOn:readonly string[]; dispose():void }
+export interface DKDSReactiveRuntime {
+  readonly version:string; readonly owner:string; revision(id:string):number; value<T=any>(id:string):T|undefined; signature(ids:string[]|string):string;
+  setValue<T=any>(id:string,value:T,options?:{touch?:boolean;meta?:any}):T; touch(keys:string|string[],meta?:any):any; transact<T=any>(label:string,fn:(tx:{id:number;label:string;owner:string;meta:any;touch(keys:string|string[],meta?:any):void})=>T,meta?:any):T;
+  derive(id:string,spec:{dependsOn?:string[];compute:(ctx:any)=>any;immediate?:boolean;scheduler?:'microtask'|'frame';when?:(ctx:any)=>boolean}):DKDSReactiveEntry;
+  effect(id:string,spec:{dependsOn?:string[];effect:(ctx:any,meta?:any)=>any;immediate?:boolean;scheduler?:'microtask'|'frame';when?:(ctx:any)=>boolean}):DKDSReactiveEntry;
+  runLatest<T=any>(id:string,work:(ctx:any)=>T|Promise<T>,options?:{dependsOn?:string[];publish?:string}):Promise<DKDSReactiveTaskResult<T>>;
+  flushNow():boolean; subscribe(fn:(event:any,runtime:DKDSReactiveRuntime)=>void,options?:{immediate?:boolean}):()=>void; snapshot():any;
+}
+
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.9.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.10.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
@@ -47,7 +59,7 @@ export interface DKDSPluginContext {
   readonly capabilities:{register(id:string,spec:any):any;get(id:string):any;require(id:string,options?:any):any;proxy(id:string):any;list(query?:any):any[];invoke(id:string,method:string,...args:any[]):any;watch(fn:(event:any)=>void,options?:any):()=>void;snapshot():any};
   readonly state:{create<T=any>(initial:T,options?:any):DKDSStateStore<T>};
   readonly data:{
-    model:any; formula:any; flow:any;
+    model:any; formula:any; flow:any; reactive:DKDSReactiveRuntime;
     importers:{register(id:string,spec:any):any;list():any[]}; exporters:any; transformers:any; analyzers:any;
     pipeline:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;list(query?:any):any[];run(id:string,input:any,options?:any):Promise<any>;runSync(id:string,input:any,options?:any):any;runPlan(plan:any,input:any,options?:any):any;snapshot():any};
     transforms:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;resolve(value:any):any;list(query?:any):any[];runCurve(id:string,input:any,options?:any):any;runScalarField(id:string,input:any,options?:any):any;curveStageId(id:string):string;fieldStageId(id:string):string};

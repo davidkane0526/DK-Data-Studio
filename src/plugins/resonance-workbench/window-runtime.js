@@ -9,7 +9,7 @@
         root:dom?.query?.('#app'),
         resize:()=>window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'resonance-top-adapter'})
       };
-      return feature.createTop({...args,adapter,io:window.DKDSIO?.createScope?.('builtin.resonance-workbench')||window.DKDSIO,charts:window.DKDSCharts?.createScope?.('builtin.resonance-workbench')||window.DKDSCharts,dom});
+      return feature.createTop({...args,adapter,reactive:window.DKDSScientificReactive?.createScope?.('builtin.resonance-workbench')||null,io:window.DKDSIO?.createScope?.('builtin.resonance-workbench')||window.DKDSIO,charts:window.DKDSCharts?.createScope?.('builtin.resonance-workbench')||window.DKDSCharts,dom});
     }
   });
 })();

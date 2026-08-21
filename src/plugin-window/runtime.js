@@ -35,6 +35,7 @@
     'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
     'component-runtime':'../core/component-runtime.js',
     'data-flow-runtime':'../core/data-flow-runtime.js',
+    'scientific-reactive-runtime':'../core/scientific-reactive-runtime.js',
     'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js',
     'scientific-transform-runtime':'../core/scientific-transform-runtime.js',
     'scientific-algorithm-runtime':'../core/scientific-algorithm-runtime.js',
@@ -51,6 +52,7 @@
   let artifactStore = null;
   let pluginRuntime = null;
   let ready = false;
+  let plotlyRequested = false;
   let snapshotTimer = null;
   let roleTransitionSnapshotTaken = false;
   let artifactUpserts = new Map();
@@ -145,6 +147,7 @@
   async function loadDependencies(spec) {
     const requested = Array.isArray(spec?.dependencies) ? spec.dependencies : [];
     const requestedPlotly=requested.map(id=>String(id||'').trim()).includes('plotly');
+    plotlyRequested=requestedPlotly;
     const ordered = [];
     for (const id of requested) {
       const key = String(id || '').trim();
@@ -179,6 +182,19 @@
       zones:{overlay:'#app',main:'#app',left:'#pluginWindowLeftDock',right:'#pluginWindowRightDock',bottom:'#pluginWindowBottomDock'}
     });
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
+  }
+
+  function scheduleDeclaredChartWarmup() {
+    if (!plotlyRequested || !window.DKDSCharts?.ensurePlotly) return;
+    const warm = () => {
+      void Promise.resolve(window.DKDSCharts.ensurePlotly({reason:'idle-preload'}))
+        .catch(err => console.warn('[DKDS plugin window Plotly idle preload]', err));
+    };
+    // Keep renderer startup non-blocking, but do not make the user's first
+    // scientific action pay Plotly parse/eval cost. This is Core-owned for
+    // every dedicated TOP that declares the logical `plotly` dependency.
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(warm,{timeout:350});
+    else setTimeout(warm,120);
   }
 
   function safeSegment(value) {
@@ -405,7 +421,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.59.0',
+      appVersion:'3.60.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -526,6 +542,7 @@
     startupProfile.algorithmProviders=(spec.algorithmProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.algorithmCategories||[])],source:provider.source}));
     startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     window.electronAPI?.markActivityWindowReady?.({startupProfile});
+    scheduleDeclaredChartWarmup();
   }
 
   async function replaceProjectFromBootstrap(nextBootstrap) {

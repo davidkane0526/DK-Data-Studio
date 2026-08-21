@@ -2,11 +2,11 @@
   "id": "example.plugin",
   "name": "Example Plugin",
   "version": "0.4.0",
-  "apiVersion": "1.9.0",
+  "apiVersion": "1.10.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 900,
-  "description": "Core-first plugin template. Domain logic is declared by the plugin; infrastructure is consumed only through Plugin API v1.9.",
+  "description": "Core-first plugin template. Domain logic is declared by the plugin; infrastructure is consumed only through Plugin API v1.10.",
   "capabilities": [
     "ui.page",
     "ui.analysis-workbench",

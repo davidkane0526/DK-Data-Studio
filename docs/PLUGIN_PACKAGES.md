@@ -29,7 +29,7 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.9.0",
+    "apiVersion": "1.10.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
@@ -228,8 +228,8 @@ Algorithm Provider packages should declare the exact algorithms that the package
     {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
   ],
   "compatibility": {
-    "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.9.0"
+    "app": ">=3.60.0 <4.0.0",
+    "pluginApi": "^1.10.0"
   }
 }
 ```

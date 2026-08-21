@@ -12,7 +12,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,artifacts,io=window.DKDSIO,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
@@ -135,7 +135,7 @@
         select.innerHTML=(missing?`<option value="${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}">缺失版本 · ${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}</option>`:'')+rows.map(row=>`<option value="${String(row.id)}@${String(row.version)}">${String(row.title||row.id)} · ${String(row.id)}@${String(row.version)}</option>`).join('');
         if(resolved){terAlgorithmRef=api?.lock?.({category:'ter-analysis',id:resolved.id,version:resolved.version})||{category:'ter-analysis',id:resolved.id,version:resolved.version};select.value=`${resolved.id}@${resolved.version}`;}else if(missing)select.value=`${terAlgorithmRef.id}@${terAlgorithmRef.version}`;
         const recover=$('#terRecoverAlgorithmBtn');if(recover){recover.classList.toggle('hidden',!missing||typeof api?.recover!=='function');recover.disabled=false;if(recover.dataset.terRecoverBound!=='1'){recover.dataset.terRecoverBound='1';recover.addEventListener('click',async()=>{recover.disabled=true;try{const catalog=await api.locate?.(terAlgorithmRef);const compatible=(catalog?.candidates||[]).filter(row=>row.compatible&&row.recoverable);if(!compatible.length){const found=(catalog?.candidates||[]).length;setStatus(found?`已定位到 ${found} 个包含该 TER 算法的包，但当前环境不兼容。`:`未在当前包或插件历史中找到 ${terAlgorithmRef.id}@${terAlgorithmRef.version}。`);return;}const restored=await api.recover(terAlgorithmRef,compatible[0]);setStatus(`已恢复 TER 算法 ${restored.id}@${restored.version}。`);syncTerAlgorithmControl();render();}catch(err){setStatus(`恢复 TER 算法失败：${err.message}`);}finally{recover.disabled=false;}});}}
-        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;matrixViewModel=null;invalidateComputeCaches();render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
+        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;matrixViewModel=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'algorithm-change'});render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
       }
       function syncInputs(){
         setInput('terVmin',settings.vmin);setInput('terVmax',settings.vmax);
@@ -200,31 +200,14 @@
             vmin:result.used.vmin,vmax:result.used.vmax,vstep:result.used.vstep,
             tolerance:result.used.tolerance,currentFloor:result.used.currentFloor
           };
-          syncInputs();renderResult();publishDerivedArtifacts();scheduleSnapshot();
+          syncInputs();renderResult();publishDerivedArtifacts();reactive?.touch?.('ter.result',{reason:'calculate'});scheduleSnapshot();
           setStatus(`TER 热图计算完成：${result.vgs.length} 个 Vg × ${result.targets.length} 个 Vd。`);
           return result;
         }catch(err){
-          result=null;
+          result=null;reactive?.touch?.('ter.result',{reason:'calculate-failed'});
           if($('#terSummary'))$('#terSummary').innerHTML=`<span class="ter-summary-chip">计算失败：${String(err.message||err)}</span>`;
           setStatus(`TER_max 计算失败：${err.message||err}`);
           return null;
-        }
-      }
-
-      function plotConfig(name){
-        return {responsive:true,scrollZoom:true,displaylogo:false,toImageButtonOptions:{format:'png',filename:name,width:1400,height:900,scale:2}};
-      }
-      function baseLayout(xTitle,yTitle){
-        return {
-          margin:{l:72,r:24,t:20,b:60},
-          xaxis:{title:xTitle,gridcolor:'#edf0f5',automargin:true},
-          yaxis:{title:yTitle,gridcolor:'#edf0f5',automargin:true},
-          dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
-        };
-      }
-      function purge(){
-        for(const id of ['terHeatmapPlot','terMaxVgPlot','terMaxVgArgPlot','terMaxVdPlot','terMaxVdArgPlot']){
-          const el=dom?.query?.('#'+id);if(el)try{charts.purge(el);}catch{}
         }
       }
 
@@ -237,40 +220,7 @@
           `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`,
           `算法：${r.algorithm?.algorithmId||terAlgorithmRef.id}@${r.algorithm?.algorithmVersion||terAlgorithmRef.version}`
         ].map(t=>`<span class="ter-summary-chip">${t}</span>`).join('');
-
-        // Analysis is intentionally headless-safe: chart availability must not
-        // determine whether the scientific result exists or can be persisted.
-        if(!charts?.react)return;
-        const vals=r.matrix.flat().filter(Number.isFinite);
-        const autoMin=vals.length?Math.min(...vals):0,autoMax=vals.length?Math.max(...vals):1;
-        const zmin=finite(display.zmin)?Number(display.zmin):autoMin;
-        const zmax=finite(display.zmax)?Number(display.zmax):autoMax;
-        const pipelineTrace=matrixViewModel?.traces?.[0]||null;
-        const terField={x:pipelineTrace?.x||r.targets,y:pipelineTrace?.y||r.vgs,z:pipelineTrace?.z||r.matrix,xName:'Vds',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',diverging:false};
-        charts.scalarField('terHeatmapPlot',terField,{colorscale:display.colorscale||'Viridis',zmin,zmax,hovertemplate:pipelineTrace?.hovertemplate||'Vg=%{y}<br>Vds=%{x}<br>TER=%{z:.4g}%<extra></extra>',
-          colorbar:{title:{text:'TER (%)',side:'right'},thickness:18,len:.86,tickmode:display.colorDtick?'linear':'auto',dtick:display.colorDtick||undefined},
-          xaxis:{title:'Vds (V)',tickmode:display.xDtick?'linear':'auto',dtick:display.xDtick||undefined,automargin:true,constrain:'domain'},
-          yaxis:{title:'Vg (V)',tickmode:display.yDtick?'linear':'auto',dtick:display.yDtick||undefined,automargin:true,constrain:'domain'},config:plotConfig('TER_heatmap'),source:'ter-heatmap',renderKey:`ter:${r.vgs.length}:${r.targets.length}:${r.missing}:${terAlgorithmRef.id}@${terAlgorithmRef.version}`})
-          .catch?.(err=>console.warn('[TER heatmap]',err));
-
         const maxVg=r.terMaxByVg||r.terMax||[],maxVd=r.terMaxByVd||[];
-        charts.react('terMaxVgPlot',[{
-          x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.terMax),mode:'lines+markers',name:'TER_Max–Vg',
-          marker:{size:8},line:{width:2},customdata:maxVg.map(d=>d.vdsAtMax),
-          hovertemplate:'Vg=%{x}<br>TER_Max=%{y:.5g}%<br>Vd@max=%{customdata:.5g} V<extra></extra>'
-        }],baseLayout('Vg (V)','TER_Max–Vg (%)'),plotConfig('TER_Max-Vg'));
-        charts.react('terMaxVgArgPlot',[{
-          x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.vdsAtMax),mode:'lines+markers',name:'Vd@max',marker:{size:8}
-        }],baseLayout('Vg (V)','Vd @ TER_Max–Vg (V)'),plotConfig('Vd_at_TER_Max-Vg'));
-        charts.react('terMaxVdPlot',[{
-          x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.terMax),mode:'lines+markers',name:'TER_Max–Vd',marker:{size:7},line:{width:2},
-          customdata:maxVd.map(d=>d.vgAtMax),
-          hovertemplate:'Vd=%{x}<br>TER_Max=%{y:.5g}%<br>Vg@max=%{customdata:.5g} V<extra></extra>'
-        }],baseLayout('Vd (V)','TER_Max–Vd (%)'),plotConfig('TER_Max-Vd'));
-        charts.react('terMaxVdArgPlot',[{
-          x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.vgAtMax),mode:'lines+markers',name:'Vg@max',marker:{size:7}
-        }],baseLayout('Vd (V)','Vg @ TER_Max–Vd (V)'),plotConfig('Vg_at_TER_Max-Vd'));
-
         if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML=`
           <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th></tr></thead>
           <tbody>${maxVg.map(d=>`<tr><td>${d.vg}</td><td>${Number(d.terMax).toPrecision(7)}</td><td>${d.vdsAtMax}</td><td>${Number(d.iUp).toExponential(6)}</td><td>${Number(d.iDown).toExponential(6)}</td><td>${Number(d.rUp).toExponential(6)}</td><td>${Number(d.rDown).toExponential(6)}</td></tr>`).join('')}</tbody>`;
@@ -285,7 +235,6 @@
         if(result)renderResult();
         else{
           if($('#terSummary'))$('#terSummary').innerHTML='<span class="ter-summary-chip">尚未计算 TER_max</span>';
-          purge();
           if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML='';
           if($('#terMaxVdTable'))$('#terMaxVdTable').innerHTML='';
         }
@@ -345,7 +294,7 @@
           terAlgorithmRef=normalizeAlgorithmRef(source.algorithmRef||DEFAULT_TER_ALGORITHM);
           transform.type=normalizeTransformType(transform.type);
           transform.direction=Number(transform.direction)<0?-1:1;
-          result=source.result?cloneSerializable(source.result):null;invalidateComputeCaches();
+          result=source.result?cloneSerializable(source.result):null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'restore'});
           if($('#terSummary'))render();
         },
         reset(){
@@ -353,16 +302,16 @@
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
           transform={type:'didv',direction:1};
           terAlgorithmRef={...DEFAULT_TER_ALGORITHM};
-          result=null;invalidateComputeCaches();
+          result=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'reset'});
           if($('#terSummary'))render();
           scheduleSnapshot();
         },
         render,getState:()=>({settings,display,transform,algorithmRef:cloneSerializable(terAlgorithmRef),result}),autoParameters,calculate,listTerAlgorithms,getTerAlgorithmRef:()=>cloneSerializable(terAlgorithmRef),
         getTransformSettings:()=>cloneSerializable(transform),getTransformDefinition:()=>cloneSerializable(transformDefinition()),listTransforms:()=>transforms?.list?.({supportsScalarField:true})||[],setTransformSettings,getTransformMatrix:transformMatrix,transformCsv,
-        applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
+        applyDisplay(){readDisplay();if(result)renderResult();reactive?.touch?.('ter.view.request',{reason:'display'});setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
-          syncDisplay();if(result)renderResult();scheduleSnapshot();setStatus('TER 热图色阶和坐标刻度已恢复自动。');
+          syncDisplay();if(result)renderResult();reactive?.touch?.('ter.view.request',{reason:'display-reset'});scheduleSnapshot();setStatus('TER 热图色阶和坐标刻度已恢复自动。');
         },
         setOnlyFullyVisible(value){settings.onlyFullyVisible=!!value;invalidateComputeCaches();autoParameters();},
         exportLong:()=>saveCsv('TER_long.csv',longCsv()),

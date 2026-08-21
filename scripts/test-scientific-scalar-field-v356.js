@@ -17,29 +17,26 @@ const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 assert(plot.includes("const VERSION='2.2.0'"),'ScientificPlot 2.2.0 must own the shared scalar-field surface.');
 for(const token of ['function scalarFieldSpec(field={},options={})','async scalarField(target,field={},options={})','scalarFieldSpec'])assert(plot.includes(token),`ScientificPlot scalar-field token missing: ${token}`);
 assert(ui.includes('scalarField:(target,field={},options={})=>this.scientificPlotly?.scalarField?.(target,field,options)||null'),'Plugin UI scope must expose shared scalarField().');
-assert(terService.includes('charts.scalarField('),'TER primary heatmap must consume the shared scalar-field surface.');
-assert(terFeature.includes('scientificPlot.scalarField('),'TER transform heatmap must consume the shared scalar-field surface.');
-assert(terWindowRuntime.includes("window.DKDSUI?.createScope?.('builtin.ter-analysis')")&&terWindowRuntime.includes('runtimeUi?.scientificPlot'),'TER dedicated TOP runtime must inject the managed ScientificPlot contract instead of a raw chart scope.');
-assert(!terService.includes("charts.react('terHeatmapPlot'"),'TER primary heatmap must not keep a private raw heatmap renderer fallback.');
+assert(terFeature.includes('scientificPlot.scalarField(')&&terFeature.includes('function renderTerHeatmap(result)'),'TER Feature Runtime must own both primary and transformed shared scalar-field views.');
+assert(!terService.includes('charts.scalarField(')&&!terService.includes('charts.react('),'TER analysis service must be presentation-free.');
+assert(!terWindowRuntime.includes('DKDSUI')&&!terWindowRuntime.includes('DKDSScientificPlot'),'TER dedicated TOP service bootstrap must not create a second chart/UI scope.');
 assert(!terFeature.includes("type:'heatmap',colorscale:signed"),'TER transform heatmap must not keep a private raw heatmap renderer fallback.');
 
-// Dynamic regression: dedicated TOP window-runtime must pass a ScientificPlot
-// scope with scalarField() into TER analysis-service.create().
+// Dynamic regression: dedicated TOP window-runtime must share the owner-scoped
+// Scientific Reactive Runtime with plugin activation, while presentation remains
+// exclusively owned by the Feature Runtime's ctx.ui.scientificPlot.
 {
-  const modules=new Map();let receivedCharts=null;
+  const modules=new Map();let received=null;
   const runtimeModules={
     define:(pid,name,value)=>{modules.set(`${pid}/${name}`,value);return value;},
-    require:(pid,name)=>{if(pid==='builtin.ter-analysis'&&name==='analysis-service')return {create:args=>{receivedCharts=args.charts;return args;}};throw new Error(`missing ${pid}/${name}`);}
+    require:(pid,name)=>{if(pid==='builtin.ter-analysis'&&name==='analysis-service')return {create:args=>{received=args;return args;}};throw new Error(`missing ${pid}/${name}`);}
   };
-  const scientificPlot={react(){},scalarField(){},purge(){}};
-  const topContext={window:{DKDSPluginModules:runtimeModules,DKDSUI:{createScope:()=>({scientificPlot})},DKDSIO:{createScope:()=>({})},DKDSComponents:{createScope:()=>({})},DKDSScientificAlgorithms:{list:()=>[],resolve:()=>null,run:()=>null,provenance:()=>null}},console};
-  topContext.window.window=topContext.window;
-  vm.createContext(topContext);
-  vm.runInContext(terWindowRuntime,topContext,{filename:'ter-window-runtime.js'});
-  const runtime=modules.get('builtin.ter-analysis/window-runtime');
-  runtime.create({project:{}});
-  assert.strictEqual(receivedCharts,scientificPlot,'TER TOP analysis service must receive the managed ScientificPlot scope.');
-  assert.strictEqual(typeof receivedCharts.scalarField,'function','TER TOP analysis service chart contract must include scalarField().');
+  const reactive={owner:'builtin.ter-analysis'};
+  const topContext={window:{DKDSPluginModules:runtimeModules,DKDSIO:{createScope:()=>({})},DKDSComponents:{createScope:()=>({})},DKDSScientificReactive:{createScope:()=>reactive},DKDSScientificAlgorithms:{list:()=>[],resolve:()=>null,run:()=>null,provenance:()=>null}},console};
+  topContext.window.window=topContext.window;vm.createContext(topContext);vm.runInContext(terWindowRuntime,topContext,{filename:'ter-window-runtime.js'});
+  modules.get('builtin.ter-analysis/window-runtime').create({project:{}});
+  assert.strictEqual(received.reactive,reactive,'TER TOP analysis service must share the canonical owner reactive scope.');
+  assert.strictEqual(received.charts,undefined,'TER TOP analysis service must not receive a chart renderer.');
 }
 assert(resonanceShared.includes("'resonance.feature-field'"),'Resonance must register a typed feature-field contract.');
 assert(resonanceFeature.includes("outputTypes:['resonance.gate-analysis','resonance.feature-field']"),'Gate analysis Pipeline must publish the feature field as a second typed output.');

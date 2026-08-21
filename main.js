@@ -113,7 +113,7 @@ function builtinPluginIds() {
   return ids;
 }
 
-const PLUGIN_API_VERSION='1.9.0';
+const PLUGIN_API_VERSION='1.10.0';
 function readBuiltinPluginManifests(){
   const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
   try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}

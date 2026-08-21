@@ -55,7 +55,7 @@ assert(ui.includes('avoidFloatOverlap()')&&ui.includes('collisionGap'),'Portable
 assert(ui.includes('z.width-r.width')&&ui.includes('z.height-r.height'),'Floating drag must keep the full panel inside the scientific canvas instead of allowing most of it to leave the workspace.');
 assert(ui.includes("this.spec.onMarkerDrag?.")&&ui.includes('this.updateMarkerVisual(marker,point)')&&!ui.includes("this.render('marker-drag')"),'Marker dragging must update only the marker geometry and defer full SVG rebuilding until drag end.');
 assert(ui.includes("data-width-side")&&!ui.includes("this.requestRender('width-drag');"),'FWHM dragging must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
-assert(resonanceFeature.includes("onMarkerDragEnd")&&resonanceFeature.includes("renderInspection();scheduleSnapshot()"),'Inspector refresh must be deferred until direct peak drag completes.');
+assert(resonanceFeature.includes("onMarkerDragEnd")&&resonanceFeature.includes("reason:'peak-drag'")&&resonanceFeature.includes("reactiveRuntime.effect('resonance.view.inspector'"),'Peak drag must commit one reactive geometry edit; dependent inspector refresh is owned by the dependency runtime.');
 assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot'),'Derived/group plots must reuse graph objects through the Core ScientificPlot runtime rather than recreate them privately.');
 
 console.log('GRS-derived PluginWorkspace + ScientificCurveSurface foundation checks passed.');

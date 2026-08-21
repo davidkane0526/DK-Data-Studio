@@ -17,7 +17,7 @@ const requirementUsage=[
   ['runtime',/ctx\.runtime\b/],['events',/ctx\.events\b/],['status',/ctx\.status\b/],['io',/ctx\.io\b/],
   ['science',/ctx\.science\b|window\.DKDSScience\b/],['performance',/ctx\.performance\b/],['services',/ctx\.services\b/],['modules',/ctx\.modules\b|window\.DKDSPluginModules\b/],
   ['recipes',/ctx\.recipes\b/],['capabilities',/ctx\.capabilities\b/],['state',/ctx\.state\b/],['project',/ctx\.project\b/],
-  ['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],
+  ['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],['data.reactive',/ctx\.data\.reactive\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],
   ['data.artifacts',/ctx\.data\.artifacts\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
   ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['analysis.detectors',/ctx\.analysis\.detectors\b/],
   ['charts',/ctx\.ui\.charts\b/],['charts.providers',/ctx\.charts\b/],['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],
@@ -53,7 +53,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
 
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
-  if (String(m.apiVersion||'') !== '1.9.0') fail(`${name}: built-in plugins must target apiVersion 1.9.0`);
+  if (!['1.9.0','1.10.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0 or 1.10.0`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);
   else for(const requirement of m.requiresCore)if(!coreRequirements.has(String(requirement)))fail(`${name}: unknown Core requirement ${requirement}`);
   const algorithmCategories=Array.isArray(m.algorithmCategories)?m.algorithmCategories.map(value=>String(value||'').trim()).filter(Boolean):[];

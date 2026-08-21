@@ -1,4 +1,18 @@
-# DK Data Studio — v3.59.0
+# DK Data Studio — v3.60.0
+
+
+## v3.60 科学响应依赖基座
+
+- 独立 TOP 仍不让 Plotly 阻塞窗口启动；声明 Plotly 的插件在窗口 ready 后由 Core 空闲预热，减少第一次计算/出图时的冷启动等待。
+
+- Plugin API / 独立 SDK 升级到 `1.10.0`，新增 `ctx.data.reactive`。插件声明科学状态、派生结果和视图之间的依赖，Core 统一负责 revision、transaction 合并、依赖传播、帧调度以及过期异步结果拒绝。
+- 新增 `Scientific Reactive Runtime 1.0.0`。一次用户编辑可以只提交一次 semantic touch；依赖它的 FWHM、Inspector、组图、物理结果或其他视图在同一依赖链上刷新，不再要求插件维护一串 `renderX()` / `renderKey=''` 调用顺序。
+- Resonance 作为第一迁移样板：Peak geometry、FWHM window、Peak metrics、identity/visibility/selection/group settings 已进入 reactive dependency；异步峰度量采用 latest-result 语义，旧计算不能覆盖更新后的峰状态。
+- 二维框选现在保留 X/Y 几何范围并声明 `targetType`。共振框选以 Peak marker/entity 为目标，不再把矩形 X 范围内的原始曲线采样点误当成峰选择。
+- TER 作为第二迁移样板：analysis service 回归纯计算/状态职责，Feature Runtime 是唯一绘图 owner；TOP 不再存在两个 ScientificPlot scope 竞争同一 Plotly DOM。
+- TER 选择联动采用轻量 `restyle/relayout` 更新高亮、marker 和 Vds 指示线，只有结果拓扑变化才重建完整 R–V traces，避免每次点击都重新 `Plotly.react()` 整张多曲线图。
+- Plotly 继续负责标准结果图/热图，D3 继续负责强交互编辑画布；二者通过统一 Selection/Reactive/ScientificPlot 契约共享状态一致性，不要求插件按 renderer 编写不同的数据刷新逻辑。
+- Automation Runner 升级到 `1.16.0`，新增 `Scientific Reactive Dependency` 运行时测试，验证 transaction 合并、依赖传播和 stale async result rejection。
 
 
 ## v3.59 统一表格与交互基座

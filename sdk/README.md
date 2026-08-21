@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.8
+# DK Data Studio Plugin SDK 1.10
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.57.0 or newer for the current SDK contract.
+- DK Data Studio 3.60.0 or newer for the full Plugin API 1.10 contract. Older 1.x plugins remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.9.0"` and declare every Core surface they use in `requiresCore`.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.10.0"` and declare every Core surface they use in `requiresCore`.
 
 ## Validate
 

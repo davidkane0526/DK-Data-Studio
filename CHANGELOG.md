@@ -1,3 +1,15 @@
+# v3.60.0 — Scientific Reactive Dependency Foundation
+
+- Promoted the public Plugin API and standalone SDK to `1.10.0` and added `ctx.data.reactive` as the canonical scientific transaction/dependency surface. Existing compatible 1.x packages remain loadable when their declared Core requirements exist.
+- Added Core `Scientific Reactive Runtime 1.0.0` with owner-scoped revisions, batched transactions, derived nodes, frame/microtask effects, dependency signatures, `runLatest()` and stale asynchronous-result rejection.
+- Migrated Resonance peak geometry/FWHM-window edits and peak-metric publication onto semantic reactive nodes. Dependent Inspector/group/main views observe revisions instead of relying on a fragile manual refresh order; stale peak-metric results cannot overwrite a newer edit.
+- Extended range Selection with semantic targets. D3 `ScientificCurveSurface` can declare marker/entity range selection so a two-dimensional selection rectangle does not degrade into highlighting raw curve samples sharing the same X interval.
+- Made TER Feature Runtime the single scientific-plot owner. The analysis service is presentation-free and the dedicated TOP runtime no longer creates a competing ScientificPlot scope.
+- Split TER R–V rendering into topology rendering and lightweight selection styling. Selection changes use `restyle/relayout` for opacity, line width, selected points and Vds indicator instead of rebuilding all traces with `Plotly.react()`.
+- Dedicated TOP windows still exclude Plotly from the blocking startup dependency chain, but Core now warms a declared Plotly renderer during the first idle period after the window reports ready. This keeps TOP startup fast while avoiding a cold renderer load on the user's first calculation/plot action.
+- Added source/runtime regressions for scientific transaction batching, dependency propagation, stale async rejection, Resonance metric/range integration, TER single-owner rendering and lightweight selection updates.
+- Automation Runner `1.16.0` adds `Scientific Reactive Dependency` to the in-app acceptance suite.
+
 # v3.59.0 — Unified Table & Interaction Foundation
 
 - Promoted the public Plugin API and standalone SDK to `1.9.0`. API 1.9 formally exposes the shared `TableSurface` and plugin `SettingsSurface`; API 1.8 packages remain accepted by the 1.x compatibility contract.

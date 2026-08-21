@@ -1,10 +1,10 @@
-# AI Plugin Development Guide — Plugin API v1.9
+# AI Plugin Development Guide — Plugin API v1.10
 
 This guide is intended to let another AI implement a complex DK Data Studio plugin without inventing host-specific infrastructure.
 
 ## 1. Non-negotiable architecture rule
 
-**If a capability is generic enough to be reused by another plugin, it belongs to Core.** A plugin may define domain algorithms, domain data types, domain state and domain view content, but it consumes application mechanisms only through Plugin API v1.9.
+**If a capability is generic enough to be reused by another plugin, it belongs to Core.** A plugin may define domain algorithms, domain data types, domain state and domain view content, but it consumes application mechanisms only through Plugin API v1.10.
 
 Before writing code, search `docs/PLUGIN_API.md`, `src/plugins/_template`, the manifest schema and existing Core registries. If the needed generic mechanism is missing, add it to Core first, document it, add a machine check, then consume it from the plugin.
 
@@ -26,7 +26,7 @@ If multiple unrelated plugins could need it (file bridge, drag/resize, worker qu
 
 ## 3. Start from the template
 
-Copy `src/plugins/_template` to `src/plugins/<folder>`. Choose a permanent reverse-domain or project-qualified ID. Set API `1.9.0` and list exact Core dependencies in `requiresCore`.
+Copy `src/plugins/_template` to `src/plugins/<folder>`. Choose a permanent reverse-domain or project-qualified ID. Set API `1.10.0` and list exact Core dependencies in `requiresCore`.
 
 `plugin.json` and the runtime manifest inside `plugin.js` must contain identical `requiresCore` arrays. Validation enforces this.
 
