@@ -53,7 +53,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
 
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
-  if (!['1.9.0','1.10.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0 or 1.10.0`);
+  if (!['1.9.0','1.10.0','1.11.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0, 1.10.0 or 1.11.0`);
   const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
   if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);

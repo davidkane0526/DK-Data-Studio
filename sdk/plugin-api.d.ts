@@ -5,7 +5,7 @@ export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[
 export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; artifactId:string }
 export interface DKDSDataSourcesCapability { list():Promise<DKDSDataSourceDescriptor[]>; rename(ref:{path?:string;sourcePath?:string}|string,label:string):Promise<any>; setExcluded(ref:{path?:string;sourcePath?:string}|string,value?:boolean):Promise<any>; remove(refs:Array<{path?:string;sourcePath?:string}>|{path?:string;sourcePath?:string}):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}> }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
@@ -35,30 +35,42 @@ export interface DKDSSettingsRuntime { define<T=Record<string,any>>(id:string,sp
 
 export interface DKDSScientificCurve { id:string; entityId?:string; points:any[]; color?:string; colorValue?:number; direction?:number; dash?:string|null; opacity?:number; strokeWidth?:number; source?:any }
 export interface DKDSScientificMarker { id:string; entityId?:string; curveId:string; x:number; y:number; color?:string; shape?:string; locked?:boolean; accepted?:boolean; source?:any }
+export interface DKDSPlotManipulatorSnap { kind:'curve'; curveId:string }
+export interface DKDSPlotManipulatorConstraints { min?:number; max?:number; contains?:number; containsGap?:number; minSpan?:number }
+export interface DKDSPlotManipulatorPresentation { color?:string; band?:boolean; handlePosition?:'top'|'bottom'|'left'|'right'|number }
+export type DKDSPlotManipulator =
+  | { id:string; kind:'point'; targetId?:string; axis?:'x'|'y'|'xy'; geometry:{x:number;y:number}; snap?:DKDSPlotManipulatorSnap; constraints?:DKDSPlotManipulatorConstraints; presentation?:DKDSPlotManipulatorPresentation; locked?:boolean; source?:any }
+  | { id:string; kind:'axis'; axis:'x'|'y'; geometry:{value:number}; snap?:DKDSPlotManipulatorSnap; constraints?:DKDSPlotManipulatorConstraints; presentation?:DKDSPlotManipulatorPresentation; locked?:boolean; source?:any }
+  | { id:string; kind:'range'; axis:'x'|'y'; geometry:{start:number;end:number}; snap?:DKDSPlotManipulatorSnap; constraints?:DKDSPlotManipulatorConstraints; presentation?:DKDSPlotManipulatorPresentation; locked?:boolean; source?:any };
+export interface DKDSPlotManipulationPayload { manipulator:DKDSPlotManipulator; handle:'point'|'value'|'start'|'end'|string; geometry:any; initialGeometry:any; curve?:DKDSScientificCurve|null; index?:number; point?:any; event:any; surface:DKDSScientificCurveSurface }
+/** @deprecated v1.11 compatibility only. Use DKDSPlotManipulationPayload. */
 export interface DKDSScientificMarkerDragPayload { marker:DKDSScientificMarker; curve:DKDSScientificCurve|null; index:number; point:any; event:any; surface:DKDSScientificCurveSurface }
+/** @deprecated v1.11 compatibility only. Use DKDSPlotManipulationPayload. */
 export interface DKDSScientificWidthWindowPayload { marker:DKDSScientificMarker; side:'left'|'right'; windowLeft:number; windowRight:number; initialWindowLeft:number; initialWindowRight:number; event:any; surface:DKDSScientificCurveSurface }
 export interface DKDSScientificCurveSurfaceSpec {
   container?:any; minWidth?:number; minHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string;
   xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; navigationTools?:boolean;
-  getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
+  getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getManipulators?:()=>DKDSPlotManipulator[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
   getView?:()=>{xDomain?:number[]|null;yDomain?:number[]|null}; setView?:(view:{xDomain?:number[]|null;yDomain?:number[]|null},meta?:any)=>void;
   getRangeSelection?:()=>any; rangeSelectionTarget?:string; rangeSelectionType?:string; showMarkers?:()=>boolean; showWidth?:()=>boolean; getMarkerWidth?:(marker:DKDSScientificMarker)=>any;
   onColorScale?:(scale:any,meta?:any)=>void; onCurveSelect?:(payload:any)=>void; onCurveModifiedClick?:(payload:any)=>void; onCurveDoubleClick?:(payload:any)=>void;
   onMarkerSelect?:(payload:any)=>void; onMarkerDoubleClick?:(payload:any)=>void; onMarkerDelete?:(payload:any)=>void; onLockedMarkerAction?:(payload:any)=>void; onMarkerHover?:(payload:any)=>void;
-  /** Pointer-rate visual preview only. Do not commit domain/project state here. */
-  onMarkerDragPreview?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** Preferred semantic marker edit hook. Called once at gesture end. */
-  onMarkerDragCommit?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  onWidthDragStart?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** Pointer-rate visual preview only. Core owns the temporary two-ended geometry. */
-  onWidthDragPreview?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** Preferred semantic FWHM/window edit hook. Always supplies a complete [left,right] window atomically. */
-  onWidthWindowCommit?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  onWidthReset?:(payload:any)=>void; onRangeStart?:(payload:any)=>void; onWheelZoomStart?:(payload:any)=>void; onRangeSelect?:(payload:any)=>void; onClearSelection?:(payload:any)=>void; onReset?:(payload?:any)=>void; onEmpty?:(payload:any)=>void; afterRender?:(payload:any)=>void;
-  /** @deprecated v1.10 compatibility hook; prefer onMarkerDragPreview. */ onMarkerDrag?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.10 compatibility hook; prefer onMarkerDragCommit. */ onMarkerDragEnd?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.10 compatibility hook; prefer onWidthDragPreview. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** @deprecated v1.10 compatibility hook; prefer onWidthWindowCommit. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** Generic direct manipulation lifecycle. Preview is pointer-rate visual feedback; commit is the only normal place to persist domain/project state. */
+  onManipulationStart?:(payload:DKDSPlotManipulationPayload)=>void;
+  onManipulationPreview?:(payload:DKDSPlotManipulationPayload)=>void;
+  onManipulationCommit?:(payload:DKDSPlotManipulationPayload)=>void;
+  onManipulationReset?:(payload:DKDSPlotManipulationPayload)=>void;
+  onRangeStart?:(payload:any)=>void; onWheelZoomStart?:(payload:any)=>void; onRangeSelect?:(payload:any)=>void; onClearSelection?:(payload:any)=>void; onReset?:(payload?:any)=>void; onEmpty?:(payload:any)=>void; afterRender?:(payload:any)=>void;
+  /** @deprecated v1.11 compatibility hook; declare a point manipulator and use onManipulationPreview. */ onMarkerDragPreview?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.11 compatibility hook; declare a point manipulator and use onManipulationCommit. */ onMarkerDragCommit?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.11 compatibility hook. */ onWidthDragStart?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** @deprecated v1.11 compatibility hook; declare a range manipulator. */ onWidthDragPreview?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** @deprecated v1.11 compatibility hook; declare a range manipulator and use onManipulationCommit. */ onWidthWindowCommit?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** @deprecated v1.11 compatibility hook; use onManipulationReset. */ onWidthReset?:(payload:any)=>void;
+  /** @deprecated v1.10 compatibility hook. */ onMarkerDrag?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.10 compatibility hook. */ onMarkerDragEnd?:(payload:DKDSScientificMarkerDragPayload)=>void;
+  /** @deprecated v1.10 compatibility hook. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
+  /** @deprecated v1.10 compatibility hook. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
 }
 export interface DKDSScientificCurveSurface { readonly target:any; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
 export interface DKDSScientificPlotRuntime {
@@ -80,7 +92,7 @@ export interface DKDSReactiveRuntime {
 }
 
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.10.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.11.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};

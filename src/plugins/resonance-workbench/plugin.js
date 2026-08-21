@@ -2,8 +2,8 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',pluginType:'workbench',
     name:'Resonance Workbench',
-    version:'3.61.3',
-    apiVersion:'1.10.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
+    version:'3.61.4',
+    apiVersion:'1.11.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
     source:'builtin',

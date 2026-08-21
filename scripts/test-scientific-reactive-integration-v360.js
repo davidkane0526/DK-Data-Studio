@@ -17,7 +17,7 @@ assert(resonanceManifest.requiresCore.includes('data.reactive')&&terManifest.req
 assert(resonanceEntry.includes('reactive:ctx.data.reactive'),'Resonance must consume the Core reactive scope rather than create a private revision bus in SUPER.');
 assert(resonance.includes("rangeSelectionTarget:'markers'")&&resonance.includes("rangeSelectionType:'resonance.peak'"),'Resonance range selection must explicitly target peak entities.');
 assert(ui.includes('markerIds')&&ui.includes("targetType:String(this.spec.rangeSelectionType"),'ScientificCurveSurface must carry typed marker-target range selection through the Core selection payload.');
-assert(resonance.includes("onWidthWindowCommit:({marker,windowLeft,windowRight})")&&resonance.includes("reason:'fwhm-window-drag'"),'FWHM window edits must commit one complete metric dependency transaction through the Core atomic window contract.');
+assert(resonance.includes("action:'analysis-window'")&&resonance.includes('onManipulationCommit')&&resonance.includes("reason:'analysis-window-edit'"),'FWHM analysis-window edits must map a generic Core range commit into one complete metric dependency transaction.');
 assert(resonance.includes("reactiveRuntime.effect('resonance.view.group'")&&resonance.includes("'resonance.peak.metrics'"),'Resonance group views must depend on published metric revisions.');
 assert(resonance.includes('reactiveRuntime.runLatest(`resonance.metric:${p.id}`'),'Peak metric async work must reject stale results through the Core runtime.');
 assert(!terService.includes('charts.react')&&!terService.includes('charts.scalarField')&&!terService.includes('DKDSScientificPlot'),'TER analysis service must be presentation-free; Feature + Core ScientificPlot own rendering.');

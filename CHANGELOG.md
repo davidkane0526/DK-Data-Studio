@@ -1,3 +1,12 @@
+# v3.61.4 — Generic Direct Manipulation SDK
+
+- Replaced feature-named scientific drag contracts with domain-neutral `ScientificCurveSurface` manipulators. Plugins can declare `point`, `axis`, and `range` geometry and receive one generic preview/commit/reset lifecycle.
+- Resonance now maps peak-position editing to a generic point manipulator and FWHM analysis-window editing to a generic X-range manipulator; it no longer depends on `onMarkerDragCommit` or `onWidthWindowCommit`.
+- Core owns curve snapping, axis/range constraints, attached-marker fast-path updates, synthetic-click suppression, and atomic range geometry. Feature semantics such as peak, threshold, fit/integration interval, crop window, baseline control, and FWHM remain plugin-owned.
+- Width/FWHM measurement rendering is now presentation-only; editable range handles are produced by the generic manipulation layer instead of the measurement feature contract.
+- Plugin API / standalone SDK advances to `1.11.0`. Manifest validation accepts both `1.10.0` and `1.11.0` packages for compatibility, while new templates target `1.11.0`.
+- Added a dedicated generic-manipulation architecture gate to prevent first-party plugins from reintroducing feature-specific pointer loops or marker/FWHM-named editing APIs.
+
 # v3.61.3 — Core Interaction Contract, Runtime-only Prewarm & Plugin Taxonomy
 
 - ScientificCurveSurface marker dragging now stays on a Core-owned visual fast path and commits domain state once at gesture end; post-drag synthetic clicks are suppressed so dragging cannot silently alter Selection or dim unrelated curves.

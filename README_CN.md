@@ -1,5 +1,13 @@
-# DK Data Studio — v3.61.3
+# DK Data Studio — v3.61.4
 
+
+## v3.61.4 通用直接操纵基座与 SDK 1.11
+
+- `ScientificCurveSurface` 将峰拖动、FWHM 手柄进一步抽象为领域无关的 `Manipulator`：`point`、`axis`、`range`。峰、阈值线、拟合区间、积分区间、裁剪范围、基线控制点、FWHM 分析窗口都只是插件对这些几何原语的领域解释。
+- 插件通过 `getManipulators()` 声明可编辑几何，Core 统一负责拖拽、曲线吸附、约束、局部预览、拖动后 click 抑制和一次性 semantic commit。新插件不应再实现私有 D3 拖动循环。
+- 共振插件已经迁移为参考实现：峰位是附着在 marker 上的 `point`，FWHM 分析窗口是 X 轴 `range`；插件只在 `onManipulationCommit` 中把通用几何映射回科学状态。
+- `getMarkerWidth` 仅负责 FWHM 基线、半高线和交点等测量结果的呈现，不再拥有编辑手柄。旧 `onMarkerDrag*` / `onWidth*` 接口仅保留为 Core 内部的 1.10 兼容适配。
+- Plugin API / 独立 SDK 升级到 `1.11.0`；新的 SDK 模板目标版本为 1.11，已有 1.10 插件仍可加载。
 
 ## v3.61 交互与多视图绘图性能
 

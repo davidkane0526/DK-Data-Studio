@@ -1,7 +1,7 @@
 (() => {
   if(window.DKDSPluginContract)return;
   const VERSION='1.0.0';
-  const API_VERSION='1.10.0';
+  const API_VERSION='1.11.0';
   const REQUIREMENTS=Object.freeze({
     'runtime':api=>!!api?.runtime,
     'events':api=>!!api?.events,

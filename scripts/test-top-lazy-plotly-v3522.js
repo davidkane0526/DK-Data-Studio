@@ -23,4 +23,4 @@ for(const activity of ['data-center','pulse','ter','resonance'])assert(windows.g
 const version=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);
 assert(version.length===3&&(version[0]>1||(version[0]===1&&(version[1]>7||(version[1]===7&&version[2]>=2)))),'Automation runner must be v1.7.2+ for lazy Plotly verification.');
 assert(automation.includes("'top.plotly-lazy'")&&automation.includes('topLazyPlotly:'),'Built-app automation must verify and export the TOP lazy Plotly contract.');
-console.log('v3.61.3 dedicated TOP lazy/runtime-only Plotly architecture checks passed.');
+console.log('v3.61.4 dedicated TOP lazy/runtime-only Plotly architecture checks passed.');

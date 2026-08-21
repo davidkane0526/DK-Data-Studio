@@ -661,6 +661,18 @@
         const windowLeft=Number.isFinite(metricWindowLeft)?metricWindowLeft:rawWindowLeft,windowRight=Number.isFinite(metricWindowRight)?metricWindowRight:rawWindowRight;if(!Number.isFinite(windowLeft)||!Number.isFinite(windowRight)||windowRight<=windowLeft)return null;
         return {left,right,yLeft:Number.isFinite(left)&&Number.isFinite(halfResidual)?sign*(baselineAt(left)+halfResidual):NaN,yRight:Number.isFinite(right)&&Number.isFinite(halfResidual)?sign*(baselineAt(right)+halfResidual):NaN,windowLeft,windowRight,baseline:{x1:windowLeft,y1:sign*baselineAt(windowLeft),x2:windowRight,y2:sign*baselineAt(windowRight)},handlePosition:'top'};
       }
+      function mainSurfaceManipulators(){
+        const rows=[];
+        for(const marker of mainSurfaceMarkers()){
+          if(marker.locked)continue;
+          rows.push({id:`peak-position:${marker.id}`,kind:'point',targetId:String(marker.id),geometry:{x:Number(marker.x),y:Number(marker.y)},snap:{kind:'curve',curveId:String(marker.curveId)},source:{action:'peak-position',peak:marker.source}});
+        }
+        const p=selectedPeak();if(p&&workspace.peakDisplay?.showWidth!==false&&!p.locked){
+          const marker={id:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),source:p},width=markerWidthSpec(marker),sw=sweepById(p.sweepId);
+          if(width&&sw){const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);rows.push({id:`analysis-window:${p.id}`,kind:'range',axis:'x',geometry:{start:Number(width.windowLeft),end:Number(width.windowRight)},snap:{kind:'curve',curveId:String(p.sweepId)},constraints:{contains:Number(p.v),containsGap:minGap,minSpan:minGap*2},presentation:{color:peakColor(p),band:true,handlePosition:'top'},source:{action:'analysis-window',peak:p}});}
+        }
+        return rows;
+      }
       function ensureMainSurface(){
         const node=$('#reswinMainPlot');if(!node)return null;if(mainSurface&&mainSurface.target===node)return mainSurface;mainSurface?.dispose?.();mainSurface=null;
         const factory=uiRuntime?.scientificPlot;if(!factory?.create)return null;
@@ -671,6 +683,7 @@
           getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),entityId:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
           getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
           getMarkers:()=>mainSurfaceMarkers(),
+          getManipulators:()=>mainSurfaceManipulators(),
           getView:()=>workspace.mainView||{xDomain:null,yDomain:null},setView:(next,meta)=>{workspace.mainView={xDomain:Array.isArray(next?.xDomain)?next.xDomain.slice():null,yDomain:Array.isArray(next?.yDomain)?next.yDomain.slice():null};if(meta?.reason==='box-zoom'){scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');}},
           getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max,yMin:selectedRange.iMin,yMax:selectedRange.iMax}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
           getMarkerWidth:marker=>markerWidthSpec(marker),
@@ -683,14 +696,14 @@
           onMarkerDelete:({marker})=>{const p=marker?.source;if(!p)return;const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);},
           onLockedMarkerAction:()=>setStatus('该峰位已锁定。'),
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
-          // Core owns high-frequency marker geometry. The workbench receives one
-          // semantic commit at gesture end and does not mutate Selection/legend state.
-          onMarkerDragCommit:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);commitPeakMetricEdit(p,{geometry:true,reason:'peak-drag'});scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          // Core submits the complete analysis window atomically. This avoids the
-          // old one-sided state where the metric provider rejected a lone endpoint
-          // and restored its automatic window after pointerup.
-          onWidthWindowCommit:({marker,windowLeft,windowRight})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!sw)return;const bounds=sweepVoltageBounds(sw);if(!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12),center=Number(p.v);let left=Math.max(bounds.lo,Math.min(Number(windowLeft),center-minGap)),right=Math.min(bounds.hi,Math.max(Number(windowRight),center+minGap));if(!(Number.isFinite(left)&&Number.isFinite(right)&&left<center&&right>center))return;p.analysisLeft=left;p.analysisRight=right;p.analysisManual=true;commitPeakMetricEdit(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
-          onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;commitPeakMetricEdit(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
+          // Domain-neutral Core manipulation primitives deliver one semantic
+          // commit. Resonance merely maps geometry back to its own scientific state.
+          onManipulationCommit:({manipulator,geometry,curve,index})=>{
+            const action=manipulator?.source?.action,p=manipulator?.source?.peak;
+            if(action==='peak-position'){const sw=curve?.source||sweepById(p?.sweepId);if(!p||!sw)return;movePeakToIndex(p,sw,index);commitPeakMetricEdit(p,{geometry:true,reason:'peak-position-edit'});scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);return;}
+            if(action==='analysis-window'){const sw=p?sweepById(p.sweepId):null,bounds=sweepVoltageBounds(sw);if(!p||!sw||!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12),center=Number(p.v);let left=Math.max(bounds.lo,Math.min(Number(geometry?.start),center-minGap)),right=Math.min(bounds.hi,Math.max(Number(geometry?.end),center+minGap));if(!(Number.isFinite(left)&&Number.isFinite(right)&&left<center&&right>center))return;p.analysisLeft=left;p.analysisRight=right;p.analysisManual=true;commitPeakMetricEdit(p,{reason:'analysis-window-edit'});scheduleSnapshot();}
+          },
+          onManipulationReset:({manipulator})=>{if(manipulator?.source?.action!=='analysis-window')return;const p=manipulator?.source?.peak;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;commitPeakMetricEdit(p,{reason:'analysis-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
           onRangeSelect:({xMin,xMax,yMin,yMax,event,markers,markerIds,target,targetType})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:markers||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),

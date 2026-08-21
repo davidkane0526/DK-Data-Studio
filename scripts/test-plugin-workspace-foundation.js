@@ -16,12 +16,12 @@ for(const token of ['class PluginWorkspace extends AnalysisWorkbench','class Sci
 for(const token of ['workspaceSurface:','pluginWorkspace: infrastructureScope?.pluginWorkspace','scientificPlot: infrastructureScope?.scientificPlot',"name:'GRS Plugin Workspace'",'hostInvariant:true']){
   assert(kernel.includes(token),`Plugin API missing GRS-derived base capability: ${token}`);
 }
-for(const token of ['.dkds-plugin-workspace{','.dkds-scientific-curve-surface{','.dkds-scientific-curve-hit{','.dkds-scientific-marker-hit{','.dkds-scientific-direct-box.is-zoom{','.dkds-scientific-width-handle{']){
+for(const token of ['.dkds-plugin-workspace{','.dkds-scientific-curve-surface{','.dkds-scientific-curve-hit{','.dkds-scientific-marker-hit{','.dkds-scientific-direct-box.is-zoom{','.dkds-direct-handle{']){
   assert(css.includes(token),`Shared GRS-derived design/interaction style missing ${token}`);
 }
 assert(ui.includes('d3.scaleSequential(d3.interpolateTurbo)'),'ScientificCurveSurface must provide the reference continuous Turbo curve palette.');
 assert(ui.includes("Number(curve.direction)<0?'7 4':null"),'ScientificCurveSurface must provide reverse-direction dash semantics.');
-assert(ui.includes('onRangeSelect')&&ui.includes('onCurveModifiedClick')&&ui.includes('onMarkerDragPreview')&&ui.includes('onMarkerDragCommit')&&ui.includes('onWidthWindowCommit'),'ScientificCurveSurface must expose range, modified-click and Core-owned direct-manipulation preview/commit hooks.');
+assert(ui.includes('onRangeSelect')&&ui.includes('onCurveModifiedClick')&&ui.includes('getManipulators')&&ui.includes('onManipulationPreview')&&ui.includes('onManipulationCommit'),'ScientificCurveSurface must expose range, modified-click and domain-neutral Core manipulation hooks.');
 assert(ui.includes('wheel.dkdssci')&&ui.includes('rangeDrag.zoom')&&ui.includes("plotBg.on('dblclick'"),'ScientificCurveSurface must own wheel zoom, box zoom and double-click reset.');
 assert(ui.includes('getColorDomainValues')&&ui.includes('onWheelZoomStart'),'ScientificCurveSurface must preserve stable color domains and expose pre-wheel semantic hooks.');
 assert(ui.includes('setInteraction(interaction)')&&ui.includes('closestInSet')&&ui.includes('this.selectEntity('),'ScientificCurveSurface must consume Core Entity/Interaction state and provide automatic entity selection for declarative curves/markers.');
@@ -53,9 +53,9 @@ assert(css.includes('.dkds-plugin-canvas-center>.dkds-analysis-primary-host>*{fl
 
 assert(ui.includes('avoidFloatOverlap()')&&ui.includes('collisionGap'),'PortableView must keep manually floated scientific panels inside the canvas and avoid accidental overlap.');
 assert(ui.includes('z.width-r.width')&&ui.includes('z.height-r.height'),'Floating drag must keep the full panel inside the scientific canvas instead of allowing most of it to leave the workspace.');
-assert(ui.includes("this.spec.onMarkerDragPreview?.(payload)")&&ui.includes('this.updateMarkerVisual(marker,point)')&&ui.includes("this.spec.onMarkerDragCommit?.(payload)")&&!ui.includes("this.render('marker-drag')"),'Marker dragging must stay Core-owned: preview geometry in place, then commit once at drag end.');
-assert(ui.includes("data-width-side")&&!ui.includes("this.requestRender('width-drag');"),'FWHM dragging must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
-assert(resonanceFeature.includes("onMarkerDragCommit:({marker,curve,index})")&&resonanceFeature.includes("reason:'peak-drag'")&&resonanceFeature.includes("reactiveRuntime.effect('resonance.view.inspector'"),'Peak drag must commit one reactive geometry edit through the Core commit callback; dependent inspector refresh is owned by the dependency runtime.');
+assert(ui.includes("emitManipulation('preview',payload)")&&ui.includes('this.updateMarkerVisual(marker,{x:nx,y:ny})')&&ui.includes("emitManipulation('commit'")&&!ui.includes("this.render('marker-drag')"),'Point manipulation must stay Core-owned: preview geometry in place, then commit once at gesture end.');
+assert(ui.includes("kind==='range'")&&ui.includes('dkds-direct-range-band')&&!ui.includes("this.requestRender('width-drag');"),'Range manipulation must update handle/band geometry in-place and defer full SVG rebuilding until drag end.');
+assert(resonanceFeature.includes('getManipulators:()=>mainSurfaceManipulators()')&&resonanceFeature.includes("action:'peak-position'")&&resonanceFeature.includes("onManipulationCommit:")&&resonanceFeature.includes("reason:'peak-position-edit'")&&resonanceFeature.includes("reactiveRuntime.effect('resonance.view.inspector'"),'Peak movement must be a plugin-domain mapping of the generic Core manipulation commit; dependent inspector refresh is owned by the dependency runtime.');
 assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot'),'Derived/group plots must reuse graph objects through the Core ScientificPlot runtime rather than recreate them privately.');
 
 console.log('GRS-derived PluginWorkspace + ScientificCurveSurface foundation checks passed.');

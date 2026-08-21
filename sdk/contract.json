@@ -1,13 +1,14 @@
 {
-  "sdkVersion": "1.10.0",
-  "pluginApiVersion": "1.10.0",
+  "sdkVersion": "1.11.0",
+  "pluginApiVersion": "1.11.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.60.0",
+  "minimumAppVersion": "3.61.4",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "New plugins target Plugin API 1.10.0.",
-    "Plugin API 1.10 adds ctx.data.reactive for scientific transactions, dependency propagation and stale async-result rejection.",
+    "New plugins target Plugin API 1.11.0; Plugin API 1.10.0 packages remain loadable.",
+    "Plugin API 1.11 adds domain-neutral ScientificCurveSurface manipulators: point, axis and range with generic preview/commit/reset lifecycle.",
+    "Feature-specific marker/FWHM drag callbacks remain compatibility adapters only.",
     "The SDK is standalone and does not require DK Data Studio source code.",
     "Domain logic belongs to plugins; application infrastructure is consumed through ctx.* Core APIs."
   ]

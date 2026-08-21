@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.10
+# DK Data Studio Plugin SDK 1.11
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.60.0 or newer for the full Plugin API 1.10 contract. Older 1.x plugins remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.4 or newer for the full Plugin API 1.11 contract. Plugin API 1.10 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.10.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.11.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Validate
 
@@ -42,7 +42,26 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
-For direct scientific curve interaction, use `ctx.ui.scientificPlot.create(...)`. Core owns pointer-rate marker movement, nearest-point snapping, range/zoom gestures, focus styling and width/FWHM handle geometry. Use `onMarkerDragCommit` and `onWidthWindowCommit` to persist domain changes once at gesture end; `onWidthWindowCommit` always provides both window endpoints, so plugins must not implement private one-handle drag state.
+For direct scientific curve interaction, use `ctx.ui.scientificPlot.create(...)`. Core owns pointer-rate geometry editing, snapping, range/zoom gestures and focus styling through domain-neutral **manipulators**. Declare `getManipulators()` with `point`, `axis`, or `range` primitives and persist domain changes only from `onManipulationCommit`. A peak position, threshold line, fit/integration interval, crop range, baseline control, or FWHM analysis window is a plugin-domain interpretation of these same Core primitives; plugins must not implement private D3 drag loops or introduce feature-named handle contracts.
+
+Example:
+
+```js
+const surface = ctx.ui.scientificPlot.create(svg, {
+  getCurves: () => curves,
+  getMarkers: () => annotations,
+  getManipulators: () => [
+    { id:'cursor', kind:'axis', axis:'x', geometry:{value:cursorX} },
+    { id:'fit-window', kind:'range', axis:'x', geometry:{start:fitLeft,end:fitRight}, constraints:{minSpan:0.01} },
+    { id:'control-point', kind:'point', targetId:'annotation-1', geometry:{x:pointX,y:pointY}, snap:{kind:'curve',curveId:'curve-1'} }
+  ],
+  onManipulationCommit: ({manipulator,geometry}) => {
+    // Map generic geometry to your plugin's own domain state here.
+  }
+});
+```
+
+The deprecated marker/FWHM-named callbacks remain only as a v1.10 compatibility adapter and are not the reference architecture for new plugins.
 
 Persistent plugin state must be registered through `ctx.project.registerSlice(...)`. `restore` receives only the plugin's canonical namespaced slice; old application root fields are migrated by DK Data Studio before plugin runtime starts. A missing slice is fresh/reset state, not a signal to inspect the project root.
 

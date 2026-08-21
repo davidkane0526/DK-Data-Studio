@@ -1271,6 +1271,7 @@
     finite(value){return Number.isFinite(Number(value));}
     curves(){const rows=this.spec.getCurves?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     markers(){const rows=this.spec.getMarkers?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
+    manipulators(){const rows=this.spec.getManipulators?.()||[];return Array.isArray(rows)?rows.filter(row=>row&&row.id&&row.kind):[];}
     view(){const raw=this.spec.getView?.()||{};return raw&&typeof raw==='object'?raw:{};}
     setView(next,meta={}){this.spec.setView?.(next,meta);this.spec.onViewChanged?.(next,meta);}
     setInteraction(interaction){if(this.interaction===interaction)return;this.selectionOff?.();this.selectionOff=null;this.interaction=interaction||null;if(this.interaction?.subscribe)this.selectionOff=this.interaction.subscribe(snapshot=>{this.selectionSnapshot=snapshot;this.requestRender('entity-selection');},{immediate:true});}
@@ -1369,69 +1370,116 @@
           .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',value:curve?.source||curve});})
           .on('dblclick',event=>{event.preventDefault();event.stopPropagation();if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});});
       }
-      const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),markerNodes=new Map();
+      const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id))),markerNodes=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
+      const declaredManipulators=this.manipulators(),manipulators=declaredManipulators.slice();
+      // v1.10 compatibility is intentionally implemented as an adapter into the
+      // generic manipulation model. New plugins should never need marker/FWHM-
+      // named drag contracts: a marker move is a point manipulator and an
+      // analysis window is simply an axis range manipulator.
+      if(!this.spec.getManipulators){
+        if(this.spec.onMarkerDragStart||this.spec.onMarkerDragPreview||this.spec.onMarkerDragCommit||this.spec.onMarkerDrag||this.spec.onMarkerDragEnd){
+          for(const marker of markers)manipulators.push({id:`compat:marker:${marker.id}`,kind:'point',targetId:String(marker.id),geometry:{x:Number(marker.x),y:Number(marker.y)},snap:{kind:'curve',curveId:String(marker.curveId)},locked:!!marker.locked,source:{compat:'marker',marker}});
+        }
+        if(selectedMarker&&this.spec.showWidth?.()!==false){
+          const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
+          const wl=Number(widthSpec?.windowLeft),wr=Number(widthSpec?.windowRight);
+          if(Number.isFinite(wl)&&Number.isFinite(wr)&&wr>wl&&(this.spec.onWidthDragStart||this.spec.onWidthDragPreview||this.spec.onWidthWindowCommit||this.spec.onWidthDrag||this.spec.onWidthDragEnd||this.spec.onWidthReset)){
+            manipulators.push({id:`compat:width:${selectedMarker.id}`,kind:'range',axis:'x',geometry:{start:wl,end:wr},snap:{kind:'curve',curveId:String(selectedMarker.curveId)},constraints:{contains:Number(selectedMarker.x)},presentation:{color:selectedMarker.color||'#2563eb',band:true,handlePosition:widthSpec?.handlePosition||'top'},locked:!!selectedMarker.locked,source:{compat:'width',marker:selectedMarker,widthSpec}});
+          }
+        }
+      }
+      const manipulatorByTarget=new Map(manipulators.filter(row=>row.kind==='point'&&row.targetId).map(row=>[String(row.targetId),row]));
+      const emitManipulation=(phase,payload)=>{
+        const fn=phase==='start'?this.spec.onManipulationStart:phase==='preview'?this.spec.onManipulationPreview:phase==='commit'?this.spec.onManipulationCommit:null;
+        fn?.(payload);
+        const compat=payload?.manipulator?.source?.compat;
+        if(compat==='marker'){
+          const legacy={marker:payload.manipulator.source.marker,curve:payload.curve||null,index:payload.index??-1,point:payload.point??null,event:payload.event,surface:this};
+          if(phase==='start')this.spec.onMarkerDragStart?.(legacy);
+          else if(phase==='preview'){this.spec.onMarkerDragPreview?.(legacy);this.spec.onMarkerDrag?.(legacy);}
+          else if(phase==='commit'){this.spec.onMarkerDragCommit?.(legacy);this.spec.onMarkerDragEnd?.(legacy);}
+        }else if(compat==='width'){
+          const g=payload.geometry||{},ig=payload.initialGeometry||{},legacy={marker:payload.manipulator.source.marker,curve:payload.curve||null,side:payload.handle==='start'?'left':'right',index:payload.index??-1,point:payload.point??null,windowLeft:Number(g.start),windowRight:Number(g.end),initialWindowLeft:Number(ig.start),initialWindowRight:Number(ig.end),event:payload.event,surface:this};
+          if(phase==='start')this.spec.onWidthDragStart?.(legacy);
+          else if(phase==='preview'){this.spec.onWidthDragPreview?.(legacy);this.spec.onWidthDrag?.(legacy);}
+          else if(phase==='commit'){this.spec.onWidthWindowCommit?.(legacy);this.spec.onWidthDragEnd?.(legacy);}
+        }
+      };
+      const resetManipulator=(manipulator,event,handle='')=>{
+        const payload={manipulator,handle,event,surface:this};this.spec.onManipulationReset?.(payload);
+        if(manipulator?.source?.compat==='width')this.spec.onWidthReset?.({marker:manipulator.source.marker,side:handle==='start'?'left':'right',event,surface:this});
+        this.requestRender('manipulation-reset');
+      };
+      const snapToCurve=(manipulator,event)=>{
+        const curveId=String(manipulator?.snap?.curveId||manipulator?.curveId||'');
+        if(manipulator?.snap?.kind!=='curve'||!curveId)return {curve:null,index:-1,point:null,xValue:x.invert(event.x),yValue:y.invert(event.y)};
+        const curve=curveById.get(curveId),points=normalized.get(curveId)||[];if(!curve||!points.length)return {curve:null,index:-1,point:null,xValue:x.invert(event.x),yValue:y.invert(event.y)};
+        const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx],sourceIndex=Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx;
+        return {curve,index:sourceIndex,point:point?.raw||point,xValue:Number(point?.x),yValue:Number(point?.y)};
+      };
       if(this.spec.showMarkers?.()!==false&&markers.length){
         const marks=dataLayer.append('g').selectAll('path.dkds-scientific-marker').data(markers,m=>m.id).join('path').attr('class',m=>`dkds-scientific-marker ${m.locked?'is-locked':''} ${hasCurveSelection&&String(m.curveId)!==selectedCurveId?'is-dimmed':''}`)
           .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
           .attr('stroke',m=>selectedMarkerIds.has(String(m.id))?'#111827':(m.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',m=>selectedMarkerIds.has(String(m.id))?3.2:1.8).attr('opacity',m=>{let o=m.accepted!==false?.98:.34;if(hasCurveSelection&&String(m.curveId)!==selectedCurveId)o*=.11;return o;}).style('pointer-events','none');
-        const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
+        const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''} ${manipulatorByTarget.has(String(m.id))?'is-manipulable':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
           .on('click',(event,marker)=>{event.stopPropagation();const id=String(marker?.id||'');if((this.markerClickSuppressUntil.get(id)||0)>Date.now()){event.preventDefault();return;}this.spec.onMarkerSelect?.({marker,event,surface:this,additive:!!(event.ctrlKey||event.metaKey)});})
           .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();this.spec.onMarkerDoubleClick?.({marker,event,surface:this});})
           .on('contextmenu',(event,marker)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.({marker,event,surface:this});else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});})
           .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
         marks.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.mark=this;markerNodes.set(id,row);});
         hits.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.hit=this;markerNodes.set(id,row);});
-        const markerDragState=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
-        hits.call(d3.drag().clickDistance(7).filter(event=>event.button===0&&!event.ctrlKey).on('start',(event,marker)=>{if(marker.locked)return;markerDragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false,curve:null,index:-1,point:null});this.spec.onMarkerDragStart?.({marker,event,surface:this});}).on('drag',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));if(state&&!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}const curve=curveById.get(String(marker.curveId)),points=normalized.get(String(marker.curveId))||[];if(!curve||!points.length)return;const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx],sourceIndex=Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx;if(state){state.curve=curve;state.index=sourceIndex;state.point=point?.raw||point;}const payload={marker,curve,index:sourceIndex,point:point?.raw||point,event,surface:this};this.spec.onMarkerDragPreview?.(payload);this.spec.onMarkerDrag?.(payload);this.updateMarkerVisual(marker,point);}).on('end',(event,marker)=>{if(marker.locked)return;const state=markerDragState.get(String(marker.id));markerDragState.delete(String(marker.id));if(!state?.moved)return;const payload={marker,curve:state.curve,index:state.index,point:state.point,event,surface:this};this.markerClickSuppressUntil.set(String(marker.id),Date.now()+160);this.spec.onMarkerDragCommit?.(payload);this.spec.onMarkerDragEnd?.(payload);this.requestRender('marker-drag-end');}));
+        const dragState=new Map();
+        hits.call(d3.drag().clickDistance(7).filter((event,marker)=>event.button===0&&!event.ctrlKey&&!!manipulatorByTarget.get(String(marker?.id||''))).on('start',(event,marker)=>{
+          const manipulator=manipulatorByTarget.get(String(marker.id));if(!manipulator||manipulator.locked||marker.locked)return;const geometry={x:Number(manipulator.geometry?.x??marker.x),y:Number(manipulator.geometry?.y??marker.y)};dragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false,manipulator,initialGeometry:{...geometry},geometry:{...geometry},curve:null,index:-1,point:null});emitManipulation('start',{manipulator,handle:'point',geometry:{...geometry},initialGeometry:{...geometry},event,surface:this});
+        }).on('drag',(event,marker)=>{
+          const state=dragState.get(String(marker.id));if(!state||state.manipulator.locked||marker.locked)return;if(!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}
+          const snapped=snapToCurve(state.manipulator,event),axis=String(state.manipulator.axis||'xy');let nx=snapped.xValue,ny=snapped.yValue;if(axis==='x')ny=state.initialGeometry.y;if(axis==='y')nx=state.initialGeometry.x;state.geometry={x:Number(nx),y:Number(ny)};state.curve=snapped.curve;state.index=snapped.index;state.point=snapped.point;
+          const payload={manipulator:state.manipulator,handle:'point',geometry:{...state.geometry},initialGeometry:{...state.initialGeometry},curve:snapped.curve,index:snapped.index,point:snapped.point,event,surface:this};emitManipulation('preview',payload);this.updateMarkerVisual(marker,{x:nx,y:ny});
+        }).on('end',(event,marker)=>{
+          const state=dragState.get(String(marker.id));dragState.delete(String(marker.id));if(!state?.moved)return;this.markerClickSuppressUntil.set(String(marker.id),Date.now()+160);emitManipulation('commit',{manipulator:state.manipulator,handle:'point',geometry:{...state.geometry},initialGeometry:{...state.initialGeometry},curve:state.curve,index:state.index,point:state.point,event,surface:this});this.requestRender('manipulation-end');
+        }));
       }
-      const selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id)));
+      // Width/FWHM is presentation only here. Editing is owned by the generic
+      // range manipulator below, so measurement semantics and interaction
+      // semantics are no longer coupled.
       if(selectedMarker&&this.spec.showWidth?.()!==false){
         const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
         if(widthSpec){
-          const finite=v=>this.finite(v),color=selectedMarker.color||'#2563eb';
-          let measureLeft=finite(widthSpec.left)?Number(widthSpec.left):NaN,measureRight=finite(widthSpec.right)?Number(widthSpec.right):NaN;
-          if(finite(measureLeft)&&finite(measureRight)&&measureLeft>measureRight)[measureLeft,measureRight]=[measureRight,measureLeft];
-          let windowLeft=finite(widthSpec.windowLeft)?Number(widthSpec.windowLeft):measureLeft,windowRight=finite(widthSpec.windowRight)?Number(widthSpec.windowRight):measureRight;
-          if(finite(windowLeft)&&finite(windowRight)&&windowLeft>windowRight)[windowLeft,windowRight]=[windowRight,windowLeft];
-          if(finite(windowLeft)&&finite(windowRight)&&windowRight>windowLeft){
-            const band=svg.append('g').attr('clip-path',`url(#${clipId})`);
-            band.append('rect').attr('class','dkds-scientific-width-band').attr('x',x(windowLeft)).attr('width',Math.max(2,x(windowRight)-x(windowLeft))).attr('y',margin.top).attr('height',innerH).attr('fill',color);
-            const baseline=widthSpec.baseline;
-            if(baseline&&finite(baseline.x1)&&finite(baseline.x2)&&finite(baseline.y1)&&finite(baseline.y2)){
-              band.append('line').attr('class','dkds-scientific-baseline-line').attr('x1',x(Number(baseline.x1))).attr('x2',x(Number(baseline.x2))).attr('y1',y(Number(baseline.y1))).attr('y2',y(Number(baseline.y2))).attr('stroke',color);
+          const finite=v=>this.finite(v),color=selectedMarker.color||'#2563eb';let measureLeft=finite(widthSpec.left)?Number(widthSpec.left):NaN,measureRight=finite(widthSpec.right)?Number(widthSpec.right):NaN;if(finite(measureLeft)&&finite(measureRight)&&measureLeft>measureRight)[measureLeft,measureRight]=[measureRight,measureLeft];
+          const layer=svg.append('g').attr('clip-path',`url(#${clipId})`),baseline=widthSpec.baseline;
+          if(baseline&&finite(baseline.x1)&&finite(baseline.x2)&&finite(baseline.y1)&&finite(baseline.y2))layer.append('line').attr('class','dkds-scientific-baseline-line').attr('x1',x(Number(baseline.x1))).attr('x2',x(Number(baseline.x2))).attr('y1',y(Number(baseline.y1))).attr('y2',y(Number(baseline.y2))).attr('stroke',color);
+          if(finite(measureLeft)&&finite(measureRight)&&measureRight>measureLeft){const yLeft=finite(widthSpec.yLeft)?Number(widthSpec.yLeft):(finite(widthSpec.y)?Number(widthSpec.y):Number(selectedMarker.y)),yRight=finite(widthSpec.yRight)?Number(widthSpec.yRight):yLeft;layer.append('line').attr('class','dkds-scientific-width-line').attr('x1',x(measureLeft)).attr('x2',x(measureRight)).attr('y1',y(yLeft)).attr('y2',y(yRight)).attr('stroke',color);for(const row of [{x:measureLeft,y:yLeft},{x:measureRight,y:yRight}])layer.append('circle').attr('class','dkds-scientific-width-crossing').attr('cx',x(row.x)).attr('cy',y(row.y)).attr('r',3.5).attr('fill','#fff').attr('stroke',color).attr('stroke-width',1.6);}
+        }
+      }
+      // Generic direct-manipulation primitives. These know only geometry,
+      // snapping and constraints; domain meanings such as peak, threshold,
+      // fit interval, crop window or FWHM belong entirely to the plugin.
+      for(const manipulator of manipulators){
+        if(!manipulator||manipulator.locked)continue;const kind=String(manipulator.kind),axis=String(manipulator.axis||'x'),g=manipulator.geometry||{},presentation=manipulator.presentation||{},color=presentation.color||'#2563eb';
+        if(kind==='range'){
+          let start=Number(g.start),end=Number(g.end);if(!Number.isFinite(start)||!Number.isFinite(end))continue;if(start>end)[start,end]=[end,start];
+          const initialGeometry={start,end},constraints=manipulator.constraints||{},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-range').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),band=presentation.band===false?null:layer.append('rect').attr('class',`dkds-direct-range-band ${axis==='x'?'dkds-scientific-width-band':''}`).attr('fill',color),handleNodes={};let moved=false,lastCurve=null,lastIndex=-1,lastPoint=null;
+          const redraw=()=>{
+            if(axis==='y'){
+              const py0=y(start),py1=y(end);band?.attr('x',margin.left).attr('width',innerW).attr('y',Math.min(py0,py1)).attr('height',Math.max(2,Math.abs(py1-py0)));
+              for(const handle of ['start','end'])handleNodes[handle]?.attr('cx',String(presentation.handlePosition||'').toLowerCase()==='right'?margin.left+innerW-10:margin.left+10).attr('cy',y(handle==='start'?start:end));
+            }else{
+              const px0=x(start),px1=x(end);band?.attr('x',Math.min(px0,px1)).attr('width',Math.max(2,Math.abs(px1-px0))).attr('y',margin.top).attr('height',innerH);
+              const handleY=String(presentation.handlePosition||'').toLowerCase()==='bottom'?margin.top+innerH-10:(Number.isFinite(Number(presentation.handlePosition))?y(Number(presentation.handlePosition)):margin.top+10);
+              for(const handle of ['start','end'])handleNodes[handle]?.attr('cx',x(handle==='start'?start:end)).attr('cy',handleY);
             }
-            if(finite(measureLeft)&&finite(measureRight)&&measureRight>measureLeft){
-              const yLeft=finite(widthSpec.yLeft)?Number(widthSpec.yLeft):(finite(widthSpec.y)?Number(widthSpec.y):Number(selectedMarker.y));
-              const yRight=finite(widthSpec.yRight)?Number(widthSpec.yRight):yLeft;
-              band.append('line').attr('class','dkds-scientific-width-line').attr('x1',x(measureLeft)).attr('x2',x(measureRight)).attr('y1',y(yLeft)).attr('y2',y(yRight)).attr('stroke',color);
-              for(const row of [{x:measureLeft,y:yLeft},{x:measureRight,y:yRight}])band.append('circle').attr('class','dkds-scientific-width-crossing').attr('cx',x(row.x)).attr('cy',y(row.y)).attr('r',3.5).attr('fill','#fff').attr('stroke',color).attr('stroke-width',1.6);
-            }
-            const handleY=String(widthSpec.handlePosition||'').toLowerCase()==='top'?margin.top+10:(finite(widthSpec.handleY)?y(Number(widthSpec.handleY)):margin.top+10);
-            for(const side of ['left','right']){
-              const xv=side==='left'?windowLeft:windowRight;
-              const h=band.append('circle').attr('class','dkds-scientific-width-handle dkds-scientific-window-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',handleY).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);let widthDragMoved=false;
-              const initialWindowLeft=windowLeft,initialWindowRight=windowRight;
-              h.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onWidthReset?.({marker:selectedMarker,side,event,surface:this});this.requestRender('width-reset');})
-                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{widthDragMoved=false;this.spec.onWidthDragStart?.({marker:selectedMarker,side,windowLeft,windowRight,event,surface:this});}).on('drag',event=>{
-                  if(selectedMarker.locked)return;
-                  const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[];
-                  if(!curve||!points.length)return;
-                  const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];
-                  // The analysis window is a Core-owned atomic edit draft. Pointermove
-                  // updates only SVG geometry. Domain state is committed once at end,
-                  // with both endpoints present, so a one-sided drag can never be
-                  // interpreted as an incomplete scientific window.
-                  const previewX=Number(point?.x),anchorX=Number(selectedMarker?.x);widthDragMoved=true;
-                  let nl=windowLeft,nr=windowRight;
-                  if(finite(previewX)){
-                    if(side==='left')nl=Math.min(previewX,finite(anchorX)?anchorX-1e-15:nr-1e-15);else nr=Math.max(previewX,finite(anchorX)?anchorX+1e-15:nl+1e-15);
-                  }
-                  if(nl>nr)[nl,nr]=[nr,nl];
-                  if(finite(nl)&&finite(nr)&&nr>nl){windowLeft=nl;windowRight=nr;band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.selectAll('circle.dkds-scientific-window-handle').attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}
-                  const payload={marker:selectedMarker,curve,side,index:Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx,point:point?.raw||point,windowLeft,windowRight,initialWindowLeft,initialWindowRight,event,surface:this};this.spec.onWidthDragPreview?.(payload);this.spec.onWidthDrag?.(payload);
-                }).on('end',event=>{if(!widthDragMoved)return;const payload={marker:selectedMarker,side,windowLeft,windowRight,initialWindowLeft,initialWindowRight,event,surface:this};this.spec.onWidthWindowCommit?.(payload);this.spec.onWidthDragEnd?.(payload);this.requestRender('width-drag-end');}));
-            }
-          }
+          };
+          const installRangeDrag=(handleNode,handle)=>handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,handle);}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;lastCurve=null;lastIndex=-1;lastPoint=null;emitManipulation('start',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{
+            let value,curve=null,index=-1,point=null;if(axis==='x'){const snapped=snapToCurve(manipulator,event);value=Number(snapped.xValue);curve=snapped.curve;index=snapped.index;point=snapped.point;}else value=Number(y.invert(event.y));if(!Number.isFinite(value))return;
+            const min=Number(constraints.min),max=Number(constraints.max),minSpan=Math.max(0,Number(constraints.minSpan)||0),contains=Number(constraints.contains),containsGap=Math.max(0,Number(constraints.containsGap)||0);if(Number.isFinite(min))value=Math.max(min,value);if(Number.isFinite(max))value=Math.min(max,value);
+            if(handle==='start'){value=Math.min(value,end-minSpan);if(Number.isFinite(contains))value=Math.min(value,contains-containsGap);start=value;}else{value=Math.max(value,start+minSpan);if(Number.isFinite(contains))value=Math.max(value,contains+containsGap);end=value;}
+            if(!(Number.isFinite(start)&&Number.isFinite(end)&&end>=start))return;moved=true;lastCurve=curve;lastIndex=index;lastPoint=point;redraw();emitManipulation('preview',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},curve,index,point,event,surface:this});
+          }).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},curve:lastCurve,index:lastIndex,point:lastPoint,event,surface:this});this.requestRender('manipulation-end');}));
+          for(const handle of ['start','end']){const h=layer.append('circle').attr('class',`dkds-direct-handle dkds-direct-range-handle ${axis==='x'?'dkds-scientific-width-handle':''}`).attr('data-handle',handle).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2).style('cursor',axis==='y'?'ns-resize':'ew-resize');handleNodes[handle]=h;installRangeDrag(h,handle);}redraw();
+        }else if(kind==='axis'){
+          let value=Number(g.value);if(!Number.isFinite(value))continue;const initialGeometry={value},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-axis').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),lineNode=layer.append('line').attr('class','dkds-direct-axis-line').attr('stroke',color),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-axis-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);const redraw=()=>{if(axis==='y'){lineNode.attr('x1',margin.left).attr('x2',margin.left+innerW).attr('y1',y(value)).attr('y2',y(value));handleNode.attr('cx',margin.left+10).attr('cy',y(value)).style('cursor','ns-resize');}else{lineNode.attr('x1',x(value)).attr('x2',x(value)).attr('y1',margin.top).attr('y2',margin.top+innerH);handleNode.attr('cx',x(value)).attr('cy',margin.top+10).style('cursor','ew-resize');}};let moved=false;handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'value');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{let curve=null,index=-1,point=null,next;if(axis==='x'){const snapped=snapToCurve(manipulator,event);next=Number(snapped.xValue);curve=snapped.curve;index=snapped.index;point=snapped.point;}else next=Number(y.invert(event.y));if(!Number.isFinite(next))return;moved=true;const min=Number(manipulator.constraints?.min),max=Number(manipulator.constraints?.max);if(Number.isFinite(min))next=Math.max(min,next);if(Number.isFinite(max))next=Math.min(max,next);value=next;redraw();emitManipulation('preview',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},curve,index,point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));redraw();
+        }else if(kind==='point'&&!manipulator.targetId){
+          let px=Number(g.x),py=Number(g.y);if(!Number.isFinite(px)||!Number.isFinite(py))continue;const initialGeometry={x:px,y:py},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-point').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-point-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2).attr('cx',x(px)).attr('cy',y(py)).style('cursor','grab');let moved=false;handleNode.on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'point');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{const snapped=snapToCurve(manipulator,event),dragAxis=String(manipulator.axis||'xy');let nx=Number(snapped.xValue),ny=Number(snapped.yValue);if(dragAxis==='x')ny=initialGeometry.y;if(dragAxis==='y')nx=initialGeometry.x;if(!Number.isFinite(nx)||!Number.isFinite(ny))return;moved=true;px=nx;py=ny;handleNode.attr('cx',x(px)).attr('cy',y(py));emitManipulation('preview',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},curve:snapped.curve,index:snapped.index,point:snapped.point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));
         }
       }
       this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});

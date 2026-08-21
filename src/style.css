@@ -4369,8 +4369,9 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-scientific-curve{fill:none;vector-effect:non-scaling-stroke}
 .dkds-scientific-curve-hit{fill:none;stroke:transparent;stroke-width:14px;pointer-events:stroke;cursor:pointer}
 .dkds-scientific-marker{pointer-events:none}.dkds-scientific-marker.is-dimmed{opacity:.12}
-.dkds-scientific-marker-hit{fill:transparent;stroke:none;pointer-events:all;cursor:pointer}.dkds-scientific-marker-hit:not(.is-locked){cursor:grab}
+.dkds-scientific-marker-hit{fill:transparent;stroke:none;pointer-events:all;cursor:pointer}.dkds-scientific-marker-hit.is-manipulable:not(.is-locked){cursor:grab}
 .dkds-scientific-width-band{opacity:.065;pointer-events:none}.dkds-scientific-width-line{stroke-width:1.6;pointer-events:none}.dkds-scientific-baseline-line{stroke-width:1.15;stroke-dasharray:5 4;opacity:.72;pointer-events:none}.dkds-scientific-width-crossing{pointer-events:none}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all}
+.dkds-direct-manipulation{pointer-events:none}.dkds-direct-range-band{opacity:.065;pointer-events:none}.dkds-direct-axis-line{stroke-width:1.15;stroke-dasharray:5 4;opacity:.72;pointer-events:none}.dkds-direct-handle{pointer-events:all}.dkds-direct-point-handle,.dkds-direct-axis-handle,.dkds-direct-range-handle{filter:drop-shadow(0 1px 1px rgba(15,23,42,.12))}
 .dkds-scientific-direct-box{pointer-events:none;stroke-width:1.4}.dkds-scientific-direct-box.is-range{fill:rgba(58,96,246,.08);stroke:#3a60f6;stroke-dasharray:5 3}.dkds-scientific-direct-box.is-zoom{fill:rgba(124,58,237,.07);stroke:#7c3aed;stroke-dasharray:3 3}
 .dkds-scientific-persisted-range{fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4;pointer-events:none}
 

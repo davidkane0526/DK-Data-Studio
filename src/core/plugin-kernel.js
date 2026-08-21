@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.10.0';
+  const API_VERSION = '1.11.0';
 
   function readPreferences() {
     if (preferences) return preferences;
