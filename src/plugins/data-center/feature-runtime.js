@@ -163,7 +163,7 @@
     function isImportedSource(a){return !!a&&a.kind==='data.table'&&(a.metadata?.adapter==='legacy-dataset'||a.metadata?.importedSource===true)&&!!String(a.metadata?.legacyDatasetPath||a?.source?.path||a.id||'');}
     function sourceRef(a){return a?.metadata?.adapter==='legacy-dataset'?{path:String(a.metadata?.legacyDatasetPath||''),sourcePath:String(a?.source?.path||'')}:{artifactId:String(a?.id||''),sourcePath:String(a?.source?.path||'')};}
     function isExcluded(a){return !!a&&(a.metadata?.sourceExcluded===true||a.metadata?.excluded===true);}
-    function renderDataAction(a=activeArtifact()){const button=$('#dcDataActionsBtn');if(!button)return;button.disabled=!a;button.title=a?'修改标签、排除/恢复或删除当前数据对象':'请选择数据对象';}
+    function renderDataAction(a=activeArtifact()){const button=$('#dcDataActionsBtn');if(!button)return;button.disabled=!a;button.title=a?'编辑标签、用途、排除状态或删除当前数据对象':'请选择数据对象';}
     async function removeActiveSource(target=activeArtifact()){
       const a=target;
       if(!isImportedSource(a)||!sourceCapability?.remove){ctx.status.set('当前选择不是可移除的导入源数据。');return false;}

@@ -393,8 +393,7 @@
   }
 
   async function savePlotlyImage(plotId, defaultName, format='png') {
-    if (!window.Plotly) throw new Error('Plotly 尚未加载。');
-    const data = await Plotly.toImage(plotId, {
+    const data = await window.DKDSCharts.toImage(plotId, {
       format,
       width:1500,
       height:950,
@@ -464,7 +463,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.9',
+      appVersion:'3.61.10',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

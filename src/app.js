@@ -1952,7 +1952,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   async function savePlotlyImage(plotId,defaultName,format){
-    const data=await Plotly.toImage(plotId,{format,width:1500,height:950,scale:format==='png'?2:1});
+    const data=await window.DKDSCharts.toImage(plotId,{format,width:1500,height:950,scale:format==='png'?2:1});
     if(format==='svg'){
       const raw=data.split(',')[1]||'';
       const content=decodeURIComponent(raw);
@@ -2022,7 +2022,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
     if(resizePlots){
       requestAnimationFrame(()=>{
-        document.querySelectorAll('.trend-plot').forEach(plot=>{try{Plotly.Plots.resize(plot);}catch{}});
+        document.querySelectorAll('.trend-plot').forEach(plot=>{try{window.DKDSCharts?.resize?.(plot);}catch{}});
       });
     }
   }
@@ -2105,7 +2105,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
           ...(result.layout||{})
         };
         const config={displayModeBar:false,responsive:true,doubleClick:'reset',...(result.config||{})};
-        Plotly.newPlot(plot,traces,layout,config).then(()=>bindPluginGroupPointClick(plot,provider,result));
+        window.DKDSCharts.react(plot,traces,layout,config).then(()=>bindPluginGroupPointClick(plot,provider,result));
       }
 
       card.addEventListener('dblclick',event=>{
@@ -2137,9 +2137,9 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       responsive:true,displaylogo:false,displayModeBar:true,scrollZoom:true,doubleClick:'reset+autosize',
       modeBarButtonsToAdd:['select2d','lasso2d'],toImageButtonOptions:{format:'svg',filename:safeName(title),width:1400,height:900}
     };
-    Plotly.newPlot('zoomPlot',traces,layout,config).then(()=>{
+    window.DKDSCharts.react('zoomPlot',traces,layout,config).then(()=>{
       if(provider)bindPluginGroupPointClick($('#zoomPlot'),provider,result||{});
-      requestAnimationFrame(()=>{try{Plotly.Plots.resize($('#zoomPlot'));}catch{}});
+      requestAnimationFrame(()=>{try{window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}});
     });
   }
 
@@ -2187,7 +2187,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.9',
+      version:'3.61.10',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2300,12 +2300,24 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   function loadProjectIntoActive(pr,path){
+    const previousArtifacts=snapshotArtifactRows();
     state.datasets=canonicalProjectDatasets(pr);
     state.projectPath=path||null;
     state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:1,artifacts:[]});
     const artifactTab=activeProjectTab();
     if(artifactTab)artifactTab.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
+    // Project restore is an Artifact transaction too. Legacy projects rebuild
+    // their transient DataTable adapters from `project.datasets`; previously
+    // that happened silently in the main renderer, leaving an already-open
+    // Data Center/TOP renderer on the old empty snapshot. Broadcast the full
+    // diff once, rather than asking each system window to special-case legacy
+    // project formats or forcing a full window reload.
+    const projectRestoreDelta=diffArtifactRows(previousArtifacts,snapshotArtifactRows());
+    if(projectRestoreDelta.upserts.length||projectRestoreDelta.removedIds.length){
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'project-restore',artifactDelta:projectRestoreDelta,artifacts:snapshotArtifactRows()});
+      pushArtifactDeltaToActivityWindows(projectRestoreDelta,'project-restore');
+    }
 
     const currentTab=activeProjectTab();
     if(currentTab)currentTab.pluginState=JSON.parse(JSON.stringify(pr.plugins||{}));
@@ -2770,7 +2782,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.csv`,content:zoomCsvText(),filters:[{name:'CSV',extensions:['csv']}]});
   };
   $('#zoomCopyCsv').onclick=()=>{if(state.zoomChart)copyTextToClipboard(zoomCsvText(),`${state.zoomChart.title} CSV`);};
-  $('#zoomExportSvg').onclick=()=>{if(!state.zoomChart)return;Plotly.toImage('zoomPlot',{format:'svg',width:1200,height:800}).then(data=>{const content=decodeURIComponent(data.split(',')[1]);window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.svg`,content,filters:[{name:'SVG',extensions:['svg']}]});});};
+  $('#zoomExportSvg').onclick=()=>{if(!state.zoomChart)return;window.DKDSCharts.toImage('zoomPlot',{format:'svg',width:1200,height:800,scale:1}).then(data=>{const content=decodeURIComponent(data.split(',')[1]);window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.svg`,content,filters:[{name:'SVG',extensions:['svg']}]});});};
 
   window.addEventListener('keydown',e=>{
     if(isTypingTarget(e.target))return;
@@ -2794,7 +2806,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     syncSuperWorkspaceDivider();
     scheduleMainPlotRelayout();
     updateTrendLayout(true);
-    try{if(!$('#zoomPanel').classList.contains('hidden'))Plotly.Plots.resize($('#zoomPlot'));}catch{}
+    try{if(!$('#zoomPanel').classList.contains('hidden'))window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}
     window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'window'});
   });
 
@@ -2812,7 +2824,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         if(entry.target.id==='groupPanel')updateTrendLayout(true);
         if(entry.target.id==='inspectorPanel')scheduleMainPlotRelayout();
         if(entry.target.id==='zoomPanel'&&!entry.target.classList.contains('hidden')){
-          try{Plotly.Plots.resize($('#zoomPlot'));}catch{}
+          try{window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}
         }
       }
     });
@@ -2991,7 +3003,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.9',
+      appVersion:'3.61.10',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

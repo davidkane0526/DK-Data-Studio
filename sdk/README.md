@@ -5,7 +5,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.9 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.10 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -40,7 +40,7 @@ A tool may use public data/artifact, table, chart, settings, clipboard, or servi
 
 ## Core display-scale interaction
 
-All Core-owned scientific data plots support **double-click Y axis → toggle linear/log display**. This is a view-only setting: it does not mutate source Artifacts, plugin-domain data, pipeline inputs, or CSV/data exports. On a log view, non-positive Y samples remain in the source data but cannot be rendered on the logarithmic axis. Plugins should not implement a duplicate Y-axis double-click handler.
+All Core-owned scientific data plots support **double-click the Y axis or left Y-label region → toggle linear/log display**. Log mode renders a view-only `|Y|` projection; it does not mutate source Artifacts, plugin-domain data, pipeline inputs, project persistence, or CSV/data exports. `Y = 0` remains in the source data but cannot be rendered on a logarithmic axis. Numeric scalar-field/heatmap Y coordinates use the same projection. Category/date Y axes are not logarithmically transformable and therefore remain unchanged. Plugins should not implement a duplicate Y-axis double-click handler or bypass the Core chart/surface runtimes.
 
 ## Validate
 

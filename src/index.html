@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.9</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.10</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -20,7 +20,7 @@
             <button id="saveProjectBtn" class="toolbar-btn" title="保存项目 · Ctrl+S">保存项目</button>
           </div>
           <div class="menu-anchor compact-menu-anchor">
-            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑操作 ▾</button>
+            <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
             <div id="editMenu" class="command-menu hidden">
               <button id="undoBtn" type="button"><span>撤销操作</span><kbd>Ctrl+Z</kbd></button>
               <button id="deselectBtn" type="button"><span>退出选中</span><kbd>Esc</kbd></button>
@@ -51,10 +51,12 @@
         </div>
 
         <div class="system-commandbar">
-          <button id="dataCenterSystemBtn" class="toolbar-btn" type="button" title="打开系统数据管理中心">数据管理</button>
-          <div class="menu-anchor">
-            <button id="toolsMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="pluginToolsMenu" aria-haspopup="true" aria-expanded="false" disabled>工具 ▾</button>
-            <div id="pluginToolsMenu" class="command-menu hidden" data-plugin-menu="tools"></div>
+          <div class="system-core-tools-group" role="group" aria-label="系统数据与工具">
+            <button id="dataCenterSystemBtn" class="toolbar-btn" type="button" title="打开系统数据管理中心">数据管理</button>
+            <div class="menu-anchor">
+              <button id="toolsMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="pluginToolsMenu" aria-haspopup="true" aria-expanded="false" disabled>工具 ▾</button>
+              <div id="pluginToolsMenu" class="command-menu hidden" data-plugin-menu="tools"></div>
+            </div>
           </div>
           <div class="menu-anchor">
             <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出数据 ▾</button>

@@ -2,13 +2,13 @@
   "sdkVersion": "1.15.0",
   "pluginApiVersion": "1.15.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.9",
+  "minimumAppVersion": "3.61.10",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
     "New plugins target Plugin API 1.15.0; Plugin API 1.10-1.14 packages remain loadable.",
     "Plugin API 1.15 adds the tool plugin category and the Core-owned top Tools menu; tool plugins contribute Commands/menu items instead of creating top-level shell buttons.",
-    "ScientificPlot and ScientificCurveSurface provide a Core-owned display-only Y-axis linear/log toggle on Y-axis double-click; source Artifacts and data exports are unchanged.",
+    "Core Chart Runtime, ScientificPlot and ScientificCurveSurface provide one display-only Y-axis/left-label linear-log toggle. Log display uses |Y| (including numeric heatmap Y coordinates) while source Artifacts and data exports remain unchanged.",
     "Plugin API 1.14 Core-owned per-workbench import actions and Plugin API 1.13 scoped source assignments remain the data-routing foundation.",
     "Algorithm plugins are first-class versioned Algorithm Providers through analysis.algorithms and algorithmProvides.",
     "The SDK is standalone and does not require DK Data Studio source code."

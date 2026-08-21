@@ -15,8 +15,8 @@ const pulsePlugin=read('src/plugins/pulse-analysis/plugin.js');
 const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('scripts/check-plugin-boundaries.js');
 
-assert(pkg.version==='3.61.9','Application version must be 3.61.9.');
-assert(contract.pluginApiVersion==='1.15.0'&&contract.minimumAppVersion==='3.61.9','SDK 1.14 must remain available from app 3.61.9 while v3.61.8 fixes live data synchronization.');
+assert(pkg.version==='3.61.10','Application version must be 3.61.10.');
+assert(contract.pluginApiVersion==='1.15.0'&&contract.minimumAppVersion==='3.61.10','Current SDK contract must require app 3.61.10 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
@@ -32,4 +32,4 @@ assert(!sdk.includes('ctx.data.importWorkbench.open'),'SDK workbench template mu
 assert(!pulseFeature.includes("label:'添加文件'")&&!pulseFeature.includes('P.addFiles()'),'Pulse must use the Core-owned import action instead of a plugin button.');
 assert(!pulsePlugin.includes('ctx.data.importWorkbench')&&!pulseService.includes('openImportWorkbench'),'First-party Pulse workbench must not own Import Workbench invocation.');
 assert(boundary.includes('workbench import UI is Core-owned in Plugin API 1.14'),'Boundary gate must prevent first-party workbenches from reintroducing import UI.');
-console.log('v3.61.9 Core-owned workbench import action passed: fixed slot, scoped target, compatible importer filtering, global multi-target routing preserved.');
+console.log('v3.61.10 Core-owned workbench import action passed: fixed slot, scoped target, compatible importer filtering, global multi-target routing preserved.');

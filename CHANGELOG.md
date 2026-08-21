@@ -1,11 +1,11 @@
-# v3.61.9 — Display Scale / Tool Plugins / System Functions
+# v3.61.10 — Universal Display Scale / Legacy Project Data Center Consistency
 
-- Core-owned scientific plots now toggle the primary Y axis between linear and logarithmic display on Y-axis double-click. The display transform is view-only and never rewrites source artifacts, trace arrays, project science data, or export payloads.
-- Plugin API / standalone SDK moves to `1.15.0` and adds first-class `pluginType: tool`, including a default tool icon, a dedicated SDK guide/template, and automatic routing of `ctx.ui.menus.add()` contributions into the top-level Tools menu.
-- Plugin Manager adds a Tools category and per-plugin `.dkplugin` export. Desktop export supports installed external plugins and application-owned built-ins through the trusted package serializer.
-- Data Center is reclassified as a `foundation` / `systemCritical` system function. It is opened from the system command bar, does not occupy the ordinary plugin activity strip, cannot become SUPER, and cannot be disabled.
-- System/foundation plugins retain a visible enable switch for status consistency, but Core rejects disable requests and the UI disables the control.
-- SDK documentation explicitly confirms first-class versioned algorithm-provider plugins through `ctx.analysis.algorithms.register`.
+- Moved Plotly Y-scale interaction down to the base Core Chart Runtime so host group charts, zoom charts, Data Center charts, TER plots, numeric heatmaps and ScientificPlot consumers share one display contract. ScientificCurveSurface keeps the same Core-owned behavior for D3 interactive curves.
+- Log display now renders a view-only `abs(Y)` projection instead of merely changing `yaxis.type`. Source Artifacts, plugin state, input arrays, project persistence and data/CSV exports retain the original signed values. Numeric heatmap Y coordinates use the same projection; categorical/date axes remain unchanged.
+- Removed remaining host-owned raw Plotly render/resize/export paths in favor of `DKDSCharts`, preventing display features from accidentally being limited to Resonance or another special workbench.
+- Project restore now publishes an Artifact delta after rebuilding legacy `project.datasets` adapters, keeping already-open Data Center/TOP renderers synchronized when an old project is opened.
+- Grouped Data Management and Tools into one system-command visual cluster; the Tools trigger no longer draws a nested border/shadow.
+- Renamed Data Center `数据操作` to `编辑`.
 
 # v3.61.8 — Live Artifact Sync / Scoped Workbench Data Reliability
 

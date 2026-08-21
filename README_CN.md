@@ -1,12 +1,14 @@
-# DK Data Studio — v3.61.9
+# DK Data Studio — v3.61.10
 
-## v3.61.9 显示尺度、工具插件与系统功能分层
+## v3.61.10 通用显示尺度与旧工程数据中心一致性
 
-- Core ScientificPlot / ScientificCurveSurface 统一支持双击纵轴在 `linear` 与 `log` 之间切换。该行为只改变图形 View Scale，不写回 Artifact、原始数组或数据导出；非正值在对数视图中不绘制但不会被删除。
-- Plugin API 升级为 `1.15.0`，正式增加 `pluginType: tool`。工具插件的菜单贡献统一进入顶部“工具”下拉菜单，并由 Core 提供默认图标。
-- SDK 明确支持独立 `algorithm` Provider 插件，并新增 `sdk/TOOL_PLUGINS.md` 与 `sdk/templates/tool-plugin/`。
-- 插件管理新增插件“导出”动作，可把当前安装插件保存为 `.dkplugin`；新增“工具”分类。
-- 数据管理改为 `foundation/systemCritical` 系统功能，从普通插件活动区移到顶部系统命令栏；系统/基座插件的启用开关保留显示但不可关闭，也不参与 TOP/SUPER 主界面选择。
+- 对数显示进一步下沉到最底层 Core Chart Runtime，不再只存在于共振主图或 ScientificPlot。宿主组图、放大图、数据中心、TER、数值型热图及其他通过 Core Chart Runtime 绘制的 Plotly 图统一支持双击 Y 轴或左侧标签区域切换线性/对数显示；ScientificCurveSurface 使用同一规则。
+- 对数视图统一显示 `|Y|`：Core 生成仅供绘制的绝对值投影，不修改 Artifact、插件领域状态、原始 trace 数组、工程保存内容或 CSV/数据导出。`Y=0` 在对数轴上不可显示但仍保留在源数据中。数值型热图的 Y 坐标同样使用该显示投影；分类/日期轴因不存在数学意义上的对数映射而保持原轴类型。
+- 清理宿主残留的直接 Plotly `newPlot/react/resize/toImage` 路径，统一经过 Core Chart Runtime，防止新基础交互只覆盖某个特殊工作台。
+- 旧工程恢复现在被视为一次完整 Artifact transaction。`project.datasets` 重建出的 legacy DataTable 会把 upsert/remove 差量广播给已经打开的数据中心及其他 TOP 窗口，修复旧工程数据实际存在但数据中心仍显示 0 的问题。
+- 顶部“数据管理 + 工具”改为一个共享描边/阴影的系统操作组，“工具”按钮自身不再重复绘制边框和阴影。
+- 数据中心“数据操作”按钮更名为“编辑”。
+- Plugin API 继续为 `1.15.0`；本轮是 Core/SDK 行为一致性修复，不增加新的领域专用接口。
 
 ## v3.61.8 独立窗口实时数据同步
 

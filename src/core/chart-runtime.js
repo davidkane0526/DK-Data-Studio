@@ -1,7 +1,8 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.4.0';
+  const VERSION='1.5.0';
   const ownerBindings=new Map();
+  const displayScaleStates=new WeakMap();
   const chartScriptUrl=document.currentScript?.src||globalThis.location?.href||'file:///src/core/chart-runtime.js';
   const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js';
   let runtimeConfig={plotlyAllowed:true,plotlySource:defaultPlotlySource,host:'main'};
@@ -68,11 +69,50 @@
     // cannot silently remove basic zoom/home controls from interactive plots.
     return {responsive:true,displaylogo:false,displayModeBar:'hover',scrollZoom:true,doubleClick:'reset+autosize',...source,displayModeBar:'hover'};
   }
-  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);const P=plotly();if(P?.react)return Promise.resolve(P.react(el,rows,themeLayout(layout),cfg));return ensurePlotly({reason:'react'}).then(next=>next.react(el,rows,themeLayout(layout),cfg));}
+  const cloneLayout=value=>{try{return structuredClone(value);}catch{try{return JSON.parse(JSON.stringify(value));}catch{return {...(value||{})};}}};
+  const axisType=layout=>String(layout?.yaxis?.type||'linear').toLowerCase();
+  const toggleableAxisType=type=>!['category','date','multicategory'].includes(String(type||'').toLowerCase());
+  const absNumber=value=>{const n=Number(value);return Number.isFinite(n)?Math.abs(n):value;};
+  function displayTrace(trace,mode){
+    if(mode!=='log'||!trace||typeof trace!=='object')return trace;
+    const next={...trace};
+    if(Array.isArray(trace.y))next.y=trace.y.map(absNumber);
+    else if(Number.isFinite(Number(trace.y0)))next.y0=Math.abs(Number(trace.y0));
+    return next;
+  }
+  function displayLayout(source,mode){
+    const layout=cloneLayout(source||{}),base=axisType(source);
+    if(!toggleableAxisType(base))return layout;
+    layout.yaxis={...(layout.yaxis||{}),type:mode};
+    if(mode==='log'){
+      delete layout.yaxis.range;layout.yaxis.autorange=true;
+      if(Array.isArray(layout.yaxis.tickvals))layout.yaxis.tickvals=layout.yaxis.tickvals.map(absNumber);
+      if(Array.isArray(layout.shapes))layout.shapes=layout.shapes.map(shape=>{if(!shape||typeof shape!=='object'||!/^y(?:\d+)?$/.test(String(shape.yref||'y')))return shape;return {...shape,y0:absNumber(shape.y0),y1:absNumber(shape.y1)};});
+      if(Array.isArray(layout.annotations))layout.annotations=layout.annotations.map(row=>{if(!row||typeof row!=='object'||!/^y(?:\d+)?$/.test(String(row.yref||'y')))return row;return {...row,y:absNumber(row.y)};});
+    }
+    return layout;
+  }
+  function displayState(el){let state=displayScaleStates.get(el);if(!state){state={mode:null,baseType:'linear',sourceData:[],sourceLayout:{},sourceConfig:{},handler:null};displayScaleStates.set(el,state);}return state;}
+  function isYAxisInteraction(el,event){
+    let current=event?.target;while(current&&current!==el){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(ytick|ytitle|yaxislayer-above|yaxislayer-below|g-ytitle)(\s|$)/.test(cls)||/yaxis/i.test(cls))return true;current=current.parentNode;}
+    const rect=el?.getBoundingClientRect?.(),size=el?._fullLayout?._size;if(!rect||!size||!Number.isFinite(Number(event?.clientX))||!Number.isFinite(Number(event?.clientY)))return false;
+    const x=Number(event.clientX)-rect.left,y=Number(event.clientY)-rect.top,left=Number(size.l)||0,top=Number(size.t)||0,height=Number(size.h)||0;
+    return x>=0&&x<=left+12&&y>=Math.max(0,top-14)&&y<=top+height+14;
+  }
+  function renderDisplay(el,P,state){const mode=String(state.mode||state.baseType||'linear').toLowerCase(),rows=(state.sourceData||[]).map(trace=>displayTrace(trace,mode)),layout=displayLayout(state.sourceLayout,mode);if(el?.dataset)el.dataset.dkdsYScale=mode;return Promise.resolve(P.react(el,rows,layout,state.sourceConfig||{}));}
+  function installDisplayScale(el){
+    if(!el)return;const state=displayState(el);if(state.handler)return;
+    state.handler=event=>{if(!isYAxisInteraction(el,event)||!toggleableAxisType(state.baseType))return;event.preventDefault?.();event.stopPropagation?.();event.stopImmediatePropagation?.();state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';const P=plotly();const done=P?.react?renderDisplay(el,P,state):ensurePlotly({reason:'display-scale'}).then(next=>renderDisplay(el,next,state));Promise.resolve(done).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis:'y',type:state.mode}}));}catch{}}).catch(()=>{});};
+    el.addEventListener?.('dblclick',state.handler,true);
+  }
+  function displayScaleState(target){const el=element(target)||target,state=el?displayScaleStates.get(el):null;return state?{axis:'y',type:String(state.mode||state.baseType||'linear'),baseType:String(state.baseType||'linear')}:null;}
+  function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});state.baseType=axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset)el.dataset.dkdsYScale=String(state.mode||state.baseType||'linear');return displayScaleState(el);}
+  function toggleYAxisDisplay(target){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';const run=P=>renderDisplay(el,P,state).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis:'y',type:state.mode}}));}catch{}return state.mode;});const P=plotly();return P?.react?run(P):ensurePlotly({reason:'display-scale'}).then(run);}
+  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config),themedLayout=themeLayout(layout),state=displayState(el);state.sourceData=rows;state.sourceLayout=themedLayout;state.sourceConfig=cfg;state.baseType=axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);const P=plotly();if(P?.react)return renderDisplay(el,P,state);return ensurePlotly({reason:'react'}).then(next=>renderDisplay(el,next,state));}
   function restyle(target,update,traces){const el=element(target)||target;const P=plotly();return P?.restyle?P.restyle(el,update,traces):ensurePlotly({reason:'restyle'}).then(next=>next.restyle(el,update,traces));}
   function relayout(target,update){const el=element(target)||target;const P=plotly();return P?.relayout?P.relayout(el,update):ensurePlotly({reason:'relayout'}).then(next=>next.relayout(el,update));}
   function resize(target){const el=element(target);if(!el||el.offsetParent===null||!plotly()?.Plots?.resize)return false;try{plotly().Plots.resize(el);return true;}catch{return false;}}
-  function purge(target){const el=element(target);if(!el||!plotly()?.purge)return false;try{plotly().purge(el);return true;}catch{return false;}}
+  function purge(target){const el=element(target);if(!el||!plotly()?.purge)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}displayScaleStates.delete(el);try{plotly().purge(el);return true;}catch{return false;}}
   function bind(owner,target,event,handler,{replace=false}={}){
     const el=element(target);if(!el||typeof el.on!=='function')return()=>{};
     if(replace){try{el.removeAllListeners?.(event);}catch{}}
@@ -105,12 +145,12 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,ensurePlotly,runtimeState,
-      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,tooltipTheme:TOOLTIP_THEME,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,displayScaleState,adoptDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
     });
   }
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,displayScaleState,adoptDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

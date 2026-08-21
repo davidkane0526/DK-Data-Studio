@@ -4642,3 +4642,10 @@ body.dkds-table-resizing *{cursor:col-resize!important;}
 .dkds-core-workbench-import-slot{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0}
 .dkds-core-workbench-import-slot+.dkds-plugin-header-actions{margin-left:6px}
 .dkds-core-import-action{white-space:nowrap}
+
+/* v3.61.10 system command grouping: Data Center + Tools are one visual system cluster. */
+.system-core-tools-group{display:flex;align-items:center;gap:0;padding:2px;border:1px solid #dce3ef;border-radius:10px;background:#fafbfe;box-shadow:0 1px 2px rgba(15,23,42,.035);flex:0 0 auto}
+.system-core-tools-group>.toolbar-btn,.system-core-tools-group>.menu-anchor>.toolbar-btn{min-width:82px;border:0!important;box-shadow:none!important;background:transparent!important}
+.system-core-tools-group>.menu-anchor>.toolbar-btn:hover,.system-core-tools-group>.toolbar-btn:hover{background:#fff!important;border:0!important;box-shadow:none!important}
+.system-core-tools-group>.menu-anchor{display:flex;align-items:center}
+.system-core-tools-group>.menu-anchor:before{content:'';width:1px;height:20px;background:#e3e8f0;margin:0 1px}
