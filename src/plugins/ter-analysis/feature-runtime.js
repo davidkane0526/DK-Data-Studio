@@ -1080,11 +1080,11 @@
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='terMaxPage'){T.render();terHeaderActions?.render?.();queueLinkedRender();}});
 
-    // Dedicated-window persistence is namespaced by plugin. This slice is the
-    // canonical TER cache; legacy root-level TER fields are migration input.
+    // TER persistence is namespaced by plugin; project-format owns historical
+    // project migration before runtime restoration.
     ctx.project.registerSlice('workspace',{
       serialize:()=>T.serialize(),
-      restore:(data,{legacyProject})=>T.restore(data,{legacyProject}),
+      restore:data=>T.restore(data),
       reset:()=>T.reset()
     });
 

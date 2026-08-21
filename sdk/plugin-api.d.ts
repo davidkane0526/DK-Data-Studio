@@ -19,7 +19,7 @@ export interface DKDSPluginContext {
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
   readonly commands:{register(id:string,handler:(payload?:any)=>any,meta?:any):any;run(id:string,payload?:any):any;get(id:string):any};
-  readonly project:{registerSlice(key:string,hooks:{serialize?():any;restore?(data:any,context?:any):void;reset?(context?:any):void}):any;current():any;create():any;capture():void};
+  readonly project:{registerSlice(key:string,hooks:{serialize?():any;restore?(data:any,context?:{pluginData:Record<string,any>}):void;reset?(context?:{pluginData?:Record<string,any>;reason?:string}):void}):any;current():any;create():any;capture():void};
   readonly workspace:{openPage(id:string):any;closeCurrentWindow():any;isAuxiliary():boolean};
   readonly io:any;
   readonly science:any;

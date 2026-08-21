@@ -4,7 +4,13 @@
   if(root)root.DKDSProjectFormat=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   const FORMAT='dk-data-studio-project';
-  const SCHEMA_VERSION=1;
+  const SCHEMA_VERSION=2;
+  const DOMAIN_ROOT_FIELDS=Object.freeze([
+    'scanVisibility','peaks','peakCategories','algorithms','peakDisplay','activeDetector','activeMetricAlgorithm','detectorSettings',
+    'physicsShowLabels','spacingSettings','gateAnalysisSettings','transformPreviewByDataset',
+    'terMaxSettings','terHeatmapDisplay','terTransformSettings','terAlgorithmRef','terMaxResult',
+    'pulseAnalysis','panelLayout'
+  ]);
 
   function stripBom(text){
     const s=String(text??'');
@@ -50,30 +56,89 @@
     }
   }
 
+  function clone(value){
+    if(value===undefined)return undefined;
+    try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
+  }
+
   function validateProject(project){
     if(!project||typeof project!=='object'||Array.isArray(project))throw new Error('文件内容不是 DK Data Studio 工程对象');
     if(project.datasets!==undefined&&!Array.isArray(project.datasets))throw new Error('工程字段 datasets 损坏：应为数组');
-    if(project.scanVisibility!==undefined&&!Array.isArray(project.scanVisibility))throw new Error('工程字段 scanVisibility 损坏：应为数组');
-    if(project.peaks!==undefined&&!Array.isArray(project.peaks))throw new Error('工程字段 peaks 损坏：应为数组');
     if(project.plugins!==undefined&&(project.plugins===null||typeof project.plugins!=='object'||Array.isArray(project.plugins))){
       throw new Error('工程字段 plugins 损坏：应为对象');
+    }
+    if(project.host!==undefined&&(project.host===null||typeof project.host!=='object'||Array.isArray(project.host))){
+      throw new Error('工程字段 host 损坏：应为对象');
     }
     return project;
   }
 
   function migrateLegacyProject(project){
-    const out=validateProject(project);
-    // Historical DKDS builds stored Pulse / Read state at the project root.
-    // Mirror it into the plugin namespace in memory only. The root payload is
-    // deliberately kept intact so old and new builds can round-trip the file.
-    if(out.pulseAnalysis&&Array.isArray(out.pulseAnalysis.files)){
-      const plugins={...(out.plugins||{})};
-      const pulse={...(plugins['builtin.pulse-analysis']||{})};
-      if(pulse.workspace===undefined)pulse.workspace=out.pulseAnalysis;
-      plugins['builtin.pulse-analysis']=pulse;
-      out.plugins=plugins;
+    validateProject(project);
+    const out=clone(project)||{};
+    const plugins={...(out.plugins||{})};
+
+    const resonanceLegacyPresent=[
+      'scanVisibility','peaks','peakCategories','algorithms','peakDisplay','activeDetector','activeMetricAlgorithm','detectorSettings',
+      'physicsShowLabels','spacingSettings','gateAnalysisSettings','transformPreviewByDataset'
+    ].some(key=>out[key]!==undefined);
+    if(resonanceLegacyPresent){
+      const plugin={...(plugins['builtin.resonance-workbench']||{})};
+      const workspace={...(plugin.workspace||{})};
+      if(workspace.schema===undefined)workspace.schema=1;
+      if(workspace.datasetMeta===undefined&&Array.isArray(out.datasets))workspace.datasetMeta=out.datasets.map(d=>({path:d.path,name:d.name,vg:d.vg}));
+      for(const key of ['scanVisibility','peaks','peakCategories','algorithms','peakDisplay','activeDetector','activeMetricAlgorithm','detectorSettings','physicsShowLabels','spacingSettings','gateAnalysisSettings','transformPreviewByDataset']){
+        if(workspace[key]===undefined&&out[key]!==undefined)workspace[key]=clone(out[key]);
+      }
+      plugin.workspace=workspace;
+      plugins['builtin.resonance-workbench']=plugin;
     }
-    return out;
+
+    const terLegacyPresent=['terMaxSettings','terHeatmapDisplay','terTransformSettings','terAlgorithmRef','terMaxResult'].some(key=>out[key]!==undefined);
+    if(terLegacyPresent){
+      const plugin={...(plugins['builtin.ter-analysis']||{})};
+      const workspace={...(plugin.workspace||{})};
+      if(workspace.schema===undefined)workspace.schema=3;
+      if(workspace.settings===undefined&&out.terMaxSettings!==undefined)workspace.settings=clone(out.terMaxSettings);
+      if(workspace.display===undefined&&out.terHeatmapDisplay!==undefined)workspace.display=clone(out.terHeatmapDisplay);
+      if(workspace.transform===undefined&&out.terTransformSettings!==undefined)workspace.transform=clone(out.terTransformSettings);
+      if(workspace.algorithmRef===undefined){
+        const ref=out.terAlgorithmRef??out.terMaxSettings?.algorithmRef;
+        if(ref!==undefined)workspace.algorithmRef=clone(ref);
+      }
+      if(workspace.result===undefined&&out.terMaxResult!==undefined)workspace.result=clone(out.terMaxResult);
+      plugin.workspace=workspace;
+      plugins['builtin.ter-analysis']=plugin;
+    }
+
+    // v3.57 Resonance Gate analysis consumed TER root settings directly. Fold
+    // that dependency into the Resonance slice once so current runtime code
+    // never needs another plugin's private project state.
+    const resonancePlugin=plugins['builtin.resonance-workbench'];
+    const terWorkspace=plugins['builtin.ter-analysis']?.workspace;
+    if(resonancePlugin?.workspace&&terWorkspace){
+      const gate={...(resonancePlugin.workspace.gateAnalysisSettings||{})};
+      if(gate.terSettings===undefined&&terWorkspace.settings!==undefined)gate.terSettings=clone(terWorkspace.settings);
+      if(gate.terAlgorithmRef===undefined&&terWorkspace.algorithmRef!==undefined)gate.terAlgorithmRef=clone(terWorkspace.algorithmRef);
+      resonancePlugin.workspace={...resonancePlugin.workspace,gateAnalysisSettings:gate};
+      plugins['builtin.resonance-workbench']=resonancePlugin;
+    }
+
+    if(out.pulseAnalysis&&Array.isArray(out.pulseAnalysis.files)){
+      const plugin={...(plugins['builtin.pulse-analysis']||{})};
+      if(plugin.workspace===undefined)plugin.workspace=clone(out.pulseAnalysis);
+      plugins['builtin.pulse-analysis']=plugin;
+    }
+
+    const host={...(out.host||{})};
+    if(host.panelLayout===undefined&&out.panelLayout!==undefined)host.panelLayout=clone(out.panelLayout);
+    out.host=host;
+
+    out.format=FORMAT;
+    out.schemaVersion=SCHEMA_VERSION;
+    out.plugins=plugins;
+    for(const key of DOMAIN_ROOT_FIELDS)delete out[key];
+    return validateProject(out);
   }
 
   function parseProjectText(text){
@@ -93,16 +158,20 @@
     return {project:parseProjectText(decoded.text),encoding:decoded.encoding};
   }
 
+  function canonicalizeProject(project){
+    return migrateLegacyProject(project);
+  }
+
   function serializeProject(project,space=2){
-    validateProject(project);
+    const canonical=canonicalizeProject(project);
     let text;
-    try{text=JSON.stringify(project,null,space);}
+    try{text=JSON.stringify(canonical,null,space);}
     catch(err){throw new Error(`工程无法序列化：${err?.message||err}`);}
-    // Validate the exact bytes we are about to write/download. This adds a
-    // guardrail without altering DKDS's self-contained project schema.
+    // Parse the exact payload we are about to write so desktop and web use the
+    // same canonical project contract.
     parseProjectText(text);
     return text;
   }
 
-  return {FORMAT,SCHEMA_VERSION,stripBom,decodeProjectBytes,validateProject,migrateLegacyProject,parseProjectText,parseProjectBytes,serializeProject};
+  return {FORMAT,SCHEMA_VERSION,DOMAIN_ROOT_FIELDS,stripBom,decodeProjectBytes,validateProject,migrateLegacyProject,canonicalizeProject,parseProjectText,parseProjectBytes,serializeProject};
 });

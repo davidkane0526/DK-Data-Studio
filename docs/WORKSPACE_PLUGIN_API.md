@@ -121,9 +121,9 @@ ctx.ui.mainViews.register('my-main-view', {
 
 The core `renderMainPlot()` is now a provider dispatcher.
 
-The existing resonance D3 implementation is retained as a mature compatibility renderer, but it is activated only through `builtin.resonance-workbench`'s `ui.mainViews` contribution.
+The Resonance main visualization is plugin-owned rather than a Core compatibility renderer. Its Controller/View implementation is mounted by `builtin.resonance-workbench` through the same workspace/view contracts available to other plugins.
 
-A new scientific plugin can therefore replace the main view without editing core.
+A new scientific plugin can therefore own or replace its main view without editing Core.
 
 ## 6. Main-view tools
 

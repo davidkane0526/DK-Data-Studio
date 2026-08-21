@@ -12,7 +12,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
@@ -37,32 +37,17 @@
 
       function applyProject(next){
         project=next||{};projectEpoch+=1;invalidateComputeCaches();
-        settings={
-          vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,
-          ...(project.terMaxSettings||{})
-        };
-        display={
-          colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,
-          ...(project.terHeatmapDisplay||{})
-        };
-        transform={type:'didv',direction:1,...(project.terTransformSettings||{})};
-        terAlgorithmRef=normalizeAlgorithmRef(project.terAlgorithmRef||project.terMaxSettings?.algorithmRef||DEFAULT_TER_ALGORITHM);
-        transform.type=normalizeTransformType(transform.type);
-        transform.direction=Number(transform.direction)<0?-1:1;
-        result=project.terMaxResult?cloneSerializable(project.terMaxResult):null;
+        settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
+        display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
+        transform={type:'didv',direction:1};
+        terAlgorithmRef={...DEFAULT_TER_ALGORITHM};
+        result=null;
       }
       applyProject(project);
 
-      function visibilityMap(){
-        const live=typeof getVisibility==='function'?getVisibility():null;
-        if(live instanceof Map)return new Map(live);
-        if(Array.isArray(live))return new Map(live);
-        return new Map(Array.isArray(project.scanVisibility)?project.scanVisibility:[]);
-      }
       function inputCacheKey(){
         const tableRevision=Number(artifacts?.revision?.('data.table'))||0;
-        const visibility=settings.onlyFullyVisible?[...visibilityMap().entries()].map(([path,row])=>`${path}:${row?.forward!==false?1:0}${row?.reverse!==false?1:0}`).sort().join('|'):'all';
-        return `${projectEpoch}|table:${tableRevision}|visible:${settings.onlyFullyVisible?1:0}|${visibility}`;
+        return `${projectEpoch}|table:${tableRevision}|complete:${settings.onlyFullyVisible?1:0}`;
       }
       function datasets(){
         // Imported source data is canonical through the shared Artifact Store.
@@ -74,7 +59,7 @@
           const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
           const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
           let next=source.slice();
-          if(settings.onlyFullyVisible){const vis=visibilityMap();next=next.filter(ds=>{const v=vis.get(ds.path);return !!v?.forward&&!!v?.reverse;});}
+          if(settings.onlyFullyVisible)next=next.filter(ds=>{const sweeps=A.buildSweeps?.(ds)||[];return sweeps.some(sw=>Number(sw.direction)>0)&&sweeps.some(sw=>Number(sw.direction)<0);});
           return next;
         };
         return performance?.stage?.('datasets',revision,'legacy-adapter',compute,{limit:4})||compute();
@@ -351,15 +336,8 @@
 
       const service={
         serialize:()=>({schema:3,settings:cloneSerializable(settings),display:cloneSerializable(display),transform:cloneSerializable(transform),algorithmRef:cloneSerializable(terAlgorithmRef),result:result?cloneSerializable(result):null}),
-        restore(data,{legacyProject}={}){
-          const legacy=legacyProject&&typeof legacyProject==='object'?{
-            settings:legacyProject.terMaxSettings,
-            display:legacyProject.terHeatmapDisplay,
-            transform:legacyProject.terTransformSettings,
-            algorithmRef:legacyProject.terAlgorithmRef||legacyProject.terMaxSettings?.algorithmRef,
-            result:legacyProject.terMaxResult
-          }:null;
-          const source=data&&typeof data==='object'?data:legacy;
+        restore(data){
+          const source=data&&typeof data==='object'?data:null;
           if(!source)return;
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(source.settings||{})};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,...(source.display||{})};

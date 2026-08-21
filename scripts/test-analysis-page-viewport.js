@@ -8,6 +8,7 @@ const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const css=read('src/style.css');
 const app=read('src/app.js');
 const manager=read('src/core/plugin-manager-ui.js');
+const pluginWindowCss=read('src/plugin-window/style.css');
 const pkg=JSON.parse(read('package.json'));
 
 assert(/^\d+\.\d+\.\d+$/.test(pkg.version),'Application package version must remain a stable semantic version.');
@@ -16,7 +17,7 @@ assert(app.includes("root.style.setProperty('--dkds-viewport-height'"),'viewport
 assert(css.includes('100dvh'),'analysis pages need a dynamic-viewport fallback.');
 assert(css.includes('flex:1 1 0%')&&css.includes('height:0'),'analysis page scroll body must be a zero-basis flex scroll region.');
 assert(css.includes('overscroll-behavior:contain'),'analysis page scrolling must stay contained.');
-assert(css.includes('body.auxiliary-window .analysis-page')&&css.includes('bottom:var(--dkds-statusbar-height,28px)!important')&&css.includes('height:auto!important'),'dedicated windows must fill between top and status bar without stale calculated heights.');
+assert(pluginWindowCss.includes('body.plugin-window-host .analysis-page')&&pluginWindowCss.includes('top:0!important')&&pluginWindowCss.includes('bottom:28px!important'),'dedicated plugin windows must fill between their own top edge and status bar without depending on the removed full-host auxiliary renderer.');
 assert(css.includes('.analysis-page{')&&css.includes('bottom:var(--dkds-statusbar-height,28px)'),'main analysis pages must use top/bottom constraints so plugin lifecycle changes cannot leave a shortened page.');
 
 assert(app.includes('function measureAnalysisPageTop()'),'app must measure the live topbar/project-tab stack.');

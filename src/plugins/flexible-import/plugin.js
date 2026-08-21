@@ -22,7 +22,9 @@
       },
       outputKinds:['data.table'],
       defaultOptions:()=>A.defaultImportOptions(),
-      normalizeOptions:options=>A.normalizeImportOptions(options)
+      normalizeOptions:options=>A.normalizeImportOptions(options),
+      parseVg:(name,text)=>A.parseVg(name,text),
+      parseVgFromHeader:header=>A.parseVgFromImportHeader(header)
     });
     return {};
   });

@@ -26,6 +26,7 @@ for(const file of allPluginFiles){
     [/\b(?:requestAnimationFrame|cancelAnimationFrame|setInterval|clearInterval|setTimeout|clearTimeout|queueMicrotask)\s*\(/,'raw scheduler lifecycle'],
     [/ctx\.registry\.add\s*\(/,'untyped generic registry'],
     [/\bctx\.host\b/,'raw host bridge'],
+    [/\bproject\.(?:scanVisibility|peaks|peakCategories|algorithms|peakDisplay|activeDetector|activeMetricAlgorithm|detectorSettings|physicsShowLabels|spacingSettings|gateAnalysisSettings|transformPreviewByDataset|terMaxSettings|terHeatmapDisplay|terTransformSettings|terAlgorithmRef|terMaxResult|pulseAnalysis)\b/,'legacy project-root domain state'],
     [/window\.DKDS(?!PluginModules\b)[A-Za-z0-9_]+\s*=/,'private global module export'],
     [/\bDKDSHostRecipes\./,'raw host recipe registry'],
     [/\.on\??\(['"']plotly_click['"']/,'private Plotly click lifecycle'],

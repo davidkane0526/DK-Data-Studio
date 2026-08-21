@@ -1,3 +1,14 @@
+# v3.58.0 — Host Neutralization & Canonical Plugin-Owned Project State
+
+- Removed the historical Resonance/Peak/FWHM/TER/Gate/Pulse/Sweep implementation and domain state from `src/app.js`; the main host now owns only generic project, Artifact, plugin lifecycle, UI, I/O and platform responsibilities.
+- Upgraded the project format to schema v2. Current saves keep domain persistence under `plugins[pluginId]`; historical domain root fields are stripped from the canonical project.
+- Made `src/core/project-format.js` the single legacy-project migration boundary. Old root fields are migrated once into first-party plugin slices during parse/canonicalization.
+- Removed `legacyProject` from Plugin Kernel runtime restoration and from Resonance, TER and Pulse project-slice restore paths. Missing slices now mean reset/fresh state; runtime code never consumes an old project root.
+- Removed compatibility/full-host TOP mode. TOP windows are dedicated plugin renderers only, with plugin-slice + Artifact-delta synchronization for project persistence.
+- Removed dead host domain adapters and cross-plugin private-state coupling. Resonance Gate owns the TER parameters it requires through the public algorithm contract; TER no longer consumes Resonance scan-visibility state.
+- Added v3.58 Host Neutralization regressions that enforce a generic project root, dedicated-only TOP lifecycle, plugin-owned domain state and absence of scientific domain concepts from the main host.
+- Preserved v3.57 standalone SDK compatibility; this release does not add a new scientific algorithm or change numerical definitions.
+
 # v3.57.0 — Standalone Plugin SDK & Host-Independent Plugin Runtime
 
 - Added a standalone `sdk/` that can be distributed without the DK Data Studio source tree. It contains Plugin API 1.8 declarations, the manifest schema, an independent validator/packager and workspace/algorithm templates.

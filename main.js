@@ -625,16 +625,9 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     const profile=auxiliaryStartupProfiles.get(auxiliaryWebContentsId);
     if(profile){profile.main=profile.main||{};profile.main.navigationMs=Date.now()-navigationStartedAtMs;}
   });
-  if (pluginWindow?.mode !== 'compatibility' && pluginWindow) {
-    if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
-    win.loadFile(path.join(__dirname, 'src', 'plugin-window', 'index.html'));
-  } else {
-    // Compatibility TOPs still use the full renderer because their UI depends
-    // on host-owned services. They nevertheless share the same prewarm/hide/
-    // reuse lifecycle as dedicated plugin renderers.
-    if(payload.prewarm !== true)auxiliaryPendingShow.add(auxiliaryWebContentsId);
-    win.loadFile(path.join(__dirname, 'src', 'index.html'), { query: { aux: activityId } });
-  }
+  if (!pluginWindow) throw new Error(`Activity ${activityId} has no plugin-owned window contract.`);
+  if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
+  win.loadFile(path.join(__dirname, 'src', 'plugin-window', 'index.html'));
   return { reused:false, dedicated:!!pluginWindow, warming:!!pluginWindow, prewarmed:payload.prewarm === true };
 }
 

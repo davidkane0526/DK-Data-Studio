@@ -15,7 +15,6 @@
       ownedRuntime=await analysisService.create({
         project:ctx.project.create?.()||{},
         bootstrap:{title:ctx.project.current?.()?.title||'当前项目'},
-        getVisibility:()=>ctx.project.create?.()?.scanVisibility||[],
         artifacts:ctx.data.artifacts,
         setStatus:ctx.status.set,
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),

@@ -1184,13 +1184,12 @@
     return out;
   }
 
-  function restoreProject(data={}, legacyProject=null) {
-    // Route full-project restoration through the same missing-slice contract as
-    // plugin activation/reload. With no legacy root, absence means a fresh tab
-    // and must reset. With a legacy/current project root, restore(undefined)
-    // lets plugins migrate root-level data without inheriting prior-tab memory.
-    for (const pluginId of projectSlices.keys()) restorePluginProjectState(pluginId, data, legacyProject);
-    eventEmit('project:restored', { data, legacyProject });
+  function restoreProject(data={}) {
+    // Project-format migration resolves historical root fields before the plugin
+    // kernel sees a project. Runtime restoration therefore consumes namespaced
+    // plugin slices only; a missing slice is a fresh/reset state.
+    for (const pluginId of projectSlices.keys()) restorePluginProjectState(pluginId, data);
+    eventEmit('project:restored', { data });
   }
 
   function resetProjectSlices() {
@@ -1779,22 +1778,20 @@
     return api;
   }
 
-  function restorePluginProjectState(pluginId, data={}, legacyProject=null) {
+  function restorePluginProjectState(pluginId, data={}) {
     const slices = projectSlices.get(pluginId);
     if (!slices) return;
     const pluginData = data?.[pluginId] || {};
     for (const [key, hooks] of slices) {
       const hasSlice = Object.prototype.hasOwnProperty.call(pluginData, key);
       try {
-        // A brand-new project tab has no plugin slice by design. Restoring
-        // `undefined` lets stateful controllers accidentally reuse the previous
-        // tab's in-memory project. Reset instead. Legacy-project migration is the
-        // only case where an absent slice is still meaningful input to restore().
-        if (!hasSlice && legacyProject == null) {
-          hooks.reset?.({ pluginData, legacyProject:null, reason:'missing-project-slice' });
+        // Missing plugin slices represent fresh project state. Historical root
+        // fields are migrated by project-format before reaching this layer.
+        if (!hasSlice) {
+          hooks.reset?.({ pluginData, reason:'missing-project-slice' });
           continue;
         }
-        if (typeof hooks.restore === 'function') hooks.restore(pluginData?.[key], { pluginData, legacyProject });
+        if (typeof hooks.restore === 'function') hooks.restore(pluginData?.[key], { pluginData });
       }
       catch (err) { console.error(`[DKDS plugin project restore:${pluginId}/${key}]`, err); }
     }
@@ -1821,7 +1818,7 @@
       active.set(manifest.id, { manifest, instance: instance || null });
       if (restoreCurrentProject) {
         const tab = host?.getActiveProjectTab?.();
-        restorePluginProjectState(manifest.id, tab?.pluginState || {}, null);
+        restorePluginProjectState(manifest.id, tab?.pluginState || {});
       }
       eventEmit('plugin:activated', { id: manifest.id, manifest });
       eventEmit('plugin:state-changed', { id:manifest.id, reason:'activated' });

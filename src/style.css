@@ -3411,33 +3411,6 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px}
 .analysis-page-header .analysis-subtitle{margin-top:5px}
 .analysis-page-header>button,.analysis-page-header .plugin-manager-header-actions button{min-height:34px;padding:5px 11px}
 
-/* Dedicated analysis activities use their own BrowserWindow. */
-body.auxiliary-window .topbar,
-body.auxiliary-window .project-tabs-bar,
-body.auxiliary-window #importPanel,
-body.auxiliary-window #zoomPanel{display:none!important}
-/* Dedicated windows mount an analysis page; compatibility windows deliberately
-   reuse the mature main workspace DOM. Hiding .workspace for both modes made
-   compatibility TOP plugins (notably resonance) render as a blank window. */
-body.auxiliary-window:not(.auxiliary-compatibility-window) .workspace{display:none!important}
-body.auxiliary-window.auxiliary-compatibility-window .workspace{
-  display:grid!important;
-  height:100vh!important;
-  min-height:0!important;
-}
-body.auxiliary-window #app{height:100vh;min-height:0}
-body.auxiliary-window .analysis-page{
-  --dkds-analysis-page-top:0px;
-  top:0!important;
-  left:0!important;
-  right:0!important;
-  bottom:var(--dkds-statusbar-height,28px)!important;
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  z-index:1000;
-}
-body.auxiliary-window .analysis-page-close{min-width:88px}
 
 @media(max-width:1450px){
   .topbar-primary .brand{min-width:126px;padding-right:10px}
@@ -3887,14 +3860,6 @@ button.plugin-status-item:hover{background:#f0f4fa;color:#344054}
   .statusbar-plugin-right::-webkit-scrollbar{display:none}
   .plugin-status-label{max-width:92px}
   .lan-web-panel{height:calc(100vh - 92px - var(--dkds-statusbar-height,28px))!important}
-}
-body.auxiliary-window.auxiliary-compatibility-window .workspace{
-  height:calc(100vh - var(--dkds-statusbar-height,28px))!important;
-}
-body.auxiliary-window .analysis-page{
-  top:0!important;
-  bottom:var(--dkds-statusbar-height,28px)!important;
-  height:auto!important;
 }
 .plugin-status-item.passive{cursor:default}
 

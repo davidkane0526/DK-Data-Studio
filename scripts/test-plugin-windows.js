@@ -42,7 +42,7 @@ assert(shellRuntime.includes('artifactDeltaPayload()'),'Dedicated runtime must s
 assert(shellRuntime.includes('pluginState:pluginId'),'Dedicated runtime must send only its namespaced project-slice state.');
 
 assert(main.includes("src', 'plugin-window', 'index.html"),'main.js must route dedicated activities to src/plugin-window/index.html.');
-assert(main.includes("pluginWindow?.mode !== 'compatibility'")&&main.includes("src', 'index.html"),'compatibility TOPs must use the full renderer while keeping the generic window lifecycle.');
+assert(!main.includes("mode !== 'compatibility'")&&!main.includes("query: { aux: activityId }"),'TOP windows must not fall back to the full host renderer.');
 assert(main.includes('resolveConfiguredPluginWindow'),'main.js must resolve built-in and external plugin-owned window manifests.');
 assert(main.includes('listConfiguredPluginWindows'),'main.js must enumerate built-in and external dedicated windows from manifests.');
 assert(main.includes("ipcMain.handle('windows:listPluginWindows'"),'renderer must be able to discover all dedicated-window policies.');
@@ -68,8 +68,8 @@ assert(!app.includes("const activities=['data-center','ter','pulse']"),'dedicate
 assert(app.includes('function applyDedicatedActivitySnapshot'),'main renderer must merge independent-window state by plugin namespace.');
 assert(app.includes('tab.pluginState[pluginId]'),'dedicated snapshots must update only their owning plugin namespace.');
 assert(app.includes('applyArtifactDeltaToTab'),'dedicated artifact changes must merge incrementally.');
-assert(app.includes('function mergeCompatibilityActivityProject')&&app.includes('merged.plugins=cloneAuxSnapshot(tab?.pluginState||{})'),'compatibility TOP snapshots must preserve the newest namespaced plugin caches.');
-assert(app.includes('merged.dataModel=window.DKDSData.serializeStore(tab?.artifactStore'),'compatibility TOP snapshots must preserve the newest artifact store.');
+assert(!app.includes('mergeCompatibilityActivityProject'),'main renderer must not retain compatibility TOP whole-project merge paths.');
+assert(app.includes('if(!tab||!payload?.pluginId)return'),'owner renderer must accept only plugin-owned namespaced activity snapshots.');
 assert(kernel.includes("if(value.primary===undefined&&(role==='top'||value.openMode==='window'))value.primary=true"),'TOP/independent activities must default to first-level navigation without shell whitelists.');
 
 assert(shellRuntime.includes('markActivityWindowReady'),'dedicated runtime must signal completion after the target plugin is mounted.');
@@ -188,7 +188,8 @@ assert(withOverride.get('ter-override')?.source==='override','built-in override 
 assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must not load the full application renderer.');
 assert(resonanceFeatureRuntime.includes("serviceName:'builtin.resonance-workbench.runtime'"),'Resonance feature runtime must expose the normal plugin-window service contract while window-runtime stays host-only.');
 assert(resonanceFeatureRuntime.includes("builtin.resonance-workbench"),'Resonance feature runtime must restore only its namespaced plugin state.');
-assert(app.includes('serializeResonanceWorkspace')&&app.includes('restoreResonanceWorkspace'),'Main resonance service must expose a namespaced project-slice adapter.');
+assert(!app.includes('serializeResonanceWorkspace')&&!app.includes('restoreResonanceWorkspace'),'Main host must not retain a resonance project adapter after v3.58 neutralization.');
+assert(read('src/plugins/resonance-workbench/view-components.js').includes("ctx.project.registerSlice('workspace'"),'Resonance plugin must own its namespaced project slice.');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
 for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
   assert(resonanceShared.includes(label),`Resonance shared workbench must retain ${label}.`);
@@ -207,7 +208,7 @@ assert(pulseService.includes('if(source.analyzed && !item.result)analyzeItem(ite
 assert(terFeature.includes("ctx.project.registerSlice('workspace'"),'TER must use the same namespaced project-slice contract as other independent plugins.');
 assert(terService.includes('serialize:()=>({schema:3,settings:cloneSerializable(settings)'),'TER window must serialize its expensive result into the namespaced slice.');
 assert(terService.includes('result=source.result?cloneSerializable(source.result):null'),'TER restore must reuse cached result payloads rather than recompute.');
-assert(app.includes('serialize:()=>({')&&app.includes('result:state.terMaxResult?cloneProjectCache(state.terMaxResult):null'),'main TER service must expose namespaced serialization for project files.');
+assert(!app.includes('function terHostApi'),'Main host must not retain a TER project service after v3.58 neutralization.');
 
 for(const rel of [
   'src/plugin-window/runtime.js',

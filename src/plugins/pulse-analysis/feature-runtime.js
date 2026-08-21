@@ -119,7 +119,7 @@
 
     ctx.project.registerSlice('workspace',{
       serialize:()=>P.serialize(),
-      restore:(data,{legacyProject})=>P.restore(data ?? legacyProject?.pulseAnalysis ?? null),
+      restore:data=>P.restore(data ?? null),
       reset:()=>P.reset()
     });
 

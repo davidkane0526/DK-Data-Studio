@@ -1,5 +1,15 @@
-# DK Data Studio — v3.57.0
+# DK Data Studio — v3.58.0
 
+
+## v3.58 Host Neutralization 与工程状态单轨化
+
+- 主宿主 `src/app.js` 已移除 Resonance/Peak/FWHM/TER/Gate/Pulse/Sweep 等领域状态、计算、页面渲染和旧交互实现；Core 只保留工程、Artifact、插件生命周期、通用 UI、I/O 与宿主能力。
+- 工程格式升级为 schema v2。当前保存只写通用根结构与 `plugins[pluginId]` 命名空间，领域字段不再写回工程根。
+- `src/core/project-format.js` 是旧工程的唯一迁移边界：旧 root fields 在读取时一次性迁入对应插件 slice，运行时 Plugin Kernel 与第一方插件不再接收 `legacyProject`。
+- TOP 窗口只支持插件自有的 dedicated renderer；已删除重新加载完整 `index.html + app.js` 的 compatibility TOP 路径及其生命周期状态。
+- Resonance、TER、Pulse 的持久化只恢复各自 plugin slice；TER 不再读取 Resonance 私有扫描可见性，Resonance Gate 也不再读取 TER 插件私有工程状态。跨插件复用通过公开 Algorithm/Data/Selection/Artifact Contract 完成。
+- 新增 `host-neutralization:test` 与硬性源码边界检查，阻止领域状态重新进入 Core，并验证旧工程只做单向迁移。
+- v3.57 的独立 SDK 继续有效：普通第三方插件开发仍只需要 `sdk/` 和 DK Data Studio，不需要项目源码。
 
 ## v3.57 独立 Plugin SDK 与插件运行时去宿主依赖
 
@@ -8,7 +18,7 @@
 - Resonance、TER、Pulse 的 TOP 运行时 Service 改为插件命名空间所有，不再回退到主宿主提供的 `resonance / ter / pulse` 领域 Service。
 - 主宿主 `DKDSPlugins.configure(...)` 不再公开 Resonance/TER/Pulse 领域服务或领域页面回调。
 - 新增 `sdk:test`：把 SDK 复制到仓库外临时目录后完成 validate → package，再由真实应用 `.dkplugin` normalizer 验证安装包契约。
-- 下一阶段的架构重点是清理 `app.js` 中仍保留的历史领域状态/工程根字段，使兼容迁移变成单向适配，而不是长期双状态。
+- v3.58 已完成上述 Host Neutralization：历史领域状态不再存在于主宿主正常运行路径，旧工程只在 `project-format` 入口做一次性迁移。
 
 ## v3.56 共享 Scientific Scalar Field 与共振跨曲线特征场
 
@@ -43,7 +53,7 @@
 - 插件管理器为所有具有独立窗口的插件提供“预热”选项。DKDS 内置 TOP 插件默认关闭预热以降低空闲内存，用户可以逐个开启。
 - 共振分析 TOP 已改为真正的 dedicated plugin window，不再通过 compatibility 模式启动第二套完整应用；SUPER 模式仍保留成熟的完整共振工作区。
 - 桌面版与网页版统一使用 `src/core/project-format.js` 打开/保存工程。工程继续同时保存原始文本与解析后的点数据，因此复制 `.dkds.json` 到没有原始 CSV/TXT 的电脑仍可完整显示和继续分析。
-- 旧工程根字段继续保留并可迁移到插件命名空间；新增插件字段不会删除旧字段。
+- （v3.24 历史行为）当时旧工程根字段仍会继续保留；自 v3.58 起已改为读取时一次性迁移，新的保存结果不再写回这些领域根字段。
 - TER 吸收 Graphene Resonance Studio 中经过 Python 参考脚本校验的电压网格/自动容差逻辑，并增加 R–V 联动、图表排列、逐图导出等交互；没有移植其旧的整体应用架构。
 - 插件启停/重载后插件管理器回到有效顶部视口，分析页采用 top/bottom 约束，避免再次出现内容整体上移后下方大面积空白。
 

@@ -180,7 +180,7 @@ Owns TER feature entry and registers the shared TER provider.
 
 ### `builtin.pulse-analysis`
 
-Owns pulse feature entry, shared pulse-analysis provider, and its namespaced project-state slice. It migrates v3.14 root-level `pulseAnalysis` state when old projects are opened.
+Owns pulse feature entry, shared pulse-analysis provider, and its namespaced project-state slice. Historical root-level `pulseAnalysis` data is migrated centrally by `src/core/project-format.js` before plugin restoration.
 
 ## 6. Core vs shared science vs plugin
 
@@ -219,7 +219,9 @@ Plugin state is namespaced:
 
 Never add feature-specific fields to the root project format.
 
-Every persistent plugin owns its schema/migration logic.
+Since v3.58, `project-format` canonicalization is one-way: old domain root fields are read and folded into plugin slices, then removed from the canonical object. Plugin Kernel restore accepts only the `plugins` namespace.
+
+Every persistent plugin owns its **current namespaced slice schema**. Historical application-level root-field migration is centralized in `src/core/project-format.js`; plugins do not receive the old project root at runtime.
 
 ## 8. Cross-plugin communication
 
@@ -237,9 +239,9 @@ Disallowed:
 
 ## 9. What remains in `app.js`
 
-`app.js` is now primarily the mature interactive workspace/state controller: project tabs, curve/peak interaction, generic import UI, plot coordination and shared renderer plumbing.
+`app.js` is the generic renderer host: project tabs, generic import shell, Artifact/project synchronization, generic workspace/UI coordination, platform/LAN/update integration and plugin host wiring.
 
-Scientific computations that had independent meaning have been moved to `src/science`. Future changes should continue shrinking `app.js` by moving workflow-specific presentation into plugins, but do not duplicate or fork the shared science engine.
+It must not implement or store Resonance, Peak/FWHM, TER, Gate, Pulse, Sweep or other scientific-domain state. Domain workflow and presentation belong to plugins; reusable low-level numerical primitives remain in `src/science`, while independently versioned algorithms belong to Algorithm Provider plugins.
 
 ## 9. Core Plugin Manager
 
@@ -349,7 +351,7 @@ Shared DKDSScience primitives
 
 A stronger detector can therefore be added without rewriting the workbench. A different measurement plugin can replace the entire main view/inspector/group charts without modifying the core shell.
 
-The old mature D3 resonance canvas remains a compatibility implementation inside `app.js`, but the core no longer selects it directly. It runs only because the resonance plugin registers `ui.mainViews/resonance-main`. This preserves mature interaction behavior while making the ownership boundary real.
+The mature Resonance visualization is now plugin-owned. Its shared Controller/View implementation is mounted by `builtin.resonance-workbench`; `app.js` contains no Resonance renderer or scientific fallback. This preserves mature interaction behavior while keeping the ownership boundary structural rather than conventional.
 
 `npm run check` includes `scripts/check-plugin-boundaries.js`, which rejects regression such as putting resonance smart-detection/range/gate/physics UI back into core HTML.
 
@@ -423,7 +425,7 @@ The mature Graphene Resonance Studio interaction model is now a Core UI foundati
 
 SUPER/TOP is a host presentation concern. A SUPER plugin contributes semantic PRIME/SUB commands to the shell toolbar; an independent TOP renders the same commands locally. The plugin's Workspace/View/Controller tree is unchanged.
 
-Project slice restore also obeys project identity: an absent plugin slice resets the controller unless the selected project's root is explicitly supplied for legacy/root-data migration. Previous-tab controller state is never a fallback for a new project.
+Project slice restore also obeys project identity: an absent plugin slice resets the controller. Historical root-data migration occurs before runtime restoration in `project-format`; previous-tab controller state and project-root fallbacks are never inputs to a new project's plugin state.
 
 Pointer-frequency scientific interactions use direct geometry fast paths in Core. Expensive full renders occur at drag completion or through frame-coalesced scheduling.
 

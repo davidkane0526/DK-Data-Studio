@@ -54,11 +54,11 @@ P.define({
 
 let migrationMarker='stale';
 P.define({
-  id:'test.project-root-migration',name:'Project root migration',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
+  id:'test.project-slice-reset',name:'Project Slice Reset',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
 },async ctx=>{
   ctx.project.registerSlice('workspace',{
     serialize:()=>({marker:migrationMarker}),
-    restore:(data,{legacyProject}={})=>{migrationMarker=data?.marker||legacyProject?.marker||'empty-root';},
+    restore:data=>{migrationMarker=data?.marker||'empty-slice';},
     reset:()=>{migrationMarker='reset';}
   });
   return {};
@@ -101,13 +101,13 @@ P.configure({
   await P.activateAll();
   assert(P.manager.get('test.stateful').active,'default-enabled plugin should activate');
   assert(!P.manager.get('test.default-off').active,'default-disabled plugin should stay inactive');
-  P.project.restore({}, null);
+  P.project.restore({});
   assert(migrationMarker==='reset','activating into a brand-new tab with no slice must reset plugin memory instead of inheriting stale state.');
-  P.project.restore({}, {marker:'fresh-project-root'});
-  assert(migrationMarker==='fresh-project-root','missing plugin slices may migrate from the explicitly supplied current project root.');
+  P.project.restore({'test.project-slice-reset':{workspace:{marker:'canonical-slice'}}});
+  assert(migrationMarker==='canonical-slice','runtime restore must consume the canonical namespaced plugin slice.');
   migrationMarker='stale-again';
-  P.project.restore({}, null);
-  assert(migrationMarker==='reset','restoring a truly blank project with no legacy root must reset all missing plugin slices.');
+  P.project.restore({});
+  assert(migrationMarker==='reset','restoring a blank canonical project must reset all missing plugin slices.');
 
   value=23;
   await P.manager.disable('test.stateful');

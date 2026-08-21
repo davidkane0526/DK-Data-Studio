@@ -426,7 +426,7 @@
       for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'resonance',order,onClick});
     }
     ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
-    ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:(data,{legacyProject})=>controller.restore(data,{legacyProject}),reset:()=>controller.reset()});ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());ctx.events.on('layout:resize',()=>controller.resize());controller.render();adapter?.resize?.();return {controller,workbench:wb,mode};
+    ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:data=>controller.restore(data),reset:()=>controller.reset()});ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());ctx.events.on('layout:resize',()=>controller.resize());controller.render();adapter?.resize?.();return {controller,workbench:wb,mode};
   }
 
   function mountTop(ctx,controller){return mountUnified(ctx,controller,{mode:'top'});}

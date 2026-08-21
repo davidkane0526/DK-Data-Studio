@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.11.0';
+  const VERSION='1.12.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -307,10 +307,12 @@
 
   function projectFormatSmoke(){
     const F=window.DKDSProjectFormat;assert(F?.serializeProject&&F?.parseProjectBytes,'Project format runtime unavailable.');
-    const input={version:'automation',datasets:[],plugins:{'builtin.resonance-workbench':{workspace:{schema:1,activeView:'main'}}},dataModel:{schema:2,artifacts:[]}};
+    const input={version:'automation',datasets:[],peaks:[{id:'legacy-peak'}],terMaxSettings:{vmin:-1},plugins:{'builtin.resonance-workbench':{workspace:{schema:1,activeView:'main'}}},dataModel:{schema:2,artifacts:[]}};
     const text=F.serializeProject(input);const parsed=F.parseProjectBytes(new TextEncoder().encode(text)).project;
+    assert(parsed?.schemaVersion===2,'Project format did not canonicalize to schema v2.');
     assert(parsed?.plugins?.['builtin.resonance-workbench'],'Plugin project slice was lost during round-trip.');
-    return {bytes:text.length};
+    for(const key of (F.DOMAIN_ROOT_FIELDS||[]))assert(!Object.prototype.hasOwnProperty.call(parsed,key),`Canonical project root leaked domain field ${key}.`);
+    return {bytes:text.length,schemaVersion:parsed.schemaVersion,domainNeutral:true};
   }
 
   function dataTypeSmoke(){

@@ -398,7 +398,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.57.0',
+      appVersion:'3.58.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -494,11 +494,10 @@
         ? `插件激活失败：${spec.pluginId} · ${activationError}`
         : `插件激活失败：${spec.pluginId}`);
     }
-    // Mount legacy/base project data first, then let namespaced plugin slices
-    // override it. This makes plugin project state canonical without breaking
-    // older project files that only contain root-level analysis fields.
+    // Project-format migration has already canonicalized historical projects.
+    // Dedicated renderers restore only namespaced plugin slices.
     await measure('plugin-project-set',()=>pluginRuntime?.setProject?.(project));
-    await measure('project-restore',()=>window.DKDSPlugins.project.restore(project.plugins || {}, project));
+    await measure('project-restore',()=>window.DKDSPlugins.project.restore(project.plugins || {}));
 
     const opened = await measure('activity-open',()=>window.DKDSPlugins.activities.set(bootstrap.activityId));
     if (!opened) {
@@ -540,7 +539,7 @@
     restoreArtifactStore();
     try {
       await pluginRuntime?.setProject?.(project);
-      await window.DKDSPlugins?.project?.restore?.(project.plugins || {}, project);
+      await window.DKDSPlugins?.project?.restore?.(project.plugins || {});
       await window.DKDSPlugins?.activities?.set?.(bootstrap.activityId);
       window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
       window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'project-replace'});

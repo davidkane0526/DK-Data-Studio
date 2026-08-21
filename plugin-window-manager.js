@@ -42,14 +42,6 @@ const CORE_REQUIREMENT_WINDOW_DEPENDENCIES = Object.freeze({
 
 
 const WINDOW_PERSISTENCE_MODES = new Set(['project','memory','none']);
-const WINDOW_MODES = new Set(['dedicated','compatibility']);
-
-function normalizeWindowMode(value) {
-  const mode=String(value||'dedicated').trim().toLowerCase();
-  if(!WINDOW_MODES.has(mode))throw new Error(`Unsupported plugin window mode: ${mode || '(empty)'}`);
-  return mode;
-}
-
 function normalizePersistence(value) {
   const mode = String(value || 'project').trim().toLowerCase();
   if (!WINDOW_PERSISTENCE_MODES.has(mode)) {
@@ -186,14 +178,13 @@ function readBuiltinPluginWindows(appPath) {
       if (!activity || !/^[A-Za-z0-9._-]+$/.test(activity)) continue;
 
       try {
-        const mode=normalizeWindowMode(windowSpec.mode);
         const entry = safeRelativeFile(pluginDir, manifest.entry || 'plugin.js', 'plugin window entry');
         const runtime = windowSpec.runtime
           ? safeRelativeFile(pluginDir, windowSpec.runtime, 'plugin window runtime')
           : '';
         next.set(activity, Object.freeze({
           source:'builtin',
-          mode,
+          mode:'dedicated',
           pluginId:String(manifest.id || ''),
           version:String(manifest.version || ''),
           revision:String(manifest.version || ''),
@@ -233,7 +224,6 @@ function packageFile(pkg, fileName, label) {
 function normalizePackagedPluginWindow(pkg, source='external') {
   const manifest=pkg?.manifest||{};
   const windowSpec=manifest?.window;
-  const mode=normalizeWindowMode(windowSpec?.mode);
   const activity=String(windowSpec?.activity||'').trim();
   if(!activity)return null;
   if(!/^[A-Za-z0-9._-]+$/.test(activity))throw new Error(`Invalid packaged plugin window activity: ${activity}`);
@@ -257,7 +247,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
   }
   return Object.freeze({
     source,
-    mode,
+    mode:'dedicated',
     pluginId:String(manifest.id||''),
     version:String(manifest.version||''),
     revision:String(pkg?.installedAt||manifest.version||''),
@@ -355,8 +345,6 @@ function resolvePluginWindow(appPath, activityId, externalPackages=[], overrideP
 module.exports = {
   ALLOWED_WINDOW_DEPENDENCIES,
   WINDOW_PERSISTENCE_MODES,
-  WINDOW_MODES,
-  normalizeWindowMode,
   normalizeAlgorithmCategories,
   resolveAlgorithmProviders,
   attachAlgorithmProviders,
