@@ -8,6 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
+const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
 
 const DKDSProjectFormat = require('./src/core/project-format');
 const APP_NAME = 'DK Data Studio';
@@ -112,6 +113,32 @@ function builtinPluginIds() {
   return ids;
 }
 
+const PLUGIN_API_VERSION='1.8.0';
+function readBuiltinPluginManifests(){
+  const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
+  try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
+  return rows;
+}
+function installedPluginVersionMap(){
+  const map=new Map();for(const row of readBuiltinPluginManifests())map.set(String(row.manifest.id),String(row.manifest.version||''));
+  for(const pkg of installedPluginOverridePackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
+  for(const pkg of installedExternalPluginPackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
+  return map;
+}
+function currentCompatibilityEnvironment(){return {appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,installedVersions:installedPluginVersionMap()};}
+function packageCompatibility(manifest){return AlgorithmPackageCatalog.compatibility(manifest,currentCompatibilityEnvironment());}
+function assertPackageCompatible(manifest,action='install'){const result=packageCompatibility(manifest);if(result.compatible)return result;const details=result.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ');throw new Error(`Plugin package is not compatible with this DK Data Studio environment for ${action}: ${details}`);}
+function readAlgorithmHistoryCatalogPackages(){
+  const root=pluginHistoryRootDirectory(),rows=[];if(!fs.existsSync(root))return rows;
+  for(const id of fs.readdirSync(root).sort()){let dir;try{dir=pluginHistoryDirectory(id);}catch{continue;}if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});rows.push({manifest:pkg.manifest,source:'history',token:name,current:false,installed:false});}catch{}}}
+  return rows;
+}
+function algorithmPackageCatalog(ref={}){
+  const builtin=readBuiltinPluginManifests();const overrides=installedPluginOverridePackages().map(pkg=>({manifest:pkg.manifest,source:'override',current:true,installed:true}));const external=installedExternalPluginPackages().map(pkg=>({manifest:pkg.manifest,source:'external',current:true,installed:true}));const history=readAlgorithmHistoryCatalogPackages();
+  const result=AlgorithmPackageCatalog.catalog([...builtin,...overrides,...external,...history],ref,currentCompatibilityEnvironment());
+  return {...result,appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION};
+}
+
 function readInstalledExternalPlugins() {
   const dir = ensureExternalPluginDirectory();
   const packages = [];
@@ -159,6 +186,7 @@ async function installLanPluginPackage(buffer,metadata={}) {
   if(metadata.id&&String(metadata.id)!==id)throw new Error(`LAN plugin id mismatch: ${id} != ${metadata.id}`);
   const isBuiltin=id.startsWith('builtin.');
   const pkg=normalizePluginPackage(parsed,{allowBuiltinId:isBuiltin});
+  assertPackageCompatible(pkg.manifest,'LAN update');
   const state=readPluginLanState();
   if(state[id]?.sha256===sha256)return {installed:false,skipped:true,id,version:pkg.manifest.version,sha256};
 
@@ -837,8 +865,8 @@ app.whenReady().then(() => {
     }
   }
 
-  ipcMain.handle('plugins:listExternal', async () => readInstalledExternalPlugins());
-  ipcMain.handle('plugins:listOverrides', async () => readInstalledPluginOverrides());
+  ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
+  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
   ipcMain.handle('plugins:installPackage', async () => {
     const result = await dialog.showOpenDialog({
       title:'安装 DK Data Studio 插件', properties:['openFile'],
@@ -849,6 +877,7 @@ app.whenReady().then(() => {
     const stat=fs.statSync(sourcePath);
     if(stat.size>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
     const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
+    assertPackageCompatible(pkg.manifest,'install/update');
     if(builtinPluginIds().has(pkg.manifest.id))throw new Error(`不能覆盖内置插件：${pkg.manifest.id}`);
     const dir=ensureExternalPluginDirectory();
     const target=path.join(dir,pluginPackageFileName(pkg.manifest.id));
@@ -877,11 +906,13 @@ app.whenReady().then(() => {
     const pluginId=String(id||'');
     return listExternalPluginHistory(pluginId);
   });
+  ipcMain.handle('plugins:algorithmCatalog', async (_event, ref) => algorithmPackageCatalog(ref||{}));
   ipcMain.handle('plugins:rollbackVersion', async (_event, payload) => {
     const id=String(payload?.id||'');const token=path.basename(String(payload?.token||''));
     if(!validPluginId(id)||id.startsWith('builtin.')||!token.toLowerCase().endsWith('.dkplugin'))throw new Error('无效的插件回退请求。');
     const historyPath=path.join(pluginHistoryDirectory(id),token);if(!fs.existsSync(historyPath))throw new Error('指定的插件历史版本不存在。');
     const selected=normalizePluginPackage(JSON.parse(fs.readFileSync(historyPath,'utf8')),{allowBuiltinId:false});if(selected.manifest.id!==id)throw new Error('插件历史版本 ID 不匹配。');
+    assertPackageCompatible(selected.manifest,'rollback');
     const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));let previousPackage=null;
     if(fs.existsSync(target)){previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});archiveExternalPluginPackage(previousPackage,'rollback');}
     const restored={...selected,installedAt:new Date().toISOString()};atomicWritePluginPackage(target,restored);

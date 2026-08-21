@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),
   pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
   pluginHistoryList: id => ipcRenderer.invoke('plugins:historyList', id),
+  pluginAlgorithmCatalog: ref => ipcRenderer.invoke('plugins:algorithmCatalog', ref),
   pluginRollbackVersion: payload => ipcRenderer.invoke('plugins:rollbackVersion', payload),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
   pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),

@@ -1396,6 +1396,22 @@
       return descriptor;
     };
     const runAlgorithm=(ref,input,options={})=>{const row=algorithmResolve(ref,options);if(!row)throw new Error(`Scientific algorithm unavailable: ${typeof ref==='string'?ref:JSON.stringify(ref)}`);return row.run(input,{...options,parameters:options.parameters||{}});};
+    const algorithmVersions=(ref,query={})=>{const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref,query)||{id:String(ref?.id||ref||''),version:'',category:String(query.category||ref?.category||'')};return algorithmList({category:wanted.category,id:wanted.id,owner:query.owner});};
+    const diagnoseAlgorithm=(ref,query={})=>{const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref,query)||{id:String(ref?.id||ref||''),version:'',category:String(query.category||ref?.category||'')};const family=algorithmVersions(wanted,query),exact=wanted.version?family.find(row=>row.version===wanted.version):null,resolved=algorithmResolve(wanted,query);let status='available';if(wanted.version&&!exact)status=family.length?'missing-version':'missing-algorithm';else if(!wanted.version&&!resolved)status='missing-algorithm';return Object.freeze({status,available:status==='available',requested:Object.freeze({...wanted}),resolved:resolved?Object.freeze({category:resolved.category,id:resolved.id,version:resolved.version,owner:resolved.owner}):null,preferredVersion:wanted.category&&wanted.id?window.DKDSScientificAlgorithms?.preferred?.(wanted.category,wanted.id)||'':'',alternatives:Object.freeze(family.map(row=>Object.freeze({category:row.category,id:row.id,version:row.version,owner:row.owner,title:row.title,default:row.default})))});};
+    const lockAlgorithm=(ref,query={})=>{const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref,query)||{id:String(ref?.id||ref||''),version:'',category:String(query.category||ref?.category||'')};if(wanted.version)return Object.freeze({category:wanted.category,id:wanted.id,version:wanted.version});const row=algorithmResolve(wanted,query);return Object.freeze({category:row?.category||wanted.category,id:row?.id||wanted.id,version:row?.version||''});};
+    const locateAlgorithmPackage=async(ref)=>{if(!window.electronAPI?.pluginAlgorithmCatalog||window.electronAPI?.isWebClient)return {requested:window.DKDSScientificAlgorithms?.normalizeRef?.(ref)||ref,count:0,candidates:[]};return await window.electronAPI.pluginAlgorithmCatalog(ref);};
+    const recoverAlgorithmPackage=async(ref,candidate=null)=>{
+      const catalog=await locateAlgorithmPackage(ref),choice=candidate||catalog?.candidates?.find?.(row=>row.compatible&&row.recoverable);if(!choice)throw new Error('未找到兼容的算法 Provider 包。');
+      const pluginId=String(choice.pluginId||'');
+      if(choice.source==='history'){await rollbackExternalPlugin(pluginId,choice.token);}
+      else {
+        let def=definitionById(pluginId);
+        if(!def&&choice.source==='external'&&window.electronAPI?.pluginExternalList){const result=await window.electronAPI.pluginExternalList();const pkg=(result?.packages||[]).find(row=>String(row?.manifest?.id||'')===pluginId);if(pkg)await replaceExternalPluginPackage(pkg,{statusPrefix:'已恢复算法 Provider'});def=definitionById(pluginId);}
+        if(!def)throw new Error(`算法 Provider 未载入：${pluginId}`);
+        if(!isDefinitionEnabled(def))await setPluginEnabled(pluginId,true);else await reloadPlugin(pluginId);
+      }
+      const wanted=window.DKDSScientificAlgorithms?.normalizeRef?.(ref)||ref,row=algorithmResolve(wanted,{category:wanted?.category||''});if(!row||wanted?.version&&row.version!==wanted.version)throw new Error(`恢复后仍未找到算法：${wanted?.id||''}@${wanted?.version||''}`);return row;
+    };
     let apiRef=null;
     const api=Object.freeze({
       apiVersion: API_VERSION,
@@ -1614,8 +1630,16 @@
           unregister:(id,version,category)=>scientificAlgorithmScope.unregister(id,version,category),
           list:algorithmList,
           resolve:algorithmResolve,
+          versions:algorithmVersions,
+          diagnose:diagnoseAlgorithm,
+          lock:lockAlgorithm,
           run:runAlgorithm,
           provenance:(ref,query={})=>{const row=algorithmResolve(ref,query);return row?Object.freeze({pluginId:row.owner,algorithmId:row.id,algorithmVersion:row.version,category:row.category,title:row.title}):null;},
+          preferred:(category,id)=>window.DKDSScientificAlgorithms?.preferred?.(category,id)||'',
+          setPreferred:(ref,query={})=>window.DKDSScientificAlgorithms?.setPreferred?.(ref,query)||null,
+          clearPreferred:(category,id)=>window.DKDSScientificAlgorithms?.clearPreferred?.(category,id)||false,
+          locate:locateAlgorithmPackage,
+          recover:recoverAlgorithmPackage,
           snapshot:()=>window.DKDSScientificAlgorithms?.snapshot?.()||{version:'',count:0,algorithms:[]}
         }) : null,
         detectors: {
@@ -2024,7 +2048,7 @@
       for(const row of result?.errors||[])externalLoadErrors.push(row);
       const loaded=[];
       for(const pkg of result?.packages||[]){
-        try{const def=await loadExternalPackage(pkg);loaded.push(def.manifest.id);}
+        try{if(pkg?.compatibilityStatus?.compatible===false)throw new Error(`插件与当前环境不兼容：${(pkg.compatibilityStatus.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ')}`);const def=await loadExternalPackage(pkg);loaded.push(def.manifest.id);}
         catch(err){externalLoadErrors.push({file:pkg?.manifest?.id||'<package>',error:err.message});console.error('[DKDS external plugin]',err);}
       }
       return loaded;
@@ -2106,7 +2130,7 @@
         const id=String(row?.id||'');
         const override=id?byId.get(id):null;
         if(override){
-          try{await loadOverridePackage(override);continue;}
+          try{if(override?.compatibilityStatus?.compatible===false)throw new Error(`override 与当前环境不兼容：${(override.compatibilityStatus.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ')}`);await loadOverridePackage(override);continue;}
           catch(err){
             overrideLoadErrors.push({file:id,error:err.message});
             console.error('[DKDS built-in plugin override fallback]',id,err);
@@ -2157,6 +2181,7 @@
       install:installExternalPlugin,
       uninstall:uninstallExternalPlugin,
       history:id=>window.electronAPI?.pluginHistoryList?.(id)||Promise.resolve([]),
+      algorithmCatalog:ref=>window.electronAPI?.pluginAlgorithmCatalog?.(ref)||Promise.resolve({requested:ref,count:0,candidates:[]}),
       rollback:rollbackExternalPlugin,
       openFolder:()=>window.electronAPI?.pluginOpenFolder?.(),
       installed:()=>[...externalPackages.keys()],

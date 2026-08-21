@@ -1,12 +1,12 @@
-# DK Data Studio — v3.54.0
+# DK Data Studio — v3.55.0
 
-## v3.54 算法版本管理与 Provider 回退
+## v3.55 算法包目录、兼容范围与缺失算法恢复
 
-- 科学算法默认版本与工程锁定版本正式分离：默认版本只影响新分析；工程中的 `algorithmId@version` 永远精确解析。
-- Core Algorithm Runtime 提供多版本枚举、默认偏好、精确锁定和缺失版本诊断；缺失旧版本时显示可用替代版本，不会静默升级。
-- 插件管理器可为 Algorithm Provider 的算法族选择“新分析默认版本”。外部 `.dkplugin` 更新会保留历史包，并可从“版本历史”回退。
-- 同一插件 ID 仍保持单一活动包；真正的科学算法并存由一个或多个 Provider 注册多个算法版本实现。
-- v3.53 的 Transport/TER/Peak/FWHM Algorithm Providers 与 v3.52.2 Lazy Plotly 启动优化保持不变。
+- Algorithm Provider 可以在 manifest 中用 `algorithmProvides` 声明可离线索引的精确算法版本；Core 不需要执行插件代码即可知道某个包是否包含工程锁定的算法。
+- 新增 `compatibility.app`、`compatibility.pluginApi` 和 `pluginDependencies` 版本范围；安装、LAN 更新、历史回退与运行时加载使用同一兼容判断。
+- TER 与共振在精确算法版本缺失时保留原锁定，并提供“定位/恢复缺失算法”。Core 会优先查当前包和历史包，只恢复兼容候选，恢复后再次验证精确版本。
+- 插件包版本与科学算法版本继续分离：Standard Resonance Algorithms 包升级到 2.2.0、Standard Transport Algorithms 包升级到 1.1.0，但现有科学算法仍是 1.0.0，数值定义未改变。
+- v3.52.2 的 Lazy Plotly、v3.53 的 Provider 路由和 v3.54 的默认版本/工程精确锁定机制保持不变。
 
 ## 历史说明：v3.28.0 及之前
 

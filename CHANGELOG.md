@@ -1,3 +1,14 @@
+# v3.55.0 — Algorithm Package Catalog, Compatibility & Recovery
+
+- Added Algorithm Package Catalog 1.0.0. Provider manifests can publish exact `algorithmProvides` entries (`category + id + version`) so missing project-locked algorithms can be located without executing unknown plugin code.
+- Added package compatibility contracts: `compatibility.app`, `compatibility.pluginApi`, and `pluginDependencies` version ranges. The same evaluator is used by Catalog lookup, local install/update, LAN update, installed external/override loading, and history rollback.
+- Added `ctx.analysis.algorithms.locate()` and `recover()`. Recovery reloads/enables a compatible current Provider or rolls an external Provider package back to a compatible archived package, then verifies the exact requested algorithm version was actually restored.
+- TER and Resonance now keep missing exact algorithm locks visible and provide explicit locate/recover controls. They never silently replace a missing locked algorithm with a newer default.
+- Built-in Standard Resonance Algorithms package is v2.2.0 and Standard Transport Algorithms package is v1.1.0 to publish catalog/compatibility metadata; their scientific algorithm versions remain 1.0.0 because numerical definitions did not change.
+- Plugin Manager Provider details expose the offline algorithm-package index and declared compatibility ranges.
+- Automation Runner 1.10.0 adds `Algorithm Package Catalog & compatibility`; the development Electron suite now contains 29 cases.
+- Scientific numerical definitions, Lazy Plotly scheduling, TOP provider routing and project data formats are unchanged.
+
 # v3.54.0 — Algorithm Version Management & Provider Rollback
 
 - Upgraded Scientific Algorithm Runtime to v1.1.0 with explicit `versions()`, persisted new-analysis version preferences, `lock()` for exact project references, and `diagnose()` for `available` / `missing-version` / `missing-algorithm` states.

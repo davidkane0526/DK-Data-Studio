@@ -203,3 +203,29 @@ If an installed package is updated while DK Data Studio is running, the package 
 Desktop installation keeps one active package per plugin id. When an external `.dkplugin` is updated, the previous package is archived under the application plugin-history store. Plugin Manager can list those archived versions and roll back; the package being replaced by the rollback is archived as well.
 
 This package history is not the same as scientific algorithm-version coexistence. A single active Algorithm Provider package may register multiple versions of the same algorithm simultaneously. Projects/results store exact algorithm references, while package rollback is a recovery mechanism when an old implementation is no longer supplied by the active package.
+
+
+## Algorithm package catalog and compatibility (v3.55+)
+
+Algorithm Provider packages should declare the exact algorithms that the package can supply in `algorithmProvides`. This allows DK Data Studio to search built-in providers, the active external/override packages and archived external-package history without executing package JavaScript.
+
+```json
+{
+  "algorithmProvider": true,
+  "algorithmCategories": ["transport-transform", "ter-analysis"],
+  "algorithmProvides": [
+    {"category":"transport-transform","id":"transport.didv","version":"1.0.0"},
+    {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
+  ],
+  "compatibility": {
+    "app": ">=3.55.0 <4.0.0",
+    "pluginApi": "^1.8.0"
+  }
+}
+```
+
+`pluginDependencies` may additionally declare package-level dependencies as `{id, range, optional}`. The Catalog marks a candidate compatible only when the current DK Data Studio version, Plugin API version and required plugin-package versions satisfy all declared ranges. The same compatibility result is enforced when installing/updating locally, applying a LAN update, loading an already-installed external/override package, or rolling an archived package back.
+
+When a project locks an unavailable algorithm version, Workbench code must not scan package directories or execute candidate code itself. Use the Core Algorithm API to locate/recover the package. Current compatible providers can be re-enabled/reloaded; archived external providers can be restored through package history. Override candidates are diagnostic only while the host is running because hot-swapping a built-in override would violate host/window lifecycle guarantees.
+
+Package recovery never rewrites the scientific project lock. After a recovery action, Core resolves the original exact algorithm reference again and reports failure if that exact version is still unavailable.

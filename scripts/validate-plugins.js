@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const SemverCompat = require('../semver-compat');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
@@ -62,6 +63,24 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   if(m.algorithmProvider!==undefined&&typeof m.algorithmProvider!=='boolean')fail(`${name}: algorithmProvider must be boolean`);
   if(m.algorithmProvider===true&&!algorithmCategories.length)fail(`${name}: algorithmProvider requires at least one algorithmCategories entry`);
   if(algorithmCategories.length&&!(m.requiresCore||[]).includes('analysis.algorithms'))fail(`${name}: algorithmCategories requires analysis.algorithms in requiresCore`);
+  const algorithmProvides=Array.isArray(m.algorithmProvides)?m.algorithmProvides:[];
+  if(m.algorithmProvides!==undefined&&!Array.isArray(m.algorithmProvides))fail(`${name}: algorithmProvides must be an array when declared`);
+  if(m.algorithmProvider===true&&!algorithmProvides.length)fail(`${name}: built-in Algorithm Providers must declare algorithmProvides for package catalog recovery`);
+  const algorithmProvideKeys=new Set();
+  for(const row of algorithmProvides){
+    const category=String(row?.category||'').trim(),id=String(row?.id||row?.algorithmId||'').trim(),version=String(row?.version||row?.algorithmVersion||'').trim();
+    if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category)||! /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))fail(`${name}: invalid algorithmProvides entry ${category}/${id}@${version}`);
+    if(category&&!algorithmCategories.includes(category))fail(`${name}: algorithmProvides category ${category} missing from algorithmCategories`);
+    const key=`${category}::${id}@${version}`;if(algorithmProvideKeys.has(key))fail(`${name}: duplicate algorithmProvides entry ${key}`);algorithmProvideKeys.add(key);
+  }
+  if(m.compatibility!==undefined){
+    if(!m.compatibility||typeof m.compatibility!=='object'||Array.isArray(m.compatibility))fail(`${name}: compatibility must be an object`);
+    else for(const field of ['app','pluginApi'])if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))fail(`${name}: compatibility.${field} must be a valid version range`);
+  }
+  const pluginDependencies=Array.isArray(m.pluginDependencies)?m.pluginDependencies:[];
+  if(m.pluginDependencies!==undefined&&!Array.isArray(m.pluginDependencies))fail(`${name}: pluginDependencies must be an array`);
+  const pluginDependencyIds=new Set();
+  for(const row of pluginDependencies){const dependencyId=String(row?.id||'').trim(),range=String(row?.range||'').trim();if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(dependencyId)||!range||!SemverCompat.validateRange(range))fail(`${name}: invalid plugin dependency ${dependencyId}@${range}`);if(pluginDependencyIds.has(dependencyId))fail(`${name}: duplicate plugin dependency ${dependencyId}`);pluginDependencyIds.add(dependencyId);}
   if(m.scripts!==undefined){
     if(!Array.isArray(m.scripts)||!m.scripts.length)fail(`${name}: scripts must be a non-empty array when declared`);
     else for(const raw of m.scripts){
@@ -88,6 +107,9 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
       if(JSON.stringify(runtimeManifest.requiresCore||[])!==JSON.stringify(m.requiresCore||[]))fail(`${name}: runtime requiresCore must exactly match plugin.json`);
       if(Boolean(runtimeManifest.algorithmProvider) !== Boolean(m.algorithmProvider))fail(`${name}: runtime algorithmProvider must exactly match plugin.json`);
       if(JSON.stringify(runtimeManifest.algorithmCategories||[])!==JSON.stringify(m.algorithmCategories||[]))fail(`${name}: runtime algorithmCategories must exactly match plugin.json`);
+      if(JSON.stringify(runtimeManifest.algorithmProvides||[])!==JSON.stringify(m.algorithmProvides||[]))fail(`${name}: runtime algorithmProvides must exactly match plugin.json`);
+      if(JSON.stringify(runtimeManifest.compatibility||null)!==JSON.stringify(m.compatibility||null))fail(`${name}: runtime compatibility must exactly match plugin.json`);
+      if(JSON.stringify(runtimeManifest.pluginDependencies||[])!==JSON.stringify(m.pluginDependencies||[]))fail(`${name}: runtime pluginDependencies must exactly match plugin.json`);
     }
   } catch(err){ fail(`${name}: cannot evaluate runtime manifest: ${err.message}`); }
 

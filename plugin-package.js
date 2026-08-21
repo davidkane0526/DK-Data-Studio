@@ -1,4 +1,5 @@
 const path = require('path');
+const SemverCompat = require('./semver-compat');
 
 const PLUGIN_PACKAGE_SCHEMA = 1;
 const MAX_FILES = 64;
@@ -42,6 +43,34 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   for(const category of algorithmCategories)if(!validPluginId(category))throw new Error(`Invalid algorithm category: ${category}`);
   if(algorithmProvider&&!algorithmCategories.length)throw new Error('Algorithm Provider packages must declare algorithmCategories.');
   if(algorithmCategories.length&&!(Array.isArray(sourceManifest.requiresCore)&&sourceManifest.requiresCore.includes('analysis.algorithms')))throw new Error('algorithmCategories requires analysis.algorithms in requiresCore.');
+  if(sourceManifest.algorithmProvides!==undefined&&!Array.isArray(sourceManifest.algorithmProvides))throw new Error('Plugin manifest.algorithmProvides must be an array.');
+  const algorithmProvides=[];const algorithmProvideKeys=new Set();
+  for(const raw of (Array.isArray(sourceManifest.algorithmProvides)?sourceManifest.algorithmProvides:[])){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('algorithmProvides entries must be objects.');
+    const category=String(raw.category||'').trim(),algorithmId=String(raw.id||raw.algorithmId||'').trim(),algorithmVersion=String(raw.version||raw.algorithmVersion||'').trim();
+    if(!validPluginId(category)||!validPluginId(algorithmId)||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(algorithmVersion))throw new Error(`Invalid algorithmProvides entry: ${category}/${algorithmId}@${algorithmVersion}`);
+    if(!algorithmProvider)throw new Error('algorithmProvides requires algorithmProvider=true.');
+    if(!algorithmCategories.includes(category))throw new Error(`algorithmProvides category is not declared in algorithmCategories: ${category}`);
+    const key=`${category}::${algorithmId}@${algorithmVersion}`;if(algorithmProvideKeys.has(key))throw new Error(`Duplicate algorithmProvides entry: ${key}`);algorithmProvideKeys.add(key);
+    algorithmProvides.push({category,id:algorithmId,version:algorithmVersion,...(raw.title?{title:String(raw.title)}:{})});
+  }
+  let compatibility=sourceManifest.compatibility;
+  if(compatibility!==undefined){
+    if(!compatibility||typeof compatibility!=='object'||Array.isArray(compatibility))throw new Error('Plugin manifest.compatibility must be an object.');
+    const appRange=String(compatibility.app||'*').trim()||'*',pluginApiRange=String(compatibility.pluginApi||'*').trim()||'*';
+    if(!SemverCompat.validateRange(appRange))throw new Error(`Invalid compatibility.app range: ${appRange}`);
+    if(!SemverCompat.validateRange(pluginApiRange))throw new Error(`Invalid compatibility.pluginApi range: ${pluginApiRange}`);
+    compatibility={app:appRange,pluginApi:pluginApiRange};
+  }
+  if(sourceManifest.pluginDependencies!==undefined&&!Array.isArray(sourceManifest.pluginDependencies))throw new Error('Plugin manifest.pluginDependencies must be an array.');
+  const pluginDependencies=[];const dependencyIds=new Set();
+  for(const raw of (Array.isArray(sourceManifest.pluginDependencies)?sourceManifest.pluginDependencies:[])){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('pluginDependencies entries must be objects.');
+    const dependencyId=String(raw.id||'').trim(),range=String(raw.range||'').trim();
+    if(!validPluginId(dependencyId)||!range||!SemverCompat.validateRange(range))throw new Error(`Invalid plugin dependency: ${dependencyId}@${range}`);
+    if(dependencyIds.has(dependencyId))throw new Error(`Duplicate plugin dependency: ${dependencyId}`);dependencyIds.add(dependencyId);
+    pluginDependencies.push({id:dependencyId,range,optional:raw.optional===true});
+  }
   if (!name) throw new Error('Plugin manifest.name is required.');
   if (!version) throw new Error('Plugin manifest.version is required.');
   if (!apiVersion.startsWith('1.')) throw new Error(`Unsupported Plugin API: ${apiVersion}`);
@@ -110,6 +139,9 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     ...(windowSpec!==undefined?{window:windowSpec}:{}),
     ...(sourceManifest.algorithmProvider!==undefined?{algorithmProvider}:{}),
     ...(algorithmCategories.length?{algorithmCategories}:{}),
+    ...(algorithmProvides.length?{algorithmProvides}:{}),
+    ...(compatibility!==undefined?{compatibility}:{}),
+    ...(pluginDependencies.length?{pluginDependencies}:{}),
     enabled: sourceManifest.enabled !== false,
     source: 'external'
   };

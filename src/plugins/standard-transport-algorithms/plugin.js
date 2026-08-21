@@ -1,10 +1,12 @@
 (() => {
   const manifest={
-    id:'builtin.standard-transport-algorithms',name:'Standard Transport Algorithms',version:'1.0.0',apiVersion:'1.8.0',
+    id:'builtin.standard-transport-algorithms',name:'Standard Transport Algorithms',version:'1.1.0',apiVersion:'1.8.0',
     requiresCore:['analysis.algorithms','modules'],entry:'plugin.js',enabled:true,order:70,
     description:'Versioned local transport transform, scalar-field and TER numerical Algorithm Providers.',
     capabilities:['analysis.algorithm','analysis.transport-transform','analysis.transport-scalar-field','analysis.ter'],
-    algorithmProvider:true,algorithmCategories:['transport-transform','transport-scalar-field','ter-analysis']
+    algorithmProvider:true,algorithmCategories:['transport-transform','transport-scalar-field','ter-analysis'],
+    algorithmProvides:[{category:'transport-transform',id:'transport.raw',version:'1.0.0',title:'原始 I–V'},{category:'transport-transform',id:'transport.detrend',version:'1.0.0',title:'去背景 I−Ibg'},{category:'transport-transform',id:'transport.didv',version:'1.0.0',title:'dI/dV（微分电导）'},{category:'transport-transform',id:'transport.d2idv2',version:'1.0.0',title:'d²I/dV²'},{category:'transport-transform',id:'transport.dlog',version:'1.0.0',title:'d ln|I|/dV'},{category:'transport-transform',id:'transport.dvdi',version:'1.0.0',title:'dV/dI（微分电阻）'},{category:'transport-transform',id:'transport.resistance',version:'1.0.0',title:'R = |V/I|'},{category:'transport-scalar-field',id:'transport.scalar-field',version:'1.0.0',title:'标准 Vg–Vd 标量场投影'},{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0',title:'TER 高低电阻比'}],
+    compatibility:{app:'>=3.55.0 <4.0.0',pluginApi:'^1.8.0'}
   };
   window.DKDSPlugins.define(manifest,ctx=>{
     const A=ctx.modules.require('algorithm');if(!A)throw new Error('Standard Transport Algorithms implementation unavailable.');

@@ -4,62 +4,265 @@
   "title": "DK Data Studio Plugin Manifest",
   "type": "object",
   "additionalProperties": true,
-  "required": ["id", "name", "version", "apiVersion", "entry", "requiresCore"],
+  "required": [
+    "id",
+    "name",
+    "version",
+    "apiVersion",
+    "entry",
+    "requiresCore"
+  ],
   "properties": {
-    "id": {"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]*$"},
-    "name": {"type":"string","minLength":1},
-    "version": {"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"},
-    "apiVersion": {"const":"1.8.0"},
-    "entry": {"type":"string","pattern":"^[^/\\\\]+\\.js$"},
-    "enabled": {"type":"boolean"},
-    "order": {"type":"number"},
-    "description": {"type":"string"},
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "apiVersion": {
+      "const": "1.8.0"
+    },
+    "entry": {
+      "type": "string",
+      "pattern": "^[^/\\\\]+\\.js$"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    },
     "requiresCore": {
-      "type":"array",
-      "uniqueItems":true,
+      "type": "array",
+      "uniqueItems": true,
       "items": {
         "enum": [
-          "runtime", "events", "status", "io", "science", "performance", "services", "modules", "recipes",
-          "capabilities", "state", "project", "workspace", "parameters",
-          "data.flow", "data.pipeline", "data.transforms", "data.artifacts", "data.entities", "data.types", "data.model", "data.formula",
-          "workflow", "analysis.providers", "analysis.algorithms", "analysis.detectors", "charts", "charts.providers",
-          "ui.dom", "ui.components", "ui.workspace", "ui.scientific-plot", "ui.plot-views",
-          "ui.actions", "ui.selection", "ui.interaction", "ui.menus", "ui.context-menus",
-          "ui.activities", "ui.top-workspace", "ui.toolbar", "ui.status-bar", "ui.shortcuts",
-          "ui.pages", "ui.styles", "ui.portable", "ui.edit"
+          "runtime",
+          "events",
+          "status",
+          "io",
+          "science",
+          "performance",
+          "services",
+          "modules",
+          "recipes",
+          "capabilities",
+          "state",
+          "project",
+          "workspace",
+          "parameters",
+          "data.flow",
+          "data.pipeline",
+          "data.transforms",
+          "data.artifacts",
+          "data.entities",
+          "data.types",
+          "data.model",
+          "data.formula",
+          "workflow",
+          "analysis.providers",
+          "analysis.algorithms",
+          "analysis.detectors",
+          "charts",
+          "charts.providers",
+          "ui.dom",
+          "ui.components",
+          "ui.workspace",
+          "ui.scientific-plot",
+          "ui.plot-views",
+          "ui.actions",
+          "ui.selection",
+          "ui.interaction",
+          "ui.menus",
+          "ui.context-menus",
+          "ui.activities",
+          "ui.top-workspace",
+          "ui.toolbar",
+          "ui.status-bar",
+          "ui.shortcuts",
+          "ui.pages",
+          "ui.styles",
+          "ui.portable",
+          "ui.edit"
         ]
       }
     },
-    "capabilities": {"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
     "workspace": {
-      "type":"object",
+      "type": "object",
       "properties": {
-        "role":{"enum":["top"]},
-        "activity":{"type":"string"},
-        "icon":{"type":"string"},
-        "title":{"type":"string"},
-        "defaultSuper":{"type":"boolean"}
+        "role": {
+          "enum": [
+            "top"
+          ]
+        },
+        "activity": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "defaultSuper": {
+          "type": "boolean"
+        }
       }
     },
     "window": {
-      "type":"object",
-      "required":["activity"],
+      "type": "object",
+      "required": [
+        "activity"
+      ],
       "properties": {
-        "activity":{"type":"string"},
-        "title":{"type":"string"},
-        "runtime":{"type":"string"},
-        "scripts":{"type":"array","items":{"type":"string"}},
-        "dependencies":{"type":"array","items":{"type":"string"}},
-        "prewarm":{"type":"boolean"},
-        "reuse":{"type":"boolean"},
-        "persistence":{"enum":["project","memory","none"]},
-        "width":{"type":"number","exclusiveMinimum":0},
-        "height":{"type":"number","exclusiveMinimum":0},
-        "minWidth":{"type":"number","exclusiveMinimum":0},
-        "minHeight":{"type":"number","exclusiveMinimum":0}
+        "activity": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "scripts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prewarm": {
+          "type": "boolean"
+        },
+        "reuse": {
+          "type": "boolean"
+        },
+        "persistence": {
+          "enum": [
+            "project",
+            "memory",
+            "none"
+          ]
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minWidth": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minHeight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
-    "algorithmProvider": {"type":"boolean"},
-    "algorithmCategories": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]*$"}}
+    "algorithmProvider": {
+      "type": "boolean"
+    },
+    "algorithmCategories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      }
+    },
+    "algorithmProvides": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "id",
+          "version"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pluginApi": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "pluginDependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "range"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "range": {
+            "type": "string",
+            "minLength": 1
+          },
+          "optional": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
   }
 }

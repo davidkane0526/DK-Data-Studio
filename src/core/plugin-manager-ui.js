@@ -61,6 +61,17 @@
     };
   }
 
+  function algorithmCatalogText(plugin){
+    const rows=Array.isArray(plugin?.algorithmProvides)?plugin.algorithmProvides:[];
+    return rows.length?rows.map(row=>`${row.id}@${row.version}`).join('、'):'未声明可离线索引的算法版本';
+  }
+
+  function pluginCompatibilityText(plugin){
+    const app=plugin?.compatibility?.app||'*',api=plugin?.compatibility?.pluginApi||'*',deps=Array.isArray(plugin?.pluginDependencies)?plugin.pluginDependencies:[];
+    const depText=deps.length?` · 依赖 ${deps.map(row=>`${row.id} ${row.range}${row.optional?'（可选）':''}`).join('、')}`:'';
+    return `App ${app} · Plugin API ${api}${depText}`;
+  }
+
   function algorithmVersionControls(plugin){
     if(plugin?.algorithmProvider!==true||!window.DKDSScientificAlgorithms?.list)return '';
     const A=window.DKDSScientificAlgorithms,owned=A.list({owner:plugin.id})||[],families=new Map();
@@ -372,7 +383,7 @@
           <div><strong>启用来源：</strong>${plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
-          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div>${algorithmVersionControls(plugin)}`:''}
+          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div><div><strong>兼容范围：</strong>${escapeHtml(pluginCompatibilityText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
           ${plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:''}
         </div>`;
 

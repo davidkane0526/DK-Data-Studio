@@ -65,6 +65,21 @@
     if(manifest.algorithmProvider!==undefined&&typeof manifest.algorithmProvider!=='boolean')errors.push('algorithmProvider must be boolean.');
     if(manifest.algorithmProvider===true&&!categories.length)errors.push('algorithmProvider requires algorithmCategories.');
     if(categories.length&&!requested.includes('analysis.algorithms'))errors.push('algorithmCategories requires Core requirement analysis.algorithms.');
+    const provides=Array.isArray(manifest.algorithmProvides)?manifest.algorithmProvides:[];
+    if(manifest.algorithmProvides!==undefined&&!Array.isArray(manifest.algorithmProvides))errors.push('algorithmProvides must be an array.');
+    const provideKeys=new Set();
+    for(const row of provides){
+      const category=String(row?.category||'').trim(),id=String(row?.id||row?.algorithmId||'').trim(),version=String(row?.version||row?.algorithmVersion||'').trim();
+      if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category)||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))errors.push(`Invalid algorithmProvides entry: ${category}/${id}@${version}`);
+      if(category&&!categories.includes(category))errors.push(`algorithmProvides category not declared: ${category}`);
+      const key=`${category}::${id}@${version}`;if(provideKeys.has(key))errors.push(`Duplicate algorithmProvides entry: ${key}`);provideKeys.add(key);
+    }
+    if(provides.length&&manifest.algorithmProvider!==true)errors.push('algorithmProvides requires algorithmProvider=true.');
+    if(manifest.compatibility!==undefined&&(!manifest.compatibility||typeof manifest.compatibility!=='object'||Array.isArray(manifest.compatibility)))errors.push('compatibility must be an object.');
+    const dependencies=Array.isArray(manifest.pluginDependencies)?manifest.pluginDependencies:[];
+    if(manifest.pluginDependencies!==undefined&&!Array.isArray(manifest.pluginDependencies))errors.push('pluginDependencies must be an array.');
+    const dependencyIds=new Set();
+    for(const row of dependencies){const id=String(row?.id||'').trim(),range=String(row?.range||'').trim();if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)||!range)errors.push(`Invalid plugin dependency: ${id}@${range}`);if(dependencyIds.has(id))errors.push(`Duplicate plugin dependency: ${id}`);dependencyIds.add(id);}
     return Object.freeze({ok:errors.length===0,errors:Object.freeze(errors),requirements:Object.freeze(requested)});
   }
   function assertApi(api,manifest={}){

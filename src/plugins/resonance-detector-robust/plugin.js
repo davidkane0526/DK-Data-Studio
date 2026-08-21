@@ -2,12 +2,14 @@
   DKDSPlugins.define({
     id:'builtin.resonance-detector-robust',
     name:'Standard Resonance Algorithms',
-    version:'2.1.0',
+    version:'2.2.0',
     apiVersion:'1.8.0',requiresCore:["science","analysis.algorithms","modules"],
     description:'Versioned resonance peak detection and baseline-aware peak metrics algorithms.',
     source:'builtin',
     order:80,
     algorithmProvider:true,algorithmCategories:['peak-detector','peak-metrics'],
+    algorithmProvides:[{category:'peak-detector',id:'robust-ricker-v1',version:'1.0.0',title:'稳健多通道 / 多尺度'},{category:'peak-metrics',id:'baseline-fwhm-v1',version:'1.0.0',title:'局部基线 FWHM'}],
+    compatibility:{app:'>=3.55.0 <4.0.0',pluginApi:'^1.8.0'},
     capabilities:['analysis.algorithm','analysis.peak-detector','analysis.peak-metrics']
   }, async ctx => {
     const S=ctx.science;

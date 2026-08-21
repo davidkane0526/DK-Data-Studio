@@ -395,6 +395,31 @@ If `diagnose()` returns `missing-version`, the consumer must preserve the reques
 
 External plugin packages remain single-active by plugin id. Desktop Plugin Manager keeps archived package versions for update rollback, while true scientific-version coexistence is represented by multiple algorithm versions registered by the active provider package.
 
+### Algorithm package catalog and recovery (v3.55+)
+
+Algorithm Provider packages should publish a metadata-only catalog in their manifest. Core can then locate an exact project-locked algorithm without executing the package:
+
+```json
+{
+  "algorithmProvider": true,
+  "algorithmCategories": ["peak-metrics"],
+  "algorithmProvides": [
+    {"category":"peak-metrics","id":"baseline-fwhm-v1","version":"1.0.0","title":"局部基线 FWHM"}
+  ],
+  "compatibility": {
+    "app": ">=3.55.0 <4.0.0",
+    "pluginApi": "^1.8.0"
+  },
+  "pluginDependencies": [
+    {"id":"other.provider","range":"^2.0.0","optional":false}
+  ]
+}
+```
+
+`algorithmProvides` is an exact package catalog, not a substitute for runtime `register()`. Every entry must belong to a declared `algorithmCategories` value and use an exact semantic version. `compatibility.app`, `compatibility.pluginApi`, and package-level `pluginDependencies` are evaluated by the same Core compatibility service during catalog lookup, install/update, LAN update, startup loading and history rollback.
+
+A consumer with a missing exact project lock may use `ctx.analysis.algorithms.locate(ref)` to list compatible current/history candidates and `recover(ref, candidate)` to restore one. Recovery must preserve the original `{category,id,version}` lock, restore/enable the package, and then verify that the exact algorithm version registered successfully. An incompatible candidate may be shown diagnostically but must not be auto-activated. Override candidates are located but are not hot-swapped into a running host.
+
 `ctx.analysis.detectors` remains a compatibility facade for older detector plugins. New detector implementations should register `analysis.algorithms` with `category:'peak-detector'`.
 
 ## 14. Analysis providers, detectors and workflows

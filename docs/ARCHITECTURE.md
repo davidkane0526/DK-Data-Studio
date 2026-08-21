@@ -30,6 +30,12 @@ Versioned Algorithm Providers
 ├─ peak metrics / FWHM
 └─ future replaceable scientific algorithms
         ↓
+Algorithm Package Catalog / Compatibility
+├─ exact algorithmProvides metadata
+├─ app / Plugin API compatibility ranges
+├─ package dependency ranges
+└─ current + history package recovery
+        ↓
 Plugins
 ├─ flexible-import
 ├─ resonance-workbench
@@ -82,6 +88,15 @@ npm run science:parity
 ```
 
 This parity check is part of `npm run check`.
+
+
+## 2.1 Algorithm package catalog and recovery
+
+Scientific reproducibility spans both an exact algorithm identity and the package that can supply it. Provider manifests therefore publish metadata-only `algorithmProvides` entries and optional package compatibility/dependency ranges. Core `algorithm-package-catalog.js` indexes built-ins, active external/override packages and external package history without executing candidate JavaScript.
+
+A project lock remains `category + algorithmId + algorithmVersion`. If the exact version is missing, Core distinguishes “algorithm unavailable” from “package exists but is incompatible”, returns candidate package diagnostics, and may recover a compatible current/history Provider. Recovery never changes the project lock; the exact algorithm is resolved again after the package action. Override candidates are not hot-swapped into the active host.
+
+Compatibility is a single policy used by catalog lookup, local/LAN installation, external/override startup loading and package-history rollback. This prevents a package from being advertised as incompatible while another code path still executes it.
 
 ## 3. Runtime shells
 
