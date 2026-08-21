@@ -250,6 +250,23 @@ ctx.ui.scientificPlot.resize(plot);
 await ctx.ui.scientificPlot.saveImage(plot,'fit_result','png');
 ```
 
+For matrix/scalar-field results, use the same runtime rather than creating a plugin-private Plotly heatmap:
+
+```js
+await ctx.ui.scientificPlot.scalarField(plot, {
+  x: field.x, y: field.y, z: field.z,
+  xName:'Vd', yName:'Vg', valueName:'dI/dV',
+  xUnit:'V', yUnit:'V', valueUnit:'A/V',
+  semanticType:'science.transport.conductance-field'
+}, {
+  diverging:false,
+  source:'conductance-field',
+  renderKey:artifact.fingerprint
+});
+```
+
+`scalarField()` owns heatmap colorbar/axis metadata, diverging `zmid`, hover defaults, ScientificPlot viewport/export/lifecycle and managed rendering. The plugin owns the scientific matrix and optional domain mapping from a cell to a real Entity/Selection.
+
 When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing rendered Plotly graphs may be adopted with `attach()`.
 
 For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Domain callbacks remain optional for special commands such as “open inspector” or “create manual peak”.

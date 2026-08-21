@@ -1,4 +1,13 @@
-# DK Data Studio — v3.55.0
+# DK Data Studio — v3.56.0
+
+## v3.56 共享 Scientific Scalar Field 与共振跨曲线特征场
+
+- `DKDSScientificPlot` 升级到 2.2.0，新增共享 `scalarField()`：热图坐标轴/单位、colorbar、diverging zmid、hover、缩放、导出与 renderer 生命周期统一由 Core 管理。
+- TER 主热图与可选 Transport Transform 热图已经迁到同一共享 surface；TER/Transform 数值定义没有改变。
+- 共振 `gate-analysis` 现在除原有栅压分析结果外，还发布标准 `resonance.feature-field` Matrix Artifact。
+- 共振栅压页新增跨曲线特征场，可在峰位、FWHM、峰高、Prominence、面积、局域基线、峰/背景比之间切换，并按正扫/反扫/全部筛选。
+- 热图单元保留真实 peak ID；点击后继续进入统一 Selection/Inspector 联动，而不是生成孤立的热图选择。
+- 特征场计算不依赖页面 controller，可从可见已采纳峰直接推导峰族，适合 Pipeline、自动化与未来后台计算。
 
 ## v3.55 算法包目录、兼容范围与缺失算法恢复
 

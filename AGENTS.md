@@ -97,6 +97,10 @@ Algorithm package rule (v3.55+): every first-party `algorithmProvider` must decl
 
 Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
 
+## Shared scientific scalar-field rule (v3.56+)
+
+A matrix/scalar-field scientific result and its heatmap renderer are separate contracts. Plugins publish typed `science.scalar-field` (or subtype) data/Artifacts and render them through `ctx.ui.scientificPlot.scalarField()`. Do not create plugin-private Plotly heatmap lifecycle/hover/export infrastructure. Domain-specific click behavior may map a field cell back to its source Entity/Artifact through stable IDs, but Selection must remain the real scientific object when one exists. Cross-curve feature computation must be headless/data-first and must not require an attached View/Controller.
+
 ## Android build rule
 
 React Native source lives in `mobile/`.

@@ -1,6 +1,6 @@
 (() => {
   if (window.DKDSScientificPlot) return;
-  const VERSION='2.1.0';
+  const VERSION='2.2.0';
   const CONTROLLERS=Object.freeze(['selection','legend','tooltip','focus','pin','viewport','export']);
   const resolve=value=>{
     if(value?.nodeType===1)return value;
@@ -12,6 +12,26 @@
   const finite=value=>Number.isFinite(Number(value));
   const baseTraceStyle=trace=>({opacity:trace?.opacity??1,lineWidth:Number(trace?.line?.width)||1.5,markerOpacity:trace?.marker?.opacity??1,markerSize:clone(trace?.marker?.size)});
   const array=value=>Array.isArray(value)?value:(value===undefined||value===null?[]:[value]);
+  function scalarFieldSpec(field={},options={}){
+    const x=clone(field.x||field.targets||[]),y=clone(field.y||field.vgs||[]),z=clone(field.z||field.matrix||[]);
+    const valueName=String(options.valueName||field.valueName||field.label||field.title||field.transformId||'value');
+    const valueUnit=String(options.valueUnit??field.valueUnit??field.unit??'');
+    const xName=String(options.xName||field.xName||'x'),yName=String(options.yName||field.yName||'y');
+    const xUnit=String(options.xUnit??field.xUnit??''),yUnit=String(options.yUnit??field.yUnit??'');
+    const transformMeta=field?.metadata?.scientificTransform||{};
+    const diverging=options.diverging!==undefined?!!options.diverging:(field.diverging!==undefined?!!field.diverging:!!transformMeta.diverging);
+    const colorscale=String(options.colorscale||field.colorscale||(diverging?'RdBu':'Viridis'));
+    const trace={x,y,z,type:'heatmap',colorscale,reversescale:options.reversescale!==undefined?!!options.reversescale:diverging,zsmooth:options.zsmooth===true?'best':false,hoverongaps:false,
+      colorbar:{title:{text:`${valueName}${valueUnit?` (${valueUnit})`:''}`,side:'right'},thickness:Number(options.colorbarThickness)||18,len:Number(options.colorbarLength)||.86,...(options.colorbar||{})},
+      hovertemplate:options.hovertemplate||`${xName}=%{x}${xUnit?` ${xUnit}`:''}<br>${yName}=%{y}${yUnit?` ${yUnit}`:''}<br>${valueName}=%{z:.6g}${valueUnit?` ${valueUnit}`:''}<extra></extra>`};
+    if(finite(options.zmin))trace.zmin=Number(options.zmin);if(finite(options.zmax))trace.zmax=Number(options.zmax);
+    if(finite(options.zmid))trace.zmid=Number(options.zmid);else if(diverging)trace.zmid=0;
+    const axisTitle=(name,unit)=>`${name}${unit?` (${unit})`:''}`;
+    const layout={margin:{l:76,r:98,t:26,b:66,...(options.margin||{})},xaxis:{title:axisTitle(xName,xUnit),automargin:true,constrain:'domain',...(options.xaxis||{})},yaxis:{title:axisTitle(yName,yUnit),automargin:true,constrain:'domain',...(options.yaxis||{})},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',...(options.layout||{})};
+    const config={responsive:true,displaylogo:false,scrollZoom:options.scrollZoom!==false,...(options.config||{})};
+    const renderKey=asId(options.renderKey||field.revisionKey||field.fingerprint||'');
+    return {traces:[trace],layout,config,spec:{interaction:options.interaction||null,source:options.source||'scientific-scalar-field',renderKey,onClick:options.onClick||null,onEntitySelect:options.onEntitySelect||null,controllers:options.controllers||undefined}};
+  }
 
   function normalizeControllerSpec(spec={}){
     const controllers=spec.controllers&&typeof spec.controllers==='object'?spec.controllers:{};
@@ -192,6 +212,7 @@
     create(target,spec={}){const key=this.key(target);if(!key)throw new Error('ScientificPlot target not found.');this.views.get(key)?.dispose?.();const view=new ScientificPlotView(this.owner,target,spec);this.views.set(key,view);return view;}
     attach(target,spec={}){const key=this.key(target);if(!key)throw new Error('ScientificPlot target not found.');let view=this.views.get(key);if(!view){view=new ScientificPlotView(this.owner,target,spec);this.views.set(key,view);}return view.attach(spec);}
     async react(target,data=[],layout={},config={},spec={}){const key=this.key(target);if(!key)throw new Error('ScientificPlot target not found.');let view=this.views.get(key);if(!view){view=new ScientificPlotView(this.owner,target,spec);this.views.set(key,view);}await view.set({...spec,data,layout,config});return view;}
+    async scalarField(target,field={},options={}){const prepared=scalarFieldSpec(field,options);return this.react(target,prepared.traces,prepared.layout,prepared.config,prepared.spec);}
     resize(target){return this.get(target)?.resize?.()||window.DKDSCharts?.resize?.(target);}
     restyle(target,update,traces){return window.DKDSCharts?.restyle?.(target,update,traces);}
     relayout(target,update){return window.DKDSCharts?.relayout?.(target,update);}
@@ -215,5 +236,5 @@
   function disposeOwner(owner){const id=String(owner||'');for(const scope of [...(scopes.get(id)||[])])scope.dispose();scopes.delete(id);}
   async function lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle(state,options));return {state:String(state||''),scopes:rows.length,views:rows.reduce((sum,row)=>sum+Number(row?.length??row?.views??0),0)};}
   function snapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(scope.lifecycleState());return {version:VERSION,scopes:rows.length,views:rows.reduce((sum,row)=>sum+row.views,0),managed:rows.reduce((sum,row)=>sum+row.managed,0),suspended:rows.reduce((sum,row)=>sum+row.suspended,0),purged:rows.reduce((sum,row)=>sum+row.purged,0),rows};}
-  window.DKDSScientificPlot=Object.freeze({VERSION,CONTROLLERS,ScientificPlotView,ScientificPlotScope,createScope,disposeOwner,lifecycle,snapshot});
+  window.DKDSScientificPlot=Object.freeze({VERSION,CONTROLLERS,ScientificPlotView,ScientificPlotScope,scalarFieldSpec,createScope,disposeOwner,lifecycle,snapshot});
 })();

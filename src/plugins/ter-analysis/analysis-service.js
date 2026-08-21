@@ -261,18 +261,12 @@
         const zmin=finite(display.zmin)?Number(display.zmin):autoMin;
         const zmax=finite(display.zmax)?Number(display.zmax):autoMax;
         const pipelineTrace=matrixViewModel?.traces?.[0]||null;
-        charts.react('terHeatmapPlot',[{
-          x:pipelineTrace?.x||r.targets,y:pipelineTrace?.y||r.vgs,z:pipelineTrace?.z||r.matrix,type:'heatmap',colorscale:display.colorscale||'Viridis',
-          zmin,zmax,zsmooth:false,
-          colorbar:{title:{text:'TER (%)',side:'right'},thickness:18,len:.86,
-            tickmode:display.colorDtick?'linear':'auto',dtick:display.colorDtick||undefined},
-          hovertemplate:pipelineTrace?.hovertemplate||'Vg=%{y}<br>Vds=%{x}<br>TER=%{z:.4g}%<extra></extra>'
-        }],{
-          margin:{l:76,r:96,t:26,b:66},
-          xaxis:{title:'Vds (V)',automargin:true,tickmode:display.xDtick?'linear':'auto',dtick:display.xDtick||undefined,constrain:'domain'},
-          yaxis:{title:'Vg (V)',automargin:true,tickmode:display.yDtick?'linear':'auto',dtick:display.yDtick||undefined,constrain:'domain'},
-          dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
-        },plotConfig('TER_heatmap'));
+        const terField={x:pipelineTrace?.x||r.targets,y:pipelineTrace?.y||r.vgs,z:pipelineTrace?.z||r.matrix,xName:'Vds',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',diverging:false};
+        charts.scalarField('terHeatmapPlot',terField,{colorscale:display.colorscale||'Viridis',zmin,zmax,hovertemplate:pipelineTrace?.hovertemplate||'Vg=%{y}<br>Vds=%{x}<br>TER=%{z:.4g}%<extra></extra>',
+          colorbar:{title:{text:'TER (%)',side:'right'},thickness:18,len:.86,tickmode:display.colorDtick?'linear':'auto',dtick:display.colorDtick||undefined},
+          xaxis:{title:'Vds (V)',tickmode:display.xDtick?'linear':'auto',dtick:display.xDtick||undefined,automargin:true,constrain:'domain'},
+          yaxis:{title:'Vg (V)',tickmode:display.yDtick?'linear':'auto',dtick:display.yDtick||undefined,automargin:true,constrain:'domain'},config:plotConfig('TER_heatmap'),source:'ter-heatmap',renderKey:`ter:${r.vgs.length}:${r.targets.length}:${r.missing}:${terAlgorithmRef.id}@${terAlgorithmRef.version}`})
+          .catch?.(err=>console.warn('[TER heatmap]',err));
 
         const maxVg=r.terMaxByVg||r.terMax||[],maxVd=r.terMaxByVd||[];
         charts.react('terMaxVgPlot',[{

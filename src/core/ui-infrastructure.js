@@ -1514,6 +1514,7 @@
         createPlotly:(target,spec={})=>this.scientificPlotly?.create?.(target,spec)||null,
         attach:(target,spec={})=>this.scientificPlotly?.attach?.(target,spec)||null,
         react:(target,data=[],layout={},config={},spec={})=>this.scientificPlotly?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
+        scalarField:(target,field={},options={})=>this.scientificPlotly?.scalarField?.(target,field,options)||null,
         get:target=>this.scientificPlotly?.get?.(target)||null,
         controller:(target,name)=>this.scientificPlotly?.controller?.(target,name)||null,
         resize:target=>this.scientificPlotly?.resize?.(target)||window.DKDSCharts?.resize?.(target),

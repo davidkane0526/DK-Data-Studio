@@ -461,3 +461,7 @@ Selection / ViewModel / ScientificPlot
 ```
 
 `ctx.data.pipeline` owns execution metadata, caching, publication and projections. `ctx.data.transforms` owns discoverable transform semantics. Every public transform receives a canonical curve stage `transform.<id>` and may receive a scalar-field stage `scalar-field.<id>`. TER and Resonance consume this registry rather than maintaining independent transform catalogs. Adding a new reusable transform must not require a host change or a TER-specific heatmap branch. SUPER and dedicated TOP derive the same transform/pipeline runtimes from `requiresCore`, preserving host invariance.
+
+## v3.56 shared scalar-field rendering and feature matrices
+
+Typed matrix data is not a renderer contract. Scientific plugins publish `science.scalar-field` or a registered subtype and use `ctx.ui.scientificPlot.scalarField()` for the common heatmap surface. This keeps color/axis/hover/viewport/export/lifecycle behavior consistent while allowing the field producer to remain headless. Resonance `gate-analysis` demonstrates a multi-output Pipeline stage by publishing both its legacy analysis Artifact and `resonance.feature-field`; the latter retains peak-set lineage and source peak IDs so heatmap cells project back into the shared peak Selection/Inspector. TER uses the same surface for both TER and transform scalar fields.

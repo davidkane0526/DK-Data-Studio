@@ -33,7 +33,7 @@ const interaction={
     {x:[0,1],y:[2,3],mode:'lines+markers',name:'B',entityId:'trace:B',line:{width:2},marker:{size:6}}
   ];
   const view=await scope.react(target,traces,{}, {},{interaction,traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),legendPolicy:{selectOnClick:true},pinPolicy:{enabled:true},selectionPolicy:{area:true}});
-  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.1.0');
+  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.2.0');
   for(const name of context.DKDSScientificPlot.CONTROLLERS)assert(view.controllers[name],`missing ${name} controller`);
   for(const event of ['plotly_click','plotly_legendclick','plotly_legenddoubleclick','plotly_relayout','plotly_hover','plotly_unhover','plotly_selected','plotly_deselect'])assert(target.handlers.has(event),`missing ${event}`);
   const clickHandler=target.handlers.get('plotly_click');
@@ -55,9 +55,10 @@ const interaction={
   await scope.react(target,traces,{}, {},{interaction,traceEntity:trace=>({id:trace.entityId,type:'data.series'}),legendPolicy:{selectOnClick:true}});
   assert.strictEqual(target.handlers.get('plotly_click'),clickHandler,'react must not duplicate or replace shared event handlers');
   assert.strictEqual(scope.controller(target,'pin'),view.controllers.pin,'scope.controller must expose shared controller');
+  const fieldView=await scope.scalarField(target,{x:[0,1],y:['正扫 · 峰1','反扫 · 峰1'],z:[[1,2],[3,4]],xName:'Vg',yName:'峰族 / 扫描',valueName:'FWHM',xUnit:'V',valueUnit:'V',diverging:false},{renderKey:'field-v1'});assert(fieldView===view,'scalarField must reuse the managed ScientificPlot view');assert.strictEqual(target.data[0].type,'heatmap');assert.strictEqual(target.data[0].colorbar.title.text,'FWHM (V)');
   view.controllers.pin.pin('trace:A',{source:'test'});await view.controllers.viewport.set({xRange:[0,1]},{source:'lifecycle-test'});
   const reactBeforeSuspend=calls.react;await view.suspend({purgeManaged:true,reason:'test'});assert(view.lifecycleState().suspended&&view.lifecycleState().purged,'managed plot must enter purged suspended state');assert.strictEqual(target.data.length,0,'suspend must release Plotly renderer data');assert.strictEqual(target.handlers.size,0,'suspend must release Plotly handlers');
-  await view.resume({reason:'test'});assert(!view.lifecycleState().suspended&&!view.lifecycleState().purged,'resume must rebuild managed plot');assert.strictEqual(calls.react,reactBeforeSuspend+1,'resume must rebuild a purged renderer exactly once');assert.strictEqual(target.data.length,2);assert(view.controllers.pin.has('trace:A'),'pin state must survive renderer lifecycle');assert.deepStrictEqual(view.controllers.viewport.get().xRange,[0,1],'viewport must survive renderer lifecycle');
+  await view.resume({reason:'test'});assert(!view.lifecycleState().suspended&&!view.lifecycleState().purged,'resume must rebuild managed plot');assert.strictEqual(calls.react,reactBeforeSuspend+1,'resume must rebuild a purged renderer exactly once');assert.strictEqual(target.data.length,1);assert(view.controllers.pin.has('trace:A'),'pin state must survive renderer lifecycle');assert.deepStrictEqual(view.controllers.viewport.get().xRange,[0,1],'viewport must survive renderer lifecycle');
   scope.dispose();
   assert.strictEqual(target.handlers.size,0,'dispose must remove every shared Plotly handler');
   console.log('v3.46 ScientificPlot shared Selection/Legend/Tooltip/Focus/Pin/Viewport/Export controller checks passed.');

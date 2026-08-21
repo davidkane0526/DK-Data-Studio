@@ -322,12 +322,11 @@
       if(meta)meta.textContent=`${matrix.vgs.length} × ${matrix.targets.length} 网格 · 缺失 ${matrix.missing} · 与 TER 的 Vg/Vd 网格和源文件选择保持一致`;
       const definition=ctx.data.transforms?.resolve?.(matrix.transformId||matrix.type)||T.getTransformDefinition?.()||null;
       const signed=definition?.diverging!==false;
-      const trace={x:matrix.targets,y:matrix.vgs,z:matrix.matrix,type:'heatmap',colorscale:signed?'RdBu':'Viridis',reversescale:signed,zsmooth:false,
-        colorbar:{title:{text:`${matrix.label||matrix.type}${matrix.unit?` (${matrix.unit})`:''}`,side:'right'},thickness:18,len:.86},
-        hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`};
-      if(signed)trace.zmid=0;
-      ctx.ui.scientificPlot.react(plot,[trace],{margin:{l:76,r:98,t:26,b:66},xaxis:{title:'Vds (V)',automargin:true,constrain:'domain'},yaxis:{title:'Vg (V)',automargin:true,constrain:'domain'},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},{responsive:true,displaylogo:false,scrollZoom:true},{interaction:T.interaction,source:'ter-transform-heatmap',renderKey:`ter-transform:${resultRevision}:${matrix.type}:${matrix.direction}:${matrix.missing}`,onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')})
-        .catch?.(err=>console.warn('[TER transformed heatmap]',err));
+      const field={x:matrix.targets,y:matrix.vgs,z:matrix.matrix,xName:'Vds',yName:'Vg',valueName:matrix.label||matrix.type,xUnit:'V',yUnit:'V',valueUnit:matrix.unit||'',diverging:signed,metadata:{scientificTransform:{diverging:signed}}};
+      const render=ctx.ui.scientificPlot.scalarField(plot,field,{colorscale:signed?'RdBu':'Viridis',reversescale:signed,zmid:signed?0:undefined,
+        hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`,
+        layout:{uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},interaction:T.interaction,source:'ter-transform-heatmap',renderKey:`ter-transform:${resultRevision}:${matrix.type}:${matrix.direction}:${matrix.missing}`,onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')});
+      render?.catch?.(err=>console.warn('[TER transformed heatmap]',err));
       return matrix;
     }
 

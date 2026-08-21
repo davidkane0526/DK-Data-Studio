@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.10.0';
+  const VERSION='1.11.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -207,6 +207,21 @@
     return {version:T.VERSION,registered:rows.length,curveType:curve.semanticType,fieldType:field.semanticType,fieldShape:[field.vgs.length,field.targets.length],terPipeline:true,resonancePipeline:true};
   }
 
+  function scientificScalarFieldSmoke(){
+    const P=window.DKDSScientificPlot,types=window.DKDSUI?.dataTypes,pipeline=window.DKDSScientificPipeline;
+    assert(P?.scalarFieldSpec&&types&&pipeline?.get,'Shared Scientific Scalar Field runtime unavailable.');
+    const field={x:[0,1],y:['反扫 · 峰1','正扫 · 峰1'],z:[[-.12,.08],[-.05,.15]],xName:'Vg',yName:'峰族 / 扫描',xUnit:'V',valueName:'峰位 V_R',valueUnit:'V',semanticType:'resonance.feature-field'};
+    const spec=P.scalarFieldSpec(field,{diverging:true,renderKey:'automation-scalar-field-v1'});
+    assert(spec?.traces?.[0]?.type==='heatmap','Shared scalar-field projection did not create a heatmap trace.');
+    assert(spec.traces[0].zmid===0&&spec.traces[0].reversescale===true,'Diverging scalar-field defaults are incorrect.');
+    assert(spec.traces[0].colorbar?.title?.text==='峰位 V_R (V)','Scalar-field colorbar metadata is incomplete.');
+    assert(types.get('resonance.feature-field'),'Typed resonance.feature-field contract is not registered.');
+    assert(types.isA('resonance.feature-field','science.scalar-field'),'Resonance feature field is not compatible with the canonical scalar-field type.');
+    const gate=pipeline.get('builtin.resonance-workbench','gate-analysis');
+    assert(gate?.outputTypes?.includes?.('resonance.feature-field'),'Resonance gate Pipeline does not publish a feature-field output.');
+    return {version:P.VERSION,traceType:spec.traces[0].type,diverging:spec.traces[0].zmid===0,semanticType:'resonance.feature-field',gateOutputTypes:[...(gate.outputTypes||[])]};
+  }
+
   function scientificAlgorithmRegistrySmoke(){
     const A=window.DKDSScientificAlgorithms,S=window.DKDSScience;assert(A?.list&&A?.resolve&&A?.run,'Scientific Algorithm Registry unavailable.');
     const detectors=A.list({category:'peak-detector'}),metrics=A.list({category:'peak-metrics'});
@@ -337,6 +352,7 @@
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
+    await runCase('scalar-field.shared','Scientific Scalar Field & resonance feature field','Data Contract',scientificScalarFieldSmoke);
     await runCase('algorithms.registry','Scientific Algorithm Registry & Version Lock','Data Contract',scientificAlgorithmRegistrySmoke);
     await runCase('algorithms.version-management','Algorithm default / lock / missing-version management','Data Contract',scientificAlgorithmVersionManagementSmoke);
     await runCase('algorithms.package-catalog','Algorithm Package Catalog & compatibility','Data Contract',scientificAlgorithmPackageCatalogSmoke);
@@ -431,7 +447,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificAlgorithmVersionManagement:clone(state.results.find(row=>row.id==='algorithms.version-management')?.data||null),scientificAlgorithmPackageCatalog:clone(state.results.find(row=>row.id==='algorithms.package-catalog')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topLazyPlotly:clone(state.results.find(row=>row.id==='top.plotly-lazy')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificScalarField:clone(state.results.find(row=>row.id==='scalar-field.shared')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificAlgorithmVersionManagement:clone(state.results.find(row=>row.id==='algorithms.version-management')?.data||null),scientificAlgorithmPackageCatalog:clone(state.results.find(row=>row.id==='algorithms.package-catalog')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topLazyPlotly:clone(state.results.find(row=>row.id==='top.plotly-lazy')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

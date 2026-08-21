@@ -1,3 +1,15 @@
+# v3.56.0 — Shared Scientific Scalar Fields & Resonance Feature Maps
+
+- Upgraded `DKDSScientificPlot` to v2.2.0 with the shared `scalarField()` surface. Core now owns heatmap axes/units, colorbar metadata, diverging `zmid`, hover defaults, viewport/export behavior and renderer lifecycle; plugins provide typed scalar-field data instead of managing Plotly heatmap lifecycle themselves.
+- Migrated the TER primary heatmap and selectable transport-transform heatmap to the shared Scientific Scalar Field surface without changing TER/transform numerical definitions or interaction semantics.
+- Added canonical `resonance.feature-field` as a `science.scalar-field` subtype and extended the Resonance `gate-analysis` Pipeline to publish a second typed matrix Artifact alongside the existing gate-analysis result.
+- Resonance gate analysis now provides an all-accepted-peak cross-curve feature map over Vg × peak-family/scan-direction with selectable peak position, FWHM, amplitude, Prominence, area, local baseline and |Ipk/Ibg| metrics; forward/reverse/all direction filters are supported.
+- Feature-map cells retain their originating peak IDs. Clicking a populated cell publishes the real `resonance.peak` Selection and opens the existing Inspector instead of creating a heatmap-only pseudo-selection.
+- Cross-curve feature computation is data-first and can derive peak-family series directly from visible accepted peaks when no UI controller is attached, so Pipeline/headless execution does not depend on page state.
+- Added feature-field CSV export and a transient typed matrix Artifact with peak-set lineage plus the exact peak-metrics algorithm reference used to derive FWHM/baseline/amplitude/area values.
+- Automation Runner 1.11.0 adds `Scientific Scalar Field & resonance feature field`; development Electron now contains 30 cases.
+- Peak/FWHM, Transport/TER Algorithm Provider versions remain unchanged because this release does not change their numerical definitions.
+
 # v3.55.0 — Algorithm Package Catalog, Compatibility & Recovery
 
 - Added Algorithm Package Catalog 1.0.0. Provider manifests can publish exact `algorithmProvides` entries (`category + id + version`) so missing project-locked algorithms can be located without executing unknown plugin code.
