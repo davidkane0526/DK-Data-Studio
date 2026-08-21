@@ -29,7 +29,7 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.11.0",
+    "apiVersion": "1.13.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
@@ -53,7 +53,7 @@ Limits are enforced before installation:
 - only text files are accepted;
 - file count and total package size are bounded;
 - the declared Plugin API must be compatible with the v1 API family.
-- new SDK packages target `1.11.0`; existing `1.10.0` packages remain accepted for compatibility.
+- new SDK packages target `1.13.0`; existing `1.10.0`, `1.11.0`, and `1.12.0` packages remain accepted for compatibility.
 
 ## Build a package
 
@@ -229,8 +229,8 @@ Algorithm Provider packages should declare the exact algorithms that the package
     {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
   ],
   "compatibility": {
-    "app": ">=3.61.4 <4.0.0",
-    "pluginApi": "^1.11.0"
+    "app": ">=3.61.6 <4.0.0",
+    "pluginApi": "^1.13.0"
   }
 }
 ```
@@ -240,3 +240,11 @@ Algorithm Provider packages should declare the exact algorithms that the package
 When a project locks an unavailable algorithm version, Workbench code must not scan package directories or execute candidate code itself. Use the Core Algorithm API to locate/recover the package. Current compatible providers can be re-enabled/reloaded; archived external providers can be restored through package history. Override candidates are diagnostic only while the host is running because hot-swapping a built-in override would violate host/window lifecycle guarantees.
 
 Package recovery never rewrites the scientific project lock. After a recovery action, Core resolves the original exact algorithm reference again and reports failure if that exact version is still unavailable.
+
+### Standalone workbench defaults and data ownership (Plugin API 1.13)
+
+A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...)` and does not declare a `workspace.role` is a standalone primary activity by default. It appears in the main activity strip according to `order`; it is not inserted into another workbench's contextual toolbar. Set `presentation: "toolbar"` only when a page is intentionally a contextual sub-tool.
+
+`icon` is optional in the manifest. Core provides a category default icon when neither `manifest.icon` nor `workspace.icon` is supplied.
+
+Imported project data is stored once and assigned to zero, one, or multiple analysis workbenches. New plugins should require `data.sources` and read sources through `ctx.data.sources.list()`. A workbench receives its own scoped view automatically. Source assignment is centralized in Import/Data Center rather than implemented by each plugin.

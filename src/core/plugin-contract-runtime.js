@@ -1,7 +1,7 @@
 (() => {
   if(window.DKDSPluginContract)return;
   const VERSION='1.0.0';
-  const API_VERSION='1.11.0';
+  const API_VERSION='1.13.0';
   const REQUIREMENTS=Object.freeze({
     'runtime':api=>!!api?.runtime,
     'events':api=>!!api?.events,
@@ -26,6 +26,9 @@
     'data.types':api=>!!api?.data?.types,
     'data.model':api=>!!api?.data?.model,
     'data.formula':api=>!!api?.data?.formula,
+    'data.sources':api=>!!api?.data?.sources,
+    'data.importers':api=>!!api?.data?.importers,
+    'data.import-workbench':api=>!!api?.data?.importWorkbench,
     'workflow':api=>!!api?.workflow,
     'analysis.providers':api=>!!api?.analysis?.providers,
     'analysis.algorithms':api=>!!api?.analysis?.algorithms,
@@ -42,6 +45,7 @@
     'ui.actions':api=>!!api?.ui?.actions,
     'ui.selection':api=>!!api?.ui?.selection,
     'ui.interaction':api=>!!api?.ui?.interaction,
+    'ui.interaction-behavior':api=>!!api?.ui?.interactionBehaviors,
     'ui.menus':api=>!!api?.ui?.menus,
     'ui.context-menus':api=>!!api?.ui?.contextMenus,
     'ui.activities':api=>!!api?.ui?.activities,

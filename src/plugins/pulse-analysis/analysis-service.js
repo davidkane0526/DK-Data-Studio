@@ -107,7 +107,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.pulse-analysis','analysis-service',{
-    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null}) {
+    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,openImportWorkbench=null,detachSource=null,migrateLegacySource=null}) {
       const $=s=>dom?.query?.(s)||null;
       let state = createState();
 
@@ -133,6 +133,42 @@
           settings:defaultSettings(inspection,meta.name),
           result:null,error:'',loading:false,analyzedAt:null
         };
+      }
+
+      function artifactSourceText(artifact){
+        const raw=String(artifact?.source?.text||'');if(raw)return raw;
+        if(artifact?.kind!=='data.table'||!Array.isArray(artifact.columns)||!artifact.columns.length)return '';
+        const headers=artifact.columns.filter(c=>c?.key!=='sourceLine').map(c=>String(c.name||c.key||''));
+        const columns=artifact.columns.filter(c=>c?.key!=='sourceLine');
+        const rows=[headers.join('\t')];
+        for(let r=0;r<Number(artifact.rowCount||0);r++)rows.push(columns.map(c=>Number.isFinite(Number(c.values?.[r]))?String(c.values[r]):'').join('\t'));
+        return rows.join('\n');
+      }
+
+      function makeItemFromArtifact(artifact,previous=null){
+        const text=artifactSourceText(artifact),name=String(artifact?.source?.name||artifact?.name||'pulse-data'),path=String(artifact?.source?.path||artifact?.id||name),encoding=String(artifact?.source?.encoding||'auto');
+        const inspection=A.inspectDataText({name,path,text,encoding},A.defaultImportOptions());
+        return {
+          id:String(artifact.id),artifactId:String(artifact.id),path,name,size:text.length,label:String(previous?.label||artifact?.name||name).replace(/\.[^.]+$/,''),
+          checked:previous?.checked!==false,text,encoding,inspection,
+          settings:{...defaultSettings(inspection,name),...(previous?.settings||{})},
+          result:previous?.result?cloneSerializable(previous.result):null,error:'',loading:false,analyzedAt:previous?.analyzedAt||null
+        };
+      }
+
+      function pulseArtifacts(){
+        const rows=artifacts?.list?.({kind:'data.table',includeTransient:true})||[];
+        return rows.filter(a=>(String(a?.semanticType||'')==='science.pulse.trace'||String(a?.metadata?.sourceFormat||'')==='pulse-text')&&a?.metadata?.excluded!==true&&a?.metadata?.sourceExcluded!==true);
+      }
+
+      function refreshSources({preserveLegacy=false}={}){
+        const previous=new Map(state.files.map(item=>[String(item.artifactId||item.id||item.path),item]));
+        const next=pulseArtifacts().map(artifact=>makeItemFromArtifact(artifact,previous.get(String(artifact.id))||previous.get(String(artifact?.source?.path||''))||null));
+        if(preserveLegacy)for(const item of state.files)if(!item.artifactId&&!next.some(row=>row.path===item.path))next.push(item);
+        state.files=next;
+        if(!state.files.some(f=>f.id===state.activeId))state.activeId=state.files[0]?.id||null;
+        if($('#pulseFileList'))render();
+        return state.files;
       }
 
       function syncEditor() {
@@ -490,37 +526,26 @@
       async function addFiles() {
         if (state.dialogOpen) return;
         state.dialogOpen = true;
-        let metas = [];
-        try { metas = await io.openDataFiles(); }
-        finally { state.dialogOpen = false; }
-        if (!metas?.length) return;
-        const paths = new Set(state.files.map(f=>f.path));
-        let added=0;
-        for (const meta of metas) {
-          if (paths.has(meta.path)) continue;
-          try {
-            const data = await io.readDataText({path:meta.path,encoding:'auto'});
-            const item = makeItem(meta,data);
-            state.files.push(item); paths.add(meta.path); added++;
-            if (!state.activeId) state.activeId=item.id;
-          } catch (err) {
-            state.files.push({
-              id:`pulse::${Date.now()}::${Math.random().toString(36).slice(2,8)}`,
-              path:meta.path,name:meta.name,size:meta.size||0,label:String(meta.name||'').replace(/\.[^.]+$/,''),
-              checked:true,text:'',encoding:'',inspection:null,settings:{},result:null,error:err?.message||String(err),loading:false
-            });
-          }
-        }
-        render(); scheduleSnapshot();
-        if (added) setStatus(`已加入 ${added} 个脉冲数据文件。`);
+        try {
+          if(typeof openImportWorkbench!=='function')throw new Error('统一数据导入工作台不可用。');
+          await openImportWorkbench({importerId:'pulse-text'});
+          setStatus('已打开统一数据导入工作台；导入后的 pulse.trace 数据会自动出现在脉冲分析中。');
+        } finally { state.dialogOpen = false; }
       }
 
-      function removeChecked() {
-        const ids = new Set(state.files.filter(f=>f.checked).map(f=>f.id));
-        state.files = state.files.filter(f=>!ids.has(f.id));
-        if (ids.has(state.activeId)) state.activeId = state.files[0]?.id || null;
-        render(); scheduleSnapshot();
-        setStatus(`已移除 ${ids.size} 个文件。`);
+      async function removeChecked() {
+        const rows=state.files.filter(f=>f.checked);if(!rows.length)return;
+        let detached=0;
+        for(const item of rows){
+          if(item.artifactId&&typeof detachSource==='function'){
+            try{const result=await detachSource({artifactId:item.artifactId,sourcePath:item.path});if(result?.updated!==false)detached++;}catch{}
+          }
+        }
+        const localIds=new Set(rows.filter(item=>!item.artifactId).map(item=>item.id));
+        if(localIds.size)state.files=state.files.filter(item=>!localIds.has(item.id));
+        refreshSources({preserveLegacy:true});
+        scheduleSnapshot();
+        setStatus(`已从脉冲分析移除 ${Math.max(detached,rows.length)} 个数据对象；数据中心中的源数据不会被删除。`);
       }
 
       function analyzeCurrent() {
@@ -603,8 +628,8 @@
         return {
           activeId:state.activeId,resultScope:state.resultScope||'checked',
           files:state.files.map(item=>({
-            id:item.id,path:item.path,name:item.name,size:item.size,label:item.label,checked:item.checked,
-            text:item.text,encoding:item.encoding,settings:{...(item.settings||{})},
+            id:item.id,artifactId:item.artifactId||null,path:item.path,name:item.name,size:item.size,label:item.label,checked:item.checked,
+            ...(item.artifactId?{}:{text:item.text,encoding:item.encoding}),settings:{...(item.settings||{})},
             analyzed:!!item.result,analyzedAt:item.analyzedAt||null,
             result:item.result ? cloneSerializable(item.result) : null
           }))
@@ -617,6 +642,11 @@
           next.resultScope=saved.resultScope==='active'?'active':'checked';
           for (const source of saved.files) {
             try {
+              let artifact=source.artifactId&&artifacts?.get?.(String(source.artifactId));
+              if(!artifact&&source.text&&typeof migrateLegacySource==='function'){
+                try{artifact=migrateLegacySource(source)||null;}catch(err){console.warn('[Pulse legacy source migration]',err);}
+              }
+              if(artifact){next.files.push(makeItemFromArtifact(artifact,source));continue;}
               const inspection=A.inspectDataText({name:source.name,path:source.path,text:source.text||'',encoding:source.encoding||'auto'},A.defaultImportOptions());
               const item={
                 id:source.id||`pulse::${Date.now()}::${Math.random().toString(36).slice(2,8)}`,
@@ -627,9 +657,6 @@
                 result:source.result ? cloneSerializable(source.result) : null,
                 error:'',loading:false,analyzedAt:source.analyzedAt||null
               };
-              // New projects persist the computed result. Re-run analysis only
-              // when migrating older project files that stored analyzed=true
-              // without a result payload.
               if(source.analyzed && !item.result)analyzeItem(item);
               next.files.push(item);
             } catch {}
@@ -637,11 +664,13 @@
           next.activeId=next.files.some(f=>f.id===saved.activeId)?saved.activeId:(next.files[0]?.id||null);
         }
         state=next;
+        refreshSources({preserveLegacy:true});
         if ($('#pulseFileList')) render();
       }
 
       const service = {
         render,
+        refreshSources,
         addFiles,
         setAllChecked(value){state.files.forEach(f=>f.checked=!!value);renderFileList();renderComparison();scheduleSnapshot();},
         removeChecked,

@@ -2,8 +2,8 @@
   DKDSPlugins.define({
     id:'builtin.flexible-import',pluginType:'data',
     name:'Flexible Text Import',
-    version:'1.0.0',
-    apiVersion:'1.9.0',requiresCore:["science","data.flow","data.model"],
+    version:'1.1.0',
+    apiVersion:'1.13.0',requiresCore:["science","data.importers","data.model"],
     description:'Generic text/multicolumn import provider used by the import workbench.',
     source:'builtin',
     order:10,
@@ -21,6 +21,10 @@
         return {artifacts:parsed.datasets.map(ds=>ctx.data.model.fromLegacyDataset(ds)),inspection:parsed.inspection};
       },
       outputKinds:['data.table'],
+      outputTypes:['science.transport.iv'],
+      editor:'flexible-iv',
+      storage:'legacy-datasets',
+      priority:20,
       defaultOptions:()=>A.defaultImportOptions(),
       normalizeOptions:options=>A.normalizeImportOptions(options),
       parseVg:(name,text)=>A.parseVg(name,text),

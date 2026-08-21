@@ -20,7 +20,7 @@
       const runner=(sweep,_type,transformOptions)=>ctx.analysis.algorithms.run(transformRef,sweep,{category:'transport-transform',parameters:transformOptions||{}});
       return A.computeSweepScalarField(sweeps,parameters.targets||[],parameters.vgs||[],parameters,runner);
     }});
-    ctx.analysis.algorithms.register('ter.high-low-ratio',{version:'1.0.0',category:'ter-analysis',title:'TER 高低电阻比',description:'TER=(Rhigh−Rlow)/Rlow×100%，在相同 Vd 配对正扫/反扫。',default:true,inputTypes:['data.table','data.dataset'],outputTypes:['science.ter.matrix'],tags:['ter','transport'],metadata:{local:true,formula:'(Rhigh-Rlow)/Rlow*100'},run:(datasets,{parameters={}}={})=>A.computeTerMatrix(datasets,parameters.settings||parameters)});
+    ctx.analysis.algorithms.register('ter.high-low-ratio',{version:'1.0.0',category:'ter-analysis',title:'TER 高低电阻比',description:'TER=(Rhigh−Rlow)/Rlow×100%，在相同 Vd 配对正扫/反扫。',default:true,inputTypes:['science.transport.iv','data.table','data.dataset'],outputTypes:['science.ter.matrix'],tags:['ter','transport'],metadata:{local:true,formula:'(Rhigh-Rlow)/Rlow*100'},run:(datasets,{parameters={}}={})=>A.computeTerMatrix(datasets,parameters.settings||parameters)});
     return {deactivate(){}};
   });
 })();

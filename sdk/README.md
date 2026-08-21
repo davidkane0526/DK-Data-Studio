@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.11
+# DK Data Studio Plugin SDK 1.13
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.4 or newer for the full Plugin API 1.11 contract. Plugin API 1.10 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.6 or newer for the full Plugin API 1.13 contract. Plugin API 1.10/1.11/1.12 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.11.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.13.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Validate
 
@@ -61,23 +61,72 @@ const surface = ctx.ui.scientificPlot.create(svg, {
 });
 ```
 
-The deprecated marker/FWHM-named callbacks remain only as a v1.10 compatibility adapter and are not the reference architecture for new plugins.
+The deprecated marker/FWHM-named callbacks remain only as a compatibility adapter and are not the reference architecture for new plugins.
+
+
+### Workbench navigation, icons and scoped project data
+
+Plugin API 1.13 treats a `pluginType: "workbench"` page with no explicit TOP/SUPPORT workspace role as a standalone primary activity by default. `ctx.ui.pages.add(...)` therefore creates a top-level activity instead of a contextual button unless the plugin explicitly requests `presentation: "toolbar"`. An explicit manifest/page icon is optional; Core supplies a stable category default icon.
+
+Use `ctx.data.sources` for imported project sources. Workbench plugins receive a scoped read view automatically, so `list()` returns only sources assigned to that workbench. Physical data remains canonical and is stored once; assignments are many-to-many. Import/Data Center own assignment changes, avoiding one importer per analysis plugin and avoiding unrelated workbench data pollution.
+
+`ctx.ui.scientificPlot.create(target, spec)` accepts either an SVG element or an ordinary container. For a normal container Core creates and owns the internal SVG, sizing and lifecycle. Plugins should not create private D3/SVG interaction infrastructure.
+
+### Interaction Behavior
+
+Input policy is a separate Core contract from scientific geometry. Use `ctx.ui.interactionBehaviors` to declare how normalized gestures map to intents or Commands. Plugin code should not own raw keyboard listeners, private right-click menus, or feature-specific box-selection branches.
+
+The stable Interaction Behavior gesture vocabulary introduced in Plugin API 1.12 is `click`, `double-click`, `context`, `drag`, `box`, `wheel`, and `key`. Keyboard bindings use a complete normalized chord such as `Ctrl+Z`, `Ctrl+ArrowLeft`, or `Shift+ArrowLeft`. Context actions are rendered by Core, and a scientific surface resolves direct manipulation before selection/background gestures.
+
+```js
+ctx.commands.register('sample.reset-range', () => {
+  // Commit plugin-domain state here.
+});
+
+ctx.ui.interactionBehaviors.create('sample-keys', {
+  activity: 'sample',
+  bindings: [
+    { gesture:'key', target:'keyboard', chord:'Ctrl+R', command:'sample.reset-range' }
+  ]
+});
+
+const surface = ctx.ui.scientificPlot.create(svg, {
+  interactionBehavior: {
+    bindings: [
+      { gesture:'context', target:'marker', button:'secondary', contextActions: ({marker}) => [
+        { id:'remove', label:'删除', command:'sample.remove-marker' }
+      ]},
+      { gesture:'box', target:'background', modifiers:['ctrl'], intent:'zoom-box', priority:20 },
+      { gesture:'box', target:'background', intent:'select-region' }
+    ]
+  }
+});
+```
+
+The intended execution path is **Input → Interaction Binding → Intent / Command → domain transaction**. Toolbar buttons, menus, keyboard shortcuts, and context actions should converge on the same registered Command when they perform the same semantic operation.
 
 Persistent plugin state must be registered through `ctx.project.registerSlice(...)`. `restore` receives only the plugin's canonical namespaced slice; old application root fields are migrated by DK Data Studio before plugin runtime starts. A missing slice is fresh/reset state, not a signal to inspect the project root.
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
 
-## Project source-data lifecycle (DK Data Studio 3.58.2+)
+## Project source-data lifecycle (Plugin API 1.13)
 
-Imported file lifetime is owned by the project host, not by an analysis plugin. Plugins that genuinely manage project source data can use the generic Capability Runtime:
+Imported file lifetime and physical storage are owned by the project host, not by an analysis workbench. A workbench reads its assigned source catalog through the scoped `ctx.data.sources` API and opens the centralized importer through `ctx.data.importWorkbench`:
 
 ```js
-const sources = ctx.capabilities.proxy('core.data-sources');
-const rows = await sources.list();
-await sources.remove([{ path: rows[0].path }]);
+const rows = ctx.data.sources.list();
+
+// Open the shared Import Workbench with this workbench preselected as consumer.
+ctx.data.importWorkbench.open();
+
+// Remove only this workbench's assignment; the physical source remains available
+// to other workbenches and Data Center.
+ctx.data.sources.detach({ artifactId: rows[0].artifactId });
 ```
 
-`remove()` removes the canonical imported source and its dependent Artifact lineage. Analysis plugins should normally consume `ctx.data.artifacts` and keep their own data lists limited to visibility/selection/analysis state.
+A `data` or `foundation` plugin may manage global assignments through `ctx.data.sources.setAssignments(...)`. Ordinary workbenches cannot mutate another workbench's assignment. Physical source deletion is a Data Center / host action because deletion also removes dependent Artifact lineage.
+
+`ctx.capabilities.proxy('core.data-sources')` remains a compatibility facade for older Plugin API packages. New Plugin API 1.13 plugins should use `ctx.data.sources` and `ctx.data.importWorkbench`.
 
 ## Unified TableSurface (DK Data Studio 3.59+)
 

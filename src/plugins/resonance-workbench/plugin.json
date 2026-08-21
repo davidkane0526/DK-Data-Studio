@@ -1,8 +1,8 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.61.4",
-  "apiVersion": "1.11.0",
+  "version": "3.61.6",
+  "apiVersion": "1.13.0",
   "requiresCore": [
     "runtime",
     "events",
@@ -17,6 +17,7 @@
     "workspace",
     "parameters",
     "data.artifacts",
+    "data.sources",
     "data.entities",
     "data.types",
     "data.reactive",
@@ -29,12 +30,12 @@
     "ui.actions",
     "ui.selection",
     "ui.interaction",
+    "ui.interaction-behavior",
     "ui.menus",
     "ui.context-menus",
     "ui.activities",
     "ui.top-workspace",
     "ui.toolbar",
-    "ui.shortcuts",
     "ui.pages",
     "ui.styles",
     "ui.edit",
@@ -65,8 +66,10 @@
     "ui.analysis-surface",
     "runtime.capabilities.v2",
     "ui.interaction",
+    "ui.interaction-behavior",
     "data.types",
     "data.artifacts",
+    "data.sources",
     "data.pipeline",
     "ui.plugin-workspace",
     "ui.scientific-plot",
@@ -126,5 +129,10 @@
     "transport-scalar-field",
     "ter-analysis"
   ],
-  "pluginType": "workbench"
+  "pluginType": "workbench",
+  "data": {
+    "accepts": [
+      "science.transport.iv"
+    ]
+  }
 }

@@ -34,7 +34,7 @@ assert(!resonance.includes("publishPeakSelection(p,'resonance-peak-drag")&&!reso
 assert(resonance.includes("action:'analysis-window'")&&resonance.includes('p.analysisLeft=left;p.analysisRight=right;p.analysisManual=true')&&!resonance.includes('onWidthWindowCommit:'),'FWHM analysis-window editing must be a domain mapping of a generic atomic range commit.');
 assert(resonance.includes("commitPeakMetricEdit(p,{reason:'analysis-window-edit'})"),'Analysis-window manipulation end must synchronously commit the current window when the provider supports sync metrics.');
 assert(resonance.includes('rawWindowLeft=Number(p.analysisLeft)')&&resonance.includes('rawWindowRight=Number(p.analysisRight)'),'Manual FWHM handles must remain authoritative while an asynchronous metric provider is pending.');
-assert(resonanceView.includes("['resonance-undo','Ctrl+Z'")&&resonanceView.includes('R.undoLastAction?.();return true;'),'Resonance Ctrl+Z must use the same plugin-owned undo operation as the UI undo button.');
+assert(resonanceView.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]")&&resonanceView.includes("['Ctrl+Z','builtin.resonance.undo']")&&resonance.includes("commandRuntime.run('builtin.resonance.undo')"),'Resonance Ctrl+Z and the visible undo button must converge on the same Command Registry command.');
 assert(terManifest.window?.prewarm===true,'TER must opt into the generic dedicated-window runtime prewarm contract.');
 assert((ter.match(/T\.calculate\(\)/g)||[]).length===1&&ter.includes("label:'计算 TER'")&&ter.includes('onInvoke:()=>T.calculate()'),'TER calculation must have exactly one feature-runtime trigger: the explicit Calculate TER action/shortcut.');
 assert(!/calculate\s*\(\s*\)\s*;/.test(terService.replace(/function calculate\(\)[\s\S]*?\n      }/,'CULLED')),'TER analysis service must not invoke calculate() as a restore/render side effect.');
@@ -70,5 +70,5 @@ context.window=context;context.globalThis=context;vm.createContext(context);vm.r
   frames.shift()(16);await Promise.all([pa,pb]);
   assert.deepStrictEqual(calls,['a','b'],'Queued views must complete deterministically one per frame.');
   scope.dispose();
-  console.log('v3.61.4 Core interaction/render performance and runtime-only prewarm checks passed.');
+  console.log('v3.61.5 Core interaction/render performance, command convergence and runtime-only prewarm checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

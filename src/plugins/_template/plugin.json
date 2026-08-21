@@ -2,11 +2,11 @@
   "id": "example.plugin",
   "name": "Example Plugin",
   "version": "0.4.0",
-  "apiVersion": "1.11.0",
+  "apiVersion": "1.13.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 900,
-  "description": "Core-first plugin template. Domain logic is declared by the plugin; infrastructure is consumed only through Plugin API v1.10.",
+  "description": "Core-first Plugin API 1.12 template. Domain logic is declared by the plugin; interaction behavior and infrastructure are consumed through Core contracts.",
   "capabilities": [
     "ui.page",
     "ui.analysis-workbench",
@@ -15,6 +15,7 @@
     "runtime.capabilities",
     "ui.dynamic-actions",
     "ui.interaction",
+    "ui.interaction-behavior",
     "data.types",
     "state.store",
     "workflow.processor"
@@ -32,6 +33,7 @@
     "ui.workspace",
     "ui.actions",
     "ui.interaction",
+    "ui.interaction-behavior",
     "ui.pages"
   ],
   "pluginType": "developer"

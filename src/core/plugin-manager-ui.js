@@ -363,7 +363,7 @@
         <div class="plugin-card-head">
           ${plugin.workspaceRole==='top'
             ? `<button class="plugin-card-icon plugin-super-selector ${plugin.isSuper?'selected':''}" type="button" aria-pressed="${plugin.isSuper?'true':'false'}" title="${plugin.isSuper?'当前主界面（SUPER）':'设为主界面（SUPER）'}" ${(!plugin.active||busy||!plugin.topContractReady)?'disabled':''}>${escapeHtml(plugin.workspaceIcon||'⌂')}<span class="plugin-super-home-mark">⌂</span></button>`
-            : `<div class="plugin-card-icon" aria-hidden="true">${escapeHtml(display.name.slice(0,1).toUpperCase())}</div>`}
+            : `<div class="plugin-card-icon" aria-hidden="true">${escapeHtml(plugin.icon||plugin.workspaceIcon||'⬡')}</div>`}
           <div class="plugin-card-title-wrap">
             <div class="plugin-card-title-line">
               <h3>${escapeHtml(display.name)}</h3>

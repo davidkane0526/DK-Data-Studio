@@ -235,15 +235,19 @@
   function fromLegacyDataset(ds){
     const path=String(ds?.path||ds?.name||'dataset');
     const points=safeArray(ds?.points);
+    const assignments=Object.prototype.hasOwnProperty.call(ds||{},'assignments')
+      ? safeArray(ds?.assignments).map(String).map(x=>x.trim()).filter(Boolean)
+      : ['*'];
     const table=createTable({
       id:stableId('legacy-table',path),
       name:String(ds?.name||'I-V data'),
+      semanticType:'science.transport.iv',
       createdAt:ds?.importedAt||undefined,
       updatedAt:safeArray(ds?.dataProvenance).at(-1)?.timestamp||ds?.importedAt||undefined,
       transient:true,
       metadata:{
         adapter:'legacy-dataset',legacyDatasetPath:path,vg:Number.isFinite(ds?.vg)?ds.vg:null,
-        importSpec:deepClone(ds?.importSpec||null),sourceExcluded:ds?.excluded===true
+        importSpec:deepClone(ds?.importSpec||null),sourceExcluded:ds?.excluded===true,dataAssignments:assignments
       },
       source:{path:ds?.sourcePath||ds?.path||'',name:ds?.sourceName||ds?.name||'',encoding:ds?.encoding||''},
       columns:[
@@ -306,6 +310,7 @@
       vg:Number.isFinite(vg)?vg:null,
       points,
       importSpec,
+      assignments:safeArray(table.metadata?.dataAssignments).map(String).filter(Boolean),
       excluded:table.metadata?.sourceExcluded===true,
       importedAt:table.createdAt||undefined,
       dataProvenance:safeArray(table.provenance).slice(1).map(deepClone)

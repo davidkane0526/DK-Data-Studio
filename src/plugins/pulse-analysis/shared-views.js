@@ -20,7 +20,7 @@
             <div class="pulse-file-toolbar">
               <button id="pulseCheckAllBtn">全选</button>
               <button id="pulseUncheckAllBtn">全不选</button>
-              <button id="pulseRemoveFilesBtn">移除勾选</button>
+              <button id="pulseRemoveFilesBtn">从脉冲分析移除</button>
             </div>
             <div id="pulseFileList" class="pulse-file-list"><div class="pulse-file-empty">尚未添加脉冲数据文件</div></div>
             <div id="pulseBatchFileSummary" class="pulse-file-summary">0 个文件</div>

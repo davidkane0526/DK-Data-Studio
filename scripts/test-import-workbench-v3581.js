@@ -14,7 +14,7 @@ assert(app.includes('Number.isFinite(v)?`<td>${formatImportNumber(v,6)}</td>`'),
   'Import preview table must render through the import formatter.');
 
 const addStart=app.indexOf('async function addImportFiles(){');
-const addEnd=app.indexOf('\n  function openImportWorkbench()',addStart);
+const addEnd=app.indexOf('\n  function openImportWorkbench(options={})',addStart);
 assert(addStart>=0&&addEnd>addStart,'addImportFiles source not found.');
 const add=app.slice(addStart,addEnd);
 const firstRender=add.indexOf('renderImportWorkbench();');

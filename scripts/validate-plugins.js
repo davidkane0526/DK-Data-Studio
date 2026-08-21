@@ -17,13 +17,13 @@ const requirementUsage=[
   ['runtime',/ctx\.runtime\b/],['events',/ctx\.events\b/],['status',/ctx\.status\b/],['io',/ctx\.io\b/],
   ['science',/ctx\.science\b|window\.DKDSScience\b/],['performance',/ctx\.performance\b/],['services',/ctx\.services\b/],['modules',/ctx\.modules\b|window\.DKDSPluginModules\b/],
   ['recipes',/ctx\.recipes\b/],['capabilities',/ctx\.capabilities\b/],['state',/ctx\.state\b/],['project',/ctx\.project\b/],
-  ['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],['data.reactive',/ctx\.data\.reactive\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],
-  ['data.artifacts',/ctx\.data\.artifacts\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
+  ['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],['data.flow',/ctx\.data\.(?:flow|exporters|transformers|analyzers)\b/],['data.importers',/ctx\.data\.importers\b/],['data.import-workbench',/ctx\.data\.importWorkbench\b/],['data.reactive',/ctx\.data\.reactive\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],
+  ['data.artifacts',/ctx\.data\.artifacts\b/],['data.sources',/ctx\.data\.sources\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
   ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['analysis.detectors',/ctx\.analysis\.detectors\b/],
   ['charts',/ctx\.ui\.charts\b/],['charts.providers',/ctx\.charts\b/],['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],
   ['ui.workspace',/ctx\.ui\.(?:pluginWorkspace|analysisWorkbench|workspaceSurface|analysisSurface|workbench)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],
   ['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],
-  ['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.menus',/ctx\.ui\.menus\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],
+  ['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.menus',/ctx\.ui\.menus\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],
   ['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],
   ['ui.status-bar',/ctx\.ui\.statusBar\b/],['ui.shortcuts',/ctx\.ui\.shortcuts\b/],['ui.pages',/ctx\.ui\.pages\b/],
   ['ui.styles',/ctx\.ui\.styles\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
@@ -53,7 +53,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
 
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
-  if (!['1.9.0','1.10.0','1.11.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0, 1.10.0 or 1.11.0`);
+  if (!['1.9.0','1.10.0','1.11.0','1.12.0','1.13.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0, 1.10.0, 1.11.0, 1.12.0 or 1.13.0`);
   const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
   if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);

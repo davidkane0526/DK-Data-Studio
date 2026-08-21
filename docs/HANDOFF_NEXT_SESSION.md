@@ -1,49 +1,52 @@
-# Next Session Handoff — v3.61.4
+# Next Session Handoff — v3.61.6
 
-## Current baseline
+## Baseline
 
-- Application: `3.61.4`
-- Branch: `refactor/v3.61.4-generic-direct-manipulation`
-- Public Plugin API / standalone SDK: `1.11.0`
-- Plugin API `1.10.0` packages remain accepted for compatibility.
-- Core owns interaction mechanics and rendering infrastructure; plugins own domain state, scientific meaning and algorithm selection.
+- Application: `3.61.6`
+- Branch: `refactor/v3.61.6-data-routing-sdk`
+- Public Plugin API / standalone SDK: `1.13.0`
+- Plugin API 1.10 / 1.11 / 1.12 packages remain compatibility-loadable when their declared requirements are available.
 
-## Generic direct-manipulation contract
+## Core interaction baseline
 
-`ScientificCurveSurface` no longer treats peak dragging or FWHM handles as first-class SDK concepts. New plugins declare domain-neutral manipulators through `getManipulators()`:
+The interaction stack remains orthogonal:
 
-- `point` — movable point/control anchor, optionally attached to a marker and optionally snapped to a curve.
-- `axis` — movable X or Y cursor/threshold/reference line.
-- `range` — editable X or Y interval with atomic `{start,end}` geometry, optional bounds, minimum span and contained anchor constraints.
+1. Surface renders content.
+2. Manipulator declares editable `point / axis / range` geometry.
+3. Interaction Behavior maps normalized input to intents/Commands, including DOM-delegated context behavior.
+4. Selection owns selected entities/ranges/focus.
+5. Command Registry owns semantic state changes.
 
-Core owns pointer capture, snapping, temporary SVG geometry, marker fast-path movement, click suppression and gesture lifecycle. Pointer-rate updates use `onManipulationPreview`; domain/project state is normally persisted only in `onManipulationCommit`. `onManipulationReset` handles domain-specific reset semantics.
+Do not add plugin-local mouse/keyboard/context-menu/box-selection infrastructure when a generic Core primitive can express the behavior.
 
-A plugin may interpret the same primitives as peak position, threshold, fit interval, integration interval, crop range, baseline controls, FWHM analysis window, or other domain concepts. Do not add a new Core callback merely because a new scientific feature needs a draggable point/line/range.
+## Workbench/navigation baseline
 
-The v1.10 marker/FWHM-named hooks remain only as compatibility adapters inside Core. First-party reference plugins must not consume them.
+- `pluginType: workbench` + a page + no explicit TOP/SUPPORT role => standalone primary Activity.
+- `presentation: toolbar` is required to intentionally add a contextual toolbar page.
+- Plugin icon is optional; Core supplies a category default.
+- `ctx.ui.scientificPlot.create()` accepts a normal DIV/container and Core owns its internal SVG/lifecycle.
 
-## Resonance reference mapping
+## Data baseline
 
-- Peak move: generic `point` manipulator attached to the rendered peak marker and snapped to its sweep.
-- FWHM analysis window: generic X `range` manipulator constrained to contain the peak center.
-- FWHM baseline/half-height/crossings: presentation only through `getMarkerWidth`; measurement presentation no longer owns the draggable handles.
-- Resonance maps generic commit geometry back into its own reactive scientific state and metric invalidation.
+Canonical model:
 
-## Interaction invariants
+`Importer Provider -> typed Data Artifact -> assignment -> scoped workbench view`
 
-1. Pointer-rate manipulation must not change Selection/focus, rebuild legends, run scientific algorithms, or publish project state.
-2. Semantic commit occurs once at gesture end.
-3. A range commit always contains the complete geometry, not one endpoint.
-4. Snapping and geometric constraints are Core responsibilities when expressible through the public manipulator contract.
-5. Plugins must not create private D3/Plotly/DOM/timer pointer loops. If a needed primitive is missing, extend Core/SDK generically.
+- One physical source can be assigned to multiple workbenches without duplication.
+- Workbenches read `ctx.data.sources` and `ctx.data.artifacts` through assignment scope.
+- Workbenches open `ctx.data.importWorkbench`; they do not implement file pickers.
+- Data Center owns the global source catalog and assignment/delete operations.
+- `builtin.flexible-import` provides `science.transport.iv`.
+- `builtin.pulse-import` provides `science.pulse.trace`; Pulse Analysis only consumes it.
+- Old project datasets without assignments are wildcard-visible (`*`) for compatibility.
 
-## Dedicated TOP prewarm contract
+## External Vth compatibility
 
-- Prewarm is manifest-driven and runtime-only.
-- Hidden prewarm loads Core/plugin/algorithm/chart runtimes, including declared Plotly, without project restore, activity opening, domain calculation or project-result drawing.
-- Promotion to real open hydrates the project/activity and waits for the real ready signal before showing the window.
+The user-provided `com.dkds.transfer-vth-lab` Plugin API 1.10 package is an important compatibility case. It must remain a standalone primary Activity, receive the default workbench icon when none is supplied, render its normal DIV plot through Core ScientificPlot, and see only sources/artifacts assigned to it. Do not add a Vth-specific Core branch.
 
-## Required validation gates
+## Required gates
+
+Before the next delivery run:
 
 - `npm run check`
 - `npm test`
@@ -52,7 +55,6 @@ The v1.10 marker/FWHM-named hooks remain only as compatibility adapters inside C
 - `npm run sdk:test`
 - `npm run table-surface:test`
 - `npm run host-neutralization:test`
-- `node scripts/test-generic-direct-manipulation-v3614.js`
 - `node scripts/check-plugin-boundaries.js`
 - `node scripts/validate-plugins.js`
 - `git diff --check`

@@ -1,0 +1,33 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const assert=(v,m)=>{if(!v)throw new Error(m);};
+
+(async()=>{
+  const sandbox={console,structuredClone,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,Error};
+  sandbox.window=sandbox;sandbox.globalThis=sandbox;sandbox.crypto={randomUUID:()=> 'runtime-test'};
+  sandbox.DKDSScience={median:values=>{const rows=[...(values||[])].filter(Number.isFinite).sort((a,b)=>a-b);return rows.length?rows[Math.floor(rows.length/2)]:NaN;}};
+  vm.createContext(sandbox);
+  vm.runInContext(read('src/core/data-model.js'),sandbox,{filename:'data-model.js'});
+  vm.runInContext(read('src/science/import.js'),sandbox,{filename:'science/import.js'});
+  let definition=null;
+  sandbox.DKDSPlugins={define:(manifest,activate)=>{definition={manifest,activate};}};
+  vm.runInContext(read('src/plugins/pulse-import/plugin.js'),sandbox,{filename:'pulse-import/plugin.js'});
+  assert(definition?.manifest?.id==='builtin.pulse-import','Pulse Importer Provider must register as an independent data plugin.');
+  let provider=null;
+  await definition.activate({science:sandbox.DKDSScience,data:{model:sandbox.DKDSData,importers:{register:(id,spec)=>{provider={id,...spec};return provider;}}}});
+  assert(provider?.id==='pulse-text','Pulse Importer Provider registration missing.');
+  assert(provider.outputTypes?.includes('science.pulse.trace'),'Pulse importer must advertise science.pulse.trace.');
+  const text='Time\tCurrent\tVoltage\n0\t1e-9\t1\n1\t2e-9\t0.1\n2\t3e-9\t1\n';
+  const result=provider.parseArtifacts({name:'pulse-demo.txt',path:'C:/pulse-demo.txt',text},provider.defaultOptions());
+  const artifact=result?.artifacts?.[0];
+  assert(sandbox.DKDSData.isArtifact(artifact),'Pulse importer must produce a valid Core artifact.');
+  assert(artifact.kind==='data.table'&&artifact.semanticType==='science.pulse.trace','Pulse importer must produce a typed DataTable.');
+  assert(artifact.rowCount===3&&artifact.columns?.length===4,'Pulse importer must preserve numeric columns and source-row provenance.');
+  assert(artifact.source?.path==='C:/pulse-demo.txt'&&!Object.prototype.hasOwnProperty.call(artifact.source||{},'text'),'Canonical pulse artifact must not duplicate the full raw file string after parsing.');
+  assert(Array.isArray(artifact.metadata?.dataAssignments)&&artifact.metadata.dataAssignments.length===0,'Importer Provider must not decide consumer assignment; the Import Workbench owns routing.');
+  console.log('v3.61.6 shared Importer Provider runtime passed: Pulse text -> typed Core DataTable without plugin-owned file I/O or duplicate raw source text.');
+})().catch(err=>{console.error(err);process.exit(1);});

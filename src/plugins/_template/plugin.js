@@ -1,8 +1,8 @@
 (() => {
-  const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.pages'];
+  const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.interaction-behavior','ui.pages'];
   DKDSPlugins.define({
-    id:'example.plugin',pluginType:'developer',name:'Example Plugin',version:'0.4.0',apiVersion:'1.11.0',requiresCore,order:900,
-    capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.interaction','data.types','state.store','workflow.processor']
+    id:'example.plugin',pluginType:'developer',name:'Example Plugin',version:'0.4.0',apiVersion:'1.13.0',requiresCore,order:900,
+    capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor']
   }, async ctx => {
     const dom=ctx.ui.dom;
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});
@@ -42,8 +42,11 @@
     wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>ctx.ui.components.mount(container,{type:'stack',children:[{type:'text',text:'PRIME · Domain details'}]})});
     const actions=dom.create('div',{className:'dkds-plugin-header-actions'});
     dom.append(dom.query('.analysis-page-header',page),actions);
+    const runCommand=()=>{store.patch({lastRun:Date.now()});ctx.status.set('Example command executed.');return true;};
+    ctx.commands.register('example.run',runCommand);
+    ctx.ui.interactionBehaviors.create('example-keys',{activity:'example',bindings:[{gesture:'key',target:'keyboard',chord:'Ctrl+Enter',command:'example.run'}]});
     ctx.ui.actions.mount(actions,{actions:[
-      {id:'run',label:'运行',shortcut:'Ctrl+Enter',onInvoke:()=>{store.patch({lastRun:Date.now()});ctx.status.set('Example command executed.');}},
+      {id:'run',label:'运行',onInvoke:()=>ctx.commands.run('example.run')},
       {id:'details',label:'详情',onInvoke:()=>wb.togglePrime('details')}
     ]});
     return {deactivate(){wb.dispose?.();}};

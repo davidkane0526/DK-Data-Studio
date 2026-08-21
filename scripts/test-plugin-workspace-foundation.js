@@ -21,8 +21,8 @@ for(const token of ['.dkds-plugin-workspace{','.dkds-scientific-curve-surface{',
 }
 assert(ui.includes('d3.scaleSequential(d3.interpolateTurbo)'),'ScientificCurveSurface must provide the reference continuous Turbo curve palette.');
 assert(ui.includes("Number(curve.direction)<0?'7 4':null"),'ScientificCurveSurface must provide reverse-direction dash semantics.');
-assert(ui.includes('onRangeSelect')&&ui.includes('onCurveModifiedClick')&&ui.includes('getManipulators')&&ui.includes('onManipulationPreview')&&ui.includes('onManipulationCommit'),'ScientificCurveSurface must expose range, modified-click and domain-neutral Core manipulation hooks.');
-assert(ui.includes('wheel.dkdssci')&&ui.includes('rangeDrag.zoom')&&ui.includes("plotBg.on('dblclick'"),'ScientificCurveSurface must own wheel zoom, box zoom and double-click reset.');
+assert(ui.includes('onRangeSelect')&&ui.includes('getManipulators')&&ui.includes('onManipulationPreview')&&ui.includes('onManipulationCommit')&&ui.includes('interactionBehavior'),'ScientificCurveSurface must expose range/manipulation hooks and consume the shared Interaction Behavior policy.');
+assert(ui.includes('wheel.dkdssci')&&ui.includes("routeInteraction('box','background'")&&ui.includes("routeInteraction('double-click','background'")&&ui.includes("intent==='zoom-box'"),'ScientificCurveSurface must own gesture geometry while zoom/box/reset semantics are resolved by Interaction Behavior.');
 assert(ui.includes('getColorDomainValues')&&ui.includes('onWheelZoomStart'),'ScientificCurveSurface must preserve stable color domains and expose pre-wheel semantic hooks.');
 assert(ui.includes('setInteraction(interaction)')&&ui.includes('closestInSet')&&ui.includes('this.selectEntity('),'ScientificCurveSurface must consume Core Entity/Interaction state and provide automatic entity selection for declarative curves/markers.');
 

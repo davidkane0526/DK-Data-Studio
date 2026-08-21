@@ -1,5 +1,27 @@
-# DK Data Studio — v3.61.4
+# DK Data Studio — v3.61.6
 
+
+
+## v3.61.6 工作台数据作用域与 SDK 1.13
+
+- `pluginType: workbench` 的独立页面在未声明 TOP/SUPPORT workspace role 时，默认注册为顶层主活动；只有显式 `presentation: toolbar` 才进入当前工作台的上下文按钮区。因此独立 Vth 等第三方分析插件不会再被误放进“共振分析”的子功能区域。
+- SDK 不再要求插件必须自带图标。插件可声明 `icon` / `workspace.icon`，未声明时 Core 按 `foundation / data / algorithm / workbench / task / extension / developer` 自动提供默认图标。
+- `ctx.ui.scientificPlot.create()` 现在可以直接接普通容器；Core 自动创建、尺寸管理并销毁内部 SVG。第三方插件无需知道 ScientificCurveSurface 实际使用 SVG/D3，也不应自行搭建绘图交互基础设施。
+- 新增工程级“数据用途/assignment”：一份物理导入数据只保存一次，但可同时分配给多个工作台。普通 workbench 通过 `ctx.data.sources.list()` 自动获得按插件 ID 隔离的 scoped view；不会再因为 Vth/脉冲数据导入而污染共振数据列表。
+- “导入数据”仍由统一 Host 导入工作台维护，但增加“数据用途”多选，默认选择当前活动工作台；不选择任何工作台时数据只进入数据中心。数据中心保留单一全局目录，并按“用途”筛选/重新分配，而不是为每个插件复制一套数据标签页。
+- Interaction Behavior 增加普通 DOM 列表/树/表格的委托绑定。第一方插件的右键策略统一走 Core Context Action，不再允许插件自行注册 `contextmenu`。
+- Plugin API 升级为 `1.13.0`；1.10/1.11/1.12 插件继续兼容。
+
+
+## v3.61.5 交互行为基座与 SDK 1.12
+
+- 新增独立 `ctx.ui.interactionBehaviors` 能力，把鼠标、键盘、右键、框选和滚轮统一为 Core 的 Interaction Behavior。稳定手势词汇为 `click / double-click / context / drag / box / wheel / key`。
+- Interaction Behavior 只负责 **Gesture → Intent / Command**。`ScientificCurveSurface` 继续负责可视 Surface，`point / axis / range` Manipulator 负责直接几何编辑，Selection 负责选中状态，Command Registry 负责最终语义状态变化。
+- 科学图交互仲裁固定为“可操纵对象优先于 Selection，Selection/激活优先于背景行为”。拖动结束产生的 click 不得改变 Selection；右键由 Core Context Menu 渲染；框选可声明为区域选择或缩放。
+- 键盘采用完整标准化 chord，例如 `Ctrl+Z`、`Ctrl+ArrowLeft`、`Shift+ArrowLeft`，避免仅按 modifier 匹配造成快捷键冲突。
+- 共振插件已经作为 Plugin API 1.12 参考消费者迁移：Shift+左键添加点、Shift+右键快速删除、普通右键菜单及键盘操作均通过 Interaction Behavior + Command Registry；插件不再注册私有鼠标/键盘监听。
+- 撤销按钮和 `Ctrl+Z` 现在汇合到同一个 `builtin.resonance.undo` Command，避免按钮与快捷键再次出现两套业务路径。
+- SDK Workspace 模板同步示范 Command + Interaction Behavior，第三方插件无需复制共振插件代码即可获得同一套键盘、右键、框选与直接操纵基础设施。Plugin API 升级为 `1.12.0`，1.10/1.11 包继续兼容加载。
 
 ## v3.61.4 通用直接操纵基座与 SDK 1.11
 

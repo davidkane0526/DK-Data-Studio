@@ -39,9 +39,22 @@
   }
 
   function parseDatasets(project={},artifacts=null){
-    const rows=artifacts?.list?.({includeTransient:true})||[];
-    const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-    return normalizeLegacyDatasets(canonical.length?canonical:(project.datasets||[]));
+    const assignedToResonance=dataset=>{
+      const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')
+        ? (Array.isArray(dataset.assignments)?dataset.assignments.map(String):[])
+        : ['*'];
+      return rows.includes('*')||rows.includes('builtin.resonance-workbench');
+    };
+    if(artifacts?.list){
+      const rows=artifacts.list({includeTransient:true})||[];
+      const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
+      if(canonical.length)return normalizeLegacyDatasets(canonical);
+      // Compatibility for a project restore before the host has projected its
+      // legacy dataset array into Artifacts. The fallback is still consumer-
+      // scoped, so Vth/Pulse-only datasets can never leak into Resonance.
+      return normalizeLegacyDatasets((project.datasets||[]).filter(assignedToResonance));
+    }
+    return normalizeLegacyDatasets((project.datasets||[]).filter(assignedToResonance));
   }
 
   async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
@@ -74,11 +87,13 @@
       const linkedSelectionViewIds=['resonance-dataset-list','resonance-main-legend'];
       let applyingExternalSelection=false;
       let interactionMenus=null;
+      let datasetContextBehavior=null;
       let dataSourcesRuntime=null;
       let selectedRange=null;
       let physicsCache={key:'',value:null};
       let resizeRaf=0;
       let uiRuntime=null;
+      let commandRuntime=null;
       let entityRuntime=null;
       let workspaceRuntime=null;
       let mainSurface=null;
@@ -538,12 +553,17 @@
       async function renameDatasetSource(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.rename)return false;const label=window.prompt('修改数据标签',String(row.name||row.path||''));if(label===null)return false;const name=String(label||'').trim();if(!name)return false;try{await dataSourcesRuntime.rename({path:String(row.path||path)},name);refreshData();setStatus(`数据标签已修改为：${name}`);return true;}catch(err){setStatus(`修改数据标签失败：${err?.message||err}`);return false;}}
       async function toggleDatasetSourceExcluded(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.setExcluded)return false;const next=row.excluded!==true;try{await dataSourcesRuntime.setExcluded({path:String(row.path||path)},next);refreshData();setStatus(`${next?'已排除':'已恢复'}数据：${row.name||row.path}`);return true;}catch(err){setStatus(`修改数据参与状态失败：${err?.message||err}`);return false;}}
       async function deleteDatasetSource(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.remove)return false;if(!window.confirm(`删除“${row.name||row.path}”？`))return false;try{const result=await dataSourcesRuntime.remove([{path:String(row.path||path)}]);refreshData();const count=Array.isArray(result?.removed)?result.removed.length:0;setStatus(count?`已删除 ${count} 组源数据。`:'源数据已不存在。');return count>0;}catch(err){setStatus(`删除源数据失败：${err?.message||err}`);return false;}}
-      function openDatasetMenu(event,path){const row=datasetSource(path);if(!row||!interactionMenus?.open)return null;return interactionMenus.open({x:Number(event?.clientX)||0,y:Number(event?.clientY)||0,context:{dataset:row,path},items:[
+      function datasetActionItems(path){const row=datasetSource(path);if(!row)return [];return [
         {id:'rename',label:'修改标签',icon:'✎',enabled:!!dataSourcesRuntime?.rename,onInvoke:()=>void renameDatasetSource(path)},
         {id:'exclude',label:row.excluded===true?'恢复参与分析':'排除',icon:row.excluded===true?'○':'⊘',enabled:!!dataSourcesRuntime?.setExcluded,onInvoke:()=>void toggleDatasetSourceExcluded(path)},
         {type:'separator'},
         {id:'delete',label:'删除',icon:'×',enabled:!!dataSourcesRuntime?.remove,onInvoke:()=>void deleteDatasetSource(path)}
-      ]});}
+      ];}
+      function ensureDatasetContextBehavior(list){
+        if(datasetContextBehavior||!list||!uiRuntime?.interactionBehaviors?.create)return;
+        datasetContextBehavior=uiRuntime.interactionBehaviors.create('resonance-dataset-context',{bindings:[{id:'resonance.dataset.context',gesture:'context',target:'dataset',intent:'context-menu',contextActions:context=>datasetActionItems(context.path)}]});
+        datasetContextBehavior.bind(list,{selector:'.respar-dataset-item',gestures:['context'],target:'dataset',targetId:({element})=>String(element.dataset.datasetPath||''),payload:({element})=>({path:String(element.dataset.datasetPath||''),dataset:datasetSource(String(element.dataset.datasetPath||''))})});
+      }
 
       function datasetRowsHtml(){
         const vis=visibilityMap();
@@ -556,9 +576,9 @@
       function renderControls(){
         const list=$('#reswinDatasetList');if(list){
           list.innerHTML=datasetRowsHtml();
+          ensureDatasetContextBehavior(list);
           list.querySelectorAll('.respar-dataset-item').forEach(row=>{
             const path=row.dataset.datasetPath;
-            row.addEventListener('contextmenu',event=>{event.preventDefault();event.stopPropagation();openDatasetMenu(event,path);});
             row.querySelector('.reswin-vg')?.addEventListener('click',e=>e.stopPropagation());
             row.querySelector('.reswin-vg')?.addEventListener('change',e=>setDatasetVg(path,e.target.value));
             const master=row.querySelector('.reswin-master');if(master){const state=visibilityMap().get(String(path))||{forward:true,reverse:true};master.indeterminate=state.forward!==state.reverse;master.addEventListener('change',e=>{const map=visibilityMap(),next=map.get(String(path))||{forward:true,reverse:true};next.forward=next.reverse=!!e.target.checked;map.set(String(path),next);workspace.scanVisibility=[...map.entries()];fitVisibleData('visibility-master');render();scheduleSnapshot();});}
@@ -680,6 +700,14 @@
           container:'#resparMainPlotWrap',minWidth:260,minHeight:180,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
           yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
           interaction:interactionRuntime,source:'resonance-main',rangeSelectionTarget:'markers',rangeSelectionType:'resonance.peak',
+          interactionBehavior:{bindings:[
+            {id:'resonance-add-point',gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point',priority:120},
+            {id:'resonance-delete-point-fast',gesture:'context',target:'marker',button:'secondary',modifiers:['shift'],command:'builtin.resonance.delete-target-peak',priority:140},
+            {id:'resonance-marker-context',gesture:'context',target:'marker',button:'secondary',priority:80,contextActions:ctx=>[
+              {id:'toggle-lock',label:()=>ctx.marker?.locked?'解锁峰位':'锁定峰位',command:'builtin.resonance.toggle-target-lock'},
+              {id:'delete',label:'删除峰位',enabled:()=>!ctx.marker?.locked,command:'builtin.resonance.delete-target-peak'}
+            ]}
+          ]},
           getCurves:()=>visibleSweeps().map(sw=>({id:String(sw.id),entityId:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
           getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
           getMarkers:()=>mainSurfaceMarkers(),
@@ -689,12 +717,9 @@
           getMarkerWidth:marker=>markerWidthSpec(marker),
           onColorScale:scale=>renderMainLegend(scale),
           onCurveSelect:({curve})=>{clearMainRangeMenu();const sw=curve?.source;if(sw)publishSweepSelection(sw,'resonance-main');},
-          onCurveModifiedClick:({curve,x,event})=>{clearMainRangeMenu();const sw=curve?.source;if(!sw)return;selectedSweepId=sw.id;publishSweepSelection(sw,'resonance-main-manual');addManualPeak(Number(x));workspaceNavigator?.('inspect');},
           onCurveDoubleClick:({curve})=>{const sw=curve?.source;if(sw){publishSweepSelection(sw,'resonance-main');workspaceNavigator?.('inspect');}},
           onMarkerSelect:({marker,additive})=>{const p=marker?.source;if(p){clearMainRangeMenu();publishPeakSelection(p,'resonance-main',{openInspector:true,additive});}},
           onMarkerDoubleClick:({marker})=>{const p=marker?.source;if(p)publishPeakSelection(p,'resonance-main',{openInspector:true});},
-          onMarkerDelete:({marker})=>{const p=marker?.source;if(!p)return;const label=`${directionName(p.direction)} · ${peakLabel(p)}`;deletePeak(p.id);setStatus(`已删除 ${label}。`);},
-          onLockedMarkerAction:()=>setStatus('该峰位已锁定。'),
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
           // Domain-neutral Core manipulation primitives deliver one semantic
           // commit. Resonance merely maps geometry back to its own scientific state.
@@ -1000,7 +1025,7 @@
       function computeGateTer(settings={}){const ref=gateTerAlgorithmRef(),row=algorithmRuntime?.resolve?.(ref,{category:'ter-analysis'});if(row&&algorithmRuntime?.run){const value=algorithmRuntime.run({id:row.id,version:row.version,category:'ter-analysis'},datasets,{category:'ter-analysis',parameters:{settings}});if(value&&typeof value.then==='function')throw new Error(`Gate TER requires a local Algorithm Provider: ${row.id}@${row.version}`);return {...value,algorithm:algorithmRuntime.provenance?.({id:row.id,version:row.version,category:'ter-analysis'})||value?.algorithm||null};}return S.computeTerMatrix?.(datasets,settings)||null;}
       if(pipelineRuntime?.register){
         pipelineRuntime.register('gate-analysis',{
-          title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['data.table'],outputTypes:['resonance.gate-analysis','resonance.feature-field'],allowEmptyInput:true,cacheLimit:6,
+          title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['science.transport.iv','data.table'],outputTypes:['resonance.gate-analysis','resonance.feature-field'],allowEmptyInput:true,cacheLimit:6,
           run:(_input,{parameters})=>{
             const s={...(parameters?.settings||workspace.gateAnalysisSettings||{})};
             const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;
@@ -1118,7 +1143,7 @@
         page.querySelector('#reswinExportMainSvg')?.addEventListener('click',()=>exportMainSvg());
         page.querySelector('#reswinExportMainPng')?.addEventListener('click',()=>exportMainPng());
         page.querySelector('#reswinCopyMain')?.addEventListener('click',()=>copyTextToClipboard(mainCsv(),'主图 CSV'));
-        page.querySelector('#reswinUndo')?.addEventListener('click',()=>undoLastAction());
+        page.querySelector('#reswinUndo')?.addEventListener('click',()=>{if(commandRuntime?.run)return commandRuntime.run('builtin.resonance.undo');return undoLastAction();});
         page.querySelector('#reswinDeselect')?.addEventListener('click',()=>clearSelection());
         page.querySelector('#reswinExportPeaks')?.addEventListener('click',()=>io.saveCsv(peaksCsv(),'resonance_peaks.csv') );
         page.querySelector('#reswinCopyPeaks')?.addEventListener('click',()=>copyTextToClipboard(peaksCsv(),'峰参数 CSV'));
@@ -1179,8 +1204,10 @@
         getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
         setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRenderKey='';if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
+        openInspector(){workspaceNavigator?.('inspect');return true;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
-        setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;installReactiveViews();syncDerivedArtifacts();},
+        setUiRuntime(runtime){datasetContextBehavior?.dispose?.();datasetContextBehavior=null;uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;installReactiveViews();syncDerivedArtifacts();},
+        setCommandRuntime(runtime){commandRuntime=runtime||null;},
         setEntityRuntime(runtime){entityRuntime=runtime||null;syncEntities();},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},

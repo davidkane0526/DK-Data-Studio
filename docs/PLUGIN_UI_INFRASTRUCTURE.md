@@ -90,19 +90,22 @@ actions.update({ hasResult:true });
 
 Buttons and keyboard shortcuts use one command description instead of separate UI and keydown implementations.
 
-## Mouse / pointer input
+## Interaction Behavior
+
+Plugin API 1.12+ uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
 
 ```js
-ctx.ui.interactions.bind(plot, {
-  click: ({event,mods}) => {},
-  doubleClick: ({event,mods}) => {},
-  contextMenu: ({event,mods}) => {},
-  wheel: ({event,mods}) => {},
-  drag: { start(){}, move(){}, end(){} }
+ctx.ui.interactionBehaviors.create('my-analysis-input', {
+  activity:'my-analysis',
+  bindings:[
+    { gesture:'key', chord:'Ctrl+Enter', command:'example.run' },
+    { gesture:'context', target:'marker', intent:'context-menu', contextActions:[/* ... */] },
+    { gesture:'box', target:'background', modifiers:['shift'], command:'example.define-region' }
+  ]
 });
 ```
 
-Plugins should not install permanent global mouse listeners merely to implement a local plot interaction.
+`ctx.ui.interactions.bind(...)` remains a low-level compatibility primitive for older plugins. New plugins should not use it to implement domain interaction policy, and should never install permanent global mouse or keyboard listeners.
 
 ## Plugin-registered data types and typed interaction
 
@@ -288,3 +291,11 @@ The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with
 PortableView has a Core layer policy: fixed dock < canvas float < global float < context menu/modal. Global free-floating views can cross the control/science boundary and are raised on focus/drag; they must not be hidden below group docks. Close/collapse actions use the shared icon chrome and collapsed dock geometry returns unused space to PRIMARY.
 
 Architecture guards in `scripts/test-plot-view-foundation.js` treat plugin-private generic SVG/PNG/location chrome, document-wide PlotView action-host fallback, and one-shot SUB PlotView scans as regressions.
+
+### DOM delegation is also Interaction Behavior
+
+Plugin API 1.13 adds `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
+
+### Scientific plot container contract
+
+`ctx.ui.scientificPlot.create(...)` accepts an `<svg>` or a normal container element. If the target is not SVG, Core creates/owns the internal SVG and observes the container size. This keeps third-party workbenches independent of D3/SVG implementation details.

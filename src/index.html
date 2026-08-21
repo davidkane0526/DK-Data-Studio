@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.4</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.6</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -207,6 +207,15 @@
           </div>
         </div>
 
+        <div class="import-target-bar">
+          <div class="import-target-heading">
+            <strong>数据用途</strong>
+            <span>选择哪些分析工作台可以看到这批数据</span>
+          </div>
+          <div id="importTargetOptions" class="import-target-options"></div>
+          <div id="importTargetHint" class="import-target-hint"></div>
+        </div>
+
         <div class="import-workbench-body">
           <aside class="import-file-pane">
             <div class="import-pane-title">待导入文件</div>
@@ -225,6 +234,9 @@
 
             <div id="importEditor" class="hidden">
               <div class="import-section import-basic-grid">
+                <label>解析器
+                  <select id="importProvider"></select>
+                </label>
                 <label>编码
                   <select id="importEncoding">
                     <option value="auto">自动</option>
@@ -270,7 +282,7 @@
                 <label>注释前缀
                   <input id="importCommentPrefix" type="text" value="auto" placeholder="auto / # / % / //">
                 </label>
-                <label>数据排列
+                <label id="importLayoutWrap">数据排列
                   <select id="importLayout">
                     <option value="auto">自动识别</option>
                     <option value="single">单组 V / I</option>
@@ -280,7 +292,9 @@
                 </label>
               </div>
 
-              <div class="import-section">
+              <div id="importGenericImporterNote" class="import-section import-generic-importer-note hidden"></div>
+
+              <div id="importFlexibleMappingSection" class="import-section">
                 <div class="import-section-head">
                   <strong>列映射</strong>
                   <span id="importAutoDiagnosis" class="import-diagnosis"></span>

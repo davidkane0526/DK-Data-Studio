@@ -42,17 +42,55 @@
     files:[],
     activePath:null,
     loading:false,
-    fileDialogOpen:false
+    fileDialogOpen:false,
+    targets:null
   };
 
   function importActiveItem(){
     return importDraft.files.find(f=>f.path===importDraft.activePath)||null;
   }
 
+  function importProviders(){
+    return (window.DKDSPlugins?.registry?.values?.('data.importers')||[]).filter(Boolean)
+      .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||String(a.name||a.id).localeCompare(String(b.name||b.id)));
+  }
+
+  function importProvider(id=''){
+    const key=String(id||'').trim();
+    const rows=importProviders();
+    return rows.find(provider=>String(provider.id)===key)||rows.find(provider=>provider.id==='flexible-text')||rows[0]||null;
+  }
+
   function flexibleImportProvider(){
-    const provider=window.DKDSPlugins?.registry?.find?.('data.importers',value=>value?.id==='flexible-text');
-    if(!provider)throw new Error('Flexible Text Import 插件未启用。');
+    const provider=importProvider('flexible-text');
+    if(!provider||provider.id!=='flexible-text')throw new Error('Flexible Text Import 插件未启用。');
     return provider;
+  }
+
+  function fileExtension(name=''){
+    const match=String(name||'').toLowerCase().match(/\.([^.\/]+)$/);return match?match[1]:'';
+  }
+
+  function chooseImportProvider(meta={},targets=ensureImportTargets()){
+    const ext=fileExtension(meta?.name||meta?.path||'');
+    const context={targets:Array.isArray(targets)?targets.map(String):[]};
+    const scored=importProviders().map(provider=>{
+      const extensions=Array.isArray(provider.extensions)?provider.extensions.map(x=>String(x).toLowerCase()):[];
+      const preferred=Array.isArray(provider.preferredConsumers)?provider.preferredConsumers.map(String):[];
+      const outputs=Array.isArray(provider.outputTypes)?provider.outputTypes.map(String):[];
+      const targetAccepts=dataConsumerTargets().filter(row=>context.targets.includes(row.id)).flatMap(row=>row.accepts||[]);
+      let score=Number(provider.priority)||0;
+      if(ext&&extensions.includes(ext))score+=40;
+      if(preferred.some(id=>context.targets.includes(id)))score+=500;
+      if(outputs.some(type=>targetAccepts.includes(type)))score+=250;
+      try{if(typeof provider.score==='function')score+=Number(provider.score(meta,context))||0;}catch{}
+      return {provider,score};
+    }).sort((a,b)=>b.score-a.score);
+    return scored[0]?.provider||flexibleImportProvider();
+  }
+
+  function providerForImportItem(item){
+    return importProvider(item?.importerId)||chooseImportProvider(item||{},ensureImportTargets());
   }
 
   function setStatus(t){ status.textContent = t; }
@@ -351,7 +389,7 @@
       title:title||`项目 ${n}`,
       datasets:[],
       artifactStore:window.DKDSData.createStore(),
-      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false},
+      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null},
       pluginState:{},
       projectPath:null,
       trendColumns:loadTrendColumnsPreference(),
@@ -398,7 +436,8 @@
     state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
-    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false};
+    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null};
+    if(!Object.prototype.hasOwnProperty.call(importDraft,'targets'))importDraft.targets=null;
     t.importDraft=importDraft;
     state.projectPath=t.projectPath||null;
     state.trendColumns=t.trendColumns||loadTrendColumnsPreference();
@@ -574,23 +613,28 @@
   function recomputeImportItem(item,initializeMapping=false){
     if(!item?.text)return;
     try{
-      item.inspection=flexibleImportProvider().inspect({
+      const provider=providerForImportItem(item);
+      if(!provider?.inspect)throw new Error(`导入器 ${item?.importerId||'(unknown)'} 不支持预览。`);
+      item.importerId=provider.id;
+      item.inspection=provider.inspect({
         name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding
       },item.settings);
       item.error='';
 
-      if(initializeMapping||!item.mappingTouched){
-        item.settings.xCol=item.inspection.suggestedX;
-        item.settings.yCol=item.inspection.suggestedYCols[0]??Math.min(1,item.inspection.headers.length-1);
-        item.settings.yCols=item.inspection.suggestedYCols.slice();
-        item.settings.pairStart=0;
-      }
+      if(provider.id==='flexible-text'){
+        if(initializeMapping||!item.mappingTouched){
+          item.settings.xCol=item.inspection.suggestedX;
+          item.settings.yCol=item.inspection.suggestedYCols[0]??Math.min(1,item.inspection.headers.length-1);
+          item.settings.yCols=item.inspection.suggestedYCols.slice();
+          item.settings.pairStart=0;
+        }
 
-      const max=Math.max(0,item.inspection.headers.length-1);
-      item.settings.xCol=Math.min(Math.max(0,Number(item.settings.xCol)||0),max);
-      item.settings.yCol=Math.min(Math.max(0,Number(item.settings.yCol)||0),max);
-      item.settings.pairStart=Math.min(Math.max(0,Number(item.settings.pairStart)||0),max);
-      item.settings.yCols=(item.settings.yCols||[]).filter(c=>c>=0&&c<=max&&c!==item.settings.xCol);
+        const max=Math.max(0,item.inspection.headers.length-1);
+        item.settings.xCol=Math.min(Math.max(0,Number(item.settings.xCol)||0),max);
+        item.settings.yCol=Math.min(Math.max(0,Number(item.settings.yCol)||0),max);
+        item.settings.pairStart=Math.min(Math.max(0,Number(item.settings.pairStart)||0),max);
+        item.settings.yCols=(item.settings.yCols||[]).filter(c=>c>=0&&c<=max&&c!==item.settings.xCol);
+      }
     }catch(err){
       item.error=err?.message||String(err);
       item.inspection=null;
@@ -611,13 +655,15 @@
     for(const meta of metas){
       let item=importDraft.files.find(f=>f.path===meta.path);
       if(!item){
+        const provider=chooseImportProvider(meta,ensureImportTargets());
         item={
           ...meta,
           checked:true,
           text:'',
           detectedEncoding:'',
           loadedEncodingRequest:'',
-          settings:flexibleImportProvider().defaultOptions(),
+          importerId:provider.id,
+          settings:provider.defaultOptions?.()||{},
           inspection:null,
           mappingTouched:false,
           loading:false,
@@ -637,9 +683,59 @@
     renderImportWorkbench();
   }
 
-  function openImportWorkbench(){
+  function openImportWorkbench(options={}){
+    if(Array.isArray(options?.targets))importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
+    else ensureImportTargets();
+    if(options?.importerId){
+      for(const item of importDraft.files){
+        const provider=importProvider(options.importerId);if(!provider)continue;
+        item.importerId=provider.id;item.importerTouched=true;item.settings=provider.defaultOptions?.()||{};item.mappingTouched=false;if(item.text)recomputeImportItem(item,true);
+      }
+    }else autoRouteImportersForTargets();
     $('#importPanel').classList.remove('hidden');
     renderImportWorkbench();
+  }
+
+  function dataConsumerTargets(){
+    const rows=window.DKDSPlugins?.manager?.list?.()||[];
+    return rows.filter(row=>row?.enabled!==false&&row?.pluginType==='workbench').map(row=>({
+      id:String(row.id),label:String(row.workspaceTitle||row.name||row.id),icon:String(row.workspaceIcon||row.icon||'◇'),order:Number(row.order)||100,accepts:Array.isArray(row?.data?.accepts)?row.data.accepts.map(String):[]
+    })).sort((a,b)=>a.order-b.order||a.label.localeCompare(b.label));
+  }
+
+  function activeDataConsumerId(){
+    const activeId=window.DKDSPlugins?.activities?.active?.();
+    const activity=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row.id)===String(activeId));
+    const pluginId=String(activity?.pluginId||'');
+    return dataConsumerTargets().some(row=>row.id===pluginId)?pluginId:'';
+  }
+
+  function ensureImportTargets(){
+    if(Array.isArray(importDraft.targets))return importDraft.targets;
+    const active=activeDataConsumerId();importDraft.targets=active?[active]:[];return importDraft.targets;
+  }
+
+  function autoRouteImportersForTargets(){
+    for(const item of importDraft.files){
+      if(item.importerTouched)continue;
+      const provider=chooseImportProvider(item,ensureImportTargets());
+      if(!provider||provider.id===item.importerId)continue;
+      item.importerId=provider.id;
+      item.settings=provider.defaultOptions?.()||{};
+      item.mappingTouched=false;
+      if(item.text)recomputeImportItem(item,true);
+    }
+  }
+
+  function renderImportTargets(){
+    const host=$('#importTargetOptions');if(!host)return;const targets=dataConsumerTargets(),selected=new Set(ensureImportTargets());host.innerHTML='';
+    for(const row of targets){const label=document.createElement('label');label.className='import-target-chip';label.innerHTML=`<input type="checkbox" value="${escapeHtml(row.id)}" ${selected.has(row.id)?'checked':''}><span class="import-target-icon">${escapeHtml(row.icon)}</span><span>${escapeHtml(row.label)}</span>`;label.querySelector('input').onchange=()=>{importDraft.targets=[...host.querySelectorAll('input:checked')].map(input=>String(input.value));autoRouteImportersForTargets();renderImportWorkbench();};host.appendChild(label);}
+    renderImportTargetHint();
+  }
+
+  function renderImportTargetHint(){
+    const hint=$('#importTargetHint');if(!hint)return;const selected=new Set(Array.isArray(importDraft.targets)?importDraft.targets:[]),targets=dataConsumerTargets(),labels=targets.filter(row=>selected.has(row.id)).map(row=>row.label);
+    hint.textContent=labels.length?`将分配给：${labels.join('、')}。同一数据仅保存一份，可同时供多个工作台使用。`:'未选择分析用途：数据将只进入数据中心，之后可再分配。';
   }
 
   function closeImportWorkbench(){
@@ -654,7 +750,8 @@
       const el=document.createElement('div');
       el.className=`import-file-item ${item.path===importDraft.activePath?'active':''} ${item.error?'error':''}`;
       const ins=item.inspection;
-      const layout=ins?importResolvedLayout(item):'—';
+      const provider=providerForImportItem(item);
+      const layout=ins&&provider?.id==='flexible-text'?importResolvedLayout(item):'';
       el.innerHTML=`
         <div class="import-file-top">
           <input type="checkbox" ${item.checked?'checked':''}>
@@ -663,7 +760,7 @@
         <div class="import-file-meta">
           ${item.loading?'读取中…':
             item.error?escapeHtml(item.error):
-            `${humanFileSize(item.size)} · ${escapeHtml(item.detectedEncoding||item.settings.encoding)} · ${ins?.headers?.length||0} 列 · ${ins?.rowCount||0} 行 · ${escapeHtml(importLayoutName(layout))}`}
+            `${humanFileSize(item.size)} · ${escapeHtml(item.detectedEncoding||item.settings.encoding)} · ${ins?.headers?.length||0} 列 · ${ins?.rowCount||0} 行 · ${escapeHtml(provider?.name||provider?.id||'导入器')}${layout?` · ${escapeHtml(importLayoutName(layout))}`:''}`}
         </div>`;
       el.querySelector('input').onclick=e=>{
         e.stopPropagation();
@@ -802,20 +899,27 @@
       return;
     }
 
-    const layout=importResolvedLayout(item);
-    let seriesEstimate=1;
-    if(layout==='sharedX')seriesEstimate=(item.settings.yCols||[]).length;
-    if(layout==='paired')seriesEstimate=Math.max(0,Math.floor((ins.headers.length-(item.settings.pairStart||0))/2));
+    const provider=providerForImportItem(item);
+    let estimate=1,layout='';
+    if(provider?.id==='flexible-text'){
+      layout=importResolvedLayout(item);
+      if(layout==='sharedX')estimate=(item.settings.yCols||[]).length;
+      if(layout==='paired')estimate=Math.max(0,Math.floor((ins.headers.length-(item.settings.pairStart||0))/2));
+    }else{
+      try{estimate=Math.max(1,Number(provider?.estimateArtifacts?.({name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding},item.settings,ins))||1);}catch{estimate=1;}
+    }
 
-    $('#importPreviewSummary').innerHTML=[
+    const chips=[
+      `解析器 ${provider?.name||provider?.id||'—'}`,
       `检测编码 ${item.detectedEncoding||item.settings.encoding}`,
       `分隔符 ${importDelimiterName(ins.delimiter)}`,
       `${ins.headers.length} 列`,
       `${ins.rowCount} 个有效数值行`,
       `起始源文件行 ${ins.dataStartSourceLine??'—'}`,
-      `排列 ${importLayoutName(layout)}`,
-      `预计生成 ${seriesEstimate} 条数据`
-    ].map(t=>`<span class="import-preview-chip">${escapeHtml(t)}</span>`).join('');
+      ...(layout?[`排列 ${importLayoutName(layout)}`]:[]),
+      `预计生成 ${estimate} 个数据对象`
+    ];
+    $('#importPreviewSummary').innerHTML=chips.map(t=>`<span class="import-preview-chip">${escapeHtml(t)}</span>`).join('');
 
     const headers=ins.headers;
     const rows=ins.previewRows.slice(0,40);
@@ -825,8 +929,9 @@
         Number.isFinite(v)?`<td>${formatImportNumber(v,6)}</td>`:'<td class="import-nan">—</td>'
       ).join('')}</tr>`).join('')}</tbody>`;
 
-    $('#importAutoDiagnosis').textContent=
-      `自动建议：${importLayoutName(ins.suggestedLayout)}；X=${ins.suggestedX+1}；Y=${ins.suggestedYCols.map(v=>v+1).join(', ')||'—'}`;
+    $('#importAutoDiagnosis').textContent=provider?.id==='flexible-text'
+      ? `自动建议：${importLayoutName(ins.suggestedLayout)}；X=${ins.suggestedX+1}；Y=${ins.suggestedYCols.map(v=>v+1).join(', ')||'—'}`
+      : `该解析器保留完整数值表；具体分析列与协议由目标工作台解释。`;
   }
 
   function renderImportEditor(){
@@ -835,52 +940,79 @@
     $('#importEditor').classList.toggle('hidden',!item);
     if(!item)return;
 
-    const s=item.settings;
-    $('#importEncoding').value=s.encoding||'auto';
-    $('#importSkipRows').value=s.skipRows||0;
-    $('#importEndRow').value=s.endRow||0;
-    $('#importDelimiter').value=s.delimiter||'auto';
-    $('#importHeaderMode').value=s.headerMode||'auto';
-    $('#importDecimal').value=s.decimalSeparator||'auto';
-    $('#importCommentPrefix').value=s.commentPrefix||'auto';
-    $('#importLayout').value=s.layout||'auto';
-    $('#importVoltageUnit').value=s.voltageUnit||'auto';
-    $('#importCurrentUnit').value=s.currentUnit||'auto';
-    $('#importVgMode').value=s.vgMode||'auto';
-    $('#importManualVg').value=Number.isFinite(Number(s.manualVg))?s.manualVg:'';
+    const provider=providerForImportItem(item);
+    item.importerId=provider?.id||item.importerId;
+    const providerSelect=$('#importProvider');
+    if(providerSelect){
+      providerSelect.innerHTML=importProviders().map(row=>`<option value="${escapeHtml(row.id)}">${escapeHtml(row.name||row.id)}</option>`).join('');
+      providerSelect.value=item.importerId||'';
+    }
+    const flexible=provider?.id==='flexible-text';
+    $('#importLayoutWrap')?.classList.toggle('hidden',!flexible);
+    $('#importFlexibleMappingSection')?.classList.toggle('hidden',!flexible);
+    const genericNote=$('#importGenericImporterNote');
+    if(genericNote){
+      genericNote.classList.toggle('hidden',flexible);
+      genericNote.innerHTML=flexible?'':`<strong>${escapeHtml(provider?.name||provider?.id||'通用解析器')}</strong><span>${escapeHtml(provider?.description||'导入器将生成标准数据对象，具体分析参数由目标工作台维护。')}</span>`;
+    }
 
-    const options=importColumnOptions(item,s.xCol);
-    $('#importXCol').innerHTML=options;
-    $('#importYCol').innerHTML=importColumnOptions(item,s.yCol);
-    $('#importPairStart').innerHTML=importColumnOptions(item,s.pairStart);
+    const st=item.settings||{};
+    $('#importEncoding').value=st.encoding||'auto';
+    $('#importSkipRows').value=st.skipRows||0;
+    $('#importEndRow').value=st.endRow||0;
+    $('#importDelimiter').value=st.delimiter||'auto';
+    $('#importHeaderMode').value=st.headerMode||'auto';
+    $('#importDecimal').value=st.decimalSeparator||'auto';
+    $('#importCommentPrefix').value=st.commentPrefix||'auto';
 
-    const layout=importResolvedLayout(item);
-    $('#importYSingleWrap').classList.toggle('hidden',layout!=='single');
-    $('#importYMultiWrap').classList.toggle('hidden',layout!=='sharedX');
-    $('#importPairStartWrap').classList.toggle('hidden',layout!=='paired');
-    $('#importManualVgWrap').classList.toggle('hidden',s.vgMode!=='manual');
+    if(flexible){
+      $('#importLayout').value=st.layout||'auto';
+      $('#importVoltageUnit').value=st.voltageUnit||'auto';
+      $('#importCurrentUnit').value=st.currentUnit||'auto';
+      $('#importVgMode').value=st.vgMode||'auto';
+      $('#importManualVg').value=Number.isFinite(Number(st.manualVg))?st.manualVg:'';
 
-    renderImportYColumns(item);
-    renderImportSeriesVgRows(item);
+      const options=importColumnOptions(item,st.xCol);
+      $('#importXCol').innerHTML=options;
+      $('#importYCol').innerHTML=importColumnOptions(item,st.yCol);
+      $('#importPairStart').innerHTML=importColumnOptions(item,st.pairStart);
+
+      const layout=importResolvedLayout(item);
+      $('#importYSingleWrap').classList.toggle('hidden',layout!=='single');
+      $('#importYMultiWrap').classList.toggle('hidden',layout!=='sharedX');
+      $('#importPairStartWrap').classList.toggle('hidden',layout!=='paired');
+      $('#importManualVgWrap').classList.toggle('hidden',st.vgMode!=='manual');
+
+      renderImportYColumns(item);
+      renderImportSeriesVgRows(item);
+    }
     renderImportPreview(item);
   }
 
   function renderImportGlobalSummary(){
     const checked=importDraft.files.filter(f=>f.checked);
-    let series=0,errors=0;
+    let objects=0,errors=0;
+    const providerNames=new Set();
     for(const item of checked){
       if(item.error||!item.inspection){errors++;continue;}
-      const layout=importResolvedLayout(item);
-      if(layout==='single')series+=1;
-      else if(layout==='sharedX')series+=(item.settings.yCols||[]).length;
-      else if(layout==='paired')series+=Math.max(0,Math.floor((item.inspection.headers.length-(item.settings.pairStart||0))/2));
+      const provider=providerForImportItem(item);providerNames.add(provider?.name||provider?.id||'导入器');
+      if(provider?.id==='flexible-text'){
+        const layout=importResolvedLayout(item);
+        if(layout==='single')objects+=1;
+        else if(layout==='sharedX')objects+=(item.settings.yCols||[]).length;
+        else if(layout==='paired')objects+=Math.max(0,Math.floor((item.inspection.headers.length-(item.settings.pairStart||0))/2));
+      }else{
+        try{objects+=Math.max(1,Number(provider?.estimateArtifacts?.({name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding},item.settings,item.inspection))||1);}catch{objects+=1;}
+      }
     }
+    const parserText=providerNames.size?` · ${[...providerNames].join(' / ')}`:'';
     $('#importGlobalSummary').textContent=
-      `${checked.length}/${importDraft.files.length} 个文件已勾选 · 预计生成 ${series} 条 I–V 数据${errors?` · ${errors} 个文件需检查`:''}`;
+      `${checked.length}/${importDraft.files.length} 个文件已勾选 · 预计生成 ${objects} 个数据对象${parserText}${errors?` · ${errors} 个文件需检查`:''}`;
     $('#importCommitBtn').disabled=!checked.length||checked.every(f=>f.error||!f.inspection);
   }
 
   function renderImportWorkbench(){
+    renderImportTargets();
     renderImportFileList();
     renderImportGlobalSummary();
     renderImportEditor();
@@ -899,7 +1031,7 @@
       };
       recomputeImportItem(item,true);
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
-      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false};
+      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[]};
       renderImportWorkbench();
 
       const checkbox=$('#importFileList input[type="checkbox"]');
@@ -953,19 +1085,22 @@
     const template=JSON.parse(JSON.stringify(current.settings));
     for(const item of importDraft.files){
       if(item.path===current.path)continue;
-      item.settings={...template};
+      item.importerId=current.importerId;
+      item.importerTouched=true;
+      item.settings=JSON.parse(JSON.stringify(template));
       item.mappingTouched=current.mappingTouched;
       await readImportItemText(item,true);
       recomputeImportItem(item,false);
     }
     renderImportWorkbench();
-    setStatus('已将当前导入设置应用到全部待导入文件；每个文件重新生成了预览。');
+    setStatus('已将当前解析器和导入设置应用到全部待导入文件；每个文件重新生成了预览。');
   }
 
   async function resetCurrentImportAuto(){
     const item=importActiveItem();
     if(!item)return;
-    item.settings=flexibleImportProvider().defaultOptions();
+    const provider=providerForImportItem(item);
+    item.settings=provider?.defaultOptions?.()||{};
     item.mappingTouched=false;
     await readImportItemText(item,true);
     recomputeImportItem(item,true);
@@ -979,56 +1114,102 @@
     $('#importCommitBtn').disabled=true;
     importDraft.loading=true;
     try{
-      const parsed=[];
+      const legacyRows=[];
+      const artifactRows=[];
       const reports=[];
+      const requestedAssignments=Array.isArray(importDraft.targets)?importDraft.targets.map(String).filter(Boolean):[];
+      const assignmentUnion=(previous=[])=>{
+        const prior=(Array.isArray(previous)?previous:[]).map(String).filter(Boolean);
+        return prior.includes('*')?['*']:[...new Set([...prior,...requestedAssignments])];
+      };
+      const priorLegacyBySource=new Map();
+      for(const dataset of state.datasets){
+        const sourcePath=String(dataset?.sourcePath||dataset?.path||'');if(!sourcePath)continue;
+        const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')?(Array.isArray(dataset.assignments)?dataset.assignments:['*']):['*'];
+        const set=priorLegacyBySource.get(sourcePath)||new Set();for(const id of rows)set.add(String(id));priorLegacyBySource.set(sourcePath,set);
+      }
+      const priorArtifacts=state.artifactStore?.list?.({includeTransient:true})||[];
+      const priorArtifactAssignments=(sourcePath,importerId)=>{
+        const rows=priorArtifacts.filter(a=>a?.metadata?.importedSource===true&&String(a?.source?.path||'')===String(sourcePath)&&String(a?.metadata?.importerId||'')===String(importerId));
+        const out=new Set();for(const a of rows)for(const id of (Array.isArray(a?.metadata?.dataAssignments)?a.metadata.dataAssignments:[]))out.add(String(id));return [...out];
+      };
+
       for(const item of selected){
         await readImportItemText(item);
         if(item.error)continue;
-        const result=flexibleImportProvider().parse({
-          name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding
-        },item.settings);
-        if(result.datasets.length){
-          parsed.push(...result.datasets);
-          reports.push(`${item.name}: ${result.datasets.length}`);
+        const provider=providerForImportItem(item);
+        if(!provider)continue;
+        const file={name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding};
+        if(provider.storage==='legacy-datasets'){
+          const result=provider.parse?.(file,item.settings)||{datasets:[]};
+          const rows=Array.isArray(result?.datasets)?result.datasets:[];
+          for(const dataset of rows){
+            const sourcePath=String(dataset?.sourcePath||item.path||dataset?.path||'');
+            const previous=[...(priorLegacyBySource.get(sourcePath)||[])];
+            dataset.importedAt=dataset.importedAt||new Date().toISOString();
+            dataset.dataProvenance=Array.isArray(dataset.dataProvenance)?dataset.dataProvenance:[];
+            dataset.assignments=assignmentUnion(previous);
+            legacyRows.push({dataset,sourcePath,providerId:provider.id});
+          }
+          if(rows.length)reports.push(`${item.name}: ${rows.length} 个 ${provider.name||provider.id} 数据对象`);
+          continue;
         }
+        const result=provider.parseArtifacts?.(file,item.settings);
+        const rows=Array.isArray(result?.artifacts)?result.artifacts:[];
+        const previous=priorArtifactAssignments(item.path,provider.id);
+        for(const raw of rows){
+          if(!window.DKDSData?.isArtifact?.(raw))continue;
+          const artifact=window.DKDSData.deepClone(raw);
+          artifact.metadata={...(artifact.metadata||{}),importedSource:true,importerId:provider.id,dataAssignments:assignmentUnion(previous)};
+          artifact.source={...(artifact.source||{}),path:String(artifact?.source?.path||item.path),name:String(artifact?.source?.name||item.name),encoding:String(artifact?.source?.encoding||item.detectedEncoding||'auto')};
+          artifactRows.push({artifact,sourcePath:item.path,providerId:provider.id});
+        }
+        if(rows.length)reports.push(`${item.name}: ${rows.length} 个 ${provider.name||provider.id} 数据对象`);
       }
 
-      if(!parsed.length){
-        setStatus('没有生成可导入的数据。请检查列映射、跳行、编码或分隔符设置。');
+      if(!legacyRows.length&&!artifactRows.length){
+        setStatus('没有生成可导入的数据。请检查解析器、跳行、编码或分隔符设置。');
         return;
       }
 
-      const sourcePaths=new Set(selected.map(f=>f.path));
-      state.datasets=state.datasets.filter(d=>!sourcePaths.has(d.sourcePath||d.path));
-      for(const ds of parsed){
-        ds.importedAt=ds.importedAt||new Date().toISOString();
-        ds.dataProvenance=Array.isArray(ds.dataProvenance)?ds.dataProvenance:[];
-        state.datasets.push(ds);
+      const legacySourcePaths=new Set(legacyRows.map(row=>row.sourcePath));
+      if(legacySourcePaths.size){
+        state.datasets=state.datasets.filter(dataset=>!legacySourcePaths.has(String(dataset?.sourcePath||dataset?.path||'')));
+        state.datasets.push(...legacyRows.map(row=>row.dataset));
+      }
+      syncDatasetArtifacts({emit:false});
+
+      if(artifactRows.length){
+        const nextKeys=new Set(artifactRows.map(row=>String(row.artifact.id)));
+        const importedPairs=new Set(artifactRows.map(row=>`${row.providerId}
+${row.sourcePath}`));
+        const stale=(state.artifactStore?.list?.({includeTransient:true})||[]).filter(a=>a?.metadata?.importedSource===true&&importedPairs.has(`${String(a?.metadata?.importerId||'')}
+${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
+        const removeIds=new Set();
+        for(const root of stale){
+          for(const child of (state.artifactStore?.lineage?.(root.id)?.descendants||[]))if(child?.id)removeIds.add(String(child.id));
+          if(root?.id)removeIds.add(String(root.id));
+        }
+        state.artifactStore?.batch?.(api=>{
+          for(const id of [...removeIds].reverse())api.remove?.(id);
+          for(const row of artifactRows)api.upsert?.(row.artifact);
+        });
       }
 
-      syncDatasetArtifacts();
-      clearMainView(false);
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+      if(legacyRows.length)clearMainView(false);
       renderAll();
       refreshOpenAnalysisPage();
+      captureActiveProjectTab();
 
-      const tab=activeProjectTab();
-      if(tab&&!state.projectPath&&state.datasets.length){
-        tab.title=state.datasets.length===1?state.datasets[0].name:`数据组 (${state.datasets.length})`;
-        captureActiveProjectTab();
-        renderProjectTabs();
-      }
-
-      // A successful import ends the import session. Keeping the previous
-      // pending-file draft caused reopening the panel to look like a second
-      // automatic import and triggered duplicate/replacement warnings before
-      // the user selected any files.
       importDraft.files=[];
       importDraft.activePath=null;
+      importDraft.targets=null;
       closeImportWorkbench();
-      setStatus(
-        `导入完成：${selected.length} 个源文件生成 ${parsed.length} 组数据。`
-        + ` ${reports.join('；')}`
-      );
+      setStatus(`导入完成：${reports.join('；')}。`);
+    }catch(err){
+      console.error(err);
+      setStatus(`导入失败：${err?.message||String(err)}`);
     }finally{
       importDraft.loading=false;
       $('#importCommitBtn').disabled=false;
@@ -1067,7 +1248,13 @@
   }
 
   function dataSourceHostApi(){
-    const list=()=>state.datasets.map(dataset=>({
+    const assignmentsFor=value=>{
+      if(value?.metadata&&Object.prototype.hasOwnProperty.call(value.metadata,'dataAssignments'))return Array.isArray(value.metadata.dataAssignments)?value.metadata.dataAssignments.map(String).filter(Boolean):[];
+      return Object.prototype.hasOwnProperty.call(value||{},'assignments')?(Array.isArray(value.assignments)?value.assignments.map(String).filter(Boolean):[]):['*'];
+    };
+    const matchesConsumer=(value,consumer)=>{const id=String(consumer||'').trim();if(!id)return true;const rows=assignmentsFor(value);return rows.includes('*')||rows.includes(id);};
+    const genericImports=()=> (state.artifactStore?.list?.({includeTransient:true})||[]).filter(a=>a?.metadata?.importedSource===true&&a?.metadata?.adapter!=='legacy-dataset');
+    const legacyDescriptors=()=>state.datasets.map(dataset=>({
       path:String(dataset?.path||dataset?.name||''),
       name:String(dataset?.name||dataset?.path||'data'),
       sourcePath:String(dataset?.sourcePath||dataset?.path||''),
@@ -1075,26 +1262,54 @@
       vg:Number.isFinite(Number(dataset?.vg))?Number(dataset.vg):null,
       points:Array.isArray(dataset?.points)?dataset.points.length:0,
       excluded:dataset?.excluded===true,
+      assignments:assignmentsFor(dataset),
+      semanticType:'science.transport.iv',
+      kind:'data.table',
+      importerId:'flexible-text',
       artifactId:window.DKDSData?.stableId?.('legacy-table',String(dataset?.path||dataset?.name||'dataset'))||''
     }));
-    const locate=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};const path=String(row?.path||''),sourcePath=String(row?.sourcePath||'');return state.datasets.find(dataset=>(path&&String(dataset?.path||dataset?.name||'')===path)||(sourcePath&&String(dataset?.sourcePath||'')===sourcePath))||null;};
-    const commit=(type,dataset)=>{syncDatasetArtifacts({emit:false});window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
+    const genericDescriptors=()=>genericImports().map(artifact=>({
+      path:String(artifact.id),name:String(artifact.name||artifact.id),sourcePath:String(artifact?.source?.path||''),sourceName:String(artifact?.source?.name||artifact.name||''),
+      vg:null,points:Number(artifact?.rowCount||artifact?.length)||0,excluded:artifact?.metadata?.excluded===true||artifact?.metadata?.sourceExcluded===true,
+      assignments:assignmentsFor(artifact),semanticType:String(artifact?.semanticType||artifact?.metadata?.dataType||''),kind:String(artifact.kind||''),
+      importerId:String(artifact?.metadata?.importerId||''),artifactId:String(artifact.id)
+    }));
+    const list=(options={})=>[...legacyDescriptors(),...genericDescriptors()].filter(row=>matchesConsumer(row,options?.consumer||options?.pluginId));
+    const locateLegacy=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};if(row?.artifactId)return null;const path=String(row?.path||''),sourcePath=String(row?.sourcePath||'');return state.datasets.find(dataset=>(path&&String(dataset?.path||dataset?.name||'')===path)||(sourcePath&&String(dataset?.sourcePath||'')===sourcePath))||null;};
+    const locateGeneric=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};const id=String(row?.artifactId||row?.path||''),sourcePath=String(row?.sourcePath||'');return genericImports().filter(a=>(id&&String(a.id)===id)||(sourcePath&&String(a?.source?.path||'')===sourcePath)||(id&&String(a?.source?.path||'')===id));};
+    const commitLegacy=(type,dataset)=>{syncDatasetArtifacts({emit:false});window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.sourcePath||dataset?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
+    const commitGeneric=(type,artifacts=[])=>{window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(artifacts[0]?.source?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
     return {
       list,
-      rename(ref,label){const dataset=locate(ref),name=String(label||'').trim();if(!dataset||!name)return {updated:false,sources:list()};dataset.name=name;commit('source-rename',dataset);setStatus(`源数据标签已修改为：${name}`);return {updated:true,source:list().find(row=>row.path===String(dataset.path||dataset.name||''))||null,sources:list()};},
-      setExcluded(ref,value=true){const dataset=locate(ref);if(!dataset)return {updated:false,sources:list()};dataset.excluded=!!value;commit('source-exclude',dataset);setStatus(`${dataset.excluded?'已排除':'已恢复'}源数据：${dataset.name||dataset.path}`);return {updated:true,excluded:dataset.excluded,source:list().find(row=>row.path===String(dataset.path||dataset.name||''))||null,sources:list()};},
+      targets:()=>dataConsumerTargets(),
+      setAssignments(ref,pluginIds=[]){
+        const ids=[...new Set((Array.isArray(pluginIds)?pluginIds:[]).map(String).map(x=>x.trim()).filter(Boolean))];
+        const dataset=locateLegacy(ref);
+        if(dataset){dataset.assignments=ids;commitLegacy('source-assignments',dataset);setStatus(ids.length?`已更新数据用途：${dataset.name||dataset.path}`:`已设为仅数据中心：${dataset.name||dataset.path}`);return {updated:true,assignments:[...ids],sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};
+        state.artifactStore?.batch?.(api=>{for(const artifact of artifacts)api.upsert?.({...artifact,metadata:{...(artifact.metadata||{}),dataAssignments:[...ids]}});});
+        commitGeneric('source-assignments',artifacts);setStatus(ids.length?`已更新数据用途：${artifacts[0].name||artifacts[0].id}`:`已设为仅数据中心：${artifacts[0].name||artifacts[0].id}`);return {updated:true,assignments:[...ids],sources:list()};
+      },
+      rename(ref,label){
+        const name=String(label||'').trim();if(!name)return {updated:false,sources:list()};const dataset=locateLegacy(ref);
+        if(dataset){dataset.name=name;commitLegacy('source-rename',dataset);setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach((artifact,index)=>api.upsert?.({...artifact,name:index?artifact.name:name})));commitGeneric('source-rename',artifacts);setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};
+      },
+      setExcluded(ref,value=true){
+        const dataset=locateLegacy(ref);if(dataset){dataset.excluded=!!value;commitLegacy('source-exclude',dataset);setStatus(`${dataset.excluded?'已排除':'已恢复'}源数据：${dataset.name||dataset.path}`);return {updated:true,excluded:dataset.excluded,sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach(artifact=>api.upsert?.({...artifact,metadata:{...(artifact.metadata||{}),excluded:!!value}})));commitGeneric('source-exclude',artifacts);setStatus(`${value?'已排除':'已恢复'}源数据：${artifacts[0].name||artifacts[0].id}`);return {updated:true,excluded:!!value,sources:list()};
+      },
       remove(refs){
         const requested=Array.isArray(refs)?refs:[refs];
-        const outcome=window.DKDSData?.removeLegacyDatasets?.(state.artifactStore,state.datasets,requested);
-        if(!outcome)return {removed:[],removedArtifactIds:[],sources:list()};
+        const outcome=window.DKDSData?.removeLegacyDatasets?.(state.artifactStore,state.datasets,requested)||{datasets:state.datasets,removed:[],removedArtifactIds:[]};
         state.datasets=outcome.datasets||[];
+        const genericRoots=[...new Map(requested.flatMap(ref=>locateGeneric(ref)).map(a=>[a.id,a])).values()];
+        const genericRemoveIds=new Set();for(const root of genericRoots){for(const child of (state.artifactStore?.lineage?.(root.id)?.descendants||[]))if(child?.id)genericRemoveIds.add(String(child.id));if(root?.id)genericRemoveIds.add(String(root.id));}
+        if(genericRemoveIds.size)state.artifactStore?.batch?.(api=>{for(const id of [...genericRemoveIds].reverse())api.remove?.(id);});
         const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
-        if(outcome.removed?.length){
-          window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:outcome.removed.map(row=>row.path),removedArtifactIds:outcome.removedArtifactIds||[],artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
-          renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();
-          setStatus(`已移除 ${outcome.removed.length} 组源数据。`);
-        }
-        return {removed:(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),removedArtifactIds:outcome.removedArtifactIds||[],sources:list()};
+        const removedCount=(outcome.removed?.length||0)+genericRoots.length;
+        if(removedCount){window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
+        return {removed:[...(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),...genericRoots.map(a=>({path:a.id,name:a.name,sourcePath:a?.source?.path||''}))],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],sources:list()};
       }
     };
   }
@@ -1878,6 +2093,7 @@
         importedAt:d.importedAt||null,
         dataProvenance:d.dataProvenance||[],
         importSpec:d.importSpec||null,
+        assignments:Object.prototype.hasOwnProperty.call(d,'assignments')?(Array.isArray(d.assignments)?d.assignments:[]):['*'],
         points:(d.points||[]).map(p=>({
           v:p.v,i:p.i,index:p.index,sourceLine:p.sourceLine,sourceColumns:p.sourceColumns
         }))
@@ -1967,14 +2183,14 @@
     const out=[];
     for(const source of (Array.isArray(project?.datasets)?project.datasets:[])){
       if(Array.isArray(source?.points)&&source.points.length){
-        out.push({...source,sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name,points:source.points.map((point,index)=>({...point,index}))});
+        out.push({...source,assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name,points:source.points.map((point,index)=>({...point,index}))});
         continue;
       }
       if(!source?.text)continue;
       try{
         const provider=flexibleImportProvider();
         const parsed=provider.parse({name:source.name,path:source.path,text:source.text,encoding:source.encoding||'auto'},provider.defaultOptions?.()||{});
-        for(const dataset of (parsed?.datasets||[]))out.push({...dataset,sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name});
+        for(const dataset of (parsed?.datasets||[]))out.push({...dataset,assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name});
       }catch(err){console.warn('[DKDS project dataset restore]',err);}
     }
     return out;
@@ -2295,6 +2511,12 @@
   $('#importResetAutoBtn').onclick=resetCurrentImportAuto;
   $('#importApplyAllBtn').onclick=applyCurrentImportSettingsToAll;
 
+  $('#importProvider').onchange=async e=>{
+    const item=importActiveItem();if(!item)return;
+    const provider=importProvider(e.target.value);if(!provider)return;
+    item.importerId=provider.id;item.importerTouched=true;item.settings=provider.defaultOptions?.()||{};item.mappingTouched=false;
+    await readImportItemText(item,true);recomputeImportItem(item,true);renderImportWorkbench();
+  };
   $('#importEncoding').onchange=e=>updateImportSetting('encoding',e.target.value,{reload:true});
   $('#importSkipRows').onchange=e=>updateImportSetting('skipRows',Math.max(0,Number(e.target.value)||0));
   $('#importEndRow').onchange=e=>updateImportSetting('endRow',Math.max(0,Number(e.target.value)||0));
@@ -2662,7 +2884,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.4',
+      appVersion:'3.61.6',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -2673,6 +2895,7 @@
       openActivityWindow:openPluginActivityWindow,
       prepareSuperTransition:preparePluginSuperTransition,
       closeCurrentWindow:()=>window.electronAPI?.closeCurrentWindow?.(),
+      openImportWorkbench:options=>openImportWorkbench(options||{}),
       makeProject:()=>makeProject(),
       getActiveProjectTab:()=>activeProjectTab(),
       captureActiveProjectTab,

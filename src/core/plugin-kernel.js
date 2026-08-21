@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.11.0';
+  const API_VERSION = '1.13.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -105,13 +105,21 @@
     return definitions.find(d => d.manifest.id === id) || null;
   }
 
+  const DEFAULT_PLUGIN_ICONS=Object.freeze({
+    foundation:'◆',data:'▦',algorithm:'ƒ',workbench:'◇',task:'✓',extension:'⬡',developer:'⌘'
+  });
+  function defaultPluginIcon(manifest={}) {
+    const explicit=String(manifest?.icon||manifest?.workspace?.icon||'').trim();
+    return explicit||DEFAULT_PLUGIN_ICONS[pluginTypeForManifest(manifest)]||'⬡';
+  }
+
   function workspaceMeta(manifest={}) {
     const raw=manifest?.workspace&&typeof manifest.workspace==='object'?manifest.workspace:{};
     const role=String(raw.role||'').trim().toLowerCase();
     return {
       role:role==='top'?'top':role==='support'?'support':'',
       activity:String(raw.activity||'').trim(),
-      icon:String(raw.icon||'').trim(),
+      icon:String(raw.icon||manifest.icon||defaultPluginIcon(manifest)).trim(),
       title:String(raw.title||manifest.name||manifest.id||'').trim()
     };
   }
@@ -665,7 +673,7 @@
     const definition=definitionById(pluginId);
     const meta=workspaceMeta(definition?.manifest);
     const role=String(spec.role||((meta.role==='top'&&(!meta.activity||meta.activity===id))?'top':'')).trim().toLowerCase();
-    const value={id,label:id,order:100,...spec,id,pluginId,role};
+    const value={id,label:id,order:100,icon:defaultPluginIcon(definition?.manifest),...spec,id,pluginId,role};
     // TOP plugins are always first-class workspace tabs. Whether a TOP opens
     // embedded or in its independent window is decided by the SUPER state.
     if(value.primary===undefined&&(role==='top'||value.openMode==='window'))value.primary=true;
@@ -1212,6 +1220,7 @@
   }
 
   function addPage(pluginId, spec) {
+    const definition=definitionById(pluginId),manifest=definition?.manifest||{};
     let page = spec.pageId ? document.getElementById(spec.pageId) : null;
     if (!page && spec.html) {
       page = document.createElement('section');
@@ -1223,7 +1232,9 @@
       addCleanup(pluginId, () => page.remove());
     }
     if (!page) throw new Error(`Plugin page not found: ${spec.pageId || spec.id}`);
-    page.dataset.pluginActivity = spec.activity || page.dataset.pluginActivity || '';
+    const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'&&!workspaceMeta(manifest).role&&!spec.activity&&spec.presentation!=='toolbar'&&spec.primary!==false;
+    const pageActivity=String(spec.activity||(standaloneWorkbench?spec.activityId||spec.id:'')||page.dataset.pluginActivity||'');
+    page.dataset.pluginActivity = pageActivity;
 
     for (const close of page.querySelectorAll('.analysis-page-close')) {
       if (close.dataset.dkdsPluginCloseBound === '1') continue;
@@ -1241,7 +1252,22 @@
     });
     addCleanup(pluginId, () => page.classList.add('hidden'));
 
-    if (spec.toolbar !== false) {
+    if (standaloneWorkbench) {
+      const commandId = `${pluginId}.${spec.id}.open`;
+      registerCommand(pluginId, commandId, async () => {
+        host?.openAnalysisPage?.(page.id);
+        await spec.onOpen?.({ page, host });
+      });
+      registerActivity(pluginId,pageActivity,{
+        label:spec.label||manifest.name||spec.id,
+        title:spec.title||manifest.description||'',
+        icon:String(spec.icon||defaultPluginIcon(manifest)),
+        order:Number(spec.order??manifest.order??100),
+        primary:true,
+        description:String(spec.description||manifest.description||''),
+        onActivate:()=>runCommand(commandId,{source:'activity'})
+      });
+    } else if (spec.toolbar !== false) {
       const commandId = `${pluginId}.${spec.id}.open`;
       registerCommand(pluginId, commandId, async () => {
         host?.openAnalysisPage?.(page.id);
@@ -1332,7 +1358,27 @@
 
   function createApi(definition) {
     const pluginId = definition.manifest.id;
-    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmitNow } }) || null;
+    const pluginType=pluginTypeForManifest(definition.manifest);
+    const dataAssignmentsMatch=(artifact)=>{
+      if(pluginType!=='workbench')return true;
+      const raw=artifact?.metadata?.dataAssignments;
+      if(!Array.isArray(raw))return true;
+      const rows=raw.map(String);return rows.includes('*')||rows.includes(pluginId);
+    };
+    const sourceCapability=()=>{
+      const base=window.DKDSCapabilities?.proxy?.('core.data-sources')||null;if(!base)return null;
+      if(pluginType!=='workbench')return base;
+      return new Proxy(base,{get(target,prop,receiver){
+        if(prop==='list')return options=>target.list?.({...((options&&typeof options==='object')?options:{}),consumer:pluginId})||[];
+        if(prop==='setAssignments')return undefined;
+        if(prop==='detach')return ref=>{
+          const rows=target.list?.({consumer:pluginId})||[];const row=rows.find(item=>String(item?.artifactId||item?.path||'')===String(ref?.artifactId||ref?.path||ref||'')||String(item?.sourcePath||'')===String(ref?.sourcePath||''));if(!row)return {updated:false};
+          const targets=target.targets?.()||[];const current=Array.isArray(row.assignments)?row.assignments.map(String):[];const expanded=current.includes('*')?targets.map(item=>String(item.id)):current;return target.setAssignments?.({artifactId:row.artifactId,path:row.path,sourcePath:row.sourcePath},expanded.filter(id=>id!==pluginId));
+        };
+        const value=Reflect.get(target,prop,receiver);return typeof value==='function'?value.bind(target):value;
+      }});
+    };
+    const infrastructureScope = window.DKDSUI?.createScope?.(pluginId, { host, events:{ emit:eventEmitNow }, commands:{ run:runCommand } }) || null;
     const ioScope = window.DKDSIO?.createScope?.(pluginId) || null;
     const chartScope = window.DKDSCharts?.createScope?.(pluginId) || null;
     const componentScope = window.DKDSComponents?.createScope?.(pluginId,{root:document}) || null;
@@ -1456,7 +1502,7 @@
         },
         get:id=>window.DKDSCapabilities?.get?.(id)||null,
         require:(id,options)=>window.DKDSCapabilities?.require?.(id,options),
-        proxy:id=>window.DKDSCapabilities?.proxy?.(id)||null,
+        proxy:id=>String(id)==='core.data-sources'?sourceCapability():(window.DKDSCapabilities?.proxy?.(id)||null),
         list:query=>window.DKDSCapabilities?.list?.(query)||[],
         invoke:(id,method,...args)=>window.DKDSCapabilities?.invoke?.(id,method,...args),
         watch:(fn,options={})=>{
@@ -1523,6 +1569,15 @@
       data: {
         model: window.DKDSData,
         formula: window.DKDSFormula,
+        sources:Object.freeze({
+          list:options=>sourceCapability()?.list?.(options)||[],
+          targets:()=>sourceCapability()?.targets?.()||[],
+          detach:pluginType==='workbench'?ref=>sourceCapability()?.detach?.(ref):undefined,
+          setAssignments:pluginType==='data'||pluginType==='foundation'?(ref,ids)=>sourceCapability()?.setAssignments?.(ref,ids):undefined
+        }),
+        importWorkbench:Object.freeze({
+          open:(options={})=>host?.openImportWorkbench?.({...(options&&typeof options==='object'?options:{}),targets:Array.isArray(options?.targets)?options.targets:(pluginType==='workbench'?[pluginId]:undefined)})
+        }),
         flow: dataFlowScope,
         transforms: scientificTransformScope ? Object.freeze({
           version:scientificTransformScope.version,
@@ -1571,10 +1626,10 @@
           resolve:(id,item,context)=>window.DKDSUI?.dataTypes?.resolve?.(id,item,context)
         }),
         artifacts: {
-          list: options => {const rows=host?.artifacts?.list?.(options)||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return rows;},
+          list: options => {const rows=(host?.artifacts?.list?.(options)||[]).filter(dataAssignmentsMatch);infrastructureScope?.entities?.projectArtifacts?.(rows);return rows;},
           revision: kind => host?.artifacts?.revision?.(kind)||0,
           fingerprint: id => host?.artifacts?.fingerprint?.(id)||'',
-          get: id => {const row=host?.artifacts?.get?.(id)||null;if(row)infrastructureScope?.entities?.projectArtifact?.(row);return row;},
+          get: id => {const row=host?.artifacts?.get?.(id)||null;if(row&&!dataAssignmentsMatch(row))return null;if(row)infrastructureScope?.entities?.projectArtifact?.(row);return row;},
           add: (artifact, options) => {const result=host?.artifacts?.add?.(artifact, options);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
           upsert: artifact => {const result=host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
           publish: (artifact, options={}) => {const result=host?.artifacts?.publish?.(artifact, options) || host?.artifacts?.upsert?.(artifact);infrastructureScope?.entities?.projectArtifact?.(artifact);return result;},
@@ -1677,6 +1732,7 @@
         settings: infrastructureScope?.settings || null,
         interactions: infrastructureScope?.interactions || null,
         interaction: infrastructureScope?.interactionRuntime || null,
+        interactionBehaviors: infrastructureScope?.interactionBehaviors || null,
         contextMenus: infrastructureScope?.menus || null,
         selection: infrastructureScope?.selection || null,
         views: infrastructureScope?.views || null,
@@ -1904,7 +1960,9 @@
       prewarmEnabled:isPrewarmEnabled(definition),
       workspaceRole:workspace.role,
       workspaceActivity:workspace.activity||topContract?.activity||'',
-      workspaceIcon:workspace.icon||topContract?.icon||'',
+      workspaceIcon:workspace.icon||topContract?.icon||defaultPluginIcon(m),
+      workspaceTitle:workspace.title||m.name||m.id,
+      icon:defaultPluginIcon(m),
       topContractReady:workspace.role==='top'?!!topContract:false,
       isSuper:m.id===superPluginId,
       primeCount,

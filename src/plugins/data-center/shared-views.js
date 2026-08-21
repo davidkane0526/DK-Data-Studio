@@ -3,7 +3,7 @@
         <div class="analysis-page-header data-center-header"><div><h2>数据中心</h2><div class="analysis-subtitle">标准 Data Model + Provenance + Formula + Workflow / Recipe。新场景优先组合处理步骤，而不是修改主程序。</div></div><button class="analysis-page-close">关闭窗口</button></div>
         <div class="analysis-page-body data-center-body">
           <aside class="dc-card dc-artifact-pane">
-            <div class="dc-section-head"><div><strong>数据对象</strong><span id="dcArtifactCount">0</span></div></div>
+            <div class="dc-section-head"><div><strong>数据对象</strong><span id="dcArtifactCount">0</span></div><select id="dcAssignmentFilter" class="dc-assignment-filter" title="按分析用途筛选"><option value="all">全部用途</option></select></div>
             <div id="dcArtifactList" class="dc-artifact-list"></div>
           </aside>
           <main class="dc-main">

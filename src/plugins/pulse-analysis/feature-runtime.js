@@ -110,6 +110,7 @@
     }
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='pulseAnalysisPage')P.render();});
+    ctx.events.on('data:artifacts-changed',()=>P.refreshSources?.());
     ctx.events.on('layout:resize',()=>{
       for(const id of ['pulseRawPlot','pulseReadPlot','pulsePulsePlot']){
         const el=dom.query('#'+id);

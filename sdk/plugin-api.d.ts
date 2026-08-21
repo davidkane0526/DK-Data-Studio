@@ -2,13 +2,16 @@ export type DKDSDisposable = { dispose?(): void } | (() => void) | void;
 export type DKDSPluginInstance = { deactivate?(): void | Promise<void> };
 export type DKDSAlgorithmRef = { category: string; id: string; version?: string };
 export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[]; focus:any; ranges:any[]; context:Record<string,unknown>; source:any };
-export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; artifactId:string }
-export interface DKDSDataSourcesCapability { list():Promise<DKDSDataSourceDescriptor[]>; rename(ref:{path?:string;sourcePath?:string}|string,label:string):Promise<any>; setExcluded(ref:{path?:string;sourcePath?:string}|string,value?:boolean):Promise<any>; remove(refs:Array<{path?:string;sourcePath?:string}>|{path?:string;sourcePath?:string}):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}> }
+export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; assignments?:string[]; artifactId:string; kind?:string; semanticType?:string; importerId?:string }
+export interface DKDSDataSourceTarget { id:string; label:string; icon:string; order:number }
+export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
+export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):Promise<DKDSDataSourceDescriptor[]>|DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
+  data?:{accepts?:string[];produces?:string[]};
   window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';width?:number;height?:number;minWidth?:number;minHeight?:number};
   algorithmProvider?:boolean; algorithmCategories?:string[];
   algorithmProvides?:Array<{category:string;id:string;version:string;title?:string}>;
@@ -47,9 +50,16 @@ export interface DKDSPlotManipulationPayload { manipulator:DKDSPlotManipulator; 
 export interface DKDSScientificMarkerDragPayload { marker:DKDSScientificMarker; curve:DKDSScientificCurve|null; index:number; point:any; event:any; surface:DKDSScientificCurveSurface }
 /** @deprecated v1.11 compatibility only. Use DKDSPlotManipulationPayload. */
 export interface DKDSScientificWidthWindowPayload { marker:DKDSScientificMarker; side:'left'|'right'; windowLeft:number; windowRight:number; initialWindowLeft:number; initialWindowRight:number; event:any; surface:DKDSScientificCurveSurface }
+export type DKDSInteractionGesture='click'|'double-click'|'context'|'drag'|'box'|'wheel'|'key';
+export type DKDSInteractionIntent='select'|'activate'|'clear-selection'|'manipulate'|'select-region'|'zoom-box'|'zoom-wheel'|'pan'|'context-menu'|'command'|'reset-view'|string;
+export interface DKDSInteractionBehaviorBinding { id?:string; gesture:DKDSInteractionGesture; target?:string|string[]; targetId?:string; button?:'primary'|'middle'|'secondary'; modifiers?:Array<'ctrl'|'shift'|'alt'>|string; chord?:string; activity?:string; priority?:number; intent?:DKDSInteractionIntent; selectionMode?:'replace'|'additive'|'toggle'; command?:string; contextActions?:any[]|((context:any)=>any[]); when?:(context:any)=>boolean; onInvoke?:(context:any)=>boolean|void }
+export interface DKDSInteractionBehaviorBindSpec { gestures?:DKDSInteractionGesture[]; selector?:string; target?:string|((context:any)=>string); targetId?:string|((context:any)=>string); button?:string|((context:any)=>string); payload?:Record<string,any>|((context:any)=>Record<string,any>); capture?:boolean; preventDefault?:boolean; stopPropagation?:boolean; beforeRoute?:(context:any)=>void; onDecision?:(context:any)=>void }
+export interface DKDSInteractionBehaviorProfile { add(binding:DKDSInteractionBehaviorBinding):()=>void; setBindings(bindings:DKDSInteractionBehaviorBinding[]):this; resolve(input:any):any; route(input:any):any; bind(target:any,spec?:DKDSInteractionBehaviorBindSpec):()=>void; snapshot():any; dispose():void }
+export interface DKDSInteractionBehaviorRuntime { create(id:string,spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; compile(spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; get(id:string):DKDSInteractionBehaviorProfile|null; gestures:readonly DKDSInteractionGesture[]; intents:readonly string[] }
+
 export interface DKDSScientificCurveSurfaceSpec {
   container?:any; minWidth?:number; minHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string;
-  xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; navigationTools?:boolean;
+  xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; interactionBehavior?:DKDSInteractionBehaviorProfile|{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}; navigationTools?:boolean;
   getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getManipulators?:()=>DKDSPlotManipulator[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
   getView?:()=>{xDomain?:number[]|null;yDomain?:number[]|null}; setView?:(view:{xDomain?:number[]|null;yDomain?:number[]|null},meta?:any)=>void;
   getRangeSelection?:()=>any; rangeSelectionTarget?:string; rangeSelectionType?:string; showMarkers?:()=>boolean; showWidth?:()=>boolean; getMarkerWidth?:(marker:DKDSScientificMarker)=>any;
@@ -91,8 +101,20 @@ export interface DKDSReactiveRuntime {
   flushNow():boolean; subscribe(fn:(event:any,runtime:DKDSReactiveRuntime)=>void,options?:{immediate?:boolean}):()=>void; snapshot():any;
 }
 
+export interface DKDSDataImporterContext { targets?:string[] }
+export interface DKDSDataImporterResult { artifacts:any[]; inspection?:any }
+export interface DKDSDataImporterSpec {
+  id?:string; name?:string; description?:string; extensions?:string[]; preferredConsumers?:string[]; outputKinds?:string[]; outputTypes?:string[];
+  editor?:'flexible-iv'|'generic-table'|string; storage?:'legacy-datasets'|'artifacts'; priority?:number;
+  defaultOptions?:()=>any; normalizeOptions?:(value:any)=>any; inspect?:(file:any,options?:any)=>any;
+  score?:(file:any,context?:DKDSDataImporterContext)=>number; estimateArtifacts?:(file:any,options?:any,inspection?:any)=>number;
+  parse?:(file:any,options?:any)=>any; parseArtifacts?:(file:any,options?:any)=>DKDSDataImporterResult;
+}
+export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];importerId?:string}):any }
+export interface DKDSDataImportersCapability { register(id:string,spec:DKDSDataImporterSpec):any; list():any[] }
+
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.11.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.13.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
@@ -107,8 +129,8 @@ export interface DKDSPluginContext {
   readonly capabilities:{register(id:string,spec:any):any;get(id:string):any;require(id:string,options?:any):any;proxy(id:string):any;list(query?:any):any[];invoke(id:string,method:string,...args:any[]):any;watch(fn:(event:any)=>void,options?:any):()=>void;snapshot():any};
   readonly state:{create<T=any>(initial:T,options?:any):DKDSStateStore<T>};
   readonly data:{
-    model:any; formula:any; flow:any; reactive:DKDSReactiveRuntime;
-    importers:{register(id:string,spec:any):any;list():any[]}; exporters:any; transformers:any; analyzers:any;
+    model:any; formula:any; sources:DKDSDataSourcesCapability; importWorkbench:DKDSDataImportWorkbench; flow:any; reactive:DKDSReactiveRuntime;
+    importers:DKDSDataImportersCapability; exporters:any; transformers:any; analyzers:any;
     pipeline:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;list(query?:any):any[];run(id:string,input:any,options?:any):Promise<any>;runSync(id:string,input:any,options?:any):any;runPlan(plan:any,input:any,options?:any):any;snapshot():any};
     transforms:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;resolve(value:any):any;list(query?:any):any[];runCurve(id:string,input:any,options?:any):any;runScalarField(id:string,input:any,options?:any):any;curveStageId(id:string):string;fieldStageId(id:string):string};
     artifacts:any; entities:any;
@@ -124,11 +146,11 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:any; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
-    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; contextMenus:any;
+    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     analysisWorkbench:any; pluginWorkspace:any; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:any; actions:any;
     activities:{add(spec:any):any;activate(id:string):any;active():string};
     topWorkspace:{register(spec:any):any;isSuper():boolean}; prime:any; sub:any; toolbar:any; statusBar:any; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
-    pages:{add(spec:any):HTMLElement}; panels:any; styles:any; edit:any; designSystem:any
+    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; edit:any; designSystem:any
   };
 }
 export interface DKDSPluginRegistry { define(manifest:DKDSManifest,activate:(ctx:DKDSPluginContext)=>DKDSPluginInstance|Promise<DKDSPluginInstance>|void|Promise<void>):void }

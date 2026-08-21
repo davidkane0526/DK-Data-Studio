@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.8.0';
+  const VERSION = '6.9.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -210,6 +210,8 @@
   dataTypeRegistry.register('core','science.curve',{title:'Scientific curve',parents:['data.series','science.measurement'],kind:'data',shape:'curve',tags:['scientific']});
   dataTypeRegistry.register('core','science.scalar-field',{title:'Scientific scalar field',parents:['result.matrix','science.measurement'],kind:'result',shape:'matrix',tags:['scientific','field']});
   dataTypeRegistry.register('core','science.iv.raw',{title:'原始 I–V',parents:['data.sweep','science.curve'],kind:'data',quantity:'current',shape:'curve',unit:'A',tags:['transport','iv','raw'],axes:[{name:'V',unit:'V'},{name:'I',unit:'A'}],metadata:{transformKey:'raw'}});
+  dataTypeRegistry.register('core','science.transport.iv',{title:'输运 I–V 数据表',parent:'data.table',kind:'data',shape:'table',tags:['transport','iv','imported']});
+  dataTypeRegistry.register('core','science.pulse.trace',{title:'脉冲/读取数据表',parent:'data.table',kind:'data',shape:'table',tags:['pulse','read','imported']});
   dataTypeRegistry.register('core','science.iv.background-removed',{title:'去背景 I–V',parents:['data.transform','science.curve'],kind:'data',quantity:'current',shape:'curve',unit:'A',tags:['transport','iv','transform'],metadata:{transformKey:'detrend'}});
   dataTypeRegistry.register('core','science.iv.derivative',{title:'I–V 导数',parents:['data.transform','science.curve'],kind:'data',shape:'curve',tags:['transport','iv','transform']});
   dataTypeRegistry.register('core','science.transport.didv',{title:'dI/dV',parent:'science.iv.derivative',kind:'data',quantity:'conductance',shape:'curve',unit:'A/V',tags:['transport','conductance','transform'],metadata:{transformKey:'didv'}});
@@ -585,6 +587,101 @@
       }
     }
     dispose(){this.cleanups.splice(0).forEach(cleanupCall);}
+  }
+
+  const INPUT_GESTURES=Object.freeze(['click','double-click','context','drag','box','wheel','key']);
+  const CORE_INTERACTION_INTENTS=Object.freeze(['select','activate','clear-selection','manipulate','select-region','zoom-box','zoom-wheel','pan','context-menu','command','reset-view']);
+  function eventModifiers(event){return Object.freeze({ctrl:!!(event?.ctrlKey||event?.metaKey),shift:!!event?.shiftKey,alt:!!event?.altKey});}
+  function normalizeModifiers(value=[]){
+    const rows=Array.isArray(value)?value:(value?String(value).split('+'):[]),out=[];
+    for(const raw of rows){const key=String(raw||'').trim().toLowerCase();if(['ctrl','control','cmd','command','meta'].includes(key)){if(!out.includes('ctrl'))out.push('ctrl');}else if(key==='shift'){if(!out.includes('shift'))out.push('shift');}else if(['alt','option'].includes(key)){if(!out.includes('alt'))out.push('alt');}}
+    return out;
+  }
+  function buttonName(event,explicit=''){
+    if(explicit)return String(explicit);
+    const value=Number(event?.button);return value===2?'secondary':value===1?'middle':'primary';
+  }
+
+  class InteractionBehaviorProfile {
+    constructor(scope,id,spec={}){
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'interaction-behavior');this.spec={...spec};this.bindings=[];this.cleanups=[];this.sequence=0;this.menu=null;this.setBindings(spec.bindings||[]);
+    }
+    normalizeBinding(spec={}){
+      const gesture=String(spec.gesture||'').trim();if(!INPUT_GESTURES.includes(gesture))throw new Error(`Unsupported interaction gesture: ${gesture||'(empty)'}`);
+      const target=Array.isArray(spec.target)?spec.target.map(String):(spec.target?[String(spec.target)]:['*']);
+      const intent=String(spec.intent||(spec.command?'command':gesture)).trim(),chord=normalizeChord(spec.chord||'');return {...spec,id:String(spec.id||`${this.id}:${gesture}:${++this.sequence}`),gesture,target,modifiers:normalizeModifiers(spec.modifiers),matchModifiers:spec.modifiers!==undefined,priority:Number(spec.priority)||0,button:spec.button?String(spec.button):'',chord,intent,command:spec.command?String(spec.command):''};
+    }
+    setBindings(rows=[]){this.cleanups.splice(0).forEach(cleanupCall);this.bindings=[];for(const row of Array.isArray(rows)?rows:[])this.add(row);return this;}
+    add(spec={}){
+      const row=this.normalizeBinding(spec);this.bindings.push(row);let shortcutOff=null;
+      if(row.gesture==='key'&&row.chord){shortcutOff=shortcutHub.register(this.owner,`behavior:${row.id}`,{chord:row.chord,activity:row.activity||this.spec.activity,priority:row.priority,allowTyping:row.allowTyping,when:row.whenKey,handler:({event,activity})=>{const result=this.route({gesture:'key',target:'keyboard',event,chord:row.chord,payload:{activity}});return result.handled;}});this.cleanups.push(shortcutOff);}
+      return ()=>{const i=this.bindings.indexOf(row);if(i>=0)this.bindings.splice(i,1);if(shortcutOff){const c=this.cleanups.indexOf(shortcutOff);if(c>=0)this.cleanups.splice(c,1);cleanupCall(shortcutOff);shortcutOff=null;}};
+    }
+    matches(row,input){
+      if(row.gesture!==input.gesture)return false;
+      const target=String(input.target||'');if(!row.target.includes('*')&&!row.target.includes(target))return false;
+      if(row.targetId&&String(row.targetId)!==String(input.targetId||''))return false;
+      if(row.button&&row.button!==buttonName(input.event,input.button))return false;
+      if(row.gesture==='key'&&row.chord&&normalizeChord(input.chord||eventChord(input.event))!==row.chord)return false;
+      const mods=eventModifiers(input.event),wanted=new Set(row.modifiers||[]);
+      if(row.matchModifiers&&(wanted.has('ctrl')!==mods.ctrl||wanted.has('shift')!==mods.shift||wanted.has('alt')!==mods.alt))return false;
+      if(typeof row.when==='function'){try{if(!row.when({...input,mods,profile:this}))return false;}catch(err){console.warn('[DKDS interaction behavior when]',row.id,err);return false;}}
+      return true;
+    }
+    resolve(input={}){
+      const normalized={...input,gesture:String(input.gesture||''),target:String(input.target||'*')};
+      const rows=this.bindings.filter(row=>this.matches(row,normalized)).sort((a,b)=>b.priority-a.priority||this.bindings.indexOf(a)-this.bindings.indexOf(b));
+      const binding=rows[0]||null;if(!binding)return Object.freeze({handled:false,intent:'',binding:null,input:normalized});
+      return {handled:false,intent:String(binding.intent||''),binding,input:normalized};
+    }
+    commandContext(decision){const input=decision.input||{};return {...(input.payload||{}),gesture:input.gesture,targetKind:input.target,targetId:input.targetId||'',event:input.event,mods:eventModifiers(input.event),intent:decision.intent,bindingId:decision.binding?.id||'',behaviorId:this.id};}
+    openContextActions(decision){
+      const binding=decision.binding,input=decision.input||{},ctx=this.commandContext(decision);let rows=binding?.contextActions;
+      if(typeof rows==='function')rows=rows(ctx);if(!Array.isArray(rows)||!rows.length)return false;
+      const items=rows.map(item=>({...item,onInvoke:payload=>{const actionCtx={...ctx,...payload,actionId:item.id};if(item.command)return this.scope.options.commands?.run?.(String(item.command),actionCtx);return item.onInvoke?.(actionCtx);}}));
+      const event=input.event,x=Number(event?.clientX)||0,y=Number(event?.clientY)||0;this.menu?.dispose?.();this.menu=new ContextMenu(this.owner);this.menu.open({x,y,items,context:ctx});return true;
+    }
+    route(input={}){
+      const decision=this.resolve(input);if(!decision.binding)return decision;
+      const binding=decision.binding,ctx=this.commandContext(decision);let handled=false;
+      if(input.gesture==='context'&&binding.contextActions)handled=this.openContextActions(decision)||handled;
+      if(binding.command){handled=true;Promise.resolve(this.scope.options.commands?.run?.(binding.command,ctx)).catch(err=>{console.error('[DKDS interaction behavior command]',binding.command,err);this.scope.options.host?.setStatus?.(`交互命令执行失败：${err.message}`);});}
+      if(typeof binding.onInvoke==='function'){try{handled=binding.onInvoke(ctx)!==false||handled;}catch(err){console.error('[DKDS interaction behavior]',binding.id,err);}}
+      if(typeof this.spec.onIntent==='function'){try{handled=this.spec.onIntent({...ctx,binding,intent:decision.intent})!==false||handled;}catch(err){console.error('[DKDS interaction behavior intent]',this.id,err);}}
+      return {...decision,handled};
+    }
+    bind(target,spec={}){
+      const root=resolveElement(target);if(!root)throw new Error(`Interaction behavior target not found: ${this.id}`);
+      const requested=Array.isArray(spec.gestures)&&spec.gestures.length?spec.gestures:['click','double-click','context'];
+      const eventNames={click:'click','double-click':'dblclick',context:'contextmenu',wheel:'wheel',key:'keydown'};
+      const selector=String(spec.selector||'').trim(),cleanups=[];
+      const subjectFor=event=>{
+        if(!selector)return root;
+        const subject=event?.target?.closest?.(selector);return subject&&root.contains(subject)?subject:null;
+      };
+      const valueFor=(value,context,fallback='')=>typeof value==='function'?value(context):(value??fallback);
+      for(const gesture of requested){
+        const eventName=eventNames[String(gesture||'')];if(!eventName)continue;
+        const listener=event=>{
+          const element=subjectFor(event);if(!element)return;
+          const base={event,element,root,profile:this};
+          const targetKind=String(valueFor(spec.target,base,element.dataset?.interactionTarget||'*')||'*');
+          const targetId=String(valueFor(spec.targetId,base,element.dataset?.interactionId||element.dataset?.selectionKey||'')||'');
+          const extraPayload=valueFor(spec.payload,base,{})||{};
+          const input={gesture:String(gesture),target:targetKind,targetId,event,button:valueFor(spec.button,base,''),payload:{...extraPayload,element,root}};
+          try{spec.beforeRoute?.({...base,input});}catch(err){console.warn('[DKDS interaction behavior beforeRoute]',this.id,err);}
+          const decision=this.route(input),matched=!!decision.binding;
+          const shouldPrevent=spec.preventDefault===true||(String(gesture)==='context'&&(matched||decision.handled));
+          if(shouldPrevent)event.preventDefault?.();
+          if((decision.handled||spec.stopPropagation===true)&&spec.stopPropagation!==false)event.stopPropagation?.();
+          try{spec.onDecision?.({...base,input,decision});}catch(err){console.warn('[DKDS interaction behavior onDecision]',this.id,err);}
+        };
+        root.addEventListener(eventName,listener,spec.capture===true);cleanups.push(()=>root.removeEventListener(eventName,listener,spec.capture===true));
+      }
+      const cleanup=()=>cleanups.splice(0).reverse().forEach(cleanupCall);this.cleanups.push(cleanup);return cleanup;
+    }
+    snapshot(){return Object.freeze({id:this.id,bindings:Object.freeze(this.bindings.map(row=>Object.freeze({id:row.id,gesture:row.gesture,target:Object.freeze(row.target.slice()),modifiers:Object.freeze(row.modifiers.slice()),button:row.button,intent:row.intent,command:row.command,priority:row.priority})))});}
+    dispose(){this.menu?.dispose?.();this.menu=null;this.cleanups.splice(0).forEach(cleanupCall);this.bindings=[];}
   }
 
   function normalizePlacement(value){const p=String(value||'').toLowerCase();return ['home','sticky','left','right','bottom','main','float','global'].includes(p)?p:'home';}
@@ -1254,13 +1351,34 @@
   ensureGlobalTableSurfaceObserver();
 
 
+  const DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS=Object.freeze([
+    Object.freeze({id:'core.manipulate',gesture:'drag',target:'manipulator',intent:'manipulate',priority:100}),
+    Object.freeze({id:'core.marker.select-additive',gesture:'click',target:'marker',modifiers:['ctrl'],intent:'select',selectionMode:'additive',priority:10}),
+    Object.freeze({id:'core.marker.select',gesture:'click',target:'marker',intent:'select'}),
+    Object.freeze({id:'core.marker.activate',gesture:'double-click',target:'marker',intent:'activate'}),
+    Object.freeze({id:'core.marker.context',gesture:'context',target:'marker',intent:'context-menu'}),
+    Object.freeze({id:'core.curve.select-additive',gesture:'click',target:'curve',modifiers:['ctrl'],intent:'select',selectionMode:'additive',priority:10}),
+    Object.freeze({id:'core.curve.select',gesture:'click',target:'curve',intent:'select'}),
+    Object.freeze({id:'core.curve.activate',gesture:'double-click',target:'curve',intent:'activate'}),
+    Object.freeze({id:'core.background.clear',gesture:'click',target:'background',intent:'clear-selection'}),
+    Object.freeze({id:'core.background.reset',gesture:'double-click',target:'background',intent:'reset-view'}),
+    Object.freeze({id:'core.background.zoom-box',gesture:'box',target:'background',modifiers:['ctrl'],intent:'zoom-box',priority:20}),
+    Object.freeze({id:'core.background.select-region',gesture:'box',target:'background',intent:'select-region'}),
+    Object.freeze({id:'core.plot.wheel-zoom',gesture:'wheel',target:'plot',intent:'zoom-wheel'})
+  ]);
+
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.target=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.markerClickSuppressUntil=new Map();
-      if(!this.target)throw new Error('ScientificCurveSurface target not found.');
+      this.scope=scope;this.owner=scope.owner;const resolvedTarget=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.markerClickSuppressUntil=new Map();this.ownsTarget=false;const behaviorSpec=spec.interactionBehavior&&typeof spec.interactionBehavior==='object'&&!spec.interactionBehavior.route?spec.interactionBehavior:{};this.behavior=spec.interactionBehavior?.route?spec.interactionBehavior:scope.interactionBehaviors?.compile?.({...behaviorSpec,bindings:[...DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS,...(Array.isArray(behaviorSpec.bindings)?behaviorSpec.bindings:[])]})||null;
+      if(!resolvedTarget)throw new Error('ScientificCurveSurface target not found.');
+      const isSvg=String(resolvedTarget.tagName||'').toLowerCase()==='svg'||resolvedTarget.namespaceURI==='http://www.w3.org/2000/svg';
+      if(isSvg)this.target=resolvedTarget;
+      else{
+        this.target=document.createElementNS('http://www.w3.org/2000/svg','svg');this.target.classList.add('dkds-scientific-curve-canvas');this.target.setAttribute('role','img');resolvedTarget.appendChild(this.target);this.ownsTarget=true;
+      }
       this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
       this.target.classList.add('dkds-scientific-curve-surface');
-      this.container=resolveElement(spec.container)||this.target.parentElement||this.target;
+      this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');
       this.installNavigationTools();
       this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.requestRender('resize')):null;
@@ -1275,6 +1393,9 @@
     view(){const raw=this.spec.getView?.()||{};return raw&&typeof raw==='object'?raw:{};}
     setView(next,meta={}){this.spec.setView?.(next,meta);this.spec.onViewChanged?.(next,meta);}
     setInteraction(interaction){if(this.interaction===interaction)return;this.selectionOff?.();this.selectionOff=null;this.interaction=interaction||null;if(this.interaction?.subscribe)this.selectionOff=this.interaction.subscribe(snapshot=>{this.selectionSnapshot=snapshot;this.requestRender('entity-selection');},{immediate:true});}
+    routeInteraction(gesture,target,event,payload={},extra={}){const input={gesture,target,event,payload,targetId:String(extra.targetId||payload?.marker?.id||payload?.curve?.id||payload?.manipulator?.id||''),button:extra.button};return this.behavior?.route?.(input)||{handled:false,intent:'',binding:null,input};}
+    interactionIntent(gesture,target,event,payload={},extra={}){return String(this.routeInteraction(gesture,target,event,payload,extra)?.intent||'');}
+    canManipulate(manipulator,event){const input={gesture:'drag',target:'manipulator',event,payload:{manipulator,surface:this},targetId:String(manipulator?.id||'')};const decision=this.behavior?.resolve?.(input);return !decision?.binding||decision.intent==='manipulate';}
     focusEntityId(){return String(this.selectionSnapshot?.focus?.id||this.selectionSnapshot?.items?.at?.(-1)?.id||'');}
     ensureEntity(id,parentId=''){const key=String(id||'');if(!key)return null;try{return this.entities?.ensure?.({id:key,parents:parentId?[String(parentId)]:[]})||{id:key};}catch{return {id:key};}}
     selectedCurveId(){const explicit=String(this.spec.getSelectedCurveId?.()||'');if(explicit)return explicit;const focus=this.focusEntityId();if(!focus)return '';const ids=this.curves().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean),set=new Set(ids);if(set.has(focus))return focus;return String(this.entities?.closestInSet?.(focus,set)||'');}
@@ -1338,7 +1459,7 @@
       const d3=this.d3(),node=this.target,container=this.container;if(!d3||!node||!container)return false;
       const rect=container.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);
       const minWidth=Number(this.spec.minWidth)||260,minHeight=Number(this.spec.minHeight)||180;
-      if(width<minWidth||height<minHeight){this.requestRender('await-layout');return false;}
+      if(width<minWidth||height<minHeight){this.awaitingLayout=true;return false;}this.awaitingLayout=false;
       const curves=this.curves(),svg=d3.select(node);svg.on('.dkdssci',null).attr('viewBox',null).attr('preserveAspectRatio',null).attr('width',width).attr('height',height).style('width',`${width}px`).style('height',`${height}px`);svg.selectAll('*').remove();
       if(!curves.length){this.spec.onEmpty?.({svg,width,height});if(!this.spec.onEmpty)svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text(this.spec.emptyText||'没有可显示的数据');return true;}
       const margin={top:62,right:30,bottom:50,left:78,...(this.spec.margin||{})},innerW=Math.max(60,width-margin.left-margin.right),innerH=Math.max(60,height-margin.top-margin.bottom);
@@ -1367,8 +1488,8 @@
         const opacity=curve.opacity??(hasCurveSelection?(active?1:.10):.74),strokeWidth=curve.strokeWidth??(active?3:1.25);
         dataLayer.append('path').datum(points).attr('class',`dkds-scientific-curve ${hasCurveSelection&&!active?'is-dimmed':''}`).attr('d',line).attr('stroke',color).attr('stroke-width',strokeWidth).attr('stroke-dasharray',dash).attr('opacity',opacity).style('pointer-events','none');
         dataLayer.append('path').datum(points).attr('class','dkds-scientific-curve-hit').attr('d',line)
-          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px);if(event.ctrlKey||event.shiftKey)this.spec.onCurveModifiedClick?.({curve,x:xValue,event,surface:this});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',value:curve?.source||curve});})
-          .on('dblclick',event=>{event.preventDefault();event.stopPropagation();if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick({curve,event,surface:this});else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});});
+          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px),payload={curve,x:xValue,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',additive:payload.additive,value:curve?.source||curve});}else if(decision.intent==='activate')this.spec.onCurveDoubleClick?.(payload);else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);})
+          .on('dblclick',event=>{event.preventDefault();event.stopPropagation();const payload={curve,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('double-click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='activate'){if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});}});
       }
       const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id))),markerNodes=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
       const declaredManipulators=this.manipulators(),manipulators=declaredManipulators.slice();
@@ -1422,14 +1543,14 @@
           .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
           .attr('stroke',m=>selectedMarkerIds.has(String(m.id))?'#111827':(m.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',m=>selectedMarkerIds.has(String(m.id))?3.2:1.8).attr('opacity',m=>{let o=m.accepted!==false?.98:.34;if(hasCurveSelection&&String(m.curveId)!==selectedCurveId)o*=.11;return o;}).style('pointer-events','none');
         const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''} ${manipulatorByTarget.has(String(m.id))?'is-manipulable':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
-          .on('click',(event,marker)=>{event.stopPropagation();const id=String(marker?.id||'');if((this.markerClickSuppressUntil.get(id)||0)>Date.now()){event.preventDefault();return;}this.spec.onMarkerSelect?.({marker,event,surface:this,additive:!!(event.ctrlKey||event.metaKey)});})
-          .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();this.spec.onMarkerDoubleClick?.({marker,event,surface:this});})
-          .on('contextmenu',(event,marker)=>{if(!(event.ctrlKey||event.shiftKey))return;event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.({marker,event,surface:this});else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});})
+          .on('click',(event,marker)=>{event.stopPropagation();const id=String(marker?.id||'');if((this.markerClickSuppressUntil.get(id)||0)>Date.now()){event.preventDefault();return;}const payload={marker,event,surface:this,additive:false};const decision=this.routeInteraction('click','marker',event,payload,{targetId:id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';this.spec.onMarkerSelect?.(payload);}})
+          .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();const payload={marker,event,surface:this};const decision=this.routeInteraction('double-click','marker',event,payload,{targetId:marker?.id});if(decision.handled)return;if(decision.intent==='activate')this.spec.onMarkerDoubleClick?.(payload);})
+          .on('contextmenu',(event,marker)=>{const payload={marker,event,surface:this};const decision=this.routeInteraction('context','marker',event,payload,{targetId:marker?.id,button:'secondary'});if(decision.handled){event.preventDefault();event.stopPropagation();return;}if(decision.intent==='context-menu'&&(event.ctrlKey||event.shiftKey)){event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.(payload);else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});}})
           .on('mouseenter',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'enter'})).on('mousemove',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'move'})).on('mouseleave',(event,marker)=>this.spec.onMarkerHover?.({marker,event,surface:this,phase:'leave'}));
         marks.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.mark=this;markerNodes.set(id,row);});
         hits.each(function(marker){const id=String(marker?.id||'');if(!id)return;const row=markerNodes.get(id)||{};row.hit=this;markerNodes.set(id,row);});
         const dragState=new Map();
-        hits.call(d3.drag().clickDistance(7).filter((event,marker)=>event.button===0&&!event.ctrlKey&&!!manipulatorByTarget.get(String(marker?.id||''))).on('start',(event,marker)=>{
+        hits.call(d3.drag().clickDistance(7).filter((event,marker)=>{const manipulator=manipulatorByTarget.get(String(marker?.id||''));return event.button===0&&!!manipulator&&this.canManipulate(manipulator,event);}).on('start',(event,marker)=>{
           const manipulator=manipulatorByTarget.get(String(marker.id));if(!manipulator||manipulator.locked||marker.locked)return;const geometry={x:Number(manipulator.geometry?.x??marker.x),y:Number(manipulator.geometry?.y??marker.y)};dragState.set(String(marker.id),{x:Number(event.x),y:Number(event.y),moved:false,manipulator,initialGeometry:{...geometry},geometry:{...geometry},curve:null,index:-1,point:null});emitManipulation('start',{manipulator,handle:'point',geometry:{...geometry},initialGeometry:{...geometry},event,surface:this});
         }).on('drag',(event,marker)=>{
           const state=dragState.get(String(marker.id));if(!state||state.manipulator.locked||marker.locked)return;if(!state.moved){state.moved=Math.hypot(Number(event.x)-state.x,Number(event.y)-state.y)>=5;if(!state.moved)return;}
@@ -1469,7 +1590,7 @@
               for(const handle of ['start','end'])handleNodes[handle]?.attr('cx',x(handle==='start'?start:end)).attr('cy',handleY);
             }
           };
-          const installRangeDrag=(handleNode,handle)=>handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,handle);}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;lastCurve=null;lastIndex=-1;lastPoint=null;emitManipulation('start',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{
+          const installRangeDrag=(handleNode,handle)=>handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,handle);}).call(d3.drag().clickDistance(5).filter(event=>event.button===0&&this.canManipulate(manipulator,event)).on('start',event=>{moved=false;lastCurve=null;lastIndex=-1;lastPoint=null;emitManipulation('start',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{
             let value,curve=null,index=-1,point=null;if(axis==='x'){const snapped=snapToCurve(manipulator,event);value=Number(snapped.xValue);curve=snapped.curve;index=snapped.index;point=snapped.point;}else value=Number(y.invert(event.y));if(!Number.isFinite(value))return;
             const min=Number(constraints.min),max=Number(constraints.max),minSpan=Math.max(0,Number(constraints.minSpan)||0),contains=Number(constraints.contains),containsGap=Math.max(0,Number(constraints.containsGap)||0);if(Number.isFinite(min))value=Math.max(min,value);if(Number.isFinite(max))value=Math.min(max,value);
             if(handle==='start'){value=Math.min(value,end-minSpan);if(Number.isFinite(contains))value=Math.min(value,contains-containsGap);start=value;}else{value=Math.max(value,start+minSpan);if(Number.isFinite(contains))value=Math.max(value,contains+containsGap);end=value;}
@@ -1477,16 +1598,19 @@
           }).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle,geometry:{start,end},initialGeometry:{...initialGeometry},curve:lastCurve,index:lastIndex,point:lastPoint,event,surface:this});this.requestRender('manipulation-end');}));
           for(const handle of ['start','end']){const h=layer.append('circle').attr('class',`dkds-direct-handle dkds-direct-range-handle ${axis==='x'?'dkds-scientific-width-handle':''}`).attr('data-handle',handle).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2).style('cursor',axis==='y'?'ns-resize':'ew-resize');handleNodes[handle]=h;installRangeDrag(h,handle);}redraw();
         }else if(kind==='axis'){
-          let value=Number(g.value);if(!Number.isFinite(value))continue;const initialGeometry={value},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-axis').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),lineNode=layer.append('line').attr('class','dkds-direct-axis-line').attr('stroke',color),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-axis-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);const redraw=()=>{if(axis==='y'){lineNode.attr('x1',margin.left).attr('x2',margin.left+innerW).attr('y1',y(value)).attr('y2',y(value));handleNode.attr('cx',margin.left+10).attr('cy',y(value)).style('cursor','ns-resize');}else{lineNode.attr('x1',x(value)).attr('x2',x(value)).attr('y1',margin.top).attr('y2',margin.top+innerH);handleNode.attr('cx',x(value)).attr('cy',margin.top+10).style('cursor','ew-resize');}};let moved=false;handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'value');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{let curve=null,index=-1,point=null,next;if(axis==='x'){const snapped=snapToCurve(manipulator,event);next=Number(snapped.xValue);curve=snapped.curve;index=snapped.index;point=snapped.point;}else next=Number(y.invert(event.y));if(!Number.isFinite(next))return;moved=true;const min=Number(manipulator.constraints?.min),max=Number(manipulator.constraints?.max);if(Number.isFinite(min))next=Math.max(min,next);if(Number.isFinite(max))next=Math.min(max,next);value=next;redraw();emitManipulation('preview',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},curve,index,point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));redraw();
+          let value=Number(g.value);if(!Number.isFinite(value))continue;const initialGeometry={value},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-axis').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),lineNode=layer.append('line').attr('class','dkds-direct-axis-line').attr('stroke',color),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-axis-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);const redraw=()=>{if(axis==='y'){lineNode.attr('x1',margin.left).attr('x2',margin.left+innerW).attr('y1',y(value)).attr('y2',y(value));handleNode.attr('cx',margin.left+10).attr('cy',y(value)).style('cursor','ns-resize');}else{lineNode.attr('x1',x(value)).attr('x2',x(value)).attr('y1',margin.top).attr('y2',margin.top+innerH);handleNode.attr('cx',x(value)).attr('cy',margin.top+10).style('cursor','ew-resize');}};let moved=false;handleNode.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'value');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0&&this.canManipulate(manipulator,event)).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{let curve=null,index=-1,point=null,next;if(axis==='x'){const snapped=snapToCurve(manipulator,event);next=Number(snapped.xValue);curve=snapped.curve;index=snapped.index;point=snapped.point;}else next=Number(y.invert(event.y));if(!Number.isFinite(next))return;moved=true;const min=Number(manipulator.constraints?.min),max=Number(manipulator.constraints?.max);if(Number.isFinite(min))next=Math.max(min,next);if(Number.isFinite(max))next=Math.min(max,next);value=next;redraw();emitManipulation('preview',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},curve,index,point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'value',geometry:{value},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));redraw();
         }else if(kind==='point'&&!manipulator.targetId){
-          let px=Number(g.x),py=Number(g.y);if(!Number.isFinite(px)||!Number.isFinite(py))continue;const initialGeometry={x:px,y:py},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-point').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-point-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2).attr('cx',x(px)).attr('cy',y(py)).style('cursor','grab');let moved=false;handleNode.on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'point');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{const snapped=snapToCurve(manipulator,event),dragAxis=String(manipulator.axis||'xy');let nx=Number(snapped.xValue),ny=Number(snapped.yValue);if(dragAxis==='x')ny=initialGeometry.y;if(dragAxis==='y')nx=initialGeometry.x;if(!Number.isFinite(nx)||!Number.isFinite(ny))return;moved=true;px=nx;py=ny;handleNode.attr('cx',x(px)).attr('cy',y(py));emitManipulation('preview',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},curve:snapped.curve,index:snapped.index,point:snapped.point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));
+          let px=Number(g.x),py=Number(g.y);if(!Number.isFinite(px)||!Number.isFinite(py))continue;const initialGeometry={x:px,y:py},layer=svg.append('g').attr('class','dkds-direct-manipulation dkds-direct-point').attr('data-manipulator-id',String(manipulator.id)).attr('clip-path',`url(#${clipId})`),handleNode=layer.append('circle').attr('class','dkds-direct-handle dkds-direct-point-handle').attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2).attr('cx',x(px)).attr('cy',y(py)).style('cursor','grab');let moved=false;handleNode.on('dblclick',event=>{event.preventDefault();event.stopPropagation();resetManipulator(manipulator,event,'point');}).call(d3.drag().clickDistance(5).filter(event=>event.button===0&&this.canManipulate(manipulator,event)).on('start',event=>{moved=false;emitManipulation('start',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});}).on('drag',event=>{const snapped=snapToCurve(manipulator,event),dragAxis=String(manipulator.axis||'xy');let nx=Number(snapped.xValue),ny=Number(snapped.yValue);if(dragAxis==='x')ny=initialGeometry.y;if(dragAxis==='y')nx=initialGeometry.x;if(!Number.isFinite(nx)||!Number.isFinite(ny))return;moved=true;px=nx;py=ny;handleNode.attr('cx',x(px)).attr('cy',y(py));emitManipulation('preview',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},curve:snapped.curve,index:snapped.index,point:snapped.point,event,surface:this});}).on('end',event=>{if(!moved)return;emitManipulation('commit',{manipulator,handle:'point',geometry:{x:px,y:py},initialGeometry:{...initialGeometry},event,surface:this});this.requestRender('manipulation-end');}));
         }
       }
       this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});
-      let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,zoom:!!event.ctrlKey,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${rangeDrag.zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
-      const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){if(drag.zoom)this.spec.onCurveModifiedClick?.({curve:near.curve,x:near.point.x,event,surface:this,source:'background'});else if(this.spec.onCurveSelect)this.spec.onCurveSelect({curve:near.curve,event,surface:this,source:'background'});else this.selectEntity(near.curve?.entityId||near.curve?.id,{source:this.spec.source||'scientific-curve-background',value:near.curve?.source||near.curve});}else if(!drag.zoom){if(this.spec.onClearSelection)this.spec.onClearSelection({event,surface:this});else this.interaction?.clear?.({source:this.spec.source||'scientific-curve-background'});}return;}const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;if(drag.zoom){const next={xDomain:[x.invert(sx0),x.invert(sx1)].sort((a,b)=>a-b),yDomain:[y.invert(sy1),y.invert(sy0)].sort((a,b)=>a-b)};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}const selection={xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this,target:String(this.spec.rangeSelectionTarget||'samples'),targetType:String(this.spec.rangeSelectionType||'')};selection.markers=markers.filter(marker=>this.finite(marker?.x)&&this.finite(marker?.y)&&Number(marker.x)>=selection.xMin&&Number(marker.x)<=selection.xMax&&Number(marker.y)>=selection.yMin&&Number(marker.y)<=selection.yMax);selection.markerIds=selection.markers.map(marker=>String(marker?.entityId||marker?.id||'')).filter(Boolean);this.spec.onRangeSelect?.(selection);};plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
-      plotBg.on('dblclick',event=>{event.preventDefault();this.resetView({event});});
-      svg.on('wheel.dkdssci',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;event.preventDefault();event.stopPropagation();this.spec.onWheelZoomStart?.({event,surface:this});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6),next={xDomain:this.scaleDomainAround(xDomain,cx,factor,minX),yDomain:this.scaleDomainAround(yDomain,cy,factor,minY)};this.setView(next,{reason:'wheel',event});this.requestRender('wheel');});
+      let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;if(!rangeDrag.moved)return;const preview=this.behavior?.resolve?.({gesture:'box',target:'background',event,payload:{surface:this}}),zoom=preview?.intent==='zoom-box';svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
+      const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}
+        if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){const payload={curve:near.curve,x:near.point.x,index:near.index,point:near.point?.raw||near.point,event,surface:this,source:'background'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:near.curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(near.curve?.entityId||near.curve?.id,{source:this.spec.source||'scientific-curve-background',additive:payload.additive,value:near.curve?.source||near.curve});}else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);}else{const payload={event,surface:this,source:'background'};const decision=this.routeInteraction('click','background',event,payload);if(decision.handled)return;if(decision.intent==='clear-selection'){if(this.spec.onClearSelection)this.spec.onClearSelection(payload);else this.interaction?.clear?.({source:this.spec.source||'scientific-curve-background'});}}return;}
+        const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;const selection={xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this,target:String(this.spec.rangeSelectionTarget||'samples'),targetType:String(this.spec.rangeSelectionType||'')};selection.markers=markers.filter(marker=>this.finite(marker?.x)&&this.finite(marker?.y)&&Number(marker.x)>=selection.xMin&&Number(marker.x)<=selection.xMax&&Number(marker.y)>=selection.yMin&&Number(marker.y)<=selection.yMax);selection.markerIds=selection.markers.map(marker=>String(marker?.entityId||marker?.id||'')).filter(Boolean);const decision=this.routeInteraction('box','background',event,selection);if(decision.handled)return;if(decision.intent==='zoom-box'){const next={xDomain:[selection.xMin,selection.xMax],yDomain:[selection.yMin,selection.yMax]};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}if(decision.intent==='select-region')this.spec.onRangeSelect?.(selection);
+      };plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
+      plotBg.on('dblclick',event=>{event.preventDefault();const decision=this.routeInteraction('double-click','background',event,{event,surface:this});if(decision.handled)return;if(decision.intent==='reset-view')this.resetView({event});});
+      svg.on('wheel.dkdssci',event=>{const [px,py]=d3.pointer(event,node);if(px<margin.left||px>margin.left+innerW||py<margin.top||py>margin.top+innerH)return;const payload={event,surface:this,x:x.invert(px),y:y.invert(py)};const decision=this.routeInteraction('wheel','plot',event,payload);if(decision.handled)return;if(decision.intent!=='zoom-wheel')return;event.preventDefault();event.stopPropagation();this.spec.onWheelZoomStart?.({event,surface:this});const dy=Math.max(-220,Math.min(220,Number(event.deltaY)||0)),factor=Math.max(.72,Math.min(1.38,Math.exp(dy*.00145))),cx=x.invert(px),cy=y.invert(py),minX=Math.max(1e-12,Math.abs(fullX[1]-fullX[0])*1e-6),minY=Math.max(1e-30,Math.abs(fullY[1]-fullY[0])*1e-6),next={xDomain:this.scaleDomainAround(xDomain,cx,factor,minX),yDomain:this.scaleDomainAround(yDomain,cy,factor,minY)};this.setView(next,{reason:'wheel',event});this.requestRender('wheel');});
       const selectedRange=this.spec.getRangeSelection?.();if(selectedRange&&this.finite(selectedRange.xMin??selectedRange.min)&&this.finite(selectedRange.xMax??selectedRange.max)){
         const xv0=Number(selectedRange.xMin??selectedRange.min),xv1=Number(selectedRange.xMax??selectedRange.max),rx0=x(xv0),rx1=x(xv1),hasY=this.finite(selectedRange.yMin)&&this.finite(selectedRange.yMax),yv0=hasY?Number(selectedRange.yMin):null,yv1=hasY?Number(selectedRange.yMax):null,ry0=hasY?y(yv0):margin.top+innerH,ry1=hasY?y(yv1):margin.top;
         if(Number.isFinite(rx0)&&Number.isFinite(rx1)&&Number.isFinite(ry0)&&Number.isFinite(ry1)){
@@ -1505,7 +1629,7 @@
       }
       this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes};return true;
     }
-    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
   }
 
   class AnalysisWorkbench {
@@ -1819,7 +1943,7 @@
       this.interactions={bind:(target,spec)=>this.trackObject(new InteractionBinding(this.owner,target,spec))};
       this.menus={create:spec=>this.trackObject(new ContextMenu(this.owner,spec)),open:(spec={})=>{const menu=this.trackObject(new ContextMenu(this.owner,spec));menu.open(spec);return menu;}};
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
-      this.selectionChannels=new Map();this.selectionModels=new Map();this.interactionRuntimes=new Map();
+      this.selectionChannels=new Map();this.selectionModels=new Map();this.interactionRuntimes=new Map();this.interactionBehaviorProfiles=new Map();
       this.selection={
         channel:(id,initial=null)=>{const key=String(id);if(!this.selectionChannels.has(key))this.selectionChannels.set(key,this.trackObject(new SelectionChannel(this.owner,key,initial)));return this.selectionChannels.get(key);},
         model:(id,spec={})=>{const key=String(id);if(!this.selectionModels.has(key))this.selectionModels.set(key,this.trackObject(new SelectionModel(this.owner,key,spec)));return this.selectionModels.get(key);},
@@ -1827,6 +1951,7 @@
         observe:(fn,options={})=>{if(typeof fn!=='function')return()=>{};const handler=event=>{const detail=event?.detail||{};if(options.owner&&detail.owner!==options.owner)return;const types=Array.isArray(options.types)?options.types:(options.type?[options.type]:[]);if(types.length&&!((detail.snapshot?.items||[]).some(item=>dataTypeRegistry.accepts(item.type,types))))return;fn(detail.snapshot,detail.meta||{},detail);};window.addEventListener('dkds:selection-changed',handler);const off=()=>window.removeEventListener('dkds:selection-changed',handler);this.track(off);return off;}
       };
       this.interactionRuntime={create:(id,spec={})=>{const key=String(id||'interaction');if(!this.interactionRuntimes.has(key))this.interactionRuntimes.set(key,this.trackObject(new InteractionRuntime(this,key,spec)));return this.interactionRuntimes.get(key);},get:id=>this.interactionRuntimes.get(String(id||''))||null};
+      this.interactionBehaviors={create:(id,spec={})=>{const key=String(id||`behavior-${this.interactionBehaviorProfiles.size+1}`);if(this.interactionBehaviorProfiles.has(key))return this.interactionBehaviorProfiles.get(key);const profile=this.trackObject(new InteractionBehaviorProfile(this,key,spec));this.interactionBehaviorProfiles.set(key,profile);return profile;},compile:(spec={})=>this.trackObject(new InteractionBehaviorProfile(this,`surface-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,spec)),get:id=>this.interactionBehaviorProfiles.get(String(id||''))||null,gestures:INPUT_GESTURES,intents:CORE_INTERACTION_INTENTS};
       this.resizeScheduler=new ResizeScheduler(this);
       this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec))};
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
@@ -1885,7 +2010,7 @@
       if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificPlotly?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
       return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificPlotly?.lifecycleState?.()||null};
     }
-    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
+    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
   }
 
   function configureHost(options={}){
@@ -1923,7 +2048,7 @@
     async lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle?.(state,options));return {state:String(state||''),scopes:rows.length,rows};},
     lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificPlotly?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
-    ActionGroup,InteractionBinding,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

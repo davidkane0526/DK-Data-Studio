@@ -268,7 +268,7 @@
 
       if(pipeline?.register){
         pipeline.register('ter-matrix',{
-          title:'TER matrix',kind:'analysis',inputTypes:['data.table'],outputTypes:['science.ter.matrix'],allowEmptyInput:true,cacheLimit:4,
+          title:'TER matrix',kind:'analysis',inputTypes:['science.transport.iv','data.table'],outputTypes:['science.ter.matrix'],allowEmptyInput:true,cacheLimit:4,
           run:(input,{parameters})=>{
             const canonical=D?.legacyDatasetsFromArtifacts?.(Array.isArray(input)?input:[])||[];
             const source=canonical.length?canonical:datasets();

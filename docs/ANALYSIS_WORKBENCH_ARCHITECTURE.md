@@ -123,15 +123,15 @@ Capability registry changes are republished automatically.
 
 ## 6. Shared infrastructure exposed to plugins
 
-Plugin API 1.9 exposes, among other APIs:
+Plugin API 1.12 exposes, among other APIs:
 
 - `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface`;
 - `ctx.ui.grid`;
 - `ctx.ui.portable`;
 - `ctx.ui.actions`;
-- `ctx.ui.shortcuts`;
-- `ctx.ui.interactions`;
+- `ctx.ui.interactionBehaviors` for normalized gesture → intent / command arbitration;
 - `ctx.ui.contextMenus`;
+- legacy low-level `ctx.ui.shortcuts` / `ctx.ui.interactions` remain compatibility primitives, but new plugins should not bypass Interaction Behavior with them;
 - `ctx.ui.selection` and `ctx.ui.interaction`;
 - `ctx.data.types` for plugin-owned raw/derived/result type registration;
 - `ctx.ui.charts`;

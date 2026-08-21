@@ -2,14 +2,14 @@
   DKDSPlugins.define({
     id:'builtin.resonance-workbench',pluginType:'workbench',
     name:'Resonance Workbench',
-    version:'3.61.4',
-    apiVersion:'1.11.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.shortcuts","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
+    version:'3.61.6',
+    apiVersion:'1.13.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.sources","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.interaction-behavior","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.pages","ui.styles","ui.edit","ui.scientific-plot","ui.settings"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
     source:'builtin',
     order:100,
-    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','data.artifacts','data.pipeline','ui.plugin-workspace','ui.scientific-plot','ui.settings'],
-    workspace:{role:'top',activity:'resonance',icon:'∿',title:'共振分析'}
+    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','ui.interaction-behavior','data.types','data.artifacts','data.sources','data.pipeline','ui.plugin-workspace','ui.scientific-plot','ui.settings'],
+    workspace:{role:'top',activity:'resonance',icon:'∿',title:'共振分析'},data:{accepts:['science.transport.iv']}
   }, async ctx => {
     const shared=ctx.modules.require('workbench-shared');
     // Domain types live with the shared feature contract, not with the shell.

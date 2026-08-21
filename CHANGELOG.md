@@ -1,3 +1,25 @@
+# v3.61.6 — Scoped Workbench Data / SDK 1.13
+
+- Standalone `pluginType: workbench` pages now become primary activities by default. External workbenches no longer fall into another plugin's contextual toolbar unless they explicitly request `presentation: toolbar`.
+- Core now guarantees a default icon by plugin category; manifest/workspace/page icons remain optional overrides.
+- `ScientificCurveSurface` now accepts a normal container and owns its internal SVG, fixing third-party workbenches that correctly use `ctx.ui.scientificPlot` without knowing the Core SVG implementation detail. Hidden/unlaid-out surfaces wait for ResizeObserver rather than entering a render retry loop.
+- Added canonical source assignments and scoped `ctx.data.sources`: each imported source is stored once and can be assigned to multiple workbenches; workbench plugins automatically see only their assigned sources. Data Center retains the global catalog and centralized assignment editing. Legacy projects without assignment metadata use wildcard visibility for compatibility.
+- Import Workbench now includes a multi-select “数据用途” target chooser. It defaults to the active workbench; choosing no workbench stores data in Data Center only. Re-importing an existing physical source preserves/merges prior usage assignments instead of silently revoking access.
+- Data Center adds a usage filter and assignment actions instead of duplicating physical data into per-plugin tabs.
+- Interaction Behavior now provides generic DOM delegation; Data Center and Resonance dataset list right-click behavior no longer installs raw `contextmenu` handlers.
+- Plugin API / standalone SDK moves to `1.13.0`; Plugin API 1.10/1.11/1.12 packages remain compatible.
+
+# v3.61.5 — Interaction Behavior Core / Plugin API 1.12
+
+- Added `ctx.ui.interactionBehaviors` as a first-class Core/SDK capability. Mouse, keyboard, context-menu, box-selection and wheel policy now share the normalized `click / double-click / context / drag / box / wheel / key` gesture vocabulary.
+- Split input semantics from scientific geometry. `ScientificCurveSurface` consumes Interaction Behavior, generic `point / axis / range` manipulators own editable geometry, Selection owns selected entities/ranges, and Command Registry owns semantic state changes.
+- Replaced ad-hoc scientific box logic with behavior arbitration: Ctrl+box resolves to `zoom-box`, default box resolves to `select-region`, and plugins may bind a box gesture to a Command without owning pointer capture or selection-rectangle lifecycle.
+- Right-click marker policy now resolves through the Core `context-menu` intent. Plugins contribute context actions/Commands; Core owns menu placement, lifecycle, keyboard dismissal and theme. Resonance uses this for lock/unlock/delete and retains Shift+right-click only as a declared high-priority command binding.
+- Keyboard behavior uses exact normalized chords, so bindings such as `Ctrl+Z`, `Ctrl+ArrowLeft`, and `Shift+ArrowLeft` are distinct. Interaction Behavior routes keyboard execution through the same Command Registry used by visible actions.
+- Resonance undo button and `Ctrl+Z` now converge on `builtin.resonance.undo`; the reference plugin no longer contributes a parallel `ctx.ui.shortcuts` path or feature-specific modified-click/right-click callbacks.
+- Updated the standalone SDK, schemas, templates and package guide for Plugin API `1.12.0`. Plugin API 1.10 and 1.11 packages remain accepted when their declared Core requirements are available.
+- Added `test-interaction-behavior-v3615.js` to the normal test/check gates to prevent mouse/keyboard/context/box policy from drifting back into first-party plugin implementations.
+
 # v3.61.4 — Generic Direct Manipulation SDK
 
 - Replaced feature-named scientific drag contracts with domain-neutral `ScientificCurveSurface` manipulators. Plugins can declare `point`, `axis`, and `range` geometry and receive one generic preview/commit/reset lifecycle.

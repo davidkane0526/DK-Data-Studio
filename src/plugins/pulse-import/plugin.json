@@ -1,0 +1,23 @@
+{
+  "id": "builtin.pulse-import",
+  "name": "Pulse Text Import",
+  "version": "1.0.0",
+  "apiVersion": "1.13.0",
+  "requiresCore": [
+    "science",
+    "data.model",
+    "data.importers"
+  ],
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 18,
+  "description": "Typed pulse/read text importer. Parses raw instrument tables into a shared science.pulse.trace DataTable without owning file dialogs or workbench UI.",
+  "capabilities": [
+    "data.importer",
+    "data.inspector"
+  ],
+  "pluginType": "data",
+  "scripts": [
+    "plugin.js"
+  ]
+}

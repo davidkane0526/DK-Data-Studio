@@ -13,8 +13,8 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.data-center",
       "name": "Data Center",
-      "version": "1.11.0",
-      "apiVersion": "1.9.0",
+      "version": "1.12.0",
+      "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",
         "events",
@@ -30,6 +30,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "data.types",
         "data.model",
         "data.formula",
+        "data.sources",
         "workflow",
         "charts",
         "charts.providers",
@@ -40,6 +41,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ui.actions",
         "ui.selection",
         "ui.interaction",
+        "ui.interaction-behavior",
         "ui.menus",
         "ui.context-menus",
         "ui.activities",
@@ -80,7 +82,9 @@ window.DKDS_BUILTIN_PLUGINS = [
         "data.types",
         "ui.plugin-workspace",
         "ui.scientific-plot",
-        "ui.table"
+        "ui.table",
+        "data.sources",
+        "ui.interaction-behavior"
       ],
       "source": "builtin",
       "window": {
@@ -136,11 +140,11 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.flexible-import",
       "name": "Flexible Text Import",
-      "version": "1.0.0",
-      "apiVersion": "1.9.0",
+      "version": "1.1.0",
+      "apiVersion": "1.13.0",
       "requiresCore": [
         "science",
-        "data.flow",
+        "data.importers",
         "data.model"
       ],
       "entry": "plugin.js",
@@ -169,8 +173,8 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.pulse-analysis",
       "name": "Pulse / Read Analysis",
-      "version": "2.9.1",
-      "apiVersion": "1.9.0",
+      "version": "2.10.0",
+      "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",
         "events",
@@ -182,6 +186,10 @@ window.DKDS_BUILTIN_PLUGINS = [
         "project",
         "workspace",
         "data.types",
+        "data.artifacts",
+        "data.sources",
+        "data.importers",
+        "data.import-workbench",
         "analysis.providers",
         "charts",
         "ui.dom",
@@ -212,6 +220,11 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ui.portable",
         "ui.dynamic-actions",
         "ui.shortcuts",
+        "ui.workbench",
+        "ui.selection",
+        "ui.context-menu",
+        "ui.split",
+        "ui.chart-surface",
         "ui.analysis-workbench",
         "ui.primary",
         "ui.prime",
@@ -221,6 +234,8 @@ window.DKDS_BUILTIN_PLUGINS = [
         "runtime.capabilities.v2",
         "ui.interaction",
         "data.types",
+        "data.sources",
+        "data.import-workbench",
         "ui.plugin-workspace",
         "ui.scientific-plot"
       ],
@@ -267,6 +282,42 @@ window.DKDS_BUILTIN_PLUGINS = [
         "plugin.js"
       ],
       "pluginType": "workbench",
+      "data": {
+        "accepts": [
+          "science.pulse.trace"
+        ]
+      },
+      "source": "builtin"
+    }
+  },
+  {
+    "id": "builtin.pulse-import",
+    "entry": "plugins/pulse-import/plugin.js",
+    "scripts": [
+      "plugins/pulse-import/plugin.js"
+    ],
+    "manifest": {
+      "id": "builtin.pulse-import",
+      "name": "Pulse Text Import",
+      "version": "1.0.0",
+      "apiVersion": "1.13.0",
+      "requiresCore": [
+        "science",
+        "data.model",
+        "data.importers"
+      ],
+      "entry": "plugin.js",
+      "enabled": true,
+      "order": 18,
+      "description": "Typed pulse/read text importer. Parses raw instrument tables into a shared science.pulse.trace DataTable without owning file dialogs or workbench UI.",
+      "capabilities": [
+        "data.importer",
+        "data.inspector"
+      ],
+      "pluginType": "data",
+      "scripts": [
+        "plugin.js"
+      ],
       "source": "builtin"
     }
   },
@@ -340,8 +391,8 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.resonance-workbench",
       "name": "Resonance Workbench",
-      "version": "3.61.4",
-      "apiVersion": "1.11.0",
+      "version": "3.61.6",
+      "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",
         "events",
@@ -356,6 +407,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "workspace",
         "parameters",
         "data.artifacts",
+        "data.sources",
         "data.entities",
         "data.types",
         "data.reactive",
@@ -368,12 +420,12 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ui.actions",
         "ui.selection",
         "ui.interaction",
+        "ui.interaction-behavior",
         "ui.menus",
         "ui.context-menus",
         "ui.activities",
         "ui.top-workspace",
         "ui.toolbar",
-        "ui.shortcuts",
         "ui.pages",
         "ui.styles",
         "ui.edit",
@@ -404,8 +456,10 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ui.analysis-surface",
         "runtime.capabilities.v2",
         "ui.interaction",
+        "ui.interaction-behavior",
         "data.types",
         "data.artifacts",
+        "data.sources",
         "data.pipeline",
         "ui.plugin-workspace",
         "ui.scientific-plot",
@@ -466,6 +520,11 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ter-analysis"
       ],
       "pluginType": "workbench",
+      "data": {
+        "accepts": [
+          "science.transport.iv"
+        ]
+      },
       "source": "builtin"
     }
   },
@@ -798,6 +857,7 @@ window.DKDS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/data-center/plugin.js",
   "plugins/flexible-import/plugin.js",
   "plugins/pulse-analysis/plugin.js",
+  "plugins/pulse-import/plugin.js",
   "plugins/resonance-detector-robust/plugin.js",
   "plugins/resonance-workbench/plugin.js",
   "plugins/shell-navigation/plugin.js",
