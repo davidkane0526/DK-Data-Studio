@@ -1369,7 +1369,7 @@
 
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;const resolvedTarget=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.markerClickSuppressUntil=new Map();this.ownsTarget=false;const behaviorSpec=spec.interactionBehavior&&typeof spec.interactionBehavior==='object'&&!spec.interactionBehavior.route?spec.interactionBehavior:{};this.behavior=spec.interactionBehavior?.route?spec.interactionBehavior:scope.interactionBehaviors?.compile?.({...behaviorSpec,bindings:[...DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS,...(Array.isArray(behaviorSpec.bindings)?behaviorSpec.bindings:[])]})||null;
+      this.scope=scope;this.owner=scope.owner;const resolvedTarget=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.displayYAxisType=String(spec.yScaleType||'linear').toLowerCase()==='log'?'log':'linear';this.markerClickSuppressUntil=new Map();this.ownsTarget=false;const behaviorSpec=spec.interactionBehavior&&typeof spec.interactionBehavior==='object'&&!spec.interactionBehavior.route?spec.interactionBehavior:{};this.behavior=spec.interactionBehavior?.route?spec.interactionBehavior:scope.interactionBehaviors?.compile?.({...behaviorSpec,bindings:[...DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS,...(Array.isArray(behaviorSpec.bindings)?behaviorSpec.bindings:[])]})||null;
       if(!resolvedTarget)throw new Error('ScientificCurveSurface target not found.');
       const isSvg=String(resolvedTarget.tagName||'').toLowerCase()==='svg'||resolvedTarget.namespaceURI==='http://www.w3.org/2000/svg';
       if(isSvg)this.target=resolvedTarget;
@@ -1387,11 +1387,13 @@
     }
     d3(){return window.d3||null;}
     finite(value){return Number.isFinite(Number(value));}
+    yDisplayable(value){return this.finite(value)&&(this.displayYAxisType!=='log'||Number(value)>0);}
     curves(){const rows=this.spec.getCurves?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     markers(){const rows=this.spec.getMarkers?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     manipulators(){const rows=this.spec.getManipulators?.()||[];return Array.isArray(rows)?rows.filter(row=>row&&row.id&&row.kind):[];}
     view(){const raw=this.spec.getView?.()||{};return raw&&typeof raw==='object'?raw:{};}
     setView(next,meta={}){this.spec.setView?.(next,meta);this.spec.onViewChanged?.(next,meta);}
+    toggleYAxisDisplay(meta={}){const next=this.displayYAxisType==='log'?'linear':'log';if(next==='log'&&!this.curves().some(curve=>this.normalizedPoints(curve).some(point=>Number(point.y)>0)))return false;this.displayYAxisType=next;this.target.dataset.dkdsYScale=this.displayYAxisType;this.spec.onDisplayScaleChanged?.({axis:'y',type:this.displayYAxisType,surface:this,...meta});this.requestRender('axis-scale-toggle');return this.displayYAxisType;}
     setInteraction(interaction){if(this.interaction===interaction)return;this.selectionOff?.();this.selectionOff=null;this.interaction=interaction||null;if(this.interaction?.subscribe)this.selectionOff=this.interaction.subscribe(snapshot=>{this.selectionSnapshot=snapshot;this.requestRender('entity-selection');},{immediate:true});}
     routeInteraction(gesture,target,event,payload={},extra={}){const input={gesture,target,event,payload,targetId:String(extra.targetId||payload?.marker?.id||payload?.curve?.id||payload?.manipulator?.id||''),button:extra.button};return this.behavior?.route?.(input)||{handled:false,intent:'',binding:null,input};}
     interactionIntent(gesture,target,event,payload={},extra={}){return String(this.routeInteraction(gesture,target,event,payload,extra)?.intent||'');}
@@ -1445,14 +1447,14 @@
     updateMarkerVisual(marker,point){
       const last=this.lastRender;if(!last||!marker||!point)return false;const id=String(marker.id),xv=Number(point.x??point.v),yv=Number(point.y??point.i);if(!Number.isFinite(xv)||!Number.isFinite(yv))return false;
       marker.x=xv;marker.y=yv;const {dataLayer,x,y}=last;if(!dataLayer||!x||!y)return false;
-      const nodes=last.markerNodes?.get?.(id);
-      if(nodes?.mark)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(yv)})`);else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).attr('transform',`translate(${x(xv)},${y(yv)})`);
-      if(nodes?.hit){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(yv)));}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).attr('cx',x(xv)).attr('cy',y(yv));
+      const nodes=last.markerNodes?.get?.(id),visible=this.yDisplayable(yv);
+      if(nodes?.mark){nodes.mark.style.display=visible?'':'none';if(visible)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(yv)})`);}else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('transform',visible?`translate(${x(xv)},${y(yv)})`:null);
+      if(nodes?.hit){nodes.hit.style.display=visible?'':'none';if(visible){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(yv)));}}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('cx',visible?x(xv):null).attr('cy',visible?y(yv):null);
       return true;
     }
     nearestCurveAtPixel(px,py,x,y,curves,maxDistancePx=18){
       let best=null;
-      for(const curve of curves){const points=this.normalizedPoints(curve);if(!points.length)continue;const idx=this.nearestIndex(points,x.invert(px));for(let j=Math.max(0,idx-2);j<=Math.min(points.length-1,idx+2);j++){const p=points[j],dx=x(p.x)-px,dy=y(p.y)-py,dist=Math.hypot(dx,dy);if(!best||dist<best.distance)best={curve,point:p,index:Number.isFinite(Number(p.sourceIndex))?Number(p.sourceIndex):j,distance:dist};}}
+      for(const curve of curves){const points=this.normalizedPoints(curve);if(!points.length)continue;const idx=this.nearestIndex(points,x.invert(px));for(let j=Math.max(0,idx-2);j<=Math.min(points.length-1,idx+2);j++){const p=points[j];if(!this.yDisplayable(p.y))continue;const dx=x(p.x)-px,dy=y(p.y)-py,dist=Math.hypot(dx,dy);if(!best||dist<best.distance)best={curve,point:p,index:Number.isFinite(Number(p.sourceIndex))?Number(p.sourceIndex):j,distance:dist};}}
       return best&&best.distance<=maxDistancePx?best:null;
     }
     render(reason='render'){
@@ -1465,16 +1467,19 @@
       const margin={top:62,right:30,bottom:50,left:78,...(this.spec.margin||{})},innerW=Math.max(60,width-margin.left-margin.right),innerH=Math.max(60,height-margin.top-margin.bottom);
       const normalized=new Map(curves.map(curve=>[String(curve.id),this.normalizedPoints(curve)]));
       const xs=[...normalized.values()].flatMap(rows=>rows.map(p=>p.x)),ys=[...normalized.values()].flatMap(rows=>rows.map(p=>p.y));if(!xs.length||!ys.length)return false;
-      const fullX=d3.extent(xs);let fullY=d3.extent(ys),ypad=((fullY[1]-fullY[0])||1)*Number(this.spec.yPaddingFactor??.06);fullY=[fullY[0]-ypad,fullY[1]+ypad];
-      const view=this.view();let xDomain=Array.isArray(view.xDomain)?view.xDomain.slice():d3.scaleLinear().domain(fullX).nice().domain(),yDomain=Array.isArray(view.yDomain)?view.yDomain.slice():d3.scaleLinear().domain(fullY).nice().domain();
-      if(!xDomain.every(Number.isFinite)||xDomain[0]===xDomain[1])xDomain=fullX.slice();if(!yDomain.every(Number.isFinite)||yDomain[0]===yDomain[1])yDomain=fullY.slice();
-      const x=d3.scaleLinear().domain(xDomain).range([margin.left,margin.left+innerW]),y=d3.scaleLinear().domain(yDomain).range([margin.top+innerH,margin.top]);
+      const fullX=d3.extent(xs),logY=this.displayYAxisType==='log',positiveYs=logY?ys.filter(value=>Number(value)>0):ys;let fullY=d3.extent(positiveYs.length?positiveYs:ys);
+      if(logY){const lo=Math.max(Number.MIN_VALUE,Number(fullY[0])),hi=Math.max(lo*(1+1e-9),Number(fullY[1]));fullY=[lo/Math.pow(10,.04),hi*Math.pow(10,.04)];}
+      else{const ypad=((fullY[1]-fullY[0])||1)*Number(this.spec.yPaddingFactor??.06);fullY=[fullY[0]-ypad,fullY[1]+ypad];}
+      const view=this.view();let xDomain=Array.isArray(view.xDomain)?view.xDomain.slice():d3.scaleLinear().domain(fullX).nice().domain(),candidateY=Array.isArray(view.yDomain)?view.yDomain.slice():null,yDomain=(candidateY&&(!logY||candidateY.every(value=>Number(value)>0)))?candidateY:(logY?fullY.slice():d3.scaleLinear().domain(fullY).nice().domain());
+      if(!xDomain.every(Number.isFinite)||xDomain[0]===xDomain[1])xDomain=fullX.slice();if(!yDomain.every(Number.isFinite)||yDomain[0]===yDomain[1]||(logY&&yDomain.some(value=>Number(value)<=0)))yDomain=fullY.slice();
+      const x=d3.scaleLinear().domain(xDomain).range([margin.left,margin.left+innerW]),y=(logY?d3.scaleLog():d3.scaleLinear()).domain(yDomain).range([margin.top+innerH,margin.top]);
       const clipId=`dkds-sci-clip-${Math.random().toString(36).slice(2,9)}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH);
       const plotBg=svg.append('rect').attr('class','dkds-scientific-plot-bg').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH).style('cursor','crosshair');
-      svg.append('g').attr('class','dkds-scientific-axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).tickFormat(this.spec.xTickFormat||undefined));
-      svg.append('g').attr('class','dkds-scientific-axis').attr('transform',`translate(${margin.left},0)`).call(d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined));
+      svg.append('g').attr('class','dkds-scientific-axis dkds-scientific-x-axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).tickFormat(this.spec.xTickFormat||undefined));
+      const yAxis=svg.append('g').attr('class','dkds-scientific-axis dkds-scientific-y-axis').attr('transform',`translate(${margin.left},0)`).style('cursor','pointer').call(d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined));
+      const toggleY=event=>{event.preventDefault();event.stopPropagation();this.toggleYAxisDisplay({event,source:'axis-double-click'});};yAxis.on('dblclick.dkdsyaxis',toggleY);
       if(this.spec.xTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('x',margin.left+innerW/2).attr('y',height-10).attr('text-anchor','middle').text(this.spec.xTitle||'X');
-      if(this.spec.yTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text(this.spec.yTitle||'Y');
+      if(this.spec.yTitle!==false)svg.append('text').attr('class','dkds-scientific-axis-title dkds-scientific-y-axis-title').style('cursor','pointer').attr('transform',`translate(18,${margin.top+innerH/2}) rotate(-90)`).attr('text-anchor','middle').text(this.spec.yTitle||'Y').on('dblclick.dkdsyaxis',toggleY);
       const configuredColorValues=this.spec.getColorDomainValues?.();const values=(Array.isArray(configuredColorValues)&&configuredColorValues.some(v=>this.finite(v))?configuredColorValues:curves.map(c=>c.colorValue)).filter(v=>this.finite(v)).map(Number);if(!values.length)values.push(0);const extent=d3.extent(values);if(extent[0]===extent[1]){extent[0]-=1;extent[1]+=1;}
       // Color-domain changes are semantic data changes, not selection/drag changes.
       // Keep the scale stable across geometry-only renders so external legends do
@@ -1482,7 +1487,7 @@
       const colorScaleKey=`${extent[0]}|${extent[1]}|${values.join(',')}`;let colorScale=this.colorScaleState?.key===colorScaleKey?this.colorScaleState.scale:null;
       if(!colorScale){colorScale=this.spec.colorScale?.({d3,extent,curves,values})||d3.scaleSequential(d3.interpolateTurbo).domain(extent);this.colorScaleState={key:colorScaleKey,scale:colorScale};this.spec.onColorScale?.(colorScale,{curves,extent,values});}
       for(const curve of curves)this.ensureEntity(curve?.entityId||curve?.id);const selectedCurveId=this.selectedCurveId(),hasCurveSelection=!!selectedCurveId,dataLayer=svg.append('g').attr('clip-path',`url(#${clipId})`);
-      const line=d3.line().defined(p=>this.finite(p.x)&&this.finite(p.y)).x(p=>x(p.x)).y(p=>y(p.y));
+      const line=d3.line().defined(p=>this.finite(p.x)&&this.finite(p.y)&&(!logY||Number(p.y)>0)).x(p=>x(p.x)).y(p=>y(p.y));
       for(const curve of curves){
         const points=normalized.get(String(curve.id))||[],active=String(curve.id)===selectedCurveId,color=curve.color||colorScale(this.finite(curve.colorValue)?Number(curve.colorValue):0),dash=curve.dash??(Number(curve.direction)<0?'7 4':null);
         const opacity=curve.opacity??(hasCurveSelection?(active?1:.10):.74),strokeWidth=curve.strokeWidth??(active?3:1.25);
@@ -1540,9 +1545,9 @@
       };
       if(this.spec.showMarkers?.()!==false&&markers.length){
         const marks=dataLayer.append('g').selectAll('path.dkds-scientific-marker').data(markers,m=>m.id).join('path').attr('class',m=>`dkds-scientific-marker ${m.locked?'is-locked':''} ${hasCurveSelection&&String(m.curveId)!==selectedCurveId?'is-dimmed':''}`)
-          .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).attr('transform',m=>`translate(${x(Number(m.x))},${y(Number(m.y))})`).attr('fill',m=>m.color||'#2563eb')
+          .attr('d',m=>d3.symbol().type(this.symbolType(m.shape,d3)).size(selectedMarkerIds.has(String(m.id))?180:105)()).style('display',m=>this.yDisplayable(m.y)?null:'none').attr('transform',m=>this.yDisplayable(m.y)?`translate(${x(Number(m.x))},${y(Number(m.y))})`:null).attr('fill',m=>m.color||'#2563eb')
           .attr('stroke',m=>selectedMarkerIds.has(String(m.id))?'#111827':(m.accepted!==false?'#fff':'#6b7280')).attr('stroke-width',m=>selectedMarkerIds.has(String(m.id))?3.2:1.8).attr('opacity',m=>{let o=m.accepted!==false?.98:.34;if(hasCurveSelection&&String(m.curveId)!==selectedCurveId)o*=.11;return o;}).style('pointer-events','none');
-        const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''} ${manipulatorByTarget.has(String(m.id))?'is-manipulable':''}`).attr('cx',m=>x(Number(m.x))).attr('cy',m=>y(Number(m.y))).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
+        const hits=dataLayer.append('g').selectAll('circle.dkds-scientific-marker-hit').data(markers,m=>m.id).join('circle').attr('class',m=>`dkds-scientific-marker-hit ${m.locked?'is-locked':''} ${manipulatorByTarget.has(String(m.id))?'is-manipulable':''}`).style('display',m=>this.yDisplayable(m.y)?null:'none').attr('cx',m=>this.yDisplayable(m.y)?x(Number(m.x)):null).attr('cy',m=>this.yDisplayable(m.y)?y(Number(m.y)):null).attr('r',m=>selectedMarkerIds.has(String(m.id))?12:10)
           .on('click',(event,marker)=>{event.stopPropagation();const id=String(marker?.id||'');if((this.markerClickSuppressUntil.get(id)||0)>Date.now()){event.preventDefault();return;}const payload={marker,event,surface:this,additive:false};const decision=this.routeInteraction('click','marker',event,payload,{targetId:id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';this.spec.onMarkerSelect?.(payload);}})
           .on('dblclick',(event,marker)=>{event.preventDefault();event.stopPropagation();const payload={marker,event,surface:this};const decision=this.routeInteraction('double-click','marker',event,payload,{targetId:marker?.id});if(decision.handled)return;if(decision.intent==='activate')this.spec.onMarkerDoubleClick?.(payload);})
           .on('contextmenu',(event,marker)=>{const payload={marker,event,surface:this};const decision=this.routeInteraction('context','marker',event,payload,{targetId:marker?.id,button:'secondary'});if(decision.handled){event.preventDefault();event.stopPropagation();return;}if(decision.intent==='context-menu'&&(event.ctrlKey||event.shiftKey)){event.preventDefault();event.stopPropagation();if(!marker.locked)this.spec.onMarkerDelete?.(payload);else this.spec.onLockedMarkerAction?.({marker,action:'delete',event,surface:this});}})
@@ -1627,7 +1632,7 @@
           }
         }
       }
-      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes};return true;
+      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes,yScaleType:this.displayYAxisType};return true;
     }
     dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
   }

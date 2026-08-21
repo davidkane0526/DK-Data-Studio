@@ -21,8 +21,8 @@ const flexibleImporter=read('src/plugins/flexible-import/plugin.js');
 const schema=JSON.parse(read('sdk/plugin-manifest.schema.json'));
 const sdk=read('sdk/plugin-api.d.ts');
 
-assert(pkg.version==='3.61.8','Application version must be v3.61.8.');
-assert(kernel.includes("const API_VERSION = '1.14.0'"),'Plugin Kernel must publish Plugin API 1.14.');
+assert(pkg.version==='3.61.9','Application version must be v3.61.9.');
+assert(kernel.includes("const API_VERSION = '1.15.0'"),'Plugin Kernel must publish Plugin API 1.14.');
 assert(kernel.includes('const DEFAULT_PLUGIN_ICONS=Object.freeze')&&kernel.includes("workbench:'◇'"),'Core must guarantee category default icons when a plugin omits icon metadata.');
 assert(kernel.includes("const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'")&&kernel.includes("spec.presentation!=='toolbar'"),'A standalone workbench page must default to a primary activity rather than a contextual toolbar contribution.');
 assert(kernel.includes('if (standaloneWorkbench)')&&kernel.includes('primary:true'),'Standalone workbench page registration must create a primary activity.');
@@ -72,13 +72,13 @@ assert(pulseService.includes('function refreshSources')&&pulseService.includes("
 assert(pulseService.includes('artifactId:String(artifact.id)')&&pulseService.includes('artifactId:item.artifactId'),'Pulse project slice must reference central source artifacts instead of serializing a second private copy.');
 assert(pulsePlugin.includes('ctx.data.sources?.detach?.(ref)'),'Removing data from Pulse must detach its assignment rather than delete the shared source.');
 
-assert(schema.properties.apiVersion.enum.includes('1.14.0'),'SDK manifest schema must accept Plugin API 1.14.');
+assert(schema.properties.apiVersion.enum.includes('1.15.0'),'SDK manifest schema must accept Plugin API 1.14.');
 assert(schema.properties.icon?.type==='string','SDK manifest must document the optional plugin icon override.');
 assert(schema.properties.requiresCore.items.enum.includes('data.sources')&&schema.properties.requiresCore.items.enum.includes('data.importers')&&schema.properties.requiresCore.items.enum.includes('data.import-workbench'),'SDK manifest must expose shared source/importer/import-workbench requirements.');
 assert(schema.properties.data?.properties?.accepts,'SDK manifest must let workbenches declare accepted semantic data types.');
-assert(sdk.includes("readonly apiVersion:'1.14.0'")&&sdk.includes('DKDSDataSourcesCapability'),'Editor SDK declarations must expose Plugin API 1.14 scoped source contracts.');
+assert(sdk.includes("readonly apiVersion:'1.15.0'")&&sdk.includes('DKDSDataSourcesCapability'),'Editor SDK declarations must expose Plugin API 1.14 scoped source contracts.');
 assert(sdk.includes('importWorkbench:DKDSDataImportWorkbench')&&sdk.includes('DKDSDataImporterSpec'),'SDK declarations must expose centralized importing and importer provider contracts.');
 assert(sdk.includes("presentation?:'activity'|'toolbar'"),'SDK page contract must expose explicit activity-vs-toolbar placement override.');
 assert(sdk.includes('bind(target:any,spec?:DKDSInteractionBehaviorBindSpec)'),'SDK Interaction Behavior must expose generic DOM delegation.');
 
-console.log('v3.61.7 workbench placement, default icon, Core-owned plot surface, typed importer routing, scoped source catalog and shared Pulse import checks passed.');
+console.log('v3.61.9 workbench placement, default icon, Core-owned plot surface, typed importer routing, scoped source catalog and shared Pulse import checks passed.');

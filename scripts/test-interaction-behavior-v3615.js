@@ -38,7 +38,7 @@ for(const chord of ['Ctrl+Z','Ctrl+ArrowLeft','Shift+ArrowLeft','Escape'])assert
 assert(feature.includes("commandRuntime.run('builtin.resonance.undo')")&&views.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]"),'Undo button and keyboard binding must converge on the same Command Registry command.');
 assert(views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'System Edit Contract must be an adapter into the same semantic commands, not a parallel business path.');
 
-assert(sdkContract.pluginApiVersion==='1.14.0','Standalone SDK must target Plugin API 1.14.0 while preserving older package compatibility.');
+assert(sdkContract.pluginApiVersion==='1.15.0','Standalone SDK must target Plugin API 1.15.0 while preserving older package compatibility.');
 assert(sdk.includes('DKDSInteractionBehaviorBinding')&&sdk.includes('DKDSInteractionBehaviorRuntime'),'Standalone SDK must publish Interaction Behavior types.');
 assert(sdk.includes('interactionBehavior?:DKDSInteractionBehaviorProfile'),'Scientific surface SDK must accept an Interaction Behavior profile/spec.');
 

@@ -113,11 +113,31 @@ function builtinPluginIds() {
   return ids;
 }
 
-const PLUGIN_API_VERSION='1.10.0';
+const PLUGIN_API_VERSION='1.15.0';
 function readBuiltinPluginManifests(){
   const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
   try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
   return rows;
+}
+
+function readBuiltinPluginPackage(id){
+  const pluginId=String(id||'');const base=path.join(app.getAppPath(),'src','plugins');
+  for(const name of fs.readdirSync(base).sort()){
+    if(name.startsWith('_'))continue;const folder=path.join(base,name),manifestPath=path.join(folder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
+    let manifest;try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}catch{continue;}if(String(manifest?.id||'')!==pluginId)continue;
+    const referenced=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]);
+    if(fs.existsSync(path.join(folder,'README.md')))referenced.add('README.md');const files={};
+    for(const rel of referenced){const normalized=String(rel).replace(/\\/g,'/');const file=path.resolve(folder,normalized);if(!file.startsWith(folder+path.sep)&&file!==folder)throw new Error(`Unsafe built-in plugin path: ${normalized}`);if(!fs.existsSync(file)||!fs.statSync(file).isFile())throw new Error(`Built-in plugin file missing: ${normalized}`);files[normalized]=fs.readFileSync(file,'utf8');}
+    return normalizePluginPackage({schema:1,manifest,files},{allowBuiltinId:true});
+  }
+  return null;
+}
+
+function currentPluginPackage(id){
+  const pluginId=String(id||'');
+  const override=installedPluginOverridePackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(override)return normalizePluginPackage(override,{allowBuiltinId:true});
+  const external=installedExternalPluginPackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(external)return normalizePluginPackage(external,{allowBuiltinId:false});
+  return readBuiltinPluginPackage(pluginId);
 }
 function installedPluginVersionMap(){
   const map=new Map();for(const row of readBuiltinPluginManifests())map.set(String(row.manifest.id),String(row.manifest.version||''));
@@ -990,6 +1010,13 @@ app.whenReady().then(() => {
     const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
     if(fs.existsSync(target))fs.unlinkSync(target);
     return true;
+  });
+  ipcMain.handle('plugins:exportPackage', async (_event, id) => {
+    const pluginId=String(id||'');if(!validPluginId(pluginId))throw new Error('无效的插件 ID。');
+    const pkg=currentPluginPackage(pluginId);if(!pkg)throw new Error(`未找到插件包：${pluginId}`);
+    const safeId=pluginId.replace(/[^0-9A-Za-z._-]/g,'_'),safeVersion=String(pkg.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
+    const result=await dialog.showSaveDialog({title:`导出插件 · ${pkg.manifest.name||pluginId}`,defaultPath:path.join(app.getPath('downloads'),`${safeId}-${safeVersion}.dkplugin`),filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']}]});
+    if(result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
   });
   ipcMain.handle('plugins:openFolder', async () => {
     const dir=ensureExternalPluginDirectory();

@@ -1,11 +1,11 @@
 (() => {
   const requiresCore=['status','state','project','data.types','data.sources','ui.scientific-plot','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction-behavior','ui.pages'];
   DKDSPlugins.define({
-    id:'com.example.workspace',pluginType:'workbench',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.14.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
+    id:'com.example.workspace',pluginType:'workbench',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.15.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
     description:'Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.',requiresCore,
     capabilities:['ui.page','ui.analysis-workbench','ui.interaction-behavior','ui.scientific-plot','state.store','data.types','data.sources'],
     data:{accepts:['science.transport.iv']},
-    compatibility:{app:'>=3.61.7 <4.0.0',pluginApi:'^1.14.0'}
+    compatibility:{app:'>=3.61.9 <4.0.0',pluginApi:'^1.15.0'}
   }, async ctx => {
     const state=ctx.state.create({runs:0},{projectSlice:'settings'});
     const run=()=>{state.patch({runs:state.get().runs+1});ctx.status.set(`SDK example run ${state.get().runs}`);return true;};

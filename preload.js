@@ -85,6 +85,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginAlgorithmCatalog: ref => ipcRenderer.invoke('plugins:algorithmCatalog', ref),
   pluginRollbackVersion: payload => ipcRenderer.invoke('plugins:rollbackVersion', payload),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
+  pluginExportPackage: id => ipcRenderer.invoke('plugins:exportPackage', id),
   pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),
   updateGetStatus: () => ipcRenderer.invoke('update:getStatus'),
   updateGetSettings: () => ipcRenderer.invoke('update:getSettings'),

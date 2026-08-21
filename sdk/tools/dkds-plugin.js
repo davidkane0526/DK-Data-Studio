@@ -46,17 +46,22 @@ function validate(folder){
   folder=path.resolve(folder);const m=readManifest(folder);const errors=[];
   if(!pluginId(m.id))errors.push(`invalid id: ${m.id||'(missing)'}`);if(String(m.id||'').startsWith('builtin.'))errors.push('builtin.* is reserved for application plugins');
   if(!String(m.name||'').trim())errors.push('name is required');if(!version(m.version))errors.push(`version must be semver: ${m.version||'(missing)'}`);
+  const pluginTypes=new Set(schema.properties.pluginType?.enum||[]);if(!pluginTypes.has(String(m.pluginType||'')))errors.push(`invalid pluginType: ${m.pluginType||'(missing)'}`);
   if(m.apiVersion!==API)errors.push(`new SDK plugins must target apiVersion ${API}`);if(!Array.isArray(m.requiresCore))errors.push('requiresCore must be an array');
   else {const seen=new Set();for(const r of m.requiresCore){if(!requirements.has(r))errors.push(`unknown Core requirement: ${r}`);if(seen.has(r))errors.push(`duplicate Core requirement: ${r}`);seen.add(r);}}
   let files=[];try{files=referencedFiles(m,folder);}catch(e){errors.push(e.message);}
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
   const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
-  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.14 development contract`);
+  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.15 development contract`);
+  if(m.pluginType==='tool'){
+    if(!declared.has('ui.menus'))errors.push('Tool plugins must declare ui.menus so Core can place them in the top Tools menu.');
+    if(!/ctx\.ui\.menus\.add\s*\(/.test(source))errors.push('Tool plugins must contribute at least one action through ctx.ui.menus.add(...).');
+  }
   if(m.pluginType==='workbench'){
     const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
-    if(!accepts.length)errors.push('Plugin API 1.14 workbenches must declare data.accepts so Core can route the standard import action.');
-    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workbench import UI is Core-owned in Plugin API 1.14; do not invoke ctx.data.importWorkbench from workbench UI.');
+    if(!accepts.length)errors.push('Plugin API 1.15 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workbench import UI is Core-owned in Plugin API 1.15; do not invoke ctx.data.importWorkbench from workbench UI.');
     if(/<input[^>]+type=[\"']?file/i.test(source))errors.push('Workbench plugins must not create file inputs; use the Core-owned workbench import action.');
   }
   const entry=path.join(folder,m.entry||'plugin.js');
@@ -65,7 +70,7 @@ function validate(folder){
       let runtime=null;const sandbox={DKDSPlugins:{define:manifest=>{runtime=manifest;}}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:m.entry||'plugin.js',timeout:1000});
       if(!runtime)errors.push('entry did not call DKDSPlugins.define(...)');
       else {
-        for(const key of ['id','name','version','apiVersion'])if(String(runtime[key]??'')!==String(m[key]??''))errors.push(`runtime manifest ${key} does not match plugin.json`);
+        for(const key of ['id','name','version','apiVersion','pluginType'])if(String(runtime[key]??'')!==String(m[key]??''))errors.push(`runtime manifest ${key} does not match plugin.json`);
         for(const key of ['requiresCore','algorithmCategories','algorithmProvides','compatibility','pluginDependencies'])if(JSON.stringify(runtime[key]??(Array.isArray(m[key])?[]:null))!==JSON.stringify(m[key]??(Array.isArray(runtime[key])?[]:null)))errors.push(`runtime manifest ${key} does not match plugin.json`);
         if(Boolean(runtime.algorithmProvider)!==Boolean(m.algorithmProvider))errors.push('runtime manifest algorithmProvider does not match plugin.json');
       }

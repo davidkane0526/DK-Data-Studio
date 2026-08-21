@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.14.0';
+  const API_VERSION = '1.15.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -48,7 +48,12 @@
     return typeof value === 'boolean' ? value : undefined;
   }
 
+  function isSystemLockedDefinition(definition) {
+    const manifest=definition?.manifest||{};return String(manifest.source||'builtin')==='builtin'&&(pluginTypeForManifest(manifest)==='foundation'||manifest.systemCritical===true);
+  }
+
   function isDefinitionEnabled(definition) {
+    if(isSystemLockedDefinition(definition)) return true;
     const saved = preferenceFor(definition.manifest.id);
     return saved === undefined ? definition.manifest.enabled !== false : saved;
   }
@@ -106,7 +111,7 @@
   }
 
   const DEFAULT_PLUGIN_ICONS=Object.freeze({
-    foundation:'◆',data:'▦',algorithm:'ƒ',workbench:'◇',task:'✓',extension:'⬡',developer:'⌘'
+    foundation:'◆',data:'▦',algorithm:'ƒ',workbench:'◇',task:'✓',tool:'⌁',extension:'⬡',developer:'⌘'
   });
   function defaultPluginIcon(manifest={}) {
     const explicit=String(manifest?.icon||manifest?.workspace?.icon||'').trim();
@@ -127,6 +132,7 @@
   function isTopDefinition(definition) {
     return workspaceMeta(definition?.manifest).role==='top';
   }
+  function isSuperEligibleDefinition(definition){return isTopDefinition(definition)&&!isSystemLockedDefinition(definition);}
 
   function readSuperPreference() {
     try {
@@ -341,7 +347,8 @@
     if(!id)throw new Error('必须选择一个 TOP 插件作为主界面。');
     const definition=definitionById(id);
     if(!definition)throw new Error(`Plugin not found: ${id}`);
-    if(!isTopDefinition(definition))throw new Error(`插件 ${definition.manifest.name||id} 不是 TOP 插件，不能提升为 SUPER。`);
+    if(!isTopDefinition(definition))throw new Error(`插件 ${definition.manifest.name||id} 不是 TOP 插件。`);
+    if(!isSuperEligibleDefinition(definition))throw new Error(`插件 ${definition.manifest.name||id} 属于系统功能，不能设为 SUPER。`);
     if(!isDefinitionEnabled(definition)||!active.has(id))throw new Error(`请先启用插件 ${definition.manifest.name||id}。`);
     if(!topWorkspaceForPlugin(id))throw new Error(`插件 ${definition.manifest.name||id} 未注册完整 TOP 工作区契约。`);
     const previous=superPluginId;
@@ -391,7 +398,7 @@
     // manifest order is used. After a user selects a SUPER we never silently
     // fall back to another plugin.
     const candidates=[...definitions.values()]
-      .filter(definition=>isTopDefinition(definition)&&topDefinitionReady(definition.manifest.id))
+      .filter(definition=>isSuperEligibleDefinition(definition)&&topDefinitionReady(definition.manifest.id))
       .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)
         ||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100)
         ||String(a.manifest.id).localeCompare(String(b.manifest.id)));
@@ -535,7 +542,7 @@
     const primaryMount=document.querySelector('#primaryActivityBar');
     const overflow=document.querySelector('#activityMoreMenu');
     if(!mount)return;
-    const rows=activityRows();
+    const rows=activityRows().filter(row=>String(row.value?.navigation||'')!=='system');
     mount.innerHTML='';
     if(primaryMount)primaryMount.innerHTML='';
     if(overflow)overflow.innerHTML='';
@@ -602,6 +609,19 @@
     const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.title=hasPluginExport?`导出 ${active?.contextLabel||active?.label||'当前插件'} 的数据或图形`:'导出当前数据或图形';}
   }
 
+
+  function refreshToolMenuPresentation(){
+    const menu=document.querySelector('#pluginToolsMenu');
+    const trigger=document.querySelector('#toolsMenuBtn');
+    if(!menu||!trigger)return;
+    const items=[...menu.querySelectorAll('.plugin-menu-item')].filter(el=>!el.classList.contains('hidden'));
+    trigger.disabled=items.length===0;
+    trigger.title=items.length?`打开工具（${items.length}）`:'当前没有已启用的工具插件';
+    let empty=menu.querySelector('[data-tools-empty]');
+    if(!items.length){if(!empty){empty=document.createElement('div');empty.dataset.toolsEmpty='1';empty.className='command-menu-empty';empty.textContent='当前没有已启用的工具';menu.appendChild(empty);}empty.classList.remove('hidden');}
+    else empty?.classList?.add('hidden');
+  }
+
   function refreshActivityVisibility() {
     const id=activeActivityId;
     document.querySelectorAll('[data-plugin-activity]').forEach(el=>{
@@ -619,6 +639,7 @@
     document.querySelectorAll('#activityBar .activity-tab,#primaryActivityBar .activity-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.activityId===id));
     reflowContextToolbar();
     refreshExportMenuPresentation();
+    refreshToolMenuPresentation();
     eventEmit('activity:changed',{id,activity:active});
   }
 
@@ -764,12 +785,15 @@
     return createScopedButton(pluginId,spec,'[data-plugin-main-tools]','plugin-main-tool-btn');
   }
 
-  function addMenuItem(pluginId,spec) {
-    const mount=document.querySelector(`[data-plugin-menu="${spec.menu||'export'}"]`);
-    if(!mount)throw new Error(`Plugin menu mount not found: ${spec.menu||'export'}`);
-    const button=createScopedButton(pluginId,spec,`[data-plugin-menu="${spec.menu||'export'}"]`,'plugin-menu-item');
+  function addMenuItem(pluginId,spec={}) {
+    const definition=definitionById(pluginId);const defaultMenu=pluginTypeForManifest(definition?.manifest||{})==='tool'?'tools':'export';
+    const menu=String(spec.menu||defaultMenu);
+    const mount=document.querySelector(`[data-plugin-menu="${menu}"]`);
+    if(!mount)throw new Error(`Plugin menu mount not found: ${menu}`);
+    const button=createScopedButton(pluginId,{...spec,menu},`[data-plugin-menu="${menu}"]`,'plugin-menu-item');
     button.addEventListener('click',()=>button.closest('.command-menu')?.classList.add('hidden'));
-    queueMicrotask(refreshExportMenuPresentation);
+    const refresh=()=>{refreshExportMenuPresentation();refreshToolMenuPresentation();};
+    queueMicrotask(refresh);addCleanup(pluginId,()=>queueMicrotask(refresh));
     return button;
   }
 
@@ -1955,7 +1979,7 @@
 
   function pluginTypeForManifest(manifest={}) {
     const declared=String(manifest?.pluginType||'').trim().toLowerCase();
-    const allowed=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
+    const allowed=new Set(['foundation','data','algorithm','workbench','task','tool','extension','developer']);
     if(allowed.has(declared))return declared;
     // Backward compatibility for older external packages that predate pluginType.
     // New SDK packages should declare it explicitly; inference is only a safe UI fallback.
@@ -1989,6 +2013,7 @@
       error,
       source:m.source || 'builtin',
       pluginType:pluginTypeForManifest(m),
+      systemLocked:isSystemLockedDefinition(definition),
       capabilities:Array.isArray(m.capabilities)?m.capabilities.slice():[],
       contributionCounts,
       preference:preferenceFor(m.id),
@@ -2019,6 +2044,7 @@
     const definition = definitionById(id);
     if (!definition) throw new Error(`Plugin not found: ${id}`);
     const next = !!enabled;
+    if(!next&&isSystemLockedDefinition(definition))throw new Error('系统与基座插件是应用运行所必需的，不能停用。');
     if(!next&&id===superPluginId)throw new Error('当前 SUPER 主界面不能直接停用。请先将另一个 TOP 插件设为主界面。');
     setPreference(id, next);
 
@@ -2069,7 +2095,7 @@
     writePreferences();
     writePrewarmPreferences();
     for (const definition of definitions) {
-      const shouldEnable = definition.manifest.id===superPluginId ? true : definition.manifest.enabled !== false;
+      const shouldEnable = isSystemLockedDefinition(definition) || definition.manifest.id===superPluginId ? true : definition.manifest.enabled !== false;
       if (shouldEnable && !active.has(definition.manifest.id)) {
         await activateDefinition(definition, { restoreCurrentProject:true });
       } else if (!shouldEnable && active.has(definition.manifest.id)) {
@@ -2303,6 +2329,7 @@
       algorithmCatalog:ref=>window.electronAPI?.pluginAlgorithmCatalog?.(ref)||Promise.resolve({requested:ref,count:0,candidates:[]}),
       rollback:rollbackExternalPlugin,
       openFolder:()=>window.electronAPI?.pluginOpenFolder?.(),
+      export:id=>window.electronAPI?.pluginExportPackage?.(id),
       installed:()=>[...externalPackages.keys()],
       errors:()=>externalLoadErrors.slice()
     },

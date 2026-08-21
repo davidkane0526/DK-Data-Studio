@@ -88,14 +88,15 @@
 
   const PLUGIN_TYPE_META = {
     foundation:{label:'基座与系统',description:'Core 基座配套、宿主导航、状态与工作区安全能力。'},
-    data:{label:'数据能力',description:'数据导入、数据模型、数据中心与数据组织能力。'},
+    data:{label:'数据能力',description:'数据导入、数据模型、格式适配与数据组织能力。'},
     algorithm:{label:'算法',description:'可版本化科学算法 Provider；可被任意兼容分析插件调用。'},
     workbench:{label:'分析工作台',description:'面向具体分析任务的 TOP/页面插件，交互由统一 SDK 与基座提供。'},
     task:{label:'任务与自动化',description:'批处理、后台任务、自动化流程与可复用任务执行器。'},
+    tool:{label:'工具',description:'轻量通用工具与辅助功能；入口统一出现在顶部“工具”菜单。'},
     extension:{label:'其他扩展',description:'不属于上述类型的通用扩展能力。'},
     developer:{label:'开发与示例',description:'SDK 示例、开发辅助与验证插件。'}
   };
-  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','extension','developer'];
+  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','extension','developer'];
   function pluginTypeMeta(plugin){
     const id=String(plugin?.pluginType||'extension');
     return {id,...(PLUGIN_TYPE_META[id]||PLUGIN_TYPE_META.extension)};
@@ -326,7 +327,7 @@
     const note=$('#pluginManagerNote');
     if(note)note.innerHTML=externalErrors.length
       ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
-      : '停用插件只移除其功能入口和运行时贡献，不会删除保存在工程中的插件数据；再次启用时会恢复当前工程的对应状态。桌面版可安装本地 <code>.dkplugin</code> 插件包。';
+      : '普通插件可停用，工程数据不会因此删除；<strong>基座与系统</strong>属于应用运行必需功能，保留启用开关用于状态展示但不允许关闭。桌面版可安装或导出 <code>.dkplugin</code> 插件包。';
     const plugins=filteredPlugins();
     $('#pluginManagerVisibleCount').textContent=`显示 ${plugins.length} / ${all.length}`;
 
@@ -361,21 +362,21 @@
       const localizedCaps=(plugin.capabilities||[]).map(capabilityLabel).join('、')||'—';
       card.innerHTML=`
         <div class="plugin-card-head">
-          ${plugin.workspaceRole==='top'
+          ${plugin.workspaceRole==='top'&&!plugin.systemLocked
             ? `<button class="plugin-card-icon plugin-super-selector ${plugin.isSuper?'selected':''}" type="button" aria-pressed="${plugin.isSuper?'true':'false'}" title="${plugin.isSuper?'当前主界面（SUPER）':'设为主界面（SUPER）'}" ${(!plugin.active||busy||!plugin.topContractReady)?'disabled':''}>${escapeHtml(plugin.workspaceIcon||'⌂')}<span class="plugin-super-home-mark">⌂</span></button>`
             : `<div class="plugin-card-icon" aria-hidden="true">${escapeHtml(plugin.icon||plugin.workspaceIcon||'⬡')}</div>`}
           <div class="plugin-card-title-wrap">
             <div class="plugin-card-title-line">
               <h3>${escapeHtml(display.name)}</h3>
               <span class="plugin-status-badge ${status.className}">${status.label}</span>
-              ${plugin.workspaceRole==='top'?`<span class="plugin-role-badge top">TOP</span>`:''}
+              ${plugin.systemLocked?`<span class="plugin-role-badge system">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top">TOP</span>`:'')}
               ${plugin.isSuper?`<span class="plugin-role-badge super">SUPER</span>`:''}
             </div>
             <div class="plugin-card-id">${escapeHtml(plugin.id)} · v${escapeHtml(plugin.version||'?')}</div>
           </div>
           <div class="plugin-card-switches">
-            <label class="plugin-enable-switch" title="${plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
-              <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper)?'disabled':''}>
+            <label class="plugin-enable-switch" title="${plugin.systemLocked?'系统功能由基座管理，不能停用':plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
+              <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper||plugin.systemLocked)?'disabled':''}>
               <span class="plugin-switch-track"><span class="plugin-switch-thumb"></span></span>
               <span class="plugin-switch-label">${plugin.enabled?'启用':'停用'}</span>
             </label>
@@ -400,6 +401,7 @@
           </div>
           <div class="plugin-card-actions">
             <button class="plugin-details-btn" type="button">详情</button>
+            <button class="plugin-export-btn" type="button" ${busy?'disabled':''}>导出</button>
             <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
             ${plugin.source==='external'?`<button class="plugin-history-btn" type="button" ${busy?'disabled':''}>版本历史</button><button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>卸载</button>`:''}
           </div>
@@ -407,11 +409,11 @@
         <div class="plugin-card-details hidden">
           <div><strong>插件类别：</strong>${escapeHtml(typeMeta.label)} · ${escapeHtml(typeMeta.description)}</div>
           <div><strong>注册贡献：</strong>${escapeHtml(contributionText(plugin.contributionCounts))}</div>
-          <div><strong>启用来源：</strong>${plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
+          <div><strong>启用来源：</strong>${plugin.systemLocked?'系统功能 · 强制启用':plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
           ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div><div><strong>兼容范围：</strong>${escapeHtml(pluginCompatibilityText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
-          ${plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:''}
+          ${plugin.systemLocked&&plugin.workspaceRole==='top'?`<div><strong>系统窗口：</strong>独立系统功能 · 强制启用 · 不参与 SUPER 选择</div>`:(plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:'')}
         </div>`;
 
       const superSelector=card.querySelector('.plugin-super-selector');
@@ -448,6 +450,13 @@
           state.host?.setStatus?.(`插件 ${display.name} 预热设置失败：${err.message}`);
           renderList({anchorPluginId:plugin.id});
         }
+      };
+
+      card.querySelector('.plugin-export-btn').onclick=async()=>{
+        if(state.busy.has(plugin.id))return;state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
+        try{const result=await window.DKDSPlugins.external.export(plugin.id);if(result)state.host?.setStatus?.(`插件 ${display.name} v${result.version||plugin.version||'?'} 已导出。`);}
+        catch(err){state.host?.setStatus?.(`导出插件失败：${err.message}`);}
+        finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
       card.querySelector('.plugin-reload-btn').onclick=async()=>{

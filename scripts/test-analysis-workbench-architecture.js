@@ -18,7 +18,7 @@ for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends Ana
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.14.0'"),'Plugin API must be v1.14.0.');
+assert(kernel.includes("const API_VERSION = '1.15.0'"),'Plugin API must be v1.15.0.');
 assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&&kernel.includes('workspaceSurface:'),'Kernel must expose the host-invariant PluginWorkspace as the preferred scientific workspace surface.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
@@ -48,7 +48,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
-  assert(['1.9.0','1.10.0','1.11.0','1.12.0','1.13.0','1.14.0'].includes(manifest.apiVersion),`${folder}: manifest must target compatible plugin API 1.9/1.10/1.11/1.12/1.13/1.14.`);
+  assert(['1.9.0','1.10.0','1.11.0','1.12.0','1.13.0','1.14.0','1.15.0'].includes(manifest.apiVersion),`${folder}: manifest must target compatible plugin API 1.9/1.10/1.11/1.12/1.13/1.14/1.15.`);
   assert((manifest.capabilities||[]).includes('ui.analysis-workbench'),`${folder}: manifest must declare unified workbench capability.`);
   assert((manifest.capabilities||[]).includes('runtime.capabilities'),`${folder}: manifest must declare Capability Runtime use.`);
 }

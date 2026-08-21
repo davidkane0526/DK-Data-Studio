@@ -32,7 +32,7 @@ sandbox.window.dispatchEvent=()=>{};
 
 const source = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-kernel.js'),'utf8');
 const managerUi = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-manager-ui.js'),'utf8');
-assert(managerUi.includes("PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','extension','developer']"),'Plugin Manager must render explicit capability/domain sections instead of only builtin/user source groups.');
+assert(managerUi.includes("PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','extension','developer']"),'Plugin Manager must render explicit capability/domain sections instead of only builtin/user source groups.');
 assert(!managerUi.includes("label:'系统插件'")&&!managerUi.includes("label:'用户插件'"),'Plugin Manager must not use source-only sections as its primary information architecture.');
 assert(managerUi.includes('const groupId=pluginTypeMeta(plugin).id')&&!managerUi.includes("plugin.source==='builtin'?'system':'user'"),'Plugin cards must mount into the explicit pluginType section rather than the legacy source group.');
 vm.runInNewContext(source,sandbox,{filename:'plugin-kernel.js'});
@@ -82,6 +82,10 @@ P.define({
   throw new Error('expected activation failure');
 });
 
+
+P.define({
+  id:'test.system',name:'System Foundation',version:'1.0.0',enabled:true,apiVersion:'1.0.0',pluginType:'foundation',source:'builtin',systemCritical:true
+},async()=>({}));
 
 P.define({
   id:'test.windowed',name:'Windowed',version:'1.0.0',enabled:true,apiVersion:'1.0.0',pluginType:'task',
@@ -145,6 +149,11 @@ P.configure({
   assert(duplicateFailed,'globally addressed provider ids must be unique across plugins');
   const statefulProviders=(P.diagnostics().registries['analysis.providers']||[]).filter(row=>row.id==='stateful');
   assert(statefulProviders.length===1&&statefulProviders[0].pluginId==='test.stateful','duplicate provider activation must not replace the original owner');
+
+  const system=P.manager.get('test.system');
+  assert(system.systemLocked===true&&system.enabled===true,'built-in system/foundation plugins must be exposed as force-enabled system entries.');
+  let systemDisableRejected=false;try{await P.manager.disable('test.system');}catch{systemDisableRejected=true;}
+  assert(systemDisableRejected&&P.manager.get('test.system').enabled,'system functionality must retain a disabled-looking toggle contract but reject disable requests.');
 
   const windowed=P.manager.get('test.windowed');
   assert(windowed.pluginType==='task','plugin manager state must expose the SDK-declared pluginType category.');

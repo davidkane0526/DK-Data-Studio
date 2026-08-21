@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.14
+# DK Data Studio Plugin SDK 1.15
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.7 or newer for the full Plugin API 1.14 contract. Plugin API 1.10/1.11/1.12/1.13 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.9 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -14,9 +14,33 @@ Copy one template directory and change the plugin id/name/version.
 ```text
 sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
+sdk/templates/tool-plugin/           lightweight tool / top Tools-menu example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.14.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.15.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
+
+## Algorithm plugins
+
+Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`, declare `algorithmProvider: true`, `algorithmCategories`, and machine-readable `algorithmProvides`, then register implementations through `ctx.analysis.algorithms.register(...)`. Algorithms should not own workbench UI; compatible workbench/task plugins resolve and invoke them through the versioned Algorithm Registry. See `sdk/templates/algorithm-provider/`.
+
+详细规范与示例另见 [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md)。
+
+## Tool plugins (Plugin API 1.15)
+
+Use `pluginType: "tool"` for lightweight reusable utilities that do not need a dedicated analysis workbench. Core owns the top-level **工具** button. A tool plugin registers Commands and contributes one or more menu actions through `ctx.ui.menus.add(...)`; for a `tool` plugin the default menu is automatically `tools`, so the plugin must not add its own top-level shell button.
+
+```js
+ctx.commands.register('com.example.tool.run', () => {
+  // utility logic
+});
+ctx.ui.menus.add({ id:'run', label:'示例工具', command:'com.example.tool.run' });
+```
+
+A tool may use public data/artifact, table, chart, settings, clipboard, or service APIs as declared in `requiresCore`, but it must not bypass Core lifecycle or create private global menus. See `sdk/templates/tool-plugin/`.
+
+## Core display-scale interaction
+
+All Core-owned scientific data plots support **double-click Y axis → toggle linear/log display**. This is a view-only setting: it does not mutate source Artifacts, plugin-domain data, pipeline inputs, or CSV/data exports. On a log view, non-positive Y samples remain in the source data but cannot be rendered on the logarithmic axis. Plugins should not implement a duplicate Y-axis double-click handler.
 
 ## Validate
 

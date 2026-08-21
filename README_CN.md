@@ -1,4 +1,12 @@
-# DK Data Studio — v3.61.8
+# DK Data Studio — v3.61.9
+
+## v3.61.9 显示尺度、工具插件与系统功能分层
+
+- Core ScientificPlot / ScientificCurveSurface 统一支持双击纵轴在 `linear` 与 `log` 之间切换。该行为只改变图形 View Scale，不写回 Artifact、原始数组或数据导出；非正值在对数视图中不绘制但不会被删除。
+- Plugin API 升级为 `1.15.0`，正式增加 `pluginType: tool`。工具插件的菜单贡献统一进入顶部“工具”下拉菜单，并由 Core 提供默认图标。
+- SDK 明确支持独立 `algorithm` Provider 插件，并新增 `sdk/TOOL_PLUGINS.md` 与 `sdk/templates/tool-plugin/`。
+- 插件管理新增插件“导出”动作，可把当前安装插件保存为 `.dkplugin`；新增“工具”分类。
+- 数据管理改为 `foundation/systemCritical` 系统功能，从普通插件活动区移到顶部系统命令栏；系统/基座插件的启用开关保留显示但不可关闭，也不参与 TOP/SUPER 主界面选择。
 
 ## v3.61.8 独立窗口实时数据同步
 

@@ -1,3 +1,12 @@
+# v3.61.9 — Display Scale / Tool Plugins / System Functions
+
+- Core-owned scientific plots now toggle the primary Y axis between linear and logarithmic display on Y-axis double-click. The display transform is view-only and never rewrites source artifacts, trace arrays, project science data, or export payloads.
+- Plugin API / standalone SDK moves to `1.15.0` and adds first-class `pluginType: tool`, including a default tool icon, a dedicated SDK guide/template, and automatic routing of `ctx.ui.menus.add()` contributions into the top-level Tools menu.
+- Plugin Manager adds a Tools category and per-plugin `.dkplugin` export. Desktop export supports installed external plugins and application-owned built-ins through the trusted package serializer.
+- Data Center is reclassified as a `foundation` / `systemCritical` system function. It is opened from the system command bar, does not occupy the ordinary plugin activity strip, cannot become SUPER, and cannot be disabled.
+- System/foundation plugins retain a visible enable switch for status consistency, but Core rejects disable requests and the UI disables the control.
+- SDK documentation explicitly confirms first-class versioned algorithm-provider plugins through `ctx.analysis.algorithms.register`.
+
 # v3.61.8 — Live Artifact Sync / Scoped Workbench Data Reliability
 
 - Main project Artifact mutations now propagate incrementally to already-open dedicated TOP renderers. Data Center, Pulse and other independent workbenches no longer require close/reopen to observe imported or reassigned data.

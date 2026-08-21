@@ -3643,6 +3643,7 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
 .plugin-role-badge{flex:0 0 auto;padding:2px 6px;border-radius:999px;font-size:9px;font-weight:760;letter-spacing:.02em}
 .plugin-role-badge.top{background:#f1f4f8;color:#5d687a;border:1px solid #e0e6ee}
 .plugin-role-badge.super{background:#eaf0ff;color:#244fc9;border:1px solid #c9d6f7}
+.plugin-role-badge.system{background:var(--surface-subtle,#f3f4f6);color:var(--text-secondary,#4b5563);border:1px solid var(--border-subtle,#d9dee7)}
 .plugin-enable-switch:has(.plugin-enable-input:disabled){cursor:default}
 
 /* One horizontal control rhythm. The selected workspace no longer has a blue underline. */

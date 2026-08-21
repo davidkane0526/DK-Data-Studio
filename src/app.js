@@ -2187,7 +2187,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.8',
+      version:'3.61.9',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2597,6 +2597,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
 
   // Controls
   $('#openBtn').onclick=importFiles; $('#openProjectBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
+  const dataCenterSystemBtn=$('#dataCenterSystemBtn');if(dataCenterSystemBtn)dataCenterSystemBtn.onclick=()=>openPluginActivityWindow('data-center');
   $('#inspectorDockBtn').onclick=toggleInspectorDock;
   $('#importChooseFilesBtn').onclick=addImportFiles;
   $('#importCloseBtn').onclick=closeImportWorkbench;
@@ -2990,7 +2991,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.8',
+      appVersion:'3.61.9',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
