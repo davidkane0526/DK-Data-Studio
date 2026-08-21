@@ -243,7 +243,7 @@
       transient:true,
       metadata:{
         adapter:'legacy-dataset',legacyDatasetPath:path,vg:Number.isFinite(ds?.vg)?ds.vg:null,
-        importSpec:deepClone(ds?.importSpec||null)
+        importSpec:deepClone(ds?.importSpec||null),sourceExcluded:ds?.excluded===true
       },
       source:{path:ds?.sourcePath||ds?.path||'',name:ds?.sourceName||ds?.name||'',encoding:ds?.encoding||''},
       columns:[
@@ -306,6 +306,7 @@
       vg:Number.isFinite(vg)?vg:null,
       points,
       importSpec,
+      excluded:table.metadata?.sourceExcluded===true,
       importedAt:table.createdAt||undefined,
       dataProvenance:safeArray(table.provenance).slice(1).map(deepClone)
     };

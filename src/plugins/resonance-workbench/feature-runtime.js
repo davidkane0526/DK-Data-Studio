@@ -74,6 +74,7 @@
       const linkedSelectionViewIds=['resonance-dataset-list','resonance-main-legend'];
       let applyingExternalSelection=false;
       let interactionMenus=null;
+      let dataSourcesRuntime=null;
       let selectedRange=null;
       let physicsCache={key:'',value:null};
       let resizeRaf=0;
@@ -86,6 +87,7 @@
       const groupPlotViews=new Map();
       const registeredEntityIds=new Set();
       let groupRenderKey='';
+      let runtimeDefaults={groupColumns:'auto'};
       let undoStack=[];
       let committedWorkspace=null;
       const workspaceFingerprint=value=>{try{return JSON.stringify(value);}catch{return '';}};
@@ -96,6 +98,13 @@
           undoStack.push(committedWorkspace);if(undoStack.length>80)undoStack.shift();
         }
         committedWorkspace=current;persistSnapshot?.();
+      }
+      function commitWorkspaceEdit(previous){
+        const before=clone(previous),current=clone(workspace);
+        if(before&&workspaceFingerprint(before)!==workspaceFingerprint(current)){
+          undoStack.push(before);if(undoStack.length>80)undoStack.shift();
+        }
+        committedWorkspace=current;persistSnapshot?.();return true;
       }
       function undoLastAction(){
         const previous=undoStack.pop();if(!previous){setStatus('没有可回退的共振编辑。');return false;}
@@ -198,8 +207,9 @@
       }
 
       function peaksInRange(range=selectedRange){
-        if(!range)return [];const lo=Math.min(Number(range.min),Number(range.max)),hi=Math.max(Number(range.min),Number(range.max));
-        return (workspace.peaks||[]).filter(p=>(!range.sweepId||p.sweepId===range.sweepId)&&Number(p.v)>=lo&&Number(p.v)<=hi);
+        if(!range)return [];const lo=Math.min(Number(range.min??range.vMin??range.xMin),Number(range.max??range.vMax??range.xMax)),hi=Math.max(Number(range.min??range.vMin??range.xMin),Number(range.max??range.vMax??range.xMax));
+        const hasY=Number.isFinite(Number(range.iMin??range.yMin))&&Number.isFinite(Number(range.iMax??range.yMax)),yLo=hasY?Math.min(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN,yHi=hasY?Math.max(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN;
+        return (workspace.peaks||[]).filter(p=>(!range.sweepId||p.sweepId===range.sweepId)&&Number(p.v)>=lo&&Number(p.v)<=hi&&(!hasY||(Number(p.i)>=yLo&&Number(p.i)<=yHi)));
       }
       function setRangeLocked(value){for(const p of peaksInRange())p.locked=!!value;physicsCache={key:'',value:null};renderLinkedSelection();scheduleSnapshot();}
       function setRangeCategory(order){
@@ -248,15 +258,19 @@
       function algorithmProvenance(provider,category='peak-detector'){const algorithmId=String(provider?.algorithmId||provider?.id||'').split('@')[0],version=String(provider?.version||'');return algorithmRuntime?.provenance?.({id:algorithmId,version,category})||{pluginId:provider?.owner||provider?.pluginId||'',algorithmId,algorithmVersion:version,category,title:provider?.title||provider?.name||algorithmId};}
       async function detectRange(range=selectedRange){
         if(!range)return;
-        const lo=Math.min(Number(range.min),Number(range.max)),hi=Math.max(Number(range.min),Number(range.max));
-        const targets=range.sweepId?[sweepById(range.sweepId)].filter(Boolean):visibleSweeps();
-        if(!targets.length){setStatus('框选范围内没有可见扫描。');return;}
+        const lo=Math.min(Number(range.min??range.vMin??range.xMin),Number(range.max??range.vMax??range.xMax)),hi=Math.max(Number(range.min??range.vMin??range.xMin),Number(range.max??range.vMax??range.xMax));
+        const hasY=Number.isFinite(Number(range.iMin??range.yMin))&&Number.isFinite(Number(range.iMax??range.yMax)),yLo=hasY?Math.min(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN,yHi=hasY?Math.max(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN;
+        const candidates=range.sweepId?[sweepById(range.sweepId)].filter(Boolean):visibleSweeps();
+        const pointsInBox=sw=>(sw?.points||[]).filter(p=>Number(p.v)>=lo&&Number(p.v)<=hi&&(!hasY||(Number(p.i)>=yLo&&Number(p.i)<=yHi)));
+        const targets=candidates.filter(sw=>pointsInBox(sw).length>0);
+        if(!targets.length){setStatus('框选矩形内没有可见数据点。');return;}
+        const beforeDetection=clone(workspace);
         const providers=detectorRuntime?.list?.()||[];const provider=selectDetectorProvider(providers);const activeId=String(provider?.id||workspace.activeDetector||'');
         const settings=detectorSettingsFor(provider,activeId);
         const inside=new Set(peaksInRange(range).filter(p=>!p.manual&&!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!inside.has(p.id));
         const added=[];let insufficient=0;
         for(const sw of targets){
-          const points=(sw.points||[]).filter(p=>Number(p.v)>=lo&&Number(p.v)<=hi);if(points.length<5){insufficient++;continue;}
+          const points=pointsInBox(sw);if(points.length<5){insufficient++;continue;}
           const subset={...sw,points};
           try{
             const found=await runPeakDetector(provider,subset,settings,{range:{vMin:lo,vMax:hi}});
@@ -265,7 +279,7 @@
           }catch(err){console.warn('[resonance range detect]',sw.id,err);}
         }
         workspace.peaks.push(...added);normalizeCategories();
-        if(added[0])publishPeakSelection(added[0],'resonance-range');else render();scheduleSnapshot();
+        if(added[0])publishPeakSelection(added[0],'resonance-range');else render();commitWorkspaceEdit(beforeDetection);
         setStatus(`局部寻峰完成：${targets.length-insufficient}/${targets.length} 条扫描，新增 ${added.length} 个峰。`);
       }
       function openRangeMenu(event){
@@ -286,7 +300,6 @@
           const row=meta.get(String(d.path||''));
           if(!row)continue;
           if(finite(row.vg))d.vg=Number(row.vg);
-          if(row.name)d.name=String(row.name);
         }
       }
 
@@ -295,6 +308,7 @@
         applyWorkspaceToDatasets();
         sweeps=[];
         for(const dataset of datasets){
+          if(dataset?.excluded===true)continue;
           try{sweeps.push(...(S.buildSweeps?.(dataset)||[]));}catch(err){console.warn('[resonance window buildSweeps]',dataset?.name,err);}
         }
         if(!sweeps.some(sw=>sw.id===selectedSweepId))selectedSweepId=visibleSweeps()[0]?.id||sweeps[0]?.id||'';
@@ -412,6 +426,7 @@
       async function runDetection(scope='selected'){
         const targets=scope==='all'?visibleSweeps():[selectedSweep()].filter(Boolean);
         if(!targets.length){setStatus('没有可寻峰的可见扫描。');return;}
+        const beforeDetection=clone(workspace);
         const targetIds=new Set(targets.map(sw=>sw.id));
         const preserved=(workspace.peaks||[]).filter(p=>!targetIds.has(p.sweepId)||p.manual||p.locked);
         const added=[];
@@ -427,7 +442,7 @@
           }catch(err){console.warn('[resonance window detect]',sw.id,err);}
         }
         workspace.peaks=preserved.concat(added);normalizeCategories();selectedPeakId=added[0]?.id||selectedPeakId;
-        render();scheduleSnapshot();
+        render();commitWorkspaceEdit(beforeDetection);
         setStatus(`寻峰完成：${targets.length} 条扫描，新增 ${added.length} 个自动峰。`);
       }
 
@@ -489,11 +504,22 @@
         normalizeCategories();render();scheduleSnapshot();setStatus('已按跨 Vg 峰轨迹重新整理峰序。');
       }
 
+      function datasetSource(path){return datasets.find(row=>String(row?.path||row?.name||'')===String(path||''))||null;}
+      async function renameDatasetSource(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.rename)return false;const label=window.prompt('修改数据标签',String(row.name||row.path||''));if(label===null)return false;const name=String(label||'').trim();if(!name)return false;try{await dataSourcesRuntime.rename({path:String(row.path||path)},name);refreshData();setStatus(`数据标签已修改为：${name}`);return true;}catch(err){setStatus(`修改数据标签失败：${err?.message||err}`);return false;}}
+      async function toggleDatasetSourceExcluded(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.setExcluded)return false;const next=row.excluded!==true;try{await dataSourcesRuntime.setExcluded({path:String(row.path||path)},next);refreshData();setStatus(`${next?'已排除':'已恢复'}数据：${row.name||row.path}`);return true;}catch(err){setStatus(`修改数据参与状态失败：${err?.message||err}`);return false;}}
+      async function deleteDatasetSource(path){const row=datasetSource(path);if(!row||!dataSourcesRuntime?.remove)return false;if(!window.confirm(`删除“${row.name||row.path}”？`))return false;try{const result=await dataSourcesRuntime.remove([{path:String(row.path||path)}]);refreshData();const count=Array.isArray(result?.removed)?result.removed.length:0;setStatus(count?`已删除 ${count} 组源数据。`:'源数据已不存在。');return count>0;}catch(err){setStatus(`删除源数据失败：${err?.message||err}`);return false;}}
+      function openDatasetMenu(event,path){const row=datasetSource(path);if(!row||!interactionMenus?.open)return null;return interactionMenus.open({x:Number(event?.clientX)||0,y:Number(event?.clientY)||0,context:{dataset:row,path},items:[
+        {id:'rename',label:'修改标签',icon:'✎',enabled:!!dataSourcesRuntime?.rename,onInvoke:()=>void renameDatasetSource(path)},
+        {id:'exclude',label:row.excluded===true?'恢复参与分析':'排除',icon:row.excluded===true?'○':'⊘',enabled:!!dataSourcesRuntime?.setExcluded,onInvoke:()=>void toggleDatasetSourceExcluded(path)},
+        {type:'separator'},
+        {id:'delete',label:'删除',icon:'×',enabled:!!dataSourcesRuntime?.remove,onInvoke:()=>void deleteDatasetSource(path)}
+      ]});}
+
       function datasetRowsHtml(){
         const vis=visibilityMap();
         return datasets.map(d=>{
           const row=vis.get(String(d.path))||{forward:true,reverse:true},transform=new Map(workspace.transformPreviewByDataset||[]).get(String(d.path))||'raw';
-          return `<div class="respar-dataset-item" data-dataset-path="${esc(d.path)}" data-entity-id="${esc(datasetEntityId(d.path))}" data-selection-key="${esc(datasetEntityId(d.path))}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform">${transformOptionsHtml(transform)}</select></label></div></div>`;
+          return `<div class="respar-dataset-item${d.excluded===true?' is-excluded':''}" data-dataset-path="${esc(d.path)}" data-entity-id="${esc(datasetEntityId(d.path))}" data-selection-key="${esc(datasetEntityId(d.path))}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''} ${d.excluded===true?'disabled':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform">${transformOptionsHtml(transform)}</select></label></div></div>`;
         }).join('')||'<div class="empty-state">工程中没有数据。</div>';
       }
 
@@ -502,6 +528,7 @@
           list.innerHTML=datasetRowsHtml();
           list.querySelectorAll('.respar-dataset-item').forEach(row=>{
             const path=row.dataset.datasetPath;
+            row.addEventListener('contextmenu',event=>{event.preventDefault();event.stopPropagation();openDatasetMenu(event,path);});
             row.querySelector('.reswin-vg')?.addEventListener('click',e=>e.stopPropagation());
             row.querySelector('.reswin-vg')?.addEventListener('change',e=>setDatasetVg(path,e.target.value));
             const master=row.querySelector('.reswin-master');if(master){const state=visibilityMap().get(String(path))||{forward:true,reverse:true};master.indeterminate=state.forward!==state.reverse;master.addEventListener('change',e=>{const map=visibilityMap(),next=map.get(String(path))||{forward:true,reverse:true};next.forward=next.reverse=!!e.target.checked;map.set(String(path),next);workspace.scanVisibility=[...map.entries()];fitVisibleData('visibility-master');render();scheduleSnapshot();});}
@@ -553,7 +580,7 @@
         const idx=Math.max(0,Math.min(points.length-1,Number(index)||0)),pt=points[idx],oldV=Number(p.v);
         p.index=Number.isFinite(Number(pt.index))?Number(pt.index):idx;p.v=Number(pt.v);p.i=Number(pt.i);p.manual=true;
         const delta=Number(p.v)-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(p.widthLeft)))p.widthLeft=Number(p.widthLeft)+delta;if(Number.isFinite(Number(p.widthRight)))p.widthRight=Number(p.widthRight)+delta;if(Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(p.analysisLeft)+delta;if(Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(p.analysisRight)+delta;}
-        physicsCache={key:'',value:null};
+        peakMetricCache.delete(p);peakMetricRevision+=1;physicsCache={key:'',value:null};groupRenderKey='';
       }
       function clearMainRangeMenu({keepSelection=false}={}){
         $('#resparRangeMenu')?.classList.add('hidden');
@@ -610,7 +637,7 @@
           getColorDomainValues:()=>datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),
           getMarkers:()=>mainSurfaceMarkers(),
           getView:()=>workspace.mainView||{xDomain:null,yDomain:null},setView:(next,meta)=>{workspace.mainView={xDomain:Array.isArray(next?.xDomain)?next.xDomain.slice():null,yDomain:Array.isArray(next?.yDomain)?next.yDomain.slice():null};if(meta?.reason==='box-zoom'){scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');}},
-          getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
+          getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max,yMin:selectedRange.iMin,yMax:selectedRange.iMax}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
           getMarkerWidth:marker=>markerWidthSpec(marker),
           onColorScale:scale=>renderMainLegend(scale),
           onCurveSelect:({curve})=>{clearMainRangeMenu();const sw=curve?.source;if(sw)publishSweepSelection(sw,'resonance-main');},
@@ -623,13 +650,13 @@
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
-          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
+          onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;publishPeakSelection(p,'resonance-peak-drag');if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
           onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));const m=peakMetrics(p)||{};if(!Number.isFinite(Number(p.analysisLeft)))p.analysisLeft=Number(m.analysisLeft);if(!Number.isFinite(Number(p.analysisRight)))p.analysisRight=Number(m.analysisRight);p.analysisManual=true;physicsCache={key:'',value:null};},
           onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
           onWidthDragEnd:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
           onWheelZoomStart:()=>clearMainRangeMenu({keepSelection:true}),
-          onRangeSelect:({xMin,xMax,yMin,yMax,event})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:selectedSweepId||''},event),
+          onRangeSelect:({xMin,xMax,yMin,yMax,event})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:''},event),
           onClearSelection:()=>{selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();},
           onReset:()=>{workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
           onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');},
@@ -1069,7 +1096,7 @@
         index=Math.max(0,Math.min(points.length-1,index+(Number(step)||0)));
         const point=points[index],oldV=Number(peak.v);peak.v=Number(point.v);peak.i=Number(point.i);peak.index=Number.isFinite(Number(point.index))?Number(point.index):index;peak.manual=true;
         const delta=peak.v-oldV;if(Number.isFinite(delta)){if(Number.isFinite(Number(peak.widthLeft)))peak.widthLeft=Number(peak.widthLeft)+delta;if(Number.isFinite(Number(peak.widthRight)))peak.widthRight=Number(peak.widthRight)+delta;if(Number.isFinite(Number(peak.analysisLeft)))peak.analysisLeft=Number(peak.analysisLeft)+delta;if(Number.isFinite(Number(peak.analysisRight)))peak.analysisRight=Number(peak.analysisRight)+delta;}
-        physicsCache={key:'',value:null};publishPeakSelection(peak,'resonance-peak-move');scheduleSnapshot();return true;
+        peakMetricCache.delete(peak);peakMetricRevision+=1;physicsCache={key:'',value:null};groupRenderKey='';publishPeakSelection(peak,'resonance-peak-move');if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();scheduleSnapshot();return true;
       }
       function selectAdjacentPeak(step){
         const sw=selectedSweep();if(!sw)return false;const rows=(workspace.peaks||[]).filter(p=>p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));if(!rows.length)return false;
@@ -1094,10 +1121,11 @@
         selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
         directionName,peakLabel,colorForPeakOrder,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
         restore(data){workspace=normalizeWorkspace(data,project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
-        reset(){workspace=defaultWorkspace(project);currentView='main';rebuild();render();scheduleSnapshot();},
+        reset(){workspace=defaultWorkspace(project);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
         renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(gateResult?.featureField||gateFeatureField()),gateFeatureFieldCsv,
-        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;renderGroup();scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
+        getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;groupRenderKey='';renderGroup();scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
+        setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRenderKey='';if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
         setUiRuntime(runtime){uiRuntime=runtime||null;mainSurface?.dispose?.();mainSurface=null;syncDerivedArtifacts();},
@@ -1106,6 +1134,7 @@
         setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},
         setPipelineRuntime(runtime){pipelineRuntime=runtime||null;installAlgorithmPipeline();},
         setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
+        setDataSourceRuntime(runtime){dataSourcesRuntime=runtime||null;},
         selection:()=>interactionSelection?.get?.()||null,
         selectPeak:(id,options={})=>{const p=peakById(id);return p?publishPeakSelection(p,options.source||'resonance-api',options):false;},
         selectSweep:(id,options={})=>{const sw=sweepById(id);return sw?publishSweepSelection(sw,options.source||'resonance-api'):false;},
@@ -1126,7 +1155,7 @@
       };
       sharedController=Shared.createController(service,{mode:'top-runtime',science:S});
 
-      function setProject(next){project=clone(next||{});workspace=normalizeWorkspace(pluginSliceFromProject(project),project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
+      function setProject(next){project=clone(next||{});const saved=pluginSliceFromProject(project);workspace=normalizeWorkspace(saved,project);if(saved?.groupColumns===undefined)workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();}
       await setProject(project);
       return {
         serviceName:'builtin.resonance-workbench.runtime',service,render,resize,setProject,

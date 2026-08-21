@@ -12,12 +12,12 @@ const context={window,document,console,Promise};context.globalThis=context;windo
 vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.js'});
 window.DKDSCharts.react('plot',[],{hoverlabel:{bgcolor:'orange',namelength:-1,font:{size:18,color:'green'}}},{});
 assert(captured,'Plotly.react must be called');
-assert.equal(captured.layout.hoverlabel.bgcolor,'rgba(31,41,55,0.90)','Core must own one translucent tooltip background');
-assert.equal(captured.layout.hoverlabel.bordercolor,'rgba(255,255,255,0.22)');
+assert.equal(captured.layout.hoverlabel.bgcolor,'rgba(31,41,55,0.92)','Core must own one translucent tooltip background');
+assert.equal(captured.layout.hoverlabel.bordercolor,'rgba(255,255,255,0.20)');
 assert.equal(captured.layout.hoverlabel.font.color,'#ffffff','Core must own tooltip foreground color');
 assert.equal(captured.layout.hoverlabel.font.size,12,'Core must normalize tooltip typography');
 assert.equal(captured.layout.hoverlabel.namelength,-1,'non-visual hoverlabel behavior may remain chart-specific');
 const css=fs.readFileSync(path.join(root,'src/style.css'),'utf8');
-assert(css.includes('.dkds-tooltip,.hover-tip')&&css.includes('background:rgba(31,41,55,.90)'),'custom/D3 tooltip must share the translucent Core theme');
-assert(css.includes('.js-plotly-plot .hoverlayer .hovertext path')&&css.includes('fill:rgba(31,41,55,.90)!important'),'legacy/direct Plotly hover labels must also inherit the Core tooltip visual contract');
+assert(css.includes('.dkds-tooltip,.hover-tip')&&css.includes('background:rgba(31,41,55,.92)'),'custom/D3 tooltip must share the translucent Core theme');
+assert(css.includes('.js-plotly-plot .hoverlayer .hovertext path')&&css.includes('fill:rgba(31,41,55,.92)!important'),'legacy/direct Plotly hover labels must also inherit the Core tooltip visual contract');
 console.log('Core Plotly + custom tooltip visual theme checks passed.');

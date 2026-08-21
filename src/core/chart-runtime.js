@@ -1,6 +1,6 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.2.0';
+  const VERSION='1.3.0';
   const ownerBindings=new Map();
   const chartScriptUrl=document.currentScript?.src||globalThis.location?.href||'file:///src/core/chart-runtime.js';
   const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-dist-min/plotly.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-dist-min/plotly.min.js';
@@ -44,12 +44,31 @@
   }
   function runtimeState(){return {version:VERSION,host:runtimeConfig.host,plotlyAllowed:runtimeConfig.plotlyAllowed,plotlySource:runtimeConfig.plotlySource,status:plotlyRuntime.status,requests:plotlyRuntime.requests,reuses:plotlyRuntime.reuses,lastReason:plotlyRuntime.lastReason,loadDurationMs:plotlyRuntime.loadDurationMs,error:plotlyRuntime.error,ready:!!plotly()?.react};}
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
-  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.90)',bordercolor:'rgba(255,255,255,0.22)',align:'left',font:Object.freeze({color:'#ffffff',size:12})});
+  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:'Inter, Segoe UI, sans-serif'})});
   function themeLayout(layout={}){
     const source=layout&&typeof layout==='object'?layout:{};const hover=source.hoverlabel&&typeof source.hoverlabel==='object'?source.hoverlabel:{};
     return {...source,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
   }
-  function react(target,data=[],layout={},config={}){const el=element(target)||target;const P=plotly();if(P?.react)return Promise.resolve(P.react(el,data,themeLayout(layout),{responsive:true,displaylogo:false,...config}));return ensurePlotly({reason:'react'}).then(next=>next.react(el,data,themeLayout(layout),{responsive:true,displaylogo:false,...config}));}
+  function normalizeHoverTemplate(value){
+    const text=String(value??'');if(!text||!/<extra>[\s\S]*?<\/extra>/i.test(text))return text;
+    return text.replace(/<extra>([\s\S]*?)<\/extra>/gi,(_all,extra)=>{const label=String(extra||'').replace(/<[^>]*>/g,'').trim();return label?`<br><b>${label}</b><extra></extra>`:'<extra></extra>';});
+  }
+  function themeTrace(trace={}){
+    if(!trace||typeof trace!=='object')return trace;
+    const hover=trace.hoverlabel&&typeof trace.hoverlabel==='object'?trace.hoverlabel:{};
+    const next={...trace,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
+    if(typeof trace.hovertemplate==='string')next.hovertemplate=normalizeHoverTemplate(trace.hovertemplate);
+    return next;
+  }
+  function themeData(data=[]){return (Array.isArray(data)?data:[]).map(themeTrace);}
+  function normalizeConfig(config={}){
+    const source=config&&typeof config==='object'?config:{};
+    if(source.staticPlot===true)return {responsive:true,displaylogo:false,...source,displayModeBar:false,scrollZoom:false};
+    // Common chart navigation is Core-owned. Plugins can extend the modebar but
+    // cannot silently remove basic zoom/home controls from interactive plots.
+    return {responsive:true,displaylogo:false,displayModeBar:'hover',scrollZoom:true,doubleClick:'reset+autosize',...source,displayModeBar:'hover'};
+  }
+  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);const P=plotly();if(P?.react)return Promise.resolve(P.react(el,rows,themeLayout(layout),cfg));return ensurePlotly({reason:'react'}).then(next=>next.react(el,rows,themeLayout(layout),cfg));}
   function restyle(target,update,traces){const el=element(target)||target;const P=plotly();return P?.restyle?P.restyle(el,update,traces):ensurePlotly({reason:'restyle'}).then(next=>next.restyle(el,update,traces));}
   function relayout(target,update){const el=element(target)||target;const P=plotly();return P?.relayout?P.relayout(el,update):ensurePlotly({reason:'relayout'}).then(next=>next.relayout(el,update));}
   function resize(target){const el=element(target);if(!el||el.offsetParent===null||!plotly()?.Plots?.resize)return false;try{plotly().Plots.resize(el);return true;}catch{return false;}}
@@ -86,12 +105,12 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,ensurePlotly,runtimeState,
-      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,tooltipTheme:TOOLTIP_THEME,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,tooltipTheme:TOOLTIP_THEME,
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
     });
   }
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

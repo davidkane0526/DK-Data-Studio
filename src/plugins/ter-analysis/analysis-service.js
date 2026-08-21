@@ -58,7 +58,7 @@
           const rows=artifacts?.list?.({includeTransient:true})||[];
           const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
           const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
-          let next=source.slice();
+          let next=source.filter(dataset=>dataset?.excluded!==true);
           if(settings.onlyFullyVisible)next=next.filter(ds=>{const sweeps=A.buildSweeps?.(ds)||[];return sweeps.some(sw=>Number(sw.direction)>0)&&sweeps.some(sw=>Number(sw.direction)<0);});
           return next;
         };

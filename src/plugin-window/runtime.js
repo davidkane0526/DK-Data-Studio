@@ -69,6 +69,13 @@
   window.addEventListener('keydown', event => {
     if (isTypingTarget(event.target)) return;
     const edit = window.DKDSPlugins?.edit;
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 's') {
+      event.preventDefault();
+      const payload=buildSnapshotPayload(true);
+      if(window.electronAPI?.requestOwnerProjectSave)window.electronAPI.requestOwnerProjectSave(payload||{});
+      else pushSnapshot(true);
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'z') {
       if (edit?.supports?.('undo')) { event.preventDefault(); edit.invoke('undo'); }
       return;
@@ -398,7 +405,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.58.2',
+      appVersion:'3.59.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

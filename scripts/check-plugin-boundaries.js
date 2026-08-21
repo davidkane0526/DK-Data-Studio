@@ -34,13 +34,13 @@ for(const file of allPluginFiles){
     [/\.scrollIntoView\s*\(/,'private focus reveal/scroll lifecycle'],
     [/ctx\.ui\.charts\b/,'legacy chart surface bypass; use ui.scientificPlot']
   ];
-  for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.8.`);
+  for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.9.`);
 }
 for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-runtime.js','core/scientific-plot-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/scientific-pipeline-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
   if(!html.includes(token))fail(`main renderer must load ${token}`);
 }
 for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','pipeline: scientificPipelineScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
-  if(!kernel.includes(token))fail(`Plugin API v1.8 missing ${token}`);
+  if(!kernel.includes(token))fail(`Plugin API v1.9 missing ${token}`);
 }
 const configureStart=app.indexOf('window.DKDSPlugins.configure({');
 const configureEnd=configureStart>=0?app.indexOf('\n    });',configureStart):-1;
@@ -53,6 +53,6 @@ if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use
 if(!ui.includes('class ScientificCurveSurface'))fail('Core must own D3 scientific plot interaction surface.');
 if(!read('src/core/scientific-plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own Plotly scientific interaction lifecycle.');
 if(!read('src/core/entity-runtime.js').includes('class EntityRegistry'))fail('Core must own canonical entity identity/relationship state.');
-if(!kernel.includes("const API_VERSION = '1.8.0'"))fail('Plugin API must be 1.8.0.');
+if(!kernel.includes("const API_VERSION = '1.9.0'"))fail('Plugin API must be 1.8.0.');
 if(process.exitCode)process.exit(process.exitCode);
-console.log('Plugin boundary check OK: all first-party plugin infrastructure is routed through Core API v1.8.');
+console.log('Plugin boundary check OK: all first-party plugin infrastructure is routed through Core API v1.9.');

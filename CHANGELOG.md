@@ -1,3 +1,16 @@
+# v3.59.0 — Unified Table & Interaction Foundation
+
+- Promoted the public Plugin API and standalone SDK to `1.9.0`. API 1.9 formally exposes the shared `TableSurface` and plugin `SettingsSurface`; API 1.8 packages remain accepted by the 1.x compatibility contract.
+- Added Core `TableSurface` as the default table infrastructure. Normal application/plugin `<table>` elements are automatically enhanced unless explicitly opted out; plugins may also use `ctx.ui.tables` to mount/bind managed tables.
+- `TableSurface` now owns draggable column widths, double-click/command auto-size, sort/restore-original-order, hide/restore columns, copy cell/row/visible table, stable column-state persistence, semantic column keys and targeted dynamic-DOM hydration. Transient anonymous tables do not share persistent state.
+- Added Core plugin `SettingsSurface` through `ctx.ui.settings`; Resonance uses it for default Inspector/Group placement and default group-column count without moving those preferences into Host/domain state.
+- Unified chart interaction defaults further: Plotly uses hover modebar, scroll zoom and reset/autosize defaults while D3 `ScientificCurveSurface` exposes matching hover navigation; shared tooltip styling uses a dark translucent DKDS surface.
+- Reserved normal project Save handling at Core level for dedicated TOP windows. `Ctrl+S` is forwarded to the owning project instead of being a plugin-private shortcut.
+- Data Center source actions are aligned under one action menu and source-data rows support the same `修改标签 / 排除(恢复) / 删除` lifecycle from right-click. Resonance data rows consume the same generic `core.data-sources` capability rather than owning source lifetime.
+- Resonance interaction fixes: peak detection now creates an undoable edit, box/local detection uses a real two-dimensional range, marker drag distinguishes click from movement, moving a peak invalidates dependent group/metric render state, and source rename no longer gets overwritten by plugin-local metadata.
+- Plugin Manager now separates built-in/system plugins from user-installed plugins.
+- Automation Runner `1.15.0` adds a real DOM `Unified TableSurface interaction contract`; repository gates add `table-surface:test` and keep Host Neutralization, SDK-detached, TOP/SUPER and scientific parity checks green.
+
 # v3.58.2 — TOP ScientificPlot, Resonance Group Trends & Source Data Lifecycle
 
 - Fixed TER dedicated TOP calculation failure `charts.scalarField is not a function`. The TER window runtime now injects the same managed `ScientificPlot` surface used by plugin feature code, so ordinary traces and scalar fields share one renderer contract in TOP and SUPER.

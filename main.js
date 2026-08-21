@@ -113,7 +113,7 @@ function builtinPluginIds() {
   return ids;
 }
 
-const PLUGIN_API_VERSION='1.8.0';
+const PLUGIN_API_VERSION='1.9.0';
 function readBuiltinPluginManifests(){
   const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
   try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
@@ -794,6 +794,22 @@ app.whenReady().then(() => {
     if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
     win.close();
     return true;
+  });
+  ipcMain.on('windows:requestProjectSave', (event, payload={}) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    owner.webContents.send('windows:requestProjectSave', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      persistence: bootstrap.pluginWindow?.persistence || 'project',
+      project: payload?.project || null,
+      pluginState: payload?.pluginState ?? null,
+      artifactDelta: payload?.artifactDelta || null,
+      final: true
+    });
   });
   ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);

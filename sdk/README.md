@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.8.0"` and declare every Core surface they use in `requiresCore`.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.9.0"` and declare every Core surface they use in `requiresCore`.
 
 ## Validate
 
@@ -57,3 +57,40 @@ await sources.remove([{ path: rows[0].path }]);
 ```
 
 `remove()` removes the canonical imported source and its dependent Artifact lineage. Analysis plugins should normally consume `ctx.data.artifacts` and keep their own data lists limited to visibility/selection/analysis state.
+
+## Unified TableSurface (DK Data Studio 3.59+)
+
+Data/scientific tables are a Core UI surface just like plots. Existing `<table>` elements are enhanced automatically unless they set `data-dkds-table="off"`; plugins can also bind or create them explicitly through `ctx.ui.tables`.
+
+```js
+const table = ctx.ui.tables.mount('summary-table', container, {
+  columns: [
+    { key: 'vg', label: 'Vg', unit: 'V' },
+    { key: 'value', label: 'Value' }
+  ],
+  rows
+});
+```
+
+The shared surface owns column resize, double-click auto-size, sorting, header actions, column hide/restore, cell/row copy, persisted column state and lifecycle. Plugins should not implement separate column-resize/sort/context-menu code for ordinary data tables. `bind(id, table)` adapts an existing DOM table; `mount(id, container, spec)` creates one through the same runtime.
+
+
+## Plugin settings (DK Data Studio 3.59+)
+
+插件需要保存“新工程/新窗口默认值”时使用 `ctx.ui.settings`，不要把用户偏好塞进 Core 或工程根字段。设置按插件 ID 独立持久化，并可通过统一设置对话框编辑。
+
+```js
+const settings = ctx.ui.settings.define('defaults', {
+  title: '插件默认设置',
+  defaults: { placement: 'right', columns: 'auto' },
+  fields: [
+    { id: 'placement', label: '默认位置', type: 'select', options: ['left', 'right'] },
+    { id: 'columns', label: '每行列数', type: 'select', options: ['auto', '2', '3'] }
+  ],
+  onApply: value => service.setUserDefaults(value)
+});
+
+settings.open();
+```
+
+插件设置是**用户默认偏好**；当前工程已经保存的布局/分析状态仍由插件自己的 project slice 决定。

@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.8.0';
+  const API_VERSION = '1.9.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1670,6 +1670,8 @@
           escape:value=>window.DKDSComponents?.escape?.(value)??String(value??'')
         }),
         plotViews: infrastructureScope?.plotViews || null,
+        tables: infrastructureScope?.tables || null,
+        settings: infrastructureScope?.settings || null,
         interactions: infrastructureScope?.interactions || null,
         interaction: infrastructureScope?.interactionRuntime || null,
         contextMenus: infrastructureScope?.menus || null,
@@ -1698,7 +1700,7 @@
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
         entities: infrastructureScope?.entities || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.6',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,artifactLineage:true}),
+        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.6',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true}),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

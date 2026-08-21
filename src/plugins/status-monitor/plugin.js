@@ -3,7 +3,7 @@
     id:'builtin.status-monitor',
     name:'Status Monitor',
     version:'1.0.0',
-    apiVersion:'1.8.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar"],
+    apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar"],
     order:7,
     description:'Unified bottom status bar runtime and LAN state monitor.',
     capabilities:['ui.status-bar','system.runtime-status','lan.web-status']

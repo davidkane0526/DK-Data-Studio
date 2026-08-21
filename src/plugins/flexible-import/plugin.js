@@ -3,7 +3,7 @@
     id:'builtin.flexible-import',
     name:'Flexible Text Import',
     version:'1.0.0',
-    apiVersion:'1.8.0',requiresCore:["science","data.flow","data.model"],
+    apiVersion:'1.9.0',requiresCore:["science","data.flow","data.model"],
     description:'Generic text/multicolumn import provider used by the import workbench.',
     source:'builtin',
     order:10,

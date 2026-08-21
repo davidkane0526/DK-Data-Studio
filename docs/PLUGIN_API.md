@@ -1,10 +1,10 @@
-# DK Data Studio Plugin API v1.8
+# DK Data Studio Plugin API v1.9
 
-Plugin API v1.8 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+Plugin API v1.9 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
 
-Starting with DK Data Studio v3.42, API 1.8 gains backward-compatible Core surfaces for Entity identity, Artifact lineage and ScientificPlot. The API version remains `1.8.0` so existing v1.8 plugins continue to load unchanged; new plugins should consume the stronger surfaces instead of older compatibility shortcuts.
+DK Data Studio v3.59 promotes the public contract to API `1.9.0` to add the shared TableSurface and SettingsSurface as first-class SDK capabilities. Compatible API 1.8 packages remain loadable under the 1.x compatibility rule, but new plugins should target 1.9 when they consume these surfaces.
 
-For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.8 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
+For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.9 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
 
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
@@ -17,14 +17,14 @@ DKDSPlugins.define(manifest, async ctx => {
 
 ## 1. Manifest and machine contract
 
-`plugin.json` must target API `1.8.0` and declare every Core surface it consumes in `requiresCore`.
+`plugin.json` must target API `1.9.0` and declare every Core surface it consumes in `requiresCore`.
 
 ```json
 {
   "id": "com.example.spectroscopy",
   "name": "Spectroscopy",
   "version": "1.0.0",
-  "apiVersion": "1.8.0",
+  "apiVersion": "1.9.0",
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
   "requiresCore": [
@@ -84,7 +84,7 @@ window.DKDSMyPluginSomething = ...
 DKDSHostRecipes.*
 ```
 
-Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge for old external packages and is deliberately excluded from the v1.8 development contract.
+Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge for old external packages and is deliberately excluded from the v1.9 development contract.
 
 ## 4. Core requirement catalog
 
@@ -95,7 +95,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 - data: `data.flow`, `data.pipeline`, `data.transforms`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
-- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`.
+- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`.
 
 Activation fails before plugin code runs if a declared Core requirement is unavailable.
 
@@ -427,7 +427,7 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
   ],
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.8.0"
+    "pluginApi": "^1.9.0"
   },
   "pluginDependencies": [
     {"id":"other.provider","range":"^2.0.0","optional":false}
@@ -472,3 +472,30 @@ npm run check
 ```
 
 For changes to mature scientific algorithms also run `npm run science:parity` against a preserved baseline. See `docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md` for the full development workflow.
+
+### Managed tables and plugin defaults
+
+Normal application/plugin tables are automatically enhanced by Core unless they opt out with `data-dkds-table="off"`. For explicit lifecycle/state control, declare `ui.table` and use `ctx.ui.tables`:
+
+```js
+const table = ctx.ui.tables.bind('results', root.querySelector('table'), {persist:true});
+table.autoSizeAll();
+table.setSort('value','asc');
+table.setColumnVisible('notes', false);
+await table.copyVisibleTable();
+```
+
+`ctx.ui.tables.mount(...)` can also render a table from semantic column/row definitions. Column width, visibility and sort state belong to TableSurface; plugins should not install private header draggers or global table observers. Anonymous transient tables are intentionally not persisted by default.
+
+Declare `ui.settings` and use `ctx.ui.settings` for user defaults such as preferred view placement or default column count:
+
+```js
+const settings = ctx.ui.settings.define('defaults', {
+  title:'Plugin defaults',
+  defaults:{placement:'right'},
+  fields:[{id:'placement',label:'Default placement',type:'select',options:['left','right','bottom']}]
+});
+const value = settings.get();
+```
+
+Plugin settings are user preferences. Scientific results and project-domain state still belong in the plugin project slice / Artifact model rather than SettingsSurface.

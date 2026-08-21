@@ -444,7 +444,7 @@ Pointer-frequency scientific interactions use direct geometry fast paths in Core
 
 ## v3.41 Core-owned plugin infrastructure
 
-Plugin API v1.8 establishes an enforceable Core-first boundary. New IO, Data Flow, Chart, scoped DOM/Component, Service, Plugin Module, Plugin Contract and Host Recipe runtimes centralize reusable application capabilities. First-party plugins must declare `requiresCore` and cannot directly access Electron, raw Plotly, raw document infrastructure, private observers/schedulers, `ctx.host`, private DKDS globals or the generic untyped registry. See `docs/ARCHITECTURE_V3.41.md` and `docs/PLUGIN_API.md` for the authoritative model.
+Plugin API v1.9 establishes an enforceable Core-first boundary. New IO, Data Flow, Chart, scoped DOM/Component, Service, Plugin Module, Plugin Contract and Host Recipe runtimes centralize reusable application capabilities. First-party plugins must declare `requiresCore` and cannot directly access Electron, raw Plotly, raw document infrastructure, private observers/schedulers, `ctx.host`, private DKDS globals or the generic untyped registry. See `docs/ARCHITECTURE_V3.41.md` and `docs/PLUGIN_API.md` for the authoritative model.
 
 ## v3.50–v3.51 scientific pipeline and transform registry
 

@@ -3,7 +3,7 @@
     id:'com.example.raw-prominence-detector',
     name:'Raw Prominence Detector Example',
     version:'1.0.0',
-    apiVersion:'1.8.0',
+    apiVersion:'1.9.0',
     source:'external',
     enabled:false,
     order:500,

@@ -10,7 +10,7 @@ const ui=read('src/core/ui-infrastructure.js');
 const automation=read('src/core/automation-test-runtime.js');
 assert(runtime.includes("if (key==='plotly') continue"),'Dedicated TOP must keep Plotly out of blocking dependency loads.');
 assert(runtime.includes("configureRuntime?.({plotlyAllowed:requestedPlotly")&&runtime.includes('startupProfile.chartRuntime'),'Dedicated TOP must preserve the logical Plotly contract and report lazy runtime state.');
-assert(charts.includes("const VERSION='1.2.0'")&&charts.includes('function ensurePlotly(options={})')&&charts.includes('plotlyPromise'),'Core Chart Runtime must own one shared lazy Plotly loader promise.');
+assert(charts.includes("const VERSION='1.3.0'")&&charts.includes('function ensurePlotly(options={})')&&charts.includes('plotlyPromise'),'Core Chart Runtime v1.3.0 must own one shared lazy Plotly loader promise.');
 assert(charts.includes("status:window.Plotly?.react?'ready':'idle'")&&charts.includes('runtimeState'),'Core Chart Runtime must expose lazy-loader state for diagnostics.');
 assert(ui.includes('await window.DKDSCharts.react(this.plot')&&ui.includes('window.DKDSCharts.toImage(plot'),'Core UI surfaces must use Chart Runtime rather than direct Plotly render/export calls.');
 assert(!ui.includes('await Plotly.react(this.plot')&&!ui.includes('const data=await Plotly.toImage(plot'),'UI infrastructure must not bypass the lazy Chart Runtime.');

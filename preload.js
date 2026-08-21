@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
   pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
+  requestOwnerProjectSave: payload => ipcRenderer.send('windows:requestProjectSave', payload || {}),
+  onOwnerProjectSaveRequest: callback => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('windows:requestProjectSave', handler);
+    return () => ipcRenderer.removeListener('windows:requestProjectSave', handler);
+  },
   onActivityProjectSnapshot: callback => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('windows:activityProjectSnapshot', handler);

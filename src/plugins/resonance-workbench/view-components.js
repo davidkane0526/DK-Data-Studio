@@ -296,7 +296,7 @@
     /* v3.36: exact GRS-derived data/inspector/range visual language */
     #resonanceDedicatedPage .respar-dataset-list{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow:auto;margin-top:6px}
     #resonanceDedicatedPage .respar-dataset-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;padding:7px;border-radius:7px;border:1px solid transparent;cursor:pointer;background:#fff}
-    #resonanceDedicatedPage .respar-dataset-item:hover{background:#f7f8fc}#resonanceDedicatedPage .respar-dataset-item>.reswin-master{align-self:start;margin-top:2px}
+    #resonanceDedicatedPage .respar-dataset-item:hover{background:#f7f8fc}#resonanceDedicatedPage .respar-dataset-item.is-excluded{opacity:.52;background:#f7f8fb}#resonanceDedicatedPage .respar-dataset-item>.reswin-master{align-self:start;margin-top:2px}
     #resonanceDedicatedPage .respar-dataset-content{min-width:0}#resonanceDedicatedPage .respar-dataset-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#25324a}
     #resonanceDedicatedPage .respar-dataset-vg{display:flex;align-items:center;gap:4px;margin-top:3px;color:#667085;font-size:11px}
     #resonanceDedicatedPage .respar-dataset-vg input{width:76px;height:24px;padding:2px 5px;border:1px solid #d7ddea;border-radius:5px;color:#334155;background:#fff;font-size:11px;box-shadow:none}
@@ -339,7 +339,7 @@
     const isTop=mode==='top'||ctx.runtime.isAuxiliaryWindow;
     ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振曲线、峰位与物理分析',onActivate:()=>{ctx.workspace.openPage('resonanceDedicatedPage');controller.render();}});
     const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(ctx),onOpen:()=>controller.render()});
-    R.bindUi?.(page);R.setUiRuntime?.(ctx.ui);R.setEntityRuntime?.(ctx.data.entities);R.setPipelineRuntime?.(ctx.data.pipeline);R.setAlgorithmRuntime?.(ctx.analysis.algorithms);R.setDetectorRuntime?.({list:()=>{const rows=ctx.analysis.algorithms?.list?.({category:'peak-detector'})||[];return rows.map(row=>{const ref=`${row.id}@${row.version}`;return {...row,id:ref,algorithmId:row.id,name:row.title,shortName:row.metadata?.shortName||row.title,presets:row.metadata?.presets||[],detect:(sweep,settings,options={})=>ctx.analysis.algorithms.run({id:row.id,version:row.version,category:'peak-detector'},sweep,{...options,parameters:settings||{}})};});}});
+    R.bindUi?.(page);R.setUiRuntime?.(ctx.ui);R.setEntityRuntime?.(ctx.data.entities);R.setPipelineRuntime?.(ctx.data.pipeline);R.setAlgorithmRuntime?.(ctx.analysis.algorithms);R.setDataSourceRuntime?.(ctx.capabilities.proxy('core.data-sources'));R.setDetectorRuntime?.({list:()=>{const rows=ctx.analysis.algorithms?.list?.({category:'peak-detector'})||[];return rows.map(row=>{const ref=`${row.id}@${row.version}`;return {...row,id:ref,algorithmId:row.id,name:row.title,shortName:row.metadata?.shortName||row.title,presets:row.metadata?.presets||[],detect:(sweep,settings,options={})=>ctx.analysis.algorithms.run({id:row.id,version:row.version,category:'peak-detector'},sweep,{...options,parameters:settings||{}})};});}});
     let detectorParamPanel=null;
     const recoverLockedAlgorithm=async(category,ref,button,rerender)=>{if(!ref||typeof ctx.analysis.algorithms?.recover!=='function')return;button.disabled=true;try{const catalog=await ctx.analysis.algorithms.locate?.({category,id:String(ref).split('@')[0],version:String(ref).includes('@')?String(ref).slice(String(ref).lastIndexOf('@')+1):''});const compatible=(catalog?.candidates||[]).filter(row=>row.compatible&&row.recoverable);if(!compatible.length){ctx.status.set((catalog?.candidates||[]).length?`已定位到包含 ${ref} 的算法包，但当前环境不兼容。`:`未在当前包或插件历史中找到 ${ref}。`);return;}const restored=await ctx.analysis.algorithms.recover({category,id:String(ref).split('@')[0],version:String(ref).slice(String(ref).lastIndexOf('@')+1)},compatible[0]);ctx.status.set(`已恢复算法 ${restored.id}@${restored.version}。`);rerender?.();}catch(err){ctx.status.set(`恢复算法失败：${err.message}`);}finally{button.disabled=false;}};
     const renderDetectorPicker=()=>{const select=page.querySelector('#reswinDetectorSelect'),note=page.querySelector('#reswinDetectorDescription'),paramHost=page.querySelector('#reswinDetectorParams'),recover=page.querySelector('#reswinRecoverDetector');if(!select)return;const rows=(ctx.analysis.algorithms?.list?.({category:'peak-detector'})||[]).map(row=>({...row,id:`${row.id}@${row.version}`,algorithmId:row.id,shortName:row.metadata?.shortName||row.title,name:row.title,presets:row.metadata?.presets||[]})),state=R.getState?.(),saved=String(state?.workspace?.activeDetector||''),diagnostic=saved.includes('@')?ctx.analysis.algorithms?.diagnose?.(saved,{category:'peak-detector'}):null,missing=diagnostic?.status==='missing-version'||diagnostic?.status==='missing-algorithm',current=missing?saved:String(rows.find(row=>row.id===saved||row.algorithmId===saved)?.id||rows.find(row=>row.default)?.id||rows[0]?.id||'');select.innerHTML=(missing?`<option value="${esc(saved)}">缺失版本 · ${esc(saved)}</option>`:'')+rows.map(row=>`<option value="${String(row.id).replace(/"/g,'&quot;')}">${String(row.shortName||row.name||row.id)} · v${String(row.version||'')}</option>`).join('');if(current)select.value=current;if(recover){recover.classList.toggle('hidden',!missing);recover.onclick=()=>recoverLockedAlgorithm('peak-detector',saved,recover,renderDetectorPicker);}const renderActive=()=>{const row=rows.find(item=>String(item.id)===select.value);if(note)note.textContent=missing&&!row?`工程锁定的寻峰算法缺失：${saved}`:(row?`${row.description||'寻峰算法'} · ${row.algorithmId}@${row.version}`:'选择当前使用的寻峰算法。');detectorParamPanel?.dispose?.();detectorParamPanel=null;if(paramHost)paramHost.replaceChildren();if(row?.parameterSchema&&paramHost&&ctx.parameters?.render){const ws=R.getState?.()?.workspace||{},value=ws.detectorSettings?.[row.id]||ws.detectorSettings?.[row.algorithmId]||ws.algorithms||{};detectorParamPanel=ctx.parameters.render(paramHost,row.parameterSchema,{value,onChange:next=>R.setDetectorSettings?.(row.id,next)});}};select.onchange=()=>{if(missing&&select.value===saved)return;R.setActiveDetector?.(select.value);renderActive();};renderActive();};
@@ -354,6 +354,11 @@
     parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
     const workspaceFactory=ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench;
     if(!workspaceFactory?.create)throw new Error('PluginWorkspace Core capability is unavailable.');
+    const settingsSurface=ctx.ui.settings?.get?.('defaults')||null;
+    const pluginDefaults=settingsSurface?.get?.()||{};
+    const allowedPlacements=new Set(['float','global','left','right','bottom']);
+    const inspectDefault=allowedPlacements.has(String(pluginDefaults.inspectPlacement||''))?String(pluginDefaults.inspectPlacement):'right';
+    const groupDefault=allowedPlacements.has(String(pluginDefaults.groupPlacement||''))?String(pluginDefaults.groupPlacement):'bottom';
     const wb=workspaceFactory.create(host,{header:false,activity:'resonance',hostMode:isTop?'top':'super',primaryScroll:'contained',leftWidth:280,leftMin:230,canvasLeftWidth:360,canvasRightWidth:390,canvasBottomHeight:360});
     const primaryShell=parity.querySelector('.respar-primary'),leftPanel=primaryShell?.querySelector('.respar-left-panel'),mainArea=primaryShell?.querySelector('.respar-main-area');
     const inspector=parity.querySelector('#resparInspectorPanel'),group=parity.querySelector('#resparGroupPanel');
@@ -363,8 +368,8 @@
     wb.compose({
       primary:{id:'main',label:'共振分析',scroll:'contained',leftNode:leftPanel,mainNode:mainArea},
       primes:[
-        {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:'float',placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
-        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:'bottom',placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
+        {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:inspectDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
+        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:groupDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
           id:'group-columns',menu:true,order:10,
           label:()=>{const value=String(R.getGroupColumns?.()||'auto');return `每行：${value==='auto'?'自动':value}`;},
           title:'设置每行子图数量',
@@ -410,7 +415,7 @@
     const localActions=[
       {id:'inspect',label:'检查',onInvoke:()=>togglePanel('inspect')},{id:'group',label:'组图',onInvoke:()=>togglePanel('group')},
       {type:'separator'},{id:'physics',label:'物理机制',onInvoke:()=>navigate('physics')},{id:'spacing',label:'峰间距',onInvoke:()=>navigate('spacing')},{id:'gate',label:'栅压分析',onInvoke:()=>navigate('gate')},
-      {type:'separator'},{id:'export',label:'导出',menu:true,items:exportItems},
+      {type:'separator'},{id:'export',label:'导出',menu:true,items:exportItems},{id:'settings',label:'设置',onInvoke:()=>settingsSurface?.open?.()},
       ...(isTop?[{id:'close',label:'关闭窗口',onInvoke:()=>ctx.workspace.closeCurrentWindow?.()}]:[])
     ];
     const pageHeader=page.querySelector('.resonance-window-header'),headerActions=page.querySelector('#reswinHeaderActions');
@@ -419,7 +424,8 @@
       pageHeader?.classList.add('hidden');
       const toolbarActions=[
         ['res-inspect','检查','PRIME',40,()=>togglePanel('inspect')],['res-group','组图','PRIME',50,()=>togglePanel('group')],
-        ['res-physics','物理机制','SUB',70,()=>navigate('physics')],['res-spacing','峰间距','SUB',80,()=>navigate('spacing')],['res-gate','栅压分析','SUB',90,()=>navigate('gate')]
+        ['res-physics','物理机制','SUB',70,()=>navigate('physics')],['res-spacing','峰间距','SUB',80,()=>navigate('spacing')],['res-gate','栅压分析','SUB',90,()=>navigate('gate')],
+        ['res-settings','设置','SUB',110,()=>settingsSurface?.open?.()]
       ];
       for(const [id,label,section,order,onClick] of toolbarActions)ctx.ui.toolbar.add({id,label,activity:'resonance',section,order,priority:section==='PRIME'?20:10,onClick});
       const menuRows=[['res-export-main-svg','共振 I–V 主图 · SVG',10,()=>R.exportMainSvg?.()],['res-export-main-png','共振 I–V 主图 · PNG',20,()=>R.exportMainPng?.()],['res-export-main-csv','共振 I–V 主图数据 · CSV',30,()=>R.exportMainCsv?.()],['res-export-main-copy','复制共振 I–V 主图数据',40,()=>R.copyMainCsv?.()],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.()],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.()]];

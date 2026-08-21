@@ -1,5 +1,17 @@
-# DK Data Studio — v3.58.2
+# DK Data Studio — v3.59.0
 
+
+## v3.59 统一表格与交互基座
+
+- Plugin API / 独立 SDK 升级到 `1.9.0`。`ctx.ui.tables` 与 `ctx.ui.settings` 现在是正式公共能力；旧 1.8 插件仍按 1.x 兼容契约加载。
+- Core 新增统一 `TableSurface`。普通数据表格默认自动获得拖动列宽、双击/命令自动列宽、排序、恢复原顺序、隐藏/恢复列、复制单元格/行/可见表格以及稳定列状态恢复；插件不再需要自己实现这些基础表格操作。
+- 插件可以显式通过 `ctx.ui.tables.bind()` / `mount()` 使用同一接口。动态生成表格由 Core 定向接管，临时匿名表格默认不跨页面共享列状态。
+- Core 新增 `SettingsSurface`。插件可以保存用户默认偏好而不污染工程科学状态；共振插件已用于“检查/组图默认位置”和“组图每行列数”。
+- Plotly 与 D3 继续保留各自 renderer 优势，但通过统一交互基座收敛 Tooltip、悬浮图工具、缩放/归位和生命周期体验。
+- `Ctrl+S` 属于 Core 项目快捷键，独立 TOP 插件窗口也会保存所属工程，插件不应私有覆盖。
+- 数据中心和共振数据列表统一使用工程级源数据生命周期：右键可修改标签、排除/恢复、删除；分析插件不拥有源数据本体。
+- 共振修复寻峰 Undo、二维框选/局部寻峰、误点击拖峰、峰移动后组图/度量缓存失效刷新等交互问题。
+- 插件管理器按“系统插件 / 用户插件”分组。
 
 ## v3.58.2 运行时一致性与源数据生命周期
 
@@ -22,7 +34,7 @@
 
 ## v3.57 独立 Plugin SDK 与插件运行时去宿主依赖
 
-- 新增可脱离项目源码单独分发的 `sdk/`：包含 Plugin API 1.8 类型声明、manifest schema、独立校验/打包 CLI，以及完整 UI Workspace 与 Algorithm Provider 两类模板。
+- v3.57 首次新增可脱离项目源码单独分发的 `sdk/`（当时为 Plugin API 1.8）；当前 v3.59 分发的 SDK 已升级为 Plugin API 1.9，并继续包含类型声明、manifest schema、独立校验/打包 CLI，以及完整 UI Workspace 与 Algorithm Provider 两类模板。
 - 第三方开发者只需要 SDK 和已安装的 DK Data Studio，即可生成可安装的 `.dkplugin`，不再需要复制 `src/` 或使用项目内构建脚本。
 - Resonance、TER、Pulse 的 TOP 运行时 Service 改为插件命名空间所有，不再回退到主宿主提供的 `resonance / ter / pulse` 领域 Service。
 - 主宿主 `DKDSPlugins.configure(...)` 不再公开 Resonance/TER/Pulse 领域服务或领域页面回调。

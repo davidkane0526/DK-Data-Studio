@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.14.0';
+  const VERSION='1.15.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -95,6 +95,24 @@
     }finally{try{scope.dispose?.();}catch{}try{window.Plotly?.purge?.(host);}catch{}host.remove();}
   }
 
+  async function tableSurfaceSmoke(){
+    const ui=window.DKDSUI;assert(ui?.createScope,'Core UI infrastructure unavailable.');
+    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:720px;height:320px;pointer-events:none;';
+    host.innerHTML='<table id="automationTable"><thead><tr><th>Name</th><th>Value</th><th>Note</th></tr></thead><tbody><tr><td>C</td><td>30</td><td>third</td></tr><tr><td>A</td><td>10</td><td>first</td></tr><tr><td>B</td><td>20</td><td>second</td></tr></tbody></table><div id="automationMountedTable"></div>';
+    document.body.appendChild(host);const scope=ui.createScope('core.automation-table-surface');
+    try{
+      const table=host.querySelector('#automationTable'),surface=scope.tables.bind('automation-table',table,{persist:false});assert(surface,'TableSurface bind failed.');assert(table.classList.contains('dkds-managed-table'),'TableSurface did not mark the table as managed.');assert(table.querySelectorAll('.dkds-table-column-resizer').length===3,'Column resizers were not installed on every header.');
+      const width=surface.setColumnWidth(1,180,{persist:false});assert(width===180,'Column width API did not retain the requested width.');assert(table.querySelector('thead th:nth-child(2)').style.width==='180px','Column width was not applied to the header.');assert(table.querySelector('tbody td:nth-child(2)').style.width==='180px','Column width was not applied to body cells.');
+      const autoWidth=surface.autoSizeColumn(0,{persist:false});assert(Number(autoWidth)>=56,'Auto-size did not return a valid column width.');
+      surface.sort(1,'asc',{persist:false});assert(table.querySelector('tbody tr td:nth-child(2)').textContent.trim()==='10','Ascending table sort failed.');surface.sort(1,'desc',{persist:false});assert(table.querySelector('tbody tr td:nth-child(2)').textContent.trim()==='30','Descending table sort failed.');surface.clearSort();assert(table.querySelector('tbody tr td:first-child').textContent.trim()==='C','Clearing sort did not restore the original DOM order.');
+      assert(surface.setColumnVisible(2,false,{persist:false}),'Column hide failed.');assert(table.querySelector('thead th:nth-child(3)').classList.contains('dkds-table-column-hidden'),'Hidden-column state was not projected to the DOM.');surface.showAllColumns();assert(!table.querySelector('thead th:nth-child(3)').classList.contains('dkds-table-column-hidden'),'Show-all columns did not restore the hidden column.');
+      const mounted=scope.tables.mount('automation-mounted',host.querySelector('#automationMountedTable'),{persist:false,columns:[{key:'vg',label:'Vg',unit:'V'},{key:'value',label:'Value'}],rows:[{vg:-5,value:2},{vg:5,value:1}]});assert(mounted?.table?.querySelectorAll('tbody tr').length===2,'TableSurface mount did not render data rows.');assert(mounted.table.querySelector('thead th').textContent.includes('Vg'),'TableSurface mount did not render column metadata.');
+      const rawHost=document.createElement('div');rawHost.innerHTML='<table id="automationAutoTable"><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';document.body.appendChild(rawHost);await Promise.resolve();await new Promise(resolve=>requestAnimationFrame(()=>resolve()));const autoTable=rawHost.querySelector('table');assert(autoTable.classList.contains('dkds-managed-table'),'Document-level TableSurface observer did not auto-enhance a newly inserted table.');assert(autoTable.querySelectorAll('.dkds-table-column-resizer').length===2,'Auto-enhanced table did not receive column resize handles.');rawHost.remove();
+      const saved=surface.columnState();surface.setColumnVisible('A',false,{persist:false});assert(surface.visibleColumnKeys().length===2,'TableSurface key-based visibility did not update visible columns.');surface.restoreColumnState(saved,{persist:false});assert(!table.querySelector('thead th:first-child').classList.contains('dkds-table-column-hidden'),'TableSurface state restore did not restore column visibility.');assert(surface.visibleTableText().includes('A\tB\tC'),'TableSurface visible-table serialization is unavailable.');surface.resetState({persist:false});
+      return {version:ui.version,resizers:table.querySelectorAll('.dkds-table-column-resizer').length,columnState:surface.columnState(),mountedRows:mounted.table.querySelectorAll('tbody tr').length,autoHydration:true,operations:['resize','auto-size','sort','hide/show','copy menu','state','mount/bind','auto-hydrate']};
+    }finally{try{scope.dispose?.();}catch{}host.remove();}
+  }
+
   function performanceCacheSmoke(){
     const perf=window.DKDSPerformance;assert(perf?.memo&&perf?.snapshot,'Performance Runtime unavailable.');
     perf.clear('automation.memo');perf.resetMetrics('automation.memo');let calls=0;
@@ -167,7 +185,7 @@
   async function dataSourceLifecycleSmoke(){
     const D=window.DKDSData,cap=window.DKDSCapabilities?.get?.('core.data-sources');
     assert(D?.createStore&&D?.removeLegacyDatasets,'Data source lifecycle primitive unavailable.');
-    assert(cap&&cap.methods?.includes?.('list')&&cap.methods?.includes?.('remove'),'core.data-sources capability is not registered.');
+    assert(cap&&['list','rename','setExcluded','remove'].every(method=>cap.methods?.includes?.(method)),'core.data-sources lifecycle capability is incomplete.');
     const sources=await window.DKDSCapabilities.invoke('core.data-sources','list');
     assert(Array.isArray(sources),'core.data-sources.list() did not return a source list.');
     const datasets=[{path:'automation-a.csv',name:'automation-a.csv',points:[{v:0,i:1},{v:1,i:2}]},{path:'automation-b.csv',name:'automation-b.csv',points:[{v:0,i:3},{v:1,i:4}]}];
@@ -386,6 +404,7 @@
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
+    await runCase('table.surface','Unified TableSurface interaction contract','UI / Table',tableSurfaceSmoke);
     await runCase('performance.cache','Performance cache & render dedupe','Performance',performanceCacheSmoke);
     await runCase('performance.lifecycle','Performance cache policy & lifecycle trim','Performance',performanceLifecycleSmoke);
     await runCase('performance.resources','Renderer & resource lifecycle','Performance',performanceResourceLifecycleSmoke);
@@ -420,7 +439,7 @@
           for(const runtime of domainRuntimes)assert(loaded.has(runtime)===declared.has(runtime),`${row.id}: ${runtime} load did not follow the resolved Core contract.`);
           assert(!loaded.has('plotly'),`${row.id}: Plotly must not block dedicated TOP startup.`);
           const chartRuntime=renderer.chartRuntime||null;
-          assert(chartRuntime&&chartRuntime.version==='1.2.0',`${row.id}: Core Chart Runtime lazy-loader snapshot missing.`);
+          assert(chartRuntime&&chartRuntime.version==='1.3.0',`${row.id}: Core Chart Runtime lazy-loader snapshot missing.`);
           assert(chartRuntime.plotlyAllowed===declared.has('plotly'),`${row.id}: logical Plotly contract was not preserved by the lazy loader.`);
           return {activityId:row.data?.activityId||row.id.slice(4),pluginId:row.data?.pluginId||'',readyMs:Number(row.data?.durationMs)||0,rendererTotalMs:Number(renderer.totalMs)||0,navigationMs:Number(main.navigationMs)||0,createToReadyMs:Number(main.createToReadyMs)||0,dependencyCount:Number(renderer.dependencyCount)||renderer.dependencies.length,scriptCount:Number(renderer.scriptCount)||renderer.scripts?.length||0,domainRuntimes:domainRuntimes.filter(id=>loaded.has(id)),algorithmProviders:clone(renderer.algorithmProviders||[]),chartRuntime:clone(chartRuntime),phases:(renderer.phases||[]).map(item=>({name:item.name,durationMs:item.durationMs})),slowDependencies:renderer.dependencies.slice().sort((a,b)=>(Number(b.durationMs)||0)-(Number(a.durationMs)||0)).slice(0,5).map(item=>({name:item.name,durationMs:item.durationMs}))};
         });
@@ -431,7 +450,7 @@
         const profiles=rows.map(row=>{
           const renderer=row.data?.startupProfile?.renderer||{},loaded=new Set((renderer.dependencies||[]).map(item=>String(item?.name||''))),declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
           assert(!loaded.has('plotly'),`${row.id}: eager Plotly dependency is still present.`);
-          assert(chart.version==='1.2.0',`${row.id}: lazy Chart Runtime state missing.`);
+          assert(chart.version==='1.3.0',`${row.id}: lazy Chart Runtime state missing.`);
           assert(chart.plotlyAllowed===declared.has('plotly'),`${row.id}: Plotly permission does not match resolved plugin contract.`);
           return {activityId:row.data?.activityId||row.id.slice(4),declared:declared.has('plotly'),status:chart.status||'',ready:!!chart.ready,requests:Number(chart.requests)||0,reuses:Number(chart.reuses)||0,loadDurationMs:Number(chart.loadDurationMs)||0};
         });

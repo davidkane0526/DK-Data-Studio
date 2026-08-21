@@ -9,6 +9,9 @@ const dataModel=read('src/core/data-model.js');
 const app=read('src/app.js');
 const dcFeature=read('src/plugins/data-center/feature-runtime.js');
 const dcViews=read('src/plugins/data-center/shared-views.js');
+const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
+const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
 
 const context={window:{},console,structuredClone,crypto:{randomUUID:()=>`uuid-${Math.random()}`}};
 context.window.window=context.window;
@@ -38,7 +41,12 @@ assert(store.get(sourceB.id),'Removing one imported source must not remove anoth
 
 assert(app.includes("'core.data-sources'")&&app.includes('methods:dataSourceHostApi()'),'Host must expose source lifecycle through one generic Core capability.');
 assert(dcFeature.includes("ctx.capabilities.proxy('core.data-sources')")&&dcFeature.includes('sourceCapability.remove([{path}])'),'Data Center must consume the generic data-source lifecycle capability rather than mutate host state directly.');
-assert(dcViews.includes('id="dcRemoveSource"')&&dcViews.includes('移除源数据'),'Data Center must expose the canonical source removal action.');
+assert(dcViews.includes('id="dcDataActionsBtn"')&&dcViews.includes('数据操作'),'Data Center must expose source lifecycle through the aligned data-actions menu.');
+assert(dcFeature.includes('openDataActions')&&dcFeature.includes('修改标签')&&dcFeature.includes('排除')&&dcFeature.includes('删除'),'Data Center data objects must expose the shared rename/exclude/delete action set.');
+assert(dcFeature.includes('artifactList.oncontextmenu'),'Data Center data objects must expose the same actions from the row context menu.');
+assert(resonance.includes('openDatasetMenu(event,path)')&&resonance.includes("row.addEventListener('contextmenu'")&&resonance.includes('修改标签')&&resonance.includes('排除')&&resonance.includes('删除'),'Resonance source-data rows must expose the same source lifecycle context menu.');
+assert(resonance.includes('setDataSourceRuntime(runtime)')&&resonanceViews.includes("ctx.capabilities.proxy('core.data-sources')")&&!resonanceEntry.includes("ctx.capabilities.proxy('core.data-sources')"),'Resonance shared View/runtime wiring must consume the generic data-source capability without bloating the thin plugin entry.');
+assert(!resonance.includes('state.datasets.splice'),'Resonance must not duplicate source deletion inside plugin state.');
 assert(!dcFeature.includes('state.datasets.splice')&&!dcFeature.includes('legacyDatasetPath)=null'),'Data Center must not duplicate imported-source ownership inside plugin state.');
 
 console.log('v3.58.2 data-source lifecycle checks passed.');

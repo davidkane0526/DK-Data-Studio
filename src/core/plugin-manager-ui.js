@@ -323,6 +323,17 @@
     }
 
     list.innerHTML='';
+    const grouped=[
+      {id:'system',label:'系统插件',description:'随 DK Data Studio 提供的内置基座与第一方插件。',rows:plugins.filter(plugin=>plugin.source==='builtin')},
+      {id:'user',label:'用户插件',description:'通过 .dkplugin 安装的本地插件。',rows:plugins.filter(plugin=>plugin.source!=='builtin')}
+    ];
+    const groupHosts=new Map();
+    for(const group of grouped){
+      if(!group.rows.length)continue;
+      const section=document.createElement('section');section.className=`plugin-manager-section plugin-manager-section-${group.id}`;section.dataset.pluginGroup=group.id;
+      section.innerHTML=`<div class="plugin-manager-section-head"><div><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(group.description)}</span></div><span class="plugin-manager-section-count">${group.rows.length}</span></div><div class="plugin-manager-section-list"></div>`;
+      list.appendChild(section);groupHosts.set(group.id,section.querySelector('.plugin-manager-section-list'));
+    }
     for(const plugin of plugins){
       const busy=state.busy.has(plugin.id);
       const status=statusMeta(plugin);
@@ -470,7 +481,8 @@
         details.classList.toggle('hidden');
         card.querySelector('.plugin-details-btn').textContent=details.classList.contains('hidden')?'详情':'收起';
       };
-      list.appendChild(card);
+      const groupId=plugin.source==='builtin'?'system':'user';
+      (groupHosts.get(groupId)||list).appendChild(card);
     }
     restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
     if(resetScroll)settleManagerAtTop();

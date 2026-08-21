@@ -1,8 +1,8 @@
 {
   "id": "builtin.data-center",
   "name": "Data Center",
-  "version": "1.10.1",
-  "apiVersion": "1.8.0",
+  "version": "1.11.0",
+  "apiVersion": "1.9.0",
   "requiresCore": [
     "runtime",
     "events",
@@ -24,10 +24,12 @@
     "ui.dom",
     "ui.workspace",
     "ui.plot-views",
+    "ui.table",
     "ui.actions",
     "ui.selection",
     "ui.interaction",
     "ui.menus",
+    "ui.context-menus",
     "ui.activities",
     "ui.top-workspace",
     "ui.pages",
@@ -65,7 +67,8 @@
     "ui.interaction",
     "data.types",
     "ui.plugin-workspace",
-    "ui.scientific-plot"
+    "ui.scientific-plot",
+    "ui.table"
   ],
   "source": "builtin",
   "window": {

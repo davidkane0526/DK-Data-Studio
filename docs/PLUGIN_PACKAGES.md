@@ -29,7 +29,7 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.8.0",
+    "apiVersion": "1.9.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
@@ -229,7 +229,7 @@ Algorithm Provider packages should declare the exact algorithms that the package
   ],
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.8.0"
+    "pluginApi": "^1.9.0"
   }
 }
 ```

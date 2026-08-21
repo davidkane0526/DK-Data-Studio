@@ -1074,10 +1074,15 @@
       sourceName:String(dataset?.sourceName||dataset?.name||''),
       vg:Number.isFinite(Number(dataset?.vg))?Number(dataset.vg):null,
       points:Array.isArray(dataset?.points)?dataset.points.length:0,
+      excluded:dataset?.excluded===true,
       artifactId:window.DKDSData?.stableId?.('legacy-table',String(dataset?.path||dataset?.name||'dataset'))||''
     }));
+    const locate=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};const path=String(row?.path||''),sourcePath=String(row?.sourcePath||'');return state.datasets.find(dataset=>(path&&String(dataset?.path||dataset?.name||'')===path)||(sourcePath&&String(dataset?.sourcePath||'')===sourcePath))||null;};
+    const commit=(type,dataset)=>{syncDatasetArtifacts({emit:false});window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
     return {
       list,
+      rename(ref,label){const dataset=locate(ref),name=String(label||'').trim();if(!dataset||!name)return {updated:false,sources:list()};dataset.name=name;commit('source-rename',dataset);setStatus(`源数据标签已修改为：${name}`);return {updated:true,source:list().find(row=>row.path===String(dataset.path||dataset.name||''))||null,sources:list()};},
+      setExcluded(ref,value=true){const dataset=locate(ref);if(!dataset)return {updated:false,sources:list()};dataset.excluded=!!value;commit('source-exclude',dataset);setStatus(`${dataset.excluded?'已排除':'已恢复'}源数据：${dataset.name||dataset.path}`);return {updated:true,excluded:dataset.excluded,source:list().find(row=>row.path===String(dataset.path||dataset.name||''))||null,sources:list()};},
       remove(refs){
         const requested=Array.isArray(refs)?refs:[refs];
         const outcome=window.DKDSData?.removeLegacyDatasets?.(state.artifactStore,state.datasets,requested);
@@ -1864,7 +1869,7 @@
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.58.2',
+      version:'3.59.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2657,7 +2662,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.58.2',
+      appVersion:'3.59.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -2752,6 +2757,7 @@
     state.activeProjectTabId=initialTab.id;
     mountProjectTab(initialTab);
 
+    window.electronAPI?.onOwnerProjectSaveRequest?.(payload=>{applyActivityProjectSnapshot(payload);saveProject();});
     window.electronAPI?.onActivityProjectSnapshot?.(applyActivityProjectSnapshot);
     window.electronAPI?.onActivityWindowFailed?.(payload=>{
       const activity=String(payload?.activityId||'插件工作区');

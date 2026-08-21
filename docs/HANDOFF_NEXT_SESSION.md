@@ -1,33 +1,38 @@
-# Next Session Handoff — v3.58.2
+# Next Session Handoff — v3.59.0
 
 ## Current baseline
 
-- Application: `3.58.2`
-- Branch: `fix/v3.58.2-runtime-data-lifecycle`
-- Architecture baseline: v3.58 Host Neutralization remains intact. Core/Host is domain-neutral; first-party scientific state is plugin-owned; TOP renderers are dedicated-only.
-- Plugin SDK: v1.8.0 remains the public plugin development surface.
+- Application: `3.59.0`
+- Branch: `feat/v3.59-interaction-foundation`
+- Architecture baseline: v3.58 Host Neutralization remains intact. Core/Host is domain-neutral, domain persistence is plugin-owned, and TOP renderers are dedicated-only.
+- Public Plugin API / standalone SDK: `1.9.0`. API 1.9 adds `ui.table` / `ctx.ui.tables` and `ui.settings` / `ctx.ui.settings`; compatible API 1.8 packages remain loadable.
 
-## v3.58.2 fixes
+## v3.59 foundation
 
-1. TER dedicated TOP now injects managed `ScientificPlot` into its analysis service. This fixes `charts.scalarField is not a function` without adding a TER-specific Host path.
-2. Resonance peak-family/group trend construction no longer requires optional peak-metrics completion. Vpk/Ipk and peak identity remain available immediately; FWHM/amplitude/area merge when available.
-3. Imported source datasets have an explicit lifecycle. The project Host owns canonical source datasets and mirrors them as `legacy-dataset` DataTable Artifacts. `core.data-sources` exposes generic list/remove operations, and Data Center is the canonical UI for source removal. Removing a source also removes its Artifact lineage descendants.
+1. `TableSurface` is the canonical table infrastructure. Normal `<table>` elements are auto-enhanced unless `data-dkds-table="off"`; explicit SDK consumers use `ctx.ui.tables.bind()` or `mount()`. Core owns column resize/auto-size, sorting, hide/show, copy operations, state restore and dynamic-table lifecycle.
+2. `SettingsSurface` is the canonical plugin-default preference surface. Plugin defaults are user preferences, not scientific project data. Resonance uses it for Inspector/Group default placement and group columns.
+3. Scientific chart UX is renderer-neutral at the contract level. D3 remains appropriate for editable interaction canvases and Plotly for standard result/heatmap rendering; tooltip and viewport/tool affordances are Core-owned.
+4. `Ctrl+S` is a Core project shortcut in main and dedicated TOP windows. Plugins must not take ownership of ordinary application shortcuts.
+5. Imported source lifetime remains Host-owned through `core.data-sources`. Data Center and Resonance source rows use the same rename/exclude/remove capability; plugin-local dataset metadata must not overwrite canonical source labels.
+6. Plugin Manager visually separates system/built-in plugins from user-installed plugins.
 
-## Ownership rule
+## Resonance interaction fixes in this baseline
 
-- Host/project: imported source lifetime.
-- Artifact Store: typed projections and derived lineage.
-- Data Center: source-management UI.
-- Analysis plugin data lists: visibility/selection/analysis participation only; do not own source deletion.
+- Global/local peak detection records an undoable workspace edit.
+- Range selection and local detection use both X and Y bounds.
+- Peak marker drag has a movement threshold and robust nearest-point lookup.
+- Peak movement invalidates peak-metric/physics/group render state so dependent group views update.
+- Source rows expose the generic rename/exclude/remove context menu without owning source lifetime.
 
 ## Validation gates
 
 - `npm run check`
 - `npm test`
+- `npm run table-surface:test`
 - `npm run data-source-lifecycle:test`
 - `npm run sdk:test`
 - `npm run host-neutralization:test`
 - `git diff --check`
-- Built-in Automation Test Center: `Data Contract -> Project source data lifecycle`
+- Built-in Automation Test Center: `UI / Table -> Unified TableSurface interaction contract`
 
-Do not fix future plugin errors by reintroducing scientific domain code into `src/app.js`. Add or extend a generic Core contract only when a real plugin requires it.
+Do not reimplement table basics, plugin-default settings, standard project shortcuts, scientific viewport controls or imported-source lifetime inside individual plugins. Extend a generic Core contract only when an actual plugin requirement is missing.

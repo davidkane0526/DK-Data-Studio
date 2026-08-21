@@ -1,4 +1,4 @@
-# Workspace / UI Plugin API v1.8
+# Workspace / UI Plugin API v1.9
 
 This document defines how a plugin owns an entire scientific workspace without adding domain UI to `src/index.html` or `src/app.js`.
 
@@ -476,7 +476,7 @@ Peak detectors and other algorithm providers must be discovered from registries 
 
 ## AnalysisWorkbench v5 / Typed Interaction / Capability Runtime v2
 
-Plugin API 1.8 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
+Plugin API 1.9 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
 Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
 
