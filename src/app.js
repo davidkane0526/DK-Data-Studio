@@ -116,6 +116,35 @@
   function setStatus(t){ status.textContent = t; }
   let updateStatusState=null;
 
+  function pushArtifactDeltaToActivityWindows(artifactDelta,reason='artifact-change',options={}){
+    const upserts=Array.isArray(artifactDelta?.upserts)?artifactDelta.upserts.filter(row=>row?.id):[];
+    const removedIds=Array.isArray(artifactDelta?.removedIds)?artifactDelta.removedIds.map(String).filter(Boolean):[];
+    if(!upserts.length&&!removedIds.length)return false;
+    const tab=activeProjectTab();
+    if(!tab?.id||!window.electronAPI?.pushActivityArtifactDelta)return false;
+    try{
+      window.electronAPI.pushActivityArtifactDelta({projectTabId:tab.id,reason,excludeActivityId:String(options?.excludeActivityId||''),artifactDelta:{upserts,removedIds}});
+      return true;
+    }catch(err){console.warn('[DKDS owner artifact broadcast]',err);return false;}
+  }
+
+  function snapshotArtifactRows(){
+    return state.artifactStore?.list?.({includeTransient:true})||[];
+  }
+
+  function diffArtifactRows(beforeRows=[],afterRows=snapshotArtifactRows()){
+    const before=new Map((beforeRows||[]).filter(row=>row?.id).map(row=>[String(row.id),row]));
+    const after=new Map((afterRows||[]).filter(row=>row?.id).map(row=>[String(row.id),row]));
+    const upserts=[];
+    for(const [id,row] of after){
+      const prior=before.get(id);
+      const changed=!prior||window.DKDSData?.fingerprintArtifact?.(prior)!==window.DKDSData?.fingerprintArtifact?.(row);
+      if(changed)upserts.push(row);
+    }
+    const removedIds=[...before.keys()].filter(id=>!after.has(id));
+    return {upserts,removedIds};
+  }
+
   function formatBytes(n){
     const v=Number(n)||0;
     if(v<=0)return '0 B';
@@ -1158,6 +1187,7 @@
     $('#importCommitBtn').disabled=true;
     importDraft.loading=true;
     try{
+      const beforeArtifactRows=snapshotArtifactRows();
       const legacyRows=[];
       const artifactRows=[];
       const reports=[];
@@ -1240,7 +1270,9 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         });
       }
 
-      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+      const importDelta=diffArtifactRows(beforeArtifactRows);
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifactDelta:importDelta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+      pushArtifactDeltaToActivityWindows(importDelta,'import');
       if(legacyRows.length)clearMainView(false);
       renderAll();
       refreshOpenAnalysisPage();
@@ -1274,7 +1306,19 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   function artifactHostApi(){
-    const emit=payload=>window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',payload);
+    const emit=payload=>{
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',payload);
+      const collect=(entry,out={upserts:[],removedIds:[]})=>{
+        if(!entry)return out;
+        if(entry.type==='batch'){for(const child of entry.events||entry.changes||[])collect(child,out);return out;}
+        if((entry.type==='add'||entry.type==='upsert'||entry.type==='publish')&&entry.artifact?.id)out.upserts.push(entry.artifact);
+        else if(entry.type==='remove'&&entry.id)out.removedIds.push(String(entry.id));
+        else if(entry.type==='clear')out.removedIds.push(...(entry.ids||[]).map(String));
+        return out;
+      };
+      const delta=collect(payload);
+      pushArtifactDeltaToActivityWindows(delta,`artifact-${String(payload?.type||'change')}`);
+    };
     const api={
       list:options=>state.artifactStore?.list?.(options)||[],
       revision:kind=>state.artifactStore?.revision?.(kind)||0,
@@ -1322,8 +1366,22 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     const list=(options={})=>[...legacyDescriptors(),...genericDescriptors()].filter(row=>matchesConsumer(row,options?.consumer||options?.pluginId));
     const locateLegacy=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};if(row?.artifactId)return null;const path=String(row?.path||''),sourcePath=String(row?.sourcePath||'');return state.datasets.find(dataset=>(path&&String(dataset?.path||dataset?.name||'')===path)||(sourcePath&&String(dataset?.sourcePath||'')===sourcePath))||null;};
     const locateGeneric=ref=>{const row=ref&&typeof ref==='object'?ref:{path:ref};const id=String(row?.artifactId||row?.path||''),sourcePath=String(row?.sourcePath||'');return genericImports().filter(a=>(id&&String(a.id)===id)||(sourcePath&&String(a?.source?.path||'')===sourcePath)||(id&&String(a?.source?.path||'')===id));};
-    const commitLegacy=(type,dataset)=>{syncDatasetArtifacts({emit:false});window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.sourcePath||dataset?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
-    const commitGeneric=(type,artifacts=[])=>{window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(artifacts[0]?.source?.path||''),artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();};
+    const commitLegacy=(type,dataset)=>{
+      syncDatasetArtifacts({emit:false});
+      const artifactId=window.DKDSData?.stableId?.('legacy-table',String(dataset?.path||dataset?.name||'dataset'))||'';
+      const changed=artifactId?state.artifactStore?.get?.(artifactId):null;
+      const delta={upserts:changed?[changed]:[],removedIds:[]};
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.sourcePath||dataset?.path||''),artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+      pushArtifactDeltaToActivityWindows(delta,type);
+      renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();
+    };
+    const commitGeneric=(type,artifacts=[])=>{
+      const changed=(artifacts||[]).map(row=>state.artifactStore?.get?.(row?.id)).filter(Boolean);
+      const delta={upserts:changed,removedIds:[]};
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(changed[0]?.source?.path||artifacts[0]?.source?.path||''),artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+      pushArtifactDeltaToActivityWindows(delta,type);
+      renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();
+    };
     return {
       list,
       targets:()=>dataConsumerTargets(),
@@ -1353,7 +1411,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         if(genericRemoveIds.size)state.artifactStore?.batch?.(api=>{for(const id of [...genericRemoveIds].reverse())api.remove?.(id);});
         const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
         const removedCount=(outcome.removed?.length||0)+genericRoots.length;
-        if(removedCount){window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
+        if(removedCount){const removedArtifactIds=[...(outcome.removedArtifactIds||[]),...genericRemoveIds].map(String);const delta={upserts:[],removedIds:removedArtifactIds};window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds,artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(delta,'source-remove');renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
         return {removed:[...(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),...genericRoots.map(a=>({path:a.id,name:a.name,sourcePath:a?.source?.path||''}))],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],sources:list()};
       }
     };
@@ -2129,7 +2187,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.0',
+      version:'3.61.8',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2880,9 +2938,12 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if(active){
       state.artifactStore=tab.artifactStore;
       window.DKDSPlugins?.project?.restorePlugin?.(pluginId,tab.pluginState);
-      if(artifactsChanged)window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
-        type:'merge',pluginId,activityId:payload.activityId||'',artifacts:state.artifactStore.list()
-      });
+      if(artifactsChanged){
+        window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+          type:'merge',pluginId,activityId:payload.activityId||'',artifactDelta:payload.artifactDelta||null,artifacts:state.artifactStore.list()
+        });
+        pushArtifactDeltaToActivityWindows(payload.artifactDelta||{},'activity-merge',{excludeActivityId:String(payload.activityId||'')});
+      }
       captureActiveProjectTab();
       if(payload.final){
         renderAll();
@@ -2929,7 +2990,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.7',
+      appVersion:'3.61.8',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

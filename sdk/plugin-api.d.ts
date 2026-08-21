@@ -2,6 +2,10 @@ export type DKDSDisposable = { dispose?(): void } | (() => void) | void;
 export type DKDSPluginInstance = { deactivate?(): void | Promise<void> };
 export type DKDSAlgorithmRef = { category: string; id: string; version?: string };
 export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[]; focus:any; ranges:any[]; context:Record<string,unknown>; source:any };
+export interface DKDSDataModelRuntime {
+  isArtifact(value:any):boolean; column(table:any,ref:any):any; columnValues(table:any,ref:any):any[]; rows(table:any,options?:{start?:number;limit?:number}):Record<string,any>[];
+  fromLegacyDataset?(dataset:any):any; toLegacyDataset?(artifact:any):any; summarize?(artifact:any):any; deepClone?<T=any>(value:T):T;
+}
 export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; assignments?:string[]; artifactId:string; kind?:string; semanticType?:string; importerId?:string }
 export interface DKDSDataSourceTarget { id:string; label:string; icon:string; order:number }
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
@@ -129,7 +133,7 @@ export interface DKDSPluginContext {
   readonly capabilities:{register(id:string,spec:any):any;get(id:string):any;require(id:string,options?:any):any;proxy(id:string):any;list(query?:any):any[];invoke(id:string,method:string,...args:any[]):any;watch(fn:(event:any)=>void,options?:any):()=>void;snapshot():any};
   readonly state:{create<T=any>(initial:T,options?:any):DKDSStateStore<T>};
   readonly data:{
-    model:any; formula:any; sources:DKDSDataSourcesCapability; importWorkbench:DKDSDataImportWorkbench; flow:any; reactive:DKDSReactiveRuntime;
+    model:DKDSDataModelRuntime; formula:any; sources:DKDSDataSourcesCapability; importWorkbench:DKDSDataImportWorkbench; flow:any; reactive:DKDSReactiveRuntime;
     importers:DKDSDataImportersCapability; exporters:any; transformers:any; analyzers:any;
     pipeline:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;list(query?:any):any[];run(id:string,input:any,options?:any):Promise<any>;runSync(id:string,input:any,options?:any):any;runPlan(plan:any,input:any,options?:any):any;snapshot():any};
     transforms:{version:string;register(id:string,spec:any):any;unregister(id:string):any;get(id:string):any;resolve(value:any):any;list(query?:any):any[];runCurve(id:string,input:any,options?:any):any;runScalarField(id:string,input:any,options?:any):any;curveStageId(id:string):string;fieldStageId(id:string):string};

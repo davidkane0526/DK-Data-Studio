@@ -1,3 +1,11 @@
+# v3.61.8 — Live Artifact Sync / Scoped Workbench Data Reliability
+
+- Main project Artifact mutations now propagate incrementally to already-open dedicated TOP renderers. Data Center, Pulse and other independent workbenches no longer require close/reopen to observe imported or reassigned data.
+- Import commits publish exact Artifact deltas, including transient legacy adapters, without rehydrating or reactivating the whole plugin window.
+- Source assignment/rename/exclude/remove transactions use the same owner-to-TOP delta channel.
+- Plugin-window owner deltas are merged without being echoed back as local plugin changes, preventing project synchronization loops.
+- SDK documentation now makes the canonical `data.table` contract explicit: DataTables are columnar (`columns[].values`); plugins needing row objects use `ctx.data.model.rows(table)` instead of assuming private `rows`/`points` shapes.
+
 # v3.61.7 — Core-owned Workbench Import Action / SDK 1.14
 
 - Core now supplies the standard `导入数据` action for every analysis workbench. New workbenches declare `manifest.data.accepts`; plugins no longer own duplicate import buttons or file pickers.

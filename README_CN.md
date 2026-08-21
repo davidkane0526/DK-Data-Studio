@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.7
+# DK Data Studio — v3.61.8
+
+## v3.61.8 独立窗口实时数据同步
+
+- 主窗口导入、生成、重新分配或删除数据后，会把 Artifact 增量同步到已经打开的数据中心及其他 TOP 工作台，不再依赖关闭后重新打开。
+- 同步只传输变化的 Artifact，不重新恢复整个工程，也不重新激活分析插件。
+- SDK 明确 `data.table` 为列式结构；插件读取标准表格时应使用 `columns` 或 `ctx.data.model.rows(table)`，不得假设私有 `points/rows` 结构。
+
 
 
 

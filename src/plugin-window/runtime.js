@@ -287,6 +287,35 @@
     scheduleSnapshot();
   }
 
+  function applyOwnerArtifactDelta(payload={}) {
+    if (!projectHydrated || !artifactStore) return false;
+    const delta=payload?.artifactDelta&&typeof payload.artifactDelta==='object'?payload.artifactDelta:null;
+    if(!delta)return false;
+    let changed=false;
+    const upserts=Array.isArray(delta.upserts)?delta.upserts:[];
+    const removedIds=Array.isArray(delta.removedIds)?delta.removedIds:[];
+    artifactStore.batch?.(()=>{
+      for(const artifact of upserts){
+        if(!artifact?.id)continue;
+        try{artifactStore.upsert(artifact);changed=true;}catch(err){console.warn('[DKDS owner artifact sync:upsert]',err);}
+      }
+      for(const id of removedIds){
+        try{changed=artifactStore.remove(String(id))||changed;}catch(err){console.warn('[DKDS owner artifact sync:remove]',err);}
+      }
+    });
+    if(changed){
+      // Owner-originated changes are already canonical in the main project. Do
+      // not record them as local plugin-window deltas or echo them back.
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+        type:'owner-sync',
+        reason:String(payload?.reason||'owner-artifact-change'),
+        artifactDelta:{upserts:upserts.map(clone),removedIds:[...removedIds]},
+        artifacts:artifactStore.list?.({includeTransient:true})||[]
+      });
+    }
+    return changed;
+  }
+
   const artifactsApi = {
     list: options => artifactStore?.list?.(options) || [],
     revision: kind => artifactStore?.revision?.(kind) || 0,
@@ -435,7 +464,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.7',
+      appVersion:'3.61.8',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -623,6 +652,10 @@
       window.electronAPI?.onActivityBootstrapChanged?.(async () => {
         const next = await window.electronAPI?.getActivityWindowBootstrap?.();
         if (next) await replaceProjectFromBootstrap(next);
+      });
+      window.electronAPI?.onOwnerArtifactDelta?.(payload => {
+        if(String(payload?.projectTabId||'')!==String(bootstrap?.projectTabId||''))return;
+        applyOwnerArtifactDelta(payload);
       });
       window.electronAPI?.onActivityWillHide?.(() => {
         pushSnapshot(true);

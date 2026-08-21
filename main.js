@@ -831,6 +831,30 @@ app.whenReady().then(() => {
       final: true
     });
   });
+  ipcMain.on('windows:ownerArtifactDelta', (event, payload={}) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    const projectTabId = String(payload?.projectTabId || '').trim();
+    const excludeActivityId = String(payload?.excludeActivityId || '').trim();
+    const delta = payload?.artifactDelta && typeof payload.artifactDelta === 'object' ? payload.artifactDelta : null;
+    if (!ownerId || !projectTabId || !delta) return;
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId !== ownerId || String(row?.projectTabId || '') !== projectTabId) continue;
+      if (excludeActivityId && String(row?.activityId || '') === excludeActivityId) continue;
+      // Runtime-only prewarm has no hydrated domain store yet. The current
+      // project snapshot will be supplied when that renderer is promoted.
+      if (row?.prewarm === true) continue;
+      try {
+        win.webContents.send('windows:ownerArtifactDelta', {
+          projectTabId,
+          reason:String(payload?.reason || 'owner-artifact-change'),
+          artifactDelta:delta
+        });
+      } catch {}
+    }
+  });
   ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
     if (!bootstrap) return;

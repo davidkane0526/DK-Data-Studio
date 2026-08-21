@@ -150,6 +150,17 @@ A `data` or `foundation` plugin may manage global assignments through `ctx.data.
 
 `ctx.capabilities.proxy('core.data-sources')` remains a compatibility facade for older Plugin API packages. New Plugin API 1.14 workbenches use `ctx.data.sources`; their visible import action is Core-owned. `ctx.data.importWorkbench` remains a compatibility/infrastructure API.
 
+### Canonical DataTable shape
+
+A `data.table` Artifact is columnar. Plugins must not assume imported project data exposes private `points`, `rows`, `records` or application-specific dataset arrays. Read `artifact.columns`, or request a row projection only when needed:
+
+```js
+const table = ctx.data.artifacts.get(source.artifactId);
+const rows = ctx.data.model.rows(table);
+```
+
+Columnar storage is the canonical project representation; `ctx.data.model.rows(table)` is a convenience projection and should not be cached as a second copy of the source data.
+
 ## Unified TableSurface (DK Data Studio 3.59+)
 
 Data/scientific tables are a Core UI surface just like plots. Existing `<table>` elements are enhanced automatically unless they set `data-dkds-table="off"`; plugins can also bind or create them explicitly through `ctx.ui.tables`.
