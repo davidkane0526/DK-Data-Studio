@@ -23,8 +23,8 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-webview": "13.16.1",
     "d3": "^7.9.0",
-    "plotly.js-dist-min": "^3.1.0",
-    "expo-document-picker": "~57.0.1"
+    "expo-document-picker": "~57.0.1",
+    "plotly.js-cartesian-dist-min": "^3.1.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

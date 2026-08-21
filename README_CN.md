@@ -1,4 +1,15 @@
-# DK Data Studio — v3.60.0
+# DK Data Studio — v3.61.0
+
+
+## v3.61 交互与多视图绘图性能
+
+- FWHM 边界拖动改为“**拖动预览 / 释放提交**”两阶段。鼠标移动阶段只改变 D3 几何，不再调用 FWHM/局部基线算法；释放后才提交一次科学 transaction 并重算派生量。
+- 共振 sweep 的电压边界使用对象级缓存，拖动时不再反复遍历、分配整条曲线数组。
+- `ScientificPlot 2.3.0` 新增 Core 统一多图渲染调度。主图可以立即渲染，次要重图按 frame/idle 优先级逐帧补齐，同一视图的未执行请求会合并，避免一次动作把多张 Plotly 图同时压进主线程。
+- TER 只声明视图优先级：TER 主热图优先，R–V 下一帧，变换热图和 reduction 图后台补齐；真正的队列、合并和帧调度仍由 Core 管理，不形成 TER 私有性能实现。
+- 桌面与移动端 Plotly 从全量 distribution 切换为 Cartesian distribution。当前 DKDS 标准 Plotly 图使用二维 scatter/heatmap，不再为未使用的 3D、地图等模块承担正常加载/解析成本。
+- TOP 仍不 `await` Plotly：轻量 Core 依赖装载后立即启动一次非等待的 renderer preload，与插件脚本/工程恢复并行；ready 后 idle warmup 只作复用/兜底。这样 activity-open 首图不必等到 ready 之后才开始加载 Plotly。
+- Automation Runner 升级到 `1.17.0`，新增真实 Plotly `Scientific multi-view render scheduling` 测试；源码性能门槛同时防止 FWHM pointermove 再次进入昂贵 metric getter。
 
 
 ## v3.60 科学响应依赖基座

@@ -66,6 +66,7 @@
       let pipelineRuntime=pipeline||null;
       let algorithmPipelineInstalled=false;
       let peakMetricCache=new WeakMap();
+      const sweepVoltageBoundsCache=new WeakMap();
       let peakMetricRevision=0;
       let interactionRuntime=null;
       let interactionSelection=null;
@@ -633,6 +634,11 @@
         }
       }
       function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
+      function sweepVoltageBounds(sw){
+        if(!sw)return null;const cached=sweepVoltageBoundsCache.get(sw);if(cached)return cached;
+        let lo=Infinity,hi=-Infinity;for(const q of (sw.points||[])){const v=Number(q?.v);if(!Number.isFinite(v))continue;if(v<lo)lo=v;if(v>hi)hi=v;}
+        const row=Number.isFinite(lo)&&Number.isFinite(hi)?{lo,hi}:null;if(row)sweepVoltageBoundsCache.set(sw,row);return row;
+      }
       function mainSurfaceMarkers(){
         const display=workspace.peakDisplay||{},visibleIds=new Set(visibleSweepIds());if(display.showPoints===false)return [];
         return (workspace.peaks||[]).filter(p=>visibleIds.has(p.sweepId)&&(p.accepted!==false||display.showRejected===true)).map(p=>({id:String(p.id),entityId:String(p.id),curveId:String(p.sweepId),x:Number(p.v),y:Number(p.i),color:peakColor(p),locked:!!p.locked,accepted:p.accepted!==false,shape:peakMarkerShape(p),source:p}));
@@ -669,7 +675,7 @@
           onMarkerDragStart:({marker})=>{const p=marker?.source;if(!p)return;selectedSweepId=p.sweepId;selectedPeakId=p.id;selectedPeakIds=new Set([String(p.id)]);},
           onMarkerDrag:({marker,curve,index})=>{const p=marker?.source,sw=curve?.source;if(!p||!sw)return;movePeakToIndex(p,sw,index);},
           onMarkerDragEnd:({marker})=>{const p=marker?.source;if(!p)return;invalidatePeakMetric(p,{geometry:true,reason:'peak-drag'});publishPeakSelection(p,'resonance-peak-drag');scheduleSnapshot();setStatus(`已移动 ${directionName(p.direction)} · ${peakLabel(p)} 至 Vd=${fmt(p.v,6)} V。`);},
-          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v);if(!Number.isFinite(snap))return;const xs=(sw.points||[]).map(q=>Number(q.v)).filter(Number.isFinite);if(!xs.length)return;const dataLo=Math.min(...xs),dataHi=Math.max(...xs),minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(dataLo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(dataHi,Math.max(snap,Number(p.v)+minGap));p.analysisManual=true;},
+          onWidthDrag:({marker,side,point})=>{const p=marker?.source,sw=p?sweepById(p.sweepId):null;if(!p||!point||!sw)return;const snap=Number(point.v),bounds=sweepVoltageBounds(sw);if(!Number.isFinite(snap)||!bounds)return;const minGap=Math.max(Math.abs(Number(sw.step)||0.01)*3,1e-12);if(side==='left')p.analysisLeft=Math.max(bounds.lo,Math.min(snap,Number(p.v)-minGap));else p.analysisRight=Math.min(bounds.hi,Math.max(snap,Number(p.v)+minGap));p.analysisManual=true;},
           onWidthReset:({marker})=>{const p=marker?.source;if(!p)return;delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;invalidatePeakMetric(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');},
           onWidthDragEnd:({marker})=>{const p=marker?.source;if(p)invalidatePeakMetric(p,{reason:'fwhm-window-drag'});scheduleSnapshot();},
           onRangeStart:()=>clearMainRangeMenu(),
@@ -749,7 +755,7 @@
           host.querySelector('#reswinApplyPeakLabel').onclick=()=>renameSelectedCategory(host.querySelector('#reswinPeakLabelInput')?.value);
           host.querySelector('#reswinAcceptPeak').onclick=()=>updatePeak(p.id,{accepted:p.accepted===false});
           host.querySelector('#reswinLockPeak').onclick=()=>updatePeak(p.id,{locked:!p.locked});
-          host.querySelector('#reswinResetFwhmWindow').onclick=()=>{delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;physicsCache={key:'',value:null};renderMainScientific();renderInspection();renderGroup();scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');};
+          host.querySelector('#reswinResetFwhmWindow').onclick=()=>{delete p.analysisLeft;delete p.analysisRight;delete p.analysisManual;invalidatePeakMetric(p,{reason:'fwhm-window-reset'});scheduleSnapshot();setStatus('已恢复自动 FWHM 分析窗口。');};
           host.querySelector('#reswinDeletePeak').onclick=()=>deletePeak(p.id);
           host.querySelector('#reswinSelectCurve').onclick=()=>{const row=sweepById(p.sweepId);if(row)publishSweepSelection(row,'resonance-inspector');};
         }else{

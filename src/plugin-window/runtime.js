@@ -11,7 +11,7 @@
   const errorTextEl = $('#pluginWindowErrorText');
 
   const DEPENDENCY_SCRIPTS = Object.freeze({
-    plotly:'../../node_modules/plotly.js-dist-min/plotly.min.js',
+    plotly:'../../node_modules/plotly.js-cartesian-dist-min/plotly.min.js',
     d3:'../../node_modules/d3/dist/d3.min.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
@@ -184,15 +184,26 @@
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
   }
 
+  function beginDeclaredChartPreload() {
+    if (!plotlyRequested || !window.DKDSCharts?.ensurePlotly) return;
+    // Start the renderer request as soon as the lightweight Core dependencies
+    // are mounted, but deliberately do not await it. Plugin support scripts,
+    // project restore and activity mounting can proceed while the async script
+    // request is in flight. This closes the v3.60 gap where activity-open could
+    // request the first TER plot before the post-ready idle warmup even began.
+    void Promise.resolve(window.DKDSCharts.ensurePlotly({reason:'startup-parallel-preload'}))
+      .catch(err => console.warn('[DKDS plugin window Plotly parallel preload]', err));
+  }
+
   function scheduleDeclaredChartWarmup() {
     if (!plotlyRequested || !window.DKDSCharts?.ensurePlotly) return;
     const warm = () => {
       void Promise.resolve(window.DKDSCharts.ensurePlotly({reason:'idle-preload'}))
         .catch(err => console.warn('[DKDS plugin window Plotly idle preload]', err));
     };
-    // Keep renderer startup non-blocking, but do not make the user's first
-    // scientific action pay Plotly parse/eval cost. This is Core-owned for
-    // every dedicated TOP that declares the logical `plotly` dependency.
+    // Post-ready warmup remains as a fallback/reuse point. In the normal path
+    // it simply reuses the preload promise (or the ready renderer) and adds no
+    // second script. TOP readiness still never awaits Plotly.
     if (typeof requestIdleCallback === 'function') requestIdleCallback(warm,{timeout:350});
     else setTimeout(warm,120);
   }
@@ -421,7 +432,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.60.0',
+      appVersion:'3.61.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -453,6 +464,7 @@
     // Load only the dependencies declared by this top-level plugin. The old
     // host loaded Plotly + all science/workflow modules for every window.
     await measure('dependencies',()=>loadDependencies(spec));
+    beginDeclaredChartPreload();
     measureSync('artifact-store-restore',()=>restoreArtifactStore());
 
     // Optional plugin-local support scripts make a dedicated plugin

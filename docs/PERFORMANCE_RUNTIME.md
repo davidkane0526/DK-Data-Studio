@@ -81,3 +81,18 @@ Performance caching and renderer lifetime are separate Core policies. `DKDSUI.li
 Plugins must not implement their own TOP hide/show Plotly cleanup. If a plugin renders through `ctx.ui.scientificPlot.react`, it receives this behavior automatically. `attach()` views that Core cannot safely reconstruct remain attached rather than being purged.
 
 Plugin deactivation trims only that plugin's `ctx.performance` namespace to zero, so cached plugin closures/resources cannot survive a full deactivation.
+
+
+## Interaction and multi-view scheduling (v3.61+)
+
+High-frequency UI feedback and scientific recomputation are separate workloads. Interactive D3 edit surfaces should update only lightweight geometry while a pointer is moving, then commit one semantic scientific edit at gesture end. In particular, FWHM-window dragging must not call the authoritative FWHM/peak-metric getter on every pointermove.
+
+`ScientificPlot` now owns a small render scheduler for plugins that create several expensive Plotly views at once. A view may declare `renderPriority` as `immediate`, `frame`, or `idle`:
+
+- `immediate`: the primary result, executed without queueing.
+- `frame`: important secondary views, one queued heavy view per animation frame.
+- `idle`: background/secondary analysis views; lower priority than queued frame work.
+
+Requests are coalesced per managed view. A newer queued render replaces the not-yet-executed work for that view, and the view's request revision prevents stale post-render bookkeeping from becoming authoritative. Plugins may choose relative priority, but must not implement their own chart timers or renderer queues.
+
+The desktop and mobile builds use the Plotly Cartesian distribution while the built-in standard views require only Cartesian scatter/heatmap traces. Dedicated TOP starts a non-awaited Core preload immediately after lightweight dependencies are ready, before activity-open can demand the first chart; readiness still never awaits Plotly and the post-ready idle warmup simply reuses or retries the same loader.

@@ -30,13 +30,13 @@ fs.cpSync(source, out, { recursive: true });
 const vendor = path.join(out, 'vendor');
 fs.mkdirSync(vendor, { recursive: true });
 fs.copyFileSync(requireFile('node_modules/d3/dist/d3.min.js'), path.join(vendor, 'd3.min.js'));
-fs.copyFileSync(requireFile('node_modules/plotly.js-dist-min/plotly.min.js'), path.join(vendor, 'plotly.min.js'));
+fs.copyFileSync(requireFile('node_modules/plotly.js-cartesian-dist-min/plotly.min.js'), path.join(vendor, 'plotly.min.js'));
 
 const indexPath = path.join(out, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 html = html
   .replace('../node_modules/d3/dist/d3.min.js', 'vendor/d3.min.js')
-  .replace('../node_modules/plotly.js-dist-min/plotly.min.js', 'vendor/plotly.min.js')
+  .replace('../node_modules/plotly.js-cartesian-dist-min/plotly.min.js', 'vendor/plotly.min.js')
   .replace('<title>DK Data Studio</title>', '<title>DK Data Studio Mobile</title>');
 fs.writeFileSync(indexPath, html, 'utf8');
 

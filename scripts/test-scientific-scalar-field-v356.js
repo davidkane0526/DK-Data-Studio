@@ -14,7 +14,7 @@ const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js'
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 
-assert(plot.includes("const VERSION='2.2.0'"),'ScientificPlot 2.2.0 must own the shared scalar-field surface.');
+assert(plot.includes("const VERSION='2.3.0'"),'ScientificPlot 2.3.0 must own the shared scalar-field surface.');
 for(const token of ['function scalarFieldSpec(field={},options={})','async scalarField(target,field={},options={})','scalarFieldSpec'])assert(plot.includes(token),`ScientificPlot scalar-field token missing: ${token}`);
 assert(ui.includes('scalarField:(target,field={},options={})=>this.scientificPlotly?.scalarField?.(target,field,options)||null'),'Plugin UI scope must expose shared scalarField().');
 assert(terFeature.includes('scientificPlot.scalarField(')&&terFeature.includes('function renderTerHeatmap(result)'),'TER Feature Runtime must own both primary and transformed shared scalar-field views.');

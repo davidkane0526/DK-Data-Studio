@@ -1,9 +1,9 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.3.0';
+  const VERSION='1.4.0';
   const ownerBindings=new Map();
   const chartScriptUrl=document.currentScript?.src||globalThis.location?.href||'file:///src/core/chart-runtime.js';
-  const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-dist-min/plotly.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-dist-min/plotly.min.js';
+  const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-cartesian-dist-min/plotly.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-cartesian-dist-min/plotly.min.js';
   let runtimeConfig={plotlyAllowed:true,plotlySource:defaultPlotlySource,host:'main'};
   let plotlyPromise=null;
   const now=()=>globalThis.performance?.now?.()??Date.now();

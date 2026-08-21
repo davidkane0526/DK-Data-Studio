@@ -1869,7 +1869,7 @@
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.60.0',
+      version:'3.61.0',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2662,7 +2662,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.60.0',
+      appVersion:'3.61.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

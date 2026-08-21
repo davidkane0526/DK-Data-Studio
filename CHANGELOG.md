@@ -1,3 +1,13 @@
+# v3.61.0 — Interaction & Multi-View Rendering Performance
+
+- Split D3 FWHM-window dragging into lightweight visual preview and scientific commit. Pointer-move no longer calls the expensive peak-metric/FWHM getter; the final analysis-window edit is committed once when the handle is released.
+- Added a per-sweep voltage-bounds WeakMap in Resonance so high-frequency handle movement does not repeatedly allocate/map/filter the full sweep merely to clamp the preview window.
+- Upgraded Core `ScientificPlot` to `2.3.0` with a generic multi-view render scheduler. Plugins may declare `immediate`, `frame`, or `idle` render priority; non-immediate heavy Plotly renders are coalesced per view and dispatched one per animation frame so the browser can paint the primary scientific result before secondary charts finish.
+- TER now declares the primary TER heatmap as immediate, the large R–V view as next-frame, and transformed/reduction views as background priority. This is only a view-priority declaration; scheduling remains Core-owned.
+- Replaced the full Plotly distribution with the official Cartesian distribution on desktop and mobile. DKDS currently uses Cartesian `scatter`/`heatmap` scientific traces, so unused 3D/map/network modules no longer have to be parsed for the normal plotting path.
+- Kept Plotly outside the blocking dedicated-TOP dependency phase, but start a non-awaited Core preload immediately after lightweight dependencies are mounted, before plugin activity-open can request its first chart; post-ready idle warmup remains a promise-reuse fallback. The smaller Cartesian bundle further reduces preload/parse work.
+- Automation Runner `1.17.0` adds a real `Scientific multi-view render scheduling` case using Plotly views and verifies deterministic frame-before-idle completion. Repository performance gates also assert the FWHM drag loop cannot re-enter `getMarkerWidth()` and that TER delegates heavy-view scheduling to Core.
+
 # v3.60.0 — Scientific Reactive Dependency Foundation
 
 - Promoted the public Plugin API and standalone SDK to `1.10.0` and added `ctx.data.reactive` as the canonical scientific transaction/dependency surface. Existing compatible 1.x packages remain loadable when their declared Core requirements exist.

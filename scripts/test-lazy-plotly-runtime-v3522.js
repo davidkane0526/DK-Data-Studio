@@ -29,7 +29,7 @@ const document={
 const context={window,document,console,Promise,Date,URL,queueMicrotask,performance:{now:()=>Date.now()}};context.globalThis=context;window.window=window;window.document=document;
 vm.createContext(context);vm.runInContext(chartCode,context,{filename:'chart-runtime.js'});
 assert.equal(window.Plotly,undefined,'Plotly must not be loaded just by constructing Core Chart Runtime.');
-window.DKDSCharts.configureRuntime({plotlyAllowed:true,plotlySource:'file:///app/node_modules/plotly.js-dist-min/plotly.min.js',host:'dedicated-top'});
+window.DKDSCharts.configureRuntime({plotlyAllowed:true,plotlySource:'file:///app/node_modules/plotly.js-cartesian-dist-min/plotly.min.js',host:'dedicated-top'});
 const before=window.DKDSCharts.runtimeState();assert.equal(before.status,'idle');assert.equal(before.ready,false);
 const a=window.DKDSCharts.react('plot',[{x:[1],y:[2]}],{},{});
 const b=window.DKDSCharts.ensurePlotly({reason:'concurrent-smoke'});

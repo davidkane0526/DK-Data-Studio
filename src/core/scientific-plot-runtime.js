@@ -1,6 +1,6 @@
 (() => {
   if (window.DKDSScientificPlot) return;
-  const VERSION='2.2.0';
+  const VERSION='2.3.0';
   const CONTROLLERS=Object.freeze(['selection','legend','tooltip','focus','pin','viewport','export']);
   const resolve=value=>{
     if(value?.nodeType===1)return value;
@@ -12,6 +12,24 @@
   const finite=value=>Number.isFinite(Number(value));
   const baseTraceStyle=trace=>({opacity:trace?.opacity??1,lineWidth:Number(trace?.line?.width)||1.5,markerOpacity:trace?.marker?.opacity??1,markerSize:clone(trace?.marker?.size)});
   const array=value=>Array.isArray(value)?value:(value===undefined||value===null?[]:[value]);
+  // Plotly can spend tens to hundreds of milliseconds inside one react().
+  // Multi-chart plugins must not start every heavy render in the same browser
+  // turn, otherwise the first useful chart cannot paint until the whole grid is
+  // finished. Non-immediate renders are coalesced by view and executed one per
+  // animation frame so the browser can paint between scientific views.
+  const renderQueue=new Map();let renderPumpPending=false;let renderSequence=0;
+  const renderPriorityValue=value=>String(value||'immediate').toLowerCase()==='frame'?1:String(value||'immediate').toLowerCase()==='idle'?2:0;
+  function cancelScheduledRender(key,value=null){const id=String(key||'');const row=renderQueue.get(id);if(!row)return false;renderQueue.delete(id);for(const waiter of row.waiters||[])try{waiter.resolve(value);}catch{}return true;}
+  function pumpRenderQueue(){
+    if(renderPumpPending||!renderQueue.size)return;renderPumpPending=true;
+    const run=async()=>{renderPumpPending=false;if(!renderQueue.size)return;const row=[...renderQueue.values()].sort((a,b)=>(a.priority-b.priority)||(a.sequence-b.sequence))[0];renderQueue.delete(row.key);try{const value=await row.task();for(const waiter of row.waiters)waiter.resolve(value);}catch(err){for(const waiter of row.waiters)waiter.reject(err);}finally{pumpRenderQueue();}};
+    if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>void run());else setTimeout(()=>void run(),0);
+  }
+  function scheduleRender(key,priority,task){
+    const level=renderPriorityValue(priority);const id=String(key||`plot-${++renderSequence}`);
+    if(level===0){cancelScheduledRender(id);return Promise.resolve().then(task);}
+    return new Promise((resolve,reject)=>{const existing=renderQueue.get(id);if(existing){existing.task=task;existing.priority=Math.min(existing.priority,level);existing.waiters.push({resolve,reject});return;}renderQueue.set(id,{key:id,priority:level,sequence:++renderSequence,task,waiters:[{resolve,reject}]});pumpRenderQueue();});
+  }
   function scalarFieldSpec(field={},options={}){
     const x=clone(field.x||field.targets||[]),y=clone(field.y||field.vgs||[]),z=clone(field.z||field.matrix||[]);
     const valueName=String(options.valueName||field.valueName||field.label||field.title||field.transformId||'value');
@@ -30,7 +48,7 @@
     const layout={margin:{l:76,r:98,t:26,b:66,...(options.margin||{})},xaxis:{title:axisTitle(xName,xUnit),automargin:true,constrain:'domain',...(options.xaxis||{})},yaxis:{title:axisTitle(yName,yUnit),automargin:true,constrain:'domain',...(options.yaxis||{})},dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff',...(options.layout||{})};
     const config={responsive:true,displaylogo:false,scrollZoom:options.scrollZoom!==false,...(options.config||{})};
     const renderKey=asId(options.renderKey||field.revisionKey||field.fingerprint||'');
-    return {traces:[trace],layout,config,spec:{interaction:options.interaction||null,source:options.source||'scientific-scalar-field',renderKey,onClick:options.onClick||null,onEntitySelect:options.onEntitySelect||null,controllers:options.controllers||undefined}};
+    return {traces:[trace],layout,config,spec:{interaction:options.interaction||null,source:options.source||'scientific-scalar-field',renderKey,renderPriority:options.renderPriority||'immediate',onClick:options.onClick||null,onEntitySelect:options.onEntitySelect||null,controllers:options.controllers||undefined}};
   }
 
   function normalizeControllerSpec(spec={}){
@@ -47,12 +65,13 @@
 
   class ScientificPlotView {
     constructor(owner,target,spec={}){
-      this.owner=String(owner||'core');this.target=resolve(target);this.spec={...spec};this.disposed=false;this.bound=false;this.selectionOff=null;this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.lastSelection=null;
+      this.owner=String(owner||'core');this.target=resolve(target);this.spec={...spec};this.disposed=false;this.bound=false;this.selectionOff=null;this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.lastSelection=null;this.renderRequestRevision=0;
       this.pinnedIds=new Set();this.pinListeners=new Set();this.viewportListeners=new Set();this.viewportState={xRange:null,yRange:null,revision:0,source:'initial'};this.hoverState=null;this.eventHandlers=new Map();this.controllerSpec=normalizeControllerSpec(spec);this.lastRenderKey='';this.appliedStyleKey='';this.suspended=false;this.purged=false;this.managedRender=false;this.pendingRender=false;this.renderStats={reacts:0,skippedReacts:0,selectionApplies:0,selectionSkips:0,styleRestores:0,suspends:0,resumes:0,rendererPurges:0,resumeRenders:0,hiddenRenderSkips:0};
       if(!this.target)throw new Error('ScientificPlot target not found.');
       this.chart=window.DKDSCharts?.createScope?.(this.owner)||window.DKDSCharts;
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
       this.target.classList.add('dkds-scientific-plotly');
+      this.renderScheduleKey=`${this.owner}:${this.target.dataset?.dkdsScientificPlotId||this.target.id||Math.random().toString(36).slice(2,10)}`;
       this.controllers=this.createControllers();
       this.setInteraction(spec.interaction||null);
       this.restoreViewportPreference();
@@ -183,8 +202,10 @@
       this.prepareSpec(spec);this.managedRender=true;const renderKey=asId(this.spec.renderKey||this.spec.revisionKey||'');
       if(this.suspended){this.pendingRender=true;this.renderStats.hiddenRenderSkips+=1;window.DKDSPerformance?.skip?.('plot.hidden-react');return this;}
       if(renderKey&&renderKey===this.lastRenderKey&&this.target?.data?.length){this.renderStats.skippedReacts+=1;window.DKDSPerformance?.skip?.('plot.react');this.bindPlotEvents();this.applyTooltipTheme();return this;}
-      const traces=clone(this.spec.data||this.spec.traces||[]);this.normalizeMappings(traces,this.spec);
-      await this.chart.react(this.target,traces,this.spec.layout||{},this.spec.config||{});this.renderStats.reacts+=1;this.purged=false;this.pendingRender=false;if(renderKey)this.lastRenderKey=renderKey;else this.lastRenderKey='';this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
+      const traces=clone(this.spec.data||this.spec.traces||[]),layout=clone(this.spec.layout||{}),config=clone(this.spec.config||{}),requestRevision=++this.renderRequestRevision;this.normalizeMappings(traces,this.spec);
+      const renderPriority=String(this.spec.renderPriority||'immediate');
+      await scheduleRender(this.renderScheduleKey,renderPriority,()=>{if(this.disposed||this.suspended||requestRevision!==this.renderRequestRevision)return null;return this.chart.react(this.target,traces,layout,config);});
+      if(this.disposed||this.suspended||requestRevision!==this.renderRequestRevision)return this;this.renderStats.reacts+=1;this.purged=false;this.pendingRender=false;if(renderKey)this.lastRenderKey=renderKey;else this.lastRenderKey='';this.bindPlotEvents();this.applyTooltipTheme();await this.applyViewportState({reason:'plot-react'});if(this.lastSelection||this.pinnedIds.size)this.applySelection(this.lastSelection,{reason:'plot-react'});return this;
     }
     async suspend(options={}){
       if(this.disposed||this.suspended)return this.lifecycleState();this.suspended=true;this.renderStats.suspends+=1;
@@ -201,7 +222,7 @@
     lifecycleState(){return {owner:this.owner,targetId:this.target?.id||this.target?.dataset?.dkdsScientificPlotId||'',managedRender:this.managedRender,suspended:this.suspended,purged:this.purged,pendingRender:this.pendingRender,traceCount:this.target?.data?.length||0,pins:this.pinnedIds.size,viewportRevision:Number(this.viewportState?.revision)||0};}
     performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0,suspended:this.suspended,purged:this.purged,managedRender:this.managedRender});}
     resize(){if(this.suspended){window.DKDSPerformance?.skip?.('plot.hidden-resize');return false;}return this.chart?.resize?.(this.target);}
-    dispose(options={}){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
+    dispose(options={}){if(this.disposed)return;this.disposed=true;cancelScheduledRender(this.renderScheduleKey,this);this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
   }
 
   class ScientificPlotScope {

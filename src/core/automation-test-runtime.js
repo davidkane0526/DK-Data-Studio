@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.16.0';
+  const VERSION='1.17.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -110,6 +110,24 @@
       const rawHost=document.createElement('div');rawHost.innerHTML='<table id="automationAutoTable"><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';document.body.appendChild(rawHost);await Promise.resolve();await new Promise(resolve=>requestAnimationFrame(()=>resolve()));const autoTable=rawHost.querySelector('table');assert(autoTable.classList.contains('dkds-managed-table'),'Document-level TableSurface observer did not auto-enhance a newly inserted table.');assert(autoTable.querySelectorAll('.dkds-table-column-resizer').length===2,'Auto-enhanced table did not receive column resize handles.');rawHost.remove();
       const saved=surface.columnState();surface.setColumnVisible('A',false,{persist:false});assert(surface.visibleColumnKeys().length===2,'TableSurface key-based visibility did not update visible columns.');surface.restoreColumnState(saved,{persist:false});assert(!table.querySelector('thead th:first-child').classList.contains('dkds-table-column-hidden'),'TableSurface state restore did not restore column visibility.');assert(surface.visibleTableText().includes('A\tB\tC'),'TableSurface visible-table serialization is unavailable.');surface.resetState({persist:false});
       return {version:ui.version,resizers:table.querySelectorAll('.dkds-table-column-resizer').length,columnState:surface.columnState(),mountedRows:mounted.table.querySelectorAll('tbody tr').length,autoHydration:true,operations:['resize','auto-size','sort','hide/show','copy menu','state','mount/bind','auto-hydrate']};
+    }finally{try{scope.dispose?.();}catch{}host.remove();}
+  }
+
+  async function interactionRenderSchedulingSmoke(){
+    const P=window.DKDSScientificPlot;assert(P?.createScope&&P?.VERSION==='2.3.0','ScientificPlot render scheduler unavailable.');
+    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:640px;height:260px;pointer-events:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;';
+    const framePlot=document.createElement('div'),idlePlot=document.createElement('div');framePlot.style.height='220px';idlePlot.style.height='220px';host.append(framePlot,idlePlot);document.body.appendChild(host);
+    const scope=P.createScope('core.automation-render-scheduler'),completion=[];
+    try{
+      const traces=[{x:[0,1,2],y:[0,1,0],type:'scatter',mode:'lines+markers'}],layout={margin:{l:24,r:12,t:12,b:24},showlegend:false},config={responsive:false,displayModeBar:false};
+      const frame=scope.react(framePlot,traces,layout,config,{source:'automation-render-frame',renderKey:'automation-frame-v1',renderPriority:'frame'}).then(()=>completion.push('frame'));
+      const idle=scope.react(idlePlot,traces,layout,config,{source:'automation-render-idle',renderKey:'automation-idle-v1',renderPriority:'idle'}).then(()=>completion.push('idle'));
+      await Promise.all([frame,idle]);
+      assert(completion.join(',')==='frame,idle',`ScientificPlot priority order is not deterministic: ${completion.join(',')}`);
+      assert(framePlot?.data?.length===1&&idlePlot?.data?.length===1,'Scheduled ScientificPlot views did not render.');
+      const frameStats=scope.stats(framePlot),idleStats=scope.stats(idlePlot);
+      assert(frameStats?.reacts===1&&idleStats?.reacts===1,'Scheduled ScientificPlot render accounting is incorrect.');
+      return {version:P.VERSION,completion:[...completion],frameReacts:frameStats.reacts,idleReacts:idleStats.reacts,policy:'one-heavy-view-per-animation-frame'};
     }finally{try{scope.dispose?.();}catch{}host.remove();}
   }
 
@@ -425,6 +443,7 @@
     await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
     await runCase('table.surface','Unified TableSurface interaction contract','UI / Table',tableSurfaceSmoke);
+    await runCase('performance.render-scheduling','Scientific multi-view render scheduling','Performance',interactionRenderSchedulingSmoke);
     await runCase('performance.cache','Performance cache & render dedupe','Performance',performanceCacheSmoke);
     await runCase('performance.lifecycle','Performance cache policy & lifecycle trim','Performance',performanceLifecycleSmoke);
     await runCase('performance.resources','Renderer & resource lifecycle','Performance',performanceResourceLifecycleSmoke);
@@ -459,7 +478,7 @@
           for(const runtime of domainRuntimes)assert(loaded.has(runtime)===declared.has(runtime),`${row.id}: ${runtime} load did not follow the resolved Core contract.`);
           assert(!loaded.has('plotly'),`${row.id}: Plotly must not block dedicated TOP startup.`);
           const chartRuntime=renderer.chartRuntime||null;
-          assert(chartRuntime&&chartRuntime.version==='1.3.0',`${row.id}: Core Chart Runtime lazy-loader snapshot missing.`);
+          assert(chartRuntime&&chartRuntime.version==='1.4.0',`${row.id}: Core Chart Runtime lazy-loader snapshot missing.`);
           assert(chartRuntime.plotlyAllowed===declared.has('plotly'),`${row.id}: logical Plotly contract was not preserved by the lazy loader.`);
           return {activityId:row.data?.activityId||row.id.slice(4),pluginId:row.data?.pluginId||'',readyMs:Number(row.data?.durationMs)||0,rendererTotalMs:Number(renderer.totalMs)||0,navigationMs:Number(main.navigationMs)||0,createToReadyMs:Number(main.createToReadyMs)||0,dependencyCount:Number(renderer.dependencyCount)||renderer.dependencies.length,scriptCount:Number(renderer.scriptCount)||renderer.scripts?.length||0,domainRuntimes:domainRuntimes.filter(id=>loaded.has(id)),algorithmProviders:clone(renderer.algorithmProviders||[]),chartRuntime:clone(chartRuntime),phases:(renderer.phases||[]).map(item=>({name:item.name,durationMs:item.durationMs})),slowDependencies:renderer.dependencies.slice().sort((a,b)=>(Number(b.durationMs)||0)-(Number(a.durationMs)||0)).slice(0,5).map(item=>({name:item.name,durationMs:item.durationMs}))};
         });
@@ -470,7 +489,7 @@
         const profiles=rows.map(row=>{
           const renderer=row.data?.startupProfile?.renderer||{},loaded=new Set((renderer.dependencies||[]).map(item=>String(item?.name||''))),declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
           assert(!loaded.has('plotly'),`${row.id}: eager Plotly dependency is still present.`);
-          assert(chart.version==='1.3.0',`${row.id}: lazy Chart Runtime state missing.`);
+          assert(chart.version==='1.4.0',`${row.id}: lazy Chart Runtime state missing.`);
           assert(chart.plotlyAllowed===declared.has('plotly'),`${row.id}: Plotly permission does not match resolved plugin contract.`);
           return {activityId:row.data?.activityId||row.id.slice(4),declared:declared.has('plotly'),status:chart.status||'',ready:!!chart.ready,requests:Number(chart.requests)||0,reuses:Number(chart.reuses)||0,loadDurationMs:Number(chart.loadDurationMs)||0};
         });

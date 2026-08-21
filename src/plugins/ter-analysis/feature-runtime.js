@@ -329,7 +329,7 @@
       const field={x:matrix.targets,y:matrix.vgs,z:matrix.matrix,xName:'Vds',yName:'Vg',valueName:matrix.label||matrix.type,xUnit:'V',yUnit:'V',valueUnit:matrix.unit||'',diverging:signed,metadata:{scientificTransform:{diverging:signed}}};
       const render=ctx.ui.scientificPlot.scalarField(plot,field,{colorscale:signed?'RdBu':'Viridis',reversescale:signed,zmid:signed?0:undefined,
         hovertemplate:`Vg=%{y:.6g} V<br>Vds=%{x:.6g} V<br>${matrix.label||matrix.type}=%{z:.6g}${matrix.unit?` ${matrix.unit}`:''}<extra>${directionLabel}</extra>`,
-        layout:{uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},interaction:T.interaction,source:'ter-transform-heatmap',renderKey:`ter-transform:${resultRevision}:${matrix.type}:${matrix.direction}:${matrix.missing}`,onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')});
+        layout:{uirevision:`ter-transform-${matrix.type}-${matrix.direction}`},interaction:T.interaction,source:'ter-transform-heatmap',renderKey:`ter-transform:${resultRevision}:${matrix.type}:${matrix.direction}:${matrix.missing}`,renderPriority:'idle',onClick:event=>selectTerPoint(transformHeatmapSelection(matrix,event),'ter-transform-heatmap')});
       render?.catch?.(err=>console.warn('[TER transformed heatmap]',err));
       return matrix;
     }
@@ -711,7 +711,7 @@
       const config={responsive:true,scrollZoom:true,displaylogo:false};
       const react=(id,traces,layout,onClick)=>{
         const el=dom.query('#'+id);if(!el)return;
-        try{ctx.ui.scientificPlot.react(el,traces,layout,config,{interaction:T.interaction,source:`ter-${id}`,renderKey:`ter-reduction:${resultRevision}:${id}:${reactive?.revision?.('ter.maxima')||0}`,onClick});}catch(err){console.error(`[TER reduction render:${id}]`,err);}
+        try{ctx.ui.scientificPlot.react(el,traces,layout,config,{interaction:T.interaction,source:`ter-${id}`,renderKey:`ter-reduction:${resultRevision}:${id}:${reactive?.revision?.('ter.maxima')||0}`,renderPriority:'idle',onClick});}catch(err){console.error(`[TER reduction render:${id}]`,err);}
       };
       const clickRow=(rows,factory,plotId)=>event=>{const point=event?.points?.[0],index=Number(point?.pointIndex??point?.pointNumber);if(!Number.isInteger(index)||index<0)return;const selection=factory(rows[index]);if(!selection)return;selection.id=selection.id||`${plotId}:${selection.vg??''}:${selection.vds??''}`;selection.selectionType='ter.max-point';selectTerPoint(selection,`ter-${plotId}`);};
       react('terMaxVgPlot',[{
@@ -835,7 +835,7 @@
       traces.push({x:[],y:[],mode:'markers',showlegend:false,hoverinfo:'text',marker:{size:12,color:'#dc2626',symbol:'circle',line:{color:'#fff',width:1.5}},text:[]});
       traces.push({x:[],y:[],mode:'markers',showlegend:false,hoverinfo:'text',marker:{size:12,color:'#dc2626',symbol:'diamond',line:{color:'#fff',width:1.5}},text:[]});
       resistanceBaseRevision=resultRevision;
-      const rendered=ctx.ui.scientificPlot.react(plot,traces,{margin:{l:82,r:24,t:22,b:92},xaxis:{title:'Vds (V)',gridcolor:'#edf0f5',zeroline:true,zerolinecolor:'#cbd5e1',automargin:true},yaxis:{title:'R = |Vds / I| (Ω)',type:'log',gridcolor:'#edf0f5',automargin:true},legend:{orientation:'h',x:0,y:-0.23,xanchor:'left',yanchor:'top',font:{size:10},groupclick:'togglegroup'},hovermode:'closest',dragmode:'zoom',autosize:true,shapes:[],uirevision:`ter-resistance-${resultRevision}`},{responsive:true,scrollZoom:true,displaylogo:false,modeBarButtonsToAdd:['select2d'],toImageButtonOptions:{format:'png',filename:'TER_resistance_voltage',width:1400,height:1000,scale:2}},{interaction:T.interaction,source:'ter-resistance',renderKey:`ter-resistance:${resultRevision}`});
+      const rendered=ctx.ui.scientificPlot.react(plot,traces,{margin:{l:82,r:24,t:22,b:92},xaxis:{title:'Vds (V)',gridcolor:'#edf0f5',zeroline:true,zerolinecolor:'#cbd5e1',automargin:true},yaxis:{title:'R = |Vds / I| (Ω)',type:'log',gridcolor:'#edf0f5',automargin:true},legend:{orientation:'h',x:0,y:-0.23,xanchor:'left',yanchor:'top',font:{size:10},groupclick:'togglegroup'},hovermode:'closest',dragmode:'zoom',autosize:true,shapes:[],uirevision:`ter-resistance-${resultRevision}`},{responsive:true,scrollZoom:true,displaylogo:false,modeBarButtonsToAdd:['select2d'],toImageButtonOptions:{format:'png',filename:'TER_resistance_voltage',width:1400,height:1000,scale:2}},{interaction:T.interaction,source:'ter-resistance',renderKey:`ter-resistance:${resultRevision}`,renderPriority:'frame'});
       Promise.resolve(rendered).then(()=>applyResistanceSelection()).catch(err=>console.warn('[TER resistance render]',err));
     }
 

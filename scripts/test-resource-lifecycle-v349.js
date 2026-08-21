@@ -11,7 +11,7 @@ const main=read('main.js');
 const kernel=read('src/core/plugin-kernel.js');
 const automation=read('src/core/automation-test-runtime.js');
 
-assert(plot.includes("const VERSION='2.2.0'"),'ScientificPlot v2.2.0 must preserve renderer lifecycle.');
+assert(plot.includes("const VERSION='2.3.0'"),'ScientificPlot v2.3.0 must preserve renderer lifecycle.');
 for(const token of ['async suspend(options={})','async resume(options={})','rendererPurges','resumeRenders','purgeManaged'])assert(plot.includes(token),`ScientificPlot lifecycle token missing: ${token}`);
 assert(plot.includes('view.dispose?.({purge:true})'),'ScientificPlot scope disposal must purge managed renderer resources.');
 assert(plot.includes('async function lifecycle(state,options={})')&&plot.includes('function snapshot()'),'ScientificPlot must expose Core-wide lifecycle/snapshot surfaces.');

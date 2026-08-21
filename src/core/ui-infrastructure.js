@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.7.0';
+  const VERSION = '6.8.0';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -1395,20 +1395,28 @@
             const handleY=String(widthSpec.handlePosition||'').toLowerCase()==='top'?margin.top+10:(finite(widthSpec.handleY)?y(Number(widthSpec.handleY)):margin.top+10);
             for(const side of ['left','right']){
               const xv=side==='left'?windowLeft:windowRight;
-              const h=band.append('circle').attr('class','dkds-scientific-width-handle dkds-scientific-window-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',handleY).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);
+              const h=band.append('circle').attr('class','dkds-scientific-width-handle dkds-scientific-window-handle').attr('data-width-side',side).attr('cx',x(xv)).attr('cy',handleY).attr('r',6).attr('fill','#fff').attr('stroke',color).attr('stroke-width',2);let widthDragMoved=false;
               h.on('click',event=>event.stopPropagation()).on('dblclick',event=>{event.preventDefault();event.stopPropagation();this.spec.onWidthReset?.({marker:selectedMarker,side,event,surface:this});this.requestRender('width-reset');})
-                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('drag',event=>{
+                .call(d3.drag().clickDistance(5).filter(event=>event.button===0).on('start',()=>{widthDragMoved=false;}).on('drag',event=>{
                   if(selectedMarker.locked)return;
                   const curve=curves.find(c=>String(c.id)===String(selectedMarker.curveId)),points=normalized.get(String(selectedMarker.curveId))||[];
                   if(!curve||!points.length)return;
                   const idx=this.nearestIndex(points,x.invert(event.x)),point=points[idx];
+                  // Width-handle drag is a visual interaction. Do not call getMarkerWidth()
+                  // again here: for scientific plugins that getter may derive FWHM/baseline
+                  // metrics and would otherwise recompute them on every pointer move.
+                  // The plugin updates its raw analysis-window state in onWidthDrag(); Core
+                  // previews only the snapped geometry and performs one authoritative render
+                  // after onWidthDragEnd commits the scientific edit.
                   this.spec.onWidthDrag?.({marker:selectedMarker,curve,side,index:Number.isFinite(Number(point?.sourceIndex))?Number(point.sourceIndex):idx,point:point?.raw||point,event,surface:this});
-                  const next=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
-                  if(!next)return;
-                  let nl=finite(next.windowLeft)?Number(next.windowLeft):(finite(next.left)?Number(next.left):windowLeft),nr=finite(next.windowRight)?Number(next.windowRight):(finite(next.right)?Number(next.right):windowRight);
+                  const previewX=Number(point?.x),anchorX=Number(selectedMarker?.x);widthDragMoved=true;
+                  let nl=windowLeft,nr=windowRight;
+                  if(finite(previewX)){
+                    if(side==='left')nl=Math.min(previewX,finite(anchorX)?anchorX-1e-15:nr-1e-15);else nr=Math.max(previewX,finite(anchorX)?anchorX+1e-15:nl+1e-15);
+                  }
                   if(nl>nr)[nl,nr]=[nr,nl];
-                  if(finite(nl)&&finite(nr)&&nr>nl){band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.selectAll('circle.dkds-scientific-window-handle').attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}
-                }).on('end',event=>{this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this});this.requestRender('width-drag-end');}));
+                  if(finite(nl)&&finite(nr)&&nr>nl){windowLeft=nl;windowRight=nr;band.select('rect.dkds-scientific-width-band').attr('x',x(nl)).attr('width',Math.max(2,x(nr)-x(nl)));band.selectAll('circle.dkds-scientific-window-handle').attr('cx',function(){return x(this.getAttribute('data-width-side')==='left'?nl:nr);});}
+                }).on('end',event=>{if(!widthDragMoved)return;this.spec.onWidthDragEnd?.({marker:selectedMarker,event,surface:this});this.requestRender('width-drag-end');}));
             }
           }
         }
