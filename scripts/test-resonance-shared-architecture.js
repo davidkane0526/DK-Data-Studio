@@ -104,6 +104,11 @@ assert(viewSet.gate.superPageHtml().includes('gateAnalysisPage')&&viewSet.spacin
 assert(viewSet.topPageHtml().includes('reswinMainPlot')&&viewSet.topPageHtml().includes('resparInspectorPanel')&&viewSet.topPageHtml().includes('resparGroupPanel')&&viewSet.topPageHtml().includes('data-reswin-view-panel="gate"'),'Shared View components must compose one GRS-parity surface for SUPER and TOP.');
 const trend=controller.buildTrendModel();
 assert(trend.series.length===4&&trend.series.some(s=>s.direction>0)&&trend.series.some(s=>s.direction<0),'Shared trend model must project every visible forward/reverse peak family even when one forward sweep is focused.');
+const metricsPendingService={...service,metrics:()=>null};
+const metricsPendingController=W.createController(metricsPendingService,{science:context.window.DKDSScience});
+const pendingTrend=metricsPendingController.buildTrendModel();
+assert(pendingTrend.series.length===4&&pendingTrend.series.every(series=>series.points.length===2),'Vpk/Ipk group trends must remain available while optional peak-metrics computation is pending.');
+assert(pendingTrend.series.flatMap(series=>series.points).every(point=>Number.isFinite(point.v)&&Number.isFinite(point.i)&&point._peak?.id),'Base group trend points must preserve peak identity and Vpk/Ipk without requiring FWHM metrics.');
 const opts=controller.acceptedSeriesOptions();
 const a=opts.find(o=>o.label==='A'&&o.direction>0),b=opts.find(o=>o.label==='B'&&o.direction>0);
 const spacing=controller.computeSpacingRows(a.key,b.key);

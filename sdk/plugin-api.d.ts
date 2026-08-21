@@ -2,6 +2,8 @@ export type DKDSDisposable = { dispose?(): void } | (() => void) | void;
 export type DKDSPluginInstance = { deactivate?(): void | Promise<void> };
 export type DKDSAlgorithmRef = { category: string; id: string; version?: string };
 export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[]; focus:any; ranges:any[]; context:Record<string,unknown>; source:any };
+export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; artifactId:string }
+export interface DKDSDataSourcesCapability { list():Promise<DKDSDataSourceDescriptor[]>; remove(refs:Array<{path?:string;sourcePath?:string}>|{path?:string;sourcePath?:string}):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}> }
 export interface DKDSManifest {
   id:string; name:string; version:string; apiVersion:'1.8.0'; entry?:string; enabled?:boolean; order?:number; description?:string;
   requiresCore:string[]; capabilities?:string[]; source?:string;

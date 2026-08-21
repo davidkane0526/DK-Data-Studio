@@ -1,25 +1,33 @@
-# Next Session Handoff — v3.58.1
+# Next Session Handoff — v3.58.2
 
 ## Current baseline
 
-- Application: `3.58.1`
-- Branch: `fix/v3.58.1-import-workbench`
-- Architecture baseline remains v3.58 Host Neutralization: Core/Host is domain-neutral; scientific state is plugin-owned; TOP renderers are dedicated-only; legacy project migration terminates in `project-format`.
+- Application: `3.58.2`
+- Branch: `fix/v3.58.2-runtime-data-lifecycle`
+- Architecture baseline: v3.58 Host Neutralization remains intact. Core/Host is domain-neutral; first-party scientific state is plugin-owned; TOP renderers are dedicated-only.
 - Plugin SDK: v1.8.0 remains the public plugin development surface.
 
-## v3.58.1 regression fixed
+## v3.58.2 fixes
 
-The v3.58.0 import workbench could display checked files while the footer remained `0/0`. Host Neutralization removed `gateFmt()` with the Gate-analysis code, but generic import preview rendering still called it. This raised a runtime `ReferenceError` before `renderImportGlobalSummary()` could run.
+1. TER dedicated TOP now injects managed `ScientificPlot` into its analysis service. This fixes `charts.scalarField is not a function` without adding a TER-specific Host path.
+2. Resonance peak-family/group trend construction no longer requires optional peak-metrics completion. Vpk/Ipk and peak identity remain available immediately; FWHM/amplitude/area merge when available.
+3. Imported source datasets have an explicit lifecycle. The project Host owns canonical source datasets and mirrors them as `legacy-dataset` DataTable Artifacts. `core.data-sources` exposes generic list/remove operations, and Data Center is the canonical UI for source removal. Removing a source also removes its Artifact lineage descendants.
 
-v3.58.1 replaces the dependency with a generic import formatter and adds a real built-in automation smoke for import preview + checkbox summary + commit-button state.
+## Ownership rule
+
+- Host/project: imported source lifetime.
+- Artifact Store: typed projections and derived lineage.
+- Data Center: source-management UI.
+- Analysis plugin data lists: visibility/selection/analysis participation only; do not own source deletion.
 
 ## Validation gates
 
 - `npm run check`
 - `npm test`
-- `npm run import-workbench:test`
-- software built-in Automation Test Center: verify `UI / Import -> Import workbench selection & preview` passes
+- `npm run data-source-lifecycle:test`
+- `npm run sdk:test`
+- `npm run host-neutralization:test`
+- `git diff --check`
+- Built-in Automation Test Center: `Data Contract -> Project source data lifecycle`
 
-## Architecture direction
-
-Do not reintroduce Resonance/TER/Pulse/Gate domain logic into `src/app.js`. Future scientific features belong to plugins or Algorithm Providers. Only extend Core/SDK when a real plugin demonstrates a missing general-purpose contract.
+Do not fix future plugin errors by reintroducing scientific domain code into `src/app.js`. Add or extend a generic Core contract only when a real plugin requires it.

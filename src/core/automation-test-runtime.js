@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.13.0';
+  const VERSION='1.14.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -162,6 +162,23 @@
       assert(sink.get().focus?.id==='p1','Selection import did not preserve the selected entity.');
       return {sourceType:snapshot.focus.type,canonical:'science.resonance.peak'};
     }finally{scope.dispose?.();}
+  }
+
+  async function dataSourceLifecycleSmoke(){
+    const D=window.DKDSData,cap=window.DKDSCapabilities?.get?.('core.data-sources');
+    assert(D?.createStore&&D?.removeLegacyDatasets,'Data source lifecycle primitive unavailable.');
+    assert(cap&&cap.methods?.includes?.('list')&&cap.methods?.includes?.('remove'),'core.data-sources capability is not registered.');
+    const sources=await window.DKDSCapabilities.invoke('core.data-sources','list');
+    assert(Array.isArray(sources),'core.data-sources.list() did not return a source list.');
+    const datasets=[{path:'automation-a.csv',name:'automation-a.csv',points:[{v:0,i:1},{v:1,i:2}]},{path:'automation-b.csv',name:'automation-b.csv',points:[{v:0,i:3},{v:1,i:4}]}];
+    const store=D.createStore();D.syncLegacyDatasetArtifacts(store,datasets);
+    const rootA=store.list({includeTransient:true}).find(row=>row.metadata?.legacyDatasetPath==='automation-a.csv');
+    const rootB=store.list({includeTransient:true}).find(row=>row.metadata?.legacyDatasetPath==='automation-b.csv');
+    const derived=D.derive(rootA,{id:'automation:derived-a',kind:'data.transform',name:'derived-a',x:[0,1],y:[1,2],metadata:{}});store.upsert(derived);
+    const result=D.removeLegacyDatasets(store,datasets,[{path:'automation-a.csv'}]);
+    assert(result.datasets.length===1&&result.datasets[0].path==='automation-b.csv','Source removal changed the wrong canonical dataset.');
+    assert(!store.get(rootA.id)&&!store.get(derived.id)&&!!store.get(rootB.id),'Source removal did not preserve lineage/source isolation.');
+    return {registered:true,projectSourceCount:sources.length,syntheticRemoved:result.removed.length,syntheticRemaining:result.datasets.length,derivedRemoved:result.removedArtifactIds.includes('automation:derived-a')};
   }
 
   function artifactRoundTripSmoke(){
@@ -357,6 +374,7 @@
     await runCase('types.contract','Scientific Data Type Registry','Data Contract',dataTypeSmoke);
     await runCase('selection.contract','Typed Selection Contract','Data Contract',selectionContractSmoke);
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
+    await runCase('data.sources.lifecycle','Project source data lifecycle','Data Contract',dataSourceLifecycleSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
     await runCase('scalar-field.shared','Scientific Scalar Field & resonance feature field','Data Contract',scientificScalarFieldSmoke);

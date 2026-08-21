@@ -120,7 +120,15 @@
     const series=[];
     for(const w of wanted){
       const points=accepted.filter(q=>q.direction===w.direction&&categoryLabel(service,q)===w.label)
-        .map(q=>{const s=sweepById(q.sweepId);const m=s?metricFor(service,science,q,s):null;return m?{...m,_peak:q}:null;})
+        .map(q=>{
+          const s=sweepById(q.sweepId);if(!s)return null;
+          // Vpk/Ipk/peak identity already exist on the accepted peak and must
+          // not disappear merely because an optional peak-metrics Provider is
+          // still computing FWHM/amplitude/area.  Merge metric output when it
+          // exists, but keep the base trend series independently usable.
+          const m=metricFor(service,science,q,s)||{};
+          return {...m,vg:Number.isFinite(Number(m.vg))?Number(m.vg):Number(q.vg),v:Number.isFinite(Number(m.v))?Number(m.v):Number(q.v),i:Number.isFinite(Number(m.i))?Number(m.i):Number(q.i),_peak:q};
+        })
         .filter(Boolean).sort((a,b)=>Number(a.vg)-Number(b.vg));
       if(!points.length)continue;
       const repr=points[0]._peak||{};

@@ -1066,6 +1066,34 @@
     };return api;
   }
 
+  function dataSourceHostApi(){
+    const list=()=>state.datasets.map(dataset=>({
+      path:String(dataset?.path||dataset?.name||''),
+      name:String(dataset?.name||dataset?.path||'data'),
+      sourcePath:String(dataset?.sourcePath||dataset?.path||''),
+      sourceName:String(dataset?.sourceName||dataset?.name||''),
+      vg:Number.isFinite(Number(dataset?.vg))?Number(dataset.vg):null,
+      points:Array.isArray(dataset?.points)?dataset.points.length:0,
+      artifactId:window.DKDSData?.stableId?.('legacy-table',String(dataset?.path||dataset?.name||'dataset'))||''
+    }));
+    return {
+      list,
+      remove(refs){
+        const requested=Array.isArray(refs)?refs:[refs];
+        const outcome=window.DKDSData?.removeLegacyDatasets?.(state.artifactStore,state.datasets,requested);
+        if(!outcome)return {removed:[],removedArtifactIds:[],sources:list()};
+        state.datasets=outcome.datasets||[];
+        const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
+        if(outcome.removed?.length){
+          window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:outcome.removed.map(row=>row.path),removedArtifactIds:outcome.removedArtifactIds||[],artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
+          renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();
+          setStatus(`已移除 ${outcome.removed.length} 组源数据。`);
+        }
+        return {removed:(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),removedArtifactIds:outcome.removedArtifactIds||[],sources:list()};
+      }
+    };
+  }
+
   function pluginUiContext(){
     return {
       activityId:window.DKDSPlugins?.activities?.active?.()||null,
@@ -1836,7 +1864,7 @@
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.58.1',
+      version:'3.58.2',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2629,7 +2657,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.58.1',
+      appVersion:'3.58.2',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -2659,6 +2687,11 @@
       makeFloating,
       artifacts:artifactHostApi(),
       services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel})}
+    });
+
+    window.DKDSCapabilities?.register?.('core','core.data-sources',{
+      kind:'service',title:'Project Data Sources',version:'1.0.0',remote:true,
+      methods:dataSourceHostApi()
     });
 
     window.electronAPI?.onCapabilityInvokeRequest?.(async request=>{

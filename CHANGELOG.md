@@ -1,3 +1,12 @@
+# v3.58.2 — TOP ScientificPlot, Resonance Group Trends & Source Data Lifecycle
+
+- Fixed TER dedicated TOP calculation failure `charts.scalarField is not a function`. The TER window runtime now injects the same managed `ScientificPlot` surface used by plugin feature code, so ordinary traces and scalar fields share one renderer contract in TOP and SUPER.
+- Fixed blank Resonance group charts when the optional peak-metrics provider had not yet returned FWHM/amplitude/area. Peak-family construction now always preserves canonical peak identity, Vpk and Ipk; optional metrics merge later instead of gating the whole series.
+- Added a generic `core.data-sources` lifecycle capability. Imported source datasets remain project/host-owned and are projected into the Artifact Store; Data Center consumes the public capability instead of mutating host state.
+- Data Center now exposes `移除源数据` for directly imported DataTable sources. Removing a source also removes Artifact lineage descendants derived from that source, while unrelated sources remain intact. Resonance/TER data lists remain analysis visibility/selection surfaces rather than owning source lifetime.
+- Added regressions that dynamically verify TER TOP receives `scalarField()`, Resonance Vpk/Ipk trends survive pending metric computation, and source removal updates project datasets plus Artifact lineage.
+- Automation Runner 1.14.0 adds `Project source data lifecycle`, raising the development suite to 32 cases and verifying the registered `core.data-sources` capability plus isolated source/lineage removal without modifying the open project.
+
 # v3.58.1 — Import Workbench Regression Fix
 
 - Fixed a v3.58.0 regression where the import preview still referenced the removed Gate-analysis formatter, aborting workbench rendering before the selected-file summary refreshed.

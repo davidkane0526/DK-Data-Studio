@@ -9,6 +9,7 @@ const plot=read('src/core/scientific-plot-runtime.js');
 const ui=read('src/core/ui-infrastructure.js');
 const terService=read('src/plugins/ter-analysis/analysis-service.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
+const terWindowRuntime=read('src/plugins/ter-analysis/window-runtime.js');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
@@ -18,8 +19,28 @@ for(const token of ['function scalarFieldSpec(field={},options={})','async scala
 assert(ui.includes('scalarField:(target,field={},options={})=>this.scientificPlotly?.scalarField?.(target,field,options)||null'),'Plugin UI scope must expose shared scalarField().');
 assert(terService.includes('charts.scalarField('),'TER primary heatmap must consume the shared scalar-field surface.');
 assert(terFeature.includes('scientificPlot.scalarField('),'TER transform heatmap must consume the shared scalar-field surface.');
+assert(terWindowRuntime.includes("window.DKDSUI?.createScope?.('builtin.ter-analysis')")&&terWindowRuntime.includes('runtimeUi?.scientificPlot'),'TER dedicated TOP runtime must inject the managed ScientificPlot contract instead of a raw chart scope.');
 assert(!terService.includes("charts.react('terHeatmapPlot'"),'TER primary heatmap must not keep a private raw heatmap renderer fallback.');
 assert(!terFeature.includes("type:'heatmap',colorscale:signed"),'TER transform heatmap must not keep a private raw heatmap renderer fallback.');
+
+// Dynamic regression: dedicated TOP window-runtime must pass a ScientificPlot
+// scope with scalarField() into TER analysis-service.create().
+{
+  const modules=new Map();let receivedCharts=null;
+  const runtimeModules={
+    define:(pid,name,value)=>{modules.set(`${pid}/${name}`,value);return value;},
+    require:(pid,name)=>{if(pid==='builtin.ter-analysis'&&name==='analysis-service')return {create:args=>{receivedCharts=args.charts;return args;}};throw new Error(`missing ${pid}/${name}`);}
+  };
+  const scientificPlot={react(){},scalarField(){},purge(){}};
+  const topContext={window:{DKDSPluginModules:runtimeModules,DKDSUI:{createScope:()=>({scientificPlot})},DKDSIO:{createScope:()=>({})},DKDSComponents:{createScope:()=>({})},DKDSScientificAlgorithms:{list:()=>[],resolve:()=>null,run:()=>null,provenance:()=>null}},console};
+  topContext.window.window=topContext.window;
+  vm.createContext(topContext);
+  vm.runInContext(terWindowRuntime,topContext,{filename:'ter-window-runtime.js'});
+  const runtime=modules.get('builtin.ter-analysis/window-runtime');
+  runtime.create({project:{}});
+  assert.strictEqual(receivedCharts,scientificPlot,'TER TOP analysis service must receive the managed ScientificPlot scope.');
+  assert.strictEqual(typeof receivedCharts.scalarField,'function','TER TOP analysis service chart contract must include scalarField().');
+}
 assert(resonanceShared.includes("'resonance.feature-field'"),'Resonance must register a typed feature-field contract.');
 assert(resonanceFeature.includes("outputTypes:['resonance.gate-analysis','resonance.feature-field']"),'Gate analysis Pipeline must publish the feature field as a second typed output.');
 for(const token of ['gateFeatureField(settings=workspace.gateAnalysisSettings||{})','gateFeatureArtifact(field)','cellPeakIds','reswinGateFeatureField','scientificPlot.scalarField(fieldPlot'])assert(resonanceFeature.includes(token),`Resonance feature-field implementation missing: ${token}`);

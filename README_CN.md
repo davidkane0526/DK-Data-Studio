@@ -1,4 +1,13 @@
-# DK Data Studio — v3.58.1
+# DK Data Studio — v3.58.2
+
+
+## v3.58.2 运行时一致性与源数据生命周期
+
+- 修复 TER 独立 TOP 窗口错误注入原始 `DKDSCharts` 导致 `charts.scalarField is not a function`；TOP/SUPER 现在都通过同一 `ScientificPlot` 契约绘制普通图和标量场。
+- 修复共振组图被 FWHM 等可选峰度量结果阻塞的问题。Vpk、Ipk 与峰身份直接来自已采纳峰；FWHM、峰高、面积等度量计算完成后再合并，不再导致整组图空白。
+- 明确导入源数据所有权：工程 Host 持有 canonical source dataset，Artifact Store 保存其标准 DataTable 投影。分析插件的数据列表只负责分析参与、显示和选择，不负责删除源数据。
+- 数据中心新增“移除源数据”。删除直接导入的数据时，同时按 Artifact lineage 清理依赖该源生成的派生结果；其他源数据不受影响。
+- 新增 `core.data-sources` 通用 Capability，Data Center 通过公开 Core 能力管理源数据生命周期，独立 TOP 窗口通过现有 Capability Runtime 远程调用主工程所有者。
 
 
 ## v3.58 Host Neutralization 与工程状态单轨化

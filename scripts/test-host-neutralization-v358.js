@@ -63,4 +63,9 @@ for(const [rel,needle] of [
   ['src/plugins/pulse-analysis/feature-runtime.js',"ctx.project.registerSlice('workspace'"]
 ])assert(read(rel).includes(needle),`${rel} must own its project state through a plugin slice.`);
 
+
+const terService=read('src/plugins/ter-analysis/analysis-service.js');
+for(const token of ['target.terMaxSettings','target.terHeatmapDisplay','target.terTransformSettings','target.terAlgorithmRef','target.terMaxResult'])assert(!terService.includes(token),`TER dedicated runtime must not write legacy project-root field ${token}.`);
+assert(terService.includes("target.plugins['builtin.ter-analysis']")&&terService.includes('plugin.workspace=service.serialize()'),'TER dedicated runtime must synchronize only its canonical plugin slice.');
+
 console.log('v3.58 Host Neutralization OK: canonical project root is generic, domain state is plugin-owned, dead host domain adapters are absent.');

@@ -19,8 +19,8 @@ assert(resonance.includes('S.peakMetrics')&&resonance.includes('analysisLeft')&&
   'Resonance must consume shared FWHM science and expose only domain mapping');
 assert(terScience.includes('function computeSweepTransformMatrix')&&terScience.includes('transformSweep(sweep,type,transformOptions)'),
   'transformed Vg-Vd matrix must reuse shared transformSweep science');
-assert(terService.includes('A.computeSweepTransformMatrix')&&terService.includes('terTransformSettings'),
-  'TER service must own transformed-matrix domain state/project persistence');
+assert(terService.includes('A.computeSweepTransformMatrix')&&terService.includes('serialize:()=>({schema:3')&&terService.includes('transform:cloneSerializable(transform)')&&terFeature.includes("ctx.project.registerSlice('workspace'"),
+  'TER service must own transformed-matrix domain state and persist it only through the plugin workspace slice');
 assert(terFeature.includes("const CHART_COUNT=7")&&terFeature.includes("plotId:'terTransformHeatmapPlot'")&&terFeature.includes('ctx.parameters.render'),
   'TER transformed heatmap must be integrated into the seven-card dashboard using Core Parameter Schema');
 assert(terFeature.includes('ctx.ui.scientificPlot.react')&&terFeature.includes('ensurePlotViews()'),

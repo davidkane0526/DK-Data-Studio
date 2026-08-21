@@ -315,6 +315,31 @@
     return safeArray(artifacts).map(toLegacyDataset).filter(Boolean);
   }
 
+  function removeLegacyDatasets(store,datasets,refs=[]){
+    const requests=safeArray(refs).map(ref=>{
+      if(ref&&typeof ref==='object')return {path:String(ref.path||''),sourcePath:String(ref.sourcePath||'')};
+      return {path:String(ref||''),sourcePath:''};
+    }).filter(ref=>ref.path||ref.sourcePath);
+    if(!requests.length)return {datasets:safeArray(datasets).map(deepClone),removed:[],removedArtifactIds:[]};
+    const removed=[],remaining=[];
+    for(const dataset of safeArray(datasets)){
+      const path=String(dataset?.path||dataset?.name||''),sourcePath=String(dataset?.sourcePath||'');
+      const match=requests.some(ref=>(ref.path&&ref.path===path)||(ref.sourcePath&&ref.sourcePath===sourcePath));
+      if(match)removed.push(deepClone(dataset));else remaining.push(deepClone(dataset));
+    }
+    const removedPaths=new Set(removed.map(dataset=>String(dataset?.path||dataset?.name||'')));
+    const roots=(store?.list?.({includeTransient:true})||[]).filter(artifact=>artifact?.metadata?.adapter==='legacy-dataset'&&removedPaths.has(String(artifact.metadata?.legacyDatasetPath||'')));
+    const removeIds=new Set();
+    for(const root of roots){
+      for(const row of (store?.lineage?.(root.id)?.descendants||[]))if(row?.id)removeIds.add(String(row.id));
+      if(root?.id)removeIds.add(String(root.id));
+    }
+    if(store?.batch)store.batch(api=>{for(const id of [...removeIds])api.remove?.(id);});
+    else for(const id of [...removeIds])store?.remove?.(id);
+    syncLegacyDatasetArtifacts(store,remaining);
+    return {datasets:remaining,removed,removedArtifactIds:[...removeIds]};
+  }
+
   function summarize(a){
     if(!a)return null;
     if(a.kind==='data.table')return {id:a.id,kind:a.kind,name:a.name,rows:a.rowCount,columns:a.columns.length,provenance:a.provenance?.length||0};
@@ -382,7 +407,7 @@
     ARTIFACT_VERSION,STORE_VERSION,nowIso,deepClone,hashString,makeId,stableId,
     provenanceStep,normalizeLineage,fingerprintArtifact,createTable,createSeries,createSweep,createTransform,createMatrix,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
-    column,columnValues,rows,withProvenance,derive,fromLegacyDataset,syncLegacyDatasetArtifacts,toLegacyDataset,legacyDatasetsFromArtifacts,summarize,
+    column,columnValues,rows,withProvenance,derive,fromLegacyDataset,syncLegacyDatasetArtifacts,toLegacyDataset,legacyDatasetsFromArtifacts,removeLegacyDatasets,summarize,
     rehydrateArtifact,createStore,serializeStore,restoreStore
   };
 })();

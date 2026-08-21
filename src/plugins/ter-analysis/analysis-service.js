@@ -385,11 +385,10 @@
         serviceName:'builtin.ter-analysis.runtime',service,render,
         setProject(next){applyProject(next);if($('#terSummary'))render();},
         syncProject(target){
-          target.terMaxSettings={...settings};
-          target.terHeatmapDisplay={...display};
-          target.terTransformSettings={...transform};
-          target.terAlgorithmRef=cloneSerializable(terAlgorithmRef);
-          target.terMaxResult=result?cloneSerializable(result):null;
+          target.plugins=target.plugins&&typeof target.plugins==='object'?target.plugins:{};
+          const plugin=target.plugins['builtin.ter-analysis']&&typeof target.plugins['builtin.ter-analysis']==='object'?target.plugins['builtin.ter-analysis']:{};
+          plugin.workspace=service.serialize();
+          target.plugins['builtin.ter-analysis']=plugin;
         },
         getState:()=>({settings,display,transform,algorithmRef:cloneSerializable(terAlgorithmRef),result})
       };

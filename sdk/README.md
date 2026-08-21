@@ -45,3 +45,15 @@ Plugins own domain logic, domain state, domain types and domain views. Core owns
 Persistent plugin state must be registered through `ctx.project.registerSlice(...)`. `restore` receives only the plugin's canonical namespaced slice; old application root fields are migrated by DK Data Studio before plugin runtime starts. A missing slice is fresh/reset state, not a signal to inspect the project root.
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
+
+## Project source-data lifecycle (DK Data Studio 3.58.2+)
+
+Imported file lifetime is owned by the project host, not by an analysis plugin. Plugins that genuinely manage project source data can use the generic Capability Runtime:
+
+```js
+const sources = ctx.capabilities.proxy('core.data-sources');
+const rows = await sources.list();
+await sources.remove([{ path: rows[0].path }]);
+```
+
+`remove()` removes the canonical imported source and its dependent Artifact lineage. Analysis plugins should normally consume `ctx.data.artifacts` and keep their own data lists limited to visibility/selection/analysis state.
