@@ -1,10 +1,13 @@
-# DK Data Studio Plugin API v1.10
+# DK Data Studio Plugin API v1.14
 
-Plugin API v1.10 defines a **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+Plugin API v1.14 extends the Core-first contract with a **Core-owned workbench import action**. Workbench plugins declare accepted semantic data types through `manifest.data.accepts`; Core renders the standard “导入数据” action, opens the centralized Import Workbench in scoped mode, locks assignment to the current workbench, and filters Importer Providers by compatible `outputTypes`. A plugin may only mark the desired action location with an empty `data-dkds-slot="workbench-import"` slot. New workbench plugins must not implement a duplicate import button or file picker.
 
-DK Data Studio v3.60 promotes the public contract to API `1.10.0` by adding `ctx.data.reactive`: the shared scientific transaction/dependency runtime for revision propagation, batched view updates and stale asynchronous-result rejection. TableSurface and SettingsSurface remain the API 1.9 UI foundation. Existing compatible 1.x packages remain loadable when their declared Core requirements are available; new plugins should target 1.10 when they consume reactive scientific dependencies.
 
-For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.10 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
+Plugin API v1.14 continues the **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+
+The current DK Data Studio v3.61.7 public contract is API `1.14.0`. Earlier 1.x additions, including `ctx.data.reactive`, remain part of the compatible Core contract: the shared scientific transaction/dependency runtime for revision propagation, batched view updates and stale asynchronous-result rejection. TableSurface and SettingsSurface remain the API 1.9 UI foundation. Existing compatible 1.x packages remain loadable when their declared Core requirements are available; new plugins should target 1.14 and declare only the Core capabilities they consume.
+
+For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.14 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
 
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
@@ -17,7 +20,7 @@ DKDSPlugins.define(manifest, async ctx => {
 
 ## 1. Manifest and machine contract
 
-`plugin.json` must target API `1.10.0` and declare every Core surface it consumes in `requiresCore`.
+`plugin.json` for a new plugin must target API `1.14.0` and declare every Core surface it consumes in `requiresCore`.
 
 ```json
 {
@@ -25,7 +28,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "name": "Spectroscopy",
   "version": "1.0.0",
   "pluginType": "workbench",
-  "apiVersion": "1.10.0",
+  "apiVersion": "1.14.0",
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
   "requiresCore": [
@@ -88,7 +91,7 @@ window.DKDSMyPluginSomething = ...
 DKDSHostRecipes.*
 ```
 
-Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge for old external packages and is deliberately excluded from the v1.10 development contract.
+Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge for old external packages and is deliberately excluded from the v1.14 development contract.
 
 ## 4. Core requirement catalog
 
@@ -459,7 +462,7 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
   ],
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.10.0"
+    "pluginApi": "^1.14.0"
   },
   "pluginDependencies": [
     {"id":"other.provider","range":"^2.0.0","optional":false}

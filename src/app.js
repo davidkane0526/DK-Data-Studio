@@ -43,7 +43,8 @@
     activePath:null,
     loading:false,
     fileDialogOpen:false,
-    targets:null
+    targets:null,
+    scope:null
   };
 
   function importActiveItem(){
@@ -55,9 +56,28 @@
       .sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0)||String(a.name||a.id).localeCompare(String(b.name||b.id)));
   }
 
+  function importScope(){
+    const scope=importDraft?.scope;
+    return scope&&scope.mode==='scoped'?scope:null;
+  }
+
+  function importAcceptedTypes(){
+    const scope=importScope();
+    return Array.isArray(scope?.accepts)?scope.accepts.map(String).filter(Boolean):[];
+  }
+
+  function availableImportProviders(){
+    const rows=importProviders(),accepted=importAcceptedTypes();
+    if(!importScope()||!accepted.length)return rows;
+    return rows.filter(provider=>{
+      const outputs=Array.isArray(provider?.outputTypes)?provider.outputTypes.map(String):[];
+      return outputs.some(type=>accepted.includes(type));
+    });
+  }
+
   function importProvider(id=''){
     const key=String(id||'').trim();
-    const rows=importProviders();
+    const rows=availableImportProviders();
     return rows.find(provider=>String(provider.id)===key)||rows.find(provider=>provider.id==='flexible-text')||rows[0]||null;
   }
 
@@ -74,7 +94,7 @@
   function chooseImportProvider(meta={},targets=ensureImportTargets()){
     const ext=fileExtension(meta?.name||meta?.path||'');
     const context={targets:Array.isArray(targets)?targets.map(String):[]};
-    const scored=importProviders().map(provider=>{
+    const scored=availableImportProviders().map(provider=>{
       const extensions=Array.isArray(provider.extensions)?provider.extensions.map(x=>String(x).toLowerCase()):[];
       const preferred=Array.isArray(provider.preferredConsumers)?provider.preferredConsumers.map(String):[];
       const outputs=Array.isArray(provider.outputTypes)?provider.outputTypes.map(String):[];
@@ -86,7 +106,7 @@
       try{if(typeof provider.score==='function')score+=Number(provider.score(meta,context))||0;}catch{}
       return {provider,score};
     }).sort((a,b)=>b.score-a.score);
-    return scored[0]?.provider||flexibleImportProvider();
+    return scored[0]?.provider||null;
   }
 
   function providerForImportItem(item){
@@ -436,8 +456,9 @@
     state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
-    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null};
+    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null};
     if(!Object.prototype.hasOwnProperty.call(importDraft,'targets'))importDraft.targets=null;
+    importDraft.scope=null;
     t.importDraft=importDraft;
     state.projectPath=t.projectPath||null;
     state.trendColumns=t.trendColumns||loadTrendColumnsPreference();
@@ -614,6 +635,7 @@
     if(!item?.text)return;
     try{
       const provider=providerForImportItem(item);
+      if(!provider)throw new Error(importScope()?'当前工作台没有兼容的数据导入器。':'没有可用的数据导入器。');
       if(!provider?.inspect)throw new Error(`导入器 ${item?.importerId||'(unknown)'} 不支持预览。`);
       item.importerId=provider.id;
       item.inspection=provider.inspect({
@@ -662,8 +684,8 @@
           text:'',
           detectedEncoding:'',
           loadedEncodingRequest:'',
-          importerId:provider.id,
-          settings:provider.defaultOptions?.()||{},
+          importerId:provider?.id||'',
+          settings:provider?.defaultOptions?.()||{},
           inspection:null,
           mappingTouched:false,
           loading:false,
@@ -684,11 +706,22 @@
   }
 
   function openImportWorkbench(options={}){
-    if(Array.isArray(options?.targets))importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
-    else ensureImportTargets();
+    const scoped=String(options?.mode||'')==='scoped'||!!options?.consumerId;
+    if(scoped){
+      const consumerId=String(options?.consumerId||options?.targets?.[0]||'').trim();
+      const target=dataConsumerTargets().find(row=>row.id===consumerId)||null;
+      const accepts=Array.isArray(options?.accepts)?options.accepts.map(String).filter(Boolean):(target?.accepts||[]);
+      importDraft.scope={mode:'scoped',consumerId,label:String(options?.consumerLabel||target?.label||consumerId||'当前工作台'),icon:String(options?.consumerIcon||target?.icon||'◇'),accepts};
+      importDraft.targets=consumerId?[consumerId]:[];
+    }else{
+      importDraft.scope=null;
+      if(Array.isArray(options?.targets))importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
+      else importDraft.targets=null;
+      ensureImportTargets();
+    }
     if(options?.importerId){
-      for(const item of importDraft.files){
-        const provider=importProvider(options.importerId);if(!provider)continue;
+      const provider=importProvider(options.importerId);
+      if(provider)for(const item of importDraft.files){
         item.importerId=provider.id;item.importerTouched=true;item.settings=provider.defaultOptions?.()||{};item.mappingTouched=false;if(item.text)recomputeImportItem(item,true);
       }
     }else autoRouteImportersForTargets();
@@ -728,7 +761,16 @@
   }
 
   function renderImportTargets(){
-    const host=$('#importTargetOptions');if(!host)return;const targets=dataConsumerTargets(),selected=new Set(ensureImportTargets());host.innerHTML='';
+    const bar=document.querySelector('.import-target-bar');
+    const scope=importScope();
+    if(bar)bar.classList.toggle('hidden',!!scope);
+    const title=document.querySelector('.import-workbench-header h2');
+    const subtitle=document.querySelector('.import-workbench-subtitle');
+    if(title)title.textContent=scope?`导入到 ${scope.label}`:'数据导入工作台';
+    if(subtitle)subtitle.textContent=scope?'仅显示与当前工作台兼容的导入器；导入完成后自动归入当前工作台。':'默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。';
+    const host=$('#importTargetOptions');if(!host)return;
+    if(scope){host.innerHTML='';return;}
+    const targets=dataConsumerTargets(),selected=new Set(ensureImportTargets());host.innerHTML='';
     for(const row of targets){const label=document.createElement('label');label.className='import-target-chip';label.innerHTML=`<input type="checkbox" value="${escapeHtml(row.id)}" ${selected.has(row.id)?'checked':''}><span class="import-target-icon">${escapeHtml(row.icon)}</span><span>${escapeHtml(row.label)}</span>`;label.querySelector('input').onchange=()=>{importDraft.targets=[...host.querySelectorAll('input:checked')].map(input=>String(input.value));autoRouteImportersForTargets();renderImportWorkbench();};host.appendChild(label);}
     renderImportTargetHint();
   }
@@ -944,7 +986,9 @@
     item.importerId=provider?.id||item.importerId;
     const providerSelect=$('#importProvider');
     if(providerSelect){
-      providerSelect.innerHTML=importProviders().map(row=>`<option value="${escapeHtml(row.id)}">${escapeHtml(row.name||row.id)}</option>`).join('');
+      const providerRows=availableImportProviders();
+      providerSelect.innerHTML=providerRows.length?providerRows.map(row=>`<option value="${escapeHtml(row.id)}">${escapeHtml(row.name||row.id)}</option>`).join(''):'<option value="">无兼容导入器</option>';
+      providerSelect.disabled=!providerRows.length;
       providerSelect.value=item.importerId||'';
     }
     const flexible=provider?.id==='flexible-text';
@@ -1031,7 +1075,7 @@
       };
       recomputeImportItem(item,true);
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
-      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[]};
+      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null};
       renderImportWorkbench();
 
       const checkbox=$('#importFileList input[type="checkbox"]');
@@ -1205,6 +1249,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       importDraft.files=[];
       importDraft.activePath=null;
       importDraft.targets=null;
+      importDraft.scope=null;
       closeImportWorkbench();
       setStatus(`导入完成：${reports.join('；')}。`);
     }catch(err){
@@ -2884,7 +2929,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.6',
+      appVersion:'3.61.7',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

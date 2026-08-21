@@ -1,5 +1,16 @@
-# DK Data Studio — v3.61.6
+# DK Data Studio — v3.61.7
 
+
+
+## v3.61.7 工作台标准导入动作与 SDK 1.14
+
+- Workbench 的“导入数据”现在是 Core-owned 标准动作。插件只声明 `data.accepts`，Core 自动在标准页头生成按钮；插件可用空的 `data-dkds-slot="workbench-import"` 槽位指定位置，但不得自行实现文件选择器或重复的导入按钮。
+- 从插件内部打开导入时进入 scoped 模式：目标工作台被锁定为当前插件、隐藏“数据用途”多选，并只显示 `outputTypes` 与 `data.accepts` 兼容的 Importer Provider。导入结果自动 assignment 给当前插件。
+- 顶部全局“导入数据”继续保留完整路由模式，可将同一份源数据一次分配给多个工作台。两种入口共享同一 Import Workbench、Importer Provider、typed Artifact 和 Data Center，不形成第二套数据流。
+- 没有标准页头的 Workbench 会把同一个 Core 导入动作投影到宿主上下文工具栏；嵌入式 SUPER 同样由宿主提供按钮。
+- Plugin API 1.14 的新 Workbench 模板必须声明 `data.accepts`，并禁止直接调用可见导入 UI 或创建 `type=file` 输入。旧 API 1.10–1.13 Workbench 继续通过兼容层获得 Core 导入动作；未声明 `data.accepts` 时仅取消 Importer 类型过滤，但仍锁定数据归属。
+- Pulse Analysis 已移除插件私有“添加文件”入口，验证第一方插件同样使用这一宿主契约。
+- Plugin API 升级为 `1.14.0`，应用版本为 `3.61.7`。
 
 
 ## v3.61.6 工作台数据作用域与 SDK 1.13

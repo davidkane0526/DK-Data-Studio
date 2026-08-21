@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.13.0';
+  const API_VERSION = '1.14.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1219,6 +1219,39 @@
     return addCleanup(pluginId, () => el.remove());
   }
 
+  function workbenchImportMeta(manifest={}){
+    if(pluginTypeForManifest(manifest)!=='workbench')return null;
+    const accepts=Array.isArray(manifest?.data?.accepts)?manifest.data.accepts.map(String).filter(Boolean):[];
+    return {accepts,label:String(workspaceMeta(manifest).title||manifest.name||manifest.id||'当前工作台'),icon:String(workspaceMeta(manifest).icon||defaultPluginIcon(manifest))};
+  }
+
+  function mountWorkbenchImportAction(pluginId,page,pageActivity,manifest,spec={}){
+    const meta=workbenchImportMeta(manifest);if(!meta||!page)return null;
+    const commandId=`${pluginId}.${String(spec.id||'workbench')}.core-import-data`;
+    registerCommand(pluginId,commandId,()=>host?.openImportWorkbench?.({mode:'scoped',consumerId:pluginId,consumerLabel:meta.label,consumerIcon:meta.icon,accepts:meta.accepts,source:'workbench-action'}));
+    const embeddedSuper=isTopDefinition(manifest)&&superPluginId===pluginId;
+    if(embeddedSuper&&pageActivity){
+      return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
+    }
+    const header=page.querySelector('.analysis-page-header');
+    if(!header){
+      if(pageActivity){
+        return createToolbarButton(pluginId,{id:`${String(spec.id||'workbench')}-core-import`,label:'导入数据',title:`导入到 ${meta.label}`,icon:'⇩',activity:pageActivity,section:'DATA',order:0,priority:100,command:commandId,className:'dkds-core-import-action'});
+      }
+      return null;
+    }
+    let slot=page.querySelector('[data-dkds-slot="workbench-import"]');
+    if(!slot){
+      slot=document.createElement('div');slot.dataset.dkdsSlot='workbench-import';
+      const pluginActions=header.querySelector('.dkds-plugin-header-actions');
+      const close=header.querySelector('.analysis-page-close');
+      if(pluginActions)header.insertBefore(slot,pluginActions);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
+    }
+    slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
+    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.title=`导入到 ${meta.label}`;button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
+    return button;
+  }
+
   function addPage(pluginId, spec) {
     const definition=definitionById(pluginId),manifest=definition?.manifest||{};
     let page = spec.pageId ? document.getElementById(spec.pageId) : null;
@@ -1235,6 +1268,7 @@
     const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'&&!workspaceMeta(manifest).role&&!spec.activity&&spec.presentation!=='toolbar'&&spec.primary!==false;
     const pageActivity=String(spec.activity||(standaloneWorkbench?spec.activityId||spec.id:'')||page.dataset.pluginActivity||'');
     page.dataset.pluginActivity = pageActivity;
+    mountWorkbenchImportAction(pluginId,page,pageActivity,manifest,spec);
 
     for (const close of page.querySelectorAll('.analysis-page-close')) {
       if (close.dataset.dkdsPluginCloseBound === '1') continue;
@@ -1576,7 +1610,11 @@
           setAssignments:pluginType==='data'||pluginType==='foundation'?(ref,ids)=>sourceCapability()?.setAssignments?.(ref,ids):undefined
         }),
         importWorkbench:Object.freeze({
-          open:(options={})=>host?.openImportWorkbench?.({...(options&&typeof options==='object'?options:{}),targets:Array.isArray(options?.targets)?options.targets:(pluginType==='workbench'?[pluginId]:undefined)})
+          open:(options={})=>{
+            const row=options&&typeof options==='object'?options:{};
+            const accepts=Array.isArray(definition?.manifest?.data?.accepts)?definition.manifest.data.accepts.map(String):[];
+            return host?.openImportWorkbench?.({...row,...(pluginType==='workbench'?{mode:'scoped',consumerId:pluginId,consumerLabel:String(workspaceMeta(definition.manifest).title||definition.manifest.name||pluginId),consumerIcon:String(workspaceMeta(definition.manifest).icon||defaultPluginIcon(definition.manifest)),accepts,targets:[pluginId]}:{})});
+          }
         }),
         flow: dataFlowScope,
         transforms: scientificTransformScope ? Object.freeze({

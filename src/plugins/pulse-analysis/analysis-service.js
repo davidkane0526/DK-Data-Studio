@@ -107,7 +107,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.pulse-analysis','analysis-service',{
-    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,openImportWorkbench=null,detachSource=null,migrateLegacySource=null}) {
+    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,detachSource=null,migrateLegacySource=null}) {
       const $=s=>dom?.query?.(s)||null;
       let state = createState();
 
@@ -523,16 +523,6 @@
         });
       }
 
-      async function addFiles() {
-        if (state.dialogOpen) return;
-        state.dialogOpen = true;
-        try {
-          if(typeof openImportWorkbench!=='function')throw new Error('统一数据导入工作台不可用。');
-          await openImportWorkbench({importerId:'pulse-text'});
-          setStatus('已打开统一数据导入工作台；导入后的 pulse.trace 数据会自动出现在脉冲分析中。');
-        } finally { state.dialogOpen = false; }
-      }
-
       async function removeChecked() {
         const rows=state.files.filter(f=>f.checked);if(!rows.length)return;
         let detached=0;
@@ -671,7 +661,6 @@
       const service = {
         render,
         refreshSources,
-        addFiles,
         setAllChecked(value){state.files.forEach(f=>f.checked=!!value);renderFileList();renderComparison();scheduleSnapshot();},
         removeChecked,
         analyzeCurrent,

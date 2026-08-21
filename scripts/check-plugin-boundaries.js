@@ -36,7 +36,12 @@ for(const file of allPluginFiles){
     [/ctx\.ui\.charts\b/,'legacy chart surface bypass; use ui.scientificPlot'],
     [/addEventListener\s*\(\s*['\"]contextmenu['\"]|\.oncontextmenu\b/,'raw contextmenu listener; use ui.interactionBehaviors']
   ];
-  for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.13.`);
+  for(const [pattern,label] of forbidden)if(pattern.test(src))fail(`${rel}: ${label} must go through Core API v1.14.`);
+  const manifestPath=path.join(path.dirname(file),'plugin.json');
+  if(fs.existsSync(manifestPath)){
+    const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+    if(manifest?.pluginType==='workbench'&&/ctx\.data\.importWorkbench/.test(src))fail(`${rel}: workbench import UI is Core-owned in Plugin API 1.14; declare data.accepts and use the standard workbench import action instead.`);
+  }
 }
 for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-runtime.js','core/scientific-plot-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/scientific-pipeline-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
   if(!html.includes(token))fail(`main renderer must load ${token}`);
@@ -55,6 +60,6 @@ if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use
 if(!ui.includes('class ScientificCurveSurface'))fail('Core must own D3 scientific plot interaction surface.');
 if(!read('src/core/scientific-plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own Plotly scientific interaction lifecycle.');
 if(!read('src/core/entity-runtime.js').includes('class EntityRegistry'))fail('Core must own canonical entity identity/relationship state.');
-if(!kernel.includes("const API_VERSION = '1.13.0'"))fail('Plugin API must be 1.13.0.');
+if(!kernel.includes("const API_VERSION = '1.14.0'"))fail('Plugin API must be 1.14.0.');
 if(process.exitCode)process.exit(process.exitCode);
-console.log('Plugin boundary check OK: all first-party plugin infrastructure is routed through Core API v1.13.');
+console.log('Plugin boundary check OK: all first-party plugin infrastructure is routed through Core API v1.14.');

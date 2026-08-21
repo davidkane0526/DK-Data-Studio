@@ -173,7 +173,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.pulse-analysis",
       "name": "Pulse / Read Analysis",
-      "version": "2.10.0",
+      "version": "2.10.1",
       "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",
@@ -189,7 +189,6 @@ window.DKDS_BUILTIN_PLUGINS = [
         "data.artifacts",
         "data.sources",
         "data.importers",
-        "data.import-workbench",
         "analysis.providers",
         "charts",
         "ui.dom",
@@ -235,7 +234,6 @@ window.DKDS_BUILTIN_PLUGINS = [
         "ui.interaction",
         "data.types",
         "data.sources",
-        "data.import-workbench",
         "ui.plugin-workspace",
         "ui.scientific-plot"
       ],

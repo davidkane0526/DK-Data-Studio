@@ -1,16 +1,17 @@
 {
-  "sdkVersion": "1.13.0",
-  "pluginApiVersion": "1.13.0",
+  "sdkVersion": "1.14.0",
+  "pluginApiVersion": "1.14.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.6",
+  "minimumAppVersion": "3.61.7",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "New plugins target Plugin API 1.13.0; Plugin API 1.10/1.11/1.12 packages remain loadable.",
-    "Plugin API 1.13 adds scoped project data sources, workbench data assignments, standalone workbench activity defaults, default plugin icons, and DOM delegation through Interaction Behavior.",
+    "New plugins target Plugin API 1.14.0; Plugin API 1.10/1.11/1.12/1.13 packages remain loadable.",
+    "Plugin API 1.14 adds a Core-owned per-workbench import action and scoped Import Workbench mode. Workbench plugins declare data.accepts; they do not create their own import-data button or file picker.",
+    "A workbench may place an empty data-dkds-slot=\"workbench-import\" marker to choose the standard import action location; Core falls back to the standard page-header action area.",
+    "Plugin API 1.13 scoped sources, assignments, standalone workbench placement and default icons remain the data/workbench foundation.",
     "Plugin API 1.12 Interaction Behavior profiles remain the single mouse/keyboard/context/box/wheel policy layer.",
     "ScientificCurveSurface accepts either an SVG or a normal container; Core owns the internal SVG and direct-manipulation lifecycle.",
-    "Feature-specific marker/FWHM drag callbacks remain compatibility adapters only.",
     "The SDK is standalone and does not require DK Data Studio source code.",
     "Domain logic belongs to plugins; application infrastructure is consumed through ctx.* Core APIs."
   ]

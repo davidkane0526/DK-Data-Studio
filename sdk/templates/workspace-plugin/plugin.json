@@ -2,7 +2,7 @@
   "id": "com.example.workspace",
   "name": "SDK Workspace Example",
   "version": "1.0.0",
-  "apiVersion": "1.13.0",
+  "apiVersion": "1.14.0",
   "entry": "plugin.js",
   "scripts": [
     "plugin.js"
@@ -16,7 +16,6 @@
     "project",
     "data.types",
     "data.sources",
-    "data.import-workbench",
     "ui.scientific-plot",
     "ui.dom",
     "ui.components",
@@ -32,12 +31,11 @@
     "ui.scientific-plot",
     "state.store",
     "data.types",
-    "data.sources",
-    "data.import-workbench"
+    "data.sources"
   ],
   "compatibility": {
-    "app": ">=3.61.6 <4.0.0",
-    "pluginApi": "^1.13.0"
+    "app": ">=3.61.7 <4.0.0",
+    "pluginApi": "^1.14.0"
   },
   "pluginType": "workbench",
   "data": {

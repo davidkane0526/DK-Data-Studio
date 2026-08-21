@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.13
+# DK Data Studio Plugin SDK 1.14
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.6 or newer for the full Plugin API 1.13 contract. Plugin API 1.10/1.11/1.12 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.7 or newer for the full Plugin API 1.14 contract. Plugin API 1.10/1.11/1.12/1.13 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -16,7 +16,7 @@ sdk/templates/workspace-plugin/     full UI/workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 ```
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.13.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.14.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Validate
 
@@ -109,6 +109,28 @@ Persistent plugin state must be registered through `ctx.project.registerSlice(..
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
 
+## Core-owned workbench import action (Plugin API 1.14)
+
+A `pluginType: "workbench"` plugin does **not** create its own “导入数据” button, `<input type="file">`, or file-picker flow. Core automatically contributes one standard import action for the workbench and opens the shared Import Workbench in scoped mode.
+
+Declare the semantic data accepted by the workbench:
+
+```json
+"data": { "accepts": ["science.transport.iv"] }
+```
+
+Scoped mode locks the assignment target to the current plugin, hides the global “数据用途” selector, and only lists Importer Providers whose `outputTypes` intersect `data.accepts`. Legacy workbenches without `data.accepts` still receive the standard action for compatibility, but new Plugin API 1.14 workbenches should always declare accepted types.
+
+To choose the standard action position, the plugin may provide an **empty Core-owned slot** in its page header:
+
+```html
+<div data-dkds-slot="workbench-import"></div>
+```
+
+The plugin must not place custom content in that slot. If the slot is absent, Core inserts the action in the standard workbench header action area. In an embedded SUPER workspace, the same Core action is projected into the host contextual toolbar instead of duplicating a hidden page-header button. The global shell “导入数据” action remains the full routing mode for assigning one import to multiple workbenches.
+
+`ctx.data.importWorkbench` remains available for older packages and non-workbench infrastructure, but new Plugin API 1.14 workbench UI should not invoke it directly.
+
 ## Project source-data lifecycle (Plugin API 1.13)
 
 Imported file lifetime and physical storage are owned by the project host, not by an analysis workbench. A workbench reads its assigned source catalog through the scoped `ctx.data.sources` API and opens the centralized importer through `ctx.data.importWorkbench`:
@@ -126,7 +148,7 @@ ctx.data.sources.detach({ artifactId: rows[0].artifactId });
 
 A `data` or `foundation` plugin may manage global assignments through `ctx.data.sources.setAssignments(...)`. Ordinary workbenches cannot mutate another workbench's assignment. Physical source deletion is a Data Center / host action because deletion also removes dependent Artifact lineage.
 
-`ctx.capabilities.proxy('core.data-sources')` remains a compatibility facade for older Plugin API packages. New Plugin API 1.13 plugins should use `ctx.data.sources` and `ctx.data.importWorkbench`.
+`ctx.capabilities.proxy('core.data-sources')` remains a compatibility facade for older Plugin API packages. New Plugin API 1.14 workbenches use `ctx.data.sources`; their visible import action is Core-owned. `ctx.data.importWorkbench` remains a compatibility/infrastructure API.
 
 ## Unified TableSurface (DK Data Studio 3.59+)
 

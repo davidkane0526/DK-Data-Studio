@@ -25,9 +25,8 @@
     ctx.ui.actions?.mount?.(pulseHeaderActionsHost,{
       activity:'pulse',
       actions:[
-        {id:'add',icon:'＋',label:'添加文件',order:10,onInvoke:()=>P.addFiles()},
-        {id:'current',icon:'▶',label:'分析当前',order:20,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
-        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',order:30,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
+        {id:'current',icon:'▶',label:'分析当前',order:10,shortcut:'Ctrl+Enter',onInvoke:()=>P.analyzeCurrent()},
+        {id:'checked',icon:'▶▶',label:'分析勾选',className:'primary',order:20,shortcut:'Ctrl+Shift+Enter',onInvoke:()=>P.analyzeChecked()}
       ]
     });
 

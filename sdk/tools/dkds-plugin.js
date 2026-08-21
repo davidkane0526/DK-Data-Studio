@@ -52,7 +52,13 @@ function validate(folder){
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
   const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
-  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.12 development contract`);
+  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.14 development contract`);
+  if(m.pluginType==='workbench'){
+    const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
+    if(!accepts.length)errors.push('Plugin API 1.14 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workbench import UI is Core-owned in Plugin API 1.14; do not invoke ctx.data.importWorkbench from workbench UI.');
+    if(/<input[^>]+type=[\"']?file/i.test(source))errors.push('Workbench plugins must not create file inputs; use the Core-owned workbench import action.');
+  }
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){
     try{

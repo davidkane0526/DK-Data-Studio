@@ -1,3 +1,13 @@
+# v3.61.7 — Core-owned Workbench Import Action / SDK 1.14
+
+- Core now supplies the standard `导入数据` action for every analysis workbench. New workbenches declare `manifest.data.accepts`; plugins no longer own duplicate import buttons or file pickers.
+- Workbench-local import opens the shared Import Workbench in scoped mode: assignment is locked to the current plugin, the global target chooser is hidden, and Importer Providers are filtered by compatible `outputTypes`.
+- Plugins may place an empty `data-dkds-slot="workbench-import"` marker to choose the standard action position. If no standard page header exists, Core projects the same action into the host contextual toolbar. Embedded SUPER workbenches use the contextual toolbar as well.
+- The global shell Import action remains the full multi-target routing entry, so one source can still be assigned to multiple workbenches without duplication. Scoped and global entry points share the same importer/artifact/assignment pipeline.
+- Pulse Analysis removes its plugin-owned “添加文件” action and consumes the Core-owned workbench import action.
+- SDK validator now requires `data.accepts` for new Plugin API 1.14 workbenches and rejects workbench-owned visible Import Workbench invocation or raw `type=file` inputs. Legacy API 1.10–1.13 workbenches remain load-compatible.
+- Plugin API / standalone SDK moves to `1.14.0`; application version moves to `3.61.7`.
+
 # v3.61.6 — Scoped Workbench Data / SDK 1.13
 
 - Standalone `pluginType: workbench` pages now become primary activities by default. External workbenches no longer fall into another plugin's contextual toolbar unless they explicitly request `presentation: toolbar`.

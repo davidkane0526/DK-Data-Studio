@@ -1,30 +1,24 @@
-# Next Session Handoff — v3.61.6
+# Next Session Handoff — v3.61.7
 
 ## Baseline
 
-- Application: `3.61.6`
-- Branch: `refactor/v3.61.6-data-routing-sdk`
-- Public Plugin API / standalone SDK: `1.13.0`
-- Plugin API 1.10 / 1.11 / 1.12 packages remain compatibility-loadable when their declared requirements are available.
+- Application: `3.61.7`
+- Branch: `refactor/v3.61.7-host-import-action`
+- Public Plugin API / standalone SDK: `1.14.0`
+- Plugin API 1.10 / 1.11 / 1.12 / 1.13 packages remain compatibility-loadable when their declared requirements are available.
 
-## Core interaction baseline
+## Workbench import contract
 
-The interaction stack remains orthogonal:
+Workbench import UI is Core-owned.
 
-1. Surface renders content.
-2. Manipulator declares editable `point / axis / range` geometry.
-3. Interaction Behavior maps normalized input to intents/Commands, including DOM-delegated context behavior.
-4. Selection owns selected entities/ranges/focus.
-5. Command Registry owns semantic state changes.
-
-Do not add plugin-local mouse/keyboard/context-menu/box-selection infrastructure when a generic Core primitive can express the behavior.
-
-## Workbench/navigation baseline
-
-- `pluginType: workbench` + a page + no explicit TOP/SUPPORT role => standalone primary Activity.
-- `presentation: toolbar` is required to intentionally add a contextual toolbar page.
-- Plugin icon is optional; Core supplies a category default.
-- `ctx.ui.scientificPlot.create()` accepts a normal DIV/container and Core owns its internal SVG/lifecycle.
+1. New workbenches declare semantic inputs in `manifest.data.accepts`.
+2. Core automatically supplies `导入数据`.
+3. A plugin may place only an empty `<div data-dkds-slot="workbench-import"></div>` marker to choose the action position.
+4. If the marker/header is absent, Core falls back to the host contextual action. Embedded SUPER uses that host action directly.
+5. Workbench-local import is scoped: assignment is locked to the current plugin, the global target chooser is hidden, and importer providers are filtered by compatible output types.
+6. The shell-level global Import action remains the multi-target routing entry.
+7. New workbench plugins must not create file inputs, duplicate import buttons, or private file-picker/import pipelines.
+8. API 1.10–1.13 workbenches without `data.accepts` receive the Core action in compatibility mode; assignment is still scoped, while importer filtering is intentionally permissive.
 
 ## Data baseline
 
@@ -33,20 +27,21 @@ Canonical model:
 `Importer Provider -> typed Data Artifact -> assignment -> scoped workbench view`
 
 - One physical source can be assigned to multiple workbenches without duplication.
-- Workbenches read `ctx.data.sources` and `ctx.data.artifacts` through assignment scope.
-- Workbenches open `ctx.data.importWorkbench`; they do not implement file pickers.
+- Workbenches read `ctx.data.sources` / `ctx.data.artifacts` through assignment scope.
 - Data Center owns the global source catalog and assignment/delete operations.
 - `builtin.flexible-import` provides `science.transport.iv`.
 - `builtin.pulse-import` provides `science.pulse.trace`; Pulse Analysis only consumes it.
 - Old project datasets without assignments are wildcard-visible (`*`) for compatibility.
 
+## Interaction baseline
+
+Surface, Manipulator, Interaction Behavior, Selection and Command remain orthogonal. Do not add plugin-local pointer/keyboard/context-menu/box-selection infrastructure when Core primitives can express the behavior.
+
 ## External Vth compatibility
 
-The user-provided `com.dkds.transfer-vth-lab` Plugin API 1.10 package is an important compatibility case. It must remain a standalone primary Activity, receive the default workbench icon when none is supplied, render its normal DIV plot through Core ScientificPlot, and see only sources/artifacts assigned to it. Do not add a Vth-specific Core branch.
+The user-provided `com.dkds.transfer-vth-lab` API 1.10 package remains an important compatibility case. It has no `data.accepts`, so Core must still provide its standard scoped import action without adding a Vth-specific branch. Its normal DIV plot continues through Core ScientificPlot and its legacy data-source proxy remains assignment-scoped.
 
 ## Required gates
-
-Before the next delivery run:
 
 - `npm run check`
 - `npm test`

@@ -29,7 +29,7 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.13.0",
+    "apiVersion": "1.14.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
@@ -53,7 +53,7 @@ Limits are enforced before installation:
 - only text files are accepted;
 - file count and total package size are bounded;
 - the declared Plugin API must be compatible with the v1 API family.
-- new SDK packages target `1.13.0`; existing `1.10.0`, `1.11.0`, and `1.12.0` packages remain accepted for compatibility.
+- new SDK packages target `1.14.0`; existing `1.10.0`, `1.11.0`, `1.12.0`, and `1.13.0` packages remain accepted for compatibility.
 
 ## Build a package
 
@@ -229,8 +229,8 @@ Algorithm Provider packages should declare the exact algorithms that the package
     {"category":"ter-analysis","id":"ter.high-low-ratio","version":"1.0.0"}
   ],
   "compatibility": {
-    "app": ">=3.61.6 <4.0.0",
-    "pluginApi": "^1.13.0"
+    "app": ">=3.61.7 <4.0.0",
+    "pluginApi": "^1.14.0"
   }
 }
 ```

@@ -7,7 +7,7 @@ export interface DKDSDataSourceTarget { id:string; label:string; icon:string; or
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):Promise<DKDSDataSourceDescriptor[]>|DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
@@ -110,11 +110,11 @@ export interface DKDSDataImporterSpec {
   score?:(file:any,context?:DKDSDataImporterContext)=>number; estimateArtifacts?:(file:any,options?:any,inspection?:any)=>number;
   parse?:(file:any,options?:any)=>any; parseArtifacts?:(file:any,options?:any)=>DKDSDataImporterResult;
 }
-export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];importerId?:string}):any }
+export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];importerId?:string;mode?:'scoped'|'global';consumerId?:string;consumerLabel?:string;consumerIcon?:string;accepts?:string[]}):any }
 export interface DKDSDataImportersCapability { register(id:string,spec:DKDSDataImporterSpec):any; list():any[] }
 
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.13.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.14.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
