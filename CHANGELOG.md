@@ -1,3 +1,11 @@
+# v3.58.1 — Import Workbench Regression Fix
+
+- Fixed a v3.58.0 regression where the import preview still referenced the removed Gate-analysis formatter, aborting workbench rendering before the selected-file summary refreshed.
+- The import preview now uses a host-neutral numeric formatter.
+- Selected/total file count is rendered immediately after files are chosen and before sequential parsing begins.
+- Global import selection summary now renders before the editor/preview so its state is independent of preview rendering.
+- Added a dedicated import-workbench regression test to the normal `npm test` and `npm run check` gates.
+
 # v3.58.0 — Host Neutralization & Canonical Plugin-Owned Project State
 
 - Removed the historical Resonance/Peak/FWHM/TER/Gate/Pulse/Sweep implementation and domain state from `src/app.js`; the main host now owns only generic project, Artifact, plugin lifecycle, UI, I/O and platform responsibilities.

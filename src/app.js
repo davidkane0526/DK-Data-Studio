@@ -517,6 +517,13 @@
     return `${(n/1024/1024).toFixed(1)} MB`;
   }
 
+  function formatImportNumber(value,digits=6){
+    const n=Number(value);
+    if(!Number.isFinite(n))return '—';
+    if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);
+    return n.toFixed(digits);
+  }
+
   function importResolvedLayout(item){
     const layout=item?.settings?.layout||'auto';
     if(layout!=='auto')return layout;
@@ -620,6 +627,7 @@
       }
     }
     if(!importDraft.activePath)importDraft.activePath=metas[0].path;
+    renderImportWorkbench();
 
     // Read sequentially to keep the UI responsive for many small instrument files.
     for(const meta of metas){
@@ -814,7 +822,7 @@
     $('#importPreviewTable').innerHTML=`
       <thead><tr><th>源行</th>${headers.map((h,i)=>`<th>${i+1}: ${escapeHtml(h)}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(r=>`<tr><td>${r.sourceLine}</td>${r.values.map(v=>
-        Number.isFinite(v)?`<td>${gateFmt(v,6)}</td>`:'<td class="import-nan">—</td>'
+        Number.isFinite(v)?`<td>${formatImportNumber(v,6)}</td>`:'<td class="import-nan">—</td>'
       ).join('')}</tr>`).join('')}</tbody>`;
 
     $('#importAutoDiagnosis').textContent=
@@ -874,9 +882,56 @@
 
   function renderImportWorkbench(){
     renderImportFileList();
-    renderImportEditor();
     renderImportGlobalSummary();
+    renderImportEditor();
   }
+
+  async function runImportWorkbenchAutomationSmoke(){
+    const savedDraft=importDraft;
+    const panel=$('#importPanel');
+    const panelWasHidden=panel?.classList.contains('hidden')!==false;
+    try{
+      const text='vd(V),id(A)\n-1,-1e-9\n0,0\n1,1e-9\n';
+      const item={
+        name:'automation-import.csv',path:'automation://import-workbench.csv',size:text.length,checked:true,
+        text,detectedEncoding:'utf-8',loadedEncodingRequest:'auto',
+        settings:flexibleImportProvider().defaultOptions(),inspection:null,mappingTouched:false,loading:false,error:''
+      };
+      recomputeImportItem(item,true);
+      if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
+      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false};
+      renderImportWorkbench();
+
+      const checkbox=$('#importFileList input[type="checkbox"]');
+      const checkedSummary=$('#importGlobalSummary')?.textContent||'';
+      const previewRows=$('#importPreviewTable')?.querySelectorAll('tbody tr')?.length||0;
+      const commitEnabled=!$('#importCommitBtn')?.disabled;
+      if(!checkbox?.checked)throw new Error('Synthetic import file is not checked.');
+      if(!checkedSummary.includes('1/1 个文件已勾选'))throw new Error(`Unexpected selected-file summary: ${checkedSummary}`);
+      if(!previewRows)throw new Error('Import preview table did not render any rows.');
+      if(!commitEnabled)throw new Error('Import commit button stayed disabled for a valid selected file.');
+
+      checkbox.click();
+      const uncheckedSummary=$('#importGlobalSummary')?.textContent||'';
+      const disabledAfterUncheck=$('#importCommitBtn')?.disabled===true;
+      if(!uncheckedSummary.includes('0/1 个文件已勾选'))throw new Error(`Checkbox did not update summary: ${uncheckedSummary}`);
+      if(!disabledAfterUncheck)throw new Error('Import commit button did not disable after unchecking the only file.');
+
+      checkbox.click();
+      const restoredSummary=$('#importGlobalSummary')?.textContent||'';
+      if(!restoredSummary.includes('1/1 个文件已勾选'))throw new Error(`Checkbox did not restore selected summary: ${restoredSummary}`);
+      return {selectedSummary:checkedSummary,uncheckedSummary,restoredSummary,previewRows,commitEnabled};
+    }finally{
+      importDraft=savedDraft;
+      renderImportWorkbench();
+      if(panel)panel.classList.toggle('hidden',panelWasHidden);
+    }
+  }
+
+  window.DKDSAutomationHost={
+    ...(window.DKDSAutomationHost||{}),
+    runImportWorkbenchSmoke:runImportWorkbenchAutomationSmoke
+  };
 
   async function updateImportSetting(key,value,{reload=false,mapping=false}={}){
     const item=importActiveItem();
@@ -1781,7 +1836,7 @@
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.58.0',
+      version:'3.58.1',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2574,7 +2629,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.58.0',
+      appVersion:'3.58.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

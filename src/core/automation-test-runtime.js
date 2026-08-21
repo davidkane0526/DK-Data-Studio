@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.12.0';
+  const VERSION='1.13.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -347,6 +347,11 @@
     });
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
       for(const id of ['app','activityBar','mainWorkspace','statusBar','manageMenu','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
+    });
+    await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{
+      const smoke=window.DKDSAutomationHost?.runImportWorkbenchSmoke;
+      assert(typeof smoke==='function','Host import-workbench automation smoke is unavailable.');
+      return await smoke();
     });
     await runCase('plugins.activation','Plugin activation & registry','Plugins',pluginSmoke);
     await runCase('types.contract','Scientific Data Type Registry','Data Contract',dataTypeSmoke);
