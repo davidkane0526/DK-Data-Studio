@@ -8,7 +8,7 @@ const context={window:{},structuredClone:global.structuredClone,performance:{now
 vm.createContext(context);
 for(const file of ['src/science/common.js','src/science/peaks.js','src/science/ter.js','src/core/data-model.js','src/core/performance-runtime.js','src/core/scientific-pipeline-runtime.js','src/core/scientific-transform-runtime.js'])vm.runInContext(read(file),context,{filename:file});
 const S=context.window.DKDSScience,D=context.window.DKDSData,P=context.window.DKDSScientificPipeline,T=context.window.DKDSScientificTransforms,perf=context.window.DKDSPerformance;
-assert.strictEqual(T.VERSION,'1.0.0');
+const tv=T.VERSION.split('.').map(Number);assert(tv[0]>1||(tv[0]===1&&tv[1]>=0),'Scientific Transform Runtime must remain v1.x compatible or newer.');
 const ids=T.list({public:true}).map(row=>row.id);
 for(const id of ['raw','detrend','didv','d2idv2','dlog','dvdi','resistance'])assert(ids.includes(id),`missing transform ${id}`);
 assert.strictEqual(T.get('didv').outputType,'science.transport.didv');

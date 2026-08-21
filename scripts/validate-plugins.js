@@ -55,6 +55,13 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   if (String(m.apiVersion||'') !== '1.8.0') fail(`${name}: built-in plugins must target apiVersion 1.8.0`);
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);
   else for(const requirement of m.requiresCore)if(!coreRequirements.has(String(requirement)))fail(`${name}: unknown Core requirement ${requirement}`);
+  const algorithmCategories=Array.isArray(m.algorithmCategories)?m.algorithmCategories.map(value=>String(value||'').trim()).filter(Boolean):[];
+  if(m.algorithmCategories!==undefined&&!Array.isArray(m.algorithmCategories))fail(`${name}: algorithmCategories must be an array when declared`);
+  if(new Set(algorithmCategories).size!==algorithmCategories.length)fail(`${name}: algorithmCategories must contain unique values`);
+  for(const category of algorithmCategories)if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category))fail(`${name}: invalid algorithm category ${category}`);
+  if(m.algorithmProvider!==undefined&&typeof m.algorithmProvider!=='boolean')fail(`${name}: algorithmProvider must be boolean`);
+  if(m.algorithmProvider===true&&!algorithmCategories.length)fail(`${name}: algorithmProvider requires at least one algorithmCategories entry`);
+  if(algorithmCategories.length&&!(m.requiresCore||[]).includes('analysis.algorithms'))fail(`${name}: algorithmCategories requires analysis.algorithms in requiresCore`);
   if(m.scripts!==undefined){
     if(!Array.isArray(m.scripts)||!m.scripts.length)fail(`${name}: scripts must be a non-empty array when declared`);
     else for(const raw of m.scripts){
@@ -77,7 +84,11 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
     vm.createContext(sandbox);
     vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:`${name}/${m.entry||'plugin.js'}`,timeout:500});
     if(!runtimeManifest)fail(`${name}: entry did not register a runtime manifest`);
-    else if(JSON.stringify(runtimeManifest.requiresCore||[])!==JSON.stringify(m.requiresCore||[]))fail(`${name}: runtime requiresCore must exactly match plugin.json`);
+    else {
+      if(JSON.stringify(runtimeManifest.requiresCore||[])!==JSON.stringify(m.requiresCore||[]))fail(`${name}: runtime requiresCore must exactly match plugin.json`);
+      if(Boolean(runtimeManifest.algorithmProvider) !== Boolean(m.algorithmProvider))fail(`${name}: runtime algorithmProvider must exactly match plugin.json`);
+      if(JSON.stringify(runtimeManifest.algorithmCategories||[])!==JSON.stringify(m.algorithmCategories||[]))fail(`${name}: runtime algorithmCategories must exactly match plugin.json`);
+    }
   } catch(err){ fail(`${name}: cannot evaluate runtime manifest: ${err.message}`); }
 
   const ownedFiles=new Set(Array.isArray(m.scripts)?m.scripts:[m.entry||'plugin.js']);

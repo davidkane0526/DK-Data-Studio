@@ -111,6 +111,59 @@ function normalizeDependencies(value, requiresCore=[]) {
   return Object.freeze(out);
 }
 
+function normalizeAlgorithmCategories(value) {
+  return Object.freeze([...new Set((Array.isArray(value)?value:[]).map(raw=>String(raw||'').trim()).filter(Boolean))]);
+}
+
+function normalizeBuiltinAlgorithmProvider(appPath, pluginFolder, manifest) {
+  if(manifest?.algorithmProvider!==true)return null;
+  const categories=normalizeAlgorithmCategories(manifest.algorithmCategories);
+  if(!categories.length)return null;
+  const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
+  const entry=safeRelativeFile(pluginDir,manifest.entry||'plugin.js','algorithm provider entry');
+  const scripts=[];
+  for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
+    const file=safeRelativeFile(pluginDir,raw,'algorithm provider script');
+    if(!scripts.includes(file))scripts.push(file);
+  }
+  if(!scripts.includes(entry))scripts.push(entry);
+  return Object.freeze({source:'builtin',pluginId:String(manifest.id||''),version:String(manifest.version||''),pluginFolder,entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories});
+}
+
+function readBuiltinAlgorithmProviders(appPath) {
+  const out=[];const pluginsDir=path.join(appPath,'src','plugins');
+  try{
+    for(const pluginFolder of fs.readdirSync(pluginsDir).sort()){
+      if(pluginFolder.startsWith('_')||!/^[A-Za-z0-9._-]+$/.test(pluginFolder))continue;
+      const manifestPath=path.join(pluginsDir,pluginFolder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
+      try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));const row=normalizeBuiltinAlgorithmProvider(appPath,pluginFolder,manifest);if(row)out.push(row);}catch(err){console.warn(`[DKDS algorithm provider] ${pluginFolder}: ${err.message}`);}
+    }
+  }catch(err){console.warn('[DKDS algorithm provider] manifest scan failed:',err.message);}
+  return out;
+}
+
+function normalizePackagedAlgorithmProvider(pkg,source='external') {
+  const manifest=pkg?.manifest||{};if(manifest.algorithmProvider!==true)return null;
+  const categories=normalizeAlgorithmCategories(manifest.algorithmCategories);if(!categories.length)return null;
+  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged algorithm provider entry'),scripts=[];
+  for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){const file=packageFile(pkg,raw,'packaged algorithm provider script');if(!scripts.includes(file))scripts.push(file);}if(!scripts.includes(entry))scripts.push(entry);
+  return Object.freeze({source,pluginId:String(manifest.id||''),version:String(manifest.version||''),entry,scripts:Object.freeze(scripts),dependencies:normalizeDependencies([],manifest.requiresCore),algorithmCategories:categories,packageFiles:Object.freeze({...pkg.files})});
+}
+
+function resolveAlgorithmProviders(appPath,externalPackages=[],overridePackages=[]) {
+  const byId=new Map(readBuiltinAlgorithmProviders(appPath).map(row=>[row.pluginId,row]));
+  for(const pkg of (Array.isArray(overridePackages)?overridePackages:[])){const id=String(pkg?.manifest?.id||'');if(!id)continue;byId.delete(id);try{const row=normalizePackagedAlgorithmProvider(pkg,'override');if(row)byId.set(id,row);}catch(err){console.warn(`[DKDS algorithm provider override] ${id}: ${err.message}`);}}
+  for(const pkg of (Array.isArray(externalPackages)?externalPackages:[])){try{const row=normalizePackagedAlgorithmProvider(pkg,'external');if(row&&!byId.has(row.pluginId))byId.set(row.pluginId,row);}catch(err){console.warn(`[DKDS external algorithm provider] ${pkg?.manifest?.id||'unknown'}: ${err.message}`);}}
+  return [...byId.values()];
+}
+
+function attachAlgorithmProviders(spec,providers=[]) {
+  const categories=normalizeAlgorithmCategories(spec?.algorithmCategories);if(!categories.length)return Object.freeze({...spec,algorithmCategories:categories,algorithmProviders:Object.freeze([])});
+  const wanted=new Set(categories),matched=(providers||[]).filter(row=>row.pluginId!==spec.pluginId&&row.algorithmCategories.some(category=>wanted.has(category)));
+  const dependencies=[...(spec.dependencies||[])];for(const provider of matched)for(const dependency of (provider.dependencies||[]))if(!dependencies.includes(dependency))dependencies.push(dependency);
+  return Object.freeze({...spec,algorithmCategories:categories,algorithmProviders:Object.freeze(matched),dependencies:Object.freeze(dependencies)});
+}
+
 function readBuiltinPluginWindows(appPath) {
   const pluginsDir = path.join(appPath, 'src', 'plugins');
   // The manifest tree is intentionally rescanned. Directory mtime alone does
@@ -150,6 +203,7 @@ function readBuiltinPluginWindows(appPath) {
           activity,
           dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
           scripts:normalizePluginScripts(pluginDir, windowSpec.scripts),
+          algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
           title:String(windowSpec.title || manifest.name || activity),
           prewarm:windowSpec.prewarm !== false,
           reuse:windowSpec.reuse !== false,
@@ -212,6 +266,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     activity,
     dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
     scripts:Object.freeze(scripts),
+    algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
     packageScripts:Object.freeze(packageScripts),
     styles:Object.freeze(styles),
     packageFiles:Object.freeze({...pkg.files}),
@@ -274,11 +329,14 @@ function readPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
     }
     combined.set(activity,spec);
   }
+  const providers=resolveAlgorithmProviders(appPath,externalPackages,overridePackages);
+  for(const [activity,spec] of [...combined])combined.set(activity,attachAlgorithmProviders(spec,providers));
   return combined;
 }
 
 function listBuiltinPluginWindows(appPath) {
-  return [...readBuiltinPluginWindows(appPath).values()];
+  const providers=resolveAlgorithmProviders(appPath,[],[]);
+  return [...readBuiltinPluginWindows(appPath).values()].map(spec=>attachAlgorithmProviders(spec,providers));
 }
 
 function listPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
@@ -286,7 +344,8 @@ function listPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
 }
 
 function resolveBuiltinPluginWindow(appPath, activityId) {
-  return readBuiltinPluginWindows(appPath).get(String(activityId || '').trim()) || null;
+  const spec=readBuiltinPluginWindows(appPath).get(String(activityId || '').trim()) || null;
+  return spec?attachAlgorithmProviders(spec,resolveAlgorithmProviders(appPath,[],[])):null;
 }
 
 function resolvePluginWindow(appPath, activityId, externalPackages=[], overridePackages=[]) {
@@ -298,6 +357,9 @@ module.exports = {
   WINDOW_PERSISTENCE_MODES,
   WINDOW_MODES,
   normalizeWindowMode,
+  normalizeAlgorithmCategories,
+  resolveAlgorithmProviders,
+  attachAlgorithmProviders,
   normalizeDependencies,
   normalizePersistence,
   normalizePackagedPluginWindow,

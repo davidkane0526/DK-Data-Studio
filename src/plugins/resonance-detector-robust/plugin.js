@@ -2,15 +2,16 @@
   DKDSPlugins.define({
     id:'builtin.resonance-detector-robust',
     name:'Standard Resonance Algorithms',
-    version:'2.0.0',
-    apiVersion:'1.8.0',requiresCore:["science","analysis.algorithms"],
+    version:'2.1.0',
+    apiVersion:'1.8.0',requiresCore:["science","analysis.algorithms","modules"],
     description:'Versioned resonance peak detection and baseline-aware peak metrics algorithms.',
     source:'builtin',
     order:80,
+    algorithmProvider:true,algorithmCategories:['peak-detector','peak-metrics'],
     capabilities:['analysis.algorithm','analysis.peak-detector','analysis.peak-metrics']
   }, async ctx => {
     const S=ctx.science;
-    const A=window.DKDSResonanceStandardAlgorithms;
+    const A=ctx.modules.require('algorithm');
     if(!A?.detectPeaks||!A?.peakMetrics)throw new Error('Standard resonance algorithm implementation is unavailable.');
     const channels=[
       {key:'raw',label:'原始 I–V 峰',glyph:'●',symbol:'circle'},

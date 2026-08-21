@@ -189,6 +189,24 @@ high-SNR detector
 
 工作台不再为某个具体寻峰算法硬编码设置面板。
 
+### Transport / TER 数值算法同样插件化（v3.53+）
+
+Core 继续拥有 Transform Registry、Scientific Pipeline、数据类型和 provenance，但不再把可升级的数值实现视为 Core 的最终权威。内置 `builtin.standard-transport-algorithms` 以精确版本提供：
+
+```text
+transport.raw@1.0.0
+transport.detrend@1.0.0
+transport.didv@1.0.0
+transport.d2idv2@1.0.0
+transport.dlog@1.0.0
+transport.dvdi@1.0.0
+transport.resistance@1.0.0
+transport.scalar-field@1.0.0
+ter.high-low-ratio@1.0.0
+```
+
+Workbench 只声明需要的算法类别，Dedicated TOP 由宿主按类别自动装载本地 Provider。工程结果锁定 `pluginId + algorithmId + algorithmVersion + parameters`；未来 2.0 算法可以与 1.0 并存，不会静默改变旧结果。`src/science/*` 中对应入口只保留兼容/参考职责。
+
 ### 主图 / 检查器 / 组图均成为 provider
 
 新的 Workspace API v1.2 包含：

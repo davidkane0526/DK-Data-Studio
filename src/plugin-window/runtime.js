@@ -182,8 +182,8 @@
     return s;
   }
 
-  function pluginUrl(fileName) {
-    const folder = safeSegment(bootstrap?.pluginWindow?.pluginFolder);
+  function pluginUrl(fileName, pluginFolder=null) {
+    const folder = safeSegment(pluginFolder||bootstrap?.pluginWindow?.pluginFolder);
     const file = String(fileName || '').trim();
     if (!file || file.includes('/') || file.includes('\\') || file === '.' || file === '..') {
       throw new Error(`非法插件入口：${file || '(empty)'}`);
@@ -398,7 +398,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.52.2',
+      appVersion:'3.53.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -443,6 +443,13 @@
         loadedExternalScripts.add(file);
       }else await loadScript(pluginUrl(file));
     },startupProfile.scripts,{kind});
+    const loadedProviderScripts=new Set();
+    const loadProviderScript=async(provider,file)=>measure(`${provider.pluginId}:${file}`,async()=>{
+      const token=`${provider.pluginId}::${file}`;if(loadedProviderScripts.has(token))return;
+      if(provider.source==='external'||provider.source==='override')await loadInlineScript(externalPackageFile(provider,file),`${provider.pluginId}/${file}`);
+      else await loadScript(pluginUrl(file,provider.pluginFolder));
+      loadedProviderScripts.add(token);
+    },startupProfile.scripts,{kind:'algorithm-provider',providerId:provider.pluginId});
     for(const file of (spec.scripts||[]))await loadTargetScript(file,'support');
 
     if (spec.runtime) await loadTargetScript(spec.runtime,'window-runtime');
@@ -465,6 +472,9 @@
     }
 
     window.DKDSPlugins.configure(host);
+    for(const provider of (spec.algorithmProviders||[])){
+      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
+    }
     if(packagedSource){
       for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
@@ -473,6 +483,10 @@
     }
 
     await measure('plugins-activate',()=>window.DKDSPlugins.activateAll());
+    for(const provider of (spec.algorithmProviders||[])){
+      const state=window.DKDSPlugins?.manager?.get?.(String(provider.pluginId||''))||null;
+      if(!state?.active){const error=String(state?.error||'').trim();throw new Error(error?`算法 Provider 激活失败：${provider.pluginId} · ${error}`:`算法 Provider 激活失败：${provider.pluginId}`);}
+    }
     const targetPluginState=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||null;
     if(targetPluginState && !targetPluginState.active){
       const activationError=String(targetPluginState.error||'').trim();
@@ -503,6 +517,7 @@
     startupProfile.activityId=String(bootstrap.activityId||'');
     startupProfile.dependencyCount=startupProfile.dependencies.length;
     startupProfile.scriptCount=startupProfile.scripts.length;
+    startupProfile.algorithmProviders=(spec.algorithmProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.algorithmCategories||[])],source:provider.source}));
     startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     window.electronAPI?.markActivityWindowReady?.({startupProfile});
   }

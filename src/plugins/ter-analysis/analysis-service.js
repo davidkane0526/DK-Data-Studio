@@ -12,12 +12,20 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,getVisibility,artifacts,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
       let display={};
       let transform={type:'didv',direction:1};
+      const DEFAULT_TER_ALGORITHM=Object.freeze({category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'});
+      let terAlgorithmRef={...DEFAULT_TER_ALGORITHM};
+      const normalizeAlgorithmRef=value=>{if(!value)return {...DEFAULT_TER_ALGORITHM};if(typeof value==='string'){const text=String(value||''),at=text.lastIndexOf('@');return {category:'ter-analysis',id:at>0?text.slice(0,at):text,version:at>0?text.slice(at+1):''};}return {category:String(value.category||'ter-analysis'),id:String(value.id||value.algorithmId||DEFAULT_TER_ALGORITHM.id),version:String(value.version||value.algorithmVersion||'')};};
+      const algorithmApi=()=>algorithms||window.DKDSScientificAlgorithms||null;
+      const listTerAlgorithms=()=>{const api=algorithmApi();return api?.list?.({category:'ter-analysis'})||[];};
+      const resolveTerAlgorithm=(ref=terAlgorithmRef)=>{const api=algorithmApi();return api?.resolve?.(ref,{category:'ter-analysis'})||listTerAlgorithms()[0]||null;};
+      const algorithmProvenance=row=>row?{pluginId:row.owner,algorithmId:row.id,algorithmVersion:row.version,category:row.category,title:row.title}:null;
+      function runTerAlgorithm(source,algorithmRef,algorithmSettings){const api=algorithmApi(),row=resolveTerAlgorithm(algorithmRef);if(row&&api?.run){const value=api.run({id:row.id,version:row.version,category:'ter-analysis'},source,{category:'ter-analysis',parameters:{settings:{...algorithmSettings}}});if(value&&typeof value.then==='function')throw new Error(`TER 算法必须是本地同步 Provider：${row.id}@${row.version}`);return {...value,algorithm:algorithmProvenance(row)};}const value=A.computeTerMatrix(source,algorithmSettings);return {...value,algorithm:null};}
       const fallbackTransformIds=new Set(['raw','detrend','didv','d2idv2','dlog','dvdi','resistance']);
       function normalizeTransformType(value){const id=String(value||'didv');const row=transforms?.resolve?.(id)||transforms?.get?.(id);return row?.supportsScalarField!==false&&row?.id?row.id:(fallbackTransformIds.has(id)?id:'didv');}
       function transformDefinition(value=transform.type){return transforms?.resolve?.(value)||transforms?.get?.(value)||null;}
@@ -38,6 +46,7 @@
           ...(project.terHeatmapDisplay||{})
         };
         transform={type:'didv',direction:1,...(project.terTransformSettings||{})};
+        terAlgorithmRef=normalizeAlgorithmRef(project.terAlgorithmRef||project.terMaxSettings?.algorithmRef||DEFAULT_TER_ALGORITHM);
         transform.type=normalizeTransformType(transform.type);
         transform.direction=Number(transform.direction)<0?-1:1;
         result=project.terMaxResult?cloneSerializable(project.terMaxResult):null;
@@ -134,11 +143,19 @@
         const el=$('#'+id);if(!el)return;
         el.value=value===null||value===undefined||!Number.isFinite(Number(value))?'':String(value);
       }
+      function syncTerAlgorithmControl(){
+        const select=$('#terAlgorithmSelect');if(!select)return;
+        const rows=listTerAlgorithms(),resolved=resolveTerAlgorithm(terAlgorithmRef);
+        select.innerHTML=rows.map(row=>`<option value="${String(row.id)}@${String(row.version)}">${String(row.title||row.id)} · ${String(row.id)}@${String(row.version)}</option>`).join('');
+        if(resolved){terAlgorithmRef={category:'ter-analysis',id:resolved.id,version:resolved.version};select.value=`${resolved.id}@${resolved.version}`;}
+        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;matrixViewModel=null;invalidateComputeCaches();render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
+      }
       function syncInputs(){
         setInput('terVmin',settings.vmin);setInput('terVmax',settings.vmax);
         setInput('terVstep',settings.vstep);setInput('terTolerance',settings.tolerance);
         if($('#terCurrentFloor'))$('#terCurrentFloor').value=String(settings.currentFloor??1e-15);
         if($('#terOnlyFullyVisible'))$('#terOnlyFullyVisible').checked=!!settings.onlyFullyVisible;
+        syncTerAlgorithmControl();
       }
       function readInputs(){
         const read=(id,current)=>{const el=$('#'+id);return el?numOrNull(el.value):current;};
@@ -188,9 +205,9 @@
         readInputs();invalidateComputeCaches({inputs:false});
         try{
           if(pipeline?.runSync){
-            const executed=pipeline.runSync('ter-matrix',sourceArtifacts(),{parameters:{settings:{...settings}},publish:true,revision:inputCacheKey()});
+            const executed=pipeline.runSync('ter-matrix',sourceArtifacts(),{parameters:{settings:{...settings},algorithmRef:{...terAlgorithmRef}},publish:true,revision:`${inputCacheKey()}|ter:${terAlgorithmRef.id}@${terAlgorithmRef.version}`});
             result=executed?.value||null;matrixViewModel=executed?.viewModel||null;
-          }else result=A.computeTerMatrix(datasets(),settings);
+          }else result=runTerAlgorithm(datasets(),terAlgorithmRef,settings);
           if(!result)throw new Error('TER pipeline did not return a result.');
           settings={...settings,
             vmin:result.used.vmin,vmax:result.used.vmax,vstep:result.used.vstep,
@@ -230,7 +247,8 @@
         if($('#terSummary'))$('#terSummary').innerHTML=[
           `Vg 数：${r.vgs.length}`,`Vds 点：${r.targets.length}`,`缺失 TER：${r.missing}`,
           `Vds：${r.used.vmin} ~ ${r.used.vmax} V`,`step=${r.used.vstep} V`,
-          `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`
+          `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`,
+          `算法：${r.algorithm?.algorithmId||terAlgorithmRef.id}@${r.algorithm?.algorithmVersion||terAlgorithmRef.version}`
         ].map(t=>`<span class="ter-summary-chip">${t}</span>`).join('');
 
         // Analysis is intentionally headless-safe: chart availability must not
@@ -324,8 +342,9 @@
           run:(input,{parameters})=>{
             const canonical=D?.legacyDatasetsFromArtifacts?.(Array.isArray(input)?input:[])||[];
             const source=canonical.length?canonical:datasets();
-            const computed=A.computeTerMatrix(source,parameters?.settings||settings);
-            const matrix=D.createMatrix({id:'ter.matrix:main',name:'TER(Vd,Vg)',x:computed.targets,y:computed.vgs,z:computed.matrix,xName:'Vd',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',parameters:{...(computed.used||{})}});
+            const algorithmRef=normalizeAlgorithmRef(parameters?.algorithmRef||terAlgorithmRef);
+            const computed=runTerAlgorithm(source,algorithmRef,parameters?.settings||settings);
+            const matrix=D.createMatrix({id:'ter.matrix:main',name:'TER(Vd,Vg)',x:computed.targets,y:computed.vgs,z:computed.matrix,xName:'Vd',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',parameters:{...(computed.used||{}),algorithmRef},metadata:{algorithm:computed.algorithm||null}});
             return {artifacts:[matrix],value:computed};
           },
           selection:({artifacts,value})=>artifacts[0]?[{type:'ter.matrix-result',id:artifacts[0].id,ref:{artifactId:artifacts[0].id},value:{id:artifacts[0].id,rows:value?.vgs?.length||0,cols:value?.targets?.length||0}}]:[],
@@ -335,12 +354,13 @@
       }
 
       const service={
-        serialize:()=>({schema:2,settings:cloneSerializable(settings),display:cloneSerializable(display),transform:cloneSerializable(transform),result:result?cloneSerializable(result):null}),
+        serialize:()=>({schema:3,settings:cloneSerializable(settings),display:cloneSerializable(display),transform:cloneSerializable(transform),algorithmRef:cloneSerializable(terAlgorithmRef),result:result?cloneSerializable(result):null}),
         restore(data,{legacyProject}={}){
           const legacy=legacyProject&&typeof legacyProject==='object'?{
             settings:legacyProject.terMaxSettings,
             display:legacyProject.terHeatmapDisplay,
             transform:legacyProject.terTransformSettings,
+            algorithmRef:legacyProject.terAlgorithmRef||legacyProject.terMaxSettings?.algorithmRef,
             result:legacyProject.terMaxResult
           }:null;
           const source=data&&typeof data==='object'?data:legacy;
@@ -348,6 +368,7 @@
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(source.settings||{})};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null,...(source.display||{})};
           transform={type:'didv',direction:1,...(source.transform||{})};
+          terAlgorithmRef=normalizeAlgorithmRef(source.algorithmRef||DEFAULT_TER_ALGORITHM);
           transform.type=normalizeTransformType(transform.type);
           transform.direction=Number(transform.direction)<0?-1:1;
           result=source.result?cloneSerializable(source.result):null;invalidateComputeCaches();
@@ -357,11 +378,12 @@
           settings={vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false};
           display={colorscale:'Viridis',zmin:null,zmax:null,colorDtick:null,xDtick:null,yDtick:null};
           transform={type:'didv',direction:1};
+          terAlgorithmRef={...DEFAULT_TER_ALGORITHM};
           result=null;invalidateComputeCaches();
           if($('#terSummary'))render();
           scheduleSnapshot();
         },
-        render,getState:()=>({settings,display,transform,result}),autoParameters,calculate,
+        render,getState:()=>({settings,display,transform,algorithmRef:cloneSerializable(terAlgorithmRef),result}),autoParameters,calculate,listTerAlgorithms,getTerAlgorithmRef:()=>cloneSerializable(terAlgorithmRef),
         getTransformSettings:()=>cloneSerializable(transform),getTransformDefinition:()=>cloneSerializable(transformDefinition()),listTransforms:()=>transforms?.list?.({supportsScalarField:true})||[],setTransformSettings,getTransformMatrix:transformMatrix,transformCsv,
         applyDisplay(){readDisplay();if(result)renderResult();setStatus('TER 热图显示范围/刻度已应用。');},
         resetDisplay(){
@@ -392,9 +414,10 @@
           target.terMaxSettings={...settings};
           target.terHeatmapDisplay={...display};
           target.terTransformSettings={...transform};
+          target.terAlgorithmRef=cloneSerializable(terAlgorithmRef);
           target.terMaxResult=result?cloneSerializable(result):null;
         },
-        getState:()=>({settings,display,transform,result})
+        getState:()=>({settings,display,transform,algorithmRef:cloneSerializable(terAlgorithmRef),result})
       };
     }
   });

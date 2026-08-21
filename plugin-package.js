@@ -35,6 +35,13 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   const version = String(sourceManifest.version || '').trim();
   const apiVersion = String(sourceManifest.apiVersion || '1.0.0').trim();
   const entry = normalizeRelativeFile(sourceManifest.entry || 'plugin.js');
+  const algorithmProvider=sourceManifest.algorithmProvider===true;
+  if(sourceManifest.algorithmProvider!==undefined&&typeof sourceManifest.algorithmProvider!=='boolean')throw new Error('Plugin manifest.algorithmProvider must be boolean.');
+  if(sourceManifest.algorithmCategories!==undefined&&!Array.isArray(sourceManifest.algorithmCategories))throw new Error('Plugin manifest.algorithmCategories must be an array.');
+  const algorithmCategories=[...new Set((Array.isArray(sourceManifest.algorithmCategories)?sourceManifest.algorithmCategories:[]).map(value=>String(value||'').trim()).filter(Boolean))];
+  for(const category of algorithmCategories)if(!validPluginId(category))throw new Error(`Invalid algorithm category: ${category}`);
+  if(algorithmProvider&&!algorithmCategories.length)throw new Error('Algorithm Provider packages must declare algorithmCategories.');
+  if(algorithmCategories.length&&!(Array.isArray(sourceManifest.requiresCore)&&sourceManifest.requiresCore.includes('analysis.algorithms')))throw new Error('algorithmCategories requires analysis.algorithms in requiresCore.');
   if (!name) throw new Error('Plugin manifest.name is required.');
   if (!version) throw new Error('Plugin manifest.version is required.');
   if (!apiVersion.startsWith('1.')) throw new Error(`Unsupported Plugin API: ${apiVersion}`);
@@ -101,6 +108,8 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     scripts: [...new Set(scripts)],
     styles: [...new Set(styles)],
     ...(windowSpec!==undefined?{window:windowSpec}:{}),
+    ...(sourceManifest.algorithmProvider!==undefined?{algorithmProvider}:{}),
+    ...(algorithmCategories.length?{algorithmCategories}:{}),
     enabled: sourceManifest.enabled !== false,
     source: 'external'
   };

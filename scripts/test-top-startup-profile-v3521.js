@@ -24,7 +24,7 @@ const windows=readBuiltinPluginWindows(root);
 const expected={
   'data-center':[],
   'pulse':[],
-  'ter':['scientific-pipeline-runtime','scientific-transform-runtime'],
+  'ter':['scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime'],
   'resonance':['scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime']
 };
 for(const [activity,required] of Object.entries(expected)){

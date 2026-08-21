@@ -1,7 +1,7 @@
 {
   "id": "builtin.resonance-workbench",
   "name": "Resonance Workbench",
-  "version": "3.52.2",
+  "version": "3.53.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "runtime",
@@ -115,5 +115,12 @@
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"
+  ],
+  "algorithmCategories": [
+    "peak-detector",
+    "peak-metrics",
+    "transport-transform",
+    "transport-scalar-field",
+    "ter-analysis"
   ]
 }

@@ -860,13 +860,15 @@
         workspace.gateAnalysisSettings={seriesA:$('#reswinGateA')?.value||'',seriesB:$('#reswinGateB')?.value||'',hysteresisLabel:$('#reswinGateHysteresis')?.value||'',widthMode:$('#reswinGateWidth')?.value||'hwhm',useCarrierDensity:!!$('#reswinGateUseDensity')?.checked,cg:num('reswinGateCg'),cnp:num('reswinGateCnp')??0};
       }
       function gateOption(key){return acceptedSeriesOptions().find(o=>o.key===key)||null;}
+      function gateTerAlgorithmRef(){const ref=project.terAlgorithmRef||project.terMaxSettings?.algorithmRef||{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'};return typeof ref==='string'?(()=>{const at=ref.lastIndexOf('@');return {category:'ter-analysis',id:at>0?ref.slice(0,at):ref,version:at>0?ref.slice(at+1):''};})():{category:String(ref.category||'ter-analysis'),id:String(ref.id||ref.algorithmId||'ter.high-low-ratio'),version:String(ref.version||ref.algorithmVersion||'1.0.0')};}
+      function computeGateTer(settings={}){const ref=gateTerAlgorithmRef(),row=algorithmRuntime?.resolve?.(ref,{category:'ter-analysis'});if(row&&algorithmRuntime?.run){const value=algorithmRuntime.run({id:row.id,version:row.version,category:'ter-analysis'},datasets,{category:'ter-analysis',parameters:{settings}});if(value&&typeof value.then==='function')throw new Error(`Gate TER requires a local Algorithm Provider: ${row.id}@${row.version}`);return {...value,algorithm:algorithmRuntime.provenance?.({id:row.id,version:row.version,category:'ter-analysis'})||value?.algorithm||null};}return S.computeTerMatrix?.(datasets,settings)||null;}
       if(pipelineRuntime?.register){
         pipelineRuntime.register('gate-analysis',{
           title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['data.table'],outputTypes:['resonance.gate-analysis'],allowEmptyInput:true,cacheLimit:6,
           run:(_input,{parameters})=>{
             const s={...(parameters?.settings||workspace.gateAnalysisSettings||{})};
             const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;
-            try{terResult=S.computeTerMatrix?.(datasets,parameters?.terSettings||project.terMaxSettings||{})||null;}catch{}
+            try{terResult=computeGateTer(parameters?.terSettings||project.terMaxSettings||{});}catch{}
             const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];
             const hysteresis=gateHysteresisRows(s.hysteresisLabel);
             const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};
@@ -883,12 +885,12 @@
         readGate();const s=workspace.gateAnalysisSettings;
         const peakKey=(workspace.peaks||[]).filter(p=>p.accepted!==false).map(p=>[p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,p.peakLabel,p.analysisLeft,p.analysisRight]).flat().join('|');
         const dataRevision=artifacts?.revision?.('data.table')||0;
-        const key=`${dataRevision}::${JSON.stringify(s)}::${JSON.stringify(project.terMaxSettings||{})}::${peakKey}`;
-        const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=S.computeTerMatrix?.(datasets,project.terMaxSettings||{})||null;}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};};
+        const key=`${dataRevision}::${JSON.stringify(s)}::${JSON.stringify(project.terMaxSettings||{})}::${JSON.stringify(gateTerAlgorithmRef())}::${peakKey}`;
+        const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=computeGateTer(project.terMaxSettings||{});}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,fits:summary.fits||{},correlations:summary.correlations||{}};};
         gateComputeKey=key;
         if(pipelineRuntime?.runSync){
           const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>a?.metadata?.adapter==='legacy-dataset');
-          const executed=pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...(project.terMaxSettings||{})},peakKey},publish:true,revision:dataRevision});
+          const executed=pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...(project.terMaxSettings||{})},terAlgorithmRef:gateTerAlgorithmRef(),peakKey},publish:true,revision:dataRevision});
           gateResult=executed?.value||null;
         }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
         return gateResult;

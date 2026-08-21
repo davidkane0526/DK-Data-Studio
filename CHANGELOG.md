@@ -1,3 +1,15 @@
+# v3.53.0 — Versioned Transport / Scalar-Field / TER Algorithm Providers
+
+- Added `builtin.standard-transport-algorithms` v1.0.0 as a local, versioned Algorithm Plugin owning the concrete numerical implementations of raw/detrend/dI/dV/d²I/dV²/dln|I|/dV/dV/dI/R transforms, generic Vg–Vd scalar-field projection, and the standard TER high/low-resistance-ratio formula.
+- Upgraded Scientific Transform Runtime to v1.1.0: Core still owns stable transform descriptors, semantic types and `transform.<id>` / `scalar-field.<id>` Pipeline contracts, while numerical execution resolves exact `transport-*` / `scalar-field` Algorithm Providers before using legacy Core compatibility fallbacks.
+- Added category-driven local Algorithm Provider loading for dedicated TOP windows. Workbenches declare `algorithmCategories`; the host discovers matching built-in/override/external providers, merges their Core requirements and loads provider scripts before the target plugin. There are no target-plugin/provider-id whitelists.
+- TER now requires `analysis.algorithms`, locks `ter.high-low-ratio@1.0.0` in project settings/provenance, exposes a versioned TER-algorithm selector, and invalidates stale TER results when the selected algorithm changes.
+- Resonance gate analysis now consumes the same versioned TER provider; Resonance and TER transforms consume the same transport/scalar-field providers through the Core Transform Registry.
+- Marked Standard Resonance Algorithms v2.1.0 as a locally executable provider so independent TOP renderers can run peak detector/FWHM providers without remote round-trips while preserving exact provider identity.
+- Added deterministic v3.53 parity tests proving all seven transport transforms, generic scalar-field output and TER matrix/maxima match the previous mature scientific implementation.
+- Automation Runner 1.8.0 adds real `Transport / Scalar Field / TER Algorithm Providers` and `TOP local Algorithm Provider routing` cases and exports provider provenance/routing coverage. Development Electron now contains 27 cases.
+- `src/science/*` transform/TER entry points remain reference/compatibility APIs for old projects and parity tests; replaceable scientific numerical authority belongs to versioned Algorithm Plugins.
+
 # v3.52.2 — Lazy Plotly TOP Startup
 
 - Moved dedicated-TOP Plotly from a blocking physical script dependency to the Core Chart Runtime lazy loader while preserving `plotly` as the plugin's resolved logical dependency.

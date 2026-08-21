@@ -1,0 +1,16 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const runtime=fs.readFileSync(path.join(root,'src/core/automation-test-runtime.js'),'utf8');
+const match=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);
+assert(match,'Automation runner version missing.');
+const version=match.slice(1).map(Number);
+assert(version[0]>1||(version[0]===1&&version[1]>=8),'Automation runner must be v1.8.0+ for Algorithm Provider coverage.');
+assert(runtime.includes("'algorithms.transport-ter'")&&runtime.includes('Transport / Scalar Field / TER Algorithm Providers'),'Built-app automation must execute Transport/Scalar Field/TER Algorithm Providers.');
+assert(runtime.includes("'top.algorithm-providers'")&&runtime.includes('TOP local Algorithm Provider routing'),'Built-app automation must validate category-driven TOP Algorithm Provider routing.');
+assert(runtime.includes('availableProviders')&&runtime.includes('algorithmProvider===true')&&runtime.includes('targetCategories'),'TOP provider coverage must derive expected providers from manifest categories, not a target-plugin whitelist.');
+assert(runtime.includes('renderer.algorithmProviders||[]'),'TOP startup profiling must export the providers actually loaded by the independent renderer.');
+assert(runtime.includes('scientificTransportAlgorithms:')&&runtime.includes('topAlgorithmProviders:'),'Automation report must persist transport/TER provider execution and TOP routing coverage.');
+assert(runtime.includes('algorithmProvider:row.algorithmProvider===true')&&runtime.includes('algorithmCategories:Array.isArray(row.algorithmCategories)'),'Plugin diagnostics must expose Algorithm Provider machine-contract metadata.');
+console.log('v3.53 Automation Test Center Algorithm Provider coverage checks passed.');

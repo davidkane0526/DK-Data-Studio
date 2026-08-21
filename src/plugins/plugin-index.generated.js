@@ -57,6 +57,14 @@ window.DKDS_BUILTIN_PLUGINS = [
     ]
   },
   {
+    "id": "builtin.standard-transport-algorithms",
+    "entry": "plugins/standard-transport-algorithms/plugin.js",
+    "scripts": [
+      "plugins/standard-transport-algorithms/algorithm.js",
+      "plugins/standard-transport-algorithms/plugin.js"
+    ]
+  },
+  {
     "id": "builtin.status-monitor",
     "entry": "plugins/status-monitor/plugin.js",
     "scripts": [
@@ -90,6 +98,7 @@ window.DKDS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/resonance-detector-robust/plugin.js",
   "plugins/resonance-workbench/plugin.js",
   "plugins/shell-navigation/plugin.js",
+  "plugins/standard-transport-algorithms/plugin.js",
   "plugins/status-monitor/plugin.js",
   "plugins/ter-analysis/plugin.js",
   "plugins/workspace-safeguards/plugin.js"

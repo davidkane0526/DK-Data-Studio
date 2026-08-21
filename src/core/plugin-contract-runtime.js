@@ -59,6 +59,12 @@
     for(const id of requested)if(!REQUIREMENTS[id])errors.push(`Unknown Core requirement: ${id}`);
     const api=String(manifest.apiVersion||API_VERSION);
     if(!/^1\.(?:[0-8])(?:\.\d+)?$/.test(api))errors.push(`Unsupported Plugin API: ${api}`);
+    const categories=normalize(manifest.algorithmCategories);
+    if(manifest.algorithmCategories!==undefined&&!Array.isArray(manifest.algorithmCategories))errors.push('algorithmCategories must be an array.');
+    for(const category of categories)if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category))errors.push(`Invalid algorithm category: ${category}`);
+    if(manifest.algorithmProvider!==undefined&&typeof manifest.algorithmProvider!=='boolean')errors.push('algorithmProvider must be boolean.');
+    if(manifest.algorithmProvider===true&&!categories.length)errors.push('algorithmProvider requires algorithmCategories.');
+    if(categories.length&&!requested.includes('analysis.algorithms'))errors.push('algorithmCategories requires Core requirement analysis.algorithms.');
     return Object.freeze({ok:errors.length===0,errors:Object.freeze(errors),requirements:Object.freeze(requested)});
   }
   function assertApi(api,manifest={}){

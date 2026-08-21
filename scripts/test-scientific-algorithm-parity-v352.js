@@ -8,11 +8,12 @@ for(const file of [
   'src/science/common.js',
   'src/science/presets.js',
   'src/science/peaks.js',
+  'src/core/plugin-module-runtime.js',
   'src/plugins/resonance-detector-robust/algorithm.js'
 ]) vm.runInContext(read(file),context,{filename:file});
 
 const legacy=context.DKDSScience;
-const plugin=context.DKDSResonanceStandardAlgorithms;
+const plugin=context.DKDSPluginModules.require('builtin.resonance-detector-robust','algorithm');
 assert(legacy?.detectPeaks&&legacy?.peakMetrics,'Legacy/reference peak implementation unavailable.');
 assert(plugin?.detectPeaks&&plugin?.peakMetrics,'Plugin-owned peak implementation unavailable.');
 

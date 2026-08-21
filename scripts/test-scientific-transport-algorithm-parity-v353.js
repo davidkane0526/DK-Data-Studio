@@ -1,0 +1,17 @@
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');
+const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const context={console,structuredClone,TextEncoder,TextDecoder,setTimeout,clearTimeout};context.window=context;context.globalThis=context;vm.createContext(context);
+for(const file of ['src/science/common.js','src/science/peaks.js','src/science/ter.js','src/core/plugin-module-runtime.js','src/plugins/standard-transport-algorithms/algorithm.js'])vm.runInContext(read(file),context,{filename:file});
+const S=context.DKDSScience,A=context.DKDSPluginModules.require('builtin.standard-transport-algorithms','algorithm');assert(A&&S,'Science/provider runtime missing.');
+const close=(a,b,tol=1e-12)=>Number.isNaN(a)&&Number.isNaN(b)||Math.abs(Number(a)-Number(b))<=tol*Math.max(1,Math.abs(Number(a)),Math.abs(Number(b)));
+const sweep={id:'v353:sweep',datasetPath:'v353',datasetName:'v353',vg:0,direction:1,step:.01,points:Array.from({length:161},(_,k)=>{const v=-.8+k*.01;return {v,i:2e-9*v+8e-9*Math.exp(-0.5*((v-.17)/.08)**2)};})};
+for(const id of ['raw','detrend','didv','d2idv2','dlog','dvdi','resistance']){
+  const old=S.transformSweep(sweep,id,{radius:2}),next=A.computeTransformSweep(sweep,id,{radius:2});assert.strictEqual(next.points.length,old.points.length,`${id}: point count`);for(let i=0;i<old.points.length;i++)assert(close(next.points[i].y,old.points[i].y,1e-11),`${id}: y mismatch @ ${i}`);assert.strictEqual(next.label,old.label,`${id}: label`);assert.strictEqual(next.unit,old.unit,`${id}: unit`);
+}
+const reverse={...sweep,id:'v353:reverse',direction:-1,points:[...sweep.points].reverse().map(p=>({...p}))};
+const sweeps=[sweep,{...sweep,id:'v353:sweep2',vg:1,points:sweep.points.map(p=>({v:p.v,i:p.i*1.2}))},reverse,{...reverse,id:'v353:reverse2',vg:1,points:reverse.points.map(p=>({v:p.v,i:p.i*1.2}))}];
+const targets=[-.5,0,.5],vgs=[0,1],opts={type:'didv',direction:1,tolerance:.006,targets,vgs};
+const oldField=S.computeSweepScalarField(sweeps,targets,vgs,opts),nextField=A.computeSweepScalarField(sweeps,targets,vgs,opts,(sw,type,o)=>A.computeTransformSweep(sw,type,o));assert.deepStrictEqual(nextField.targets,oldField.targets);assert.deepStrictEqual(nextField.vgs,oldField.vgs);for(let y=0;y<oldField.matrix.length;y++)for(let x=0;x<oldField.matrix[y].length;x++)assert(close(nextField.matrix[y][x],oldField.matrix[y][x],1e-11),`scalar field mismatch ${y},${x}`);
+function dataset(name,vg,scale=1){const up=[-.2,-.1,.1,.2],down=[.2,.1,-.1,-.2];const points=[];for(const v of [...up,...down])points.push({v,i:(v===0?1e-12:(1.5e-9+3e-9*Math.abs(v)))*scale*(v<0?-1:1)});return {name,path:name,vg,points:points.map((p,index)=>({...p,index}))};}
+const datasets=[dataset('a',0,1),dataset('b',1,1.3)],settings={vmin:-.2,vmax:.2,vstep:.1,tolerance:.006,currentFloor:1e-15};const oldTer=S.computeTerMatrix(datasets,settings),nextTer=A.computeTerMatrix(datasets,settings);assert.deepStrictEqual(nextTer.targets,oldTer.targets);assert.deepStrictEqual(nextTer.vgs,oldTer.vgs);assert.strictEqual(nextTer.records.length,oldTer.records.length);for(let y=0;y<oldTer.matrix.length;y++)for(let x=0;x<oldTer.matrix[y].length;x++)assert(close(nextTer.matrix[y][x],oldTer.matrix[y][x],1e-11),`TER matrix mismatch ${y},${x}`);assert.strictEqual(nextTer.terMaxByVg.length,oldTer.terMaxByVg.length);assert.strictEqual(nextTer.terMaxByVd.length,oldTer.terMaxByVd.length);
+console.log('Scientific transport/scalar-field/TER algorithm parity v3.53 tests passed.');

@@ -1,0 +1,30 @@
+{
+  "id": "builtin.standard-transport-algorithms",
+  "name": "Standard Transport Algorithms",
+  "version": "1.0.0",
+  "apiVersion": "1.8.0",
+  "requiresCore": [
+    "analysis.algorithms",
+    "modules"
+  ],
+  "entry": "plugin.js",
+  "scripts": [
+    "algorithm.js",
+    "plugin.js"
+  ],
+  "enabled": true,
+  "order": 70,
+  "description": "Versioned local transport transform, scalar-field and TER numerical Algorithm Providers.",
+  "capabilities": [
+    "analysis.algorithm",
+    "analysis.transport-transform",
+    "analysis.transport-scalar-field",
+    "analysis.ter"
+  ],
+  "algorithmProvider": true,
+  "algorithmCategories": [
+    "transport-transform",
+    "transport-scalar-field",
+    "ter-analysis"
+  ]
+}

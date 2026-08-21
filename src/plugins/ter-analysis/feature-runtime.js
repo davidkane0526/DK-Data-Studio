@@ -1105,7 +1105,7 @@
     ctx.analysis.providers.register('ter',{
       id:'ter',
       name:'Same-Vd TER',
-      computeMatrix:window.DKDSScience.computeTerMatrix,
+      computeMatrix:(datasets,settings={})=>{const ref=T.getState?.()?.algorithmRef||{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'};return ctx.analysis.algorithms.run(ref,datasets,{category:'ter-analysis',parameters:{settings}});},
       computeResonant:window.DKDSScience.computeResonantTerForLabel
     });
 

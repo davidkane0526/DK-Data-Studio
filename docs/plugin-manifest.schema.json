@@ -58,6 +58,8 @@
         "minWidth":{"type":"number","exclusiveMinimum":0},
         "minHeight":{"type":"number","exclusiveMinimum":0}
       }
-    }
+    },
+    "algorithmProvider": {"type":"boolean"},
+    "algorithmCategories": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]*$"}}
   }
 }

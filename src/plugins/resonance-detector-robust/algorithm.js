@@ -1,7 +1,7 @@
 (function(root,factory){
-  const core=root.DKDSScience||{};
-  const api=factory(core);
-  root.DKDSResonanceStandardAlgorithms=Object.freeze(api);
+  const core=root.DKDSScience||{},modules=root.DKDSPluginModules;if(!modules?.define)throw new Error('Plugin Module Runtime unavailable.');
+  if(modules.get?.('builtin.resonance-detector-robust','algorithm'))return;
+  modules.define('builtin.resonance-detector-robust','algorithm',Object.freeze(factory(core)));
 })(typeof window!=='undefined'?window:globalThis,function(core){
   const {median,mad,clamp,nearestIndex,preset}=core;
   function buildSweeps(dataset){

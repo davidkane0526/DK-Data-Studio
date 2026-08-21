@@ -1,11 +1,12 @@
 {
   "id": "builtin.resonance-detector-robust",
   "name": "Standard Resonance Algorithms",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "apiVersion": "1.8.0",
   "requiresCore": [
     "science",
-    "analysis.algorithms"
+    "analysis.algorithms",
+    "modules"
   ],
   "entry": "plugin.js",
   "scripts": [
@@ -19,5 +20,10 @@
     "analysis.algorithm",
     "analysis.peak-detector",
     "analysis.peak-metrics"
+  ],
+  "algorithmProvider": true,
+  "algorithmCategories": [
+    "peak-detector",
+    "peak-metrics"
   ]
 }
