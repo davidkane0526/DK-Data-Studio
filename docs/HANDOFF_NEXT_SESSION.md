@@ -1,11 +1,17 @@
-# Next Session Handoff — v3.61.0
+# Next Session Handoff — v3.61.1
 
 ## Current baseline
 
-- Application: `3.61.0`
-- Intended branch: `perf/v3.61-interaction-rendering`
+- Application: `3.61.1`
+- Intended branch: `fix/v3.61.1-plotly-cartesian-entry`
 - Architecture baseline: v3.58 Host Neutralization, v3.59 Table/Interaction foundation and v3.60 Scientific Reactive Dependency remain intact. Core stays domain-neutral; scientific consistency is transaction/dependency-driven rather than plugin-local refresh chains.
 - Public Plugin API / standalone SDK remains `1.10.0`; v3.61 changes renderer/runtime performance, not the public plugin contract. SDK minimum application version therefore remains `3.60.0`.
+
+## v3.61.1 runtime correction
+
+- `plotly.js-cartesian-dist-min` must be loaded from `plotly-cartesian.min.js`. Do not use the full distribution filename `plotly.min.js` with the Cartesian package.
+- Main renderer, Chart Runtime, dedicated TOP and mobile vendor sync must keep the exact same Cartesian entry contract.
+- `scripts/test-plotly-cartesian-entry-v3611.js` is a required regression gate; when dependencies are installed it also asserts the actual bundle file exists.
 
 ## v3.61 performance rules
 

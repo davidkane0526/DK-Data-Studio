@@ -11,7 +11,7 @@
   const errorTextEl = $('#pluginWindowErrorText');
 
   const DEPENDENCY_SCRIPTS = Object.freeze({
-    plotly:'../../node_modules/plotly.js-cartesian-dist-min/plotly.min.js',
+    plotly:'../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js',
     d3:'../../node_modules/d3/dist/d3.min.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',

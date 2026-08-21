@@ -1,3 +1,10 @@
+# v3.61.1 — Plotly Cartesian Runtime Entry Fix
+
+- Fixed the v3.61.0 regression where every Plotly-backed view rendered blank even though scientific computation completed. The Cartesian npm distribution exposes `plotly-cartesian.min.js`; v3.61.0 incorrectly retained the full-bundle filename `plotly.min.js`.
+- Corrected the Cartesian runtime entry consistently in the main renderer, Core Chart Runtime, dedicated TOP runtime and mobile asset sync. This restores Resonance group charts, TER heatmaps/R–V linkage, Pulse/Data Center Plotly views and other shared ScientificPlot consumers without plugin-specific fallbacks.
+- Added `test-plotly-cartesian-entry-v3611.js` to `npm test`, `npm run check` and the performance gate. The contract verifies all runtime entry points use `plotly-cartesian.min.js`, rejects the nonexistent path, and checks the installed bundle file when dependencies are present.
+- Kept the v3.61 performance work intact: FWHM drag preview remains algorithm-free, ScientificPlot multi-view scheduling remains Core-owned, and dedicated TOP Plotly preload remains non-blocking.
+
 # v3.61.0 — Interaction & Multi-View Rendering Performance
 
 - Split D3 FWHM-window dragging into lightweight visual preview and scientific commit. Pointer-move no longer calls the expensive peak-metric/FWHM getter; the final analysis-window edit is committed once when the handle is released.
