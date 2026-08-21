@@ -91,6 +91,8 @@ Examples already moved there:
 
 Do not copy an algorithm between feature plugins. A versioned Algorithm Plugin owns the implementation; Workbench plugins resolve it through `ctx.analysis.algorithms`. Existing `DKDSScience` algorithm entry points are compatibility/reference APIs while migrations are completed.
 
+Algorithm version rule (v3.54+): versionless resolution is only for a new analysis choice. Once an analysis/project stores an algorithm reference, persist an exact `category + id + version`. If that exact version is unavailable, report `missing-version` and alternatives; never silently migrate the project to a newer/default algorithm. External provider package rollback is managed by Core Plugin Manager history; do not build per-workbench update/rollback UI.
+
 Use `npm run science:parity` whenever a mature scientific algorithm is refactored.
 
 ## Android build rule

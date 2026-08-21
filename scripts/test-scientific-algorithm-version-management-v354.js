@@ -1,0 +1,12 @@
+const assert=require('assert');const fs=require('fs');const vm=require('vm');
+const storage=new Map();const localStorage={getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
+const context={window:{},console,structuredClone,localStorage};context.window=context;context.globalThis=context;vm.createContext(context);
+vm.runInContext(fs.readFileSync('src/core/scientific-algorithm-runtime.js','utf8'),context,{filename:'scientific-algorithm-runtime.js'});
+const A=context.DKDSScientificAlgorithms;assert.strictEqual(A.VERSION,'1.1.0');
+A.register('provider','probe',{category:'test',version:'1.0.0',run:()=>1});A.register('provider','probe',{category:'test',version:'2.0.0',default:true,run:()=>2});
+assert.strictEqual(A.resolve('probe',{category:'test'}).version,'2.0.0');A.setPreferred({category:'test',id:'probe',version:'1.0.0'});assert.strictEqual(A.resolve('probe',{category:'test'}).version,'1.0.0');
+const locked=JSON.parse(JSON.stringify(A.lock({category:'test',id:'probe'})));assert.deepStrictEqual(locked,{category:'test',id:'probe',version:'1.0.0'});A.setPreferred({category:'test',id:'probe',version:'2.0.0'});assert.strictEqual(A.resolve(locked).version,'1.0.0');
+const missing=JSON.parse(JSON.stringify(A.diagnose({category:'test',id:'probe',version:'9.0.0'})));assert.strictEqual(missing.status,'missing-version');assert.deepStrictEqual(missing.alternatives.map(x=>x.version),['2.0.0','1.0.0']);
+assert.throws(()=>A.run({category:'test',id:'probe',version:'9.0.0'},null),/Available: 2.0.0, 1.0.0/);
+assert(storage.size>=1,'Preferred algorithm version was not persisted.');
+console.log('Scientific Algorithm version management v3.54 checks passed.');

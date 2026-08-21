@@ -69,6 +69,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginOverrideList: () => ipcRenderer.invoke('plugins:listOverrides'),
   pluginInstallPackage: () => ipcRenderer.invoke('plugins:installPackage'),
   pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
+  pluginHistoryList: id => ipcRenderer.invoke('plugins:historyList', id),
+  pluginRollbackVersion: payload => ipcRenderer.invoke('plugins:rollbackVersion', payload),
   pluginUninstall: id => ipcRenderer.invoke('plugins:uninstall', id),
   pluginOpenFolder: () => ipcRenderer.invoke('plugins:openFolder'),
   updateGetStatus: () => ipcRenderer.invoke('update:getStatus'),

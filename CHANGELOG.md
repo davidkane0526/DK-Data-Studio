@@ -1,3 +1,14 @@
+# v3.54.0 — Algorithm Version Management & Provider Rollback
+
+- Upgraded Scientific Algorithm Runtime to v1.1.0 with explicit `versions()`, persisted new-analysis version preferences, `lock()` for exact project references, and `diagnose()` for `available` / `missing-version` / `missing-algorithm` states.
+- Algorithm preferences affect only versionless resolution for new analysis. Any project/result reference that already includes an algorithm version remains exact and is never silently redirected to a newer default.
+- TER and Resonance peak-detector/FWHM consumers now preserve missing exact versions and surface available alternatives instead of silently switching algorithms. Legacy versionless references are resolved once and then locked.
+- Plugin Manager Algorithm Provider details now expose registered algorithm families and a per-family default-version selector for new analyses.
+- External `.dkplugin` updates now archive the previous package under the application plugin-history store. External plugin cards expose Version History and can roll back to an archived package; the package being replaced during rollback is archived in turn.
+- Package-level history is single-active-package by plugin ID. Scientific-version coexistence remains an Algorithm Registry concern: providers may register multiple `algorithmId@version` implementations simultaneously.
+- Automation Runner 1.9.0 adds a real algorithm default/lock/missing-version case. Development Electron now contains 28 cases.
+- Added v3.54 tests covering Core version preferences/locks, consumer no-silent-upgrade behavior, external package history/rollback plumbing and automation-report coverage.
+
 # v3.53.0 — Versioned Transport / Scalar-Field / TER Algorithm Providers
 
 - Added `builtin.standard-transport-algorithms` v1.0.0 as a local, versioned Algorithm Plugin owning the concrete numerical implementations of raw/detrend/dI/dV/d²I/dV²/dln|I|/dV/dV/dI/R transforms, generic Vg–Vd scalar-field projection, and the standard TER high/low-resistance-ratio formula.

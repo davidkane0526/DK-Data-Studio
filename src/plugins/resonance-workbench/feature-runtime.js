@@ -227,12 +227,14 @@
       }
       function selectDetectorProvider(providers=[]){
         const active=String(workspace.activeDetector||'');let provider=providers.find(p=>String(p.id)===active)||providers.find(p=>String(p.algorithmId||'')===active)||null;
+        if(!provider&&active.includes('@'))return null;
         if(!provider)provider=providers.find(p=>p.default)||providers[0]||null;
         if(provider&&String(provider.id||'').includes('@')&&String(workspace.activeDetector||'')!==String(provider.id))workspace.activeDetector=String(provider.id);
         return provider;
       }
+      function missingLockedAlgorithm(category,active){if(!algorithmRuntime?.diagnose||!String(active||'').includes('@'))return null;const d=algorithmRuntime.diagnose(String(active),{category});return d?.status==='missing-version'?d:null;}
       async function runPeakDetector(provider,sweep,settings,options={}){
-        if(!provider)return S.detectPeaks(sweep,workspace.algorithms||{},options||{});
+        if(!provider){const d=missingLockedAlgorithm('peak-detector',workspace.activeDetector);if(d)throw new Error(`工程锁定的寻峰算法版本缺失：${d.requested.id}@${d.requested.version}；可用版本：${d.alternatives.map(x=>x.version).join('、')||'无'}`);return S.detectPeaks(sweep,workspace.algorithms||{},options||{});}
         const algorithmId=String(provider.algorithmId||provider.id||'').split('@')[0],ref={id:algorithmId,version:String(provider.version||''),category:'peak-detector'};
         installAlgorithmPipeline();
         if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.detect',sweep,{parameters:{algorithmRef:ref,settings:settings||{},range:options?.range||null},publish:false});return result?.value?.peaks||[];}
@@ -648,7 +650,7 @@
         scientificReact(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
       }
 
-      function metricProvider(){const rows=algorithmRuntime?.list?.({category:'peak-metrics'})||[];const active=String(workspace.activeMetricAlgorithm||'');let row=rows.find(x=>`${x.id}@${x.version}`===active)||rows.find(x=>x.id===active)||rows.find(x=>x.default)||rows[0]||null;if(row&&!workspace.activeMetricAlgorithm)workspace.activeMetricAlgorithm=`${row.id}@${row.version}`;return row;}
+      function metricProvider(){const rows=algorithmRuntime?.list?.({category:'peak-metrics'})||[];const active=String(workspace.activeMetricAlgorithm||'');let row=rows.find(x=>`${x.id}@${x.version}`===active)||rows.find(x=>x.id===active)||null;if(!row&&active.includes('@'))return null;if(!row)row=rows.find(x=>x.default)||rows[0]||null;if(row&&!workspace.activeMetricAlgorithm)workspace.activeMetricAlgorithm=`${row.id}@${row.version}`;return row;}
       function metricSignature(p,sw,row){return [p?.id,p?.v,p?.i,p?.analysisLeft,p?.analysisRight,p?.analysisManual,sw?.id,sw?.step,row?.id,row?.version].join('|');}
       function scheduleMetricRefresh(rows=[]){for(const p of rows||[])void refreshPeakMetric(p);}
       async function refreshPeakMetric(p){
@@ -658,7 +660,7 @@
         const promise=(async()=>{try{let value;if(pipelineRuntime?.run&&algorithmRuntime){const result=await pipelineRuntime.run('peaks.metrics',{peak:p,sweep:sw},{parameters:{algorithmRef:ref,settings:{}},publish:false});value=result?.value;}else value=await provider.run?.({peak:p,sweep:sw},{parameters:{}});if(value&&typeof value==='object'){value={...value,algorithm:algorithmRuntime?.provenance?.(ref)||{pluginId:provider.owner||'',algorithmId:provider.id,algorithmVersion:provider.version,category:'peak-metrics',title:provider.title||provider.id}};peakMetricCache.set(p,{signature,value,promise:null});if(!metricRenderFrame){const flushMetricRender=()=>{metricRenderFrame=null;if($('#reswinMainPlot'))render();};if(dom?.frame)metricRenderFrame=dom.frame(flushMetricRender);else flushMetricRender();}return value;}}catch(err){console.warn('[resonance peak metrics algorithm]',p?.id,err);}peakMetricCache.set(p,{signature,value:null,promise:null});return null;})();
         peakMetricCache.set(p,{signature,value:null,promise});return promise;
       }
-      function peakMetrics(p){const sw=sweepById(p?.sweepId);if(!sw||!p)return null;const provider=metricProvider();if(provider){const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature&&cached.value)return cached.value;if(!cached||cached.signature!==signature||!cached.promise)void refreshPeakMetric(p);return null;}return S.peakMetrics?.(p,sw)||null;}
+      function peakMetrics(p){const sw=sweepById(p?.sweepId);if(!sw||!p)return null;const provider=metricProvider();if(!provider&&missingLockedAlgorithm('peak-metrics',workspace.activeMetricAlgorithm))return null;if(provider){const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature&&cached.value)return cached.value;if(!cached||cached.signature!==signature||!cached.promise)void refreshPeakMetric(p);return null;}return S.peakMetrics?.(p,sw)||null;}
       function renderPeakTable(){
         const table=$('#reswinPeakTable');if(!table)return;
         const sw=selectedSweep();const rows=(workspace.peaks||[]).filter(p=>!sw||p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));

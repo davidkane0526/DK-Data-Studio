@@ -197,3 +197,9 @@ Installed `.dkplugin` packages may use the same `manifest.window` contract as bu
 The package still registers its Activity normally with `openMode:'window'`. Project-safe results should be registered through `ctx.project.registerSlice(...)` or stored as Data Model artifacts. The dedicated renderer merges only the external plugin's namespace and artifact deltas back into the project, so it cannot replace unrelated plugin state with an older prewarmed project snapshot.
 
 If an installed package is updated while DK Data Studio is running, the package installation revision changes. Any hidden renderer from the previous revision is destroyed and a fresh dedicated renderer is created/prewarmed from the updated package.
+
+## Version history and rollback (v3.54+)
+
+Desktop installation keeps one active package per plugin id. When an external `.dkplugin` is updated, the previous package is archived under the application plugin-history store. Plugin Manager can list those archived versions and roll back; the package being replaced by the rollback is archived as well.
+
+This package history is not the same as scientific algorithm-version coexistence. A single active Algorithm Provider package may register multiple versions of the same algorithm simultaneously. Projects/results store exact algorithm references, while package rollback is a recovery mechanism when an old implementation is no longer supplied by the active package.

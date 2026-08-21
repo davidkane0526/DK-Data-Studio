@@ -1,4 +1,14 @@
-# DK Data Studio — v3.28.0
+# DK Data Studio — v3.54.0
+
+## v3.54 算法版本管理与 Provider 回退
+
+- 科学算法默认版本与工程锁定版本正式分离：默认版本只影响新分析；工程中的 `algorithmId@version` 永远精确解析。
+- Core Algorithm Runtime 提供多版本枚举、默认偏好、精确锁定和缺失版本诊断；缺失旧版本时显示可用替代版本，不会静默升级。
+- 插件管理器可为 Algorithm Provider 的算法族选择“新分析默认版本”。外部 `.dkplugin` 更新会保留历史包，并可从“版本历史”回退。
+- 同一插件 ID 仍保持单一活动包；真正的科学算法并存由一个或多个 Provider 注册多个算法版本实现。
+- v3.53 的 Transport/TER/Peak/FWHM Algorithm Providers 与 v3.52.2 Lazy Plotly 启动优化保持不变。
+
+## 历史说明：v3.28.0 及之前
 
 ## v3.27 核心 UI / 状态基础设施
 

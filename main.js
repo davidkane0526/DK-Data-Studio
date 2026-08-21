@@ -45,6 +45,30 @@ function ensureExternalPluginDirectory() {
 function pluginOverrideDirectory() {
   return path.join(app.getPath('userData'), 'plugin-overrides');
 }
+function pluginHistoryRootDirectory(){return path.join(app.getPath('userData'),'plugin-history');}
+function pluginHistoryDirectory(id){
+  const pluginId=String(id||'');
+  if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的插件历史 ID。');
+  return path.join(pluginHistoryRootDirectory(),pluginId);
+}
+function archiveExternalPluginPackage(pkg,reason='update'){
+  if(!pkg?.manifest?.id)return null;
+  const normalized=normalizePluginPackage(pkg,{allowBuiltinId:false});
+  const dir=pluginHistoryDirectory(normalized.manifest.id);fs.mkdirSync(dir,{recursive:true});
+  const version=String(normalized.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  const fileName=`${version}--${stamp}.dkplugin`;
+  const payload={...normalized,archivedAt:new Date().toISOString(),archiveReason:String(reason||'update')};
+  atomicWritePluginPackage(path.join(dir,fileName),payload);
+  return fileName;
+}
+function listExternalPluginHistory(id){
+  const dir=pluginHistoryDirectory(id);const versions=[];if(!fs.existsSync(dir))return versions;
+  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){
+    try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});if(pkg.manifest.id!==id)continue;versions.push({token:name,version:String(pkg.manifest.version||''),name:String(pkg.manifest.name||id),archivedAt:String(raw.archivedAt||''),archiveReason:String(raw.archiveReason||'update')});}catch{}
+  }
+  return versions;
+}
 
 function ensurePluginOverrideDirectory() {
   const dir=pluginOverrideDirectory();
@@ -841,12 +865,27 @@ app.whenReady().then(() => {
         +'本地插件包含可执行 JavaScript，可访问当前应用提供的插件 API 和工作区数据。仅安装你信任或已审查源码的插件包。工程中的插件数据不会因安装/更新被删除。'
     });
     if(confirm.response!==1)return null;
+    if(previousPackage)archiveExternalPluginPackage(previousPackage,'upgrade');
     const normalized={...pkg,installedAt:new Date().toISOString()};
     const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
     fs.writeFileSync(tmp,JSON.stringify(normalized,null,2)+'\n','utf8');
     if(fs.existsSync(target))fs.rmSync(target,{force:true});
     fs.renameSync(tmp,target);
     return {...normalized,installedPath:target,previousPackage};
+  });
+  ipcMain.handle('plugins:historyList', async (_event, id) => {
+    const pluginId=String(id||'');
+    return listExternalPluginHistory(pluginId);
+  });
+  ipcMain.handle('plugins:rollbackVersion', async (_event, payload) => {
+    const id=String(payload?.id||'');const token=path.basename(String(payload?.token||''));
+    if(!validPluginId(id)||id.startsWith('builtin.')||!token.toLowerCase().endsWith('.dkplugin'))throw new Error('无效的插件回退请求。');
+    const historyPath=path.join(pluginHistoryDirectory(id),token);if(!fs.existsSync(historyPath))throw new Error('指定的插件历史版本不存在。');
+    const selected=normalizePluginPackage(JSON.parse(fs.readFileSync(historyPath,'utf8')),{allowBuiltinId:false});if(selected.manifest.id!==id)throw new Error('插件历史版本 ID 不匹配。');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));let previousPackage=null;
+    if(fs.existsSync(target)){previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});archiveExternalPluginPackage(previousPackage,'rollback');}
+    const restored={...selected,installedAt:new Date().toISOString()};atomicWritePluginPackage(target,restored);
+    return {...restored,installedPath:target,previousPackage};
   });
   ipcMain.handle('plugins:restorePackage', async (_event, payload) => {
     const id=String(payload?.id||payload?.package?.manifest?.id||'');

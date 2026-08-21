@@ -4620,3 +4620,9 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .automation-test-row.pass .automation-test-status{background:#ecfdf3;color:#027a48}.automation-test-row.fail .automation-test-status{background:#fef3f2;color:#b42318}.automation-test-row.skip .automation-test-status{background:#fffaeb;color:#b54708}.automation-test-row.running .automation-test-status{background:#eef4ff;color:#3538cd}
 .automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px}.automation-test-main strong{font-size:12px}.automation-test-main span{font-size:10px;color:var(--muted,#7a8495)}.automation-test-main small{font-size:10px;color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}
+.plugin-algorithm-version-block{margin-top:6px;display:grid;gap:5px}
+.plugin-algorithm-version-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);gap:8px;align-items:center}
+.plugin-algorithm-version-row>span{display:grid;gap:1px}
+.plugin-algorithm-version-row small{color:#98a2b3;font-size:8px}
+.plugin-algorithm-version-row select{min-width:0;height:28px}
+@media(max-width:720px){.plugin-algorithm-version-row{grid-template-columns:1fr}}

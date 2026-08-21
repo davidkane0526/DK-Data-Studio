@@ -184,6 +184,7 @@ Owns pulse feature entry, shared pulse-analysis provider, and its namespaced pro
 | chart dashboard | primitive only | data math | yes |
 
 Rule: stable low-level numerical primitives shared by runtimes may live in `src/science`. A scientific algorithm whose behavior/version can change independently belongs to a versioned Algorithm Provider plugin. Workbench plugins own workflow/UI, not algorithm implementations.
+Version management rule (v3.54+): versionless algorithm resolution is a user/default choice for new analysis only. Persisted project/result provenance stores an exact version lock. Missing locks are diagnosed and preserved; they are never silently redirected to a newer version.
 
 ## 7. Project files
 

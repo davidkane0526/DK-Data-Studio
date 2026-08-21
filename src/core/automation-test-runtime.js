@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.8.0';
+  const VERSION='1.9.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -220,6 +220,26 @@
     return {version:A.VERSION,registered:A.list().length,detector:`${detector.id}@${detector.version}`,metric:`${metric.id}@${metric.version}`,peakCount:peaks.length,fwhm:m.fwhm,provenance:A.provenance({id:metric.id,version:metric.version,category:metric.category})};
   }
 
+  function scientificAlgorithmVersionManagementSmoke(){
+    const A=window.DKDSScientificAlgorithms;assert(A?.setPreferred&&A?.preferred&&A?.diagnose&&A?.lock&&A?.versions,'Scientific Algorithm version-management API unavailable.');
+    const owner='core.automation-algorithm-version-management',ref={category:'automation-version',id:'versioned-probe'};
+    try{
+      A.register(owner,ref.id,{category:ref.category,version:'1.0.0',run:()=>1});
+      A.register(owner,ref.id,{category:ref.category,version:'2.0.0',default:true,run:()=>2});
+      assert(A.resolve(ref)?.version==='2.0.0','Newest/default algorithm resolution is incorrect before user preference.');
+      A.setPreferred({...ref,version:'1.0.0'});
+      assert(A.preferred(ref.category,ref.id)==='1.0.0','Preferred algorithm version was not persisted in runtime state.');
+      assert(A.resolve(ref)?.version==='1.0.0','Preferred version did not control versionless resolution for new analysis.');
+      const locked=A.lock(ref);assert(locked.version==='1.0.0','Algorithm lock did not freeze the preferred version.');
+      A.setPreferred({...ref,version:'2.0.0'});
+      assert(A.resolve(ref)?.version==='2.0.0','Updated default preference did not affect new versionless resolution.');
+      assert(A.resolve(locked)?.version==='1.0.0','Exact project lock was incorrectly overridden by a newer default preference.');
+      const missing=A.diagnose({...ref,version:'9.0.0'});assert(missing.status==='missing-version'&&!missing.available,'Missing locked version was not diagnosed.');assert(missing.alternatives.map(row=>row.version).includes('1.0.0')&&missing.alternatives.map(row=>row.version).includes('2.0.0'),'Missing-version diagnostics did not expose available alternatives.');
+      return {version:A.VERSION,preferredVersion:A.preferred(ref.category,ref.id),lockedVersion:locked.version,missingStatus:missing.status,alternatives:missing.alternatives.map(row=>row.version),coexistingVersions:A.versions(ref).map(row=>row.version)};
+    }finally{A.clearPreferred?.(ref.category,ref.id);A.removeOwner(owner);}
+  }
+
+
   function scientificTransportAlgorithmProvidersSmoke(){
     const A=window.DKDSScientificAlgorithms,T=window.DKDSScientificTransforms,D=window.DKDSData;
     assert(A?.list&&A?.run&&T?.runCurve&&T?.runScalarField,'Transport Algorithm Provider runtime unavailable.');
@@ -306,6 +326,7 @@
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
     await runCase('algorithms.registry','Scientific Algorithm Registry & Version Lock','Data Contract',scientificAlgorithmRegistrySmoke);
+    await runCase('algorithms.version-management','Algorithm default / lock / missing-version management','Data Contract',scientificAlgorithmVersionManagementSmoke);
     await runCase('algorithms.transport-ter','Transport / Scalar Field / TER Algorithm Providers','Data Contract',scientificTransportAlgorithmProvidersSmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
@@ -397,7 +418,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topLazyPlotly:clone(state.results.find(row=>row.id==='top.plotly-lazy')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificAlgorithmVersionManagement:clone(state.results.find(row=>row.id==='algorithms.version-management')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topLazyPlotly:clone(state.results.find(row=>row.id==='top.plotly-lazy')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

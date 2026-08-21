@@ -381,6 +381,20 @@ ctx.analysis.algorithms.register('my-detector', {
 
 Dedicated TOP renderers discover algorithms through Capability Runtime, so an algorithm plugin does not need to be hard-coded into a Workbench window dependency list. Pipelines should resolve an exact algorithm version and include it in Artifact lineage/provenance.
 
+### Algorithm version management (v3.54+)
+
+Versionless resolution is for **new analysis only**. A user may choose a preferred version for an algorithm family with `setPreferred({category,id,version})`; `resolve({category,id})` then uses that preference. Persisted project/results should call `lock(ref)` and store the returned exact `{category,id,version}`.
+
+```js
+const chosen = ctx.analysis.algorithms.resolve({category:'ter-analysis', id:'ter.high-low-ratio'});
+const locked = ctx.analysis.algorithms.lock(chosen); // persist this exact ref
+const check = ctx.analysis.algorithms.diagnose(locked);
+```
+
+If `diagnose()` returns `missing-version`, the consumer must preserve the requested version and present the available alternatives. It must **not** silently replace the project lock with the current default. `versions(ref)` lists coexisting registered versions; `preferred()` / `setPreferred()` / `clearPreferred()` manage the user default for new analyses only.
+
+External plugin packages remain single-active by plugin id. Desktop Plugin Manager keeps archived package versions for update rollback, while true scientific-version coexistence is represented by multiple algorithm versions registered by the active provider package.
+
 `ctx.analysis.detectors` remains a compatibility facade for older detector plugins. New detector implementations should register `analysis.algorithms` with `category:'peak-detector'`.
 
 ## 14. Analysis providers, detectors and workflows

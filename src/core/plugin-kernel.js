@@ -2032,59 +2032,33 @@
     return externalLoadingPromise;
   }
 
-  async function installExternalPlugin(){
-    if(!window.electronAPI?.pluginInstallPackage||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持安装可执行插件。');
-    const pkg=await window.electronAPI.pluginInstallPackage();
-    if(!pkg)return null;
-    const id=pkg.manifest.id;
-    const existing=definitionById(id);
+  async function replaceExternalPluginPackage(pkg,{statusPrefix='已安装插件'}={}){
+    if(!pkg?.manifest?.id)throw new Error('插件包缺少 manifest.id。');
+    const id=pkg.manifest.id;const existing=definitionById(id);
     const oldPackage=externalPackages.get(id)||pkg.previousPackage||null;
-    const oldEnabled=existing?isDefinitionEnabled(existing):null;
-    const oldPreference=preferenceFor(id);
-
+    const oldEnabled=existing?isDefinitionEnabled(existing):null;const oldPreference=preferenceFor(id);
     try{
-      if(existing){
-        if(existing.manifest.source!=='external')throw new Error(`不能覆盖内置插件：${id}`);
-        await deactivate(id,{captureProject:true});
-        removeDefinition(id);
-        externalPackages.delete(id);
-      }
+      if(existing){if(existing.manifest.source!=='external')throw new Error(`不能覆盖内置插件：${id}`);await deactivate(id,{captureProject:true});removeDefinition(id);externalPackages.delete(id);}
       const definition=await loadExternalPackage(pkg);
-      if(isDefinitionEnabled(definition)){
-        const result=await activateDefinition(definition,{restoreCurrentProject:true});
-        void result;
-        if(!active.has(id))throw new Error(disabled.get(id)||`Plugin ${id} failed to activate.`);
-      }
-      chooseFallbackActivity();
-      eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
-      host?.setStatus?.(`已安装插件 ${definition.manifest.name||id} v${definition.manifest.version||'?'}`);
+      if(isDefinitionEnabled(definition)){await activateDefinition(definition,{restoreCurrentProject:true});if(!active.has(id))throw new Error(disabled.get(id)||`Plugin ${id} failed to activate.`);}
+      chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+      host?.setStatus?.(`${statusPrefix} ${definition.manifest.name||id} v${definition.manifest.version||'?'}`);
       return pluginStateRow(definition);
     }catch(err){
-      // Runtime activation is part of installation. If a new/update package
-      // cannot load, restore the previous package on disk and in memory so a
-      // broken plugin update cannot leave the application without its old plugin.
-      try{
-        removeDefinition(id);
-        externalPackages.delete(id);
-        disabled.delete(id);
-        if(oldPackage){
-          await window.electronAPI?.pluginRestorePackage?.({id,package:oldPackage});
-          const restored=await loadExternalPackage(oldPackage);
-          if(oldPreference===undefined)clearPreference(id);else setPreference(id,oldPreference);
-          const shouldEnable=oldEnabled===null?isDefinitionEnabled(restored):oldEnabled;
-          if(shouldEnable)await activateDefinition(restored,{restoreCurrentProject:true});
-        }else{
-          await window.electronAPI?.pluginRestorePackage?.({id,package:null});
-          clearPreference(id);
-        }
-        chooseFallbackActivity();
-        eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
-      }catch(rollbackError){
-        console.error('[DKDS external plugin rollback]',rollbackError);
-        externalLoadErrors.push({file:id,error:`安装失败且回滚失败：${rollbackError.message}`});
-      }
+      try{removeDefinition(id);externalPackages.delete(id);disabled.delete(id);if(oldPackage){await window.electronAPI?.pluginRestorePackage?.({id,package:oldPackage});const restored=await loadExternalPackage(oldPackage);if(oldPreference===undefined)clearPreference(id);else setPreference(id,oldPreference);const shouldEnable=oldEnabled===null?isDefinitionEnabled(restored):oldEnabled;if(shouldEnable)await activateDefinition(restored,{restoreCurrentProject:true});}else{await window.electronAPI?.pluginRestorePackage?.({id,package:null});clearPreference(id);}chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});}
+      catch(rollbackError){console.error('[DKDS external plugin rollback]',rollbackError);externalLoadErrors.push({file:id,error:`安装失败且回滚失败：${rollbackError.message}`});}
       throw err;
     }
+  }
+  async function rollbackExternalPlugin(id,token){
+    if(!window.electronAPI?.pluginRollbackVersion||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持插件版本回退。');
+    const pkg=await window.electronAPI.pluginRollbackVersion({id,token});if(!pkg)return null;
+    return replaceExternalPluginPackage(pkg,{statusPrefix:'已回退插件'});
+  }
+  async function installExternalPlugin(){
+    if(!window.electronAPI?.pluginInstallPackage||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持安装可执行插件。');
+    const pkg=await window.electronAPI.pluginInstallPackage();if(!pkg)return null;
+    return replaceExternalPluginPackage(pkg,{statusPrefix:'已安装插件'});
   }
 
   async function uninstallExternalPlugin(id){
@@ -2182,6 +2156,8 @@
       available:()=>!!window.electronAPI?.pluginInstallPackage&&!window.electronAPI?.isWebClient,
       install:installExternalPlugin,
       uninstall:uninstallExternalPlugin,
+      history:id=>window.electronAPI?.pluginHistoryList?.(id)||Promise.resolve([]),
+      rollback:rollbackExternalPlugin,
       openFolder:()=>window.electronAPI?.pluginOpenFolder?.(),
       installed:()=>[...externalPackages.keys()],
       errors:()=>externalLoadErrors.slice()

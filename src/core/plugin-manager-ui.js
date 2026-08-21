@@ -30,6 +30,10 @@
       name:'稳健共振寻峰',
       description:'面向共振 I–V 数据的稳健多证据寻峰算法。'
     },
+    'builtin.standard-transport-algorithms': {
+      name:'标准输运算法',
+      description:'提供 I–V 变换、Vg–Vd 标量场与 TER 的可版本化标准算法。'
+    },
     'builtin.ter-analysis': {
       name:'TER 分析',
       description:'同一 Vd 下的 TER 矩阵、热图、极值与最佳读出偏压分析。'
@@ -55,6 +59,20 @@
       name:mapped?.name || plugin?.name || plugin?.id || '未命名插件',
       description:mapped?.description || plugin?.description || '未提供插件说明。'
     };
+  }
+
+  function algorithmVersionControls(plugin){
+    if(plugin?.algorithmProvider!==true||!window.DKDSScientificAlgorithms?.list)return '';
+    const A=window.DKDSScientificAlgorithms,owned=A.list({owner:plugin.id})||[],families=new Map();
+    for(const row of owned){const key=`${row.category}::${row.id}`;if(!families.has(key))families.set(key,{category:row.category,id:row.id,title:row.title});}
+    if(!families.size)return '<div><strong>算法版本：</strong>尚未注册</div>';
+    const rows=[...families.values()].map(family=>{
+      const versions=A.versions?.({category:family.category,id:family.id})||A.list({category:family.category,id:family.id})||[];
+      const preferred=A.preferred?.(family.category,family.id)||'',resolved=A.resolve?.({category:family.category,id:family.id});
+      const options=[`<option value="" ${!preferred?'selected':''}>自动（当前 ${escapeHtml(resolved?.version||'无可用版本')}）</option>`,...versions.map(row=>`<option value="${escapeHtml(row.version)}" ${preferred===row.version?'selected':''}>v${escapeHtml(row.version)} · ${escapeHtml(row.owner)}</option>`)].join('');
+      return `<label class="plugin-algorithm-version-row"><span>${escapeHtml(family.title||family.id)}<small>${escapeHtml(family.id)} · ${escapeHtml(family.category)}</small></span><select class="plugin-algorithm-preference" data-alg-category="${escapeHtml(family.category)}" data-alg-id="${escapeHtml(family.id)}">${options}</select></label>`;
+    }).join('');
+    return `<div class="plugin-algorithm-version-block"><strong>新分析默认算法版本：</strong>${rows}</div>`;
   }
 
   function statusMeta(plugin) {
@@ -346,7 +364,7 @@
           <div class="plugin-card-actions">
             <button class="plugin-details-btn" type="button">详情</button>
             <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
-            ${plugin.source==='external'?`<button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>卸载</button>`:''}
+            ${plugin.source==='external'?`<button class="plugin-history-btn" type="button" ${busy?'disabled':''}>版本历史</button><button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>卸载</button>`:''}
           </div>
         </div>
         <div class="plugin-card-details hidden">
@@ -354,6 +372,7 @@
           <div><strong>启用来源：</strong>${plugin.preference===undefined?(plugin.enabled?'由插件默认设置启用':'由插件默认设置停用'):'已由用户设置覆盖'}</div>
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
+          ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div>${algorithmVersionControls(plugin)}`:''}
           ${plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:''}
         </div>`;
 
@@ -409,6 +428,21 @@
           // rather than preserving a now-invalid bottom scroll anchor.
           renderList({scroll:'top'});
         }
+      };
+
+      card.querySelectorAll('.plugin-algorithm-preference').forEach(select=>{select.onchange=()=>{try{const category=select.dataset.algCategory||'',id=select.dataset.algId||'',version=select.value||'';if(version)window.DKDSScientificAlgorithms.setPreferred({category,id,version});else window.DKDSScientificAlgorithms.clearPreferred(category,id);state.host?.setStatus?.(`${id} 的新分析默认版本已${version?`设为 v${version}`:'恢复为自动解析'}；已锁定工程不会改变。`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`算法默认版本修改失败：${err.message}`);renderList({anchorPluginId:plugin.id});}};});
+
+      const historyBtn=card.querySelector('.plugin-history-btn');
+      if(historyBtn)historyBtn.onclick=async()=>{
+        try{
+          const rows=await window.DKDSPlugins.external.history(plugin.id);
+          if(!rows?.length){state.host?.setStatus?.(`${display.name} 暂无可回退的历史版本。`);return;}
+          const listing=rows.slice(0,12).map((row,index)=>`${index+1}. v${row.version} · ${row.archiveReason||'history'}${row.archivedAt?` · ${row.archivedAt}`:''}`).join('\n');
+          const answer=window.prompt(`选择要回退的 ${display.name} 版本：\n\n${listing}\n\n输入序号；取消则不修改。`,'1');if(answer===null)return;
+          const index=Number(answer)-1,row=rows[index];if(!row){state.host?.setStatus?.('无效的版本序号。');return;}
+          if(!window.confirm(`将 ${display.name} 从 v${plugin.version||'?'} 回退到 v${row.version}？\n\n当前插件包会自动进入版本历史，可再次恢复。`))return;
+          state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});await window.DKDSPlugins.external.rollback(plugin.id,row.token);state.host?.setStatus?.(`${display.name} 已回退到 v${row.version}。`);
+        }catch(err){state.host?.setStatus?.(`插件版本回退失败：${err.message}`);}finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
       const uninstall=card.querySelector('.plugin-uninstall-btn');
