@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.12
+# DK Data Studio — v3.61.13
+
+## v3.61.13 数据中心运行时挂载修复
+
+- 修复 Data Center 独立 TOP 窗口运行时错误：`feature-runtime` 之前调用未绑定的 `dom.frame()`，会在真实 renderer 的 mount / resize / refresh 生命周期中触发 `ReferenceError: dom is not defined`。
+- Data Center 现在显式使用 Core `ctx.ui.dom` 调度器，与 TER / Pulse 等 TOP 插件保持同一宿主契约；不增加任何 Data Center 私有数据恢复路径。
+- 新增可执行的 Data Center runtime mount/layout smoke test，真实调用插件 `mount()` 并触发 Core `layout:resize`，避免以后只靠字符串检查与 Data Model 单测误判“窗口可用”。
+- 保留 v3.61.12 的 live Artifact hydration、legacy `project.datasets` 合并和 Artifact digest 刷新逻辑。
+- Data Center 插件版本提升到 `1.13.2`；Plugin API 保持 `1.15.0`。
+- 内置插件 override 改为版本优先：只有版本严格高于随应用打包的内置插件时才执行；旧版或同版 override 仅保留为诊断信息，避免升级应用后仍被用户目录中的旧插件代码覆盖。
 
 ## v3.61.12 数据中心实时恢复与动作组修复
 

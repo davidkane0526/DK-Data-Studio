@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const os = require('os');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
 const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
+const PluginOverridePolicy = require('./plugin-override-policy');
 
 const DKDSProjectFormat = require('./src/core/project-format');
 const APP_NAME = 'DK Data Studio';
@@ -194,7 +195,10 @@ function readInstalledPluginOverrides() {
   }
   return {packages,errors,directory:dir};
 }
-function installedPluginOverridePackages(){return readInstalledPluginOverrides().packages||[];}
+function classifyInstalledPluginOverrides(result=readInstalledPluginOverrides()){
+  return PluginOverridePolicy.classify(result?.packages||[],readBuiltinPluginManifests());
+}
+function installedPluginOverridePackages(){return classifyInstalledPluginOverrides().active;}
 
 async function installLanPluginPackage(buffer,metadata={}) {
   const raw=Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer||'');
@@ -213,6 +217,15 @@ async function installLanPluginPackage(buffer,metadata={}) {
   let target,kind;
   if(isBuiltin){
     if(!builtinPluginIds().has(id))throw new Error(`LAN update cannot introduce unknown built-in plugin: ${id}`);
+    const bundled=readBuiltinPluginManifests().find(row=>String(row?.manifest?.id||'')===id)?.manifest||null;
+    const bundledVersion=String(bundled?.version||'0.0.0');
+    if(!PluginOverridePolicy.isNewerThanBuiltin(pkg,bundledVersion)){
+      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-bundled',bundledVersion};
+    }
+    const installedOverride=readInstalledPluginOverrides().packages.find(row=>String(row?.manifest?.id||'')===id)||null;
+    if(installedOverride&&!PluginOverridePolicy.isNewerThanBuiltin(pkg,String(installedOverride.manifest.version||'0.0.0'))){
+      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-installed-override',installedVersion:String(installedOverride.manifest.version||'')};
+    }
     target=path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(id));
     kind='builtin-override';
   }else{
@@ -943,7 +956,7 @@ app.whenReady().then(() => {
   }
 
   ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
-  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
+  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides(),classified=classifyInstalledPluginOverrides(result);return {...result,packages:classified.active.map(pkg=>({...pkg,effective:true,compatibilityStatus:packageCompatibility(pkg.manifest)})),shadowed:classified.shadowed.map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest)}))};});
   ipcMain.handle('plugins:installPackage', async () => {
     const result = await dialog.showOpenDialog({
       title:'安装 DK Data Studio 插件', properties:['openFile'],

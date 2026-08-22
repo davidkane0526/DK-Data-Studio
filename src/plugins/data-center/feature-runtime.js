@@ -1,6 +1,7 @@
 (() => {
   async function mount(ctx,controller=null,views=null,adapter={}){
     const D=ctx.data.model,F=ctx.data.formula;
+    const dom=ctx.ui.dom;
     const sharedViews=views||window.DKDSPluginModules.get('builtin.data-center','shared-views')?.create?.(controller)||null;
     const stateStore=controller?.store;
     if(!stateStore)throw new Error('Data Center Controller state store is unavailable.');

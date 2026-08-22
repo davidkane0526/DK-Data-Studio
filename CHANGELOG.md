@@ -1,3 +1,11 @@
+# v3.61.13 — Data Center Runtime Mount Repair
+
+- 修复 Data Center `feature-runtime` 在独立 TOP 窗口中调用未绑定 `dom.frame()` 导致 mount/render 生命周期中断的问题。
+- Data Center 现在显式使用 Core `ctx.ui.dom` 调度器，与 TER / Pulse 等 TOP 插件保持同一宿主契约。
+- 新增可执行的 Data Center runtime mount/layout smoke test；不再只依赖源码字符串与 Data Model 单测判断窗口可用性。
+- 保留 v3.61.12 的 live Artifact hydration / legacy dataset 合并逻辑；本次不增加 Data Center 特例数据路径。
+- 内置插件 override 改为版本优先：只有版本严格高于随应用打包的内置插件时才执行；旧版或同版 override 仅保留为诊断信息，避免升级应用后仍被用户目录中的旧插件代码覆盖。
+
 # v3.61.12 — Data Center Live Hydration / Action Group Repair
 
 - Fixed Data Center still showing zero objects for self-contained legacy projects when a dedicated renderer received an empty/incomplete live Artifact snapshot. Live snapshots now merge with `project.datasets` transient adapters instead of suppressing the legacy bridge.
