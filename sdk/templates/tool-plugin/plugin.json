@@ -18,7 +18,7 @@
     "ui.tool-menu"
   ],
   "compatibility": {
-    "app": ">=3.61.10 <4.0.0",
+    "app": ">=3.61.11 <4.0.0",
     "pluginApi": "^1.15.0"
   },
   "pluginType": "tool"

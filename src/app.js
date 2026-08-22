@@ -2187,7 +2187,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.10',
+      version:'3.61.11',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2848,12 +2848,15 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       return window.DKDSPlugins?.activities?.set?.(activityId);
     }
     const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+    const activitySpec=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(activityId||''))||null;
+    const artifactSnapshot=String(activitySpec?.artifactHydration||'')==='live'?snapshotArtifactRows():null;
     return window.electronAPI.openActivityWindow({
       activityId,
       projectTabId:tab.id,
       title:tab.title,
       projectPath:state.projectPath,
       project:makeProject(),
+      artifactSnapshot,
       capabilitySnapshot,
       capabilityRevision:Number(capabilitySnapshot?.revision)||0
     });
@@ -3003,7 +3006,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.10',
+      appVersion:'3.61.11',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

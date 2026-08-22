@@ -73,17 +73,16 @@
       this.target.classList.add('dkds-scientific-plotly');
       this.renderScheduleKey=`${this.owner}:${this.target.dataset?.dkdsScientificPlotId||this.target.id||Math.random().toString(36).slice(2,10)}`;
       this.controllers=this.createControllers();
-      this.displayAxisState={y:null};this.baseYAxisType='linear';
-      this.axisDoubleClickHandler=event=>{if(!this.isYAxisDomTarget(event?.target))return;event.preventDefault?.();event.stopPropagation?.();event.stopImmediatePropagation?.();void this.toggleYAxisDisplay({event,source:'axis-double-click'});};
-      this.target.addEventListener?.('dblclick',this.axisDoubleClickHandler,true);
+      this.displayAxisState={y:null,z:null};this.baseYAxisType='linear';
+      this.displayScaleChangedHandler=event=>this.handleDisplayScaleChanged(event);
+      this.target.addEventListener?.('dkds:display-scale-changed',this.displayScaleChangedHandler);
       this.setInteraction(spec.interaction||null);
       this.restoreViewportPreference();
     }
-    isYAxisDomTarget(node){
-      let current=node;while(current&&current!==this.target){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(ytick|ytitle|yaxislayer-above|yaxislayer-below|g-ytitle)(\s|$)/.test(cls)||/yaxis/i.test(cls))return true;current=current.parentNode;}return false;
-    }
-    effectiveYAxisType(){return String(this.chart?.displayScaleState?.(this.target)?.type||this.baseYAxisType||'linear').toLowerCase();}
-    async toggleYAxisDisplay(meta={}){const current=this.effectiveYAxisType();if(['category','date','multicategory'].includes(current))return false;try{const next=await Promise.resolve(this.chart?.toggleYAxisDisplay?.(this.target));if(!next)return false;this.viewportState={...this.viewportState,yRange:null,revision:(Number(this.viewportState?.revision)||0)+1,source:'axis-scale-toggle'};this.persistViewport();this.emitViewport({reason:'axis-scale-toggle',scale:next,...meta});this.spec.onDisplayScaleChanged?.({axis:'y',type:next,view:this,...meta});return next;}catch{return false;}}
+    handleDisplayScaleChanged(event){const detail=event?.detail&&typeof event.detail==='object'?event.detail:{},axis=String(detail.axis||'y'),type=String(detail.type||'linear');this.displayAxisState={...this.displayAxisState,[axis]:type};if(axis==='y'){this.viewportState={...this.viewportState,yRange:null,revision:(Number(this.viewportState?.revision)||0)+1,source:'axis-scale-toggle'};this.persistViewport();this.emitViewport({reason:'axis-scale-toggle',scale:type,axis});}this.spec.onDisplayScaleChanged?.({axis,type,view:this,event});return type;}
+    effectiveYAxisType(){const state=this.chart?.displayScaleState?.(this.target);return String(state?.axis==='y'?state.type:(this.displayAxisState.y||this.baseYAxisType||'linear')).toLowerCase();}
+    async toggleYAxisDisplay(){const current=this.effectiveYAxisType();if(['category','date','multicategory'].includes(current))return false;try{return await Promise.resolve(this.chart?.toggleYAxisDisplay?.(this.target))||false;}catch{return false;}}
+    async toggleDisplayScale(axis=''){try{return await Promise.resolve(this.chart?.toggleDisplayScale?.(this.target,axis))||false;}catch{return false;}}
     createControllers(){
       const view=this;
       return Object.freeze({
@@ -230,7 +229,7 @@
     lifecycleState(){return {owner:this.owner,targetId:this.target?.id||this.target?.dataset?.dkdsScientificPlotId||'',managedRender:this.managedRender,suspended:this.suspended,purged:this.purged,pendingRender:this.pendingRender,traceCount:this.target?.data?.length||0,pins:this.pinnedIds.size,viewportRevision:Number(this.viewportState?.revision)||0};}
     performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0,suspended:this.suspended,purged:this.purged,managedRender:this.managedRender});}
     resize(){if(this.suspended){window.DKDSPerformance?.skip?.('plot.hidden-resize');return false;}return this.chart?.resize?.(this.target);}
-    dispose(options={}){if(this.disposed)return;this.disposed=true;cancelScheduledRender(this.renderScheduleKey,this);this.target?.removeEventListener?.('dblclick',this.axisDoubleClickHandler,true);this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
+    dispose(options={}){if(this.disposed)return;this.disposed=true;cancelScheduledRender(this.renderScheduleKey,this);this.target?.removeEventListener?.('dkds:display-scale-changed',this.displayScaleChangedHandler);this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
   }
 
   class ScientificPlotScope {

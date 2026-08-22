@@ -1389,6 +1389,7 @@
     finite(value){return Number.isFinite(Number(value));}
     yDisplayValue(value){const n=Number(value);return this.displayYAxisType==='log'?Math.abs(n):n;}
     yDisplayable(value){const n=this.yDisplayValue(value);return Number.isFinite(n)&&(this.displayYAxisType!=='log'||n>0);}
+    logDecadeTicks(domain){const rows=(Array.isArray(domain)?domain:[]).map(Number).filter(value=>Number.isFinite(value)&&value>0);if(rows.length<2)return rows;const lo=Math.min(...rows),hi=Math.max(...rows),from=Math.ceil(Math.log10(lo)-1e-12),to=Math.floor(Math.log10(hi)+1e-12),ticks=[];for(let exp=from;exp<=to;exp++)ticks.push(Math.pow(10,exp));if(!ticks.length){const mid=Math.pow(10,Math.round((Math.log10(lo)+Math.log10(hi))/2));if(mid>=lo&&mid<=hi)ticks.push(mid);}return ticks;}
     curves(){const rows=this.spec.getCurves?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     markers(){const rows=this.spec.getMarkers?.()||[];return Array.isArray(rows)?rows.filter(Boolean):[];}
     manipulators(){const rows=this.spec.getManipulators?.()||[];return Array.isArray(rows)?rows.filter(row=>row&&row.id&&row.kind):[];}
@@ -1477,7 +1478,8 @@
       const clipId=`dkds-sci-clip-${Math.random().toString(36).slice(2,9)}`;svg.append('defs').append('clipPath').attr('id',clipId).append('rect').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH);
       const plotBg=svg.append('rect').attr('class','dkds-scientific-plot-bg').attr('x',margin.left).attr('y',margin.top).attr('width',innerW).attr('height',innerH).style('cursor','crosshair');
       svg.append('g').attr('class','dkds-scientific-axis dkds-scientific-x-axis').attr('transform',`translate(0,${margin.top+innerH})`).call(d3.axisBottom(x).tickFormat(this.spec.xTickFormat||undefined));
-      const yAxis=svg.append('g').attr('class','dkds-scientific-axis dkds-scientific-y-axis').attr('transform',`translate(${margin.left},0)`).style('cursor','pointer').call(d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined));
+      const yAxisGenerator=d3.axisLeft(y).tickFormat(this.spec.yTickFormat||undefined);if(logY)yAxisGenerator.tickValues(this.logDecadeTicks(y.domain()));
+      const yAxis=svg.append('g').attr('class','dkds-scientific-axis dkds-scientific-y-axis').attr('transform',`translate(${margin.left},0)`).style('cursor','pointer').call(yAxisGenerator);
       const toggleY=event=>{event.preventDefault();event.stopPropagation();this.toggleYAxisDisplay({event,source:'axis-double-click'});};
       svg.append('rect').attr('class','dkds-scientific-y-axis-hit').attr('x',0).attr('y',Math.max(0,margin.top-14)).attr('width',margin.left+12).attr('height',innerH+28).attr('fill','transparent').style('cursor','pointer').on('dblclick.dkdsyaxis',toggleY);
       yAxis.raise().on('dblclick.dkdsyaxis',toggleY);

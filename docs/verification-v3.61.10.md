@@ -1,5 +1,7 @@
 # DK Data Studio v3.61.10 verification
 
+> Superseded behavior note (v3.61.11): the v3.61.10 heatmap-Y logarithmic interpretation in item 4 was incorrect. Heatmaps now keep X/Y coordinates unchanged and apply logarithmic display to the Z/color scale (`log10(|Z|)`). v3.61.11 also adds authoritative live Artifact hydration for Data Center.
+
 Scope: universal Core display-scale behavior, absolute-value logarithmic view projection, legacy-project Artifact synchronization into already-open TOP/Data Center windows, system command grouping, and concise Edit labeling.
 
 Verified gates:

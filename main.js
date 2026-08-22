@@ -328,11 +328,14 @@ function projectSnapshotDigest(project) {
 
 function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
   const project = payload.project || null;
+  const artifactSnapshot = Array.isArray(payload.artifactSnapshot) ? payload.artifactSnapshot : null;
   return {
     activityId:String(payload.activityId || '').trim(),
     projectTabId:String(payload.projectTabId || '').trim(),
     project,
     projectDigest:projectSnapshotDigest(project),
+    artifactSnapshot,
+    artifactDigest:projectSnapshotDigest(artifactSnapshot),
     projectPath:payload.projectPath || null,
     title:payload.title || '',
     ownerWebContentsId,
@@ -545,6 +548,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
     const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
       || cachedBootstrap.projectPath !== nextBootstrap.projectPath
+      || cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest
       || cachedBootstrap.prewarm !== nextBootstrap.prewarm
       || cachedBootstrap.capabilityRevision !== nextBootstrap.capabilityRevision;
     const promoteFromPrewarm = cachedBootstrap?.prewarm === true && nextBootstrap.prewarm !== true;

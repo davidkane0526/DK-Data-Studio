@@ -5,7 +5,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.10 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.11 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -40,7 +40,7 @@ A tool may use public data/artifact, table, chart, settings, clipboard, or servi
 
 ## Core display-scale interaction
 
-All Core-owned scientific data plots support **double-click the Y axis or left Y-label region → toggle linear/log display**. Log mode renders a view-only `|Y|` projection; it does not mutate source Artifacts, plugin-domain data, pipeline inputs, project persistence, or CSV/data exports. `Y = 0` remains in the source data but cannot be rendered on a logarithmic axis. Numeric scalar-field/heatmap Y coordinates use the same projection. Category/date Y axes are not logarithmically transformable and therefore remain unchanged. Plugins should not implement a duplicate Y-axis double-click handler or bypass the Core chart/surface runtimes.
+All Core-owned XY/scatter/curve plots support **double-click the Y axis or left Y-label region → toggle linear/log display**. Log mode renders a view-only `|Y|` projection; it does not mutate source Artifacts, plugin-domain data, pipeline inputs, project persistence, or CSV/data exports. `Y = 0` remains in the source data but cannot be rendered on a logarithmic axis. For heatmaps/scalar fields, the same display contract applies to the **Z/color scale** instead: double-click the colorbar/right color-scale region to toggle a view-only `log10(|Z|)` color mapping while X/Y coordinates stay unchanged. Plugins should not implement duplicate axis/colorbar scale handlers or bypass the Core chart/surface runtimes.
 
 ## Validate
 
@@ -132,6 +132,19 @@ The intended execution path is **Input → Interaction Binding → Intent / Comm
 Persistent plugin state must be registered through `ctx.project.registerSlice(...)`. `restore` receives only the plugin's canonical namespaced slice; old application root fields are migrated by DK Data Studio before plugin runtime starts. A missing slice is fresh/reset state, not a signal to inspect the project root.
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
+
+For a windowed activity that must reflect the **exact live project Artifact Store** at open/reuse time, Core also supports the activity-level hydration contract:
+
+```js
+ctx.ui.activities.add({
+  id: 'data-inspector',
+  label: '数据检查',
+  openMode: 'window',
+  artifactHydration: 'live'
+});
+```
+
+`artifactHydration: 'live'` is intentionally opt-in because it transfers the canonical live Artifact snapshot, including transient legacy adapters, into that activity renderer. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot. Plugins must not parse legacy project roots inside the activity window.
 
 ## Core-owned workbench import action (Plugin API 1.14)
 

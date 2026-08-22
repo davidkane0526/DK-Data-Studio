@@ -1,11 +1,18 @@
+# v3.61.11 — Correct Log Display / Heatmap Z Scale / Live Data Center Hydration
+
+- XY/scatter/curve log display now labels only decade ticks on the Y axis, eliminating overlapping 2×/3×/... minor labels on scientific current ranges. D3 ScientificCurveSurface and Plotly charts follow the same decade-only major-label rule.
+- Heatmap/scalar-field logarithmic display is corrected to the Z/color scale. X/Y coordinates remain unchanged; the view projects `log10(abs(Z))`, keeps zero hidden only in the rendered view, and preserves source matrices/project/export data. Colorbar tick labels remain in original absolute Z magnitudes.
+- ScientificPlot no longer owns a private Y-axis double-click handler. The base Core Chart Runtime is the sole Plotly display-scale interaction owner; ScientificPlot only observes the resulting `dkds:display-scale-changed` event.
+- Data Center activity declares generic `artifactHydration: live`. On open, the owner renderer supplies its exact live Artifact snapshot, including transient legacy DataTable adapters intentionally omitted from persisted `dataModel`. This fixes old projects whose main analysis still had data while a newly opened Data Center hydrated an empty/stale store. Heavy analysis TOP windows do not receive this extra snapshot unless they explicitly request the same activity contract.
+- Plugin API remains `1.15.0`; standalone SDK minimum application version moves to `3.61.11` for the corrected universal display contract.
+
 # v3.61.10 — Universal Display Scale / Legacy Project Data Center Consistency
 
-- Moved Plotly Y-scale interaction down to the base Core Chart Runtime so host group charts, zoom charts, Data Center charts, TER plots, numeric heatmaps and ScientificPlot consumers share one display contract. ScientificCurveSurface keeps the same Core-owned behavior for D3 interactive curves.
-- Log display now renders a view-only `abs(Y)` projection instead of merely changing `yaxis.type`. Source Artifacts, plugin state, input arrays, project persistence and data/CSV exports retain the original signed values. Numeric heatmap Y coordinates use the same projection; categorical/date axes remain unchanged.
-- Removed remaining host-owned raw Plotly render/resize/export paths in favor of `DKDSCharts`, preventing display features from accidentally being limited to Resonance or another special workbench.
-- Project restore now publishes an Artifact delta after rebuilding legacy `project.datasets` adapters, keeping already-open Data Center/TOP renderers synchronized when an old project is opened.
-- Grouped Data Management and Tools into one system-command visual cluster; the Tools trigger no longer draws a nested border/shadow.
-- Renamed Data Center `数据操作` to `编辑`.
+- Moved Plotly display-scale interaction down to the base Core Chart Runtime so host group charts, zoom charts, Data Center charts, TER plots and ScientificPlot consumers share one display contract. ScientificCurveSurface keeps the same Core-owned behavior for D3 interactive curves.
+- Introduced view-only absolute-value Y projection for ordinary XY/scatter/curve log display without mutating Artifacts, plugin state, input arrays, project persistence or data/CSV exports.
+- Removed remaining host-owned raw Plotly render/resize/export paths in favor of `DKDSCharts`.
+- Project restore began publishing Artifact deltas after rebuilding legacy `project.datasets` adapters for already-open TOP windows.
+- Grouped Data Management and Tools into one system-command visual cluster and renamed Data Center `数据操作` to `编辑`.
 
 # v3.61.8 — Live Artifact Sync / Scoped Workbench Data Reliability
 

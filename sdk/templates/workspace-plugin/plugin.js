@@ -5,7 +5,7 @@
     description:'Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.',requiresCore,
     capabilities:['ui.page','ui.analysis-workbench','ui.interaction-behavior','ui.scientific-plot','state.store','data.types','data.sources'],
     data:{accepts:['science.transport.iv']},
-    compatibility:{app:'>=3.61.10 <4.0.0',pluginApi:'^1.15.0'}
+    compatibility:{app:'>=3.61.11 <4.0.0',pluginApi:'^1.15.0'}
   }, async ctx => {
     const state=ctx.state.create({runs:0},{projectSlice:'settings'});
     const run=()=>{state.patch({runs:state.get().runs+1});ctx.status.set(`SDK example run ${state.get().runs}`);return true;};

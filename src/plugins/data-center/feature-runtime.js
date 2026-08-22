@@ -13,7 +13,7 @@
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
     ctx.ui.activities.add({
-      id:'data-center',label:'数据中心',contextLabel:'数据中心',icon:'▦',order:20,openMode:'window',navigation:'system',
+      id:'data-center',label:'数据中心',contextLabel:'数据中心',icon:'▦',order:20,openMode:'window',navigation:'system',artifactHydration:'live',
       description:'标准数据对象、公式、Workflow / Recipe 与来源链',
       onActivate:()=>ctx.workspace.openPage(page?.id||'builtin-data-center-data-center-page')
     });

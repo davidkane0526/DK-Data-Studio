@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 (async()=>{
-assert(json('package.json').version==='3.61.10','Application version must be 3.61.10.');
+assert(json('package.json').version==='3.61.11','Application version must be 3.61.11.');
 const chart=read('src/core/chart-runtime.js');
 assert(chart.includes('displayScaleStates')&&chart.includes('isYAxisInteraction')&&chart.includes('left+12'),'Core chart runtime must treat the whole left Y-label region as the display-scale interaction target.');
 assert(chart.includes('next.y=trace.y.map(absNumber)'),'Core Plotly display projection must use |Y| in log display without rewriting source data.');
@@ -21,7 +21,7 @@ const sourceY=[-10,-1,0,2];await fakeWindow.DKDSCharts.react('plot',[{type:'scat
 assert(JSON.stringify(captured.data[0].y)===JSON.stringify([10,1,0,2]),'Log display must render absolute Y values.');
 assert(JSON.stringify(sourceY)===JSON.stringify([-10,-1,0,2]),'Display projection must not mutate source Y data.');
 assert(captured.layout.yaxis.type==='log','Toggle must switch only the display axis to log.');
-const heatY=[-2,-.5,1];await fakeWindow.DKDSCharts.react('plot',[{type:'heatmap',y:heatY,z:[[1],[2],[3]]}],{yaxis:{type:'linear'}},{});assert(JSON.stringify(captured.data[0].y)===JSON.stringify([2,.5,1]),'Numeric heatmaps must share the same |Y| logarithmic display projection.');assert(JSON.stringify(heatY)===JSON.stringify([-2,-.5,1]),'Heatmap source Y coordinates must remain unchanged.');
+const heatY=[-2,-.5,1],heatZ=[[1],[2],[3]];await fakeWindow.DKDSCharts.react('plot',[{type:'heatmap',y:heatY,z:heatZ}],{yaxis:{type:'linear'}},{});assert(JSON.stringify(captured.data[0].y)===JSON.stringify(heatY),'Heatmap coordinate Y must remain unchanged; heatmap logarithmic display belongs to Z/color scale.');assert(JSON.stringify(heatZ)===JSON.stringify([[1],[2],[3]]),'Heatmap source Z values must remain unchanged in linear mode.');
 const surface=read('src/core/ui-infrastructure.js');
 assert(surface.includes('yDisplayValue(value)')&&surface.includes("this.displayYAxisType==='log'?Math.abs(n):n"),'ScientificCurveSurface must use an absolute-value display projection in log mode.');
 assert(surface.includes('dkds-scientific-y-axis-hit'),'ScientificCurveSurface must expose a left-label hit region, not only tick text.');
@@ -35,5 +35,5 @@ const index=read('src/index.html'),css=read('src/style.css');
 assert(index.includes('system-core-tools-group')&&css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn'),'Data Management and Tools must render as one shared visual group.');
 assert(index.includes('id="editMenuBtn"')&&index.includes('>编辑 ▾</button>'),'Top Edit menu label must be concise: 编辑.');
 assert(css.includes('border:0!important')&&css.includes('box-shadow:none!important'),'Tools must not keep a second nested border/shadow inside the system group.');
-console.log('v3.61.10 universal display + legacy project Data Center checks passed.');
+console.log('v3.61.11 universal display + legacy project Data Center checks passed.');
 })().catch(err=>{console.error(err);process.exit(2);});

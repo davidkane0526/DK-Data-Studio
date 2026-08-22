@@ -1,14 +1,20 @@
-# DK Data Studio — v3.61.10
+# DK Data Studio — v3.61.11
 
-## v3.61.10 通用显示尺度与旧工程数据中心一致性
+## v3.61.11 对数显示修正、热图 Z 色阶与旧工程数据中心恢复
 
-- 对数显示进一步下沉到最底层 Core Chart Runtime，不再只存在于共振主图或 ScientificPlot。宿主组图、放大图、数据中心、TER、数值型热图及其他通过 Core Chart Runtime 绘制的 Plotly 图统一支持双击 Y 轴或左侧标签区域切换线性/对数显示；ScientificCurveSurface 使用同一规则。
-- 对数视图统一显示 `|Y|`：Core 生成仅供绘制的绝对值投影，不修改 Artifact、插件领域状态、原始 trace 数组、工程保存内容或 CSV/数据导出。`Y=0` 在对数轴上不可显示但仍保留在源数据中。数值型热图的 Y 坐标同样使用该显示投影；分类/日期轴因不存在数学意义上的对数映射而保持原轴类型。
-- 清理宿主残留的直接 Plotly `newPlot/react/resize/toImage` 路径，统一经过 Core Chart Runtime，防止新基础交互只覆盖某个特殊工作台。
-- 旧工程恢复现在被视为一次完整 Artifact transaction。`project.datasets` 重建出的 legacy DataTable 会把 upsert/remove 差量广播给已经打开的数据中心及其他 TOP 窗口，修复旧工程数据实际存在但数据中心仍显示 0 的问题。
-- 顶部“数据管理 + 工具”改为一个共享描边/阴影的系统操作组，“工具”按钮自身不再重复绘制边框和阴影。
-- 数据中心“数据操作”按钮更名为“编辑”。
-- Plugin API 继续为 `1.15.0`；本轮是 Core/SDK 行为一致性修复，不增加新的领域专用接口。
+- 普通 XY / 散点 / 曲线图双击 Y 轴或左侧 Y 标签区域，可在 `linear ↔ log(|Y|)` 间切换。对数模式只标注 10 的整数次幂主刻度，避免 20、30、40… 等次刻度标签在窄纵轴上重叠。
+- **热图不再对 Y 坐标做对数变换。** 热图/标量场的对数显示作用于 Z/色标：双击色标或右侧色阶区域，在普通色阶与 `log10(|Z|)` 显示之间切换。X/Y 网格坐标始终保持原值。
+- 所有对数切换都只是 View Projection。Artifact、插件读取的数据、工程保存内容以及 CSV/矩阵导出保持原始符号和原始数值；0 只是在相应对数视图中不可显示。
+- Plotly 图的显示尺度交互现在只有最底层 Core Chart Runtime 一处实现。ScientificPlot 不再单独监听 Y 轴双击，只监听 Core 发出的显示尺度变化事件，因此共振、TER、数据中心、组图、放大图和 SDK 插件不会再各自拥有不同策略。
+- 数据中心声明通用 `artifactHydration: live` 活动契约。打开数据中心时，主窗口直接提供当前工程的**实时 Artifact 快照**，其中包括旧工程从 `project.datasets` 重建、但按设计不写入持久 `dataModel` 的 transient DataTable。由此不再依赖数据中心自己重新猜测旧工程格式。
+- 实时 Artifact 快照不是所有 TOP 的默认额外负担；只有显式声明 `artifactHydration: live` 的活动使用，避免重新增加 TER 等重型窗口的首次打开成本。
+- Plugin API 保持 `1.15.0`，当前独立 SDK 完整契约最低应用版本调整为 `3.61.11`。
+
+## v3.61.10 通用显示尺度与系统功能整理
+
+- 将普通曲线的 Y 轴显示尺度能力下沉到 Core Chart Runtime，并统一宿主组图、放大图和 ScientificPlot 的绘图入口。
+- 数据管理与工具形成统一系统按钮组，数据中心“数据操作”简化为“编辑”。
+- 为旧工程恢复增加 Artifact delta 同步，作为后续 v3.61.11 live hydration 修复的基础。
 
 ## v3.61.8 独立窗口实时数据同步
 

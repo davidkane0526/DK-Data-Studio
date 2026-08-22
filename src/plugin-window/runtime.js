@@ -237,15 +237,17 @@
   }
 
   function restoreArtifactStore() {
+    const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null;
     artifactStore = window.DKDSData?.restoreStore
-      ? window.DKDSData.restoreStore(project.dataModel || { schema:1, artifacts:[] })
+      ? window.DKDSData.restoreStore(liveSnapshot?{schema:2,artifacts:liveSnapshot}:(project.dataModel || { schema:1, artifacts:[] }))
       : null;
-    // Root project datasets remain the compatibility persistence source for
-    // imported text data. They are deliberately excluded from dataModel when
-    // serialized because their Artifact representation is transient. Rebuild
-    // those adapters here so TOP windows observe the same live data contract as
-    // the main renderer instead of receiving an empty Artifact Store.
-    if (artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
+    // Dedicated windows receive the owner's live Artifact snapshot whenever it
+    // is available. This snapshot includes transient legacy DataTable adapters
+    // that are intentionally omitted from the persisted dataModel, so Data
+    // Center and analysis TOPs see exactly the same project data as the main
+    // renderer. Older hosts without a live snapshot still rebuild adapters from
+    // project.datasets as a compatibility fallback.
+    if (!liveSnapshot && artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
       try { window.DKDSData.syncLegacyDatasetArtifacts(artifactStore,project.datasets); }
       catch (err) { console.warn('[DKDS plugin window legacy artifact bridge]', err); }
     }
@@ -463,7 +465,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.10',
+      appVersion:'3.61.11',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
