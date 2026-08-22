@@ -14,7 +14,7 @@ const dataCenter=read('src/plugins/data-center/feature-runtime.js');
 const sdkReadme=read('sdk/README.md');
 const sdkTypes=read('sdk/plugin-api.d.ts');
 
-assert(pkg.version==='3.61.13','Application version must be 3.61.13.');
+assert(pkg.version==='3.61.14','Application version must be 3.61.14.');
 assert(preload.includes("pushActivityArtifactDelta: payload => ipcRenderer.send('windows:ownerArtifactDelta'")&&preload.includes("onOwnerArtifactDelta: callback =>"),'Preload must expose owner-to-TOP Artifact delta transport in both directions of the IPC boundary.');
 assert(main.includes("ipcMain.on('windows:ownerArtifactDelta'")&&main.includes("win.webContents.send('windows:ownerArtifactDelta'")&&main.includes("if (row?.prewarm === true) continue")&&main.includes('excludeActivityId'),'Main process must forward live Artifact deltas to matching hydrated TOP windows, skip the origin activity, and avoid waking runtime-only prewarm windows.');
 assert(app.includes('function pushArtifactDeltaToActivityWindows(')&&app.includes("pushArtifactDeltaToActivityWindows(importDelta,'import')")&&app.includes("pushArtifactDeltaToActivityWindows(payload.artifactDelta||{},'activity-merge'"),'Import commits and auxiliary-window result merges must publish exact Artifact deltas to other already-open TOP windows.');

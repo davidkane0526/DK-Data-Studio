@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const policy=require(path.join(root,'plugin-override-policy'));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert(pkg.version==='3.61.13','Application version must be 3.61.13.');
+assert(pkg.version==='3.61.14','Application version must be 3.61.14.');
 
 const builtins=[
   {manifest:{id:'builtin.data-center',version:'1.13.2'}},
@@ -30,4 +30,4 @@ assert(main.includes('PluginOverridePolicy.classify')&&main.includes('classifyIn
 assert(main.includes("reason:'not-newer-than-bundled'")&&main.includes("reason:'not-newer-than-installed-override'"),'LAN updater must reject stale/downgrade built-in override packages.');
 assert(main.includes('shadowed:classified.shadowed'),'Plugin override IPC must keep stale packages diagnosable without executing them.');
 assert((pkg.build?.files||[]).includes('plugin-override-policy.js'),'Packaged app must include the override precedence policy module.');
-console.log('v3.61.13 built-in override precedence checks passed.');
+console.log('v3.61.14 built-in override precedence checks passed.');

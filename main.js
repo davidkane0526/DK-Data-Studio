@@ -425,6 +425,11 @@ async function diagnosticRendererLifecycleSnapshot(win){
   try{return await win.webContents.executeJavaScript('window.DKDSUI?.lifecycleSnapshot?.() || null',true);}
   catch{return null;}
 }
+async function diagnosticRendererProjectSnapshot(win){
+  if(!win||win.isDestroyed())return null;
+  try{return await win.webContents.executeJavaScript('window.DKDSPluginWindowDiagnostics?.snapshot?.() || null',true);}
+  catch{return null;}
+}
 function lifecycleSnapshotSuspended(snapshot,expected){
   const rows=Array.isArray(snapshot?.rows)?snapshot.rows:[];
   if(!rows.length)return true;
@@ -455,29 +460,45 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
   const spec=resolveConfiguredPluginWindow(activityId);
   if(!spec)return {ok:false,activityId,error:'No independent TOP window is configured for this activity.'};
   const projectTabId=`__dkds_automation__${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-  const project={version:app.getVersion(),datasets:[],plugins:{},dataModel:{schema:2,artifacts:[]}};
-  const created=createOrFocusAuxiliaryWindow(ownerWindow,{activityId,projectTabId,project,projectPath:null,title:'自动化测试',prewarm:true,diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0});
+  const project=payload?.project&&typeof payload.project==='object'
+    ? structuredClone(payload.project)
+    : {version:app.getVersion(),datasets:[],plugins:{},dataModel:{schema:2,artifacts:[]}};
+  const artifactSnapshot=Array.isArray(payload?.artifactSnapshot)?structuredClone(payload.artifactSnapshot):null;
+  const useConfiguredPrewarm=spec.prewarm===true;
+  const basePayload={activityId,projectTabId,project,artifactSnapshot,projectPath:null,title:'自动化测试',diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0};
+  const created=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:useConfiguredPrewarm});
   const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId);
   const win=auxiliaryWindows.get(key);
   const rendererProcessId=(()=>{try{return Number(win?.webContents?.getOSProcessId?.())||0;}catch{return 0;}})();
-  const outcome=await waitForAuxiliaryDiagnosticOutcome(win,Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000)));
+  const timeoutMs=Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000));
+  let outcome=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+  let promotion=null;
+  if(outcome.ok&&useConfiguredPrewarm&&win&&!win.isDestroyed()){
+    promotion=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
+    const hydrated=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+    outcome=hydrated.ok?{...hydrated,prewarmReady:true}:{...hydrated,prewarmReady:true};
+  }
   let lifecycle={tested:false,ok:false};
+  let rendererData=null;
   if(outcome.ok&&win&&!win.isDestroyed()){
     try{
-      try{win.webContents.send('windows:activityWillShow');win.show();}catch{}
+      if(!win.isVisible()){try{win.webContents.send('windows:activityWillShow');win.show();}catch{}}
       await diagnosticDelay(80);
+      rendererData=await diagnosticRendererProjectSnapshot(win);
       const hidden=hideDedicatedAuxiliaryWindow(win);
       await diagnosticDelay(100);
       const hiddenSnapshot=await diagnosticRendererLifecycleSnapshot(win);
-      const reopened=createOrFocusAuxiliaryWindow(ownerWindow,{activityId,projectTabId,project,projectPath:null,title:'自动化测试',prewarm:false,diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0});
-      await diagnosticDelay(160);
+      const reopened=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
+      await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+      await diagnosticDelay(80);
       const visibleSnapshot=await diagnosticRendererLifecycleSnapshot(win);
+      rendererData=await diagnosticRendererProjectSnapshot(win)||rendererData;
       lifecycle={tested:true,hidden:!!hidden,reused:reopened?.reused===true,alive:!win.isDestroyed(),visible:!win.isDestroyed()&&win.isVisible(),hiddenContract:lifecycleSnapshotSuspended(hiddenSnapshot,true),visibleContract:lifecycleSnapshotSuspended(visibleSnapshot,false),hiddenSnapshot,visibleSnapshot};
       lifecycle.ok=lifecycle.hidden&&lifecycle.reused&&lifecycle.alive&&lifecycle.hiddenContract&&lifecycle.visibleContract;
     }catch(err){lifecycle={tested:true,ok:false,error:String(err?.message||err)};}
   }
   const startupProfile=win&&!win.isDestroyed()?structuredClone(auxiliaryStartupProfiles.get(win.webContents.id)||null):null;
-  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',created,startupProfile,lifecycle};
+  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',configuredPrewarm:useConfiguredPrewarm,created,promotion,startupProfile,lifecycle,rendererData};
   closeAuxiliaryWindowForReal(win);
   return details;
 }

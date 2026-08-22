@@ -1133,9 +1133,28 @@
     }
   }
 
+  function currentProjectWindowSmokePayload(){
+    captureActiveProjectTab();
+    const project=makeProject();
+    const artifactSnapshot=snapshotArtifactRows();
+    const tables=artifactSnapshot.filter(row=>row?.kind==='data.table');
+    return {
+      project,
+      artifactSnapshot,
+      summary:{
+        datasetCount:Array.isArray(project.datasets)?project.datasets.length:0,
+        artifactCount:artifactSnapshot.length,
+        dataTableCount:tables.length,
+        transientArtifactCount:artifactSnapshot.filter(row=>row?.transient===true).length,
+        totalTableRows:tables.reduce((sum,row)=>sum+(Number(row?.rowCount)||0),0)
+      }
+    };
+  }
+
   window.DKDSAutomationHost={
     ...(window.DKDSAutomationHost||{}),
-    runImportWorkbenchSmoke:runImportWorkbenchAutomationSmoke
+    runImportWorkbenchSmoke:runImportWorkbenchAutomationSmoke,
+    currentProjectWindowSmokePayload
   };
 
   async function updateImportSetting(key,value,{reload=false,mapping=false}={}){
@@ -2187,7 +2206,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.13',
+      version:'3.61.14',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3013,7 +3032,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.13',
+      appVersion:'3.61.14',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

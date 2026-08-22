@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.13','Application version must be 3.61.13.');
+assert(pkg.version==='3.61.14','Application version must be 3.61.14.');
 
 // Execute the real Data Center feature module, then drive Core events. v3.61.12
 // failed this lifecycle with `ReferenceError: dom is not defined`; its earlier
@@ -110,5 +110,5 @@ const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
   assert(page.querySelector('#dcActiveName').textContent==='VG=0','Data Center preview must activate the first DataTable.');
 
   mounted.deactivate();
-  console.log('v3.61.13 Data Center executable mount + Artifact render smoke passed.');
+  console.log('v3.61.14 Data Center executable mount + Artifact render smoke passed.');
 })().catch(err=>{console.error(err?.stack||err);process.exit(2);});

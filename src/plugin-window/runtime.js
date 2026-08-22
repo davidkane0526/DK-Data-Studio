@@ -59,6 +59,7 @@
   let roleTransitionSnapshotTaken = false;
   let artifactUpserts = new Map();
   let artifactRemovals = new Set();
+  let artifactStorePrimedForBootstrap = false;
 
   function isTypingTarget(el) {
     if (!el) return false;
@@ -254,7 +255,52 @@
     }
     artifactUpserts = new Map();
     artifactRemovals = new Set();
+    return artifactStore;
   }
+
+  function primeArtifactStoreForRuntime() {
+    // Plugin window runtimes and plugin activation are allowed to consult the
+    // Artifact API immediately. Previously `artifactStore` did not exist until
+    // after window-runtime creation + plugin activation, which made the contract
+    // timing-dependent (Resonance could throw, while Data Center silently mounted
+    // against an empty store). Runtime-only prewarm still receives an empty Store
+    // so it does not hydrate domain data or defeat the prewarm performance policy.
+    if (bootstrap?.prewarm === true) {
+      artifactStore = window.DKDSData?.restoreStore
+        ? window.DKDSData.restoreStore({schema:2,artifacts:[]})
+        : null;
+      artifactUpserts = new Map();
+      artifactRemovals = new Set();
+      artifactStorePrimedForBootstrap = false;
+      return artifactStore;
+    }
+    restoreArtifactStore();
+    artifactStorePrimedForBootstrap = true;
+    return artifactStore;
+  }
+
+  function pluginWindowDiagnosticSnapshot() {
+    const rows=artifactStore?.list?.({includeTransient:true})||[];
+    const tables=rows.filter(row=>row?.kind==='data.table');
+    const visiblePage=[...document.querySelectorAll?.('.analysis-page:not(.hidden)')||[]][0]||null;
+    const dataCenterList=document.querySelector?.('#dcArtifactList')||null;
+    return {
+      projectHydrated:!!projectHydrated,
+      activityOpened:!!activityOpened,
+      prewarm:bootstrap?.prewarm===true,
+      projectDatasetCount:Array.isArray(project?.datasets)?project.datasets.length:0,
+      projectDataModelCount:Array.isArray(project?.dataModel?.artifacts)?project.dataModel.artifacts.length:0,
+      artifactCount:rows.length,
+      dataTableCount:tables.length,
+      transientArtifactCount:rows.filter(row=>row?.transient===true).length,
+      totalTableRows:tables.reduce((sum,row)=>sum+(Number(row?.rowCount)||0),0),
+      activeActivityId:String(window.DKDSPlugins?.activities?.active?.()||''),
+      visiblePageId:String(visiblePage?.id||''),
+      renderedArtifactRows:Number(dataCenterList?.querySelectorAll?.('.dc-artifact-item')?.length)||0,
+      dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||'')
+    };
+  }
+  window.DKDSPluginWindowDiagnostics=Object.freeze({snapshot:pluginWindowDiagnosticSnapshot});
 
   function recordArtifactChange(payload={}) {
     const type=String(payload.type||'');
@@ -466,7 +512,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.13',
+      appVersion:'3.61.14',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -491,7 +537,12 @@
 
   async function hydrateProjectAndOpenActivity(nextProject,{reason='project-hydrate'}={}) {
     project=ensureProjectShape(nextProject||{});
-    measureSync(`${reason}:artifact-store`,()=>restoreArtifactStore());
+    if (reason==='initial' && artifactStorePrimedForBootstrap && artifactStore) {
+      measureSync(`${reason}:artifact-store`,()=>artifactStore);
+    } else {
+      measureSync(`${reason}:artifact-store`,()=>restoreArtifactStore());
+    }
+    artifactStorePrimedForBootstrap=false;
     await measure(`${reason}:plugin-project-set`,()=>pluginRuntime?.setProject?.(project));
     await measure(`${reason}:project-restore`,()=>window.DKDSPlugins.project.restore(project.plugins || {}));
     projectHydrated=true;
@@ -523,6 +574,7 @@
     // host loaded Plotly + all science/workflow modules for every window.
     await measure('dependencies',()=>loadDependencies(spec));
     beginDeclaredChartPreload();
+    measureSync('artifact-store-prime',()=>primeArtifactStoreForRuntime());
 
     // Optional plugin-local support scripts make a dedicated plugin
     // self-contained: adding a new analysis does not require extending the

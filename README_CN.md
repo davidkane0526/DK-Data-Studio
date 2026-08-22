@@ -1,13 +1,14 @@
-# DK Data Studio — v3.61.13
+# DK Data Studio — v3.61.14
 
-## v3.61.13 数据中心运行时挂载修复
+## v3.61.14 TOP 工程数据生命周期收口
 
-- 修复 Data Center 独立 TOP 窗口运行时错误：`feature-runtime` 之前调用未绑定的 `dom.frame()`，会在真实 renderer 的 mount / resize / refresh 生命周期中触发 `ReferenceError: dom is not defined`。
-- Data Center 现在显式使用 Core `ctx.ui.dom` 调度器，与 TER / Pulse 等 TOP 插件保持同一宿主契约；不增加任何 Data Center 私有数据恢复路径。
-- 新增可执行的 Data Center runtime mount/layout smoke test，真实调用插件 `mount()` 并触发 Core `layout:resize`，避免以后只靠字符串检查与 Data Model 单测误判“窗口可用”。
-- 保留 v3.61.12 的 live Artifact hydration、legacy `project.datasets` 合并和 Artifact digest 刷新逻辑。
-- Data Center 插件版本提升到 `1.13.2`；Plugin API 保持 `1.15.0`。
-- 内置插件 override 改为版本优先：只有版本严格高于随应用打包的内置插件时才执行；旧版或同版 override 仅保留为诊断信息，避免升级应用后仍被用户目录中的旧插件代码覆盖。
+- 修复独立 TOP 的 Core Artifact Store 初始化顺序：Store 现在先于 `window-runtime.create()` 和插件 activation 建立，插件不再依赖“后续 hydration 恰好先发生”的隐含时序。
+- runtime-only 预热仍只获得空 Artifact Store，不加载实验数据；真正打开窗口时再恢复当前工程 Store，兼顾 TOP 首开性能与确定的数据契约。
+- Automation Runner 升级到 `1.18.0`：新增“当前打开工程 → 隔离 Data Center TOP”端到端测试，逐项核对 dataset、Artifact、DataTable、总行数以及 Data Center UI 实际渲染的数据行数。
+- Electron TOP smoke 不再无条件先用空工程预热所有插件，而是遵循各插件真实 `prewarm` 配置；诊断结果新增安全的 renderer 数据计数，不写出实验数值。
+- 修复自动化自身的 TableSurface 假失败：测试表头为 `Name / Value / Note`，此前却错误操作不存在的 `A` 列。
+- 修复 TOP lazy-Plotly 自动化版本漂移：改为与实际 `DKDSCharts.VERSION` 比较，不再硬编码旧 `1.4.0`；当前 Chart Runtime 为 `1.6.0`。
+- 保留 v3.61.13 的 Data Center `dom.frame()` 修复和内置插件 override 版本优先规则；Data Center 仍使用统一 Core 数据通道，无插件私有恢复逻辑。
 
 ## v3.61.12 数据中心实时恢复与动作组修复
 

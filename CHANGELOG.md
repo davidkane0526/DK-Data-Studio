@@ -1,3 +1,12 @@
+# v3.61.14 — TOP Project Hydration & Real Data Center Diagnostics
+
+- Prime the Core Artifact Store before any dedicated `window-runtime.create()` or plugin activation. Cold-open TOP windows receive the current project Store immediately; runtime-only prewarm receives an intentionally empty Store and hydrates only when promoted.
+- Add safe dedicated-renderer diagnostics for project dataset count, Artifact/DataTable counts, total table rows and rendered Data Center rows.
+- Automation Runner 1.18.0 now sends the currently open project and live Artifact snapshot through an isolated Data Center Electron window and verifies Store/UI counts end to end.
+- Make TOP diagnostics follow each plugin's configured prewarm policy instead of forcing every TOP through a synthetic empty prewarm project.
+- Fix the TableSurface runtime smoke to address its real `Name / Value / Note` headers.
+- Validate lazy Chart Runtime against `DKDSCharts.VERSION` instead of stale hard-coded 1.4.0.
+
 # v3.61.13 — Data Center Runtime Mount Repair
 
 - 修复 Data Center `feature-runtime` 在独立 TOP 窗口中调用未绑定 `dom.frame()` 导致 mount/render 生命周期中断的问题。

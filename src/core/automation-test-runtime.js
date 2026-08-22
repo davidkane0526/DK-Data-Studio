@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.17.0';
+  const VERSION='1.18.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -108,7 +108,7 @@
       assert(surface.setColumnVisible(2,false,{persist:false}),'Column hide failed.');assert(table.querySelector('thead th:nth-child(3)').classList.contains('dkds-table-column-hidden'),'Hidden-column state was not projected to the DOM.');surface.showAllColumns();assert(!table.querySelector('thead th:nth-child(3)').classList.contains('dkds-table-column-hidden'),'Show-all columns did not restore the hidden column.');
       const mounted=scope.tables.mount('automation-mounted',host.querySelector('#automationMountedTable'),{persist:false,columns:[{key:'vg',label:'Vg',unit:'V'},{key:'value',label:'Value'}],rows:[{vg:-5,value:2},{vg:5,value:1}]});assert(mounted?.table?.querySelectorAll('tbody tr').length===2,'TableSurface mount did not render data rows.');assert(mounted.table.querySelector('thead th').textContent.includes('Vg'),'TableSurface mount did not render column metadata.');
       const rawHost=document.createElement('div');rawHost.innerHTML='<table id="automationAutoTable"><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>';document.body.appendChild(rawHost);await Promise.resolve();await new Promise(resolve=>requestAnimationFrame(()=>resolve()));const autoTable=rawHost.querySelector('table');assert(autoTable.classList.contains('dkds-managed-table'),'Document-level TableSurface observer did not auto-enhance a newly inserted table.');assert(autoTable.querySelectorAll('.dkds-table-column-resizer').length===2,'Auto-enhanced table did not receive column resize handles.');rawHost.remove();
-      const saved=surface.columnState();surface.setColumnVisible('A',false,{persist:false});assert(surface.visibleColumnKeys().length===2,'TableSurface key-based visibility did not update visible columns.');surface.restoreColumnState(saved,{persist:false});assert(!table.querySelector('thead th:first-child').classList.contains('dkds-table-column-hidden'),'TableSurface state restore did not restore column visibility.');assert(surface.visibleTableText().includes('A\tB\tC'),'TableSurface visible-table serialization is unavailable.');surface.resetState({persist:false});
+      const saved=surface.columnState();surface.setColumnVisible('Name',false,{persist:false});assert(surface.visibleColumnKeys().length===2,'TableSurface key-based visibility did not update visible columns.');surface.restoreColumnState(saved,{persist:false});assert(!table.querySelector('thead th:first-child').classList.contains('dkds-table-column-hidden'),'TableSurface state restore did not restore column visibility.');assert(surface.visibleTableText().includes('Name\tValue\tNote'),'TableSurface visible-table serialization is unavailable.');surface.resetState({persist:false});
       return {version:ui.version,resizers:table.querySelectorAll('.dkds-table-column-resizer').length,columnState:surface.columnState(),mountedRows:mounted.table.querySelectorAll('tbody tr').length,autoHydration:true,operations:['resize','auto-size','sort','hide/show','copy menu','state','mount/bind','auto-hydrate']};
     }finally{try{scope.dispose?.();}catch{}host.remove();}
   }
@@ -448,6 +448,33 @@
     await runCase('performance.lifecycle','Performance cache policy & lifecycle trim','Performance',performanceLifecycleSmoke);
     await runCase('performance.resources','Renderer & resource lifecycle','Performance',performanceResourceLifecycleSmoke);
 
+    const currentProjectPayload=window.DKDSAutomationHost?.currentProjectWindowSmokePayload?.()||null;
+    const currentProjectSummary=currentProjectPayload?.summary||null;
+    if(window.electronAPI?.diagnosticsRunActivitySmoke&&currentProjectSummary&&Number(currentProjectSummary.artifactCount)>0){
+      await runCase('project.data-center-live','Current project → Data Center live hydration','Project / Electron',async()=>{
+        const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+        const out=await window.electronAPI.diagnosticsRunActivitySmoke({
+          activityId:'data-center',
+          project:currentProjectPayload.project,
+          artifactSnapshot:currentProjectPayload.artifactSnapshot,
+          capabilitySnapshot,
+          capabilityRevision:Number(capabilitySnapshot?.revision)||0
+        });
+        assert(out?.ok,`Data Center current-project smoke failed: ${out?.error||'renderer did not reach ready'}`);
+        const actual=out?.rendererData||{};
+        const expected=currentProjectSummary;
+        assert(actual.projectHydrated===true&&actual.activityOpened===true,'Data Center renderer reached ready without a hydrated/open project lifecycle.');
+        assert(Number(actual.projectDatasetCount)===Number(expected.datasetCount),`Data Center project dataset count mismatch. expected=${expected.datasetCount} actual=${actual.projectDatasetCount}`);
+        assert(Number(actual.artifactCount)===Number(expected.artifactCount),`Data Center Artifact Store mismatch. expected=${expected.artifactCount} actual=${actual.artifactCount}`);
+        assert(Number(actual.dataTableCount)===Number(expected.dataTableCount),`Data Center DataTable count mismatch. expected=${expected.dataTableCount} actual=${actual.dataTableCount}`);
+        assert(Number(actual.totalTableRows)===Number(expected.totalTableRows),`Data Center row count mismatch. expected=${expected.totalTableRows} actual=${actual.totalTableRows}`);
+        assert(Number(actual.renderedArtifactRows)===Number(expected.artifactCount),`Data Center UI did not render every hydrated Artifact row. expected=${expected.artifactCount} actual=${actual.renderedArtifactRows}`);
+        return {expected:clone(expected),renderer:clone(actual),configuredPrewarm:out.configuredPrewarm===true,durationMs:Number(out.durationMs)||0};
+      });
+    }else{
+      await runCase('project.data-center-live','Current project → Data Center live hydration','Project / Electron',async()=>{}, {skip:true,skipReason:'当前工程没有数据对象，无法执行真实工程 Data Center hydration；普通 TOP renderer 测试仍会继续。'});
+    }
+
     const tops=enabledTopActivities();let testedTopCount=0,passedTopCount=0;const topOutcomes=[];
     if(window.electronAPI?.diagnosticsRunActivitySmoke){
       if(!tops.length)await runCase('top.none','TOP independent renderer discovery','TOP / Electron',async()=>{throw new Error('No enabled TOP activity was discovered; this would leave the independent renderer path untested.');});
@@ -478,7 +505,7 @@
           for(const runtime of domainRuntimes)assert(loaded.has(runtime)===declared.has(runtime),`${row.id}: ${runtime} load did not follow the resolved Core contract.`);
           assert(!loaded.has('plotly'),`${row.id}: Plotly must not block dedicated TOP startup.`);
           const chartRuntime=renderer.chartRuntime||null;
-          assert(chartRuntime&&chartRuntime.version==='1.4.0',`${row.id}: Core Chart Runtime lazy-loader snapshot missing.`);
+          assert(chartRuntime&&chartRuntime.version===window.DKDSCharts?.VERSION,`${row.id}: Core Chart Runtime lazy-loader snapshot missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chartRuntime?.version||'missing'}`);
           assert(chartRuntime.plotlyAllowed===declared.has('plotly'),`${row.id}: logical Plotly contract was not preserved by the lazy loader.`);
           return {activityId:row.data?.activityId||row.id.slice(4),pluginId:row.data?.pluginId||'',readyMs:Number(row.data?.durationMs)||0,rendererTotalMs:Number(renderer.totalMs)||0,navigationMs:Number(main.navigationMs)||0,createToReadyMs:Number(main.createToReadyMs)||0,dependencyCount:Number(renderer.dependencyCount)||renderer.dependencies.length,scriptCount:Number(renderer.scriptCount)||renderer.scripts?.length||0,domainRuntimes:domainRuntimes.filter(id=>loaded.has(id)),algorithmProviders:clone(renderer.algorithmProviders||[]),chartRuntime:clone(chartRuntime),phases:(renderer.phases||[]).map(item=>({name:item.name,durationMs:item.durationMs})),slowDependencies:renderer.dependencies.slice().sort((a,b)=>(Number(b.durationMs)||0)-(Number(a.durationMs)||0)).slice(0,5).map(item=>({name:item.name,durationMs:item.durationMs}))};
         });
@@ -489,7 +516,7 @@
         const profiles=rows.map(row=>{
           const renderer=row.data?.startupProfile?.renderer||{},loaded=new Set((renderer.dependencies||[]).map(item=>String(item?.name||''))),declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
           assert(!loaded.has('plotly'),`${row.id}: eager Plotly dependency is still present.`);
-          assert(chart.version==='1.4.0',`${row.id}: lazy Chart Runtime state missing.`);
+          assert(chart.version===window.DKDSCharts?.VERSION,`${row.id}: lazy Chart Runtime state missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chart?.version||'missing'}`);
           assert(chart.plotlyAllowed===declared.has('plotly'),`${row.id}: Plotly permission does not match resolved plugin contract.`);
           return {activityId:row.data?.activityId||row.id.slice(4),declared:declared.has('plotly'),status:chart.status||'',ready:!!chart.ready,requests:Number(chart.requests)||0,reuses:Number(chart.reuses)||0,loadDurationMs:Number(chart.loadDurationMs)||0};
         });
