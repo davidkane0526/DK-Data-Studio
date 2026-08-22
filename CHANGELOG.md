@@ -1,3 +1,14 @@
+# v3.61.30 — Proxy-Aware Build Tooling
+
+- Add one build-network contract to `DKDS.cmd` / Developer Toolbox with `auto`, `inherit`, `custom` and `off` proxy modes. CLI overrides support `-Proxy`, `-ProxyMode` and `-NoProxy`; standard `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` remain valid.
+- Propagate the effective proxy consistently to npm/npx, Electron `@electron/get`, electron-builder/Git child processes and Gradle JVM networking instead of relying on tool-specific accidental environment behavior.
+- Route managed Temurin JDK downloads through the same proxy-aware PowerShell request wrapper and respect `NO_PROXY`.
+- Add a persistent **Network & Proxy** page to `DKDS_GUI.cmd`; path/cache and proxy settings now merge into the same schema-3 toolbox config instead of one settings page overwriting the other.
+- Redact proxy credentials from diagnostics. `DKDS.cmd network` shows the effective proxy source/mode without printing secrets.
+- Support authenticated HTTP(S) proxies for PowerShell-managed downloads via `ProxyCredential`, and make `-ProxyMode off` remove stale Gradle proxy JVM properties as well as process/npm/Electron proxy variables.
+- Keep the existing Electron/electron-builder mirror fallback as a fallback only; using a proxy no longer requires switching the project to a mirror.
+- Extend Windows tooling regression coverage with `test-v36130-proxy-build-tooling.js`.
+
 # v3.61.29 — SDK / Plugin Host Layout Hardening
 
 - Promote the standalone SDK to **Plugin API 1.16.0** (minimum app `3.61.29`) while keeping Plugin API 1.10–1.15 packages load-compatible.

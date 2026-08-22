@@ -39,7 +39,7 @@ const releaseSigningPluginSource = read(releaseSigningPluginPath);
 assert(!/\[string\[\]\]\s*\$Args\b/i.test(backend), 'Backend must not declare $Args as a parameter.');
 assert(!/@Args\b/i.test(backend), 'Backend must not splat the automatic $Args variable.');
 assert(/\[string\[\]\]\s*\$Arguments\s*=\s*@\(\)/.test(backend), 'Invoke-Step must use an explicit $Arguments parameter.');
-assert(/\$installArguments\s*=\s*@\('install','--ignore-scripts','--prefer-offline'\)/.test(backend) && /--cache/.test(backend), 'npm install must prefer offline data, suppress binary postinstall side effects, and pass the selected cache explicitly.');
+assert(/\$installArguments\s*=\s*@\('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund'\)/.test(backend) && /--cache/.test(backend), 'npm install must prefer offline data, suppress binary postinstall/audit side effects, and pass the selected cache explicitly.');
 assert(/&\s+\$FilePath\s+@Arguments\s+\|\s+Out-Host/.test(backend), 'Invoke-Step must keep native stdout visible without leaking it into function return values.');
 
 // PowerShell variable names are case-insensitive. Names such as $HOME are
@@ -72,6 +72,7 @@ assert(/install-deps/.test(gui) && /doctor/.test(gui) && /toolchain/.test(gui), 
 // Android packaging exposed by the toolbox must produce the final release APK,
 // not a debug build or a debug-suffixed artifact.
 assert(/assembleRelease/.test(backend), 'Android build must use Gradle assembleRelease.');
+assert(/assembleRelease','--no-daemon','--stacktrace'/.test(backend), 'Android release build must avoid persistent Gradle daemon state and retain stack traces.');
 assert(!/assembleDebug/.test(backend), 'Android toolbox must not build the debug variant.');
 assert(/DK-Data-Studio\.apk/.test(backend), 'Android output must use the final DK Data Studio APK name.');
 assert(!/-debug\.apk/i.test(backend + gui), 'Android tooling must not expose a debug APK artifact.');
@@ -87,6 +88,28 @@ assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling 
 assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
 assert(/developer-toolbox\.json/.test(backend) && /developer-toolbox\.json/.test(gui),
   'toolbox backend and GUI must share a persistent per-user path configuration file.');
+assert(/\[string\]\$ProxyMode/.test(backend) && /\[string\]\$Proxy\b/.test(backend) && /\[string\]\$NoProxy/.test(backend),
+  'toolbox CLI must expose explicit proxy mode, proxy URL and NO_PROXY overrides.');
+for(const token of ['proxyMode','proxyUrl','noProxy']){
+  assert(backend.includes(token),`toolbox backend must read configurable ${token}.`);
+  assert(gui.includes(token),`toolbox GUI must expose configurable ${token}.`);
+}
+assert(/HTTP_PROXY/.test(backend) && /HTTPS_PROXY/.test(backend) && /ALL_PROXY/.test(backend) && /NO_PROXY/.test(backend),
+  'build tooling must support standard process proxy variables.');
+assert(/npm_config_proxy/.test(backend) && /npm_config_https_proxy/.test(backend) && /npm_config_noproxy/.test(backend),
+  'npm and npx child processes must receive explicit proxy aliases.');
+assert(/ELECTRON_GET_USE_PROXY/.test(backend) && /GLOBAL_AGENT_HTTP_PROXY/.test(backend) && /GLOBAL_AGENT_HTTPS_PROXY/.test(backend),
+  'Electron binary downloads must explicitly opt into the effective proxy environment.');
+assert(/Apply-GradleProxy/.test(backend) && /proxyHost/.test(backend) && /proxyPort/.test(backend),
+  'Android/Gradle builds must receive JVM proxy properties from the effective build proxy.');
+assert(/Invoke-DkdsWebRequest/.test(backend) && /Get-PowerShellProxyForUri/.test(backend) && /Test-NoProxyForUri/.test(backend),
+  'PowerShell-managed downloads must use the same proxy and NO_PROXY contract.');
+assert(/Protect-ProxyForDisplay/.test(backend) && /UserName = '\*\*\*'/.test(backend) && /Password = '\*\*\*'/.test(backend),
+  'proxy diagnostics must redact credentials.');
+assert(/网络与代理/.test(gui) && /保存代理设置/.test(gui) && /Save-ToolboxConfigPatch/.test(gui),
+  'developer GUI must expose persistent proxy settings without overwriting unrelated toolbox configuration.');
+assert(/'network'\s*\{\s*Show-EffectiveNetwork/.test(backend),
+  'toolbox must provide a network diagnostics action.');
 for(const token of ['npmCache','pnpmStore','electronCache','electronBuilderCache','gradleCache','nodeModulesRoot']){
   assert(backend.includes(token),`toolbox backend must read configurable ${token}.`);
   assert(gui.includes(token),`toolbox GUI must expose configurable ${token}.`);

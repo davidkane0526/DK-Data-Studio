@@ -2,7 +2,10 @@
   [Parameter(Position=0)][string]$Action = 'menu',
   [string]$Version = '',
   [string]$PluginPath = '',
-  [string]$OutputPath = ''
+  [string]$OutputPath = '',
+  [string]$ProxyMode = '',
+  [string]$Proxy = '',
+  [string]$NoProxy = ''
 )
 
 Set-StrictMode -Version 2.0
@@ -36,6 +39,261 @@ function Get-DeveloperConfigValue([string]$Name) {
   $value = [string]$property.Value
   if ([string]::IsNullOrWhiteSpace($value)) { return $null }
   return $value.Trim()
+}
+
+function Get-ProcessEnvFirst([string[]]$Names) {
+  foreach ($name in $Names) {
+    $value = [Environment]::GetEnvironmentVariable($name,'Process')
+    if (-not [string]::IsNullOrWhiteSpace($value)) { return $value.Trim() }
+  }
+  return $null
+}
+
+function Normalize-ProxyUrl([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  $candidate = $Value.Trim()
+  if ($candidate -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://') { $candidate = 'http://' + $candidate }
+  try { $uri = [Uri]$candidate } catch { throw "Invalid proxy URL: $Value" }
+  if (-not $uri.Host) { throw "Invalid proxy URL: $Value" }
+  return $uri.AbsoluteUri.TrimEnd('/')
+}
+
+function Protect-ProxyForDisplay([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return '(none)' }
+  try {
+    $uri = [Uri]$Value
+    if (-not $uri.UserInfo) { return $Value }
+    $builder = [UriBuilder]$uri
+    $builder.UserName = '***'
+    $builder.Password = '***'
+    return $builder.Uri.AbsoluteUri.TrimEnd('/')
+  } catch { return '(configured)' }
+}
+
+function Resolve-ProxyMode {
+  $mode = if ($ProxyMode) { $ProxyMode } else { Get-ProcessEnvFirst @('DKDS_PROXY_MODE') }
+  if (-not $mode) { $mode = Get-DeveloperConfigValue 'proxyMode' }
+  if (-not $mode) { $mode = 'auto' }
+  $mode = $mode.Trim().ToLowerInvariant()
+  switch ($mode) {
+    'disabled' { return 'off' }
+    'direct' { return 'off' }
+    'none' { return 'off' }
+    'environment' { return 'inherit' }
+    'env' { return 'inherit' }
+    'on' { return 'auto' }
+    'auto' { return 'auto' }
+    'inherit' { return 'inherit' }
+    'custom' { return 'custom' }
+    'off' { return 'off' }
+    default { throw "Unknown proxy mode: $mode. Use auto, inherit, custom or off." }
+  }
+}
+
+function Get-EffectiveNetworkConfig {
+  $mode = Resolve-ProxyMode
+  $cliProxy = if ($Proxy) { Normalize-ProxyUrl $Proxy } else { $null }
+  $dkdsProxy = Get-ProcessEnvFirst @('DKDS_PROXY')
+  if ($dkdsProxy) { $dkdsProxy = Normalize-ProxyUrl $dkdsProxy }
+  $configuredProxy = Get-DeveloperConfigValue 'proxyUrl'
+  if ($configuredProxy) { $configuredProxy = Normalize-ProxyUrl $configuredProxy }
+
+  if ($mode -eq 'auto') {
+    if ($cliProxy -or $dkdsProxy -or $configuredProxy) { $mode = 'custom' }
+    else { $mode = 'inherit' }
+  }
+
+  $httpProxy = $null
+  $httpsProxy = $null
+  $allProxy = $null
+  $source = 'direct'
+  if ($mode -eq 'custom') {
+    $customProxy = if ($cliProxy) { $cliProxy } elseif ($dkdsProxy) { $dkdsProxy } else { $configuredProxy }
+    if (-not $customProxy) { throw 'Proxy mode is custom, but no proxy URL is configured. Use -Proxy, DKDS_PROXY or the Developer Toolbox network page.' }
+    $httpProxy = $customProxy
+    $httpsProxy = $customProxy
+    $allProxy = $customProxy
+    $source = if ($cliProxy) { 'command line' } elseif ($dkdsProxy) { 'DKDS_PROXY' } else { 'developer-toolbox.json' }
+  } elseif ($mode -eq 'inherit') {
+    $httpProxy = Get-ProcessEnvFirst @('HTTP_PROXY','http_proxy','npm_config_proxy','NPM_CONFIG_PROXY')
+    $httpsProxy = Get-ProcessEnvFirst @('HTTPS_PROXY','https_proxy','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')
+    $allProxy = Get-ProcessEnvFirst @('ALL_PROXY','all_proxy')
+    if (-not $httpProxy -and $allProxy) { $httpProxy = $allProxy }
+    if (-not $httpsProxy -and $allProxy) { $httpsProxy = $allProxy }
+    if ($httpProxy) { $httpProxy = Normalize-ProxyUrl $httpProxy }
+    if ($httpsProxy) { $httpsProxy = Normalize-ProxyUrl $httpsProxy }
+    if ($allProxy) { $allProxy = Normalize-ProxyUrl $allProxy }
+    $source = if ($httpProxy -or $httpsProxy -or $allProxy) { 'process environment' } else { 'direct (no inherited proxy)' }
+  }
+
+  $noProxyValue = if ($NoProxy) { $NoProxy.Trim() } else { Get-ProcessEnvFirst @('DKDS_NO_PROXY') }
+  if (-not $noProxyValue) { $noProxyValue = Get-DeveloperConfigValue 'noProxy' }
+  if (-not $noProxyValue -and $mode -eq 'inherit') { $noProxyValue = Get-ProcessEnvFirst @('NO_PROXY','no_proxy','npm_config_noproxy','NPM_CONFIG_NOPROXY') }
+
+  return [ordered]@{
+    Mode = $mode
+    Source = $source
+    HttpProxy = $httpProxy
+    HttpsProxy = $httpsProxy
+    AllProxy = $allProxy
+    NoProxy = $noProxyValue
+  }
+}
+
+function Set-ProcessEnvAliases([string[]]$Names,[string]$Value) {
+  foreach ($name in $Names) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { Remove-Item ("Env:" + $name) -ErrorAction SilentlyContinue }
+    else { Set-Item ("Env:" + $name) -Value $Value }
+  }
+}
+
+function Convert-NoProxyToJavaPattern([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  $patterns = @()
+  foreach ($raw in ($Value -split ',')) {
+    $item = $raw.Trim()
+    if (-not $item) { continue }
+    if ($item -eq '*') { return '*' }
+    if ($item -match '^\[[^\]]+\](?::\d+)?$') { $item = $item -replace ':\d+$','' }
+    elseif ($item -match '^[^:]+:\d+$') { $item = $item -replace ':\d+$','' }
+    if ($item.StartsWith('.')) { $item = '*' + $item }
+    $patterns += $item
+  }
+  if ($patterns.Count -eq 0) { return $null }
+  return (($patterns | Select-Object -Unique) -join '|')
+}
+
+function Clear-GradleProxyOptions {
+  if (-not $env:GRADLE_OPTS) { return }
+  $pattern = '(?i)(?<!\S)-D(?:http|https)\.(?:proxyHost|proxyPort|proxyUser|proxyPassword|nonProxyHosts)=(?:"[^"]*"|''[^'']*''|\S+)'
+  $cleaned = [Regex]::Replace($env:GRADLE_OPTS, $pattern, ' ')
+  $cleaned = [Regex]::Replace($cleaned, '\s+', ' ').Trim()
+  if ($cleaned) { $env:GRADLE_OPTS = $cleaned }
+  else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+}
+
+function Add-GradleProxyOption([string]$Name,[string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return }
+  $token = "-D$Name=$Value"
+  if (-not $env:GRADLE_OPTS) { $env:GRADLE_OPTS = $token; return }
+  if ($env:GRADLE_OPTS -notlike ("*" + $token + "*")) { $env:GRADLE_OPTS = ($env:GRADLE_OPTS.Trim() + ' ' + $token) }
+}
+
+function Apply-GradleProxy([string]$HttpProxy,[string]$HttpsProxy,[string]$NoProxyValue) {
+  Clear-GradleProxyOptions
+  foreach ($entry in @(@('http',$HttpProxy),@('https',$HttpsProxy))) {
+    $scheme = $entry[0]
+    $value = $entry[1]
+    if (-not $value) { continue }
+    try { $uri = [Uri]$value } catch { continue }
+    if ($uri.Scheme -notin @('http','https')) { continue }
+    Add-GradleProxyOption "$scheme.proxyHost" $uri.Host
+    if ($uri.Port -gt 0) { Add-GradleProxyOption "$scheme.proxyPort" ([string]$uri.Port) }
+    if ($uri.UserInfo) {
+      $parts = $uri.UserInfo -split ':',2
+      if ($parts.Count -ge 1 -and $parts[0]) { Add-GradleProxyOption "$scheme.proxyUser" ([Uri]::UnescapeDataString($parts[0])) }
+      if ($parts.Count -ge 2 -and $parts[1]) { Add-GradleProxyOption "$scheme.proxyPassword" ([Uri]::UnescapeDataString($parts[1])) }
+    }
+  }
+  $javaNoProxy = Convert-NoProxyToJavaPattern $NoProxyValue
+  if ($javaNoProxy) {
+    Add-GradleProxyOption 'http.nonProxyHosts' $javaNoProxy
+    Add-GradleProxyOption 'https.nonProxyHosts' $javaNoProxy
+  }
+}
+
+function Initialize-NetworkEnvironment {
+  $script:NetworkConfig = Get-EffectiveNetworkConfig
+  if ($script:NetworkConfig.Mode -eq 'off') {
+    Set-ProcessEnvAliases @('HTTP_PROXY','http_proxy','HTTPS_PROXY','https_proxy','ALL_PROXY','all_proxy','npm_config_proxy','NPM_CONFIG_PROXY','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY','npm_config_noproxy','NPM_CONFIG_NOPROXY','GLOBAL_AGENT_HTTP_PROXY','GLOBAL_AGENT_HTTPS_PROXY','ELECTRON_GET_USE_PROXY') $null
+    Set-ProcessEnvAliases @('NO_PROXY','no_proxy') $null
+    Clear-GradleProxyOptions
+    return
+  }
+
+  Set-ProcessEnvAliases @('HTTP_PROXY','http_proxy') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('HTTPS_PROXY','https_proxy') $script:NetworkConfig.HttpsProxy
+  Set-ProcessEnvAliases @('ALL_PROXY','all_proxy') $script:NetworkConfig.AllProxy
+  Set-ProcessEnvAliases @('npm_config_proxy','NPM_CONFIG_PROXY') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY') $script:NetworkConfig.HttpsProxy
+  Set-ProcessEnvAliases @('NO_PROXY','no_proxy','npm_config_noproxy','NPM_CONFIG_NOPROXY') $script:NetworkConfig.NoProxy
+  Set-ProcessEnvAliases @('GLOBAL_AGENT_HTTP_PROXY') $script:NetworkConfig.HttpProxy
+  Set-ProcessEnvAliases @('GLOBAL_AGENT_HTTPS_PROXY') $script:NetworkConfig.HttpsProxy
+  if ($script:NetworkConfig.HttpProxy -or $script:NetworkConfig.HttpsProxy -or $script:NetworkConfig.AllProxy) { $env:ELECTRON_GET_USE_PROXY = '1' }
+  else { Remove-Item Env:ELECTRON_GET_USE_PROXY -ErrorAction SilentlyContinue }
+  Apply-GradleProxy $script:NetworkConfig.HttpProxy $script:NetworkConfig.HttpsProxy $script:NetworkConfig.NoProxy
+}
+
+function Test-NoProxyForUri([Uri]$Uri,[string]$NoProxyValue) {
+  if (-not $Uri -or [string]::IsNullOrWhiteSpace($NoProxyValue)) { return $false }
+  $hostName = $Uri.Host.ToLowerInvariant()
+  foreach ($raw in ($NoProxyValue -split ',')) {
+    $item = $raw.Trim().ToLowerInvariant()
+    if (-not $item) { continue }
+    if ($item -eq '*') { return $true }
+    $hostPart = $item
+    if ($hostPart -match '^\[[^\]]+\](?::\d+)?$') { $hostPart = $hostPart -replace ':\d+$','' }
+    elseif ($hostPart -match '^[^:]+:\d+$') { $hostPart = $hostPart -replace ':\d+$','' }
+    if ($hostPart.StartsWith('*.')) { $hostPart = $hostPart.Substring(1) }
+    if ($hostPart.StartsWith('.')) {
+      if ($hostName.EndsWith($hostPart) -or $hostName -eq $hostPart.Substring(1)) { return $true }
+    } elseif ($hostName -eq $hostPart -or $hostName.EndsWith('.' + $hostPart)) {
+      return $true
+    }
+  }
+  return $false
+}
+
+function Get-PowerShellProxyForUri([string]$UriText) {
+  if (-not $script:NetworkConfig -or $script:NetworkConfig.Mode -eq 'off') { return $null }
+  try { $uri = [Uri]$UriText } catch { return $null }
+  if (Test-NoProxyForUri $uri $script:NetworkConfig.NoProxy) { return $null }
+  $candidate = if ($uri.Scheme -eq 'https') { $script:NetworkConfig.HttpsProxy } else { $script:NetworkConfig.HttpProxy }
+  if (-not $candidate) { $candidate = $script:NetworkConfig.AllProxy }
+  if (-not $candidate) { return $null }
+  try {
+    $proxyUri = [Uri]$candidate
+    if ($proxyUri.Scheme -notin @('http','https')) { return $null }
+  } catch { return $null }
+  return $candidate
+}
+
+function Invoke-DkdsWebRequest {
+  param(
+    [Parameter(Mandatory=$true)][string]$Uri,
+    [string]$OutFile = '',
+    [Nullable[int]]$MaximumRedirection = $null
+  )
+  $arguments = @{ Uri=$Uri; UseBasicParsing=$true; ErrorAction='Stop' }
+  if ($OutFile) { $arguments.OutFile = $OutFile }
+  if ($null -ne $MaximumRedirection) { $arguments.MaximumRedirection = [int]$MaximumRedirection }
+  $webProxy = Get-PowerShellProxyForUri $Uri
+  if ($webProxy) {
+    $proxyUri = [Uri]$webProxy
+    $proxyBuilder = [UriBuilder]$proxyUri
+    $proxyBuilder.UserName = ''
+    $proxyBuilder.Password = ''
+    $arguments.Proxy = $proxyBuilder.Uri.AbsoluteUri.TrimEnd('/')
+    if ($proxyUri.UserInfo) {
+      $parts = $proxyUri.UserInfo -split ':',2
+      $userName = [Uri]::UnescapeDataString($parts[0])
+      $password = if ($parts.Count -ge 2) { [Uri]::UnescapeDataString($parts[1]) } else { '' }
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $arguments.ProxyCredential = New-Object System.Management.Automation.PSCredential($userName,$securePassword)
+    }
+  }
+  return (Invoke-WebRequest @arguments)
+}
+
+function Show-EffectiveNetwork {
+  if (-not $script:NetworkConfig) { return }
+  Write-Host 'Effective network / proxy:' -ForegroundColor Cyan
+  Write-Host ("  mode             : {0}" -f $script:NetworkConfig.Mode) -ForegroundColor DarkGray
+  Write-Host ("  source           : {0}" -f $script:NetworkConfig.Source) -ForegroundColor DarkGray
+  Write-Host ("  HTTP proxy       : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.HttpProxy)) -ForegroundColor DarkGray
+  Write-Host ("  HTTPS proxy      : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.HttpsProxy)) -ForegroundColor DarkGray
+  Write-Host ("  ALL proxy        : {0}" -f (Protect-ProxyForDisplay $script:NetworkConfig.AllProxy)) -ForegroundColor DarkGray
+  Write-Host ("  NO_PROXY         : {0}" -f $(if ($script:NetworkConfig.NoProxy) { $script:NetworkConfig.NoProxy } else { '(none)' })) -ForegroundColor DarkGray
 }
 
 function Resolve-ConfiguredPath([string]$Value) {
@@ -106,6 +364,7 @@ $SharedToolRoot = Get-SharedToolRoot
 $SharedCacheRoot = Get-SharedCacheRoot
 $SharedNodeModulesRoot = Get-SharedNodeModulesRoot
 $script:BuildCachePaths = $null
+$script:NetworkConfig = $null
 $script:BinaryMirrorFallbackEnabled = $false
 
 function Write-SectionTitle([string]$Text) {
@@ -358,9 +617,9 @@ function Install-SharedDependencyEntry([string]$Dir=$Root) {
     Write-SectionTitle "Install shared dependencies · $(Get-NodeModulesSlot $Dir)"
     Write-Host "Dependency cache entry: $entry" -ForegroundColor DarkGray
     $installArguments = if ($hasLock) {
-      @('ci','--ignore-scripts','--prefer-offline')
+      @('ci','--ignore-scripts','--prefer-offline','--no-audit','--no-fund')
     } else {
-      @('install','--ignore-scripts','--prefer-offline','--package-lock=false')
+      @('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund','--package-lock=false')
     }
     if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
     Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $staging
@@ -408,7 +667,7 @@ function Install-NodeDeps([string]$Dir=$Root) {
   # Keep Electron's binary download outside npm reify here as well, so a
   # timeout cannot turn node_modules into a half-installed dependency tree.
   Write-SectionTitle "Install dependencies · $Dir"
-  $installArguments = @('install','--ignore-scripts','--prefer-offline')
+  $installArguments = @('install','--ignore-scripts','--prefer-offline','--no-audit','--no-fund')
   if ($env:npm_config_cache) { $installArguments += @('--cache',$env:npm_config_cache) }
   Invoke-Step -FilePath 'npm.cmd' -Arguments $installArguments -WorkingDirectory $Dir
   if ((Get-NodeModulesSlot $Dir) -eq 'desktop') {
@@ -477,6 +736,7 @@ function Show-DesktopDoctor {
   Write-Host "DK_CACHE_ROOT: $SharedCacheRoot" -ForegroundColor DarkGray
   Write-Host "DK_NODE_MODULES_ROOT: $SharedNodeModulesRoot" -ForegroundColor DarkGray
   Write-Host "Toolbox config: $(Get-DeveloperConfigPath)" -ForegroundColor DarkGray
+  Show-EffectiveNetwork
   if ($env:ELECTRON_CACHE) { Write-Host "Electron cache: $env:ELECTRON_CACHE" -ForegroundColor DarkGray }
   if ($env:GRADLE_USER_HOME) { Write-Host "Gradle cache: $env:GRADLE_USER_HOME" -ForegroundColor DarkGray }
   if (-not $ok) { return $false }
@@ -505,6 +765,7 @@ function Get-EffectiveBuildCachePaths {
 }
 
 function Initialize-SharedBuildEnvironment {
+  Initialize-NetworkEnvironment
   if ($SharedToolRoot) {
     foreach ($nodeDir in @(
       (Join-Path $SharedToolRoot 'NodeJs'),
@@ -554,6 +815,7 @@ function Initialize-SharedBuildEnvironment {
 }
 
 function Show-EffectiveBuildCaches([switch]$VerifyNpm) {
+  Show-EffectiveNetwork
   Write-Host 'Effective build caches:' -ForegroundColor Cyan
   Write-Host ("  npm              : {0}" -f $env:npm_config_cache) -ForegroundColor DarkGray
   Write-Host ("  pnpm store       : {0}" -f $env:pnpm_config_store_dir) -ForegroundColor DarkGray
@@ -792,7 +1054,7 @@ function Install-DkdsManagedJdk {
 
     $redirectResponse = $null
     try {
-      $redirectResponse = Invoke-WebRequest -Uri $apiUrl -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+      $redirectResponse = Invoke-DkdsWebRequest -Uri $apiUrl -MaximumRedirection 0
     } catch {
       if ($_.Exception.Response) { $redirectResponse = $_.Exception.Response }
       else { throw }
@@ -807,10 +1069,10 @@ function Install-DkdsManagedJdk {
     }
 
     Write-Host 'Downloading Eclipse Temurin JDK 21...' -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+    Invoke-DkdsWebRequest -Uri $downloadUrl -OutFile $downloadPath | Out-Null
 
     Write-Host 'Verifying JDK SHA-256...' -ForegroundColor Cyan
-    $checksumResponse = Invoke-WebRequest -Uri ($downloadUrl + '.sha256.txt') -UseBasicParsing
+    $checksumResponse = Invoke-DkdsWebRequest -Uri ($downloadUrl + '.sha256.txt')
     $checksumText = [string]$checksumResponse.Content
     $expectedHash = (($checksumText -split '\s+')[0]).Trim().ToUpperInvariant()
     if ($expectedHash -notmatch '^[0-9A-F]{64}$') {
@@ -1035,7 +1297,7 @@ function Build-AndroidRelease {
   Write-SectionTitle 'Expo prebuild'
   Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
   Write-SectionTitle 'Build release APK'
-  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleRelease') -WorkingDirectory (Join-Path $Mobile 'android')
+  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleRelease','--no-daemon','--stacktrace') -WorkingDirectory (Join-Path $Mobile 'android')
   New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
   $src = Join-Path $Mobile 'android\app\build\outputs\apk\release\app-release.apk'
   if (-not (Test-Path $src)) { throw "Release APK was not generated: $src" }
@@ -1090,12 +1352,13 @@ function Show-Menu {
   Write-Host ' 16  Open project folder'
   Write-Host ' 17  Open documentation'
   Write-Host ' 18  Push one plugin over LAN'
+  Write-Host ' 19  Show effective network / proxy'
   Write-Host '  0  Exit'
   $choice = Read-Host 'Select'
   $map = @{
     '1'='dev';'2'='install-deps';'3'='doctor';'4'='toolchain';'5'='check';'6'='test';'7'='build-windows';
     '8'='android-check';'9'='android-build';'10'='android-run';'11'='android-install';'12'='update-server';
-    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'18'='plugin-publish-lan';'0'='exit'
+    '13'='build-publish-update';'14'='publish-update';'15'='plugin-validate';'16'='open-root';'17'='open-docs';'18'='plugin-publish-lan';'19'='network';'0'='exit'
   }
   if ($map.ContainsKey($choice)) { return $map[$choice] }
   return 'menu'
@@ -1108,6 +1371,7 @@ try {
     'install-deps' { Install-NodeDeps -Dir $Root }
     'doctor' { if (-not (Show-DesktopDoctor)) { exit 2 } }
     'toolchain' { Show-SharedToolchain }
+    'network' { Show-EffectiveNetwork }
     'dev' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Desktop development'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('start') }
     'check' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Complete project check'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','check') }
     'test' { Ensure-NodeDeps -Dir $Root; Write-SectionTitle 'Regression tests'; Invoke-Step -FilePath 'npm.cmd' -Arguments @('test') }

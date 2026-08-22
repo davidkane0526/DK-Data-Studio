@@ -233,6 +233,34 @@ function Get-ToolboxConfigText($Config,[string]$Name,[string]$Fallback='') {
   return $Fallback
 }
 
+function Protect-ProxyForGui([string]$Value) {
+  if ([string]::IsNullOrWhiteSpace($Value)) { return '(未设置)' }
+  try {
+    $candidate = $Value.Trim()
+    if ($candidate -notmatch '^[A-Za-z][A-Za-z0-9+.-]*://') { $candidate = 'http://' + $candidate }
+    $uri = [Uri]$candidate
+    if (-not $uri.UserInfo) { return $Value }
+    $builder = [UriBuilder]$uri
+    $builder.UserName = '***'
+    $builder.Password = '***'
+    return $builder.Uri.AbsoluteUri.TrimEnd('/')
+  } catch { return '(已设置)' }
+}
+
+function Save-ToolboxConfigPatch([hashtable]$Patch) {
+  $existing = Read-ToolboxConfig
+  $payload = [ordered]@{}
+  if ($existing) {
+    foreach ($property in $existing.PSObject.Properties) { $payload[$property.Name] = $property.Value }
+  }
+  $payload['schema'] = 3
+  foreach ($key in $Patch.Keys) { $payload[$key] = $Patch[$key] }
+  $configPath = Get-ToolboxConfigPath
+  $configDir = Split-Path -Parent $configPath
+  if ($configDir) { New-Item -ItemType Directory -Force -Path $configDir | Out-Null }
+  [IO.File]::WriteAllText($configPath,($payload | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false))
+}
+
 function Select-ToolboxFolder([System.Windows.Forms.TextBox]$Target) {
   $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
   $dialog.Description = '选择共享工具 / 缓存目录'
@@ -385,12 +413,9 @@ function New-PathSettingsPage {
     try {
       if ($follow.Checked) { & $updateDerived }
       $cachePathModeValue = if ($follow.Checked) { 'derived' } else { 'custom' }
-      $payload = [ordered]@{ schema=2; cachePathMode=$cachePathModeValue }
-      foreach ($fieldName in $boxes.Keys) { $payload[$fieldName] = $boxes[$fieldName].Text.Trim() }
-      $configPath = Get-ToolboxConfigPath
-      $configDir = Split-Path -Parent $configPath
-      if ($configDir) { New-Item -ItemType Directory -Force -Path $configDir | Out-Null }
-      [IO.File]::WriteAllText($configPath,($payload | ConvertTo-Json -Depth 3),[Text.UTF8Encoding]::new($false))
+      $patch = @{ cachePathMode=$cachePathModeValue }
+      foreach ($fieldName in $boxes.Keys) { $patch[$fieldName] = $boxes[$fieldName].Text.Trim() }
+      Save-ToolboxConfigPatch $patch
       $status.Text = '路径设置已保存；新启动的构建/开发任务会验证并使用这些缓存。'
     } catch {
       [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
@@ -405,6 +430,140 @@ function New-PathSettingsPage {
   $inspect.Add_Click({ Run-Action 'toolchain' })
   [void]$actions.Controls.Add($inspect)
 
+  [void]$tabs.TabPages.Add($page)
+}
+
+function New-NetworkSettingsPage {
+  $config = Read-ToolboxConfig
+  $page = New-Object System.Windows.Forms.TabPage
+  $page.Text = '网络与代理'
+  $page.BackColor = $ColorPage
+  $page.Padding = [System.Windows.Forms.Padding]::new(18,18,18,14)
+
+  $layout = New-Object System.Windows.Forms.TableLayoutPanel
+  $layout.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $layout.ColumnCount = 2
+  $layout.RowCount = 7
+  $layout.BackColor = $ColorPage
+  [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Absolute,150))
+  [void]$layout.ColumnStyles.Add([System.Windows.Forms.ColumnStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,38))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Percent,100))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,34))
+  [void]$layout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute,48))
+  $page.Controls.Add($layout)
+
+  $modeLabel = New-Object System.Windows.Forms.Label
+  $modeLabel.Text = '代理模式'
+  $modeLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $modeLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+  $modeLabel.ForeColor = $ColorText
+  $layout.Controls.Add($modeLabel,0,0)
+
+  $modeBox = New-Object System.Windows.Forms.ComboBox
+  $modeBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+  $modeBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $modeBox.Margin = [System.Windows.Forms.Padding]::new(0,8,0,7)
+  [void]$modeBox.Items.Add('自动：优先自定义，否则继承环境')
+  [void]$modeBox.Items.Add('继承环境变量 HTTP(S)_PROXY / ALL_PROXY')
+  [void]$modeBox.Items.Add('使用下方自定义代理')
+  [void]$modeBox.Items.Add('禁用代理（本次构建直连）')
+  $modeValue = (Get-ToolboxConfigText $config 'proxyMode' 'auto').ToLowerInvariant()
+  $modeBox.SelectedIndex = switch ($modeValue) { 'inherit' {1} 'custom' {2} 'off' {3} default {0} }
+  $layout.Controls.Add($modeBox,1,0)
+
+  $proxyLabel = New-Object System.Windows.Forms.Label
+  $proxyLabel.Text = '代理地址'
+  $proxyLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $proxyLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+  $proxyLabel.ForeColor = $ColorText
+  $layout.Controls.Add($proxyLabel,0,1)
+
+  $proxyBox = New-Object System.Windows.Forms.TextBox
+  $proxyBox.Text = Get-ToolboxConfigText $config 'proxyUrl' ''
+  $proxyBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $proxyBox.Margin = [System.Windows.Forms.Padding]::new(0,8,0,7)
+  $layout.Controls.Add($proxyBox,1,1)
+
+  $noProxyLabel = New-Object System.Windows.Forms.Label
+  $noProxyLabel.Text = 'NO_PROXY'
+  $noProxyLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $noProxyLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+  $noProxyLabel.ForeColor = $ColorText
+  $layout.Controls.Add($noProxyLabel,0,2)
+
+  $noProxyBox = New-Object System.Windows.Forms.TextBox
+  $noProxyBox.Text = Get-ToolboxConfigText $config 'noProxy' '127.0.0.1,localhost'
+  $noProxyBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $noProxyBox.Margin = [System.Windows.Forms.Padding]::new(0,8,0,7)
+  $layout.Controls.Add($noProxyBox,1,2)
+
+  $hint = New-Object System.Windows.Forms.Label
+  $hint.Text = '示例：http://127.0.0.1:7890。留空地址时，“自动”会直接继承当前 PowerShell/系统启动环境中的 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY。'
+  $hint.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $hint.ForeColor = $ColorMuted
+  $hint.Padding = [System.Windows.Forms.Padding]::new(0,5,0,0)
+  $layout.SetColumnSpan($hint,2)
+  $layout.Controls.Add($hint,0,3)
+
+  $note = New-Object System.Windows.Forms.Label
+  $note.Text = "构建工具会把同一代理同步给 npm / npx、Electron 下载、electron-builder、Git 子进程和 Gradle；PowerShell 自动下载 Temurin JDK 时也显式使用 HTTP/HTTPS 代理。`r`n`r`n也可不写入配置文件，直接在启动前设置 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY，或使用：`r`nDKDS.cmd build-windows -Proxy http://127.0.0.1:7890`r`n`r`n如果代理 URL 含用户名/密码，日志只显示脱敏后的地址。"
+  $note.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $note.ForeColor = $ColorMuted
+  $note.Padding = [System.Windows.Forms.Padding]::new(0,10,0,0)
+  $layout.SetColumnSpan($note,2)
+  $layout.Controls.Add($note,0,4)
+
+  $envPreview = New-Object System.Windows.Forms.Label
+  $inheritedProxy = if ($env:HTTPS_PROXY) { $env:HTTPS_PROXY } elseif ($env:HTTP_PROXY) { $env:HTTP_PROXY } elseif ($env:ALL_PROXY) { $env:ALL_PROXY } else { '(当前进程未设置代理变量)' }
+  $envPreview.Text = "当前环境：$(Protect-ProxyForGui $inheritedProxy)"
+  $envPreview.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $envPreview.ForeColor = $ColorMuted
+  $layout.SetColumnSpan($envPreview,2)
+  $layout.Controls.Add($envPreview,0,5)
+
+  $actions = New-Object System.Windows.Forms.FlowLayoutPanel
+  $actions.Dock = [System.Windows.Forms.DockStyle]::Fill
+  $actions.FlowDirection = [System.Windows.Forms.FlowDirection]::RightToLeft
+  $actions.WrapContents = $false
+  $actions.Padding = [System.Windows.Forms.Padding]::new(0,6,0,0)
+  $layout.SetColumnSpan($actions,2)
+  $layout.Controls.Add($actions,0,6)
+
+  $save = New-Object System.Windows.Forms.Button
+  $save.Text = '保存代理设置'
+  $save.Width = 130
+  $save.Height = 31
+  $save.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+  $save.BackColor = $ColorAccent
+  $save.ForeColor = [System.Drawing.Color]::White
+  $save.FlatAppearance.BorderSize = 0
+  $save.Add_Click({
+    try {
+      $mode = @('auto','inherit','custom','off')[$modeBox.SelectedIndex]
+      if ($mode -eq 'custom' -and [string]::IsNullOrWhiteSpace($proxyBox.Text)) {
+        throw '自定义代理模式需要填写代理地址。'
+      }
+      Save-ToolboxConfigPatch @{ proxyMode=$mode; proxyUrl=$proxyBox.Text.Trim(); noProxy=$noProxyBox.Text.Trim() }
+      $status.Text = '代理设置已保存；新启动的构建/开发任务会使用该网络配置。'
+    } catch {
+      [System.Windows.Forms.MessageBox]::Show($_.Exception.Message,'DKDS',[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    }
+  }.GetNewClosure())
+  [void]$actions.Controls.Add($save)
+
+  $inspect = New-Object System.Windows.Forms.Button
+  $inspect.Text = '查看生效代理'
+  $inspect.Width = 130
+  $inspect.Height = 31
+  $inspect.Add_Click({ Run-Action 'network' })
+  [void]$actions.Controls.Add($inspect)
+
+  $modeBox.Add_SelectedIndexChanged({ $proxyBox.Enabled = ($modeBox.SelectedIndex -in @(0,2)) }.GetNewClosure())
+  $proxyBox.Enabled = ($modeBox.SelectedIndex -in @(0,2))
   [void]$tabs.TabPages.Add($page)
 }
 
@@ -464,6 +623,7 @@ Add-ActionCard -Flow $common -Text '启动桌面开发版' -Description '自动�
 Add-ActionCard -Flow $common -Text '安装 / 修复依赖' -Description '明确执行 npm install，可用于首次运行或依赖损坏。' -Action 'install-deps'
 Add-ActionCard -Flow $common -Text '工具环境诊断' -Description '检查 Node、npm、Git、项目路径和依赖状态。' -Action 'doctor'
 Add-ActionCard -Flow $common -Text '共享工具链' -Description '显示 DK_TOOL_ROOT、公共缓存、JDK、Android SDK 与 Electron/Gradle 缓存位置。' -Action 'toolchain'
+Add-ActionCard -Flow $common -Text '网络与代理' -Description '查看当前构建任务实际使用的代理与 NO_PROXY；设置请使用“网络与代理”页。' -Action 'network'
 Add-ActionCard -Flow $common -Text '完整工程检查' -Description '插件、结构、科学引擎 parity 与边界检查。' -Action 'check'
 Add-ActionCard -Flow $common -Text '全部回归测试' -Description '运行历史功能和当前框架测试。' -Action 'test'
 Add-ActionCard -Flow $common -Text '构建 Windows' -Description '生成 Setup 与 Portable。' -Action 'build-windows'
@@ -473,6 +633,7 @@ Add-ActionCard -Flow $common -Text '打开 Windows 输出' -Description '打开 
 Add-ActionCard -Flow $common -Text '查看 Git 状态' -Description '检查当前分支与未提交修改。' -Action 'git-status'
 
 New-PathSettingsPage
+New-NetworkSettingsPage
 
 $android = New-Page 'Android'
 Add-ActionCard -Flow $android -Text '检查 Android 环境' -Description '检查 Node、adb、ANDROID_HOME 与 API 36；缺少 JDK 时自动准备并共享 Temurin 21。' -Action 'android-check' -Accent

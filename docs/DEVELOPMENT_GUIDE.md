@@ -3,14 +3,14 @@
 
 ## Dependency installation
 
-For an unchanged checkout with committed lockfiles:
+The current repository does **not** commit root/mobile npm lockfiles, so the supported install path is:
 
 ```bash
-npm ci
-cd mobile && npm ci
+npm install --no-audit --no-fund
+cd mobile && npm install --no-audit --no-fund
 ```
 
-Use `npm install` only when intentionally changing dependencies; review and commit the corresponding lockfile update. Desktop and mobile are independent npm projects.
+On Windows, prefer `DKDS.cmd install-deps` or `DKDS_GUI.cmd`; the toolbox also manages the shared npm/Electron caches and Electron binary installation separately. If lockfiles are introduced later, CI and this guide should switch together to `npm ci`.
 
 ## Normal development
 
@@ -42,6 +42,33 @@ DKDS.cmd build-windows
 ```
 
 Outputs go to `dist/`.
+
+## Build proxy
+
+The build toolbox has one shared proxy contract for npm/npx, Electron/electron-builder, Git child processes, Gradle and managed JDK downloads. The easiest persistent setup is the **网络与代理** page in `DKDS_GUI.cmd`.
+
+One-off Windows build through a local HTTP proxy:
+
+```bat
+DKDS.cmd build-windows -Proxy http://127.0.0.1:7890
+```
+
+Or use ordinary environment variables before starting the toolbox:
+
+```bat
+set HTTPS_PROXY=http://127.0.0.1:7890
+set HTTP_PROXY=http://127.0.0.1:7890
+set NO_PROXY=127.0.0.1,localhost
+DKDS.cmd build-windows
+```
+
+Inspect the effective configuration without building:
+
+```bat
+DKDS.cmd network
+```
+
+`-ProxyMode off` explicitly disables inherited/configured proxies for that toolbox process. Proxy credentials are redacted from diagnostics. HTTP/HTTPS proxies are fully supported for PowerShell-managed JDK downloads; Node/npm/Electron may additionally inherit other proxy schemes supported by their own transports.
 
 ## Android
 

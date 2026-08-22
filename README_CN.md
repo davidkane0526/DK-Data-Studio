@@ -1,4 +1,15 @@
-# DK Data Studio — v3.61.29
+# DK Data Studio — v3.61.30
+
+## v3.61.30 构建代理与网络工具链
+
+本版不修改科学算法或插件 API，重点让 Windows/Android 构建链可以可靠地通过代理下载依赖和工具。
+
+- `DKDS.cmd` 新增统一代理参数：`-ProxyMode auto|inherit|custom|off`、`-Proxy <URL>`、`-NoProxy <hosts>`。例如：`DKDS.cmd build-windows -Proxy http://127.0.0.1:7890`。
+- 默认 `auto`：如果设置了 `-Proxy`、`DKDS_PROXY` 或 GUI 自定义代理，则使用自定义代理；否则继承当前进程的 `HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY`。
+- 代理统一同步到 npm/npx、Electron 下载、electron-builder/Git 子进程和 Gradle。PowerShell 自动下载 Temurin JDK 21 时也使用同一代理并尊重 `NO_PROXY`。
+- Developer Toolbox 新增“网络与代理”页，可持久保存代理模式、代理 URL 与 `NO_PROXY`；日志和诊断会隐藏代理 URL 中的用户名/密码。
+- `DKDS.cmd network` 可查看当前构建实际使用的代理来源和生效值。
+- Electron / electron-builder 的国内镜像仍只是网络失败后的 fallback；配置代理不会强制切换镜像。
 
 ## v3.61.29 SDK / Plugin Host 稳定性强化
 
