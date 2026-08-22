@@ -328,8 +328,18 @@ function createWindow() {
   return win;
 }
 
-function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId) {
-  return `${ownerWebContentsId}::${projectTabId || 'project'}::${activityId}`;
+function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse=true} = {}) {
+  // Reusable TOP/Tool windows are renderer singletons per owner + activity. Project
+  // state is explicitly rehydrated through the bootstrap contract when a different
+  // project opens the same activity. This prevents project-tab prewarm duplicates.
+  return `${ownerWebContentsId}::${reuse !== false ? '__reusable__' : (projectTabId || 'project')}::${activityId}`;
+}
+
+function removeAuxiliaryWindowReferences(win) {
+  if (!win) return;
+  for (const [key, candidate] of auxiliaryWindows) {
+    if (candidate === win) auxiliaryWindows.delete(key);
+  }
 }
 
 function projectSnapshotDigest(project) {
@@ -468,7 +478,7 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
   const useConfiguredPrewarm=spec.prewarm===true;
   const basePayload={activityId,projectTabId,project,artifactSnapshot,projectPath:null,title:'自动化测试',diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0};
   const created=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:useConfiguredPrewarm});
-  const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId);
+  const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId,{reuse:spec?.reuse!==false});
   const win=auxiliaryWindows.get(key);
   const rendererProcessId=(()=>{try{return Number(win?.webContents?.getOSProcessId?.())||0;}catch{return 0;}})();
   const timeoutMs=Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000));
@@ -563,7 +573,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
   const resolveStartedAtMs=Date.now();
   const pluginWindow = resolveConfiguredPluginWindow(activityId);
   const resolveSpecMs=Date.now()-resolveStartedAtMs;
-  const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId);
+  const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse:pluginWindow?.reuse !== false});
   let previous = auxiliaryWindows.get(key);
   if (previous && !previous.isDestroyed()) {
     const previousSpec=auxiliaryBootstrap.get(previous.webContents.id)?.pluginWindow||null;
@@ -573,14 +583,20 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
       ||previousSpec.revision!==pluginWindow.revision
     );
     if(definitionChanged){
-      auxiliaryWindows.delete(key);
+      removeAuxiliaryWindowReferences(previous);
       closeAuxiliaryWindowForReal(previous);
       previous=null;
     }
   }
   if (previous && !previous.isDestroyed()) {
-    const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
     const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
+    // Prewarm is only allowed to create/warm an empty renderer. Never downgrade an
+    // already hydrated reusable window back into prewarm mode after it is hidden;
+    // doing so used to make a later reopen look like a second first-open lifecycle.
+    if (payload.prewarm === true && cachedBootstrap?.prewarm !== true) {
+      return {reused:true,dedicated:!!pluginWindow,prewarmSkipped:true,ready:auxiliaryReady.has(previous.webContents.id)};
+    }
+    const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
     const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
       || cachedBootstrap.projectPath !== nextBootstrap.projectPath
       || cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest
@@ -666,7 +682,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     });
   }
   win.on('closed', () => {
-    auxiliaryWindows.delete(key);
+    removeAuxiliaryWindowReferences(win);
     auxiliaryBootstrap.delete(auxiliaryWebContentsId);
     auxiliaryReady.delete(auxiliaryWebContentsId);
     auxiliaryFailures.delete(auxiliaryWebContentsId);
@@ -1199,9 +1215,12 @@ app.whenReady().then(() => {
       const pluginId=String(pluginWindow.pluginId||'');
       const activityId=String(pluginWindow.activity||bootstrap.activityId||'');
       const title=String(pluginWindow.title||bootstrap.title||win.getTitle?.()||'').trim();
+      const projectTabId=String(bootstrap.projectTabId||'');
+      const projectTitle=String(bootstrap.title||'').trim();
+      const lifecycle=pluginId?(bootstrap.prewarm===true?'预热':(win.isVisible()?'已打开':'已隐藏')):'主界面';
       rendererMeta.set(pid,{
-        pluginId,activityId,title,
-        label:pluginId?`插件 · ${title||pluginId}`:`主界面 · ${title||APP_NAME}`
+        pluginId,activityId,title,projectTabId,projectTitle,lifecycle,visible:win.isVisible(),prewarm:bootstrap.prewarm===true,
+        label:pluginId?`插件 · ${title||pluginId}${projectTitle?` · ${projectTitle}`:''} · ${lifecycle}`:`主界面 · ${title||APP_NAME}`
       });
     }
     const components=metrics.map((row,index)=>{
@@ -1223,6 +1242,11 @@ app.whenReady().then(() => {
         type,pid,label,
         pluginId:renderer?.pluginId||'',
         activityId:renderer?.activityId||'',
+        projectTabId:renderer?.projectTabId||'',
+        projectTitle:renderer?.projectTitle||'',
+        lifecycle:renderer?.lifecycle||'',
+        visible:renderer?.visible!==false,
+        prewarm:renderer?.prewarm===true,
         workingSetBytes:(Number(m.workingSetSize)||0)*1024,
         peakWorkingSetBytes:(Number(m.peakWorkingSetSize)||0)*1024,
         privateBytes:(Number(m.privateBytes)||0)*1024

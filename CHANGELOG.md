@@ -1,3 +1,14 @@
+# v3.61.26 — Shared Plugin Theme, Reusable Window Lifecycle & Tool Contract
+
+- Promote appearance from shell-only styling to a Core PluginWorkspace semantic token contract shared by built-in and external plugin windows, with legacy variable aliases resolving from the same light/dark source.
+- Convert runtime-injected Resonance, TER and Data Center chrome to semantic Core surfaces/text/borders so high-specificity plugin CSS no longer forces white panels in dark mode.
+- Make reusable TOP/Tool renderers singletons per owner + activity rather than per project tab; project changes rehydrate the existing renderer instead of creating duplicate prewarm processes.
+- Prevent a later prewarm request from downgrading an already hydrated hidden reusable renderer, fixing the TER close/reopen lifecycle.
+- Add project/lifecycle metadata (`预热 / 已打开 / 已隐藏`) to component-memory diagnostics so reusable plugin renderer state is explicit.
+- Strengthen Tool package validation: Tool plugins must declare a TOP workspace and a dedicated window with the same activity. Plugin installation now filters to the normalized type and refreshes the top Tool menu immediately.
+- Keep `builtin.pulse-import` as the intentional Data importer while validating the supplied `com.dkds.tools.pulse-sampler` as a Tool plugin; the two capabilities are distinct.
+- Plugin API remains `1.15.0`; scientific algorithms and project data semantics are unchanged.
+
 # v3.61.25 — Ordered Modern Shell, Theme & Tool Runtime
 
 - Refine the v3.61.24 scoped visual system using the supplied Theme Lab 1.6.7 reference: cool light canvas, thin blue-gray rims, broad low-opacity ambient depth and short motion, while avoiding glossy or skeuomorphic controls.

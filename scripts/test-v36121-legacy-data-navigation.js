@@ -10,7 +10,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 const pkg=json('package.json');
 const dc=json('src/plugins/data-center/plugin.json');
 const sdk=json('sdk/contract.json');
-assert(pkg.version==='3.61.25','Application version must be 3.61.25.');
+assert(pkg.version==='3.61.26','Application version must be 3.61.26.');
 assert(dc.version==='1.13.6','Data Center version must advance to 1.13.6.');
 assert(sdk.pluginApiVersion==='1.15.0','Data navigation / legacy restoration / Core plot chrome must not bump the Plugin SDK.');
 

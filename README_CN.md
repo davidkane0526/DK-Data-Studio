@@ -1,4 +1,18 @@
-# DK Data Studio — v3.61.25
+# DK Data Studio — v3.61.26
+
+
+## v3.61.26 统一插件主题、可复用窗口生命周期与 Tool 契约修复
+
+本版本针对真实暗色主题、TER 独立窗口和外部 Tool 插件暴露出的基座问题做收敛修复，不修改科学算法与数据语义。
+
+- 将亮/暗主题从“主界面样式”提升为 Core PluginWorkspace 视觉契约，统一发布 `surface / border / text / accent / status` 等语义 token；旧插件使用的 `--bg / --panel / --line / --text / --muted` 也由同一 token 源桥接。
+- 共振、TER、Data Center 等运行时注入 CSS 改为消费 Core token，避免插件高优先级样式在暗色模式下重新写回白色面板。独立插件窗口的标题、导航、按钮、表单与状态栏由 Core 统一适配。
+- 修复 `reuse:true` 的 TOP/Tool 窗口按工程标签重复创建 renderer 的生命周期错误：可复用窗口改为 owner + activity 单例，切换工程通过已有 hydration 契约更新数据，不再为每个 project tab 额外预热一份进程。
+- 修复已打开/已隐藏的可复用窗口被后续 prewarm 重新降级为“预热态”的问题，解决 TER 关闭后无法稳定再次打开的路径。内存面板增加工程名与 `预热 / 已打开 / 已隐藏` 生命周期说明。
+- 强化 Tool 包契约：`pluginType: tool` 必须对应 TOP workspace，并拥有 activity 一致的 dedicated window；安装成功后插件管理器自动切到规范化后的实际类型并立即刷新顶部“工具”菜单。
+- `builtin.pulse-import`（Pulse Text Import）继续保持 `data` 类型，因为它只提供数据导入能力；用户提供的 `com.dkds.tools.pulse-sampler` 则按其 manifest 作为 `tool` 安装，两者不再混淆。
+- 新增 `test-v36126-theme-lifecycle-tool-contract.js`，覆盖共享主题 token、暗色插件样式、TER 可复用 renderer 生命周期以及 Tool 分类/窗口契约。
+- Plugin API 仍为 `1.15.0`；已有规范插件无需迁移。
 
 
 ## v3.61.25 有序现代 Shell、主题与工具运行时

@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.25','ordered modern shell release must be v3.61.25');
+assert.equal(json('package.json').version,'3.61.26','ordered modern shell release must be v3.61.26');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
 const css=read('src/ui-modern.css');
@@ -44,4 +44,4 @@ assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:
 assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
 assert(kernel.includes("pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
 assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
-console.log('v3.61.25 ordered modern shell, appearance, memory and Tool runtime checks passed.');
+console.log('v3.61.26 ordered modern shell, appearance, memory and Tool runtime checks passed.');

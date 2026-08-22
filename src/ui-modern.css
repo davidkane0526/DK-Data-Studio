@@ -1,4 +1,4 @@
-/* DK Data Studio v3.61.25 · ordered modern visual layer
+/* DK Data Studio v3.61.26 · ordered modern visual layer
    Scope: visual treatment only. No Plotly internal DOM selectors and no layout geometry overrides. */
 :root{
   --dkui-canvas:#eef4fb;
@@ -19,9 +19,67 @@
   --dkui-shadow-float:0 1px 0 rgba(255,255,255,.98) inset,0 8px 20px rgba(70,99,139,.10),0 24px 54px rgba(70,99,139,.16);
   --dkui-radius:10px;
   --dkui-radius-lg:13px;
+
+  /* Public plugin visual contract. Plugins should consume these semantic tokens
+     instead of owning light/dark color literals. */
+  --app-bg:var(--dkui-canvas);
+  --surface-canvas:var(--dkui-canvas);
+  --surface-primary:var(--dkui-surface);
+  --surface-secondary:var(--dkui-surface-soft);
+  --surface-subtle:var(--dkui-surface-soft);
+  --surface-hover:var(--dkui-surface-hover);
+  --panel-bg:var(--dkui-surface);
+  --input-bg:var(--dkui-surface-soft);
+  --border-subtle:var(--dkui-border);
+  --border-strong:var(--dkui-border-strong);
+  --line:var(--dkui-border);
+  --text-primary:var(--dkui-text);
+  --text-secondary:var(--dkui-text-soft);
+  --text-tertiary:var(--dkui-muted);
+  --accent-primary:var(--dkui-accent);
+  --accent-contrast:#fff;
+  --accent-soft:var(--dkui-accent-soft);
+  --focus-ring:var(--dkui-focus);
+  --surface-shadow:var(--dkui-shadow-1);
+  --surface-shadow-raised:var(--dkui-shadow-2);
+  --success:#15803d;
+  --success-soft:color-mix(in srgb,var(--success) 10%,var(--surface-primary));
+  --warning:#b45309;
+  --warning-soft:color-mix(in srgb,var(--warning) 10%,var(--surface-primary));
+  --danger:#c2413a;
+  --danger-soft:color-mix(in srgb,var(--danger) 10%,var(--surface-primary));
+  /* Legacy aliases remain as a compatibility bridge, but resolve from the same
+     modern token source so old plugin markup cannot force a light surface. */
+  --bg:var(--app-bg);
+  --panel:var(--surface-primary);
+  --border:var(--border-subtle);
+  --text:var(--text-primary);
+  --muted:var(--text-secondary);
+  --accent:var(--accent-primary);
+  --shadow:var(--surface-shadow);
 }
 
 html,body,#app{color:var(--dkui-text)}
+
+/* PluginWorkspace is a Core-owned visual boundary. Domain and external plugins
+   inherit these tokens automatically; only data semantics and truly custom
+   visualization marks should remain plugin-owned. */
+body.dkds-modern-ui .dkds-plugin-workspace,
+body.dkds-modern-ui .dkds-analysis-workbench{
+  --plugin-workspace-panel-border:var(--border-subtle);
+  --plugin-workspace-surface:var(--surface-primary);
+  --plugin-workspace-muted-surface:var(--surface-secondary);
+  --plugin-workspace-grid:var(--border-subtle);
+  --plugin-workspace-shadow:var(--surface-shadow-raised);
+  --plugin-surface-bg:var(--surface-primary);
+  background:var(--app-bg);
+  color:var(--text-primary);
+}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis line{stroke:var(--text-tertiary)}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis text{fill:var(--text-secondary)}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis-title{fill:var(--text-primary)}
+
 body.dkds-modern-ui{
   background:var(--dkui-canvas);
   background-image:radial-gradient(ellipse at 55% -10%,rgba(255,255,255,.82) 0%,rgba(244,249,255,.40) 34%,rgba(218,232,248,.10) 62%,transparent 78%);
@@ -296,6 +354,46 @@ body.dkds-modern-ui .plugin-manager-note{background:#f7f9fc;border-left-color:#9
 body.dkds-modern-ui .plugin-switch-track{box-shadow:0 1px 2px rgba(25,39,66,.11) inset}
 body.dkds-modern-ui .plugin-switch-thumb{box-shadow:0 2px 5px rgba(25,39,66,.18)}
 
+/* Plugin pages/windows are Core chrome. Keep their header, standard controls and
+   navigation visually consistent even when the plugin itself is external. */
+body.dkds-modern-ui .analysis-page-header,
+body.dkds-modern-ui.plugin-window-host .analysis-page-header{
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:0 1px 0 rgba(255,255,255,.50) inset,0 2px 8px rgba(56,81,116,.045);
+}
+body.dkds-modern-ui .analysis-page-header h2{color:var(--text-primary)}
+body.dkds-modern-ui .analysis-subtitle{color:var(--text-secondary)}
+body.dkds-modern-ui .dkds-analysis-nav{background:var(--surface-primary);border-color:var(--border-subtle)}
+body.dkds-modern-ui .dkds-analysis-nav-btn{color:var(--text-primary)}
+body.dkds-modern-ui .dkds-analysis-nav-btn:hover{background:var(--surface-hover)}
+body.dkds-modern-ui .dkds-analysis-nav-btn.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 32%,var(--border-subtle));color:var(--accent-primary)}
+body.dkds-modern-ui .analysis-page-header button,
+body.dkds-modern-ui .dkds-plugin-header-actions button,
+body.dkds-modern-ui .dkds-plugin-workspace button{
+  border-color:var(--border-subtle);
+  background:var(--surface-primary);
+  color:var(--text-primary);
+  box-shadow:var(--surface-shadow);
+}
+body.dkds-modern-ui .analysis-page-header button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-plugin-header-actions button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-plugin-workspace button:hover:not(:disabled){
+  background:var(--surface-hover);
+  border-color:var(--border-strong);
+}
+body.dkds-modern-ui .dkds-plugin-workspace input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .dkds-plugin-workspace select,
+body.dkds-modern-ui .dkds-plugin-workspace textarea{
+  background:var(--input-bg);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+}
+body.dkds-modern-ui .dkds-plugin-workspace input:focus-visible,
+body.dkds-modern-ui .dkds-plugin-workspace select:focus-visible,
+body.dkds-modern-ui .dkds-plugin-workspace textarea:focus-visible{outline:none;border-color:var(--accent-primary);box-shadow:var(--focus-ring)}
+
 /* Scientific workbenches: style the card chrome only, never Plotly's generated DOM. */
 body.dkds-modern-ui #resonanceDedicatedPage .resonance-dedicated-body,
 body.dkds-modern-ui #resonanceDedicatedPage .resonance-parity-root,
@@ -303,20 +401,22 @@ body.dkds-modern-ui .data-center-body:not(.dkds-unified-workbench-body){backgrou
 body.dkds-modern-ui #resonanceDedicatedPage .respar-left-panel,
 body.dkds-modern-ui #resonanceDedicatedPage .respar-inspector-panel,
 body.dkds-modern-ui #resonanceDedicatedPage .respar-floating-panel{
-  background:#fff;
-  border-color:var(--dkui-border);
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
 }
 body.dkds-modern-ui .trend-card-legend,
 body.dkds-modern-ui .main-legend-bar,
 body.dkds-modern-ui .respar-main-legend,
-body.dkds-modern-ui .reswin-group-legend{background:#fff;border-color:#e8edf3}
+body.dkds-modern-ui .reswin-group-legend{background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)}
 body.dkds-modern-ui .main-legend-chip,
 body.dkds-modern-ui .trend-legend-chip,
 body.dkds-modern-ui .respar-legend-chip,
 body.dkds-modern-ui .dc-ref-chip,
 body.dkds-modern-ui .ter-summary-chip{
-  border-color:#e1e7ef;
-  background:#f8f9fc;
+  border-color:var(--border-subtle);
+  background:var(--surface-secondary);
+  color:var(--text-primary);
 }
 
 /* Menus/dialogs receive depth only where the component itself is already floating. */
@@ -469,14 +569,16 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools{back
 body.dkds-modern-ui .analysis-page-header,
 body.dkds-modern-ui .dkds-analysis-header,
 body.dkds-modern-ui .plugin-manager-header{
-  background:#fff;
-  border-color:var(--dkui-border);
-  box-shadow:0 1px 0 rgba(255,255,255,.9) inset;
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 90%,white) inset;
 }
 body.dkds-modern-ui .plugin-card-footer,
 body.dkds-modern-ui .plugin-card-details{
-  background:#fafbfd;
-  border-color:#e8edf3;
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+  color:var(--text-secondary);
 }
 body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent!important;box-shadow:none!important}
 
@@ -512,7 +614,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
   html[data-dkds-theme="dark"] body.dkds-modern-ui .reswin-group-legend{color:#aeb8c7}
 
 
-/* v3.61.25 shell order contract: analysis pages can never cover the command shell. */
+/* v3.61.26 shell order contract: analysis pages can never cover the command shell. */
 body.dkds-modern-ui .topbar{position:relative;z-index:1400;isolation:isolate}
 body.dkds-modern-ui .project-tabs-bar{position:relative;z-index:1300}
 body.dkds-modern-ui .analysis-page{z-index:500}
@@ -603,14 +705,7 @@ body.dkds-modern-ui .dkds-memory-empty{padding:18px 10px;text-align:center;color
 body.dkds-modern-ui .appearance-status-item .plugin-status-icon{font-size:12px}
 
 /* Explicit dark mode: flat material with restrained depth, no balloon-like highlights. */
-html[data-dkds-theme="dark"]{
-  --dkui-canvas:#101a28;--dkui-surface:#182434;--dkui-surface-soft:#1b293a;--dkui-surface-hover:#203044;
-  --dkui-border:#30455e;--dkui-border-strong:#405a75;--dkui-text:#edf4ff;--dkui-text-soft:#b6c2d3;--dkui-muted:#8f9db3;
-  --dkui-accent:#4d9dff;--dkui-accent-hover:#6caeff;--dkui-accent-soft:#1c385b;--dkui-focus:0 0 0 3px rgba(77,157,255,.17);
-  --dkui-shadow-1:0 1px 0 rgba(255,255,255,.035) inset,0 -1px 0 rgba(0,0,0,.24) inset,0 4px 10px rgba(0,0,0,.16),0 12px 26px rgba(0,0,0,.13);
-  --dkui-shadow-2:0 1px 0 rgba(255,255,255,.045) inset,0 -1px 0 rgba(0,0,0,.28) inset,0 6px 14px rgba(0,0,0,.20),0 17px 34px rgba(0,0,0,.18);
-  --dkui-shadow-float:0 1px 0 rgba(255,255,255,.04) inset,0 8px 22px rgba(0,0,0,.28),0 24px 58px rgba(0,0,0,.34);
-}
+
 html[data-dkds-theme="dark"] body.dkds-modern-ui{background:#101a28;background-image:radial-gradient(ellipse at 55% -12%,rgba(74,112,165,.12),transparent 64%)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel{background:rgba(24,36,52,.985);border-color:#30455e}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel-head{border-bottom-color:#2b3d53}

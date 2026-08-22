@@ -2,8 +2,8 @@
 
 ## Current local repository
 
-- Application checkpoint: **v3.61.25**; the current branch contains the ordered modern Shell, shared appearance runtime, memory inspector and deterministic Tool menu fixes.
-- Current checkout: `feat/v3.61.25-ordered-modern-shell` (UI/Shell/Tool runtime stabilization; scientific/data contracts stay unchanged).
+- Application checkpoint: **v3.61.26**; the current branch contains the shared plugin-theme contract, reusable TOP/Tool lifecycle fix and strict Tool package classification.
+- Current checkout: `feat/v3.61.26-theme-lifecycle-tool-contract` (plugin theme/lifecycle/Tool contract stabilization; scientific/data contracts stay unchanged).
 - Previous runtime-fix branch: `fix/v3.61.22-legacy-resonance-runtime`.
 - Existing `main` / `dev` refs are historical baselines and are not the current delivered application state.
 - This cleanup does **not** create, move, push or publish the future GitHub `plugin` branch; branch publication is a separate explicit step.

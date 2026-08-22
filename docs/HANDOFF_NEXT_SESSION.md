@@ -1,10 +1,10 @@
-# Next Session Handoff — v3.61.25 ordered modern Shell stabilization
+# Next Session Handoff — v3.61.26 plugin theme / reusable window stabilization
 
 ## Baseline
 
-- Application: `3.61.25`; current changes refine the scoped modern visual system, enforce Shell z-order, add shared appearance/runtime memory inspection, and make Tool-plugin menus deterministic without changing scientific/data contracts.
-- Runtime/scientific behavior baseline: `3.61.25` (scientific algorithms/data semantics unchanged from v3.61.22).
-- Current branch: `feat/v3.61.25-ordered-modern-shell`.
+- Application: `3.61.26`; current changes refine the scoped modern visual system, enforce Shell z-order, add shared appearance/runtime memory inspection, and make Tool-plugin menus deterministic without changing scientific/data contracts.
+- Runtime/scientific behavior baseline: `3.61.26` (scientific algorithms/data semantics unchanged from v3.61.22).
+- Current branch: `feat/v3.61.26-theme-lifecycle-tool-contract`.
 - Public Plugin API / standalone SDK: `1.15.0`.
 - Architecture phase: **feature complete / release candidate / stabilization**.
 - Architecture is frozen unless a real P0/P1 issue proves a boundary is wrong.

@@ -547,7 +547,17 @@
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{
         const installed=await window.DKDSPlugins.external.install();
-        if(installed)state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装并载入。`);
+        if(installed){
+          const type=pluginTypeMeta(installed).id;
+          state.query='';
+          state.filter='all';
+          state.typeFilter=type;
+          const search=$('#pluginManagerSearch');if(search)search.value='';
+          const filter=$('#pluginManagerFilter');if(filter)filter.value='all';
+          const typeFilter=$('#pluginManagerTypeFilter');if(typeFilter)typeFilter.value=type;
+          state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装为“${pluginTypeMeta(installed).label}”并载入。`);
+          window.DKDSPlugins?.activities?.refresh?.();
+        }
       }catch(err){state.host?.setStatus?.(`安装插件失败：${err.message}`);}
       renderList();
     };

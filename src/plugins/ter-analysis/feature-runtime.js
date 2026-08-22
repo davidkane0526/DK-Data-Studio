@@ -46,7 +46,7 @@
         position:sticky;
         top:8px;
         z-index:30;
-        box-shadow:0 10px 30px rgba(15,23,42,.16);
+        box-shadow:var(--surface-shadow-raised);
       }
       #terMaxPage .ter-resistance-card .analysis-chart{
         min-height:380px;
@@ -61,8 +61,8 @@
         justify-content:space-between;
         gap:8px;
         padding:5px 8px 5px 10px;
-        background:#fafbfe;
-        border-bottom:1px solid #edf0f5;
+        background:var(--surface-secondary);
+        border-bottom:1px solid var(--border-subtle);
         flex-wrap:wrap;
       }
       #terMaxPage .ter-card-title-text{
@@ -90,22 +90,22 @@
       }
       #terMaxPage .ter-resistance-hint{
         margin:7px 10px 0;
-        color:#64748b;
+        color:var(--text-secondary);
         font-size:11px;
         line-height:1.45;
       }
       #terMaxPage .ter-resistance-selection{
         margin:6px 10px 0;
         min-height:20px;
-        color:#334155;
+        color:var(--text-primary);
         font-size:11px;
       }
-      #terMaxPage .ter-resistance-selection strong{color:#b91c1c}
+      #terMaxPage .ter-resistance-selection strong{color:var(--danger)}
       #terMaxPage .ter-layout-controls{
         align-items:center;
       }
       #terMaxPage .ter-layout-controls strong{
-        color:#334155;
+        color:var(--text-primary);
         margin-right:2px;
       }
       #terMaxPage .ter-layout-controls label{
@@ -119,7 +119,7 @@
         height:30px;
       }
       #terMaxPage .ter-layout-controls .ter-layout-note{
-        color:#64748b;
+        color:var(--text-secondary);
         font-size:11px;
       }
       #terMaxPage .ter-layout-controls .ter-sticky-check{

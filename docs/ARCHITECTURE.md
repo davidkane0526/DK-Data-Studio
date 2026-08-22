@@ -1,7 +1,7 @@
 # Architecture — Current v3.61.x Baseline
 
 
-## Current architecture checkpoint — v3.61.25
+## Current architecture checkpoint — v3.61.26
 
 The runtime architecture is considered feature-complete and is now in stabilization mode. New work should prefer fixing demonstrated P0/P1 defects over introducing new host/runtime abstraction layers.
 

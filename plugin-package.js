@@ -130,6 +130,14 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     windowSpec={...windowSpec,activity,runtime:runtime||undefined,scripts:[...new Set(windowScripts)],persistence};
   }
 
+  if(pluginType==='tool'){
+    const workspace=sourceManifest.workspace&&typeof sourceManifest.workspace==='object'?sourceManifest.workspace:{};
+    const role=String(workspace.role||'').trim().toLowerCase();
+    const activity=String(workspace.activity||'').trim();
+    if(role!=='top'||!validPluginId(activity))throw new Error('Tool plugins must declare workspace.role=top and a valid workspace.activity.');
+    if(!windowSpec||String(windowSpec.activity||'')!==activity)throw new Error('Tool plugins must declare a dedicated window with the same activity as workspace.activity.');
+  }
+
   const manifest = {
     ...sourceManifest,
     id,
