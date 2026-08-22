@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.18.0';
+  const VERSION='1.19.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -452,7 +452,7 @@
     const currentProjectSummary=currentProjectPayload?.summary||null;
     if(window.electronAPI?.diagnosticsRunActivitySmoke&&currentProjectSummary&&Number(currentProjectSummary.artifactCount)>0){
       await runCase('project.data-center-live','Current project → Data Center live hydration','Project / Electron',async()=>{
-        const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+        const capabilitySnapshot=currentProjectPayload.capabilitySnapshot||window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
         const out=await window.electronAPI.diagnosticsRunActivitySmoke({
           activityId:'data-center',
           project:currentProjectPayload.project,
@@ -480,7 +480,7 @@
       if(!tops.length)await runCase('top.none','TOP independent renderer discovery','TOP / Electron',async()=>{throw new Error('No enabled TOP activity was discovered; this would leave the independent renderer path untested.');});
       for(const top of tops){
         const row=await runCase(`top.${top.activityId}`,`TOP renderer · ${top.name||top.pluginId}`,'TOP / Electron',async()=>{
-          testedTopCount+=1;const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
+          testedTopCount+=1;const capabilitySnapshot=currentProjectPayload?.capabilitySnapshot||window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
           assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);assert(out?.lifecycle?.tested&&out?.lifecycle?.ok,`${out?.pluginId||top.pluginId}: TOP hide/reuse lifecycle failed.`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow,algorithmCategories:top.algorithmCategories};
         });
         if(row.status==='pass')passedTopCount+=1;

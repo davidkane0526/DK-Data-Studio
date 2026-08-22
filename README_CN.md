@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.14
+# DK Data Studio — v3.61.15
+
+## v3.61.15 独立 TOP 数据源同步读取契约修复
+
+- 修复独立 TOP 窗口中 `ctx.data.sources.list()` / `targets()` 被通用远程 capability proxy 变成 Promise 的 Core 契约错误。SDK 一直将这两个接口定义为同步只读接口；现在主窗口与独立窗口重新保持一致。
+- `core.data-sources` 的来源目录和“数据用途”目标通过 capability metadata 提供只读快照；`setAssignments`、重命名、排除、删除等写操作仍走 IPC，不引入第二套数据状态。
+- 来源目录变化会更新 capability snapshot revision，并同步到已打开的 TOP 窗口，避免导入或重新分配后独立工作台继续读取旧目录。
+- Automation Runner 升级到 `1.19.0`。真实工程 Data Center 端到端测试现在使用与正式窗口完全相同的 capability snapshot，并记录 renderer 是否收到同步 source snapshot、source 数和 target 数。
+- 新回归测试会先证明裸远程 capability 的 `targets()` 返回 Promise，再验证 Plugin Kernel 在交给插件前恢复 SDK 承诺的同步数组语义；这直接覆盖 v3.61.14 实机出现的“Artifact Store 已有数据但 Data Center DOM 为 0 行”故障模式。
+- 本次为 Core 跨窗口能力修复，不增加 Data Center 私有数据恢复路径；Plugin API 保持 `1.15.0`。
+
 
 ## v3.61.14 TOP 工程数据生命周期收口
 

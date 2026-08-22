@@ -1425,8 +1425,26 @@
     };
     const sourceCapability=()=>{
       const base=window.DKDSCapabilities?.proxy?.('core.data-sources')||null;if(!base)return null;
-      if(pluginType!=='workbench')return base;
-      return new Proxy(base,{get(target,prop,receiver){
+      const descriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
+      const syncSnapshot=descriptor?.remote===true&&descriptor?.metadata?.syncSnapshot&&typeof descriptor.metadata.syncSnapshot==='object'
+        ? descriptor.metadata.syncSnapshot
+        : null;
+      const syncBase=syncSnapshot?new Proxy(base,{get(target,prop,receiver){
+        if(prop==='list')return options=>{
+          const rows=Array.isArray(syncSnapshot.sources)?syncSnapshot.sources:[];
+          const query=options&&typeof options==='object'?options:{};
+          const consumer=String(query.consumer||query.pluginId||'').trim();
+          return rows.filter(row=>{
+            if(!consumer)return true;
+            const assignments=Array.isArray(row?.assignments)?row.assignments.map(String):['*'];
+            return assignments.includes('*')||assignments.includes(consumer);
+          }).map(row=>({...row,assignments:Array.isArray(row?.assignments)?[...row.assignments]:row?.assignments}));
+        };
+        if(prop==='targets')return ()=>Array.isArray(syncSnapshot.targets)?syncSnapshot.targets.map(row=>({...row,accepts:Array.isArray(row?.accepts)?[...row.accepts]:[]})):[];
+        const value=Reflect.get(target,prop,receiver);return typeof value==='function'?value.bind(target):value;
+      }}):base;
+      if(pluginType!=='workbench')return syncBase;
+      return new Proxy(syncBase,{get(target,prop,receiver){
         if(prop==='list')return options=>target.list?.({...((options&&typeof options==='object')?options:{}),consumer:pluginId})||[];
         if(prop==='setAssignments')return undefined;
         if(prop==='detach')return ref=>{
@@ -1631,7 +1649,10 @@
           list:options=>sourceCapability()?.list?.(options)||[],
           targets:()=>sourceCapability()?.targets?.()||[],
           detach:pluginType==='workbench'?ref=>sourceCapability()?.detach?.(ref):undefined,
-          setAssignments:pluginType==='data'||pluginType==='foundation'?(ref,ids)=>sourceCapability()?.setAssignments?.(ref,ids):undefined
+          setAssignments:pluginType==='data'||pluginType==='foundation'?(ref,ids)=>sourceCapability()?.setAssignments?.(ref,ids):undefined,
+          rename:pluginType==='data'||pluginType==='foundation'?(ref,label)=>sourceCapability()?.rename?.(ref,label):undefined,
+          setExcluded:pluginType==='data'||pluginType==='foundation'?(ref,value)=>sourceCapability()?.setExcluded?.(ref,value):undefined,
+          remove:pluginType==='data'||pluginType==='foundation'?refs=>sourceCapability()?.remove?.(refs):undefined
         }),
         importWorkbench:Object.freeze({
           open:(options={})=>{

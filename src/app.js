@@ -1141,6 +1141,7 @@
     return {
       project,
       artifactSnapshot,
+      capabilitySnapshot:capabilitySnapshotForWindows(),
       summary:{
         datasetCount:Array.isArray(project.datasets)?project.datasets.length:0,
         artifactCount:artifactSnapshot.length,
@@ -1292,6 +1293,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const importDelta=diffArtifactRows(beforeArtifactRows);
       window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifactDelta:importDelta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
       pushArtifactDeltaToActivityWindows(importDelta,'import');
+      void publishCapabilitySnapshot();
       if(legacyRows.length)clearMainView(false);
       renderAll();
       refreshOpenAnalysisPage();
@@ -1392,6 +1394,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const delta={upserts:changed?[changed]:[],removedIds:[]};
       window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(dataset?.sourcePath||dataset?.path||''),artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
       pushArtifactDeltaToActivityWindows(delta,type);
+      void publishCapabilitySnapshot();
       renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();
     };
     const commitGeneric=(type,artifacts=[])=>{
@@ -1399,6 +1402,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const delta={upserts:changed,removedIds:[]};
       window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,sourcePath:String(changed[0]?.source?.path||artifacts[0]?.source?.path||''),artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
       pushArtifactDeltaToActivityWindows(delta,type);
+      void publishCapabilitySnapshot();
       renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();return list();
     };
     return {
@@ -1430,7 +1434,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         if(genericRemoveIds.size)state.artifactStore?.batch?.(api=>{for(const id of [...genericRemoveIds].reverse())api.remove?.(id);});
         const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
         const removedCount=(outcome.removed?.length||0)+genericRoots.length;
-        if(removedCount){const removedArtifactIds=[...(outcome.removedArtifactIds||[]),...genericRemoveIds].map(String);const delta={upserts:[],removedIds:removedArtifactIds};window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds,artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(delta,'source-remove');renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
+        if(removedCount){const removedArtifactIds=[...(outcome.removedArtifactIds||[]),...genericRemoveIds].map(String);const delta={upserts:[],removedIds:removedArtifactIds};window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds,artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(delta,'source-remove');void publishCapabilitySnapshot();renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
         return {removed:[...(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),...genericRoots.map(a=>({path:a.id,name:a.name,sourcePath:a?.source?.path||''}))],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],sources:list()};
       }
     };
@@ -2206,7 +2210,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.14',
+      version:'3.61.15',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2852,9 +2856,29 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     panelObserver.observe($('#zoomPanel'));
   }
 
+  function capabilitySnapshotForWindows(){
+    const snapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+    if(!snapshot||!Array.isArray(snapshot.providers))return snapshot;
+    const sourceSnapshot={
+      schema:1,
+      sources:dataSourceHostApi().list(),
+      targets:dataConsumerTargets()
+    };
+    const baseRevision=Number(snapshot.revision)||0;
+    const sourceHashText=window.DKDSData?.hashString?.(JSON.stringify(sourceSnapshot))||'0';
+    const sourceRevision=Number.parseInt(String(sourceHashText),36)>>>0;
+    return {
+      ...snapshot,
+      revision:baseRevision*4294967296+sourceRevision,
+      providers:snapshot.providers.map(row=>String(row?.id||'')==='core.data-sources'
+        ? {...row,metadata:{...(row.metadata||{}),syncSnapshot:sourceSnapshot}}
+        : row)
+    };
+  }
+
   async function publishCapabilitySnapshot(){
     if(!window.electronAPI?.publishCapabilitySnapshot)return null;
-    const snapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+    const snapshot=capabilitySnapshotForWindows();
     try{return await window.electronAPI.publishCapabilitySnapshot({snapshot,revision:Number(snapshot?.revision)||0});}
     catch(err){console.warn('[DKDS capabilities:publish]',err);return null;}
   }
@@ -2866,7 +2890,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if(!window.electronAPI?.openActivityWindow){
       return window.DKDSPlugins?.activities?.set?.(activityId);
     }
-    const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+    const capabilitySnapshot=capabilitySnapshotForWindows();
     const activitySpec=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(activityId||''))||null;
     // Live Artifact hydration is a host/window lifecycle contract, so accept it
     // from either the runtime Activity spec or the machine-readable window
@@ -2925,7 +2949,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       if(!tab)return;
       captureActiveProjectTab();
       const activityId=activities[index];
-      const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
+      const capabilitySnapshot=capabilitySnapshotForWindows();
       const payload={
         activityId,
         projectTabId:tab.id,
@@ -3032,7 +3056,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.14',
+      appVersion:'3.61.15',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

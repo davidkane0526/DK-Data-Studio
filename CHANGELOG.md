@@ -1,3 +1,12 @@
+# v3.61.15 — Dedicated TOP Data Sources Contract Repair
+
+- Preserve the public Plugin API contract for `ctx.data.sources.list()` and `ctx.data.sources.targets()` inside dedicated TOP renderers. Read methods remain synchronous just like the main-window implementation instead of leaking Promise semantics from the generic remote capability proxy.
+- Publish a read-only `core.data-sources` catalog/target snapshot with each dedicated-window capability snapshot. Source mutations still travel through IPC asynchronously; only the documented synchronous read side is mirrored locally.
+- Make capability snapshot revisions source-sensitive so already-open TOP windows receive updated source catalogs after import, assignment, rename, exclusion or removal operations.
+- Automation Runner 1.19.0 routes the current-project Data Center test through the same synchronized capability snapshot used by real windows and reports source-snapshot counts from the renderer.
+- Add a regression that proves the raw remote capability returns a Promise, then verifies Plugin Kernel restores synchronous `list()/targets()` semantics before a workbench receives `ctx.data.sources`. This reproduces and prevents the v3.61.14 `targets.map is not a function` failure that left Data Center with a hydrated Store but zero rendered rows.
+- Plugin API remains `1.15.0`.
+
 # v3.61.14 — TOP Project Hydration & Real Data Center Diagnostics
 
 - Prime the Core Artifact Store before any dedicated `window-runtime.create()` or plugin activation. Cold-open TOP windows receive the current project Store immediately; runtime-only prewarm receives an intentionally empty Store and hydrates only when promoted.

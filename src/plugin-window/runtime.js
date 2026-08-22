@@ -284,6 +284,8 @@
     const tables=rows.filter(row=>row?.kind==='data.table');
     const visiblePage=[...document.querySelectorAll?.('.analysis-page:not(.hidden)')||[]][0]||null;
     const dataCenterList=document.querySelector?.('#dcArtifactList')||null;
+    const sourceDescriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
+    const sourceSync=sourceDescriptor?.metadata?.syncSnapshot&&typeof sourceDescriptor.metadata.syncSnapshot==='object'?sourceDescriptor.metadata.syncSnapshot:null;
     return {
       projectHydrated:!!projectHydrated,
       activityOpened:!!activityOpened,
@@ -297,7 +299,10 @@
       activeActivityId:String(window.DKDSPlugins?.activities?.active?.()||''),
       visiblePageId:String(visiblePage?.id||''),
       renderedArtifactRows:Number(dataCenterList?.querySelectorAll?.('.dc-artifact-item')?.length)||0,
-      dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||'')
+      dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||''),
+      dataSourceSyncSnapshot:!!sourceSync,
+      dataSourceSourceCount:Array.isArray(sourceSync?.sources)?sourceSync.sources.length:0,
+      dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0
     };
   }
   window.DKDSPluginWindowDiagnostics=Object.freeze({snapshot:pluginWindowDiagnosticSnapshot});
@@ -512,7 +517,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.14',
+      appVersion:'3.61.15',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

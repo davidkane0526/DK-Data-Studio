@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.14','Application version must be 3.61.14.');
+assert(json('package.json').version==='3.61.15','Application version must be 3.61.15.');
 
 const runtime=read('src/plugin-window/runtime.js');
 const prime=runtime.indexOf("measureSync('artifact-store-prime'");
