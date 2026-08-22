@@ -346,6 +346,48 @@
     return {datasets:remaining,removed,removedArtifactIds:[...removeIds]};
   }
 
+  const DATA_TAG_RULES=Object.freeze([
+    ['vd',[/\bvd\b/i,/\bvds\b/i,/\bv[_\s-]*d\b/i,/\bdrain[_\s-]*voltage\b/i,/漏极电压|源漏电压/]],
+    ['id',[/\b(?:Id|id)\b/,/\b(?:Ids|ids)\b/,/\b(?:I|i)[_\s-]+[dD]\b/,/\bdrain[_\s-]*current\b/i,/漏极电流|源漏电流/]],
+    ['vg',[/\bvg\b/i,/\bvgs\b/i,/\bv[_\s-]*g\b/i,/\bgate[_\s-]*voltage\b/i,/栅压|栅极电压/]],
+    ['ig',[/\big\b/i,/\bigs\b/i,/\bi[_\s-]*g\b/i,/\bgate[_\s-]*current\b/i,/栅流|栅极电流/]],
+    ['vth',[/\bvth\b/i,/\bthreshold[_\s-]*voltage\b/i,/阈值电压/]],
+    ['didv',[/\bd\s*i\s*\/\s*d\s*v\b/i,/\bdidv\b/i,/微分电导/]],
+    ['dvdi',[/\bd\s*v\s*\/\s*d\s*i\b/i,/\bdvdi\b/i]],
+    ['resistance',[/\bresistance\b/i,/\bresistivity\b/i,/\bohm\b/i,/电阻/]],
+    ['conductance',[/\bconductance\b/i,/电导/]],
+    ['time',[/\btime\b/i,/\btimestamp\b/i,/时间/]],
+    ['temperature',[/\btemperature\b/i,/\btemp\b/i,/温度/]]
+  ]);
+  const DATA_TAG_LABELS=Object.freeze({vd:'Vd',id:'Id',vg:'Vg',ig:'Ig',vth:'Vth',didv:'dI/dV',dvdi:'dV/dI',resistance:'R',conductance:'G',time:'Time',temperature:'T'});
+  function dataTagLabel(tag){const key=normalizeDataTag(tag);return DATA_TAG_LABELS[key]||String(tag||'');}
+  function normalizeDataTag(value){
+    const text=String(value??'').normalize?.('NFKC')||String(value??'');
+    const lowered=text.trim().toLowerCase().replace(/[µμ]/g,'u').replace(/[^a-z0-9_./+-]+/g,'-').replace(/^-+|-+$/g,'');
+    return lowered;
+  }
+  function dataTagsFromText(value){
+    const text=String(value??'').normalize?.('NFKC')||String(value??'');
+    const out=[];
+    for(const [tag,patterns] of DATA_TAG_RULES)if(patterns.some(pattern=>pattern.test(text)))out.push(tag);
+    return [...new Set(out)];
+  }
+  function columnDataTags(column){
+    const values=[column?.key,column?.name,column?.metadata?.label,column?.metadata?.sourceHeader];
+    const tags=new Set();for(const value of values)for(const tag of dataTagsFromText(value))tags.add(tag);
+    const role=String(column?.role||'').toLowerCase();if(role==='x')tags.add('x');if(role==='y')tags.add('y');if(role==='group')tags.add('group');
+    return [...tags];
+  }
+  function artifactDataTags(artifact){
+    if(!artifact||typeof artifact!=='object')return [];
+    const tags=new Set();
+    const add=value=>{for(const tag of dataTagsFromText(value))tags.add(tag);};
+    for(const tag of safeArray(artifact.tags)){const normalized=normalizeDataTag(tag);if(normalized)tags.add(normalized);add(tag);}
+    for(const value of [artifact.name,artifact.semanticType,artifact?.source?.name,artifact?.source?.path,artifact?.metadata?.sourceName,artifact?.metadata?.legacyDatasetPath,artifact?.metadata?.label])add(value);
+    for(const column of safeArray(artifact.columns))for(const tag of columnDataTags(column))tags.add(tag);
+    return [...tags];
+  }
+
   function summarize(a){
     if(!a)return null;
     if(a.kind==='data.table')return {id:a.id,kind:a.kind,name:a.name,rows:a.rowCount,columns:a.columns.length,provenance:a.provenance?.length||0};
@@ -414,6 +456,6 @@
     provenanceStep,normalizeLineage,fingerprintArtifact,createTable,createSeries,createSweep,createTransform,createMatrix,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
     column,columnValues,rows,withProvenance,derive,fromLegacyDataset,syncLegacyDatasetArtifacts,toLegacyDataset,legacyDatasetsFromArtifacts,removeLegacyDatasets,summarize,
-    rehydrateArtifact,createStore,serializeStore,restoreStore
+    rehydrateArtifact,createStore,serializeStore,restoreStore,normalizeDataTag,dataTagLabel,dataTagsFromText,columnDataTags,artifactDataTags
   };
 })();

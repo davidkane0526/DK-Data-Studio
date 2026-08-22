@@ -82,7 +82,18 @@
       return;
     }
     if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'z') {
-      if (edit?.supports?.('undo')) { event.preventDefault(); edit.invoke('undo'); }
+      event.preventDefault();
+      if (event.shiftKey) {
+        if (edit?.supports?.('redo')) edit.invoke('redo');
+        else void window.DKDSCapabilities?.invoke?.('core.project-history','redo');
+      } else if (edit?.supports?.('undo')) edit.invoke('undo');
+      else void window.DKDSCapabilities?.invoke?.('core.project-history','undo');
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'y') {
+      event.preventDefault();
+      if (edit?.supports?.('redo')) edit.invoke('redo');
+      else void window.DKDSCapabilities?.invoke?.('core.project-history','redo');
       return;
     }
     if (event.key === 'Escape' && edit?.supports?.('deselect')) {
@@ -525,7 +536,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.19',
+      appVersion:'3.61.20',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

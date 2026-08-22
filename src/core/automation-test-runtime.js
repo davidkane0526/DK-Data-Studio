@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.21.0';
+  const VERSION='1.22.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -198,6 +198,14 @@
       assert(sink.get().focus?.id==='p1','Selection import did not preserve the selected entity.');
       return {sourceType:snapshot.focus.type,canonical:'science.resonance.peak'};
     }finally{scope.dispose?.();}
+  }
+
+  async function projectHistoryContractSmoke(){
+    const cap=window.DKDSCapabilities?.get?.('core.project-history');
+    assert(cap&&['state','undo','redo','commitArtifactMutation'].every(method=>cap.methods?.includes?.(method)),'core.project-history capability is incomplete.');
+    const snapshot=await window.DKDSCapabilities.invoke('core.project-history','state');
+    assert(snapshot&&typeof snapshot.canUndo==='boolean'&&typeof snapshot.canRedo==='boolean','Project history state is unavailable.');
+    return {version:String(cap.version||''),canUndo:snapshot.canUndo,canRedo:snapshot.canRedo,undoLabel:String(snapshot.undoLabel||''),redoLabel:String(snapshot.redoLabel||'')};
   }
 
   async function dataSourceLifecycleSmoke(){
@@ -430,6 +438,7 @@
     await runCase('selection.contract','Typed Selection Contract','Data Contract',selectionContractSmoke);
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
     await runCase('data.sources.lifecycle','Project source data lifecycle','Data Contract',dataSourceLifecycleSmoke);
+    await runCase('project.history','Unified project undo / redo contract','Data Contract',projectHistoryContractSmoke);
     await runCase('reactive.contract','Scientific Reactive Dependency','Data Contract',scientificReactiveSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);

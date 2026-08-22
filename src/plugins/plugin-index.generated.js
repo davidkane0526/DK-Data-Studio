@@ -13,7 +13,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.data-center",
       "name": "Data Center",
-      "version": "1.13.4",
+      "version": "1.13.5",
       "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",

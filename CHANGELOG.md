@@ -1,3 +1,13 @@
+# v3.61.20 — Smart Plot Chrome, Semantic Data Tags & Unified Project History
+
+- Core D3 ScientificPlot navigation chrome now detects Core legend overlays (including legends that appear/change after render) and automatically relocates to the nearest non-overlapping position. User-dragged positions remain bounded and are re-routed only when they collide with a visible legend.
+- Data Model adds internal semantic data-tag inference for common transport labels including Vd, Id, Vg, Ig, Vth, dI/dV, dV/dI, resistance and conductance. Data Center and the Core Import Workbench share the same inference rules.
+- Data Center adds semantic tag filtering alongside analysis-usage filtering. Multiple selected tags use AND matching, making combinations such as `Id + Vg` deterministic.
+- Core Import Workbench adds signal-column tag filtering. X columns remain preserved while filters such as `Id` select only matching Y/signal columns across the import batch; selecting multiple signal tags keeps any matching signal (OR), and manual column edits clear the semantic filter.
+- Adds a Core project edit-history runtime and remote `core.project-history` capability. Data-source assignment, rename, exclude/restore, deletion, and Data Center artifact edits now participate in the same project undo/redo chain.
+- Main shell and dedicated TOP windows route Ctrl/Cmd+Z to plugin-local edit history first, then the project history; Ctrl/Cmd+Y and Ctrl/Cmd+Shift+Z provide redo.
+- Data Center moves to 1.13.5. Automation Runner moves to 1.22.0. Plugin API remains 1.15.0; no SDK changes are required for these Core behaviors.
+
 # v3.61.19 — Core D3 Navigation Toolbar
 
 - ScientificCurveSurface 的默认 D3 图形工具条改为 Core 统一的紧凑浮动控件：默认移到右上偏内侧，避免压住 X 轴区域。

@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.19
+# DK Data Studio — v3.61.20
+
+## v3.61.20 图形工具条避让、语义标签筛选与统一工程历史
+
+- Core D3 ScientificPlot 工具条会检测数据图上方/内部的 Core 图例覆盖区域。默认位置与图例冲突时自动选择最近的无碰撞位置；用户手动拖动的位置仍优先保留，但一旦与可见图例发生重叠会自动避让并更新记忆位置。
+- Data Model 增加内部语义标签识别，统一识别 `Vd / Id / Vg / Ig / Vth / dI/dV / dV/dI / R / G` 等常见科学数据标签，并避免把 `grid` 或通用大写 `ID` 字段误判成漏极电流 `Id`。
+- Data Center 增加标签筛选，与“数据用途”筛选并列；多标签按同时满足匹配，例如 `Id + Vg` 可稳定筛出对应传输曲线。
+- Core 数据导入工作台增加信号列标签筛选。标签只作用于 Y/信号列，X 列始终保留，因此共享 `Vd` 的 `Id / Ig` 多列文件可以直接选择 `Id`，而不需要逐列取消 `Ig`；选择多个信号标签时按 OR 保留任一匹配信号。
+- 新增 Core 工程级 Undo/Redo History。数据用途分配、标签修改、排除/恢复、源数据删除以及 Data Center 对普通 Artifact 的修改统一进入同一条工程历史，不再依赖 Data Center 私有撤销。
+- 主窗口和独立 TOP 均采用相同快捷键：`Ctrl/Cmd+Z` 撤销，`Ctrl/Cmd+Y` 或 `Ctrl/Cmd+Shift+Z` 重做；插件自身存在更具体的编辑历史时仍优先使用插件历史。
+- Data Center 版本为 `1.13.5`，Automation Runner 为 `1.22.0`。Plugin API 仍保持 `1.15.0`；这些属于 Core 默认行为，不增加 SDK 配置负担。
 
 
 ## v3.61.19 Core D3 图形工具条

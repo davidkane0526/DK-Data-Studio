@@ -4,6 +4,7 @@
         <div class="analysis-page-body data-center-body">
           <aside class="dc-card dc-artifact-pane">
             <div class="dc-section-head"><div class="dc-section-copy"><strong>数据对象</strong><span id="dcArtifactCount">0</span></div><select id="dcAssignmentFilter" class="dc-assignment-filter" title="按分析用途筛选"><option value="all">全部用途</option></select></div>
+            <div class="dc-tag-filter"><span class="dc-tag-filter-label">标签</span><div id="dcTagChips" class="dc-tag-chips"></div><button id="dcTagClearBtn" type="button" title="清除标签筛选">清除</button></div>
             <div class="dc-selection-tools" aria-label="数据对象选择工具"><span>Shift 连选 · Ctrl/Cmd 多选</span><div><button id="dcSelectAllBtn" type="button">全选</button><button id="dcInvertSelectionBtn" type="button">反选</button><button id="dcClearSelectionBtn" type="button">清除</button></div></div>
             <div id="dcArtifactList" class="dc-artifact-list" tabindex="0" aria-label="数据对象列表"></div>
           </aside>

@@ -45,7 +45,8 @@
     fileDialogOpen:false,
     targets:null,
     scope:null,
-    selectionAnchorPath:null
+    selectionAnchorPath:null,
+    columnTagFilter:[]
   };
 
   function importActiveItem(){
@@ -439,7 +440,7 @@
       title:title||`项目 ${n}`,
       datasets:[],
       artifactStore:window.DKDSData.createStore(),
-      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null},
+      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null,columnTagFilter:[]},
       pluginState:{},
       projectPath:null,
       trendColumns:loadTrendColumnsPreference(),
@@ -450,13 +451,24 @@
       inspectorPanelMode:'right',
       inspectorDockWidth:390,
       inspectorFloatRect:null,
-      mainView:{xDomain:null,yDomain:null,mode:'select'}
+      mainView:{xDomain:null,yDomain:null,mode:'select'},
+      history:window.DKDSProjectHistory?.create?.({limit:80})||null
     };
   }
 
   function activeProjectTab(){
     return state.projectTabs.find(t=>t.id===state.activeProjectTabId)||null;
   }
+
+  function activeProjectHistory(){
+    const tab=activeProjectTab();if(!tab)return null;
+    if(!tab.history)tab.history=window.DKDSProjectHistory?.create?.({limit:80})||null;
+    return tab.history;
+  }
+  function projectHistorySnapshot(){return activeProjectHistory()?.snapshot?.()||{canUndo:false,canRedo:false,undoLabel:'',redoLabel:'',past:[],future:[]};}
+  function recordProjectHistory(entry){return activeProjectHistory()?.record?.(entry)||false;}
+  async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok)setStatus(`已撤销：${label}`);return ok;}
+  async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok)setStatus(`已重做：${label}`);return ok;}
 
   function captureActiveProjectTab(){
     const t=activeProjectTab();
@@ -482,13 +494,15 @@
   }
 
   function mountProjectTab(t){
+    if(!t.history)t.history=window.DKDSProjectHistory?.create?.({limit:80})||null;
     state.datasets=t.datasets||[];
     state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
-    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null};
+    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null,columnTagFilter:[]};
     if(!Object.prototype.hasOwnProperty.call(importDraft,'targets'))importDraft.targets=null;
     if(!Object.prototype.hasOwnProperty.call(importDraft,'selectionAnchorPath'))importDraft.selectionAnchorPath=null;
+    if(!Array.isArray(importDraft.columnTagFilter))importDraft.columnTagFilter=[];
     importDraft.scope=null;
     t.importDraft=importDraft;
     state.projectPath=t.projectPath||null;
@@ -687,6 +701,7 @@
         item.settings.yCol=Math.min(Math.max(0,Number(item.settings.yCol)||0),max);
         item.settings.pairStart=Math.min(Math.max(0,Number(item.settings.pairStart)||0),max);
         item.settings.yCols=(item.settings.yCols||[]).filter(c=>c>=0&&c<=max&&c!==item.settings.xCol);
+        if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item,{touch:false});
       }
     }catch(err){
       item.error=err?.message||String(err);
@@ -878,6 +893,32 @@
     return headers.map((h,i)=>`<option value="${i}" ${i===Number(selected)?'selected':''}>${i+1}: ${escapeHtml(h)}</option>`).join('');
   }
 
+  function importColumnSemanticTags(column){return (window.DKDSData?.columnDataTags?.(column)||[]).filter(tag=>!['x','y','group'].includes(String(tag)));}
+  function importAvailableColumnTags(item){
+    const ins=item?.inspection;if(!ins)return [];
+    const counts=new Map();for(const column of ins.columns||[]){if(column.index===Number(item.settings?.xCol)||Number(column.numericFraction)<.5)continue;for(const tag of importColumnSemanticTags(column))counts.set(tag,(counts.get(tag)||0)+1);}
+    const priority=['id','ig','vg','vd','vth','didv','dvdi','resistance','conductance','time','temperature'];
+    return [...counts.entries()].map(([tag,count])=>({tag,count})).sort((a,b)=>{const ai=priority.indexOf(a.tag),bi=priority.indexOf(b.tag);return (ai<0?999:ai)-(bi<0?999:bi)||b.count-a.count||a.tag.localeCompare(b.tag);});
+  }
+  function importColumnMatchesTags(column){const selected=new Set((importDraft.columnTagFilter||[]).map(String));if(!selected.size)return true;const tags=new Set(importColumnSemanticTags(column));return [...selected].some(tag=>tags.has(tag));}
+  function applyImportColumnTagFilter(item,{touch=true}={}){
+    const ins=item?.inspection;if(!ins)return false;const selected=importDraft.columnTagFilter||[];if(!selected.length)return false;
+    const layout=importResolvedLayout(item),eligible=(ins.columns||[]).filter(column=>column.index!==Number(item.settings.xCol)&&Number(column.numericFraction)>=.5&&importColumnMatchesTags(column));
+    if(layout==='sharedX')item.settings.yCols=eligible.map(column=>column.index);
+    else if(layout==='single'){item.settings.yCol=eligible.length?eligible[0].index:-1;item.settings.yCols=eligible.length?[eligible[0].index]:[];}
+    else return false;
+    if(touch)item.mappingTouched=true;return true;
+  }
+  function applyImportTagFilterToAll(){for(const item of importDraft.files)if(item?.inspection&&providerForImportItem(item)?.id==='flexible-text')applyImportColumnTagFilter(item);renderImportWorkbench();}
+  function renderImportColumnTagFilter(item){
+    const wrap=$('#importColumnTagFilter'),host=$('#importColumnTagChips'),clear=$('#importColumnTagClear');if(!wrap||!host||!clear)return;
+    const layout=importResolvedLayout(item),rows=importAvailableColumnTags(item),selected=new Set(importDraft.columnTagFilter||[]),supported=layout==='single'||layout==='sharedX';
+    wrap.classList.toggle('hidden',!rows.length||!supported);host.replaceChildren();
+    if(!rows.length||!supported)return;
+    for(const row of rows){const button=document.createElement('button');button.type='button';button.className=`import-tag-chip${selected.has(row.tag)?' active':''}`;button.dataset.tag=row.tag;button.textContent=`${window.DKDSData?.dataTagLabel?.(row.tag)||row.tag}${row.count>1?` · ${row.count}`:''}`;button.title=`按 ${row.tag} 标签筛选信号列`;button.onclick=()=>{const next=new Set(importDraft.columnTagFilter||[]);if(next.has(row.tag))next.delete(row.tag);else next.add(row.tag);importDraft.columnTagFilter=[...next];applyImportTagFilterToAll();};host.appendChild(button);}
+    clear.disabled=!selected.size;clear.onclick=()=>{importDraft.columnTagFilter=[];for(const row of importDraft.files){if(row?.inspection&&providerForImportItem(row)?.id==='flexible-text'){row.mappingTouched=false;recomputeImportItem(row,true);}}renderImportWorkbench();};
+  }
+
   function renderImportYColumns(item){
     const host=$('#importYColumns');
     if(!host)return;
@@ -893,6 +934,7 @@
       label.innerHTML=`<input type="checkbox" value="${c.index}" ${selected.has(c.index)?'checked':''}><span>${c.index+1}: ${escapeHtml(c.header)}</span>`;
       label.querySelector('input').onchange=()=>{
         const values=[...host.querySelectorAll('input:checked')].map(x=>Number(x.value));
+        importDraft.columnTagFilter=[];
         item.settings.yCols=values;
         item.mappingTouched=true;
         renderImportSeriesVgRows(item);
@@ -1083,6 +1125,7 @@
       $('#importPairStartWrap').classList.toggle('hidden',layout!=='paired');
       $('#importManualVgWrap').classList.toggle('hidden',st.vgMode!=='manual');
 
+      renderImportColumnTagFilter(item);
       renderImportYColumns(item);
       renderImportSeriesVgRows(item);
     }
@@ -1385,12 +1428,51 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     };return api;
   }
 
+  function commitOwnerArtifactMutation(beforeRows,type='project-history'){
+    const delta=diffArtifactRows(beforeRows,snapshotArtifactRows());
+    if(delta.upserts.length||delta.removedIds.length){
+      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type,artifactDelta:delta,artifacts:snapshotArtifactRows()});
+      pushArtifactDeltaToActivityWindows(delta,type);
+    }
+    const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
+    void publishCapabilitySnapshot();renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();
+    return delta;
+  }
+  function applyArtifactHistoryPatch(patch={},type='history-artifact'){
+    const before=snapshotArtifactRows();
+    const upserts=Array.isArray(patch.upserts)?patch.upserts:[],removedIds=Array.isArray(patch.removedIds)?patch.removedIds:[];
+    state.artifactStore?.batch?.(api=>{for(const id of removedIds)api.remove?.(String(id));for(const artifact of upserts)if(artifact?.id)api.upsert?.(window.DKDSData.deepClone(artifact));});
+    commitOwnerArtifactMutation(before,type);return true;
+  }
+  function snapshotProjectDataState(){return {datasets:window.DKDSData.deepClone(state.datasets||[]),artifacts:snapshotArtifactRows().map(window.DKDSData.deepClone)};}
+  function restoreProjectDataState(snapshot,type='history-data-restore'){
+    const before=snapshotArtifactRows();
+    state.datasets=window.DKDSData.deepClone(snapshot?.datasets||[]);
+    state.artifactStore=window.DKDSData.createStore((snapshot?.artifacts||[]).map(window.DKDSData.deepClone));
+    syncDatasetArtifacts({emit:false});
+    commitOwnerArtifactMutation(before,type);return true;
+  }
+  function projectHistoryHostApi(){
+    return {
+      state:()=>projectHistorySnapshot(),
+      undo:()=>undoProjectHistory(),
+      redo:()=>redoProjectHistory(),
+      commitArtifactMutation(payload={}){
+        const label=String(payload.label||'数据对象修改'),beforePatch=payload.before&&typeof payload.before==='object'?payload.before:{upserts:[],removedIds:[]},afterPatch=payload.after&&typeof payload.after==='object'?payload.after:{upserts:[],removedIds:[]};
+        applyArtifactHistoryPatch(afterPatch,'history-artifact-commit');
+        recordProjectHistory({label,metadata:{kind:'artifact'},undo:()=>applyArtifactHistoryPatch(beforePatch,'history-artifact-undo'),redo:()=>applyArtifactHistoryPatch(afterPatch,'history-artifact-redo')});
+        return {updated:true,state:projectHistorySnapshot()};
+      }
+    };
+  }
+
   function dataSourceHostApi(){
     const assignmentsFor=value=>{
       if(value?.metadata&&Object.prototype.hasOwnProperty.call(value.metadata,'dataAssignments'))return Array.isArray(value.metadata.dataAssignments)?value.metadata.dataAssignments.map(String).filter(Boolean):[];
       return Object.prototype.hasOwnProperty.call(value||{},'assignments')?(Array.isArray(value.assignments)?value.assignments.map(String).filter(Boolean):[]):['*'];
     };
     const matchesConsumer=(value,consumer)=>{const id=String(consumer||'').trim();if(!id)return true;const rows=assignmentsFor(value);return rows.includes('*')||rows.includes(id);};
+    const sameStringSet=(a,b)=>{const left=[...new Set((a||[]).map(String))].sort(),right=[...new Set((b||[]).map(String))].sort();return left.length===right.length&&left.every((value,index)=>value===right[index]);};
     const genericImports=()=> (state.artifactStore?.list?.({includeTransient:true})||[]).filter(a=>a?.metadata?.importedSource===true&&a?.metadata?.adapter!=='legacy-dataset');
     const legacyDescriptors=()=>state.datasets.map(dataset=>({
       path:String(dataset?.path||dataset?.name||''),
@@ -1437,24 +1519,24 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       list,
       targets:()=>dataConsumerTargets(),
       setAssignments(ref,pluginIds=[]){
-        const ids=[...new Set((Array.isArray(pluginIds)?pluginIds:[]).map(String).map(x=>x.trim()).filter(Boolean))];
+        const ids=[...new Set((Array.isArray(pluginIds)?pluginIds:[]).map(String).map(x=>x.trim()).filter(Boolean))],historyRef=window.DKDSData.deepClone(ref);
         const dataset=locateLegacy(ref);
-        if(dataset){dataset.assignments=ids;commitLegacy('source-assignments',dataset);setStatus(ids.length?`已更新数据用途：${dataset.name||dataset.path}`:`已设为仅数据中心：${dataset.name||dataset.path}`);return {updated:true,assignments:[...ids],sources:list()};}
-        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};
+        if(dataset){const previous=assignmentsFor(dataset);if(sameStringSet(previous,ids))return {updated:false,assignments:[...previous],sources:list()};dataset.assignments=ids;commitLegacy('source-assignments',dataset);recordProjectHistory({label:`数据用途 · ${dataset.name||dataset.path}`,metadata:{kind:'data-source',operation:'assignments'},undo:()=>dataSourceHostApi().setAssignments(historyRef,previous),redo:()=>dataSourceHostApi().setAssignments(historyRef,ids)});setStatus(ids.length?`已更新数据用途：${dataset.name||dataset.path}`:`已设为仅数据中心：${dataset.name||dataset.path}`);return {updated:true,assignments:[...ids],sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};const previous=assignmentsFor(artifacts[0]);if(sameStringSet(previous,ids))return {updated:false,assignments:[...previous],sources:list()};
         state.artifactStore?.batch?.(api=>{for(const artifact of artifacts)api.upsert?.({...artifact,metadata:{...(artifact.metadata||{}),dataAssignments:[...ids]}});});
-        commitGeneric('source-assignments',artifacts);setStatus(ids.length?`已更新数据用途：${artifacts[0].name||artifacts[0].id}`:`已设为仅数据中心：${artifacts[0].name||artifacts[0].id}`);return {updated:true,assignments:[...ids],sources:list()};
+        commitGeneric('source-assignments',artifacts);recordProjectHistory({label:`数据用途 · ${artifacts[0].name||artifacts[0].id}`,metadata:{kind:'data-source',operation:'assignments'},undo:()=>dataSourceHostApi().setAssignments(historyRef,previous),redo:()=>dataSourceHostApi().setAssignments(historyRef,ids)});setStatus(ids.length?`已更新数据用途：${artifacts[0].name||artifacts[0].id}`:`已设为仅数据中心：${artifacts[0].name||artifacts[0].id}`);return {updated:true,assignments:[...ids],sources:list()};
       },
       rename(ref,label){
-        const name=String(label||'').trim();if(!name)return {updated:false,sources:list()};const dataset=locateLegacy(ref);
-        if(dataset){dataset.name=name;commitLegacy('source-rename',dataset);setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};}
-        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach((artifact,index)=>api.upsert?.({...artifact,name:index?artifact.name:name})));commitGeneric('source-rename',artifacts);setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};
+        const name=String(label||'').trim();if(!name)return {updated:false,sources:list()};const historyRef=window.DKDSData.deepClone(ref),dataset=locateLegacy(ref);
+        if(dataset){const previous=String(dataset.name||dataset.path||'');if(previous===name)return {updated:false,sources:list()};dataset.name=name;commitLegacy('source-rename',dataset);recordProjectHistory({label:`修改数据标签 · ${name}`,metadata:{kind:'data-source',operation:'rename'},undo:()=>dataSourceHostApi().rename(historyRef,previous),redo:()=>dataSourceHostApi().rename(historyRef,name)});setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};const previous=String(artifacts[0].name||artifacts[0].id);if(previous===name)return {updated:false,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach((artifact,index)=>api.upsert?.({...artifact,name:index?artifact.name:name})));commitGeneric('source-rename',artifacts);recordProjectHistory({label:`修改数据标签 · ${name}`,metadata:{kind:'data-source',operation:'rename'},undo:()=>dataSourceHostApi().rename(historyRef,previous),redo:()=>dataSourceHostApi().rename(historyRef,name)});setStatus(`源数据标签已修改为：${name}`);return {updated:true,sources:list()};
       },
       setExcluded(ref,value=true){
-        const dataset=locateLegacy(ref);if(dataset){dataset.excluded=!!value;commitLegacy('source-exclude',dataset);setStatus(`${dataset.excluded?'已排除':'已恢复'}源数据：${dataset.name||dataset.path}`);return {updated:true,excluded:dataset.excluded,sources:list()};}
-        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach(artifact=>api.upsert?.({...artifact,metadata:{...(artifact.metadata||{}),excluded:!!value}})));commitGeneric('source-exclude',artifacts);setStatus(`${value?'已排除':'已恢复'}源数据：${artifacts[0].name||artifacts[0].id}`);return {updated:true,excluded:!!value,sources:list()};
+        const historyRef=window.DKDSData.deepClone(ref),dataset=locateLegacy(ref);if(dataset){const previous=dataset.excluded===true;if(previous===!!value)return {updated:false,excluded:previous,sources:list()};dataset.excluded=!!value;commitLegacy('source-exclude',dataset);recordProjectHistory({label:`${value?'排除':'恢复'}数据 · ${dataset.name||dataset.path}`,metadata:{kind:'data-source',operation:'exclude'},undo:()=>dataSourceHostApi().setExcluded(historyRef,previous),redo:()=>dataSourceHostApi().setExcluded(historyRef,!!value)});setStatus(`${dataset.excluded?'已排除':'已恢复'}源数据：${dataset.name||dataset.path}`);return {updated:true,excluded:dataset.excluded,sources:list()};}
+        const artifacts=locateGeneric(ref);if(!artifacts.length)return {updated:false,sources:list()};const previous=artifacts[0]?.metadata?.excluded===true||artifacts[0]?.metadata?.sourceExcluded===true;if(previous===!!value)return {updated:false,excluded:previous,sources:list()};state.artifactStore?.batch?.(api=>artifacts.forEach(artifact=>api.upsert?.({...artifact,metadata:{...(artifact.metadata||{}),excluded:!!value}})));commitGeneric('source-exclude',artifacts);recordProjectHistory({label:`${value?'排除':'恢复'}数据 · ${artifacts[0].name||artifacts[0].id}`,metadata:{kind:'data-source',operation:'exclude'},undo:()=>dataSourceHostApi().setExcluded(historyRef,previous),redo:()=>dataSourceHostApi().setExcluded(historyRef,!!value)});setStatus(`${value?'已排除':'已恢复'}源数据：${artifacts[0].name||artifacts[0].id}`);return {updated:true,excluded:!!value,sources:list()};
       },
       remove(refs){
-        const requested=Array.isArray(refs)?refs:[refs];
+        const requested=Array.isArray(refs)?refs:[refs],historyBefore=snapshotProjectDataState();
         const outcome=window.DKDSData?.removeLegacyDatasets?.(state.artifactStore,state.datasets,requested)||{datasets:state.datasets,removed:[],removedArtifactIds:[]};
         state.datasets=outcome.datasets||[];
         const genericRoots=[...new Map(requested.flatMap(ref=>locateGeneric(ref)).map(a=>[a.id,a])).values()];
@@ -1462,7 +1544,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         if(genericRemoveIds.size)state.artifactStore?.batch?.(api=>{for(const id of [...genericRemoveIds].reverse())api.remove?.(id);});
         const tab=activeProjectTab();if(tab)tab.artifactStore=state.artifactStore;
         const removedCount=(outcome.removed?.length||0)+genericRoots.length;
-        if(removedCount){const removedArtifactIds=[...(outcome.removedArtifactIds||[]),...genericRemoveIds].map(String);const delta={upserts:[],removedIds:removedArtifactIds};window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds,artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(delta,'source-remove');void publishCapabilitySnapshot();renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();setStatus(`已移除 ${removedCount} 个源数据对象。`);}
+        if(removedCount){const removedArtifactIds=[...(outcome.removedArtifactIds||[]),...genericRemoveIds].map(String);const delta={upserts:[],removedIds:removedArtifactIds};window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'source-remove',removed:[...(outcome.removed||[]).map(row=>row.path),...genericRoots.map(row=>row.id)],removedArtifactIds,artifactDelta:delta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(delta,'source-remove');void publishCapabilitySnapshot();renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();const historyAfter=snapshotProjectDataState();recordProjectHistory({label:`删除 ${removedCount} 个源数据对象`,metadata:{kind:'data-source',operation:'remove'},undo:()=>restoreProjectDataState(historyBefore,'history-source-remove-undo'),redo:()=>restoreProjectDataState(historyAfter,'history-source-remove-redo')});setStatus(`已移除 ${removedCount} 个源数据对象。`);}
         return {removed:[...(outcome.removed||[]).map(row=>({path:row.path,name:row.name,sourcePath:row.sourcePath||row.path})),...genericRoots.map(a=>({path:a.id,name:a.name,sourcePath:a?.source?.path||''}))],removedArtifactIds:[...(outcome.removedArtifactIds||[]),...genericRemoveIds],sources:list()};
       }
     };
@@ -2238,7 +2320,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.19',
+      version:'3.61.20',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2351,6 +2433,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   function loadProjectIntoActive(pr,path){
+    activeProjectHistory()?.clear?.('project-load');
     const previousArtifacts=snapshotArtifactRows();
     state.datasets=canonicalProjectDatasets(pr);
     state.projectPath=path||null;
@@ -2702,22 +2785,24 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if(item.settings.layout==='sharedX'&&!item.settings.yCols.length){
       item.settings.yCols=(item.inspection?.suggestedYCols||[]).slice();
     }
+    if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item);
     renderImportWorkbench();
   };
   $('#importXCol').onchange=e=>{
     const item=importActiveItem();if(!item)return;
     item.settings.xCol=Number(e.target.value);item.mappingTouched=true;
     item.settings.yCols=(item.settings.yCols||[]).filter(c=>c!==item.settings.xCol);
+    if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item);
     renderImportWorkbench();
   };
-  $('#importYCol').onchange=e=>updateImportSetting('yCol',Number(e.target.value),{mapping:true});
+  $('#importYCol').onchange=e=>{importDraft.columnTagFilter=[];updateImportSetting('yCol',Number(e.target.value),{mapping:true});};
   $('#importPairStart').onchange=e=>updateImportSetting('pairStart',Number(e.target.value),{mapping:true});
   $('#importVoltageUnit').onchange=e=>updateImportSetting('voltageUnit',e.target.value,{mapping:true});
   $('#importCurrentUnit').onchange=e=>updateImportSetting('currentUnit',e.target.value,{mapping:true});
   $('#importVgMode').onchange=e=>updateImportSetting('vgMode',e.target.value,{mapping:true});
   $('#importManualVg').onchange=e=>updateImportSetting('manualVg',e.target.value===''?null:Number(e.target.value),{mapping:true});
   $('#importYAllBtn').onclick=()=>{
-    const item=importActiveItem();if(!item?.inspection)return;
+    const item=importActiveItem();if(!item?.inspection)return;importDraft.columnTagFilter=[];
     item.settings.yCols=item.inspection.columns
       .filter(c=>c.index!==Number(item.settings.xCol)&&c.numericFraction>=.5)
       .map(c=>c.index);
@@ -2725,7 +2810,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     renderImportWorkbench();
   };
   $('#importYNoneBtn').onclick=()=>{
-    const item=importActiveItem();if(!item)return;
+    const item=importActiveItem();if(!item)return;importDraft.columnTagFilter=[];
     item.settings.yCols=[];item.mappingTouched=true;renderImportWorkbench();
   };
 
@@ -2812,9 +2897,10 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   };
 
   $('#newProjectTabBtn').onclick=()=>createProjectTab(null,true);
-  const systemUndo=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('undo'))return edit.invoke('undo');setStatus('当前工作区没有可撤销的编辑。');return false;};
+  const systemUndo=async()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('undo')){const handled=await Promise.resolve(edit.invoke('undo'));if(handled!==false)return true;}if(await undoProjectHistory())return true;setStatus('当前工程没有可撤销的编辑。');return false;};
+  const systemRedo=async()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('redo')){const handled=await Promise.resolve(edit.invoke('redo'));if(handled!==false)return true;}if(await redoProjectHistory())return true;setStatus('当前工程没有可重做的编辑。');return false;};
   const systemDeselect=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('deselect'))return edit.invoke('deselect');setStatus('当前工作区没有活动选择。');return false;};
-  $('#undoBtn').onclick=systemUndo; $('#deselectBtn').onclick=systemDeselect;
+  $('#undoBtn').onclick=()=>void systemUndo(); $('#deselectBtn').onclick=systemDeselect;
 
   document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
 
@@ -2843,7 +2929,8 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject();return;}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='o'){e.preventDefault();openProject();return;}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){e.preventDefault();createProjectTab(null,true);return;}
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();systemUndo();return;}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)void systemRedo();else void systemUndo();return;}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();void systemRedo();return;}
     if(e.key==='Escape'){
       e.preventDefault();
       if(!$('#importPanel').classList.contains('hidden')){
@@ -3087,7 +3174,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.19',
+      appVersion:'3.61.20',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3123,6 +3210,10 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     window.DKDSCapabilities?.register?.('core','core.data-sources',{
       kind:'service',title:'Project Data Sources',version:'1.0.0',remote:true,
       methods:dataSourceHostApi()
+    });
+    window.DKDSCapabilities?.register?.('core','core.project-history',{
+      kind:'service',title:'Project Edit History',version:'1.0.0',remote:true,
+      methods:projectHistoryHostApi()
     });
 
     window.electronAPI?.onCapabilityInvokeRequest?.(async request=>{

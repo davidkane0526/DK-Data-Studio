@@ -1369,7 +1369,7 @@
 
   class ScientificCurveSurface {
     constructor(scope,target,spec={}){
-      this.scope=scope;this.owner=scope.owner;const resolvedTarget=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.displayYAxisType=String(spec.yScaleType||'linear').toLowerCase()==='log'?'log':'linear';this.markerClickSuppressUntil=new Map();this.ownsTarget=false;const behaviorSpec=spec.interactionBehavior&&typeof spec.interactionBehavior==='object'&&!spec.interactionBehavior.route?spec.interactionBehavior:{};this.behavior=spec.interactionBehavior?.route?spec.interactionBehavior:scope.interactionBehaviors?.compile?.({...behaviorSpec,bindings:[...DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS,...(Array.isArray(behaviorSpec.bindings)?behaviorSpec.bindings:[])]})||null;
+      this.scope=scope;this.owner=scope.owner;const resolvedTarget=resolveElement(target);this.spec={...spec};this.disposed=false;this.renderQueued=false;this.selectionSnapshot=null;this.selectionOff=null;this.interaction=null;this.pointOrderCache=new WeakMap();this.colorScaleState={key:'',scale:null};this.navCollisionFrame=0;this.navObstacleObserver=null;this.displayYAxisType=String(spec.yScaleType||'linear').toLowerCase()==='log'?'log':'linear';this.markerClickSuppressUntil=new Map();this.ownsTarget=false;const behaviorSpec=spec.interactionBehavior&&typeof spec.interactionBehavior==='object'&&!spec.interactionBehavior.route?spec.interactionBehavior:{};this.behavior=spec.interactionBehavior?.route?spec.interactionBehavior:scope.interactionBehaviors?.compile?.({...behaviorSpec,bindings:[...DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS,...(Array.isArray(behaviorSpec.bindings)?behaviorSpec.bindings:[])]})||null;
       if(!resolvedTarget)throw new Error('ScientificCurveSurface target not found.');
       const isSvg=String(resolvedTarget.tagName||'').toLowerCase()==='svg'||resolvedTarget.namespaceURI==='http://www.w3.org/2000/svg';
       if(isSvg)this.target=resolvedTarget;
@@ -1381,8 +1381,9 @@
       this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');
       this.installNavigationTools();
-      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{this.clampNavigationTools();this.requestRender('resize');}):null;
+      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{this.clampNavigationTools();this.requestRender('resize');this.scheduleNavigationCollisionCheck();}):null;
       this.resizeObserver?.observe(this.container);
+      this.installNavigationObstacleObserver();
       this.setInteraction(spec.interaction||null);
     }
     d3(){return window.d3||null;}
@@ -1434,13 +1435,13 @@
       const targetId=String(this.target?.id||this.container?.id||this.target?.dataset?.dkdsScientificPlotId||'').trim();
       return targetId?`${hostState.storagePrefix}.scientific-nav.${this.owner}.${targetId}`:'';
     }
-    setNavigationToolsPosition(x,y,{persist=false}={}){
+    setNavigationToolsPosition(x,y,{persist=false,moved=true}={}){
       const tools=this.navTools,container=this.container;if(!tools||!container)return false;
       const hostRect=container.getBoundingClientRect(),toolRect=tools.getBoundingClientRect();
       if(!(hostRect.width>0&&hostRect.height>0&&toolRect.width>0&&toolRect.height>0))return false;
       const pad=4,maxX=Math.max(pad,hostRect.width-toolRect.width-pad),maxY=Math.max(pad,hostRect.height-toolRect.height-pad);
       const nx=Math.min(maxX,Math.max(pad,Number(x)||pad)),ny=Math.min(maxY,Math.max(pad,Number(y)||pad));
-      tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';tools.style.bottom='auto';tools.dataset.moved='1';
+      tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';tools.style.bottom='auto';if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;
       if(persist){const key=this.navigationToolsStorageKey();if(key)writeJson(key,{x:nx,y:ny});}
       return true;
     }
@@ -1453,10 +1454,42 @@
       const tools=this.navTools;if(!tools)return false;const key=this.navigationToolsStorageKey();if(key)try{localStorage.removeItem(key);}catch{}
       for(const prop of ['left','top','right','bottom'])tools.style.removeProperty(prop);delete tools.dataset.moved;return true;
     }
+    navigationToolObstacles(){
+      const container=this.container,tools=this.navTools;if(!container||!tools)return [];
+      const hostRect=container.getBoundingClientRect(),selectors=['.main-legend-bar','.respar-main-legend','.respar-peak-legend','.reswin-group-legend','.trend-card-legend','.dkds-plot-legend','[data-dkds-legend]'],seen=new Set(),rows=[];
+      for(const selector of selectors)for(const el of document.querySelectorAll(selector)){if(!el||el===tools||seen.has(el)||el.closest?.('.dkds-scientific-nav-tools'))continue;seen.add(el);const style=getComputedStyle(el);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)continue;const r=el.getBoundingClientRect();const left=Math.max(hostRect.left,r.left),right=Math.min(hostRect.right,r.right),top=Math.max(hostRect.top,r.top),bottom=Math.min(hostRect.bottom,r.bottom);if(right>left&&bottom>top)rows.push({el,rect:r});}
+      return rows;
+    }
+    isNavigationLegendNode(node){
+      const el=node?.nodeType===1?node:node?.parentElement;if(!el?.closest)return false;
+      return !!el.closest('.main-legend-bar,.respar-main-legend,.respar-peak-legend,.reswin-group-legend,.trend-card-legend,.dkds-plot-legend,[data-dkds-legend]');
+    }
+    scheduleNavigationCollisionCheck(){
+      if(this.disposed||this.navCollisionFrame)return;this.navCollisionFrame=requestAnimationFrame(()=>{this.navCollisionFrame=0;if(!this.disposed)this.avoidNavigationToolCollisions();});
+    }
+    installNavigationObstacleObserver(){
+      if(!window.MutationObserver||this.navObstacleObserver)return false;
+      const root=this.container?.closest?.('.dkds-workbench,.respar-main-card,.trend-card,.card')||this.container?.parentElement||this.container;if(!root)return false;
+      this.navObstacleObserver=new MutationObserver(records=>{for(const record of records){if(this.isNavigationLegendNode(record.target)||[...(record.addedNodes||[])].some(node=>this.isNavigationLegendNode(node))||[...(record.removedNodes||[])].some(node=>this.isNavigationLegendNode(node))){this.scheduleNavigationCollisionCheck();break;}}});
+      this.navObstacleObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});return true;
+    }
+    avoidNavigationToolCollisions(){
+      const tools=this.navTools,container=this.container;if(!tools||!container||tools.classList.contains('is-dragging'))return false;
+      const host=container.getBoundingClientRect(),tr=tools.getBoundingClientRect();if(!(host.width>0&&host.height>0&&tr.width>0&&tr.height>0))return false;
+      const obstacles=this.navigationToolObstacles(),userMoved=tools.dataset.moved==='1',margin=this.lastRender?.margin||{top:0,right:0,bottom:0,left:0},pad=8;
+      const overlap=(x,y)=>{const candidate={left:host.left+x,top:host.top+y,right:host.left+x+tr.width,bottom:host.top+y+tr.height};let area=0;for(const row of obstacles){const r=row.rect,w=Math.max(0,Math.min(candidate.right,r.right)-Math.max(candidate.left,r.left)),h=Math.max(0,Math.min(candidate.bottom,r.bottom)-Math.max(candidate.top,r.top));area+=w*h;}return area;};
+      const defaultPos={x:Math.max(pad,host.width-tr.width-pad),y:pad};
+      const currentX=Number.parseFloat(tools.style.left),currentY=Number.parseFloat(tools.style.top),current={x:Number.isFinite(currentX)?currentX:defaultPos.x,y:Number.isFinite(currentY)?currentY:defaultPos.y};
+      if(overlap(current.x,current.y)<=0){if(!userMoved&&Number.isFinite(currentX)&&overlap(defaultPos.x,defaultPos.y)<=0)this.resetNavigationToolsPosition();return false;}
+      const rightX=Math.max(pad,host.width-tr.width-pad),leftX=Math.max(pad,Number(margin.left)||pad),bottomY=Math.max(pad,host.height-tr.height-Math.max(pad,Number(margin.bottom)||0)-pad),topY=Math.max(pad,Number(margin.top)>tr.height?Math.min(pad,Number(margin.top)-tr.height-pad):pad),candidates=[defaultPos,{x:rightX,y:bottomY},{x:leftX,y:topY},{x:leftX,y:bottomY}];
+      for(const row of obstacles){const below=Math.max(pad,row.rect.bottom-host.top+6),above=Math.max(pad,row.rect.top-host.top-tr.height-6);candidates.push({x:rightX,y:below},{x:leftX,y:below},{x:rightX,y:above},{x:leftX,y:above});}
+      const unique=[];const seen=new Set();for(const c of candidates){const x=Math.min(Math.max(pad,c.x),Math.max(pad,host.width-tr.width-pad)),y=Math.min(Math.max(pad,c.y),Math.max(pad,host.height-tr.height-pad)),key=`${Math.round(x)}:${Math.round(y)}`;if(!seen.has(key)){seen.add(key);unique.push({x,y});}}
+      unique.sort((a,b)=>overlap(a.x,a.y)-overlap(b.x,b.y)||Math.hypot(a.x-current.x,a.y-current.y)-Math.hypot(b.x-current.x,b.y-current.y));const best=unique[0];if(!best)return false;return this.setNavigationToolsPosition(best.x,best.y,{persist:userMoved,moved:userMoved});
+    }
     clampNavigationTools(){
-      const tools=this.navTools;if(!tools||tools.dataset.moved!=='1')return false;
+      const tools=this.navTools;if(!tools)return false;
       const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(!Number.isFinite(x)||!Number.isFinite(y))return false;
-      return this.setNavigationToolsPosition(x,y);
+      return this.setNavigationToolsPosition(x,y,{persist:false,moved:tools.dataset.moved==='1'});
     }
     installNavigationTools(){
       if(this.spec.navigationTools===false||this.navTools)return;
@@ -1473,11 +1506,11 @@
         tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}
       });
       drag.addEventListener('pointermove',event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;event.preventDefault();this.setNavigationToolsPosition(dragState.startX+event.clientX-dragState.startClientX,dragState.startY+event.clientY-dragState.startClientY);});
-      const finishDrag=event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;const pointerId=dragState.pointerId;dragState=null;tools.classList.remove('is-dragging');try{drag.releasePointerCapture(pointerId);}catch{}const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))this.setNavigationToolsPosition(x,y,{persist:true});};
+      const finishDrag=event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;const pointerId=dragState.pointerId;dragState=null;tools.classList.remove('is-dragging');try{drag.releasePointerCapture(pointerId);}catch{}const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))this.setNavigationToolsPosition(x,y,{persist:true});this.scheduleNavigationCollisionCheck();};
       drag.addEventListener('pointerup',finishDrag);drag.addEventListener('pointercancel',finishDrag);
       drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();this.resetNavigationToolsPosition();});
       drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();this.resetNavigationToolsPosition();}});
-      this.restoreNavigationToolsPosition();
+      this.restoreNavigationToolsPosition();this.scheduleNavigationCollisionCheck();
     }
     zoomBy(factor,meta={}){
       const last=this.lastRender;if(!last)return false;const xd=last.x.domain(),yd=last.y.domain(),cx=(xd[0]+xd[1])/2,cy=(yd[0]+yd[1])/2;
@@ -1679,9 +1712,9 @@
           }
         }
       }
-      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes,yScaleType:this.displayYAxisType};return true;
+      this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes,yScaleType:this.displayYAxisType};requestAnimationFrame(()=>{this.clampNavigationTools();this.scheduleNavigationCollisionCheck();});return true;
     }
-    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();this.navObstacleObserver?.disconnect?.();this.navObstacleObserver=null;if(this.navCollisionFrame){cancelAnimationFrame(this.navCollisionFrame);this.navCollisionFrame=0;}try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.container?.classList?.remove('dkds-scientific-surface-host');}
   }
 
   class AnalysisWorkbench {
