@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 const pkg=json('package.json');
-assert(pkg.version==='3.61.15','Application version must be 3.61.15.');
+assert(pkg.version==='3.61.16','Application version must be 3.61.16.');
 
 const runtime=read('src/plugin-window/runtime.js');
 assert(runtime.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}'),'An empty live snapshot must be distinguishable from no live snapshot.');

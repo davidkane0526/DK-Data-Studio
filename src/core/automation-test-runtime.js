@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.19.0';
+  const VERSION='1.20.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -469,6 +469,10 @@
         assert(Number(actual.dataTableCount)===Number(expected.dataTableCount),`Data Center DataTable count mismatch. expected=${expected.dataTableCount} actual=${actual.dataTableCount}`);
         assert(Number(actual.totalTableRows)===Number(expected.totalTableRows),`Data Center row count mismatch. expected=${expected.totalTableRows} actual=${actual.totalTableRows}`);
         assert(Number(actual.renderedArtifactRows)===Number(expected.artifactCount),`Data Center UI did not render every hydrated Artifact row. expected=${expected.artifactCount} actual=${actual.renderedArtifactRows}`);
+        if(Number(expected.dataTableCount)>0){
+          assert(actual.dataCenterChartRuntimeReady===true,`Data Center chart runtime did not reach ready. status=${actual.dataCenterChartRuntimeStatus||'unknown'} error=${actual.dataCenterChartRuntimeError||''}`);
+          assert(Number(actual.dataCenterChartTraceCount)>0,`Data Center chart preview did not render any Plotly trace. provider=${actual.dataCenterChartProvider||'none'}`);
+        }
         return {expected:clone(expected),renderer:clone(actual),configuredPrewarm:out.configuredPrewarm===true,durationMs:Number(out.durationMs)||0};
       });
     }else{

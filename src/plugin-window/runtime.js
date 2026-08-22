@@ -284,6 +284,8 @@
     const tables=rows.filter(row=>row?.kind==='data.table');
     const visiblePage=[...document.querySelectorAll?.('.analysis-page:not(.hidden)')||[]][0]||null;
     const dataCenterList=document.querySelector?.('#dcArtifactList')||null;
+    const dataCenterChart=document.querySelector?.('#dcChart')||null;
+    const dataCenterChartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     const sourceDescriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
     const sourceSync=sourceDescriptor?.metadata?.syncSnapshot&&typeof sourceDescriptor.metadata.syncSnapshot==='object'?sourceDescriptor.metadata.syncSnapshot:null;
     return {
@@ -300,6 +302,12 @@
       visiblePageId:String(visiblePage?.id||''),
       renderedArtifactRows:Number(dataCenterList?.querySelectorAll?.('.dc-artifact-item')?.length)||0,
       dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||''),
+      dataCenterChartTraceCount:Array.isArray(dataCenterChart?.data)?dataCenterChart.data.length:0,
+      dataCenterChartSvgCount:Number(dataCenterChart?.querySelectorAll?.('.main-svg')?.length)||0,
+      dataCenterChartProvider:String(document.querySelector?.('#dcChartProvider')?.value||''),
+      dataCenterChartRuntimeReady:dataCenterChartRuntime?.ready===true,
+      dataCenterChartRuntimeStatus:String(dataCenterChartRuntime?.status||''),
+      dataCenterChartRuntimeError:String(dataCenterChartRuntime?.error||''),
       dataSourceSyncSnapshot:!!sourceSync,
       dataSourceSourceCount:Array.isArray(sourceSync?.sources)?sourceSync.sources.length:0,
       dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0
@@ -517,7 +525,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.15',
+      appVersion:'3.61.16',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

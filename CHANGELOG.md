@@ -1,3 +1,13 @@
+# v3.61.16 — Data Center Chart Preview / Dependency Hygiene
+
+- Data Center now renders the active DataTable chart preview automatically after project hydration, Artifact selection, provider changes and chart-parameter changes. The preview no longer depends on pressing the draw button after data arrives.
+- Repair stale saved chart column mappings against the active DataTable. Invalid legacy X/Y keys are replaced with current role-based or fallback columns instead of leaving the preview silently invalid.
+- Chart Providers now return the ScientificPlot render Promise and Data Center awaits it, so lazy Plotly load/render failures are surfaced instead of escaping synchronous try/catch.
+- Current-project Electron diagnostics now verify that a hydrated Data Center with DataTables reaches a ready Chart Runtime and actually creates Plotly traces. Automation Runner moves to `1.20.0`.
+- Move the development Electron line from 39 to current stable 43.4.x so Electron uses the current `@electron/get` dependency line; keep stable `electron-builder` 26.15.7 rather than forcing incompatible transitive `glob`/`rimraf` overrides solely to hide upstream install warnings.
+- Add `npm run deps:trace` to print the exact installed ancestry of `inflight`, `lodash.isequal`, `rimraf`, `glob` and `boolean` on the build machine.
+- Plugin API remains `1.15.0`; Data Center moves to `1.13.3`.
+
 # v3.61.15 — Dedicated TOP Data Sources Contract Repair
 
 - Preserve the public Plugin API contract for `ctx.data.sources.list()` and `ctx.data.sources.targets()` inside dedicated TOP renderers. Read methods remain synchronous just like the main-window implementation instead of leaking Promise semantics from the generic remote capability proxy.

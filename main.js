@@ -483,7 +483,7 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
   if(outcome.ok&&win&&!win.isDestroyed()){
     try{
       if(!win.isVisible()){try{win.webContents.send('windows:activityWillShow');win.show();}catch{}}
-      await diagnosticDelay(80);
+      await diagnosticDelay(Array.isArray(artifactSnapshot)&&artifactSnapshot.length?260:80);
       rendererData=await diagnosticRendererProjectSnapshot(win);
       const hidden=hideDedicatedAuxiliaryWindow(win);
       await diagnosticDelay(100);

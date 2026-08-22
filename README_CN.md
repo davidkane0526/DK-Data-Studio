@@ -1,4 +1,15 @@
-# DK Data Studio — v3.61.15
+# DK Data Studio — v3.61.16
+
+## v3.61.16 Data Center 图形预览与依赖整理
+
+- Data Center 在工程恢复、切换数据对象、切换图形 Provider 或修改图形参数后会自动绘制当前 DataTable，不再要求数据已经出现后再手动点击一次“绘图”。
+- 旧工程保存的 X/Y 列键如果已失效，会按当前 DataTable 的 `role=x / role=y` 或有效列自动修复，避免参数看似存在但实际指向不存在列导致空预览。
+- Chart Provider 现在返回并等待 ScientificPlot 的异步绘图 Promise；Plotly 按需加载或渲染失败会显示具体错误，不再被同步 `try/catch` 静默漏掉。
+- Automation Runner 升级到 `1.20.0`。真实工程 Data Center 诊断除了核对 Artifact/UI 行数，还会验证 Chart Runtime 已 ready 且至少生成一个 Plotly trace。
+- 开发 Electron 更新到当前稳定 43.4.x，并要求 Node.js `>=22.12.0`；同时保留稳定 `electron-builder 26.15.7`，不使用跨大版本 `overrides` 强行替换其上游 `glob/rimraf/inflight`，避免为了消除 warning 破坏构建工具链。
+- 新增 `npm run deps:trace`，可在实际 Windows 安装后直接追踪 `inflight / lodash.isequal / rimraf / glob / boolean` 的真实依赖来源。
+- Data Center 版本为 `1.13.3`，Plugin API 保持 `1.15.0`。
+
 
 ## v3.61.15 独立 TOP 数据源同步读取契约修复
 
