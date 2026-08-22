@@ -6,12 +6,12 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
-assert(json('package.json').version==='3.61.20','Application version must be 3.61.20.');
+assert(json('package.json').version==='3.61.21','Application version must be 3.61.20.');
 const ui=read('src/core/ui-infrastructure.js');
 const css=read('src/style.css');
 const sdk=JSON.parse(read('sdk/contract.json'));
 
-assert(ui.includes("const VERSION = '6.9.1'"),'UI infrastructure version must advance for draggable D3 navigation chrome.');
+assert(ui.includes("const VERSION = '6.9.2'"),'UI infrastructure version must advance for draggable D3 navigation chrome.');
 assert(ui.includes('navigationToolsStorageKey()')&&ui.includes('setNavigationToolsPosition(x,y')&&ui.includes('clampNavigationTools()'),'ScientificCurveSurface must own bounded navigation-tool placement.');
 assert(ui.includes("drag.addEventListener('pointerdown'")&&ui.includes("drag.addEventListener('pointermove'")&&ui.includes("drag.addEventListener('pointerup'"),'D3 navigation tools must support pointer drag without plugin code.');
 assert(ui.includes('this.restoreNavigationToolsPosition()')&&ui.includes("localStorage.removeItem(key)"),'D3 navigation-tool position must persist and support reset.');

@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.22.0';
+  const VERSION='1.23.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -459,6 +459,41 @@
 
     const currentProjectPayload=window.DKDSAutomationHost?.currentProjectWindowSmokePayload?.()||null;
     const currentProjectSummary=currentProjectPayload?.summary||null;
+    const resonanceWorkspace=currentProjectPayload?.project?.plugins?.['builtin.resonance-workbench']?.workspace||null;
+    const resonancePeaks=Array.isArray(resonanceWorkspace?.peaks)?resonanceWorkspace.peaks:[];
+    if(resonancePeaks.length&&window.DKDSScience?.buildSweeps){
+      await runCase('project.resonance-groups','Current project → Resonance group-data integrity','Project / Science',async()=>{
+        const datasets=Array.isArray(currentProjectPayload?.project?.datasets)?currentProjectPayload.project.datasets:[];
+        const sweeps=[];for(const dataset of datasets){try{sweeps.push(...(window.DKDSScience.buildSweeps(dataset)||[]));}catch{}}
+        const byId=new Map(sweeps.map(row=>[String(row.id),row]));
+        const visibility=new Map((resonanceWorkspace.scanVisibility||[]).map(([path,value])=>[String(path),{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
+        const legacyPaths=new Set((resonanceWorkspace.legacyVisibilityDatasetPaths||[]).map(String));
+        const visibleSweeps=sweeps.filter(sw=>{const row=visibility.get(String(sw.datasetPath));if(row)return Number(sw.direction)>0?row.forward!==false:row.reverse!==false;return !(resonanceWorkspace.legacyVisibilityExplicit===true&&legacyPaths.has(String(sw.datasetPath)));});
+        const visibleIds=new Set(visibleSweeps.map(row=>String(row.id)));
+        const accepted=resonancePeaks.filter(row=>row?.accepted!==false);
+        const unresolved=accepted.filter(row=>!byId.has(String(row?.sweepId||'')));
+        const visibleAccepted=accepted.filter(row=>visibleIds.has(String(row?.sweepId||'')));
+        assert(unresolved.length===0,`Saved resonance peaks lost their sweep identity after project restore. unresolved=${unresolved.length}/${accepted.length}`);
+        if(visibleAccepted.length){
+          const Shared=window.DKDSPluginModules?.get?.('builtin.resonance-workbench','workbench-shared');
+          if(Shared?.createController){
+            const service={
+              getState:()=>({workspace:resonanceWorkspace,datasets,sweeps,peaks:resonancePeaks}),
+              visibleSweepIds:()=>[...visibleIds],sweepById:id=>byId.get(String(id))||null,
+              peakLabel:peak=>String(peak?.peakLabel||`峰${Math.max(1,Math.round(Number(peak?.peakOrder)||1))}`),
+              directionName:dir=>Number(dir)>0?'正扫':'反扫',
+              metrics:(peak)=>({vg:Number(peak?.vg),v:Number(peak?.v),i:Number(peak?.i)})
+            };
+            const model=Shared.createController(service,{science:window.DKDSScience}).buildTrendModel();
+            assert(Array.isArray(model?.series)&&model.series.length>0,`Resonance group model is empty despite ${visibleAccepted.length} visible accepted peak(s).`);
+            return {datasets:datasets.length,sweeps:sweeps.length,peaks:accepted.length,visiblePeaks:visibleAccepted.length,groupSeries:model.series.length,groupPoints:model.series.reduce((sum,row)=>sum+(row.points?.length||0),0)};
+          }
+        }
+        return {datasets:datasets.length,sweeps:sweeps.length,peaks:accepted.length,visiblePeaks:visibleAccepted.length,groupSeries:visibleAccepted.length?null:0,groupPoints:visibleAccepted.length?null:0};
+      });
+    }else{
+      await runCase('project.resonance-groups','Current project → Resonance group-data integrity','Project / Science',async()=>{}, {skip:true,skipReason:'当前工程没有已保存共振峰，无需执行旧工程组图完整性检查。'});
+    }
     if(window.electronAPI?.diagnosticsRunActivitySmoke&&currentProjectSummary&&Number(currentProjectSummary.artifactCount)>0){
       await runCase('project.data-center-live','Current project → Data Center live hydration','Project / Electron',async()=>{
         const capabilitySnapshot=currentProjectPayload.capabilitySnapshot||window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;

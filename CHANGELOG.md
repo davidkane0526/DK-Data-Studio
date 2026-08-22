@@ -1,3 +1,13 @@
+# v3.61.21 — Legacy Selection Fidelity, Data Lineage Navigation & Auto-hide D3 Chrome
+
+- Replace Data Center semantic tag pills with compact lineage (`all / raw / derived`) navigation plus an exact field-name dropdown derived from real artifact columns/axes.
+- Replace Import Workbench heuristic signal tags with an exact inspected-column dropdown; selecting `id(0.0)` preserves the X column and excludes sibling `ig(0.0)` signals.
+- Restore self-contained legacy datasets with their saved `importSpec` and original dataset path instead of reparsing embedded multi-column text with current defaults.
+- Preserve legacy Resonance explicit visibility/adoption semantics so auxiliary datasets retained only for project portability do not silently become visible analysis input. Recover meaningful root `peaks`, `scanVisibility`, and `trendColumns` when an intermediate namespaced workspace contains only empty placeholders.
+- Keep saved `peak.sweepId` identities aligned with rebuilt sweeps and add regression/automation coverage that requires old-project Resonance group models to remain non-empty when visible accepted peaks exist.
+- Auto-hide the Core D3 ScientificCurveSurface navigation toolbar on desktop until plot hover/focus/drag, while keeping touch devices usable and retaining legend collision avoidance.
+- Data Center moves to 1.13.6, UI Infrastructure to 6.9.2, Automation Runner to 1.23.0. Plugin API remains 1.15.0.
+
 # v3.61.20 — Smart Plot Chrome, Semantic Data Tags & Unified Project History
 
 - Core D3 ScientificPlot navigation chrome now detects Core legend overlays (including legends that appear/change after render) and automatically relocates to the nearest non-overlapping position. User-dragged positions remain bounded and are re-routed only when they collide with a visible legend.

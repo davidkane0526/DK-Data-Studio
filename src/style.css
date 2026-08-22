@@ -4626,13 +4626,14 @@ body.dkds-table-resizing *{cursor:col-resize!important;}
 
 /* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
 .dkds-scientific-surface-host{position:relative;}
-.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:1px;padding:2px;border:1px solid rgba(167,180,202,.42);border-radius:8px;background:rgba(255,255,255,.94);box-shadow:0 2px 7px rgba(28,42,70,.055);backdrop-filter:blur(6px);opacity:.85;pointer-events:auto;user-select:none;transition:opacity .12s,box-shadow .12s,border-color .12s;}
-.dkds-scientific-nav-tools:hover,.dkds-scientific-nav-tools:focus-within,.dkds-scientific-nav-tools.is-dragging{opacity:.98;border-color:rgba(145,164,196,.55);box-shadow:0 3px 9px rgba(28,42,70,.075);}
+.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:1px;padding:2px;border:1px solid rgba(167,180,202,.42);border-radius:8px;background:rgba(255,255,255,.94);box-shadow:0 2px 7px rgba(28,42,70,.055);backdrop-filter:blur(6px);opacity:0;pointer-events:none;user-select:none;transform:translateY(-2px);transition:opacity .12s,transform .12s,box-shadow .12s,border-color .12s;}
+.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,.dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,.dkds-scientific-nav-tools.is-dragging{opacity:.85;pointer-events:auto;transform:none}.dkds-scientific-nav-tools:hover,.dkds-scientific-nav-tools:focus-within,.dkds-scientific-nav-tools.is-dragging{opacity:.98;border-color:rgba(145,164,196,.55);box-shadow:0 3px 9px rgba(28,42,70,.075);}
 .dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:11px;height:23px;flex:0 0 11px;border-radius:5px;color:#8b96a8;font-size:14px;line-height:1;cursor:grab;touch-action:none;outline:none;}
 .dkds-scientific-nav-drag:hover,.dkds-scientific-nav-drag:focus-visible{background:rgba(49,94,251,.07);color:#5f6f87;}
 .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing;}
 .dkds-scientific-nav-tools button{width:23px;height:23px;min-width:23px;min-height:0;padding:0;border:0;border-radius:5px;background:transparent;color:#344054;font-size:14px;line-height:1;}
 .dkds-scientific-nav-tools button:hover{background:rgba(49,94,251,.09);color:#2558ed;}
+@media (hover:none),(pointer:coarse){.dkds-scientific-nav-tools{opacity:.85;pointer-events:auto;transform:none}}
 @media (prefers-color-scheme:dark){.dkds-scientific-nav-tools{background:rgba(27,34,47,.94);border-color:rgba(116,132,161,.34);box-shadow:0 2px 7px rgba(0,0,0,.12)}.dkds-scientific-nav-tools:hover,.dkds-scientific-nav-tools:focus-within,.dkds-scientific-nav-tools.is-dragging{border-color:rgba(116,132,161,.48);box-shadow:0 3px 9px rgba(0,0,0,.16)}.dkds-scientific-nav-drag{color:#98a4b8}.dkds-scientific-nav-drag:hover,.dkds-scientific-nav-drag:focus-visible{background:rgba(120,145,210,.12);color:#c4cede}.dkds-scientific-nav-tools button{color:#d7deeb}.dkds-scientific-nav-tools button:hover{background:rgba(92,125,202,.18);color:#fff}}
 
 /* Core plugin settings surface */
@@ -4654,10 +4655,9 @@ body.dkds-table-resizing *{cursor:col-resize!important;}
 .system-core-tools-group>.menu-anchor{display:flex;align-items:center}
 .system-core-tools-group>.menu-anchor:before{content:'';width:1px;height:20px;background:#e3e8f0;margin:0 1px}
 
-/* v3.61.20 semantic label filtering */
-.import-column-tag-filter{display:grid;grid-template-columns:minmax(150px,auto) minmax(0,1fr) auto;align-items:center;gap:8px;margin:8px 0 10px;padding:8px 10px;border:1px solid var(--border,#d8e0ec);border-radius:8px;background:color-mix(in srgb,var(--panel,#fff) 94%,var(--accent,#315efb) 6%)}
-.import-column-tag-filter.hidden{display:none}
-.import-column-tag-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.import-column-tag-copy strong{font-size:10.5px;color:var(--text,#344054)}.import-column-tag-copy span{font-size:8.5px;color:var(--muted,#7d8798);white-space:normal}
-.import-column-tag-chips{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}.import-tag-chip{min-height:24px;padding:3px 8px;border-radius:999px;font-size:9px;background:var(--panel,#fff);border:1px solid var(--border,#d8e0ec);color:var(--text-2,#475467)}.import-tag-chip.active{border-color:color-mix(in srgb,var(--accent,#315efb) 58%,var(--border,#d8e0ec));background:color-mix(in srgb,var(--accent,#315efb) 10%,#fff);color:var(--accent,#315efb);font-weight:650}
-#importColumnTagClear{min-height:26px;height:26px;padding:3px 8px;font-size:9px}
-@media(max-width:900px){.import-column-tag-filter{grid-template-columns:1fr auto}.import-column-tag-copy{grid-column:1/-1}.import-column-tag-chips{grid-column:1/2}}
+/* Compact exact-column filtering in the Core Import Workbench. */
+.import-column-field-filter{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);align-items:center;gap:10px;margin:8px 0 10px;padding:7px 9px;border:1px solid var(--border,#d8e0ec);border-radius:8px;background:color-mix(in srgb,var(--panel,#fff) 97%,var(--accent,#315efb) 3%)}
+.import-column-field-filter.hidden{display:none}
+.import-column-field-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.import-column-field-copy strong{font-size:10.5px;color:var(--text,#344054)}.import-column-field-copy span{font-size:8.5px;color:var(--muted,#7d8798);white-space:normal}
+#importColumnFieldSelect{width:100%;height:28px;min-height:28px;border:1px solid var(--border,#d8e0ec);border-radius:6px;padding:0 26px 0 7px;background:var(--panel,#fff);color:var(--text,#344054);font-size:9px}
+@media(max-width:900px){.import-column-field-filter{grid-template-columns:1fr}}

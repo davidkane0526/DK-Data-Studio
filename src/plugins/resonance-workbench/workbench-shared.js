@@ -47,6 +47,8 @@
       spacingSettings:{seriesA:'',seriesB:'',mode:'abs'},
       gateAnalysisSettings:{seriesA:'',seriesB:'',hysteresisLabel:'',widthMode:'hwhm',useCarrierDensity:false,cg:null,cnp:0,featureMetric:'fwhm',featureDirection:'all',terSettings:{vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false},terAlgorithmRef:{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'}},
       transformPreviewByDataset:[],
+      legacyVisibilityExplicit:false,
+      legacyVisibilityDatasetPaths:[],
       groupColumns:'auto',
       mainView:{xDomain:null,yDomain:null},
       activeView:'main'
@@ -70,6 +72,8 @@
       spacingSettings:{...(base.spacingSettings||{}),...(source.spacingSettings||{})},
       gateAnalysisSettings:{...(base.gateAnalysisSettings||{}),...(source.gateAnalysisSettings||{}),terSettings:{...(base.gateAnalysisSettings?.terSettings||{}),...(source.gateAnalysisSettings?.terSettings||{})},terAlgorithmRef:{...(base.gateAnalysisSettings?.terAlgorithmRef||{}),...(source.gateAnalysisSettings?.terAlgorithmRef||{})}},
       transformPreviewByDataset:Array.isArray(source.transformPreviewByDataset)?clone(source.transformPreviewByDataset):base.transformPreviewByDataset,
+      legacyVisibilityExplicit:source.legacyVisibilityExplicit===true,
+      legacyVisibilityDatasetPaths:Array.isArray(source.legacyVisibilityDatasetPaths)?source.legacyVisibilityDatasetPaths.map(String):base.legacyVisibilityDatasetPaths,
       groupColumns:['auto','1','2','3','4','5','6'].includes(String(source.groupColumns))?String(source.groupColumns):'auto',
       mainView:{xDomain:Array.isArray(source.mainView?.xDomain)?source.mainView.xDomain.map(Number):null,yDomain:Array.isArray(source.mainView?.yDomain)?source.mainView.yDomain.map(Number):null},
       activeView:VIEW_IDS.has(String(source.activeView))?String(source.activeView):'main'

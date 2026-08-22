@@ -46,7 +46,7 @@
     targets:null,
     scope:null,
     selectionAnchorPath:null,
-    columnTagFilter:[]
+    columnFieldFilter:''
   };
 
   function importActiveItem(){
@@ -440,7 +440,7 @@
       title:title||`项目 ${n}`,
       datasets:[],
       artifactStore:window.DKDSData.createStore(),
-      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null,columnTagFilter:[]},
+      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null,columnFieldFilter:''},
       pluginState:{},
       projectPath:null,
       trendColumns:loadTrendColumnsPreference(),
@@ -499,10 +499,11 @@
     state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
-    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null,columnTagFilter:[]};
+    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null,columnFieldFilter:''};
     if(!Object.prototype.hasOwnProperty.call(importDraft,'targets'))importDraft.targets=null;
     if(!Object.prototype.hasOwnProperty.call(importDraft,'selectionAnchorPath'))importDraft.selectionAnchorPath=null;
-    if(!Array.isArray(importDraft.columnTagFilter))importDraft.columnTagFilter=[];
+    if(typeof importDraft.columnFieldFilter!=='string')importDraft.columnFieldFilter='';
+    delete importDraft.columnTagFilter;
     importDraft.scope=null;
     t.importDraft=importDraft;
     state.projectPath=t.projectPath||null;
@@ -701,7 +702,7 @@
         item.settings.yCol=Math.min(Math.max(0,Number(item.settings.yCol)||0),max);
         item.settings.pairStart=Math.min(Math.max(0,Number(item.settings.pairStart)||0),max);
         item.settings.yCols=(item.settings.yCols||[]).filter(c=>c>=0&&c<=max&&c!==item.settings.xCol);
-        if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item,{touch:false});
+        if(importDraft.columnFieldFilter)applyImportColumnFieldFilter(item,{touch:false});
       }
     }catch(err){
       item.error=err?.message||String(err);
@@ -893,30 +894,47 @@
     return headers.map((h,i)=>`<option value="${i}" ${i===Number(selected)?'selected':''}>${i+1}: ${escapeHtml(h)}</option>`).join('');
   }
 
-  function importColumnSemanticTags(column){return (window.DKDSData?.columnDataTags?.(column)||[]).filter(tag=>!['x','y','group'].includes(String(tag)));}
-  function importAvailableColumnTags(item){
-    const ins=item?.inspection;if(!ins)return [];
-    const counts=new Map();for(const column of ins.columns||[]){if(column.index===Number(item.settings?.xCol)||Number(column.numericFraction)<.5)continue;for(const tag of importColumnSemanticTags(column))counts.set(tag,(counts.get(tag)||0)+1);}
-    const priority=['id','ig','vg','vd','vth','didv','dvdi','resistance','conductance','time','temperature'];
-    return [...counts.entries()].map(([tag,count])=>({tag,count})).sort((a,b)=>{const ai=priority.indexOf(a.tag),bi=priority.indexOf(b.tag);return (ai<0?999:ai)-(bi<0?999:bi)||b.count-a.count||a.tag.localeCompare(b.tag);});
+  function normalizeImportFieldName(value){return String(value||'').trim().toLocaleLowerCase();}
+  function importAvailableColumnFields(){
+    const counts=new Map(),labels=new Map();
+    for(const item of importDraft.files){
+      if(!item?.inspection||providerForImportItem(item)?.id!=='flexible-text')continue;
+      const xCol=Number(item.settings?.xCol);
+      const seen=new Set();
+      for(const column of item.inspection.columns||[]){
+        if(column.index===xCol||Number(column.numericFraction)<.5)continue;
+        const label=String(column.header||'').trim();const key=normalizeImportFieldName(label);
+        if(!key||seen.has(key))continue;seen.add(key);labels.set(key,label);counts.set(key,(counts.get(key)||0)+1);
+      }
+    }
+    return [...counts.entries()].map(([key,count])=>({key,label:labels.get(key)||key,count})).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label));
   }
-  function importColumnMatchesTags(column){const selected=new Set((importDraft.columnTagFilter||[]).map(String));if(!selected.size)return true;const tags=new Set(importColumnSemanticTags(column));return [...selected].some(tag=>tags.has(tag));}
-  function applyImportColumnTagFilter(item,{touch=true}={}){
-    const ins=item?.inspection;if(!ins)return false;const selected=importDraft.columnTagFilter||[];if(!selected.length)return false;
-    const layout=importResolvedLayout(item),eligible=(ins.columns||[]).filter(column=>column.index!==Number(item.settings.xCol)&&Number(column.numericFraction)>=.5&&importColumnMatchesTags(column));
+  function applyImportColumnFieldFilter(item,{touch=true}={}){
+    const ins=item?.inspection;if(!ins)return false;const wanted=normalizeImportFieldName(importDraft.columnFieldFilter);if(!wanted)return false;
+    const layout=importResolvedLayout(item);if(layout!=='single'&&layout!=='sharedX')return false;
+    const eligible=(ins.columns||[]).filter(column=>column.index!==Number(item.settings.xCol)&&Number(column.numericFraction)>=.5&&normalizeImportFieldName(column.header)===wanted);
     if(layout==='sharedX')item.settings.yCols=eligible.map(column=>column.index);
-    else if(layout==='single'){item.settings.yCol=eligible.length?eligible[0].index:-1;item.settings.yCols=eligible.length?[eligible[0].index]:[];}
-    else return false;
+    else{item.settings.yCol=eligible.length?eligible[0].index:-1;item.settings.yCols=eligible.length?[eligible[0].index]:[];}
     if(touch)item.mappingTouched=true;return true;
   }
-  function applyImportTagFilterToAll(){for(const item of importDraft.files)if(item?.inspection&&providerForImportItem(item)?.id==='flexible-text')applyImportColumnTagFilter(item);renderImportWorkbench();}
-  function renderImportColumnTagFilter(item){
-    const wrap=$('#importColumnTagFilter'),host=$('#importColumnTagChips'),clear=$('#importColumnTagClear');if(!wrap||!host||!clear)return;
-    const layout=importResolvedLayout(item),rows=importAvailableColumnTags(item),selected=new Set(importDraft.columnTagFilter||[]),supported=layout==='single'||layout==='sharedX';
-    wrap.classList.toggle('hidden',!rows.length||!supported);host.replaceChildren();
-    if(!rows.length||!supported)return;
-    for(const row of rows){const button=document.createElement('button');button.type='button';button.className=`import-tag-chip${selected.has(row.tag)?' active':''}`;button.dataset.tag=row.tag;button.textContent=`${window.DKDSData?.dataTagLabel?.(row.tag)||row.tag}${row.count>1?` · ${row.count}`:''}`;button.title=`按 ${row.tag} 标签筛选信号列`;button.onclick=()=>{const next=new Set(importDraft.columnTagFilter||[]);if(next.has(row.tag))next.delete(row.tag);else next.add(row.tag);importDraft.columnTagFilter=[...next];applyImportTagFilterToAll();};host.appendChild(button);}
-    clear.disabled=!selected.size;clear.onclick=()=>{importDraft.columnTagFilter=[];for(const row of importDraft.files){if(row?.inspection&&providerForImportItem(row)?.id==='flexible-text'){row.mappingTouched=false;recomputeImportItem(row,true);}}renderImportWorkbench();};
+  function applyImportFieldFilterToAll(){for(const item of importDraft.files)if(item?.inspection&&providerForImportItem(item)?.id==='flexible-text')applyImportColumnFieldFilter(item);renderImportWorkbench();}
+  function clearImportColumnFieldFilter({restoreAuto=false}={}){
+    importDraft.columnFieldFilter='';
+    if(restoreAuto)for(const row of importDraft.files){if(row?.inspection&&providerForImportItem(row)?.id==='flexible-text'){row.mappingTouched=false;recomputeImportItem(row,true);}}
+  }
+  function renderImportColumnFieldFilter(item){
+    const wrap=$('#importColumnFieldFilter'),select=$('#importColumnFieldSelect');if(!wrap||!select)return;
+    const layout=importResolvedLayout(item),rows=importAvailableColumnFields(),supported=layout==='single'||layout==='sharedX';
+    wrap.classList.toggle('hidden',!rows.length||!supported);if(!rows.length||!supported){select.innerHTML='<option value="">全部 / 自动</option>';return;}
+    const current=normalizeImportFieldName(importDraft.columnFieldFilter);
+    select.innerHTML='<option value="">全部 / 自动</option>'+rows.map(row=>`<option value="${escapeHtml(row.key)}">${escapeHtml(row.label)}${row.count>1?` · ${row.count} 文件`:''}</option>`).join('');
+    select.value=[...select.options].some(option=>normalizeImportFieldName(option.value)===current)?current:'';
+    if(current&&!select.value)importDraft.columnFieldFilter='';
+    select.onchange=()=>{
+      importDraft.columnFieldFilter=select.value||'';
+      if(importDraft.columnFieldFilter)applyImportFieldFilterToAll();
+      else{clearImportColumnFieldFilter({restoreAuto:true});renderImportWorkbench();}
+    };
   }
 
   function renderImportYColumns(item){
@@ -934,7 +952,7 @@
       label.innerHTML=`<input type="checkbox" value="${c.index}" ${selected.has(c.index)?'checked':''}><span>${c.index+1}: ${escapeHtml(c.header)}</span>`;
       label.querySelector('input').onchange=()=>{
         const values=[...host.querySelectorAll('input:checked')].map(x=>Number(x.value));
-        importDraft.columnTagFilter=[];
+        importDraft.columnFieldFilter='';
         item.settings.yCols=values;
         item.mappingTouched=true;
         renderImportSeriesVgRows(item);
@@ -1125,7 +1143,7 @@
       $('#importPairStartWrap').classList.toggle('hidden',layout!=='paired');
       $('#importManualVgWrap').classList.toggle('hidden',st.vgMode!=='manual');
 
-      renderImportColumnTagFilter(item);
+      renderImportColumnFieldFilter(item);
       renderImportYColumns(item);
       renderImportSeriesVgRows(item);
     }
@@ -1174,7 +1192,7 @@
       };
       recomputeImportItem(item,true);
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
-      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path};
+      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path,columnFieldFilter:''};
       renderImportWorkbench();
 
       const checkbox=$('#importFileList input[type="checkbox"]');
@@ -1374,6 +1392,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       importDraft.targets=null;
       importDraft.scope=null;
       importDraft.selectionAnchorPath=null;
+      importDraft.columnFieldFilter='';
       closeImportWorkbench();
       setStatus(`导入完成：${reports.join('；')}。`);
     }catch(err){
@@ -2320,7 +2339,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.20',
+      version:'3.61.21',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2425,8 +2444,24 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       if(!source?.text)continue;
       try{
         const provider=flexibleImportProvider();
-        const parsed=provider.parse({name:source.name,path:source.path,text:source.text,encoding:source.encoding||'auto'},provider.defaultOptions?.()||{});
-        for(const dataset of (parsed?.datasets||[]))out.push({...dataset,assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name});
+        // A self-contained project may keep the original multi-column text even
+        // when only one signal column was adopted. Reparse with the SAVED import
+        // mapping; reparsing with provider defaults can silently resurrect Ig or
+        // another auxiliary channel that the user explicitly did not select.
+        const savedSpec=source.importSpec&&typeof source.importSpec==='object'?source.importSpec:{};
+        const options={...(provider.defaultOptions?.()||{}),...savedSpec};
+        const parsed=provider.parse({name:source.sourceName||source.name,path:source.sourcePath||source.path,text:source.text,encoding:source.encoding||'auto'},options);
+        const restored=parsed?.datasets||[];
+        for(const [index,dataset] of restored.entries()){
+          const single=restored.length===1;
+          out.push({...dataset,
+            name:single&&source.name?source.name:dataset.name,
+            path:single&&source.path?source.path:dataset.path,
+            importSpec:{...(dataset.importSpec||{}),...savedSpec},
+            assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],
+            sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name
+          });
+        }
       }catch(err){console.warn('[DKDS project dataset restore]',err);}
     }
     return out;
@@ -2785,24 +2820,24 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if(item.settings.layout==='sharedX'&&!item.settings.yCols.length){
       item.settings.yCols=(item.inspection?.suggestedYCols||[]).slice();
     }
-    if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item);
+    if(importDraft.columnFieldFilter)applyImportColumnFieldFilter(item);
     renderImportWorkbench();
   };
   $('#importXCol').onchange=e=>{
     const item=importActiveItem();if(!item)return;
     item.settings.xCol=Number(e.target.value);item.mappingTouched=true;
     item.settings.yCols=(item.settings.yCols||[]).filter(c=>c!==item.settings.xCol);
-    if((importDraft.columnTagFilter||[]).length)applyImportColumnTagFilter(item);
+    if(importDraft.columnFieldFilter)applyImportColumnFieldFilter(item);
     renderImportWorkbench();
   };
-  $('#importYCol').onchange=e=>{importDraft.columnTagFilter=[];updateImportSetting('yCol',Number(e.target.value),{mapping:true});};
+  $('#importYCol').onchange=e=>{importDraft.columnFieldFilter='';updateImportSetting('yCol',Number(e.target.value),{mapping:true});};
   $('#importPairStart').onchange=e=>updateImportSetting('pairStart',Number(e.target.value),{mapping:true});
   $('#importVoltageUnit').onchange=e=>updateImportSetting('voltageUnit',e.target.value,{mapping:true});
   $('#importCurrentUnit').onchange=e=>updateImportSetting('currentUnit',e.target.value,{mapping:true});
   $('#importVgMode').onchange=e=>updateImportSetting('vgMode',e.target.value,{mapping:true});
   $('#importManualVg').onchange=e=>updateImportSetting('manualVg',e.target.value===''?null:Number(e.target.value),{mapping:true});
   $('#importYAllBtn').onclick=()=>{
-    const item=importActiveItem();if(!item?.inspection)return;importDraft.columnTagFilter=[];
+    const item=importActiveItem();if(!item?.inspection)return;importDraft.columnFieldFilter='';
     item.settings.yCols=item.inspection.columns
       .filter(c=>c.index!==Number(item.settings.xCol)&&c.numericFraction>=.5)
       .map(c=>c.index);
@@ -2810,7 +2845,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     renderImportWorkbench();
   };
   $('#importYNoneBtn').onclick=()=>{
-    const item=importActiveItem();if(!item)return;importDraft.columnTagFilter=[];
+    const item=importActiveItem();if(!item)return;importDraft.columnFieldFilter='';
     item.settings.yCols=[];item.mappingTouched=true;renderImportWorkbench();
   };
 
@@ -3174,7 +3209,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.20',
+      appVersion:'3.61.21',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 (async()=>{
-assert(json('package.json').version==='3.61.20','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.21','Application version must be 3.61.18.');
 const chart=read('src/core/chart-runtime.js');
 assert(chart.includes('displayScaleStates')&&chart.includes('isYAxisInteraction')&&chart.includes('left+12'),'Core chart runtime must treat the whole left Y-label region as the display-scale interaction target.');
 assert(chart.includes('next.y=trace.y.map(absNumber)'),'Core Plotly display projection must use |Y| in log display without rewriting source data.');

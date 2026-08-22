@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.20</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.21</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -349,10 +349,11 @@
                   </label>
                 </div>
 
-                <div id="importColumnTagFilter" class="import-column-tag-filter hidden">
-                  <div class="import-column-tag-copy"><strong>标签筛选</strong><span>只筛选 Y / 信号列，X 列始终保留；多标签表示保留任一匹配信号。</span></div>
-                  <div id="importColumnTagChips" class="import-column-tag-chips"></div>
-                  <button id="importColumnTagClear" type="button">清除</button>
+                <div id="importColumnFieldFilter" class="import-column-field-filter hidden">
+                  <div class="import-column-field-copy"><strong>信号列</strong><span>按实际列标题选择要导入的 Y / 信号列；X 列始终保留。</span></div>
+                  <select id="importColumnFieldSelect" title="按实际列标题筛选信号列">
+                    <option value="">全部 / 自动</option>
+                  </select>
                 </div>
 
                 <div id="importYMultiWrap" class="import-y-multi hidden">

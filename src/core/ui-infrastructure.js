@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.9.1';
+  const VERSION = '6.9.2';
   const scopes = new Map();
   const hostState = {
     root: null,

@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.20
+# DK Data Studio — v3.61.21
+
+## v3.61.21 旧工程选择语义恢复、数据层级导航与 D3 自动隐藏
+
+- Data Center 移除占空间的语义标签 pill，改为紧凑的“数据层级 + 实际字段”导航：可按 `原始数据 / 派生数据` 面包屑层级过滤，并直接按真实列标题/字段名筛选。
+- Core Import Workbench 移除启发式标签按钮，改成实际信号列标题下拉。多列 `Vd / Id / Ig` 文件选择 `Id` 时只导入对应 Id 信号，X 列仍保留。
+- 旧工程恢复严格尊重已保存 `importSpec`、原 dataset path 与 `scanVisibility` 的显式采纳语义；工程中为自包含而保留但当时未采用的辅助通道（如 Ig）不会重新进入共振主图。
+- 修复旧工程中根级 `peaks / scanVisibility / trendColumns` 被空 namespaced placeholder 覆盖的迁移边界；保存的 `peak.sweepId` 与重建 sweep 身份保持一致，组图 Vpk/Ipk 等不再只剩空坐标轴。
+- Core D3 ScientificPlot 浮动工具条在桌面端默认隐藏，仅在绘图区 hover / focus 或拖动时显示；触控设备保持可见。既有图例碰撞避让与位置记忆继续保留。
+- Automation Runner 升级到 `1.23.0`，新增当前工程 Resonance group-data integrity 检查：验证保存峰全部能解析到 sweep，并在存在可见已采纳峰时要求组图模型生成非空 series。
+- Data Center 版本为 `1.13.6`，UI Infrastructure 为 `6.9.2`。Plugin API 仍保持 `1.15.0`；本次没有新增 SDK 配置项。
 
 ## v3.61.20 图形工具条避让、语义标签筛选与统一工程历史
 

@@ -369,7 +369,17 @@
 
       function visibilityMap(){
         const map=new Map((workspace.scanVisibility||[]).map(([path,value])=>[String(path),{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
-        for(const d of datasets)if(!map.has(String(d.path)))map.set(String(d.path),{forward:true,reverse:true});
+        const legacyPaths=new Set((workspace.legacyVisibilityDatasetPaths||[]).map(String));
+        for(const d of datasets){
+          const path=String(d.path);
+          if(map.has(path))continue;
+          // Old projects could retain auxiliary channels (for example Ig) in
+          // the self-contained payload while scanVisibility listed only the
+          // channels actually adopted by Resonance. Keep those legacy-only
+          // auxiliaries hidden, without hiding data imported after migration.
+          const hiddenLegacy=workspace.legacyVisibilityExplicit===true&&legacyPaths.has(path);
+          map.set(path,{forward:!hiddenLegacy,reverse:!hiddenLegacy});
+        }
         return map;
       }
       function isVisible(sw){
