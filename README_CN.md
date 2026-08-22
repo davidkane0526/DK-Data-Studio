@@ -1,3 +1,13 @@
+# DK Data Studio — v3.61.12
+
+## v3.61.12 数据中心实时恢复与动作组修复
+
+- 修复旧工程在数据中心仍显示 0 个对象的问题：独立窗口的 live Artifact 快照会与工程自包含的 `project.datasets` 兼容桥合并，空快照不再阻止 transient DataTable 恢复。
+- 修复复用数据中心窗口时仅 Artifact 变化却被 `sameProject` 提前返回的问题；现在 Artifact digest 改变会直接刷新本地 live store，不重新加载插件。
+- `window.artifactHydration` 正式进入机器可读 SDK manifest；宿主可从 Activity 或 window manifest 解析 live hydration，不依赖特定功能名。
+- 修复数据中心“公式 / 工作流 / 来源链 / 编辑”动作挤成两行的问题；标题区与动作区改为明确结构，动作保持单行水平排列。
+- Plugin API 保持 `1.15.0`。
+
 # DK Data Studio — v3.61.11
 
 ## v3.61.11 对数显示修正、热图 Z 色阶与旧工程数据中心恢复

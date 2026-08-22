@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 (async()=>{
-assert(json('package.json').version==='3.61.11','Application version must be 3.61.11.');
+assert(json('package.json').version==='3.61.12','Application version must be 3.61.12.');
 const chart=read('src/core/chart-runtime.js');
 assert(chart.includes('displayScaleStates')&&chart.includes('isYAxisInteraction')&&chart.includes('left+12'),'Core chart runtime must treat the whole left Y-label region as the display-scale interaction target.');
 assert(chart.includes('next.y=trace.y.map(absNumber)'),'Core Plotly display projection must use |Y| in log display without rewriting source data.');
@@ -35,5 +35,5 @@ const index=read('src/index.html'),css=read('src/style.css');
 assert(index.includes('system-core-tools-group')&&css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn'),'Data Management and Tools must render as one shared visual group.');
 assert(index.includes('id="editMenuBtn"')&&index.includes('>编辑 ▾</button>'),'Top Edit menu label must be concise: 编辑.');
 assert(css.includes('border:0!important')&&css.includes('box-shadow:none!important'),'Tools must not keep a second nested border/shadow inside the system group.');
-console.log('v3.61.11 universal display + legacy project Data Center checks passed.');
+console.log('v3.61.12 universal display + legacy project Data Center checks passed.');
 })().catch(err=>{console.error(err);process.exit(2);});

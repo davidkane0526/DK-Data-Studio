@@ -1,3 +1,11 @@
+# v3.61.12 — Data Center Live Hydration / Action Group Repair
+
+- Fixed Data Center still showing zero objects for self-contained legacy projects when a dedicated renderer received an empty/incomplete live Artifact snapshot. Live snapshots now merge with `project.datasets` transient adapters instead of suppressing the legacy bridge.
+- Fixed reused live-hydration windows ignoring a changed Artifact snapshot when the serialized project digest/path were unchanged; Artifact-digest-only changes now replace the local live store and emit one canonical refresh event without remounting the plugin.
+- Added `window.artifactHydration` to the machine-readable SDK manifest contract and made the host resolve hydration from either the runtime Activity or the window manifest, removing activity-mount timing dependence without any Data Center id special-case.
+- Fixed the Data Center preview action row: a broad direct-child CSS selector was forcing the tabs and “编辑” into a vertical column. Title/copy blocks are now explicit, while action controls stay in one horizontal group.
+- Plugin API remains `1.15.0`.
+
 # v3.61.11 — Correct Log Display / Heatmap Z Scale / Live Data Center Hydration
 
 - XY/scatter/curve log display now labels only decade ticks on the Y axis, eliminating overlapping 2×/3×/... minor labels on scientific current ranges. D3 ScientificCurveSurface and Plotly charts follow the same decade-only major-label rule.

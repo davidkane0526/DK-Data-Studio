@@ -34,7 +34,7 @@
     "data.sources"
   ],
   "compatibility": {
-    "app": ">=3.61.11 <4.0.0",
+    "app": ">=3.61.12 <4.0.0",
     "pluginApi": "^1.15.0"
   },
   "pluginType": "workbench",

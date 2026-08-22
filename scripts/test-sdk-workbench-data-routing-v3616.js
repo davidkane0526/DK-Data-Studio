@@ -21,7 +21,7 @@ const flexibleImporter=read('src/plugins/flexible-import/plugin.js');
 const schema=JSON.parse(read('sdk/plugin-manifest.schema.json'));
 const sdk=read('sdk/plugin-api.d.ts');
 
-assert(pkg.version==='3.61.11','Application version must be v3.61.11.');
+assert(pkg.version==='3.61.12','Application version must be v3.61.12.');
 assert(kernel.includes("const API_VERSION = '1.15.0'"),'Plugin Kernel must publish Plugin API 1.14.');
 assert(kernel.includes('const DEFAULT_PLUGIN_ICONS=Object.freeze')&&kernel.includes("workbench:'◇'"),'Core must guarantee category default icons when a plugin omits icon metadata.');
 assert(kernel.includes("const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'")&&kernel.includes("spec.presentation!=='toolbar'"),'A standalone workbench page must default to a primary activity rather than a contextual toolbar contribution.');
@@ -81,4 +81,4 @@ assert(sdk.includes('importWorkbench:DKDSDataImportWorkbench')&&sdk.includes('DK
 assert(sdk.includes("presentation?:'activity'|'toolbar'"),'SDK page contract must expose explicit activity-vs-toolbar placement override.');
 assert(sdk.includes('bind(target:any,spec?:DKDSInteractionBehaviorBindSpec)'),'SDK Interaction Behavior must expose generic DOM delegation.');
 
-console.log('v3.61.11 workbench placement, default icon, Core-owned plot surface, typed importer routing, scoped source catalog and shared Pulse import checks passed.');
+console.log('v3.61.12 workbench placement, default icon, Core-owned plot surface, typed importer routing, scoped source catalog and shared Pulse import checks passed.');

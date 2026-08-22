@@ -2187,7 +2187,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.11',
+      version:'3.61.12',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2849,7 +2849,14 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     }
     const capabilitySnapshot=window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
     const activitySpec=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(activityId||''))||null;
-    const artifactSnapshot=String(activitySpec?.artifactHydration||'')==='live'?snapshotArtifactRows():null;
+    // Live Artifact hydration is a host/window lifecycle contract, so accept it
+    // from either the runtime Activity spec or the machine-readable window
+    // manifest. The latter keeps system buttons reliable even if they are used
+    // before an activity contribution has finished mounting. No activity id is
+    // special-cased here.
+    const pluginWindowSpec=(window.DKDSPlugins?.manager?.list?.()||[]).find(row=>String(row?.window?.activity||'')===String(activityId||''))?.window||null;
+    const artifactHydration=String(activitySpec?.artifactHydration||pluginWindowSpec?.artifactHydration||'');
+    const artifactSnapshot=artifactHydration==='live'?snapshotArtifactRows():null;
     return window.electronAPI.openActivityWindow({
       activityId,
       projectTabId:tab.id,
@@ -3006,7 +3013,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.11',
+      appVersion:'3.61.12',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

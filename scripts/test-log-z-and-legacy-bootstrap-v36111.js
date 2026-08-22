@@ -55,6 +55,6 @@ function assert(v,m){if(!v)throw new Error(m);}
   assert(app.includes("artifactHydration||''")&&app.includes("==='live'?snapshotArtifactRows():null"),'Activities that declare live Artifact hydration must receive the owner snapshot without adding the payload to every heavy TOP window.');
   const dc=read('src/plugins/data-center/feature-runtime.js');assert(dc.includes("artifactHydration:'live'"),'Data Center must explicitly request live Artifact hydration as a generic activity contract.');
   assert(main.includes('artifactSnapshot')&&main.includes('artifactDigest')&&main.includes('cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest'),'Main must track live Artifact snapshot changes when reusing TOP windows.');
-  assert(aux.includes('const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null')&&aux.includes('liveSnapshot?{schema:2,artifacts:liveSnapshot}'),'Dedicated Data Center/TOP hydration must prefer the owner live Artifact snapshot over reparsing persisted legacy data.');
-  console.log('v3.61.11 corrected log display + legacy Data Center bootstrap checks passed.');
+  assert(aux.includes('const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null')&&aux.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}')&&aux.includes('syncLegacyDatasetArtifacts(artifactStore,project.datasets)'),'Dedicated live hydration must restore the owner snapshot and reconcile self-contained legacy transient adapters instead of treating the two sources as mutually exclusive.');
+  console.log('v3.61.12 corrected log display + reconciled legacy Data Center bootstrap checks passed.');
 })().catch(err=>{console.error(err);process.exit(2);});

@@ -2,7 +2,7 @@
   "sdkVersion": "1.15.0",
   "pluginApiVersion": "1.15.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.11",
+  "minimumAppVersion": "3.61.12",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [

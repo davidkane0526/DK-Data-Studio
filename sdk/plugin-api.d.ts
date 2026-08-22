@@ -16,7 +16,7 @@ export interface DKDSManifest {
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
   data?:{accepts?:string[];produces?:string[]};
-  window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';width?:number;height?:number;minWidth?:number;minHeight?:number};
+  window?:{activity:string;title?:string;runtime?:string;scripts?:string[];dependencies?:string[];prewarm?:boolean;reuse?:boolean;persistence?:'project'|'memory'|'none';artifactHydration?:'project'|'live';width?:number;height?:number;minWidth?:number;minHeight?:number};
   algorithmProvider?:boolean; algorithmCategories?:string[];
   algorithmProvides?:Array<{category:string;id:string;version:string;title?:string}>;
   compatibility?:{app?:string;pluginApi?:string};

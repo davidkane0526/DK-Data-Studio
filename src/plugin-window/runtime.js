@@ -239,15 +239,16 @@
   function restoreArtifactStore() {
     const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null;
     artifactStore = window.DKDSData?.restoreStore
-      ? window.DKDSData.restoreStore(liveSnapshot?{schema:2,artifacts:liveSnapshot}:(project.dataModel || { schema:1, artifacts:[] }))
+      ? window.DKDSData.restoreStore(liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}:(project.dataModel || { schema:1, artifacts:[] }))
       : null;
-    // Dedicated windows receive the owner's live Artifact snapshot whenever it
-    // is available. This snapshot includes transient legacy DataTable adapters
-    // that are intentionally omitted from the persisted dataModel, so Data
-    // Center and analysis TOPs see exactly the same project data as the main
-    // renderer. Older hosts without a live snapshot still rebuild adapters from
-    // project.datasets as a compatibility fallback.
-    if (!liveSnapshot && artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
+    // Live snapshots and legacy project datasets are complementary inputs.
+    // The live snapshot is authoritative for canonical/persisted Artifacts,
+    // while project.datasets is still the self-contained source for transient
+    // legacy DataTable adapters. Never treat an empty (or incomplete) live
+    // snapshot as a reason to skip that compatibility bridge: doing so leaves
+    // Data Center empty even though the same project still renders in the main
+    // Resonance workbench. Stable legacy artifact ids make this merge idempotent.
+    if (artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
       try { window.DKDSData.syncLegacyDatasetArtifacts(artifactStore,project.datasets); }
       catch (err) { console.warn('[DKDS plugin window legacy artifact bridge]', err); }
     }
@@ -465,7 +466,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.11',
+      appVersion:'3.61.12',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -619,6 +620,7 @@
     const sameProject = previousBootstrap?.projectDigest
       && previousBootstrap.projectDigest === nextBootstrap.projectDigest
       && previousBootstrap.projectPath === nextBootstrap.projectPath;
+    const liveArtifactsChanged = String(previousBootstrap?.artifactDigest||'') !== String(nextBootstrap?.artifactDigest||'');
     const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true;
     bootstrap = nextBootstrap;
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
@@ -629,6 +631,22 @@
         // Main keeps a runtime-only prewarmed window hidden until this second
         // readiness signal, so users never see a half-hydrated analysis page.
         window.electronAPI?.markActivityWindowReady?.({startupProfile:{...startupProfile,prewarmMode:'hydrated-open'}});
+        return;
+      }
+      if(sameProject&&liveArtifactsChanged&&Array.isArray(nextBootstrap.artifactSnapshot)){
+        // Reused live-hydration windows must consume a new full owner snapshot
+        // even when the serialized project itself is unchanged. This repairs
+        // missed/transient deltas without reloading plugin code or remounting the
+        // activity. The Artifact API closes over `artifactStore`, so replacing
+        // the store here is immediately visible to Data Center and other live
+        // consumers after the change event below.
+        project=ensureProjectShape(nextBootstrap.project);
+        restoreArtifactStore();
+        window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{
+          type:'owner-live-replace',reason:'bootstrap-artifact-refresh',
+          artifacts:artifactStore?.list?.({includeTransient:true})||[]
+        });
+        setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} · 数据已同步`);
         return;
       }
       if(sameProject){setStatus(`${bootstrap.pluginWindow?.title || bootstrap.activityId} 已就绪`);return;}

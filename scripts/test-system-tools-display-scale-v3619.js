@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
-assert(json('package.json').version==='3.61.11','Application version must be v3.61.11.');
+assert(json('package.json').version==='3.61.12','Application version must be v3.61.12.');
 assert(json('sdk/contract.json').pluginApiVersion==='1.15.0','Standalone SDK must publish Plugin API 1.15.');
 assert(json('sdk/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'SDK manifest schema must expose the tool plugin category.');
 assert(json('docs/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'Application manifest schema must accept tool plugins.');
@@ -49,4 +49,4 @@ assert(toolGuide.includes('pluginType: "tool"')||toolGuide.includes('pluginType:
 execFileSync(process.execPath,[path.join(root,'sdk/tools/dkds-plugin.js'),'validate',path.join(root,'sdk/templates/tool-plugin')],{stdio:'pipe'});
 execFileSync(process.execPath,[path.join(root,'sdk/tools/dkds-plugin.js'),'validate',path.join(root,'sdk/templates/algorithm-provider')],{stdio:'pipe'});
 
-console.log('v3.61.11 system/tools/universal-display-scale contracts passed.');
+console.log('v3.61.12 system/tools/universal-display-scale contracts passed.');

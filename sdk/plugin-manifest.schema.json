@@ -191,6 +191,12 @@
             "none"
           ]
         },
+        "artifactHydration": {
+          "enum": [
+            "project",
+            "live"
+          ]
+        },
         "width": {
           "type": "number",
           "exclusiveMinimum": 0

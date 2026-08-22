@@ -5,7 +5,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.11 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.12 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -133,7 +133,16 @@ Persistent plugin state must be registered through `ctx.project.registerSlice(..
 
 Do not use application source files or private globals from a plugin. If a feature cannot be implemented through this SDK, that is a missing public Core contract and should be added to the SDK/Core rather than worked around by importing application source.
 
-For a windowed activity that must reflect the **exact live project Artifact Store** at open/reuse time, Core also supports the activity-level hydration contract:
+For a windowed activity that must reflect the **exact live project Artifact Store** at open/reuse time, Core supports the generic live-hydration contract. Declare it in the machine-readable window manifest and, when the activity is registered dynamically, mirror it on the Activity spec:
+
+```json
+{
+  "window": {
+    "activity": "data-inspector",
+    "artifactHydration": "live"
+  }
+}
+```
 
 ```js
 ctx.ui.activities.add({
@@ -144,7 +153,7 @@ ctx.ui.activities.add({
 });
 ```
 
-`artifactHydration: 'live'` is intentionally opt-in because it transfers the canonical live Artifact snapshot, including transient legacy adapters, into that activity renderer. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot. Plugins must not parse legacy project roots inside the activity window.
+`artifactHydration: 'live'` is intentionally opt-in because it transfers the canonical live Artifact snapshot, including transient legacy adapters, into that activity renderer. Core reconciles that snapshot with self-contained legacy `project.datasets`, so an empty or incomplete live snapshot cannot erase recoverable legacy source data. Reused live-hydration windows also refresh when only the Artifact digest changes, without remounting the plugin. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot. Plugins must not parse legacy project roots inside the activity window.
 
 ## Core-owned workbench import action (Plugin API 1.14)
 

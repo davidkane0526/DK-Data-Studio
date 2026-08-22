@@ -13,7 +13,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.data-center",
       "name": "Data Center",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",
@@ -113,7 +113,8 @@ window.DKDS_BUILTIN_PLUGINS = [
           "shared-views.js",
           "feature-runtime.js",
           "super-layout.js"
-        ]
+        ],
+        "artifactHydration": "live"
       },
       "workspace": {
         "role": "top",
