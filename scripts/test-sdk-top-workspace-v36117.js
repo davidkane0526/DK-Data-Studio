@@ -60,4 +60,4 @@ assert(types.includes('list(options?:{consumer?:string;pluginId?:string}):DKDSDa
 const sdkReadme=read('sdk/README.md');
 assert(sdkReadme.includes('A **true TOP workbench** must keep four contracts aligned')&&sdkReadme.includes('minmax(0, 1fr)'),'SDK guide must document true TOP and bounded scientific layout contracts.');
 assert(read('sdk/TOP_WORKSPACES.md').includes('Workbench is not TOP')&&read('sdk/TOP_WORKSPACES.md').includes('bounded height chain'),'SDK must ship a dedicated TOP workspace authoring guide.');
-console.log('v3.61.17 external TOP workspace + bounded scientific layout + SDK authoring contract checks passed.');
+console.log('v3.61.18 external TOP workspace + bounded scientific layout + SDK authoring contract checks passed.');

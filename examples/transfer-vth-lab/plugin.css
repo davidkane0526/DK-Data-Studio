@@ -4,7 +4,7 @@
 .dkds-vth-card{background:var(--panel,#fff);border:1px solid var(--line,#dfe5ef);border-radius:9px;padding:10px;box-sizing:border-box}
 .dkds-vth-card h3{margin:0 0 9px;font-size:13px}
 .dkds-vth-field{display:grid;gap:4px;margin:8px 0}.dkds-vth-field label{font-size:11px;color:var(--muted,#687386)}
-.dkds-vth-field input,.dkds-vth-field select{width:100%;min-width:0;height:31px;box-sizing:border-box}
+.dkds-vth-field input,.dkds-vth-field select{width:100%;min-width:0;height:31px;box-sizing:border-box;border:1px solid var(--line,#cfd7e5);border-radius:6px;padding:4px 7px;background:var(--panel,#fff);color:var(--text,#344054);font:inherit;font-size:11px;outline:none}.dkds-vth-field input:hover,.dkds-vth-field select:hover{border-color:color-mix(in srgb,var(--accent,#315efb) 30%,var(--line,#cfd7e5))}.dkds-vth-field input:focus,.dkds-vth-field select:focus{border-color:var(--accent,#315efb);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent,#315efb) 14%,transparent)}
 .dkds-vth-check{display:flex;align-items:center;gap:7px;font-size:12px;margin-top:8px}.dkds-vth-check input{width:auto;height:auto}
 .dkds-vth-hint{margin:8px 0 0;color:var(--muted,#7a8495);font-size:11px;line-height:1.45}
 .dkds-vth-source-badge{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:999px;background:#eef3fb;color:#4f6078;font-size:11px}

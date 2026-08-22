@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.17','Application version must be 3.61.17.');
+assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
 
 // Execute the real Data Center feature module, then drive Core events. v3.61.12
 // failed this lifecycle with `ReferenceError: dom is not defined`; its earlier

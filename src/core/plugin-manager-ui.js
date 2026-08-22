@@ -92,7 +92,7 @@
     algorithm:{label:'算法',description:'可版本化科学算法 Provider；可被任意兼容分析插件调用。'},
     workbench:{label:'分析工作台',description:'面向具体分析任务的 TOP/页面插件，交互由统一 SDK 与基座提供。'},
     task:{label:'任务与自动化',description:'批处理、后台任务、自动化流程与可复用任务执行器。'},
-    tool:{label:'工具',description:'轻量通用工具与辅助功能；入口统一出现在顶部“工具”菜单。'},
+    tool:{label:'工具',description:'工具类工作区与 TOP 使用相同窗口/工作区契约；入口统一收纳在顶部“工具”菜单。'},
     extension:{label:'其他扩展',description:'不属于上述类型的通用扩展能力。'},
     developer:{label:'开发与示例',description:'SDK 示例、开发辅助与验证插件。'}
   };

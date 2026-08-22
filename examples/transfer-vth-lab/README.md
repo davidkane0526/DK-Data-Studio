@@ -1,4 +1,4 @@
-# Transfer Curve Vth Lab 3.0.0
+# Transfer Curve Vth Lab 3.0.1 3.0.0
 
 A Plugin API 1.15 external TOP workbench reference implementation.
 
@@ -10,3 +10,10 @@ A Plugin API 1.15 external TOP workbench reference implementation.
 - Uses `ScientificPlot` for plotting and the Algorithm Registry for Vth extraction.
 
 - The log-current checkbox selects the Core ScientificPlot display scale (`yScaleType: "log"`); the plugin does not pre-transform data with a private `log10()` view.
+
+
+## 3.0.1
+
+- Dedicated TOP declares the D3 runtime required by `ctx.ui.scientificPlot.create(...)`.
+- Core-owned import is forwarded from the dedicated window to the owner project window.
+- Raw numeric controls follow the host field visual contract.

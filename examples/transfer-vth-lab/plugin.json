@@ -1,7 +1,7 @@
 {
   "id": "com.dkds.transfer-vth-lab",
   "name": "Transfer Curve Vth Lab",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "apiVersion": "1.15.0",
   "entry": "plugin.js",
   "scripts": [
@@ -60,7 +60,7 @@
     "minWidth": 900,
     "minHeight": 620,
     "dependencies": [
-      "plotly",
+      "d3",
       "data-model"
     ],
     "prewarm": false,
@@ -87,7 +87,7 @@
     }
   ],
   "compatibility": {
-    "app": ">=3.61.17 <4.0.0",
+    "app": ">=3.61.18 <4.0.0",
     "pluginApi": "^1.15.0"
   }
 }

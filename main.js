@@ -889,6 +889,20 @@ app.whenReady().then(() => {
       final: true
     });
   });
+  ipcMain.on('windows:requestImportWorkbench', (event, payload={}) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    if (owner.isMinimized()) owner.restore();
+    owner.show();owner.focus();
+    owner.webContents.send('windows:requestImportWorkbench', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      options: payload?.options && typeof payload.options === 'object' ? payload.options : payload || {}
+    });
+  });
   ipcMain.on('windows:ownerArtifactDelta', (event, payload={}) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
     const ownerId = owner?.webContents?.id;

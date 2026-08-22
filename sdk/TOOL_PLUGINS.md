@@ -1,47 +1,117 @@
-# 工具类插件（Plugin API 1.15）
+# Tool Workspaces — Plugin API 1.15
 
-工具类插件用于提供轻量、跨工作台的通用命令，例如数据清理、单位转换、批处理辅助、文本/路径工具或其他不需要独立分析工作台的功能。
+工具（`pluginType: "tool"`）现在是与 TOP 工作台并列的正式 UI 分类。
 
-## Manifest
+**当前版本刻意不定义额外的工具语义。** 一个拥有界面的 Tool Workspace 与 TOP 使用相同的 workspace/window/activity 生命周期；当前唯一宿主级区别是入口分类：
+
+- TOP 工作区显示在 TOP/Activity 区域；
+- Tool Workspace 收纳到应用顶部 **“工具”** 按钮中；
+- Tool 被提升为 SUPER 时，仍复用同一份工作区实现；
+- 后续如果工具类需要新的专用能力，再扩展本文件，不要求插件现在提前实现假设性的工具契约。
+
+## 1. Tool Workspace
+
+推荐的新工具插件形式与 TOP 完全相同，只把 `pluginType` 改为 `tool`：
 
 ```json
 {
   "pluginType": "tool",
-  "apiVersion": "1.15.0",
-  "requiresCore": ["ui.menus"]
+  "workspace": {
+    "role": "top",
+    "activity": "my-tool"
+  },
+  "window": {
+    "activity": "my-tool",
+    "reuse": true,
+    "persistence": "project"
+  }
 }
 ```
 
-`pluginType: "tool"` 是正式插件类别。Core 会为工具类插件提供默认图标，并把其菜单贡献统一归入应用顶部的“工具”下拉菜单。
-
-## 注册工具动作
-
-工具插件应注册命令，再把命令贡献给 Core 菜单：
+运行时同样注册 Activity 与 TopWorkspace：
 
 ```js
-ctx.commands.register('com.example.tool.run', () => {
-  // 执行工具逻辑
+ctx.ui.activities.add({
+  id: 'my-tool',
+  label: 'My Tool',
+  openMode: 'window',
+  onActivate: () => ctx.workspace.openPage('myToolPage')
 });
 
-ctx.ui.menus.add({
-  id: 'run',
-  label: '运行工具',
-  command: 'com.example.tool.run'
+ctx.ui.topWorkspace.register({
+  id: 'my-tool',
+  activity: 'my-tool',
+  layout: {
+    mode: 'native',
+    root: { selector: '#myToolPage .dkds-plugin-workspace' },
+    primary: { id: 'main', role: 'analysis-primary' },
+    prime: [],
+    sub: []
+  }
 });
 ```
 
-工具插件不需要自行创建顶层“工具”按钮，也不应直接操作顶部工具栏 DOM。对于 `pluginType: "tool"`，省略 `menu` 时 `ctx.ui.menus.add()` 默认进入顶部“工具”菜单。
+Core 会自动把这个工作区的打开入口放到顶部 **工具** 菜单，而不是 TOP 标签栏。插件不要自行创建全局“工具”按钮。
 
-## 与 Workbench / Algorithm 的区别
+Tool Workspace 使用与 [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md) 相同的独立窗口、Artifact hydration、PluginWorkspace、ScientificPlot、TableSurface、Project Slice、Data Sources 等公开契约。
 
-- `tool`：轻量通用工具，通过顶部“工具”菜单调用。
-- `workbench`：有独立分析工作区，通常消费指定类型的数据 Artifact。
-- `algorithm`：提供可版本化科学算法 Provider，本身不要求拥有 UI。
+## 2. 数据与导入
 
-工具插件如需调用算法，应通过 `ctx.analysis.algorithms` 使用已注册 Provider，而不是复制算法实现。
+工具是否消费工程数据由插件自己决定。需要数据时可像 TOP 一样声明：
 
-## 默认图标
+```json
+"data": { "accepts": ["science.transport.iv"] }
+```
 
-插件可声明自己的 `icon`。未声明时 Core 根据 `pluginType` 自动提供默认 icon；因此默认 icon 不是插件安装或运行的必填项。
+并通过：
 
-完整示例见 `sdk/templates/tool-plugin/`。
+```js
+const rows = ctx.data.sources.list();
+const artifact = ctx.data.artifacts.get(rows[0]?.artifactId);
+```
+
+读取分配给工具的工程数据。若声明 `data.accepts` 并提供 `workbench-import` slot，Core 可以提供标准导入入口；工具不应创建私有文件选择器。
+
+## 3. 图形与布局
+
+Tool Workspace 与 TOP 使用相同的 bounded-layout 规则。填充窗口的图形推荐：
+
+```js
+const workspace = ctx.ui.pluginWorkspace.create(host, {
+  primaryScroll: 'contained'
+});
+```
+
+CSS 高度链必须包含 `height:100%` / `min-height:0`，图形所在 grid row 使用 `minmax(0, 1fr)`。不要使用 intrinsic-height parent + `minmax(<positive px>, 1fr)` 的自增长组合。
+
+依赖也必须由独立窗口显式声明：
+
+- `ctx.ui.scientificPlot.create(...)` 是 Core D3 ScientificCurveSurface，声明 `"d3"`；
+- `ctx.ui.scientificPlot.react(...)` / `createPlotly(...)` 声明 `"plotly"`。
+
+SDK validator 会检查这些依赖。
+
+## 4. Command-only Tool
+
+仍保留轻量 command-only 工具作为兼容/简化形式。此类插件不声明 `workspace.role: "top"`，通过：
+
+```js
+ctx.commands.register('com.example.tool.run', () => {});
+ctx.ui.menus.add({ id:'run', label:'运行工具', command:'com.example.tool.run' });
+```
+
+直接向 **工具** 菜单贡献动作。
+
+这只是 Tool 的轻量形式，不是 Tool Workspace 的不同宿主等级。
+
+## 5. SDK 校验
+
+对拥有 `workspace.role: "top"` 的 Tool，SDK 使用与 TOP 相同的机器校验：
+
+- `workspace.activity` 与 `window.activity` 必须一致；
+- 必须声明 `workspace`、`ui.activities`、`ui.top-workspace`；
+- 必须调用 `ctx.ui.activities.add(...)` 与 `ctx.ui.topWorkspace.register(...)`；
+- Activity 必须 `openMode: "window"`；
+- 独立窗口中的 ScientificPlot 依赖必须明确声明。
+
+默认模板见 `sdk/templates/tool-plugin/`。

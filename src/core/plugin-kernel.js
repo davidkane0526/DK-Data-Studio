@@ -541,13 +541,23 @@
     const mount=document.querySelector('#activityBar');
     const primaryMount=document.querySelector('#primaryActivityBar');
     const overflow=document.querySelector('#activityMoreMenu');
+    const toolsMenu=document.querySelector('#pluginToolsMenu');
     if(!mount)return;
     const rows=activityRows().filter(row=>String(row.value?.navigation||'')!=='system');
     mount.innerHTML='';
     if(primaryMount)primaryMount.innerHTML='';
     if(overflow)overflow.innerHTML='';
+    toolsMenu?.querySelectorAll?.('[data-tool-workspace-entry]')?.forEach?.(el=>el.remove());
     for(const row of rows){
       const spec=row.value||{};
+      const definition=definitionById(row.pluginId);
+      const toolWorkspace=pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'&&row.pluginId!==superPluginId&&!host?.isAuxiliaryWindow;
+      if(toolWorkspace&&toolsMenu){
+        const toolButton=document.createElement('button');toolButton.type='button';toolButton.className='plugin-menu-item';toolButton.dataset.toolWorkspaceEntry='1';toolButton.dataset.pluginId=row.pluginId;toolButton.dataset.pluginOrder=String(Number(spec.order)||100);toolButton.title=spec.title||spec.description||spec.label||spec.id;toolButton.innerHTML=`${spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:''}<span>${spec.label||spec.id}</span>`;
+        toolButton.onclick=async()=>{try{const opened=await host?.openActivityWindow?.(spec.id);if(opened===false)host?.setStatus?.(`工具 ${spec.label||spec.id} 未能打开。`);}catch(err){console.error(`[DKDS tool-window:${spec.id}]`,err);host?.setStatus?.(`工具 ${spec.label||spec.id} 打开失败：${err.message||err}`);}};
+        toolsMenu.appendChild(toolButton);
+        continue;
+      }
       const button=document.createElement('button');
       button.type='button';
       button.className='activity-tab';
@@ -579,6 +589,7 @@
       const target=(spec.primary&&primaryMount)?primaryMount:mount;
       target.appendChild(button);
     }
+    if(toolsMenu){sortButtons(toolsMenu);refreshToolMenuPresentation();}
     queueMicrotask(reflowActivities);
   }
 
@@ -1244,9 +1255,10 @@
   }
 
   function workbenchImportMeta(manifest={}){
-    if(pluginTypeForManifest(manifest)!=='workbench')return null;
+    const type=pluginTypeForManifest(manifest),workspace=workspaceMeta(manifest);
     const accepts=Array.isArray(manifest?.data?.accepts)?manifest.data.accepts.map(String).filter(Boolean):[];
-    return {accepts,label:String(workspaceMeta(manifest).title||manifest.name||manifest.id||'当前工作台'),icon:String(workspaceMeta(manifest).icon||defaultPluginIcon(manifest))};
+    if(type!=='workbench'&&!(type==='tool'&&workspace.role==='top'&&accepts.length))return null;
+    return {accepts,label:String(workspace.title||manifest.name||manifest.id||'当前工作台'),icon:String(workspace.icon||defaultPluginIcon(manifest))};
   }
 
   function mountWorkbenchImportAction(pluginId,page,pageActivity,manifest,spec={}){

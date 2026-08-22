@@ -44,7 +44,8 @@
     loading:false,
     fileDialogOpen:false,
     targets:null,
-    scope:null
+    scope:null,
+    selectionAnchorPath:null
   };
 
   function importActiveItem(){
@@ -438,7 +439,7 @@
       title:title||`项目 ${n}`,
       datasets:[],
       artifactStore:window.DKDSData.createStore(),
-      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null},
+      importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null},
       pluginState:{},
       projectPath:null,
       trendColumns:loadTrendColumnsPreference(),
@@ -485,8 +486,9 @@
     state.artifactStore=t.artifactStore||window.DKDSData.createStore();
     t.artifactStore=state.artifactStore;
     syncDatasetArtifacts({emit:false});
-    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null};
+    importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null};
     if(!Object.prototype.hasOwnProperty.call(importDraft,'targets'))importDraft.targets=null;
+    if(!Object.prototype.hasOwnProperty.call(importDraft,'selectionAnchorPath'))importDraft.selectionAnchorPath=null;
     importDraft.scope=null;
     t.importDraft=importDraft;
     state.projectPath=t.projectPath||null;
@@ -813,6 +815,23 @@
     $('#importPanel').classList.add('hidden');
   }
 
+  function importFileIndex(path){return importDraft.files.findIndex(item=>String(item.path)===String(path));}
+
+  function setImportCheckedRange(fromPath,toPath,checked=true){
+    const from=importFileIndex(fromPath),to=importFileIndex(toPath);if(from<0||to<0)return false;
+    const lo=Math.min(from,to),hi=Math.max(from,to);for(let i=lo;i<=hi;i++)importDraft.files[i].checked=!!checked;return true;
+  }
+
+  function invertImportChecked(){for(const item of importDraft.files)item.checked=!item.checked;renderImportWorkbench();}
+
+  function handleImportListShortcut(event){
+    if($('#importPanel')?.classList.contains('hidden'))return;
+    if(event.target?.closest?.('input,select,textarea,[contenteditable="true"]')&&event.target?.id!=='importFileList')return;
+    const mod=event.ctrlKey||event.metaKey,key=String(event.key||'').toLowerCase();
+    if(mod&&key==='a'){event.preventDefault();importDraft.files.forEach(f=>f.checked=true);renderImportWorkbench();}
+    else if(mod&&key==='i'){event.preventDefault();invertImportChecked();}
+  }
+
   function renderImportFileList(){
     const host=$('#importFileList');
     if(!host)return;
@@ -835,11 +854,19 @@
         </div>`;
       el.querySelector('input').onclick=e=>{
         e.stopPropagation();
-        item.checked=e.target.checked;
-        renderImportGlobalSummary();
-      };
-      el.onclick=()=>{
+        const next=!!e.target.checked;
+        if(e.shiftKey&&importDraft.selectionAnchorPath)setImportCheckedRange(importDraft.selectionAnchorPath,item.path,next);
+        else item.checked=next;
+        importDraft.selectionAnchorPath=item.path;
         importDraft.activePath=item.path;
+        renderImportWorkbench();
+      };
+      el.onclick=e=>{
+        const additive=!!(e.ctrlKey||e.metaKey),range=!!e.shiftKey;
+        importDraft.activePath=item.path;
+        if(range&&importDraft.selectionAnchorPath)setImportCheckedRange(importDraft.selectionAnchorPath,item.path,true);
+        else if(additive)item.checked=!item.checked;
+        if(!range)importDraft.selectionAnchorPath=item.path;
         renderImportWorkbench();
       };
       host.appendChild(el);
@@ -1104,7 +1131,7 @@
       };
       recomputeImportItem(item,true);
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
-      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null};
+      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path};
       renderImportWorkbench();
 
       const checkbox=$('#importFileList input[type="checkbox"]');
@@ -1303,6 +1330,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       importDraft.activePath=null;
       importDraft.targets=null;
       importDraft.scope=null;
+      importDraft.selectionAnchorPath=null;
       closeImportWorkbench();
       setStatus(`导入完成：${reports.join('；')}。`);
     }catch(err){
@@ -2210,7 +2238,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.17',
+      version:'3.61.18',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2639,11 +2667,14 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   $('#importCancelBtn').onclick=closeImportWorkbench;
   $('#importCommitBtn').onclick=commitImportWorkbench;
   $('#importCheckAllBtn').onclick=()=>{importDraft.files.forEach(f=>f.checked=true);renderImportWorkbench();};
+  $('#importInvertBtn').onclick=invertImportChecked;
   $('#importUncheckAllBtn').onclick=()=>{importDraft.files.forEach(f=>f.checked=false);renderImportWorkbench();};
+  $('#importFileList')?.addEventListener('keydown',handleImportListShortcut);
   $('#importRemoveBtn').onclick=()=>{
     const active=importActiveItem();
     if(!active)return;
     importDraft.files=importDraft.files.filter(f=>f.path!==active.path);
+    if(importDraft.selectionAnchorPath===active.path)importDraft.selectionAnchorPath=null;
     importDraft.activePath=importDraft.files[0]?.path||null;
     renderImportWorkbench();
   };
@@ -3056,7 +3087,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.17',
+      appVersion:'3.61.18',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3153,6 +3184,11 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     mountProjectTab(initialTab);
 
     window.electronAPI?.onOwnerProjectSaveRequest?.(payload=>{applyActivityProjectSnapshot(payload);saveProject();});
+    window.electronAPI?.onOwnerImportWorkbenchRequest?.(payload=>{
+      const tabId=String(payload?.projectTabId||'');
+      if(tabId&&tabId!==state.activeProjectTabId&&state.projectTabs.some(tab=>tab.id===tabId))switchProjectTab(tabId);
+      openImportWorkbench(payload?.options&&typeof payload.options==='object'?payload.options:{});
+    });
     window.electronAPI?.onActivityProjectSnapshot?.(applyActivityProjectSnapshot);
     window.electronAPI?.onActivityWindowFailed?.(payload=>{
       const activity=String(payload?.activityId||'插件工作区');

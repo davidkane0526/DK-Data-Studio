@@ -11,7 +11,7 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.17</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.18</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -226,9 +226,11 @@
         <div class="import-workbench-body">
           <aside class="import-file-pane">
             <div class="import-pane-title">待导入文件</div>
-            <div id="importFileList" class="import-file-list"></div>
+            <div class="import-selection-hint">Shift 连选 · Ctrl/Cmd+A 全选 · Ctrl/Cmd+I 反选</div>
+            <div id="importFileList" class="import-file-list" tabindex="0" aria-label="待导入文件列表"></div>
             <div class="import-file-actions">
               <button id="importCheckAllBtn">全选</button>
+              <button id="importInvertBtn">反选</button>
               <button id="importUncheckAllBtn">全不选</button>
               <button id="importRemoveBtn">移除</button>
             </div>

@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.17
+# DK Data Studio — v3.61.18
+
+
+## v3.61.18 数据选择、独立窗口导入与 Tool Workspace SDK
+
+- 数据中心无有效 DataTable 时会立即清理旧图，不再残留上一份工程的预览。
+- 数据中心与导入工作台加入 Shift 连选、Ctrl/Cmd 多选/切换、全选、反选等常用选择操作。
+- 独立 TOP 的 Core-owned “导入数据”现在会正确转发到所属主工程窗口。
+- Transfer Vth Lab 3.0.1 修复独立窗口缺少 D3 导致的空图，并统一数值输入控件视觉。
+- SDK 新增/重写 Tool Workspace 规范：当前与 TOP 共用同一 workspace/window 生命周期，只在宿主入口分类上进入“工具”按钮；后续工具专属语义再增量扩展。
 
 ## v3.61.17 Vth 真 TOP 工作台与 SDK TOP 契约收口
 

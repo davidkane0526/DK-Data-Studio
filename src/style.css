@@ -788,6 +788,7 @@ button.danger-soft{
   overflow:auto;
   padding:7px;
 }
+.import-selection-hint{padding:5px 8px;border-bottom:1px solid var(--line,#e4e8ef);font-size:9px;color:var(--muted,#7a8495);background:var(--panel,#fff)}
 .import-file-item{
   padding:8px 8px;
   border:1px solid transparent;

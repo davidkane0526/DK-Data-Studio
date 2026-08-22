@@ -1,5 +1,7 @@
-# SDK Tool Example
+# SDK Tool Workspace Example
 
-A Plugin API 1.15 `tool` plugin. Tool plugins do not create their own top-level shell button. Register Commands and add actions through `ctx.ui.menus.add(...)`; Core places them under the global **工具** menu.
+Reference `pluginType: "tool"` workspace for Plugin API 1.15.
 
-Validate/package with `sdk/tools/dkds-plugin.js`.
+It intentionally uses the same machine contract as a TOP workspace (`workspace.role: "top"`, matching dedicated `window`, `openMode: "window"`, `ctx.ui.topWorkspace.register`). Core distinguishes it only by presentation: the opener is grouped under the global **工具** button instead of the TOP activity strip.
+
+No additional Tool-only semantics are required in the current SDK. See `sdk/TOOL_PLUGINS.md`.

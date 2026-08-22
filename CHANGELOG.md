@@ -1,3 +1,14 @@
+# v3.61.18 — Data Selection / Dedicated Import / Tool Workspace SDK
+
+- Data Center clears/purges stale chart state immediately when no valid DataTable remains.
+- Data Center adds Shift range selection, Ctrl/Cmd additive selection, Select All / Invert / Clear and keyboard shortcuts.
+- Import Workbench adds Shift range checking, Ctrl/Cmd toggle, Ctrl/Cmd+A, Ctrl/Cmd+I and an explicit Invert action.
+- Dedicated TOP windows can forward the Core-owned Import Workbench action back to the owning project window.
+- Transfer Vth Lab 3.0.1 declares the D3 ScientificCurveSurface dependency and aligns raw numeric controls with host field styling.
+- Tool Workspace is now documented and validated as a TOP-equivalent workspace lifecycle whose opener is grouped under the Core Tools button. Command-only Tools remain supported.
+- SDK validator now checks ScientificPlot runtime dependencies for dedicated workspaces.
+- Data Center moves to 1.13.4. Plugin API remains 1.15.0. Automation Runner moves to 1.21.0.
+
 # v3.61.17 — External Vth TOP / SDK TOP Contract
 
 - Rebuild the external Transfer Vth Lab reference as a real TOP workbench: manifest TOP workspace + matching dedicated window + `openMode: window` Activity + one shared `topWorkspace` layout.

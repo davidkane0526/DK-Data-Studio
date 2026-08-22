@@ -5,7 +5,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.12 or newer for the full Plugin API 1.15 contract. Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.18 or newer for the complete current Plugin API 1.15 contract (including Tool Workspace routing and dedicated-window Core Import forwarding). Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -15,10 +15,10 @@ Copy one template directory and change the plugin id/name/version.
 sdk/templates/workspace-plugin/     standalone workbench activity example (not TOP)
 sdk/templates/top-workspace-plugin/ true TOP + dedicated-window workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
-sdk/templates/tool-plugin/           lightweight tool / top Tools-menu example
+sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent lifecycle, Tools-menu entry)
 ```
 
-For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md).
+For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
 The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.15.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
 
@@ -30,16 +30,9 @@ Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`
 
 ## Tool plugins (Plugin API 1.15)
 
-Use `pluginType: "tool"` for lightweight reusable utilities that do not need a dedicated analysis workbench. Core owns the top-level **工具** button. A tool plugin registers Commands and contributes one or more menu actions through `ctx.ui.menus.add(...)`; for a `tool` plugin the default menu is automatically `tools`, so the plugin must not add its own top-level shell button.
+`pluginType: "tool"` is a host category parallel to TOP workbenches. A **Tool Workspace** uses the same `workspace.role: "top"` + dedicated `window` + `ctx.ui.activities` + `ctx.ui.topWorkspace` contract as TOP; Core simply places its opener under the global **工具** button instead of the TOP activity strip. No additional Tool-only semantics are imposed yet.
 
-```js
-ctx.commands.register('com.example.tool.run', () => {
-  // utility logic
-});
-ctx.ui.menus.add({ id:'run', label:'示例工具', command:'com.example.tool.run' });
-```
-
-A tool may use public data/artifact, table, chart, settings, clipboard, or service APIs as declared in `requiresCore`, but it must not bypass Core lifecycle or create private global menus. See `sdk/templates/tool-plugin/`.
+Command-only tools remain supported as a lightweight form through `ctx.ui.menus.add(...)`. See [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md) and `sdk/templates/tool-plugin/`.
 
 ## Core display-scale interaction
 

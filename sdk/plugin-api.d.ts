@@ -12,6 +12,7 @@ export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactI
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
   id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};

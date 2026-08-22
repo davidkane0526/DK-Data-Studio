@@ -56,36 +56,40 @@ function validate(folder){
   const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
   for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.15 development contract`);
-  if(m.pluginType==='tool'){
-    if(!declared.has('ui.menus'))errors.push('Tool plugins must declare ui.menus so Core can place them in the top Tools menu.');
-    if(!/ctx\.ui\.menus\.add\s*\(/.test(source))errors.push('Tool plugins must contribute at least one action through ctx.ui.menus.add(...).');
+  const topWorkspace=m?.workspace?.role==='top';
+  if(m.pluginType==='tool'&&!topWorkspace){
+    if(!declared.has('ui.menus'))errors.push('Command-only Tool plugins must declare ui.menus so Core can place them in the top Tools menu.');
+    if(!/ctx\.ui\.menus\.add\s*\(/.test(source))errors.push('Command-only Tool plugins must contribute at least one action through ctx.ui.menus.add(...).');
   }
-  if(m.pluginType==='workbench'){
+  if(m.pluginType==='workbench'||(m.pluginType==='tool'&&topWorkspace)){
     const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
-    if(!accepts.length)errors.push('Plugin API 1.15 workbenches must declare data.accepts so Core can route the standard import action.');
-    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workbench import UI is Core-owned in Plugin API 1.15; do not invoke ctx.data.importWorkbench from workbench UI.');
-    if(/<input[^>]+type=[\"']?file/i.test(source))errors.push('Workbench plugins must not create file inputs; use the Core-owned workbench import action.');
+    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.15 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.15; do not invoke ctx.data.importWorkbench from plugin UI.');
+    if(/<input[^>]+type=["']?file/i.test(source))errors.push('Workspace plugins must not create file inputs; use the Core-owned import action.');
 
-    const top=m?.workspace?.role==='top';
     const workspaceActivity=String(m?.workspace?.activity||'').trim();
     const windowActivity=String(m?.window?.activity||'').trim();
-    if(top){
-      if(!workspaceActivity)errors.push('TOP workbenches must declare workspace.activity.');
-      else if(!pluginId(workspaceActivity))errors.push(`invalid TOP workspace.activity: ${workspaceActivity}`);
-      if(!m.window||typeof m.window!=='object')errors.push('TOP workbenches must declare a dedicated window contract.');
-      else if(!windowActivity)errors.push('TOP workbenches must declare window.activity.');
-      else if(!pluginId(windowActivity))errors.push(`invalid TOP window.activity: ${windowActivity}`);
-      else if(workspaceActivity!==windowActivity)errors.push(`TOP workspace.activity (${workspaceActivity}) must match window.activity (${windowActivity}).`);
-      if(!declared.has('workspace'))errors.push('TOP workbenches must declare workspace so their activity can open its page in embedded/SUPER and dedicated hosts.');
-      if(!declared.has('ui.activities'))errors.push('TOP workbenches must declare ui.activities.');
-      if(!declared.has('ui.top-workspace'))errors.push('TOP workbenches must declare ui.top-workspace.');
-      if(!/ctx\.ui\.activities\.add\s*\(/.test(source))errors.push('TOP workbenches must register their activity through ctx.ui.activities.add(...).');
-      if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push('TOP workbenches must register their workspace through ctx.ui.topWorkspace.register(...).');
-      if(!/openMode\s*:\s*[\"']window[\"']/.test(source))errors.push('TOP workbench activity must use openMode: "window"; Core embeds it automatically only when promoted to SUPER.');
+    if(topWorkspace){
+      const label=m.pluginType==='tool'?'Tool workspace':'TOP workbench';
+      if(!workspaceActivity)errors.push(`${label} must declare workspace.activity.`);
+      else if(!pluginId(workspaceActivity))errors.push(`invalid workspace.activity: ${workspaceActivity}`);
+      if(!m.window||typeof m.window!=='object')errors.push(`${label} must declare a dedicated window contract.`);
+      else if(!windowActivity)errors.push(`${label} must declare window.activity.`);
+      else if(!pluginId(windowActivity))errors.push(`invalid window.activity: ${windowActivity}`);
+      else if(workspaceActivity!==windowActivity)errors.push(`workspace.activity (${workspaceActivity}) must match window.activity (${windowActivity}).`);
+      if(!declared.has('workspace'))errors.push(`${label} must declare workspace.`);
+      if(!declared.has('ui.activities'))errors.push(`${label} must declare ui.activities.`);
+      if(!declared.has('ui.top-workspace'))errors.push(`${label} must declare ui.top-workspace.`);
+      if(!/ctx\.ui\.activities\.add\s*\(/.test(source))errors.push(`${label} must register its activity through ctx.ui.activities.add(...).`);
+      if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push(`${label} must register its workspace through ctx.ui.topWorkspace.register(...).`);
+      if(!/openMode\s*:\s*["']window["']/.test(source))errors.push(`${label} activity must use openMode: "window".`);
     }else if(m.window&&typeof m.window==='object'){
       errors.push('A Plugin API 1.15 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
     }
   }
+  const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);
+  if(/ctx\.ui\.scientificPlot\.create\s*\(/.test(source)&&m?.window&&topWorkspace&&!windowDependencies.has('d3'))errors.push('Dedicated workspace using ctx.ui.scientificPlot.create(...) must declare "d3" in window.dependencies.');
+  if(/ctx\.ui\.scientificPlot\.(?:react|createPlotly)\s*\(/.test(source)&&m?.window&&topWorkspace&&!windowDependencies.has('plotly'))errors.push('Dedicated workspace using Plotly ScientificPlot APIs must declare "plotly" in window.dependencies.');
 
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){

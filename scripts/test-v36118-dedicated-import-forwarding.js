@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+const preload=read('preload.js'),main=read('main.js'),runtime=read('src/plugin-window/runtime.js'),app=read('src/app.js');
+assert(preload.includes("requestOwnerImportWorkbench: payload => ipcRenderer.send('windows:requestImportWorkbench'"),'Preload must expose the dedicated-window import request.');
+assert(preload.includes('onOwnerImportWorkbenchRequest'),'Owner window must receive import requests through preload.');
+assert(main.includes("ipcMain.on('windows:requestImportWorkbench'"),'Main process must route dedicated-window import requests.');
+assert(main.includes("owner.webContents.send('windows:requestImportWorkbench'"),'Main process must forward import requests to the owning renderer.');
+assert(runtime.includes('openImportWorkbench:options=>'),'Dedicated plugin host must implement the Core openImportWorkbench contract.');
+assert(runtime.includes('requestOwnerImportWorkbench'),'Dedicated host import must forward rather than create private file UI.');
+assert(app.includes('onOwnerImportWorkbenchRequest')&&app.includes('openImportWorkbench(payload?.options'),'Owner renderer must open the Core Import Workbench.');
+assert(app.includes('switchProjectTab(tabId)'),'Import forwarding must resolve the owning project tab before opening the workbench.');
+console.log('v3.61.18 dedicated TOP Core-owned import forwarding contract passed.');

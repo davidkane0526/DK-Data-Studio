@@ -37,7 +37,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   const apiVersion = String(sourceManifest.apiVersion || '1.0.0').trim();
   const entry = normalizeRelativeFile(sourceManifest.entry || 'plugin.js');
   const pluginType=String(sourceManifest.pluginType||'extension').trim().toLowerCase();
-  const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','extension','developer']);
+  const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','extension','developer']);
   if(!pluginTypes.has(pluginType))throw new Error(`Unsupported pluginType: ${sourceManifest.pluginType}`);
   const algorithmProvider=sourceManifest.algorithmProvider===true;
   if(sourceManifest.algorithmProvider!==undefined&&typeof sourceManifest.algorithmProvider!=='boolean')throw new Error('Plugin manifest.algorithmProvider must be boolean.');

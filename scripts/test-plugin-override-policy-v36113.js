@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const policy=require(path.join(root,'plugin-override-policy'));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert(pkg.version==='3.61.17','Application version must be 3.61.17.');
+assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
 
 const builtins=[
   {manifest:{id:'builtin.data-center',version:'1.13.2'}},
@@ -14,14 +14,14 @@ const builtins=[
 const overrides=[
   {manifest:{id:'builtin.data-center',version:'1.12.0'},token:'older'},
   {manifest:{id:'builtin.data-center',version:'1.13.2'},token:'same'},
-  {manifest:{id:'builtin.data-center',version:'1.13.3'},token:'newer'},
+  {manifest:{id:'builtin.data-center',version:'1.13.4'},token:'newer'},
   {manifest:{id:'builtin.ter-analysis',version:'3.9.9'},token:'old-ter'}
 ];
 const classified=policy.classify(overrides,builtins);
 assert(classified.active.length===1&&classified.active[0].token==='newer','Only a strictly newer trusted built-in override may shadow bundled code.');
 assert(classified.shadowed.length===3,'Older or equal built-in overrides must be retained only as shadowed diagnostics.');
 assert(classified.shadowed.every(row=>row.effective===false&&row.shadowedByBuiltinVersion),'Shadowed overrides must explain which bundled version won.');
-assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.3'}},'1.13.2')===true,'Newer override version must be accepted.');
+assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.4'}},'1.13.2')===true,'Newer override version must be accepted.');
 assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.2'}},'1.13.2')===false,'Equal override version must not shadow bundled code.');
 assert(policy.isNewerThanBuiltin({manifest:{version:'1.12.9'}},'1.13.2')===false,'Older override version must not shadow bundled code.');
 

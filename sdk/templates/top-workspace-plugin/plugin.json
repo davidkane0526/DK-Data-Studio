@@ -48,7 +48,7 @@
     "minWidth": 860,
     "minHeight": 560,
     "dependencies": [
-      "plotly"
+      "d3"
     ],
     "prewarm": false,
     "reuse": true,
@@ -61,7 +61,7 @@
     ]
   },
   "compatibility": {
-    "app": ">=3.61.17 <4.0.0",
+    "app": ">=3.61.18 <4.0.0",
     "pluginApi": "^1.15.0"
   }
 }

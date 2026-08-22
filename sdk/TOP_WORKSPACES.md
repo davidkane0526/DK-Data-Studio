@@ -110,6 +110,16 @@ Avoid this pattern for a fill-height/responsive plot:
 
 Core coalesces resize work, but a plugin must still provide a mathematically bounded CSS layout.
 
+
+### ScientificPlot runtime dependencies
+
+Dedicated windows load only manifest-declared chart runtimes. Declare the runtime used by the public API:
+
+- `ctx.ui.scientificPlot.create(...)` -> `"d3"` (Core `ScientificCurveSurface`);
+- `ctx.ui.scientificPlot.react(...)` / `createPlotly(...)` -> `"plotly"`.
+
+The SDK validator rejects a dedicated workspace that uses one of these APIs without its runtime dependency.
+
 ## 4. Scientific display scale
 
 Use the Core ScientificPlot display contract instead of pre-transforming plot data solely for display:

@@ -525,11 +525,17 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.17',
+      appVersion:'3.61.18',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
       openActivityWindow:()=>false,
+      openImportWorkbench:options=>{
+        if(!window.electronAPI?.requestOwnerImportWorkbench)return false;
+        window.electronAPI.requestOwnerImportWorkbench({options:clone(options||{})});
+        setStatus('已在主窗口打开数据导入工作台。');
+        return true;
+      },
       getState:()=>pluginRuntime?.getState?.() || project,
       getActiveProjectTab:()=>({id:bootstrap?.projectTabId||'plugin-window', title:bootstrap?.title||'', pluginState:project.plugins||{}}),
       captureActiveProjectTab:scheduleSnapshot,

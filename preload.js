@@ -27,10 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
   pushActivityArtifactDelta: payload => ipcRenderer.send('windows:ownerArtifactDelta', payload || {}),
   requestOwnerProjectSave: payload => ipcRenderer.send('windows:requestProjectSave', payload || {}),
+  requestOwnerImportWorkbench: payload => ipcRenderer.send('windows:requestImportWorkbench', payload || {}),
   onOwnerProjectSaveRequest: callback => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('windows:requestProjectSave', handler);
     return () => ipcRenderer.removeListener('windows:requestProjectSave', handler);
+  },
+  onOwnerImportWorkbenchRequest: callback => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('windows:requestImportWorkbench', handler);
+    return () => ipcRenderer.removeListener('windows:requestImportWorkbench', handler);
   },
   onOwnerArtifactDelta: callback => {
     const handler = (_event, payload) => callback(payload);

@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.17','Application version must be 3.61.17.');
+assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
 
 const modules=new Map();
 const sandbox={
@@ -37,6 +37,7 @@ class FakeNode{
   querySelectorAll(){return [];}
   appendChild(node){this.children.push(node);return node;}
   before(){} closest(){return new FakeNode('closest');} remove(){} replaceChildren(...nodes){this.children=[...nodes];}
+  addEventListener(){} removeEventListener(){}
   getBoundingClientRect(){return {left:0,bottom:0};}
 }
 
@@ -56,17 +57,18 @@ const state={schema:1,activeArtifactId:null,recipeName:'我的工作流',steps:[
 const stateStore={get:()=>state,subscribe:()=>noop};
 const controller={store:stateStore,getState:()=>state,interaction:{bindView:()=>({dispose:noop})},select:noop};
 const providers=[];
-let reactCalls=0,lastTraces=null,lastLayout=null,lastSpec=null,resizeCalls=0;
+let reactCalls=0,lastTraces=null,lastLayout=null,lastSpec=null,resizeCalls=0,purgeCalls=0;
+let artifactRows=[artifact];
 const D={
   deepClone:value=>JSON.parse(JSON.stringify(value)),summarize:value=>({rows:value?.rowCount??0,columns:value?.columns?.length??0,provenance:value?.provenance?.length??0}),
   column:(table,key)=>(table?.columns||[]).find(c=>c.key===key)||null,isArtifact:value=>!!value?.kind,hashString:value=>String(value)
 };
 const defaults=(schema,initial={})=>{const out=JSON.parse(JSON.stringify(initial||{}));for(const field of schema?.fields||[])if(out[field.id]===undefined&&field.default!==undefined)out[field.id]=JSON.parse(JSON.stringify(field.default));return out;};
 const ctx={
-  data:{model:D,formula:{},sources:{targets:()=>[]},entities:{projectArtifact:noop},artifacts:{list:()=>[artifact],get:id=>id===artifact.id?artifact:null,revision:()=>7,lineage:()=>({descendants:[]}),syncLegacy:noop}},
+  data:{model:D,formula:{},sources:{targets:()=>[]},entities:{projectArtifact:noop},artifacts:{list:()=>artifactRows.slice(),get:id=>artifactRows.find(row=>row.id===id)||null,revision:()=>7,lineage:()=>({descendants:[]}),syncLegacy:noop}},
   ui:{
     activities:{add:noop},pages:{add:()=>page},dom:{create:()=>new FakeNode('created'),frame:fn=>fn?.()},actions:{mount:noop},topWorkspace:{register:noop},plotViews:{bind:noop},portable:{create:noop},styles:{add:noop},
-    scientificPlot:{react:async(_container,traces,layout,_config,spec)=>{reactCalls+=1;lastTraces=traces;lastLayout=layout;lastSpec=spec;return {ok:true};},resize:()=>{resizeCalls+=1;},get:()=>null},
+    scientificPlot:{purge:()=>{purgeCalls+=1;return true;},react:async(_container,traces,layout,_config,spec)=>{reactCalls+=1;lastTraces=traces;lastLayout=layout;lastSpec=spec;return {ok:true};},resize:()=>{resizeCalls+=1;},get:()=>null},
     interactionBehaviors:{create:()=>({bind:noop})},tables:{bind:noop},contextMenus:{open:()=>null}
   },
   workflow:{processors:{register:noop,list:()=>[]},analyzers:{register:noop,list:()=>[]},recipes:{register:noop,list:()=>[]},buildSequentialRecipe:()=>({})},
@@ -91,6 +93,9 @@ const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
   assert(lastLayout?.xaxis?.title?.includes('Vd'),'Preview X axis must be bound to Vd.');
   assert(lastSpec?.renderKey?.includes(artifact.id),'Preview must use a stable ScientificPlot render key.');
   assert(resizeCalls>0,'Completed preview rendering must schedule a resize pass.');
+  artifactRows=[];changed({type:'replace'});await Promise.resolve();await Promise.resolve();
+  assert(purgeCalls>0,'Removing the last DataTable must purge the stale chart renderer.');
+  assert(String(page.querySelector('#dcChart').innerHTML).includes('选择 DataTable'),'Empty Data Center must replace the old chart with an empty-state message.');
   mounted.deactivate();
-  console.log('v3.61.17 Data Center automatic chart preview + stale parameter repair passed.');
+  console.log('v3.61.18 Data Center automatic chart preview + stale parameter repair passed.');
 })().catch(err=>{console.error(err?.stack||err);process.exit(2);});
