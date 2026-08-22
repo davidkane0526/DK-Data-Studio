@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.27
+# DK Data Studio — v3.61.28
+
+## v3.61.28 Tool 窗口布局与单页导航收敛
+
+- 顶部“工具”下拉菜单改为内容自适应宽度，Tool 图标与文字保持紧凑左对齐，不再继承带快捷键菜单的固定最小宽度与两端对齐。
+- PluginWorkspace 只有一个 Primary 页面且没有 PRIME/SUB 时默认隐藏无意义的单按钮导航条；确有需要可通过 `navigation: "always"` 强制显示。
+- 独立插件窗口只保留 AnalysisPage 对固定状态栏的一次 28 px viewport 预留，移除 `body padding-bottom + #app calc(...)` 的重复避让，消除插件页面与状态栏之间的额外空带。
+- SDK Tool 模板同步采用单页无冗余导航的写法，并公开 `navigation: auto | always | hidden`。
+- 对用户提供的 Pulse Sampler 1.0.0 诊断确认：空白 ScientificPlot 与局部裁剪来自插件自身 CSS 的尺寸矛盾（250 px plot row < `minHeight:260`）和固定 Grid/裁剪组合，不是 ScientificPlot 数据链或 SDK 定义故障；另提供 1.0.1 布局修正版。
+- 新增 `test-v36128-tool-window-layout.js` 并纳入完整 `npm test` / `npm run check`。Plugin API 保持 `1.15.0`。
+
 
 
 ## v3.61.27 Tool 安装同步契约与原生暗色窗口修复

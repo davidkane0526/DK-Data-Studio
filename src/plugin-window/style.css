@@ -1,6 +1,6 @@
 html,body,#app{width:100%;height:100%;margin:0;overflow:hidden}
-body.plugin-window-host{background:var(--bg);padding-bottom:28px}
-body.plugin-window-host #app{height:calc(100vh - 28px);min-height:0}
+body.plugin-window-host{background:var(--bg);padding:0}
+body.plugin-window-host #app{height:100vh;min-height:0}
 body.plugin-window-host .analysis-page{
   top:0!important;
   bottom:28px!important;
@@ -37,7 +37,7 @@ body.plugin-window-host{
   background:var(--bg,#f6f8fb);
 }
 body.plugin-window-host #app{background:var(--bg,#f6f8fb)}
-body.plugin-window-host .analysis-page-body{background:var(--bg,#f6f8fb)}
+body.plugin-window-host .analysis-page-body{background:var(--bg,#f6f8fb);padding-bottom:12px}
 .plugin-window-status{font-size:var(--ui-font-small,11px);background:var(--surface-primary);color:var(--text-tertiary);border-top:1px solid var(--border-subtle)}
 .plugin-window-error strong{font-size:var(--ui-font-page-title,18px)}
 .plugin-window-error span{font-size:var(--ui-font-small,11px)}

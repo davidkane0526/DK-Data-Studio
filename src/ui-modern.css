@@ -1,4 +1,4 @@
-/* DK Data Studio v3.61.27 · ordered modern visual layer
+/* DK Data Studio v3.61.28 · ordered modern visual layer
    Scope: visual treatment only. No Plotly internal DOM selectors and no layout geometry overrides. */
 :root{
   --dkui-canvas:#eef4fb;
@@ -678,6 +678,24 @@ body.dkds-modern-ui .plugin-type-badge{
 }
 body.dkds-modern-ui .plugin-type-badge.type-tool{background:#eaf7f0;border-color:#c8ead8;color:#148253}
 body.dkds-modern-ui .tool-workspace-menu-item .activity-icon{color:var(--dkui-accent)}
+/* Tool menus are content-sized. Generic command menus reserve room for shortcut
+   hints, but a tools list is icon + label only and should not stretch them apart. */
+body.dkds-modern-ui #pluginToolsMenu{
+  width:max-content;
+  min-width:0;
+  max-width:min(360px,calc(100vw - 16px));
+}
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item{
+  width:100%;
+  min-width:0;
+  justify-content:flex-start;
+  gap:7px;
+}
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item>.activity-icon{
+  flex:0 0 auto;
+  min-width:14px;
+  text-align:center;
+}
 
 /* Status details float above the app without changing the footer layout. */
 body.dkds-modern-ui .dkds-memory-panel{

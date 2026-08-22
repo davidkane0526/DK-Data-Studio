@@ -1,3 +1,12 @@
+# v3.61.28 — Tool Window Layout & Single-Primary Navigation
+
+- Make the top Tools dropdown content-sized and left-packed so icon/label spacing stays compact instead of inheriting shortcut-menu width.
+- Auto-hide PluginWorkspace navigation when the workspace has only one Primary destination; `navigation: "always"` remains available when a plugin intentionally wants the strip.
+- Remove duplicate dedicated-window status-bar reservation so AnalysisPage is the single viewport owner above the fixed 28 px status bar.
+- Document the PluginWorkspace navigation policy in the SDK and update the Tool template to avoid teaching a redundant `工具` Primary label.
+- Add v3.61.28 regression coverage for Tool-menu sizing, single-Primary navigation and dedicated-window viewport/status-bar geometry.
+- Plugin API remains 1.15.0; the supplied Pulse Sampler 1.0.0 additionally needs a plugin-side bounded-layout correction because its 250 px waveform row is smaller than its own ScientificPlot `minHeight: 260`.
+
 # v3.61.27 — Tool Install Sync Contract & Native Dark Window Chrome
 
 - Fix the real external Tool install/activation failure `sources is not iterable`: `ctx.data.sources.list()` remains a synchronous SDK read in the owner renderer through a Core local capability proxy, while dedicated plugin windows continue to use the synchronous snapshot bridge.

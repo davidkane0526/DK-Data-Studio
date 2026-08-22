@@ -1,13 +1,20 @@
-# Next Session Handoff — v3.61.27 plugin theme / reusable window stabilization
+# Next Session Handoff — v3.61.28 Tool window/layout stabilization
 
 ## Baseline
 
-- Application: `3.61.27`; current changes refine the scoped modern visual system, enforce Shell z-order, add shared appearance/runtime memory inspection, and make Tool-plugin menus deterministic without changing scientific/data contracts.
-- Runtime/scientific behavior baseline: `3.61.27` (scientific algorithms/data semantics unchanged from v3.61.22).
-- Current branch: `feat/v3.61.27-tool-install-native-theme`.
+- Application: `3.61.28`; current changes compact the Tool dropdown, remove redundant single-Primary navigation, and correct dedicated plugin-window/status-bar viewport geometry without changing scientific/data contracts.
+- Runtime/scientific behavior baseline: `3.61.28` (scientific algorithms/data semantics unchanged from v3.61.22).
+- Current branch: `feat/v3.61.28-tool-window-layout`.
 - Public Plugin API / standalone SDK: `1.15.0`.
 - Architecture phase: **feature complete / release candidate / stabilization**.
 - Architecture is frozen unless a real P0/P1 issue proves a boundary is wrong.
+
+
+## v3.61.28 Tool diagnosis
+
+- `com.dkds.tools.pulse-sampler@1.0.0` is a valid Tool/TOP package, but its own layout sets the waveform row to a 250 px minimum while asking Core ScientificPlot for `minHeight:260`; Core therefore waits for sufficient layout and the plot remains visually blank. The plugin also combines fixed grid sizing with clipped cards, which can hide lower controls. A 1.0.1 layout-only correction was produced separately.
+- Core-side fixes are intentionally generic: content-sized Tool menu, auto-hidden single-Primary nav, and exactly one dedicated-window status-bar reservation.
+- SDK bounded-layout guidance was already correct; v3.61.28 only improves the Tool template/navigation ergonomics.
 
 ## Core architecture
 

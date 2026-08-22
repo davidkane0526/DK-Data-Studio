@@ -80,6 +80,8 @@ Tool Workspace 与 TOP 使用相同的 bounded-layout 规则。填充窗口的�
 const workspace = ctx.ui.pluginWorkspace.create(host, {
   primaryScroll: 'contained'
 });
+
+当 Tool 只有一个 Primary 页面时，Core 默认隐藏没有导航价值的单按钮导航条。若工具确实需要始终显示该导航条，可显式传入 `navigation: "always"`；也可使用 `navigation: "hidden"` 强制隐藏。
 ```
 
 CSS 高度链必须包含 `height:100%` / `min-height:0`，图形所在 grid row 使用 `minmax(0, 1fr)`。不要使用 intrinsic-height parent + `minmax(<positive px>, 1fr)` 的自增长组合。

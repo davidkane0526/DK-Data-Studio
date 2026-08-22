@@ -1848,7 +1848,13 @@
       if(this.primary&&primaryHost){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
       for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.title='PRIME：可嵌入、固定或悬浮';b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
       for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-sub-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost?.appendChild(b);}
-      const nav=this.shell.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('empty',!(primaryHost?.children.length||primeHost?.children.length||subHost?.children.length));
+      const nav=this.shell.querySelector('.dkds-analysis-nav');
+      if(nav){
+        const primaryCount=primaryHost?.children.length||0,primeCount=primeHost?.children.length||0,subCount=subHost?.children.length||0,total=primaryCount+primeCount+subCount;
+        const mode=String(this.spec.navigation||this.spec.navigationMode||'auto').toLowerCase();
+        const redundantSinglePrimary=total===1&&primaryCount===1;
+        nav.classList.toggle('empty',mode==='hidden'||total===0||(mode!=='always'&&redundantSinglePrimary));
+      }
     }
     primeHome(row){
       if(row.inlineHost){const el=resolveElement(row.inlineHost,this.shell)||resolveElement(row.inlineHost,this.root);if(el)return el;}

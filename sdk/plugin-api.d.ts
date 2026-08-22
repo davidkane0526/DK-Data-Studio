@@ -63,6 +63,8 @@ export interface DKDSInteractionBehaviorProfile { add(binding:DKDSInteractionBeh
 export interface DKDSInteractionBehaviorRuntime { create(id:string,spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; compile(spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; get(id:string):DKDSInteractionBehaviorProfile|null; gestures:readonly DKDSInteractionGesture[]; intents:readonly string[] }
 export interface DKDSActivitySpec { id:string; label?:string; contextLabel?:string; icon?:string; order?:number; default?:boolean; primary?:boolean; openMode?:'window'|'page'; navigation?:'primary'|'system'|'hidden'|string; artifactHydration?:'project'|'live'; description?:string; onActivate?:(context?:any)=>any }
 export interface DKDSPluginWorkspaceCreateSpec {
+  /** Navigation is auto-hidden when Primary is the only destination. */
+  navigation?:'auto'|'always'|'hidden';
   id?:string; activity?:string; title?:string; subtitle?:string; header?:boolean; closable?:boolean; hostMode?:'embedded'|'dedicated'|string;
   primaryScroll?:'auto'|'contained'; canvasLeftWidth?:number; canvasLeftMin?:number; canvasLeftReserve?:number; canvasRightWidth?:number; canvasRightMin?:number; canvasRightReserve?:number; canvasBottomHeight?:number; canvasBottomMin?:number; canvasBottomReserve?:number;
 }
