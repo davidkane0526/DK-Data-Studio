@@ -1,3 +1,7 @@
-# SDK Workspace Example
+# SDK Standalone Workbench Example
 
-A minimal installable UI plugin using only Plugin API 1.9. Validate/package it with `sdk/tools/dkds-plugin.js`.
+This template is a **standalone workbench activity**, not a TOP and not a dedicated window. `pluginType: "workbench"` describes the plugin category only.
+
+Use `sdk/templates/top-workspace-plugin/` when the plugin must be a true TOP that normally opens in its own window and can be promoted to SUPER.
+
+Validate/package with `sdk/tools/dkds-plugin.js`.

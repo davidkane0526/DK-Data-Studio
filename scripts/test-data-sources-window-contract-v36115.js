@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.16','Application version must be 3.61.16.');
+assert(json('package.json').version==='3.61.17','Application version must be 3.61.17.');
 
 // The public Plugin API documents list()/targets() as synchronous reads. A raw
 // remote capability proxy is async, so dedicated TOP windows need a synchronized
@@ -29,7 +29,7 @@ assert(kernel.includes("descriptor?.remote===true"),'Local main-window data sour
 assert(kernel.includes("rename:pluginType==='data'||pluginType==='foundation'")&&kernel.includes("remove:pluginType==='data'||pluginType==='foundation'"),'Foundation/data plugins must receive the host-owned source management methods promised to Data Center.');
 
 const automation=read('src/core/automation-test-runtime.js');
-assert(automation.includes("const VERSION='1.20.0'"),'Automation runner must identify the v3.61.16 contract diagnostics.');
+assert(automation.includes("const VERSION='1.20.0'"),'Automation runner must identify the v3.61.17 contract diagnostics.');
 assert(automation.includes('currentProjectPayload.capabilitySnapshot'),'Current-project Data Center smoke must use the same synchronized capability snapshot as real TOP windows.');
 
 const pluginWindow=read('src/plugin-window/runtime.js');
@@ -79,5 +79,5 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
   assert(!(observed.rows&&typeof observed.rows.then==='function')&&!(observed.targets&&typeof observed.targets.then==='function'),'Dedicated TOP source reads must not leak Promise semantics into the Plugin API.');
   assert(observed.write&&typeof observed.write.then==='function','Remote source mutations must remain asynchronous IPC operations.');
   await observed.write;
-  console.log('v3.61.16 dedicated TOP data.sources synchronous-read contract checks passed.');
+  console.log('v3.61.17 dedicated TOP data.sources synchronous-read contract checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

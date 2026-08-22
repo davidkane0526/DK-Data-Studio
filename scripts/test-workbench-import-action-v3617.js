@@ -15,7 +15,7 @@ const pulsePlugin=read('src/plugins/pulse-analysis/plugin.js');
 const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('scripts/check-plugin-boundaries.js');
 
-assert(pkg.version==='3.61.16','Application version must be 3.61.16.');
+assert(pkg.version==='3.61.17','Application version must be 3.61.17.');
 assert(contract.pluginApiVersion==='1.15.0'&&contract.minimumAppVersion==='3.61.12','Current SDK contract must require app 3.61.12 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');

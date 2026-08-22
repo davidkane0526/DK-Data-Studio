@@ -328,5 +328,48 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "pluginType": {
+            "const": "workbench"
+          },
+          "workspace": {
+            "properties": {
+              "role": {
+                "const": "top"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          }
+        },
+        "required": [
+          "pluginType",
+          "workspace"
+        ]
+      },
+      "then": {
+        "required": [
+          "window"
+        ],
+        "properties": {
+          "workspace": {
+            "required": [
+              "role",
+              "activity"
+            ]
+          },
+          "window": {
+            "required": [
+              "activity"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }

@@ -1,4 +1,16 @@
-# DK Data Studio — v3.61.16
+# DK Data Studio — v3.61.17
+
+## v3.61.17 Vth 真 TOP 工作台与 SDK TOP 契约收口
+
+- 将外部示例 `com.dkds.transfer-vth-lab` 重写为真正的 Plugin API 1.15 TOP：`workspace.role=top`、独立 `window`、`openMode=window` 与 `ctx.ui.topWorkspace.register()` 使用同一个 activity。正常状态打开独立窗口，只有晋升为 SUPER 时才嵌入主窗口。
+- Vth 不再自建导入流程。它声明 `data.accepts`，由 Core 提供标准“导入数据”动作；数据通过 Data Center/工程级 assignment 统一管理，插件只同步读取 `ctx.data.sources` 与 `ctx.data.artifacts`。
+- Vth 改为 `PluginWorkspace(primaryScroll: contained)` 与全链路 `height:100%; min-height:0` 的受限布局，图形所在网格使用 `minmax(0,1fr)`，消除示例图在 ResizeObserver/ScientificPlot 循环中不断向下增长的问题。
+- Vth 对数电流显示改用 Core ScientificPlot 的 `yScaleType=log`，不再在插件里先做私有 `log10()` 视图变换。
+- SDK 新增 `top-workspace-plugin` 模板，并明确区分“普通 workbench activity”和“真正 TOP”。validator 会拒绝缺少独立 window、activity 不一致、未注册 TOP workspace 或 activity 未声明 `openMode: window` 的伪 TOP 插件。
+- SDK TypeScript 声明补全 `PluginWorkspace` / `TopWorkspace`，正式暴露 `primaryScroll: contained`；`ctx.data.sources.list()/targets()` 明确为所有宿主一致的同步读取契约。
+- 修复 `plugin-window-manager` 未把 manifest `window.artifactHydration` 带入归一化 Window Spec 的遗漏，使内置与外部 TOP 都能真正依赖机器可读 hydration 契约。
+- Plugin API 仍为 `1.15.0`；这是 SDK 规范与 Core Window Spec 完整性修复，不增加新的 API 大版本。
+
 
 ## v3.61.16 Data Center 图形预览与依赖整理
 

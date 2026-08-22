@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.16','Application version must be 3.61.16.');
+assert(pkg.version==='3.61.17','Application version must be 3.61.17.');
 
 const modules=new Map();
 const sandbox={
@@ -92,5 +92,5 @@ const views={pageHtml:()=>'',attach:()=>({registerPrime:noop})};
   assert(lastSpec?.renderKey?.includes(artifact.id),'Preview must use a stable ScientificPlot render key.');
   assert(resizeCalls>0,'Completed preview rendering must schedule a resize pass.');
   mounted.deactivate();
-  console.log('v3.61.16 Data Center automatic chart preview + stale parameter repair passed.');
+  console.log('v3.61.17 Data Center automatic chart preview + stale parameter repair passed.');
 })().catch(err=>{console.error(err?.stack||err);process.exit(2);});

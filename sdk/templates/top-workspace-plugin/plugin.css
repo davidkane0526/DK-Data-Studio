@@ -1,0 +1,5 @@
+.sdk-top-workbench{width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
+.sdk-top-main{width:100%;height:100%;min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;overflow:hidden;padding:10px;box-sizing:border-box}
+.sdk-top-summary{font-size:11px;color:var(--text-secondary,#667085)}
+.sdk-top-plot{width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
+.sdk-top-subtitle{font-size:10px;color:var(--text-secondary,#667085)}

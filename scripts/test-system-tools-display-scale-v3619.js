@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
-assert(json('package.json').version==='3.61.16','Application version must be v3.61.16.');
+assert(json('package.json').version==='3.61.17','Application version must be v3.61.17.');
 assert(json('sdk/contract.json').pluginApiVersion==='1.15.0','Standalone SDK must publish Plugin API 1.15.');
 assert(json('sdk/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'SDK manifest schema must expose the tool plugin category.');
 assert(json('docs/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'Application manifest schema must accept tool plugins.');

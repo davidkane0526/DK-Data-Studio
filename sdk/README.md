@@ -12,10 +12,13 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 Copy one template directory and change the plugin id/name/version.
 
 ```text
-sdk/templates/workspace-plugin/     full UI/workbench example
+sdk/templates/workspace-plugin/     standalone workbench activity example (not TOP)
+sdk/templates/top-workspace-plugin/ true TOP + dedicated-window workbench example
 sdk/templates/algorithm-provider/   versioned scientific algorithm example
 sdk/templates/tool-plugin/           lightweight tool / top Tools-menu example
 ```
+
+For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md).
 
 The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.15.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
 
@@ -90,9 +93,24 @@ The deprecated marker/FWHM-named callbacks remain only as a compatibility adapte
 
 ### Workbench navigation, icons and scoped project data
 
-Plugin API 1.13 treats a `pluginType: "workbench"` page with no explicit TOP/SUPPORT workspace role as a standalone primary activity by default. `ctx.ui.pages.add(...)` therefore creates a top-level activity instead of a contextual button unless the plugin explicitly requests `presentation: "toolbar"`. An explicit manifest/page icon is optional; Core supplies a stable category default icon.
+`pluginType: "workbench"` describes a UI/analysis plugin category; it does **not** make the plugin a TOP. A workbench with no explicit `workspace.role: "top"` is a standalone activity hosted by the main shell and does not own a dedicated TOP window. Use `sdk/templates/workspace-plugin/` for that simpler case.
 
-Use `ctx.data.sources` for imported project sources. Workbench plugins receive a scoped read view automatically, so `list()` returns only sources assigned to that workbench. Physical data remains canonical and is stored once; assignments are many-to-many. Import/Data Center own assignment changes, avoiding one importer per analysis plugin and avoiding unrelated workbench data pollution.
+A **true TOP workbench** must keep four contracts aligned:
+
+1. Manifest: `workspace.role: "top"` with a stable `workspace.activity`.
+2. Manifest: a dedicated `window` whose `activity` exactly matches `workspace.activity`.
+3. Runtime: `ctx.ui.activities.add({ id: <activity>, openMode: "window", ... })`.
+4. Runtime: `ctx.ui.topWorkspace.register({ activity: <activity>, ... })`.
+
+Core then gives the plugin the same host semantics as built-in TOPs: normally it opens in a reusable dedicated window; when promoted to SUPER, the same activity/layout is embedded in the main shell instead of creating a second implementation. Plugin API 1.15 validation rejects incomplete or mismatched TOP contracts. Start from `sdk/templates/top-workspace-plugin/`.
+
+Use `ctx.data.sources` for imported project sources. Workbench plugins receive a scoped read view automatically, so `list()` and `targets()` are synchronous reads in every host, including dedicated TOP windows. Physical data remains canonical and is stored once; assignments are many-to-many. Import/Data Center own assignment changes, avoiding one importer per analysis plugin and avoiding unrelated workbench data pollution.
+
+#### Bounded scientific layout
+
+Viewport-owned scientific charts must live in a bounded layout. Prefer `ctx.ui.pluginWorkspace.create(host, { primaryScroll: "contained" })` and `mountPrimary({ scroll: "contained" })`. Every CSS ancestor between the workspace and a fill-height plot should use a definite/bounded height plus `min-height: 0`; grid rows that own a chart should normally use `minmax(0, 1fr)`.
+
+Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. This is a plugin layout error; Core coalesces resize work but does not reinterpret an unbounded CSS layout.
 
 `ctx.ui.scientificPlot.create(target, spec)` accepts either an SVG element or an ordinary container. For a normal container Core creates and owns the internal SVG, sizing and lifecycle. Plugins should not create private D3/SVG interaction infrastructure.
 
@@ -179,18 +197,17 @@ The plugin must not place custom content in that slot. If the slot is absent, Co
 
 ## Project source-data lifecycle (Plugin API 1.13)
 
-Imported file lifetime and physical storage are owned by the project host, not by an analysis workbench. A workbench reads its assigned source catalog through the scoped `ctx.data.sources` API and opens the centralized importer through `ctx.data.importWorkbench`:
+Imported file lifetime and physical storage are owned by the project host, not by an analysis workbench. A workbench reads its assigned source catalog through the scoped `ctx.data.sources` API; the visible import action itself is mounted and opened by Core:
 
 ```js
-const rows = ctx.data.sources.list();
+const rows = ctx.data.sources.list(); // synchronous scoped read
 
-// Open the shared Import Workbench with this workbench preselected as consumer.
-ctx.data.importWorkbench.open();
-
-// Remove only this workbench's assignment; the physical source remains available
-// to other workbenches and Data Center.
-ctx.data.sources.detach({ artifactId: rows[0].artifactId });
+// Optional: remove only this workbench's assignment. The physical source remains
+// available to other workbenches and Data Center.
+await ctx.data.sources.detach({ artifactId: rows[0].artifactId });
 ```
+
+New workbench UI must not call `ctx.data.importWorkbench.open()` directly. Declare `data.accepts` and provide the empty `workbench-import` slot (or let Core place the action automatically).
 
 A `data` or `foundation` plugin may manage global assignments through `ctx.data.sources.setAssignments(...)`. Ordinary workbenches cannot mutate another workbench's assignment. Physical source deletion is a Data Center / host action because deletion also removes dependent Artifact lineage.
 

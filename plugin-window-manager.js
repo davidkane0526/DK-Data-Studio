@@ -44,6 +44,12 @@ const CORE_REQUIREMENT_WINDOW_DEPENDENCIES = Object.freeze({
 
 
 const WINDOW_PERSISTENCE_MODES = new Set(['project','memory','none']);
+const WINDOW_ARTIFACT_HYDRATION_MODES = new Set(['project','live']);
+function normalizeArtifactHydration(value) {
+  const mode=String(value||'project').trim().toLowerCase();
+  if(!WINDOW_ARTIFACT_HYDRATION_MODES.has(mode))throw new Error(`Unsupported plugin window artifact hydration mode: ${mode||'(empty)'}`);
+  return mode;
+}
 function normalizePersistence(value) {
   const mode = String(value || 'project').trim().toLowerCase();
   if (!WINDOW_PERSISTENCE_MODES.has(mode)) {
@@ -201,6 +207,7 @@ function readBuiltinPluginWindows(appPath) {
           prewarm:windowSpec.prewarm !== false,
           reuse:windowSpec.reuse !== false,
           persistence:normalizePersistence(windowSpec.persistence),
+          artifactHydration:normalizeArtifactHydration(windowSpec.artifactHydration),
           width:finiteDimension(windowSpec.width,1480),
           height:finiteDimension(windowSpec.height,940),
           minWidth:finiteDimension(windowSpec.minWidth,920),
@@ -266,6 +273,7 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     prewarm:windowSpec.prewarm!==false,
     reuse:windowSpec.reuse!==false,
     persistence:normalizePersistence(windowSpec.persistence),
+    artifactHydration:normalizeArtifactHydration(windowSpec.artifactHydration),
     width:finiteDimension(windowSpec.width,1480),
     height:finiteDimension(windowSpec.height,940),
     minWidth:finiteDimension(windowSpec.minWidth,920),
@@ -347,11 +355,13 @@ function resolvePluginWindow(appPath, activityId, externalPackages=[], overrideP
 module.exports = {
   ALLOWED_WINDOW_DEPENDENCIES,
   WINDOW_PERSISTENCE_MODES,
+  WINDOW_ARTIFACT_HYDRATION_MODES,
   normalizeAlgorithmCategories,
   resolveAlgorithmProviders,
   attachAlgorithmProviders,
   normalizeDependencies,
   normalizePersistence,
+  normalizeArtifactHydration,
   normalizePackagedPluginWindow,
   normalizeExternalPluginWindow,
   normalizeOverridePluginWindow,

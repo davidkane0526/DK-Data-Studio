@@ -53,7 +53,7 @@ Limits are enforced before installation:
 - only text files are accepted;
 - file count and total package size are bounded;
 - the declared Plugin API must be compatible with the v1 API family.
-- new SDK packages target `1.14.0`; existing `1.10.0`, `1.11.0`, `1.12.0`, and `1.13.0` packages remain accepted for compatibility.
+- new SDK packages target `1.15.0`; existing `1.10.0`–`1.14.0` packages remain accepted for compatibility.
 
 ## Build a package
 
@@ -76,7 +76,7 @@ node sdk/tools/dkds-plugin.js validate my-plugin
 node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
 ```
 
-The distributable SDK contains the manifest schema, API declarations, validator/packager and workspace/algorithm templates.
+The distributable SDK contains the manifest schema, API declarations, validator/packager, standalone-workbench, true-TOP-workbench, tool and algorithm templates. For a dedicated TOP start from `sdk/templates/top-workspace-plugin/` and read `sdk/TOP_WORKSPACES.md`.
 
 The folder must contain `plugin.json` and its declared source/style files.
 
@@ -248,3 +248,9 @@ A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...
 `icon` is optional in the manifest. Core provides a category default icon when neither `manifest.icon` nor `workspace.icon` is supplied.
 
 Imported project data is stored once and assigned to zero, one, or multiple analysis workbenches. New plugins should require `data.sources` and read sources through `ctx.data.sources.list()`. A workbench receives its own scoped view automatically. Source assignment is centralized in Import/Data Center rather than implemented by each plugin.
+
+### True TOP workbench contract (Plugin API 1.15)
+
+A workbench does not become TOP merely because it uses `AnalysisWorkbench`/`PluginWorkspace`. A true TOP must declare `workspace.role: "top"`, a matching dedicated `window.activity`, register an Activity with `openMode: "window"`, and register one `ctx.ui.topWorkspace` layout. Core uses that same implementation in a dedicated window or, when promoted, as SUPER in the main shell. The standalone SDK validator rejects incomplete/mismatched TOP packages.
+
+Viewport-owned scientific plots in TOP workbenches should use `PluginWorkspace(primaryScroll: "contained")` and a bounded CSS height chain (`height:100%; min-height:0`, with chart rows such as `minmax(0,1fr)`). Do not use an intrinsic-height parent plus a positive-minimum `1fr` responsive chart; that can create a ResizeObserver feedback loop.

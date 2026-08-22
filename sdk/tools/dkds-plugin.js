@@ -13,6 +13,8 @@ const API=contract.pluginApiVersion;
 function die(message){console.error(`DKDS SDK ERROR: ${message}`);process.exit(2);}
 function pluginId(value){return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(value||''));}
 function version(value){return /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(String(value||''));}
+function stable(value){if(Array.isArray(value))return value.map(stable);if(value&&typeof value==='object'){const out={};for(const key of Object.keys(value).sort())out[key]=stable(value[key]);return out;}return value;}
+function same(a,b){return JSON.stringify(stable(a))===JSON.stringify(stable(b));}
 function relFile(raw){
   const value=String(raw||'').replace(/\\/g,'/').trim();
   if(!value||value.startsWith('/')||/^[A-Za-z]:\//.test(value))throw new Error(`invalid file path: ${raw}`);
@@ -63,7 +65,28 @@ function validate(folder){
     if(!accepts.length)errors.push('Plugin API 1.15 workbenches must declare data.accepts so Core can route the standard import action.');
     if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workbench import UI is Core-owned in Plugin API 1.15; do not invoke ctx.data.importWorkbench from workbench UI.');
     if(/<input[^>]+type=[\"']?file/i.test(source))errors.push('Workbench plugins must not create file inputs; use the Core-owned workbench import action.');
+
+    const top=m?.workspace?.role==='top';
+    const workspaceActivity=String(m?.workspace?.activity||'').trim();
+    const windowActivity=String(m?.window?.activity||'').trim();
+    if(top){
+      if(!workspaceActivity)errors.push('TOP workbenches must declare workspace.activity.');
+      else if(!pluginId(workspaceActivity))errors.push(`invalid TOP workspace.activity: ${workspaceActivity}`);
+      if(!m.window||typeof m.window!=='object')errors.push('TOP workbenches must declare a dedicated window contract.');
+      else if(!windowActivity)errors.push('TOP workbenches must declare window.activity.');
+      else if(!pluginId(windowActivity))errors.push(`invalid TOP window.activity: ${windowActivity}`);
+      else if(workspaceActivity!==windowActivity)errors.push(`TOP workspace.activity (${workspaceActivity}) must match window.activity (${windowActivity}).`);
+      if(!declared.has('workspace'))errors.push('TOP workbenches must declare workspace so their activity can open its page in embedded/SUPER and dedicated hosts.');
+      if(!declared.has('ui.activities'))errors.push('TOP workbenches must declare ui.activities.');
+      if(!declared.has('ui.top-workspace'))errors.push('TOP workbenches must declare ui.top-workspace.');
+      if(!/ctx\.ui\.activities\.add\s*\(/.test(source))errors.push('TOP workbenches must register their activity through ctx.ui.activities.add(...).');
+      if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push('TOP workbenches must register their workspace through ctx.ui.topWorkspace.register(...).');
+      if(!/openMode\s*:\s*[\"']window[\"']/.test(source))errors.push('TOP workbench activity must use openMode: "window"; Core embeds it automatically only when promoted to SUPER.');
+    }else if(m.window&&typeof m.window==='object'){
+      errors.push('A Plugin API 1.15 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
+    }
   }
+
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){
     try{
@@ -71,7 +94,7 @@ function validate(folder){
       if(!runtime)errors.push('entry did not call DKDSPlugins.define(...)');
       else {
         for(const key of ['id','name','version','apiVersion','pluginType'])if(String(runtime[key]??'')!==String(m[key]??''))errors.push(`runtime manifest ${key} does not match plugin.json`);
-        for(const key of ['requiresCore','algorithmCategories','algorithmProvides','compatibility','pluginDependencies'])if(JSON.stringify(runtime[key]??(Array.isArray(m[key])?[]:null))!==JSON.stringify(m[key]??(Array.isArray(runtime[key])?[]:null)))errors.push(`runtime manifest ${key} does not match plugin.json`);
+        for(const key of ['requiresCore','capabilities','workspace','window','data','algorithmCategories','algorithmProvides','compatibility','pluginDependencies'])if(!same(runtime[key]??(Array.isArray(m[key])?[]:null),m[key]??(Array.isArray(runtime[key])?[]:null)))errors.push(`runtime manifest ${key} does not match plugin.json`);
         if(Boolean(runtime.algorithmProvider)!==Boolean(m.algorithmProvider))errors.push('runtime manifest algorithmProvider does not match plugin.json');
       }
     }catch(e){errors.push(`cannot evaluate entry manifest: ${e.message}`);}

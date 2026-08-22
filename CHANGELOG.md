@@ -1,3 +1,14 @@
+# v3.61.17 — External Vth TOP / SDK TOP Contract
+
+- Rebuild the external Transfer Vth Lab reference as a real TOP workbench: manifest TOP workspace + matching dedicated window + `openMode: window` Activity + one shared `topWorkspace` layout.
+- Route Vth imports through the Core-owned scoped workbench import action and consume only assigned `data.sources` / `data.artifacts`; no private file picker or plugin-local dataset copy is introduced.
+- Bound the Vth scientific layout with `PluginWorkspace(primaryScroll: contained)`, `height:100%`, `min-height:0`, and `minmax(0,1fr)` chart rows, removing the intrinsic-size resize feedback that made the demo plot grow downward continuously.
+- Use the Core ScientificPlot Y display scale for Vth logarithmic current display instead of a plugin-owned `log10()` pre-transform.
+- Add `sdk/templates/top-workspace-plugin` and strengthen the standalone SDK validator so incomplete/mismatched TOP contracts are rejected before packaging.
+- Type `PluginWorkspace` and `TopWorkspace` in `sdk/plugin-api.d.ts`, including contained primary scrolling, and publish synchronous `ctx.data.sources.list()/targets()` read semantics explicitly.
+- Preserve `window.artifactHydration` in normalized built-in/external plugin Window Specs so the machine-readable manifest hydration contract actually reaches the host.
+- Add executable SDK regression coverage for Vth external-window normalization, invalid TOP packages, and bounded chart-layout rules. Plugin API remains `1.15.0`.
+
 # v3.61.16 — Data Center Chart Preview / Dependency Hygiene
 
 - Data Center now renders the active DataTable chart preview automatically after project hydration, Artifact selection, provider changes and chart-parameter changes. The preview no longer depends on pressing the draw button after data arrives.

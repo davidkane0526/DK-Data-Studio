@@ -24,6 +24,7 @@ assert(schema.properties.requiresCore.items.enum.includes('ui.interaction-behavi
 assert(schema.properties.requiresCore.items.enum.includes('data.sources'),'SDK manifest must expose scoped project data sources as an explicit Core requirement.');
 assert(schema.properties.icon?.type==='string','SDK manifest must expose an optional plugin icon while Core guarantees a category default.');
 assert(sdkTypes.includes('DKDSDataSourcesCapability')&&sdkTypes.includes('sources:DKDSDataSourcesCapability'),'Standalone SDK must publish scoped data-source types.');
+assert(sdkTypes.includes('DKDSPluginWorkspaceRuntime')&&sdkTypes.includes('DKDSTopWorkspaceRuntime')&&sdkTypes.includes("primaryScroll?:'auto'|'contained'"),'Standalone SDK must publish typed TOP/PluginWorkspace bounded-layout contracts.');
 assert(sdkTypes.includes('bind(target:any,spec?:DKDSInteractionBehaviorBindSpec)'),'Interaction Behavior must publish generic DOM delegation, not only scientific-surface routing.');
 
 // Copy the SDK outside the repository and use only that copy. This is the
@@ -32,7 +33,7 @@ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-sdk-v357-'));
 const detached=path.join(tmp,'sdk');
 fs.cpSync(path.join(root,'sdk'),detached,{recursive:true});
 const cli=path.join(detached,'tools','dkds-plugin.js');
-for(const name of ['workspace-plugin','algorithm-provider']){
+for(const name of ['workspace-plugin','top-workspace-plugin','algorithm-provider']){
   const pluginDir=path.join(detached,'templates',name);
   execFileSync(process.execPath,[cli,'validate',pluginDir],{stdio:'pipe'});
   const output=path.join(tmp,`${name}.dkplugin`);
