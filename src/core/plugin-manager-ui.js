@@ -2,6 +2,7 @@
   const state = {
     host:null,
     filter:'all',
+    typeFilter:'all',
     query:'',
     busy:new Set(),
     bound:false
@@ -196,6 +197,7 @@
       if(state.filter==='active'&&!plugin.active)return false;
       if(state.filter==='disabled'&&plugin.enabled)return false;
       if(state.filter==='error'&&plugin.status!=='error')return false;
+      if(state.typeFilter!=='all'&&pluginTypeMeta(plugin).id!==state.typeFilter)return false;
       if(!q)return true;
       const display=displayMeta(plugin);
       const typeMeta=pluginTypeMeta(plugin);
@@ -368,6 +370,7 @@
           <div class="plugin-card-title-wrap">
             <div class="plugin-card-title-line">
               <h3>${escapeHtml(display.name)}</h3>
+              <span class="plugin-type-badge type-${escapeHtml(typeMeta.id)}">${escapeHtml(typeMeta.label)}</span>
               <span class="plugin-status-badge ${status.className}">${status.label}</span>
               ${plugin.systemLocked?`<span class="plugin-role-badge system">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top">TOP</span>`:'')}
               ${plugin.isSuper?`<span class="plugin-role-badge super">SUPER</span>`:''}
@@ -539,6 +542,7 @@
     $('#pluginManagerBtn').onclick=openManager;
     $('#pluginManagerSearch').oninput=e=>{state.query=e.target.value||'';renderList({scroll:'top'});};
     $('#pluginManagerFilter').onchange=e=>{state.filter=e.target.value||'all';renderList({scroll:'top'});};
+    $('#pluginManagerTypeFilter').onchange=e=>{state.typeFilter=e.target.value||'all';renderList({scroll:'top'});};
     $('#pluginManagerRefreshBtn').onclick=renderList;
     $('#pluginManagerInstallBtn').onclick=async()=>{
       try{

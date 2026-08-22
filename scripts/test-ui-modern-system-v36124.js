@@ -8,7 +8,7 @@ const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.htm
 const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.24','modern UI cleanup release must be v3.61.24');
+assert.equal(pkg.version,'3.61.25','modern UI cleanup release must be v3.61.25');
 assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
 assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');
@@ -22,4 +22,4 @@ assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shad
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 assert(chartRuntime.includes('PLOT_THEME_DARK')&&chartRuntime.includes("matchMedia?.('(prefers-color-scheme: dark)')"),'Chart Runtime must own light/dark scientific plot theming instead of CSS targeting Plotly internals');
 assert(!/\b(width|height|min-width|min-height|max-width|max-height)\s*:/i.test(css.split('/* App-owned controls only.')[0]),'high-level visual layer must not redefine shell/card geometry');
-console.log('v3.61.24 scoped modern UI and anti-overlay checks passed.');
+console.log('v3.61.25 scoped modern UI and anti-overlay checks passed.');

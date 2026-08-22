@@ -49,7 +49,8 @@
   const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:UI_FONT})});
   const PLOT_THEME_LIGHT=Object.freeze({paper:'#ffffff',plot:'#ffffff',grid:'#e8edf4',zero:'#d3dbe6',axis:'#adb8c7',text:'#46546a',muted:'#6f7d91',legend:'rgba(214,223,235,.72)',colorbar:'#d3dce8'});
   const PLOT_THEME_DARK=Object.freeze({paper:'#1d232e',plot:'#1d232e',grid:'#303a49',zero:'#414d5f',axis:'#5a687c',text:'#d8e0eb',muted:'#9aa7b9',legend:'rgba(72,84,103,.80)',colorbar:'#4b586b'});
-  const plotTheme=()=>globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches?PLOT_THEME_DARK:PLOT_THEME_LIGHT;
+  const activeThemeName=()=>String(window.DKDSTheme?.current?.()||document.documentElement?.dataset?.dkdsTheme||'').toLowerCase()|| (globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches?'dark':'light');
+  const plotTheme=()=>activeThemeName()==='dark'?PLOT_THEME_DARK:PLOT_THEME_LIGHT;
   const isPlainWhite=value=>['','#fff','#ffffff','white','rgb(255, 255, 255)','rgba(255, 255, 255, 1)'].includes(String(value??'').trim().toLowerCase());
   const oldGrid=value=>['','#edf0f5','#e8edf5','#e5e9f0','#dfe5ef'].includes(String(value??'').trim().toLowerCase());
   function themeAxis(axis={},theme=plotTheme()){
@@ -220,6 +221,20 @@
       raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
     });
   }
+  function refreshRenderedTheme(){
+    const P=plotly();if(!P?.relayout||typeof document==='undefined')return;
+    const theme=plotTheme();
+    document.querySelectorAll('.js-plotly-plot').forEach(el=>{
+      const layout=el?.layout||{};const patch={paper_bgcolor:theme.paper,plot_bgcolor:theme.plot,'font.color':theme.text};
+      for(const key of Object.keys(layout)){
+        if(!/^[xy]axis\d*$/.test(key))continue;
+        patch[`${key}.gridcolor`]=theme.grid;patch[`${key}.zerolinecolor`]=theme.zero;patch[`${key}.linecolor`]=theme.axis;patch[`${key}.tickcolor`]=theme.axis;patch[`${key}.tickfont.color`]=theme.muted;patch[`${key}.title.font.color`]=theme.text;
+      }
+      if(layout.legend){patch['legend.bordercolor']=theme.legend;patch['legend.font.color']=theme.text;}
+      Promise.resolve(P.relayout(el,patch)).catch(()=>{});
+    });
+  }
+  try{globalThis.addEventListener?.('dkds:theme-changed',()=>queueMicrotask(refreshRenderedTheme));}catch{}
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
   window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

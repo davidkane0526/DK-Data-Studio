@@ -2,8 +2,8 @@
 
 ## Current local repository
 
-- Application checkpoint: **v3.61.24**; the current branch contains the scoped modern-UI cleanup with anti-overlay safeguards.
-- Current checkout: `feat/v3.61.24-modern-ui-cleanup` (scoped modern UI cleanup; scientific/data contracts stay unchanged).
+- Application checkpoint: **v3.61.25**; the current branch contains the ordered modern Shell, shared appearance runtime, memory inspector and deterministic Tool menu fixes.
+- Current checkout: `feat/v3.61.25-ordered-modern-shell` (UI/Shell/Tool runtime stabilization; scientific/data contracts stay unchanged).
 - Previous runtime-fix branch: `fix/v3.61.22-legacy-resonance-runtime`.
 - Existing `main` / `dev` refs are historical baselines and are not the current delivered application state.
 - This cleanup does **not** create, move, push or publish the future GitHub `plugin` branch; branch publication is a separate explicit step.

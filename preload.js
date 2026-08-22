@@ -9,6 +9,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
   getRuntimeStatus: () => ipcRenderer.invoke('system:getRuntimeStatus'),
+  appearanceGetTheme: () => ipcRenderer.invoke('system:getAppearanceTheme'),
+  appearanceSetTheme: theme => ipcRenderer.invoke('system:setAppearanceTheme', theme),
+  onAppearanceThemeChanged: callback => {
+    const handler = (_event, theme) => callback(theme);
+    ipcRenderer.on('system:appearanceThemeChanged', handler);
+    return () => ipcRenderer.removeListener('system:appearanceThemeChanged', handler);
+  },
   diagnosticsGetEnvironment: () => ipcRenderer.invoke('diagnostics:getEnvironment'),
   diagnosticsRunActivitySmoke: payload => ipcRenderer.invoke('diagnostics:runActivitySmoke', payload || {}),
   diagnosticsWriteAutomationReport: report => ipcRenderer.invoke('diagnostics:writeAutomationReport', report || {}),

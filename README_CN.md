@@ -1,19 +1,20 @@
-# DK Data Studio — v3.61.24
+# DK Data Studio — v3.61.25
 
 
-## v3.61.24 现代 UI 清理与遮挡修复
+## v3.61.25 有序现代 Shell、主题与工具运行时
 
-本版本撤销 v3.61.23 的全局视觉覆盖思路，不继续叠加补丁。`src/ui-polish.css` 已删除，改为作用域明确的 `src/ui-modern.css`。
+本版本在 v3.61.24 的干净作用域视觉层上继续收敛，不重新引入全局样式覆盖。视觉参考用户提供的 Theme Lab 1.6.7，但只吸收其冷色浅背景、细描边、宽而低透明度的环境阴影和轻量交互反馈，保持 flat-first，不使用厚重高光或传统拟物效果。
 
-- 主窗口和独立插件窗口只在 `dkds-modern-ui` 作用域内应用新视觉层，避免通用选择器污染第三方/运行时生成 DOM。
-- 不再用 CSS 修改 Plotly modebar 等内部结构；图表字体、坐标轴和网格等主题仍由 Core Chart Runtime 统一，卡片、图例和 DKDS 自有工具条由 CSS 处理。
-- Core Chart Runtime 增加浅色/暗色科学绘图调色板，暗色模式下绘图区、网格、坐标文字和色条不再依赖外部 CSS 强行覆盖。
-- 插件管理、共振分析、Data Center、TER、Pulse 与 Analysis Workbench 使用明确的组件级选择器，禁止通过全局 `button/input/select` 规则制造遮挡。
-- 视觉方向改为 flat-first 的轻微立体感：细边框、低对比表面、克制阴影、短 hover/press 动效，不使用厚重高光和拟物渐变。
-- 新增 `test-ui-modern-system-v36124.js`，自动拒绝 Plotly modebar 样式、全局按钮/输入框选择器以及被删除的 v3.61.23 视觉覆盖层回归。
+- 明确 Shell 层级契约：顶栏命令层始终高于共振分析等固定工作区，工具、导出数据、软件管理不会再被分析页面覆盖。
+- 新增 Core-owned `ThemeRuntime`，主窗口与独立插件窗口共享亮色/暗色状态；底部状态栏可直接切换，Core Chart Runtime 同步跟随主题。
+- 内存状态项升级为自动隐藏详情面板，显示主进程、主界面、插件独立窗口、GPU/Utility 等组件工作集占用及 PID。
+- 建立选中/按下状态的前景色契约，`active` / `aria-pressed=true` 等状态自动保持文本对比度，避免选中按钮文字不可读。
+- 插件管理器增加插件类型筛选和类型徽标，Tool 插件明确显示“工具”。
+- 顶部“工具”菜单改为根据当前已启用 Tool activities 确定性重建；安装、启用、停用后菜单立即与 Plugin Kernel 状态同步。
+- 已用用户提供的 `com.dkds.tools.pulse-sampler@1.0.0` 包验证 Tool SDK、TOP workspace、独立窗口和 D3/Data Model 契约。
+- 新增 `test-v36125-ordered-modern-shell.js`，覆盖 Shell 层级、主题运行时、状态栏入口、内存组件明细、按钮前景色契约与 Tool 菜单重建。
 
 Plugin API 仍为 `1.15.0`，无 SDK 迁移要求。
-
 
 ## v3.61.23 统一视觉系统与科学图表精修
 

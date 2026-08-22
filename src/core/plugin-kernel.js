@@ -537,27 +537,49 @@
     for(const b of buttons)if(!keep.has(b))menu.appendChild(b);
   }
 
+  function renderToolMenu(rows=activityRows()){
+    const toolsMenu=document.querySelector('#pluginToolsMenu');
+    if(!toolsMenu)return;
+    toolsMenu.querySelectorAll?.('[data-tool-workspace-entry]')?.forEach?.(el=>el.remove());
+    if(host?.isAuxiliaryWindow){refreshToolMenuPresentation();return;}
+    for(const row of rows){
+      const spec=row.value||{};
+      const definition=definitionById(row.pluginId);
+      const toolWorkspace=pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'&&row.pluginId!==superPluginId;
+      if(!toolWorkspace)continue;
+      const toolButton=document.createElement('button');
+      toolButton.type='button';toolButton.className='plugin-menu-item tool-workspace-menu-item';
+      toolButton.dataset.toolWorkspaceEntry='1';toolButton.dataset.pluginId=row.pluginId;toolButton.dataset.activityId=spec.id;toolButton.dataset.pluginOrder=String(Number(spec.order)||100);
+      toolButton.title=spec.title||spec.description||spec.label||spec.id;
+      toolButton.innerHTML=`${spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:''}<span>${spec.label||spec.id}</span>`;
+      toolButton.onclick=async()=>{
+        try{
+          document.querySelector('#pluginToolsMenu')?.classList?.add('hidden');
+          document.querySelector('#toolsMenuBtn')?.setAttribute?.('aria-expanded','false');
+          const opened=await host?.openActivityWindow?.(spec.id);
+          if(opened===false)host?.setStatus?.(`工具 ${spec.label||spec.id} 未能打开。`);
+        }catch(err){console.error(`[DKDS tool-window:${spec.id}]`,err);host?.setStatus?.(`工具 ${spec.label||spec.id} 打开失败：${err.message||err}`);}
+      };
+      toolsMenu.appendChild(toolButton);
+    }
+    sortButtons(toolsMenu);refreshToolMenuPresentation();
+  }
+
   function renderActivityBar() {
     const mount=document.querySelector('#activityBar');
     const primaryMount=document.querySelector('#primaryActivityBar');
     const overflow=document.querySelector('#activityMoreMenu');
-    const toolsMenu=document.querySelector('#pluginToolsMenu');
     if(!mount)return;
     const rows=activityRows().filter(row=>String(row.value?.navigation||'')!=='system');
     mount.innerHTML='';
     if(primaryMount)primaryMount.innerHTML='';
     if(overflow)overflow.innerHTML='';
-    toolsMenu?.querySelectorAll?.('[data-tool-workspace-entry]')?.forEach?.(el=>el.remove());
+    renderToolMenu(rows);
     for(const row of rows){
       const spec=row.value||{};
       const definition=definitionById(row.pluginId);
       const toolWorkspace=pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'&&row.pluginId!==superPluginId&&!host?.isAuxiliaryWindow;
-      if(toolWorkspace&&toolsMenu){
-        const toolButton=document.createElement('button');toolButton.type='button';toolButton.className='plugin-menu-item';toolButton.dataset.toolWorkspaceEntry='1';toolButton.dataset.pluginId=row.pluginId;toolButton.dataset.pluginOrder=String(Number(spec.order)||100);toolButton.title=spec.title||spec.description||spec.label||spec.id;toolButton.innerHTML=`${spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:''}<span>${spec.label||spec.id}</span>`;
-        toolButton.onclick=async()=>{try{const opened=await host?.openActivityWindow?.(spec.id);if(opened===false)host?.setStatus?.(`工具 ${spec.label||spec.id} 未能打开。`);}catch(err){console.error(`[DKDS tool-window:${spec.id}]`,err);host?.setStatus?.(`工具 ${spec.label||spec.id} 打开失败：${err.message||err}`);}};
-        toolsMenu.appendChild(toolButton);
-        continue;
-      }
+      if(toolWorkspace)continue;
       const button=document.createElement('button');
       button.type='button';
       button.className='activity-tab';
@@ -589,7 +611,6 @@
       const target=(spec.primary&&primaryMount)?primaryMount:mount;
       target.appendChild(button);
     }
-    if(toolsMenu){sortButtons(toolsMenu);refreshToolMenuPresentation();}
     queueMicrotask(reflowActivities);
   }
 

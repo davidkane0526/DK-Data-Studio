@@ -33,6 +33,7 @@ const pendingAuxiliaryRoleSnapshots = new Map();
 let capabilityRequestSeq = 0;
 let auxiliaryRoleSnapshotSeq = 0;
 let appQuitting = false;
+let appearanceTheme = '';
 
 function externalPluginDirectory() {
   return path.join(app.getPath('userData'), 'plugins');
@@ -1173,13 +1174,64 @@ app.whenReady().then(() => {
     return filePath;
   });
 
+  ipcMain.handle('system:getAppearanceTheme', async () => appearanceTheme || null);
+  ipcMain.handle('system:setAppearanceTheme', async (_event, value) => {
+    const next=String(value||'').toLowerCase();
+    if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
+    if(appearanceTheme===next)return next;
+    appearanceTheme=next;
+    for(const win of BrowserWindow.getAllWindows()){
+      if(!win||win.isDestroyed())continue;
+      try{win.webContents.send('system:appearanceThemeChanged',next);}catch{}
+    }
+    return next;
+  });
+
   ipcMain.handle('system:getRuntimeStatus', async () => {
     const metrics = app.getAppMetrics();
-    const memory = metrics.reduce((sum, row) => {
-      const m = row?.memory || {};
-      sum.workingSetBytes += (Number(m.workingSetSize) || 0) * 1024;
-      sum.peakWorkingSetBytes += (Number(m.peakWorkingSetSize) || 0) * 1024;
-      sum.privateBytes += (Number(m.privateBytes) || 0) * 1024;
+    const rendererMeta=new Map();
+    for(const win of BrowserWindow.getAllWindows()){
+      if(!win||win.isDestroyed())continue;
+      const pid=Number(win.webContents?.getOSProcessId?.())||0;
+      if(!pid)continue;
+      const bootstrap=auxiliaryBootstrap.get(win.webContents.id)||{};
+      const pluginWindow=bootstrap.pluginWindow||{};
+      const pluginId=String(pluginWindow.pluginId||'');
+      const activityId=String(pluginWindow.activity||bootstrap.activityId||'');
+      const title=String(pluginWindow.title||bootstrap.title||win.getTitle?.()||'').trim();
+      rendererMeta.set(pid,{
+        pluginId,activityId,title,
+        label:pluginId?`插件 · ${title||pluginId}`:`主界面 · ${title||APP_NAME}`
+      });
+    }
+    const components=metrics.map((row,index)=>{
+      const m=row?.memory||{};
+      const pid=Number(row?.pid)||0;
+      const renderer=rendererMeta.get(pid)||null;
+      const type=String(row?.type||'process');
+      const processName=String(row?.name||row?.serviceName||'').trim();
+      let label=renderer?.label||'';
+      if(!label){
+        if(type==='Browser')label='主进程';
+        else if(type==='GPU')label='GPU 进程';
+        else if(type==='Utility')label=processName?`服务 · ${processName}`:'Utility 服务';
+        else if(type==='Tab')label='渲染进程';
+        else label=processName||`${type} 进程`;
+      }
+      return {
+        id:`${type}:${pid||index}`,
+        type,pid,label,
+        pluginId:renderer?.pluginId||'',
+        activityId:renderer?.activityId||'',
+        workingSetBytes:(Number(m.workingSetSize)||0)*1024,
+        peakWorkingSetBytes:(Number(m.peakWorkingSetSize)||0)*1024,
+        privateBytes:(Number(m.privateBytes)||0)*1024
+      };
+    }).sort((a,b)=>b.workingSetBytes-a.workingSetBytes);
+    const memory = components.reduce((sum, row) => {
+      sum.workingSetBytes += Number(row.workingSetBytes)||0;
+      sum.peakWorkingSetBytes += Number(row.peakWorkingSetBytes)||0;
+      sum.privateBytes += Number(row.privateBytes)||0;
       return sum;
     }, { workingSetBytes:0, peakWorkingSetBytes:0, privateBytes:0 });
     return {
@@ -1187,7 +1239,8 @@ app.whenReady().then(() => {
       platform:process.platform,
       isPackaged:app.isPackaged,
       processCount:metrics.length,
-      memory
+      memory,
+      components
     };
   });
 

@@ -326,7 +326,12 @@
           workingSetBytes:Number(memory.usedJSHeapSize)||0,
           jsHeapUsedBytes:Number(memory.usedJSHeapSize)||0,
           jsHeapLimitBytes:Number(memory.jsHeapSizeLimit)||0
-        }
+        },
+        components:[{
+          id:'web:renderer',type:'renderer',pid:0,label:nativeBridge?'Android WebView':'网页 JS Heap',
+          pluginId:'',activityId:'',workingSetBytes:Number(memory.usedJSHeapSize)||0,
+          peakWorkingSetBytes:Number(memory.totalJSHeapSize)||0,privateBytes:Number(memory.usedJSHeapSize)||0
+        }]
       };
     },
 

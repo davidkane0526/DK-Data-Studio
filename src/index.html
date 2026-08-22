@@ -7,12 +7,13 @@
   <link rel="icon" href="../assets/dkds-icon.png" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-modern.css" />
+  <script src="core/theme-runtime.js"></script>
 </head>
 <body class="dkds-modern-ui">
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.24</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.25</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -156,6 +157,19 @@
               <option value="active">已启用</option>
               <option value="disabled">已停用</option>
               <option value="error">错误</option>
+            </select>
+          </label>
+          <label>类型
+            <select id="pluginManagerTypeFilter">
+              <option value="all">全部类型</option>
+              <option value="foundation">基座与系统</option>
+              <option value="data">数据能力</option>
+              <option value="algorithm">算法</option>
+              <option value="workbench">分析工作台</option>
+              <option value="task">任务与自动化</option>
+              <option value="tool">工具</option>
+              <option value="extension">其他扩展</option>
+              <option value="developer">开发与示例</option>
             </select>
           </label>
           <span id="pluginManagerVisibleCount" class="plugin-manager-visible-count">显示 0 / 0</span>

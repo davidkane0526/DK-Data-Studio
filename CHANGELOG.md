@@ -1,3 +1,14 @@
+# v3.61.25 — Ordered Modern Shell, Theme & Tool Runtime
+
+- Refine the v3.61.24 scoped visual system using the supplied Theme Lab 1.6.7 reference: cool light canvas, thin blue-gray rims, broad low-opacity ambient depth and short motion, while avoiding glossy or skeuomorphic controls.
+- Establish explicit shell stacking layers so Resonance and other fixed analysis pages cannot cover the top Tools, Export Data or Software Management command groups.
+- Add a persistent light/dark appearance runtime and a bottom-status-bar appearance toggle; Core Chart Runtime follows the selected application theme rather than only the operating-system preference.
+- Turn the memory status item into an auto-hiding component-memory panel that lists Electron/plugin-window working-set usage by process.
+- Add a host-owned selected/pressed control color contract so selected text remains legible in light and dark themes.
+- Make Tool plugins first-class in Plugin Manager with visible type tags, and rebuild the top Tools menu deterministically from active TOP-role Tool activities after plugin lifecycle changes.
+- Validate the supplied `com.dkds.tools.pulse-sampler@1.0.0` package against the SDK/package/window contract and its `pulse-sampler-tool` dedicated window.
+- Plugin API remains `1.15.0`; no plugin migration is required.
+
 # v3.61.24 — Scoped Modern UI Cleanup
 
 - Remove the superseded `ui-polish.css` layer from v3.61.23 instead of stacking more override patches on top of it.
