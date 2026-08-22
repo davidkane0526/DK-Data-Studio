@@ -1,4 +1,18 @@
-# DK Data Studio — v3.61.23
+# DK Data Studio — v3.61.24
+
+
+## v3.61.24 现代 UI 清理与遮挡修复
+
+本版本撤销 v3.61.23 的全局视觉覆盖思路，不继续叠加补丁。`src/ui-polish.css` 已删除，改为作用域明确的 `src/ui-modern.css`。
+
+- 主窗口和独立插件窗口只在 `dkds-modern-ui` 作用域内应用新视觉层，避免通用选择器污染第三方/运行时生成 DOM。
+- 不再用 CSS 修改 Plotly modebar 等内部结构；图表字体、坐标轴和网格等主题仍由 Core Chart Runtime 统一，卡片、图例和 DKDS 自有工具条由 CSS 处理。
+- Core Chart Runtime 增加浅色/暗色科学绘图调色板，暗色模式下绘图区、网格、坐标文字和色条不再依赖外部 CSS 强行覆盖。
+- 插件管理、共振分析、Data Center、TER、Pulse 与 Analysis Workbench 使用明确的组件级选择器，禁止通过全局 `button/input/select` 规则制造遮挡。
+- 视觉方向改为 flat-first 的轻微立体感：细边框、低对比表面、克制阴影、短 hover/press 动效，不使用厚重高光和拟物渐变。
+- 新增 `test-ui-modern-system-v36124.js`，自动拒绝 Plotly modebar 样式、全局按钮/输入框选择器以及被删除的 v3.61.23 视觉覆盖层回归。
+
+Plugin API 仍为 `1.15.0`，无 SDK 迁移要求。
 
 
 ## v3.61.23 统一视觉系统与科学图表精修

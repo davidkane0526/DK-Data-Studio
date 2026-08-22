@@ -1,0 +1,25 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const html=fs.readFileSync(path.join(root,'src','index.html'),'utf8');
+const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.html'),'utf8');
+const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
+const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
+
+assert.equal(pkg.version,'3.61.24','modern UI cleanup release must be v3.61.24');
+assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
+assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
+assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');
+assert(!css.includes('.js-plotly-plot .plotly .modebar'),'modern CSS must never style Plotly generated modebar DOM');
+assert(!/^\s*button\s*[,\{]/m.test(css),'modern CSS must not use a global button selector');
+assert(!/^\s*(input|select|textarea)\s*[,\{]/m.test(css),'modern CSS must not use global form-control selectors');
+assert(css.includes('body.dkds-modern-ui .plugin-manager-card'),'plugin manager must have an explicit scoped surface contract');
+assert(css.includes('body.dkds-modern-ui #resonanceDedicatedPage'),'Resonance workbench must have explicit scoped chrome without Plotly internals');
+assert(css.includes('body.dkds-modern-ui .data-center-body'),'Data Center must have an explicit scoped chrome contract');
+assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none!important'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
+assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
+assert(chartRuntime.includes('PLOT_THEME_DARK')&&chartRuntime.includes("matchMedia?.('(prefers-color-scheme: dark)')"),'Chart Runtime must own light/dark scientific plot theming instead of CSS targeting Plotly internals');
+assert(!/\b(width|height|min-width|min-height|max-width|max-height)\s*:/i.test(css.split('/* App-owned controls only.')[0]),'high-level visual layer must not redefine shell/card geometry');
+console.log('v3.61.24 scoped modern UI and anti-overlay checks passed.');

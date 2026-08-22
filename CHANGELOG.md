@@ -1,3 +1,15 @@
+# v3.61.24 — Scoped Modern UI Cleanup
+
+- Remove the superseded `ui-polish.css` layer from v3.61.23 instead of stacking more override patches on top of it.
+- Replace it with `ui-modern.css`, loaded only through an explicit `dkds-modern-ui` body scope in both the main shell and dedicated plugin windows.
+- Eliminate all styling of Plotly-generated modebar DOM. Scientific plot typography/axis defaults remain owned by Core Chart Runtime, while CSS is limited to DKDS-owned cards, legends and navigation chrome.
+- Add light/dark plot palettes inside Core Chart Runtime so scientific canvases adapt with the application theme without CSS reaching into Plotly internals.
+- Rework visual depth toward a modern flat-first surface system: low-contrast borders, restrained shadows, no glossy gradients, short hover/press motion and explicit reduced-motion handling.
+- Give Plugin Manager, Resonance, Data Center, TER, Pulse and shared Analysis Workbench explicit scoped surface/control rules without introducing absolute overlays or changing layout geometry.
+- Protect compact Core scientific navigation controls from generic card/button depth so chart tools cannot expand into opaque overlay blocks.
+- Add v3.61.24 anti-overlay regression checks that reject global button/form selectors, Plotly modebar CSS and reintroduction of the removed v3.61.23 polish layer.
+- Plugin API remains `1.15.0`; no plugin migration is required.
+
 # v3.61.23 — Unified Visual System & Scientific Chart Polish
 
 - Add one Core-owned `src/ui-polish.css` cascade layer shared by the main shell and dedicated plugin windows, without changing existing workspace geometry or scientific/data contracts.
