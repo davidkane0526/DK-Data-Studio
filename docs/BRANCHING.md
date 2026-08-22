@@ -1,56 +1,53 @@
-# Branching Model
+# Branching Model — v3.61.x Stabilization
 
 ## Current local repository
 
-This delivery contains a reconstructed local Git repository with `refactor/v3.37-workspace-order-runtime-audit` checked out; `main` remains the v3.32.0 baseline until this refactor is explicitly merged. The commits correspond to the actual ZIP snapshots produced during this DK Data Studio session. No remote repository was read or modified when creating this history.
+- Application checkpoint: **v3.61.22**; the current branch contains repository/documentation cleanup only.
+- Current checkout: `chore/v3.61.22-repo-cleanup` (repository-only cleanup; runtime stays v3.61.22).
+- Previous runtime-fix branch: `fix/v3.61.22-legacy-resonance-runtime`.
+- Existing `main` / `dev` refs are historical baselines and are not the current delivered application state.
+- This cleanup does **not** create, move, push or publish the future GitHub `plugin` branch; branch publication is a separate explicit step.
 
-Current development baseline: **v3.39.0**.
+The repository history from v3.30 through v3.61 documents the migration from a monolithic analysis UI to the current Core-first plugin architecture. Those older branch names are historical context, not current development targets.
 
-`v3.39.0` standardizes scientific data figures on Core PlotView, fixes native SUPER root navigation from system pages, moves Resonance group layout to the shared ActionGroup menu path, and adds a single-line scientific form-row contract.
+## Stabilization policy
 
-`v3.38.0` adds stable PortableView Home Anchors, a functional Resonance Group column menu, and activity-scoped semantic system exports.
+v3.61.x is architecture-frozen. Prefer changes in this order:
 
-`v3.37.0` audits workspace/runtime ordering: explicit PRIMARY scrolling modes, independent SUB pages, two portable floating scopes, dock conflict stacking, active-plugin edit routing, live stable Resonance group plots and Pulse repeat-analysis reliability.
+1. P0: incorrect/lost data, corrupt projects, crashes.
+2. P1: unusable real workflow, broken cross-view state, Undo/Redo failures, severe performance or window/data synchronization defects.
+3. P2: clear UI/interaction defects.
+4. P3: new features or abstractions only when there is a demonstrated need.
 
-## Recommended future flow
+Do not restructure Artifact, Data Sources, Plugin Kernel, TOP/SUPER, ScientificPlot, Capability Runtime, Scientific Pipeline or Algorithm Provider layers merely for code aesthetics.
 
-Keep `main` as the local delivered baseline. For larger follow-up work, create a local feature branch and merge it only after tests pass:
+## Recommended local feature flow
+
+Until the publishing branch is explicitly selected, continue from the latest delivered checkpoint:
 
 ```bash
-git switch main
-git switch -c feature/<name>
+git switch <latest-stable-local-ref>
+git switch -c fix/<issue>
 # implement
-npm test
 npm run check
+npm test
+npm run performance:test
+git diff --check
 git commit
-git switch main
-git merge --no-ff feature/<name>
 ```
 
-Do not access, push to, or modify any remote repository unless the user explicitly requests it.
+Repository maintenance changes may use `chore/*`. New scientific or host behavior should use a focused `fix/*` or `feature/*` branch.
 
-## Current delivery checkpoint
+## GitHub publication rule
 
-`v3.37.0` separates scientific-canvas docking from whole-plugin floating, makes same-zone docks stack instead of overlap, moves SUB pages outside the scientific canvas, gives TER/Pulse/Data Center auto-scrolling PRIMARY workspaces, routes system Edit operations to the active plugin, keeps Resonance group PortableViews stable/live, and fixes Pulse optional-range null handling plus rerun state preservation. The control/science split is semantic and resizable; no fixed 1/5:4/5 ratio is an architecture requirement.
+Do not push or move remote refs implicitly. When publication is requested, choose the target branch explicitly, then push the already-verified local history. CI should run from committed lockfiles with `npm ci`; dependency-tree changes must be reviewed as source changes.
 
-`v3.36.0` makes fixed PRIME/SUB/subplot placement relative to the right-side scientific canvas rather than the whole plugin rectangle, keeps flexible floating/snap behavior inside that canvas, removes SUPER/TOP command duplication, fixes absent-slice project leakage, and eliminates full Resonance redraws from peak/FWHM pointer-move loops.
+## Current architectural checkpoint
 
-`v3.35.0` promotes the GRS workspace model into the common PluginWorkspace design system. Resonance, TER, Pulse and Data Center consume the same workspace foundation; Resonance main-plot direct interaction is supplied by Core ScientificCurveSurface. SUPER and TOP mount the same plugin workspace.
+The current host boundary is:
 
-`v3.33.0` remains the canonical live-data bridge baseline: Data Center, TER, Resonance and dedicated plugin windows observe the same imported Artifact/legacy dataset state.
+```text
+Platform → Generic Core → Scientific infrastructure → Algorithm Providers → Domain plugins
+```
 
-`v3.32.0` is the interaction/performance completion pass: Core coalesces resize notifications and rejects recursive layout feedback; plugins can register heterogeneous raw/derived/result data types; typed selections carry compact references/ranges/context; Sticky is distinct from Dock; TER restores the R–V sticky inspector; Resonance restores shared main/trend/inspector/group selection linkage without rebuilding full plots on each click.
-
-`v3.31.2` is a runtime-interaction hotfix on top of v3.31.1. It restores the Resonance shared feature-runtime bootstrap and fixes the Core ContextMenu capture-phase bug that made TER layout and portable chart-placement menu items appear but never execute. AnalysisWorkbench now also receives explicit portable-placement callbacks so dock regions and managed grids resynchronize immediately.
-
-`v3.31.1` is a Windows tooling patch on top of the unified runtime. It makes the selected shared dependency/cache folders authoritative, avoids running npm reify through a project `node_modules` Junction, separates Electron binary acquisition from npm package installation, and adds retry/mirror fallback for transient binary download failures.
-
-`v3.31.0` completes the unified runtime: AnalysisWorkbench v4 owns outer geometry without mutating plugin DOM, PRIMARY/PRIME/SUB share one view tree across SUPER/TOP, and Capability Runtime v2 adds query/require/watch semantics.
-
-`v3.30.0` establishes the unified Core analysis surface: `AnalysisWorkbench` owns PRIMARY / PRIME / SUB composition, managed responsive grids, dock/floating regions, resize lifecycle and portable scientific views. `Capability Runtime` publishes serializable plugin providers from the main renderer and makes them available to dedicated TOP renderers through a generic IPC bridge.
-
-TER, Pulse / Read and Data Center mount the same shared Controller + Shared Views + Feature Runtime stack into this workbench regardless of SUPER/TOP hosting. Resonance keeps its mature scientific renderer but now shares the same Controller/View contracts and PRIMARY/PRIME/SUB topology; its TOP renderer receives detector providers and parameter schemas from the same capability registry used by the main renderer. Host adapters are restricted to container/lifecycle mapping.
-
-Project files remain self-contained: raw imported text, parsed points, plugin state and analysis results are preserved so a copied project remains usable without the original source files.
-
-`v3.31.1` supersedes the v3.27.1 shared-cache implementation: the selected shared cache root remains bound to npm, pnpm, Electron, electron-builder and Gradle, while shared `node_modules` is now an immutable signature-keyed dependency cache that npm never reifies through directly.
+TOP and Tool workspaces share the same dedicated-window lifecycle; the current user-facing distinction is their host entry category. SUPER is a host promotion of the same plugin workspace, not a separate plugin implementation. Project compatibility is handled by one-way migration into canonical state rather than permanent forward-compatibility branches inside the host.

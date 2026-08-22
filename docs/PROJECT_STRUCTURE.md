@@ -1,4 +1,4 @@
-# Project Structure — plugin branch
+# Project Structure — v3.61.x
 
 This repository intentionally keeps the root small and separates runtime, tools, services, docs, mobile, plugins and scientific code.
 
@@ -26,7 +26,7 @@ DK Data Studio/
 │  ├─ style.css
 │  └─ web-bridge.js
 │
-├─ mobile/                  # React Native / Expo Android shell
+├─ mobile/                  # React Native / Expo Android shell (separate npm project)
 ├─ services/
 │  └─ update-server/        # LAN update server and release storage
 ├─ config/
@@ -56,3 +56,18 @@ The only root CMD launchers should remain:
 DKDS.cmd
 DKDS_GUI.cmd
 ```
+
+## Dependency-lock policy
+
+Desktop and mobile are separate npm projects and the GitHub-ready target is to commit separate lockfiles:
+
+```text
+/package-lock.json
+/mobile/package-lock.json
+```
+
+Once both lockfiles are committed, CI and clean-machine verification should use `npm ci`; use `npm install` only when intentionally changing the dependency graph, then review and commit the resulting lockfile diff. Do not add dependency `overrides` merely to hide upstream deprecation warnings unless compatibility is verified.
+
+## Architecture ownership rule
+
+`src/app.js` is a generic host/compatibility shell, not a place for domain-specific recovery rules. One-way old-project interpretation belongs to Project Format migration; domain analysis behavior belongs to its plugin; reusable scientific transforms/algorithms belong to shared scientific infrastructure or versioned Algorithm Providers.

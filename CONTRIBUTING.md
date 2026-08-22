@@ -1,6 +1,6 @@
 # Contributing
 
-Development target: `plugin` branch.
+Development target: the current v3.61.x stabilization baseline. Use focused local `fix/*`, `feature/*`, or `chore/*` branches; remote publication is a separate explicit step.
 
 Read:
 - `AGENTS.md`
@@ -8,14 +8,24 @@ Read:
 - `docs/PLUGIN_API.md`
 - `docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md`
 
+After the repository contains committed root/mobile lockfiles, install unchanged dependency trees with:
+
+```bash
+npm ci
+cd mobile && npm ci
+```
+
 Checks:
 
 ```bash
 npm run check
 npm test
+npm run sdk:test
+npm run performance:test
+git diff --check
 ```
 
-New scientific features should be plugins.
+New scientific/domain features should be plugins or versioned Algorithm Providers. Do not add domain-specific compatibility branches to the generic host.
 
 Keep commits scoped. Do not mix broad formatting changes with scientific algorithm changes.
 

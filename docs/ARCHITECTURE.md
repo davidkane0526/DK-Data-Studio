@@ -1,4 +1,54 @@
-# Architecture — plugin branch
+# Architecture — Current v3.61.x Baseline
+
+
+## Current architecture checkpoint — v3.61.22
+
+The runtime architecture is considered feature-complete and is now in stabilization mode. New work should prefer fixing demonstrated P0/P1 defects over introducing new host/runtime abstraction layers.
+
+```text
+Platform shells
+├─ Electron desktop
+├─ LAN/browser
+└─ React Native Android
+        ↓
+Generic Core / Host
+├─ Project Format + one-way legacy migration
+├─ Artifact Store + Provenance + lineage
+├─ Data Sources + assignment scope
+├─ Data Types + Selection + Entity
+├─ Project History + Commands + Interaction
+├─ Import Workbench
+├─ ScientificPlot + TableSurface + UI Infrastructure
+├─ Capability Runtime + dedicated TOP window bridge
+├─ TOP / SUPER / PRIME / SUB / Tool workspace hosting
+└─ Plugin Kernel + package/override lifecycle
+        ↓
+Scientific infrastructure
+├─ Scientific Reactive
+├─ Scientific Pipeline
+├─ Transform Registry
+├─ Scalar Field
+└─ Algorithm Registry / version locks / package catalog
+        ↓
+Versioned Algorithm Providers
+        ↓
+Domain plugins
+├─ Resonance Workbench
+├─ TER Analysis
+├─ Pulse / Read Analysis
+├─ Data Center
+└─ external Vth / Tool plugins
+```
+
+Current invariants:
+
+- The main shell is domain-neutral. Legacy domain knowledge belongs in one-way Project Format migration or the owning plugin, not `app.js`.
+- Imported physical data is owned once by the project; workbenches consume scoped views through assignments rather than duplicating source data.
+- Dedicated TOP windows must preserve the same public Core contracts as the main renderer; IPC transport must not silently change synchronous read semantics exposed by the SDK.
+- User commands enter project/plugin history explicitly. Derived/background Artifact mutations do not automatically pollute Undo/Redo.
+- Scientific algorithms remain replaceable versioned providers; exact versions are persisted in provenance/locks.
+- Core visual behavior such as ScientificPlot toolbar placement is not an SDK concern unless it becomes a public plugin-configurable contract.
+- v3.61.x is an architecture-freeze line: split large files only when a concrete change benefits from it; do not refactor solely to reduce file size.
 
 ## 1. Goal
 

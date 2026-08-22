@@ -2,13 +2,13 @@
 
 This repository uses a plugin-first architecture.
 
-## Branch rule
+## Branch and stabilization rule
 
-- `main` is the preserved v3.14 baseline.
-- `plugin` is the plugin-architecture development branch.
-- Do **not** merge `plugin` into `main` unless the user explicitly requests it.
-- New feature work on the plugin branch should normally be implemented as a plugin.
-- `src/analysis.js` is now a compatibility facade. New/reworked reusable scientific calculations belong in `src/science/*`; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms back into `app.js`.
+- Current delivered architecture is the v3.61.x Core-first plugin line. The checked-out branch may be a focused `fix/*` or `chore/*` branch; do not infer that an old `main`/`dev` ref is the active runtime baseline.
+- Remote branch publication is explicit. Do not create, move, merge or push a GitHub branch unless the user requests it.
+- v3.61.x is architecture-frozen: prefer demonstrated P0/P1 fixes over new host/runtime abstraction layers.
+- New domain feature work should normally be implemented as a plugin or versioned Algorithm Provider; generic behavior shared by all plugins belongs in Core.
+- `src/analysis.js` is a compatibility facade. New/reworked reusable scientific calculations belong in `src/science/*` or a versioned Algorithm Provider; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms or domain recovery rules into `app.js`.
 
 ## Before changing code
 

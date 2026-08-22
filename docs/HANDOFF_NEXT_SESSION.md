@@ -1,55 +1,64 @@
-# Next Session Handoff — v3.61.7
+# Next Session Handoff — v3.61.22 repository cleanup
 
 ## Baseline
 
-- Application: `3.61.7`
-- Branch: `refactor/v3.61.7-host-import-action`
-- Public Plugin API / standalone SDK: `1.14.0`
-- Plugin API 1.10 / 1.11 / 1.12 / 1.13 packages remain compatibility-loadable when their declared requirements are available.
+- Application: `3.61.22`; current changes are repository/documentation maintenance only.
+- Runtime/scientific behavior baseline: `3.61.22`.
+- Current branch: `chore/v3.61.22-repo-cleanup`.
+- Public Plugin API / standalone SDK: `1.15.0`.
+- Architecture phase: **feature complete / release candidate / stabilization**.
+- Architecture is frozen unless a real P0/P1 issue proves a boundary is wrong.
 
-## Workbench import contract
+## Core architecture
 
-Workbench import UI is Core-owned.
+Canonical path:
 
-1. New workbenches declare semantic inputs in `manifest.data.accepts`.
-2. Core automatically supplies `导入数据`.
-3. A plugin may place only an empty `<div data-dkds-slot="workbench-import"></div>` marker to choose the action position.
-4. If the marker/header is absent, Core falls back to the host contextual action. Embedded SUPER uses that host action directly.
-5. Workbench-local import is scoped: assignment is locked to the current plugin, the global target chooser is hidden, and importer providers are filtered by compatible output types.
-6. The shell-level global Import action remains the multi-target routing entry.
-7. New workbench plugins must not create file inputs, duplicate import buttons, or private file-picker/import pipelines.
-8. API 1.10–1.13 workbenches without `data.accepts` receive the Core action in compatibility mode; assignment is still scoped, while importer filtering is intentionally permissive.
+`Importer -> typed Artifact -> assignment -> scoped Data Source -> workbench -> derived Artifact/provenance`
 
-## Data baseline
+Core owns Project Format, Artifact Store, Provenance/lineage, Data Sources, Data Types, Selection/Entity, Project History, Import Workbench, Interaction, ScientificPlot, TableSurface, Capability Runtime, TOP/SUPER/Tool hosting and Plugin Kernel.
 
-Canonical model:
+Shared scientific infrastructure owns Reactive, Pipeline, Transform Registry, Scalar Field and Algorithm Registry/version management. Replaceable numerical algorithms are versioned Algorithm Providers. Domain plugins consume those contracts.
 
-`Importer Provider -> typed Data Artifact -> assignment -> scoped workbench view`
+## Compatibility baseline
 
-- One physical source can be assigned to multiple workbenches without duplication.
-- Workbenches read `ctx.data.sources` / `ctx.data.artifacts` through assignment scope.
-- Data Center owns the global source catalog and assignment/delete operations.
-- `builtin.flexible-import` provides `science.transport.iv`.
-- `builtin.pulse-import` provides `science.pulse.trace`; Pulse Analysis only consumes it.
-- Old project datasets without assignments are wildcard-visible (`*`) for compatibility.
+- Project Format performs one-way migration from old root/domain fields into canonical plugin/data state.
+- The main shell must stay domain-neutral; do not add Resonance/TER/Vth special cases to `app.js`.
+- Old self-contained data may remain in Data Center while assignments decide whether an analysis workbench consumes it.
+- Resonance legacy saved peaks may reconcile stale sweep identity only when the stored ID no longer exists; valid identities/results must not be rewritten.
 
-## Interaction baseline
+## Window/data baseline
 
-Surface, Manipulator, Interaction Behavior, Selection and Command remain orthogonal. Do not add plugin-local pointer/keyboard/context-menu/box-selection infrastructure when Core primitives can express the behavior.
+- Dedicated TOP windows must see the same Artifact/Data Source contracts as the main renderer.
+- `ctx.data.sources.list()` / `targets()` remain synchronous reads even across dedicated-window capability transport; writes remain IPC-backed asynchronous operations.
+- TOP prewarm must not hydrate large project data until real open unless the activity contract explicitly requires it.
+- Tool Workspace currently shares TOP lifecycle and differs primarily by host entry classification.
 
-## External Vth compatibility
+## Interaction/history baseline
 
-The user-provided `com.dkds.transfer-vth-lab` API 1.10 package remains an important compatibility case. It has no `data.accepts`, so Core must still provide its standard scoped import action without adding a Vth-specific branch. Its normal DIV plot continues through Core ScientificPlot and its legacy data-source proxy remains assignment-scoped.
+- Plugin-specific fine-grained history may handle local editing first.
+- Project-level user commands fall back to unified Project History (`Ctrl/Cmd+Z`, redo variants).
+- Background/derived Artifact mutations do not automatically become history entries.
+- Core ScientificPlot owns generic D3/Plotly interaction chrome; plugins should not reimplement it unless exposing a genuinely domain-specific interaction.
 
-## Required gates
+## External plugin baseline
+
+- Transfer Vth Lab 3.0.1 remains the external TOP compatibility reference.
+- New TOPs use `workspace.role=top`, a dedicated `window`, `openMode=window`, `topWorkspace.register()` and Core-owned import/scoped data.
+- ScientificPlot/D3 and Plotly runtime dependencies must be declared by dedicated plugins and are validated by the SDK.
+
+## Repository reproducibility
+
+GitHub-ready reproducibility requires committed `/package-lock.json` and `/mobile/package-lock.json`. After they are generated, clean CI should use `npm ci`. Run `npm install` only when intentionally updating dependencies and commit the lockfile change together with `package.json`.
+
+## Required gates before delivery
 
 - `npm run check`
 - `npm test`
-- `npm run performance:test`
-- `npm run reactive:test`
 - `npm run sdk:test`
-- `npm run table-surface:test`
+- `npm run performance:test`
 - `npm run host-neutralization:test`
 - `node scripts/check-plugin-boundaries.js`
 - `node scripts/validate-plugins.js`
 - `git diff --check`
+
+For old-project bugs, prefer the in-app Electron automation cases (`project.data-center-live`, `project.resonance-live`, etc.) over synthetic model-only evidence.

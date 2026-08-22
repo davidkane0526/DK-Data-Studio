@@ -1,3 +1,10 @@
+# Unreleased — Repository Reproducibility & Documentation Refresh
+
+- Repository-only maintenance release; application/scientific behavior remains the v3.61.22 runtime baseline.
+- Refresh architecture, branching, project-structure and handoff documentation to the current v3.61.x Core-first plugin architecture.
+- Prepare GitHub CI for deterministic lockfile-based installs (`npm ci`) once root/mobile lockfiles are present.
+- Plugin API remains `1.15.0`; no plugin migration is required.
+
 # v3.61.22 — Legacy Resonance Runtime Identity & Scoped Artifact Repair
 
 - Fix the actual Resonance Artifact-consumer path so canonical datasets reconstructed from the shared Artifact Store still honor generic `assignments`. Legacy auxiliary channels migrated to `assignments: []` remain archived in the project/Data Center but no longer leak back into Resonance simply because an Artifact exists.

@@ -1,4 +1,16 @@
-# Development Guide — plugin branch
+# Development Guide — v3.61.x
+
+
+## Dependency installation
+
+For an unchanged checkout with committed lockfiles:
+
+```bash
+npm ci
+cd mobile && npm ci
+```
+
+Use `npm install` only when intentionally changing dependencies; review and commit the corresponding lockfile update. Desktop and mobile are independent npm projects.
 
 ## Normal development
 
@@ -73,7 +85,7 @@ node sdk/tools/dkds-plugin.js validate my-plugin
 node sdk/tools/dkds-plugin.js package my-plugin my-plugin.dkplugin
 ```
 
-Start from `sdk/templates/workspace-plugin/` for a UI/workbench plugin or `sdk/templates/algorithm-provider/` for a versioned scientific algorithm. `examples/external-plugins/` remains an application-repository integration example.
+Start from `sdk/templates/top-workspace-plugin/` for a dedicated TOP, `sdk/templates/tool-plugin/` for a Tool Workspace, the generic workspace template for non-TOP UI contributions, or `sdk/templates/algorithm-provider/` for a versioned scientific algorithm. `examples/external-plugins/` remains an application-repository integration example.
 
 ## UI shell rule
 

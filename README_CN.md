@@ -1,5 +1,22 @@
 # DK Data Studio — v3.61.22
 
+
+## v3.61.22 GitHub 提交前仓库整理
+
+本版本不改变科学算法、插件运行时、工程格式或 UI 行为，只整理可重复构建与当前架构文档。运行时功能基线仍为 v3.61.22。
+
+- 当前架构冻结在 Core / Scientific Infrastructure / Algorithm Provider / Domain Plugin 四层：Core 管 Artifact、Data Sources、Selection、Project History、Import、Interaction、ScientificPlot、TableSurface、Capability、TOP/SUPER 与 Plugin Kernel；共享科学层负责 Reactive / Pipeline / Transform / Scalar Field；可替换算法通过版本化 Algorithm Provider 提供；Resonance / TER / Pulse / Data Center 以及外部 Vth/Tool 均作为领域插件消费这些能力。
+- 项目文件继续采用一次性旧格式迁移 + canonical plugin slices / Artifact Store 的单轨恢复路径；主 Shell 不保存领域插件特判。
+- GitHub/CI 的目标依赖安装方式为 committed lockfile + `npm ci`，避免随时间重新解析依赖树；锁文件需要在可访问 npm registry 的环境中由 npm 正式解析生成，不手工伪造。
+- `docs/ARCHITECTURE.md`、`BRANCHING.md`、`PROJECT_STRUCTURE.md`、`HANDOFF_NEXT_SESSION.md` 已更新到 v3.61.x 当前状态，旧 v3.3x 内容保留为历史背景而不再作为当前基线。
+
+### 当前成熟度定位
+
+- 功能：Feature Complete。
+- 架构：冻结；除真实 P0/P1 问题外不再做大规模重构。
+- 使用阶段：Release Candidate / 稳定化使用期。
+- Plugin API：`1.15.0`，本次无 SDK API 变更。
+
 ## v3.61.22 旧工程共振真实运行时恢复修复
 
 - 修复旧工程 Ig 再次进入共振分析的真实原因：Project Format 已经把旧工程中未采纳辅助通道迁移为通用 `assignments: []`，但 Resonance 从 Artifact Store 重建 canonical datasets 时曾绕过 assignments 过滤。现在 Artifact 路径与 project.datasets 路径使用完全相同的 scoped-data 契约；Ig 可继续作为历史原始数据保存在工程/Data Center 中，但不会被 Resonance 重新当成分析输入。
