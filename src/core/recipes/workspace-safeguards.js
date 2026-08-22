@@ -22,21 +22,21 @@
       .import-workbench-body{min-height:0!important;overflow:hidden!important}
       .import-file-pane{min-height:0!important;overflow:hidden!important}
       .import-file-list{min-height:0!important;overflow:auto!important;overscroll-behavior:contain}
-      .import-file-actions{flex:0 0 auto!important;position:relative;z-index:6;background:#fff}
+      .import-file-actions{flex:0 0 auto!important;position:relative;z-index:6;background:var(--surface-primary)}
       .import-main-pane{min-height:0!important}
 
       .import-duplicate-warning{
-        flex:0 0 auto;margin:0;padding:7px 9px;border-top:1px solid #f2d29b;
-        background:#fff8e8;color:#8a4b08;font-size:var(--plugin-font-meta,11px);line-height:1.45;
+        flex:0 0 auto;margin:0;padding:7px 9px;border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));
+        background:var(--warning-soft);color:var(--warning);font-size:var(--plugin-font-meta,11px);line-height:1.45;
       }
-      .import-file-item.import-name-warning{border-color:#edb45f;background:#fffaf0}
-      .import-file-item.import-replace-warning{border-color:#df8b60;background:#fff7f2}
+      .import-file-item.import-name-warning{border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));background:var(--warning-soft)}
+      .import-file-item.import-replace-warning{border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));background:var(--danger-soft)}
       .import-duplicate-badge{
         flex:0 0 auto;margin-left:auto;padding:2px 5px;border-radius:999px;
-        background:#fff0d5;border:1px solid #efc27c;color:#8a4b08;font-size:var(--plugin-font-meta,11px);font-weight:700;
+        background:var(--warning-soft);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));color:var(--warning);font-size:var(--plugin-font-meta,11px);font-weight:700;
       }
       .import-file-item.import-replace-warning .import-duplicate-badge{
-        background:#ffeadf;border-color:#e9a47d;color:#9a3412;
+        background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger);
       }
     `);
 

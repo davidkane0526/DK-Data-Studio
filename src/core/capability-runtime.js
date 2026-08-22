@@ -172,6 +172,19 @@
     return await remoteInvoker({id:key, method:name, args:clone(args) || []});
   }
 
+  function localProxy(id) {
+    const key=normalizedId(id);
+    const row=local.get(key);if(!row)return null;
+    const descriptor=descriptorOf(row);
+    return new Proxy({...descriptor},{
+      get(target,prop){
+        if(prop in target)return target[prop];
+        const fn=row.methods.get(String(prop));
+        return typeof fn==='function'?(...args)=>fn(...args):undefined;
+      }
+    });
+  }
+
   function proxy(id) {
     const descriptor = get(id); if (!descriptor) return null;
     return new Proxy({...descriptor}, {
@@ -189,7 +202,7 @@
 
   window.DKDSCapabilities = Object.freeze({
     version:VERSION,schema:SCHEMA,
-    register, unregister, removeOwner, snapshot, importRemote, get, list, invoke, proxy,
+    register, unregister, removeOwner, snapshot, importRemote, get, list, invoke, proxy, localProxy,
     require:requireCapability, subscribe,
     revision:()=>revision,
     remoteRevision:()=>remoteRevision

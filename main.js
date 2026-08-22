@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { LanWebServer } = require('./lan-web-server');
 const { resolvePluginWindow, listPluginWindows } = require('./plugin-window-manager');
@@ -34,6 +34,37 @@ let capabilityRequestSeq = 0;
 let auxiliaryRoleSnapshotSeq = 0;
 let appQuitting = false;
 let appearanceTheme = '';
+
+function appearanceSettingsPath(){return path.join(app.getPath('userData'),'appearance.json');}
+function readPersistedAppearanceTheme(){
+  try{
+    const value=String(JSON.parse(fs.readFileSync(appearanceSettingsPath(),'utf8'))?.theme||'').toLowerCase();
+    return ['light','dark'].includes(value)?value:'';
+  }catch{return '';}
+}
+function nativeWindowBackground(theme=appearanceTheme){
+  const effective=['light','dark'].includes(theme)?theme:(nativeTheme.shouldUseDarkColors?'dark':'light');
+  return effective==='dark'?'#151922':'#f5f7fb';
+}
+function applyNativeAppearance(value,{persist=false,broadcast=true}={}){
+  const next=String(value||'').toLowerCase();
+  if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
+  appearanceTheme=next;
+  // Electron nativeTheme owns the non-HTML window chrome on Windows/macOS.
+  // Keeping it in the same transaction as the renderer theme prevents the
+  // native title bar from remaining light while a plugin workspace is dark.
+  try{nativeTheme.themeSource=next;}catch{}
+  const background=nativeWindowBackground(next);
+  for(const win of BrowserWindow.getAllWindows()){
+    if(!win||win.isDestroyed())continue;
+    try{win.setBackgroundColor(background);}catch{}
+    if(broadcast)try{win.webContents.send('system:appearanceThemeChanged',next);}catch{}
+  }
+  if(persist){
+    try{fs.mkdirSync(path.dirname(appearanceSettingsPath()),{recursive:true});fs.writeFileSync(appearanceSettingsPath(),JSON.stringify({theme:next},null,2)+'\n','utf8');}catch(err){console.warn('[DKDS appearance:persist]',err);}
+  }
+  return next;
+}
 
 function externalPluginDirectory() {
   return path.join(app.getPath('userData'), 'plugins');
@@ -317,7 +348,7 @@ function createWindow() {
     height: 1040,
     minWidth: 1200,
     minHeight: 760,
-    backgroundColor: '#f5f7fb',
+    backgroundColor: nativeWindowBackground(),
     title: APP_NAME,
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
@@ -652,7 +683,7 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
     height: pluginWindow?.height || 940,
     minWidth: pluginWindow?.minWidth || 920,
     minHeight: pluginWindow?.minHeight || 650,
-    backgroundColor: '#f5f7fb',
+    backgroundColor: nativeWindowBackground(),
     icon: path.join(__dirname, 'assets', 'dkds-icon.png'),
     autoHideMenuBar: true,
     title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
@@ -728,6 +759,16 @@ function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
 
 app.whenReady().then(() => {
   enforcePackagedExpiry();
+  const persistedAppearance=readPersistedAppearanceTheme();
+  if(persistedAppearance)applyNativeAppearance(persistedAppearance,{persist:false,broadcast:false});
+  else{
+    // v3.61.26 and earlier stored the user's choice in renderer localStorage
+    // only. Keep the native frame on the OS theme until ThemeRuntime performs
+    // its first handshake, so that saved renderer choice can migrate into the
+    // new main-process appearance file instead of being overwritten.
+    appearanceTheme='';
+    try{nativeTheme.themeSource='system';}catch{}
+  }
   Menu.setApplicationMenu(null);
 
   ipcMain.handle('windows:openActivity', async (event, payload) => {
@@ -1194,13 +1235,12 @@ app.whenReady().then(() => {
   ipcMain.handle('system:setAppearanceTheme', async (_event, value) => {
     const next=String(value||'').toLowerCase();
     if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
-    if(appearanceTheme===next)return next;
-    appearanceTheme=next;
-    for(const win of BrowserWindow.getAllWindows()){
-      if(!win||win.isDestroyed())continue;
-      try{win.webContents.send('system:appearanceThemeChanged',next);}catch{}
+    if(appearanceTheme===next){
+      // Re-assert nativeTheme: Windows can recreate native chrome when a
+      // BrowserWindow is restored or moved between displays.
+      return applyNativeAppearance(next,{persist:true,broadcast:false});
     }
-    return next;
+    return applyNativeAppearance(next,{persist:true,broadcast:true});
   });
 
   ipcMain.handle('system:getRuntimeStatus', async () => {

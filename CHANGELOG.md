@@ -1,3 +1,12 @@
+# v3.61.27 — Tool Install Sync Contract & Native Dark Window Chrome
+
+- Fix the real external Tool install/activation failure `sources is not iterable`: `ctx.data.sources.list()` remains a synchronous SDK read in the owner renderer through a Core local capability proxy, while dedicated plugin windows continue to use the synchronous snapshot bridge.
+- Synchronize Electron native window chrome with DKDS appearance through `nativeTheme.themeSource`, restore the persisted appearance before creating the first BrowserWindow, and use theme-aware BrowserWindow backgrounds for the main shell and dedicated TER/Tool windows.
+- Complete the shared dark-theme boundary for legacy Analysis Workbench controls, including parameter cards, inputs/selects, notes, tables, import action bars and duplicate-warning states.
+- Convert late host recipe toolbar/overflow styles from hard-coded light colors to Core semantic `surface / text / border / accent / warning / danger` tokens so they cannot override dark mode after plugin activation.
+- Add executable v3.61.27 regression coverage reproducing the external Tool `for...of ctx.data.sources.list()` path and locking native-theme/persisted-appearance/theme-boundary behavior.
+- Revalidate `com.dkds.tools.pulse-sampler@1.0.0` with the current SDK as a Tool + TOP + reusable dedicated-window plugin. Plugin API remains `1.15.0`; no plugin migration is required.
+
 # v3.61.26 — Shared Plugin Theme, Reusable Window Lifecycle & Tool Contract
 
 - Promote appearance from shell-only styling to a Core PluginWorkspace semantic token contract shared by built-in and external plugin windows, with legacy variable aliases resolving from the same light/dark source.

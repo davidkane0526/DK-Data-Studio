@@ -1457,9 +1457,14 @@
       const rows=raw.map(String);return rows.includes('*')||rows.includes(pluginId);
     };
     const sourceCapability=()=>{
-      const base=window.DKDSCapabilities?.proxy?.('core.data-sources')||null;if(!base)return null;
+      // data.sources has a synchronous read contract. In the owner renderer the
+      // provider is local even though it is exportable (`remote:true`), so use a
+      // direct local proxy for list()/targets(). Dedicated plugin windows have no
+      // local provider and continue to use the synchronized snapshot facade below.
+      const localBase=window.DKDSCapabilities?.localProxy?.('core.data-sources')||null;
+      const base=localBase||window.DKDSCapabilities?.proxy?.('core.data-sources')||null;if(!base)return null;
       const descriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
-      const syncSnapshot=descriptor?.remote===true&&descriptor?.metadata?.syncSnapshot&&typeof descriptor.metadata.syncSnapshot==='object'
+      const syncSnapshot=!localBase&&descriptor?.remote===true&&descriptor?.metadata?.syncSnapshot&&typeof descriptor.metadata.syncSnapshot==='object'
         ? descriptor.metadata.syncSnapshot
         : null;
       const syncBase=syncSnapshot?new Proxy(base,{get(target,prop,receiver){

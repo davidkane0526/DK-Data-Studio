@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.26
+# DK Data Studio — v3.61.27
+
+
+## v3.61.27 Tool 安装同步契约与原生暗色窗口修复
+
+- 修复外部 Tool 在真实安装/激活阶段因 `ctx.data.sources.list()` 被通用 Capability Proxy Promise 化而触发 `sources is not iterable` 的问题。Core 新增本地同步代理，主窗口与独立插件窗口现在都遵守 SDK 既有的同步数据源读取契约。
+- Electron 主进程接管亮/暗外观：使用 `nativeTheme.themeSource` 同步 Windows/macOS 原生窗口外壳，并在创建 BrowserWindow 前恢复持久化主题；主窗口与 TER/Tool 等独立窗口的原生标题栏不再固定为浅色。
+- 补齐旧 Analysis Workbench 公共控件的主题边界：参数卡、说明块、表格、表单、导入警告、宿主命令条与 overflow 控件全部改用 Core 语义 token，不再晚加载写回硬编码白色。
+- 新增 `test-v36127-tool-install-native-theme.js`，直接复现外部 Tool 对 `sources` 的 `for...of` 同步读取，并锁定 nativeTheme、持久化外观和旧工作区暗色边界。
+- Plugin API 仍为 `1.15.0`，这是宿主实现修复，不要求插件迁移。
 
 
 ## v3.61.26 统一插件主题、可复用窗口生命周期与 Tool 契约修复

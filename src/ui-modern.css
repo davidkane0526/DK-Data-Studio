@@ -1,4 +1,4 @@
-/* DK Data Studio v3.61.26 · ordered modern visual layer
+/* DK Data Studio v3.61.27 · ordered modern visual layer
    Scope: visual treatment only. No Plotly internal DOM selectors and no layout geometry overrides. */
 :root{
   --dkui-canvas:#eef4fb;
@@ -614,7 +614,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
   html[data-dkds-theme="dark"] body.dkds-modern-ui .reswin-group-legend{color:#aeb8c7}
 
 
-/* v3.61.26 shell order contract: analysis pages can never cover the command shell. */
+/* v3.61.27 shell order contract: analysis pages can never cover the command shell. */
 body.dkds-modern-ui .topbar{position:relative;z-index:1400;isolation:isolate}
 body.dkds-modern-ui .project-tabs-bar{position:relative;z-index:1300}
 body.dkds-modern-ui .analysis-page{z-index:500}
@@ -760,4 +760,68 @@ body.dkds-modern-ui .plugin-toolbar-btn,
 body.dkds-modern-ui .plugin-main-tool-btn,
 body.dkds-modern-ui .tool-workspace-menu-item{
   white-space:nowrap;
+}
+
+/* v3.61.27 · complete first-party workspace theme boundary.
+   Legacy analysis markup is still shared by several built-in plugins. Keep its
+   surfaces semantic here so every PluginWorkspace inherits light/dark without
+   each plugin shipping a second theme. */
+body.dkds-modern-ui .analysis-page-body,
+body.dkds-modern-ui.plugin-window-host .analysis-page-body{
+  background:var(--app-bg);
+  color:var(--text-primary);
+}
+body.dkds-modern-ui .analysis-control-card,
+body.dkds-modern-ui .analysis-large-plot,
+body.dkds-modern-ui .analysis-table-wrap{
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:var(--surface-shadow);
+}
+body.dkds-modern-ui .analysis-control-card label,
+body.dkds-modern-ui .analysis-subtitle,
+body.dkds-modern-ui .analysis-chart-title,
+body.dkds-modern-ui .analysis-table,
+body.dkds-modern-ui .analysis-section-title{
+  color:var(--text-secondary);
+}
+body.dkds-modern-ui .analysis-control-card input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .analysis-control-card select,
+body.dkds-modern-ui .analysis-control-card textarea,
+body.dkds-modern-ui .analysis-page .schema-param-field input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .analysis-page .schema-param-field select,
+body.dkds-modern-ui .analysis-page .schema-param-field textarea{
+  background:var(--input-bg);
+  border-color:var(--border-strong);
+  color:var(--text-primary);
+}
+body.dkds-modern-ui .analysis-control-card input::placeholder,
+body.dkds-modern-ui .analysis-control-card textarea::placeholder{color:var(--text-tertiary)}
+body.dkds-modern-ui .analysis-note{
+  background:color-mix(in srgb,var(--accent-primary) 7%,var(--surface-secondary));
+  border-left-color:color-mix(in srgb,var(--accent-primary) 58%,var(--border-strong));
+  color:var(--text-secondary);
+}
+body.dkds-modern-ui .analysis-chart-title,
+body.dkds-modern-ui .analysis-table th{
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+  color:var(--text-secondary);
+}
+body.dkds-modern-ui .analysis-table th,
+body.dkds-modern-ui .analysis-table td{border-bottom-color:var(--border-subtle)}
+body.dkds-modern-ui .ter-workspace-left,
+body.dkds-modern-ui .ter-workspace-main,
+body.dkds-modern-ui .pulse-analysis,
+body.dkds-modern-ui .ter-analysis{color:var(--text-primary)}
+
+/* Core-owned navigation/tool strips must use the same semantic surfaces even
+   when a host recipe is active after the base stylesheet. */
+body.dkds-modern-ui .workspace-commandbar,
+body.dkds-modern-ui .primary-activity-cluster,
+body.dkds-modern-ui .context-commandbar,
+body.dkds-modern-ui .plugin-context-toolbar,
+body.dkds-modern-ui .import-file-actions{
+  color:var(--text-primary);
 }

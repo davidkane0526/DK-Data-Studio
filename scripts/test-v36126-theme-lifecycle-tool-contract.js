@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {normalizePluginPackage}=require('../plugin-package');
 
-assert.equal(json('package.json').version,'3.61.26','theme/lifecycle/tool contract release must be v3.61.26');
+assert.equal(json('package.json').version,'3.61.27','theme/lifecycle/tool contract release must be v3.61.27');
 
 const ui=read('src/ui-modern.css');
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){
@@ -61,4 +61,4 @@ assert(rejected,'Tool packages with a workspace/window activity mismatch must be
 const manager=read('src/core/plugin-manager-ui.js');
 assert(manager.includes('state.typeFilter=type')&&manager.includes('window.DKDSPlugins?.activities?.refresh?.()'),'Installing a package must reveal its actual normalized type and rebuild the top Tool menu immediately.');
 
-console.log('v3.61.26 shared plugin theme, reusable TOP lifecycle and Tool classification contracts passed.');
+console.log('v3.61.27 shared plugin theme, reusable TOP lifecycle and Tool classification contracts passed.');
