@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.30','SDK/Plugin Host hardening release must be v3.61.30');
+assert.equal(json('package.json').version,'3.61.31','SDK/Plugin Host hardening release must be v3.61.31');
 const contract=json('sdk/contract.json');
 assert.equal(contract.pluginApiVersion,'1.16.0','Plugin API 1.16 must be the current standalone SDK contract');
 assert.equal(contract.minimumAppVersion,'3.61.29','Plugin API 1.16 requires the hardened Plugin Host baseline');

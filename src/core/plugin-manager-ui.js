@@ -487,17 +487,17 @@
         try{
           const rows=await window.DKDSPlugins.external.history(plugin.id);
           if(!rows?.length){state.host?.setStatus?.(`${display.name} 暂无可回退的历史版本。`);return;}
-          const listing=rows.slice(0,12).map((row,index)=>`${index+1}. v${row.version} · ${row.archiveReason||'history'}${row.archivedAt?` · ${row.archivedAt}`:''}`).join('\n');
-          const answer=window.prompt(`选择要回退的 ${display.name} 版本：\n\n${listing}\n\n输入序号；取消则不修改。`,'1');if(answer===null)return;
-          const index=Number(answer)-1,row=rows[index];if(!row){state.host?.setStatus?.('无效的版本序号。');return;}
-          if(!window.confirm(`将 ${display.name} 从 v${plugin.version||'?'} 回退到 v${row.version}？\n\n当前插件包会自动进入版本历史，可再次恢复。`))return;
+          const candidates=rows.slice(0,12);
+          const token=await window.DKDSUI?.dialogs?.prompt?.({tone:'info',title:'选择插件历史版本',message:`选择要回退的 ${display.name} 版本。当前插件包会自动进入版本历史，可再次恢复。`,input:{type:'select',label:'历史版本',value:candidates[0]?.token||'',options:candidates.map(row=>({value:row.token,label:`v${row.version} · ${row.archiveReason||'history'}${row.archivedAt?` · ${row.archivedAt}`:''}`}))},confirmLabel:'选择版本'});if(token===null)return;
+          const row=candidates.find(item=>String(item.token)===String(token));if(!row){state.host?.setStatus?.('无效的历史版本。');return;}
+          const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'回退插件版本',message:`将 ${display.name} 从 v${plugin.version||'?'} 回退到 v${row.version}。`,meta:[{label:'插件 ID',value:plugin.id},{label:'目标版本',value:`v${row.version}`}],cancelLabel:'取消',confirmLabel:'回退版本'});if(!confirmed)return;
           state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});await window.DKDSPlugins.external.rollback(plugin.id,row.token);state.host?.setStatus?.(`${display.name} 已回退到 v${row.version}。`);
         }catch(err){state.host?.setStatus?.(`插件版本回退失败：${err.message}`);}finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
       const uninstall=card.querySelector('.plugin-uninstall-btn');
       if(uninstall)uninstall.onclick=async()=>{
-        if(!window.confirm(`卸载本地插件 ${display.name}？\n\n不会删除工程中已保存的 ${plugin.id} 数据；重新安装同 ID 插件后仍可恢复。`))return;
+        const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'卸载本地插件',message:`卸载 ${display.name}？工程中已保存的插件数据不会删除，重新安装同 ID 插件后仍可恢复。`,meta:[{label:'插件 ID',value:plugin.id},{label:'当前版本',value:`v${plugin.version||'?'}`}],cancelLabel:'取消',confirmLabel:'卸载插件',destructive:true});if(!confirmed)return;
         state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
         try{await window.DKDSPlugins.external.uninstall(plugin.id);}
         catch(err){state.host?.setStatus?.(`卸载插件失败：${err.message}`);}
@@ -515,6 +515,16 @@
     restoreManagerScroll(scrollSnapshot,{top:resetScroll,anchorPluginId});
     if(resetScroll)settleManagerAtTop();
     scheduleViewportRepair();
+  }
+
+  async function showPluginInstallFailure(err){
+    const spec=err?.dkdsDialog||{
+      tone:'error',title:'插件安装失败',message:String(err?.message||err||'未知错误'),
+      detail:String(err?.stack||''),detailLabel:'技术详情'
+    };
+    const dialogs=window.DKDSUI?.dialogs;
+    if(dialogs?.alert)await dialogs.alert(spec);
+    state.host?.setStatus?.(`安装插件失败：${String(err?.message||err||'未知错误')}`);
   }
 
   async function copyDiagnostics(){
@@ -558,13 +568,13 @@
           state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装为“${pluginTypeMeta(installed).label}”并载入。`);
           window.DKDSPlugins?.activities?.refresh?.();
         }
-      }catch(err){state.host?.setStatus?.(`安装插件失败：${err.message}`);}
+      }catch(err){await showPluginInstallFailure(err);}
       renderList();
     };
     $('#pluginManagerOpenFolderBtn').onclick=async()=>{try{await window.DKDSPlugins.external.openFolder();}catch(err){state.host?.setStatus?.(`打开插件目录失败：${err.message}`);}};
     $('#pluginManagerDiagnosticsBtn').onclick=copyDiagnostics;
     $('#pluginManagerResetBtn').onclick=async()=>{
-      if(!window.confirm('恢复所有插件的默认启用状态与默认预热设置？不会删除插件工程数据。'))return;
+      const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'恢复插件默认设置',message:'恢复所有插件的默认启用状态与默认预热设置？插件工程数据不会被删除。',cancelLabel:'取消',confirmLabel:'恢复默认'});if(!confirmed)return;
       try{
         await window.DKDSPlugins.manager.resetPreferences();
         state.host?.setStatus?.('插件启用状态与预热设置已恢复默认。');

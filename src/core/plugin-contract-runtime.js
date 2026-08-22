@@ -42,6 +42,7 @@
     'ui.plot-views':api=>!!api?.ui?.plotViews,
     'ui.table':api=>!!api?.ui?.tables,
     'ui.settings':api=>!!api?.ui?.settings,
+    'ui.dialogs':api=>!!api?.ui?.dialogs,
     'ui.actions':api=>!!api?.ui?.actions,
     'ui.selection':api=>!!api?.ui?.selection,
     'ui.interaction':api=>!!api?.ui?.interaction,

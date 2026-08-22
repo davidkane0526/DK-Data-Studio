@@ -148,6 +148,11 @@ export interface DKDSDataImporterSpec {
   score?:(file:any,context?:DKDSDataImporterContext)=>number; estimateArtifacts?:(file:any,options?:any,inspection?:any)=>number;
   parse?:(file:any,options?:any)=>any; parseArtifacts?:(file:any,options?:any)=>DKDSDataImporterResult;
 }
+export interface DKDSDialogMeta { label:string; value:any }
+export interface DKDSDialogAction { id:string; label:string; kind?:'primary'|'secondary'|'danger'; autofocus?:boolean }
+export interface DKDSDialogSpec { tone?:'info'|'warning'|'error'|'success'; title?:string; subtitle?:string; message?:string; detail?:string; detailLabel?:string; detailOpen?:boolean; meta?:DKDSDialogMeta[]; actions?:DKDSDialogAction[]; dismissible?:boolean; dismissOnBackdrop?:boolean; defaultAction?:string; cancelAction?:string; confirmLabel?:string; cancelLabel?:string; okLabel?:string; destructive?:boolean; input?:{type?:'text'|'number'|'select';label?:string;value?:any;placeholder?:string;options?:Array<any>} }
+export interface DKDSDialogRuntime { show(spec?:DKDSDialogSpec):Promise<any>; alert(spec?:DKDSDialogSpec):Promise<any>; confirm(spec?:DKDSDialogSpec):Promise<boolean>; prompt(spec?:DKDSDialogSpec):Promise<string|null> }
+
 export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];importerId?:string;mode?:'scoped'|'global';consumerId?:string;consumerLabel?:string;consumerIcon?:string;accepts?:string[]}):any }
 export interface DKDSDataImportersCapability { register(id:string,spec:DKDSDataImporterSpec):any; list():any[] }
 
@@ -184,7 +189,7 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
-    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
+    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:any; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
     topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;

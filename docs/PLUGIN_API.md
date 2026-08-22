@@ -102,7 +102,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 - data: `data.flow`, `data.pipeline`, `data.transforms`, `data.reactive`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
-- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`.
+- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`, `ui.dialogs`.
 
 Activation fails before plugin code runs if a declared Core requirement is unavailable.
 
@@ -534,3 +534,17 @@ const value = settings.get();
 ```
 
 Plugin settings are user preferences. Scientific results and project-domain state still belong in the plugin project slice / Artifact model rather than SettingsSurface.
+### Core Dialog Runtime
+
+插件需要阻断式提示或确认时声明 `ui.dialogs` 并使用 `ctx.ui.dialogs`。不要调用 `window.alert / confirm / prompt`，这样亮暗主题、层级、键盘交互和窗口行为由 Core 统一管理。
+
+```js
+const ok = await ctx.ui.dialogs.confirm({
+  tone:'warning',
+  title:'确认操作',
+  message:'该操作会修改当前插件数据。',
+  confirmLabel:'继续'
+});
+```
+
+`alert()`、`confirm()` 和 `prompt()` 都返回 Promise；弹窗 DOM 与视觉由宿主拥有。

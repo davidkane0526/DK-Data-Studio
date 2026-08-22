@@ -1851,6 +1851,7 @@
         plotViews: infrastructureScope?.plotViews || null,
         tables: infrastructureScope?.tables || null,
         settings: infrastructureScope?.settings || null,
+        dialogs: window.DKDSUI?.dialogs || null,
         interactions: infrastructureScope?.interactions || null,
         interaction: infrastructureScope?.interactionRuntime || null,
         interactionBehaviors: infrastructureScope?.interactionBehaviors || null,
@@ -2266,8 +2267,12 @@
       host?.setStatus?.(`${statusPrefix} ${definition.manifest.name||id} v${definition.manifest.version||'?'}`);
       return pluginStateRow(definition);
     }catch(err){
+      let rollbackError=null;
       try{removeDefinition(id);externalPackages.delete(id);disabled.delete(id);if(oldPackage){await window.electronAPI?.pluginRestorePackage?.({id,package:oldPackage});const restored=await loadExternalPackage(oldPackage);if(oldPreference===undefined)clearPreference(id);else setPreference(id,oldPreference);const shouldEnable=oldEnabled===null?isDefinitionEnabled(restored):oldEnabled;if(shouldEnable)await activateDefinition(restored,{restoreCurrentProject:true});}else{await window.electronAPI?.pluginRestorePackage?.({id,package:null});clearPreference(id);}chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});}
-      catch(rollbackError){console.error('[DKDS external plugin rollback]',rollbackError);externalLoadErrors.push({file:id,error:`安装失败且回滚失败：${rollbackError.message}`});}
+      catch(rollbackFailure){rollbackError=rollbackFailure;console.error('[DKDS external plugin rollback]',rollbackFailure);externalLoadErrors.push({file:id,error:`安装失败且回滚失败：${rollbackFailure.message}`});}
+      if(rollbackError){const combined=new Error(`${err?.message||err}；自动回滚失败：${rollbackError?.message||rollbackError}`);combined.dkdsDialog={tone:'error',title:'插件加载失败且自动回滚失败',message:`插件 ${id} 未能完成加载，且宿主无法自动恢复安装前状态。`,meta:[{label:'插件 ID',value:id}],detail:`加载错误：${err?.stack||err}
+
+回滚错误：${rollbackError?.stack||rollbackError}`,detailLabel:'技术详情',detailOpen:true};throw combined;}
       throw err;
     }
   }
@@ -2276,10 +2281,49 @@
     const pkg=await window.electronAPI.pluginRollbackVersion({id,token});if(!pkg)return null;
     return replaceExternalPluginPackage(pkg,{statusPrefix:'已回退插件'});
   }
+  function pluginInstallRendererError(payload,fallback='插件安装失败。'){
+    const row=payload&&typeof payload==='object'?payload:{message:String(payload||fallback)};
+    const error=new Error(String(row.message||fallback));
+    const compatibility=row.compatibility||null,plugin=row.plugin||null;
+    const issueText=Array.isArray(compatibility?.issues)?compatibility.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required}（当前 ${issue.actual||'missing'}）`:`${issue.kind} ${issue.required}（当前 ${issue.actual||'unknown'}）`).join('\n'):'';
+    error.dkdsDialog={
+      tone:'error',title:String(row.title||'插件安装失败'),message:String(row.message||fallback),
+      meta:[
+        plugin?.name?{label:'插件',value:`${plugin.name}${plugin.version?` v${plugin.version}`:''}`} : null,
+        plugin?.id?{label:'插件 ID',value:plugin.id}:null,
+        compatibility?.requiredPluginApi?{label:'要求 Plugin API',value:compatibility.requiredPluginApi}:null,
+        compatibility?.pluginApiVersion?{label:'当前 Plugin API',value:compatibility.pluginApiVersion}:null,
+        compatibility?.requiredApp?{label:'要求应用版本',value:compatibility.requiredApp}:null,
+        compatibility?.appVersion?{label:'当前应用版本',value:compatibility.appVersion}:null
+      ].filter(Boolean),
+      detail:issueText||String(row.code||''),detailLabel:'兼容性 / 技术详情'
+    };
+    return error;
+  }
   async function installExternalPlugin(){
-    if(!window.electronAPI?.pluginInstallPackage||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持安装可执行插件。');
-    const pkg=await window.electronAPI.pluginInstallPackage();if(!pkg)return null;
-    return replaceExternalPluginPackage(pkg,{statusPrefix:'已安装插件'});
+    if(!window.electronAPI?.pluginSelectPackage||!window.electronAPI?.pluginInstallPackage||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持安装可执行插件。');
+    const selection=await window.electronAPI.pluginSelectPackage();
+    if(selection?.canceled)return null;
+    if(!selection?.ok)throw pluginInstallRendererError(selection?.error);
+    const manifest=selection.manifest||{},isUpdate=selection.exists===true;
+    const dialogs=window.DKDSUI?.dialogs;if(!dialogs?.confirm)throw new Error('Core Dialog Runtime 未就绪，无法安全确认插件安装。');
+    const confirmed=await dialogs.confirm({
+      tone:'warning',title:isUpdate?'更新插件':'安装插件',subtitle:isUpdate?'将替换当前已安装版本':'本地可执行扩展',
+      message:'插件包含可执行 JavaScript，并可访问其声明的 DKDS 能力和工作区数据。请仅安装你信任或已经审查过的插件包。',
+      meta:[
+        {label:'插件',value:`${manifest.name||manifest.id||'未命名'} v${manifest.version||'?'}`},
+        {label:'插件 ID',value:manifest.id||''},
+        {label:'类型',value:manifest.pluginType||'extension'},
+        {label:'Plugin API',value:selection.compatibility?.requiredPluginApi||manifest.compatibility?.pluginApi||manifest.apiVersion||'*'},
+        isUpdate&&selection.previousVersion?{label:'当前版本',value:selection.previousVersion}:null
+      ].filter(Boolean),
+      cancelLabel:'取消',confirmLabel:isUpdate?'更新插件':'安装插件'
+    });
+    if(!confirmed){await window.electronAPI?.pluginCancelInstall?.(selection.token);return null;}
+    const committed=await window.electronAPI.pluginInstallPackage(selection.token);
+    if(!committed?.ok)throw pluginInstallRendererError(committed?.error);
+    const pkg=committed.package;if(!pkg)return null;
+    return replaceExternalPluginPackage(pkg,{statusPrefix:isUpdate?'已更新插件':'已安装插件'});
   }
 
   async function uninstallExternalPlugin(id){
@@ -2381,7 +2425,7 @@
     },
     deactivate,
     external: {
-      available:()=>!!window.electronAPI?.pluginInstallPackage&&!window.electronAPI?.isWebClient,
+      available:()=>!!window.electronAPI?.pluginSelectPackage&&!!window.electronAPI?.pluginInstallPackage&&!window.electronAPI?.isWebClient,
       install:installExternalPlugin,
       uninstall:uninstallExternalPlugin,
       history:id=>window.electronAPI?.pluginHistoryList?.(id)||Promise.resolve([]),

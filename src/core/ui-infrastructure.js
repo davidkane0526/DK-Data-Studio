@@ -1126,6 +1126,56 @@
   }
 
 
+  class DialogService {
+    constructor(){this.overlays=new Set();}
+    toneIcon(tone){return ({error:'!',warning:'!',success:'✓',info:'i'})[String(tone||'info')]||'i';}
+    closeAll(){for(const overlay of [...this.overlays])overlay.__dkdsClose?.('dismiss');}
+    show(spec={}){
+      if(typeof document==='undefined'||!document.body)return Promise.resolve(spec.defaultAction||'dismiss');
+      const options={tone:'info',title:'提示',message:'',detail:'',meta:[],actions:[{id:'ok',label:'知道了',kind:'primary'}],dismissible:true,...spec};
+      const actions=Array.isArray(options.actions)&&options.actions.length?options.actions:[{id:'ok',label:'知道了',kind:'primary'}];
+      return new Promise(resolve=>{
+        const previous=document.activeElement;
+        const overlay=document.createElement('div');overlay.className='dkds-dialog-overlay';overlay.dataset.tone=String(options.tone||'info');
+        const dialog=document.createElement('section');dialog.className=`dkds-dialog dkds-dialog-${String(options.tone||'info')}`;dialog.setAttribute('role',options.tone==='error'?'alertdialog':'dialog');dialog.setAttribute('aria-modal','true');
+        const header=document.createElement('header');header.className='dkds-dialog-header';
+        const icon=document.createElement('span');icon.className='dkds-dialog-icon';icon.setAttribute('aria-hidden','true');icon.textContent=this.toneIcon(options.tone);
+        const titleWrap=document.createElement('div');titleWrap.className='dkds-dialog-title-wrap';
+        const title=document.createElement('strong');title.className='dkds-dialog-title';title.textContent=String(options.title||'提示');titleWrap.appendChild(title);
+        if(options.subtitle){const subtitle=document.createElement('span');subtitle.className='dkds-dialog-subtitle';subtitle.textContent=String(options.subtitle);titleWrap.appendChild(subtitle);}
+        header.append(icon,titleWrap);
+        if(options.dismissible!==false){const x=document.createElement('button');x.type='button';x.className='dkds-dialog-close';x.setAttribute('aria-label','关闭');x.textContent='×';header.appendChild(x);}
+        const body=document.createElement('div');body.className='dkds-dialog-body';
+        if(options.message){const message=document.createElement('p');message.className='dkds-dialog-message';message.textContent=String(options.message);body.appendChild(message);}
+        const meta=Array.isArray(options.meta)?options.meta.filter(row=>row&&row.value!==undefined&&row.value!==null&&String(row.value)!==''):[];
+        if(meta.length){const grid=document.createElement('dl');grid.className='dkds-dialog-meta';for(const row of meta){const dt=document.createElement('dt');dt.textContent=String(row.label||'');const dd=document.createElement('dd');dd.textContent=String(row.value);grid.append(dt,dd);}body.appendChild(grid);}
+        if(options.detail){const details=document.createElement('details');details.className='dkds-dialog-details';if(options.detailOpen)details.open=true;const summary=document.createElement('summary');summary.textContent=String(options.detailLabel||'详细信息');const pre=document.createElement('pre');pre.textContent=String(options.detail);details.append(summary,pre);body.appendChild(details);}
+        let inputNode=null;
+        if(options.input&&typeof options.input==='object'){
+          const field=document.createElement('label');field.className='dkds-dialog-field';const label=document.createElement('span');label.textContent=String(options.input.label||'');field.appendChild(label);
+          if(String(options.input.type||'text')==='select'){inputNode=document.createElement('select');for(const row of options.input.options||[]){const option=document.createElement('option');option.value=String(row?.value??row?.id??row??'');option.textContent=String(row?.label??row?.title??row?.value??row?.id??row??'');inputNode.appendChild(option);}inputNode.value=String(options.input.value??'');}
+          else{inputNode=document.createElement('input');inputNode.type=String(options.input.type||'text');inputNode.value=String(options.input.value??'');inputNode.placeholder=String(options.input.placeholder||'');}
+          field.appendChild(inputNode);body.appendChild(field);
+        }
+        const footer=document.createElement('footer');footer.className='dkds-dialog-footer';
+        const cleanup=[];let settled=false;
+        const close=value=>{if(settled)return;settled=true;for(const fn of cleanup.splice(0))cleanupCall(fn);this.overlays.delete(overlay);overlay.remove();try{if(previous?.isConnected&&typeof previous.focus==='function')previous.focus();}catch{}resolve(options.input?{action:value,value:String(inputNode?.value??'')}:value);};
+        overlay.__dkdsClose=close;this.overlays.add(overlay);
+        for(const action of actions){const button=document.createElement('button');button.type='button';button.className=`dkds-dialog-action ${String(action.kind||'secondary')}`;button.dataset.dialogAction=String(action.id||'ok');button.textContent=String(action.label||action.id||'确定');if(action.autofocus)button.autofocus=true;button.addEventListener('click',()=>close(action.id||'ok'));footer.appendChild(button);}
+        dialog.append(header,body,footer);overlay.appendChild(dialog);document.body.appendChild(overlay);
+        const closeButton=header.querySelector('.dkds-dialog-close');if(closeButton)closeButton.addEventListener('click',()=>close(options.cancelAction||'dismiss'));
+        const onPointer=event=>{if(options.dismissOnBackdrop===true&&event.target===overlay)close(options.cancelAction||'dismiss');};overlay.addEventListener('pointerdown',onPointer);cleanup.push(()=>overlay.removeEventListener('pointerdown',onPointer));
+        const onKey=event=>{if(event.key==='Escape'&&options.dismissible!==false){event.preventDefault();close(options.cancelAction||'dismiss');return;}if(event.key==='Enter'&&!isTypingTarget(event.target)){const target=footer.querySelector(`[data-dialog-action="${String(options.defaultAction||'')}"]`)||footer.querySelector('.primary');if(target){event.preventDefault();target.click();}}};document.addEventListener('keydown',onKey,true);cleanup.push(()=>document.removeEventListener('keydown',onKey,true));
+        const focusTarget=footer.querySelector('[autofocus]')||footer.querySelector('.primary')||footer.querySelector('button')||closeButton;try{focusTarget?.focus?.();}catch{}
+      });
+    }
+    alert(spec={}){return this.show({...spec,actions:spec.actions||[{id:'ok',label:spec.okLabel||'知道了',kind:'primary',autofocus:true}],defaultAction:'ok',cancelAction:'ok'});}
+    async confirm(spec={}){const value=await this.show({...spec,actions:spec.actions||[{id:'cancel',label:spec.cancelLabel||'取消',kind:'secondary'},{id:'confirm',label:spec.confirmLabel||'确定',kind:spec.destructive?'danger':'primary',autofocus:true}],defaultAction:'confirm',cancelAction:'cancel'});return value==='confirm';}
+    async prompt(spec={}){const result=await this.show({...spec,input:spec.input||{type:'text',label:spec.inputLabel||'',value:spec.value||''},actions:spec.actions||[{id:'cancel',label:spec.cancelLabel||'取消',kind:'secondary'},{id:'confirm',label:spec.confirmLabel||'确定',kind:'primary',autofocus:true}],defaultAction:'confirm',cancelAction:'cancel'});return result?.action==='confirm'?result.value:null;}
+  }
+  const dialogService=new DialogService();
+
+
   class SettingsSurface {
     constructor(scope,id,spec={}){
       this.scope=scope||null;this.owner=String(scope?.owner||spec.owner||'core');this.id=String(id||spec.id||'defaults');this.spec={title:'插件设置',fields:[],defaults:{},...spec};this.listeners=new Set();this.dialog=null;this.value=this.read();
@@ -2201,11 +2251,12 @@
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
     tables:{mount:(id,container,spec={})=>globalTableSurfaceRegistry.mount(id,container,spec),bind:(id,table,spec={})=>globalTableSurfaceRegistry.bind(id,table,spec),hydrate:(root,spec={})=>globalTableSurfaceRegistry.hydrate(root,spec),observe:(root,spec={})=>globalTableSurfaceRegistry.observe(root,spec),get:value=>globalTableSurfaceRegistry.get(value)},
+    dialogs:{show:spec=>dialogService.show(spec),alert:spec=>dialogService.alert(spec),confirm:spec=>dialogService.confirm(spec),prompt:spec=>dialogService.prompt(spec),closeAll:()=>dialogService.closeAll()},
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),resolveId:id=>dataTypeRegistry.resolveId(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),lineage:id=>dataTypeRegistry.lineage(id),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx),validate:()=>dataTypeRegistry.validate()},
     async lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle?.(state,options));return {state:String(state||''),scopes:rows.length,rows};},
     lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificPlotly?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
-    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

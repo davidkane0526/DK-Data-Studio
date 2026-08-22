@@ -103,6 +103,7 @@
           "ui.plot-views",
           "ui.table",
           "ui.settings",
+          "ui.dialogs",
           "ui.actions",
           "ui.selection",
           "ui.interaction",

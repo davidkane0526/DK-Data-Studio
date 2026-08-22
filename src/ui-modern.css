@@ -843,3 +843,19 @@ body.dkds-modern-ui .plugin-context-toolbar,
 body.dkds-modern-ui .import-file-actions{
   color:var(--text-primary);
 }
+
+/* v3.61.31 · renderer-owned modal chrome. Keep the surface mostly flat and
+   use a restrained edge/highlight instead of native or skeuomorphic dialogs. */
+body.dkds-modern-ui .dkds-dialog{
+  border-color:var(--dkui-border);
+  background:var(--surface-primary);
+  box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 88%,white) inset,0 18px 48px rgba(42,61,91,.15),0 4px 14px rgba(42,61,91,.08);
+}
+body.dkds-modern-ui .dkds-dialog-header{background:var(--surface-primary);border-color:var(--border-subtle)}
+body.dkds-modern-ui .dkds-dialog-footer{background:var(--surface-secondary);border-color:var(--border-subtle)}
+body.dkds-modern-ui .dkds-dialog-action.secondary{background:var(--surface-primary);border-color:var(--border-strong);color:var(--text-secondary);box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 88%,white) inset,0 2px 5px rgba(42,61,91,.04)}
+body.dkds-modern-ui .dkds-dialog-action.primary{background:var(--accent-primary);border-color:var(--accent-primary);color:var(--accent-contrast);box-shadow:0 4px 10px color-mix(in srgb,var(--accent-primary) 17%,transparent)}
+body.dkds-modern-ui .dkds-dialog-action:hover:not(:disabled){transform:translateY(-1px)}
+body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:translateY(0)}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-dialog-overlay{background:rgba(4,8,14,.48)}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-dialog{box-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 22px 58px rgba(0,0,0,.38),0 5px 16px rgba(0,0,0,.24)}

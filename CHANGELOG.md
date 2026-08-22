@@ -1,3 +1,12 @@
+# v3.61.31 — Plugin Compatibility Single Source & Core Dialog Runtime
+
+- Fix external Plugin API 1.16 packages being rejected by the Electron installer because `main.js` still advertised a stale hard-coded Plugin API 1.15.0 while the SDK and renderer Core were already on 1.16.0.
+- Make the Electron compatibility environment consume `sdk/contract.json` directly and include that contract in packaged application files so the installer no longer owns an independent Plugin API version constant.
+- Split local plugin installation into select/validate → renderer confirmation → atomic commit. The file picker remains native, but executable-plugin confirmation and install/update errors are now renderer-owned UI.
+- Add a reusable Core Dialog Runtime with light/dark-aware alert, confirm and prompt/select surfaces, structured metadata, expandable technical details, keyboard handling and restrained modern depth.
+- Migrate Plugin Manager install/update, uninstall, rollback selection/confirmation and reset confirmation away from browser/Electron default dialogs. Blocking install errors always open a modal while the status bar keeps only a short audit message.
+- Add `test-v36131-plugin-install-dialog.js` to prevent SDK/installer API drift and regression to native plugin-management message boxes.
+
 # v3.61.30 — Proxy-Aware Build Tooling
 
 - Add one build-network contract to `DKDS.cmd` / Developer Toolbox with `auto`, `inherit`, `custom` and `off` proxy modes. CLI overrides support `-Proxy`, `-ProxyMode` and `-NoProxy`; standard `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY` remain valid.

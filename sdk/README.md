@@ -253,3 +253,8 @@ settings.open();
 ```
 
 插件设置是**用户默认偏好**；当前工程已经保存的布局/分析状态仍由插件自己的 project slice 决定。
+
+
+## Core Dialog Runtime
+
+需要提示、确认或选择时，在 `requiresCore` 声明 `ui.dialogs`，使用 `ctx.ui.dialogs.alert / confirm / prompt`。不要使用浏览器原生 `alert / confirm / prompt`；Core 会统一亮暗主题、遮罩层、按钮对比度和键盘行为。

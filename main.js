@@ -10,6 +10,7 @@ const os = require('os');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
 const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
 const PluginOverridePolicy = require('./plugin-override-policy');
+const PluginSdkContract = require('./sdk/contract.json');
 
 const DKDSProjectFormat = require('./src/core/project-format');
 const APP_NAME = 'DK Data Studio';
@@ -146,7 +147,39 @@ function builtinPluginIds() {
   return ids;
 }
 
-const PLUGIN_API_VERSION='1.15.0';
+const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();
+if(!PLUGIN_API_VERSION)throw new Error('sdk/contract.json is missing pluginApiVersion.');
+
+const pendingPluginInstalls=new Map();
+function pluginInstallCompatibilityDetails(result){
+  return (result?.issues||[]).map(issue=>({
+    kind:String(issue?.kind||'compatibility'),
+    id:String(issue?.id||''),
+    required:String(issue?.required||''),
+    actual:String(issue?.actual||'missing')
+  }));
+}
+function pluginInstallErrorPayload(error,{code='PLUGIN_INSTALL_FAILED',title='插件安装失败',manifest=null,compatibility=null}={}){
+  const message=String(error?.message||error||'未知错误').replace(/^Error:\s*/,'').trim();
+  return {
+    code,
+    title,
+    message,
+    plugin:manifest?{id:String(manifest.id||''),name:String(manifest.name||manifest.id||''),version:String(manifest.version||''),type:String(manifest.pluginType||'extension')} : null,
+    compatibility:compatibility?{
+      compatible:!!compatibility.compatible,
+      issues:pluginInstallCompatibilityDetails(compatibility),
+      appVersion:String(app.getVersion()||''),
+      pluginApiVersion:PLUGIN_API_VERSION,
+      requiredApp:String(manifest?.compatibility?.app||'*'),
+      requiredPluginApi:String(manifest?.compatibility?.pluginApi||manifest?.apiVersion||'*')
+    }:null
+  };
+}
+function sweepPendingPluginInstalls(){
+  const cutoff=Date.now()-10*60*1000;
+  for(const [token,row] of pendingPluginInstalls)if(Number(row?.createdAt||0)<cutoff)pendingPluginInstalls.delete(token);
+}
 function readBuiltinPluginManifests(){
   const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
   try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
@@ -1050,40 +1083,56 @@ app.whenReady().then(() => {
 
   ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
   ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides(),classified=classifyInstalledPluginOverrides(result);return {...result,packages:classified.active.map(pkg=>({...pkg,effective:true,compatibilityStatus:packageCompatibility(pkg.manifest)})),shadowed:classified.shadowed.map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest)}))};});
-  ipcMain.handle('plugins:installPackage', async () => {
-    const result = await dialog.showOpenDialog({
-      title:'安装 DK Data Studio 插件', properties:['openFile'],
-      filters:[{ name:'DK Data Studio Plugin', extensions:['dkplugin'] },{ name:'JSON', extensions:['json'] }]
-    });
-    if(result.canceled || !result.filePaths.length)return null;
-    const sourcePath=result.filePaths[0];
-    const stat=fs.statSync(sourcePath);
-    if(stat.size>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
-    const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
-    assertPackageCompatible(pkg.manifest,'install/update');
-    if(builtinPluginIds().has(pkg.manifest.id))throw new Error(`不能覆盖内置插件：${pkg.manifest.id}`);
-    const dir=ensureExternalPluginDirectory();
-    const target=path.join(dir,pluginPackageFileName(pkg.manifest.id));
-    const exists=fs.existsSync(target);
-    let previousPackage=null;
-    if(exists){
-      try{previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});}
-      catch(err){throw new Error(`已安装插件包损坏，无法安全更新：${err.message}`);}
+  ipcMain.handle('plugins:selectPackage', async () => {
+    sweepPendingPluginInstalls();
+    let manifest=null;
+    try{
+      const result=await dialog.showOpenDialog({
+        title:'选择 DK Data Studio 插件',properties:['openFile'],
+        filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']},{name:'JSON',extensions:['json']}]
+      });
+      if(result.canceled||!result.filePaths.length)return {ok:true,canceled:true};
+      const sourcePath=result.filePaths[0],stat=fs.statSync(sourcePath);
+      if(stat.size>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
+      const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
+      manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible){
+        const details=pluginInstallCompatibilityDetails(compatibility).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required}（当前 ${issue.actual}）`:`${issue.kind} ${issue.required}（当前 ${issue.actual}）`).join('；');
+        return {ok:false,error:pluginInstallErrorPayload(`插件与当前 DK Data Studio 环境不兼容：${details}`,{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      }
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(manifest.id));
+      const exists=fs.existsSync(target);let previousPackage=null;
+      if(exists){
+        try{previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});}
+        catch(err){return {ok:false,error:pluginInstallErrorPayload(`已安装插件包损坏，无法安全更新：${err.message}`,{code:'PLUGIN_EXISTING_PACKAGE_INVALID',title:'无法安全更新插件',manifest,compatibility})};}
+      }
+      const token=crypto.randomUUID();
+      pendingPluginInstalls.set(token,{pkg,target,exists,previousPackage,createdAt:Date.now()});
+      return {ok:true,canceled:false,token,manifest,exists,previousVersion:String(previousPackage?.manifest?.version||''),compatibility:{appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,requiredApp:String(manifest.compatibility?.app||'*'),requiredPluginApi:String(manifest.compatibility?.pluginApi||manifest.apiVersion||'*')}};
+    }catch(err){
+      return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_PACKAGE_INVALID',title:'无法读取插件包',manifest})};
     }
-    const confirm=await dialog.showMessageBox({
-      type:'warning',buttons:['取消',exists?'更新插件':'安装插件'],defaultId:0,cancelId:0,
-      title:exists?'更新已安装插件':'安装本地插件',message:`${pkg.manifest.name} v${pkg.manifest.version}`,
-      detail:(exists?`将替换已安装的 ${pkg.manifest.id}。\n\n`:'')
-        +'本地插件包含可执行 JavaScript，可访问当前应用提供的插件 API 和工作区数据。仅安装你信任或已审查源码的插件包。工程中的插件数据不会因安装/更新被删除。'
-    });
-    if(confirm.response!==1)return null;
-    if(previousPackage)archiveExternalPluginPackage(previousPackage,'upgrade');
-    const normalized={...pkg,installedAt:new Date().toISOString()};
-    const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
-    fs.writeFileSync(tmp,JSON.stringify(normalized,null,2)+'\n','utf8');
-    if(fs.existsSync(target))fs.rmSync(target,{force:true});
-    fs.renameSync(tmp,target);
-    return {...normalized,installedPath:target,previousPackage};
+  });
+  ipcMain.handle('plugins:cancelInstall', async (_event, token) => {
+    pendingPluginInstalls.delete(String(token||''));return true;
+  });
+  ipcMain.handle('plugins:installPackage', async (_event, token) => {
+    sweepPendingPluginInstalls();const key=String(token||''),pending=pendingPluginInstalls.get(key);
+    if(!pending)return {ok:false,error:pluginInstallErrorPayload('安装会话已失效，请重新选择插件包。',{code:'PLUGIN_INSTALL_SESSION_EXPIRED',title:'安装会话已失效'})};
+    pendingPluginInstalls.delete(key);
+    const {pkg,target,previousPackage}=pending,manifest=pkg.manifest;
+    try{
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('插件环境兼容性在确认期间发生变化，请重新选择插件包。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      if(previousPackage)archiveExternalPluginPackage(previousPackage,'upgrade');
+      const normalized={...pkg,installedAt:new Date().toISOString()};atomicWritePluginPackage(target,normalized);
+      return {ok:true,package:{...normalized,installedPath:target,previousPackage}};
+    }catch(err){
+      try{if(previousPackage)atomicWritePluginPackage(target,previousPackage);else if(fs.existsSync(target))fs.rmSync(target,{force:true});}catch(restoreErr){return {ok:false,error:pluginInstallErrorPayload(`${err.message||err}；写入失败后的自动恢复也失败：${restoreErr.message||restoreErr}`,{code:'PLUGIN_INSTALL_AND_RESTORE_FAILED',title:'插件安装与自动恢复均失败',manifest,compatibility:packageCompatibility(manifest)})};}
+      return {ok:false,error:pluginInstallErrorPayload(err,{manifest,compatibility:packageCompatibility(manifest)})};
+    }
   });
   ipcMain.handle('plugins:historyList', async (_event, id) => {
     const pluginId=String(id||'');
