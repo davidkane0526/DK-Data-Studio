@@ -4661,3 +4661,17 @@ body.dkds-table-resizing *{cursor:col-resize!important;}
 .import-column-field-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.import-column-field-copy strong{font-size:10.5px;color:var(--text,#344054)}.import-column-field-copy span{font-size:8.5px;color:var(--muted,#7d8798);white-space:normal}
 #importColumnFieldSelect{width:100%;height:28px;min-height:28px;border:1px solid var(--border,#d8e0ec);border-radius:6px;padding:0 26px 0 7px;background:var(--panel,#fff);color:var(--text,#344054);font-size:9px}
 @media(max-width:900px){.import-column-field-filter{grid-template-columns:1fr}}
+
+/* v3.61.29 Plugin Host safety net.
+   The host must never silently clip plugin UI. Plugin-authored clipping is
+   recovered at runtime only when actual overflow is detected. */
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host,
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host{
+  height:100%;min-height:0!important;overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable
+}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host>*,
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{min-height:0;min-width:0}
+.dkds-layout-overflow-fallback{overscroll-behavior:contain;scrollbar-gutter:stable}
+.dkds-scientific-surface-host.dkds-scientific-layout-fallback{
+  min-height:var(--dkds-scientific-preferred-min-height,180px)!important
+}

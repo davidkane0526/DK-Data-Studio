@@ -2,7 +2,7 @@
   "id": "com.example.workspace",
   "name": "SDK Workspace Example",
   "version": "1.0.0",
-  "apiVersion": "1.15.0",
+  "apiVersion": "1.16.0",
   "entry": "plugin.js",
   "scripts": [
     "plugin.js"
@@ -35,7 +35,7 @@
   ],
   "compatibility": {
     "app": ">=3.61.12 <4.0.0",
-    "pluginApi": "^1.15.0"
+    "pluginApi": "^1.16.0"
   },
   "pluginType": "workbench",
   "data": {

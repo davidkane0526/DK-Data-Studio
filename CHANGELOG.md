@@ -1,3 +1,14 @@
+# v3.61.29 — SDK / Plugin Host Layout Hardening
+
+- Promote the standalone SDK to **Plugin API 1.16.0** (minimum app `3.61.29`) while keeping Plugin API 1.10–1.15 packages load-compatible.
+- Make `ScientificCurveSurface` minimum dimensions preferred geometry rather than a silent render gate. Core now attempts a host-owned minimum-height recovery and can render compactly above a hard safety floor instead of leaving a toolbar-only blank plot.
+- Add `PluginWorkspace` **safe** scrolling and a runtime Layout Guard. If plugin-owned semantic UI is genuinely clipped by `overflow:hidden/clip`, Core restores the affected axis to scrolling so content remains reachable.
+- Add one shared API 1.16 layout contract to both the standalone SDK validator and the application install path. New packages are rejected before activation when they style Core-owned shell DOM, clip semantic workspace UI, own the host viewport with `100vh`, or use positive-pixel `minmax(...,1fr)` scientific rows.
+- Tighten public SDK typing for scoped DOM lifecycle, status-bar items, PluginWorkspace scroll policy and ScientificPlot layout diagnostics.
+- Remove the remaining first-party Core Boundary exceptions: `builtin.status-monitor` now creates DOM, subscribes to window/document events and schedules auto-hide exclusively through `ctx.ui.dom`.
+- Migrate the TOP/Tool templates and the external `Transfer Vth Lab 3.0.2` reference to API 1.16 safe-layout defaults. The reference implementations no longer teach root `overflow:hidden` or plugin-owned viewport geometry.
+- Add `test-v36129-sdk-host-hardening.js`, including a deliberately unsafe test plugin that must fail with an explicit layout diagnostic. Full `npm test` and the stricter `npm run check` both pass with zero Plugin Boundary violations.
+
 # v3.61.28 — Tool Window Layout & Single-Primary Navigation
 
 - Make the top Tools dropdown content-sized and left-packed so icon/label spacing stays compact instead of inheriting shortcut-menu width.

@@ -3,6 +3,7 @@
 const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
+const {inspectWorkspaceStyles}=require('../layout-contract');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
@@ -55,7 +56,10 @@ function validate(folder){
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
   const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
-  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API 1.15 development contract`);
+  for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API ${API} development contract`);
+  const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
+  const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,styles:styleRows});
+  errors.push(...layoutAudit.errors);for(const warning of layoutAudit.warnings)console.warn(`DKDS SDK WARNING: ${warning}`);
   const topWorkspace=m?.workspace?.role==='top';
   if(m.pluginType==='tool'&&!topWorkspace){
     if(!declared.has('ui.menus'))errors.push('Command-only Tool plugins must declare ui.menus so Core can place them in the top Tools menu.');
@@ -63,8 +67,8 @@ function validate(folder){
   }
   if(m.pluginType==='workbench'||(m.pluginType==='tool'&&topWorkspace)){
     const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
-    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.15 workbenches must declare data.accepts so Core can route the standard import action.');
-    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.15; do not invoke ctx.data.importWorkbench from plugin UI.');
+    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.16 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.16; do not invoke ctx.data.importWorkbench from plugin UI.');
     if(/<input[^>]+type=["']?file/i.test(source))errors.push('Workspace plugins must not create file inputs; use the Core-owned import action.');
 
     const workspaceActivity=String(m?.workspace?.activity||'').trim();
@@ -84,7 +88,7 @@ function validate(folder){
       if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push(`${label} must register its workspace through ctx.ui.topWorkspace.register(...).`);
       if(!/openMode\s*:\s*["']window["']/.test(source))errors.push(`${label} activity must use openMode: "window".`);
     }else if(m.window&&typeof m.window==='object'){
-      errors.push('A Plugin API 1.15 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
+      errors.push('A Plugin API 1.16 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
     }
   }
   const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);

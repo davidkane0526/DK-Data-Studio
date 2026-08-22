@@ -23,9 +23,9 @@
     let runtimeStatus=null;
     let lanStatus=null;
     let stopped=false;
-    let memoryHideTimer=0;
+    let cancelMemoryHide=null;
 
-    const themeName=()=>String(window.DKDSTheme?.current?.()||document.documentElement?.dataset?.dkdsTheme||'light')==='dark'?'dark':'light';
+    const themeName=()=>String(window.DKDSTheme?.current?.()||'light')==='dark'?'dark':'light';
     const themeItem=ctx.ui.statusBar.add({
       id:'appearance',side:'right',order:5,
       icon:themeName()==='dark'?'◐':'☼',
@@ -44,24 +44,20 @@
       }
     });
 
-    const panel=document.createElement('aside');
-    panel.id='dkdsMemoryBreakdownPanel';
-    panel.className='dkds-memory-panel hidden';
-    panel.setAttribute('aria-label','内存占用明细');
-    panel.innerHTML=`
+    const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
       <div class="dkds-memory-panel-head">
         <div><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
         <button id="dkdsMemoryPanelClose" type="button" title="关闭">×</button>
       </div>
       <div class="dkds-memory-panel-note">按 Electron 进程 / 插件窗口统计工作集内存</div>
-      <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`;
-    (document.querySelector('#app')||document.body).appendChild(panel);
-    const componentList=panel.querySelector('#dkdsMemoryComponentList');
-    const totalLabel=panel.querySelector('#dkdsMemoryPanelTotal');
+      <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`});
+    ctx.ui.dom.append(ctx.ui.dom.query('#app')||ctx.ui.dom.root(),panel);
+    const componentList=ctx.ui.dom.query('#dkdsMemoryComponentList',panel);
+    const totalLabel=ctx.ui.dom.query('#dkdsMemoryPanelTotal',panel);
 
-    const clearMemoryTimer=()=>{if(memoryHideTimer){clearTimeout(memoryHideTimer);memoryHideTimer=0;}};
+    const clearMemoryTimer=()=>{cancelMemoryHide?.();cancelMemoryHide=null;};
     const hideMemoryPanel=()=>{clearMemoryTimer();panel.classList.add('hidden');};
-    const scheduleMemoryHide=(ms=6500)=>{clearMemoryTimer();memoryHideTimer=setTimeout(hideMemoryPanel,ms);};
+    const scheduleMemoryHide=(ms=6500)=>{clearMemoryTimer();cancelMemoryHide=ctx.ui.dom.timeout(()=>{cancelMemoryHide=null;hideMemoryPanel();},ms);};
     function renderMemoryPanel(){
       const status=runtimeStatus||{};
       const total=Number(status.memory?.workingSetBytes||status.memory?.jsHeapUsedBytes)||0;
@@ -139,12 +135,12 @@
     const onPanelPointerLeave=()=>scheduleMemoryHide(2200);
     const onOutsidePointer=event=>{if(panel.classList.contains('hidden'))return;if(panel.contains(event.target)||memoryItem.element?.contains?.(event.target))return;hideMemoryPanel();};
     const onKeyDown=event=>{if(event.key==='Escape'&&!panel.classList.contains('hidden'))hideMemoryPanel();};
-    window.addEventListener('dkds:theme-changed',onThemeChanged);
-    panel.addEventListener('pointerenter',onPanelPointerEnter);
-    panel.addEventListener('pointerleave',onPanelPointerLeave);
-    panel.querySelector('#dkdsMemoryPanelClose')?.addEventListener('click',hideMemoryPanel);
-    document.addEventListener('pointerdown',onOutsidePointer,true);
-    document.addEventListener('keydown',onKeyDown,true);
+    ctx.ui.dom.on(window,'dkds:theme-changed',onThemeChanged);
+    ctx.ui.dom.on(panel,'pointerenter',onPanelPointerEnter);
+    ctx.ui.dom.on(panel,'pointerleave',onPanelPointerLeave);
+    ctx.ui.dom.on(ctx.ui.dom.query('#dkdsMemoryPanelClose',panel),'click',hideMemoryPanel);
+    ctx.ui.dom.on(ctx.ui.dom.root(),'pointerdown',onOutsidePointer,true);
+    ctx.ui.dom.on(ctx.ui.dom.root(),'keydown',onKeyDown,true);
     ctx.events.on('lanweb:status',applyLan);
     applyTheme();
     await Promise.all([refreshRuntime(),refreshLan()]);
@@ -153,9 +149,6 @@
     return {
       deactivate(){
         stopped=true;stopPolling?.();clearMemoryTimer();panel.remove();
-        window.removeEventListener('dkds:theme-changed',onThemeChanged);
-        document.removeEventListener('pointerdown',onOutsidePointer,true);
-        document.removeEventListener('keydown',onKeyDown,true);
       },
       getState(){return {runtimeStatus,lanStatus,theme:themeName()};}
     };

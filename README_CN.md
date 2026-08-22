@@ -1,4 +1,18 @@
-# DK Data Studio — v3.61.28
+# DK Data Studio — v3.61.29
+
+## v3.61.29 SDK / Plugin Host 稳定性强化
+
+这一版不再针对某一个第三方插件做布局补丁，而是把“图不能静默空白、界面不能静默裁剪、错误布局应在开发阶段被发现”提升为 SDK 与 Plugin Host 的共同契约。
+
+- Plugin API 升级到 **`1.16.0`**，完整独立 SDK 最低应用版本为 `3.61.29`；已有 Plugin API 1.10–1.15 包继续保持加载兼容。
+- Core ScientificCurveSurface 不再把 `minWidth / minHeight` 当作“达不到就不渲染”的硬门槛。它们改为首选尺寸：Core 会先尝试恢复合理的绘图区高度，仍不足时在硬安全下限以上使用 compact 布局，而不是只留下工具条和空白区域。
+- PluginWorkspace 新增默认 **`primaryScroll: "safe"`** 与运行时 Layout Guard。插件若因为自身 CSS 把真实内容裁在 `overflow:hidden/clip` 中，Host 会基于实际 `scrollHeight/clientHeight` 恢复对应方向滚动，保证用户仍能到达内容。
+- standalone SDK validator 与应用安装 `.dkplugin` 的路径共用同一份 `sdk/layout-contract.js`。API 1.16 新插件若直接控制 Core Shell/Workspace DOM、裁剪语义 UI、用 `100vh` 接管宿主 viewport，或在科学绘图区使用正像素 `minmax(...,1fr)`，会在安装前得到明确错误而不是运行后才通过截图发现。
+- SDK 类型补全 `DKDSDomRuntime`、`DKDSStatusBarRuntime`、`safe | auto | contained` PluginWorkspace 模式，以及 ScientificPlot 的 `layoutDiagnostics()` / hard minimum 声明。
+- 清除第一方插件最后两处 Core Boundary 违规：`builtin.status-monitor` 的内存浮层、window/document 事件与自动隐藏 timer 现在全部经过 `ctx.ui.dom` 生命周期管理，不再直接使用 raw DOM / raw scheduler。
+- SDK 自带 TOP / Tool 模板同步改为安全默认布局；外部参考 `Transfer Vth Lab` 升级到 `3.0.2 / Plugin API 1.16`，不再教授根容器 `overflow:hidden` 或插件自行接管窗口高度。
+- 新增“故意写坏布局”的回归插件：开发阶段必须被 validator 明确拒绝；同时保留 API 1.15 legacy fixture，确认旧插件不会因 1.16 的新严格规则被强制迁移。
+- 本版完整 `npm test` 与更严格的 `npm run check` 均实际执行到末尾并返回退出码 0；`check-plugin-boundaries.js` 为 **0 违规**。
 
 ## v3.61.28 Tool 窗口布局与单页导航收敛
 
@@ -6,10 +20,8 @@
 - PluginWorkspace 只有一个 Primary 页面且没有 PRIME/SUB 时默认隐藏无意义的单按钮导航条；确有需要可通过 `navigation: "always"` 强制显示。
 - 独立插件窗口只保留 AnalysisPage 对固定状态栏的一次 28 px viewport 预留，移除 `body padding-bottom + #app calc(...)` 的重复避让，消除插件页面与状态栏之间的额外空带。
 - SDK Tool 模板同步采用单页无冗余导航的写法，并公开 `navigation: auto | always | hidden`。
-- 对用户提供的 Pulse Sampler 1.0.0 诊断确认：空白 ScientificPlot 与局部裁剪来自插件自身 CSS 的尺寸矛盾（250 px plot row < `minHeight:260`）和固定 Grid/裁剪组合，不是 ScientificPlot 数据链或 SDK 定义故障；另提供 1.0.1 布局修正版。
-- 新增 `test-v36128-tool-window-layout.js` 并纳入完整 `npm test` / `npm run check`。Plugin API 保持 `1.15.0`。
-
-
+- 对用户提供的 Pulse Sampler 1.0.0 诊断确认：空白 ScientificPlot 与局部裁剪来自插件自身 CSS 的尺寸矛盾（250 px plot row < `minHeight:260`）和固定 Grid/裁剪组合；该问题直接推动了 v3.61.29 的 Host/SDK 兜底，而不是继续依赖人工修插件。
+- 新增 `test-v36128-tool-window-layout.js`。Plugin API 在该版本仍为 `1.15.0`。
 
 ## v3.61.27 Tool 安装同步契约与原生暗色窗口修复
 

@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.15
+# DK Data Studio Plugin SDK 1.16
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.18 or newer for the complete current Plugin API 1.15 contract (including Tool Workspace routing and dedicated-window Core Import forwarding). Plugin API 1.10–1.14 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.29 or newer for the complete Plugin API 1.16 contract. Plugin API 1.10–1.15 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -20,7 +20,7 @@ sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent life
 
 For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.15.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.16.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Algorithm plugins
 
@@ -28,7 +28,7 @@ Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`
 
 详细规范与示例另见 [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md)。
 
-## Tool plugins (Plugin API 1.15)
+## Tool plugins (Plugin API 1.16)
 
 `pluginType: "tool"` is a host category parallel to TOP workbenches. A **Tool Workspace** uses the same `workspace.role: "top"` + dedicated `window` + `ctx.ui.activities` + `ctx.ui.topWorkspace` contract as TOP; Core simply places its opener under the global **工具** button instead of the TOP activity strip. No additional Tool-only semantics are imposed yet.
 
@@ -44,7 +44,7 @@ All Core-owned XY/scatter/curve plots support **double-click the Y axis or left 
 node sdk/tools/dkds-plugin.js validate path/to/my-plugin
 ```
 
-Validation checks the manifest, referenced files, runtime-manifest parity, declared Core requirements and forbidden infrastructure bypasses.
+Validation checks the manifest, referenced files, runtime-manifest parity, declared Core requirements and forbidden infrastructure bypasses. For Plugin API 1.16 workspaces it also lints CSS/layout ownership: Core shell selectors, semantic `overflow:hidden/clip`, and viewport-height ownership are rejected before packaging. Positive-pixel `minmax(...,1fr)` rows are release-blocking in scientific/workspace-critical regions and reported as warnings in ordinary internal grids, so the validator stays strict where blank/clipped scientific UI can occur without over-constraining normal plugin layout.
 
 ## Package
 
@@ -95,15 +95,15 @@ A **true TOP workbench** must keep four contracts aligned:
 3. Runtime: `ctx.ui.activities.add({ id: <activity>, openMode: "window", ... })`.
 4. Runtime: `ctx.ui.topWorkspace.register({ activity: <activity>, ... })`.
 
-Core then gives the plugin the same host semantics as built-in TOPs: normally it opens in a reusable dedicated window; when promoted to SUPER, the same activity/layout is embedded in the main shell instead of creating a second implementation. Plugin API 1.15 validation rejects incomplete or mismatched TOP contracts. Start from `sdk/templates/top-workspace-plugin/`.
+Core then gives the plugin the same host semantics as built-in TOPs: normally it opens in a reusable dedicated window; when promoted to SUPER, the same activity/layout is embedded in the main shell instead of creating a second implementation. Plugin API 1.16 validation rejects incomplete or mismatched TOP contracts. Start from `sdk/templates/top-workspace-plugin/`.
 
 Use `ctx.data.sources` for imported project sources. Workbench plugins receive a scoped read view automatically, so `list()` and `targets()` are synchronous reads in every host, including dedicated TOP windows. Physical data remains canonical and is stored once; assignments are many-to-many. Import/Data Center own assignment changes, avoiding one importer per analysis plugin and avoiding unrelated workbench data pollution.
 
 #### Bounded scientific layout
 
-Viewport-owned scientific charts must live in a bounded layout. Prefer `ctx.ui.pluginWorkspace.create(host, { primaryScroll: "contained" })` and `mountPrimary({ scroll: "contained" })`. Every CSS ancestor between the workspace and a fill-height plot should use a definite/bounded height plus `min-height: 0`; grid rows that own a chart should normally use `minmax(0, 1fr)`.
+Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). Core owns the outer safety scroll region and recovers semantic plugin containers that would otherwise clip real content. Every CSS ancestor between the workspace and a fill-height plot should use a definite/bounded height plus `min-height: 0`; grid rows that own a chart should normally use `minmax(0, 1fr)`.
 
-Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. This is a plugin layout error; Core coalesces resize work but does not reinterpret an unbounded CSS layout.
+Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Plugin API 1.16 rejects this pattern in scientific/workspace-critical regions during SDK validation and warns when it appears in ordinary internal grids. At runtime Core also provides a final Layout Guard so a missed layout defect becomes scrolling/compact rendering rather than silent clipping or a blank scientific plot. `PluginWorkspace.layoutDiagnostics()` reports any containers that required runtime recovery; recovery is also logged once to the developer console.
 
 `ctx.ui.scientificPlot.create(target, spec)` accepts either an SVG element or an ordinary container. For a normal container Core creates and owns the internal SVG, sizing and lifecycle. Plugins should not create private D3/SVG interaction infrastructure.
 

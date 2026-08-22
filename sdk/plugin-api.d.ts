@@ -11,7 +11,7 @@ export interface DKDSDataSourceTarget { id:string; label:string; icon:string; or
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'|'1.16.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'extension'|'developer';
   requiresCore:string[]; capabilities?:string[]; source?:string;
@@ -61,18 +61,32 @@ export interface DKDSInteractionBehaviorBinding { id?:string; gesture:DKDSIntera
 export interface DKDSInteractionBehaviorBindSpec { gestures?:DKDSInteractionGesture[]; selector?:string; target?:string|((context:any)=>string); targetId?:string|((context:any)=>string); button?:string|((context:any)=>string); payload?:Record<string,any>|((context:any)=>Record<string,any>); capture?:boolean; preventDefault?:boolean; stopPropagation?:boolean; beforeRoute?:(context:any)=>void; onDecision?:(context:any)=>void }
 export interface DKDSInteractionBehaviorProfile { add(binding:DKDSInteractionBehaviorBinding):()=>void; setBindings(bindings:DKDSInteractionBehaviorBinding[]):this; resolve(input:any):any; route(input:any):any; bind(target:any,spec?:DKDSInteractionBehaviorBindSpec):()=>void; snapshot():any; dispose():void }
 export interface DKDSInteractionBehaviorRuntime { create(id:string,spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; compile(spec?:{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}):DKDSInteractionBehaviorProfile; get(id:string):DKDSInteractionBehaviorProfile|null; gestures:readonly DKDSInteractionGesture[]; intents:readonly string[] }
+
+export interface DKDSDomRuntime {
+  readonly version:string; readonly owner:string;
+  root(value?:any):any; query(selector:string,from?:any):any; all(selector:string,from?:any):HTMLElement[];
+  create(tag:string,spec?:{className?:string;text?:string;html?:string;attrs?:Record<string,any>;dataset?:Record<string,any>}):HTMLElement;
+  createNS(namespace:string,tag:string,spec?:{className?:string;text?:string;attrs?:Record<string,any>}):Element;
+  html(target:any,value:any):any; text(target:any,value:any):any; replace(target:any,...nodes:any[]):any; append(target:any,...nodes:any[]):any; toggle(target:any,className:string,force?:boolean):any; style(target:any,patch?:Record<string,any>):any; attr(target:any,name:string,value?:any):any;
+  on(target:EventTarget,event:string,handler:(event:any)=>void,options?:any):()=>void; delegate(target:any,event:string,selector:string,handler:(event:any,hit:HTMLElement)=>void,options?:any):()=>void;
+  observe(target:any,callback:(entries:any)=>void,options?:{resize?:boolean;mutation?:boolean|MutationObserverInit}):()=>void; frame(fn:()=>void):()=>void; timeout(fn:()=>void,delay?:number):()=>void; interval(fn:()=>void,delay?:number):()=>void; microtask(fn:()=>void):void; dispose():void;
+}
+export interface DKDSStatusBarItemSpec { id:string; side?:'left'|'right'; order?:number; icon?:string; label?:string; title?:string; state?:'info'|'ok'|'warn'|'error'|string; hidden?:boolean; disabled?:boolean; className?:string; onClick?:(payload:{event:Event;element:HTMLButtonElement;pluginId:string;id:string;host:any})=>void }
+export interface DKDSStatusBarItem { readonly id:string; readonly pluginId:string; readonly element:HTMLButtonElement; update(patch:Partial<DKDSStatusBarItemSpec>):DKDSStatusBarItem; remove():void; readonly value:DKDSStatusBarItemSpec }
+export interface DKDSStatusBarRuntime { add(spec:DKDSStatusBarItemSpec):DKDSStatusBarItem; own():DKDSStatusBarItem[] }
+
 export interface DKDSActivitySpec { id:string; label?:string; contextLabel?:string; icon?:string; order?:number; default?:boolean; primary?:boolean; openMode?:'window'|'page'; navigation?:'primary'|'system'|'hidden'|string; artifactHydration?:'project'|'live'; description?:string; onActivate?:(context?:any)=>any }
 export interface DKDSPluginWorkspaceCreateSpec {
   /** Navigation is auto-hidden when Primary is the only destination. */
   navigation?:'auto'|'always'|'hidden';
   id?:string; activity?:string; title?:string; subtitle?:string; header?:boolean; closable?:boolean; hostMode?:'embedded'|'dedicated'|string;
-  primaryScroll?:'auto'|'contained'; canvasLeftWidth?:number; canvasLeftMin?:number; canvasLeftReserve?:number; canvasRightWidth?:number; canvasRightMin?:number; canvasRightReserve?:number; canvasBottomHeight?:number; canvasBottomMin?:number; canvasBottomReserve?:number;
+  primaryScroll?:'safe'|'auto'|'contained'; canvasLeftWidth?:number; canvasLeftMin?:number; canvasLeftReserve?:number; canvasRightWidth?:number; canvasRightMin?:number; canvasRightReserve?:number; canvasBottomHeight?:number; canvasBottomMin?:number; canvasBottomReserve?:number;
 }
 export interface DKDSPluginWorkspaceMountContext { workbench:DKDSPluginWorkspace; scope:any; slots:any; left:HTMLElement; main:HTMLElement; root:HTMLElement }
-export interface DKDSPluginWorkspacePrimarySpec { id:string; label?:string; leftNode?:any; mainNode?:any; leftHtml?:string|(()=>string); mainHtml?:string|(()=>string); scroll?:'auto'|'contained'; scrollMode?:'auto'|'contained'; mount?:(context:DKDSPluginWorkspaceMountContext)=>void|(()=>void) }
+export interface DKDSPluginWorkspacePrimarySpec { id:string; label?:string; leftNode?:any; mainNode?:any; leftHtml?:string|(()=>string); mainHtml?:string|(()=>string); scroll?:'safe'|'auto'|'contained'; scrollMode?:'safe'|'auto'|'contained'; mount?:(context:DKDSPluginWorkspaceMountContext)=>void|(()=>void) }
 export interface DKDSPluginWorkspace {
   readonly shell:HTMLElement; readonly slots?:any;
-  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:any):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; capabilityState():any; dispose():void;
+  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:any):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
 }
 export interface DKDSPluginWorkspaceRuntime { create(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace }
 export interface DKDSTopWorkspaceSpec {
@@ -82,7 +96,7 @@ export interface DKDSTopWorkspaceSpec {
 export interface DKDSTopWorkspaceRuntime { register(spec:DKDSTopWorkspaceSpec):any; isSuper():boolean }
 
 export interface DKDSScientificCurveSurfaceSpec {
-  container?:any; minWidth?:number; minHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string; yScaleType?:'linear'|'log'; renderPriority?:'frame'|'idle'|string;
+  container?:any; /** Preferred geometry; Core renders compactly or recovers space instead of silently blanking. */ minWidth?:number; minHeight?:number; /** Hard lower bound used only when a surface is truly too small to draw. */ hardMinWidth?:number; hardMinHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string; yScaleType?:'linear'|'log'; renderPriority?:'frame'|'idle'|string;
   xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; interactionBehavior?:DKDSInteractionBehaviorProfile|{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}; navigationTools?:boolean;
   getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getManipulators?:()=>DKDSPlotManipulator[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
   getView?:()=>{xDomain?:number[]|null;yDomain?:number[]|null}; setView?:(view:{xDomain?:number[]|null;yDomain?:number[]|null},meta?:any)=>void;
@@ -106,7 +120,7 @@ export interface DKDSScientificCurveSurfaceSpec {
   /** @deprecated v1.10 compatibility hook. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
   /** @deprecated v1.10 compatibility hook. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
 }
-export interface DKDSScientificCurveSurface { readonly target:any; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
+export interface DKDSScientificCurveSurface { readonly target:any; layoutDiagnostics():Readonly<{status:'initial'|'ready'|'compact'|'waiting'|string;width:number;height:number;preferredMinWidth:number;preferredMinHeight:number;hardMinWidth:number;hardMinHeight:number;fallbackApplied:boolean;compact:boolean;reason:string}>; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
 export interface DKDSScientificPlotRuntime {
   create(target:any,spec:DKDSScientificCurveSurfaceSpec):DKDSScientificCurveSurface; createPlotly(target:any,spec?:any):any; attach(target:any,spec?:any):any;
   react(target:any,data?:any[],layout?:any,config?:any,spec?:any):any; scalarField(target:any,field?:any,options?:any):any; get(target:any):any; controller(target:any,name:string):any;
@@ -138,7 +152,7 @@ export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];impo
 export interface DKDSDataImportersCapability { register(id:string,spec:DKDSDataImporterSpec):any; list():any[] }
 
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.15.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.16.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
@@ -169,11 +183,11 @@ export interface DKDSPluginContext {
   };
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
-    dom:any; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
+    dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
     scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:any; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
-    topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:any; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
+    topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
     pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; edit:any; designSystem:any
   };
 }

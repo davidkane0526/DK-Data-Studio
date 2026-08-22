@@ -1,20 +1,22 @@
-# Next Session Handoff — v3.61.28 Tool window/layout stabilization
+# Next Session Handoff — v3.61.29 SDK / Plugin Host hardening
 
 ## Baseline
 
-- Application: `3.61.28`; current changes compact the Tool dropdown, remove redundant single-Primary navigation, and correct dedicated plugin-window/status-bar viewport geometry without changing scientific/data contracts.
-- Runtime/scientific behavior baseline: `3.61.28` (scientific algorithms/data semantics unchanged from v3.61.22).
-- Current branch: `feat/v3.61.28-tool-window-layout`.
-- Public Plugin API / standalone SDK: `1.15.0`.
-- Architecture phase: **feature complete / release candidate / stabilization**.
-- Architecture is frozen unless a real P0/P1 issue proves a boundary is wrong.
+- Application: `3.61.29`; this release moves recurring plugin-layout failures into explicit SDK/Host guarantees rather than plugin-specific repair.
+- Runtime/scientific behavior baseline: scientific algorithms and canonical data semantics remain unchanged from the v3.61.22+ stabilized line.
+- Current branch: `feat/v3.61.29-sdk-host-hardening`.
+- Public Plugin API / standalone SDK: **`1.16.0`**, minimum app `3.61.29`; API 1.10–1.15 packages remain load-compatible.
+- Architecture phase: **release candidate / stabilization**. New abstractions should be added only when a demonstrated defect cannot be solved by the existing public contract.
 
+## v3.61.29 SDK / Host contract
 
-## v3.61.28 Tool diagnosis
-
-- `com.dkds.tools.pulse-sampler@1.0.0` is a valid Tool/TOP package, but its own layout sets the waveform row to a 250 px minimum while asking Core ScientificPlot for `minHeight:260`; Core therefore waits for sufficient layout and the plot remains visually blank. The plugin also combines fixed grid sizing with clipped cards, which can hide lower controls. A 1.0.1 layout-only correction was produced separately.
-- Core-side fixes are intentionally generic: content-sized Tool menu, auto-hidden single-Primary nav, and exactly one dedicated-window status-bar reservation.
-- SDK bounded-layout guidance was already correct; v3.61.28 only improves the Tool template/navigation ergonomics.
+- New TOP/Tool workspaces default to `primaryScroll: "safe"`. Core owns the outer reachable viewport and runs a Layout Guard over Primary content. If semantic plugin UI is actually clipped by `overflow:hidden/clip`, the affected axis is recovered to scrolling.
+- ScientificCurveSurface `minWidth/minHeight` are preferred geometry, not a silent rendering gate. Core attempts a preferred-height recovery and renders compactly above hard safety minima; a small but usable container must not become a toolbar-only blank plot.
+- API 1.16 standalone validation and in-app package installation share `sdk/layout-contract.js`. New packages are rejected for Core-owned shell selectors, semantic clipping, plugin-owned viewport height (`100vh`) and positive-pixel `minmax(...,1fr)` scientific rows.
+- The SDK templates are the canonical authoring path. They must never teach patterns that API 1.16 rejects.
+- First-party plugins have no boundary exceptions. `builtin.status-monitor` now uses `ctx.ui.dom` for DOM creation, EventTargets and timers; `node scripts/check-plugin-boundaries.js` returns zero violations.
+- `Transfer Vth Lab 3.0.2` is the external TOP reference for API 1.16 safe layout.
+- Required release gates `npm test` and `npm run check` both passed end-to-end on this branch.
 
 ## Core architecture
 
@@ -49,7 +51,7 @@ Shared scientific infrastructure owns Reactive, Pipeline, Transform Registry, Sc
 
 ## External plugin baseline
 
-- Transfer Vth Lab 3.0.1 remains the external TOP compatibility reference.
+- Transfer Vth Lab 3.0.2 is the current API 1.16 external TOP authoring reference; API 1.15 remains a compatibility fixture, not the template for new code.
 - New TOPs use `workspace.role=top`, a dedicated `window`, `openMode=window`, `topWorkspace.register()` and Core-owned import/scoped data.
 - ScientificPlot/D3 and Plotly runtime dependencies must be declared by dedicated plugins and are validated by the SDK.
 

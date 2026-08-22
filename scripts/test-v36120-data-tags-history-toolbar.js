@@ -9,9 +9,9 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.28','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.29','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
-  assert(sdk.pluginApiVersion==='1.15.0','Core history/tag/toolbar work must not require a Plugin API bump.');
+  assert(sdk.pluginApiVersion==='1.16.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
   const dataContext={window:{},console,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.window=dataContext;
   vm.runInNewContext(read('src/core/data-model.js'),dataContext,{filename:'data-model.js'});

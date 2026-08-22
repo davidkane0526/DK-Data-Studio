@@ -15,8 +15,8 @@ const pulsePlugin=read('src/plugins/pulse-analysis/plugin.js');
 const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('scripts/check-plugin-boundaries.js');
 
-assert(pkg.version==='3.61.28','Application version must be 3.61.18.');
-assert(contract.pluginApiVersion==='1.15.0'&&contract.minimumAppVersion==='3.61.18','Current complete SDK contract must require app 3.61.18 while preserving older installed plugin-package compatibility.');
+assert(pkg.version==='3.61.29','Application version must be 3.61.18.');
+assert(contract.pluginApiVersion==='1.16.0'&&contract.minimumAppVersion==='3.61.29','Current complete SDK contract must require app 3.61.29 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
@@ -26,7 +26,7 @@ assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList
 assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
 assert(app.includes("importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
 assert(index.includes('id="importTargetOptions"'),'Global Import Workbench target routing must remain available.');
-assert(sdkManifest.apiVersion==='1.15.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
+assert(sdkManifest.apiVersion==='1.16.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
 assert(sdk.includes('data-dkds-slot="workbench-import"'),'SDK template must mark the Core-owned import-action position.');
 assert(!sdk.includes('ctx.data.importWorkbench.open'),'SDK workbench template must not create or invoke a private import button.');
 assert(!pulseFeature.includes("label:'添加文件'")&&!pulseFeature.includes('P.addFiles()'),'Pulse must use the Core-owned import action instead of a plugin button.');

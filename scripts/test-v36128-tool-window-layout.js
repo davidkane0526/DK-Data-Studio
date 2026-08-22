@@ -4,7 +4,7 @@ const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.28','Tool window/layout release must be v3.61.28');
+assert.equal(pkg.version,'3.61.29','Tool window/layout release must be v3.61.29');
 
 const modern=read('src/ui-modern.css');
 assert(/#pluginToolsMenu\s*\{[\s\S]*?width\s*:\s*max-content/i.test(modern),'Tools menu must size to its content');
@@ -26,4 +26,4 @@ assert(api.includes("navigation?:'auto'|'always'|'hidden'"),'SDK must document P
 const template=read('sdk/templates/tool-plugin/plugin.js');
 assert(!template.includes("label:'工具'"),'Single-page Tool template must not teach a redundant Tool navigation label');
 
-console.log('v3.61.28 tool window/layout regression OK');
+console.log('v3.61.29 tool window/layout regression OK');

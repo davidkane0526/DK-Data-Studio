@@ -1,5 +1,6 @@
 const path = require('path');
 const SemverCompat = require('./semver-compat');
+const {inspectWorkspaceStyles}=require('./sdk/layout-contract');
 
 const PLUGIN_PACKAGE_SCHEMA = 1;
 const MAX_FILES = 64;
@@ -111,6 +112,8 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if (!Object.prototype.hasOwnProperty.call(files, fileName)) throw new Error(`Plugin stylesheet not found: ${fileName}`);
     if (!fileName.toLowerCase().endsWith('.css')) throw new Error(`Plugin stylesheet must be CSS: ${fileName}`);
   }
+  const layoutAudit=inspectWorkspaceStyles({apiVersion,pluginType,workspace:sourceManifest.workspace,styles:styles.map(name=>({name,content:files[name]}))});
+  if(layoutAudit.errors.length)throw new Error(`Plugin layout contract failed: ${layoutAudit.errors.join(' ')}`);
 
   let windowSpec = sourceManifest.window;
   if(windowSpec!==undefined){

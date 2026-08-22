@@ -3,7 +3,8 @@
   const VERSION='1.0.0';
   const scopes=new Map();
   const isElement=v=>!!v&&v.nodeType===1;
-  const resolve=(root,value)=>{if(isElement(value))return value;if(typeof value==='function')return resolve(root,value());const q=String(value||'').trim();if(!q)return root||null;try{return root?.querySelector?.(q)||document.querySelector(q);}catch{return null;}};
+  const isEventTarget=v=>!!v&&typeof v.addEventListener==='function'&&typeof v.removeEventListener==='function';
+  const resolve=(root,value)=>{if(isElement(value)||value===window||value===document||(isEventTarget(value)&&typeof value!=='string'))return value;if(typeof value==='function')return resolve(root,value());const q=String(value||'').trim();if(!q)return root||null;try{return root?.querySelector?.(q)||document.querySelector(q);}catch{return null;}};
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function createScope(owner,{root=document}={}){
     const id=String(owner||'plugin');const cleanups=new Set();let base=resolve(document,root)||document;let disposed=false;

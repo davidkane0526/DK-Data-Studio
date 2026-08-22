@@ -1,4 +1,4 @@
-# TOP Workspaces — Plugin API 1.15
+# TOP Workspaces — Plugin API 1.16
 
 This document defines the public contract for third-party analysis plugins that must behave like built-in TOP workspaces.
 
@@ -74,30 +74,34 @@ A plot that fills the TOP viewport must have a bounded height chain. The referen
 ```js
 const workspace = ctx.ui.pluginWorkspace.create(host, {
   activity: 'my-analysis',
-  primaryScroll: 'contained'
+  primaryScroll: 'safe'
 });
 workspace.mountPrimary({
   id: 'main',
-  scroll: 'contained',
+  scroll: 'safe',
   mainNode
 });
 ```
 
 ```css
 .my-workbench,
-.my-main,
-.my-plot-card,
-.my-plot {
-  height: 100%;
-  min-height: 0;
+.my-main {
+  width: 100%;
   min-width: 0;
+  min-height: 100%;
 }
 .my-main {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow: hidden;
+}
+.my-plot-card,
+.my-plot {
+  min-width: 0;
+  min-height: 220px;
 }
 ```
+
+Do not set `height:100%`/`100vh` on the plugin root to take ownership of the host viewport, and do not use `overflow:hidden/clip` on semantic workspace/card/content containers. `primaryScroll: "safe"` keeps the outer viewport reachable; Core can recover a missed inner overflow at runtime.
 
 Avoid this pattern for a fill-height/responsive plot:
 
@@ -108,7 +112,7 @@ Avoid this pattern for a fill-height/responsive plot:
 .my-main { grid-template-rows: auto minmax(380px, 1fr) auto; }
 ```
 
-Core coalesces resize work, but a plugin must still provide a mathematically bounded CSS layout.
+Plugin API 1.16 validates the bounded layout before packaging. Core also owns a runtime Layout Guard: semantic containers that actually clip content are converted to scrolling, and ScientificCurveSurface treats `minWidth/minHeight` as preferred geometry rather than a silent-render gate.
 
 
 ### ScientificPlot runtime dependencies
@@ -135,7 +139,7 @@ The Core log view displays `|Y|` without mutating source Artifacts. A plugin sho
 
 ## 5. Validation
 
-The Plugin API 1.15 SDK validator rejects:
+The Plugin API 1.16 SDK validator rejects:
 
 - a TOP workbench without `manifest.window`;
 - mismatched `workspace.activity` / `window.activity`;
@@ -146,3 +150,7 @@ The Plugin API 1.15 SDK validator rejects:
 - workbench-owned file inputs/import UI.
 
 Start from `sdk/templates/top-workspace-plugin/` rather than adapting the standalone workbench template by guesswork.
+
+### Plugin API 1.16 layout safety
+
+For new workspaces, `safe` is the default Primary scroll policy. The standalone validator and the application installer both reject plugin CSS that targets Core-owned workspace DOM, clips semantic UI with `overflow:hidden/clip`, owns `100vh` viewport geometry, or uses positive-pixel `minmax(...,1fr)` rows in scientific/workspace-critical regions. Ordinary internal grids receive a warning instead of a hard failure. This is intentional: a plugin should describe its domain layout while Core guarantees that content remains reachable.

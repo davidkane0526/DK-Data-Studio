@@ -1,4 +1,4 @@
-# Tool Workspaces — Plugin API 1.15
+# Tool Workspaces — Plugin API 1.16
 
 工具（`pluginType: "tool"`）现在是与 TOP 工作台并列的正式 UI 分类。
 
@@ -78,13 +78,13 @@ Tool Workspace 与 TOP 使用相同的 bounded-layout 规则。填充窗口的�
 
 ```js
 const workspace = ctx.ui.pluginWorkspace.create(host, {
-  primaryScroll: 'contained'
+  primaryScroll: 'safe'
 });
-
-当 Tool 只有一个 Primary 页面时，Core 默认隐藏没有导航价值的单按钮导航条。若工具确实需要始终显示该导航条，可显式传入 `navigation: "always"`；也可使用 `navigation: "hidden"` 强制隐藏。
 ```
 
-CSS 高度链必须包含 `height:100%` / `min-height:0`，图形所在 grid row 使用 `minmax(0, 1fr)`。不要使用 intrinsic-height parent + `minmax(<positive px>, 1fr)` 的自增长组合。
+当 Tool 只有一个 Primary 页面时，Core 默认隐藏没有导航价值的单按钮导航条。若工具确实需要始终显示该导航条，可显式传入 `navigation: "always"`；也可使用 `navigation: "hidden"` 强制隐藏。
+
+优先让 PluginWorkspace 的 `safe` 模式管理外层滚动。插件自己的 Grid 行使用 `minmax(0, 1fr)`，绘图区可给 `min-height` 作为首选尺寸，但不要用 `overflow:hidden/clip` 裁剪语义 UI。Plugin API 1.16 validator 会在开发阶段阻止高风险布局；运行时 Core 仍提供最后一层滚动与 ScientificPlot 尺寸兜底。
 
 依赖也必须由独立窗口显式声明：
 

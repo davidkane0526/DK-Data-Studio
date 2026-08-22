@@ -1,9 +1,11 @@
 # Architecture — Current v3.61.x Baseline
 
 
-## Current architecture checkpoint — v3.61.28
+## Current architecture checkpoint — v3.61.29
 
 The runtime architecture is considered feature-complete and is now in stabilization mode. New work should prefer fixing demonstrated P0/P1 defects over introducing new host/runtime abstraction layers.
+
+Plugin API 1.16 makes layout reachability a Core boundary: PluginWorkspace owns safe outer scrolling/overflow recovery, ScientificCurveSurface owns compact geometry fallback, and the standalone SDK plus package installer share one layout contract. First-party plugins must pass the same public boundary rules as external plugins.
 
 ```text
 Platform shells

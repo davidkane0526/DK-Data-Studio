@@ -10,9 +10,9 @@ function assert(value,message){if(!value)throw new Error(message);}
 const pkg=json('package.json');
 const dc=json('src/plugins/data-center/plugin.json');
 const sdk=json('sdk/contract.json');
-assert(pkg.version==='3.61.28','Application version must be 3.61.27.');
+assert(pkg.version==='3.61.29','Application version must be 3.61.27.');
 assert(dc.version==='1.13.6','Data Center version must advance to 1.13.6.');
-assert(sdk.pluginApiVersion==='1.15.0','Data navigation / legacy restoration / Core plot chrome must not bump the Plugin SDK.');
+assert(sdk.pluginApiVersion==='1.16.0','Data navigation / legacy restoration / Core plot chrome must not bump the Plugin SDK.');
 
 // The legacy project migrator must recover meaningful root state even when an
 // intermediate build wrote empty namespaced placeholders.

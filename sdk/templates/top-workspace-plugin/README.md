@@ -1,6 +1,6 @@
 # SDK TOP Workspace Example
 
-Reference template for a **true TOP workbench** in Plugin API 1.15.
+Reference template for a **true TOP workbench** in Plugin API 1.16.
 
 A TOP is not created by `pluginType: "workbench"` alone. The four parts must agree:
 
@@ -11,7 +11,7 @@ A TOP is not created by `pluginType: "workbench"` alone. The four parts must agr
 
 Core owns the workbench import action. Declare `data.accepts`, include the `workbench-import` slot, and read assigned project data through `ctx.data.sources` / `ctx.data.artifacts`.
 
-For viewport-owned scientific charts, use `ctx.ui.pluginWorkspace.create(..., { primaryScroll: "contained" })` and bounded CSS (`height:100%; min-height:0`) through every ancestor between the workspace and plot. Do not combine an intrinsic-height parent with `minmax(<px>, 1fr)` and a responsive chart; that can create a resize feedback loop.
+For scientific charts, use `ctx.ui.pluginWorkspace.create(..., { primaryScroll: "safe" })`. Keep plugin-owned roots flexible (`min-width:0; min-height:100%`), use `minmax(0, 1fr)` for flexible chart rows, and give the plot target only a reasonable preferred `min-height`. Do not take ownership of the host viewport with `100vh`/root `height:100%`, and do not clip semantic UI with `overflow:hidden/clip`; API 1.16 validation rejects those patterns and Core provides a runtime overflow fallback.
 
 Validate/package:
 

@@ -1,12 +1,12 @@
 (() => {
   const manifest={
-    id:'com.example.top-workspace',name:'SDK TOP Workspace Example',version:'1.0.0',apiVersion:'1.15.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:910,
+    id:'com.example.top-workspace',name:'SDK TOP Workspace Example',version:'1.0.0',apiVersion:'1.16.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:910,
     description:'Reference external TOP workbench with a dedicated window, scoped project sources and bounded scientific layout.',pluginType:'workbench',
     requiresCore:['status','events','workspace','data.sources','data.artifacts','ui.dom','ui.workspace','ui.scientific-plot','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','data.scoped-sources'],
     workspace:{role:'top',activity:'sdk-top-example',icon:'◇',title:'SDK TOP Example'},
     window:{activity:'sdk-top-example',title:'SDK TOP Example',width:1280,height:820,minWidth:860,minHeight:560,dependencies:['d3'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    data:{accepts:['science.transport.iv']},compatibility:{app:'>=3.61.18 <4.0.0',pluginApi:'^1.15.0'}
+    data:{accepts:['science.transport.iv']},compatibility:{app:'>=3.61.29 <4.0.0',pluginApi:'^1.16.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     let workbench=null;
@@ -26,14 +26,14 @@
       html:'<div class="analysis-page-header"><div><h2>SDK TOP Workspace Example</h2><div class="sdk-top-subtitle">Dedicated TOP · scoped data · bounded plot</div></div><div data-dkds-slot="workbench-import"></div></div><div class="analysis-page-body"><div class="sdk-top-workbench"></div></div>'
     });
     const host=ctx.ui.dom.query('.sdk-top-workbench',page);
-    workbench=ctx.ui.pluginWorkspace.create(host,{header:false,activity:'sdk-top-example',primaryScroll:'contained'});
+    workbench=ctx.ui.pluginWorkspace.create(host,{header:false,activity:'sdk-top-example',primaryScroll:'safe'});
     workbench.mountPrimary({
-      id:'main',label:'主界面',scroll:'contained',mount:({main})=>{
+      id:'main',label:'主界面',scroll:'safe',mount:({main})=>{
         const shell=ctx.ui.dom.create('div',{className:'sdk-top-main'});
         summary=ctx.ui.dom.create('div',{className:'sdk-top-summary'});
         const plot=ctx.ui.dom.create('div',{className:'sdk-top-plot'});
         ctx.ui.dom.append(shell,summary,plot);ctx.ui.dom.append(main,shell);
-        surface=ctx.ui.scientificPlot.create(plot,{minHeight:220,xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});
+        surface=ctx.ui.scientificPlot.create(plot,{xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});
         refresh();
         return()=>{surface?.dispose?.();surface=null;summary=null;};
       }

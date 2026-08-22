@@ -29,7 +29,7 @@ Schema version 1:
     "id": "com.example.strong-detector",
     "name": "Strong Detector",
     "version": "1.0.0",
-    "apiVersion": "1.15.0",
+    "apiVersion": "1.16.0",
     "entry": "plugin.js",
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
@@ -44,7 +44,7 @@ Schema version 1:
 }
 ```
 
-Limits are enforced before installation:
+Limits and Plugin API 1.16 layout safety are enforced before installation:
 
 - package id must be valid and cannot start with `builtin.`;
 - all paths must be relative and cannot traverse outside the package;
@@ -52,8 +52,9 @@ Limits are enforced before installation:
 - styles must end in `.css`;
 - only text files are accepted;
 - file count and total package size are bounded;
-- the declared Plugin API must be compatible with the v1 API family.
-- new SDK packages target `1.15.0`; existing `1.10.0`–`1.14.0` packages remain accepted for compatibility.
+- the declared Plugin API must be compatible with the v1 API family;
+- API 1.16 workspace CSS cannot own Core shell selectors/viewport geometry or silently clip semantic UI; the same rules are checked by the standalone SDK and again by the application installer.
+- new SDK packages target `1.16.0`; existing `1.10.0`–`1.15.0` packages remain accepted for compatibility.
 
 ## Build a package
 
@@ -249,7 +250,7 @@ A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...
 
 Imported project data is stored once and assigned to zero, one, or multiple analysis workbenches. New plugins should require `data.sources` and read sources through `ctx.data.sources.list()`. A workbench receives its own scoped view automatically. Source assignment is centralized in Import/Data Center rather than implemented by each plugin.
 
-### True TOP workbench contract (Plugin API 1.15)
+### True TOP workbench contract (Plugin API 1.16)
 
 A workbench does not become TOP merely because it uses `AnalysisWorkbench`/`PluginWorkspace`. A true TOP must declare `workspace.role: "top"`, a matching dedicated `window.activity`, register an Activity with `openMode: "window"`, and register one `ctx.ui.topWorkspace` layout. Core uses that same implementation in a dedicated window or, when promoted, as SUPER in the main shell. The standalone SDK validator rejects incomplete/mismatched TOP packages.
 

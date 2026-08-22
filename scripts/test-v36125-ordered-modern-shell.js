@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.28','ordered modern shell release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.29','ordered modern shell release must be v3.61.27');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
 const css=read('src/ui-modern.css');
@@ -34,7 +34,7 @@ assert(css.includes('.toolbar-btn.strong')&&css.includes('button.primary')&&css.
 assert(css.includes('.plugin-toolbar-btn')&&css.includes('white-space:nowrap'),'command labels must remain atomic and rely on existing overflow/reflow behavior instead of wrapping into collisions');
 
 assert(status.includes("id:'appearance'")&&status.includes('window.DKDSTheme?.toggle?.()'),'status bar must expose a light/dark toggle');
-assert(status.includes("id='dkdsMemoryBreakdownPanel'")&&status.includes('scheduleMemoryHide')&&status.includes('status.components'),'memory status must open an auto-hiding per-component breakdown panel');
+assert(status.includes("id:'dkdsMemoryBreakdownPanel'")&&status.includes('scheduleMemoryHide')&&status.includes('status.components')&&status.includes('ctx.ui.dom.timeout'),'memory status must open an auto-hiding per-component breakdown panel through Core-owned DOM/scheduler lifecycle');
 assert(main.includes('const components=metrics.map')&&main.includes('pluginId:renderer?.pluginId'),'desktop runtime status must expose per-process/plugin-window memory components');
 assert(web.includes("id:'web:renderer'")&&web.includes('components:[{'),'web runtime status must expose a compatible component-memory row');
 
@@ -44,4 +44,4 @@ assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:
 assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
 assert(kernel.includes("pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
 assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
-console.log('v3.61.27 ordered modern shell, appearance, memory and Tool runtime checks passed.');
+console.log('ordered modern shell, appearance, memory and Tool runtime checks passed under v3.61.29.');
