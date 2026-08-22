@@ -1,0 +1,404 @@
+/* DK Data Studio v3.61.23 visual system polish
+   Visual-only cascade layer: no layout contract, data contract, or interaction logic changes. */
+:root{
+  --bg:#f3f6fb;
+  --panel:#ffffff;
+  --border:#d9e1ec;
+  --text:#253247;
+  --muted:#748197;
+  --accent:#315efb;
+  --line:#e1e7f0;
+  --hover:#f4f7fc;
+  --ui-panel-radius:11px;
+  --dkds-surface:#ffffff;
+  --dkds-surface-subtle:#f8fafd;
+  --dkds-surface-muted:#f3f6fa;
+  --dkds-line:#dde4ee;
+  --dkds-line-strong:#cbd5e3;
+  --dkds-text:#253247;
+  --dkds-text-soft:#55637a;
+  --dkds-muted:#7d899c;
+  --dkds-accent-soft:#eef3ff;
+  --dkds-shadow-xs:0 1px 2px rgba(25,39,66,.055), inset 0 1px 0 rgba(255,255,255,.82);
+  --dkds-shadow-sm:0 2px 7px rgba(25,39,66,.07), 0 1px 2px rgba(25,39,66,.04), inset 0 1px 0 rgba(255,255,255,.86);
+  --dkds-shadow-md:0 10px 28px rgba(25,39,66,.10), 0 2px 6px rgba(25,39,66,.05), inset 0 1px 0 rgba(255,255,255,.88);
+  --dkds-shadow-float:0 20px 52px rgba(24,38,65,.16), 0 4px 12px rgba(24,38,65,.07), inset 0 1px 0 rgba(255,255,255,.92);
+  --dkds-focus-ring:0 0 0 3px rgba(49,94,251,.14);
+}
+
+html,body,#app{color:var(--dkds-text);background:var(--bg)}
+body{
+  background:
+    radial-gradient(900px 520px at 70% -220px,rgba(73,111,241,.055),transparent 62%),
+    linear-gradient(180deg,#f7f9fd 0,#f3f6fb 120px,#f3f6fb 100%);
+}
+::selection{background:rgba(49,94,251,.18);color:#18243a}
+
+/* Inputs and buttons: restrained tactile depth without changing sizing. */
+button,
+input:not([type="checkbox"]):not([type="radio"]),
+select,textarea{
+  transition:border-color .14s ease,background-color .14s ease,box-shadow .14s ease,color .14s ease,opacity .14s ease,transform .10s ease;
+}
+button{
+  border-color:var(--dkds-line)!important;
+  background:linear-gradient(180deg,#fff 0%,#f8fafe 100%);
+  color:#344258;
+  box-shadow:var(--dkds-shadow-xs);
+}
+button:hover:not(:disabled){
+  border-color:#c4cfde!important;
+  background:linear-gradient(180deg,#fff 0%,#f2f6fc 100%);
+  color:#253247;
+  box-shadow:0 4px 12px rgba(25,39,66,.075),0 1px 2px rgba(25,39,66,.05),inset 0 1px 0 rgba(255,255,255,.92);
+  transform:translateY(-1px);
+}
+button:active:not(:disabled){
+  transform:translateY(0);
+  background:linear-gradient(180deg,#f1f5fb 0%,#f8fafe 100%);
+  box-shadow:inset 0 1px 3px rgba(27,43,70,.11),0 1px 0 rgba(255,255,255,.8);
+}
+button:disabled{opacity:.46;cursor:default;box-shadow:none;transform:none}
+button.primary,.toolbar-btn.strong{
+  border-color:#315efb!important;
+  background:linear-gradient(180deg,#3b69ff 0%,#315efb 58%,#2955e7 100%)!important;
+  color:#fff!important;
+  box-shadow:0 3px 8px rgba(49,94,251,.20),inset 0 1px 0 rgba(255,255,255,.24)!important;
+}
+button.primary:hover:not(:disabled),.toolbar-btn.strong:hover:not(:disabled){
+  border-color:#2855e7!important;
+  background:linear-gradient(180deg,#4773ff 0%,#315efb 60%,#244ddd 100%)!important;
+  box-shadow:0 6px 14px rgba(49,94,251,.25),inset 0 1px 0 rgba(255,255,255,.28)!important;
+}
+button.danger,.danger-soft{border-color:#efc7c4!important}
+button.danger:hover,.danger-soft:hover{background:#fff5f4!important;color:#b42318!important;border-color:#e7aaa5!important}
+
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{
+  border-color:#cfd8e5!important;
+  background:linear-gradient(180deg,#fff,#fbfcfe)!important;
+  color:#344258;
+  box-shadow:inset 0 1px 2px rgba(30,45,71,.045),0 1px 0 rgba(255,255,255,.78);
+}
+input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hover{border-color:#b9c6d8!important}
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{
+  outline:none!important;
+  border-color:#7392ee!important;
+  box-shadow:var(--dkds-focus-ring),inset 0 1px 2px rgba(30,45,71,.04)!important;
+}
+input::placeholder,textarea::placeholder{color:#9aa6b7}
+input[type="checkbox"],input[type="radio"]{filter:saturate(.93)}
+
+/* Shell chrome. */
+.topbar{
+  background:rgba(255,255,255,.965)!important;
+  border-bottom-color:#dce3ed!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.95),0 5px 18px rgba(25,39,66,.045)!important;
+  backdrop-filter:saturate(1.2) blur(14px);
+}
+.topbar-primary .brand{color:#202d43!important;border-right-color:#e1e7ef!important}
+.brand-mark{box-shadow:0 2px 6px rgba(49,94,251,.18),inset 0 1px 0 rgba(255,255,255,.22)!important}
+.version{color:#8a96a8!important}
+.toolbar-group,.primary-activity-cluster,.system-core-tools-group{
+  border-color:#dde5ef!important;
+  background:linear-gradient(180deg,#fbfcff 0%,#f4f7fb 100%)!important;
+  box-shadow:0 1px 3px rgba(27,42,67,.045),inset 0 1px 0 rgba(255,255,255,.88)!important;
+}
+.toolbar-group .toolbar-btn:not(.strong),
+.primary-activity-cluster .activity-tab,
+.primary-activity-cluster .plugin-toolbar-btn,
+.system-core-tools-group>.toolbar-btn,
+.system-core-tools-group>.menu-anchor>.toolbar-btn{
+  box-shadow:none!important;
+}
+.toolbar-group .toolbar-btn:not(.strong),.plugin-context-toolbar .plugin-toolbar-btn,.activity-tab{
+  background:transparent!important;border-color:transparent!important;
+}
+.toolbar-group .toolbar-btn:hover:not(.strong),.plugin-context-toolbar .plugin-toolbar-btn:hover,.activity-tab:hover{
+  background:rgba(255,255,255,.90)!important;
+  border-color:#d9e1ec!important;
+  box-shadow:0 1px 3px rgba(25,39,66,.055)!important;
+}
+.activity-tab.active,.primary-activity-bar .activity-tab.top-level-activity-tab.active{
+  background:linear-gradient(180deg,#fff,#f1f5ff)!important;
+  border-color:#cbd7f1!important;
+  color:#2757d6!important;
+  box-shadow:0 2px 6px rgba(42,78,171,.09),inset 0 1px 0 #fff!important;
+}
+.system-commandbar>.menu-anchor>.toolbar-btn,.compact-menu-anchor>.toolbar-btn{
+  background:linear-gradient(180deg,#fff,#f6f8fc)!important;
+  border-color:#dce3ed!important;
+  box-shadow:var(--dkds-shadow-xs)!important;
+}
+
+.project-tabs-bar{
+  background:linear-gradient(180deg,#f1f4f9,#edf1f6)!important;
+  border-bottom-color:#dce3ec!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.62);
+}
+.project-tab{
+  border-color:#d8e0eb!important;
+  background:linear-gradient(180deg,#eef2f7,#e8edf4)!important;
+  color:#617087!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55)!important;
+}
+.project-tab:hover{background:linear-gradient(180deg,#f6f8fb,#edf1f6)!important;color:#39475b!important}
+.project-tab.active{
+  background:linear-gradient(180deg,#fff,#fbfcfe)!important;
+  color:#223047!important;
+  border-color:#d4dce7!important;
+  border-bottom-color:#fff!important;
+  box-shadow:0 -2px 7px rgba(26,41,66,.05),inset 0 1px 0 #fff!important;
+}
+.new-project-tab{background:linear-gradient(180deg,#fff,#f6f8fb)!important;border-color:#d8e0eb!important;box-shadow:var(--dkds-shadow-xs)!important}
+
+.workspace,.main-area{background:var(--bg)!important}
+.left-panel{
+  background:linear-gradient(180deg,#fbfcfe,#f8fafd)!important;
+  border-right-color:#dfe6ef!important;
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.72);
+}
+.plot-wrap,.main-workspace{background:#fff!important}
+.statusbar{
+  background:linear-gradient(180deg,#fcfdff,#f7f9fc)!important;
+  border-top-color:#e2e8f0!important;
+  color:#788599!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.78)!important;
+}
+
+/* Cards and floating surfaces. */
+.floating-panel,.pulse-card,.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card,
+.import-section,.lan-web-settings-card,.lan-web-address-card,.lan-web-share-section,.trend-card,
+.analysis-chart-card,.analysis-table-wrap,.dkds-analysis-prime-panel,.dc-card,.reswin-group-card{
+  border-color:var(--dkds-line)!important;
+  background:linear-gradient(180deg,#fff 0%,#fdfefe 100%)!important;
+  box-shadow:var(--dkds-shadow-sm)!important;
+}
+.floating-panel{
+  border-radius:12px!important;
+  box-shadow:var(--dkds-shadow-float)!important;
+}
+.floating-header,.pulse-card-heading,.trend-card-header,.analysis-chart-title,.plugin-card-footer,
+.dkds-analysis-prime-head,.dc-section-head,.dc-tool-title{
+  background:linear-gradient(180deg,#fbfcfe,#f6f8fb)!important;
+  border-color:#e5eaf1!important;
+  color:#344258!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+.panel-header-actions button,.floating-panel:not(.lan-web-panel) .panel-header-actions>button,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close{
+  box-shadow:none!important;background:transparent!important;border-color:transparent!important;
+}
+.panel-header-actions button:hover,.floating-panel:not(.lan-web-panel) .panel-header-actions>button:hover,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close:hover{
+  background:#eef3f9!important;color:#2f4058!important;transform:none!important;
+}
+
+/* Menus and transient chrome. */
+.command-menu{
+  border-color:#d8e1ec!important;
+  border-radius:10px!important;
+  background:rgba(255,255,255,.985)!important;
+  box-shadow:0 18px 44px rgba(24,38,65,.15),0 3px 8px rgba(24,38,65,.06),inset 0 1px 0 rgba(255,255,255,.95)!important;
+  backdrop-filter:blur(14px) saturate(1.1);
+}
+.command-menu>button,.command-menu>div>.plugin-menu-item{box-shadow:none!important;border-color:transparent!important;background:transparent!important}
+.command-menu>button:hover,.command-menu>div>.plugin-menu-item:hover{background:#f1f5fb!important;color:#26354b!important;transform:none!important}
+.command-menu-separator{background:#e8edf4!important}
+.dkds-tooltip,.hover-tip,.respar-hover-tip{
+  background:rgba(31,42,59,.94)!important;
+  border-color:rgba(255,255,255,.18)!important;
+  border-radius:9px!important;
+  box-shadow:0 12px 30px rgba(17,25,40,.22)!important;
+  backdrop-filter:blur(8px);
+}
+
+/* Dataset/list selection has layered, consistent emphasis. */
+.dataset-item,.dc-artifact-item,.respar-dataset-item,.dkds-selection-item{
+  border-color:transparent;
+  transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,opacity .14s ease,transform .10s ease!important;
+}
+.dataset-item:hover,.dc-artifact-item:hover,.respar-dataset-item:hover{
+  background:#f5f8fc!important;
+  border-color:#e1e7f0!important;
+  box-shadow:0 1px 3px rgba(25,39,66,.04)!important;
+}
+.dataset-item.selected,.dc-artifact-item.dkds-selection-focused,.respar-dataset-item.selected,
+.dkds-selection-item.dkds-selection-focused{
+  background:linear-gradient(180deg,#f2f6ff,#edf3ff)!important;
+  border-color:#b9c9ef!important;
+  box-shadow:0 2px 6px rgba(49,94,251,.075),inset 0 1px 0 rgba(255,255,255,.82)!important;
+}
+.main-legend-chip,.trend-legend-chip,.respar-legend-chip,.dc-ref-chip,.ter-summary-chip,.plugin-capability-chip{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+.main-legend-chip:hover,.respar-legend-chip:hover{transform:translateY(-1px)}
+
+/* Tables: slightly separated header plane, clean numeric rows. */
+.analysis-table-wrap,.dc-table-preview,.pulse-table-wrap,.import-preview-table-wrap{box-shadow:var(--dkds-shadow-xs)!important}
+.analysis-table th,.dc-preview-table th,.dkds-managed-table thead th,.import-preview-table th,.pulse-table-wrap th{
+  background:linear-gradient(180deg,#f8fafd,#f3f6fa)!important;
+  color:#4c5a70!important;
+  border-bottom-color:#dfe6ef!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+}
+.analysis-table td,.dc-preview-table td,.dkds-managed-table tbody td,.dkds-managed-table tbody th,
+.import-preview-table td,.pulse-table-wrap td{border-bottom-color:#edf1f5!important}
+.analysis-table tbody tr:hover td,.dc-preview-table tbody tr:hover td,.dkds-managed-table tbody tr:hover>td,
+.dkds-managed-table tbody tr:hover>th,.import-preview-table tbody tr:hover td,.pulse-table-wrap tbody tr:hover td{
+  background:#f8faff!important;
+}
+
+/* Generic schema/settings surfaces. */
+.schema-param-field input,.schema-param-field select,.schema-param-field textarea,
+.dkds-settings-field select,.dkds-settings-field input[type="text"],.dkds-settings-field input[type="number"]{
+  border-color:#cfd8e5!important;background:linear-gradient(180deg,#fff,#fbfcfe)!important;
+  box-shadow:inset 0 1px 2px rgba(28,42,68,.04)!important;
+}
+.dkds-settings-overlay{background:rgba(25,37,58,.27)!important;backdrop-filter:blur(5px)!important}
+.dkds-settings-dialog{border-color:#d8e1ec!important;border-radius:13px!important;box-shadow:var(--dkds-shadow-float)!important}
+.dkds-settings-dialog>header,.dkds-settings-dialog>footer{background:linear-gradient(180deg,#fbfcfe,#f6f8fb)!important;border-color:#e6ebf2!important}
+
+/* Plugin manager. */
+.plugin-manager-card:hover{border-color:#ccd7e5!important;box-shadow:0 7px 20px rgba(25,39,66,.075),inset 0 1px 0 rgba(255,255,255,.9)!important}
+.plugin-card-icon{
+  background:linear-gradient(145deg,#f3f6ff,#e7eeff)!important;
+  border:1px solid #d8e3ff;
+  box-shadow:0 2px 6px rgba(49,94,251,.09),inset 0 1px 0 #fff;
+}
+.plugin-status-badge,.plugin-capability-chip,.plugin-manager-section-count{box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.plugin-switch-track{background:linear-gradient(180deg,#d6dde7,#c5cedb)!important;box-shadow:inset 0 1px 2px rgba(32,47,73,.12)!important}
+.plugin-enable-switch input:checked + .plugin-switch-track{background:linear-gradient(180deg,#4774ff,#315efb)!important;box-shadow:inset 0 1px 2px rgba(22,48,132,.18),0 1px 3px rgba(49,94,251,.16)!important}
+.plugin-switch-thumb{box-shadow:0 2px 5px rgba(25,39,66,.24),inset 0 1px 0 #fff!important}
+
+/* Unified Analysis Workbench. */
+.dkds-analysis-workbench{background:linear-gradient(180deg,#f5f7fb,#f2f5fa)!important}
+.dkds-analysis-header,.dkds-analysis-nav{
+  background:rgba(255,255,255,.97)!important;
+  border-color:#dfe6ef!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+}
+.dkds-analysis-nav-btn{box-shadow:none!important;background:transparent!important;border-color:transparent!important}
+.dkds-analysis-nav-btn:hover{background:#f3f6fb!important;border-color:#e0e6ef!important;transform:none!important}
+.dkds-analysis-nav-btn.active{background:linear-gradient(180deg,#f2f6ff,#eaf1ff)!important;border-color:#bfd0f4!important;color:#2858d4!important;box-shadow:inset 0 1px 0 #fff!important}
+.dkds-analysis-frame{background:transparent}
+.dkds-analysis-left,.dkds-analysis-right,.dkds-analysis-bottom{scrollbar-gutter:stable}
+.dkds-analysis-prime-panel{border-radius:11px!important}
+
+/* Data Center. Higher specificity intentionally wins over plugin-injected legacy colors. */
+body .data-center-body:not(.dkds-unified-workbench-body){background:linear-gradient(180deg,#f6f8fc,#f3f6fb)!important}
+body .dc-card{border-radius:11px!important;overflow:hidden}
+body .dc-section-head,body .dc-tool-title,body .dc-selection-tools,body .dc-data-nav{
+  border-color:#e6ebf2!important;
+}
+body .dc-data-nav{background:#fff!important}
+body .dc-selection-tools{background:#fafbfd!important}
+body .dc-artifact-item{
+  border-color:#e1e7ef!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,#fff,#fbfcfe)!important;
+  box-shadow:0 1px 2px rgba(25,39,66,.035)!important;
+}
+body .dc-artifact-item:hover{border-color:#ced8e6!important;background:#f7f9fd!important}
+body .dc-tabs button.active{background:linear-gradient(180deg,#3b69ff,#315efb)!important;border-color:#315efb!important;color:#fff!important;box-shadow:0 2px 6px rgba(49,94,251,.16)!important}
+body .dc-step-card,body .dc-prov-item{border-color:#e0e6ef!important;background:linear-gradient(180deg,#fff,#fbfcfe)!important;box-shadow:var(--dkds-shadow-xs)!important}
+body .dc-ref-chip{background:#f5f8fc!important;border-color:#dce4ef!important}
+
+/* Resonance workbench: only chrome is restyled; scientific category colors remain untouched. */
+body #resonanceDedicatedPage .resonance-dedicated-body,
+body #resonanceDedicatedPage .resonance-parity-root{background:linear-gradient(180deg,#f6f8fc,#f3f6fb)!important}
+body #resonanceDedicatedPage .respar-left-panel,
+body #resonanceDedicatedPage .respar-floating-panel,
+body #resonanceDedicatedPage .reswin-group-card,
+body #resonanceDedicatedPage .respar-inspector-panel{
+  background:linear-gradient(180deg,#fff,#fdfefe)!important;
+  border-color:#dce4ee!important;
+  box-shadow:var(--dkds-shadow-sm)!important;
+}
+body #resonanceDedicatedPage .respar-floating-panel{box-shadow:var(--dkds-shadow-float)!important}
+body #resonanceDedicatedPage .respar-floating-header,
+body #resonanceDedicatedPage .reswin-group-head,
+body #resonanceDedicatedPage .respar-derived-header{
+  background:linear-gradient(180deg,#fbfcfe,#f6f8fb)!important;
+  border-color:#e6ebf2!important;
+}
+body #resonanceDedicatedPage .respar-dataset-item{border-radius:8px!important}
+body #resonanceDedicatedPage .respar-dataset-transform select,
+body #resonanceDedicatedPage .respar-peak-class-grid input{
+  background:linear-gradient(180deg,#fff,#fbfcfe)!important;border-color:#cfd8e5!important;box-shadow:inset 0 1px 2px rgba(28,42,68,.04)!important;
+}
+body #resonanceDedicatedPage .respar-range-grid button,
+body #resonanceDedicatedPage .respar-inspector-action-grid button,
+body #resonanceDedicatedPage .respar-inline-actions button,
+body #resonanceDedicatedPage .respar-preset-row button{
+  box-shadow:var(--dkds-shadow-xs)!important;
+}
+body #resonanceDedicatedPage .peak-category-choice{box-shadow:var(--dkds-shadow-xs)!important}
+body #resonanceDedicatedPage .peak-category-choice.selected{box-shadow:0 0 0 1px #668cff,0 3px 8px rgba(49,94,251,.10),inset 0 1px 0 #fff!important}
+
+/* TER / Pulse cards share the same depth and toolbar rhythm. */
+body .ter-analysis .analysis-chart-card,body .pulse-analysis .pulse-card{border-radius:11px!important;box-shadow:var(--dkds-shadow-sm)!important}
+body .ter-chart-actions,body .pulse-plot-actions,body .dc-inline-actions,body .dkds-plugin-header-actions,
+body .plugin-card-actions,body .panel-header-actions,body .trend-layout-controls{
+  align-items:center;gap:5px;
+}
+
+/* Plotly and D3 chart chrome. Scientific trace colors/data stay unchanged. */
+.js-plotly-plot .plotly .modebar{
+  padding:3px 4px!important;
+  border:1px solid rgba(205,216,231,.82)!important;
+  border-radius:9px!important;
+  background:rgba(255,255,255,.90)!important;
+  box-shadow:0 5px 15px rgba(24,38,65,.09),inset 0 1px 0 rgba(255,255,255,.92)!important;
+  backdrop-filter:blur(8px);
+}
+.js-plotly-plot .plotly .modebar-group{background:transparent!important;padding:0 1px!important}
+.js-plotly-plot .plotly .modebar-btn{border-radius:6px!important;transition:background .12s ease,opacity .12s ease,transform .10s ease!important}
+.js-plotly-plot .plotly .modebar-btn:hover{background:#eef3fb!important;transform:translateY(-1px)}
+.js-plotly-plot .plotly .modebar-btn path{fill:#58677c!important}
+.js-plotly-plot .plotly .modebar-btn:hover path{fill:#315efb!important}
+.dkds-scientific-nav-tools{
+  border-color:rgba(198,210,226,.82)!important;
+  background:rgba(255,255,255,.92)!important;
+  box-shadow:0 5px 14px rgba(24,38,65,.08),inset 0 1px 0 rgba(255,255,255,.9)!important;
+  backdrop-filter:blur(8px)!important;
+}
+.dkds-scientific-nav-tools button{box-shadow:none!important}
+.dkds-scientific-nav-tools button:hover{transform:none!important}
+.axis path,.axis line,.respar-axis path,.respar-axis line{stroke:#cbd5e1!important;shape-rendering:geometricPrecision}
+.axis text,.respar-axis text{fill:#66758b!important;font-family:"Segoe UI Variable Text","Microsoft YaHei UI","Segoe UI",sans-serif!important}
+
+/* Scrollbars keep the visual weight low but provide a visible hover affordance. */
+*{scrollbar-color:#b8c3d2 transparent}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-thumb{background:#bec8d5;border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:#99a8bc;background-clip:padding-box}
+
+/* Responsive anti-crowding safeguards. No dimensions are changed at normal desktop widths. */
+@media(max-width:1180px){
+  .analysis-page-header,.dkds-analysis-header{gap:12px!important}
+  .analysis-page-header>div:first-child,.dkds-analysis-heading{min-width:0}
+  .plugin-manager-header-actions,.automation-test-header-actions,.dkds-analysis-commandbar{flex-wrap:wrap}
+  body .dc-chart-toolbar,body .dc-preview-actions{flex-wrap:wrap!important;min-width:0!important}
+}
+@media(max-width:860px){
+  .analysis-page-header,.dkds-analysis-header{align-items:flex-start!important;flex-wrap:wrap!important}
+  .analysis-page-header>div:first-child,.dkds-analysis-heading{flex:1 1 100%!important;padding-right:0!important}
+  .analysis-page-header>div:last-child,.dkds-analysis-commandbar{max-width:100%;justify-content:flex-start!important}
+  body .plugin-card-actions{flex-wrap:wrap;justify-content:flex-end}
+  body .respar-inline-actions,body .ter-chart-actions,body .pulse-plot-actions{flex-wrap:wrap}
+}
+@media(max-width:640px){
+  .schema-parameter-panel,.schema-parameter-panel.compact{grid-template-columns:1fr!important}
+  .plugin-manager-toolbar-card{gap:7px!important}
+}
+
+/* Motion is intentionally short and functional. */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes dkds-menu-in{from{opacity:0;transform:translateY(-4px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes dkds-panel-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  .command-menu:not(.hidden){animation:dkds-menu-in .14s cubic-bezier(.2,.8,.2,1)}
+  .analysis-page:not(.hidden),.dkds-settings-dialog{animation:dkds-panel-in .18s cubic-bezier(.2,.75,.2,1)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}

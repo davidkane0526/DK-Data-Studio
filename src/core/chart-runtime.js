@@ -45,10 +45,25 @@
   }
   function runtimeState(){return {version:VERSION,host:runtimeConfig.host,plotlyAllowed:runtimeConfig.plotlyAllowed,plotlySource:runtimeConfig.plotlySource,status:plotlyRuntime.status,requests:plotlyRuntime.requests,reuses:plotlyRuntime.reuses,lastReason:plotlyRuntime.lastReason,loadDurationMs:plotlyRuntime.loadDurationMs,error:plotlyRuntime.error,ready:!!plotly()?.react};}
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
-  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:'Inter, Segoe UI, sans-serif'})});
+  const UI_FONT='Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI, sans-serif';
+  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:UI_FONT})});
+  const PLOT_THEME=Object.freeze({paper:'#ffffff',plot:'#fbfcfe',grid:'#e7edf5',zero:'#cfd8e5',axis:'#aeb9c8',text:'#46546a',muted:'#6f7d91'});
+  const isPlainWhite=value=>['','#fff','#ffffff','white','rgb(255, 255, 255)','rgba(255, 255, 255, 1)'].includes(String(value??'').trim().toLowerCase());
+  const oldGrid=value=>['','#edf0f5','#e8edf5','#e5e9f0','#dfe5ef'].includes(String(value??'').trim().toLowerCase());
+  function themeAxis(axis={}){
+    const source=axis&&typeof axis==='object'?axis:{};const title=source.title&&typeof source.title==='object'?source.title:{text:source.title};const tickfont=source.tickfont&&typeof source.tickfont==='object'?source.tickfont:{};
+    return {...source,gridcolor:oldGrid(source.gridcolor)?PLOT_THEME.grid:source.gridcolor,zerolinecolor:oldGrid(source.zerolinecolor)?PLOT_THEME.zero:source.zerolinecolor,linecolor:source.linecolor||PLOT_THEME.axis,tickcolor:source.tickcolor||PLOT_THEME.axis,tickfont:{family:UI_FONT,size:11,color:PLOT_THEME.muted,...tickfont},title:{...title,font:{family:UI_FONT,size:12,color:PLOT_THEME.text,...(title.font||{})}},automargin:source.automargin!==false};
+  }
   function themeLayout(layout={}){
-    const source=layout&&typeof layout==='object'?layout:{};const hover=source.hoverlabel&&typeof source.hoverlabel==='object'?source.hoverlabel:{};
-    return {...source,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
+    const source=layout&&typeof layout==='object'?layout:{};const hover=source.hoverlabel&&typeof source.hoverlabel==='object'?source.hoverlabel:{};const next={...source};
+    for(const [key,value] of Object.entries(source))if(/^[xy]axis\d*$/.test(key))next[key]=themeAxis(value);
+    if(!next.xaxis)next.xaxis=themeAxis({});if(!next.yaxis)next.yaxis=themeAxis({});
+    const font=source.font&&typeof source.font==='object'?source.font:{};next.font={family:UI_FONT,size:12,color:PLOT_THEME.text,...font};
+    if(isPlainWhite(source.paper_bgcolor))next.paper_bgcolor=PLOT_THEME.paper;
+    if(isPlainWhite(source.plot_bgcolor))next.plot_bgcolor=PLOT_THEME.plot;
+    if(source.legend&&typeof source.legend==='object')next.legend={...source.legend,bgcolor:isPlainWhite(source.legend.bgcolor)?'rgba(255,255,255,0)':source.legend.bgcolor,bordercolor:source.legend.bordercolor||'rgba(214,223,235,.72)',font:{family:UI_FONT,size:11,color:PLOT_THEME.text,...(source.legend.font||{})}};
+    next.hoverlabel={...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}};
+    return next;
   }
   function normalizeHoverTemplate(value){
     const text=String(value??'');if(!text||!/<extra>[\s\S]*?<\/extra>/i.test(text))return text;
@@ -58,6 +73,7 @@
     if(!trace||typeof trace!=='object')return trace;
     const hover=trace.hoverlabel&&typeof trace.hoverlabel==='object'?trace.hoverlabel:{};
     const next={...trace,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
+    if(trace.colorbar&&typeof trace.colorbar==='object'){const title=trace.colorbar.title&&typeof trace.colorbar.title==='object'?trace.colorbar.title:{text:trace.colorbar.title};next.colorbar={...trace.colorbar,outlinecolor:trace.colorbar.outlinecolor||'#d3dce8',tickfont:{family:UI_FONT,size:10,color:PLOT_THEME.muted,...(trace.colorbar.tickfont||{})},title:{...title,font:{family:UI_FONT,size:11,color:PLOT_THEME.text,...(title.font||{})}}};}
     if(typeof trace.hovertemplate==='string')next.hovertemplate=normalizeHoverTemplate(trace.hovertemplate);
     return next;
   }

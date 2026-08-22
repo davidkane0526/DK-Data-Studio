@@ -1,3 +1,14 @@
+# v3.61.23 — Unified Visual System & Scientific Chart Polish
+
+- Add one Core-owned `src/ui-polish.css` cascade layer shared by the main shell and dedicated plugin windows, without changing existing workspace geometry or scientific/data contracts.
+- Unify buttons, form fields, tabs, menus, panels, cards, tables, status chrome, plugin manager, Data Center and first-party analysis workbenches with one restrained border/radius/depth/focus language.
+- Make toolbar groups carry the surrounding border/shadow while their inner commands remain visually lighter, reducing duplicated chrome and improving alignment.
+- Extend Core Chart Runtime theming to shared Plotly typography, axes, grid/zero lines, plot background, legend and colorbar typography while preserving scientific trace colors and heatmap color scales.
+- Restyle Plotly modebar and Core D3 navigation controls to match application chrome.
+- Add short non-layout motion plus reduced-motion fallback, and responsive anti-crowding rules at narrower desktop widths.
+- Add v3.61.23 visual-system regression coverage and cloud static-render checks at 1440×900, 1100×760 and 820×900 with no shell horizontal overflow.
+- Plugin API remains `1.15.0`; no plugin migration is required.
+
 # Unreleased — Repository Reproducibility & Documentation Refresh
 
 - Repository-only maintenance release; application/scientific behavior remains the v3.61.22 runtime baseline.

@@ -1,10 +1,10 @@
-# Next Session Handoff — v3.61.22 repository cleanup
+# Next Session Handoff — v3.61.23 visual-system stabilization
 
 ## Baseline
 
-- Application: `3.61.22`; current changes are repository/documentation maintenance only.
-- Runtime/scientific behavior baseline: `3.61.22`.
-- Current branch: `chore/v3.61.22-repo-cleanup`.
+- Application: `3.61.23`; current changes add a Core-owned visual-system polish layer and shared Plotly chart theming without changing scientific/data contracts.
+- Runtime/scientific behavior baseline: `3.61.23` (scientific algorithms/data semantics unchanged from v3.61.22).
+- Current branch: `feat/v3.61.23-visual-system-polish`.
 - Public Plugin API / standalone SDK: `1.15.0`.
 - Architecture phase: **feature complete / release candidate / stabilization**.
 - Architecture is frozen unless a real P0/P1 issue proves a boundary is wrong.

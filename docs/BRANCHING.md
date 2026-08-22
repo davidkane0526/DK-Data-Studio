@@ -2,8 +2,8 @@
 
 ## Current local repository
 
-- Application checkpoint: **v3.61.22**; the current branch contains repository/documentation cleanup only.
-- Current checkout: `chore/v3.61.22-repo-cleanup` (repository-only cleanup; runtime stays v3.61.22).
+- Application checkpoint: **v3.61.23**; the current branch contains the unified visual-system polish and chart-chrome normalization.
+- Current checkout: `feat/v3.61.23-visual-system-polish` (visual-only shell/plugin polish plus shared chart theming; scientific/data contracts stay unchanged).
 - Previous runtime-fix branch: `fix/v3.61.22-legacy-resonance-runtime`.
 - Existing `main` / `dev` refs are historical baselines and are not the current delivered application state.
 - This cleanup does **not** create, move, push or publish the future GitHub `plugin` branch; branch publication is a separate explicit step.
