@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '6.9.0';
+  const VERSION = '6.9.1';
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -1381,7 +1381,7 @@
       this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');
       this.installNavigationTools();
-      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>this.requestRender('resize')):null;
+      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{this.clampNavigationTools();this.requestRender('resize');}):null;
       this.resizeObserver?.observe(this.container);
       this.setInteraction(spec.interaction||null);
     }
@@ -1430,12 +1430,54 @@
       while(lo<hi){const mid=(lo+hi)>>1,x=Number(points[mid].x);if(order.ascending?(x<target):(x>target))lo=mid+1;else hi=mid;}
       if(lo>0&&Math.abs(Number(points[lo-1].x)-target)<=Math.abs(Number(points[lo].x)-target))return lo-1;return lo;
     }
+    navigationToolsStorageKey(){
+      const targetId=String(this.target?.id||this.container?.id||this.target?.dataset?.dkdsScientificPlotId||'').trim();
+      return targetId?`${hostState.storagePrefix}.scientific-nav.${this.owner}.${targetId}`:'';
+    }
+    setNavigationToolsPosition(x,y,{persist=false}={}){
+      const tools=this.navTools,container=this.container;if(!tools||!container)return false;
+      const hostRect=container.getBoundingClientRect(),toolRect=tools.getBoundingClientRect();
+      if(!(hostRect.width>0&&hostRect.height>0&&toolRect.width>0&&toolRect.height>0))return false;
+      const pad=4,maxX=Math.max(pad,hostRect.width-toolRect.width-pad),maxY=Math.max(pad,hostRect.height-toolRect.height-pad);
+      const nx=Math.min(maxX,Math.max(pad,Number(x)||pad)),ny=Math.min(maxY,Math.max(pad,Number(y)||pad));
+      tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';tools.style.bottom='auto';tools.dataset.moved='1';
+      if(persist){const key=this.navigationToolsStorageKey();if(key)writeJson(key,{x:nx,y:ny});}
+      return true;
+    }
+    restoreNavigationToolsPosition(){
+      const key=this.navigationToolsStorageKey();if(!key)return false;const saved=readJson(key,null);
+      if(!saved||!Number.isFinite(Number(saved.x))||!Number.isFinite(Number(saved.y)))return false;
+      requestAnimationFrame(()=>this.setNavigationToolsPosition(Number(saved.x),Number(saved.y)));return true;
+    }
+    resetNavigationToolsPosition(){
+      const tools=this.navTools;if(!tools)return false;const key=this.navigationToolsStorageKey();if(key)try{localStorage.removeItem(key);}catch{}
+      for(const prop of ['left','top','right','bottom'])tools.style.removeProperty(prop);delete tools.dataset.moved;return true;
+    }
+    clampNavigationTools(){
+      const tools=this.navTools;if(!tools||tools.dataset.moved!=='1')return false;
+      const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(!Number.isFinite(x)||!Number.isFinite(y))return false;
+      return this.setNavigationToolsPosition(x,y);
+    }
     installNavigationTools(){
       if(this.spec.navigationTools===false||this.navTools)return;
       const tools=document.createElement('div');tools.className='dkds-scientific-nav-tools';tools.setAttribute('aria-label','图形操作');
+      const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag';drag.setAttribute('role','button');drag.setAttribute('tabindex','0');drag.setAttribute('aria-label','拖动图形工具条');drag.title='拖动工具条；双击恢复默认位置';drag.textContent='⋮';tools.appendChild(drag);
       const rows=[['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']];
       for(const [action,label,title] of rows){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.textContent=label;button.title=title;button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')this.resetView({reason:'toolbar-home'});else this.zoomBy(action==='zoom-in'?0.72:1.38,{reason:`toolbar-${action}`});});tools.appendChild(button);}
       this.container.appendChild(tools);this.navTools=tools;
+      let dragState=null;
+      drag.addEventListener('pointerdown',event=>{
+        if(event.button!==0)return;event.preventDefault();event.stopPropagation();
+        const hostRect=this.container.getBoundingClientRect(),toolRect=tools.getBoundingClientRect();
+        dragState={pointerId:event.pointerId,startClientX:event.clientX,startClientY:event.clientY,startX:toolRect.left-hostRect.left,startY:toolRect.top-hostRect.top};
+        tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}
+      });
+      drag.addEventListener('pointermove',event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;event.preventDefault();this.setNavigationToolsPosition(dragState.startX+event.clientX-dragState.startClientX,dragState.startY+event.clientY-dragState.startClientY);});
+      const finishDrag=event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;const pointerId=dragState.pointerId;dragState=null;tools.classList.remove('is-dragging');try{drag.releasePointerCapture(pointerId);}catch{}const x=Number.parseFloat(tools.style.left),y=Number.parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))this.setNavigationToolsPosition(x,y,{persist:true});};
+      drag.addEventListener('pointerup',finishDrag);drag.addEventListener('pointercancel',finishDrag);
+      drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();this.resetNavigationToolsPosition();});
+      drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();this.resetNavigationToolsPosition();}});
+      this.restoreNavigationToolsPosition();
     }
     zoomBy(factor,meta={}){
       const last=this.lastRender;if(!last)return false;const xd=last.x.domain(),yd=last.y.domain(),cx=(xd[0]+xd[1])/2,cy=(yd[0]+yd[1])/2;

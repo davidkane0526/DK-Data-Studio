@@ -1,3 +1,11 @@
+# v3.61.19 — Core D3 Navigation Toolbar
+
+- ScientificCurveSurface 的默认 D3 图形工具条改为 Core 统一的紧凑浮动控件：默认移到右上偏内侧，避免压住 X 轴区域。
+- 工具条静止透明度为 85%，缩窄按钮与间距，并显著减轻阴影；悬停/聚焦时才提高可见度。
+- 新增 Core 内建拖动把手：工具条只能在所属绘图区内移动，位置按图表实例本地记忆；双击把手或键盘 Home/Escape 恢复默认位置。
+- 绘图区尺寸变化时会自动夹紧已保存位置，避免窗口缩放后工具条跑出可视区域。
+- 此能力完全属于 Core ScientificPlot/D3 默认 UI，Plugin API 与 SDK minimumAppVersion 保持不变。
+
 # v3.61.18 — Data Selection / Dedicated Import / Tool Workspace SDK
 
 - Data Center clears/purges stale chart state immediately when no valid DataTable remains.

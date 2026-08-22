@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.18','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.19','Application version must be 3.61.18.');
 
 // The public Plugin API documents list()/targets() as synchronous reads. A raw
 // remote capability proxy is async, so dedicated TOP windows need a synchronized

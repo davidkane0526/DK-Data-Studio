@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const json=f=>JSON.parse(read(f));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
-assert(json('package.json').version==='3.61.18','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.19','Application version must be 3.61.18.');
 const dc=read('src/plugins/data-center/feature-runtime.js');
 const views=read('src/plugins/data-center/shared-views.js');
 const app=read('src/app.js');

@@ -4,7 +4,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
-assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.19','Application version must be 3.61.18.');
 assert(/^\^43\.4\./.test(String(pkg.devDependencies?.electron||'')),'Electron must use the stable 43.4.x line.');
 assert(String(pkg.devDependencies?.['electron-builder']||'')==='^26.15.7','Keep the stable electron-builder 26.15.7 line.');
 const overrides=JSON.stringify(pkg.overrides||{});

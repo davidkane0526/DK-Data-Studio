@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.18
+# DK Data Studio — v3.61.19
+
+
+## v3.61.19 Core D3 图形工具条
+
+- D3 ScientificCurveSurface 的默认图形工具条现在由基座统一提供可拖动、紧凑、85% 透明的轻量浮动样式。
+- 默认位置改到绘图区右上偏内侧；拖动位置会在本机记忆并在窗口缩放时限制在图内，双击拖动把手可复位。
+- 本次没有增加任何 Plugin SDK 配置项：这是 Core 默认交互，不要求插件声明或适配。
 
 
 ## v3.61.18 数据选择、独立窗口导入与 Tool Workspace SDK

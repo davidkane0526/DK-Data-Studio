@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.19','Application version must be 3.61.18.');
 
 const modules=new Map();
 const sandbox={

@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const policy=require(path.join(root,'plugin-override-policy'));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert(pkg.version==='3.61.18','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.19','Application version must be 3.61.18.');
 
 const builtins=[
   {manifest:{id:'builtin.data-center',version:'1.13.2'}},

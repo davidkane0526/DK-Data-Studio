@@ -4624,13 +4624,16 @@ body.dkds-table-resizing{cursor:col-resize!important;user-select:none!important;
 body.dkds-table-resizing *{cursor:col-resize!important;}
 
 
-/* Core-owned hover navigation for D3 ScientificCurveSurface. */
+/* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
 .dkds-scientific-surface-host{position:relative;}
-.dkds-scientific-nav-tools{position:absolute;right:12px;bottom:12px;z-index:18;display:flex;gap:3px;padding:4px;border:1px solid rgba(167,180,202,.55);border-radius:9px;background:rgba(255,255,255,.88);box-shadow:0 5px 18px rgba(28,42,70,.10);backdrop-filter:blur(8px);opacity:0;transform:translateY(3px);pointer-events:none;transition:opacity .14s,transform .14s;}
-.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,.dkds-scientific-nav-tools:focus-within{opacity:1;transform:none;pointer-events:auto;}
-.dkds-scientific-nav-tools button{width:28px;height:27px;min-height:0;padding:0;border:0;border-radius:6px;background:transparent;color:#344054;font-size:16px;line-height:1;}
-.dkds-scientific-nav-tools button:hover{background:#eef3ff;color:#2558ed;}
-@media (prefers-color-scheme:dark){.dkds-scientific-nav-tools{background:rgba(27,34,47,.88);border-color:rgba(116,132,161,.42)}.dkds-scientific-nav-tools button{color:#d7deeb}.dkds-scientific-nav-tools button:hover{background:#293650;color:#fff}}
+.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:1px;padding:2px;border:1px solid rgba(167,180,202,.42);border-radius:8px;background:rgba(255,255,255,.94);box-shadow:0 2px 7px rgba(28,42,70,.055);backdrop-filter:blur(6px);opacity:.85;pointer-events:auto;user-select:none;transition:opacity .12s,box-shadow .12s,border-color .12s;}
+.dkds-scientific-nav-tools:hover,.dkds-scientific-nav-tools:focus-within,.dkds-scientific-nav-tools.is-dragging{opacity:.98;border-color:rgba(145,164,196,.55);box-shadow:0 3px 9px rgba(28,42,70,.075);}
+.dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:11px;height:23px;flex:0 0 11px;border-radius:5px;color:#8b96a8;font-size:14px;line-height:1;cursor:grab;touch-action:none;outline:none;}
+.dkds-scientific-nav-drag:hover,.dkds-scientific-nav-drag:focus-visible{background:rgba(49,94,251,.07);color:#5f6f87;}
+.dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing;}
+.dkds-scientific-nav-tools button{width:23px;height:23px;min-width:23px;min-height:0;padding:0;border:0;border-radius:5px;background:transparent;color:#344054;font-size:14px;line-height:1;}
+.dkds-scientific-nav-tools button:hover{background:rgba(49,94,251,.09);color:#2558ed;}
+@media (prefers-color-scheme:dark){.dkds-scientific-nav-tools{background:rgba(27,34,47,.94);border-color:rgba(116,132,161,.34);box-shadow:0 2px 7px rgba(0,0,0,.12)}.dkds-scientific-nav-tools:hover,.dkds-scientific-nav-tools:focus-within,.dkds-scientific-nav-tools.is-dragging{border-color:rgba(116,132,161,.48);box-shadow:0 3px 9px rgba(0,0,0,.16)}.dkds-scientific-nav-drag{color:#98a4b8}.dkds-scientific-nav-drag:hover,.dkds-scientific-nav-drag:focus-visible{background:rgba(120,145,210,.12);color:#c4cede}.dkds-scientific-nav-tools button{color:#d7deeb}.dkds-scientific-nav-tools button:hover{background:rgba(92,125,202,.18);color:#fff}}
 
 /* Core plugin settings surface */
 .dkds-settings-overlay{position:fixed;inset:0;z-index:2400;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.22);backdrop-filter:blur(2px)}
