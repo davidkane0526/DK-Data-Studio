@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.21
+# DK Data Studio — v3.61.22
+
+## v3.61.22 旧工程共振真实运行时恢复修复
+
+- 修复旧工程 Ig 再次进入共振分析的真实原因：Project Format 已经把旧工程中未采纳辅助通道迁移为通用 `assignments: []`，但 Resonance 从 Artifact Store 重建 canonical datasets 时曾绕过 assignments 过滤。现在 Artifact 路径与 project.datasets 路径使用完全相同的 scoped-data 契约；Ig 可继续作为历史原始数据保存在工程/Data Center 中，但不会被 Resonance 重新当成分析输入。
+- 修复旧工程“主图有扫描、有峰，组图却全空”的运行时身份问题：如果保存峰的精确 `sweepId` 在当前 sweep 重建后已经不存在，Resonance 会按稳定的 dataset path + 扫描方向确定性重新绑定；只有存在多个候选时才使用峰位/峰电流几何作 tie-break。仍然有效的原 `sweepId` 不会被改写。
+- 独立 Resonance renderer 现在直接暴露实际运行中的组图诊断：datasets、sweeps、visible sweeps、peaks、matched/unresolved peaks、group series 与 group points。
+- Automation Runner 升级到 `1.24.0`，新增 `project.resonance-live`：把当前打开工程和实时 Artifact snapshot 真正送进独立 Resonance 窗口，并要求已采纳保存峰全部能绑定当前 sweep，且实际插件运行时生成非空组图 series/points。不会再用外部模型“算得出来”代替真实窗口验证。
+- 新增执行级回归同时覆盖“未采纳 Ig Artifact + 过期保存峰 sweepId”：真实 Resonance feature runtime 必须过滤 Ig、修复峰身份并生成组图。
+- Resonance Workbench 版本为 `3.61.7`。Plugin API 仍为 `1.15.0`，本次属于内部恢复/消费契约修复，不修改 SDK。
+
 
 ## v3.61.21 旧工程选择语义恢复、数据层级导航与 D3 自动隐藏
 

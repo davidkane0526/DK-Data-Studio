@@ -9,7 +9,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.21','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.22','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
   assert(sdk.pluginApiVersion==='1.15.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
@@ -39,6 +39,6 @@ function assert(value,message){if(!value)throw new Error(message);}
   assert(dc.includes("proxy?.('core.project-history')")&&dc.includes('commitArtifactMutation'),'Data Center non-source artifact edits must use Core history rather than a private undo stack.');
   assert(!dcView.includes('dcTagChips')&&!app.includes('importColumnTagFilter'),'Legacy semantic tag pills must not remain coupled to Data Center / Import UX; semantic helpers stay available only as internal metadata utilities.');
   assert(ui.includes('navigationToolObstacles()')&&ui.includes('avoidNavigationToolCollisions()')&&ui.includes("'.main-legend-bar'")&&ui.includes("'.respar-main-legend'")&&ui.includes('installNavigationObstacleObserver()'),'Core D3 navigation chrome must detect changing legend overlays and reroute around them.');
-  assert(automation.includes("const VERSION='1.23.0'")&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract.');
+  assert(automation.includes("const VERSION='1.24.0'")&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract.');
   console.log('v3.61.20 semantic tags + unified project history + legend-aware D3 toolbar checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

@@ -391,7 +391,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.resonance-workbench",
       "name": "Resonance Workbench",
-      "version": "3.61.6",
+      "version": "3.61.7",
       "apiVersion": "1.13.0",
       "requiresCore": [
         "runtime",

@@ -21,7 +21,7 @@ const flexibleImporter=read('src/plugins/flexible-import/plugin.js');
 const schema=JSON.parse(read('sdk/plugin-manifest.schema.json'));
 const sdk=read('sdk/plugin-api.d.ts');
 
-assert(pkg.version==='3.61.21','Application version must be v3.61.18.');
+assert(pkg.version==='3.61.22','Application version must be v3.61.18.');
 assert(kernel.includes("const API_VERSION = '1.15.0'"),'Plugin Kernel must publish Plugin API 1.14.');
 assert(kernel.includes('const DEFAULT_PLUGIN_ICONS=Object.freeze')&&kernel.includes("workbench:'◇'"),'Core must guarantee category default icons when a plugin omits icon metadata.');
 assert(kernel.includes("const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'")&&kernel.includes("spec.presentation!=='toolbar'"),'A standalone workbench page must default to a primary activity rather than a contextual toolbar contribution.');

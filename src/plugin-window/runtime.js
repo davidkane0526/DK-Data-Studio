@@ -299,6 +299,7 @@
     const dataCenterChartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     const sourceDescriptor=window.DKDSCapabilities?.get?.('core.data-sources')||null;
     const sourceSync=sourceDescriptor?.metadata?.syncSnapshot&&typeof sourceDescriptor.metadata.syncSnapshot==='object'?sourceDescriptor.metadata.syncSnapshot:null;
+    const resonanceDiagnostics=window.DKDSServices?.get?.('builtin.resonance-workbench.runtime')?.getGroupDiagnostics?.()||null;
     return {
       projectHydrated:!!projectHydrated,
       activityOpened:!!activityOpened,
@@ -321,7 +322,8 @@
       dataCenterChartRuntimeError:String(dataCenterChartRuntime?.error||''),
       dataSourceSyncSnapshot:!!sourceSync,
       dataSourceSourceCount:Array.isArray(sourceSync?.sources)?sourceSync.sources.length:0,
-      dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0
+      dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0,
+      resonanceGroupDiagnostics:resonanceDiagnostics?clone(resonanceDiagnostics):null
     };
   }
   window.DKDSPluginWindowDiagnostics=Object.freeze({snapshot:pluginWindowDiagnosticSnapshot});
@@ -536,7 +538,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.21',
+      appVersion:'3.61.22',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

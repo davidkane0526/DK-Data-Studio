@@ -10,7 +10,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 const pkg=json('package.json');
 const dc=json('src/plugins/data-center/plugin.json');
 const sdk=json('sdk/contract.json');
-assert(pkg.version==='3.61.21','Application version must be 3.61.21.');
+assert(pkg.version==='3.61.22','Application version must be 3.61.22.');
 assert(dc.version==='1.13.6','Data Center version must advance to 1.13.6.');
 assert(sdk.pluginApiVersion==='1.15.0','Data navigation / legacy restoration / Core plot chrome must not bump the Plugin SDK.');
 
@@ -84,5 +84,5 @@ assert(dcRuntime.includes("a?.kind==='data.table'")&&dcRuntime.includes('c?.name
 assert(index.includes('importColumnFieldSelect')&&!index.includes('importColumnTagChips'),'Import Workbench must expose a compact exact-column dropdown, not semantic tag chips.');
 assert(app.includes('normalizeImportFieldName(column.header)===wanted')&&app.includes('applyImportColumnFieldFilter'),'Import signal filtering must match exact inspected column headers.');
 assert(css.includes('opacity:0;pointer-events:none')&&css.includes('.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools')&&css.includes('@media (hover:none),(pointer:coarse)'),'Core D3 toolbar must auto-hide on desktop while remaining usable on touch devices.');
-assert(automation.includes("const VERSION='1.23.0'")&&automation.includes("'project.resonance-groups'")&&automation.includes('buildTrendModel()'),'Windows automation must diagnose current-project Resonance group-data integrity.');
-console.log('v3.61.21 legacy selection + lineage navigation + old-project group integrity + D3 auto-hide checks passed.');
+assert(automation.includes("const VERSION='1.24.0'")&&automation.includes("'project.resonance-groups'")&&automation.includes('buildTrendModel()'),'Windows automation must diagnose current-project Resonance group-data integrity.');
+console.log('v3.61.22 legacy selection + lineage navigation + old-project group integrity + D3 auto-hide checks passed.');

@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.21','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.22','Application version must be 3.61.18.');
 
 // The public Plugin API documents list()/targets() as synchronous reads. A raw
 // remote capability proxy is async, so dedicated TOP windows need a synchronized
@@ -29,7 +29,7 @@ assert(kernel.includes("descriptor?.remote===true"),'Local main-window data sour
 assert(kernel.includes("rename:pluginType==='data'||pluginType==='foundation'")&&kernel.includes("remove:pluginType==='data'||pluginType==='foundation'"),'Foundation/data plugins must receive the host-owned source management methods promised to Data Center.');
 
 const automation=read('src/core/automation-test-runtime.js');
-assert(automation.includes("const VERSION='1.23.0'"),'Automation runner must identify the v3.61.18 contract diagnostics.');
+assert(automation.includes("const VERSION='1.24.0'"),'Automation runner must identify the v3.61.18 contract diagnostics.');
 assert(automation.includes('currentProjectPayload.capabilitySnapshot'),'Current-project Data Center smoke must use the same synchronized capability snapshot as real TOP windows.');
 
 const pluginWindow=read('src/plugin-window/runtime.js');

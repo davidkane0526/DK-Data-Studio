@@ -9,7 +9,7 @@ const json=f=>JSON.parse(read(f));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const cli=path.join(root,'sdk','tools','dkds-plugin.js');
 const runValidate=folder=>cp.execFileSync(process.execPath,[cli,'validate',folder],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
-assert(json('package.json').version==='3.61.21','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.22','Application version must be 3.61.18.');
 const vth=json('examples/transfer-vth-lab/plugin.json');
 assert(vth.version==='3.0.1','Transfer Vth Lab must be 3.0.1.');
 assert(vth.window?.dependencies?.includes('d3'),'Vth ScientificCurveSurface must declare d3 in its dedicated window.');

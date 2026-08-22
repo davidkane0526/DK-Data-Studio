@@ -1,3 +1,12 @@
+# v3.61.22 — Legacy Resonance Runtime Identity & Scoped Artifact Repair
+
+- Fix the actual Resonance Artifact-consumer path so canonical datasets reconstructed from the shared Artifact Store still honor generic `assignments`. Legacy auxiliary channels migrated to `assignments: []` remain archived in the project/Data Center but no longer leak back into Resonance simply because an Artifact exists.
+- Reconcile saved legacy peak identities only when their exact `sweepId` no longer exists after current sweep reconstruction. Matching uses the stable dataset path plus scan direction, with peak geometry as a deterministic tie-breaker; valid exact identities are never rewritten.
+- Expose live Resonance group diagnostics from the plugin service (`datasets / sweeps / visibleSweeps / peaks / matchedPeaks / unresolvedPeaks / series / seriesPoints`) through dedicated-window diagnostics.
+- Automation Runner 1.24.0 adds `project.resonance-live`, which sends the current project and live Artifact snapshot through a real dedicated Resonance renderer and requires all accepted saved peaks to resolve and the live group model to contain non-empty series/points. This replaces the insufficient v3.61.21 assumption that an external reconstructed trend model proves the actual renderer is healthy.
+- Add an executable regression that reproduces both failures together: an adopted Id Artifact plus an unadopted Ig Artifact, and saved peaks whose old sweep identities no longer exist. The real Resonance feature runtime must exclude Ig, repair the peak identities and produce group series.
+- Resonance Workbench moves to 3.61.7 and Automation Runner to 1.24.0. Plugin API remains 1.15.0; no SDK surface changes are required.
+
 # v3.61.21 — Legacy Selection Fidelity, Data Lineage Navigation & Auto-hide D3 Chrome
 
 - Replace Data Center semantic tag pills with compact lineage (`all / raw / derived`) navigation plus an exact field-name dropdown derived from real artifact columns/axes.

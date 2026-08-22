@@ -38,17 +38,23 @@
     });
   }
 
+  function assignedToResonance(dataset){
+    const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')
+      ? (Array.isArray(dataset.assignments)?dataset.assignments.map(String):[])
+      : ['*'];
+    return rows.includes('*')||rows.includes('builtin.resonance-workbench');
+  }
+
   function parseDatasets(project={},artifacts=null){
-    const assignedToResonance=dataset=>{
-      const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')
-        ? (Array.isArray(dataset.assignments)?dataset.assignments.map(String):[])
-        : ['*'];
-      return rows.includes('*')||rows.includes('builtin.resonance-workbench');
-    };
     if(artifacts?.list){
       const rows=artifacts.list({includeTransient:true})||[];
       const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-      if(canonical.length)return normalizeLegacyDatasets(canonical);
+      // Artifact projection is still a scoped-data boundary.  v3.61.21
+      // correctly migrated legacy unadopted channels to assignments:[], but
+      // this canonical path accidentally bypassed that contract and fed every
+      // legacy table back into Resonance.  Keep the same consumer filter for
+      // both Artifact and project-array paths.
+      if(canonical.length)return normalizeLegacyDatasets(canonical.filter(assignedToResonance));
       // Compatibility for a project restore before the host has projected its
       // legacy dataset array into Artifacts. The fallback is still consumer-
       // scoped, so Vth/Pulse-only datasets can never leak into Resonance.
@@ -348,6 +354,49 @@
         }
       }
 
+      function normalizedLegacyPath(value){return String(value||'').replace(/\\/g,'/').toLowerCase();}
+      function savedSweepDatasetPath(peak){
+        const direct=String(peak?.datasetPath||'');if(direct)return direct;
+        return String(peak?.sweepId||'').replace(/::(?:up|down)::\d+$/i,'');
+      }
+      function sweepMatchScore(peak,sw){
+        const points=sw?.points||[];if(!points.length)return Number.POSITIVE_INFINITY;
+        const pv=Number(peak?.v),pi=Number(peak?.i);
+        let best=Number.POSITIVE_INFINITY;
+        for(const point of points){
+          const dv=Number.isFinite(pv)?Math.abs(Number(point.v)-pv):0;
+          const di=Number.isFinite(pi)&&Number.isFinite(Number(point.i))?Math.abs(Number(point.i)-pi):0;
+          const score=dv+Math.min(di,1)*1e-6;if(score<best)best=score;
+        }
+        return best;
+      }
+      function reconcileSavedPeakSweeps(){
+        const byId=new Map(sweeps.map(sw=>[String(sw.id),sw]));
+        const byPathDirection=new Map();
+        for(const sw of sweeps){
+          const key=`${normalizedLegacyPath(sw.datasetPath)}::${Number(sw.direction)>0?1:-1}`;
+          const rows=byPathDirection.get(key)||[];rows.push(sw);byPathDirection.set(key,rows);
+        }
+        let repaired=0,unresolved=0;
+        for(const peak of workspace.peaks||[]){
+          const exact=byId.get(String(peak?.sweepId||''));
+          if(exact){
+            peak.datasetPath=exact.datasetPath;peak.direction=exact.direction;
+            if(Number.isFinite(Number(exact.vg)))peak.vg=Number(exact.vg);
+            continue;
+          }
+          const datasetPath=savedSweepDatasetPath(peak),direction=Number(peak?.direction)>0?1:-1;
+          const candidates=byPathDirection.get(`${normalizedLegacyPath(datasetPath)}::${direction}`)||[];
+          if(!candidates.length){unresolved+=1;continue;}
+          const chosen=candidates.length===1?candidates[0]:candidates.slice().sort((a,b)=>sweepMatchScore(peak,a)-sweepMatchScore(peak,b)||String(a.id).localeCompare(String(b.id)))[0];
+          if(!chosen){unresolved+=1;continue;}
+          peak.sweepId=chosen.id;peak.datasetPath=chosen.datasetPath;peak.direction=chosen.direction;
+          if(Number.isFinite(Number(chosen.vg)))peak.vg=Number(chosen.vg);
+          repaired+=1;
+        }
+        return {repaired,unresolved,total:(workspace.peaks||[]).length};
+      }
+
       function rebuild(){
         datasets=parseDatasets(project,artifacts);
         applyWorkspaceToDatasets();
@@ -356,6 +405,8 @@
           if(dataset?.excluded===true)continue;
           try{sweeps.push(...(S.buildSweeps?.(dataset)||[]));}catch(err){console.warn('[resonance window buildSweeps]',dataset?.name,err);}
         }
+        const peakIdentity=reconcileSavedPeakSweeps();
+        if(peakIdentity.repaired)console.info('[resonance legacy peak identity]',peakIdentity);
         if(!sweeps.some(sw=>sw.id===selectedSweepId))selectedSweepId=visibleSweeps()[0]?.id||sweeps[0]?.id||'';
         if(selectedPeakId&&!peakById(selectedPeakId))selectedPeakId='';
         syncEntities();syncDerivedArtifacts();
@@ -1240,7 +1291,8 @@
         copyMainCsv:()=>copyTextToClipboard(mainCsv(),'主图 CSV'),
         exportMainSvg,exportMainPng,
         resetMainView,detectSelectedRange:()=>detectRange(selectedRange),deleteSelectedRangePeaks:()=>deleteRangePeaks(),setSelectedRangeLocked:value=>setRangeLocked(value),applySelectedRangeIdentity:(order,label)=>applyRangeIdentity(order,label),
-        getState:()=>({workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult,gateResult})
+        getState:()=>({workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult,gateResult}),
+        getGroupDiagnostics(){const visibleIds=new Set(visibleSweepIds().map(String)),matched=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.has(String(p.sweepId))),unresolved=(workspace.peaks||[]).filter(p=>p.accepted!==false&&!sweeps.some(sw=>String(sw.id)===String(p.sweepId)));const series=groupSeries();return {datasets:datasets.length,sweeps:sweeps.length,visibleSweeps:visibleIds.size,peaks:(workspace.peaks||[]).length,matchedPeaks:matched.length,unresolvedPeaks:unresolved.length,series:series.length,seriesPoints:series.reduce((n,row)=>n+(row.peaks?.length||0),0)};}
       };
       sharedController=Shared.createController(service,{mode:'top-runtime',science:S});
 
