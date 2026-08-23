@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.37');
+assert.equal(json('package.json').version,'3.61.38');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.4');
+assert.equal(contract.sdkVersion,'1.17.5');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.37');
+assert.equal(contract.minimumAppVersion,'3.61.38');
 
 const scientific=read('src/core/scientific-plot-runtime.js');
 const renderer=read('src/core/d3-chart-renderer.js');
@@ -55,4 +55,4 @@ assert.deepEqual(Array.from(geometry.numericEdges([-2,-1,0,1,2])),[-2.5,-1.5,-0.
 assert.deepEqual(Array.from(geometry.normalizedColorDomain([1,2,3,6],null,'')),[1,6]);
 assert.deepEqual(Array.from(geometry.linearTickValues([-2,2],1)),[-2,-1,0,1,2]);
 
-console.log('v3.61.37 D3 heatmap + autorange contract PASS');
+console.log('v3.61.38 D3 heatmap + autorange contract PASS');

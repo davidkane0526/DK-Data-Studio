@@ -6,7 +6,7 @@
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot'],
     workspace:{role:'top',activity:'sdk-tool-example',icon:'⌁',title:'SDK Tool Example'},
     window:{activity:'sdk-tool-example',title:'SDK Tool Example',width:1080,height:720,minWidth:760,minHeight:520,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    compatibility:{app:'>=3.61.37 <4.0.0',pluginApi:'^1.17.0'}
+    compatibility:{app:'>=3.61.38 <4.0.0',pluginApi:'^1.17.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     let workspace=null,surface=null;

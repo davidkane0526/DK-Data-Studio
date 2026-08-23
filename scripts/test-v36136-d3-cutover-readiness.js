@@ -33,4 +33,4 @@ for(const id of ['data-center','pulse-analysis','resonance-workbench','ter-analy
 }
 const vth=json('examples/transfer-vth-lab/plugin.json');
 assert(vth.window?.dependencies?.includes('scientific-renderer')&&!vth.window?.dependencies?.includes('d3'),'Vth example must use the renderer-neutral dependency.');
-console.log('v3.61.37 D3 scientific renderer cutover readiness PASS');
+console.log('v3.61.38 D3 scientific renderer cutover readiness PASS');

@@ -4,16 +4,19 @@ const os=require('os');
 const path=require('path');
 const cp=require('child_process');
 const assert=require('assert');
+const {normalizePluginPackage}=require('../plugin-package');
+const {normalizeExternalPluginWindow}=require('../plugin-window-manager');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const contract=JSON.parse(read('sdk/contract.json'));
-assert.equal(contract.sdkVersion,'1.17.4');
+assert.equal(contract.sdkVersion,'1.17.5');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 
 const kernel=read('src/core/plugin-kernel.js'),infra=read('src/core/ui-infrastructure.js'),chart=read('src/core/chart-runtime.js');
 const requiredHostTokens=[
   [kernel,'history: Object.freeze'],[kernel,'series: infrastructureScope?.series'],[kernel,'legends: infrastructureScope?.legends'],[kernel,'groupPlots: infrastructureScope?.groupPlots'],[kernel,'tooltips: infrastructureScope?.tooltips'],
-  [infra,'class SeriesRegistry'],[infra,'class LegendGroup'],[infra,'class ActiveLayoutSolver'],[infra,'class GroupPlot'],[chart,'smartLegendLayout']
+  [infra,'class SeriesRegistry'],[infra,'class LegendGroup'],[infra,'class ActiveLayoutSolver'],[infra,'class GroupPlot'],[chart,'smartLegendLayout'],
+  [kernel,'function applyPackagedManifest('],[kernel,'packageRuntime:Object.freeze({']
 ];
 for(const [source,token] of requiredHostTokens)assert(source.includes(token),`SDK Host missing ${token}`);
 
@@ -26,8 +29,15 @@ try{
     const dir=path.join(detached,'templates',name),out=path.join(temp,`${name}.dkplugin`);
     cp.execFileSync(process.execPath,[cli,'validate',dir],{stdio:'pipe'});
     cp.execFileSync(process.execPath,[cli,'package',dir,out],{stdio:'pipe'});
-    const pkg=JSON.parse(fs.readFileSync(out,'utf8'));
-    assert.equal(pkg.manifest.apiVersion,'1.17.0',`${name} must target SDK 1.17`);
+    const raw=JSON.parse(fs.readFileSync(out,'utf8'));
+    assert.equal(raw.manifest.apiVersion,'1.17.0',`${name} must target SDK 1.17`);
+    if(name==='tool-plugin'){
+      const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});
+      const windowSpec=normalizeExternalPluginWindow(pkg);
+      assert.equal(windowSpec?.packageManifest?.id,pkg.manifest.id,'Detached SDK Tool package must carry its canonical manifest into the dedicated renderer.');
+      assert.equal(windowSpec?.packageManifest?.workspace?.role,'top','Detached SDK Tool package must preserve TOP role in its machine window contract.');
+      assert(windowSpec?.dependencies?.includes('scientific-renderer'),'Detached SDK Tool package must resolve the D3-only scientific-renderer contract.');
+    }
   }
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
 

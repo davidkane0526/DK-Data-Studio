@@ -51,7 +51,7 @@
     "artifactHydration": "live"
   },
   "compatibility": {
-    "app": ">=3.61.37 <4.0.0",
+    "app": ">=3.61.38 <4.0.0",
     "pluginApi": "^1.17.0"
   }
 }

@@ -17,7 +17,7 @@ const manager=read('plugin-window-manager.js');
 const ui=read('src/core/ui-infrastructure.js');
 const scientific=read('src/core/scientific-plot-runtime.js');
 
-assert.equal(pkg.version,'3.61.37');
+assert.equal(pkg.version,'3.61.38');
 assert(pkg.dependencies?.d3,'Desktop runtime must ship D3.');
 assert(!Object.keys(pkg.dependencies||{}).some(k=>/plotly/i.test(k)),'Desktop dependencies must be Plotly-free.');
 assert(!Object.keys(pkg.optionalDependencies||{}).some(k=>/plotly/i.test(k)),'Desktop optional dependencies must be Plotly-free.');
@@ -56,5 +56,5 @@ context.window=context;context.globalThis=context;vm.createContext(context);vm.r
   assert.throws(()=>context.DKDSCharts.configureRuntime({preferredRenderer:'plotly'}),/D3-only/,'A vendor fallback request must be rejected rather than opening a second backend.');
   await context.DKDSCharts.react(target,[{type:'scatter',x:[0,1],y:[1,2],name:'A'}],{showlegend:false},{staticPlot:true});
   assert.equal(d3React,1);assert.equal(context.DKDSCharts.rendererFor(target),'d3');
-  console.log('v3.61.37 D3 single-backend runtime PASS');
+  console.log('v3.61.38 D3 single-backend runtime PASS');
 })().catch(err=>{console.error(err);process.exit(1);});

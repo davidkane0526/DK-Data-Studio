@@ -1,3 +1,12 @@
+# v3.61.38 — External Tool Dedicated-Window Contract Closure
+
+- Make the packaged `.dkplugin` manifest canonical in both owner and dedicated renderers. The dedicated renderer now applies the packaged manifest after evaluating package scripts and before Core contract validation/activation, removing the split-brain case where Tools navigation used package metadata while the independent window used stale runtime-embedded metadata.
+- Require the target plugin id, declared Activity, TOP Workspace, and an actually visible plugin-owned page before a Dedicated Tool/TOP renderer can reach ready.
+- Preflight the main-process machine window registry before opening a Tool/TOP activity so a renderer contribution without a resolvable window contract fails explicitly instead of appearing as a no-op.
+- Strengthen Electron diagnostic TOP smoke: ready without the requested active Activity or visible page is now a failure, and lifecycle validation contributes to the final smoke result.
+- Extend SDK Host Harness with a detached Tool package window-contract check and add the v3.61.38 external Tool host regression.
+- Publish SDK **1.17.5** while retaining Plugin API **1.17.0**; complete host guarantees require DK Data Studio **3.61.38**.
+
 # v3.61.37 — D3 Heatmap & Autorange Geometry
 
 - Fix automatic TER/scalar-field color scaling: absent `zmin` / `zmax` remain automatic instead of being coerced to zero. Missing matrix values no longer enter the renderer as numeric zero.

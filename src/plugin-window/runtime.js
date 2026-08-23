@@ -299,6 +299,10 @@
       totalTableRows:tables.reduce((sum,row)=>sum+(Number(row?.rowCount)||0),0),
       activeActivityId:String(window.DKDSPlugins?.activities?.active?.()||''),
       visiblePageId:String(visiblePage?.id||''),
+      visiblePagePluginId:String(visiblePage?.dataset?.pluginId||''),
+      targetPluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+      targetPluginState:window.DKDSPlugins?.manager?.get?.(String(bootstrap?.pluginWindow?.pluginId||''))||null,
+      topWorkspaceRegistered:(window.DKDSPlugins?.workspace?.top?.()||[]).some(row=>String(row?.pluginId||'')===String(bootstrap?.pluginWindow?.pluginId||'')&&String(row?.activity||'')===String(bootstrap?.activityId||'')),
       renderedArtifactRows:Number(dataCenterList?.querySelectorAll?.('.dc-artifact-item')?.length)||0,
       dataCenterCountText:String(document.querySelector?.('#dcArtifactCount')?.textContent||''),
       dataCenterChartTraceCount:Array.isArray(dataCenterChart?.data)?dataCenterChart.data.length:0,
@@ -525,7 +529,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.37',
+      appVersion:'3.61.38',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -572,6 +576,10 @@
       const activationError=String(state?.error||'').trim();
       throw new Error(activationError?`插件工作区不可用：${bootstrap.activityId} · ${activationError}`:`插件没有注册工作区：${bootstrap.activityId}`);
     }
+    const visiblePage=[...document.querySelectorAll('.analysis-page:not(.hidden)')][0]||null;
+    const expectedPluginId=String(bootstrap?.pluginWindow?.pluginId||'');
+    if(!visiblePage)throw new Error(`插件工作区已激活但没有显示页面：${bootstrap.activityId}`);
+    if(expectedPluginId&&String(visiblePage.dataset?.pluginId||'')!==expectedPluginId)throw new Error(`插件工作区显示了错误页面：${bootstrap.activityId}`);
     activityOpened=true;
     window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'replace'});
     window.DKDSPlugins?.events?.emit?.('layout:resize',{reason});
@@ -640,6 +648,11 @@
     if(packagedSource){
       for(const file of (spec.styles||[]))loadInlineStyle(externalPackageFile(spec,file),`${spec.pluginId}/${file}`);
       for(const file of (spec.packageScripts||[spec.entry]))await loadTargetScript(file,file===spec.entry?'entry':'package');
+      // Keep the .dkplugin manifest canonical in the independent renderer too.
+      // The owner renderer has always merged the packaged manifest after script
+      // evaluation; not doing that here created two lifecycle contracts for the
+      // same external Tool and could leave a visible Tools entry with no page.
+      window.DKDSPlugins?.packageRuntime?.applyManifest?.(spec.pluginId,spec.packageManifest||{},spec.source||'external');
     }else{
       await loadTargetScript(spec.entry,'entry');
     }
@@ -650,11 +663,18 @@
       if(!state?.active){const error=String(state?.error||'').trim();throw new Error(error?`算法 Provider 激活失败：${provider.pluginId} · ${error}`:`算法 Provider 激活失败：${provider.pluginId}`);}
     }
     const targetPluginState=window.DKDSPlugins?.manager?.get?.(String(spec.pluginId||''))||null;
-    if(targetPluginState && !targetPluginState.active){
+    if(!targetPluginState)throw new Error(`插件包没有注册目标插件：${spec.pluginId}`);
+    if(!targetPluginState.active){
       const activationError=String(targetPluginState.error||'').trim();
       throw new Error(activationError
         ? `插件激活失败：${spec.pluginId} · ${activationError}`
         : `插件激活失败：${spec.pluginId}`);
+    }
+    const targetActivity=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(bootstrap.activityId||'')&&String(row?.pluginId||'')===String(spec.pluginId||''));
+    if(!targetActivity)throw new Error(`插件没有注册声明的独立工作区：${bootstrap.activityId}`);
+    if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'){
+      const top=(window.DKDSPlugins?.workspace?.top?.()||[]).find(row=>String(row?.activity||'')===String(bootstrap.activityId||'')&&String(row?.pluginId||'')===String(spec.pluginId||''));
+      if(!top)throw new Error(`插件没有注册 TOP Workspace 契约：${bootstrap.activityId}`);
     }
     // Prewarm is intentionally runtime-only. Hidden dedicated windows load Core,
     // Plugin SDK/runtime code, algorithm providers and declared chart runtimes,

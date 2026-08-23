@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.17.4
+# DK Data Studio Plugin SDK 1.17.5
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.37 or newer for the complete SDK 1.17.4 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.38 or newer for the complete SDK 1.17.5 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -62,7 +62,7 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
-### Scientific presentation contract (SDK 1.17.4)
+### Scientific presentation contract (SDK 1.17.5)
 
 The Core D3 scientific renderer is a rendering engine only. Core owns one shared **Scientific Presentation** layer for automatic legend placement, two-row packing, per-surface legend scope, curve-to-legend focus, reversible legend isolation, compact draggable navigation tools, and semantic light/dark styling. A plugin should declare series identity/labels/groups and data; it should not implement its own generic legend packing or renderer chrome.
 

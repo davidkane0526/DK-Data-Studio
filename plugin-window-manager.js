@@ -269,6 +269,11 @@ function normalizePackagedPluginWindow(pkg, source='external') {
     packageScripts:Object.freeze(packageScripts),
     styles:Object.freeze(styles),
     packageFiles:Object.freeze({...pkg.files}),
+    // Carry the canonical package manifest into the dedicated renderer. The
+    // owner renderer already merges this metadata after evaluating plugin.js;
+    // without the same merge a Tool can appear in the main Tools menu yet boot
+    // its independent window with stale runtime-embedded metadata.
+    packageManifest:Object.freeze({...manifest}),
     title:String(windowSpec.title||manifest.name||activity),
     prewarm:windowSpec.prewarm!==false,
     reuse:windowSpec.reuse!==false,

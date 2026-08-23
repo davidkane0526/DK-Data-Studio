@@ -560,6 +560,15 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
       if(!win.isVisible()){try{win.webContents.send('windows:activityWillShow');win.show();}catch{}}
       await diagnosticDelay(Array.isArray(artifactSnapshot)&&artifactSnapshot.length?260:80);
       rendererData=await diagnosticRendererProjectSnapshot(win);
+      const expectedPluginId=String(spec?.pluginId||'');
+      const expectedActivityId=String(activityId||'');
+      if(rendererData){
+        if(rendererData.projectHydrated!==true||rendererData.activityOpened!==true)throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without hydrated/open lifecycle.`);
+        if(String(rendererData.activeActivityId||'')!==expectedActivityId)throw new Error(`${expectedPluginId||expectedActivityId}: active activity mismatch (${rendererData.activeActivityId||'none'}).`);
+        if(!String(rendererData.visiblePageId||''))throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without a visible page.`);
+        if(expectedPluginId&&String(rendererData.visiblePagePluginId||'')!==expectedPluginId)throw new Error(`${expectedPluginId}: visible page is owned by ${rendererData.visiblePagePluginId||'unknown'}.`);
+        if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'&&rendererData.topWorkspaceRegistered!==true)throw new Error(`${expectedPluginId}: TOP Workspace was not registered.`);
+      }
       const hidden=hideDedicatedAuxiliaryWindow(win);
       await diagnosticDelay(100);
       const hiddenSnapshot=await diagnosticRendererLifecycleSnapshot(win);
@@ -573,7 +582,9 @@ async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
     }catch(err){lifecycle={tested:true,ok:false,error:String(err?.message||err)};}
   }
   const startupProfile=win&&!win.isDestroyed()?structuredClone(auxiliaryStartupProfiles.get(win.webContents.id)||null):null;
-  const details={...outcome,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',configuredPrewarm:useConfiguredPrewarm,created,promotion,startupProfile,lifecycle,rendererData};
+  const finalOk=outcome.ok===true&&(!lifecycle.tested||lifecycle.ok===true);
+  const finalError=finalOk?'':String(lifecycle.error||outcome.error||'Dedicated Tool/TOP lifecycle validation failed.');
+  const details={...outcome,ok:finalOk,error:finalError,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',configuredPrewarm:useConfiguredPrewarm,created,promotion,startupProfile,lifecycle,rendererData};
   closeAuxiliaryWindowForReal(win);
   return details;
 }

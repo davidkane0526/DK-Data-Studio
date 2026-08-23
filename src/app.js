@@ -2340,7 +2340,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.37',
+      version:'3.61.38',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3044,6 +3044,15 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     if(!window.electronAPI?.openActivityWindow){
       return window.DKDSPlugins?.activities?.set?.(activityId);
     }
+    // The renderer activity list and the main-process dedicated-window list are
+    // independent registries. Preflight the machine window contract so a Tool
+    // menu entry can never fail as an unexplained no-op when only the renderer
+    // contribution exists.
+    if(window.electronAPI?.listPluginWindows){
+      const configured=await window.electronAPI.listPluginWindows()||[];
+      const contract=configured.find(row=>String(row?.activity||'')===String(activityId||''));
+      if(!contract)throw new Error(`独立工作区契约未注册：${activityId}`);
+    }
     const capabilitySnapshot=capabilitySnapshotForWindows();
     const activitySpec=(window.DKDSPlugins?.activities?.list?.()||[]).find(row=>String(row?.id||'')===String(activityId||''))||null;
     // Live Artifact hydration is a host/window lifecycle contract, so accept it
@@ -3210,7 +3219,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.37',
+      appVersion:'3.61.38',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

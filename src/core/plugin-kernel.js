@@ -2206,6 +2206,20 @@
     });
   }
 
+  function applyPackagedManifest(id,manifest={},source='external'){
+    const pluginId=String(id||manifest?.id||'').trim();
+    assertId(pluginId);
+    if(manifest?.id&&String(manifest.id)!==pluginId)throw new Error(`Plugin package manifest id mismatch: ${manifest.id} != ${pluginId}`);
+    const definition=definitionById(pluginId);
+    if(!definition)throw new Error(`Plugin package did not register manifest id: ${pluginId}`);
+    // plugin.json/.dkplugin manifest is the machine-readable source of truth.
+    // Runtime entry files may keep a compact manifest for direct authoring, but
+    // dedicated windows and the owner renderer must resolve the exact same
+    // metadata before contract validation/activation.
+    definition.manifest={...definition.manifest,...manifest,source:String(source||definition.manifest?.source||'external')};
+    return definition;
+  }
+
   async function loadPackagedPlugin(pkg,source='external'){
     const manifest=pkg?.manifest||{};
     assertId(manifest.id);
@@ -2220,9 +2234,7 @@
       const created=definitions.filter(d=>!beforeIds.has(d.manifest.id));
       const unexpected=created.filter(d=>d.manifest.id!==manifest.id);
       if(unexpected.length)throw new Error(`Plugin package ${manifest.id} registered unexpected ids: ${unexpected.map(d=>d.manifest.id).join(', ')}`);
-      const definition=definitionById(manifest.id);
-      if(!definition)throw new Error(`Plugin package did not register manifest id: ${manifest.id}`);
-      definition.manifest={...definition.manifest,...manifest,source};
+      const definition=applyPackagedManifest(manifest.id,manifest,source);
 
       const styleFiles=Array.isArray(manifest.styles)?manifest.styles:[];
       if(styleFiles.length){
@@ -2469,6 +2481,9 @@
       setSuper:id=>setSuperPlugin(id),
       super:()=>superState()
     },
+    packageRuntime:Object.freeze({
+      applyManifest:(id,manifest,source)=>applyPackagedManifest(id,manifest,source)
+    }),
     activities: {
       list:()=>activityRows().map(x=>({...x.value,pluginId:x.pluginId,isSuper:x.pluginId===superPluginId})),
       active:()=>activeActivityId,

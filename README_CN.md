@@ -1,4 +1,12 @@
-# DK Data Studio — v3.61.37
+# DK Data Studio — v3.61.38
+
+## v3.61.38 外部 Tool 独立窗口契约收口
+
+- 修复“Tool 已出现在顶部工具菜单，但独立窗口没有实际页面”的双注册表风险：`.dkplugin` 的机器可读 manifest 现在在主界面与 Dedicated Renderer 中都是唯一权威元数据，Dedicated Renderer 不再依赖 `plugin.js` 内可能滞后的精简 manifest。
+- Dedicated Tool/TOP 在报告 ready 前必须同时满足：目标插件已激活、声明 Activity 已由目标插件注册、TOP Workspace 已注册、目标页面已实际显示且归目标插件所有。任一步失败都会作为启动失败上报。
+- 主界面打开独立 Tool 前先向主进程预检 machine window contract，避免 renderer 中有工具入口而主进程没有对应窗口契约时表现为无响应。
+- Automation Test Center 的真实 Electron TOP smoke 现在把“页面实际显示/Activity 正确/TOP 契约正确”纳入 PASS，而不是只接受 renderer 发出 ready。
+- SDK Host Harness 增加独立 Tool 包的 window contract 检查；SDK 更新为 **1.17.5**，Plugin API 保持 **1.17.0**。
 
 ## v3.61.37 D3 热图与自动坐标范围修正
 

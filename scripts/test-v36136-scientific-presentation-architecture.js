@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.37');
+assert.equal(json('package.json').version,'3.61.38');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.4');
+assert.equal(contract.sdkVersion,'1.17.5');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.37');
+assert.equal(contract.minimumAppVersion,'3.61.38');
 
 const presentation=read('src/core/plot-presentation-runtime.js');
 const chart=read('src/core/chart-runtime.js');
@@ -53,4 +53,4 @@ const previous={enabled:true,placement:'top',count:2,rows:1,width:430,height:26,
 solved=api.solveLegend({entries:[{key:'a',label:'Vd'}],width:452,height:320,previous,stabilize:true});
 assert.equal(solved.reason,'stable-single-series-slot');assert.equal(solved.reserve,26,'Transient series-count changes must not resize plot geometry.');
 
-console.log('v3.61.37 shared scientific presentation architecture OK');
+console.log('v3.61.38 shared scientific presentation architecture OK');

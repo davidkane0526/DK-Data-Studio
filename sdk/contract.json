@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.17.4",
+  "sdkVersion": "1.17.5",
   "pluginApiVersion": "1.17.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.37",
+  "minimumAppVersion": "3.61.38",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.17.5 closes the external Tool dedicated-window contract: the .dkplugin manifest is canonical in both owner and dedicated renderers, and host smoke tests require the requested activity, TOP workspace, and visible page to mount before PASS. Plugin API remains 1.17.0.",
     "SDK 1.17.4 fixes Core D3 scalar-field automatic limits and adds stable Cartesian autorange padding; Plugin API remains 1.17.0.",
     "New plugins target Plugin API 1.17.0; Plugin API 1.10-1.16 packages remain loadable.",
     "SDK 1.17.4 makes scientific rendering single-backend and vendor-neutral at the Plugin API boundary: plugins declare scientific-renderer and Core implements the scientific renderer with D3 only.",
