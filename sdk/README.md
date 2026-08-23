@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.17.0
+# DK Data Studio Plugin SDK 1.17.1
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.33 or newer for the complete SDK 1.17.0 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.34 or newer for the complete SDK 1.17.1 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -101,7 +101,7 @@ Use `ctx.data.sources` for imported project sources. Workbench plugins receive a
 
 #### Bounded scientific layout
 
-Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). Core owns the outer safety scroll region and recovers semantic plugin containers that would otherwise clip real content. Every CSS ancestor between the workspace and a fill-height plot should use a definite/bounded height plus `min-height: 0`; grid rows that own a chart should normally use `minmax(0, 1fr)`.
+Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). In safe mode the PluginWorkspace outer canvas owns scrolling while the plugin Primary root is allowed to grow to its semantic content, so controls/results cannot be silently clipped by a fixed-height host. Use `primaryScroll:"contained"` only for a true full-viewport surface that intentionally owns a bounded height. Grid rows that own a contained chart should normally use `minmax(0, 1fr)`.
 
 Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Plugin API 1.16 rejects this pattern in scientific/workspace-critical regions during SDK validation and warns when it appears in ordinary internal grids. At runtime Core also runs a Layout Guard preflight on size/mutation changes. It records actual scroll overflow **and child visual containment overflow** before applying recovery; unsafe `hidden`, `clip`, or `visible` semantic regions are contained with local scrolling instead of clipping or painting through their parent card. `PluginWorkspace.layoutDiagnostics()` exposes both `risks` and `guarded` rows so a developer can see what Core predicted and what it recovered.
 
@@ -109,9 +109,9 @@ Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive 
 
 #### Core-owned multi-series legends
 
-A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Core chooses a compact external **bottom or right** placement from the current surface aspect ratio and estimated label footprint, reserves that footprint inside the plot's total size, and recomputes it when the plot is resized. The legend therefore does not cover data and the plugin must **not** guess an extra margin of its own.
+A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Core chooses a compact external **top-first** placement from the current surface aspect ratio and measured/estimated label footprint: top is preferred when the legend fits cleanly, bottom is the second choice with explicit X-axis-title clearance, and a side placement is used only when horizontal packing is no longer compact. D3 and Plotly use the same Core HTML legend presentation, so row packing, typography and click-to-isolate behavior are visually consistent. Core reserves that footprint inside the plot's total size and recomputes it only after a meaningful size change; the legend therefore does not cover data and the plugin must **not** guess an extra margin of its own.
 
-Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. A plugin can opt out explicitly (`legend:false` / `showlegend:false`) or provide an explicit Plotly legend position. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
+Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. Plotly's native modebar is suppressed by the Core runtime; interactive Plotly surfaces receive the same compact, draggable `＋ / − / ⌂` navigation strip as D3, while `displayModeBar:false` or `dkdsNavigationTools:false` explicitly disables it. A plugin can opt out of the Core legend (`legend:false` / `showlegend:false`) or opt out of automatic placement with Plotly `legend.autoplace:false` when an exact native Plotly legend position is genuinely required. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
 
 ### Interaction Behavior
 

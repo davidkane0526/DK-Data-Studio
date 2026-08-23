@@ -21,7 +21,7 @@ assert(ui.includes('risks:Object.freeze(risks)'),'PluginWorkspace diagnostics mu
 
 const chart=read('src/core/chart-runtime.js');
 assert(/const VERSION='1\.(?:7|8)\.0'/.test(chart),'Chart Runtime must publish the smart-legend revision');
-assert(chart.includes('smartLegendLayout')&&chart.includes("itemclick:'toggleothers'"),'Plotly must provide default legend linkage');
+assert(chart.includes('smartLegendLayout')&&chart.includes('dkds-plotly-auto-legend')&&chart.includes('current.legendSoloKey'),'Plotly must provide Core-owned default legend linkage');
 assert(chart.includes('legendMetrics')&&chart.includes('legendBaseLayouts'),'Plotly must expose legend footprint and recompute it from the base layout');
 
 const scientific=read('src/core/scientific-plot-runtime.js');

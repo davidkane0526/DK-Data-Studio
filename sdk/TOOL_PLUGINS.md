@@ -84,7 +84,7 @@ const workspace = ctx.ui.pluginWorkspace.create(host, {
 
 当 Tool 只有一个 Primary 页面时，Core 默认隐藏没有导航价值的单按钮导航条。若工具确实需要始终显示该导航条，可显式传入 `navigation: "always"`；也可使用 `navigation: "hidden"` 强制隐藏。
 
-优先让 PluginWorkspace 的 `safe` 模式管理外层滚动。插件自己的 Grid 行使用 `minmax(0, 1fr)`，绘图区可给 `min-height` 作为首选尺寸，但不要用 `overflow:hidden/clip` 裁剪语义 UI。Plugin API 1.16 validator 会在开发阶段阻止高风险布局；运行时 Core 仍提供最后一层滚动与 ScientificPlot 尺寸兜底。
+优先让 PluginWorkspace 的 `safe` 模式管理外层滚动：Primary 根节点可以按语义内容自然增高，Core canvas 负责滚动，因此结果区和控件不会被固定高度截断。只有真正需要固定视口的页面才使用 `contained`。插件自己的受约束 Grid 行可使用 `minmax(0, 1fr)`，绘图区可给 `min-height` 作为首选尺寸，但不要用 `overflow:hidden/clip` 裁剪语义 UI。Plugin API 1.16 validator 会在开发阶段阻止高风险布局；运行时 Core 仍提供最后一层滚动与 ScientificPlot 尺寸兜底。
 
 依赖也必须由独立窗口显式声明：
 

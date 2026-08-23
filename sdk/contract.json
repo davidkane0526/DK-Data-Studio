@@ -1,15 +1,15 @@
 {
-  "sdkVersion": "1.17.0",
+  "sdkVersion": "1.17.1",
   "pluginApiVersion": "1.17.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.33",
+  "minimumAppVersion": "3.61.34",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
     "New plugins target Plugin API 1.17.0; Plugin API 1.10-1.16 packages remain loadable.",
-    "SDK 1.17.0 completes Core UI contracts for stable series, legend groups, group plots, active layout, semantic tables, tooltips, history and the typed Design System.",
+    "SDK 1.17.1 completes Core UI contracts for stable series, legend groups, group plots, active layout, semantic tables, tooltips, history and the typed Design System.",
     "Multi-series ScientificPlot surfaces provide a Core-owned interactive legend by default; Core reserves legend footprint and exposes legend metrics.",
-    "PluginWorkspace performs overflow and visual-containment preflight diagnostics and recovers unsafe semantic regions with contained scrolling.",
+    "PluginWorkspace safe mode keeps semantic Primary content reachable through Core-owned outer scrolling; contained mode remains available for intentionally bounded full-viewport surfaces.",
     "ScientificCurveSurface minWidth/minHeight are preferred geometry, not a silent-render gate; Core may recover or render compactly.",
     "Tool/TOP workspaces use one reusable dedicated window contract with Core-owned import, theme, viewport, navigation and status-bar geometry.",
     "The SDK is standalone and does not require DK Data Studio source code."

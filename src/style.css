@@ -44,14 +44,14 @@ button.wide { width:100%; margin-top:8px; }
 .inspector-section{border-bottom:1px solid #edf0f6;padding-bottom:10px;margin-bottom:10px}.inspector-section h4{margin:0 0 7px;font-size:13px}.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 8px;font-size:12px}.kv .k{color:var(--muted)}.empty-state{color:var(--muted);font-size:13px;padding:18px;text-align:center}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.peak-class-grid{display:grid;grid-template-columns:110px 1fr;gap:7px}.peak-class-grid label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted)}.peak-class-grid input{border:1px solid var(--border);border-radius:6px;padding:5px;color:var(--text);background:#fff}
 .trend-grid{--trend-cols:2;--trend-plot-height:240px;display:grid;grid-template-columns:repeat(var(--trend-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}
-.trend-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;min-width:0;min-height:0;cursor:zoom-in;display:grid;grid-template-rows:auto auto auto}
-.trend-card-header{height:32px;padding:5px 8px;font-size:12px;font-weight:650;background:#fafbfe;display:flex;justify-content:space-between;align-items:center}
+.trend-card{border:1px solid var(--border-subtle,var(--border));border-radius:8px;overflow:hidden;background:var(--surface-primary,var(--panel));min-width:0;min-height:0;cursor:zoom-in;display:grid;grid-template-rows:auto auto auto}
+.trend-card-header{height:32px;padding:5px 8px;font-size:12px;font-weight:650;background:var(--surface-secondary,#fafbfe);border-bottom:1px solid var(--border-subtle,#d8e0eb);display:flex;justify-content:space-between;align-items:center;color:var(--text-primary,#1c2a43)}
 .trend-card-header button{padding:2px 5px;font-size:11px}
 .trend-plot{height:var(--trend-plot-height);min-height:210px;width:100%;min-width:0}
-.trend-card-legend{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:5px 12px;padding:7px 8px 8px;border-top:1px solid #edf0f5;background:#fff;min-height:34px;font-size:11px;color:#475569;overflow:visible}
+.trend-card-legend{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:5px 12px;padding:7px 8px 8px;border-top:1px solid var(--border-subtle,#d8e0eb);background:var(--surface-primary,#fff);min-height:34px;font-size:11px;color:var(--text-secondary,#60708c);overflow:visible}
 .trend-card-legend:empty{display:none}
 .trend-card-legend .trend-legend-chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.group-panel-toolbar{font-size:12px;color:var(--muted);padding-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid #edf0f5;margin-bottom:10px}
+.group-panel-toolbar{font-size:12px;color:var(--text-secondary,var(--muted));padding-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:var(--surface-primary,#fff);z-index:3;border-bottom:1px solid var(--border-subtle,#d8e0eb);margin-bottom:10px}
 .group-panel-title-wrap{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
 .group-panel-hint{font-size:11px;color:#94a3b8}
 .trend-layout-controls{display:flex;align-items:center;gap:4px;white-space:nowrap}
@@ -312,8 +312,8 @@ button.wide { width:100%; margin-top:8px; }
 }
 .analysis-chart-card{
   min-width:0;
-  background:#fff;
-  border:1px solid #dce2ec;
+  background:var(--surface-primary,#fff);
+  border:1px solid var(--border-subtle,#d8e0eb);
   border-radius:9px;
   overflow:hidden;
 }
@@ -325,8 +325,9 @@ button.wide { width:100%; margin-top:8px; }
   padding:0 10px;
   font-size:12px;
   font-weight:700;
-  background:#fafbfe;
-  border-bottom:1px solid #edf0f5;
+  background:var(--surface-secondary,#f6f9fd);
+  border-bottom:1px solid var(--border-subtle,#d8e0eb);
+  color:var(--text-primary,#1c2a43);
 }
 .analysis-chart{height:380px;min-height:300px}
 .wide-card .analysis-chart{height:510px}
@@ -4740,3 +4741,44 @@ body.dkds-table-resizing *{cursor:col-resize!important}
 .dkds-managed-table[data-dkds-table-tone="danger"]{--dkds-table-row-selected-bg:color-mix(in srgb,var(--status-danger,#d14343) 13%,var(--surface-primary,#fff))}
 .dkds-managed-table[data-dkds-table-emphasis="quiet"]{--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary,#fff) 98%,transparent);--dkds-table-row-even-bg:var(--dkds-table-row-odd-bg)}
 .dkds-managed-table[data-dkds-table-emphasis="strong"] thead th{font-weight:740!important}
+
+/* ============================================================
+   v3.61.34 Plot presentation contract
+   D3 and Plotly share one compact, stable, draggable navigation language.
+   Plotly's native modebar is never allowed to inject light chrome or reflow.
+   ============================================================ */
+.dkds-plotly-surface-host{position:relative!important;min-width:0;min-height:0;background:var(--surface-primary,#fff);border-color:var(--border-subtle,#d8e0eb);outline:0;box-shadow:none}
+/* Navigation no longer pops in/out on hover. It stays quiet until used, so the
+   chart geometry and legend never appear to twitch. */
+.dkds-scientific-nav-tools{
+  opacity:.64!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
+.dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-plotly-surface-host:hover>.dkds-scientific-nav-tools,
+.dkds-plotly-surface-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-scientific-nav-tools:hover,
+.dkds-scientific-nav-tools:focus-within,
+.dkds-scientific-nav-tools.is-dragging{opacity:.96!important;transform:none!important}
+.dkds-scientific-auto-legend.is-top,.dkds-scientific-auto-legend.is-bottom{
+  row-gap:2px;column-gap:4px;max-height:50px;padding:2px 4px
+}
+.dkds-plotly-auto-legend{overflow:hidden!important}
+.dkds-plotly-auto-legend .dkds-plot-legend-label{max-width:112px}
+.dkds-plotly-auto-legend.is-right .dkds-plot-legend-label,.dkds-plotly-auto-legend.is-left .dkds-plot-legend-label{max-width:132px}
+.dkds-plot-legend-item{min-height:20px!important;padding:1px 5px!important}
+
+/* Safe means reachable, not fixed-height. The outer canvas owns scrolling while
+   the plugin root may grow to its semantic content. Full-viewport charts that
+   require strict containment must request primaryScroll:'contained'. */
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-plugin-canvas-center{
+  overflow:auto!important;align-items:stretch!important;overscroll-behavior:contain;scrollbar-gutter:stable
+}
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host{
+  height:auto!important;min-height:100%!important;overflow:visible!important;flex:0 0 auto!important
+}
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{
+  height:auto!important;min-height:100%;min-width:0
+}

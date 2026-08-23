@@ -8,7 +8,7 @@ const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.htm
 const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.33','modern UI cleanup release must be v3.61.27');
+assert.equal(pkg.version,'3.61.34','modern UI cleanup release must be v3.61.27');
 assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
 assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');

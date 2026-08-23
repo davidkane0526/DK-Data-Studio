@@ -6,11 +6,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.33');
+assert.equal(json('package.json').version,'3.61.34');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.0');
+assert.equal(contract.sdkVersion,'1.17.1');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.33');
+assert.equal(contract.minimumAppVersion,'3.61.34');
 
 const infra=read('src/core/ui-infrastructure.js');
 for(const token of ['class SeriesRegistry','class LegendGroup','class ActiveLayoutSolver','class GroupPlot','class TooltipService','series=new SeriesRegistry','groupPlots={create','layoutSolver.solve'])assert(infra.includes(token),`Core UI contract missing ${token}`);
@@ -20,7 +20,7 @@ assert(infra.includes('dataset.dkdsTableTone')&&infra.includes('dataset.dkdsTabl
 
 const chart=read('src/core/chart-runtime.js');
 for(const token of ["const VERSION='1.8.0'",'normalizedLegendData','compactLegendLabel',"placement=topFits?'top'",'next.modebar='])assert(chart.includes(token),`Chart runtime missing ${token}`);
-assert(chart.includes('58+Math.ceil(reserve)'),'bottom Plotly legend must reserve x-axis-title clearance');
+assert(chart.includes('Math.ceil(reserve)+46'),'bottom Plotly legend must reserve x-axis-title clearance');
 
 const kernel=read('src/core/plugin-kernel.js');
 assert(kernel.includes("const API_VERSION = '1.17.0'"));
@@ -40,4 +40,4 @@ const types=read('sdk/plugin-api.d.ts');
 for(const token of ["readonly apiVersion:'1.17.0'",'DKDSSeriesRegistry','DKDSLegendGroup','DKDSActiveLayoutSolver','DKDSGroupPlot','DKDSTooltipRuntime','DKDSProjectHistoryRuntime','DKDSDesignSystem'])assert(types.includes(token),`SDK types missing ${token}`);
 const schema=json('sdk/plugin-manifest.schema.json');
 for(const req of ['history','ui.series','ui.legend-groups','ui.group-plots','ui.tooltips','ui.design-system'])assert(schema.properties.requiresCore.items.enum.includes(req),`Manifest schema missing ${req}`);
-console.log('v3.61.33 SDK 1.17 Core UI Contract Completion OK');
+console.log('v3.61.34 SDK 1.17 Core UI Contract Completion OK');

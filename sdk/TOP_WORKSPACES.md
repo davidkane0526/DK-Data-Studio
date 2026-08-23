@@ -101,7 +101,7 @@ workspace.mountPrimary({
 }
 ```
 
-Do not set `height:100%`/`100vh` on the plugin root to take ownership of the host viewport, and do not use `overflow:hidden/clip` on semantic workspace/card/content containers. `primaryScroll: "safe"` keeps the outer viewport reachable; Core can recover a missed inner overflow at runtime.
+Do not set `height:100%`/`100vh` on the plugin root to take ownership of the host viewport, and do not use `overflow:hidden/clip` on semantic workspace/card/content containers. `primaryScroll: "safe"` lets the Primary root grow and makes the Core canvas the outer scroll owner, so semantic controls/results remain reachable; `contained` is reserved for intentionally bounded full-viewport layouts. Core can still recover a missed inner overflow at runtime.
 
 Avoid this pattern for a fill-height/responsive plot:
 

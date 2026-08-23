@@ -1,3 +1,12 @@
+# v3.61.34 — Unified Scientific Plot Presentation & Viewport Safety
+
+- Replace Plotly's native modebar with the same compact, theme-aware, draggable `＋ / − / ⌂` Core navigation strip used by D3. Explicit `displayModeBar:false` remains a real opt-out instead of being overwritten by Core defaults.
+- Move auto-managed Plotly legends out of Plotly SVG chrome into the shared Core HTML legend presentation used by D3. Top placement is preferred, compact two-row packing is favored, bottom placement reserves the X-axis title, and side placement is a fallback rather than the default.
+- Make legend click-to-isolate deterministic for Plotly and D3 and keep legend geometry stable across small resize/hover changes to remove the visible reflow/twitch seen in compact cards.
+- Close remaining dark-theme leaks in shell menu buttons and legacy scientific card/header/border surfaces; Plotly canvases, generated SVG containers and Core navigation chrome now resolve from semantic theme tokens.
+- Correct `PluginWorkspace` `primaryScroll:"safe"` semantics so Primary content may grow while the Core canvas owns scrolling, preventing result panels from being clipped by a fixed-height host.
+- Publish standalone SDK **1.17.1** while retaining Plugin API **1.17.0**; the full presentation/viewport guarantees require DK Data Studio **3.61.34**.
+
 # v3.61.32 — Core Table, Layout, Legend & DevTool Contracts
 
 - Make Core `TableSurface` own table typography, header/cell geometry, borders, scrolling, hover/selection and theme styling. Plugin API 1.16 packages may no longer style Core table internals directly; narrowly declared row-striping or row-state overrides remain available when genuinely needed.
