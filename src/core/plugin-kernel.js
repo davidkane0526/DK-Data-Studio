@@ -27,7 +27,7 @@
   let shellResizeObserver = null;
   let contextOverflowPopup = null;
 
-  const API_VERSION = '1.16.0';
+  const API_VERSION = '1.17.0';
 
   function readPreferences() {
     if (preferences) return preferences;
@@ -1633,6 +1633,12 @@
         create:()=>host?.makeProject?.()||{},
         capture:()=>host?.captureActiveProjectTab?.()
       },
+      history: Object.freeze({
+        state:()=>window.DKDSCapabilities?.invoke?.('core.project-history','state'),
+        undo:()=>window.DKDSCapabilities?.invoke?.('core.project-history','undo'),
+        redo:()=>window.DKDSCapabilities?.invoke?.('core.project-history','redo'),
+        commitArtifactMutation:(payload={})=>window.DKDSCapabilities?.invoke?.('core.project-history','commitArtifactMutation',payload)
+      }),
       workspace: Object.freeze({
         openPage:id=>host?.openAnalysisPage?.(id),
         closeCurrentWindow:()=>host?.closeCurrentWindow?.(),
@@ -1880,8 +1886,17 @@
           roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
         }) : null,
         scientificPlot: infrastructureScope?.scientificPlot || null,
+        series: infrastructureScope?.series || null,
+        legends: infrastructureScope?.legends || null,
+        groupPlots: infrastructureScope?.groupPlots || null,
+        tooltips: infrastructureScope?.tooltips || null,
         entities: infrastructureScope?.entities || null,
-        designSystem: Object.freeze({name:'GRS Plugin Workspace',version:'1.6',hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true}),
+        designSystem: (()=>{
+          const tokens=Object.freeze({surfacePrimary:'--surface-primary',surfaceSecondary:'--surface-secondary',surfaceElevated:'--surface-elevated',surfaceHover:'--surface-hover',borderSubtle:'--border-subtle',borderStrong:'--border-strong',textPrimary:'--text-primary',textSecondary:'--text-secondary',textTertiary:'--text-tertiary',accentPrimary:'--accent-primary',accentSoft:'--accent-soft',success:'--status-success',warning:'--status-warning',danger:'--status-danger'});
+          const roles=Object.freeze({surface:'surfacePrimary',panel:'surfaceSecondary',floating:'surfaceElevated',text:'textPrimary',muted:'textSecondary',border:'borderSubtle',accent:'accentPrimary'});
+          const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true});
+          return Object.freeze({name:'DK Data Studio Design System',version:'1.17',tokens,roles,capabilities,token:name=>tokens[String(name)]||'',cssVar:(name,fallback='')=>{const token=tokens[String(name)]||String(name||'');return token?`var(${token}${fallback?`, ${fallback}`:''})`:String(fallback||'');}});
+        })(),
         grid: infrastructureScope?.grid || null,
         activities: {
           add: spec => registerActivity(pluginId, spec.id, spec),

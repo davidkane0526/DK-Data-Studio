@@ -13,12 +13,12 @@ const preload=read('preload.js');
 const app=read('src/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
-assert(/const VERSION\s*=\s*'6\.[0-9]+\.[0-9]+'/.test(ui),'UI infrastructure must ship the v6 PluginWorkspace/scientific interaction runtime.');
+assert(/const VERSION\s*=\s*'[7-9][0-9]*\.[0-9]+\.[0-9]+'/.test(ui)||/const VERSION\s*=\s*'6\.[0-9]+\.[0-9]+'/.test(ui),'UI infrastructure must ship the v6+ PluginWorkspace/scientific interaction runtime.');
 for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.16.0'"),'Plugin API must be v1.16.0.');
+assert(kernel.includes("const API_VERSION = '1.17.0'"),'Plugin API must be v1.17.0.');
 assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&&kernel.includes('workspaceSurface:'),'Kernel must expose the host-invariant PluginWorkspace as the preferred scientific workspace surface.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');

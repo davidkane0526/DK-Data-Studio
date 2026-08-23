@@ -2,7 +2,7 @@
   "id": "com.example.top-workspace",
   "name": "SDK TOP Workspace Example",
   "version": "1.0.0",
-  "apiVersion": "1.16.0",
+  "apiVersion": "1.17.0",
   "entry": "plugin.js",
   "scripts": [
     "plugin.js"
@@ -61,7 +61,7 @@
     ]
   },
   "compatibility": {
-    "app": ">=3.61.32 <4.0.0",
-    "pluginApi": "^1.16.0"
+    "app": ">=3.61.33 <4.0.0",
+    "pluginApi": "^1.17.0"
   }
 }

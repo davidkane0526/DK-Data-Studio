@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.16.json",
+  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.17.json",
   "title": "DK Data Studio Plugin Manifest",
   "type": "object",
   "additionalProperties": true,
@@ -33,7 +33,8 @@
         "1.13.0",
         "1.14.0",
         "1.15.0",
-        "1.16.0"
+        "1.16.0",
+        "1.17.0"
       ]
     },
     "entry": {
@@ -78,6 +79,7 @@
           "capabilities",
           "state",
           "project",
+          "history",
           "workspace",
           "parameters",
           "data.flow",
@@ -100,6 +102,11 @@
           "ui.components",
           "ui.workspace",
           "ui.scientific-plot",
+          "ui.series",
+          "ui.legend-groups",
+          "ui.group-plots",
+          "ui.tooltips",
+          "ui.design-system",
           "ui.plot-views",
           "ui.table",
           "ui.settings",

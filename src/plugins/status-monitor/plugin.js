@@ -87,7 +87,7 @@
     const devToolsItem=ctx.ui.statusBar.add({
       id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'info',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||typeof runtimeService.toggleDevTools!=='function',
       title:'打开当前窗口 DevTools',
-      onClick:async()=>{try{const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
+      onClick:async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();devToolsItem.update({state:'ok',title:'打开 Plugin DevTools；Chromium 可从面板内进入'});return;}const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
     });
 
     const lanItem=ctx.ui.statusBar.add({

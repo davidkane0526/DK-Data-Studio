@@ -1,7 +1,7 @@
 (() => {
   if(window.DKDSPluginContract)return;
   const VERSION='1.0.0';
-  const API_VERSION='1.16.0';
+  const API_VERSION='1.17.0';
   const REQUIREMENTS=Object.freeze({
     'runtime':api=>!!api?.runtime,
     'events':api=>!!api?.events,
@@ -15,6 +15,7 @@
     'capabilities':api=>!!api?.capabilities,
     'state':api=>!!api?.state,
     'project':api=>!!api?.project,
+    'history':api=>!!api?.history,
     'workspace':api=>!!api?.workspace,
     'parameters':api=>!!api?.parameters,
     'data.flow':api=>!!api?.data?.flow,
@@ -39,6 +40,11 @@
     'ui.components':api=>!!api?.ui?.components,
     'ui.workspace':api=>!!api?.ui?.pluginWorkspace,
     'ui.scientific-plot':api=>!!api?.ui?.scientificPlot,
+    'ui.series':api=>!!api?.ui?.series,
+    'ui.legend-groups':api=>!!api?.ui?.legends,
+    'ui.group-plots':api=>!!api?.ui?.groupPlots,
+    'ui.tooltips':api=>!!api?.ui?.tooltips,
+    'ui.design-system':api=>!!api?.ui?.designSystem,
     'ui.plot-views':api=>!!api?.ui?.plotViews,
     'ui.table':api=>!!api?.ui?.tables,
     'ui.settings':api=>!!api?.ui?.settings,

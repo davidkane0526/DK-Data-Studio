@@ -11,7 +11,7 @@ const allowed=new Set(schema.properties.requiresCore.items.enum);
 const contractSource=read('src/core/plugin-contract-runtime.js');
 const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(sandbox);vm.runInContext(contractSource,sandbox,{filename:'plugin-contract-runtime.js'});
 const contract=sandbox.window.DKDSPluginContract;
-assert(contract&&contract.API_VERSION==='1.16.0','Core contract must target Plugin API 1.16.0.');
+assert(contract&&contract.API_VERSION==='1.17.0','Core contract must target Plugin API 1.16.0.');
 assert.deepStrictEqual([...contract.requirements].sort(),[...allowed].sort(),'Runtime and JSON schema Core requirement catalogs must stay identical.');
 assert(contract.validateManifest({apiVersion:'1.16.0',requiresCore:['io','charts','data.reactive','ui.scientific-plot']}).ok,'Current Plugin API 1.14 manifests must validate against the public Core contract.');
 assert(contract.validateManifest({apiVersion:'1.10.0',requiresCore:['io','charts','data.reactive','data.pipeline','data.entities','analysis.algorithms','ui.scientific-plot','ui.table','ui.settings']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');

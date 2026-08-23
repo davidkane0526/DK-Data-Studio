@@ -7,10 +7,10 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.32','SDK/Plugin Host hardening release must be v3.61.32');
+assert(Number(json('package.json').version.split('.').at(-1))>=32,'SDK/Plugin Host hardening requires v3.61.32+');
 const contract=json('sdk/contract.json');
-assert.equal(contract.pluginApiVersion,'1.16.0','Plugin API 1.16 must be the current standalone SDK contract');
-assert.equal(contract.minimumAppVersion,'3.61.32','Plugin API 1.16 requires the hardened Plugin Host baseline');
+assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.16 host guarantees');
+assert(/^3\.61\.(?:3[2-9]|[4-9]\d|\d{3,})$/.test(contract.minimumAppVersion),'Current SDK minimum app must include the hardened Plugin Host baseline');
 
 const components=read('src/core/component-runtime.js');
 assert(components.includes('isEventTarget')&&components.includes("value===window||value===document"),'scoped DOM runtime must support lifecycle-safe window/document EventTargets');
@@ -60,5 +60,5 @@ try{
 
 const api=read('sdk/plugin-api.d.ts');
 assert(api.includes("'1.15.0'|'1.16.0'"),'editor manifest declaration must preserve Plugin API 1.15 package compatibility');
-for(const token of ["readonly apiVersion:'1.16.0'",'DKDSDomRuntime','DKDSStatusBarRuntime',"primaryScroll?:'safe'|'auto'|'contained'",'hardMinHeight?:number','layoutDiagnostics()'])assert(api.includes(token),`editor SDK declaration missing ${token}`);
+for(const token of ["readonly apiVersion:'1.17.0'",'DKDSDomRuntime','DKDSStatusBarRuntime',"primaryScroll?:'safe'|'auto'|'contained'",'hardMinHeight?:number','layoutDiagnostics()'])assert(api.includes(token),`editor SDK declaration missing ${token}`);
 console.log('v3.61.29 SDK / Plugin Host hardening regression OK');

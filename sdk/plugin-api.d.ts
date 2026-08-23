@@ -11,7 +11,7 @@ export interface DKDSDataSourceTarget { id:string; label:string; icon:string; or
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'|'1.16.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'|'1.16.0'|'1.17.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'extension'|'developer';
   ui?:{tableAppearance?:{cssOverrides?:Array<'row-striping'|'row-state'>}};
@@ -33,7 +33,7 @@ export interface DKDSTableSurface {
   resetColumn(column:number|string,options?:any):boolean; resetColumns():boolean; setColumnVisible(column:number|string,visible?:boolean,options?:any):boolean; showAllColumns():boolean; visibleColumnKeys():string[];
   sort(column:number|string,direction?:'asc'|'desc'|'none'|'toggle',options?:any):string|false; clearSort():boolean; visibleTableText(options?:{includeHeader?:boolean}):string; copyVisibleTable(options?:{includeHeader?:boolean}):boolean; resetState(options?:{persist?:boolean}):DKDSTableColumnState; columnState():DKDSTableColumnState; restoreColumnState(value:Partial<DKDSTableColumnState>,options?:any):DKDSTableColumnState; dispose():void;
 }
-export interface DKDSTableAppearance { density?:'compact'|'comfortable'; stripe?:'subtle'|'none'|false; colors?:{odd?:string;even?:string;hover?:string;selected?:string} }
+export interface DKDSTableAppearance { density?:'compact'|'comfortable'|'spacious'; stripe?:'subtle'|'none'|false; tone?:'neutral'|'analysis'|'data'|'success'|'warning'|'danger'; emphasis?:'quiet'|'normal'|'strong'; colors?:{odd?:string;even?:string;hover?:string;selected?:string} }
 export interface DKDSTableMountSpec { table?:any; className?:string; columns?:any[]; rows?:any[]; appearance?:DKDSTableAppearance; minColumnWidth?:number; maxColumnWidth?:number; sortable?:boolean; headerMenu?:boolean; cellMenu?:boolean; copyTable?:boolean; persist?:boolean; [key:string]:any }
 export interface DKDSTableRuntime {
   mount(id:string,container:any,spec?:DKDSTableMountSpec):DKDSTableSurface|null; bind(id:string,table:any,spec?:DKDSTableMountSpec):DKDSTableSurface|null; hydrate(root?:any,spec?:DKDSTableMountSpec):DKDSTableSurface[]; observe(root?:any,spec?:DKDSTableMountSpec):()=>void; get(idOrElement:any):DKDSTableSurface|null;
@@ -160,12 +160,23 @@ export interface DKDSDialogRuntime { show(spec?:DKDSDialogSpec):Promise<any>; al
 export interface DKDSDataImportWorkbench { open(options?:{targets?:string[];importerId?:string;mode?:'scoped'|'global';consumerId?:string;consumerLabel?:string;consumerIcon?:string;accepts?:string[]}):any }
 export interface DKDSDataImportersCapability { register(id:string,spec:DKDSDataImporterSpec):any; list():any[] }
 
+
+export interface DKDSSeriesDescriptor { id:string; label:string; color:string; group?:string; visible?:boolean; metadata?:Record<string,unknown> }
+export interface DKDSSeriesRegistry { register(spec:string|Partial<DKDSSeriesDescriptor>&Record<string,any>,index?:number):DKDSSeriesDescriptor; normalize(series?:Array<string|Partial<DKDSSeriesDescriptor>&Record<string,any>>):DKDSSeriesDescriptor[]; get(id:string):DKDSSeriesDescriptor|null; label(id:string,fallback?:string):string; color(id:string,fallback?:string):string; setVisible(id:string,visible?:boolean):boolean; list(query?:{group?:string;visible?:boolean}):DKDSSeriesDescriptor[]; snapshot():{owner:string;count:number;rows:readonly DKDSSeriesDescriptor[];series:readonly DKDSSeriesDescriptor[]}; clear():void }
+export interface DKDSLegendGroup { readonly id:string; register(surface:any,series?:any[]):()=>void; setSeries(surface:any,series?:any[]):any[]; entries():any[]; setVisible(seriesId:string,visible?:boolean):boolean; isolate(seriesId?:string):string; showAll():boolean; toggle(seriesId:string):boolean; visibleIds():string[]; subscribe(fn:(snapshot:any,event:any)=>void,options?:{immediate?:boolean}):()=>void; snapshot():any; dispose():void }
+export interface DKDSActiveLayoutSolver { solve(spec:{container?:Element|string;width?:number;height?:number;count?:number;columns?:number|'auto';minItemWidth?:number;minItemHeight?:number;maxColumns?:number;gap?:number;aspectRatio?:number;maxItemHeight?:number}):{columns:number;rows:number;itemWidth:number;itemHeight:number;gap:number;overflowY:boolean} }
+export interface DKDSGroupPlot { setItems(items:any[]):DKDSGroupPlot; layout():any; setColumns(value:number|'auto'):any; diagnostics():any; dispose():void }
+export interface DKDSTooltipRuntime { show(spec:{anchor?:Element|string;point?:{x?:number;y?:number;clientX?:number;clientY?:number};title?:string;text?:string;rows?:Array<{label?:string;key?:string;value:any}>}):HTMLElement; hide():void; bind(target:Element|string,spec:any):()=>void }
+export interface DKDSProjectHistoryRuntime { state():any; undo():Promise<any>|any; redo():Promise<any>|any; commitArtifactMutation(payload:{label?:string;before:{upserts?:any[];removedIds?:string[]};after:{upserts?:any[];removedIds?:string[]}}):Promise<any>|any }
+export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.17'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
+
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.16.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.17.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};
   readonly commands:{register(id:string,handler:(payload?:any)=>any,meta?:any):any;run(id:string,payload?:any):any;get(id:string):any};
+  readonly history:DKDSProjectHistoryRuntime;
   readonly project:{registerSlice(key:string,hooks:{serialize?():any;restore?(data:any,context?:{pluginData:Record<string,any>}):void;reset?(context?:{pluginData?:Record<string,any>;reason?:string}):void}):any;current():any;create():any;capture():void};
   readonly workspace:{openPage(id:string):any;closeCurrentWindow():any;isAuxiliary():boolean};
   readonly io:any;
@@ -193,11 +204,11 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
-    scientificPlot:DKDSScientificPlotRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
-    analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:any; actions:any;
+    scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
+    analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:{solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
     topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
-    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; edit:any; designSystem:any
+    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; edit:any; designSystem:DKDSDesignSystem
   };
 }
 export interface DKDSPluginRegistry { define(manifest:DKDSManifest,activate:(ctx:DKDSPluginContext)=>DKDSPluginInstance|Promise<DKDSPluginInstance>|void|Promise<void>):void }

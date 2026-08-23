@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.16.1
+# DK Data Studio Plugin SDK 1.17.0
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.32 or newer for the complete SDK 1.16.1 host guarantees (Plugin API remains 1.16.0). Plugin API 1.10–1.15 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.33 or newer for the complete SDK 1.17.0 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -20,7 +20,7 @@ sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent life
 
 For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.16.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.17.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Algorithm plugins
 

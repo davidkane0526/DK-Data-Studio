@@ -44,6 +44,7 @@
     'plugin-module-runtime':'../core/plugin-module-runtime.js',
     'ui-infrastructure':'../core/ui-infrastructure.js',
     'capability-runtime':'../core/capability-runtime.js',
+    'plugin-devtools':'../core/plugin-devtools.js',
     'plugin-kernel':'../core/plugin-kernel.js'
   });
 
@@ -117,7 +118,7 @@
     const zone=$('#statusBarPluginRight');if(!zone)return null;
     const button=document.createElement('button');button.type='button';button.className='plugin-status-item compact devtools-status-item';button.dataset.state='info';button.title='打开/关闭当前插件窗口 DevTools';button.innerHTML='<span class="plugin-status-icon">⌘</span><span class="plugin-status-label">DevTool</span>';
     const apply=state=>{const open=!!state?.open;button.classList.toggle('active',open);button.setAttribute('aria-pressed',String(open));button.title=open?'关闭当前插件窗口 DevTools':'打开当前插件窗口 DevTools';};
-    button.addEventListener('click',async()=>{try{apply(await window.electronAPI.toggleDevTools());}catch(err){setStatus(`DevTool：${err?.message||err}`);}});
+    button.addEventListener('click',async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();return;}apply(await window.electronAPI.toggleDevTools());}catch(err){setStatus(`DevTool：${err?.message||err}`);}});
     zone.appendChild(button);hostDevToolsButton=button;void window.electronAPI.getDevToolsState?.().then(apply).catch(()=>{});return button;
   }
 
@@ -192,6 +193,7 @@
     // features and caused startup time to grow as the platform evolved.
     for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
+    if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
 
@@ -548,7 +550,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.32',
+      appVersion:'3.61.33',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,

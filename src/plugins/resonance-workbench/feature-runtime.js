@@ -758,7 +758,7 @@
         const node=$('#reswinMainPlot');if(!node)return null;if(mainSurface&&mainSurface.target===node)return mainSurface;mainSurface?.dispose?.();mainSurface=null;
         const factory=uiRuntime?.scientificPlot;if(!factory?.create)return null;
         mainSurface=factory.create(node,{
-          container:'#resparMainPlotWrap',minWidth:260,minHeight:180,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
+          container:'#resparMainPlotWrap',minWidth:260,minHeight:180,legend:false,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
           yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
           interaction:interactionRuntime,source:'resonance-main',rangeSelectionTarget:'markers',rangeSelectionType:'resonance.peak',
           interactionBehavior:{bindings:[

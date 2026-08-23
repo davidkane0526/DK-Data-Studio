@@ -1,6 +1,6 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.7.0';
+  const VERSION='1.8.0';
   const ownerBindings=new Map();
   const displayScaleStates=new WeakMap();
   const legendLayoutStates=new WeakMap();
@@ -67,7 +67,8 @@
     const font=source.font&&typeof source.font==='object'?source.font:{};next.font={family:UI_FONT,size:12,color:theme.text,...font};
     if(isPlainWhite(source.paper_bgcolor))next.paper_bgcolor=theme.paper;
     if(isPlainWhite(source.plot_bgcolor))next.plot_bgcolor=theme.plot;
-    if(source.legend&&typeof source.legend==='object')next.legend={...source.legend,bgcolor:isPlainWhite(source.legend.bgcolor)?'rgba(255,255,255,0)':source.legend.bgcolor,bordercolor:source.legend.bordercolor||theme.legend,font:{family:UI_FONT,size:11,color:theme.text,...(source.legend.font||{})}};
+    if(source.legend&&typeof source.legend==='object')next.legend={...source.legend,bgcolor:isPlainWhite(source.legend.bgcolor)?'rgba(255,255,255,0)':source.legend.bgcolor,bordercolor:source.legend.bordercolor||theme.legend,borderwidth:Number(source.legend.borderwidth)||0,font:{family:UI_FONT,size:11,color:theme.text,...(source.legend.font||{})}};
+    next.modebar={bgcolor:'rgba(0,0,0,0)',color:theme.muted,activecolor:theme.text,...(source.modebar||{})};
     next.hoverlabel={...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}};
     return next;
   }
@@ -83,20 +84,21 @@
     if(typeof trace.hovertemplate==='string')next.hovertemplate=normalizeHoverTemplate(trace.hovertemplate);
     return next;
   }
-  function themeData(data=[]){return (Array.isArray(data)?data:[]).map(themeTrace);}
+  function themeData(data=[]){return normalizedLegendData(Array.isArray(data)?data:[]).map(themeTrace);}
+  function compactLegendLabel(value=''){let text=String(value??'').trim();if(!text)return '';text=text.replace(/\\/g,'/');if(text.includes('/'))text=text.split('/').filter(Boolean).at(-1)||text;text=text.replace(/\.(csv|txt|dat|tsv|xlsx?|json)$/i,'');return text.length>44?`${text.slice(0,20)}…${text.slice(-20)}`:text;}
+  function normalizedLegendData(data=[]){const rows=(Array.isArray(data)?data:[]).map((trace,index)=>{if(!trace||typeof trace!=='object')return trace;const explicit=trace.legendlabel??trace.meta?.legendLabel??trace.meta?.label;let name=compactLegendLabel(explicit??trace.name??'');if(!name)name=`Series ${index+1}`;return {...trace,name};});const counts=new Map();for(const row of rows){const name=String(row?.name||'');counts.set(name,(counts.get(name)||0)+1);}const seen=new Map();return rows.map((row,index)=>{const name=String(row?.name||'');if((counts.get(name)||0)<=1)return row;const ordinal=(seen.get(name)||0)+1;seen.set(name,ordinal);const suffix=row?.meta?.vg!=null?` · ${row.meta.vg} V`:row?.legendgroup?` · ${compactLegendLabel(row.legendgroup)}`:` · ${ordinal}`;return {...row,name:`${name}${suffix}`};});}
   function legendableTrace(trace={}){const type=String(trace?.type||'scatter').toLowerCase();return trace?.showlegend!==false&&!!String(trace?.name||'').trim()&&!['heatmap','contour','surface','image','histogram2d','histogram2dcontour'].includes(type);}
   function smartLegendLayout(target,data=[],layout={}){
     const source=layout&&typeof layout==='object'?layout:{};const traces=(Array.isArray(data)?data:[]).filter(legendableTrace);const explicitOff=source.showlegend===false;
     if(explicitOff||traces.length<2){const next={...source};legendLayoutStates.set(target,{enabled:false,placement:'none',count:traces.length,rows:0,width:0,height:0,reserve:0,reason:explicitOff?'explicit-disabled':'single-series'});return next;}
-    const current=source.legend&&typeof source.legend==='object'?source.legend:{};const explicitPlacement=['x','y','orientation'].some(key=>Object.prototype.hasOwnProperty.call(current,key))&&current.autoplace!==true;
+    const current=source.legend&&typeof source.legend==='object'?source.legend:{};const requested=String(current.placement||current.autoplacePlacement||'auto');const explicitPlacement=['x','y','orientation'].some(key=>Object.prototype.hasOwnProperty.call(current,key))&&current.autoplace!==true&&!current.placement;
     if(explicitPlacement){legendLayoutStates.set(target,{enabled:true,placement:'explicit',count:traces.length,rows:0,width:0,height:0,reserve:0,reason:'explicit-layout'});return {...source,showlegend:true,legend:{itemclick:'toggleothers',itemdoubleclick:'toggle',...current}};}
-    const rect=target?.getBoundingClientRect?.()||{};const width=Math.max(240,Number(rect.width)||Number(source.width)||640),height=Math.max(160,Number(rect.height)||Number(source.height)||360);const margin={l:60,r:24,t:28,b:48,...(source.margin||{})};
-    const entryWidths=traces.map(trace=>Math.min(210,38+String(trace.name||'').length*7.1)),availableW=Math.max(130,width-margin.l-margin.r-12),total=entryWidths.reduce((sum,value)=>sum+value,0)+Math.max(0,traces.length-1)*8,rows=Math.max(1,Math.ceil(total/availableW)),bottomHeight=rows*27+8,maxEntry=Math.max(...entryWidths,90),rightWidth=Math.min(Math.max(maxEntry+14,124),Math.max(124,width*.31));
-    const bottomRatio=bottomHeight/height,rightRatio=rightWidth/width,placement=(rows<=3&&bottomRatio<=.28)||rightRatio>.27||width<560?'bottom':'right';const nextMargin={...margin};let legend,reserve;
-    if(placement==='right'){reserve=rightWidth+12;nextMargin.r=Math.max(nextMargin.r,Math.ceil(reserve));legend={orientation:'v',x:1.02,xanchor:'left',y:1,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}
-    else{reserve=bottomHeight;nextMargin.b=Math.max(nextMargin.b,48+Math.ceil(reserve));legend={orientation:'h',x:.5,xanchor:'center',y:-.19,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}
-    const metrics={enabled:true,placement,count:traces.length,rows:placement==='bottom'?rows:traces.length,width:placement==='right'?rightWidth:availableW,height:placement==='bottom'?bottomHeight:Math.min(height-margin.t-margin.b,traces.length*27+8),reserve,reason:'auto-external'};legendLayoutStates.set(target,metrics);
-    return {...source,showlegend:true,margin:nextMargin,legend:{...legend,...current,autoplace:true}};
+    const rect=target?.getBoundingClientRect?.()||{};const width=Math.max(240,Number(rect.width)||Number(source.width)||640),height=Math.max(160,Number(rect.height)||Number(source.height)||360);const margin={l:60,r:24,t:28,b:52,...(source.margin||{})};
+    const entryWidths=traces.map(trace=>Math.min(210,38+String(trace.name||'').length*7.1)),availableW=Math.max(130,width-margin.l-margin.r-12),total=entryWidths.reduce((sum,value)=>sum+value,0)+Math.max(0,traces.length-1)*8,rows=Math.max(1,Math.ceil(total/availableW)),horizontalHeight=rows*27+10,maxEntry=Math.max(...entryWidths,90),sideWidth=Math.min(Math.max(maxEntry+14,124),Math.max(124,width*.30));
+    let placement=['top','bottom','right','left'].includes(requested)?requested:'auto';if(placement==='auto'){const topFits=rows<=3&&horizontalHeight/height<=.25;const bottomFits=rows<=4&&horizontalHeight/height<=.31;placement=topFits?'top':(bottomFits?'bottom':(width>=720?'right':'bottom'));}
+    const nextMargin={...margin};let legend,reserve;if(placement==='top'){reserve=horizontalHeight;nextMargin.t=Math.max(nextMargin.t,28+Math.ceil(reserve));legend={orientation:'h',x:.5,xanchor:'center',y:1.02,yanchor:'bottom',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}else if(placement==='bottom'){reserve=horizontalHeight;nextMargin.b=Math.max(nextMargin.b,58+Math.ceil(reserve));legend={orientation:'h',x:.5,xanchor:'center',y:-.16,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}else if(placement==='left'){reserve=sideWidth+12;nextMargin.l=Math.max(nextMargin.l,Math.ceil(reserve));legend={orientation:'v',x:-.02,xanchor:'right',y:1,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}else{reserve=sideWidth+12;nextMargin.r=Math.max(nextMargin.r,Math.ceil(reserve));legend={orientation:'v',x:1.02,xanchor:'left',y:1,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}
+    const horizontal=placement==='top'||placement==='bottom',metrics={enabled:true,placement,count:traces.length,rows:horizontal?rows:traces.length,width:horizontal?availableW:sideWidth,height:horizontal?horizontalHeight:Math.min(height-margin.t-margin.b,traces.length*27+8),reserve,reason:'active-layout-solver'};legendLayoutStates.set(target,metrics);
+    return {...source,showlegend:true,margin:nextMargin,legend:{...legend,...current,autoplace:true,placement}};
   }
   function legendMetrics(target){const el=element(target)||target;return {...(legendLayoutStates.get(el)||{enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0,reason:'unrendered'})};}
   function normalizeConfig(config={}){
@@ -243,7 +245,7 @@
     const P=plotly();if(!P?.relayout||typeof document==='undefined')return;
     const theme=plotTheme();
     document.querySelectorAll('.js-plotly-plot').forEach(el=>{
-      const layout=el?.layout||{};const patch={paper_bgcolor:theme.paper,plot_bgcolor:theme.plot,'font.color':theme.text};
+      const layout=el?.layout||{};const patch={paper_bgcolor:theme.paper,plot_bgcolor:theme.plot,'font.color':theme.text,'modebar.bgcolor':'rgba(0,0,0,0)','modebar.color':theme.muted,'modebar.activecolor':theme.text};
       for(const key of Object.keys(layout)){
         if(!/^[xy]axis\d*$/.test(key))continue;
         patch[`${key}.gridcolor`]=theme.grid;patch[`${key}.zerolinecolor`]=theme.zero;patch[`${key}.linecolor`]=theme.axis;patch[`${key}.tickcolor`]=theme.axis;patch[`${key}.tickfont.color`]=theme.muted;patch[`${key}.title.font.color`]=theme.text;

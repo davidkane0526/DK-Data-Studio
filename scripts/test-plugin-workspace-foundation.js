@@ -13,8 +13,8 @@ const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js'
 for(const token of ['class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','this.pluginWorkspace={create:createPluginWorkspace}','this.scientificPlot={']){
   assert(ui.includes(token),`Core PluginWorkspace foundation missing ${token}`);
 }
-for(const token of ['workspaceSurface:','pluginWorkspace: infrastructureScope?.pluginWorkspace','scientificPlot: infrastructureScope?.scientificPlot',"name:'GRS Plugin Workspace'",'hostInvariant:true']){
-  assert(kernel.includes(token),`Plugin API missing GRS-derived base capability: ${token}`);
+for(const token of ['workspaceSurface:','pluginWorkspace: infrastructureScope?.pluginWorkspace','scientificPlot: infrastructureScope?.scientificPlot',"name:'DK Data Studio Design System'","version:'1.17'",'const tokens=Object.freeze','const roles=Object.freeze','const capabilities=Object.freeze','hostInvariant:true']){
+  assert(kernel.includes(token),`Plugin API missing shared workspace/design-system capability: ${token}`);
 }
 for(const token of ['.dkds-plugin-workspace{','.dkds-scientific-curve-surface{','.dkds-scientific-curve-hit{','.dkds-scientific-marker-hit{','.dkds-scientific-direct-box.is-zoom{','.dkds-direct-handle{']){
   assert(css.includes(token),`Shared GRS-derived design/interaction style missing ${token}`);
