@@ -3,8 +3,7 @@ const path = require('path');
 const { normalizeRelativeFile } = require('./plugin-package');
 
 const ALLOWED_WINDOW_DEPENDENCIES = new Set([
-  'plotly',
-  'd3',
+  'scientific-renderer',
   'science-common',
   'science-import',
   'science-presets',
@@ -100,8 +99,9 @@ function normalizeDependencies(value, requiresCore=[]) {
 
   // `requiresCore` is the canonical plugin/Core contract. Dedicated TOP
   // renderers must not maintain a second, drifting declaration for Core
-  // infrastructure that is already implied by that contract. Domain/vendor
-  // libraries (Plotly, D3, science modules) remain explicit window choices.
+  // infrastructure that is already implied by that contract. Domain libraries
+  // remain explicit window choices. Scientific rendering is declared through the
+  // single vendor-neutral `scientific-renderer` contract and is implemented by D3.
   for (const requirement of (Array.isArray(requiresCore) ? requiresCore : [])) {
     for (const dependency of (CORE_REQUIREMENT_WINDOW_DEPENDENCIES[String(requirement || '').trim()] || [])) append(dependency);
   }

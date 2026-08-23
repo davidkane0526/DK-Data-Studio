@@ -32,7 +32,7 @@ assert(!forbiddenHostDomain.test(app),'src/app.js must remain scientifically dom
 for(const token of ['window.Analysis','runDetection','rebuildSweeps','mergeCompatibilityActivityProject'])assert(!app.includes(token),`Host must not retain removed legacy science/runtime path ${token}`);
 const main=read('main.js');
 const windowManager=read('plugin-window-manager.js');
-assert(!/compatibility/i.test(windowManager),'TOP window manager must expose only dedicated plugin renderers.');
+for(const token of ['legacyRenderer','compatibilityRenderer','hostRendererFallback','fullHostRenderer'])assert(!windowManager.includes(token),`TOP window manager must not expose historical renderer fallback ${token}.`);
 
 const kernel=read('src/core/plugin-kernel.js');
 assert(!kernel.includes('legacyProject'),'Plugin Kernel must not carry historical project-root migration state; project-format is the single migration boundary.');

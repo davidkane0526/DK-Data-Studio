@@ -63,7 +63,7 @@
     return normalizeLegacyDatasets((project.datasets||[]).filter(assignedToResonance));
   }
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,savePlotlyImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,copyTextToClipboard,saveChartImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -207,7 +207,7 @@
       }
       function renderLinkedSelection({includeGroup=true,controls=false}={}){
         // Selection is Core-owned. D3 main surface receives the current entity IDs
-        // through its declarative selection getters, while Plotly ScientificPlot
+        // through its declarative selection getters, while Core ScientificPlot
         // views subscribe to the same Interaction Runtime and restyle themselves.
         // Do not rebuild or privately restyle trend/group plots on focus changes.
         if(controls)renderControls();

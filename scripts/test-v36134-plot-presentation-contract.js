@@ -12,35 +12,27 @@ assert(Number(contract.sdkVersion.split('.').at(-1))>=1,'SDK 1.17.1+ is required
 assert.equal(contract.pluginApiVersion,'1.17.0');
 assert(Number(contract.minimumAppVersion.split('.').at(-1))>=34,'SDK minimum host must retain v3.61.34 guarantees');
 
+const presentation=read('src/core/plot-presentation-runtime.js');
 const chart=read('src/core/chart-runtime.js');
-for(const token of [
-  'function packedLegendRows',
-  "current.autoplace===false",
-  'function plotlyRenderLayout',
-  "next.showlegend=false",
-  'dkds-plotly-auto-legend',
-  'function renderPlotLegend',
-  'function installPlotNavigation',
-  'next.__dkdsNavigationTools=!staticPlot&&!explicitOff',
-  'next.displayModeBar=false'
-])assert(chart.includes(token),`Plot presentation contract missing ${token}`);
-assert(!chart.includes("displayModeBar:'hover'"),'Core must not force Plotly native modebar back on.');
+for(const token of ['class LegendController','function solveLegend','function splitRows'])assert(presentation.includes(token),`Shared presentation contract missing ${token}`);
+for(const token of ['function rendererLayout',"next.showlegend=false",'function renderPlotLegend','function installPlotNavigation','next.__dkdsNavigationTools=!staticPlot&&!explicitOff'])assert(chart.includes(token),`Plot presentation contract missing ${token}`);
+assert(chart.includes("preferredRenderer:'d3'")&&chart.includes('singleBackend:true'),'Core must retain the unified presentation contract on the single D3 backend.');
 
 const infra=read('src/core/ui-infrastructure.js');
-for(const token of ['function packedLegendRowCount',"rows<=Math.min(2,options.maxRows)",'margin.top=Math.max(margin.top,legendMetrics.reserve+8)'])assert(infra.includes(token),`D3 presentation contract missing ${token}`);
+for(const token of ['plotPresentation.solveLegend','legendController=new plotPresentation.LegendController','margin.top=Math.max(margin.top,legendMetrics.reserve+8)'])assert(infra.includes(token),`D3 presentation contract missing ${token}`);
 assert(!infra.includes("margin.top+=legendMetrics.reserve"),'D3 must not double-count top legend reserve.');
 
 const css=read('src/style.css'),modern=read('src/ui-modern.css');
-assert(css.includes('.dkds-plotly-surface-host'),'Plotly must expose Core-owned host chrome.');
-assert(css.includes('.dkds-plotly-auto-legend'),'Plotly must use the shared HTML legend presentation.');
-assert(css.includes('opacity:.64!important'),'Navigation chrome must remain geometrically stable instead of popping in/out on hover.');
+assert(css.includes('.dkds-scientific-chart-host'),'Scientific renderer must expose Core-owned host chrome.');
+assert(css.includes('.dkds-plot-legend.dkds-scientific-auto-legend'),'D3 must use the shared HTML legend presentation.');
+assert(css.includes('opacity:0!important')&&css.includes('pointer-events:none!important'),'Navigation chrome must auto-hide without participating in layout.');
 assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('height:auto!important'),'safe PluginWorkspace must allow semantic Primary content to grow.');
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger')&&modern.includes('background:transparent!important'),'Dark shell menu triggers must not inherit legacy white paint.');
 assert(modern.includes('semantic structural bridge'),'Legacy scientific card borders/surfaces must resolve through semantic theme tokens.');
-assert(!modern.includes('.js-plotly-plot .plotly .modebar'),'Modern theme must not patch generated Plotly modebar DOM.');
+assert(!/js-plotly|dkds-plotly/i.test(modern),'Modern theme must contain no vendor-specific scientific renderer chrome.');
 
 const types=read('sdk/plugin-api.d.ts');
 assert(types.includes("placement?:'auto'|'top'|'bottom'|'right'|'left'"),'SDK legend placement vocabulary must match the Core solver.');
 const readme=read('sdk/README.md');
-assert(readme.includes('top-first')&&readme.includes("same Core HTML legend presentation")&&readme.includes("native modebar is suppressed"),'SDK docs must describe unified D3/Plotly presentation.');
+assert(readme.includes('top-first')&&readme.includes('Core HTML legend')&&readme.includes('D3'),'SDK docs must describe Core-owned D3 scientific presentation.');
 console.log('v3.61.34 unified scientific plot presentation contract retained');

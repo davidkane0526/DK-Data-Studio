@@ -28,7 +28,7 @@
         setStatus:ctx.status.set,
         scheduleSnapshot:()=>ctx.project.capture?.(),
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
-        savePlotlyImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
+        saveChartImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
         io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,reactive:ctx.data.reactive,
         adapter:{mode:'super',root:ctx.ui.dom.query('#app')}
       });

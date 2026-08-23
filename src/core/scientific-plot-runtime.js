@@ -1,6 +1,6 @@
 (() => {
   if (window.DKDSScientificPlot) return;
-  const VERSION='2.3.0';
+  const VERSION='2.4.0';
   const CONTROLLERS=Object.freeze(['selection','legend','tooltip','focus','pin','viewport','export']);
   const resolve=value=>{
     if(value?.nodeType===1)return value;
@@ -12,7 +12,7 @@
   const finite=value=>Number.isFinite(Number(value));
   const baseTraceStyle=trace=>({opacity:trace?.opacity??1,lineWidth:Number(trace?.line?.width)||1.5,markerOpacity:trace?.marker?.opacity??1,markerSize:clone(trace?.marker?.size)});
   const array=value=>Array.isArray(value)?value:(value===undefined||value===null?[]:[value]);
-  // Plotly can spend tens to hundreds of milliseconds inside one react().
+  // Scientific rendering can spend tens to hundreds of milliseconds inside one react().
   // Multi-chart plugins must not start every heavy render in the same browser
   // turn, otherwise the first useful chart cannot paint until the whole grid is
   // finished. Non-immediate renders are coalesced by view and executed one per
@@ -70,12 +70,14 @@
       if(!this.target)throw new Error('ScientificPlot target not found.');
       this.chart=window.DKDSCharts?.createScope?.(this.owner)||window.DKDSCharts;
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
-      this.target.classList.add('dkds-scientific-plotly');
+      this.target.classList.add('dkds-scientific-plot','dkds-scientific-d3');
       this.renderScheduleKey=`${this.owner}:${this.target.dataset?.dkdsScientificPlotId||this.target.id||Math.random().toString(36).slice(2,10)}`;
       this.controllers=this.createControllers();
       this.displayAxisState={y:null,z:null};this.baseYAxisType='linear';
       this.displayScaleChangedHandler=event=>this.handleDisplayScaleChanged(event);
+      this.legendActivateHandler=event=>{const detail=event?.detail||{},index=Number(detail.curveNumber);if(Number.isInteger(index)&&index>=0)this.handleLegend({curveNumber:index,detail,originalEvent:detail.originalEvent},false);};
       this.target.addEventListener?.('dkds:display-scale-changed',this.displayScaleChangedHandler);
+      this.target.addEventListener?.('dkds:chart-legend-activate',this.legendActivateHandler);
       this.setInteraction(spec.interaction||null);
       this.restoreViewportPreference();
     }
@@ -119,12 +121,12 @@
     selectEntity(entity,point=null,options={}){const payload=this.payloadFromEntity(entity,point);if(!payload)return null;try{return this.interaction?.select?.(payload,{source:options.source||this.spec.source||'scientific-plot',additive:options.additive===true,...options});}catch(err){console.warn('[DKDS ScientificPlot select]',err);return null;}}
     selectTrace(index,options={}){const entity=this.entityFromTrace(index);return entity?this.selectEntity(entity,{curveNumber:Number(index),pointNumber:null},options):null;}
     modifierMatches(event,modifier){const raw=String(modifier||'shift').toLowerCase();const e=event?.event||event||{};if(raw==='none')return true;if(raw==='ctrl'||raw==='control')return !!(e.ctrlKey||e.metaKey);if(raw==='alt')return !!e.altKey;if(raw==='meta'||raw==='cmd')return !!e.metaKey;return !!e.shiftKey;}
-    bindEvent(name,handler){if(!this.target?.on||this.eventHandlers.has(name))return;this.eventHandlers.set(name,handler);this.target.on(name,handler);}
-    unbindPlotEvents(){for(const [name,handler] of this.eventHandlers)try{this.target?.removeListener?.(name,handler);}catch{}this.eventHandlers.clear();this.bound=false;}
+    bindEvent(name,handler){if(this.eventHandlers.has(name)||typeof handler!=='function')return;const off=this.chart?.bind?.(this.target,name,handler)||null;if(typeof off==='function')this.eventHandlers.set(name,off);}
+    unbindPlotEvents(){for(const off of this.eventHandlers.values())try{off?.();}catch{}this.eventHandlers.clear();this.bound=false;}
     bindPlotEvents(){
-      if(this.bound||!this.target?.on)return;this.bound=true;
-      this.bindEvent('plotly_click',event=>{
-        const point=event?.points?.[0];if(!point)return;const entity=this.entityFromPoint(point);
+      if(this.bound||!this.target)return;this.bound=true;
+      this.bindEvent('dkds_chart_click',event=>{
+        const point=event?.points?.[0];if(!point)return;this.chart?.selectLegendForTrace?.(this.target,Number(point.curveNumber));const entity=this.entityFromPoint(point);
         if(entity){
           const additive=!!(event?.event?.ctrlKey||event?.event?.metaKey);
           this.selectEntity(entity,point,{source:this.spec.source||'scientific-plot',additive});
@@ -133,13 +135,11 @@
         }
         try{this.spec.onClick?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onClick]',err);}
       });
-      this.bindEvent('plotly_legendclick',event=>this.handleLegend(event,false));
-      this.bindEvent('plotly_legenddoubleclick',event=>this.handleLegend(event,true));
-      this.bindEvent('plotly_relayout',event=>this.captureViewport(event,{source:'plotly-relayout'}));
-      this.bindEvent('plotly_hover',event=>{this.hoverState=this.hoverSnapshot(event);try{this.spec.onHover?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onHover]',err);}});
-      this.bindEvent('plotly_unhover',event=>{this.hoverState=null;try{this.spec.onUnhover?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onUnhover]',err);}});
-      this.bindEvent('plotly_selected',event=>this.handleAreaSelection(event));
-      this.bindEvent('plotly_deselect',event=>{if(this.controllerSpec.selection.clearOnDeselect)this.interaction?.clear?.({source:this.spec.source||'scientific-plot-deselect'});try{this.spec.onDeselect?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onDeselect]',err);}});
+      this.bindEvent('dkds_chart_relayout',event=>this.captureViewport(event,{source:'chart-relayout'}));
+      this.bindEvent('dkds_chart_hover',event=>{this.hoverState=this.hoverSnapshot(event);try{this.spec.onHover?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onHover]',err);}});
+      this.bindEvent('dkds_chart_unhover',event=>{this.hoverState=null;try{this.spec.onUnhover?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onUnhover]',err);}});
+      this.bindEvent('dkds_chart_selected',event=>this.handleAreaSelection(event));
+      this.bindEvent('dkds_chart_deselect',event=>{this.chart?.clearLegendSelection?.(this.target);if(this.controllerSpec.selection.clearOnDeselect)this.interaction?.clear?.({source:this.spec.source||'scientific-plot-deselect'});try{this.spec.onDeselect?.(event,this);}catch(err){console.warn('[DKDS ScientificPlot onDeselect]',err);}});
     }
     handleLegend(event,doubleClick=false){
       const index=Number(event?.curveNumber);const entity=this.entityFromTrace(index);const policy=this.controllerSpec.legend;
@@ -166,6 +166,8 @@
     isEntityActive(entityId,focusId){if(!entityId)return false;if(this.pinnedIds.has(entityId))return true;return this.related(entityId,focusId);}
     applySelection(snapshot){
       if(this.disposed||!this.target?.data?.length||!this.chart?.restyle)return false;const focusId=asId(snapshot?.focus?.id||snapshot?.items?.at?.(-1)?.id||'');
+      const legendTraceIndex=focusId?this.traceEntities.findIndex(entityId=>this.related(entityId,focusId)):-1;
+      if(legendTraceIndex>=0)this.chart?.selectLegendForTrace?.(this.target,legendTraceIndex);else if(!focusId)this.chart?.clearLegendSelection?.(this.target);
       const styleKey=`focus:${focusId}|pins:${[...this.pinnedIds].sort().join(',')}`;
       if(this.appliedStyleKey===styleKey){this.renderStats.selectionSkips+=1;window.DKDSPerformance?.skip?.('plot.selection-restyle');return false;}
       if(!focusId&&!this.pinnedIds.size)return this.restoreStyles();
@@ -229,7 +231,7 @@
     lifecycleState(){return {owner:this.owner,targetId:this.target?.id||this.target?.dataset?.dkdsScientificPlotId||'',managedRender:this.managedRender,suspended:this.suspended,purged:this.purged,pendingRender:this.pendingRender,traceCount:this.target?.data?.length||0,pins:this.pinnedIds.size,viewportRevision:Number(this.viewportState?.revision)||0};}
     performance(){return clone({...this.renderStats,lastRenderKey:this.lastRenderKey,traceCount:this.target?.data?.length||0,suspended:this.suspended,purged:this.purged,managedRender:this.managedRender});}
     resize(){if(this.suspended){window.DKDSPerformance?.skip?.('plot.hidden-resize');return false;}return this.chart?.resize?.(this.target);}
-    dispose(options={}){if(this.disposed)return;this.disposed=true;cancelScheduledRender(this.renderScheduleKey,this);this.target?.removeEventListener?.('dkds:display-scale-changed',this.displayScaleChangedHandler);this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plotly','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
+    dispose(options={}){if(this.disposed)return;this.disposed=true;cancelScheduledRender(this.renderScheduleKey,this);this.target?.removeEventListener?.('dkds:display-scale-changed',this.displayScaleChangedHandler);this.target?.removeEventListener?.('dkds:chart-legend-activate',this.legendActivateHandler);this.selectionOff?.();this.selectionOff=null;this.unbindPlotEvents();if(options.purge===true)try{this.chart?.purge?.(this.target);}catch{}this.pinListeners.clear();this.viewportListeners.clear();this.pinnedIds.clear();this.traceEntities=[];this.pointEntities=[];this.baseStyles=[];this.spec={};this.target?.classList?.remove('dkds-scientific-plot','dkds-scientific-d3','dkds-scientific-plot-has-pins');if(this.target?.dataset)delete this.target.dataset.dkdsTooltipTheme;}
   }
 
   class ScientificPlotScope {

@@ -46,7 +46,7 @@ vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{fi
   const runtime=await terAnalysis.create({
     artifacts:{list:opts=>store.list(opts)},
     getVisibility:()=>new Map(),
-    project:{datasets:[legacyA]},setStatus(){},copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){}
+    project:{datasets:[legacyA]},setStatus(){},copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){}
   });
   runtime.service.autoParameters();
   assert.strictEqual(terSeen.length,1);
@@ -57,7 +57,7 @@ vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{fi
   vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
   const resonanceFeature=context.DKDSPluginModules.require('builtin.resonance-workbench','feature-runtime');
   const resonance=await resonanceFeature.createTop({
-    artifacts:{list:opts=>store.list(opts)},project:{datasets:[legacyA]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
+    artifacts:{list:opts=>store.list(opts)},project:{datasets:[legacyA]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}
   });
   assert.strictEqual(resonance.getState().datasets[0].path,legacyB.path,'Resonance must consume the same canonical Artifact source');
   D.syncLegacyDatasetArtifacts(store,[legacyA,legacyB]);

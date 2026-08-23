@@ -15,9 +15,8 @@ function periodicCsv(){
 }
 
 const document={querySelector:()=>null,getElementById:()=>null};
-const Plotly={Plots:{resize:()=>{}},react:()=>Promise.resolve(),relayout:()=>Promise.resolve()};
 const context={
-  window:{Analysis,Plotly,electronAPI:{}},Plotly,
+  window:{Analysis,electronAPI:{}},
   document,console,structuredClone,JSON,Date,Math,Number,String,Array,Set,Map,Promise,
   requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame:()=>{},setTimeout,clearTimeout
 };
@@ -30,7 +29,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'src/plugins/pulse-analysis/analy
   const statuses=[];
   const pulseAnalysis=context.window.DKDSPluginModules.require('builtin.pulse-analysis','analysis-service');
   const runtime=await pulseAnalysis.create({
-    setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,savePlotlyImage:()=>true,scheduleSnapshot:()=>{}
+    setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,saveChartImage:()=>true,scheduleSnapshot:()=>{}
   });
   const file={
     id:'pulse-test',path:'periodic.csv',name:'periodic.csv',size:0,label:'periodic',checked:true,

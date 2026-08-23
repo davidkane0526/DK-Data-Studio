@@ -17,7 +17,7 @@ vm.runInContext(source,context,{filename:'pulse-analysis-service.js'});
 assert(moduleValue?.create,'Pulse analysis service module was not registered.');
 
 (async()=>{
-  const runtime=await moduleValue.create({setStatus(){},copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){},io:{},charts:null,dom});
+  const runtime=await moduleValue.create({setStatus(){},copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){},io:{},charts:null,dom});
   assert(runtime?.service?.render,'Pulse service render API missing.');
   runtime.service.render();
   assert(elements.pulseNoActiveFile,'Regression fixture missing empty-state DOM.');

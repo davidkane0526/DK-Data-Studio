@@ -5,7 +5,7 @@
     requiresCore:['events','status','state','project','workspace','data.model','data.types','data.sources','data.artifacts','analysis.algorithms','ui.dom','ui.workspace','ui.scientific-plot','ui.table','ui.settings','ui.actions','ui.interaction-behavior','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['analysis.threshold-voltage','ui.page','ui.analysis-workbench','ui.interaction-behavior','ui.scientific-plot','ui.batch-results','data.scoped-sources','ui.top-workspace'],
     workspace:{role:'top',activity:'transfer-vth-lab',icon:'Vₜ',title:'Vth 工作台'},
-    window:{activity:'transfer-vth-lab',title:'Vth 工作台',width:1420,height:900,minWidth:900,minHeight:620,dependencies:['d3','data-model'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
+    window:{activity:'transfer-vth-lab',title:'Vth 工作台',width:1420,height:900,minWidth:900,minHeight:620,dependencies:['scientific-renderer','data-model'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
     data:{accepts:['science.transport.iv','science.transport.transfer']},algorithmProvider:true,algorithmCategories:['transfer-curve'],
     algorithmProvides:[{category:'transfer-curve',id:'transfer.vth-constant-current',version:'2.0.0',title:'Threshold voltage by constant-current neighborhood'}],
     compatibility:{app:'>=3.61.33 <4.0.0',pluginApi:'^1.17.0'}

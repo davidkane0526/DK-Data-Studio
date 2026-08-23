@@ -39,7 +39,7 @@ assert(views.includes('leftNode:leftPanel,mainNode:mainArea')&&views.includes('c
 assert(views.includes("id:'export',label:'导出',menu:true")&&views.includes("ctx.ui.menus.add({id,menu:'export'"),'TOP must expose one local Export menu while SUPER contributes the same export actions to the host menu.');
 assert(views.includes("['res-inspect','检查','PRIME'")&&views.includes("['res-group','组图','PRIME'"),'SUPER must present resonance PRIME commands in the host top command bar rather than duplicate in-plugin navigation.');
 assert(!views.includes('const makeDraggable'),'Resonance parity must not reimplement draggable/docking infrastructure inside the plugin.');
-assert((manifest.window?.dependencies||[]).includes('d3'),'Dedicated TOP must explicitly declare D3 because the shared main interaction renderer depends on it.');
+assert((manifest.window?.dependencies||[]).includes('scientific-renderer'),'Dedicated TOP must declare the renderer-neutral Core scientific renderer; D3 is a Core implementation detail.');
 assert(!views.includes("id:'undo',label:'↶'")&&!views.includes("id:'deselect',label:'取消'")&&views.includes('resparRangeApplyIdentity'),'Undo/deselect are system edit operations and must not be duplicated as resonance PRIME/SUB commands.');
 assert(feature.includes('undoLastAction')&&feature.includes('applyRangeIdentity')&&feature.includes('applySelectedRangeIdentity'),'Shared feature runtime must own undo and range peak identity operations.');
 assert(views.includes("ctx.ui.edit?.register?.")&&views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'Resonance system edit actions must converge on the same Command Registry used by Interaction Behavior.');

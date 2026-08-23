@@ -1,5 +1,5 @@
 /* DK Data Studio v3.61.32 · ordered modern visual layer
-   Scope: visual treatment only. No Plotly internal DOM selectors and no layout geometry overrides. */
+   Scope: visual treatment only. No renderer-internal DOM selectors and no layout geometry overrides. */
 :root{
   --dkui-canvas:#eef4fb;
   --dkui-surface:#fbfcfe;
@@ -239,7 +239,7 @@ body.dkds-modern-ui .dc-tool-title{
   box-shadow:0 1px 0 rgba(255,255,255,.92) inset;
 }
 
-/* App-owned controls only. Plotly internal elements are deliberately excluded. */
+/* App-owned controls only. Renderer-internal elements are deliberately excluded. */
 body.dkds-modern-ui .panel-header-actions button,
 body.dkds-modern-ui .scan-global-buttons button,
 body.dkds-modern-ui .preset-row button,
@@ -398,7 +398,7 @@ body.dkds-modern-ui .dkds-plugin-workspace input:focus-visible,
 body.dkds-modern-ui .dkds-plugin-workspace select:focus-visible,
 body.dkds-modern-ui .dkds-plugin-workspace textarea:focus-visible{outline:none;border-color:var(--accent-primary);box-shadow:var(--focus-ring)}
 
-/* Scientific workbenches: style the card chrome only, never Plotly's generated DOM. */
+/* Scientific workbenches: style application card chrome only, never renderer internals. */
 body.dkds-modern-ui #resonanceDedicatedPage .resonance-dedicated-body,
 body.dkds-modern-ui #resonanceDedicatedPage .resonance-parity-root,
 body.dkds-modern-ui .data-center-body:not(.dkds-unified-workbench-body){background:var(--dkui-canvas)}
@@ -898,8 +898,8 @@ body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
 .dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));overflow:auto;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd))}.dkds-plugin-devtools-window>nav button{border:0!important;background:transparent!important;box-shadow:none!important;padding:6px 9px!important}.dkds-plugin-devtools-window>nav button.active{background:var(--dkui-accent-soft,var(--accent-soft,#eaf0ff))!important;color:var(--dkui-accent,var(--accent-primary,#315efb))!important}
 .dkds-plugin-devtools-window>main{overflow:auto;padding:12px}.dkds-devtools-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}.dkds-devtools-metric,.dkds-devtools-section{border:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));border-radius:9px;background:var(--dkui-surface-elevated,var(--surface-elevated,#fff))}.dkds-devtools-metric{display:grid;gap:2px;padding:10px}.dkds-devtools-metric>span,.dkds-devtools-metric>small{font-size:10px;color:var(--dkui-muted,var(--text-secondary,#60708c))}.dkds-devtools-metric>strong{font-size:18px}.dkds-devtools-section{padding:11px;margin-bottom:9px}.dkds-devtools-section h3{margin:0 0 8px;font-size:12px}.dkds-devtools-section p,.dkds-devtools-section li{font-size:11px;line-height:1.55;color:var(--dkui-muted,var(--text-secondary,#60708c))}.dkds-devtools-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:11px}.dkds-devtools-kv span{color:var(--dkui-muted,var(--text-secondary,#60708c))}.dkds-devtools-chiprow{display:flex;flex-wrap:wrap;gap:6px}.dkds-devtools-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd));font-size:9px}.dkds-devtools-badge[data-tone="success"]{color:#16815a}.dkds-devtools-badge[data-tone="warning"]{color:#aa6a08}.dkds-devtools-badge[data-tone="danger"]{color:#c13d3d}.dkds-devtools-badge[data-tone="info"]{color:var(--dkui-accent,var(--accent-primary,#315efb))}.dkds-devtools-table{width:100%;border-collapse:collapse;font-size:10px}.dkds-devtools-table th,.dkds-devtools-table td{padding:6px 7px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));text-align:left}.dkds-devtools-swatch{display:inline-block;width:16px;height:3px;margin-right:6px;border-radius:9px;vertical-align:middle}.dkds-devtools-history-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));font-size:11px}.dkds-devtools-history-row small,.dkds-devtools-empty{color:var(--dkui-muted,var(--text-secondary,#60708c));font-size:10px}
 
-/* v3.61.34 · plot/theme closure. Legacy menu-trigger declarations and Plotly's
-   injected chrome may not paint a light surface inside an explicit dark host. */
+/* v3.61.34+ · plot/theme closure. Legacy menu-trigger declarations may not
+   paint a light surface inside an explicit dark host. */
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger{
   background:transparent!important;
   border-color:transparent!important;
@@ -1159,4 +1159,80 @@ body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.a
 html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab.active,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{
   box-shadow:0 1px 2px rgba(0,0,0,.18)!important;
+}
+
+
+/* v3.61.36 · Core Scientific Presentation final theme boundary.
+   Engine-specific chrome is not allowed to restyle semantic legend/navigation. */
+body.dkds-modern-ui .dkds-plot-legend.dkds-scientific-auto-legend{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body.dkds-modern-ui .dkds-plot-legend-item,
+body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"]{
+  background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;
+  color:var(--text-secondary)!important;transform:none!important;
+}
+body.dkds-modern-ui .dkds-plot-legend-item:hover{
+  background:color-mix(in srgb,var(--surface-hover) 58%,transparent)!important;
+  border:0!important;box-shadow:none!important;color:var(--text-primary)!important;transform:none!important;
+}
+body.dkds-modern-ui .dkds-plot-legend-item.is-selected,
+body.dkds-modern-ui .dkds-plot-legend-item.is-solo{
+  background:transparent!important;color:var(--text-primary)!important;box-shadow:none!important;
+}
+body.dkds-modern-ui .dkds-scientific-nav-tools{opacity:0!important;pointer-events:none!important;transform:none!important}
+body.dkds-modern-ui .dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-chart-host:focus-within>.dkds-scientific-nav-tools,
+body.dkds-modern-ui .dkds-scientific-nav-tools:hover,
+body.dkds-modern-ui .dkds-scientific-nav-tools:focus-within,
+body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging{opacity:.94!important;pointer-events:auto!important}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend.dkds-scientific-auto-legend{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"]{
+  background:transparent!important;border:0!important;box-shadow:none!important;color:var(--text-secondary)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item:hover{
+  background:rgba(139,158,187,.10)!important;color:var(--text-primary)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-selected,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-solo{
+  background:transparent!important;color:var(--text-primary)!important;
+}
+
+
+/* v3.61.36 · geometry-stable controls. Hover changes paint only, never position. */
+body.dkds-modern-ui button:hover:not(:disabled),
+body.dkds-modern-ui .toolbar-btn:hover:not(:disabled),
+body.dkds-modern-ui .activity-tab:hover,
+body.dkds-modern-ui .plugin-toolbar-btn:hover{
+  transform:none!important;
+}
+body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
+body.dkds-modern-ui .activity-tab:hover,
+body.dkds-modern-ui .plugin-toolbar-btn:hover,
+body.dkds-modern-ui .zoom-actions button:hover:not(:disabled),
+body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled),
+body.dkds-modern-ui .data-center-body button:hover:not(:disabled),
+body.dkds-modern-ui #resonanceDedicatedPage button:hover:not(:disabled),
+body.dkds-modern-ui .ter-analysis button:hover:not(:disabled),
+body.dkds-modern-ui .pulse-analysis button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-settings-dialog button:hover:not(:disabled),
+body.dkds-modern-ui .command-menu button:hover:not(:disabled){
+  box-shadow:0 2px 6px rgba(26,39,64,.055)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab:hover,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn:hover,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .zoom-actions button:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .data-center-body button:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui #resonanceDedicatedPage button:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .ter-analysis button:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .pulse-analysis button:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled){
+  box-shadow:none!important;
 }

@@ -62,7 +62,7 @@ canonical inputs
 → UI projection
 ```
 
-Do not read calculation settings from arbitrary Core DOM. Do not make Plotly traces the canonical result. Do not store a second copy of imported data when Artifacts already owns it.
+Do not read calculation settings from arbitrary Core DOM. Do not make renderer trace objects the canonical result. Do not store a second copy of imported data when Artifacts already owns it.
 
 Build a lineage chain for every derived scientific result: `Raw Dataset → Sweep → Transform → Analysis/Matrix → Annotation`. Use `ctx.data.artifacts.publish()` and `batch()`; do not invent plugin-local “result changed” event buses.
 
@@ -170,10 +170,10 @@ Dedicated windows synchronize namespaced plugin slices and artifact deltas. Do n
 
 - Keep canonical large arrays in Artifacts/services, not Selection. Publish derived results with lineage and use Artifact batching/deduplication.
 - Treat chart, legend, data-list and inspector focus as projections of one Core `InteractionRuntime` + Entity graph; never keep private focus state. Core reveal is remount-safe and horizontal projections use local wheel/reveal scrolling.
-- Let Core own tooltip visuals. Plotly hover labels are normalized by Chart Runtime; custom SVG/D3 hover content should use `.dkds-tooltip`. Plugins provide content, not private tooltip colors/opacity/shadows.
+- Let Core own tooltip visuals. Scientific hover labels are normalized by Chart Runtime; custom Core surface hover content should use `.dkds-tooltip`. Plugins provide content, not private tooltip colors/opacity/shadows.
 
 - Coalesce visual resize/render work with Core scheduling.
-- Use Core ScientificPlot `react/attach/resize/purge/saveImage`; never construct parallel Plotly/D3 event or chart lifecycles.
+- Use Core ScientificPlot `react/attach/resize/purge/saveImage`; never construct a parallel renderer event or chart lifecycle.
 - Avoid re-rendering hidden views on every event.
 - Dispose service subscriptions/listeners through Core scopes.
 - Prefer event delegation or stable Core bindings for frequently rebuilt rows.
@@ -218,7 +218,7 @@ node scripts/check-plugin-boundaries.js
 npm run check
 ```
 
-The boundary checker rejects direct Electron, raw Plotly, private `plotly_click` lifecycles, private `scrollIntoView` focus logic, `ctx.ui.charts` bypasses in first-party plugins, raw document infrastructure access, private observers/schedulers, `ctx.host`, untyped generic registries, private DKDS globals and direct host-recipe access.
+The boundary checker rejects direct Electron, raw renderer-vendor access, private renderer event lifecycles, private `scrollIntoView` focus logic, `ctx.ui.charts` bypasses in first-party plugins, raw document infrastructure access, private observers/schedulers, `ctx.host`, untyped generic registries, private DKDS globals and direct host-recipe access.
 
 ## 16. Completion checklist
 

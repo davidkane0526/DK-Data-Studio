@@ -74,7 +74,7 @@
     "minWidth": 920,
     "minHeight": 650,
     "dependencies": [
-      "plotly",
+      "scientific-renderer",
       "science-common",
       "science-import",
       "science-pulse",

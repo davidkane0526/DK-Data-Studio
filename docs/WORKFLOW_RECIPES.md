@@ -80,7 +80,7 @@ ctx.charts.register('spectrum.fit', {
   inputKinds: ['data.table'],
   parameterSchema: {...},
   render({ container, artifact, parameters }) {
-    Plotly.react(container, ...);
+    ctx.ui.scientificPlot.react(container, traces, layout, config);
   }
 });
 ```

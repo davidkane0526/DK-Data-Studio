@@ -14,13 +14,14 @@ assert(Number(contract.minimumAppVersion.split('.').at(-1))>=33,'SDK minimum hos
 
 const infra=read('src/core/ui-infrastructure.js');
 for(const token of ['class SeriesRegistry','class LegendGroup','class ActiveLayoutSolver','class GroupPlot','class TooltipService','series=new SeriesRegistry','groupPlots={create','layoutSolver.solve'])assert(infra.includes(token),`Core UI contract missing ${token}`);
-assert(infra.includes("placement=horizontalFits?'top'")||infra.includes("placement=topFits?'top'"),'D3 legend auto-placement must prefer top');
-assert(infra.includes("'is-top','is-bottom','is-right','is-left'"),'D3 legend must support all Core placements');
+const presentation=read('src/core/plot-presentation-runtime.js');
+assert(presentation.includes("placement='top'")&&presentation.includes("requested==='auto'"),'Shared scientific legend auto-placement must prefer top.');
+assert(presentation.includes("['top','bottom','right','left']"),'Shared scientific legend must support all Core placements.');
 assert(infra.includes('dataset.dkdsTableTone')&&infra.includes('dataset.dkdsTableEmphasis'),'TableSurface must own semantic tone/emphasis');
 
 const chart=read('src/core/chart-runtime.js');
 for(const token of ['normalizedLegendData','compactLegendLabel','smartLegendLayout','normalizeConfig'])assert(chart.includes(token),`Chart runtime missing ${token}`);
-assert(chart.includes('Math.ceil(reserve)+46'),'bottom Plotly legend must reserve x-axis-title clearance');
+assert(chart.includes('Math.ceil(metrics.reserve)+40'),'bottom scientific legend must reserve x-axis-title clearance.');
 
 const kernel=read('src/core/plugin-kernel.js');
 assert(kernel.includes("const API_VERSION = '1.17.0'"));

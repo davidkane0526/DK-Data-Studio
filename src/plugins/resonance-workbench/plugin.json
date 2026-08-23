@@ -95,8 +95,7 @@
     "runtime": "window-runtime.js",
     "dependencies": [
       "data-model",
-      "plotly",
-      "d3",
+      "scientific-renderer",
       "science-common",
       "science-presets",
       "science-import",

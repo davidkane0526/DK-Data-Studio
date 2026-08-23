@@ -37,7 +37,7 @@ Never cache against a UI label, current tab, or viewport if those values do not 
 
 `ctx.ui.scientificPlot.react(..., spec)` accepts `renderKey` / `revisionKey`.
 
-If the same Plot target receives the same non-empty render key, Core skips the expensive `Plotly.react` call while preserving event bindings and tooltip ownership. The caller is responsible for changing the render key whenever traces/layout that affect the rendered result change.
+If the same Plot target receives the same non-empty render key, Core skips the expensive scientific renderer update while preserving event bindings and tooltip ownership. The caller is responsible for changing the render key whenever traces/layout that affect the rendered result change.
 
 Selection/focus restyling and tooltip relayout are also de-duplicated by Core.
 
@@ -76,9 +76,9 @@ Performance measurements are trend indicators for the same machine/build setup, 
 
 ## UI / renderer lifecycle (v3.49+)
 
-Performance caching and renderer lifetime are separate Core policies. `DKDSUI.lifecycle()` propagates hidden/visible state through plugin UI scopes. Hidden scopes suspend their `ResizeScheduler` and ask Core ScientificPlot to suspend managed Plotly renderers. Managed renderers may purge Plotly DOM/event state while retaining the plugin's declarative render spec plus Core Selection/Pin/Viewport state. On resume, Core rebuilds the renderer before the normal layout settle sequence.
+Performance caching and renderer lifetime are separate Core policies. `DKDSUI.lifecycle()` propagates hidden/visible state through plugin UI scopes. Hidden scopes suspend their `ResizeScheduler` and ask Core ScientificPlot to suspend managed scientific renderers. Managed renderers may purge renderer DOM/event state while retaining the plugin's declarative render spec plus Core Selection/Pin/Viewport state. On resume, Core rebuilds the renderer before the normal layout settle sequence.
 
-Plugins must not implement their own TOP hide/show Plotly cleanup. If a plugin renders through `ctx.ui.scientificPlot.react`, it receives this behavior automatically. `attach()` views that Core cannot safely reconstruct remain attached rather than being purged.
+Plugins must not implement their own TOP hide/show renderer cleanup. If a plugin renders through `ctx.ui.scientificPlot.react`, it receives this behavior automatically. `attach()` views that Core cannot safely reconstruct remain attached rather than being purged.
 
 Plugin deactivation trims only that plugin's `ctx.performance` namespace to zero, so cached plugin closures/resources cannot survive a full deactivation.
 
@@ -87,7 +87,7 @@ Plugin deactivation trims only that plugin's `ctx.performance` namespace to zero
 
 High-frequency UI feedback and scientific recomputation are separate workloads. Interactive D3 edit surfaces should update only lightweight geometry while a pointer is moving, then commit one semantic scientific edit at gesture end. In particular, FWHM-window dragging must not call the authoritative FWHM/peak-metric getter on every pointermove.
 
-`ScientificPlot` now owns a small render scheduler for plugins that create several expensive Plotly views at once. A view may declare `renderPriority` as `immediate`, `frame`, or `idle`:
+`ScientificPlot` now owns a small render scheduler for plugins that create several expensive scientific views at once. A view may declare `renderPriority` as `immediate`, `frame`, or `idle`:
 
 - `immediate`: the primary result, executed without queueing.
 - `frame`: important secondary views, one queued heavy view per animation frame.
@@ -95,4 +95,4 @@ High-frequency UI feedback and scientific recomputation are separate workloads. 
 
 Requests are coalesced per managed view. A newer queued render replaces the not-yet-executed work for that view, and the view's request revision prevents stale post-render bookkeeping from becoming authoritative. Plugins may choose relative priority, but must not implement their own chart timers or renderer queues.
 
-The desktop and mobile builds use the Plotly Cartesian distribution while the built-in standard views require only Cartesian scatter/heatmap traces. Dedicated TOP starts the shared Core Plotly loader after lightweight dependencies are ready. A normal cold open may continue mounting while that loader is in flight. A manifest-declared prewarm is different: the hidden renderer explicitly awaits its declared chart runtime and reports **runtime-only ready** without restoring project slices, opening the domain activity, calculating results, or drawing charts. On first real open the main process waits for a second hydrated-ready signal before showing the window. This makes prewarm useful without performing hidden scientific work.
+Desktop and mobile use one Core D3 scientific renderer for scatter/curve/heatmap views. Dedicated TOP windows load the vendor-neutral `scientific-renderer` dependency through Core. Manifest-declared prewarm reports **runtime-only ready** without restoring project slices, opening the domain activity, calculating results, or drawing charts. On first real open the main process waits for a second hydrated-ready signal before showing the window. This keeps prewarm useful without performing hidden scientific work.

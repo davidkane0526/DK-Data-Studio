@@ -25,7 +25,7 @@ assert(shell.includes('var(--plugin-font-body')&&shell.includes('var(--plugin-fo
 assert(safeguards.includes('var(--plugin-font-meta'),'Import/workspace warnings must consume the shared plugin meta text token.');
 assert(runtime.includes('document.body.dataset.pluginId'),'Dedicated TOP windows must expose plugin identity so shared visual rules can opt a parity surface in/out deterministically.');
 assert(runtime.includes("d3:'../../node_modules/d3/dist/d3.min.js'"),'Dedicated plugin dependency loader must support D3 for the GRS main renderer.');
-assert((manifest.window?.dependencies||[]).includes('d3'),'Resonance TOP must explicitly declare its D3 dependency.');
+assert((manifest.window?.dependencies||[]).includes('scientific-renderer'),'Resonance TOP must declare the renderer-neutral Core scientific renderer.');
 assert(resonance.includes('display:grid;grid-template-columns:minmax(0,1fr);height:100%'),'GRS main-workspace must preserve a non-zero chart surface inside AnalysisWorkbench.');
 assert(resonance.includes('respar-main-legend dkds-scroll-x-compact'),'Resonance legend must consume the Core compact horizontal-scroll utility.');
 assert(resonanceRuntime.includes('compactLegendNumber')&&resonanceRuntime.includes("chip.className='respar-legend-chip'"),'Resonance legend must format compact Vg labels.');

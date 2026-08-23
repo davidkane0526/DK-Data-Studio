@@ -11,8 +11,8 @@
   const errorTextEl = $('#pluginWindowErrorText');
 
   const DEPENDENCY_SCRIPTS = Object.freeze({
-    plotly:'../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js',
     d3:'../../node_modules/d3/dist/d3.min.js',
+    'd3-chart-renderer':'../core/d3-chart-renderer.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
     'science-presets':'../science/presets.js',
@@ -30,6 +30,7 @@
     platform:'../core/platform.js',
     'state-store':'../core/state-store.js',
     'io-runtime':'../core/io-runtime.js',
+    'plot-presentation-runtime':'../core/plot-presentation-runtime.js',
     'chart-runtime':'../core/chart-runtime.js',
     'performance-runtime':'../core/performance-runtime.js',
     'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
@@ -55,7 +56,6 @@
   let ready = false;
   let projectHydrated = false;
   let activityOpened = false;
-  let plotlyRequested = false;
   let snapshotTimer = null;
   let roleTransitionSnapshotTaken = false;
   let artifactUpserts = new Map();
@@ -171,17 +171,14 @@
 
   async function loadDependencies(spec) {
     const requested = Array.isArray(spec?.dependencies) ? spec.dependencies : [];
-    const requestedPlotly=requested.map(id=>String(id||'').trim()).includes('plotly');
-    plotlyRequested=requestedPlotly;
+    const requestedIds=requested.map(id=>String(id||'').trim());
+    const requestedScientificRenderer=requestedIds.includes('scientific-renderer');
     const ordered = [];
+    if(requestedScientificRenderer){ordered.push('d3');ordered.push('d3-chart-renderer');}
     for (const id of requested) {
       const key = String(id || '').trim();
+      if(key==='scientific-renderer')continue;
       if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
-      // Plotly is a large renderer runtime (~0.6 s parse/eval on the reference
-      // Windows machine). Keep the logical dependency contract, but let the
-      // Core Chart Runtime load it once on first actual chart use instead of
-      // blocking every dedicated TOP's first interactive frame.
-      if (key==='plotly') continue;
       if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
     }
     if (!ordered.includes('platform')) ordered.push('platform');
@@ -191,14 +188,14 @@
     // dependencies requested them. Loading Pipeline/Transform/Algorithm in every
     // TOP made unrelated Data Center/Pulse windows pay the cost of new science
     // features and caused startup time to grow as the platform evolved.
-    for(const id of ['entity-runtime','io-runtime','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
+    for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])if(!ordered.includes(id))ordered.push(id);
     if (!ordered.includes('ui-infrastructure')) ordered.push('ui-infrastructure');
     if (!ordered.includes('plugin-devtools')) ordered.push('plugin-devtools');
     if (!ordered.includes('capability-runtime')) ordered.push('capability-runtime');
     ordered.push('plugin-kernel');
 
     for (const id of ordered) await measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies,{src:DEPENDENCY_SCRIPTS[id]});
-    window.DKDSCharts?.configureRuntime?.({plotlyAllowed:requestedPlotly,plotlySource:new URL(DEPENDENCY_SCRIPTS.plotly,location.href).href,host:'dedicated-top'});
+    window.DKDSCharts?.configureRuntime?.({preferredRenderer:'d3',host:'dedicated-top'});
     if (window.DKDSScience) window.Analysis = window.DKDSScience;
     if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
     window.DKDSUI?.host?.configure?.({
@@ -210,30 +207,8 @@
     window.DKDSCapabilities?.importRemote?.(bootstrap?.capabilitySnapshot||null, payload=>window.electronAPI?.invokeOwnerCapability?.(payload));
   }
 
-  function beginDeclaredChartPreload() {
-    if (!plotlyRequested || !window.DKDSCharts?.ensurePlotly) return;
-    // Start the renderer request as soon as the lightweight Core dependencies
-    // are mounted, but deliberately do not await it. Plugin support scripts,
-    // project restore and activity mounting can proceed while the async script
-    // request is in flight. This closes the v3.60 gap where activity-open could
-    // request the first TER plot before the post-ready idle warmup even began.
-    void Promise.resolve(window.DKDSCharts.ensurePlotly({reason:'startup-parallel-preload'}))
-      .catch(err => console.warn('[DKDS plugin window Plotly parallel preload]', err));
-  }
-
-  function scheduleDeclaredChartWarmup() {
-    if (!plotlyRequested || !window.DKDSCharts?.ensurePlotly) return;
-    const warm = () => {
-      void Promise.resolve(window.DKDSCharts.ensurePlotly({reason:'idle-preload'}))
-        .catch(err => console.warn('[DKDS plugin window Plotly idle preload]', err));
-    };
-    // Post-ready warmup remains as a fallback/reuse point. In the normal path
-    // it simply reuses the preload promise (or the ready renderer) and adds no
-    // second script. Ordinary cold-open readiness remains non-blocking; a
-    // manifest-declared runtime-only prewarm explicitly awaits the same promise.
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(warm,{timeout:350});
-    else setTimeout(warm,120);
-  }
+  function beginDeclaredChartPreload() {}
+  function scheduleDeclaredChartWarmup() {}
 
   function safeSegment(value) {
     const s = String(value || '').trim();
@@ -479,7 +454,7 @@
     return !!ok;
   }
 
-  async function savePlotlyImage(plotId, defaultName, format='png') {
+  async function saveChartImage(plotId, defaultName, format='png') {
     const data = await window.DKDSCharts.toImage(plotId, {
       format,
       width:1500,
@@ -550,7 +525,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.35',
+      appVersion:'3.61.36',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -571,7 +546,8 @@
       closeAnalysisPage,
       showMainWorkspace:()=>false,
       copyTextToClipboard,
-      savePlotlyImage,
+      saveChartImage,
+      saveChartImage:saveChartImage,
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
@@ -602,11 +578,7 @@
     return true;
   }
 
-  async function ensureDeclaredChartWarm() {
-    if(!plotlyRequested||!window.DKDSCharts?.ensurePlotly)return false;
-    await window.DKDSCharts.ensurePlotly({reason:'dedicated-prewarm-runtime'});
-    return true;
-  }
+  async function ensureDeclaredChartWarm(){return !!window.DKDSCharts?.runtimeState?.()?.d3Ready;}
 
   async function loadTargetPlugin() {
     const spec = bootstrap?.pluginWindow;
@@ -615,7 +587,7 @@
     if (!spec?.entry || (!packagedSource&&!spec?.pluginFolder)) throw new Error('插件窗口缺少入口信息。');
 
     // Load only the dependencies declared by this top-level plugin. The old
-    // host loaded Plotly + all science/workflow modules for every window.
+    // host loaded every scientific renderer and science/workflow module for every window.
     await measure('dependencies',()=>loadDependencies(spec));
     beginDeclaredChartPreload();
     measureSync('artifact-store-prime',()=>primeArtifactStoreForRuntime());
@@ -651,7 +623,8 @@
         setStatus,
         scheduleSnapshot,
         copyTextToClipboard,
-        savePlotlyImage,
+        saveChartImage,
+        saveChartImage:saveChartImage,
         artifacts:artifactsApi
       }));
       if (pluginRuntime?.serviceName && pluginRuntime?.service) {
@@ -776,7 +749,7 @@
       window.electronAPI?.onActivityWillHide?.(() => {
         pushSnapshot(true);
         // TOP reuse is a Core resource lifecycle, not a plugin-specific optimization.
-        // Suspend generic UI schedulers and release managed Plotly renderer state
+        // Suspend generic UI schedulers and release managed D3 renderer state
         // before contracting scientific caches. Domain state/Selection/Viewport stay
         // in the shared Controller/View model and are restored on show.
         void Promise.resolve(window.DKDSUI?.lifecycle?.('hidden',{reason:'top-window-hide'})).catch(err=>console.warn('[DKDS plugin window UI suspend]',err)).finally(()=>{

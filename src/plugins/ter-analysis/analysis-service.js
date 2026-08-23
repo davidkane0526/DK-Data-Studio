@@ -12,7 +12,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.ter-analysis','analysis-service',{
-    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,artifacts,io=window.DKDSIO,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null}){
+    async create({project:initialProject,bootstrap,setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,artifacts,io=window.DKDSIO,dom=window.DKDSComponents?.createScope?.('builtin.ter-analysis')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null}){
       const $=s=>dom?.query?.(s)||null;
       let project=initialProject||{};
       let settings={};
@@ -318,16 +318,16 @@
         copyLong:()=>copyTextToClipboard(longCsv(),'TER_long CSV'),
         exportMatrix:()=>saveCsv('TER_matrix.csv',matrixCsv()),
         copyMatrix:()=>copyTextToClipboard(matrixCsv(),'TER_matrix CSV'),
-        exportHeatmapSvg:()=>result&&savePlotlyImage('terHeatmapPlot','TER_heatmap','svg'),
-        exportHeatmapPng:()=>result&&savePlotlyImage('terHeatmapPlot','TER_heatmap','png'),
+        exportHeatmapSvg:()=>result&&saveChartImage('terHeatmapPlot','TER_heatmap','svg'),
+        exportHeatmapPng:()=>result&&saveChartImage('terHeatmapPlot','TER_heatmap','png'),
         exportMaxVg:()=>saveCsv('TER_Max-Vg.csv',maxVgCsv()),
         copyMaxVg:()=>copyTextToClipboard(maxVgCsv(),'TER_Max–Vg CSV'),
-        exportMaxVgSvg:()=>result&&savePlotlyImage('terMaxVgPlot','TER_Max-Vg','svg'),
-        exportMaxVgPng:()=>result&&savePlotlyImage('terMaxVgPlot','TER_Max-Vg','png'),
+        exportMaxVgSvg:()=>result&&saveChartImage('terMaxVgPlot','TER_Max-Vg','svg'),
+        exportMaxVgPng:()=>result&&saveChartImage('terMaxVgPlot','TER_Max-Vg','png'),
         exportMaxVd:()=>saveCsv('TER_Max-Vd.csv',maxVdCsv()),
         copyMaxVd:()=>copyTextToClipboard(maxVdCsv(),'TER_Max–Vd CSV'),
-        exportMaxVdSvg:()=>result&&savePlotlyImage('terMaxVdPlot','TER_Max-Vd','svg'),
-        exportMaxVdPng:()=>result&&savePlotlyImage('terMaxVdPlot','TER_Max-Vd','png')
+        exportMaxVdSvg:()=>result&&saveChartImage('terMaxVdPlot','TER_Max-Vd','svg'),
+        exportMaxVdPng:()=>result&&saveChartImage('terMaxVdPlot','TER_Max-Vd','png')
       };
 
       return {

@@ -2103,7 +2103,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     syncSuperWorkspaceDivider();
   }
 
-  async function savePlotlyImage(plotId,defaultName,format){
+  async function saveChartImage(plotId,defaultName,format){
     const data=await window.DKDSCharts.toImage(plotId,{format,width:1500,height:950,scale:format==='png'?2:1});
     if(format==='svg'){
       const raw=data.split(',')[1]||'';
@@ -2188,12 +2188,13 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   function bindPluginGroupPointClick(plot,provider,result){
-    if(!plot||typeof plot.on!=='function')return;
-    try{plot.removeAllListeners?.('plotly_click');}catch{}
-    plot.on('plotly_click',ev=>{
+    if(!plot||!window.DKDSCharts?.bind)return;
+    try{plot.__dkdsGroupPointOff?.();}catch{}
+    const off=window.DKDSCharts.bind('core.group-plots',plot,'dkds_chart_click',ev=>{
       try{provider.onPointClick?.({event:ev,point:ev?.points?.[0],result,context:pluginUiContext()});}
       catch(err){console.error('[DKDS group point click]',err);}
     });
+    try{Object.defineProperty(plot,'__dkdsGroupPointOff',{value:off,writable:true,configurable:true});}catch{plot.__dkdsGroupPointOff=off;}
   }
 
   function renderTrendPanel(){
@@ -2339,7 +2340,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.35',
+      version:'3.61.36',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3209,7 +3210,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.35',
+      appVersion:'3.61.36',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3236,7 +3237,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       showNoSuperWorkspace,
       placePrime:placePrimeContribution,
       copyTextToClipboard,
-      savePlotlyImage,
+      saveChartImage,
       makeFloating,
       artifacts:artifactHostApi(),
       services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel})}

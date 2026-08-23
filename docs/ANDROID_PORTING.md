@@ -22,7 +22,7 @@ This is not a remote-control client. After building, the Android app loads its o
 
 ## 2. Why a hybrid React Native shell
 
-The mature application has complex D3/Plotly SVG/canvas interaction, multi-panel scientific dashboards and a large tested browser renderer. Rewriting all visual interaction as unrelated native charts would immediately fork the product and scientific behavior.
+The mature application has complex D3 scientific SVG/canvas interaction, multi-panel scientific dashboards and a large tested browser renderer. Rewriting all visual interaction as unrelated native charts would immediately fork the product and scientific behavior.
 
 React Native therefore owns native platform concerns while WebView hosts the shared scientific workspace. Native screens can be introduced progressively later without changing scientific algorithms.
 
@@ -53,7 +53,7 @@ cd mobile
 npm run sync:web
 ```
 
-The script copies the current `src/` tree and vendor D3/Plotly files into:
+The script copies the current `src/` tree and the D3 scientific renderer assets into:
 
 ```text
 mobile/assets/web/
@@ -170,7 +170,7 @@ On touch devices the current renderer increases:
 
 Desktop keyboard/mouse shortcuts remain conveniences, not the required mobile path.
 
-Next interaction work should add explicit long-press equivalents for Ctrl/right-click actions and two-finger/pinch handling where WebView/Plotly behavior is insufficient.
+Next interaction work should add explicit long-press equivalents for Ctrl/right-click actions and two-finger/pinch handling where WebView/Core scientific interaction is insufficient.
 
 ## 9. Responsive layout
 
@@ -194,7 +194,7 @@ Plugins should react to `ctx.platform.profile`, not invent their own hard-coded 
 - do not make an Android-specific numerical algorithm;
 - large tables should eventually be virtualized;
 - expensive analysis should eventually move to Web Workers;
-- hidden Plotly views can be purged/lazy-rendered if phone memory becomes a problem.
+- hidden ScientificPlot views can be purged/lazy-rendered if phone memory becomes a problem.
 
 ## 11. Future native React Native UI
 

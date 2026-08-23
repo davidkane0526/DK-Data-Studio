@@ -83,7 +83,7 @@
     "minHeight": 650,
     "dependencies": [
       "data-model",
-      "plotly",
+      "scientific-renderer",
       "science-common",
       "science-peaks",
       "science-ter",

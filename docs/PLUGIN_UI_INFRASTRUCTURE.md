@@ -8,7 +8,7 @@ Core owns:
 
 - workspace regions and responsive layout;
 - portable/pinnable/floating panels and persistent placement;
-- Plotly surface lifecycle and resize;
+- scientific surface lifecycle and resize;
 - dynamic action/button groups;
 - activity-aware shortcuts;
 - mouse / pointer / wheel / context-menu bindings;
@@ -197,7 +197,7 @@ plugin/
   plugin.js           registration only
 ```
 
-`super-layout.js` and `window-runtime.js` must not contain Plotly traces, science calculations, domain HTML templates, peak/TER logic, or feature-specific event handlers.
+`super-layout.js` and `window-runtime.js` must not contain renderer trace objects, science calculations, domain HTML templates, peak/TER logic, or feature-specific event handlers.
 
 ## Host adapters
 
@@ -259,7 +259,7 @@ Rules:
 - Toolbars and action clusters are **single-row-first** (`flex-wrap: nowrap`). If the host is truly narrower than the action set, the row may scroll/overflow horizontally or move low-priority commands into a Core ActionGroup menu; it must not wrap early into two or three rows while usable horizontal space remains.
 - Plugin-owned historical CSS may define older values for legacy/non-workbench pages, but a current `AnalysisWorkbench` surface is normalized by the shared contract. New built-ins should use the variables directly.
 - A parity surface may intentionally opt out only when reproducing an externally defined product UI. The exception must be scoped to a deterministic plugin identity (for dedicated windows `body[data-plugin-id]`) rather than broad selectors. Resonance is the current reference exception because its UI intentionally reproduces the supplied Graphene Resonance Studio workspace.
-- Renderer dependencies are part of the TOP contract. If a shared View uses D3, Plotly or another renderer, declare it in `plugin.json.window.dependencies`; the generic window host must load it rather than relying on libraries that happen to exist in the main renderer.
+- Renderer dependencies are part of the TOP contract. If a shared View uses ScientificPlot, declare `scientific-renderer` in `plugin.json.window.dependencies`; the generic window host loads the Core D3 renderer instead of exposing a renderer vendor to plugins.
 
 The visual contract belongs to UI infrastructure. Do not solve inconsistent typography or premature toolbar wrapping by adding per-plugin `!important` patches unless the plugin is deliberately implementing a documented parity surface.
 

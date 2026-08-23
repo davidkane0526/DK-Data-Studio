@@ -47,13 +47,13 @@ Shared scientific infrastructure owns Reactive, Pipeline, Transform Registry, Sc
 - Plugin-specific fine-grained history may handle local editing first.
 - Project-level user commands fall back to unified Project History (`Ctrl/Cmd+Z`, redo variants).
 - Background/derived Artifact mutations do not automatically become history entries.
-- Core ScientificPlot owns generic D3/Plotly interaction chrome; plugins should not reimplement it unless exposing a genuinely domain-specific interaction.
+- Core ScientificPlot owns generic scientific interaction chrome; plugins should not reimplement it unless exposing a genuinely domain-specific interaction.
 
 ## External plugin baseline
 
 - Transfer Vth Lab 3.0.2 is the current API 1.16 external TOP authoring reference; API 1.15 remains a compatibility fixture, not the template for new code.
 - New TOPs use `workspace.role=top`, a dedicated `window`, `openMode=window`, `topWorkspace.register()` and Core-owned import/scoped data.
-- ScientificPlot/D3 and Plotly runtime dependencies must be declared by dedicated plugins and are validated by the SDK.
+- ScientificPlot runtime dependencies are declared with the vendor-neutral `scientific-renderer` capability and validated by the SDK; renderer-vendor dependencies are prohibited.
 
 ## Repository reproducibility
 

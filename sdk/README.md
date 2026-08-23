@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.17.2
+# DK Data Studio Plugin SDK 1.17.3
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.35 or newer for the complete SDK 1.17.2 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.36 or newer for the complete SDK 1.17.3 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -62,6 +62,14 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
+### Scientific presentation contract (SDK 1.17.3)
+
+The Core D3 scientific renderer is a rendering engine only. Core owns one shared **Scientific Presentation** layer for automatic legend placement, two-row packing, per-surface legend scope, curve-to-legend focus, reversible legend isolation, compact draggable navigation tools, and semantic light/dark styling. A plugin should declare series identity/labels/groups and data; it should not implement its own generic legend packing or renderer chrome.
+
+Top/bottom legends use the full surface-chrome width rather than the inner axis rectangle. Dynamic multi-series plots keep a stable legend footprint across transient trace-count changes, so a temporary `2 → 1 → 2` update does not resize the plotting area. `dkdsNavigationTools:false` disables the Core navigation strip when a scientific surface intentionally needs no navigation tools.
+
+Clicking a rendered curve focuses its corresponding Core legend entry. Clicking a legend entry isolates its semantic series/`legendgroup`; clicking the same entry again restores the baseline visibility of all series. Horizontal legend chrome is capped at two compact rows and does not expose a permanent horizontal scrollbar.
+
 For direct scientific curve interaction, use `ctx.ui.scientificPlot.create(...)`. Core owns pointer-rate geometry editing, snapping, range/zoom gestures and focus styling through domain-neutral **manipulators**. Declare `getManipulators()` with `point`, `axis`, or `range` primitives and persist domain changes only from `onManipulationCommit`. A peak position, threshold line, fit/integration interval, crop range, baseline control, or FWHM analysis window is a plugin-domain interpretation of these same Core primitives; plugins must not implement private D3 drag loops or introduce feature-named handle contracts.
 
 Example:
@@ -109,9 +117,9 @@ Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive 
 
 #### Core-owned multi-series legends
 
-A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Every legend is **scoped to its own surface host**: adjacent cards never share or overlap an accidental common legend. Core chooses a compact external **top-first** placement and packs horizontal legends into at most two balanced rows before allowing horizontal overflow; bottom placement keeps explicit X-axis-title clearance and side placement is an explicit/fallback choice rather than the normal compact-card behavior. D3 and Plotly use the same Core HTML legend presentation, so typography and click-to-isolate behavior are consistent. Once a surface has become multi-series, Core keeps the reserved legend footprint stable across transient trace-count updates so the plot does not visibly twitch.
+A scientific plot with two or more named/labeled series gets an interactive Core legend by default. Use `label`/`name` on curves or renderer-neutral trace objects. Every legend is **scoped to its own surface host**: adjacent cards never share or overlap an accidental common legend. Core chooses a compact external **top-first** placement and packs horizontal legends into at most two balanced rows. The legend chrome does not expose a permanent horizontal scrollbar; labels are compacted within the surface and side placement is reserved for genuinely wide layouts. Bottom placement keeps explicit X-axis-title clearance. the Core scientific renderer use the same Core HTML legend presentation, so typography and click-to-isolate behavior are consistent. Once a surface has become multi-series, Core keeps the reserved legend footprint stable across transient trace-count updates so the plot does not visibly twitch.
 
-Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. Plotly `legendgroup` is treated as one semantic series group, so a visible forward-scan legend entry can isolate its paired hidden-from-legend reverse trace at the same time. Plotly's native modebar is suppressed by the Core runtime; interactive Plotly surfaces receive the same compact, draggable `＋ / − / ⌂` navigation strip as D3, while `displayModeBar:false` or `dkdsNavigationTools:false` explicitly disables it. A plugin can opt out of the Core legend (`legend:false` / `showlegend:false`) or opt out of automatic placement with Plotly `legend.autoplace:false` when an exact native Plotly legend position is genuinely required. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
+Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. `legendgroup` is treated as one semantic series group, so a visible forward-scan legend entry can isolate its paired hidden-from-legend reverse trace at the same time. Interactive scientific surfaces use the compact, draggable Core `＋ / − / ⌂` navigation strip; use `dkdsNavigationTools:false` only when the scientific surface intentionally needs no navigation tools. A plugin can opt out of the Core legend (`legend:false` / `showlegend:false`) or request `top`, `bottom`, `left`, or `right`; engine-native legend chrome is not part of the supported Core presentation contract. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` or `ctx.ui.scientificPlot.legendMetrics(target)`. These return placement, row count, size and reserve information.
 
 ### Interaction Behavior
 
@@ -266,3 +274,7 @@ settings.open();
 ## Core Dialog Runtime
 
 需要提示、确认或选择时，在 `requiresCore` 声明 `ui.dialogs`，使用 `ctx.ui.dialogs.alert / confirm / prompt`。不要使用浏览器原生 `alert / confirm / prompt`；Core 会统一亮暗主题、遮罩层、按钮对比度和键盘行为。
+
+
+### Scientific renderer dependency
+Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.

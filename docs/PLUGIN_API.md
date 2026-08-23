@@ -52,7 +52,7 @@ Plugin IDs are permanent once project files persist state under them.
 - desktop/web file dialogs, text/binary reads, save/export, clipboard and image export;
 - canonical Artifact/Data Model, lineage/provenance graph and typed data-flow registries;
 - canonical Entity Registry for identity/relationship/state projection (`visible / focused / selected / locked / hidden / disabled`);
-- Plotly/D3 access through ScientificPlot, including focus styling, chart lifecycle, resize, purge and export;
+- D3 scientific rendering through the vendor-neutral ScientificPlot API, including focus styling, chart lifecycle, resize, purge and export;
 - DOM creation/query helpers, persistent listener/observer cleanup, animation-frame/timer scheduling and declarative component primitives;
 - PRIMARY / PRIME / SUB workspaces, Grid, portable/dock/floating surfaces, z-order and resize propagation;
 - actions, shortcuts, menus, status bar, typed selection and Interaction Runtime;
@@ -78,9 +78,9 @@ New code must not use these infrastructure shortcuts:
 ```text
 ctx.host
 window.electronAPI / electronAPI.*
-Plotly.* / window.Plotly
+raw renderer-vendor globals such as window.d3
 window.d3
-private plotly_click listeners or listener cleanup
+private renderer event listeners or listener cleanup
 private scrollIntoView focus/reveal logic
 ctx.ui.charts (legacy first-party bypass; use ctx.ui.scientificPlot)
 raw document.querySelector/createElement...
@@ -272,9 +272,9 @@ A plugin may inspect only its own namespace through `ctx.performance.snapshot()`
 
 ## 10. Scientific plots
 
-First-party and new plugins use `ctx.ui.scientificPlot` for Plotly/D3 scientific interaction. Do not bind `plotly_click` yourself and do not manually restyle focused traces.
+First-party and new plugins use `ctx.ui.scientificPlot` for all scientific interaction. Do not bind renderer-private events and do not manually restyle focused series.
 
-Plotly example:
+ScientificPlot example:
 
 ```js
 await ctx.ui.scientificPlot.react(plot, traces, layout, config, {
@@ -287,7 +287,7 @@ ctx.ui.scientificPlot.resize(plot);
 await ctx.ui.scientificPlot.saveImage(plot,'fit_result','png');
 ```
 
-For matrix/scalar-field results, use the same runtime rather than creating a plugin-private Plotly heatmap:
+For matrix/scalar-field results, use the same runtime rather than creating a plugin-private heatmap renderer:
 
 ```js
 await ctx.ui.scientificPlot.scalarField(plot, {
@@ -304,7 +304,7 @@ await ctx.ui.scientificPlot.scalarField(plot, {
 
 `scalarField()` owns heatmap colorbar/axis metadata, diverging `zmid`, hover defaults, ScientificPlot viewport/export/lifecycle and managed rendering. The plugin owns the scientific matrix and optional domain mapping from a cell to a real Entity/Selection.
 
-When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing rendered Plotly graphs may be adopted with `attach()`.
+When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing Core-managed scientific graphs may be adopted with `attach()`.
 
 For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Core also owns curve snapping, marker drag geometry, post-drag click suppression, zoom/range gestures and FWHM/window handle geometry. Plugins should commit scientific state only from `onMarkerDragCommit` and `onWidthWindowCommit`; the latter always supplies a complete atomic `[windowLeft, windowRight]` pair even when the user drags only one handle. Pointer-rate preview callbacks are optional and must not mutate project/scientific state. Domain callbacks remain optional for commands such as “open inspector” or “create manual peak”.
 
@@ -357,7 +357,7 @@ Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Po
 
 ### Tooltip ownership
 
-Core Chart Runtime owns the visual tooltip theme for Plotly charts, and Core `.dkds-tooltip` owns the matching custom D3/SVG tooltip appearance. Plugins may define semantic hover content and formatting, but must not define independent tooltip background colors, opacity, borders, shadows or typography.
+Core Chart Runtime owns the visual tooltip theme for ScientificPlot charts, and Core `.dkds-tooltip` owns the matching custom surface tooltip appearance. Plugins may define semantic hover content and formatting, but must not define independent tooltip background colors, opacity, borders, shadows or typography.
 
 ## 13. Actions, shortcuts and interaction
 

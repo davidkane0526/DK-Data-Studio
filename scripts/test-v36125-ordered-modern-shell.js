@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.35','ordered modern shell release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.36','ordered modern shell release must be v3.61.27');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
 const css=read('src/ui-modern.css');
@@ -23,7 +23,7 @@ assert(html.includes('core/theme-runtime.js'),'main shell must initialize the ex
 assert(pluginHtml.includes('../core/theme-runtime.js'),'dedicated plugin windows must use the same appearance runtime');
 assert(preload.includes('appearanceGetTheme')&&preload.includes('appearanceSetTheme')&&main.includes("system:getAppearanceTheme")&&main.includes("system:setAppearanceTheme"),'desktop windows must synchronize explicit appearance through the Electron host');
 assert(theme.includes("STORAGE_KEY='dkds.appearance.v1'")&&theme.includes('dkds:theme-changed')&&theme.includes("addEventListener?.('storage'"),'appearance selection must persist and synchronize across windows');
-assert(charts.includes('window.DKDSTheme?.current?.()')&&charts.includes('refreshRenderedTheme'),'Chart Runtime must follow the application-selected theme and refresh live Plotly canvases');
+assert(charts.includes('window.DKDSTheme?.current?.()')&&charts.includes('refreshRenderedTheme'),'Chart Runtime must follow the application-selected theme and refresh live D3 scientific canvases');
 
 assert(css.includes('body.dkds-modern-ui .topbar{position:relative;z-index:1400')&&css.includes('body.dkds-modern-ui .analysis-page{z-index:500}'),'top command shell must stay above fixed analysis workbenches');
 assert(css.includes('body.dkds-modern-ui .command-menu{z-index:1650}'),'top dropdown menus must stay above workbench content');

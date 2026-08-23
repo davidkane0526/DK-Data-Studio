@@ -7,14 +7,14 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function assert(v,m){if(!v)throw new Error(m);}
 (async()=>{
   const chart=read('src/core/chart-runtime.js');
-  assert(chart.includes("const VERSION='1.8.1'"),'Chart runtime must advance for corrected display-scale semantics.');
+  assert(chart.includes("const VERSION='2.0.0'"),'Chart runtime must advance for corrected display-scale semantics.');
   assert(chart.includes("hasHeatmap(data)?'z'")&&chart.includes('isColorScaleInteraction'),'Heatmap display scale must target Z/colorbar rather than the coordinate Y axis.');
   assert(chart.includes('Math.log10(n)')&&chart.includes('const magnitudeZ=rawZ.map'),'Heatmap log view must project log10(|Z|) while retaining display access to original magnitudes.');
-  assert(chart.includes("layout.yaxis.tickmode='linear';layout.yaxis.dtick=1"),'Plotly log Y axes must label decade ticks only.');
+  assert(chart.includes("layout.yaxis.tickmode='linear';layout.yaxis.dtick=1"),'Scientific log Y axes must label decade ticks only.');
 
   let captured=null;
-  const plot={nodeType:1,dataset:{},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
-  const fakeWindow={Plotly:{react(el,data,layout,config){captured={el,data,layout,config};return Promise.resolve(true);}}};
+  const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
+  const fakeWindow={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(true);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
   const fakeDocument={currentScript:{src:'file:///tmp/src/core/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
   const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
 

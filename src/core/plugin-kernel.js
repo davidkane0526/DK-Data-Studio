@@ -448,7 +448,7 @@
   function eventEmit(name, payload) {
     if (name !== 'layout:resize') return eventEmitNow(name, payload);
     // layout:resize is a frame signal, not a synchronous command. Window
-    // resize, splitters, grids and Plotly ResizeObservers may all report the
+    // resize, splitters, grids and renderer ResizeObservers may all report the
     // same geometry change. Coalesce them globally and reject recursive
     // layout notifications from listeners so a plugin can never create a
     // frame-by-frame feedback loop.

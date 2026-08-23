@@ -30,7 +30,7 @@ assert(feature?.createTop,'Resonance feature runtime module must expose createTo
 
 (async()=>{
   const runtime=await feature.createTop({
-    project:{datasets:[]},artifacts:{list:()=>[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},savePlotlyImage(){}
+    project:{datasets:[]},artifacts:{list:()=>[]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}
   });
   assert.equal(runtime.serviceName,'builtin.resonance-workbench.runtime');
   assert.equal(typeof runtime.service?.serialize,'function');

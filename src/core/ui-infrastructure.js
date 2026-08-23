@@ -1,7 +1,8 @@
 (() => {
   if (window.DKDSUI) return;
 
-  const VERSION = '7.0.0';
+  const VERSION = '7.1.0';
+  const plotPresentation = window.DKDSPlotPresentation || null;
   const scopes = new Map();
   const hostState = {
     root: null,
@@ -446,8 +447,6 @@
     text=text.replace(/^file:\/\//i,'').trim();
     return text.length>42?`${text.slice(0,19)}…${text.slice(-19)}`:text;
   }
-  function legendLabelWidth(value=''){let width=0;for(const ch of String(value||''))width+=/[\u2E80-\u9FFF\uF900-\uFAFF]/.test(ch)?10.2:6.1;return Math.min(164,27+width);}
-  function packedLegendRowCount(widths,available,gap=5){let rows=1,used=0;for(const raw of widths){const w=Math.min(available,Math.max(36,Number(raw)||36));if(used>0&&used+gap+w>available){rows+=1;used=w;}else used+=(used?gap:0)+w;}return Math.max(1,rows);}
   class SeriesRegistry {
     constructor(owner='core'){this.owner=String(owner||'core');this.rows=new Map();this.order=[];}
     stableId(spec={},index=0){const raw=spec?.seriesId??spec?.id??spec?.key??spec?.entityId??spec?.uid??spec?.name??spec?.label??`series-${index+1}`;return String(raw||`series-${index+1}`);}
@@ -792,7 +791,7 @@
       const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
       wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));
       const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});
-      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;for(const plot of this.wrapper.querySelectorAll?.('.js-plotly-plot')||[]){try{window.DKDSCharts?.resize?.(plot);}catch{}}});};
+      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;for(const plot of this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')||[]){try{window.DKDSCharts?.resize?.(plot);}catch{}}});};
       const ro=window.ResizeObserver?new ResizeObserver(requestPortableResize):null;ro?.observe(wrapper);this.resizeObserver=ro;
     }
     zone(placement){return this.spec.layout?.slot?.(placement)||hostState.zones.get(placement)||null;}
@@ -941,15 +940,14 @@
       this.bindPlotEvents();return true;
     }
     bindPlotEvents(){
-      if(!this.plot?.on)return;
-      for(const [name,handler] of this.boundPlotEvents)try{this.plot.removeListener?.(name,handler);}catch{}
+      for(const off of this.boundPlotEvents)try{off?.();}catch{}
       this.boundPlotEvents=[];
-      const events={plotly_click:'onClick',plotly_doubleclick:'onDoubleClick',plotly_hover:'onHover',plotly_unhover:'onUnhover',plotly_selected:'onSelected',plotly_relayout:'onRelayout'};
-      for(const [eventName,key] of Object.entries(events)){const fn=this.spec[key];if(typeof fn!=='function')continue;const handler=payload=>fn(payload,this);this.plot.on(eventName,handler);this.boundPlotEvents.push([eventName,handler]);}
+      const events={dkds_chart_click:'onClick',dkds_chart_doubleclick:'onDoubleClick',dkds_chart_hover:'onHover',dkds_chart_unhover:'onUnhover',dkds_chart_selected:'onSelected',dkds_chart_relayout:'onRelayout'};
+      for(const [eventName,key] of Object.entries(events)){const fn=this.spec[key];if(typeof fn!=='function')continue;const off=window.DKDSCharts?.bind?.(this.scope.owner,this.plot,eventName,payload=>fn(payload,this));if(typeof off==='function')this.boundPlotEvents.push(off);}
     }
     resize(){try{window.DKDSCharts?.resize?.(this.plot);}catch{}}
     portable(id,spec={}){return this.scope.panels.create(id,this.container,{title:this.spec.title||spec.title,...spec});}
-    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();try{window.DKDSCharts?.purge?.(this.plot);}catch{}this.boundPlotEvents=[];const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.toolbar?.dispose?.();for(const off of this.boundPlotEvents.splice(0))try{off?.();}catch{}try{window.DKDSCharts?.purge?.(this.plot);}catch{}const i=this.scope?.charts?.indexOf?.(this);if(Number.isInteger(i)&&i>=0)this.scope.charts.splice(i,1);}
   }
 
   class PlotView {
@@ -957,7 +955,7 @@
       this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;
       if(!this.card)throw new Error(`PlotView card not found: ${this.id}`);
       this.card.classList.add('dkds-plot-view');
-      this.plot=resolveScopedElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.js-plotly-plot',this.card)||this.card.querySelector('.analysis-chart')||this.card;
+      this.plot=resolveScopedElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.dkds-scientific-chart-host',this.card)||this.card.querySelector('.analysis-chart')||this.card;
       this.header=resolveScopedElement(this.spec.header||'.analysis-chart-title,.reswin-group-head,.ter-resistance-card-header,.ter-chart-header,.pulse-card-heading,.pulse-plot-header,.dc-tool-title',this.card);
       if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
       this.header.classList.add('dkds-plot-view-head');
@@ -1051,7 +1049,7 @@
       const factory=this.spec.portableFactory;
       this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
     }
-    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot?.classList?.contains('js-plotly-plot')){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
+    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
     dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
   }
 
@@ -1071,7 +1069,7 @@
     hydrate(root,spec={}){
       const rows=[];for(const card of this.cards(root)){
         const bound=this.byCard.get(card);if(bound&&!bound.disposed){rows.push(bound);continue;}
-        const plot=resolveScopedElement(spec.plotSelector||'.analysis-chart,.reswin-group-plot,.dkds-chart-plot,.js-plotly-plot,#dcChart',card);if(!plot)continue;
+        const plot=resolveScopedElement(spec.plotSelector||'.analysis-chart,.reswin-group-plot,.dkds-chart-plot,.dkds-scientific-chart-host,#dcChart',card);if(!plot)continue;
         const header=resolveScopedElement(spec.headerSelector||'.analysis-chart-title,.reswin-group-head,.ter-resistance-card-header,.pulse-card-heading,.dc-tool-title,.dkds-chart-head',card);
         const plotId=String(plot.id||card.dataset?.plotId||card.dataset?.groupMetric||`plot-${this.byId.size+1}`);const alreadyPrime=card.dataset.dkdsPrimeOwned==='1'||card.classList.contains('dkds-portable-view');
         const base={plot,header,portable:alreadyPrime?false:spec.portable!==false,placements:spec.placements||['home','left','right','bottom','global'],defaultPlacement:spec.defaultPlacement||'home',stateVersion:spec.stateVersion||'plot-view-v2',portableFactory:spec.portableFactory};
@@ -1513,7 +1511,7 @@
       this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');
       this.layoutState={status:'initial',width:0,height:0,preferredMinWidth:Number(spec.minWidth)||260,preferredMinHeight:Number(spec.minHeight)||180,hardMinWidth:Math.max(72,Number(spec.hardMinWidth)||112),hardMinHeight:Math.max(72,Number(spec.hardMinHeight)||96),fallbackApplied:false,compact:false,reason:'initial'};
-      this.layoutFallbackOwned=false;this.legendHost=null;this.legendSoloId='';this.legendGroup=null;this.legendGroupOff=null;this.legendLayoutState={enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0};
+      this.layoutFallbackOwned=false;this.legendHost=null;this.legendController=null;this.legendSoloId='';this.legendSelectedId='';this.legendGroup=null;this.legendGroupOff=null;this.legendLayoutState={enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0};
       this.installLegendHost();
       this.installNavigationTools();
       this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{this.clampNavigationTools();this.requestRender('resize');this.scheduleNavigationCollisionCheck();}):null;
@@ -1528,9 +1526,32 @@
     curveLegendLabel(curve){const id=String(curve?.id||'');return this.scope.series?.label?.(id,curve?.label??curve?.name??curve?.title??id)||compactSeriesLabel(curve?.label??curve?.name??curve?.title??id);}
     categoricalColor(index=0){const d3=this.d3(),palette=Array.isArray(d3?.schemeTableau10)?d3.schemeTableau10:['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'];return palette[Math.abs(Number(index)||0)%palette.length];}
     legendEntries(curves){const scale=this.colorScaleState?.scale;const rows=(Array.isArray(curves)?curves:[]).map((curve,index)=>{const scaled=this.finite(curve?.colorValue)&&typeof scale==='function'?String(scale(Number(curve.colorValue))):'';const initial=this.scope.series?.register?.({...curve,color:curve?.color||scaled||undefined},index);const color=String(curve?.color||scaled||initial?.color||this.categoricalColor(index));const reg=this.scope.series?.register?.({...curve,color},index);return {curve,id:String(curve?.id||reg?.id||''),label:this.curveLegendLabel(curve),color,group:String(curve?.legendGroup||curve?.legendgroup||reg?.group||''),visible:curve?.visible!==false};}).filter(row=>row.id&&row.label&&row.curve?.legend!==false);const groupId=this.legendOptions().group;if(groupId){const group=this.scope.legends?.group?.(groupId);if(group!==this.legendGroup){this.legendGroupOff?.();this.legendGroup=group;this.legendGroupOff=group?.register?.(this,rows)||null;}group?.setSeries?.(this,rows);}return rows;}
-    installLegendHost(){if(this.legendHost||!this.container)return;const host=document.createElement('div');host.className='dkds-plot-legend dkds-scientific-auto-legend hidden';host.dataset.dkdsLegend='auto';host.setAttribute('aria-label','图例');host.addEventListener('click',event=>{const button=event.target?.closest?.('button[data-curve-id]');if(!button||!host.contains(button))return;event.preventDefault();event.stopPropagation();const options=this.legendOptions();if(options.interaction==='none')return;const id=String(button.dataset.curveId||'');if(!id)return;if(this.legendGroup)this.legendSoloId=this.legendGroup.isolate(id);else this.legendSoloId=this.legendSoloId===id?'':id;try{this.spec.onLegendChange?.({soloId:this.legendSoloId,curveId:id,visibleIds:this.legendGroup?.visibleIds?.()||(this.legendSoloId?[this.legendSoloId]:this.curves().filter(curve=>curve?.visible!==false).map(curve=>String(curve.id))),surface:this,event});}catch(err){console.warn('[DKDS ScientificCurveSurface legend]',err);}this.requestRender('legend');});this.container.appendChild(host);this.legendHost=host;}
-    computeLegendLayout(width,height,curves,baseMargin){const options=this.legendOptions(),entries=this.legendEntries(curves);if(!options.enabled||entries.length<2)return {enabled:false,placement:'none',count:entries.length,rows:0,width:0,height:0,reserve:0,entries};const availableW=Math.max(120,Math.floor((width-(Number(baseMargin.left)||0)-(Number(baseMargin.right)||0)-12)/8)*8),entryWidths=entries.map(row=>legendLabelWidth(row.label)),rows=packedLegendRowCount(entryWidths,availableW,5),horizontalHeight=rows*21+7,maxLabel=Math.max(...entryWidths,72),sideWidth=Math.min(Math.max(maxLabel+10,112),Math.max(112,width*.28));let placement=options.placement;if(!['top','bottom','right','left'].includes(placement)){const topFits=rows<=Math.min(2,options.maxRows)&&horizontalHeight/Math.max(1,height)<=.24,bottomFits=rows<=Math.max(3,options.maxRows)&&horizontalHeight/Math.max(1,height)<=.30;placement=topFits?'top':(bottomFits?'bottom':(width>=700?'right':'bottom'));}const horizontal=placement==='top'||placement==='bottom',reserve=horizontal?horizontalHeight:sideWidth+8;return {enabled:true,placement,count:entries.length,rows:horizontal?rows:entries.length,width:horizontal?availableW:sideWidth,height:horizontal?horizontalHeight:Math.min(height-(Number(baseMargin.top)||0)-(Number(baseMargin.bottom)||0),entries.length*24+6),reserve,entries};}
-    renderLegend(metrics,curves){const host=this.legendHost;if(!host)return;const entries=metrics?.entries||[];if(!metrics?.enabled||entries.length<2){host.classList.add('hidden');host.replaceChildren();this.legendLayoutState={enabled:false,placement:'none',count:entries.length,rows:0,width:0,height:0,reserve:0};if(this.legendSoloId&&!curves.some(curve=>String(curve?.id||'')===this.legendSoloId))this.legendSoloId='';return;}if(this.legendSoloId&&!entries.some(row=>row.id===this.legendSoloId))this.legendSoloId='';host.classList.remove('hidden','is-top','is-bottom','is-right','is-left');host.classList.add(`is-${metrics.placement}`);for(const name of ['left','right','top','bottom','width','max-height'])host.style.removeProperty(name);if(metrics.placement==='right'||metrics.placement==='left'){host.style[metrics.placement]='6px';host.style.top='8px';host.style.width=`${Math.max(104,metrics.width-12)}px`;host.style.maxHeight=`${Math.max(70,metrics.height)}px`;}else{host.style.left='6px';host.style.right='6px';host.style[metrics.placement]='4px';}const fragment=document.createDocumentFragment();for(const row of entries){const button=document.createElement('button');button.type='button';button.dataset.curveId=row.id;button.className='dkds-plot-legend-item';const active=!this.legendSoloId||this.legendSoloId===row.id;button.classList.toggle('is-muted',!active);button.setAttribute('aria-pressed',String(active));button.title=this.legendSoloId===row.id?'再次点击恢复全部通道':`只显示 ${row.label}`;const swatch=document.createElement('span');swatch.className='dkds-plot-legend-swatch';swatch.style.background=row.color||row.curve?.color||'currentColor';const label=document.createElement('span');label.className='dkds-plot-legend-label';label.textContent=row.label;button.append(swatch,label);fragment.appendChild(button);}host.replaceChildren(fragment);this.legendLayoutState={enabled:true,placement:metrics.placement,count:entries.length,rows:metrics.rows,width:Math.round(metrics.width),height:Math.round(metrics.height),reserve:Math.round(metrics.reserve),soloId:this.legendSoloId};}
+    installLegendHost(){
+      if(this.legendController||!this.container)return;
+      if(!plotPresentation?.LegendController)return;
+      this.legendController=new plotPresentation.LegendController(this.container,{engine:'d3',ariaLabel:'图例',onActivate:({key,event})=>{
+        const options=this.legendOptions();if(options.interaction==='none')return;const id=String(key||'');if(!id)return;
+        if(this.legendGroup)this.legendSoloId=this.legendGroup.isolate(id);else this.legendSoloId=this.legendSoloId===id?'':id;
+        this.legendSelectedId=this.legendSoloId;
+        try{this.spec.onLegendChange?.({soloId:this.legendSoloId,curveId:id,visibleIds:this.legendGroup?.visibleIds?.()||(this.legendSoloId?[this.legendSoloId]:this.curves().filter(curve=>curve?.visible!==false).map(curve=>String(curve.id))),surface:this,event});}catch(err){console.warn('[DKDS ScientificCurveSurface legend]',err);}
+        this.requestRender('legend');
+      }});
+      this.legendHost=this.legendController.host;
+    }
+    computeLegendLayout(width,height,curves,baseMargin){
+      const options=this.legendOptions(),raw=this.legendEntries(curves),entries=raw.map(row=>({...row,key:row.id}));
+      if(!plotPresentation?.solveLegend)return {enabled:false,placement:'none',count:entries.length,rows:0,width:0,height:0,reserve:0,entries};
+      const metrics=plotPresentation.solveLegend({entries,width,height,margin:baseMargin,placement:options.placement,maxRows:Math.min(2,options.maxRows),enabled:options.enabled,previous:this.legendLayoutState,stabilize:true,options:{maxItemWidth:146,minPlotWidth:220}});
+      return {...metrics,entries};
+    }
+    renderLegend(metrics,curves){
+      const entries=metrics?.entries||[];
+      if(this.legendSoloId&&!entries.some(row=>String(row.id||row.key)===this.legendSoloId))this.legendSoloId='';
+      if(this.legendSelectedId&&!entries.some(row=>String(row.id||row.key)===this.legendSelectedId))this.legendSelectedId='';
+      this.legendController?.update?.(entries.map(row=>({...row,key:String(row.id||row.key)})),metrics,{soloKey:this.legendSoloId,selectedKey:this.legendSelectedId});
+      this.legendHost=this.legendController?.host||null;
+      this.legendLayoutState=metrics?.enabled?{enabled:true,placement:metrics.placement,count:entries.length,rows:metrics.rows,width:Math.round(metrics.width||0),height:Math.round(metrics.height||0),reserve:Math.round(metrics.reserve||0),soloId:this.legendSoloId,selectedId:this.legendSelectedId}:{enabled:false,placement:'none',count:entries.length,rows:0,width:0,height:0,reserve:0,soloId:this.legendSoloId,selectedId:this.legendSelectedId};
+    }
     visibleCurves(curves){let rows=(Array.isArray(curves)?curves:[]).filter(curve=>curve?.visible!==false);if(this.legendGroup){const visible=new Set(this.legendGroup.visibleIds());rows=rows.filter(curve=>visible.has(String(curve?.id||'')));}else if(this.legendSoloId)rows=rows.filter(curve=>String(curve?.id||'')===this.legendSoloId);return rows;}
     prepareLayoutGeometry(){
       const container=this.container;if(!container)return null;
@@ -1711,7 +1732,7 @@
       if(geometry.status==='waiting'){this.awaitingLayout=true;return false;}this.awaitingLayout=false;
       const allCurves=this.curves(),svg=d3.select(node);svg.on('.dkdssci',null).attr('viewBox',null).attr('preserveAspectRatio',null).attr('width',width).attr('height',height).style('width',`${width}px`).style('height',`${height}px`);svg.selectAll('*').remove();
       if(!allCurves.length){this.renderLegend({enabled:false,entries:[]},allCurves);this.spec.onEmpty?.({svg,width,height});if(!this.spec.onEmpty)svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text(this.spec.emptyText||'没有可显示的数据');return true;}
-      const baseMargin=this.adaptiveMargin(width,height),legendMetrics=this.computeLegendLayout(width,height,allCurves,baseMargin),margin={...baseMargin};if(legendMetrics.enabled){if(legendMetrics.placement==='right')margin.right=Math.max(margin.right,legendMetrics.reserve+8);else if(legendMetrics.placement==='left')margin.left=Math.max(margin.left,legendMetrics.reserve+40);else if(legendMetrics.placement==='top')margin.top=Math.max(margin.top,legendMetrics.reserve+8);else margin.bottom=Math.max(margin.bottom,legendMetrics.reserve+42);}this.renderLegend(legendMetrics,allCurves);const curves=this.visibleCurves(allCurves),innerW=Math.max(24,width-margin.left-margin.right),innerH=Math.max(24,height-margin.top-margin.bottom);
+      const baseMargin=this.adaptiveMargin(width,height),legendMetrics=this.computeLegendLayout(width,height,allCurves,baseMargin),margin={...baseMargin};if(legendMetrics.reserve>0&&legendMetrics.placement!=='none'){if(legendMetrics.placement==='right')margin.right=Math.max(margin.right,legendMetrics.reserve+8);else if(legendMetrics.placement==='left')margin.left=Math.max(margin.left,legendMetrics.reserve+40);else if(legendMetrics.placement==='top')margin.top=Math.max(margin.top,legendMetrics.reserve+8);else margin.bottom=Math.max(margin.bottom,legendMetrics.reserve+42);}this.renderLegend(legendMetrics,allCurves);const curves=this.visibleCurves(allCurves),innerW=Math.max(24,width-margin.left-margin.right),innerH=Math.max(24,height-margin.top-margin.bottom);
       const normalized=new Map(curves.map(curve=>[String(curve.id),this.normalizedPoints(curve)]));
       const xs=[...normalized.values()].flatMap(rows=>rows.map(p=>p.x)),ys=[...normalized.values()].flatMap(rows=>rows.map(p=>p.y));if(!xs.length||!ys.length)return false;
       const fullX=d3.extent(xs),logY=this.displayYAxisType==='log',displayYs=logY?ys.map(value=>Math.abs(Number(value))).filter(value=>Number.isFinite(value)&&value>0):ys;let fullY=d3.extent(displayYs.length?displayYs:ys);
@@ -1744,7 +1765,7 @@
         const opacity=curve.opacity??(hasCurveSelection?(active?1:.10):.74),strokeWidth=curve.strokeWidth??(active?3:1.25);
         dataLayer.append('path').datum(points).attr('class',`dkds-scientific-curve ${hasCurveSelection&&!active?'is-dimmed':''}`).attr('d',line).attr('stroke',color).attr('stroke-width',strokeWidth).attr('stroke-dasharray',dash).attr('opacity',opacity).style('pointer-events','none');
         dataLayer.append('path').datum(points).attr('class','dkds-scientific-curve-hit').attr('d',line)
-          .on('click',(event)=>{event.stopPropagation();const [px]=d3.pointer(event,node),xValue=x.invert(px),payload={curve,x:xValue,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',additive:payload.additive,value:curve?.source||curve});}else if(decision.intent==='activate')this.spec.onCurveDoubleClick?.(payload);else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);})
+          .on('click',(event)=>{event.stopPropagation();this.legendSelectedId=String(curve?.id||'');this.renderLegend({...legendMetrics,entries:this.legendEntries(allCurves)},allCurves);const [px]=d3.pointer(event,node),xValue=x.invert(px),payload={curve,x:xValue,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve',additive:payload.additive,value:curve?.source||curve});}else if(decision.intent==='activate')this.spec.onCurveDoubleClick?.(payload);else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);})
           .on('dblclick',event=>{event.preventDefault();event.stopPropagation();const payload={curve,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('double-click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='activate'){if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});}});
       }
       const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id))),markerNodes=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
@@ -1862,7 +1883,7 @@
       this.spec.afterRender?.({svg,dataLayer,x,y,curves,markers,width,height,margin,innerW,innerH,clipId,colorScale,surface:this});
       let rangeDrag=null;plotBg.on('pointerdown',event=>{if(event.button!==0)return;this.spec.onRangeStart?.({event,surface:this});const [px,py]=d3.pointer(event,node),sx=Math.max(margin.left,Math.min(margin.left+innerW,px)),sy=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag={pointerId:event.pointerId,sx,sy,ex:sx,ey:sy,moved:false};try{plotBg.node().setPointerCapture(event.pointerId);}catch{}event.preventDefault();}).on('pointermove',event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const [px,py]=d3.pointer(event,node);rangeDrag.ex=Math.max(margin.left,Math.min(margin.left+innerW,px));rangeDrag.ey=Math.max(margin.top,Math.min(margin.top+innerH,py));rangeDrag.moved=rangeDrag.moved||Math.hypot(rangeDrag.ex-rangeDrag.sx,rangeDrag.ey-rangeDrag.sy)>=5;if(!rangeDrag.moved)return;const preview=this.behavior?.resolve?.({gesture:'box',target:'background',event,payload:{surface:this}}),zoom=preview?.intent==='zoom-box';svg.selectAll('.dkds-scientific-direct-box').remove();svg.append('rect').attr('class',`dkds-scientific-direct-box ${zoom?'is-zoom':'is-range'}`).attr('x',Math.min(rangeDrag.sx,rangeDrag.ex)).attr('y',Math.min(rangeDrag.sy,rangeDrag.ey)).attr('width',Math.abs(rangeDrag.ex-rangeDrag.sx)).attr('height',Math.abs(rangeDrag.ey-rangeDrag.sy));event.preventDefault();});
       const finishRange=event=>{if(!rangeDrag||rangeDrag.pointerId!==event.pointerId)return;const drag=rangeDrag;rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();try{plotBg.node().releasePointerCapture(event.pointerId);}catch{}
-        if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){const payload={curve:near.curve,x:near.point.x,index:near.index,point:near.point?.raw||near.point,event,surface:this,source:'background'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:near.curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(near.curve?.entityId||near.curve?.id,{source:this.spec.source||'scientific-curve-background',additive:payload.additive,value:near.curve?.source||near.curve});}else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);}else{const payload={event,surface:this,source:'background'};const decision=this.routeInteraction('click','background',event,payload);if(decision.handled)return;if(decision.intent==='clear-selection'){if(this.spec.onClearSelection)this.spec.onClearSelection(payload);else this.interaction?.clear?.({source:this.spec.source||'scientific-curve-background'});}}return;}
+        if(!drag.moved){const near=this.nearestCurveAtPixel(drag.sx,drag.sy,x,y,curves,Number(this.spec.nearestDistance)||18);if(near){this.legendSelectedId=String(near.curve?.id||'');this.renderLegend({...legendMetrics,entries:this.legendEntries(allCurves)},allCurves);const payload={curve:near.curve,x:near.point.x,index:near.index,point:near.point?.raw||near.point,event,surface:this,source:'background'};const decision=this.routeInteraction('click','curve',event,payload,{targetId:near.curve?.id});if(decision.handled)return;if(decision.intent==='select'){payload.additive=decision.binding?.selectionMode==='additive';if(this.spec.onCurveSelect)this.spec.onCurveSelect(payload);else this.selectEntity(near.curve?.entityId||near.curve?.id,{source:this.spec.source||'scientific-curve-background',additive:payload.additive,value:near.curve?.source||near.curve});}else if(decision.intent==='command'&&this.spec.onCurveModifiedClick)this.spec.onCurveModifiedClick(payload);}else{const payload={event,surface:this,source:'background'};const decision=this.routeInteraction('click','background',event,payload);if(decision.handled)return;if(decision.intent==='clear-selection'){this.legendSelectedId='';this.renderLegend({...legendMetrics,entries:this.legendEntries(allCurves)},allCurves);if(this.spec.onClearSelection)this.spec.onClearSelection(payload);else this.interaction?.clear?.({source:this.spec.source||'scientific-curve-background'});}}return;}
         const sx0=Math.min(drag.sx,drag.ex),sx1=Math.max(drag.sx,drag.ex),sy0=Math.min(drag.sy,drag.ey),sy1=Math.max(drag.sy,drag.ey);if(Math.abs(sx1-sx0)<6||Math.abs(sy1-sy0)<6)return;const selection={xMin:Math.min(x.invert(sx0),x.invert(sx1)),xMax:Math.max(x.invert(sx0),x.invert(sx1)),yMin:Math.min(y.invert(sy0),y.invert(sy1)),yMax:Math.max(y.invert(sy0),y.invert(sy1)),curveId:selectedCurveId,event,surface:this,target:String(this.spec.rangeSelectionTarget||'samples'),targetType:String(this.spec.rangeSelectionType||'')};selection.markers=markers.filter(marker=>{const my=this.yDisplayValue(marker?.y);return this.finite(marker?.x)&&Number.isFinite(my)&&Number(marker.x)>=selection.xMin&&Number(marker.x)<=selection.xMax&&my>=selection.yMin&&my<=selection.yMax;});selection.markerIds=selection.markers.map(marker=>String(marker?.entityId||marker?.id||'')).filter(Boolean);const decision=this.routeInteraction('box','background',event,selection);if(decision.handled)return;if(decision.intent==='zoom-box'){const next={xDomain:[selection.xMin,selection.xMax],yDomain:[selection.yMin,selection.yMax]};this.setView(next,{reason:'box-zoom',event});this.requestRender('box-zoom');return;}if(decision.intent==='select-region')this.spec.onRangeSelect?.(selection);
       };plotBg.on('pointerup',finishRange).on('pointercancel',()=>{rangeDrag=null;svg.selectAll('.dkds-scientific-direct-box').remove();});
       plotBg.on('dblclick',event=>{event.preventDefault();const decision=this.routeInteraction('double-click','background',event,{event,surface:this});if(decision.handled)return;if(decision.intent==='reset-view')this.resetView({event});});
@@ -1885,7 +1906,7 @@
       }
       this.lastRender={reason,width,height,x,y,colorScale,curves,markers,margin,innerW,innerH,clipId,dataLayer,markerNodes,yScaleType:this.displayYAxisType};requestAnimationFrame(()=>{this.clampNavigationTools();this.scheduleNavigationCollisionCheck();});return true;
     }
-    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();this.navObstacleObserver?.disconnect?.();this.navObstacleObserver=null;if(this.navCollisionFrame){cancelAnimationFrame(this.navCollisionFrame);this.navCollisionFrame=0;}try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.legendHost?.remove?.();this.legendHost=null;this.legendGroupOff?.();this.legendGroupOff=null;this.legendGroup=null;if(this.layoutFallbackOwned){this.container?.classList?.remove('dkds-scientific-layout-fallback');this.container?.style?.removeProperty?.('--dkds-scientific-preferred-min-height');this.layoutFallbackOwned=false;}this.container?.removeAttribute?.('data-dkds-scientific-layout');this.container?.classList?.remove('dkds-scientific-surface-host');}
+    dispose(){if(this.disposed)return;this.disposed=true;this.selectionOff?.();this.selectionOff=null;this.resizeObserver?.disconnect?.();this.navObstacleObserver?.disconnect?.();this.navObstacleObserver=null;if(this.navCollisionFrame){cancelAnimationFrame(this.navCollisionFrame);this.navCollisionFrame=0;}try{this.d3()?.select(this.target)?.on('.dkdssci',null);}catch{}this.target.classList.remove('dkds-scientific-curve-surface');if(this.ownsTarget)this.target.remove?.();this.navTools?.remove?.();this.navTools=null;this.legendController?.dispose?.();this.legendController=null;this.legendHost=null;this.legendGroupOff?.();this.legendGroupOff=null;this.legendGroup=null;if(this.layoutFallbackOwned){this.container?.classList?.remove('dkds-scientific-layout-fallback');this.container?.style?.removeProperty?.('--dkds-scientific-preferred-min-height');this.layoutFallbackOwned=false;}this.container?.removeAttribute?.('data-dkds-scientific-layout');this.container?.classList?.remove('dkds-scientific-surface-host');}
   }
 
   class AnalysisWorkbench {
@@ -2165,7 +2186,7 @@
     }
     applyLayoutSafety(){
       const root=this.slots?.primary;if(!root||!root.isConnected)return {recovered:0,guarded:0,risks:0};
-      const rows=[root,...root.querySelectorAll('*')],isVisual=el=>el.matches?.('svg,canvas,img,video')||el.classList?.contains('dkds-scientific-surface-host')||!!el.closest?.('.plotly,.js-plotly-plot,.dkds-scientific-curve-canvas,.dkds-plot-view-canvas');let recovered=0;const risks=[];
+      const rows=[root,...root.querySelectorAll('*')],isVisual=el=>el.matches?.('svg,canvas,img,video')||el.classList?.contains('dkds-scientific-surface-host')||!!el.closest?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host,.dkds-scientific-curve-canvas,.dkds-plot-view-canvas');let recovered=0;const risks=[];
       const rectOverflow=el=>{const rect=el.getBoundingClientRect?.();if(!rect||rect.width<=0||rect.height<=0)return {x:0,y:0};let x=0,y=0;for(const child of el.children||[]){const style=getComputedStyle(child);if(style.position==='fixed'||style.display==='none'||style.visibility==='hidden')continue;const cr=child.getBoundingClientRect?.();if(!cr||cr.width<=0||cr.height<=0)continue;x=Math.max(x,cr.right-rect.right,rect.left-cr.left);y=Math.max(y,cr.bottom-rect.bottom,rect.top-cr.top);}return {x:Math.max(0,x),y:Math.max(0,y)};};
       const hasOverflow=el=>{if(!el?.isConnected)return false;const visual=rectOverflow(el);return el.scrollHeight>el.clientHeight+8||el.scrollWidth>el.clientWidth+8||visual.y>8||visual.x>8;};
       for(const el of [...this.layoutGuarded.keys()])if(!hasOverflow(el))this.restoreGuardedElement(el);
@@ -2284,31 +2305,31 @@
       const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
       this.pluginWorkspace={create:createPluginWorkspace};
       this.analysisWorkbench={create:createPluginWorkspace};
-      this.scientificPlotly=window.DKDSScientificPlot?.createScope?.(this.owner)||null;if(this.scientificPlotly)this.cleanups.push(()=>this.scientificPlotly.dispose?.());
+      this.scientificRenderer=window.DKDSScientificPlot?.createScope?.(this.owner)||null;if(this.scientificRenderer)this.cleanups.push(()=>this.scientificRenderer.dispose?.());
       this.scientificPlot={
         create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec)),
-        createPlotly:(target,spec={})=>this.scientificPlotly?.create?.(target,spec)||null,
-        attach:(target,spec={})=>this.scientificPlotly?.attach?.(target,spec)||null,
-        react:(target,data=[],layout={},config={},spec={})=>this.scientificPlotly?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
-        scalarField:(target,field={},options={})=>this.scientificPlotly?.scalarField?.(target,field,options)||null,
-        get:target=>this.scientificPlotly?.get?.(target)||null,
-        controller:(target,name)=>this.scientificPlotly?.controller?.(target,name)||null,
-        resize:target=>this.scientificPlotly?.resize?.(target)||window.DKDSCharts?.resize?.(target),
-        restyle:(target,update,traces)=>this.scientificPlotly?.restyle?.(target,update,traces)||window.DKDSCharts?.restyle?.(target,update,traces),
-        relayout:(target,update)=>this.scientificPlotly?.relayout?.(target,update)||window.DKDSCharts?.relayout?.(target,update),
-        viewport:target=>this.scientificPlotly?.viewport?.(target)||null,
-        setViewport:(target,state,meta={})=>this.scientificPlotly?.setViewport?.(target,state,meta)||false,
-        resetViewport:(target,meta={})=>this.scientificPlotly?.resetViewport?.(target,meta)||false,
-        pin:(target,id,meta={})=>this.scientificPlotly?.pin?.(target,id,meta)||false,
-        unpin:(target,id,meta={})=>this.scientificPlotly?.unpin?.(target,id,meta)||false,
-        pins:target=>this.scientificPlotly?.pins?.(target)||[],
-        stats:target=>this.scientificPlotly?.stats?.(target)||null,
-        legendMetrics:target=>this.scientificPlotly?.legendMetrics?.(target)||window.DKDSCharts?.legendMetrics?.(target)||null,
-        suspend:(target,options={})=>this.scientificPlotly?.get?.(target)?.suspend?.(options)||false,
-        resume:(target,options={})=>this.scientificPlotly?.get?.(target)?.resume?.(options)||false,
-        lifecycleState:()=>this.scientificPlotly?.lifecycleState?.()||null,
-        saveImage:(target,baseName,format='svg',options={})=>this.scientificPlotly?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
-        purge:target=>this.scientificPlotly?.purge?.(target)||window.DKDSCharts?.purge?.(target)
+        createRenderer:(target,spec={})=>this.scientificRenderer?.create?.(target,spec)||null,
+        attach:(target,spec={})=>this.scientificRenderer?.attach?.(target,spec)||null,
+        react:(target,data=[],layout={},config={},spec={})=>this.scientificRenderer?.react?.(target,data,layout,config,spec)||window.DKDSCharts?.react?.(target,data,layout,config),
+        scalarField:(target,field={},options={})=>this.scientificRenderer?.scalarField?.(target,field,options)||null,
+        get:target=>this.scientificRenderer?.get?.(target)||null,
+        controller:(target,name)=>this.scientificRenderer?.controller?.(target,name)||null,
+        resize:target=>this.scientificRenderer?.resize?.(target)||window.DKDSCharts?.resize?.(target),
+        restyle:(target,update,traces)=>this.scientificRenderer?.restyle?.(target,update,traces)||window.DKDSCharts?.restyle?.(target,update,traces),
+        relayout:(target,update)=>this.scientificRenderer?.relayout?.(target,update)||window.DKDSCharts?.relayout?.(target,update),
+        viewport:target=>this.scientificRenderer?.viewport?.(target)||null,
+        setViewport:(target,state,meta={})=>this.scientificRenderer?.setViewport?.(target,state,meta)||false,
+        resetViewport:(target,meta={})=>this.scientificRenderer?.resetViewport?.(target,meta)||false,
+        pin:(target,id,meta={})=>this.scientificRenderer?.pin?.(target,id,meta)||false,
+        unpin:(target,id,meta={})=>this.scientificRenderer?.unpin?.(target,id,meta)||false,
+        pins:target=>this.scientificRenderer?.pins?.(target)||[],
+        stats:target=>this.scientificRenderer?.stats?.(target)||null,
+        legendMetrics:target=>this.scientificRenderer?.legendMetrics?.(target)||window.DKDSCharts?.legendMetrics?.(target)||null,
+        suspend:(target,options={})=>this.scientificRenderer?.get?.(target)?.suspend?.(options)||false,
+        resume:(target,options={})=>this.scientificRenderer?.get?.(target)?.resume?.(options)||false,
+        lifecycleState:()=>this.scientificRenderer?.lifecycleState?.()||null,
+        saveImage:(target,baseName,format='svg',options={})=>this.scientificRenderer?.saveImage?.(target,baseName,format,options)||window.DKDSCharts?.saveImage?.(target,baseName,format,options),
+        purge:target=>this.scientificRenderer?.purge?.(target)||window.DKDSCharts?.purge?.(target)
       };
       this.grid={create:(container,spec)=>this.trackObject(new GridController(this,container,spec))};
       this.dataTypes={register:(id,spec)=>dataTypeRegistry.register(this.owner,id,spec),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),lineage:id=>dataTypeRegistry.lineage(id),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),projectSelection:(id,value,context)=>dataTypeRegistry.projectSelection(id,value,context),resolve:(id,item,context)=>dataTypeRegistry.resolve(id,item,context),validate:()=>dataTypeRegistry.validate()};
@@ -2319,9 +2340,9 @@
     requestChartResize(payload={}){this.resizeScheduler?.request?.(payload,{emit:false});}
     async lifecycle(state,options={}){
       const value=String(state||'').toLowerCase();
-      if(value==='hidden'||value==='suspended'){this.resizeScheduler?.suspend?.();const plots=await this.scientificPlotly?.lifecycle?.('hidden',{purgeManaged:true,...options});return {owner:this.owner,state:'hidden',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
-      if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificPlotly?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
-      return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificPlotly?.lifecycleState?.()||null};
+      if(value==='hidden'||value==='suspended'){this.resizeScheduler?.suspend?.();const plots=await this.scientificRenderer?.lifecycle?.('hidden',{purgeManaged:true,...options});return {owner:this.owner,state:'hidden',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
+      if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificRenderer?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
+      return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificRenderer?.lifecycleState?.()||null};
     }
     dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.legendGroups.clear();this.series.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
   }
@@ -2360,8 +2381,8 @@
     dialogs:{show:spec=>dialogService.show(spec),alert:spec=>dialogService.alert(spec),confirm:spec=>dialogService.confirm(spec),prompt:spec=>dialogService.prompt(spec),closeAll:()=>dialogService.closeAll()},
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),resolveId:id=>dataTypeRegistry.resolveId(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),lineage:id=>dataTypeRegistry.lineage(id),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx),validate:()=>dataTypeRegistry.validate()},
     async lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle?.(state,options));return {state:String(state||''),scopes:rows.length,rows};},
-    lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificPlotly?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
-    diagnostics(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,series:scope.series?.snapshot?.()||null,legendGroups:[...scope.legendGroups.values()].map(x=>x.snapshot()),workbenches:(scope.workbenches||[]).map(x=>x.layoutDiagnostics?.()).filter(Boolean),tables:[...new Set(globalTableSurfaceRegistry.rows.values())].filter(x=>x.owner===scope.owner).length,plots:scope.scientificPlotly?.lifecycleState?.()||null});return Object.freeze({version:VERSION,scopes:rows.length,rows:Object.freeze(rows)});},
+    lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificRenderer?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
+    diagnostics(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,series:scope.series?.snapshot?.()||null,legendGroups:[...scope.legendGroups.values()].map(x=>x.snapshot()),workbenches:(scope.workbenches||[]).map(x=>x.layoutDiagnostics?.()).filter(Boolean),tables:[...new Set(globalTableSurfaceRegistry.rows.values())].filter(x=>x.owner===scope.owner).length,plots:scope.scientificRenderer?.lifecycleState?.()||null});return Object.freeze({version:VERSION,scopes:rows.length,rows:Object.freeze(rows)});},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
     ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,SeriesRegistry,LegendGroup,ActiveLayoutSolver,TooltipService,GroupPlot,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}

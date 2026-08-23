@@ -16,7 +16,7 @@
       ownedRuntime=await analysisService.create({
         setStatus:ctx.status.set,
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
-        savePlotlyImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
+        saveChartImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
         scheduleSnapshot:()=>ctx.project.capture?.(),
         io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,artifacts:ctx.data.artifacts,
         detachSource:ref=>ctx.data.sources?.detach?.(ref),

@@ -107,7 +107,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.pulse-analysis','analysis-service',{
-    async create({setStatus,copyTextToClipboard,savePlotlyImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,detachSource=null,migrateLegacySource=null}) {
+    async create({setStatus,copyTextToClipboard,saveChartImage,scheduleSnapshot,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.pulse-analysis')||null,artifacts=null,detachSource=null,migrateLegacySource=null}) {
       const $=s=>dom?.query?.(s)||null;
       let state = createState();
 
@@ -672,16 +672,16 @@
         fitRaw(){if(!active()?.result)return false;charts.relayout('pulseRawPlot',{'xaxis.autorange':true,'yaxis.autorange':true,'yaxis2.autorange':true});return true;},
         copyRaw:()=>copyTextToClipboard(rawCsv(),'当前原始脉冲波形 CSV'),
         exportRawCsv:()=>saveCsv(`${safeName(label(active()))}_raw_waveform.csv`,rawCsv()),
-        exportRawSvg:()=>active()?.result&&savePlotlyImage('pulseRawPlot',`${safeName(label(active()))}_raw_waveform`,'svg'),
-        exportRawPng:()=>active()?.result&&savePlotlyImage('pulseRawPlot',`${safeName(label(active()))}_raw_waveform`,'png'),
+        exportRawSvg:()=>active()?.result&&saveChartImage('pulseRawPlot',`${safeName(label(active()))}_raw_waveform`,'svg'),
+        exportRawPng:()=>active()?.result&&saveChartImage('pulseRawPlot',`${safeName(label(active()))}_raw_waveform`,'png'),
         copyRead:()=>copyTextToClipboard(readCsv(),'可见脉冲电压-读取电流 CSV'),
         exportReadCsv:()=>saveCsv('pulse_voltage_read_current_visible.csv',readCsv()),
-        exportReadSvg:()=>visibleResults().length&&savePlotlyImage('pulseReadPlot','pulse_voltage_read_current_visible','svg'),
-        exportReadPng:()=>visibleResults().length&&savePlotlyImage('pulseReadPlot','pulse_voltage_read_current_visible','png'),
+        exportReadSvg:()=>visibleResults().length&&saveChartImage('pulseReadPlot','pulse_voltage_read_current_visible','svg'),
+        exportReadPng:()=>visibleResults().length&&saveChartImage('pulseReadPlot','pulse_voltage_read_current_visible','png'),
         copyPulse:()=>copyTextToClipboard(pulseCsv(),'可见脉冲电压-脉冲电流 CSV'),
         exportPulseCsv:()=>saveCsv('pulse_voltage_pulse_current_visible.csv',pulseCsv()),
-        exportPulseSvg:()=>visibleResults().length&&savePlotlyImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','svg'),
-        exportPulsePng:()=>visibleResults().length&&savePlotlyImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','png'),
+        exportPulseSvg:()=>visibleResults().length&&saveChartImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','svg'),
+        exportPulsePng:()=>visibleResults().length&&saveChartImage('pulsePulsePlot','pulse_voltage_pulse_current_visible','png'),
         copyResults:()=>copyTextToClipboard(resultCsv(),'可见脉冲分析结果 CSV'),
         exportResults:()=>saveCsv('pulse_read_analysis_visible.csv',resultCsv()),
         serialize,

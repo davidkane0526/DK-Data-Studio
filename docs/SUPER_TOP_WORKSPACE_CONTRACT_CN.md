@@ -173,7 +173,7 @@ SUB 自己拥有界面生命周期。打开 SUB 时只是暂时覆盖/显示工�
 - `prewarm` 默认 `true`
 - `reuse` 默认 `true`
 - `persistence` 默认 `project`
-- 关闭默认隐藏并复用 renderer/DOM/Plotly/内存状态
+- 关闭默认隐藏并复用 renderer/DOM/内存状态
 - restart-safe 结果使用 `ctx.project.registerSlice(...)` 和 artifact store
 
 若插件必须依赖完整主 Renderer，可声明：

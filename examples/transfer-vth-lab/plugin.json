@@ -60,7 +60,7 @@
     "minWidth": 900,
     "minHeight": 620,
     "dependencies": [
-      "d3",
+      "scientific-renderer",
       "data-model"
     ],
     "prewarm": false,

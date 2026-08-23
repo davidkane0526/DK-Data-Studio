@@ -9,11 +9,11 @@ const json=f=>JSON.parse(read(f));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const cli=path.join(root,'sdk','tools','dkds-plugin.js');
 const runValidate=folder=>cp.execFileSync(process.execPath,[cli,'validate',folder],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
-assert(json('package.json').version==='3.61.35','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.36','Application version must be 3.61.18.');
 const vth=json('examples/transfer-vth-lab/plugin.json');
 assert(vth.version==='3.0.2','Transfer Vth Lab must be 3.0.2.');
-assert(vth.window?.dependencies?.includes('d3'),'Vth ScientificCurveSurface must declare d3 in its dedicated window.');
-assert(!vth.window?.dependencies?.includes('plotly'),'Vth must not load Plotly when it only uses the D3 ScientificCurveSurface.');
+assert(vth.window?.dependencies?.includes('scientific-renderer'),'Vth ScientificCurveSurface must declare the renderer-neutral scientific-renderer dependency.');
+assert(!vth.window?.dependencies?.includes('plotly')&&!vth.window?.dependencies?.includes('d3'),'Vth must not declare a renderer vendor.');
 const vthCss=read('examples/transfer-vth-lab/plugin.css');
 assert(vthCss.includes('border-radius:6px')&&vthCss.includes('var(--accent'),'Vth numeric inputs must follow host field styling.');
 runValidate(path.join(root,'examples','transfer-vth-lab'));
@@ -28,20 +28,20 @@ assert(kernel.includes("toolsMenu.appendChild(toolButton)"),'Tool Workspace open
 const docs=read('sdk/TOOL_PLUGINS.md');
 assert(docs.includes('当前版本刻意不定义额外的工具语义')&&docs.includes('与 TOP 使用相同'),'Tool SDK docs must preserve the intentionally minimal TOP-equivalent Tool contract.');
 // Dependency validator must reject the exact Vth 3.0.0 class of error.
-const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-vth-no-d3-'));
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-vth-no-renderer-'));
 for(const name of ['plugin.json','plugin.js','plugin.css','README.md'])fs.copyFileSync(path.join(root,'examples','transfer-vth-lab',name),path.join(tmp,name));
 const badManifest=JSON.parse(fs.readFileSync(path.join(tmp,'plugin.json'),'utf8'));
-badManifest.window.dependencies=badManifest.window.dependencies.filter(name=>name!=='d3');
+badManifest.window.dependencies=badManifest.window.dependencies.filter(name=>name!=='scientific-renderer');
 fs.writeFileSync(path.join(tmp,'plugin.json'),JSON.stringify(badManifest,null,2)+'\n');
 let badSource=fs.readFileSync(path.join(tmp,'plugin.js'),'utf8');
-badSource=badSource.replace("dependencies:['d3','data-model']","dependencies:['data-model']");
+badSource=badSource.replace("dependencies:['scientific-renderer','data-model']","dependencies:['data-model']");
 fs.writeFileSync(path.join(tmp,'plugin.js'),badSource);
 let rejected=false;
-try{runValidate(tmp);}catch(err){rejected=String(err.stderr||err.message||err).includes('must declare "d3"');}
+try{runValidate(tmp);}catch(err){rejected=String(err.stderr||err.message||err).includes('must declare "scientific-renderer"');}
 fs.rmSync(tmp,{recursive:true,force:true});
-assert(rejected,'SDK validator must reject a dedicated ScientificCurveSurface workspace without d3.');
+assert(rejected,'SDK validator must reject a dedicated ScientificCurveSurface workspace without scientific-renderer.');
 const PluginPackage=require(path.join(root,'plugin-package.js'));
 const toolPayload={schema:1,manifest:tool,files:{'plugin.js':read('sdk/templates/tool-plugin/plugin.js'),'plugin.css':read('sdk/templates/tool-plugin/plugin.css'),'README.md':read('sdk/templates/tool-plugin/README.md')}};
 const normalized=PluginPackage.normalizePluginPackage(toolPayload);
 assert(normalized.manifest.pluginType==='tool','Installed plugin package normalization must accept pluginType=tool.');
-console.log('v3.61.29 Tool Workspace SDK 1.16 + Vth dedicated-plot dependency checks passed.');
+console.log('v3.61.29 Tool Workspace SDK 1.16 + Vth renderer-neutral dependency checks passed.');

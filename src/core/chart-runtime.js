@@ -1,54 +1,54 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.8.1';
+  const VERSION='2.0.0';
   const ownerBindings=new Map();
+  const presentation=window.DKDSPlotPresentation||Object.freeze({
+    solveLegend:({entries=[],enabled=true}={})=>({enabled:enabled!==false&&entries.length>1,placement:enabled!==false&&entries.length>1?'top':'none',count:entries.length,rows:entries.length>1?1:0,width:0,height:0,reserve:entries.length>1?26:0,overflow:false,entries,rowGroups:entries.length?[entries]:[],signature:entries.map(row=>row?.key||'').join('|'),reason:'fallback'}),
+    LegendController:class{constructor(container){this.container=container;this.host=null;}update(){return null;}dispose(){}}
+  });
   const displayScaleStates=new WeakMap();
   const legendLayoutStates=new WeakMap();
   const legendBaseLayouts=new WeakMap();
   const legendResizeFrames=new WeakMap();
   const plotNavigationStates=new WeakMap();
   const plotLegendStates=new WeakMap();
-  const chartScriptUrl=document.currentScript?.src||globalThis.location?.href||'file:///src/core/chart-runtime.js';
-  const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js';
-  let runtimeConfig={plotlyAllowed:true,plotlySource:defaultPlotlySource,host:'main'};
-  let plotlyPromise=null;
-  const now=()=>globalThis.performance?.now?.()??Date.now();
-  const plotlyRuntime={status:window.Plotly?.react?'ready':'idle',requestedAt:0,readyAt:window.Plotly?.react?now():0,loadDurationMs:0,requests:0,reuses:0,lastReason:'',error:''};
+  const plotLegendSelectionStates=new WeakMap();
+  const rendererStates=new WeakMap();
+  const neutralBindings=new WeakMap();
+  let runtimeConfig={preferredRenderer:'d3',host:'main'};
   const element=value=>{
     if(value?.nodeType===1)return value;
     if(typeof value==='string')return document.getElementById(value)||document.querySelector(value);
     return null;
   };
-  const plotly=()=>window.Plotly;
+  const d3Renderer=()=>window.DKDSD3Renderer||null;
+  const d3Ready=()=>!!(window.d3&&d3Renderer()?.react);
   function configureRuntime(options={}){
-    if(Object.prototype.hasOwnProperty.call(options,'plotlyAllowed'))runtimeConfig.plotlyAllowed=options.plotlyAllowed!==false;
-    if(options.plotlySource)runtimeConfig.plotlySource=String(options.plotlySource);
     if(options.host)runtimeConfig.host=String(options.host);
-    if(window.Plotly?.react){plotlyRuntime.status='ready';plotlyRuntime.error='';}
+    // v3.61.36+: the scientific rendering contract is intentionally single-backend.
+    // Vendor renderer requests are rejected instead of silently opening a second UI path.
+    if(options.preferredRenderer&&String(options.preferredRenderer).toLowerCase()!=='d3'){
+      throw new Error('DK Data Studio scientific rendering is D3-only.');
+    }
+    runtimeConfig.preferredRenderer='d3';
     return runtimeState();
   }
-  function ensurePlotly(options={}){
-    const current=plotly();
-    plotlyRuntime.requests+=1;plotlyRuntime.lastReason=String(options.reason||'chart');
-    if(current?.react){plotlyRuntime.status='ready';return Promise.resolve(current);}
-    if(runtimeConfig.plotlyAllowed===false)return Promise.reject(new Error('Plotly runtime is not declared by this plugin window.'));
-    if(plotlyPromise){plotlyRuntime.reuses+=1;return plotlyPromise;}
-    const started=now();plotlyRuntime.requestedAt=started;plotlyRuntime.status='loading';plotlyRuntime.error='';
-    plotlyPromise=new Promise((resolve,reject)=>{
-      const existing=document.querySelector('script[data-dkds-plotly-runtime="1"]');
-      const script=existing||document.createElement('script');
-      const finish=()=>{
-        const P=plotly();
-        if(!P?.react){const err=new Error('Plotly runtime loaded without a usable Plotly API.');plotlyRuntime.status='error';plotlyRuntime.error=err.message;plotlyPromise=null;reject(err);return;}
-        plotlyRuntime.status='ready';plotlyRuntime.readyAt=now();plotlyRuntime.loadDurationMs=Math.round((plotlyRuntime.readyAt-started)*10)/10;plotlyRuntime.error='';resolve(P);
-      };
-      const fail=()=>{const err=new Error(`无法按需加载 Plotly：${runtimeConfig.plotlySource||defaultPlotlySource}`);plotlyRuntime.status='error';plotlyRuntime.error=err.message;plotlyPromise=null;reject(err);};
-      if(existing){if(plotly()?.react)finish();else{existing.addEventListener('load',finish,{once:true});existing.addEventListener('error',fail,{once:true});}}
-      else{script.dataset.dkdsPlotlyRuntime='1';script.src=runtimeConfig.plotlySource||defaultPlotlySource;script.async=true;script.addEventListener('load',finish,{once:true});script.addEventListener('error',fail,{once:true});document.head.appendChild(script);}
-    });
-    return plotlyPromise;
+  function runtimeState(){return {version:VERSION,host:runtimeConfig.host,preferredRenderer:'d3',renderer:'d3',ready:d3Ready(),d3Ready:d3Ready(),singleBackend:true};}
+  function rendererFor(target){const el=element(target)||target;return String(rendererStates.get(el)||el?.dataset?.dkdsChartRenderer||'');}
+  function chooseRenderer(data=[],config={}){
+    const requested=String(config?.dkdsRenderer||config?.renderer||'').toLowerCase();
+    if(requested&&requested!=='d3')throw new Error(`Unsupported scientific renderer: ${requested}. DK Data Studio is D3-only.`);
+    const renderer=d3Renderer();
+    if(!renderer?.supports?.(data)){
+      const kinds=[...new Set((Array.isArray(data)?data:[]).map(row=>String(row?.type||'scatter').toLowerCase()))].join(', ')||'empty';
+      throw new Error(`D3 renderer does not support trace type(s): ${kinds}.`);
+    }
+    return 'd3';
   }
-  function runtimeState(){return {version:VERSION,host:runtimeConfig.host,plotlyAllowed:runtimeConfig.plotlyAllowed,plotlySource:runtimeConfig.plotlySource,status:plotlyRuntime.status,requests:plotlyRuntime.requests,reuses:plotlyRuntime.reuses,lastReason:plotlyRuntime.lastReason,loadDurationMs:plotlyRuntime.loadDurationMs,error:plotlyRuntime.error,ready:!!plotly()?.react};}
+  async function ensureRenderer(name='d3'){
+    if(String(name||'d3')!=='d3')throw new Error('DK Data Studio scientific rendering is D3-only.');
+    const renderer=d3Renderer();if(!window.d3||!renderer?.react)throw new Error('D3 scientific renderer unavailable.');return renderer;
+  }
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
   const UI_FONT='Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI, sans-serif';
   const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:UI_FONT})});
@@ -102,35 +102,33 @@
     });
     return out;
   }
-  function legendTextWidth(value=''){let width=0;for(const ch of String(value||''))width+=/[\u2E80-\u9FFF\uF900-\uFAFF]/.test(ch)?10.2:6.15;return Math.min(170,28+width);}
-  function packedLegendRows(widths,available,gap=6){let rows=1,used=0;for(const raw of widths){const w=Math.min(available,Math.max(38,Number(raw)||38));if(used>0&&used+gap+w>available){rows+=1;used=w;}else used+=(used?gap:0)+w;}return Math.max(1,rows);}
-  function splitLegendRows(entries=[],available=640,maxRows=2){
-    if(entries.length<2||maxRows<2)return [entries];const widths=entries.map(row=>legendTextWidth(row.label));const total=widths.reduce((a,b)=>a+b,0)+Math.max(0,widths.length-1)*4;if(total<=available)return [entries];
-    let best=1,bestCost=Infinity;for(let i=1;i<entries.length;i++){const left=widths.slice(0,i).reduce((a,b)=>a+b,0)+Math.max(0,i-1)*4,right=widths.slice(i).reduce((a,b)=>a+b,0)+Math.max(0,widths.length-i-1)*4,cost=Math.max(left,right)+Math.abs(left-right)*.08;if(cost<bestCost){best=i;bestCost=cost;}}
-    return [entries.slice(0,best),entries.slice(best)];
-  }
   function smartLegendLayout(target,data=[],layout={}){
-    const source=layout&&typeof layout==='object'?layout:{},entries=legendEntriesFor(data,target),explicitOff=source.showlegend===false,previous=legendLayoutStates.get(target)||{},knownKeys=new Set(Array.isArray(previous.knownKeys)?previous.knownKeys:[]);
-    for(const entry of entries)knownKeys.add(entry.key);const stickyMulti=knownKeys.size>=2||previous.stickyMulti===true;
-    if(explicitOff||(!stickyMulti&&entries.length<2)){const next={...source};legendLayoutStates.set(target,{enabled:false,placement:'none',count:entries.length,rows:0,width:0,height:0,reserve:0,containerWidth:Number(target?.getBoundingClientRect?.().width)||0,containerHeight:Number(target?.getBoundingClientRect?.().height)||0,knownKeys:[...knownKeys],stickyMulti:false,reason:explicitOff?'explicit-disabled':'single-series'});return next;}
-    const current=source.legend&&typeof source.legend==='object'?source.legend:{},requested=String(current.placement||current.autoplacePlacement||'auto'),explicitPlacement=current.autoplace===false&&(['x','y','orientation'].some(key=>Object.prototype.hasOwnProperty.call(current,key))||!!current.placement);
-    if(explicitPlacement){legendLayoutStates.set(target,{enabled:true,placement:'explicit',count:entries.length,rows:0,width:0,height:0,reserve:0,knownKeys:[...knownKeys],stickyMulti,reason:'explicit-layout'});return {...source,showlegend:true,legend:{itemclick:false,itemdoubleclick:false,...current}};}
+    const source=layout&&typeof layout==='object'?layout:{},entries=legendEntriesFor(data,target),explicitOff=source.showlegend===false,previous=legendLayoutStates.get(target)||{};
+    const current=source.legend&&typeof source.legend==='object'?source.legend:{};
+    let requested=String(current.placement||current.autoplacePlacement||'auto').toLowerCase();
+    if(!['auto','top','bottom','right','left'].includes(requested)){
+      const orientation=String(current.orientation||'').toLowerCase(),x=Number(current.x),y=Number(current.y);
+      requested=orientation==='v'?(Number.isFinite(x)&&x<.5?'left':'right'):(Number.isFinite(y)&&y<0?'bottom':'top');
+    }else if(requested==='auto'&&current.autoplace===false){
+      const orientation=String(current.orientation||'').toLowerCase(),x=Number(current.x),y=Number(current.y);
+      requested=orientation==='v'?(Number.isFinite(x)&&x<.5?'left':'right'):(Number.isFinite(y)&&y<0?'bottom':'top');
+    }
     const rect=target?.getBoundingClientRect?.()||{},width=Math.max(240,Number(rect.width)||Number(source.width)||640),height=Math.max(160,Number(rect.height)||Number(source.height)||360),margin={l:56,r:18,t:18,b:46,...(source.margin||{})};
-    const stableWidth=Math.max(240,Math.floor(width/64)*64),availableW=Math.max(140,stableWidth-margin.l-margin.r-16),entryWidths=entries.map(row=>legendTextWidth(row.label));let rawRows=entries.length?packedLegendRows(entryWidths,availableW,6):Number(previous.rawRows)||1;
-    const signature=[...knownKeys].join('|'),sameSeries=previous.signature===signature&&previous.enabled===true;let rows=Math.min(2,Math.max(1,rawRows));if(sameSeries&&['top','bottom'].includes(previous.placement))rows=Math.max(1,Math.min(2,Number(previous.rows)||rows));
-    let placement=['top','bottom','right','left'].includes(requested)?requested:'top';if(requested==='auto')placement=sameSeries&&['top','bottom','right','left'].includes(previous.placement)?previous.placement:'top';
-    if(entries.length<2&&stickyMulti&&previous.enabled){placement=previous.placement||placement;rows=Math.max(1,Number(previous.rows)||rows);rawRows=Math.max(rows,Number(previous.rawRows)||rows);}
-    const horizontalHeight=rows*22+8,maxEntry=Math.max(82,...entryWidths),sideWidth=Math.min(Math.max(maxEntry+12,116),Math.max(116,width*.28)),nextMargin={...margin};let legend,reserve;
-    if(placement==='top'){reserve=horizontalHeight;nextMargin.t=Math.max(nextMargin.t,Math.ceil(reserve)+12);legend={orientation:'h',x:.5,xanchor:'center',y:1.015,yanchor:'bottom',traceorder:'normal'};}else if(placement==='bottom'){reserve=horizontalHeight;nextMargin.b=Math.max(nextMargin.b,Math.ceil(reserve)+46);legend={orientation:'h',x:.5,xanchor:'center',y:-.14,yanchor:'top',traceorder:'normal'};}else if(placement==='left'){reserve=sideWidth+10;nextMargin.l=Math.max(nextMargin.l,Math.ceil(reserve)+38);legend={orientation:'v',x:-.02,xanchor:'right',y:1,yanchor:'top',traceorder:'normal'};}else{reserve=sideWidth+10;nextMargin.r=Math.max(nextMargin.r,Math.ceil(reserve));legend={orientation:'v',x:1.015,xanchor:'left',y:1,yanchor:'top',traceorder:'normal'};}
-    const horizontal=placement==='top'||placement==='bottom',metrics={enabled:true,placement,count:entries.length,rows:horizontal?rows:entries.length,rawRows,width:horizontal?availableW:sideWidth,height:horizontal?horizontalHeight:Math.min(height-margin.t-margin.b,entries.length*24+6),reserve,availableW,containerWidth:width,containerHeight:height,knownKeys:[...knownKeys],stickyMulti,signature,overflow:horizontal&&rawRows>2,reason:'stable-active-layout-solver'};legendLayoutStates.set(target,metrics);
-    return {...source,showlegend:true,margin:nextMargin,legend:{...current,...legend,autoplace:true,placement,itemclick:false,itemdoubleclick:false,font:{size:10,...(current.font||{})},itemsizing:'constant',tracegroupgap:3}};
+    const metrics=presentation.solveLegend({entries,width,height,margin:{left:margin.l,right:margin.r,top:margin.t,bottom:margin.b},placement:requested,maxRows:2,enabled:!explicitOff,previous,stabilize:true,options:{maxItemWidth:146,minPlotWidth:220}});
+    const nextMargin={...margin};
+    if(metrics.reserve>0&&metrics.placement==='top')nextMargin.t=Math.max(nextMargin.t,Math.ceil(metrics.reserve)+7);
+    else if(metrics.reserve>0&&metrics.placement==='bottom')nextMargin.b=Math.max(nextMargin.b,Math.ceil(metrics.reserve)+40);
+    else if(metrics.reserve>0&&metrics.placement==='left')nextMargin.l=Math.max(nextMargin.l,Math.ceil(metrics.reserve)+30);
+    else if(metrics.reserve>0&&metrics.placement==='right')nextMargin.r=Math.max(nextMargin.r,Math.ceil(metrics.reserve)+4);
+    const stored={...metrics,reason:metrics.reason||'core-presentation-solver'};legendLayoutStates.set(target,stored);
+    return {...source,showlegend:!explicitOff,margin:nextMargin,legend:{...current,autoplace:true,placement:metrics.placement,itemclick:false,itemdoubleclick:false,font:{size:10,...(current.font||{})},itemsizing:'constant',tracegroupgap:3}};
   }
   function legendMetrics(target){const el=element(target)||target;return {...(legendLayoutStates.get(el)||{enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0,reason:'unrendered'})};}
   function normalizeConfig(config={}){
-    const source=config&&typeof config==='object'?config:{},staticPlot=source.staticPlot===true,explicitOff=source.displayModeBar===false||source.dkdsNavigationTools===false;
+    const source=config&&typeof config==='object'?config:{},staticPlot=source.staticPlot===true,explicitOff=source.dkdsNavigationTools===false;
     const next={responsive:true,displaylogo:false,scrollZoom:!staticPlot,doubleClick:'reset+autosize',...source};
     next.__dkdsNavigationTools=!staticPlot&&!explicitOff;
-    // Plotly's native modebar is intentionally suppressed. Core renders one compact,
+    // Renderer-native chrome is intentionally suppressed. Core renders one compact,
     // theme-aware, draggable navigation strip shared with D3 ScientificCurveSurface.
     next.displayModeBar=false;delete next.dkdsNavigationTools;return next;
   }
@@ -201,73 +199,95 @@
     }
     return layout;
   }
-  function displayState(el){let state=displayScaleStates.get(el);if(!state){state={axis:'y',mode:null,baseType:'linear',sourceData:[],sourceLayout:{},sourceConfig:{},handler:null,legendSoloKey:''};displayScaleStates.set(el,state);}return state;}
+  function displayState(el){let state=displayScaleStates.get(el);if(!state){state={axis:'y',mode:null,baseType:'linear',sourceData:[],sourceLayout:{},sourceConfig:{},handler:null,legendSoloKey:'',legendSelectedKey:'',legendBaselineVisibility:[]};displayScaleStates.set(el,state);}return state;}
   function isYAxisInteraction(el,event){
-    let current=event?.target;while(current&&current!==el){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(ytick|ytitle|yaxislayer-above|yaxislayer-below|g-ytitle)(\s|$)/.test(cls)||/yaxis/i.test(cls))return true;current=current.parentNode;}
+    let current=event?.target;while(current&&current!==el){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(ytick|ytitle|yaxislayer-above|yaxislayer-below|g-ytitle|dkds-d3-y-axis)(\s|$)/.test(cls)||/yaxis|y-axis/i.test(cls))return true;current=current.parentNode;}
     const rect=el?.getBoundingClientRect?.(),size=el?._fullLayout?._size;if(!rect||!size||!Number.isFinite(Number(event?.clientX))||!Number.isFinite(Number(event?.clientY)))return false;
     const x=Number(event.clientX)-rect.left,y=Number(event.clientY)-rect.top,left=Number(size.l)||0,top=Number(size.t)||0,height=Number(size.h)||0;
     return x>=0&&x<=left+12&&y>=Math.max(0,top-14)&&y<=top+height+14;
   }
   function isColorScaleInteraction(el,event){
-    let current=event?.target;while(current&&current!==el){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(cbaxis|cbtitle|cbbg|cbfill|cboutline|cbline|colorbar)(\s|$)/i.test(cls)||/colorbar/i.test(cls))return true;current=current.parentNode;}
+    let current=event?.target;while(current&&current!==el){const cls=typeof current.getAttribute==='function'?String(current.getAttribute('class')||''):'';if(/(^|\s)(cbaxis|cbtitle|cbbg|cbfill|cboutline|cbline|colorbar|dkds-d3-colorbar)(\s|$)/i.test(cls)||/colorbar/i.test(cls))return true;current=current.parentNode;}
     const rect=el?.getBoundingClientRect?.(),size=el?._fullLayout?._size;if(!rect||!size||!Number.isFinite(Number(event?.clientX))||!Number.isFinite(Number(event?.clientY)))return false;
     const x=Number(event.clientX)-rect.left,y=Number(event.clientY)-rect.top,right=(Number(size.l)||0)+(Number(size.w)||0),top=Number(size.t)||0,height=Number(size.h)||0;
     return x>=right-4&&x<=rect.width&&y>=Math.max(0,top-18)&&y<=top+height+18;
   }
   function traceSeriesKey(trace,index){return String(trace?.uid??trace?.meta?.seriesId??trace?.meta?.id??trace?.id??`${trace?.name||'series'}#${index}`);}
+  function baselineVisibility(state,index,trace){const value=state?.legendBaselineVisibility?.[index];if(value!==undefined)return value;return trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true);}
   function legendFocusedRows(state,rows){
-    const solo=String(state?.legendSoloKey||'');if(!solo)return rows;const entries=legendEntriesFor(rows),selected=entries.find(row=>row.key===solo);if(!selected){state.legendSoloKey='';return rows;}const selectedIndices=new Set(selected.indices),controlled=new Set(entries.flatMap(row=>row.indices));
-    return rows.map((trace,index)=>controlled.has(index)?{...trace,visible:selectedIndices.has(index)?(trace?.visible===false?false:true):'legendonly'}:trace);
+    const solo=String(state?.legendSoloKey||'');if(!solo)return rows.map((trace,index)=>({...trace,visible:baselineVisibility(state,index,trace)}));const entries=legendEntriesFor(rows),selected=entries.find(row=>row.key===solo);if(!selected){state.legendSoloKey='';return rows.map((trace,index)=>({...trace,visible:baselineVisibility(state,index,trace)}));}const selectedIndices=new Set(selected.indices),controlled=new Set(entries.flatMap(row=>row.indices));
+    return rows.map((trace,index)=>controlled.has(index)?{...trace,visible:selectedIndices.has(index)?baselineVisibility(state,index,trace):'legendonly'}:{...trace,visible:baselineVisibility(state,index,trace)});
   }
   function legendVisibilityPlan(state){
     const rows=Array.isArray(state?.sourceData)?state.sourceData:[],entries=legendEntriesFor(rows),solo=String(state?.legendSoloKey||''),selected=entries.find(row=>row.key===solo)||null;if(solo&&!selected)state.legendSoloKey='';const selectedIndices=new Set(selected?.indices||[]),controlled=[...new Set(entries.flatMap(row=>row.indices))].sort((a,b)=>a-b);
-    return {indices:controlled,values:controlled.map(index=>{const original=rows[index]?.visible;if(!selected)return original===false?false:(original==='legendonly'?'legendonly':true);return selectedIndices.has(index)?(original===false?false:true):'legendonly';})};
+    return {indices:controlled,values:controlled.map(index=>selected?selectedIndices.has(index)?baselineVisibility(state,index,rows[index]):'legendonly':baselineVisibility(state,index,rows[index]))};
   }
-  function applyPlotLegendFocus(el,P,state){const plan=legendVisibilityPlan(state);if(!plan.indices.length||!P?.restyle)return Promise.resolve(false);return Promise.resolve(P.restyle(el,{visible:plan.values},plan.indices)).catch(()=>false);}
-  function plotlyConfig(config={}){const next={...(config||{})};delete next.__dkdsNavigationTools;return next;}
-  function plotlyRenderLayout(el,layout={}){const next=cloneLayout(layout||{}),metrics=legendLayoutStates.get(el)||{};if(metrics.enabled&&metrics.placement!=='explicit')next.showlegend=false;return next;}
+  function applyPlotLegendFocus(el,state){const plan=legendVisibilityPlan(state);if(!plan.indices.length)return Promise.resolve(false);return Promise.resolve(restyle(el,{visible:plan.values},plan.indices,{internal:true})).catch(()=>false);}
+  function rendererConfig(config={}){const next={...(config||{})};delete next.__dkdsNavigationTools;delete next.dkdsRenderer;delete next.renderer;return next;}
+  function rendererLayout(_el,layout={}){const next=cloneLayout(layout||{});next.showlegend=false;return next;}
   function plotLegendColor(el,trace,index){const full=el?._fullData?.[index]||{},candidates=[trace?.line?.color,trace?.marker?.color,trace?.fillcolor,full?.line?.color,full?.marker?.color,full?.fillcolor];for(const value of candidates)if(typeof value==='string'&&value.trim())return value;return PLOT_SERIES_PALETTE[Math.abs(Number(index)||0)%PLOT_SERIES_PALETTE.length];}
-  function ensurePlotPresentationHost(el){if(el?.classList?.add)el.classList.add('dkds-plotly-surface-host');return el;}
-  function createLegendButton(row,solo=''){const button=document.createElement('button');button.type='button';button.className='dkds-plot-legend-item';button.dataset.seriesKey=row.key;const active=!solo||solo===row.key;button.classList.toggle('is-muted',!active);button.setAttribute('aria-pressed',String(active));button.title=solo===row.key?'再次点击恢复全部通道':`只显示 ${row.label}`;const swatch=document.createElement('span');swatch.className='dkds-plot-legend-swatch';swatch.style.background=row.color;const label=document.createElement('span');label.className='dkds-plot-legend-label';label.textContent=row.label;button.append(swatch,label);return button;}
-  function renderPlotLegend(el,state){
-    if(!el||typeof document==='undefined'||typeof document.createElement!=='function'||typeof el.appendChild!=='function')return;ensurePlotPresentationHost(el);const metrics=legendLayoutStates.get(el)||{enabled:false,placement:'none'},entries=legendEntriesFor(state?.sourceData||[],el);let binding=plotLegendStates.get(el);
-    if(!metrics.enabled||metrics.placement==='explicit'||entries.length<2){binding?.host?.remove?.();plotLegendStates.delete(el);return;}
-    if(!binding?.host?.isConnected){const host=document.createElement('div');host.className='dkds-plot-legend dkds-scientific-auto-legend dkds-plotly-auto-legend';host.dataset.dkdsLegend='auto';host.dataset.dkdsLegendEngine='plotly';host.setAttribute('aria-label','图例');host.addEventListener('click',event=>{const button=event.target?.closest?.('button[data-series-key]');if(!button||!host.contains(button))return;event.preventDefault();event.stopPropagation();const key=String(button.dataset.seriesKey||'');if(!key)return;const current=displayScaleStates.get(el);if(!current)return;current.legendSoloKey=current.legendSoloKey===key?'':key;const run=P=>applyPlotLegendFocus(el,P,current).then(()=>{renderPlotLegend(el,current);positionPlotNavigation(el,current);});const P=plotly();void (P?.restyle?run(P):ensurePlotly({reason:'legend-focus'}).then(run));});el.appendChild(host);binding={host};plotLegendStates.set(el,binding);}
-    const host=binding.host;host.classList.remove('hidden','is-top','is-bottom','is-right','is-left');host.classList.add(`is-${metrics.placement}`);host.style.setProperty('--dkds-legend-rows',String(Math.max(1,Number(metrics.rows)||1)));for(const name of ['left','right','top','bottom','width','max-height'])host.style.removeProperty(name);
-    if(metrics.placement==='right'||metrics.placement==='left'){host.style[metrics.placement]='6px';host.style.top='8px';host.style.width=`${Math.max(104,(Number(metrics.width)||116)-12)}px`;host.style.maxHeight=`${Math.max(70,Number(metrics.height)||70)}px`;}else{host.style.left='6px';host.style.right='6px';host.style[metrics.placement]='4px';}
-    const fragment=document.createDocumentFragment(),solo=String(state?.legendSoloKey||'');if(metrics.placement==='top'||metrics.placement==='bottom'){for(const rowEntries of splitLegendRows(entries,Math.max(140,Number(metrics.width)||640),Math.max(1,Number(metrics.rows)||1))){const line=document.createElement('div');line.className='dkds-plot-legend-row';for(const row of rowEntries)line.appendChild(createLegendButton(row,solo));fragment.appendChild(line);}}else for(const row of entries)fragment.appendChild(createLegendButton(row,solo));host.replaceChildren(fragment);
+  function ensurePlotPresentationHost(el){if(el?.classList?.add)el.classList.add('dkds-scientific-chart-host','dkds-chart-surface-host','dkds-d3-surface-host');return el;}
+  function ensurePlotLegendController(el,state){
+    let binding=plotLegendStates.get(el);if(binding?.controller?.host?.isConnected)return binding.controller;
+    const controller=new presentation.LegendController(el,{engine:rendererFor(el)||'core',onActivate:({key,entry,event})=>{
+      const current=displayScaleStates.get(el);if(!current)return;
+      const restoring=current.legendSoloKey===key;
+      current.legendSoloKey=restoring?'':key;
+      current.legendSelectedKey=current.legendSoloKey;
+      void applyPlotLegendFocus(el,current).then(()=>{
+        renderPlotLegend(el,current);positionPlotNavigation(el,current);
+        const detail={key,entry,indices:[...(entry?.indices||[])],curveNumber:Number(entry?.indices?.[0]??entry?.index??-1),soloKey:current.legendSoloKey,restored:restoring,originalEvent:event||null};
+        try{el.dispatchEvent?.(new CustomEvent('dkds:chart-legend-activate',{detail}));}catch{}
+        try{el.__dkdsChartEmitter?.emit?.('dkds_chart_legendactivate',detail);}catch{}
+      });
+    }});
+    plotLegendStates.set(el,{controller});return controller;
   }
+  function renderPlotLegend(el,state){
+    if(!el)return;ensurePlotPresentationHost(el);const metrics=legendLayoutStates.get(el)||{enabled:false,placement:'none'},entries=legendEntriesFor(state?.sourceData||[],el),controller=ensurePlotLegendController(el,state);
+    controller.update(entries,metrics,{soloKey:String(state?.legendSoloKey||''),selectedKey:String(state?.legendSelectedKey||'')});
+  }
+  function installPlotLegendSelection(el,state){
+    if(!el?.addEventListener||plotLegendSelectionStates.has(el))return;
+    const click=event=>{const payload=event?.detail??event,index=Number(payload?.points?.[0]?.curveNumber);if(!Number.isInteger(index)||index<0)return;const current=displayScaleStates.get(el);if(!current)return;const entry=legendEntriesFor(current.sourceData||[],el).find(row=>row.indices.includes(index));current.legendSelectedKey=entry?.key||'';renderPlotLegend(el,current);};
+    const deselect=()=>{const current=displayScaleStates.get(el);if(!current||current.legendSoloKey)return;current.legendSelectedKey='';renderPlotLegend(el,current);};
+    el.addEventListener('dkds_chart_click',click);el.addEventListener('dkds_chart_deselect',deselect);plotLegendSelectionStates.set(el,{click,deselect});
+  }
+  function uninstallPlotLegendSelection(el){const binding=plotLegendSelectionStates.get(el);if(!binding)return;try{el.removeEventListener?.('dkds_chart_click',binding.click);}catch{}try{el.removeEventListener?.('dkds_chart_deselect',binding.deselect);}catch{}plotLegendSelectionStates.delete(el);}
   function navigationStorageKey(el){const id=String(el?.id||el?.dataset?.dkdsScientificPlotId||'').trim();return id?`dkds.plot-nav.${id}`:'';}
   function setPlotNavigationPosition(el,tools,x,y,{persist=false,moved=true}={}){const host=el?.getBoundingClientRect?.(),rect=tools?.getBoundingClientRect?.();if(!host||!rect||!(host.width>0&&host.height>0&&rect.width>0&&rect.height>0))return false;const pad=5,nx=Math.max(pad,Math.min(host.width-rect.width-pad,Number(x)||pad)),ny=Math.max(pad,Math.min(host.height-rect.height-pad,Number(y)||pad));tools.style.left=`${Math.round(nx)}px`;tools.style.top=`${Math.round(ny)}px`;tools.style.right='auto';if(moved)tools.dataset.moved='1';else delete tools.dataset.moved;if(persist){const key=navigationStorageKey(el);if(key)try{localStorage.setItem(key,JSON.stringify({x:nx,y:ny}));}catch{}}return true;}
   function positionPlotNavigation(el,state){const nav=plotNavigationStates.get(el),tools=nav?.tools;if(!tools||tools.dataset.moved==='1')return false;const host=el.getBoundingClientRect(),tool=tools.getBoundingClientRect();if(!(host.width>0&&host.height>0&&tool.width>0&&tool.height>0))return false;const metrics=legendLayoutStates.get(el)||{},pad=6;let x=Math.max(pad,host.width-tool.width-pad),y=pad;if(metrics.enabled&&metrics.placement==='top')y=Math.min(Math.max(pad,(Number(metrics.reserve)||0)+7),Math.max(pad,host.height-tool.height-pad));else if(metrics.enabled&&metrics.placement==='right')x=Math.max(pad,host.width-tool.width-(Number(metrics.reserve)||0)-pad);setPlotNavigationPosition(el,tools,x,y,{moved:false});return true;}
-  function plotZoom(el,factor){const P=plotly();if(!P?.relayout||!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout)){if(!/^[xy]axis\d*$/.test(key))continue;const range=el._fullLayout[key]?.range;if(!Array.isArray(range)||range.length<2||!range.every(v=>Number.isFinite(Number(v))))continue;const a=Number(range[0]),b=Number(range[1]),c=(a+b)/2,span=(b-a)*factor/2;patch[`${key}.range`]=[c-span,c+span];patch[`${key}.autorange`]=false;}return Object.keys(patch).length?Promise.resolve(P.relayout(el,patch)):Promise.resolve(false);}
-  function plotHome(el){const P=plotly();if(!P?.relayout||!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout))if(/^[xy]axis\d*$/.test(key))patch[`${key}.autorange`]=true;return Object.keys(patch).length?Promise.resolve(P.relayout(el,patch)):Promise.resolve(false);}
-  function installPlotNavigation(el,state){ensurePlotPresentationHost(el);if(!el||typeof document==='undefined'||typeof document.createElement!=='function'||typeof el.appendChild!=='function'||!el.classList?.add)return;let nav=plotNavigationStates.get(el);const enabled=state?.sourceConfig?.__dkdsNavigationTools!==false;if(!enabled){nav?.tools?.remove?.();plotNavigationStates.delete(el);return;}if(nav?.tools?.isConnected){requestAnimationFrame(()=>positionPlotNavigation(el,state));return;}el.classList.add('dkds-plotly-surface-host');const tools=document.createElement('div');tools.className='dkds-scientific-nav-tools dkds-plotly-nav-tools';tools.setAttribute('aria-label','图形操作');const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag';drag.setAttribute('role','button');drag.setAttribute('tabindex','0');drag.textContent='⋮';drag.title='拖动工具条；双击恢复默认位置';tools.appendChild(drag);for(const [action,label,title] of [['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.textContent=label;button.title=title;button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')void plotHome(el);else void plotZoom(el,action==='zoom-in'?.72:1.38);});tools.appendChild(button);}el.appendChild(tools);nav={tools,drag};plotNavigationStates.set(el,nav);let ds=null;drag.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const host=el.getBoundingClientRect(),r=tools.getBoundingClientRect();ds={id:event.pointerId,cx:event.clientX,cy:event.clientY,x:r.left-host.left,y:r.top-host.top};tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}});drag.addEventListener('pointermove',event=>{if(!ds||event.pointerId!==ds.id)return;event.preventDefault();setPlotNavigationPosition(el,tools,ds.x+event.clientX-ds.cx,ds.y+event.clientY-ds.cy);});const finish=event=>{if(!ds||event.pointerId!==ds.id)return;ds=null;tools.classList.remove('is-dragging');const x=parseFloat(tools.style.left),y=parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))setPlotNavigationPosition(el,tools,x,y,{persist:true});};drag.addEventListener('pointerup',finish);drag.addEventListener('pointercancel',finish);drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}for(const prop of ['left','top','right'])tools.style.removeProperty(prop);delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));});drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));}});const key=navigationStorageKey(el);if(key)try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved)requestAnimationFrame(()=>setPlotNavigationPosition(el,tools,saved.x,saved.y));else requestAnimationFrame(()=>positionPlotNavigation(el,state));}catch{requestAnimationFrame(()=>positionPlotNavigation(el,state));}else requestAnimationFrame(()=>positionPlotNavigation(el,state));}
-  function renderDisplay(el,P,state){const mode=String(state.mode||state.baseType||'linear').toLowerCase(),axis=String(state.axis||'y'),rows=legendFocusedRows(state,(state.sourceData||[]).map(trace=>displayTrace(trace,mode,axis))),logicalLayout=displayLayout(state.sourceLayout,mode,axis),layout=plotlyRenderLayout(el,logicalLayout);ensurePlotPresentationHost(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=axis;el.dataset[axis==='z'?'dkdsZScale':'dkdsYScale']=mode;}return Promise.resolve(P.react(el,rows,layout,plotlyConfig(state.sourceConfig||{}))).then(result=>{installPlotNavigation(el,state);renderPlotLegend(el,state);return applyPlotLegendFocus(el,P,state).then(()=>result);});}
+  function plotZoom(el,factor){if(!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout)){if(!/^[xy]axis\d*$/.test(key))continue;const range=el._fullLayout[key]?.range;if(!Array.isArray(range)||range.length<2||!range.every(v=>Number.isFinite(Number(v))))continue;const a=Number(range[0]),b=Number(range[1]),c=(a+b)/2,span=(b-a)*factor/2;patch[`${key}.range`]=[c-span,c+span];patch[`${key}.autorange`]=false;}return Object.keys(patch).length?Promise.resolve(relayout(el,patch)):Promise.resolve(false);}
+  function plotHome(el){if(!el?._fullLayout)return Promise.resolve(false);const patch={};for(const key of Object.keys(el._fullLayout))if(/^[xy]axis\d*$/.test(key)){patch[`${key}.autorange`]=true;patch[`${key}.range`]=null;}return Object.keys(patch).length?Promise.resolve(relayout(el,patch)):Promise.resolve(false);}
+  function installPlotNavigation(el,state){ensurePlotPresentationHost(el);if(!el||typeof document==='undefined'||typeof document.createElement!=='function'||typeof el.appendChild!=='function'||!el.classList?.add)return;let nav=plotNavigationStates.get(el);const enabled=state?.sourceConfig?.__dkdsNavigationTools!==false;if(!enabled){nav?.tools?.remove?.();plotNavigationStates.delete(el);return;}if(nav?.tools?.isConnected){requestAnimationFrame(()=>positionPlotNavigation(el,state));return;}el.classList.add('dkds-scientific-chart-host','dkds-chart-surface-host','dkds-d3-surface-host');const tools=document.createElement('div');tools.className='dkds-scientific-nav-tools dkds-chart-nav-tools';tools.setAttribute('aria-label','图形操作');const drag=document.createElement('span');drag.className='dkds-scientific-nav-drag';drag.setAttribute('role','button');drag.setAttribute('tabindex','0');drag.textContent='⋮';drag.title='拖动工具条；双击恢复默认位置';tools.appendChild(drag);for(const [action,label,title] of [['zoom-in','＋','放大'],['zoom-out','−','缩小'],['home','⌂','恢复全部数据']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.textContent=label;button.title=title;button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(action==='home')void plotHome(el);else void plotZoom(el,action==='zoom-in'?.72:1.38);});tools.appendChild(button);}el.appendChild(tools);nav={tools,drag};plotNavigationStates.set(el,nav);let ds=null;drag.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const host=el.getBoundingClientRect(),r=tools.getBoundingClientRect();ds={id:event.pointerId,cx:event.clientX,cy:event.clientY,x:r.left-host.left,y:r.top-host.top};tools.classList.add('is-dragging');try{drag.setPointerCapture(event.pointerId);}catch{}});drag.addEventListener('pointermove',event=>{if(!ds||event.pointerId!==ds.id)return;event.preventDefault();setPlotNavigationPosition(el,tools,ds.x+event.clientX-ds.cx,ds.y+event.clientY-ds.cy);});const finish=event=>{if(!ds||event.pointerId!==ds.id)return;ds=null;tools.classList.remove('is-dragging');const x=parseFloat(tools.style.left),y=parseFloat(tools.style.top);if(Number.isFinite(x)&&Number.isFinite(y))setPlotNavigationPosition(el,tools,x,y,{persist:true});};drag.addEventListener('pointerup',finish);drag.addEventListener('pointercancel',finish);drag.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}for(const prop of ['left','top','right'])tools.style.removeProperty(prop);delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));});drag.addEventListener('keydown',event=>{if(event.key==='Home'||event.key==='Escape'){event.preventDefault();const key=navigationStorageKey(el);if(key)try{localStorage.removeItem(key);}catch{}delete tools.dataset.moved;requestAnimationFrame(()=>positionPlotNavigation(el,state));}});const key=navigationStorageKey(el);if(key)try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved)requestAnimationFrame(()=>setPlotNavigationPosition(el,tools,saved.x,saved.y));else requestAnimationFrame(()=>positionPlotNavigation(el,state));}catch{requestAnimationFrame(()=>positionPlotNavigation(el,state));}else requestAnimationFrame(()=>positionPlotNavigation(el,state));}
+  async function renderDisplay(el,state){const mode=String(state.mode||state.baseType||'linear').toLowerCase(),axis=String(state.axis||'y'),rows=legendFocusedRows(state,(state.sourceData||[]).map(trace=>displayTrace(trace,mode,axis))),logicalLayout=displayLayout(state.sourceLayout,mode,axis),layout=rendererLayout(el,logicalLayout),config=rendererConfig(state.sourceConfig||{});ensurePlotPresentationHost(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=axis;el.dataset[axis==='z'?'dkdsZScale':'dkdsYScale']=mode;}const selected=chooseRenderer(rows,state.sourceConfig||{});state.renderer=selected;const previous=rendererFor(el);if(previous&&previous!==selected)try{d3Renderer()?.purge?.(el);}catch{}const renderer=await ensureRenderer(selected);rendererStates.set(el,selected);if(el?.dataset)el.dataset.dkdsChartRenderer=selected;const result=await Promise.resolve(renderer.react(el,rows,layout,config));installPlotNavigation(el,state);installPlotLegendSelection(el,state);renderPlotLegend(el,state);await applyPlotLegendFocus(el,state);return result;}
   function installDisplayScale(el){
     if(!el)return;const state=displayState(el);if(state.handler)return;
-    state.handler=event=>{const axis=String(state.axis||'y'),hit=axis==='z'?isColorScaleInteraction(el,event):isYAxisInteraction(el,event);if(!hit||!toggleableAxisType(state.baseType))return;event.preventDefault?.();event.stopPropagation?.();event.stopImmediatePropagation?.();state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';const P=plotly();const done=P?.react?renderDisplay(el,P,state):ensurePlotly({reason:'display-scale'}).then(next=>renderDisplay(el,next,state));Promise.resolve(done).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}}).catch(()=>{});};
+    state.handler=event=>{const axis=String(state.axis||'y'),hit=axis==='z'?isColorScaleInteraction(el,event):isYAxisInteraction(el,event);if(!hit||!toggleableAxisType(state.baseType))return;event.preventDefault?.();event.stopPropagation?.();event.stopImmediatePropagation?.();state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';Promise.resolve(renderDisplay(el,state)).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}}).catch(()=>{});};
     el.addEventListener?.('dblclick',state.handler,true);
   }
   function displayScaleState(target){const el=element(target)||target,state=el?displayScaleStates.get(el):null;return state?{axis:String(state.axis||'y'),type:String(state.mode||state.baseType||'linear'),baseType:String(state.baseType||'linear')}:null;}
-  function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});const nextAxis=displayAxisFor(state.sourceData,state.sourceLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=state.axis;el.dataset[state.axis==='z'?'dkdsZScale':'dkdsYScale']=String(state.mode||state.baseType||'linear');}return displayScaleState(el);}
-  function toggleDisplayScale(target,requestedAxis=''){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el),axis=String(requestedAxis||state.axis||'y');if(requestedAxis&&axis!==String(state.axis||'y'))return Promise.resolve(false);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';const run=P=>renderDisplay(el,P,state).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}return state.mode;});const P=plotly();return P?.react?run(P):ensurePlotly({reason:'display-scale'}).then(run);}
+  function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);state.legendBaselineVisibility=state.sourceData.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});const nextAxis=displayAxisFor(state.sourceData,state.sourceLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=state.axis;el.dataset[state.axis==='z'?'dkdsZScale':'dkdsYScale']=String(state.mode||state.baseType||'linear');}return displayScaleState(el);}
+  function toggleDisplayScale(target,requestedAxis=''){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el),axis=String(requestedAxis||state.axis||'y');if(requestedAxis&&axis!==String(state.axis||'y'))return Promise.resolve(false);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';return Promise.resolve(renderDisplay(el,state)).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}return state.mode;});}
   function toggleYAxisDisplay(target){return toggleDisplayScale(target,'y');}
-  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);ensurePlotPresentationHost(el);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);const P=plotly();if(P?.react)return renderDisplay(el,P,state);return ensurePlotly({reason:'react'}).then(next=>renderDisplay(el,next,state));}
-  function restyle(target,update,traces){const el=element(target)||target;const P=plotly();return P?.restyle?P.restyle(el,update,traces):ensurePlotly({reason:'restyle'}).then(next=>next.restyle(el,update,traces));}
-  function relayout(target,update){const el=element(target)||target;const P=plotly();return P?.relayout?P.relayout(el,update):ensurePlotly({reason:'relayout'}).then(next=>next.relayout(el,update));}
-  function resize(target){const el=element(target),P=plotly();if(!el||el.offsetParent===null||!P?.Plots?.resize)return false;try{ensurePlotPresentationHost(el);P.Plots.resize(el);const base=legendBaseLayouts.get(el),state=displayScaleStates.get(el);if(base&&state?.sourceData?.length){const previous=legendLayoutStates.get(el)||{},smart=smartLegendLayout(el,state.sourceData,base),next=themeLayout(smart),current=legendLayoutStates.get(el)||{},changed=previous.placement!==current.placement||Math.abs((previous.reserve||0)-(current.reserve||0))>2||previous.rows!==current.rows||previous.signature!==current.signature;if(changed){const pending=legendResizeFrames.get(el);if(pending){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(pending);}catch{}}const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));legendResizeFrames.set(el,raf(()=>{legendResizeFrames.delete(el);if(!el.isConnected)return;state.sourceLayout=next;const logical=displayLayout(next,String(state.mode||state.baseType||'linear').toLowerCase(),String(state.axis||'y'));Promise.resolve(P.relayout(el,{showlegend:plotlyRenderLayout(el,logical).showlegend,margin:logical.margin,legend:logical.legend})).then(()=>{renderPlotLegend(el,state);positionPlotNavigation(el,state);}).catch(()=>{});}));}else{renderPlotLegend(el,state);positionPlotNavigation(el,state);}}return true;}catch{return false;}}
-  function purge(target){const el=element(target);if(!el||!plotly()?.purge)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}plotNavigationStates.get(el)?.tools?.remove?.();plotNavigationStates.delete(el);plotLegendStates.get(el)?.host?.remove?.();plotLegendStates.delete(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}try{plotly().purge(el);return true;}catch{return false;}}
+  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);ensurePlotPresentationHost(el);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;state.legendBaselineVisibility=rows.map(trace=>trace?.visible===false?false:(trace?.visible==='legendonly'?'legendonly':true));state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);return renderDisplay(el,state);}
+  function restyle(target,update,traces,_options={}){const el=element(target)||target;if(!el)return Promise.resolve(false);chooseRenderer(el.data||[],el._context||{});return Promise.resolve(d3Renderer()?.restyle?.(el,update,traces)??false);}
+  function relayout(target,update){const el=element(target)||target;if(!el)return Promise.resolve(false);return Promise.resolve(d3Renderer()?.relayout?.(el,update)??false);}
+  function resize(target){const el=element(target);if(!el||el.offsetParent===null)return false;try{ensurePlotPresentationHost(el);const state=displayScaleStates.get(el),base=legendBaseLayouts.get(el);if(state?.sourceData?.length&&base){const previous=legendLayoutStates.get(el)||{},smart=smartLegendLayout(el,state.sourceData,base),next=themeLayout(smart),current=legendLayoutStates.get(el)||{},changed=previous.placement!==current.placement||Math.abs((previous.reserve||0)-(current.reserve||0))>2||previous.rows!==current.rows||previous.signature!==current.signature;state.sourceLayout=next;if(changed){const pending=legendResizeFrames.get(el);if(pending){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(pending);}catch{}}const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));legendResizeFrames.set(el,raf(()=>{legendResizeFrames.delete(el);if(!el.isConnected)return;void renderDisplay(el,state).catch(()=>{});}));}else{d3Renderer()?.resize?.(el);renderPlotLegend(el,state);positionPlotNavigation(el,state);}return true;}return !!d3Renderer()?.resize?.(el);}catch{return false;}}
+  function purge(target){const el=element(target);if(!el)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}plotNavigationStates.get(el)?.tools?.remove?.();plotNavigationStates.delete(el);plotLegendStates.get(el)?.controller?.dispose?.();plotLegendStates.delete(el);uninstallPlotLegendSelection(el);displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}rendererStates.delete(el);return !!d3Renderer()?.purge?.(el);}
   function bind(owner,target,event,handler,{replace=false}={}){
-    const el=element(target);if(!el||typeof el.on!=='function')return()=>{};
-    if(replace){try{el.removeAllListeners?.(event);}catch{}}
-    el.on(event,handler);
-    return track(owner,()=>{try{el.removeListener?.(event,handler);}catch{}});
+    const el=element(target),name=String(event||'');if(!el||typeof handler!=='function')return()=>{};
+    if(name.startsWith('dkds_chart_')&&el.addEventListener){
+      let byEvent=neutralBindings.get(el);if(!byEvent){byEvent=new Map();neutralBindings.set(el,byEvent);}let rows=byEvent.get(name);if(!rows){rows=new Set();byEvent.set(name,rows);}
+      if(replace){for(const row of [...rows]){try{el.removeEventListener(name,row);}catch{}rows.delete(row);}}
+      const wrapper=eventObject=>handler(eventObject?.detail??eventObject);rows.add(wrapper);el.addEventListener(name,wrapper);
+      return track(owner,()=>{try{el.removeEventListener(name,wrapper);}catch{}rows.delete(wrapper);if(!rows.size)byEvent.delete(name);});
+    }
+    if(typeof el.on!=='function')return()=>{};if(replace){try{el.removeAllListeners?.(name);}catch{}}el.on(name,handler);return track(owner,()=>{try{el.removeListener?.(name,handler);}catch{}});
   }
   async function toImage(target,{format='png',width,height,scale=2}={}){
     const el=element(target);if(!el)throw new Error('Plot target not found.');
-    const P=plotly()?.toImage?plotly():await ensurePlotly({reason:'to-image'});
-    return P.toImage(el,{format,width,height,scale});
+    chooseRenderer(el.data||[],el._context||{});return d3Renderer().toImage(el,{format,width,height,scale});
   }
   async function saveImage(target,baseName='plot',format='png'){
     if(typeof window.DKDSIO?.saveBase64!=='function'&&typeof window.DKDSIO?.saveText!=='function')throw new Error('Core I/O runtime unavailable.');
@@ -286,30 +306,21 @@
     return map[String(name||'').toLowerCase()]||d3.symbolCircle;
   }
   function symbolPath(name='circle',size=105){const d3=window.d3;const type=d3Symbol(name);return d3?.symbol&&type?d3.symbol().type(type).size(Number(size)||105)():'';}
+
+  function selectLegendForTrace(target,index){const el=element(target)||target,state=el?displayScaleStates.get(el):null;if(!el||!state)return false;const entry=legendEntriesFor(state.sourceData||[],el).find(row=>row.indices.includes(Number(index)));state.legendSelectedKey=entry?.key||'';renderPlotLegend(el,state);return !!entry;}
+  function clearLegendSelection(target){const el=element(target)||target,state=el?displayScaleStates.get(el):null;if(!state)return false;state.legendSelectedKey='';renderPlotLegend(el,state);return true;}
   function createScope(owner){
     const id=String(owner||'plugin');
     return Object.freeze({
-      version:VERSION,owner:id,element,ensurePlotly,runtimeState,
-      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
+      version:VERSION,owner:id,element,runtimeState,rendererFor,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
-      raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
+      raw:Object.freeze({get d3(){return window.d3;}})
     });
   }
-  function refreshRenderedTheme(){
-    const P=plotly();if(!P?.relayout||typeof document==='undefined')return;
-    const theme=plotTheme();
-    document.querySelectorAll('.js-plotly-plot').forEach(el=>{
-      const layout=el?.layout||{};const patch={paper_bgcolor:theme.paper,plot_bgcolor:theme.plot,'font.color':theme.text,'modebar.bgcolor':'rgba(0,0,0,0)','modebar.color':theme.muted,'modebar.activecolor':theme.text};
-      for(const key of Object.keys(layout)){
-        if(!/^[xy]axis\d*$/.test(key))continue;
-        patch[`${key}.gridcolor`]=theme.grid;patch[`${key}.zerolinecolor`]=theme.zero;patch[`${key}.linecolor`]=theme.axis;patch[`${key}.tickcolor`]=theme.axis;patch[`${key}.tickfont.color`]=theme.muted;patch[`${key}.title.font.color`]=theme.text;
-      }
-      if(layout.legend){patch['legend.bordercolor']=theme.legend;patch['legend.font.color']=theme.text;}
-      Promise.resolve(P.relayout(el,patch)).catch(()=>{});
-    });
-  }
+  function refreshRenderedTheme(){if(typeof document==='undefined')return;document.querySelectorAll('[data-dkds-chart-renderer="d3"]').forEach(el=>{try{d3Renderer()?.resize?.(el);}catch{}});}
   try{globalThis.addEventListener?.('dkds:theme-changed',()=>queueMicrotask(refreshRenderedTheme));}catch{}
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,rendererFor,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

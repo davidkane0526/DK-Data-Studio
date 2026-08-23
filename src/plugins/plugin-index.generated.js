@@ -95,7 +95,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "minWidth": 920,
         "minHeight": 650,
         "dependencies": [
-          "plotly",
+          "scientific-renderer",
           "data-model",
           "formula-engine",
           "parameter-schema",
@@ -248,7 +248,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "minWidth": 920,
         "minHeight": 650,
         "dependencies": [
-          "plotly",
+          "scientific-renderer",
           "science-common",
           "science-import",
           "science-pulse",
@@ -485,8 +485,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "runtime": "window-runtime.js",
         "dependencies": [
           "data-model",
-          "plotly",
-          "d3",
+          "scientific-renderer",
           "science-common",
           "science-presets",
           "science-import",
@@ -782,7 +781,7 @@ window.DKDS_BUILTIN_PLUGINS = [
         "minHeight": 650,
         "dependencies": [
           "data-model",
-          "plotly",
+          "scientific-renderer",
           "science-common",
           "science-peaks",
           "science-ter",

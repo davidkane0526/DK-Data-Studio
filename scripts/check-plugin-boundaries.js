@@ -58,7 +58,7 @@ if(!detector.includes('parameterSchema')||detector.includes('renderSettings('))f
 if(!read('src/plugins/shell-navigation/plugin.js').includes("ctx.recipes.use('shell-navigation'"))fail('shell-navigation plugin must consume the Core recipe API.');
 if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use('workspace-safeguards'"))fail('workspace-safeguards plugin must consume the Core recipe API.');
 if(!ui.includes('class ScientificCurveSurface'))fail('Core must own D3 scientific plot interaction surface.');
-if(!read('src/core/scientific-plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own Plotly scientific interaction lifecycle.');
+if(!read('src/core/scientific-plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own scientific renderer interaction lifecycle.');
 if(!read('src/core/entity-runtime.js').includes('class EntityRegistry'))fail('Core must own canonical entity identity/relationship state.');
 if(!kernel.includes("const API_VERSION = '1.17.0'"))fail('Plugin API must be 1.17.0.');
 if(process.exitCode)process.exit(process.exitCode);

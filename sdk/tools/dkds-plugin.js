@@ -92,8 +92,9 @@ function validate(folder){
     }
   }
   const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);
-  if(/ctx\.ui\.scientificPlot\.create\s*\(/.test(source)&&m?.window&&topWorkspace&&!windowDependencies.has('d3'))errors.push('Dedicated workspace using ctx.ui.scientificPlot.create(...) must declare "d3" in window.dependencies.');
-  if(/ctx\.ui\.scientificPlot\.(?:react|createPlotly)\s*\(/.test(source)&&m?.window&&topWorkspace&&!windowDependencies.has('plotly'))errors.push('Dedicated workspace using Plotly ScientificPlot APIs must declare "plotly" in window.dependencies.');
+  const usesScientificRenderer=/ctx\.ui\.scientificPlot\.(?:create|react|createRenderer|scalarField)\s*\(/.test(source);
+  if(usesScientificRenderer&&m?.window&&topWorkspace&&!windowDependencies.has('scientific-renderer'))errors.push('Dedicated workspace using ScientificPlot must declare "scientific-renderer" in window.dependencies. Renderer vendors are Core implementation details.');
+  if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.17+ workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
 
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){

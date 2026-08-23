@@ -242,7 +242,7 @@ ctx.ui.groupCharts.register('peak-position', {
 
 A chart plugin controls:
 - the data model used for the subplot;
-- Plotly traces;
+- renderer-neutral ScientificPlot series;
 - axis titles/units;
 - layout/config;
 - CSV data;
@@ -356,7 +356,7 @@ The core also emits:
 
 ```js
 ctx.events.on('layout:resize', () => {
-  Plotly.Plots.resize(myPlot);
+  ctx.ui.scientificPlot.resize(myPlot);
 });
 ```
 

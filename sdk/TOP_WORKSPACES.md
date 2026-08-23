@@ -119,8 +119,8 @@ Plugin API 1.16 validates the bounded layout before packaging. Core also owns a 
 
 Dedicated windows load only manifest-declared chart runtimes. Declare the runtime used by the public API:
 
-- `ctx.ui.scientificPlot.create(...)` -> `"d3"` (Core `ScientificCurveSurface`);
-- `ctx.ui.scientificPlot.react(...)` / `createPlotly(...)` -> `"plotly"`.
+- 所有 `ctx.ui.scientificPlot.*` 绘图入口统一声明 `"scientific-renderer"`。
+- Core 科学绘图只有一个 D3 后端；插件只声明 `scientific-renderer`，不得声明或依赖 renderer vendor。统一使用 `createRenderer(...)`。
 
 The SDK validator rejects a dedicated workspace that uses one of these APIs without its runtime dependency.
 

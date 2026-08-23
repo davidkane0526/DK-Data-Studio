@@ -35,10 +35,7 @@ button.wide { width:100%; margin-top:8px; }
 .dataset-item{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:7px;border-radius:7px;border:1px solid transparent;cursor:pointer}.dataset-item:hover{background:#f7f8fc}.dataset-item.selected{border-color:#9db2ff;background:#eef2ff}.dataset-content{min-width:0}.dataset-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dataset-meta{font-size:11px;color:var(--muted);margin-top:2px}.scan-toggle-row{display:flex;gap:12px;margin-top:5px;font-size:11px;color:#4b5563}.scan-toggle-row label{display:flex;align-items:center;gap:4px;cursor:pointer}.scan-global-buttons{display:grid!important;grid-template-columns:1fr 1fr;gap:5px}.scan-global-buttons button{width:100%}
 .algorithm-row{display:grid;grid-template-columns:20px 1fr 64px;gap:6px;align-items:center;margin:5px 0}.algorithm-row input[type="number"]{width:64px;padding:3px;border:1px solid var(--border);border-radius:5px}.algorithm-label{display:flex;align-items:center;gap:6px}.algorithm-shape{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;font-size:15px;color:#334155;font-weight:700}.peak-color-legend{margin-top:10px;padding:7px;border:1px solid #e5e7eb;border-radius:7px;background:#fafbfe;font-size:11px}.legend-title{font-weight:650;margin-bottom:5px;color:#475569}.peak-color-rows>div{margin:4px 0}.peak-order-chip{display:inline-flex;align-items:center;gap:3px;margin:2px 5px 2px 0}.peak-order-chip i{display:inline-block;width:9px;height:9px;border-radius:50%}.preset-row{display:flex;gap:5px;margin-top:8px}.preset-row button{flex:1;font-size:12px;padding:4px}
 .main-area{position:relative;min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) auto}.plot-wrap{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff}.plot-wrap svg{position:absolute;left:0;top:0;display:block;overflow:hidden;margin:0;padding:0;transform:none}.statusbar{border-top:1px solid var(--border);padding:4px 10px;font-size:12px;color:var(--muted);background:#fff;white-space:nowrap;overflow:hidden}
-/* Core tooltip visual contract: Plotly traces may supply semantic hover content,
-   but they do not own tooltip color/opacity. This also covers legacy host plots. */
-.js-plotly-plot .hoverlayer .hovertext path{fill:rgba(31,41,55,.92)!important;fill-opacity:.90!important;stroke:rgba(255,255,255,.20)!important}
-.js-plotly-plot .hoverlayer .hovertext text,.js-plotly-plot .hoverlayer .hovertext tspan{fill:#fff!important}
+/* Core tooltip visual contract: renderer output never owns application tooltip chrome. */
 .dkds-tooltip,.hover-tip{position:absolute;z-index:80;pointer-events:none;background:rgba(31,41,55,.92);color:#fff;border:1px solid rgba(255,255,255,.18);padding:8px 10px;border-radius:7px;font-size:12px;line-height:1.5;box-shadow:0 10px 26px rgba(15,23,42,.16);max-width:320px;backdrop-filter:blur(2px)}.hidden{display:none!important}
 .floating-panel{position:absolute;z-index:100;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);resize:both;overflow:hidden;min-width:320px;min-height:220px}.inspector-panel{right:24px;top:86px;width:390px;height:520px}.group-panel{right:24px;bottom:36px;width:880px;height:620px}.docked-group-slot{display:none;min-height:0;background:#fff;border-top:1px solid var(--border);overflow:hidden}.docked-group-slot.active{display:block}.group-panel.docked{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:100%!important;height:360px;border:0;border-radius:0;box-shadow:none;resize:none;min-width:0;min-height:38px;z-index:60}.group-panel.collapsed{height:38px!important;min-height:38px!important;resize:none}.group-panel.collapsed .floating-body{display:none}.group-panel.docked .floating-header{cursor:default}.group-panel.docked .floating-body{overflow:auto;padding:8px 10px}.panel-header-actions{display:flex;align-items:center;gap:5px}.panel-header-actions button{padding:3px 7px;font-size:11px}.dock-resizer{display:none}.group-panel.docked:not(.collapsed) .dock-resizer{display:block;position:absolute;left:0;right:0;top:0;height:7px;cursor:ns-resize;z-index:8;background:transparent}.group-panel.docked:not(.collapsed) .dock-resizer:hover{background:rgba(49,94,251,.16)}.zoom-panel{left:50%;top:50%;transform:translate(-50%,-50%);width:980px;height:720px;z-index:180}.floating-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;background:#f7f8fb;border-bottom:1px solid var(--border);font-weight:650;cursor:move;user-select:none}.panel-close{border:none;background:transparent;font-size:18px;padding:2px 7px}.floating-body{height:calc(100% - 36px);overflow:auto;padding:10px}.zoom-body{display:grid;grid-template-rows:1fr auto}.zoom-plot{min-height:0}.zoom-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:8px}
 .inspector-section{border-bottom:1px solid #edf0f6;padding-bottom:10px;margin-bottom:10px}.inspector-section h4{margin:0 0 7px;font-size:13px}.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 8px;font-size:12px}.kv .k{color:var(--muted)}.empty-state{color:var(--muted);font-size:13px;padding:18px;text-align:center}
@@ -4742,37 +4739,6 @@ body.dkds-table-resizing *{cursor:col-resize!important}
 .dkds-managed-table[data-dkds-table-emphasis="quiet"]{--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary,#fff) 98%,transparent);--dkds-table-row-even-bg:var(--dkds-table-row-odd-bg)}
 .dkds-managed-table[data-dkds-table-emphasis="strong"] thead th{font-weight:740!important}
 
-/* ============================================================
-   v3.61.34 Plot presentation contract
-   D3 and Plotly share one compact, stable, draggable navigation language.
-   Plotly's native modebar is never allowed to inject light chrome or reflow.
-   ============================================================ */
-.dkds-plotly-surface-host{position:relative!important;min-width:0;min-height:0;background:var(--surface-primary,#fff);border-color:var(--border-subtle,#d8e0eb);outline:0;box-shadow:none}
-/* Navigation no longer pops in/out on hover. It stays quiet until used, so the
-   chart geometry and legend never appear to twitch. */
-.dkds-scientific-nav-tools{
-  opacity:.64!important;
-  pointer-events:auto!important;
-  transform:none!important;
-}
-.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
-.dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
-.dkds-plotly-surface-host:hover>.dkds-scientific-nav-tools,
-.dkds-plotly-surface-host:focus-within>.dkds-scientific-nav-tools,
-.dkds-scientific-nav-tools:hover,
-.dkds-scientific-nav-tools:focus-within,
-.dkds-scientific-nav-tools.is-dragging{opacity:.96!important;transform:none!important}
-.dkds-scientific-auto-legend.is-top,.dkds-scientific-auto-legend.is-bottom{
-  row-gap:2px;column-gap:4px;max-height:50px;padding:2px 4px
-}
-.dkds-plotly-auto-legend.is-top,.dkds-plotly-auto-legend.is-bottom{
-  display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;justify-content:flex-start!important;gap:2px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin;overscroll-behavior-x:contain
-}
-.dkds-plot-legend-row{display:flex;align-items:center;justify-content:center;gap:4px;width:max-content;min-width:100%;height:20px;flex:0 0 20px}
-.dkds-plotly-auto-legend .dkds-plot-legend-label{max-width:112px}
-.dkds-plotly-auto-legend.is-right .dkds-plot-legend-label,.dkds-plotly-auto-legend.is-left .dkds-plot-legend-label{max-width:132px}
-.dkds-plot-legend-item{min-height:20px!important;padding:1px 5px!important}
-
 /* Safe means reachable, not fixed-height. The outer canvas owns scrolling while
    the plugin root may grow to its semantic content. Full-viewport charts that
    require strict containment must request primaryScroll:'contained'. */
@@ -4785,3 +4751,203 @@ body.dkds-table-resizing *{cursor:col-resize!important}
 .dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{
   height:auto!important;min-height:100%;min-width:0
 }
+
+
+/* ============================================================
+   Scientific Presentation Contract 1.0
+   One visual/interaction language for the single D3 scientific renderer.
+   Legend and navigation are Core presentation chrome, not renderer UI.
+   ============================================================ */
+.dkds-plot-legend.dkds-scientific-auto-legend{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  padding:2px 4px!important;
+  color:var(--text-secondary,#60708c)!important;
+  overflow:hidden!important;
+  scrollbar-width:none!important;
+}
+.dkds-plot-legend.dkds-scientific-auto-legend::-webkit-scrollbar,
+.dkds-plot-legend-row::-webkit-scrollbar{width:0!important;height:0!important}
+.dkds-scientific-auto-legend.is-top,
+.dkds-scientific-auto-legend.is-bottom{
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  justify-content:center!important;
+  align-items:stretch!important;
+  gap:1px!important;
+  max-height:43px!important;
+}
+.dkds-plot-legend-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:19px!important;
+  flex:0 0 19px!important;
+  overflow:hidden!important;
+}
+.dkds-plot-legend-item,
+body.dkds-modern-ui .dkds-plot-legend-item,
+body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"]{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+  min-width:0!important;
+  min-height:18px!important;
+  height:18px!important;
+  max-width:146px!important;
+  padding:0 2px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:3px!important;
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  color:var(--text-secondary,#60708c)!important;
+  -webkit-text-fill-color:currentColor!important;
+  font:inherit!important;
+  font-size:10px!important;
+  font-weight:500!important;
+  line-height:18px!important;
+  white-space:nowrap!important;
+  transform:none!important;
+  cursor:pointer;
+}
+.dkds-plot-legend-item:hover,
+body.dkds-modern-ui .dkds-plot-legend-item:hover{
+  background:color-mix(in srgb,var(--surface-hover,#eef3f9) 58%,transparent)!important;
+  border:0!important;
+  color:var(--text-primary,#1c2a43)!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+.dkds-plot-legend-item.is-muted{opacity:.22!important}
+.dkds-plot-legend-item.is-selected,
+.dkds-plot-legend-item.is-solo{
+  opacity:1!important;
+  color:var(--text-primary,#1c2a43)!important;
+  font-weight:700!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.dkds-plot-legend-swatch{
+  display:inline-block!important;
+  flex:0 0 13px!important;
+  width:13px!important;
+  height:2px!important;
+  border:0!important;
+  border-radius:2px!important;
+  box-shadow:none!important;
+  transition:width .10s ease,height .10s ease,opacity .10s ease!important;
+}
+.dkds-plot-legend-item.is-selected .dkds-plot-legend-swatch,
+.dkds-plot-legend-item.is-solo .dkds-plot-legend-swatch{
+  flex-basis:18px!important;
+  width:18px!important;
+  height:3px!important;
+}
+.dkds-plot-legend-label{
+  display:block!important;
+  min-width:0!important;
+  max-width:120px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.dkds-scientific-auto-legend.is-right,
+.dkds-scientific-auto-legend.is-left{
+  overflow:auto!important;
+  scrollbar-width:none!important;
+}
+.dkds-scientific-auto-legend.is-right .dkds-plot-legend-row,
+.dkds-scientific-auto-legend.is-left .dkds-plot-legend-row{
+  justify-content:flex-start!important;
+  overflow:visible!important;
+}
+.dkds-scientific-auto-legend.is-right .dkds-plot-legend-label,
+.dkds-scientific-auto-legend.is-left .dkds-plot-legend-label{max-width:128px!important}
+
+/* Floating scientific controls auto-hide without changing surface geometry. */
+.dkds-scientific-nav-tools{
+  opacity:0!important;
+  pointer-events:none!important;
+  transform:none!important;
+  transition:opacity .12s ease,border-color .12s ease,box-shadow .12s ease!important;
+}
+.dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
+.dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools,
+.dkds-scientific-chart-host:focus-within>.dkds-scientific-nav-tools,
+.dkds-scientific-nav-tools:hover,
+.dkds-scientific-nav-tools:focus-within,
+.dkds-scientific-nav-tools.is-dragging{
+  opacity:.94!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+@media (hover:none),(pointer:coarse){
+  .dkds-scientific-nav-tools{opacity:.82!important;pointer-events:auto!important}
+}
+
+/* Standard PlotView headers are compact. Plugins declare content; Core owns chrome. */
+.dkds-plot-view-head,
+.dkds-group-plot-head,
+body.dkds-modern-ui .dkds-plot-view-head,
+body.dkds-modern-ui .dkds-group-plot-head{
+  min-height:28px!important;
+  height:28px!important;
+  padding:0 8px!important;
+  gap:6px!important;
+  line-height:28px!important;
+}
+.dkds-plot-view-head .dkds-plot-view-actions,
+.dkds-group-plot-head .dkds-plot-view-actions{height:24px!important;align-items:center!important}
+.dkds-plot-view-head button,
+.dkds-group-plot-head button{min-height:22px!important;height:22px!important}
+
+/* Explicit dark legend treatment: no light chip, rim or glow. */
+html[data-dkds-theme="dark"] .dkds-plot-legend.dkds-scientific-auto-legend{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:var(--text-secondary,#aeb8c8)!important;
+}
+html[data-dkds-theme="dark"] .dkds-plot-legend-item,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"]{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:var(--text-secondary,#aeb8c8)!important;
+}
+html[data-dkds-theme="dark"] .dkds-plot-legend-item:hover{
+  background:rgba(139,158,187,.10)!important;
+  color:var(--text-primary,#eef3fa)!important;
+}
+html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-selected,
+html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
+  background:transparent!important;
+  color:var(--text-primary,#eef3fa)!important;
+}
+
+/* v3.61.36 · single-backend scientific chart surface. D3 owns drawing;
+   Core owns presentation, interaction state and application chrome. */
+.dkds-scientific-chart-host{position:relative;min-width:0;min-height:0}
+.dkds-d3-chart-host{overflow:hidden}
+.dkds-d3-chart-svg{display:block;overflow:visible;background:transparent}
+.dkds-d3-axis path,.dkds-d3-axis line{shape-rendering:crispEdges}
+.dkds-d3-axis-title{font:500 11px/1.2 "Segoe UI Variable Text","Microsoft YaHei UI","Segoe UI",sans-serif;pointer-events:none}
+.dkds-d3-trace-hit{pointer-events:stroke}
+.dkds-d3-chart-tooltip{
+  position:absolute;z-index:34;min-width:118px;max-width:260px;padding:6px 8px;border-radius:7px;
+  border:1px solid rgba(255,255,255,.20);background:rgba(31,41,55,.94);color:#fff;
+  box-shadow:0 6px 20px rgba(15,23,42,.18);font:11px/1.42 "Segoe UI Variable Text","Microsoft YaHei UI","Segoe UI",sans-serif;
+  pointer-events:none;white-space:nowrap
+}
+.dkds-d3-chart-tooltip b{display:block;margin-bottom:2px;font-weight:650}
+html[data-dkds-theme="dark"] .dkds-d3-chart-tooltip{background:rgba(20,26,35,.96);border-color:rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(0,0,0,.28)}

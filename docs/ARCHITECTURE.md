@@ -491,12 +491,12 @@ Pointer-frequency scientific interactions use direct geometry fast paths in Core
 - SUB pages live at PluginWorkspace level outside the scientific-canvas coordinate system.
 - PortableView owns close/collapse and descendant chart resize lifecycle.
 - Shell edit actions dispatch to the active plugin through `ctx.ui.edit` before any legacy fallback.
-- Resonance group plots consume live visible/accepted-peak state and preserve PortableView identity across `Plotly.react` updates.
+- Resonance group plots consume live visible/accepted-peak state and preserve PortableView identity across Core ScientificPlot updates.
 - Pulse optional sample bounds preserve null/blank semantics in the science core; rerun failure must not destroy a previous valid analysis result.
 
 ## v3.41 Core-owned plugin infrastructure
 
-Plugin API v1.10 establishes an enforceable Core-first boundary. New IO, Data Flow, Chart, scoped DOM/Component, Service, Plugin Module, Plugin Contract and Host Recipe runtimes centralize reusable application capabilities. First-party plugins must declare `requiresCore` and cannot directly access Electron, raw Plotly, raw document infrastructure, private observers/schedulers, `ctx.host`, private DKDS globals or the generic untyped registry. See `docs/ARCHITECTURE_V3.41.md` and `docs/PLUGIN_API.md` for the authoritative model.
+Plugin API v1.10 establishes an enforceable Core-first boundary. New IO, Data Flow, Chart, scoped DOM/Component, Service, Plugin Module, Plugin Contract and Host Recipe runtimes centralize reusable application capabilities. First-party plugins must declare `requiresCore` and cannot directly access Electron, raw renderer-vendor APIs, raw document infrastructure, private observers/schedulers, `ctx.host`, private DKDS globals or the generic untyped registry. See `docs/ARCHITECTURE_V3.41.md` and `docs/PLUGIN_API.md` for the authoritative model.
 
 ## v3.50–v3.51 scientific pipeline and transform registry
 

@@ -130,7 +130,7 @@ This is presentation transformation only. The underlying PRIME/SUB views, contro
 
 ### Performance boundary
 
-Direct-manipulation surfaces must separate pointer-frequency visual updates from state/render commits. During drag, Core updates the affected SVG marker/band/handle directly. Domain state is committed continuously as needed, but expensive full surface/Plotly rebuilds are deferred until drag end or a coalesced animation frame.
+Direct-manipulation surfaces must separate pointer-frequency visual updates from state/render commits. During drag, Core updates the affected SVG marker/band/handle directly. Domain state is committed continuously as needed, but expensive full scientific-surface rebuilds are deferred until drag end or a coalesced animation frame.
 
 ## Host invariance
 

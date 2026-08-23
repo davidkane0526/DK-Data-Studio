@@ -83,7 +83,7 @@
     "minWidth": 920,
     "minHeight": 650,
     "dependencies": [
-      "plotly",
+      "scientific-renderer",
       "data-model",
       "formula-engine",
       "parameter-schema",

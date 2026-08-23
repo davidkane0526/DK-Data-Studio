@@ -190,7 +190,7 @@ expo-sharing
 
 1. 当前是 React Native 原生壳 + WebView 科学工作区，目的是先获得完整功能的可安装 Android 版本。
 2. 文件导入依赖 Android WebView 文件选择器。
-3. 大型 Plotly 图在低内存手机上可能比桌面慢。
+3. 大型 D3 科学图在低内存手机上可能比桌面慢。
 4. Ctrl / 右键快捷路径在触摸端不能作为唯一操作方式；后续插件需继续增加长按/显式菜单。
 5. Android APK 不使用桌面端 Electron 热更新机制。
 

@@ -8,8 +8,7 @@ const Analysis=require('../src/analysis.js');
 
 const context={
   console,structuredClone,setTimeout,clearTimeout,crypto:global.crypto,Analysis,
-  document:{querySelector:()=>null,querySelectorAll:()=>[],getElementById:()=>null},
-  Plotly:{react:()=>Promise.resolve(),purge(){},Plots:{resize(){}}}
+  document:{querySelector:()=>null,querySelectorAll:()=>[],getElementById:()=>null}
 };
 context.window=context;context.globalThis=context;
 vm.createContext(context);
@@ -50,7 +49,7 @@ function sweepDataset(){
   const runtime=await terAnalysis.create({
     artifacts:store,pipeline,performance,
     getVisibility:()=>new Map([[dataset.path,{forward:true,reverse:true}]]),
-    project:{datasets:[]},setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},savePlotlyImage(){},scheduleSnapshot(){}
+    project:{datasets:[]},setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){}
   });
   assert(runtime.service.autoParameters(),'TER auto detection must work from the live Artifact Store');
   const result=runtime.service.calculate();

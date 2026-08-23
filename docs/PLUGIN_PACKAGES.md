@@ -202,7 +202,7 @@ Installed `.dkplugin` packages may use the same `manifest.window` contract as bu
   "persistence": "project",
   "runtime": "window-runtime.js",
   "scripts": ["analysis-engine.js"],
-  "dependencies": ["plotly", "platform", "plugin-kernel"]
+  "dependencies": ["scientific-renderer", "platform", "plugin-kernel"]
 }
 ```
 

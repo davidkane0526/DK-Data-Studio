@@ -88,8 +88,8 @@ const workspace = ctx.ui.pluginWorkspace.create(host, {
 
 依赖也必须由独立窗口显式声明：
 
-- `ctx.ui.scientificPlot.create(...)` 是 Core D3 ScientificCurveSurface，声明 `"d3"`；
-- `ctx.ui.scientificPlot.react(...)` / `createPlotly(...)` 声明 `"plotly"`。
+- 所有 `ctx.ui.scientificPlot.*` 绘图入口统一声明 `"scientific-renderer"`；
+- Core 科学绘图只有一个 D3 后端。插件只声明 `"scientific-renderer"`，不得直接声明 renderer vendor；统一使用 `createRenderer(...)`。
 
 SDK validator 会检查这些依赖。
 

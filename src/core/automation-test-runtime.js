@@ -57,16 +57,17 @@
   }
 
   async function rendererPlotSmoke(){
-    if(!window.Plotly?.react)throw new Error('Plotly runtime unavailable.');
+    const charts=window.DKDSCharts;assert(charts?.react,'Core scientific renderer unavailable.');
     const host=document.createElement('div');
     host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:360px;height:240px;pointer-events:none;';
     document.body.appendChild(host);
     try{
-      await window.Plotly.react(host,[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'smoke'}],{width:360,height:240,margin:{l:40,r:20,t:20,b:35}},{displayModeBar:false,staticPlot:true});
-      assert(host.querySelector('.plot-container,svg.main-svg'),'Plotly did not create a rendered graph.');
-      return {svgCount:host.querySelectorAll('svg').length};
+      await charts.react(host,[{x:[0,1,2],y:[1,3,2],mode:'lines+markers',name:'smoke'}],{width:360,height:240,margin:{l:40,r:20,t:20,b:35}},{staticPlot:true,dkdsRenderer:'d3'});
+      assert(charts.rendererFor?.(host)==='d3','First-party renderer smoke must execute through D3.');
+      assert(host.querySelector('svg.dkds-d3-chart-svg'),'D3 did not create a rendered scientific graph.');
+      return {renderer:'d3',svgCount:host.querySelectorAll('svg').length};
     }finally{
-      try{window.Plotly.purge?.(host);}catch{}
+      try{charts.purge?.(host);}catch{}
       host.remove();
     }
   }
@@ -92,7 +93,7 @@
       assert(view.controllers.legend.state().length===2,'Legend controller did not expose rendered traces.');
       assert(view.controllers.tooltip.theme()?.bgcolor,'Tooltip controller did not expose the Core theme.');
       return {controllers:required,pins:view.controllers.pin.list().length,legendEntries:view.controllers.legend.state().length,viewportRevision:view.controllers.viewport.get()?.revision||0,renderStats};
-    }finally{try{scope.dispose?.();}catch{}try{window.Plotly?.purge?.(host);}catch{}host.remove();}
+    }finally{try{scope.dispose?.();}catch{}try{window.DKDSCharts?.purge?.(host);}catch{}host.remove();}
   }
 
   async function tableSurfaceSmoke(){
@@ -449,7 +450,7 @@
     await runCase('algorithms.transport-ter','Transport / Scalar Field / TER Algorithm Providers','Data Contract',scientificTransportAlgorithmProvidersSmoke);
     await runCase('project.roundtrip','Project format round-trip','Project',projectFormatSmoke);
     await runCase('science.transforms','Scientific transform smoke','Science',scienceTransformSmoke);
-    await runCase('plot.renderer','Plotly real renderer smoke','UI / Plot',rendererPlotSmoke);
+    await runCase('plot.renderer','Core D3 renderer smoke','UI / Plot',rendererPlotSmoke);
     await runCase('plot.interactions','ScientificPlot shared interaction controllers','UI / Plot',scientificPlotInteractionSmoke);
     await runCase('table.surface','Unified TableSurface interaction contract','UI / Table',tableSurfaceSmoke);
     await runCase('performance.render-scheduling','Scientific multi-view render scheduling','Performance',interactionRenderSchedulingSmoke);
@@ -532,7 +533,7 @@
         assert(Number(actual.renderedArtifactRows)===Number(expected.artifactCount),`Data Center UI did not render every hydrated Artifact row. expected=${expected.artifactCount} actual=${actual.renderedArtifactRows}`);
         if(Number(expected.dataTableCount)>0){
           assert(actual.dataCenterChartRuntimeReady===true,`Data Center chart runtime did not reach ready. status=${actual.dataCenterChartRuntimeStatus||'unknown'} error=${actual.dataCenterChartRuntimeError||''}`);
-          assert(Number(actual.dataCenterChartTraceCount)>0,`Data Center chart preview did not render any Plotly trace. provider=${actual.dataCenterChartProvider||'none'}`);
+          assert(Number(actual.dataCenterChartTraceCount)>0,`Data Center chart preview did not render any scientific trace. provider=${actual.dataCenterChartProvider||'none'}`);
         }
         return {expected:clone(expected),renderer:clone(actual),configuredPrewarm:out.configuredPrewarm===true,durationMs:Number(out.durationMs)||0};
       });
@@ -568,24 +569,25 @@
           const loaded=new Set(renderer.dependencies.map(item=>String(item?.name||'')));
           const declared=new Set((row.data?.dependencies||[]).map(String));
           for(const runtime of domainRuntimes)assert(loaded.has(runtime)===declared.has(runtime),`${row.id}: ${runtime} load did not follow the resolved Core contract.`);
-          assert(!loaded.has('plotly'),`${row.id}: Plotly must not block dedicated TOP startup.`);
           const chartRuntime=renderer.chartRuntime||null;
           assert(chartRuntime&&chartRuntime.version===window.DKDSCharts?.VERSION,`${row.id}: Core Chart Runtime lazy-loader snapshot missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chartRuntime?.version||'missing'}`);
-          assert(chartRuntime.plotlyAllowed===declared.has('plotly'),`${row.id}: logical Plotly contract was not preserved by the lazy loader.`);
+          assert(chartRuntime.preferredRenderer==='d3'&&chartRuntime.renderer==='d3',`${row.id}: D3 must be the only scientific renderer.`);
+          assert(chartRuntime.singleBackend===true,`${row.id}: scientific chart runtime must report a single backend.`);
+          assert(!declared.has('d3'),`${row.id}: plugin contract must remain renderer-vendor neutral.`);
           return {activityId:row.data?.activityId||row.id.slice(4),pluginId:row.data?.pluginId||'',readyMs:Number(row.data?.durationMs)||0,rendererTotalMs:Number(renderer.totalMs)||0,navigationMs:Number(main.navigationMs)||0,createToReadyMs:Number(main.createToReadyMs)||0,dependencyCount:Number(renderer.dependencyCount)||renderer.dependencies.length,scriptCount:Number(renderer.scriptCount)||renderer.scripts?.length||0,domainRuntimes:domainRuntimes.filter(id=>loaded.has(id)),algorithmProviders:clone(renderer.algorithmProviders||[]),chartRuntime:clone(chartRuntime),phases:(renderer.phases||[]).map(item=>({name:item.name,durationMs:item.durationMs})),slowDependencies:renderer.dependencies.slice().sort((a,b)=>(Number(b.durationMs)||0)-(Number(a.durationMs)||0)).slice(0,5).map(item=>({name:item.name,durationMs:item.durationMs}))};
         });
         return {profiles};
       });
-      await runCase('top.plotly-lazy','TOP lazy Plotly runtime contract','TOP / Performance',async()=>{
-        const rows=state.results.filter(row=>row.id?.startsWith?.('top.')&&!['top.coverage','top.startup-profile','top.plotly-lazy'].includes(row.id)&&row.status==='pass');
+      await runCase('top.d3-single-backend','TOP D3 single-backend runtime contract','TOP / Performance',async()=>{
+        const rows=state.results.filter(row=>row.id?.startsWith?.('top.')&&!['top.coverage','top.startup-profile','top.d3-single-backend'].includes(row.id)&&row.status==='pass');
         const profiles=rows.map(row=>{
           const renderer=row.data?.startupProfile?.renderer||{},loaded=new Set((renderer.dependencies||[]).map(item=>String(item?.name||''))),declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
-          assert(!loaded.has('plotly'),`${row.id}: eager Plotly dependency is still present.`);
-          assert(chart.version===window.DKDSCharts?.VERSION,`${row.id}: lazy Chart Runtime state missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chart?.version||'missing'}`);
-          assert(chart.plotlyAllowed===declared.has('plotly'),`${row.id}: Plotly permission does not match resolved plugin contract.`);
-          return {activityId:row.data?.activityId||row.id.slice(4),declared:declared.has('plotly'),status:chart.status||'',ready:!!chart.ready,requests:Number(chart.requests)||0,reuses:Number(chart.reuses)||0,loadDurationMs:Number(chart.loadDurationMs)||0};
+          assert(chart.version===window.DKDSCharts?.VERSION,`${row.id}: Chart Runtime state missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chart?.version||'missing'}`);
+          assert(chart.preferredRenderer==='d3'&&chart.renderer==='d3'&&chart.singleBackend===true,`${row.id}: dedicated scientific charts must use the D3 singleton backend.`);
+          assert(!declared.has('d3'),`${row.id}: plugin dependency declaration must remain vendor-neutral.`);
+          return {activityId:row.data?.activityId||row.id.slice(4),renderer:chart.renderer||'',ready:!!chart.ready,d3Ready:!!chart.d3Ready,singleBackend:chart.singleBackend===true};
         });
-        assert(profiles.length===tops.length,`Lazy Plotly profiler only received ${profiles.length}/${tops.length} TOP rows.`);
+        assert(profiles.length===tops.length,`D3 single-backend profiler only received ${profiles.length}/${tops.length} TOP rows.`);
         return {profiles};
       });
       await runCase('top.algorithm-providers','TOP local Algorithm Provider routing','TOP / Performance',async()=>{
@@ -622,7 +624,7 @@
     let postEnvironment=environment;try{postEnvironment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||Promise.resolve(environment));}catch{}
     const startMemory=environment?.memory||{},endMemory=postEnvironment?.memory||{};
     const memoryTrend={startWorkingSetBytes:Number(startMemory.workingSetBytes)||0,endWorkingSetBytes:Number(endMemory.workingSetBytes)||0,workingSetDeltaBytes:(Number(endMemory.workingSetBytes)||0)-(Number(startMemory.workingSetBytes)||0),startPrivateBytes:Number(startMemory.privateBytes)||0,endPrivateBytes:Number(endMemory.privateBytes)||0,privateDeltaBytes:(Number(endMemory.privateBytes)||0)-(Number(startMemory.privateBytes)||0),startProcessCount:Number(environment?.processCount)||0,endProcessCount:Number(postEnvironment?.processCount)||0};
-    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificReactive:clone(state.results.find(row=>row.id==='reactive.contract')?.data||null),scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificScalarField:clone(state.results.find(row=>row.id==='scalar-field.shared')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificAlgorithmVersionManagement:clone(state.results.find(row=>row.id==='algorithms.version-management')?.data||null),scientificAlgorithmPackageCatalog:clone(state.results.find(row=>row.id==='algorithms.package-catalog')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topLazyPlotly:clone(state.results.find(row=>row.id==='top.plotly-lazy')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
+    const report={schema:1,kind:'dkds.automation-test-report',runnerVersion:VERSION,appVersion:document.querySelector('.version')?.textContent?.replace(/^v/,'')||'',startedAt,finishedAt,counts,environment,results:clone(state.results),runtimeErrors:clone(runtimeErrors),coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:Math.max(0,tops.length-passedTopCount),activities:tops.map(row=>({pluginId:row.pluginId,activityId:row.activityId,isSuper:row.isSuper,hadWindow:row.hadWindow})),outcomes:topOutcomes},scientificPlotControllers:[...(window.DKDSScientificPlot?.CONTROLLERS||[])],scientificReactive:clone(state.results.find(row=>row.id==='reactive.contract')?.data||null),scientificPipeline:clone(state.results.find(row=>row.id==='pipeline.contract')?.data||null),scientificTransforms:clone(state.results.find(row=>row.id==='transforms.registry')?.data||null),scientificScalarField:clone(state.results.find(row=>row.id==='scalar-field.shared')?.data||null),scientificAlgorithms:clone(state.results.find(row=>row.id==='algorithms.registry')?.data||null),scientificAlgorithmVersionManagement:clone(state.results.find(row=>row.id==='algorithms.version-management')?.data||null),scientificAlgorithmPackageCatalog:clone(state.results.find(row=>row.id==='algorithms.package-catalog')?.data||null),scientificTransportAlgorithms:clone(state.results.find(row=>row.id==='algorithms.transport-ter')?.data||null),performance:{runtime:performanceSnapshot,topReadyMs,topReadyAverageMs:topReadyMs.length?topReadyMs.reduce((sum,value)=>sum+value,0)/topReadyMs.length:null,topStartupProfiles:clone(state.results.find(row=>row.id==='top.startup-profile')?.data?.profiles||[]),topD3SingleBackend:clone(state.results.find(row=>row.id==='top.d3-single-backend')?.data?.profiles||[]),topAlgorithmProviders:clone(state.results.find(row=>row.id==='top.algorithm-providers')?.data?.profiles||[]),memoryTrend,resourceLifecycle:clone(state.results.find(row=>row.id==='performance.resources')?.data||null)}},plugins:{apiVersion:pluginDiag.apiVersion,plugins:(pluginDiag.plugins||[]).map(row=>({id:row.id,name:row.name,version:row.version,status:row.status,enabled:row.enabled,active:row.active,workspaceRole:row.workspaceRole,workspaceActivity:row.workspaceActivity,topContractReady:row.topContractReady,isSuper:row.isSuper,hasWindow:row.hasWindow,algorithmProvider:row.algorithmProvider===true,algorithmCategories:Array.isArray(row.algorithmCategories)?row.algorithmCategories.slice():[]})),externalErrors:pluginDiag.external?.errors||[],overrideErrors:pluginDiag.overrides?.errors||[]},dataTypes:{count:window.DKDSUI?.dataTypes?.list?.().length||0,validation:window.DKDSUI?.dataTypes?.validate?.()||null}};
     state.latest=report;
     try{
       if(window.electronAPI?.diagnosticsWriteAutomationReport){

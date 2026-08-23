@@ -99,7 +99,7 @@ Use `npm run science:parity` whenever a mature scientific algorithm is refactore
 
 ## Shared scientific scalar-field rule (v3.56+)
 
-A matrix/scalar-field scientific result and its heatmap renderer are separate contracts. Plugins publish typed `science.scalar-field` (or subtype) data/Artifacts and render them through `ctx.ui.scientificPlot.scalarField()`. Do not create plugin-private Plotly heatmap lifecycle/hover/export infrastructure. Domain-specific click behavior may map a field cell back to its source Entity/Artifact through stable IDs, but Selection must remain the real scientific object when one exists. Cross-curve feature computation must be headless/data-first and must not require an attached View/Controller.
+A matrix/scalar-field scientific result and its heatmap renderer are separate contracts. Plugins publish typed `science.scalar-field` (or subtype) data/Artifacts and render them through `ctx.ui.scientificPlot.scalarField()`. Do not create plugin-private renderer lifecycle/hover/export infrastructure. Core renders scalar fields through the single D3 scientific backend. Domain-specific click behavior may map a field cell back to its source Entity/Artifact through stable IDs, but Selection must remain the real scientific object when one exists. Cross-curve feature computation must be headless/data-first and must not require an attached View/Controller.
 
 ## Android build rule
 
@@ -168,7 +168,7 @@ Run `node scripts/check-plugin-boundaries.js` (included in `npm run check`) befo
 
 Domain keyboard shortcuts belong to `ctx.ui.shortcuts`; only universal project/file commands belong in the core key handler.
 
-Domain canvases own their resize behavior via the generic `layout:resize` event. Never add lists of feature-specific Plotly element IDs to core resize code.
+Domain canvases own their resize behavior via the generic `layout:resize` event. Never add lists of feature-specific renderer element IDs to Core resize code.
 
 ## Installable plugins
 
@@ -203,8 +203,8 @@ Before adding plugin-private memoization, inspect `docs/PERFORMANCE_RUNTIME.md`.
 - A cache key must contain every scientific input that changes the result. Prefer `artifacts.revision(kind)` over invalidating on every project/Artifact mutation.
 - Never improve performance by reducing numerical precision, silently downsampling scientific data, or changing a published scientific definition.
 - Plot plugins using `ScientificPlot` may provide `renderKey`/`revisionKey`, but that key must change whenever the rendered trace/layout result changes.
-- Reusable TOP renderer hide/show is Core-owned. Do not add plugin-private Plotly purge/rebuild or resize-suspension code; route plots through ScientificPlot and keep recoverable state in Controller/ViewModel/Core interaction state.
-- Dedicated TOP renderer readiness must not be blocked by eager Plotly parse/evaluation. Preserve `plotly` as a logical plugin dependency, but let Core `DKDSCharts.ensurePlotly()` load the renderer on first real chart use. Plugin and shared UI code must not call `Plotly.react`, `Plotly.toImage`, or direct Plotly resize APIs; use `ctx.ui.scientificPlot` / `DKDSCharts` so startup, lifecycle and diagnostics remain Core-owned.
+- Reusable TOP renderer hide/show is Core-owned. Do not add plugin-private D3 purge/rebuild or resize-suspension code; route plots through ScientificPlot and keep recoverable state in Controller/ViewModel/Core interaction state.
+- Scientific rendering is single-backend from v3.61.36: Core owns D3 loading and chart lifecycle behind `scientific-renderer`. Plugins must not declare renderer-vendor dependencies or call raw D3 chart lifecycle/export APIs; use `ctx.ui.scientificPlot` / `DKDSCharts` so startup, lifecycle, presentation and diagnostics remain Core-owned.
 - Plugin disable/reload must not depend on Core performance caches surviving deactivation; Core trims the plugin namespace as part of cleanup.
 - Keep Performance Runtime metrics diagnostics-safe: counters and timing only, never experiment values or source paths.
 - Run `npm run performance:test` together with the normal `npm test` / `npm run check` regression suites.

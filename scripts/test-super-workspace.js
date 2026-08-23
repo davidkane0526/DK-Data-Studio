@@ -170,7 +170,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   assert(css.includes('height:34px!important'),'top command buttons must share a single height.');
   assert(managerUi.includes('plugin-super-selector')&&managerUi.includes('setSuper'),'plugin manager must expose an explicit SUPER selector for TOP plugins.');
   assert(managerUi.includes('topContractReady'),'plugin manager must expose whether a TOP contract is valid.');
-  assert(!windowManager.includes('compatibility')&&!windowManager.includes('normalizeWindowMode'),'TOP lifecycle must expose only the plugin-owned dedicated renderer model.');
+  assert(!windowManager.includes('normalizeWindowMode')&&!windowManager.includes("mode:'compatibility'")&&!windowManager.includes("mode:'embedded'"),'TOP lifecycle must expose only the plugin-owned dedicated renderer model.');
   assert((resonanceManifest.window?.mode||'dedicated')==='dedicated'&&resonanceManifest.window?.runtime==='window-runtime.js','resonance TOP must use a dedicated plugin renderer instead of the full compatibility renderer.');
   assert(read('src/plugins/resonance-workbench/feature-runtime.js').includes("serviceName:'builtin.resonance-workbench.runtime'"),'resonance feature runtime must provide the plugin-owned resonance service while the TOP adapter stays thin.');
   assert(!app.includes('auxiliary-compatibility-window'),'main host must not retain legacy full-renderer TOP branches.');

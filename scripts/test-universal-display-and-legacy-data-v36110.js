@@ -8,13 +8,13 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 (async()=>{
-assert(json('package.json').version==='3.61.35','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.36','Application version must be 3.61.18.');
 const chart=read('src/core/chart-runtime.js');
 assert(chart.includes('displayScaleStates')&&chart.includes('isYAxisInteraction')&&chart.includes('left+12'),'Core chart runtime must treat the whole left Y-label region as the display-scale interaction target.');
-assert(chart.includes('next.y=trace.y.map(absNumber)'),'Core Plotly display projection must use |Y| in log display without rewriting source data.');
-assert(chart.includes('Array.isArray(layout.shapes)')&&chart.includes('Array.isArray(layout.annotations)'),'View-only log projection must keep Plotly overlays aligned with |Y| display values.');
-let captured=null;const plot={nodeType:1,dataset:{},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
-const fakeWindow={Plotly:{react(el,data,layout,config){captured={el,data,layout,config};return Promise.resolve(true);}}};
+assert(chart.includes('next.y=trace.y.map(absNumber)'),'Core renderer-neutral display projection must use |Y| in log display without rewriting source data.');
+assert(chart.includes('Array.isArray(layout.shapes)')&&chart.includes('Array.isArray(layout.annotations)'),'View-only log projection must keep scientific overlays aligned with |Y| display values.');
+let captured=null;const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
+const fakeWindow={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(true);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
 const fakeDocument={currentScript:{src:'file:///tmp/src/core/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
 const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
 const sourceY=[-10,-1,0,2];await fakeWindow.DKDSCharts.react('plot',[{type:'scatter',y:sourceY}],{yaxis:{type:'linear'}},{});await fakeWindow.DKDSCharts.toggleYAxisDisplay('plot');

@@ -1,3 +1,14 @@
+# v3.61.36 — D3-Only Scientific Presentation Architecture
+
+- Remove Plotly from the production renderer stack. Desktop, mobile, main-window and dedicated TOP scientific charts now route through the Core D3 renderer only; plugin manifests declare the vendor-neutral `scientific-renderer` capability and cannot select a second backend.
+- Introduce one Core `PlotPresentationRuntime` for legend layout, semantic LegendGroup state, curve-to-legend selection, exact baseline restore, compact navigation chrome and light/dark presentation. D3 is responsible for scientific geometry; it no longer owns a parallel legend or toolbar contract.
+- Make legend controls stable semantic DOM nodes keyed by series/LegendGroup identity. Solver-driven row changes reparent existing controls instead of recreating them, preserving pointer/focus identity and making isolate → second-click restore deterministic.
+- Keep automatic legends top-first, capped at two compact rows, transparent and shadow-free. Narrow auxiliary plots use the full surface chrome width, crowded legends no longer force a permanent horizontal scrollbar, and transient `2 → 1 → 2` series updates retain a stable legend footprint.
+- Restore Core navigation as a compact draggable auto-hide overlay independent of renderer-native chrome. Hidden/hover transitions change opacity only and do not participate in plot geometry.
+- Compact standard PlotView headers to 28 px and keep renderer presentation entirely theme-token driven, including restrained dark-mode legends.
+- Add D3 single-backend/cutover tests and a Linux Chromium/Xvfb Core presentation harness covering per-surface legends, curve-selection focus, isolate/restore, stable legend reserve, no horizontal overflow, 28 px headers and navigation auto-hide.
+- Publish SDK **1.17.3** while retaining Plugin API **1.17.0**. Full D3-only presentation guarantees require DK Data Studio **3.61.36**.
+
 # v3.61.35 — Scoped Legends, Stable Plot Geometry & Dark Theme Closure
 
 - Fix the Core Plotly legend host ordering bug that allowed per-card legends to position against a shared ancestor and visually collapse into one misleading common legend. Every Plotly legend is now scoped to its own ScientificPlot host.

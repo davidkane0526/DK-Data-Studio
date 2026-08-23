@@ -43,7 +43,7 @@
     "minWidth": 760,
     "minHeight": 520,
     "dependencies": [
-      "d3"
+      "scientific-renderer"
     ],
     "prewarm": false,
     "reuse": true,
@@ -51,7 +51,7 @@
     "artifactHydration": "live"
   },
   "compatibility": {
-    "app": ">=3.61.35 <4.0.0",
+    "app": ">=3.61.36 <4.0.0",
     "pluginApi": "^1.17.0"
   }
 }
