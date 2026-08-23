@@ -1,3 +1,11 @@
+# v3.61.37 — D3 Heatmap & Autorange Geometry
+
+- Fix automatic TER/scalar-field color scaling: absent `zmin` / `zmax` remain automatic instead of being coerced to zero. Missing matrix values no longer enter the renderer as numeric zero.
+- Harden D3 heatmaps with non-degenerate color domains and cell-edge axis geometry, preventing uniform-color/striped heatmaps caused by collapsed limits or center-domain clipping. First-party TER palettes (`Viridis`, `Turbo`, `Cividis`, `Jet`, `Hot`) and linear `dtick`/explicit tick controls are handled by the D3 renderer.
+- Add restrained Core-owned Cartesian autorange headroom before nice ticks, so first/last data points do not sit on the plot boundary while explicit user ranges remain exact.
+- Reduce the Core scientific floating navigation controls to a 20 px button height with a thinner shell.
+- Publish SDK **1.17.4** while retaining Plugin API **1.17.0**. Full D3 geometry guarantees require DK Data Studio **3.61.37**.
+
 # v3.61.36 — D3-Only Scientific Presentation Architecture
 
 - Remove Plotly from the production renderer stack. Desktop, mobile, main-window and dedicated TOP scientific charts now route through the Core D3 renderer only; plugin manifests declare the vendor-neutral `scientific-renderer` capability and cannot select a second backend.

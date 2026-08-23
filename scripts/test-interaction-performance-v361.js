@@ -44,7 +44,7 @@ const prewarmBranch=topRuntime.slice(prewarmStart,prewarmEnd);
 assert(prewarmStart>0&&prewarmBranch.includes("await measure('declared-chart-prewarm',()=>ensureDeclaredChartWarm())")&&prewarmBranch.includes("startupProfile.prewarmMode='runtime-only'")&&!prewarmBranch.includes('hydrateProjectAndOpenActivity'),'Dedicated TOP prewarm must warm Core/plugin/chart runtimes without restoring project state, opening the analysis activity, calculating or drawing domain results.');
 assert(mainProcess.includes('const promoteFromPrewarm = cachedBootstrap?.prewarm === true')&&mainProcess.includes('auxiliaryReady.delete(previous.webContents.id)')&&mainProcess.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'First open after runtime-only prewarm must wait for project hydration/activity mount before showing the window.');
 
-assert(scientificPlot.includes("const VERSION='2.4.0'")&&scientificPlot.includes('const renderQueue=new Map()'),'ScientificPlot v2.3 must own the multi-view render scheduler.');
+assert(scientificPlot.includes("const VERSION='2.5.0'")&&scientificPlot.includes('const renderQueue=new Map()'),'ScientificPlot v2.3 must own the multi-view render scheduler.');
 assert(scientificPlot.includes('renderPriority')&&scientificPlot.includes('scheduleRender(this.renderScheduleKey'),'ScientificPlot render priority must be enforced by Core.');
 assert(ter.includes("renderPriority:'frame'")&&ter.includes("renderPriority:'idle'"),'TER must declare view render priorities instead of manually timing renderer calls.');
 assert(pkg.dependencies?.d3&&!Object.keys(pkg.dependencies||{}).some(key=>/plotly/i.test(key))&&!Object.keys(pkg.optionalDependencies||{}).some(key=>/plotly/i.test(key)),'Scientific rendering must ship D3 as the only runtime backend.');

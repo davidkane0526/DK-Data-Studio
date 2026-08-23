@@ -17,7 +17,7 @@ assert(index.includes('../node_modules/d3/dist/d3.min.js'),'Main renderer must l
 assert(index.includes('core/d3-chart-renderer.js')&&index.indexOf('core/d3-chart-renderer.js')<index.indexOf('core/chart-runtime.js'),'D3 renderer must load before the renderer facade.');
 assert(charts.includes("preferredRenderer:'d3'")&&charts.includes('singleBackend:true'),'Core chart facade must enforce D3 as the single backend.');
 assert(!Object.keys(pkg.optionalDependencies||{}).some(key=>/plotly/i.test(key)),'Plotly must not survive as an optional dependency.');
-assert(d3Renderer.includes("const VERSION='1.1.0'")&&d3Renderer.includes("new Set(['scatter','scattergl','heatmap'])"),'D3 adapter must own all first-party trace families.');
+assert(d3Renderer.includes("const VERSION='1.2.0'")&&d3Renderer.includes("new Set(['scatter','scattergl','heatmap'])"),'D3 adapter must own all first-party trace families.');
 for(const token of ['layout?.shapes','layout?.annotations','yaxis2','dkds-d3-colorbar','hovertemplate','restyle','relayout','toImage'])assert(d3Renderer.includes(token),`D3 adapter parity contract missing ${token}`);
 assert(dedicated.includes("requestedScientificRenderer=requestedIds.includes('scientific-renderer')")&&dedicated.includes("preferredRenderer:'d3',host:'dedicated-top'"),'Dedicated windows must resolve scientific-renderer directly to D3.');
 assert(sdkTool.includes('Renderer vendors are Core implementation details'),'SDK validation must keep renderer vendors private Core details.');
@@ -33,4 +33,4 @@ for(const id of ['data-center','pulse-analysis','resonance-workbench','ter-analy
 }
 const vth=json('examples/transfer-vth-lab/plugin.json');
 assert(vth.window?.dependencies?.includes('scientific-renderer')&&!vth.window?.dependencies?.includes('d3'),'Vth example must use the renderer-neutral dependency.');
-console.log('v3.61.36 D3 scientific renderer cutover readiness PASS');
+console.log('v3.61.37 D3 scientific renderer cutover readiness PASS');

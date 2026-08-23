@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.36');
+assert.equal(json('package.json').version,'3.61.37');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.3');
+assert.equal(contract.sdkVersion,'1.17.4');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.36');
+assert.equal(contract.minimumAppVersion,'3.61.37');
 
 const presentation=read('src/core/plot-presentation-runtime.js');
 const chart=read('src/core/chart-runtime.js');
@@ -26,7 +26,7 @@ assert(index.indexOf('core/plot-presentation-runtime.js') < index.indexOf('core/
 assert(dedicated.includes("'plot-presentation-runtime':'../core/plot-presentation-runtime.js'")&&dedicated.indexOf("'plot-presentation-runtime'")<dedicated.indexOf("'chart-runtime'"),'Dedicated windows must load the shared presentation runtime before charts.');
 assert(chart.includes("const VERSION='2.0.0'")&&chart.includes('const presentation=window.DKDSPlotPresentation'),'Core chart facade must consume the shared presentation runtime as a D3-only backend.');
 assert(ui.includes("const VERSION = '7.1.0'")&&ui.includes('const plotPresentation = window.DKDSPlotPresentation || null'),'Core UI surfaces must consume the same presentation runtime.');
-assert(plot.includes("const VERSION='2.4.0'")&&plot.includes('selectLegendForTrace'),'ScientificPlot selection must bridge curve selection to Core legend focus.');
+assert(plot.includes("const VERSION='2.5.0'")&&plot.includes('selectLegendForTrace'),'ScientificPlot selection must bridge curve selection to Core legend focus.');
 assert(chart.includes('legendBaselineVisibility')&&chart.includes('legendSelectedKey'),'Plot legend must preserve baseline visibility separately from selection.');
 assert(chart.includes("explicitOff=source.dkdsNavigationTools===false")&&!chart.includes("source.displayModeBar===false||source.dkdsNavigationTools===false"),'Legacy displayModeBar:false must not disable Core navigation.');
 assert(chart.includes('const restoring=current.legendSoloKey===key')&&chart.includes("current.legendSoloKey=restoring?'':key")&&chart.includes('current.legendSelectedKey=current.legendSoloKey'),'Second legend click must restore baseline visibility and clear legend-only focus.');
@@ -53,4 +53,4 @@ const previous={enabled:true,placement:'top',count:2,rows:1,width:430,height:26,
 solved=api.solveLegend({entries:[{key:'a',label:'Vd'}],width:452,height:320,previous,stabilize:true});
 assert.equal(solved.reason,'stable-single-series-slot');assert.equal(solved.reserve,26,'Transient series-count changes must not resize plot geometry.');
 
-console.log('v3.61.36 shared scientific presentation architecture OK');
+console.log('v3.61.37 shared scientific presentation architecture OK');

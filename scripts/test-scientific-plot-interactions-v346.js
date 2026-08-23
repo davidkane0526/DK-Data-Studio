@@ -34,7 +34,7 @@ const interaction={
     {x:[0,1],y:[2,3],mode:'lines+markers',name:'B',entityId:'trace:B',line:{width:2},marker:{size:6}}
   ];
   const view=await scope.react(target,traces,{}, {},{interaction,traceEntity:trace=>({id:trace.entityId,type:'data.series',label:trace.name}),legendPolicy:{selectOnClick:true},pinPolicy:{enabled:true},selectionPolicy:{area:true}});
-  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.4.0');
+  assert.strictEqual(context.DKDSScientificPlot.VERSION,'2.5.0');
   for(const name of context.DKDSScientificPlot.CONTROLLERS)assert(view.controllers[name],`missing ${name} controller`);
   for(const event of ['dkds_chart_click','dkds_chart_relayout','dkds_chart_hover','dkds_chart_unhover','dkds_chart_selected','dkds_chart_deselect'])assert(target.handlers.has(event),`missing ${event}`);
   assert(target.domHandlers.has('dkds:chart-legend-activate'),'missing Core legend activation bridge');

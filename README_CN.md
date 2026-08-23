@@ -1,16 +1,19 @@
-# DK Data Studio — v3.61.36
+# DK Data Studio — v3.61.37
 
-## v3.61.36 单一 D3 科学绘图架构
+## v3.61.37 D3 热图与自动坐标范围修正
 
 本版停止维护 Plotly/D3 双绘图体系。**生产运行时只保留 D3 科学渲染后端**，插件只声明 `scientific-renderer`，不再选择具体绘图库。图例、LegendGroup、曲线选择、高亮/独显恢复、自动布局、悬浮工具栏、主题和 PlotView chrome 统一由 Core Scientific Presentation 管理。
 
 - Plotly 已从桌面/移动端依赖、主窗口、独立 TOP 窗口、ScientificPlot 和 Core UI 运行路径移除。D3 是唯一科学绘图后端。
+- 修复 D3 标量场/TER 热图自动色阶：空的色阶上下限不再被解释为 `0`，缺失矩阵值也不会被当作零值着色；热图坐标按像素单元边界求域，并补齐 TER 的 `Viridis / Turbo / Cividis / Jet / Hot` 色图及线性刻度控制。
+- Core XY/散点图自动范围在数据极值外保留适度余量，再进行友好刻度取整；用户显式设置的坐标范围保持精确，不参与自动扩边。
+- 科学图悬浮导航进一步压缩为 20 px 控件高度，保持自动隐藏与可拖动。
 - 自动图例按每个 Surface 独立管理，顶部优先、最多两行；窄图使用完整 Surface 宽度计算，不再默认显示水平滚动条。
 - 曲线点击会同步选中对应图例；点击图例进入 semantic LegendGroup 独显，再次点击同一项精确恢复进入独显前的 baseline visibility。
 - 图例按钮以稳定 Series/LegendGroup key 复用 DOM 节点，即使布局求解重新分行也不会在点击过程中替换控制节点。
 - 动态图在 `2 → 1 → 2` 条曲线的瞬时变化中保留稳定 legend footprint，避免图例和绘图区互相触发布局抖动。
 - Core 悬浮导航恢复自动隐藏，可拖动，显隐只改变透明度，不改变图形几何。标准 PlotView 标题栏收敛为 28 px。
-- SDK 更新为 **1.17.3**，Plugin API 保持 **1.17.0**。
+- SDK 更新为 **1.17.4**，Plugin API 保持 **1.17.0**。
 
 
 ## v3.61.31 插件安装兼容性与自绘弹窗

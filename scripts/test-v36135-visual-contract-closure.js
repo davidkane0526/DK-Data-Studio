@@ -6,17 +6,17 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.36');
+assert.equal(json('package.json').version,'3.61.37');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.3');
+assert.equal(contract.sdkVersion,'1.17.4');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.36');
+assert.equal(contract.minimumAppVersion,'3.61.37');
 
 
 const app=read('src/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
-assert(app.includes("version:'3.61.36'")&&app.includes("appVersion:'3.61.36'"),'Main renderer version metadata must match the release version.');
-assert(index.includes('<span class="version">v3.61.36</span>'),'Visible shell version must match the release version.');
-assert(pluginWindow.includes("appVersion:'3.61.36'"),'Dedicated plugin windows must report the release version.');
+assert(app.includes("version:'3.61.37'")&&app.includes("appVersion:'3.61.37'"),'Main renderer version metadata must match the release version.');
+assert(index.includes('<span class="version">v3.61.37</span>'),'Visible shell version must match the release version.');
+assert(pluginWindow.includes("appVersion:'3.61.37'"),'Dedicated plugin windows must report the release version.');
 
 const chart=read('src/core/chart-runtime.js');
 for(const token of [
@@ -46,4 +46,4 @@ assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.inclu
 
 const readme=read('sdk/README.md');
 for(const token of ['scoped to its own surface host','at most two balanced rows','`legendgroup`','does not visibly twitch'])assert(readme.includes(token),`SDK visual contract docs missing ${token}`);
-console.log('v3.61.36 visual contract closure OK');
+console.log('v3.61.37 visual contract closure OK');
