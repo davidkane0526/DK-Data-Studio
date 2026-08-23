@@ -90,9 +90,7 @@
       let interactionRuntime=null;
       let interactionSelection=null;
       let interactionSelectionOff=null;
-      const linkedSelectionViewIds=['resonance-dataset-list','resonance-main-legend'];
       let applyingExternalSelection=false;
-      let interactionMenus=null;
       let datasetContextBehavior=null;
       let dataSourcesRuntime=null;
       let selectedRange=null;
@@ -192,18 +190,12 @@
 
       function selectionSweepItem(sw){return sw?{type:'resonance.sweep',id:String(sw.id),role:'sweep',value:{id:sw.id,datasetPath:sw.datasetPath,datasetName:sw.datasetName,vg:sw.vg,direction:sw.direction}}:null;}
       function selectionPeakItem(p){return p?{type:'resonance.peak',id:String(p.id),role:'peak',value:{id:p.id,sweepId:p.sweepId,datasetPath:p.datasetPath,vg:p.vg,direction:p.direction,v:p.v,i:p.i,peakOrder:p.peakOrder,peakLabel:peakLabel(p)}}:null;}
-      function focusedDatasetPath(snapshot){const focus=snapshot?.focus||snapshot?.items?.at?.(-1)||null;return String(focus?.ref?.datasetPath||focus?.value?.datasetPath||'');}
       function bindLinkedSelectionViews(){
         if(!uiBound||!interactionRuntime?.bindView)return false;
         const list=$('#reswinDatasetList'),legend=$('#resparMainLegend');
         if(list)interactionRuntime.bindView('resonance-dataset-list',list,{selector:'.respar-dataset-item',itemVariant:'row',itemKey:el=>el.dataset.entityId||datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,ignore:'input,select,label,button,a',onActivate:({element})=>{const path=String(element.dataset.datasetPath||'');const current=selectedSweep();const rows=(visibleSweeps().length?visibleSweeps():sweeps).filter(sw=>String(sw.datasetPath)===path);const preferred=current&&String(current.datasetPath)===path?current:(rows.find(sw=>Number(sw.direction)>0)||rows[0]);if(preferred)publishSweepSelection(preferred,'resonance-dataset');}});
         if(legend)interactionRuntime.bindView('resonance-main-legend',legend,{selector:'.respar-legend-chip',itemVariant:'chip',itemKey:el=>el.dataset.entityId||datasetEntityId(el.dataset.datasetPath),entityLinked:true,revealFocus:true,dimOthers:true,horizontalWheel:true,hideScrollbar:true,onActivate:({element})=>{const sw=sweepById(String(element.dataset.sweepId||''));if(sw)publishSweepSelection(sw,'resonance-main-legend');}});
         return true;
-      }
-      function selectedPeakWidthShapes(){
-        const selectedP=selectedPeak();if(!selectedP||workspace.peakDisplay?.showWidth===false)return [];
-        const m=peakMetrics(selectedP)||{},left=Number(m.fwhmLeft),right=Number(m.fwhmRight);if(!Number.isFinite(left)||!Number.isFinite(right)||right<=left)return [];
-        return [{type:'rect',xref:'x',yref:'paper',x0:left,x1:right,y0:0,y1:1,fillcolor:'rgba(58,96,246,.08)',line:{color:'rgba(58,96,246,.38)',width:1,dash:'dot'},layer:'below'}];
       }
       function renderLinkedSelection({includeGroup=true,controls=false}={}){
         // Selection is Core-owned. D3 main surface receives the current entity IDs
@@ -263,11 +255,6 @@
         return (workspace.peaks||[]).filter(p=>(!range.sweepId||p.sweepId===range.sweepId)&&Number(p.v)>=lo&&Number(p.v)<=hi&&(!hasY||(Number(p.i)>=yLo&&Number(p.i)<=yHi)));
       }
       function setRangeLocked(value){for(const p of peaksInRange())p.locked=!!value;physicsCache={key:'',value:null};renderLinkedSelection();scheduleSnapshot();}
-      function setRangeCategory(order){
-        const cat=category(order),rows=peaksInRange();if(!rows.length)return false;
-        for(const p of rows){p.peakOrder=cat.order;p.peakLabel=cat.label;p.orderAnchor=true;}
-        physicsCache={key:'',value:null};render();scheduleSnapshot();setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${cat.label}。`);return true;
-      }
       function applyRangeIdentity(order,label=''){
         const n=Math.max(1,Math.round(Number(order)||1)),rows=peaksInRange();if(!rows.length)return false;normalizeCategories();let c=category(n);const text=String(label||'').trim();
         if(text){const cat=(workspace.peakCategories||[]).find(row=>Number(row.order)===n);if(cat)cat.label=text;for(const p of workspace.peaks||[])if(Number(p.peakOrder)===n)p.peakLabel=text;c={...c,label:text};}
@@ -332,17 +319,6 @@
         workspace.peaks.push(...added);normalizeCategories();
         if(added[0])publishPeakSelection(added[0],'resonance-range');else render();commitWorkspaceEdit(beforeDetection);
         setStatus(`局部寻峰完成：${targets.length-insufficient}/${targets.length} 条扫描，新增 ${added.length} 个峰。`);
-      }
-      function openRangeMenu(event){
-        if(!interactionMenus?.open||!selectedRange)return;const count=peaksInRange().length;
-        const categoryItems=(workspace.peakCategories||[]).slice(0,12).map(cat=>({id:`category-${cat.order}`,label:`设为 ${cat.label||`峰${cat.order}`}`,icon:'●',enabled:count>0,onInvoke:()=>setRangeCategory(cat.order)}));
-        interactionMenus.open({x:Number(event?.clientX)||window.innerWidth/2,y:Number(event?.clientY)||160,items:[
-          {id:'detect',label:'局部寻峰',icon:'⌕',onInvoke:()=>detectRange()},
-          {id:'lock',label:`锁定框选峰 (${count})`,icon:'🔒',enabled:count>0,onInvoke:()=>setRangeLocked(true)},
-          {id:'unlock',label:`解除框选峰锁定 (${count})`,icon:'🔓',enabled:count>0,onInvoke:()=>setRangeLocked(false)},
-          {type:'separator'},...categoryItems,{type:'separator'},
-          {id:'delete',label:`删除未锁定框选峰 (${count})`,icon:'×',enabled:count>0,onInvoke:()=>deleteRangePeaks()}
-        ]});
       }
 
       function applyWorkspaceToDatasets(){
@@ -663,24 +639,6 @@
         const physics=$('#reswinPhysicsLabels');if(physics)physics.checked=workspace.physicsShowLabels!==false;
         const legend=$('#reswinPeakLegend');if(legend){const cats=(workspace.peakCategories||[]).slice().sort((a,b)=>Number(a.order)-Number(b.order));legend.innerHTML=cats.length?cats.map(cat=>`<span><i style="background:${esc(colorForPeakOrder(cat.order,1))}"></i>${esc(cat.label||`峰${cat.order}`)}</span>`).join(''):'<span>尚无峰类别</span>';}
       }
-
-      function nearestSweepAtPixel(px,py,x,y,rows,maxDistancePx=18){
-        if(!rows?.length)return null;
-        const targetV=x.invert(px);let best=null;
-        for(const sw of rows){
-          const points=sw.points||[];if(!points.length)continue;
-          const idx=S.nearestIndex?.(points.map(p=>p.v),targetV)??0;
-          for(let j=Math.max(0,idx-2);j<=Math.min(points.length-1,idx+2);j++){
-            const p=points[j],dx=x(Number(p.v))-px,dy=y(Number(p.i))-py,dist=Math.hypot(dx,dy);
-            if(!best||dist<best.distance)best={sw,point:p,index:j,distance:dist};
-          }
-        }
-        return best&&best.distance<=maxDistancePx?best:null;
-      }
-      function scaleDomainAround(domain,center,factor,minSpan=1e-12){
-        const lo=center+(domain[0]-center)*factor,hi=center+(domain[1]-center)*factor;
-        return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:domain.slice();
-      }
       function peakColor(p){return p?.customColor||colorForPeakOrder(p?.peakOrder||1,p?.direction||1);}
       function movePeakToIndex(p,sw,index){
         const points=sw?.points||[];if(!p||!points.length)return;
@@ -840,18 +798,6 @@
         peakMetricCache.set(p,{signature,value:null,promise});return promise;
       }
       function peakMetrics(p){const sw=sweepById(p?.sweepId);if(!sw||!p)return null;const provider=metricProvider();if(!provider&&missingLockedAlgorithm('peak-metrics',workspace.activeMetricAlgorithm))return null;if(provider){const signature=metricSignature(p,sw,provider),cached=peakMetricCache.get(p);if(cached?.signature===signature&&cached.value)return cached.value;if(!cached||cached.signature!==signature||!cached.promise){const sync=tryPeakMetricSync(p,sw,provider,signature);if(sync)return sync;void refreshPeakMetric(p);}return null;}return S.peakMetrics?.(p,sw)||null;}
-      function renderPeakTable(){
-        const table=$('#reswinPeakTable');if(!table)return;
-        const sw=selectedSweep();const rows=(workspace.peaks||[]).filter(p=>!sw||p.sweepId===sw.id).sort((a,b)=>Number(a.v)-Number(b.v));
-        table.innerHTML=`<thead><tr><th>类别</th><th>Vpk (V)</th><th>I (A)</th><th>来源</th><th>采纳</th><th>锁定</th><th></th></tr></thead><tbody>${rows.map(p=>`<tr data-peak-id="${esc(p.id)}" class="${p.id===selectedPeakId?'selected':''}"><td>${esc(peakLabel(p))}</td><td>${fmt(p.v,6)}</td><td>${fmt(p.i,6)}</td><td>${p.manual?'手动':'自动'}</td><td><input data-action="accept" type="checkbox" ${p.accepted!==false?'checked':''}></td><td><input data-action="lock" type="checkbox" ${p.locked?'checked':''}></td><td><button data-action="delete" class="danger-soft">删除</button></td></tr>`).join('')}</tbody>`;
-        table.querySelectorAll('tbody tr').forEach(row=>{
-          const id=row.dataset.peakId;
-          row.onclick=e=>{if(e.target.closest('button,input'))return;const p=peakById(id);if(p)publishPeakSelection(p,'resonance-inspector',{additive:!!(e.ctrlKey||e.metaKey)});};
-          row.querySelector('[data-action="accept"]')?.addEventListener('change',e=>updatePeak(id,{accepted:e.target.checked}));
-          row.querySelector('[data-action="lock"]')?.addEventListener('change',e=>updatePeak(id,{locked:e.target.checked}));
-          row.querySelector('[data-action="delete"]')?.addEventListener('click',()=>deletePeak(id));
-        });
-      }
 
       function renderInspection(){
         const host=$('#reswinInspectorBody');if(!host)return;
@@ -1270,7 +1216,7 @@
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},
         setPipelineRuntime(runtime){pipelineRuntime=runtime||null;installAlgorithmPipeline();},
-        setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;interactionMenus=runtime.contextMenus||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
+        setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
         setDataSourceRuntime(runtime){dataSourcesRuntime=runtime||null;},
         selection:()=>interactionSelection?.get?.()||null,
         selectPeak:(id,options={})=>{const p=peakById(id);return p?publishPeakSelection(p,options.source||'resonance-api',options):false;},

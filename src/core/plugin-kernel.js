@@ -21,7 +21,6 @@
   const externalLoadErrors = [];
   let activeActivityId = null;
   let superPluginId = null;
-  let superSelectionInitialized = false;
   let primePlacements = null;
   let shellBound = false;
   let shellResizeObserver = null;
@@ -361,7 +360,6 @@
     await host?.prepareSuperTransition?.({previous,pluginId:id,activityId});
 
     superPluginId=id;
-    superSelectionInitialized=true;
     try{
       const activated=await activateSuperWorkspace({invoke});
       if(!activated)throw new Error(`插件 ${definition.manifest.name||id} 的 SUPER 工作区启动失败。`);
@@ -387,7 +385,6 @@
   async function initializeSuperSelection() {
     if(host?.isAuxiliaryWindow)return false;
     const saved=readSuperPreference();
-    superSelectionInitialized=true;
     if(saved!==undefined){
       superPluginId=saved&&topDefinitionReady(saved)?saved:null;
       return activateSuperWorkspace({invoke:true});

@@ -2,7 +2,6 @@
   const modules=window.DKDSPluginModules;if(!modules?.define)throw new Error('Plugin Module Runtime unavailable.');
   if(modules.get?.('builtin.standard-transport-algorithms','algorithm'))return;
   const VERSION='1.0.0';
-  const finite=v=>Number.isFinite(Number(v));
   const median=values=>{const a=(values||[]).filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!a.length)return NaN;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;};
   const nearestIndex=(xs,target)=>{let best=-1,dist=Infinity;for(let i=0;i<(xs||[]).length;i++){const d=Math.abs(Number(xs[i])-Number(target));if(Number.isFinite(d)&&d<dist){dist=d;best=i;}}return best;};
   function movingAverage(y,radius){const out=new Array(y.length),r=Math.max(1,Math.round(radius));let sum=0;for(let i=0;i<y.length;i++){sum+=y[i];if(i-r-1>=0)sum-=y[i-r-1];const lo=Math.max(0,i-r),hi=i;out[i]=sum/(hi-lo+1);}const out2=new Array(y.length);sum=0;for(let i=y.length-1;i>=0;i--){sum+=out[i];if(i+r+1<y.length)sum-=out[i+r+1];const hi=Math.min(y.length-1,i+r),lo=i;out2[i]=sum/(hi-lo+1);}return out2;}

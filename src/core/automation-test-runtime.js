@@ -581,7 +581,7 @@
       await runCase('top.d3-single-backend','TOP D3 single-backend runtime contract','TOP / Performance',async()=>{
         const rows=state.results.filter(row=>row.id?.startsWith?.('top.')&&!['top.coverage','top.startup-profile','top.d3-single-backend'].includes(row.id)&&row.status==='pass');
         const profiles=rows.map(row=>{
-          const renderer=row.data?.startupProfile?.renderer||{},loaded=new Set((renderer.dependencies||[]).map(item=>String(item?.name||''))),declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
+          const renderer=row.data?.startupProfile?.renderer||{},declared=new Set((row.data?.dependencies||[]).map(String)),chart=renderer.chartRuntime||{};
           assert(chart.version===window.DKDSCharts?.VERSION,`${row.id}: Chart Runtime state missing or stale. expected=${window.DKDSCharts?.VERSION||'unknown'} actual=${chart?.version||'missing'}`);
           assert(chart.preferredRenderer==='d3'&&chart.renderer==='d3'&&chart.singleBackend===true,`${row.id}: dedicated scientific charts must use the D3 singleton backend.`);
           assert(!declared.has('d3'),`${row.id}: plugin dependency declaration must remain vendor-neutral.`);

@@ -121,20 +121,6 @@
       const label = item => String(item?.label || item?.name || 'Pulse data').trim() || 'Pulse data';
       const resultMode = result => result?.segmentationMode || 'legacy';
 
-      function makeItem(meta, data) {
-        const inspection = A.inspectDataText({
-          name:meta.name,path:meta.path,text:data.text,encoding:data.encoding
-        }, A.defaultImportOptions());
-        return {
-          id:`pulse::${Date.now()}::${Math.random().toString(36).slice(2,8)}`,
-          path:meta.path,name:meta.name,size:meta.size||data.size||0,
-          label:String(meta.name||'').replace(/\.[^.]+$/,''),
-          checked:true,text:data.text,encoding:data.encoding,inspection,
-          settings:defaultSettings(inspection,meta.name),
-          result:null,error:'',loading:false,analyzedAt:null
-        };
-      }
-
       function artifactSourceText(artifact){
         const raw=String(artifact?.source?.text||'');if(raw)return raw;
         if(artifact?.kind!=='data.table'||!Array.isArray(artifact.columns)||!artifact.columns.length)return '';

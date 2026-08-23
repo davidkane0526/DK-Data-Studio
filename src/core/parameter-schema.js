@@ -65,7 +65,7 @@
       let raw;if(field.type==='boolean')raw=input.checked;else if(input.multiple)raw=[...input.selectedOptions].map(o=>o.value);else raw=input.value;return coerce(field,raw);
     }
 
-    function rerenderVisibility(){for(const [id,row] of controls){const f=row.field;row.wrap.classList.toggle('hidden',!visible(f,values));}}
+    function rerenderVisibility(){for(const row of controls.values()){const f=row.field;row.wrap.classList.toggle('hidden',!visible(f,values));}}
     function updateErrors(result){for(const [id,row] of controls){row.wrap.classList.toggle('has-error',!!result.errors[id]);row.error.textContent=result.errors[id]||'';}}
 
     const groups=new Map();
@@ -80,7 +80,7 @@
     rerenderVisibility();updateErrors(validate(schema,values,context));
     return {
       getValue(){for(const {field,input} of controls.values())setPath(values,fieldPath(field),readInput(field,input));return clone(values);},
-      setValue(next){values=defaultValues(schema,next||{});for(const [id,{field,input}] of controls){const v=getPath(values,fieldPath(field));if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
+      setValue(next){values=defaultValues(schema,next||{});for(const {field,input} of controls.values()){const v=getPath(values,fieldPath(field));if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
       validate(){const result=validate(schema,this.getValue(),context);updateErrors(result);return result;},
       destroy(){container.innerHTML='';controls.clear();},
       schema,context

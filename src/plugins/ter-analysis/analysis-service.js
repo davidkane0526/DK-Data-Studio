@@ -30,8 +30,6 @@
       function normalizeTransformType(value){const id=String(value||'didv');const row=transforms?.resolve?.(id)||transforms?.get?.(id);return row?.supportsScalarField!==false&&row?.id?row.id:(fallbackTransformIds.has(id)?id:'didv');}
       function transformDefinition(value=transform.type){return transforms?.resolve?.(value)||transforms?.get?.(value)||null;}
       let result=null;
-      let matrixViewModel=null;
-      let transformViewModel=null;
       let projectEpoch=0;
       function invalidateComputeCaches(){performance?.trimAll?.({targetEntries:0,dropWeak:true,reason:'ter-project-change'});}
 
@@ -88,7 +86,6 @@
         if(pipeline?.runSync&&transforms?.fieldStageId){
           const stageId=transforms.fieldStageId(transform.type);
           const executed=pipeline.runSync(stageId,sourceArtifacts(),{parameters,publish:true,revision:inputCacheKey()});
-          transformViewModel=executed?.viewModel||null;
           return executed?.value||null;
         }
         const parameterKey=[transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
@@ -135,7 +132,7 @@
         select.innerHTML=(missing?`<option value="${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}">缺失版本 · ${String(terAlgorithmRef.id)}@${String(terAlgorithmRef.version)}</option>`:'')+rows.map(row=>`<option value="${String(row.id)}@${String(row.version)}">${String(row.title||row.id)} · ${String(row.id)}@${String(row.version)}</option>`).join('');
         if(resolved){terAlgorithmRef=api?.lock?.({category:'ter-analysis',id:resolved.id,version:resolved.version})||{category:'ter-analysis',id:resolved.id,version:resolved.version};select.value=`${resolved.id}@${resolved.version}`;}else if(missing)select.value=`${terAlgorithmRef.id}@${terAlgorithmRef.version}`;
         const recover=$('#terRecoverAlgorithmBtn');if(recover){recover.classList.toggle('hidden',!missing||typeof api?.recover!=='function');recover.disabled=false;if(recover.dataset.terRecoverBound!=='1'){recover.dataset.terRecoverBound='1';recover.addEventListener('click',async()=>{recover.disabled=true;try{const catalog=await api.locate?.(terAlgorithmRef);const compatible=(catalog?.candidates||[]).filter(row=>row.compatible&&row.recoverable);if(!compatible.length){const found=(catalog?.candidates||[]).length;setStatus(found?`已定位到 ${found} 个包含该 TER 算法的包，但当前环境不兼容。`:`未在当前包或插件历史中找到 ${terAlgorithmRef.id}@${terAlgorithmRef.version}。`);return;}const restored=await api.recover(terAlgorithmRef,compatible[0]);setStatus(`已恢复 TER 算法 ${restored.id}@${restored.version}。`);syncTerAlgorithmControl();render();}catch(err){setStatus(`恢复 TER 算法失败：${err.message}`);}finally{recover.disabled=false;}});}}
-        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;matrixViewModel=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'algorithm-change'});render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
+        if(select.dataset.terAlgorithmBound!=='1'){select.dataset.terAlgorithmBound='1';select.addEventListener('change',()=>{const next=normalizeAlgorithmRef(select.value);const row=resolveTerAlgorithm(next);if(!row)return;const changed=terAlgorithmRef.id!==row.id||terAlgorithmRef.version!==row.version;terAlgorithmRef={category:'ter-analysis',id:row.id,version:row.version};if(changed){result=null;invalidateComputeCaches();reactive?.touch?.('ter.result',{reason:'algorithm-change'});render();scheduleSnapshot();setStatus(`TER 算法已切换为 ${row.id}@${row.version}，请重新计算。`);}});}
       }
       function syncInputs(){
         setInput('terVmin',settings.vmin);setInput('terVmax',settings.vmax);
@@ -193,7 +190,7 @@
         try{
           if(pipeline?.runSync){
             const executed=pipeline.runSync('ter-matrix',sourceArtifacts(),{parameters:{settings:{...settings},algorithmRef:{...terAlgorithmRef}},publish:true,revision:`${inputCacheKey()}|ter:${terAlgorithmRef.id}@${terAlgorithmRef.version}`});
-            result=executed?.value||null;matrixViewModel=executed?.viewModel||null;
+            result=executed?.value||null;
           }else result=runTerAlgorithm(datasets(),terAlgorithmRef,settings);
           if(!result)throw new Error('TER pipeline did not return a result.');
           settings={...settings,

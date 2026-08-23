@@ -1239,8 +1239,6 @@ button.danger-soft{
 }
 .lan-web-status-row{display:flex;align-items:center;gap:8px;font-size:13px}
 .lan-web-dot{width:10px;height:10px;border-radius:50%;background:#98a2b3}
-.lan-web-dot.running{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.12)}
-.lan-web-dot.stopped{background:#98a2b3}
 .lan-web-status-text{margin-top:6px;font-size:10px;line-height:1.55;color:#667085}
 .lan-web-check{margin:8px 2px!important}
 .lan-web-key-card{
@@ -2979,7 +2977,6 @@ button.danger-soft{
 .plugin-main-tool-btn{padding:4px 7px!important;font-size:10px!important;background:#fff;border:1px solid #d7dce7;border-radius:6px;white-space:nowrap}
 .plugin-main-tool-btn.active{background:#e8efff;border-color:#7c9cff;color:#2147b7;font-weight:650}
 .main-plot-tools{gap:4px;max-width:min(72vw,760px);overflow-x:auto;scrollbar-width:none}
-.main-plot-tools::-webkit-scrollbar{display:none}
 .main-plot-tools>#mainResetViewBtn{flex:0 0 auto}
 
 /* Plugin-owned inspector/group content remains inside generic dock hosts. */
@@ -4599,19 +4596,6 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px}.automation-test-main strong{font-size:12px}.automation-test-main span{font-size:10px;color:var(--muted,#7a8495)}.automation-test-main small{font-size:10px;color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}
 
-/* v3.45 built-in automation test center */
-.automation-test-header-actions{display:flex;align-items:center;gap:6px}
-.automation-test-body{display:flex;flex-direction:column;gap:10px;overflow:auto}
-.automation-test-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;border:1px solid var(--border,#dbe2ec);border-radius:12px;background:var(--panel,#fff)}
-.automation-test-hero strong{font-size:15px}.automation-test-hero p{margin:4px 0 0;color:var(--muted,#6f7b8e);font-size:11px}
-.automation-test-note,.automation-test-log-path{padding:10px 12px;border-radius:9px;background:var(--surface-soft,#f4f7fb);color:var(--muted,#68758a);font-size:11px;line-height:1.55}
-.automation-test-results{display:grid;gap:6px}
-.automation-empty{padding:24px;text-align:center;color:var(--muted,#7a8495);border:1px dashed var(--border,#dbe2ec);border-radius:10px}
-.automation-test-row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;border:1px solid var(--border,#dbe2ec);border-radius:9px;background:var(--panel,#fff)}
-.automation-test-status{display:inline-flex;align-items:center;justify-content:center;height:24px;border-radius:999px;background:#eef2f7;color:var(--text-secondary,#60708c);font-size:10px;font-weight:700}
-.automation-test-row.pass .automation-test-status{background:#ecfdf3;color:#027a48}.automation-test-row.fail .automation-test-status{background:#fef3f2;color:#b42318}.automation-test-row.skip .automation-test-status{background:#fffaeb;color:#b54708}.automation-test-row.running .automation-test-status{background:#eef4ff;color:#3538cd}
-.automation-test-main{min-width:0;display:flex;flex-direction:column;gap:2px}.automation-test-main strong{font-size:12px}.automation-test-main span{font-size:10px;color:var(--muted,#7a8495)}.automation-test-main small{font-size:10px;color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}
-@media(max-width:760px){.automation-test-hero{align-items:stretch;flex-direction:column}.automation-test-hero button{width:100%}.automation-test-header-actions{flex-wrap:wrap}}
 .plugin-algorithm-version-block{margin-top:6px;display:grid;gap:5px}
 .plugin-algorithm-version-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);gap:8px;align-items:center}
 .plugin-algorithm-version-row>span{display:grid;gap:1px}

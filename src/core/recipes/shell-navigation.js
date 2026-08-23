@@ -55,19 +55,6 @@
       .activity-switcher.shell-secondary-empty{display:none!important}
       .activity-switcher{min-width:0!important;max-width:none!important;flex:0 1 auto!important}
 
-      /* Width-density modes keep the hierarchy readable instead of squeezing every item equally. */
-      .workspace-commandbar[data-nav-density="roomy"] .primary-activity-bar{gap:5px}
-      .workspace-commandbar[data-nav-density="roomy"] .top-level-activity-tab{padding-left:13px!important;padding-right:13px!important}
-      .workspace-commandbar[data-nav-density="roomy"] .context-commandbar{padding-left:11px!important}
-      .workspace-commandbar[data-nav-density="balanced"] .top-level-activity-tab{padding-left:9px!important;padding-right:9px!important}
-      .workspace-commandbar[data-nav-density="balanced"] .plugin-toolbar-btn{padding-left:8px!important;padding-right:8px!important}
-      .workspace-commandbar[data-nav-density="compact"]{gap:5px!important}
-      .workspace-commandbar[data-nav-density="compact"] .primary-activity-cluster{gap:5px!important}
-      .workspace-commandbar[data-nav-density="compact"] .top-level-activity-tab{padding-left:7px!important;padding-right:7px!important}
-      .workspace-commandbar[data-nav-density="compact"] .activity-icon{display:none!important}
-      .workspace-commandbar[data-nav-density="compact"] .context-commandbar{padding-left:5px!important}
-      .workspace-commandbar[data-nav-density="compact"] .plugin-toolbar-btn{padding-left:7px!important;padding-right:7px!important}
-
       /* Plugin manager uses the same text scale as the rest of the application. */
       .plugin-manager-stat span{font-size:var(--plugin-font-meta,11px)!important}
       .plugin-manager-search-wrap input{font-size:var(--plugin-font-body,12.5px)!important}
@@ -93,14 +80,6 @@
         .context-commandbar{min-width:120px!important;flex:1 0 120px!important}
       }
     `);
-
-    function applyDensity(){
-      const commandbar=document.querySelector('.workspace-commandbar');
-      if(!commandbar)return;
-      const width=commandbar.getBoundingClientRect().width;
-      const density=width>=980?'roomy':width>=720?'balanced':'compact';
-      commandbar.dataset.navDensity=density;
-    }
 
     function normalizeTopLevel(){
       queued=false;

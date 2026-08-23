@@ -352,67 +352,6 @@
     return {index:best.j,method:'raw-residual-projection'};
   }
 
-  function rawProminence(sweep, threshold){
-    const pts=sweep.points, y=pts.map(p=>Math.abs(p.i)); const out=[];
-    for(let j=1;j<pts.length-1;j++){
-      if(y[j]>y[j-1] && y[j]>=y[j+1]){
-        const prom=localProminence(y,j,14);
-        const scale=Math.max(Math.abs(y[j]),1e-30);
-        if(prom/scale>=threshold){out.push({index:j,score:prom/scale,prominence:prom});}
-      }
-    }
-    return out;
-  }
-
-  function localSnr(sweep, threshold){
-    const pts=sweep.points,y=pts.map(p=>Math.abs(p.i)); const out=[];
-    for(let j=2;j<pts.length-2;j++){
-      if(!(y[j]>y[j-1]&&y[j]>=y[j+1])) continue;
-      const prom=localProminence(y,j,12);
-      const lo=Math.max(1,j-10),hi=Math.min(y.length-2,j+10),d2=[];
-      for(let k=lo;k<=hi;k++) if(Math.abs(k-j)>2) d2.push(y[k+1]-2*y[k]+y[k-1]);
-      const noise=(mad(d2)||1e-30)/Math.sqrt(6); const snr=prom/Math.max(noise,1e-30);
-      if(snr>=threshold) out.push({index:j,score:snr,prominence:prom,snr});
-    }
-    return out;
-  }
-
-  function differentialDip(sweep, threshold){
-    const pts=sweep.points; if(pts.length<9) return [];
-    const dx=sweep.step||median(pts.slice(1).map((p,i)=>p.v-pts[i].v))||0.01;
-    const y=pts.map(p=>p.i); const sm=movingAverage(y,2); const g=new Array(y.length).fill(NaN);
-    for(let j=1;j<y.length-1;j++) g[j]=(sm[j+1]-sm[j-1])/(2*dx);
-    const out=[];
-    for(let j=2;j<g.length-2;j++){
-      if(!Number.isFinite(g[j])) continue;
-      if(g[j]<g[j-1]&&g[j]<=g[j+1]){
-        const left=Math.max(g[j-2],g[j-1]), right=Math.max(g[j+1],g[j+2]);
-        const depth=Math.min(left-g[j],right-g[j]);
-        const scale=Math.max(Math.abs(g[j]),0.5*(Math.abs(left)+Math.abs(right)),1e-30);
-        const rel=depth/scale;
-        if(rel>=threshold) out.push({index:j,score:rel,diffDepth:rel,gmin:g[j]});
-      }
-    }
-    return out;
-  }
-
-  function detrendedShoulder(sweep, threshold){
-    const pts=sweep.points,y=pts.map(p=>Math.abs(p.i)); const r=Math.max(4,Math.round(0.16/(sweep.step||0.01)));
-    const bg=movingAverage(y,r); const res=y.map((v,i)=>v-bg[i]); const noise=mad(res)||1e-30; const out=[];
-    for(let j=1;j<res.length-1;j++){
-      if(res[j]>res[j-1]&&res[j]>=res[j+1]&&res[j]/noise>=threshold) out.push({index:j,score:res[j]/noise,residual:res[j]});
-    }
-    return out;
-  }
-
-  function curvatureCandidates(sweep, threshold){
-    const pts=sweep.points,y=movingAverage(pts.map(p=>Math.abs(p.i)),2); const dx=sweep.step||0.01; const c=new Array(y.length).fill(0);
-    for(let j=1;j<y.length-1;j++) c[j]=-(y[j+1]-2*y[j]+y[j-1])/(dx*dx);
-    const noise=mad(c)||1e-30; const out=[];
-    for(let j=2;j<c.length-2;j++) if(c[j]>c[j-1]&&c[j]>=c[j+1]&&c[j]/noise>=threshold) out.push({index:j,score:c[j]/noise,curvature:c[j]});
-    return out;
-  }
-
 
   // ------------------------------------------------------------------
   // v3.7 robust multiscale matched-filter core

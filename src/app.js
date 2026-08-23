@@ -116,7 +116,6 @@
   }
 
   function setStatus(t){ status.textContent = t; }
-  let updateStatusState=null;
 
   function pushArtifactDeltaToActivityWindows(artifactDelta,reason='artifact-change',options={}){
     const upserts=Array.isArray(artifactDelta?.upserts)?artifactDelta.upserts.filter(row=>row?.id):[];
@@ -164,7 +163,6 @@
 
   function renderUpdateStatus(status){
     if(!status)return;
-    updateStatusState=status;
 
     const phase=status.phase||'idle';
     const dot=$('#updatePhaseDot');
@@ -2340,7 +2338,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.41',
+      version:'3.61.42',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2453,7 +2451,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
         const options={...(provider.defaultOptions?.()||{}),...savedSpec};
         const parsed=provider.parse({name:source.sourceName||source.name,path:source.sourcePath||source.path,text:source.text,encoding:source.encoding||'auto'},options);
         const restored=parsed?.datasets||[];
-        for(const [index,dataset] of restored.entries()){
+        for(const dataset of restored){
           const single=restored.length===1;
           out.push({...dataset,
             name:single&&source.name?source.name:dataset.name,
@@ -2578,15 +2576,6 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
   }
 
-  function setGroupPrimePlacement(placement){
-    const next=String(placement||'').trim().toLowerCase();
-    if(next==='bottom')state.groupPanelMode='docked';
-    else if(next==='float')state.groupPanelMode='floating';
-    else return false;
-    applyGroupPanelLayout();
-    return true;
-  }
-
   function toggleGroupDock(){
     const panel=$('#groupPanel');
     if(state.groupPanelMode==='floating'){
@@ -2682,15 +2671,6 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     requestAnimationFrame(()=>scheduleMainPlotRelayout());
   }
 
-  function setInspectorPrimePlacement(placement){
-    const next=String(placement||'').trim().toLowerCase();
-    if(next==='right')state.inspectorPanelMode='right';
-    else if(next==='float')state.inspectorPanelMode='floating';
-    else return false;
-    applyInspectorPanelLayout();
-    return true;
-  }
-
   function toggleInspectorDock(){
     const panel=$('#inspectorPanel');
     if(state.inspectorPanelMode==='floating'){
@@ -2703,30 +2683,6 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       setStatus('曲线检查器已恢复为悬浮窗口。');
     }
     applyInspectorPanelLayout();
-  }
-
-  function showInspectorPanel(bringToFront=false){
-    const panel=$('#inspectorPanel');
-    if(!panel)return;
-    panel.classList.remove('hidden');
-    if(state.inspectorPanelMode==='right'){
-      applyInspectorPanelLayout();
-    }else if(bringToFront){
-      panel.style.zIndex='220';
-    }
-  }
-
-  function toggleInspectorVisibility(){
-    const panel=$('#inspectorPanel');
-    if(!panel)return;
-    panel.classList.toggle('hidden');
-    if(state.inspectorPanelMode==='right'){
-      const slot=$('#inspectorDockSlot');
-      const visible=!panel.classList.contains('hidden');
-      slot.classList.toggle('active',visible);
-      slot.style.width=visible?`${Math.max(300,state.inspectorDockWidth)}px`:'0px';
-      scheduleMainPlotRelayout();
-    }
   }
 
   function setupInspectorDockResizer(){
@@ -3219,7 +3175,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.41',
+      appVersion:'3.61.42',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

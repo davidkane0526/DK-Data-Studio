@@ -221,14 +221,6 @@
       if(capture)ctx.project.capture?.();
     }
 
-    function setRows(rows){
-      const n=Math.max(1,Math.min(CHART_COUNT,Math.round(Number(rows)||1)));
-      layoutSettings.rows=n;
-      layoutSettings.cols=Math.max(1,Math.ceil(CHART_COUNT/n));
-      applyLayoutSettings({capture:true});
-      ctx.status.set(`TER 图表布局：${layoutSettings.rows} 行 × ${layoutSettings.cols} 列。`);
-    }
-
     function setCols(cols){
       const n=Number(cols);
       if(!GRID_COLUMNS.includes(n))return;

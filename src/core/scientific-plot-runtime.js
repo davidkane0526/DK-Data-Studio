@@ -11,7 +11,6 @@
   const asId=value=>String(value??'').trim();
   const finite=value=>value!==null&&value!==undefined&&!(typeof value==='string'&&!value.trim())&&Number.isFinite(Number(value));
   const baseTraceStyle=trace=>({opacity:trace?.opacity??1,lineWidth:Number(trace?.line?.width)||1.5,markerOpacity:trace?.marker?.opacity??1,markerSize:clone(trace?.marker?.size)});
-  const array=value=>Array.isArray(value)?value:(value===undefined||value===null?[]:[value]);
   // Scientific rendering can spend tens to hundreds of milliseconds inside one react().
   // Multi-chart plugins must not start every heavy render in the same browser
   // turn, otherwise the first useful chart cannot paint until the whole grid is

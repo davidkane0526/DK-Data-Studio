@@ -1,3 +1,10 @@
+# v3.61.42 — Release Hygiene & Dead-Code Cleanup
+
+- Remove unreachable and write-only production paths identified by a whole-source unused-symbol audit, including retired Resonance range-menu helpers, obsolete inspector/group placement helpers, stale TER view-model caches, unused peak-detection helper variants, and redundant SUPER/navigation state.
+- Remove byte-identical/redundant CSS rules and the inactive navigation width-density mode whose runtime setter had no caller. Update the affected static regressions to protect the live replacement paths instead of preserving dead implementation details.
+- Keep project/file compatibility, current D3 rendering, scientific algorithms, plugin contracts, and visible UI behavior unchanged. SDK remains **1.17.6** and Plugin API remains **1.17.0**.
+- Consolidate the local Git repository to the release branches only and repack/prune object storage so the delivered `.git` stays complete but substantially smaller.
+
 # v3.61.41 — D3 Floating Toolbar Padding & Centering Fix
 
 - Keep the compact **20 px toolbar height** and restored **23 px button width**, while increasing the floating shell's **right padding to 4 px** so the control group no longer looks squeezed against the outer frame.

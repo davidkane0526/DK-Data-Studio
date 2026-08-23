@@ -4,8 +4,6 @@
   Object.assign(core,api);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis,function(core){
-  const {median}=core;
-
   const PHYSICS_TYPES={
     R:{name:'静态共振候选',detail:'正反扫均稳定存在，峰位差相对峰宽较小。'},
     H:{name:'历史依赖共振',detail:'正反扫均可追踪，但峰位存在显著扫描历史偏移。'},
