@@ -19,7 +19,7 @@ const sdkTool=read('sdk/tools/dkds-plugin.js');
 const manifestSchema=json('sdk/plugin-manifest.schema.json');
 const Catalog=require(path.join(root,'algorithm-package-catalog.js'));
 
-assert.equal(pkg.version,'3.61.39','v3.61.32 source version must be synchronized.');
+assert.equal(pkg.version,'3.61.40','v3.61.32 source version must be synchronized.');
 assert.equal(sdk.pluginApiVersion,'1.17.0','Plugin SDK contract must remain API 1.16.0.');
 assert(main.includes("const PluginSdkContract = require('./sdk/contract.json');"),'Electron installer must consume the published SDK contract.');
 assert(main.includes("const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();"),'Electron installer must derive its current Plugin API from sdk/contract.json.');

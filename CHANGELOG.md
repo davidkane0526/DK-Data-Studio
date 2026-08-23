@@ -1,3 +1,9 @@
+# v3.61.40 — D3 Floating Toolbar Proportion Fix
+
+- Keep the reduced **20 px vertical height** of the default D3 floating navigation buttons, while restoring the previous **23 px button width**, **11 px drag-handle width**, and **2 px horizontal shell padding**. The toolbar is therefore shorter vertically without being compressed horizontally.
+- Extend the existing D3 navigation regression to lock the toolbar aspect ratio and prevent future height adjustments from unintentionally shrinking its width.
+- SDK remains **1.17.6** and Plugin API remains **1.17.0** because this is Core presentation-only polish and does not change the public plugin contract.
+
 # v3.61.39 — Stable PluginWorkspace Viewport Contract
 
 - Redefine `primaryScroll:"safe"` as one bounded Core-owned Primary viewport with one scrollbar. Plugin content may exceed the viewport, but it can no longer turn the PluginWorkspace or Dedicated Tool window into the scroll owner and recursively feed content height back into Host geometry.

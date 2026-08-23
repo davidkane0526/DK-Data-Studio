@@ -17,7 +17,7 @@ const manager=read('plugin-window-manager.js');
 const ui=read('src/core/ui-infrastructure.js');
 const scientific=read('src/core/scientific-plot-runtime.js');
 
-assert.equal(pkg.version,'3.61.39');
+assert.equal(pkg.version,'3.61.40');
 assert(pkg.dependencies?.d3,'Desktop runtime must ship D3.');
 assert(!Object.keys(pkg.dependencies||{}).some(k=>/plotly/i.test(k)),'Desktop dependencies must be Plotly-free.');
 assert(!Object.keys(pkg.optionalDependencies||{}).some(k=>/plotly/i.test(k)),'Desktop optional dependencies must be Plotly-free.');
