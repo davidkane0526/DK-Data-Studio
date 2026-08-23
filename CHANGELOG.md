@@ -1,3 +1,9 @@
+# v3.61.41 — D3 Floating Toolbar Padding & Centering Fix
+
+- Keep the compact **20 px toolbar height** and restored **23 px button width**, while increasing the floating shell's **right padding to 4 px** so the control group no longer looks squeezed against the outer frame.
+- Center the D3 navigation buttons as explicit flex boxes and clear inherited button shadow behavior so the button highlight/shadow sits visually centered inside each control.
+- SDK remains **1.17.6** and Plugin API remains **1.17.0** because this is a Core presentation-only refinement and does not change the public plugin contract.
+
 # v3.61.40 — D3 Floating Toolbar Proportion Fix
 
 - Keep the reduced **20 px vertical height** of the default D3 floating navigation buttons, while restoring the previous **23 px button width**, **11 px drag-handle width**, and **2 px horizontal shell padding**. The toolbar is therefore shorter vertically without being compressed horizontally.
