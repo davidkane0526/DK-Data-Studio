@@ -1,4 +1,4 @@
-/* DK Data Studio v3.61.29 · ordered modern visual layer
+/* DK Data Studio v3.61.32 · ordered modern visual layer
    Scope: visual treatment only. No Plotly internal DOM selectors and no layout geometry overrides. */
 :root{
   --dkui-canvas:#eef4fb;
@@ -859,3 +859,30 @@ body.dkds-modern-ui .dkds-dialog-action:hover:not(:disabled){transform:translate
 body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:translateY(0)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-dialog-overlay{background:rgba(4,8,14,.48)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-dialog{box-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 22px 58px rgba(0,0,0,.38),0 5px 16px rgba(0,0,0,.24)}
+
+/* v3.61.32: disabled commands remain part of the active theme rather than
+   falling back to native/legacy white button surfaces. */
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-header-actions button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .pulse-analysis button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .ter-analysis button:disabled{
+  background:var(--surface-secondary)!important;
+  border-color:var(--border-subtle)!important;
+  color:var(--text-tertiary)!important;
+  -webkit-text-fill-color:var(--text-tertiary)!important;
+  box-shadow:none!important;
+  opacity:.72;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar,
+html[data-dkds-theme="dark"] body.dkds-modern-ui.plugin-window-host #statusBar.statusbar{
+  background:color-mix(in srgb,var(--surface-primary) 96%,transparent)!important;
+  border-top-color:var(--border-subtle)!important;
+  color:var(--text-tertiary)!important;
+}
+body.dkds-modern-ui .plugin-status-item.active,
+body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
+  background:var(--accent-soft)!important;
+  color:var(--accent-primary)!important;
+  -webkit-text-fill-color:var(--accent-primary)!important;
+}

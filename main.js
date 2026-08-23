@@ -1280,6 +1280,18 @@ app.whenReady().then(() => {
     return filePath;
   });
 
+  ipcMain.handle('system:getDevToolsState', async event => {
+    const win=BrowserWindow.fromWebContents(event.sender);
+    if(!win||win.isDestroyed())return {available:false,open:false};
+    return {available:true,open:!!win.webContents?.isDevToolsOpened?.()};
+  });
+  ipcMain.handle('system:toggleDevTools', async event => {
+    const win=BrowserWindow.fromWebContents(event.sender);
+    if(!win||win.isDestroyed())return {available:false,open:false};
+    const contents=win.webContents;if(contents?.isDevToolsOpened?.())contents.closeDevTools();else contents?.openDevTools?.({mode:'detach',activate:true});
+    return {available:true,open:!!contents?.isDevToolsOpened?.()};
+  });
+
   ipcMain.handle('system:getAppearanceTheme', async () => appearanceTheme || null);
   ipcMain.handle('system:setAppearanceTheme', async (_event, value) => {
     const next=String(value||'').toLowerCase();

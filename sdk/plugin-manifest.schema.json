@@ -335,6 +335,28 @@
           }
         }
       }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "tableAppearance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cssOverrides": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "row-striping",
+                  "row-state"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "allOf": [

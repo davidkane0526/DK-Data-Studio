@@ -1,3 +1,14 @@
+# v3.61.32 — Core Table, Layout, Legend & DevTool Contracts
+
+- Make Core `TableSurface` own table typography, header/cell geometry, borders, scrolling, hover/selection and theme styling. Plugin API 1.16 packages may no longer style Core table internals directly; narrowly declared row-striping or row-state overrides remain available when genuinely needed.
+- Extend the shared SDK/application layout validator and PluginWorkspace runtime guard from clipping recovery to proactive scroll and visual-containment diagnostics. Semantic plugin regions that would paint outside their parent are recovered into contained scrolling and exposed through `layoutDiagnostics().risks`.
+- Add Core-owned multi-series legends to ScientificPlot/D3 and Plotly paths. Core chooses compact bottom/right placement, reserves the legend footprint in total plot geometry, supports legend/series interaction, recomputes placement on resize and exposes the computed legend metrics to plugins.
+- Return Resonance group charts to the shared Core legend contract instead of maintaining a plugin-owned static legend, restoring consistent legend/curve interaction across group plots.
+- Remove remaining hard-coded light Pulse-analysis and status-bar surfaces so disabled controls, file panels and bottom status chrome follow semantic light/dark theme tokens.
+- Add a `DevTool` status item for the main shell and dedicated plugin windows; it toggles DevTools for the current Electron window through a Core IPC/runtime capability.
+- Publish standalone SDK **1.16.1** while keeping Plugin API **1.16.0**. The SDK minimum host is `3.61.32` because the new table/layout/legend guarantees are host capabilities.
+- Add `test-v36132-core-ui-contracts.js` covering Core table ownership, layout containment recovery, smart legends, dark-theme status/Pulse chrome, Resonance legend adoption and DevTool wiring.
+
 # v3.61.31 — Plugin Compatibility Single Source & Core Dialog Runtime
 
 - Fix external Plugin API 1.16 packages being rejected by the Electron installer because `main.js` still advertised a stale hard-coded Plugin API 1.15.0 while the SDK and renderer Core were already on 1.16.0.

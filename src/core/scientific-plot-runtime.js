@@ -87,7 +87,7 @@
       const view=this;
       return Object.freeze({
         selection:Object.freeze({get:()=>clone(view.lastSelection||view.interaction?.get?.()||null),select:(value,options={})=>view.interaction?.select?.(value,options),clear:(options={})=>view.interaction?.clear?.(options),entityFromPoint:point=>view.entityFromPoint(point),entityFromTrace:index=>view.entityFromTrace(index)}),
-        legend:Object.freeze({entity:index=>view.entityFromTrace(index),select:(index,options={})=>view.selectTrace(index,{source:'scientific-plot-legend',...options}),state:()=>view.legendState()}),
+        legend:Object.freeze({entity:index=>view.entityFromTrace(index),select:(index,options={})=>view.selectTrace(index,{source:'scientific-plot-legend',...options}),state:()=>view.legendState(),layout:()=>view.chart?.legendMetrics?.(view.target)||null}),
         tooltip:Object.freeze({theme:()=>clone(view.chart?.tooltipTheme||window.DKDSCharts?.tooltipTheme||{}),hover:()=>clone(view.hoverState),enabled:()=>view.controllerSpec.tooltip.enabled!==false}),
         focus:Object.freeze({apply:(snapshot=view.lastSelection)=>view.applySelection(snapshot),restore:()=>view.restoreStyles(),configure:spec=>view.configureController('focus',spec)}),
         pin:Object.freeze({list:()=>[...view.pinnedIds],has:id=>view.pinnedIds.has(asId(id)),pin:(id,meta={})=>view.pin(id,meta),unpin:(id,meta={})=>view.unpin(id,meta),toggle:(id,meta={})=>view.togglePin(id,meta),clear:(meta={})=>view.clearPins(meta),subscribe:fn=>view.subscribePins(fn)}),
@@ -251,6 +251,7 @@
     unpin(target,id,meta={}){return this.get(target)?.unpin?.(id,meta)||false;}
     pins(target){return this.get(target)?.controllers?.pin?.list?.()||[];}
     stats(target){return this.get(target)?.performance?.()||null;}
+    legendMetrics(target){return this.get(target)?.chart?.legendMetrics?.(resolve(target))||window.DKDSCharts?.legendMetrics?.(target)||null;}
     lifecycleState(){const rows=[...this.views.values()].map(view=>view.lifecycleState());return {owner:this.owner,views:rows.length,suspended:rows.filter(row=>row.suspended).length,purged:rows.filter(row=>row.purged).length,managed:rows.filter(row=>row.managedRender).length,rows};}
     async suspend(options={}){return Promise.all([...this.views.values()].map(view=>view.suspend(options)));}
     async resume(options={}){return Promise.all([...this.views.values()].map(view=>view.resume(options)));}

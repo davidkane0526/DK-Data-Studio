@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.16
+# DK Data Studio Plugin SDK 1.16.1
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.29 or newer for the complete Plugin API 1.16 contract. Plugin API 1.10–1.15 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.32 or newer for the complete SDK 1.16.1 host guarantees (Plugin API remains 1.16.0). Plugin API 1.10–1.15 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -103,9 +103,15 @@ Use `ctx.data.sources` for imported project sources. Workbench plugins receive a
 
 Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). Core owns the outer safety scroll region and recovers semantic plugin containers that would otherwise clip real content. Every CSS ancestor between the workspace and a fill-height plot should use a definite/bounded height plus `min-height: 0`; grid rows that own a chart should normally use `minmax(0, 1fr)`.
 
-Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Plugin API 1.16 rejects this pattern in scientific/workspace-critical regions during SDK validation and warns when it appears in ordinary internal grids. At runtime Core also provides a final Layout Guard so a missed layout defect becomes scrolling/compact rendering rather than silent clipping or a blank scientific plot. `PluginWorkspace.layoutDiagnostics()` reports any containers that required runtime recovery; recovery is also logged once to the developer console.
+Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Plugin API 1.16 rejects this pattern in scientific/workspace-critical regions during SDK validation and warns when it appears in ordinary internal grids. At runtime Core also runs a Layout Guard preflight on size/mutation changes. It records actual scroll overflow **and child visual containment overflow** before applying recovery; unsafe `hidden`, `clip`, or `visible` semantic regions are contained with local scrolling instead of clipping or painting through their parent card. `PluginWorkspace.layoutDiagnostics()` exposes both `risks` and `guarded` rows so a developer can see what Core predicted and what it recovered.
 
 `ctx.ui.scientificPlot.create(target, spec)` accepts either an SVG element or an ordinary container. For a normal container Core creates and owns the internal SVG, sizing and lifecycle. Plugins should not create private D3/SVG interaction infrastructure.
+
+#### Core-owned multi-series legends
+
+A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Core chooses a compact external **bottom or right** placement from the current surface aspect ratio and estimated label footprint, reserves that footprint inside the plot's total size, and recomputes it when the plot is resized. The legend therefore does not cover data and the plugin must **not** guess an extra margin of its own.
+
+Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. A plugin can opt out explicitly (`legend:false` / `showlegend:false`) or provide an explicit Plotly legend position. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
 
 ### Interaction Behavior
 
@@ -232,6 +238,8 @@ const table = ctx.ui.tables.mount('summary-table', container, {
 ```
 
 The shared surface owns column resize, double-click auto-size, sorting, header actions, column hide/restore, cell/row copy, persisted column state and lifecycle. Plugins should not implement separate column-resize/sort/context-menu code for ordinary data tables. `bind(id, table)` adapts an existing DOM table; `mount(id, container, spec)` creates one through the same runtime.
+
+The **visual surface is also Core-owned**: typography, header, cell padding, borders, scrollbar container, hover/selection and theme colors come from TableSurface. Plugin CSS must not target `table/thead/tbody/tr/th/td`, `.dkds-managed-table`, or other Core TableSurface internals. Use `appearance:{density,stripe,colors}` when a domain table genuinely needs a supported variation. Rare direct row-striping/row-state CSS exceptions must be declared in `manifest.ui.tableAppearance.cssOverrides`; the validator rejects undeclared penetration into Core table internals. This keeps third-party tables visually identical to DKDS by default while still allowing explicit scientific semantics such as alternating row colors.
 
 
 ## Plugin settings (DK Data Studio 3.59+)

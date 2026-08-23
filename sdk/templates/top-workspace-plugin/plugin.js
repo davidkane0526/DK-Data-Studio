@@ -6,7 +6,7 @@
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','data.scoped-sources'],
     workspace:{role:'top',activity:'sdk-top-example',icon:'◇',title:'SDK TOP Example'},
     window:{activity:'sdk-top-example',title:'SDK TOP Example',width:1280,height:820,minWidth:860,minHeight:560,dependencies:['d3'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    data:{accepts:['science.transport.iv']},compatibility:{app:'>=3.61.29 <4.0.0',pluginApi:'^1.16.0'}
+    data:{accepts:['science.transport.iv']},compatibility:{app:'>=3.61.32 <4.0.0',pluginApi:'^1.16.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     let workbench=null;

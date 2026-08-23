@@ -1,4 +1,4 @@
-# DK Data Studio — v3.61.31
+# DK Data Studio — v3.61.32
 
 ## v3.61.31 插件安装兼容性与自绘弹窗
 

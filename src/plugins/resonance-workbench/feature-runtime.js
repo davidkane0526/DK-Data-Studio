@@ -903,14 +903,11 @@
         if(sw)return `主图可见数据：${directionName(sw.direction)} · 当前曲线峰族 · ${visible} 条扫描`;
         return `主图可见数据：全部已采纳峰族 · ${visible} 条扫描`;
       }
-      function groupLegendHtml(series=[]){
-        return series.map(sr=>`<span class="reswin-group-legend-item"><i style="background:${esc(sr.color||'#64748b')}"></i>${esc(sr.name||sr.label||'序列')}</span>`).join('');
-      }
       function ensureGroupCard(key,title){
         let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
         const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
         const card=dom.create('div');card.className='reswin-group-card';card.dataset.groupMetric=String(key);
-        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div><div class="reswin-group-legend"></div>`;
+        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div>`;
         hostEl.appendChild(card);
         const plot=card.querySelector('.reswin-group-plot');
         row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
@@ -951,16 +948,16 @@
         const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(230,Math.min(360,Math.round(cardWidth*.62)))}px`);
         const activeKeys=new Set();
         for(const [metric,title,unit] of defs){
-          activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(series);
+          activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;
           const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
-          const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:unit,gridcolor:'#edf0f5'},showlegend:false,autosize:true};
+          const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)'},yaxis:{title:unit},autosize:true};
           scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
         }
         const terKey='ter';
         if(terSeries.length){
-          activeKeys.add(terKey);const row=ensureGroupCard(terKey,'共振 TER');if(row){row.card.classList.remove('hidden');row.title='共振 TER';row.series=terSeries.map(sr=>({...sr,rows:sr.points.map(p=>({p:{vg:p.vg},value:p.ter}))}));row.card.querySelector('.reswin-group-title').textContent='共振 TER';row.card.querySelector('.reswin-group-legend').innerHTML=groupLegendHtml(terSeries);
+          activeKeys.add(terKey);const row=ensureGroupCard(terKey,'共振 TER');if(row){row.card.classList.remove('hidden');row.title='共振 TER';row.series=terSeries.map(sr=>({...sr,rows:sr.points.map(p=>({p:{vg:p.vg},value:p.ter}))}));row.card.querySelector('.reswin-group-title').textContent='共振 TER';
             const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
-            const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER (%)',gridcolor:'#edf0f5'},showlegend:false,autosize:true};
+            const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)'},yaxis:{title:'TER (%)'},autosize:true};
             scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
           }
         }

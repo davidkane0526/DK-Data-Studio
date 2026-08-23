@@ -2,10 +2,10 @@
   DKDSPlugins.define({
     id:'builtin.status-monitor',pluginType:'foundation',
     name:'Status Monitor',
-    version:'1.1.0',
+    version:'1.2.0',
     apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar"],
     order:7,
-    description:'Unified bottom status bar runtime, appearance, memory and LAN state monitor.',
+    description:'Unified bottom status bar runtime, appearance, memory, DevTools and LAN state monitor.',
     capabilities:['ui.status-bar','system.runtime-status','lan.web-status']
   }, async ctx => {
     const runtimeService=ctx.services.require('runtime');
@@ -84,6 +84,12 @@
       onClick:()=>{if(panel.classList.contains('hidden'))showMemoryPanel();else hideMemoryPanel();}
     });
 
+    const devToolsItem=ctx.ui.statusBar.add({
+      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'info',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||typeof runtimeService.toggleDevTools!=='function',
+      title:'打开当前窗口 DevTools',
+      onClick:async()=>{try{const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
+    });
+
     const lanItem=ctx.ui.statusBar.add({
       id:'lan-web',side:'right',order:30,icon:'●',
       label:ctx.runtime.isWebClient?'网页版 已连接':'网页版 检查中',state:ctx.runtime.isWebClient?'ok':'info',
@@ -110,6 +116,7 @@
       const ratio=limit>0?used/limit:0;
       memoryItem.update({label:`内存 ${formatBytes(used)}`,state:ratio>.9?'error':ratio>.78?'warn':'info',title:`实时内存占用 ${formatBytes(used)}；点击查看 ${Number(status.processCount)||0} 个组件 / 进程明细`});
       if(!panel.classList.contains('hidden'))renderMemoryPanel();
+      if(!ctx.runtime.isWebClient&&typeof runtimeService.getDevToolsState==='function')void Promise.resolve(runtimeService.getDevToolsState()).then(state=>devToolsItem.update({hidden:state?.available===false,state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'})).catch(()=>{});
     }
     function applyLan(status){
       if(stopped)return;

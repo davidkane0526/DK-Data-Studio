@@ -14,6 +14,7 @@ export interface DKDSManifest {
   id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'|'1.16.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'extension'|'developer';
+  ui?:{tableAppearance?:{cssOverrides?:Array<'row-striping'|'row-state'>}};
   requiresCore:string[]; capabilities?:string[]; source?:string;
   workspace?:{role:'top';activity:string;icon?:string;title?:string;defaultSuper?:boolean};
   data?:{accepts?:string[];produces?:string[]};
@@ -32,8 +33,10 @@ export interface DKDSTableSurface {
   resetColumn(column:number|string,options?:any):boolean; resetColumns():boolean; setColumnVisible(column:number|string,visible?:boolean,options?:any):boolean; showAllColumns():boolean; visibleColumnKeys():string[];
   sort(column:number|string,direction?:'asc'|'desc'|'none'|'toggle',options?:any):string|false; clearSort():boolean; visibleTableText(options?:{includeHeader?:boolean}):string; copyVisibleTable(options?:{includeHeader?:boolean}):boolean; resetState(options?:{persist?:boolean}):DKDSTableColumnState; columnState():DKDSTableColumnState; restoreColumnState(value:Partial<DKDSTableColumnState>,options?:any):DKDSTableColumnState; dispose():void;
 }
+export interface DKDSTableAppearance { density?:'compact'|'comfortable'; stripe?:'subtle'|'none'|false; colors?:{odd?:string;even?:string;hover?:string;selected?:string} }
+export interface DKDSTableMountSpec { table?:any; className?:string; columns?:any[]; rows?:any[]; appearance?:DKDSTableAppearance; minColumnWidth?:number; maxColumnWidth?:number; sortable?:boolean; headerMenu?:boolean; cellMenu?:boolean; copyTable?:boolean; persist?:boolean; [key:string]:any }
 export interface DKDSTableRuntime {
-  mount(id:string,container:any,spec?:any):DKDSTableSurface|null; bind(id:string,table:any,spec?:any):DKDSTableSurface|null; hydrate(root?:any,spec?:any):DKDSTableSurface[]; observe(root?:any,spec?:any):()=>void; get(idOrElement:any):DKDSTableSurface|null;
+  mount(id:string,container:any,spec?:DKDSTableMountSpec):DKDSTableSurface|null; bind(id:string,table:any,spec?:DKDSTableMountSpec):DKDSTableSurface|null; hydrate(root?:any,spec?:DKDSTableMountSpec):DKDSTableSurface[]; observe(root?:any,spec?:DKDSTableMountSpec):()=>void; get(idOrElement:any):DKDSTableSurface|null;
 }
 
 
@@ -41,7 +44,7 @@ export interface DKDSSettingsSurface<T=Record<string,any>> { get(key?:string):T|
 export interface DKDSSettingsRuntime { define<T=Record<string,any>>(id:string,spec:{title?:string;description?:string;defaults?:Partial<T>;fields?:Array<{id:string;label?:string;description?:string;type?:'text'|'number'|'select'|'boolean'|'checkbox';options?:any[];min?:number;max?:number;step?:number}>;onApply?:(value:T,meta?:any)=>void}):DKDSSettingsSurface<T>; get(id?:string):DKDSSettingsSurface|null }
 
 
-export interface DKDSScientificCurve { id:string; entityId?:string; points:any[]; color?:string; colorValue?:number; direction?:number; dash?:string|null; opacity?:number; strokeWidth?:number; source?:any }
+export interface DKDSScientificCurve { id:string; entityId?:string; /** Legend label. Defaults to name/title/id. */ label?:string; name?:string; title?:string; /** Core auto legend includes the curve unless false. */ legend?:boolean; /** Initial Core visibility. */ visible?:boolean; points:any[]; color?:string; colorValue?:number; direction?:number; dash?:string|null; opacity?:number; strokeWidth?:number; source?:any }
 export interface DKDSScientificMarker { id:string; entityId?:string; curveId:string; x:number; y:number; color?:string; shape?:string; locked?:boolean; accepted?:boolean; source?:any }
 export interface DKDSPlotManipulatorSnap { kind:'curve'; curveId:string }
 export interface DKDSPlotManipulatorConstraints { min?:number; max?:number; contains?:number; containsGap?:number; minSpan?:number }
@@ -86,7 +89,7 @@ export interface DKDSPluginWorkspaceMountContext { workbench:DKDSPluginWorkspace
 export interface DKDSPluginWorkspacePrimarySpec { id:string; label?:string; leftNode?:any; mainNode?:any; leftHtml?:string|(()=>string); mainHtml?:string|(()=>string); scroll?:'safe'|'auto'|'contained'; scrollMode?:'safe'|'auto'|'contained'; mount?:(context:DKDSPluginWorkspaceMountContext)=>void|(()=>void) }
 export interface DKDSPluginWorkspace {
   readonly shell:HTMLElement; readonly slots?:any;
-  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:any):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
+  mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:any):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;risks:ReadonlyArray<{element:string;tag:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number;containmentX:number;containmentY:number;unsafeX:boolean;unsafeY:boolean;recovered:boolean}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
 }
 export interface DKDSPluginWorkspaceRuntime { create(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace }
 export interface DKDSTopWorkspaceSpec {
@@ -96,12 +99,12 @@ export interface DKDSTopWorkspaceSpec {
 export interface DKDSTopWorkspaceRuntime { register(spec:DKDSTopWorkspaceSpec):any; isSuper():boolean }
 
 export interface DKDSScientificCurveSurfaceSpec {
-  container?:any; /** Preferred geometry; Core renders compactly or recovers space instead of silently blanking. */ minWidth?:number; minHeight?:number; /** Hard lower bound used only when a surface is truly too small to draw. */ hardMinWidth?:number; hardMinHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string; yScaleType?:'linear'|'log'; renderPriority?:'frame'|'idle'|string;
+  container?:any; /** Preferred geometry; Core renders compactly or recovers space instead of silently blanking. */ minWidth?:number; minHeight?:number; /** Hard lower bound used only when a surface is truly too small to draw. */ hardMinWidth?:number; hardMinHeight?:number; margin?:Partial<{top:number;right:number;bottom:number;left:number}>; xTitle?:string; yTitle?:string; yScaleType?:'linear'|'log'; renderPriority?:'frame'|'idle'|string; /** Multi-series plots get a Core-owned external legend by default. Its footprint is reserved inside the total plot size. */ legend?:false|{enabled?:boolean;placement?:'auto'|'bottom'|'right';interaction?:'isolate'|'none';maxRows?:number};
   xValue?:(point:any)=>number; yValue?:(point:any)=>number; yTickFormat?:(value:number)=>string; source?:string; interaction?:any; interactionBehavior?:DKDSInteractionBehaviorProfile|{activity?:string;bindings?:DKDSInteractionBehaviorBinding[];onIntent?:(context:any)=>boolean|void}; navigationTools?:boolean;
   getCurves:()=>DKDSScientificCurve[]; getMarkers?:()=>DKDSScientificMarker[]; getManipulators?:()=>DKDSPlotManipulator[]; getColorDomainValues?:()=>number[]; colorScale?:(context:any)=>any;
   getView?:()=>{xDomain?:number[]|null;yDomain?:number[]|null}; setView?:(view:{xDomain?:number[]|null;yDomain?:number[]|null},meta?:any)=>void;
   getRangeSelection?:()=>any; rangeSelectionTarget?:string; rangeSelectionType?:string; showMarkers?:()=>boolean; showWidth?:()=>boolean; getMarkerWidth?:(marker:DKDSScientificMarker)=>any;
-  onColorScale?:(scale:any,meta?:any)=>void; onDisplayScaleChanged?:(payload:{axis:'y';type:'linear'|'log';surface:DKDSScientificCurveSurface})=>void; onCurveSelect?:(payload:any)=>void; onCurveModifiedClick?:(payload:any)=>void; onCurveDoubleClick?:(payload:any)=>void;
+  onColorScale?:(scale:any,meta?:any)=>void; onLegendChange?:(payload:{soloId:string;curveId:string;visibleIds:string[];surface:DKDSScientificCurveSurface;event?:Event})=>void; onDisplayScaleChanged?:(payload:{axis:'y';type:'linear'|'log';surface:DKDSScientificCurveSurface})=>void; onCurveSelect?:(payload:any)=>void; onCurveModifiedClick?:(payload:any)=>void; onCurveDoubleClick?:(payload:any)=>void;
   onMarkerSelect?:(payload:any)=>void; onMarkerDoubleClick?:(payload:any)=>void; onMarkerDelete?:(payload:any)=>void; onLockedMarkerAction?:(payload:any)=>void; onMarkerHover?:(payload:any)=>void;
   /** Generic direct manipulation lifecycle. Preview is pointer-rate visual feedback; commit is the only normal place to persist domain/project state. */
   onManipulationStart?:(payload:DKDSPlotManipulationPayload)=>void;
@@ -120,12 +123,13 @@ export interface DKDSScientificCurveSurfaceSpec {
   /** @deprecated v1.10 compatibility hook. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
   /** @deprecated v1.10 compatibility hook. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
 }
-export interface DKDSScientificCurveSurface { readonly target:any; layoutDiagnostics():Readonly<{status:'initial'|'ready'|'compact'|'waiting'|string;width:number;height:number;preferredMinWidth:number;preferredMinHeight:number;hardMinWidth:number;hardMinHeight:number;fallbackApplied:boolean;compact:boolean;reason:string}>; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
+export interface DKDSScientificLegendMetrics { enabled:boolean; placement:'none'|'auto'|'bottom'|'right'|'explicit'|string; count:number; rows:number; width:number; height:number; reserve:number; reason?:string; soloId?:string }
+export interface DKDSScientificCurveSurface { readonly target:any; layoutDiagnostics():Readonly<{status:'initial'|'ready'|'compact'|'waiting'|string;width:number;height:number;preferredMinWidth:number;preferredMinHeight:number;hardMinWidth:number;hardMinHeight:number;fallbackApplied:boolean;compact:boolean;reason:string;legend:Readonly<DKDSScientificLegendMetrics>}>; legendLayout():Readonly<DKDSScientificLegendMetrics>; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
 export interface DKDSScientificPlotRuntime {
   create(target:any,spec:DKDSScientificCurveSurfaceSpec):DKDSScientificCurveSurface; createPlotly(target:any,spec?:any):any; attach(target:any,spec?:any):any;
   react(target:any,data?:any[],layout?:any,config?:any,spec?:any):any; scalarField(target:any,field?:any,options?:any):any; get(target:any):any; controller(target:any,name:string):any;
   resize(target:any):any; restyle(target:any,update:any,traces?:any):any; relayout(target:any,update:any):any; viewport(target:any):any; setViewport(target:any,state:any,meta?:any):boolean; resetViewport(target:any,meta?:any):boolean;
-  pin(target:any,id:string,meta?:any):boolean; unpin(target:any,id:string,meta?:any):boolean; pins(target:any):any[]; stats(target:any):any; suspend(target:any,options?:any):boolean; resume(target:any,options?:any):boolean; lifecycleState():any; saveImage(target:any,baseName:string,format?:string,options?:any):any; purge(target:any):any;
+  pin(target:any,id:string,meta?:any):boolean; unpin(target:any,id:string,meta?:any):boolean; pins(target:any):any[]; stats(target:any):any; /** Returns the Core-computed external legend footprint so adjacent plugin UI can reserve space without guessing. */ legendMetrics(target:any):DKDSScientificLegendMetrics|null; suspend(target:any,options?:any):boolean; resume(target:any,options?:any):boolean; lifecycleState():any; saveImage(target:any,baseName:string,format?:string,options?:any):any; purge(target:any):any;
 }
 
 export interface DKDSReactiveTaskResult<T=any>{accepted:boolean;stale:boolean;token:number;value:T}

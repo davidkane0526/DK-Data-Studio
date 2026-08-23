@@ -117,3 +117,10 @@ ctx.ui.menus.add({ id:'run', label:'运行工具', command:'com.example.tool.run
 - 独立窗口中的 ScientificPlot 依赖必须明确声明。
 
 默认模板见 `sdk/templates/tool-plugin/`。
+
+
+## SDK 1.16.1 layout/legend/table guarantees
+
+- `PluginWorkspace` owns viewport safety and records overflow/containment risks before recovering unsafe regions with scrolling.
+- Multi-series `ScientificPlot` legends are Core-owned by default; Core reserves their measured/estimated footprint and exposes legend metrics. Do not add a second plugin legend unless domain semantics genuinely require one.
+- `TableSurface` owns table CSS. Style the host only; use TableSurface `appearance` for supported variations. Direct internal table CSS is a validator error unless a narrow row override is declared.

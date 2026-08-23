@@ -111,6 +111,16 @@
     if (statusEl) statusEl.textContent = String(text || '');
   }
 
+  let hostDevToolsButton=null;
+  function installHostDevToolsStatusItem(){
+    if(hostDevToolsButton||!window.electronAPI?.toggleDevTools)return hostDevToolsButton;
+    const zone=$('#statusBarPluginRight');if(!zone)return null;
+    const button=document.createElement('button');button.type='button';button.className='plugin-status-item compact devtools-status-item';button.dataset.state='info';button.title='打开/关闭当前插件窗口 DevTools';button.innerHTML='<span class="plugin-status-icon">⌘</span><span class="plugin-status-label">DevTool</span>';
+    const apply=state=>{const open=!!state?.open;button.classList.toggle('active',open);button.setAttribute('aria-pressed',String(open));button.title=open?'关闭当前插件窗口 DevTools':'打开当前插件窗口 DevTools';};
+    button.addEventListener('click',async()=>{try{apply(await window.electronAPI.toggleDevTools());}catch(err){setStatus(`DevTool：${err?.message||err}`);}});
+    zone.appendChild(button);hostDevToolsButton=button;void window.electronAPI.getDevToolsState?.().then(apply).catch(()=>{});return button;
+  }
+
   function showStartupError(err) {
     const message = err?.message || String(err || '未知错误');
     if (errorTextEl) errorTextEl.textContent = message;
@@ -538,7 +548,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.31',
+      appVersion:'3.61.32',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       closeCurrentWindow:closeAnalysisPage,
@@ -563,7 +573,7 @@
       makeFloating:()=>{},
       artifacts:artifactsApi,
       panels:{},
-      services:{}
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()})}
     };
   }
 
@@ -648,6 +658,7 @@
     }
 
     window.DKDSPlugins.configure(host);
+    installHostDevToolsStatusItem();
     for(const provider of (spec.algorithmProviders||[])){
       for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
     }

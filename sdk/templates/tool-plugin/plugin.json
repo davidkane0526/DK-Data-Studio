@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "apiVersion": "1.16.0",
   "entry": "plugin.js",
-  "scripts": ["plugin.js"],
-  "styles": ["plugin.css"],
+  "scripts": [
+    "plugin.js"
+  ],
+  "styles": [
+    "plugin.css"
+  ],
   "enabled": true,
   "order": 920,
   "description": "Tool Workspace using the same dedicated-window contract as TOP, grouped under the Core Tools button.",
@@ -19,7 +23,12 @@
     "ui.top-workspace",
     "ui.pages"
   ],
-  "capabilities": ["ui.page", "ui.top-workspace", "ui.plugin-workspace", "ui.scientific-plot"],
+  "capabilities": [
+    "ui.page",
+    "ui.top-workspace",
+    "ui.plugin-workspace",
+    "ui.scientific-plot"
+  ],
   "workspace": {
     "role": "top",
     "activity": "sdk-tool-example",
@@ -33,14 +42,16 @@
     "height": 720,
     "minWidth": 760,
     "minHeight": 520,
-    "dependencies": ["d3"],
+    "dependencies": [
+      "d3"
+    ],
     "prewarm": false,
     "reuse": true,
     "persistence": "project",
     "artifactHydration": "live"
   },
   "compatibility": {
-    "app": ">=3.61.29 <4.0.0",
+    "app": ">=3.61.32 <4.0.0",
     "pluginApi": "^1.16.0"
   }
 }

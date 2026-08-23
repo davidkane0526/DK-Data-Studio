@@ -7,10 +7,10 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.31','SDK/Plugin Host hardening release must be v3.61.31');
+assert.equal(json('package.json').version,'3.61.32','SDK/Plugin Host hardening release must be v3.61.32');
 const contract=json('sdk/contract.json');
 assert.equal(contract.pluginApiVersion,'1.16.0','Plugin API 1.16 must be the current standalone SDK contract');
-assert.equal(contract.minimumAppVersion,'3.61.29','Plugin API 1.16 requires the hardened Plugin Host baseline');
+assert.equal(contract.minimumAppVersion,'3.61.32','Plugin API 1.16 requires the hardened Plugin Host baseline');
 
 const components=read('src/core/component-runtime.js');
 assert(components.includes('isEventTarget')&&components.includes("value===window||value===document"),'scoped DOM runtime must support lifecycle-safe window/document EventTargets');

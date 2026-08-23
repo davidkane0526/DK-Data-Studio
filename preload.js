@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
   saveProject: payload => ipcRenderer.invoke('files:saveProject', payload),
   getRuntimeStatus: () => ipcRenderer.invoke('system:getRuntimeStatus'),
+  getDevToolsState: () => ipcRenderer.invoke('system:getDevToolsState'),
+  toggleDevTools: () => ipcRenderer.invoke('system:toggleDevTools'),
   appearanceGetTheme: () => ipcRenderer.invoke('system:getAppearanceTheme'),
   appearanceSetTheme: theme => ipcRenderer.invoke('system:setAppearanceTheme', theme),
   onAppearanceThemeChanged: callback => {

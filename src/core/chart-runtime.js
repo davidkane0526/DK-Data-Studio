@@ -1,8 +1,11 @@
 (() => {
   if(window.DKDSCharts)return;
-  const VERSION='1.6.0';
+  const VERSION='1.7.0';
   const ownerBindings=new Map();
   const displayScaleStates=new WeakMap();
+  const legendLayoutStates=new WeakMap();
+  const legendBaseLayouts=new WeakMap();
+  const legendResizeFrames=new WeakMap();
   const chartScriptUrl=document.currentScript?.src||globalThis.location?.href||'file:///src/core/chart-runtime.js';
   const defaultPlotlySource=typeof URL==='function'?new URL('../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js',chartScriptUrl).href:'../../node_modules/plotly.js-cartesian-dist-min/plotly-cartesian.min.js';
   let runtimeConfig={plotlyAllowed:true,plotlySource:defaultPlotlySource,host:'main'};
@@ -81,6 +84,21 @@
     return next;
   }
   function themeData(data=[]){return (Array.isArray(data)?data:[]).map(themeTrace);}
+  function legendableTrace(trace={}){const type=String(trace?.type||'scatter').toLowerCase();return trace?.showlegend!==false&&!!String(trace?.name||'').trim()&&!['heatmap','contour','surface','image','histogram2d','histogram2dcontour'].includes(type);}
+  function smartLegendLayout(target,data=[],layout={}){
+    const source=layout&&typeof layout==='object'?layout:{};const traces=(Array.isArray(data)?data:[]).filter(legendableTrace);const explicitOff=source.showlegend===false;
+    if(explicitOff||traces.length<2){const next={...source};legendLayoutStates.set(target,{enabled:false,placement:'none',count:traces.length,rows:0,width:0,height:0,reserve:0,reason:explicitOff?'explicit-disabled':'single-series'});return next;}
+    const current=source.legend&&typeof source.legend==='object'?source.legend:{};const explicitPlacement=['x','y','orientation'].some(key=>Object.prototype.hasOwnProperty.call(current,key))&&current.autoplace!==true;
+    if(explicitPlacement){legendLayoutStates.set(target,{enabled:true,placement:'explicit',count:traces.length,rows:0,width:0,height:0,reserve:0,reason:'explicit-layout'});return {...source,showlegend:true,legend:{itemclick:'toggleothers',itemdoubleclick:'toggle',...current}};}
+    const rect=target?.getBoundingClientRect?.()||{};const width=Math.max(240,Number(rect.width)||Number(source.width)||640),height=Math.max(160,Number(rect.height)||Number(source.height)||360);const margin={l:60,r:24,t:28,b:48,...(source.margin||{})};
+    const entryWidths=traces.map(trace=>Math.min(210,38+String(trace.name||'').length*7.1)),availableW=Math.max(130,width-margin.l-margin.r-12),total=entryWidths.reduce((sum,value)=>sum+value,0)+Math.max(0,traces.length-1)*8,rows=Math.max(1,Math.ceil(total/availableW)),bottomHeight=rows*27+8,maxEntry=Math.max(...entryWidths,90),rightWidth=Math.min(Math.max(maxEntry+14,124),Math.max(124,width*.31));
+    const bottomRatio=bottomHeight/height,rightRatio=rightWidth/width,placement=(rows<=3&&bottomRatio<=.28)||rightRatio>.27||width<560?'bottom':'right';const nextMargin={...margin};let legend,reserve;
+    if(placement==='right'){reserve=rightWidth+12;nextMargin.r=Math.max(nextMargin.r,Math.ceil(reserve));legend={orientation:'v',x:1.02,xanchor:'left',y:1,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}
+    else{reserve=bottomHeight;nextMargin.b=Math.max(nextMargin.b,48+Math.ceil(reserve));legend={orientation:'h',x:.5,xanchor:'center',y:-.19,yanchor:'top',traceorder:'normal',itemclick:'toggleothers',itemdoubleclick:'toggle'};}
+    const metrics={enabled:true,placement,count:traces.length,rows:placement==='bottom'?rows:traces.length,width:placement==='right'?rightWidth:availableW,height:placement==='bottom'?bottomHeight:Math.min(height-margin.t-margin.b,traces.length*27+8),reserve,reason:'auto-external'};legendLayoutStates.set(target,metrics);
+    return {...source,showlegend:true,margin:nextMargin,legend:{...legend,...current,autoplace:true}};
+  }
+  function legendMetrics(target){const el=element(target)||target;return {...(legendLayoutStates.get(el)||{enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0,reason:'unrendered'})};}
   function normalizeConfig(config={}){
     const source=config&&typeof config==='object'?config:{};
     if(source.staticPlot===true)return {responsive:true,displaylogo:false,...source,displayModeBar:false,scrollZoom:false};
@@ -178,11 +196,11 @@
   function adoptDisplayScale(target,data=null,layout=null,config=null){const el=element(target)||target;if(!el)return null;const state=displayState(el);state.sourceData=themeData(data||el.data||[]);state.sourceLayout=themeLayout(layout||el.layout||{});state.sourceConfig=normalizeConfig(config||el._context||{});const nextAxis=displayAxisFor(state.sourceData,state.sourceLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(state.sourceLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);if(el?.dataset){el.dataset.dkdsDisplayAxis=state.axis;el.dataset[state.axis==='z'?'dkdsZScale':'dkdsYScale']=String(state.mode||state.baseType||'linear');}return displayScaleState(el);}
   function toggleDisplayScale(target,requestedAxis=''){const el=element(target)||target;if(!el)return Promise.resolve(false);const state=displayState(el),axis=String(requestedAxis||state.axis||'y');if(requestedAxis&&axis!==String(state.axis||'y'))return Promise.resolve(false);if(!toggleableAxisType(state.baseType))return Promise.resolve(false);state.mode=(String(state.mode||state.baseType).toLowerCase()==='log')?'linear':'log';const run=P=>renderDisplay(el,P,state).then(()=>{try{el.dispatchEvent(new CustomEvent('dkds:display-scale-changed',{detail:{axis,type:state.mode}}));}catch{}return state.mode;});const P=plotly();return P?.react?run(P):ensurePlotly({reason:'display-scale'}).then(run);}
   function toggleYAxisDisplay(target){return toggleDisplayScale(target,'y');}
-  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config),themedLayout=themeLayout(layout),state=displayState(el);state.sourceData=rows;state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);const P=plotly();if(P?.react)return renderDisplay(el,P,state);return ensurePlotly({reason:'react'}).then(next=>renderDisplay(el,next,state));}
+  function react(target,data=[],layout={},config={}){const el=element(target)||target,rows=themeData(data),cfg=normalizeConfig(config);if(el)legendBaseLayouts.set(el,cloneLayout(layout||{}));const smartLayout=smartLegendLayout(el,rows,layout),themedLayout=themeLayout(smartLayout),state=displayState(el);state.sourceData=rows;state.sourceLayout=themedLayout;state.sourceConfig=cfg;const nextAxis=displayAxisFor(rows,themedLayout)||'y';if(state.axis!==nextAxis)state.mode=null;state.axis=nextAxis;state.baseType=state.axis==='z'?'linear':axisType(themedLayout);if(state.mode&&!toggleableAxisType(state.baseType))state.mode=null;installDisplayScale(el);const P=plotly();if(P?.react)return renderDisplay(el,P,state);return ensurePlotly({reason:'react'}).then(next=>renderDisplay(el,next,state));}
   function restyle(target,update,traces){const el=element(target)||target;const P=plotly();return P?.restyle?P.restyle(el,update,traces):ensurePlotly({reason:'restyle'}).then(next=>next.restyle(el,update,traces));}
   function relayout(target,update){const el=element(target)||target;const P=plotly();return P?.relayout?P.relayout(el,update):ensurePlotly({reason:'relayout'}).then(next=>next.relayout(el,update));}
-  function resize(target){const el=element(target);if(!el||el.offsetParent===null||!plotly()?.Plots?.resize)return false;try{plotly().Plots.resize(el);return true;}catch{return false;}}
-  function purge(target){const el=element(target);if(!el||!plotly()?.purge)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}displayScaleStates.delete(el);try{plotly().purge(el);return true;}catch{return false;}}
+  function resize(target){const el=element(target),P=plotly();if(!el||el.offsetParent===null||!P?.Plots?.resize)return false;try{P.Plots.resize(el);const base=legendBaseLayouts.get(el),state=displayScaleStates.get(el);if(base&&state?.sourceData?.length){const previous=legendLayoutStates.get(el)||{};const smart=smartLegendLayout(el,state.sourceData,base),next=themeLayout(smart),current=legendLayoutStates.get(el)||{};const changed=previous.placement!==current.placement||Math.abs((previous.reserve||0)-(current.reserve||0))>2||previous.rows!==current.rows;if(changed){const pending=legendResizeFrames.get(el);if(pending){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(pending);}catch{}}const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));legendResizeFrames.set(el,raf(()=>{legendResizeFrames.delete(el);if(!el.isConnected)return;state.sourceLayout=next;Promise.resolve(P.relayout(el,{showlegend:next.showlegend,margin:next.margin,legend:next.legend})).catch(()=>{});}));}}return true;}catch{return false;}}
+  function purge(target){const el=element(target);if(!el||!plotly()?.purge)return false;const state=displayScaleStates.get(el);if(state?.handler)try{el.removeEventListener?.('dblclick',state.handler,true);}catch{}displayScaleStates.delete(el);legendLayoutStates.delete(el);legendBaseLayouts.delete(el);const legendFrame=legendResizeFrames.get(el);if(legendFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(legendFrame);}catch{}legendResizeFrames.delete(el);}try{plotly().purge(el);return true;}catch{return false;}}
   function bind(owner,target,event,handler,{replace=false}={}){
     const el=element(target);if(!el||typeof el.on!=='function')return()=>{};
     if(replace){try{el.removeAllListeners?.(event);}catch{}}
@@ -215,7 +233,7 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,ensurePlotly,runtimeState,
-      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get plotly(){return plotly();},get d3(){return window.d3;}})
@@ -236,5 +254,5 @@
   }
   try{globalThis.addEventListener?.('dkds:theme-changed',()=>queueMicrotask(refreshRenderedTheme));}catch{}
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,ensurePlotly,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

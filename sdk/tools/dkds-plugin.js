@@ -58,7 +58,7 @@ function validate(folder){
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
   for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API ${API} development contract`);
   const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
-  const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,styles:styleRows});
+  const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,ui:m.ui||{},styles:styleRows});
   errors.push(...layoutAudit.errors);for(const warning of layoutAudit.warnings)console.warn(`DKDS SDK WARNING: ${warning}`);
   const topWorkspace=m?.workspace?.role==='top';
   if(m.pluginType==='tool'&&!topWorkspace){
