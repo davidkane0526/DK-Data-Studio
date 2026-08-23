@@ -26,7 +26,7 @@ const css=read('src/style.css'),modern=read('src/ui-modern.css');
 assert(css.includes('.dkds-scientific-chart-host'),'Scientific renderer must expose Core-owned host chrome.');
 assert(css.includes('.dkds-plot-legend.dkds-scientific-auto-legend'),'D3 must use the shared HTML legend presentation.');
 assert(css.includes('opacity:0!important')&&css.includes('pointer-events:none!important'),'Navigation chrome must auto-hide without participating in layout.');
-assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('height:auto!important'),'safe PluginWorkspace must allow semantic Primary content to grow.');
+assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('height:100%!important')&&css.includes('overflow:auto!important'),'safe PluginWorkspace must retain a bounded Core-owned Primary scroll viewport.');
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger')&&modern.includes('background:transparent!important'),'Dark shell menu triggers must not inherit legacy white paint.');
 assert(modern.includes('semantic structural bridge'),'Legacy scientific card borders/surfaces must resolve through semantic theme tokens.');
 assert(!/js-plotly|dkds-plotly/i.test(modern),'Modern theme must contain no vendor-specific scientific renderer chrome.');

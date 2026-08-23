@@ -15,7 +15,7 @@ function inspectWorkspaceStyles({apiVersion,pluginType,workspace,ui={},styles=[]
   const layoutRelevant=top||['workbench','tool','task','extension','developer'].includes(String(pluginType||''));
   const errors=[],warnings=[];
   const tableOverrides=new Set(Array.isArray(ui?.tableAppearance?.cssOverrides)?ui.tableAppearance.cssOverrides.map(String):[]);
-  const riskyName=/(?:^|[-_.#])(root|main|content|card|panel|workbench|page|body|section|grid|results?|controls?|shell|layout|view)(?:$|[-_.:#\s>+~])/i;
+  const riskyName=/(?:^|[-_.#])(root|main|content|card|panel|workbench|page|body|section|grid|results?|controls?|shell|layout|view|designer|form|editor)(?:$|[-_.:#\s>+~])/i;
   const visualName=/(plot|chart|canvas|svg|image|viewport)/i;
   const criticalFlexibleName=/(plot|chart|canvas|viewport|scientific|graph|waveform|workbench|workspace|shell|main|content|layout|view|results?)/i;
   const hostSelector=/(^|[\s,>+~])(html|body|#app)(?=$|[\s,>+~.#:[\]])|\.dkds-(?:plugin-workspace|analysis-|plugin-canvas-|scientific-)|#statusBar\b|\.plugin-window-status\b/i;
@@ -41,6 +41,12 @@ function inspectWorkspaceStyles({apiVersion,pluginType,workspace,ui={},styles=[]
       const explicitVisible=/(?:^|;)\s*overflow(?:-[xy])?\s*:\s*visible\b/i.test(body);
       const largeMinimum=/(?:^|;)\s*min-height\s*:\s*(?:[2-9]\d{2}|1\d{3,})px\b/i.test(body);
       if(layoutRelevant&&semanticTarget&&explicitVisible&&largeMinimum)warnings.push(`${name}: "${selector}" combines overflow:visible with a large minimum height. Core will contain real overflow at runtime, but prefer flexible minmax(0,1fr)/auto rows so containment recovery is unnecessary.`);
+      const percentageMinHeight=/(?:^|;)\s*min-height\s*:\s*100%(?=\s*;|\s*$)/i.test(body);
+      if(layoutRelevant&&semanticTarget&&percentageMinHeight)warnings.push(`${name}: "${selector}" chains min-height:100% into a semantic workspace region. In Core safe mode the Primary viewport already owns the height floor; prefer min-height:0 so content cannot feed its intrinsic height back into the Host.`);
+      const gridRows=body.match(/(?:^|;)\s*grid-template-rows\s*:\s*([^;]+)/i)?.[1]||'';
+      const autoRows=(gridRows.match(/(?:^|\s)auto(?=\s|$)/gi)||[]).length;
+      const compactAutoGrid=/(?:^|;)\s*display\s*:\s*(?:inline-)?grid\b/i.test(body)&&autoRows>=2&&!/(?:^|;)\s*align-content\s*:\s*(?:start|flex-start)\b/i.test(body);
+      if(layoutRelevant&&semanticTarget&&compactAutoGrid)warnings.push(`${name}: "${selector}" uses ${autoRows} auto Grid rows without align-content:start. If a sibling makes this card taller, CSS Grid can distribute spare height between the auto rows and create large blank gaps; declare align-content:start for compact form/card layouts.`);
       const positiveFlexibleRow=/(?:^|;)\s*grid-template-rows\s*:[^;]*minmax\(\s*[1-9]\d*(?:\.\d+)?px\s*,\s*1fr\s*\)/i.test(body);
       if(positiveFlexibleRow){
         const criticalTarget=targets.some(target=>criticalFlexibleName.test(target));

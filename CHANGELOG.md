@@ -1,3 +1,11 @@
+# v3.61.39 — Stable PluginWorkspace Viewport Contract
+
+- Redefine `primaryScroll:"safe"` as one bounded Core-owned Primary viewport with one scrollbar. Plugin content may exceed the viewport, but it can no longer turn the PluginWorkspace or Dedicated Tool window into the scroll owner and recursively feed content height back into Host geometry.
+- Remove the contradictory late CSS overrides that previously changed `safe` from bounded scrolling back into `height:auto / overflow:visible` document-flow growth. `auto` is now the only explicit document-flow mode; `contained` remains the bounded no-scroll canvas mode.
+- Update standalone SDK templates and docs to use flexible `min-height:0` roots. Add layout-validator warnings for semantic `min-height:100%` chains and compact all-`auto` Grid rows without `align-content:start`, the latter being a common source of Tool cards stretching into large blank vertical gaps beside taller siblings.
+- Add `test-v36139-stable-plugin-viewport.js` and include it in both full gates and SDK Harness so safe/auto/contained geometry cannot drift back into contradictory meanings.
+- Publish SDK **1.17.6** while retaining Plugin API **1.17.0**; complete stable-viewport guarantees require DK Data Studio **3.61.39**.
+
 # v3.61.38 — External Tool Dedicated-Window Contract Closure
 
 - Make the packaged `.dkplugin` manifest canonical in both owner and dedicated renderers. The dedicated renderer now applies the packaged manifest after evaluating package scripts and before Core contract validation/activation, removing the split-brain case where Tools navigation used package metadata while the independent window used stale runtime-embedded metadata.

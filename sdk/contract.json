@@ -1,18 +1,19 @@
 {
-  "sdkVersion": "1.17.5",
+  "sdkVersion": "1.17.6",
   "pluginApiVersion": "1.17.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.61.38",
+  "minimumAppVersion": "3.61.39",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.17.6 stabilizes PluginWorkspace safe geometry: Core owns a bounded Primary viewport and scrollbar, while SDK validation/templates flag percentage-height chains and stretched auto-row grids that can make Tool workspaces appear to grow. Plugin API remains 1.17.0.",
     "SDK 1.17.5 closes the external Tool dedicated-window contract: the .dkplugin manifest is canonical in both owner and dedicated renderers, and host smoke tests require the requested activity, TOP workspace, and visible page to mount before PASS. Plugin API remains 1.17.0.",
     "SDK 1.17.4 fixes Core D3 scalar-field automatic limits and adds stable Cartesian autorange padding; Plugin API remains 1.17.0.",
     "New plugins target Plugin API 1.17.0; Plugin API 1.10-1.16 packages remain loadable.",
     "SDK 1.17.4 makes scientific rendering single-backend and vendor-neutral at the Plugin API boundary: plugins declare scientific-renderer and Core implements the scientific renderer with D3 only.",
     "Multi-series ScientificPlot surfaces provide a Core-owned interactive legend scoped to the individual plot host; semantic legendgroup members isolate together even when only one member owns the visible legend item.",
     "ScientificPlot keeps a stable reserved legend footprint once a surface becomes multi-series, preventing transient trace-count changes from changing plot geometry.",
-    "PluginWorkspace safe mode keeps semantic Primary content reachable through Core-owned outer scrolling; contained mode remains available for intentionally bounded full-viewport surfaces.",
+    "PluginWorkspace safe mode keeps semantic Primary content reachable inside a bounded Core-owned Primary viewport and scrollbar; auto mode is reserved for intentional document-flow growth and contained mode for bounded no-scroll surfaces.",
     "ScientificCurveSurface minWidth/minHeight are preferred geometry, not a silent-render gate; Core may recover or render compactly.",
     "Tool/TOP workspaces use one reusable dedicated window contract with Core-owned import, theme, viewport, navigation and status-bar geometry.",
     "The SDK is standalone and does not require DK Data Studio source code."

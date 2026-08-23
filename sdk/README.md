@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.17.5
+# DK Data Studio Plugin SDK 1.17.6
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.38 or newer for the complete SDK 1.17.5 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.39 or newer for the complete SDK 1.17.6 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -62,7 +62,7 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
-### Scientific presentation contract (SDK 1.17.5)
+### Scientific presentation contract (SDK 1.17.6)
 
 The Core D3 scientific renderer is a rendering engine only. Core owns one shared **Scientific Presentation** layer for automatic legend placement, two-row packing, per-surface legend scope, curve-to-legend focus, reversible legend isolation, compact draggable navigation tools, and semantic light/dark styling. A plugin should declare series identity/labels/groups and data; it should not implement its own generic legend packing or renderer chrome.
 
@@ -109,9 +109,9 @@ Use `ctx.data.sources` for imported project sources. Workbench plugins receive a
 
 #### Bounded scientific layout
 
-Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). In safe mode the PluginWorkspace outer canvas owns scrolling while the plugin Primary root is allowed to grow to its semantic content, so controls/results cannot be silently clipped by a fixed-height host. Use `primaryScroll:"contained"` only for a true full-viewport surface that intentionally owns a bounded height. Grid rows that own a contained chart should normally use `minmax(0, 1fr)`.
+Viewport-owned scientific charts must live in a bounded layout. Prefer the default `primaryScroll: "safe"` (or declare it explicitly). In `safe` mode Core owns a **fixed Primary viewport and its scrollbar**: plugin content may be taller than the viewport, but it must not enlarge the host or move the scroll owner upward into the window. Keep the plugin root flexible (`width:100%; min-width:0; min-height:0`); Core provides the viewport floor. Use `primaryScroll:"auto"` only for a page that intentionally participates in document-flow growth, and `primaryScroll:"contained"` only for a true full-viewport surface that intentionally forbids host scrolling. Grid rows that own a contained chart should normally use `minmax(0, 1fr)`.
 
-Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Plugin API 1.16 rejects this pattern in scientific/workspace-critical regions during SDK validation and warns when it appears in ordinary internal grids. At runtime Core also runs a Layout Guard preflight on size/mutation changes. It records actual scroll overflow **and child visual containment overflow** before applying recovery; unsafe `hidden`, `clip`, or `visible` semantic regions are contained with local scrolling instead of clipping or painting through their parent card. `PluginWorkspace.layoutDiagnostics()` exposes both `risks` and `guarded` rows so a developer can see what Core predicted and what it recovered.
+Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive px>, 1fr)` and a responsive scientific plot. A plot resize can then increase the parent's intrinsic size, which triggers another ResizeObserver pass and produces a self-growing chart. Likewise, a compact form/card grid made only of `auto` rows will distribute spare height when the card is stretched by a taller sibling unless it declares `align-content:start`; this is the common cause of large blank vertical gaps in two-column Tool layouts. SDK validation reports these risky patterns. At runtime Core also runs a Layout Guard preflight on size/mutation changes. It records actual scroll overflow **and child visual containment overflow** before applying recovery; unsafe `hidden`, `clip`, or `visible` semantic regions are contained with local scrolling instead of clipping or painting through their parent card. `PluginWorkspace.layoutDiagnostics()` exposes both `risks` and `guarded` rows so a developer can see what Core predicted and what it recovered.
 
 `ctx.ui.scientificPlot.create(target, spec)` accepts either an SVG element or an ordinary container. For a normal container Core creates and owns the internal SVG, sizing and lifecycle. Plugins should not create private D3/SVG interaction infrastructure.
 

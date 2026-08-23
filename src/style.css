@@ -4453,9 +4453,21 @@ body.plugin-window-host:not([data-plugin-id="builtin.resonance-workbench"]){
 .dkds-plugin-workspace .dkds-plugin-sub-page-host{flex:1 1 0%;height:0;max-height:100%;width:100%;min-width:0;min-height:0;overflow:auto!important;padding:0!important}
 .dkds-plugin-workspace .dkds-plugin-sub-page-host.hidden{display:none!important}
 .dkds-plugin-workspace .dkds-plugin-canvas-frame.hidden{display:none!important}
-.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center{overflow:hidden}
-.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host{height:100%;min-height:0!important;overflow:hidden!important}
-.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host>*{height:100%;min-height:0;min-width:0}
+/* PRIMARY scroll policy is owned by Core and has exactly three meanings.
+   contained: fixed viewport, no host scrolling (canvas-style workspaces).
+   safe:      fixed viewport, Core-owned Primary scrolling (default).
+   auto:      document-flow content that may grow intentionally. */
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center,
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-plugin-canvas-center{overflow:hidden;min-height:0;align-items:stretch}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host{
+  height:100%;min-height:0!important;overflow:hidden!important;flex:1 1 auto!important
+}
+.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host>*{height:100%;min-height:0!important;min-width:0}
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host{
+  height:100%!important;min-height:0!important;overflow:auto!important;flex:1 1 auto!important;
+  overscroll-behavior:contain;scrollbar-gutter:stable
+}
+.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{height:auto!important;min-height:100%!important;min-width:0}
 .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto;align-items:stretch}
 .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host{height:auto!important;min-height:100%!important;overflow:visible!important;flex:0 0 auto!important}
 .dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-analysis-primary-host>*{height:auto!important;min-height:100%;min-width:0}
@@ -4690,15 +4702,9 @@ body.dkds-table-resizing *{cursor:col-resize!important}
 #importColumnFieldSelect{width:100%;height:28px;min-height:28px;border:1px solid var(--border,#d8e0ec);border-radius:6px;padding:0 26px 0 7px;background:var(--panel,#fff);color:var(--text,#344054);font-size:9px}
 @media(max-width:900px){.import-column-field-filter{grid-template-columns:1fr}}
 
-/* v3.61.29 Plugin Host safety net.
-   The host must never silently clip plugin UI. Plugin-authored clipping is
-   recovered at runtime only when actual overflow is detected. */
-.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host,
-.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host{
-  height:100%;min-height:0!important;overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable
-}
-.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-analysis-primary-host>*,
-.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{min-height:0;min-width:0}
+/* Plugin Host safety net. The scroll policy above is authoritative. The
+   runtime guard only repairs plugin-owned semantic containers that would
+   otherwise clip their own content; it must never change workspace geometry. */
 .dkds-layout-overflow-fallback{overscroll-behavior:contain;scrollbar-gutter:stable}
 .dkds-scientific-surface-host.dkds-scientific-layout-fallback{
   min-height:var(--dkds-scientific-preferred-min-height,180px)!important
@@ -4738,20 +4744,6 @@ body.dkds-table-resizing *{cursor:col-resize!important}
 .dkds-managed-table[data-dkds-table-tone="danger"]{--dkds-table-row-selected-bg:color-mix(in srgb,var(--status-danger,#d14343) 13%,var(--surface-primary,#fff))}
 .dkds-managed-table[data-dkds-table-emphasis="quiet"]{--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary,#fff) 98%,transparent);--dkds-table-row-even-bg:var(--dkds-table-row-odd-bg)}
 .dkds-managed-table[data-dkds-table-emphasis="strong"] thead th{font-weight:740!important}
-
-/* Safe means reachable, not fixed-height. The outer canvas owns scrolling while
-   the plugin root may grow to its semantic content. Full-viewport charts that
-   require strict containment must request primaryScroll:'contained'. */
-.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-plugin-canvas-center{
-  overflow:auto!important;align-items:stretch!important;overscroll-behavior:contain;scrollbar-gutter:stable
-}
-.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host{
-  height:auto!important;min-height:100%!important;overflow:visible!important;flex:0 0 auto!important
-}
-.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host>*{
-  height:auto!important;min-height:100%;min-width:0
-}
-
 
 /* ============================================================
    Scientific Presentation Contract 1.0

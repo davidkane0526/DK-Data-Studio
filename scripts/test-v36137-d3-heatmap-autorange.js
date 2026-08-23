@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.38');
+assert.equal(json('package.json').version,'3.61.39');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.5');
+assert.equal(contract.sdkVersion,'1.17.6');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.38');
+assert.equal(contract.minimumAppVersion,'3.61.39');
 
 const scientific=read('src/core/scientific-plot-runtime.js');
 const renderer=read('src/core/d3-chart-renderer.js');

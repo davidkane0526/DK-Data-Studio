@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.38
+# DK Data Studio — v3.61.39
+
+## v3.61.39 PluginWorkspace 稳定视口契约
+
+- `primaryScroll:"safe"` 现在只有一个明确含义：**Core 固定 Primary 视口并拥有唯一滚动容器**。插件内容可以比视口高，但不能再反向把 PluginWorkspace 或独立 Tool 窗口越撑越长。
+- 删除此前互相覆盖的 `safe` CSS：旧规则先把 Primary 设为固定高度，后续规则又改回 `height:auto + overflow:visible`，这是外部 Tool 出现自增长/滚动所有权漂移的重要基座原因。`auto` 现在专门表示有意参与文档流增长，`contained` 表示固定且不由 Host 滚动的画布。
+- SDK Tool/TOP 模板不再教授 `min-height:100%` 高度链，统一使用 `min-height:0`。Validator 新增两类布局警告：语义容器的百分比最小高度链，以及多行 `auto` Grid 未声明 `align-content:start`。后者会在同排另一个卡片更高时把多余高度分散到表单行之间，形成截图中那种巨大的空白间隔。
+- SDK Host Harness 增加稳定视口回归。SDK 更新为 **1.17.6**，Plugin API 保持 **1.17.0**。
 
 ## v3.61.38 外部 Tool 独立窗口契约收口
 
