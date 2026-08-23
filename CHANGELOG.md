@@ -1,3 +1,13 @@
+# v3.61.35 — Scoped Legends, Stable Plot Geometry & Dark Theme Closure
+
+- Fix the Core Plotly legend host ordering bug that allowed per-card legends to position against a shared ancestor and visually collapse into one misleading common legend. Every Plotly legend is now scoped to its own ScientificPlot host.
+- Make Plotly legend isolation group-aware: one visible legend item controls every trace in its `legendgroup`, including paired forward/reverse traces that intentionally suppress duplicate legend entries. Legend clicks use direct Core `restyle` visibility updates rather than full Plotly re-render cycles.
+- Stabilize compact-chart geometry with a sticky multi-series legend footprint and two-row horizontal packing, eliminating trace-count/ResizeObserver feedback that made pulse and TER plots visibly twitch.
+- Remove hover geometry shifts and white inset rims from shell/activity controls; close the remaining hard-coded white system-tool hover leak.
+- Theme the Core Import Workbench, AnalysisWorkbench navigation, Data Center host controls and status-bar separators through semantic light/dark tokens. Status items use short internal dividers instead of full-height bright borders.
+- Validate the Core presentation layer in Linux Chromium/Xvfb using a browser-level visual/interaction smoke harness: per-card legend scoping, two-row packing, grouped isolation, stable legend reserve, dark Import Workbench, dark system hover and status chrome all pass.
+- Publish SDK **1.17.2** while retaining Plugin API **1.17.0**. These visual-contract guarantees require DK Data Studio **3.61.35**.
+
 # v3.61.34 — Unified Scientific Plot Presentation & Viewport Safety
 
 - Replace Plotly's native modebar with the same compact, theme-aware, draggable `＋ / − / ⌂` Core navigation strip used by D3. Explicit `displayModeBar:false` remains a real opt-out instead of being overwritten by Core defaults.

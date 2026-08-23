@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function assert(v,m){if(!v)throw new Error(m);}
 (async()=>{
   const chart=read('src/core/chart-runtime.js');
-  assert(chart.includes("const VERSION='1.8.0'"),'Chart runtime must advance for corrected display-scale semantics.');
+  assert(chart.includes("const VERSION='1.8.1'"),'Chart runtime must advance for corrected display-scale semantics.');
   assert(chart.includes("hasHeatmap(data)?'z'")&&chart.includes('isColorScaleInteraction'),'Heatmap display scale must target Z/colorbar rather than the coordinate Y axis.');
   assert(chart.includes('Math.log10(n)')&&chart.includes('const magnitudeZ=rawZ.map'),'Heatmap log view must project log10(|Z|) while retaining display access to original magnitudes.');
   assert(chart.includes("layout.yaxis.tickmode='linear';layout.yaxis.dtick=1"),'Plotly log Y axes must label decade ticks only.');

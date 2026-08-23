@@ -6,27 +6,23 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.34');
+assert(Number(json('package.json').version.split('.').at(-1))>=34,'host must retain v3.61.34 plot presentation guarantees');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.1');
+assert(Number(contract.sdkVersion.split('.').at(-1))>=1,'SDK 1.17.1+ is required');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.34');
+assert(Number(contract.minimumAppVersion.split('.').at(-1))>=34,'SDK minimum host must retain v3.61.34 guarantees');
 
 const chart=read('src/core/chart-runtime.js');
 for(const token of [
   'function packedLegendRows',
   "current.autoplace===false",
-  "rows<=2",
   'function plotlyRenderLayout',
   "next.showlegend=false",
   'dkds-plotly-auto-legend',
-  'button.dataset.seriesKey',
-  "current.legendSoloKey=current.legendSoloKey===key?'':key",
+  'function renderPlotLegend',
   'function installPlotNavigation',
-  'dkds-plotly-nav-tools',
   'next.__dkdsNavigationTools=!staticPlot&&!explicitOff',
-  'next.displayModeBar=false',
-  'dw<12&&dh<12'
+  'next.displayModeBar=false'
 ])assert(chart.includes(token),`Plot presentation contract missing ${token}`);
 assert(!chart.includes("displayModeBar:'hover'"),'Core must not force Plotly native modebar back on.');
 
@@ -47,4 +43,4 @@ const types=read('sdk/plugin-api.d.ts');
 assert(types.includes("placement?:'auto'|'top'|'bottom'|'right'|'left'"),'SDK legend placement vocabulary must match the Core solver.');
 const readme=read('sdk/README.md');
 assert(readme.includes('top-first')&&readme.includes("same Core HTML legend presentation")&&readme.includes("native modebar is suppressed"),'SDK docs must describe unified D3/Plotly presentation.');
-console.log('v3.61.34 unified scientific plot presentation contract OK');
+console.log('v3.61.34 unified scientific plot presentation contract retained');

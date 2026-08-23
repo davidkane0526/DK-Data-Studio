@@ -1,11 +1,11 @@
-# DK Data Studio Plugin SDK 1.17.1
+# DK Data Studio Plugin SDK 1.17.2
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.34 or newer for the complete SDK 1.17.1 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.35 or newer for the complete SDK 1.17.2 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -109,9 +109,9 @@ Do **not** combine an intrinsic-height/auto-sized parent with `minmax(<positive 
 
 #### Core-owned multi-series legends
 
-A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Core chooses a compact external **top-first** placement from the current surface aspect ratio and measured/estimated label footprint: top is preferred when the legend fits cleanly, bottom is the second choice with explicit X-axis-title clearance, and a side placement is used only when horizontal packing is no longer compact. D3 and Plotly use the same Core HTML legend presentation, so row packing, typography and click-to-isolate behavior are visually consistent. Core reserves that footprint inside the plot's total size and recomputes it only after a meaningful size change; the legend therefore does not cover data and the plugin must **not** guess an extra margin of its own.
+A scientific plot with two or more named/labeled series gets an interactive Core legend by default. For D3 `ScientificCurveSurface`, use `label`/`name` on curves; for Plotly use the normal trace `name`. Every legend is **scoped to its own surface host**: adjacent cards never share or overlap an accidental common legend. Core chooses a compact external **top-first** placement and packs horizontal legends into at most two balanced rows before allowing horizontal overflow; bottom placement keeps explicit X-axis-title clearance and side placement is an explicit/fallback choice rather than the normal compact-card behavior. D3 and Plotly use the same Core HTML legend presentation, so typography and click-to-isolate behavior are consistent. Once a surface has become multi-series, Core keeps the reserved legend footprint stable across transient trace-count updates so the plot does not visibly twitch.
 
-Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. Plotly's native modebar is suppressed by the Core runtime; interactive Plotly surfaces receive the same compact, draggable `＋ / − / ⌂` navigation strip as D3, while `displayModeBar:false` or `dkdsNavigationTools:false` explicitly disables it. A plugin can opt out of the Core legend (`legend:false` / `showlegend:false`) or opt out of automatic placement with Plotly `legend.autoplace:false` when an exact native Plotly legend position is genuinely required. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
+Default interaction is single-series isolation: click a legend item to focus that series; click the focused item again to restore all series. Plotly `legendgroup` is treated as one semantic series group, so a visible forward-scan legend entry can isolate its paired hidden-from-legend reverse trace at the same time. Plotly's native modebar is suppressed by the Core runtime; interactive Plotly surfaces receive the same compact, draggable `＋ / − / ⌂` navigation strip as D3, while `displayModeBar:false` or `dkdsNavigationTools:false` explicitly disables it. A plugin can opt out of the Core legend (`legend:false` / `showlegend:false`) or opt out of automatic placement with Plotly `legend.autoplace:false` when an exact native Plotly legend position is genuinely required. For adjacent domain controls that need to know the reserved footprint, use `surface.legendLayout()` for D3 or `ctx.ui.scientificPlot.legendMetrics(target)` for Plotly. These return placement, row count, size and reserve information.
 
 ### Interaction Behavior
 

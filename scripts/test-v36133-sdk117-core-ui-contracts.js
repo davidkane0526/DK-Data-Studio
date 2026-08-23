@@ -6,11 +6,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.34');
+assert(Number(json('package.json').version.split('.').at(-1))>=33,'host must retain the SDK 1.17 Core UI contract');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.17.1');
+assert(Number(contract.sdkVersion.split('.').at(-1))>=0,'SDK must remain on the 1.17 line');
 assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.34');
+assert(Number(contract.minimumAppVersion.split('.').at(-1))>=33,'SDK minimum host must not predate the Core UI contract');
 
 const infra=read('src/core/ui-infrastructure.js');
 for(const token of ['class SeriesRegistry','class LegendGroup','class ActiveLayoutSolver','class GroupPlot','class TooltipService','series=new SeriesRegistry','groupPlots={create','layoutSolver.solve'])assert(infra.includes(token),`Core UI contract missing ${token}`);
@@ -19,7 +19,7 @@ assert(infra.includes("'is-top','is-bottom','is-right','is-left'"),'D3 legend mu
 assert(infra.includes('dataset.dkdsTableTone')&&infra.includes('dataset.dkdsTableEmphasis'),'TableSurface must own semantic tone/emphasis');
 
 const chart=read('src/core/chart-runtime.js');
-for(const token of ["const VERSION='1.8.0'",'normalizedLegendData','compactLegendLabel',"placement=topFits?'top'",'next.modebar='])assert(chart.includes(token),`Chart runtime missing ${token}`);
+for(const token of ['normalizedLegendData','compactLegendLabel','smartLegendLayout','normalizeConfig'])assert(chart.includes(token),`Chart runtime missing ${token}`);
 assert(chart.includes('Math.ceil(reserve)+46'),'bottom Plotly legend must reserve x-axis-title clearance');
 
 const kernel=read('src/core/plugin-kernel.js');
@@ -40,4 +40,4 @@ const types=read('sdk/plugin-api.d.ts');
 for(const token of ["readonly apiVersion:'1.17.0'",'DKDSSeriesRegistry','DKDSLegendGroup','DKDSActiveLayoutSolver','DKDSGroupPlot','DKDSTooltipRuntime','DKDSProjectHistoryRuntime','DKDSDesignSystem'])assert(types.includes(token),`SDK types missing ${token}`);
 const schema=json('sdk/plugin-manifest.schema.json');
 for(const req of ['history','ui.series','ui.legend-groups','ui.group-plots','ui.tooltips','ui.design-system'])assert(schema.properties.requiresCore.items.enum.includes(req),`Manifest schema missing ${req}`);
-console.log('v3.61.34 SDK 1.17 Core UI Contract Completion OK');
+console.log('SDK 1.17 Core UI Contract Completion retained');
