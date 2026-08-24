@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.61.50",
+  "version": "3.61.51",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "main.js",
   "author": {

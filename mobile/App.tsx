@@ -63,6 +63,7 @@ type DkdsNativeHostApi = {
   openDocuments?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
   openDocumentsExtended?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
   openDocumentTree?: () => Promise<{ uri: string; name?: string; persistable?: boolean } | null>;
+  openDocumentTreeExtended?: () => Promise<{ uri: string; name?: string; persistable?: boolean } | null>;
   listDocumentTree?: (uri: string, relativePath: string) => Promise<any[]>;
   readDocument?: (uri: string) => Promise<string>;
   smbDiscover?: () => Promise<any[]>;
@@ -78,7 +79,9 @@ type DkdsNativeHostApi = {
   mcpRespond?: (id: string, ok: boolean, value: string) => Promise<boolean>;
   createDocument?: (name: string, mimeType: string, content: string, encoding: 'utf8' | 'base64') => Promise<string | null>;
   writeDocument?: (uri: string, content: string, encoding: 'utf8' | 'base64') => Promise<string>;
-  webStatus?: () => Promise<{ running?: boolean; url?: string; error?: string }>;
+  webStatus?: () => Promise<NativeWebServiceState>;
+  webApplySettings?: (enabled: boolean, noKey: boolean, port: number) => Promise<NativeWebServiceState>;
+  webRegenerateKey?: () => Promise<NativeWebServiceState>;
   runtimeStatus?: () => Promise<{ runtime?: string; platform?: string; processCount?: number; memory?: Record<string, number>; components?: any[] }>;
   startWebVersion?: (openBrowser: boolean) => Promise<string>;
   stopWebVersion?: () => Promise<boolean>;
@@ -143,7 +146,7 @@ export default function App() {
   const [loadError, setLoadError] = useState('');
   const [rendererKey, setRendererKey] = useState(0);
   const [webServiceVisible, setWebServiceVisible] = useState(false);
-  const [webService, setWebService] = useState<NativeWebServiceState>({ running: false, url: '' });
+  const [webService, setWebService] = useState<NativeWebServiceState>({ running: false, enabled: false, noKey: false, port: 45910, key: '', url: '', urls: [], pairedClients: 0 });
   const palette = useMemo(() => paletteFor(shell.theme), [shell.theme]);
 
   useEffect(() => {
@@ -219,7 +222,7 @@ export default function App() {
   const hostRequest = useCallback((method: string, payload: any = {}) => {
     const id = `host-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     return new Promise<any>((resolve, reject) => {
-      const interactiveFileCommand = method === 'command' && ['import', 'project.open', 'project.save'].includes(String(payload?.id || ''));
+      const interactiveFileCommand = method === 'command' && ['import', 'file.open', 'file.folder', 'project.open', 'project.save', 'connectivity.smb.open'].includes(String(payload?.id || ''));
       hostPending.current.set(id, { resolve, reject, timer: null, method, payload, timeoutMs: interactiveFileCommand ? 10 * 60 * 1000 : 45 * 1000 });
       if (hostReady.current && appStateRef.current === 'active') dispatchHostRequest(id);
       else hostQueue.current.push(id);
@@ -235,33 +238,61 @@ export default function App() {
     }
   }, []);
 
+  const normalizeWebService = useCallback((state: NativeWebServiceState | undefined): NativeWebServiceState => ({
+    running: !!state?.running,
+    enabled: !!state?.enabled,
+    noKey: !!state?.noKey,
+    port: Number(state?.port) || 45910,
+    key: String(state?.key || ''),
+    url: String(state?.url || ''),
+    urls: Array.isArray(state?.urls) ? state!.urls!.map(String).filter(Boolean) : [],
+    localhostUrl: String(state?.localhostUrl || ''),
+    browserUrl: String(state?.browserUrl || ''),
+    pairedClients: Number(state?.pairedClients) || 0,
+    error: String(state?.error || ''),
+  }), []);
+
   const refreshWebService = useCallback(async () => {
     try {
-      const state = await nativeHost?.webStatus?.();
-      const next = { running: !!state?.running, url: String(state?.url || ''), error: String(state?.error || '') };
+      const next = normalizeWebService(await nativeHost?.webStatus?.());
       setWebService(next);
       return next;
     } catch (error: any) {
-      const next = { running: false, url: '', error: error?.message || String(error) };
+      const next = normalizeWebService({ running: false, url: '', error: error?.message || String(error) });
       setWebService(next);
       return next;
     }
-  }, []);
+  }, [normalizeWebService]);
 
   useEffect(() => { void refreshWebService(); }, [refreshWebService]);
 
-  const runWebServiceAction = useCallback(async (action: 'start' | 'open' | 'stop' | 'copy') => {
+  const runWebServiceAction = useCallback(async (action: 'start' | 'open' | 'stop' | 'copy' | 'apply' | 'regenerate', payload: any = {}) => {
     if (action === 'copy') {
-      if (webService.url) { await Clipboard.setStringAsync(webService.url); ToastAndroid.show('本机网页版地址已复制', ToastAndroid.SHORT); }
+      const address = webService.url || webService.urls?.[0] || '';
+      if (address) { await Clipboard.setStringAsync(address); ToastAndroid.show('局域网网页版地址已复制', ToastAndroid.SHORT); }
       return;
     }
     setWebService(current => ({ ...current, busy: true, error: '' }));
     try {
       if (action === 'stop') await nativeHost?.stopWebVersion?.();
-      else {
-        if (!nativeHost?.startWebVersion) throw new Error('当前安装包没有本机网页版服务。');
-        const url = await nativeHost.startWebVersion(false);
-        if (action === 'open' && url) await Linking.openURL(url);
+      else if (action === 'regenerate') {
+        if (!nativeHost?.webRegenerateKey) throw new Error('当前安装包不支持重新生成配对 Key。');
+        setWebService(normalizeWebService(await nativeHost.webRegenerateKey()));
+        return;
+      } else if (action === 'apply') {
+        if (!nativeHost?.webApplySettings) throw new Error('当前安装包不支持局域网网页服务设置。');
+        setWebService(normalizeWebService(await nativeHost.webApplySettings(!!payload?.enabled, !!payload?.noKey, Number(payload?.port) || 45910)));
+        return;
+      } else {
+        if (!nativeHost?.startWebVersion) throw new Error('当前安装包没有局域网网页版服务。');
+        await nativeHost.startWebVersion(false);
+        const next = await refreshWebService();
+        if (action === 'open') {
+          const browserUrl = next.browserUrl || next.localhostUrl || next.url;
+          if (!browserUrl) throw new Error('网页服务没有返回可打开的本机地址。');
+          await Linking.openURL(browserUrl);
+        }
+        return;
       }
       await refreshWebService();
     } catch (error: any) {
@@ -271,7 +302,8 @@ export default function App() {
     } finally {
       setWebService(current => ({ ...current, busy: false }));
     }
-  }, [refreshWebService, webService.url]);
+  }, [normalizeWebService, refreshWebService, webService.url, webService.urls]);
+
 
   const sendAction = useCallback(async (action: string, payload: any = {}) => {
     try {
@@ -286,9 +318,9 @@ export default function App() {
       } else if (action === 'back') {
         const result = await hostRequest('back');
         if (!result?.handled) exitAfterUnhandledBack();
-      } else if (action === 'import') await hostRequest('command', { id: 'import' });
-      else if (action === 'smb-import') await hostRequest('command', { id: 'connectivity.smb.import' });
-      else if (action === 'smb-project') await hostRequest('command', { id: 'connectivity.smb.project' });
+      } else if (action === 'import' || action === 'file-open') await hostRequest('command', { id: 'file.open' });
+      else if (action === 'file-folder') await hostRequest('command', { id: 'file.folder' });
+      else if (action === 'smb-open') await hostRequest('command', { id: 'connectivity.smb.open' });
       else if (action === 'ai-settings') await hostRequest('command', { id: 'connectivity.ai.settings' });
       else if (action === 'ai-chat') await hostRequest('command', { id: 'connectivity.ai.chat' });
       else if (action === 'project-open') await hostRequest('command', { id: 'project.open' });
@@ -422,7 +454,8 @@ export default function App() {
         return;
       }
       if (req.type === 'openDirectory') {
-        resolveWeb(req.id, true, await nativeHost?.openDocumentTree?.());
+        const pickTree = nativeHost?.openDocumentTreeExtended || nativeHost?.openDocumentTree;
+        resolveWeb(req.id, true, await pickTree?.());
         return;
       }
       if (req.type === 'listDirectory') {
@@ -614,7 +647,7 @@ export default function App() {
             <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} webService={webService} />
           </>
         )}
-        <WebServicePopover visible={webServiceVisible} state={webService} palette={palette} onClose={() => setWebServiceVisible(false)} onAction={action => { void runWebServiceAction(action); }} />
+        <WebServicePopover visible={webServiceVisible} state={webService} palette={palette} onClose={() => setWebServiceVisible(false)} onAction={(action, payload) => { void runWebServiceAction(action, payload); }} />
         <ShellActionSheet visible={sheet} shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onClose={() => setSheet(null)} />
       </SafeAreaView>
     </SafeAreaProvider>

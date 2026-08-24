@@ -6,7 +6,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -51,6 +53,14 @@ export type NativeWebServiceState = {
   url: string;
   error?: string;
   busy?: boolean;
+  enabled?: boolean;
+  noKey?: boolean;
+  port?: number;
+  key?: string;
+  urls?: string[];
+  localhostUrl?: string;
+  browserUrl?: string;
+  pairedClients?: number;
 };
 
 type Palette = {
@@ -376,26 +386,37 @@ function ProjectSwipeRow({ project, palette, onSwitch, onDelete }: {
   onDelete: () => void;
 }) {
   const translateX = React.useRef(new Animated.Value(0)).current;
+  const rowHeight = React.useRef(new Animated.Value(64)).current;
+  const rowOpacity = React.useRef(new Animated.Value(1)).current;
   const opened = React.useRef(false);
+  const settle = React.useCallback((open: boolean) => {
+    opened.current = open;
+    Animated.spring(translateX, { toValue: open ? -72 : 0, useNativeDriver: true, speed: 27, bounciness: 0 }).start();
+  }, [translateX]);
+  const remove = React.useCallback(() => {
+    Animated.timing(translateX, { toValue: -360, duration: 165, useNativeDriver: true }).start(({ finished }) => {
+      if (!finished) return;
+      Animated.parallel([
+        Animated.timing(rowHeight, { toValue: 0, duration: 150, useNativeDriver: false }),
+        Animated.timing(rowOpacity, { toValue: 0, duration: 120, useNativeDriver: false }),
+      ]).start(({ finished: collapsed }) => { if (collapsed) onDelete(); });
+    });
+  }, [onDelete, rowHeight, rowOpacity, translateX]);
   const pan = React.useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 7 && gesture.dx < 0 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.15,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: () => { translateX.stopAnimation(); },
     onPanResponderMove: (_, gesture) => {
-      const base = opened.current ? 68 : 0;
-      translateX.setValue(Math.max(0, Math.min(76, base + gesture.dx)));
+      const base = opened.current ? -72 : 0;
+      translateX.setValue(Math.min(0, Math.max(-88, base + gesture.dx)));
     },
-    onPanResponderRelease: (_, gesture) => {
-      const shouldOpen = (opened.current ? 68 : 0) + gesture.dx > 34;
-      opened.current = shouldOpen;
-      Animated.spring(translateX, { toValue: shouldOpen ? 68 : 0, useNativeDriver: true, speed: 28, bounciness: 0 }).start();
-    },
-    onPanResponderTerminate: () => {
-      Animated.spring(translateX, { toValue: opened.current ? 68 : 0, useNativeDriver: true, speed: 28, bounciness: 0 }).start();
-    },
+    onPanResponderRelease: (_, gesture) => settle((opened.current ? -72 : 0) + gesture.dx < -34 || gesture.vx < -0.35),
+    onPanResponderTerminate: () => settle(opened.current),
   })).current;
   return (
-    <View style={[styles.projectDrawerRowWrap, { backgroundColor: '#d94f4a' }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`删除项目 ${project.title}`} onPress={onDelete} style={styles.projectDeleteAction}>
+    <Animated.View style={[styles.projectDrawerRowWrap, { backgroundColor: '#d94f4a', height: rowHeight, opacity: rowOpacity }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`删除项目 ${project.title}`} onPress={remove} style={styles.projectDeleteAction}>
         <Text style={styles.projectDeleteText}>删除</Text>
       </Pressable>
       <Animated.View style={{ transform: [{ translateX }] }} {...pan.panHandlers}>
@@ -406,12 +427,12 @@ function ProjectSwipeRow({ project, palette, onSwitch, onDelete }: {
           <View style={[styles.projectStateDot, { borderColor: palette.accent, backgroundColor: project.active ? palette.accent : 'transparent' }]} />
           <View style={styles.projectDrawerCopy}>
             <Text style={[styles.projectDrawerTitle, { color: palette.text }]} numberOfLines={1}>{project.title || '未命名项目'}</Text>
-            <Text style={[styles.projectDrawerDetail, { color: palette.textSoft }]}>{project.active ? '当前项目' : project.dirty ? '有未保存修改' : '点击切换 · 右滑删除'}</Text>
+            <Text style={[styles.projectDrawerDetail, { color: palette.textSoft }]}>{project.active ? '当前项目' : project.dirty ? '有未保存修改' : '点击切换 · 左滑删除'}</Text>
           </View>
           <Text style={[styles.projectDrawerChevron, { color: palette.textSoft }]}>›</Text>
         </Pressable>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -429,7 +450,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
           <View style={styles.projectDrawerHead}>
             <View>
               <Text style={[styles.projectDrawerHeading, { color: palette.text }]}>项目管理</Text>
-              <Text style={[styles.projectDrawerSubheading, { color: palette.textSoft }]}>切换项目，右滑项目标签显示删除</Text>
+              <Text style={[styles.projectDrawerSubheading, { color: palette.textSoft }]}>切换项目，左滑项目标签显示删除</Text>
             </View>
             <Pressable onPress={onClose} style={styles.projectDrawerClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
           </View>
@@ -455,9 +476,21 @@ export function WebServicePopover({ visible, state, palette, onClose, onAction }
   state: NativeWebServiceState;
   palette: Palette;
   onClose: () => void;
-  onAction: (action: 'start' | 'open' | 'stop' | 'copy') => void;
+  onAction: (action: 'start' | 'open' | 'stop' | 'copy' | 'apply' | 'regenerate', payload?: any) => void;
 }) {
+  const [enabled, setEnabled] = React.useState(state.enabled ?? true);
+  const [noKey, setNoKey] = React.useState(!!state.noKey);
+  const [portText, setPortText] = React.useState(String(state.port || 45910));
+  React.useEffect(() => {
+    if (!visible) return;
+    setEnabled(state.enabled ?? state.running ?? true);
+    setNoKey(!!state.noKey);
+    setPortText(String(state.port || 45910));
+  }, [visible, state.enabled, state.noKey, state.port, state.running]);
   if (!visible) return null;
+  const addresses = (state.urls || []).filter(Boolean);
+  const primaryAddress = addresses[0] || state.url || '';
+  const apply = () => onAction('apply', { enabled, noKey, port: Number(portText) || 45910 });
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.webPopoverModal}>
@@ -466,17 +499,39 @@ export function WebServicePopover({ visible, state, palette, onClose, onAction }
           <View style={styles.webPopoverHead}>
             <View style={[styles.webStatusDot, { backgroundColor: state.running ? '#2f9d62' : state.error ? '#cf5b55' : '#98a2b3' }]} />
             <View style={styles.webPopoverHeadCopy}>
-              <Text style={[styles.webPopoverTitle, { color: palette.text }]}>本机网页版</Text>
-              <Text style={[styles.webPopoverState, { color: palette.textSoft }]}>{state.busy ? '正在处理…' : state.running ? '服务运行中' : state.error ? '启动失败' : '服务未启动'}</Text>
+              <Text style={[styles.webPopoverTitle, { color: palette.text }]}>局域网网页版</Text>
+              <Text style={[styles.webPopoverState, { color: palette.textSoft }]}>{state.busy ? '正在应用设置…' : state.running ? `运行中 · ${state.pairedClients || 0} 个已配对会话` : state.error ? '启动失败' : '服务未启动'}</Text>
             </View>
             <Pressable onPress={onClose} style={styles.webPopoverClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
           </View>
-          {state.url ? <Pressable onPress={() => onAction('copy')}><Text style={[styles.webPopoverUrl, { color: palette.accent }]} numberOfLines={1}>{state.url}</Text></Pressable> : null}
+
+          <View style={styles.webSettingRow}>
+            <View style={styles.webSettingCopy}><Text style={[styles.webSettingLabel, { color: palette.text }]}>启用网页服务</Text><Text style={[styles.webSettingHint, { color: palette.textSoft }]}>允许同一局域网设备访问 Studio</Text></View>
+            <Switch value={enabled} onValueChange={setEnabled} trackColor={{ false: palette.border, true: palette.accentSoft }} thumbColor={enabled ? palette.accent : '#a4adba'} />
+          </View>
+          <View style={styles.webSettingRow}>
+            <View style={styles.webSettingCopy}><Text style={[styles.webSettingLabel, { color: palette.text }]}>无需配对 Key</Text><Text style={[styles.webSettingHint, { color: palette.textSoft }]}>关闭后访问设备需要输入 4 位 Key</Text></View>
+            <Switch value={noKey} onValueChange={setNoKey} trackColor={{ false: palette.border, true: palette.accentSoft }} thumbColor={noKey ? palette.accent : '#a4adba'} />
+          </View>
+          <View style={styles.webPortRow}>
+            <Text style={[styles.webSettingLabel, { color: palette.text }]}>端口</Text>
+            <TextInput value={portText} onChangeText={value => setPortText(value.replace(/[^0-9]/g, '').slice(0, 5))} keyboardType="number-pad" style={[styles.webPortInput, { color: palette.text, backgroundColor: palette.surfaceSoft, borderColor: palette.border }]} selectTextOnFocus />
+            {!noKey ? <Pressable onPress={() => onAction('regenerate')} style={[styles.webKeyButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border }]}><Text style={[styles.webKeyText, { color: palette.text }]}>Key {state.key || '----'}</Text><Text style={[styles.webKeyRefresh, { color: palette.accent }]}>↻</Text></Pressable> : null}
+          </View>
+
+          {primaryAddress ? (
+            <View style={styles.webAddressBox}>
+              <Text style={[styles.webAddressLabel, { color: palette.textSoft }]}>局域网地址</Text>
+              <Pressable onPress={() => onAction('copy')}><Text style={[styles.webPopoverUrl, { color: palette.accent }]} numberOfLines={1}>{primaryAddress}</Text></Pressable>
+              {addresses.length > 1 ? <Text style={[styles.webMoreAddresses, { color: palette.textSoft }]} numberOfLines={2}>{addresses.slice(1).join('   ')}</Text> : null}
+            </View>
+          ) : <Text style={[styles.webNoAddress, { color: palette.textSoft }]}>启动后会显示 Wi‑Fi / 以太网局域网地址，不对外显示 127.0.0.1。</Text>}
           {state.error ? <Text style={styles.webPopoverError}>{state.error}</Text> : null}
+
           <View style={styles.webPopoverActions}>
-            {!state.running ? <Pressable disabled={state.busy} onPress={() => onAction('start')} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent, opacity: state.busy ? .5 : 1 }]}><Text style={styles.webPopoverPrimaryText}>启动服务</Text></Pressable> : null}
-            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('open')} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent }]}><Text style={styles.webPopoverPrimaryText}>浏览器打开</Text></Pressable> : null}
-            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('stop')} style={[styles.webPopoverSecondary, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>停止</Text></Pressable> : null}
+            <Pressable disabled={state.busy} onPress={apply} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent, opacity: state.busy ? .5 : 1 }]}><Text style={styles.webPopoverPrimaryText}>{enabled ? '应用并启动' : '应用设置'}</Text></Pressable>
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('open')} style={[styles.webPopoverSecondary, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>本机浏览器</Text></Pressable> : null}
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('stop')} style={[styles.webPopoverSecondarySmall, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>停止</Text></Pressable> : null}
           </View>
         </View>
       </View>
@@ -500,10 +555,10 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
           <View style={styles.sheetHeading}>
             <View>
               <Text style={[styles.sheetTitle, { color: palette.text }]}> 
-                {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : visible === 'import' ? '导入与读取' : '项目与应用'}
+                {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : visible === 'import' ? '文件' : '更多'}
               </Text>
               <Text style={[styles.sheetSubtitle, { color: palette.textSoft }]}> 
-                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : visible === 'import' ? '本机文件、第三方 Provider 与 SMB 网络文件' : shell.status || 'DK Data Studio Android'}
+                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : visible === 'import' ? '由 Studio 自动识别数据、工程与可读取文件夹' : '软件、网页服务与外观'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="关闭" onPress={onClose} style={styles.closeButton}>
@@ -571,10 +626,9 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
               </> : <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前页面没有可用操作。</Text>
             ) : visible === 'import' ? (
               <>
-                <SheetAction glyph="□" label="系统 / 第三方文件" detail="Android 文档选择器、文件管理器与云盘 Provider" palette={palette} onPress={() => run('import')} />
-                <SheetAction glyph="▤" label="SMB 网络数据" detail="浏览服务器、共享与目录后导入数据" palette={palette} onPress={() => run('smb-import')} />
-                <SheetAction glyph="◇" label="读取本地项目" detail="从 Android 文档选择器打开项目" palette={palette} onPress={() => run('project-open')} />
-                <SheetAction glyph="▣" label="读取 SMB 项目" detail="从局域网共享直接打开 DK Data Studio 项目" palette={palette} onPress={() => run('smb-project')} />
+                <SheetAction glyph="□" label="选择文件" detail="系统文件、第三方文件管理器、云盘与支持 ACTION_GET_CONTENT 的应用；Studio 自动识别类型" palette={palette} onPress={() => run('file-open')} />
+                <SheetAction glyph="▦" label="选择文件夹" detail="Android SAF 树授权；支持 DocumentsProvider 的 NAS / SMB / 云盘应用可直接提供目录" palette={palette} onPress={() => run('file-folder')} />
+                <SheetAction glyph="▤" label="Studio SMB" detail="使用 Studio 内置 SMB 文件管理器浏览服务器、共享与目录；自动识别文件类型" palette={palette} onPress={() => run('smb-open')} />
               </>
             ) : visible === 'history' ? (
               <>
@@ -588,13 +642,8 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
               </>
             ) : (
               <>
-                <SheetAction glyph="□" label="读取项目" detail="从 Android 文档选择器打开" palette={palette} onPress={() => run('project-open')} />
-                <SheetAction glyph="↓" label="保存 / 分享项目" detail={shell.projectTitle} palette={palette} onPress={() => run('project-save')} />
-                <SheetAction glyph="＋" label="新建项目标签" detail="保留当前项目并创建独立标签" palette={palette} onPress={() => run('project-new')} />
-                <SheetAction glyph="≡" label="操作历史" detail={shell.history?.undoLabel ? `可撤销：${shell.history.undoLabel}` : '查看撤销与重做记录'} palette={palette} onPress={() => { onClose(); onSheet('history'); }} />
-                <SheetAction glyph="✦" label="AI Agent / MCP" detail="模型、API Key 与 MCP Server 设置" palette={palette} onPress={() => run('ai-settings')} />
-                <SheetAction glyph="⬡" label="插件管理" detail="启用、停用与诊断内置插件" palette={palette} onPress={() => run('plugins')} />
-                <SheetAction glyph="↗" label="本机网页版" detail="启动、停止或在系统浏览器中打开" palette={palette} onPress={() => run('web-service')} />
+                <SheetAction glyph="⬡" label="软件管理" detail="插件以及 AI Agent / MCP 设置" palette={palette} onPress={() => run('plugins')} />
+                <SheetAction glyph="↗" label="局域网网页版" detail="服务设置、局域网地址与访问状态" palette={palette} onPress={() => run('web-service')} />
                 <SheetAction
                   glyph={shell.theme === 'dark' ? '☀' : '☾'}
                   label={shell.theme === 'dark' ? '切换浅色外观' : '切换深色外观'}
@@ -649,8 +698,8 @@ const styles = StyleSheet.create({
   moreGlyph: { fontSize: 15, letterSpacing: 1 },
   nativeStatusBar: { height: 23, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 11 },
   nativeStatusMessage: { flex: 1, minWidth: 80, maxWidth: '48%', fontSize: 10, lineHeight: 14, fontWeight: '400' },
-  nativeStatusScroller: { flexGrow: 0, flexShrink: 1 },
-  nativeStatusItems: { alignItems: 'center', gap: 15, paddingLeft: 7, paddingRight: 4 },
+  nativeStatusScroller: { flexGrow: 0, flexShrink: 1, marginLeft: 'auto' },
+  nativeStatusItems: { flexGrow: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 17, paddingLeft: 9, paddingRight: 0 },
   nativeStatusItem: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 4 },
   nativeStatusIcon: { fontSize: 9, fontWeight: '500' },
   nativeStatusLabel: { fontSize: 9.3, lineHeight: 13, fontWeight: '400' },
@@ -700,7 +749,7 @@ const styles = StyleSheet.create({
   projectQuickButtonText: { fontSize: 10.5, fontWeight: '600' },
   projectDrawerList: { paddingHorizontal: 12, paddingBottom: 22, gap: 8 },
   projectDrawerRowWrap: { height: 64, borderRadius: 13, overflow: 'hidden', justifyContent: 'center' },
-  projectDeleteAction: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 68, alignItems: 'center', justifyContent: 'center' },
+  projectDeleteAction: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 72, alignItems: 'center', justifyContent: 'center' },
   projectDeleteText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   projectDrawerRow: { height: 64, borderWidth: StyleSheet.hairlineWidth, borderRadius: 13, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
   projectStateDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.3, marginRight: 11 },
@@ -709,7 +758,20 @@ const styles = StyleSheet.create({
   projectDrawerDetail: { fontSize: 9, marginTop: 3 },
   projectDrawerChevron: { fontSize: 23, fontWeight: '300', marginLeft: 8 },
   webPopoverModal: { flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: 12, paddingBottom: 72 },
-  webPopoverCard: { width: 310, maxWidth: '88%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, padding: 13, shadowColor: '#000', shadowOpacity: .13, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  webPopoverCard: { width: 372, maxWidth: '92%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, padding: 13, shadowColor: '#000', shadowOpacity: .13, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  webSettingRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7 },
+  webSettingCopy: { flex: 1, minWidth: 0 },
+  webSettingLabel: { fontSize: 10.8, fontWeight: '600' },
+  webSettingHint: { fontSize: 8.8, lineHeight: 12, marginTop: 2 },
+  webPortRow: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  webPortInput: { width: 72, height: 33, borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 9, fontSize: 11, textAlign: 'center' },
+  webKeyButton: { marginLeft: 'auto', minHeight: 33, paddingHorizontal: 9, borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  webKeyText: { fontSize: 10, fontWeight: '600', letterSpacing: .4 },
+  webKeyRefresh: { fontSize: 13, fontWeight: '700' },
+  webAddressBox: { marginTop: 8, paddingVertical: 8, paddingHorizontal: 9, borderRadius: 9 },
+  webAddressLabel: { fontSize: 8.7, marginBottom: 3 },
+  webMoreAddresses: { fontSize: 8.2, lineHeight: 11.5, marginTop: 3 },
+  webNoAddress: { fontSize: 8.8, lineHeight: 12, marginTop: 8 },
   webPopoverHead: { flexDirection: 'row', alignItems: 'center' },
   webStatusDot: { width: 9, height: 9, borderRadius: 5, marginRight: 9 },
   webPopoverHeadCopy: { flex: 1 },
@@ -721,6 +783,7 @@ const styles = StyleSheet.create({
   webPopoverActions: { flexDirection: 'row', gap: 7, marginTop: 11 },
   webPopoverPrimary: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   webPopoverPrimaryText: { color: '#fff', fontSize: 10.5, fontWeight: '700' },
+  webPopoverSecondarySmall: { minHeight: 38, minWidth: 58, borderWidth: StyleSheet.hairlineWidth, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   webPopoverSecondary: { minWidth: 74, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   webPopoverSecondaryText: { fontSize: 10.5, fontWeight: '600' },
 });

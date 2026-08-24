@@ -68,114 +68,122 @@ import org.json.JSONObject
 import kotlin.concurrent.thread
 
 private object DkdsLocalWebServer {
+  private data class Settings(val enabled:Boolean=false,val noKey:Boolean=false,val port:Int=45910)
   @Volatile private var socket: ServerSocket? = null
   @Volatile private var port: Int = 0
   @Volatile private var lastError: String = ""
+  @Volatile private var noKey: Boolean = false
+  @Volatile private var pairKey: String = randomPairKey()
+  private val tokens = ConcurrentHashMap.newKeySet<String>()
 
-  @Synchronized fun start(context: ReactApplicationContext): String {
-    if (socket?.isClosed == false && port > 0) return "http://127.0.0.1:$port/"
-    lastError = ""
+  private fun randomPairKey(): String = (1000 + java.security.SecureRandom().nextInt(9000)).toString()
+  private fun prefs(context: Context)=context.getSharedPreferences("dkds-lan-web-settings",Context.MODE_PRIVATE)
+  private fun readSettings(context: Context): Settings {
+    val p=prefs(context); return Settings(p.getBoolean("enabled",false),p.getBoolean("noKey",false),p.getInt("port",45910).coerceIn(1024,65535))
+  }
+  private fun saveSettings(context: Context,settings: Settings){prefs(context).edit().putBoolean("enabled",settings.enabled).putBoolean("noKey",settings.noKey).putInt("port",settings.port).apply()}
+  private fun lanAddresses(): List<String> {
+    val out=linkedSetOf<String>()
     try {
-      context.assets.open("dkds/index.html").use { stream ->
-        if (stream.read() < 0) throw IllegalStateException("本机网页版入口文件为空。")
-      }
-    } catch (error: Throwable) {
-      lastError = "APK 未包含完整网页版资源：\${error.message ?: error.javaClass.simpleName}"
-      throw IllegalStateException(lastError, error)
-    }
-    val candidates = listOf(45910, 0)
-    var created: ServerSocket? = null
-    var bindError: Throwable? = null
-    for (candidate in candidates) {
+      val nets=java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
+      for(net in nets) if(net.isUp && !net.isLoopback) for(addr in java.util.Collections.list(net.inetAddresses)) if(addr is java.net.Inet4Address && !addr.isLoopbackAddress && addr.isSiteLocalAddress) out.add(addr.hostAddress ?: continue)
+    } catch (_:Throwable) {}
+    return out.toList()
+  }
+  private fun baseUrls(currentPort:Int): List<String> = lanAddresses().map { "http://$it:$currentPort/" }
+  private fun authUrl(base:String):String = if(noKey) base else base + "?key=" + pairKey
+  private fun browserUrl():String = authUrl(baseUrls(port).firstOrNull() ?: "http://127.0.0.1:$port/")
+
+  private fun verifyLoopback(currentPort:Int) {
+    var last:Throwable?=null
+    repeat(8){
       try {
-        created = ServerSocket().apply {
-          reuseAddress = true
-          bind(java.net.InetSocketAddress(InetAddress.getLoopbackAddress(), candidate), 24)
+        Socket().use { probe ->
+          probe.connect(java.net.InetSocketAddress("127.0.0.1",currentPort),900);probe.soTimeout=1200
+          val request="GET /__dkds_health HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n"
+          probe.getOutputStream().write(request.toByteArray(StandardCharsets.US_ASCII));probe.getOutputStream().flush()
+          val first=BufferedReader(InputStreamReader(probe.getInputStream(),StandardCharsets.US_ASCII)).readLine() ?: ""
+          if(first.contains(" 200 "))return
+          throw IllegalStateException("健康检查返回：$first")
         }
-        break
-      } catch (error: Throwable) { bindError = error }
+      } catch(error:Throwable){last=error;Thread.sleep(70)}
     }
-    val server = created ?: run {
-      lastError = "无法绑定 Android 本机回环端口：\${bindError?.message ?: "unknown"}"
-      throw IllegalStateException(lastError, bindError)
-    }
-    socket = server
-    port = server.localPort
-    thread(name = "dkds-local-web", isDaemon = true) {
-      while (!server.isClosed) {
-        try {
-          val client = server.accept()
-          thread(name = "dkds-local-web-client", isDaemon = true) { serve(context, client) }
-        } catch (error: Throwable) {
-          if (!server.isClosed) lastError = "本机网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"
-        }
-      }
-    }
-    return "http://127.0.0.1:$port/"
+    throw IllegalStateException("网页服务已监听，但本机健康检查失败：\${last?.message ?: "unknown"}",last)
   }
 
+  @Synchronized fun start(context: ReactApplicationContext, persistEnabled:Boolean=true): WritableMap {
+    if (socket?.isClosed == false && port > 0) return status(context)
+    lastError = ""
+    try { context.assets.open("dkds/index.html").use { if (it.read() < 0) throw IllegalStateException("本机网页版入口文件为空。") } }
+    catch (error: Throwable) { lastError = "APK 未包含完整网页版资源：\${error.message ?: error.javaClass.simpleName}"; throw IllegalStateException(lastError,error) }
+    var settings=readSettings(context)
+    if(persistEnabled&&!settings.enabled){settings=settings.copy(enabled=true);saveSettings(context,settings)}
+    noKey=settings.noKey
+    pairKey=randomPairKey();tokens.clear()
+    val server=ServerSocket().apply { reuseAddress=true; bind(java.net.InetSocketAddress("0.0.0.0",settings.port),24) }
+    socket=server;port=server.localPort
+    thread(name="dkds-lan-web",isDaemon=true){while(!server.isClosed){try{val client=server.accept();thread(name="dkds-lan-web-client",isDaemon=true){serve(context,client)}}catch(error:Throwable){if(!server.isClosed)lastError="局域网网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"}}}
+    try { verifyLoopback(port) } catch(error:Throwable) { try{server.close()}catch(_:Throwable){};socket=null;port=0;lastError=error.message ?: error.javaClass.simpleName;if(persistEnabled)saveSettings(context,settings.copy(enabled=false));throw error }
+    return status(context)
+  }
+
+  fun startIfEnabled(context: ReactApplicationContext){if(readSettings(context).enabled)thread(name="dkds-lan-web-autostart",isDaemon=true){try{start(context,false)}catch(error:Throwable){markError(error)}}}
   fun markError(error: Throwable) { lastError = error.message ?: error.javaClass.simpleName }
   fun error(): String = lastError
 
-  @Synchronized fun stop() {
+  @Synchronized fun stop(context: Context,persistEnabled:Boolean=true) {
+    if(persistEnabled){val s=readSettings(context);saveSettings(context,s.copy(enabled=false))}
     try { socket?.close() } catch (_: Throwable) {}
-    socket = null
-    port = 0
-    lastError = ""
+    socket=null;port=0;tokens.clear();lastError=""
   }
 
-  fun status(): Pair<Boolean, String> {
-    val running = socket?.isClosed == false && port > 0
-    return Pair(running, if (running) "http://127.0.0.1:$port/" else "")
+  @Synchronized fun applySettings(context: ReactApplicationContext,enabled:Boolean,nextNoKey:Boolean,nextPort:Int):WritableMap {
+    val normalized=nextPort.coerceIn(1024,65535);val before=readSettings(context);val next=Settings(enabled,nextNoKey,normalized);saveSettings(context,next)
+    val mustRestart=socket?.isClosed==false && (before.port!=normalized || before.noKey!=nextNoKey)
+    if(mustRestart)stop(context,false)
+    noKey=nextNoKey
+    if(enabled && socket?.isClosed!=false)start(context,false) else if(!enabled && socket?.isClosed==false)stop(context,false)
+    return status(context)
   }
 
-  private fun serve(context: ReactApplicationContext, client: Socket) {
-    client.use { socket ->
-      socket.soTimeout = 5000
-      val reader = BufferedReader(InputStreamReader(BufferedInputStream(socket.getInputStream()), StandardCharsets.US_ASCII))
-      val first = reader.readLine() ?: return
-      while (true) {
-        val line = reader.readLine() ?: break
-        if (line.isEmpty()) break
-      }
-      val parts = first.split(" ")
-      val method = parts.getOrNull(0) ?: ""
-      if (method != "GET" && method != "HEAD") return response(socket, 405, "text/plain; charset=utf-8", "Method Not Allowed".toByteArray())
-      val raw = parts.getOrNull(1)?.substringBefore('?') ?: "/"
-      if (raw == "/__dkds_health") return response(socket, 200, "text/plain; charset=utf-8", "ok".toByteArray())
-      val decoded = try { URLDecoder.decode(raw, "UTF-8") } catch (_: Throwable) { raw }
-      val relative = decoded.trimStart('/').ifEmpty { "index.html" }
-      if (relative.split('/').any { it == ".." }) return response(socket, 403, "text/plain; charset=utf-8", "Forbidden".toByteArray())
-      val assetPath = "dkds/$relative"
-      val bytes = try { context.assets.open(assetPath).use { it.readBytes() } } catch (_: Throwable) {
-        return response(socket, 404, "text/plain; charset=utf-8", "Not Found".toByteArray())
-      }
-      response(socket, 200, mime(relative), if (method == "HEAD") ByteArray(0) else bytes, if (method == "HEAD") bytes.size else bytes.size)
+  fun regenerateKey(context:ReactApplicationContext):WritableMap {pairKey=randomPairKey();tokens.clear();return status(context)}
+
+  fun status(context: Context): WritableMap {
+    val settings=readSettings(context);val running=socket?.isClosed==false&&port>0;val activePort=if(running)port else settings.port;val urls=if(running)baseUrls(activePort) else emptyList();val primary=urls.firstOrNull() ?: ""
+    val arr=WritableNativeArray();urls.forEach{arr.pushString(it)}
+    return WritableNativeMap().apply {
+      putBoolean("running",running);putBoolean("enabled",settings.enabled);putBoolean("noKey",settings.noKey);putInt("port",activePort);putString("key",if(settings.noKey)"" else pairKey);putArray("urls",arr);putString("url",if(running&&primary.isNotBlank())authUrl(primary) else "");putString("localhostUrl",if(running)"http://127.0.0.1:$activePort/" else "");putString("browserUrl",if(running)browserUrl() else "");putInt("pairedClients",tokens.size);putString("error",lastError)
     }
   }
 
-  private fun mime(path: String): String = when (path.substringAfterLast('.', "").lowercase()) {
-    "html" -> "text/html; charset=utf-8"
-    "js" -> "application/javascript; charset=utf-8"
-    "css" -> "text/css; charset=utf-8"
-    "json" -> "application/json; charset=utf-8"
-    "svg" -> "image/svg+xml"
-    "png" -> "image/png"
-    "ico" -> "image/x-icon"
-    "woff2" -> "font/woff2"
-    else -> "application/octet-stream"
+  private fun cookieToken(headers:Map<String,String>):String {val cookie=headers["cookie"] ?: return "";return Regex("(?:^|;\\\\s*)dkds_pair=([A-Za-z0-9_-]+)").find(cookie)?.groupValues?.getOrNull(1) ?: ""}
+  private fun queryKey(target:String):String {val q=target.substringAfter('?',"");for(piece in q.split('&')){val parts=piece.split('=',limit=2);if(parts.getOrNull(0)=="key")return try{URLDecoder.decode(parts.getOrNull(1)?:"","UTF-8")}catch(_:Throwable){parts.getOrNull(1)?:""}};return ""}
+  private fun pairPage(errorText:String=""):ByteArray {
+    val error=if(errorText.isBlank())"" else "<p style='color:#c24b47;font-size:12px'>"+errorText+"</p>"
+    val html="<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>DK Data Studio · LAN</title><style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Microsoft YaHei,sans-serif;background:#f3f6fa;color:#1f2937}.wrap{min-height:100vh;display:grid;place-items:center;padding:20px}.card{width:min(390px,90vw);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,.14);padding:24px}h1{font-size:19px;margin:0 0 6px}.sub{font-size:12px;color:#667085;line-height:1.6;margin-bottom:16px}input{width:100%;box-sizing:border-box;height:48px;text-align:center;font-size:22px;letter-spacing:7px;border:1px solid #c5cfdd;border-radius:9px}button{margin-top:10px;width:100%;height:42px;border:0;border-radius:9px;background:#096bfa;color:white;font-weight:700}</style></head><body><div class='wrap'><form class='card' method='get' action='/'><h1>DK Data Studio</h1><div class='sub'>输入 Studio 设备上显示的 4 位配对 Key。</div>"+error+"<input name='key' inputmode='numeric' maxlength='4' autocomplete='one-time-code' autofocus><button type='submit'>连接</button></form></div></body></html>"
+    return html.toByteArray(StandardCharsets.UTF_8)
   }
 
-  private fun response(socket: Socket, status: Int, mime: String, body: ByteArray, contentLength: Int = body.size) {
-    val phrase = when (status) { 200 -> "OK"; 403 -> "Forbidden"; 404 -> "Not Found"; 405 -> "Method Not Allowed"; else -> "Error" }
-    val output = BufferedOutputStream(socket.getOutputStream())
-    val header = "HTTP/1.1 $status $phrase\\r\\nContent-Type: $mime\\r\\nContent-Length: $contentLength\\r\\nCache-Control: no-store\\r\\nConnection: close\\r\\nX-Content-Type-Options: nosniff\\r\\n\\r\\n"
-    output.write(header.toByteArray(StandardCharsets.US_ASCII))
-    output.write(body)
-    output.flush()
+  private fun serve(context: ReactApplicationContext, client: Socket) {
+    client.use { sock ->
+      sock.soTimeout=6000;val reader=BufferedReader(InputStreamReader(BufferedInputStream(sock.getInputStream()),StandardCharsets.US_ASCII));val first=reader.readLine() ?: return;val headers=linkedMapOf<String,String>();while(true){val line=reader.readLine() ?: break;if(line.isEmpty())break;val i=line.indexOf(':');if(i>0)headers[line.substring(0,i).trim().lowercase()]=line.substring(i+1).trim()}
+      val parts=first.split(" ");val method=parts.getOrNull(0) ?: "";val target=parts.getOrNull(1) ?: "/";if(method!="GET"&&method!="HEAD")return response(sock,405,"text/plain; charset=utf-8","Method Not Allowed".toByteArray())
+      val raw=target.substringBefore('?');if(raw=="/__dkds_health")return response(sock,200,"text/plain; charset=utf-8","ok".toByteArray())
+      if(!noKey){
+        val token=cookieToken(headers);val key=queryKey(target)
+        if(key.isNotEmpty()){
+          if(key!=pairKey)return response(sock,200,"text/html; charset=utf-8",pairPage("配对 Key 不正确。"))
+          val newToken=UUID.randomUUID().toString().replace("-","");tokens.add(newToken);return response(sock,302,"text/plain; charset=utf-8",ByteArray(0),mapOf("Location" to "/","Set-Cookie" to "dkds_pair=$newToken; Path=/; SameSite=Lax"))
+        }
+        if(token.isEmpty()||!tokens.contains(token)){if(raw=="/"||raw=="/index.html")return response(sock,200,"text/html; charset=utf-8",pairPage());return response(sock,401,"text/plain; charset=utf-8","Pairing required".toByteArray())}
+      }
+      val decoded=try{URLDecoder.decode(raw,"UTF-8")}catch(_:Throwable){raw};val relative=decoded.trimStart('/').ifEmpty{"index.html"};if(relative.split('/').any{it==".."})return response(sock,403,"text/plain; charset=utf-8","Forbidden".toByteArray());val assetPath="dkds/$relative";val bytes=try{context.assets.open(assetPath).use{it.readBytes()}}catch(_:Throwable){return response(sock,404,"text/plain; charset=utf-8","Not Found".toByteArray())};response(sock,200,mime(relative),if(method=="HEAD")ByteArray(0) else bytes,emptyMap(),bytes.size)
+    }
   }
+
+  private fun mime(path:String):String=when(path.substringAfterLast('.',"").lowercase()){"html"->"text/html; charset=utf-8";"js"->"application/javascript; charset=utf-8";"css"->"text/css; charset=utf-8";"json"->"application/json; charset=utf-8";"svg"->"image/svg+xml";"png"->"image/png";"jpg","jpeg"->"image/jpeg";"webp"->"image/webp";"ico"->"image/x-icon";"woff2"->"font/woff2";else->"application/octet-stream"}
+  private fun response(socket:Socket,status:Int,mime:String,body:ByteArray,headers:Map<String,String> = emptyMap(),contentLength:Int=body.size){val phrase=when(status){200->"OK";302->"Found";401->"Unauthorized";403->"Forbidden";404->"Not Found";405->"Method Not Allowed";else->"Error"};val output=BufferedOutputStream(socket.getOutputStream());val extra=headers.entries.joinToString(""){it.key+": "+it.value+"\\r\\n"};val head="HTTP/1.1 $status $phrase\\r\\nContent-Type: $mime\\r\\nContent-Length: $contentLength\\r\\nCache-Control: no-store\\r\\nConnection: close\\r\\nX-Content-Type-Options: nosniff\\r\\n"+extra+"\\r\\n";output.write(head.toByteArray(StandardCharsets.US_ASCII));output.write(body);output.flush()}
 }
-
 
 private object DkdsMcpServer {
   private data class Pending(val latch: CountDownLatch = CountDownLatch(1), @Volatile var body: String? = null, @Volatile var ok: Boolean = true)
@@ -263,7 +271,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   private var savePromise: Promise? = null
   private var saveBytes: ByteArray? = null
 
-  init { context.addActivityEventListener(this) }
+  init { context.addActivityEventListener(this); DkdsLocalWebServer.startIfEnabled(context) }
   override fun getName() = "DkdsNativeHost"
 
   @ReactMethod fun openDocuments(types: ReadableArray?, multiple: Boolean, promise: Promise) {
@@ -290,7 +298,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     val saf = configure(Intent(Intent.ACTION_OPEN_DOCUMENT), true)
     val intent = if (includeThirdParty) {
       val content = configure(Intent(Intent.ACTION_GET_CONTENT), false)
-      Intent.createChooser(saf, "选择数据文件").apply { putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(content)) }
+      Intent.createChooser(content, "使用系统 / 第三方文件管理器选择文件")
     } else saf
     openPromise = promise
     try { activity.startActivityForResult(intent, openRequest) }
@@ -298,10 +306,13 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   }
 
 
-  @ReactMethod fun openDocumentTree(promise: Promise) {
+  @ReactMethod fun openDocumentTree(promise: Promise) { launchDocumentTree(false,promise) }
+  @ReactMethod fun openDocumentTreeExtended(promise: Promise) { launchDocumentTree(true,promise) }
+  private fun launchDocumentTree(includeThirdParty:Boolean,promise:Promise) {
     val activity = reactApplicationContext.currentActivity ?: return promise.reject("E_NO_ACTIVITY", "Android 文件界面当前不可用。")
     if (treePromise != null) return promise.reject("E_PICKER_BUSY", "已有文件夹选择操作正在进行。")
-    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION) }
+    val tree = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION) }
+    val intent=if(includeThirdParty) Intent.createChooser(tree,"选择支持 DocumentsProvider 的文件夹应用") else tree
     treePromise = promise
     try { activity.startActivityForResult(intent, treeRequest) } catch (error: Throwable) { treePromise = null; promise.reject("E_OPEN_TREE", error) }
   }
@@ -416,29 +427,29 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     }
   }
 
-  @ReactMethod fun webStatus(promise: Promise) {
-    val (running, url) = DkdsLocalWebServer.status()
-    promise.resolve(WritableNativeMap().apply { putBoolean("running", running); putString("url", url); putString("error", DkdsLocalWebServer.error()) })
-  }
+  @ReactMethod fun webStatus(promise: Promise) { promise.resolve(DkdsLocalWebServer.status(context)) }
+  @ReactMethod fun webApplySettings(enabled:Boolean,noKey:Boolean,port:Double,promise:Promise){thread(name="dkds-web-settings",isDaemon=true){try{promise.resolve(DkdsLocalWebServer.applySettings(context,enabled,noKey,port.toInt()))}catch(error:Throwable){DkdsLocalWebServer.markError(error);promise.reject("E_WEB_SETTINGS",error)}}}
+  @ReactMethod fun webRegenerateKey(promise:Promise){promise.resolve(DkdsLocalWebServer.regenerateKey(context))}
 
   @ReactMethod fun startWebVersion(openBrowser: Boolean, promise: Promise) {
     thread(name = "dkds-web-start", isDaemon = true) {
       try {
-        val url = DkdsLocalWebServer.start(context)
-        if (openBrowser) context.runOnUiQueueThread {
+        val state = DkdsLocalWebServer.start(context)
+        val shareUrl=state.getString("url") ?: ""; val browserUrl=state.getString("browserUrl") ?: shareUrl
+        if (openBrowser && browserUrl.isNotBlank()) context.runOnUiQueueThread {
           try {
-            val view = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            val view = Intent(Intent.ACTION_VIEW, Uri.parse(browserUrl))
             val activity = reactApplicationContext.currentActivity
             if (activity != null) activity.startActivity(Intent.createChooser(view, "打开 DK Data Studio 网页版"))
             else context.startActivity(view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
           } catch (_: Throwable) {}
         }
-        promise.resolve(url)
+        promise.resolve(shareUrl)
       } catch (error: Throwable) { DkdsLocalWebServer.markError(error); promise.reject("E_WEB_VERSION", error) }
     }
   }
 
-  @ReactMethod fun stopWebVersion(promise: Promise) { DkdsLocalWebServer.stop(); promise.resolve(true) }
+  @ReactMethod fun stopWebVersion(promise: Promise) { DkdsLocalWebServer.stop(context,true); promise.resolve(true) }
 
   override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
     if (requestCode == openRequest) {
@@ -571,6 +582,16 @@ module.exports = function withDkdsAndroidNativeHost(config) {
     if (!manifest['uses-permission'].some(row => row?.$?.['android:name'] === 'android.permission.INTERNET')) {
       manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.INTERNET' } });
     }
+    const intents = [
+      { action: [{ $: { 'android:name': 'android.intent.action.OPEN_DOCUMENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
+      { action: [{ $: { 'android:name': 'android.intent.action.GET_CONTENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
+      { action: [{ $: { 'android:name': 'android.intent.action.OPEN_DOCUMENT_TREE' } }] },
+      { action: [{ $: { 'android:name': 'android.intent.action.CREATE_DOCUMENT' } }], category: [{ $: { 'android:name': 'android.intent.category.OPENABLE' } }], data: [{ $: { 'android:mimeType': '*/*' } }] },
+    ];
+    manifest.queries = manifest.queries || [{ intent: [] }];
+    manifest.queries[0].intent = manifest.queries[0].intent || [];
+    const queryActions = new Set(manifest.queries[0].intent.map(row => row?.action?.[0]?.$?.['android:name']).filter(Boolean));
+    for (const intent of intents) if (!queryActions.has(intent.action[0].$['android:name'])) manifest.queries[0].intent.push(intent);
     return mod;
   });
   return withDangerousMod(config, ['android', async mod => {

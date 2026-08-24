@@ -61,6 +61,15 @@
     try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
   }
 
+  function isProjectLike(project){
+    if(!project||typeof project!=='object'||Array.isArray(project))return false;
+    if(String(project.format||'')===FORMAT)return true;
+    const hasDatasets=Array.isArray(project.datasets);
+    const hasProjectEnvelope=project.plugins!==undefined||project.host!==undefined||project.schemaVersion!==undefined;
+    const hasLegacyDomain=DOMAIN_ROOT_FIELDS.some(key=>project[key]!==undefined);
+    return hasDatasets&&(hasProjectEnvelope||hasLegacyDomain);
+  }
+
   function validateProject(project){
     if(!project||typeof project!=='object'||Array.isArray(project))throw new Error('文件内容不是 DK Data Studio 工程对象');
     if(project.datasets!==undefined&&!Array.isArray(project.datasets))throw new Error('工程字段 datasets 损坏：应为数组');
@@ -215,5 +224,5 @@
     return text;
   }
 
-  return {FORMAT,SCHEMA_VERSION,DOMAIN_ROOT_FIELDS,stripBom,decodeProjectBytes,validateProject,migrateLegacyProject,canonicalizeProject,parseProjectText,parseProjectBytes,serializeProject};
+  return {FORMAT,SCHEMA_VERSION,DOMAIN_ROOT_FIELDS,stripBom,decodeProjectBytes,isProjectLike,validateProject,migrateLegacyProject,canonicalizeProject,parseProjectText,parseProjectBytes,serializeProject};
 });

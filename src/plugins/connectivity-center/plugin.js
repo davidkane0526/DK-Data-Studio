@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.styles','ui.menus','ui.status-bar'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.0',apiVersion:'1.16.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.1',apiVersion:'1.16.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {
@@ -89,9 +89,9 @@
       setText('#dksmbPath',c.server&&c.share?`\\\\${c.server}\\${c.share}${smbPath?`\\${smbPath.replaceAll('/','\\')}`:''}`:'尚未连接 SMB 共享');
       if(!smbEntries.length){host.innerHTML='<div class="dksmb-empty">当前目录没有可浏览的文件。</div>';}
       else host.innerHTML=smbEntries.map((row,i)=>`<div class="dksmb-row ${selectedPaths.has(row.path)?'selected':''}" data-entry="${i}"><span>${row.directory?'▸':`<input type="checkbox" ${selectedPaths.has(row.path)?'checked':''}>`}</span><span class="dksmb-name">${row.directory?'📁':'·'} ${esc(row.name)}</span><span class="dksmb-meta">${row.directory?'文件夹':fmt(row.size)}</span><span class="dksmb-meta">${esc(row.modifiedAt?String(row.modifiedAt).replace('T',' ').slice(0,16):'')}</span></div>`).join('');
-      const commit=$('#dksmbCommit');commit.disabled=smbBusy||!selectedPaths.size;commit.textContent=smbMode==='project'?'读取所选项目':`导入所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`;
+      const commit=$('#dksmbCommit');commit.disabled=smbBusy||!selectedPaths.size;commit.textContent=smbMode==='project'?'读取所选项目':smbMode==='auto'?`打开所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`:`导入所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`;
       const fav=favorites().some(row=>favoriteKey(row.server,row.share)===favoriteKey(c.server,c.share));$('#dksmbFavorite').textContent=fav?'★':'☆';
-      setText('#dksmbModeLabel',smbMode==='project'?'读取项目':'导入数据');
+      setText('#dksmbModeLabel',smbMode==='project'?'读取项目':smbMode==='auto'?'自动识别':'导入数据');
     }
     async function refreshShares(){
       const c=connection();if(!c.server)throw new Error('请输入 SMB 服务器地址。');persistSmb();shares=await connectivity.smb.listShares(c)||[];renderSmbNav();ctx.status.set(`SMB：发现 ${shares.length} 个共享。`);
@@ -100,7 +100,7 @@
       const c=connection();if(!c.server||!c.share)throw new Error('请先选择服务器和共享。');persistSmb();smbBusy=true;renderSmbFiles();try{smbEntries=await connectivity.smb.list(c,smbPath)||[];selectedPaths=new Set([...selectedPaths].filter(path=>smbEntries.some(row=>row.path===path)));}finally{smbBusy=false;renderSmbFiles();}
     }
     async function discover(){const found=await connectivity.smb.discover()||[];servers=(Array.isArray(found)?found:[]).map(row=>typeof row==='string'?{name:row,address:row}:{name:String(row.name||row.address||''),address:String(row.address||row.name||'')}).filter(row=>row.address);renderSmbNav();ctx.status.set(`SMB：扫描到 ${servers.length} 台设备。`);}
-    function openSmb(mode='data'){smbMode=mode==='project'?'project':'data';selectedPaths.clear();show(smbOverlay);renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
+    function openSmb(mode='data'){smbMode=mode==='project'?'project':mode==='auto'?'auto':'data';selectedPaths.clear();show(smbOverlay);renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
     function closeSmb(){hide(smbOverlay);}
     dom.on($('#dksmbClose'),'click',closeSmb);dom.on($('#dksmbCancel'),'click',closeSmb);dom.on(smbOverlay,'click',event=>{if(event.target===smbOverlay)closeSmb();});
     dom.on($('#dksmbDiscover'),'click',()=>setBusy('#dksmbDiscover',discover).catch(err=>ctx.status.set(`SMB 扫描失败：${err.message}`)));
@@ -119,6 +119,17 @@
       if(smbMode==='project'){
         const row=rows[0],path=`smb://${c.server}/${c.share}/${String(row.name||paths[0]).replace(/^\/+/, '')}`;
         await ctx.capabilities.invoke('core.project-loader','openBase64',{base64:row.base64,path,name:basename(row.name||paths[0])});closeSmb();return;
+      }
+      if(smbMode==='auto'){
+        const files=[];let projects=0;
+        for(let index=0;index<rows.length;index++){
+          const row=rows[index],name=basename(row.name||paths[index]),path=`smb://${c.server}/${c.share}/${String(row.name||paths[index]).replace(/^\/+/, '')}`;
+          let project=false;
+          if(name.toLowerCase().endsWith('.json'))project=!!(await ctx.capabilities.invoke('core.project-loader','isProjectBase64',{base64:row.base64,name,path}));
+          if(project){await ctx.capabilities.invoke('core.project-loader','openBase64',{base64:row.base64,path,name});projects++;}
+          else files.push({name,path,base64:row.base64,size:Math.floor(String(row.base64||'').length*3/4)});
+        }
+        if(files.length)ctx.data.importWorkbench.open({files,source:'smb'});closeSmb();ctx.status.set(projects&&files.length?`SMB：自动打开 ${projects} 个工程，其余 ${files.length} 个文件进入导入工作台。`:projects?`SMB：已打开 ${projects} 个工程。`:`已将 ${files.length} 个 SMB 文件送入导入工作台。`);return;
       }
       const files=rows.map((row,index)=>({name:basename(row.name||paths[index]),path:`smb://${c.server}/${c.share}/${String(row.name||paths[index]).replace(/^\/+/, '')}`,base64:row.base64,size:Math.floor(String(row.base64||'').length*3/4)}));
       ctx.data.importWorkbench.open({files,source:'smb'});closeSmb();ctx.status.set(`已将 ${files.length} 个 SMB 文件送入导入工作台。`);
@@ -174,6 +185,7 @@
 
     ctx.commands.register('connectivity.smb.import',()=>openSmb('data'));
     ctx.commands.register('connectivity.smb.project',()=>openSmb('project'));
+    ctx.commands.register('connectivity.smb.open',()=>openSmb('auto'));
     ctx.commands.register('connectivity.ai.settings',()=>openSettings());
     ctx.commands.register('connectivity.ai.chat',()=>toggleChat(true));
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){

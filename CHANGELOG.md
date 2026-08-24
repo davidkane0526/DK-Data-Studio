@@ -1,3 +1,11 @@
+# v3.61.51 — Android File Host, LAN Web & Mobile Interaction Closure
+
+- Align Android file selection with the supplied PyDroid Node host contract: extended selection uses `ACTION_GET_CONTENT` as the primary third-party/provider chooser; persistent SAF files retain `ACTION_OPEN_DOCUMENT`; folders use `ACTION_OPEN_DOCUMENT_TREE` / DocumentsProvider; manifest package queries advertise all supported file actions. Mobile file and SMB entry points are semantic-neutral and Core auto-detects Studio projects before routing ordinary files to Import Workbench.
+- Rebuild Android LAN Web around a real LAN listener: bind `0.0.0.0`, enumerate private IPv4 addresses, expose enabled/no-key/port/key/pair-session settings, never publish `127.0.0.1` as a share address, and require an actual `/__dkds_health` HTTP probe before reporting startup success.
+- Move desktop status plug-in/system controls into a far-right command cluster. Harden held-title PRIME resizing so scrollbar gutters, explicit resize handles and table resizers win over title gestures; global mobile held-swipe navigation also ignores PRIME title/resizer regions.
+- Make project-tag deletion use a left-swipe reveal plus iOS-like exit/collapse animation. Simplify the mobile More panel to software management, LAN Web and appearance because file/project/history actions already live in first-class shell locations.
+- Keep SDK **1.17.6** and Plugin API **1.17.0**. SMB & AI Services advances to **1.2.1**; mobile advances to **0.8.4** / Android versionCode **15**.
+
 # v3.61.50 — SMB File Browser & AI/MCP Service UX
 
 - Remove the desktop Connectivity Center activity/page and the Tools-menu `连接 / SMB / AI / MCP` shortcut. Desktop no longer has a generic “connection” page.

@@ -23,6 +23,11 @@ const legacyProject={
   plugins:{'external.example':{workspace:{answer:42}}}
 };
 const canonical=F.parseProjectText(JSON.stringify(legacyProject));
+assert.strictEqual(F.isProjectLike(canonical),true,'canonical Studio project must be auto-detected as a project file');
+assert.strictEqual(F.isProjectLike({format:F.FORMAT,schemaVersion:2,datasets:[]}),true,'canonical project envelope must be auto-detected even when empty');
+assert.strictEqual(F.isProjectLike({datasets:[],schemaVersion:2}),true,'legacy/canonical project envelope without format marker must still auto-detect');
+assert.strictEqual(F.isProjectLike({datasets:[{x:1}]}),false,'arbitrary JSON containing only a datasets field must remain ordinary data');
+assert.strictEqual(F.isProjectLike({foo:'bar'}),false,'generic JSON data must not be misclassified as a Studio project');
 assert.strictEqual(canonical.format,F.FORMAT);
 assert.strictEqual(canonical.schemaVersion,2);
 assert.deepStrictEqual(canonical.datasets[0].points,legacyProject.datasets[0].points,'embedded parsed points must survive migration');

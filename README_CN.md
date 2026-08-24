@@ -1,4 +1,16 @@
-# DK Data Studio — v3.61.50
+# DK Data Studio — v3.61.51
+
+## v3.61.51 Android 文件接口、局域网网页版与移动交互收口
+
+本版继续针对 Android / React Native 原生壳收口文件 I/O、局域网网页版、项目标签与 PRIME 手势，同时修正桌面底部状态栏的排布。桌面状态栏的插件/系统状态现在作为**右侧靠边命令簇**排列，左侧仅保留可伸缩状态文本。
+
+Android 文件入口按照 PyDroid Node 的实际 Host 方案统一：普通/第三方文件由 `ACTION_GET_CONTENT + CATEGORY_OPENABLE + EXTRA_ALLOW_MULTIPLE + MIME_TYPES` 作为扩展选择器主入口，SAF 持久文件仍保留 `ACTION_OPEN_DOCUMENT`，文件夹使用 `ACTION_OPEN_DOCUMENT_TREE` / DocumentsProvider，并在 Android manifest 查询 `OPEN_DOCUMENT / GET_CONTENT / OPEN_DOCUMENT_TREE / CREATE_DOCUMENT` Provider。移动端 UI 不再询问“数据还是项目”，Core 读取后依据 Studio Project Format 自动识别 JSON 工程，其余文件进入 Import Workbench；SMB 也使用同一自动分类路径。
+
+移动端局域网网页版不再向用户展示 `127.0.0.1` 作为共享地址。Native Host 绑定 `0.0.0.0`，枚举 Wi‑Fi/以太网私有 IPv4，提供启用、免 Key、端口、4 位 Key、重新生成 Key、配对会话和多网卡局域网地址；启动成功前必须实际通过本机 `/__dkds_health` HTTP 探测。移动壳的小型服务弹窗与桌面服务设置保持相同核心参数。
+
+PRIME 固定面板的按住标题栏调宽/调高现在会避开滚动条 gutter、表格列调整器和显式 Resize Handle，并在手势期间独占标题栏 pointer gesture，避免滚动条拖动与尺寸调整争抢。项目抽屉继续使用左滑露出红色“删除”，确认删除后增加横向退出 + 高度折叠/淡出动画，更接近 iOS 列表删除反馈。移动“更多”面板只保留软件管理、局域网网页版与外观；已外置的文件、项目、历史等功能不再重复。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**；SMB & AI Services 更新为 **1.2.1**，移动端更新为 **0.8.4**、Android `versionCode` **15**。
 
 ## v3.61.50 SMB 文件管理器与 AI/MCP 服务界面
 

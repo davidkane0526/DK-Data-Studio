@@ -736,46 +736,93 @@
     }
   }
 
-  async function addImportFiles(){
-    if(importDraft.fileDialogOpen)return;
-    importDraft.fileDialogOpen=true;
-    let metas=[];
-    try{
-      metas=await window.electronAPI.openDataFiles();
-    }finally{
-      importDraft.fileDialogOpen=false;
-    }
-    if(!metas?.length)return;
-
+  async function stageImportMetas(metas=[]){
+    metas=(Array.isArray(metas)?metas:[]).filter(meta=>meta?.path);
+    if(!metas.length)return false;
     for(const meta of metas){
       let item=importDraft.files.find(f=>f.path===meta.path);
       if(!item){
         const provider=chooseImportProvider(meta,ensureImportTargets());
         item={
-          ...meta,
-          checked:true,
-          text:'',
-          detectedEncoding:'',
-          loadedEncodingRequest:'',
-          importerId:provider?.id||'',
-          settings:provider?.defaultOptions?.()||{},
-          inspection:null,
-          mappingTouched:false,
-          loading:false,
-          error:''
+          ...meta,checked:true,text:'',detectedEncoding:'',loadedEncodingRequest:'',
+          importerId:provider?.id||'',settings:provider?.defaultOptions?.()||{},inspection:null,
+          mappingTouched:false,loading:false,error:''
         };
         importDraft.files.push(item);
       }
     }
     if(!importDraft.activePath)importDraft.activePath=metas[0].path;
     renderImportWorkbench();
-
-    // Read sequentially to keep the UI responsive for many small instrument files.
+    // Read sequentially to keep the UI responsive for many instrument files.
     for(const meta of metas){
       const item=importDraft.files.find(f=>f.path===meta.path);
       await readImportItemText(item);
     }
     renderImportWorkbench();
+    return true;
+  }
+
+  async function addImportFiles(){
+    if(importDraft.fileDialogOpen)return;
+    importDraft.fileDialogOpen=true;
+    let metas=[];
+    try{metas=await window.electronAPI.openDataFiles();}
+    finally{importDraft.fileDialogOpen=false;}
+    return stageImportMetas(metas);
+  }
+
+  async function openFilesAuto(){
+    if(importDraft.fileDialogOpen)return;
+    importDraft.fileDialogOpen=true;
+    let metas=[];
+    try{metas=await window.electronAPI.openDataFiles();}
+    finally{importDraft.fileDialogOpen=false;}
+    if(!metas?.length)return false;
+    const data=[];let openedProjects=0;
+    for(const meta of metas){
+      const name=String(meta?.name||'').toLowerCase();
+      let handled=false;
+      if(name.endsWith('.json')){
+        try{
+          const row=await window.electronAPI.readDataText({path:meta.path,encoding:'auto'});
+          const raw=JSON.parse(String(row?.text||''));
+          if(window.DKDSProjectFormat?.isProjectLike?.(raw)){
+            const project=window.DKDSProjectFormat.parseProjectText(String(row.text||''));
+            openProjectPayload({project,path:meta.path});openedProjects++;handled=true;
+          }
+        }catch(err){console.debug('[DKDS auto file classify]',meta?.name,err?.message||err);}
+      }
+      if(!handled)data.push(meta);
+    }
+    if(data.length){openImportWorkbench();await stageImportMetas(data);}
+    if(openedProjects&&data.length)setStatus(`已自动识别并打开 ${openedProjects} 个工程，其余 ${data.length} 个文件进入数据导入工作台。`);
+    return true;
+  }
+
+  async function openDirectoryAuto(){
+    const tree=await window.electronAPI.openDataDirectory?.();
+    if(!tree?.uri)return false;
+    const listed=await window.electronAPI.listDataDirectory?.({uri:tree.uri,relativePath:''});
+    const files=(Array.isArray(listed?.entries)?listed.entries:Array.isArray(listed)?listed:[]).filter(row=>row&&!row.directory);
+    if(!files.length){setStatus('所选文件夹中没有可读取文件。');return false;}
+    const dataSeeds=[];let openedProjects=0;
+    for(const row of files){
+      const name=String(row.name||'document');
+      const payload=await window.electronAPI.readDataDocument?.({uri:row.uri});
+      const base64=String(payload?.base64||payload||'');
+      let handled=false;
+      if(name.toLowerCase().endsWith('.json')&&base64){
+        try{
+          const decoded=decodeImportSeed({base64,encoding:'auto'});
+          const raw=JSON.parse(decoded.text);
+          if(window.DKDSProjectFormat?.isProjectLike?.(raw)){openProjectBase64({base64,path:`provider://${tree.name||'folder'}/${name}`,name});openedProjects++;handled=true;}
+        }catch(err){console.debug('[DKDS folder auto classify]',name,err?.message||err);}
+      }
+      if(!handled&&base64)dataSeeds.push({name,path:`provider://${tree.name||'folder'}/${name}`,base64,size:Number(row.size)||0});
+    }
+    if(dataSeeds.length)openImportWorkbench({files:dataSeeds,source:'android-provider'});
+    if(openedProjects&&dataSeeds.length)setStatus(`文件夹中自动打开 ${openedProjects} 个工程，其余 ${dataSeeds.length} 个文件进入数据导入工作台。`);
+    return true;
   }
 
   function base64ImportBytes(base64){
@@ -2404,7 +2451,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.50',
+      version:'3.61.51',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3271,7 +3318,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.50',
+      appVersion:'3.61.51',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3309,6 +3356,8 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     // The native shell never needs to locate or click desktop renderer nodes.
     window.DKDSMobileHost?.configure?.({
       importFiles:()=>importFiles(),
+      openAnyFiles:()=>openFilesAuto(),
+      openAnyDirectory:()=>openDirectoryAuto(),
       openProject:()=>openProject(),
       saveProject:()=>saveProject(),
       newProject:()=>createProjectTab(null,true),
@@ -3390,7 +3439,13 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
     window.DKDSCapabilities?.register?.('core','core.project-loader',{
       kind:'service',title:'Project Loader',version:'1.0.0',remote:false,
-      methods:{openBase64:payload=>openProjectBase64(payload||{})}
+      methods:{
+        openBase64:payload=>openProjectBase64(payload||{}),
+        isProjectBase64:payload=>{
+          try{const decoded=decodeImportSeed({base64:String(payload?.base64||''),encoding:'auto'});return !!window.DKDSProjectFormat?.isProjectLike?.(JSON.parse(decoded.text));}
+          catch{return false;}
+        }
+      }
     });
     window.DKDSCapabilities?.register?.('core','core.ai-context',{
       kind:'service',title:'AI Mention Context',version:'1.0.0',remote:false,

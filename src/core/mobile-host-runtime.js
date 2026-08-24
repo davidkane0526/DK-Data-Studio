@@ -190,6 +190,8 @@
     const id=text(payload.id);
     const commands={
       import:configured.importFiles,
+      'file.open':configured.openAnyFiles||configured.importFiles,
+      'file.folder':configured.openAnyDirectory,
       'project.open':configured.openProject,
       'project.save':configured.saveProject,
       'project.new':configured.newProject,
@@ -314,7 +316,7 @@
 
   function bindHeldSwipeKeys(){
     let gesture=null;
-    const down=event=>{if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false};};
+    const down=event=>{if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;if(event.target?.closest?.('.dkds-portable-header,.drag-handle,.dkds-portable-resize-handle,[role=scrollbar],.dkds-table-column-resizer'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false};};
     const move=event=>{
       if(!gesture||gesture.id!==event.pointerId||gesture.fired||performance.now()-gesture.at<320)return;
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;

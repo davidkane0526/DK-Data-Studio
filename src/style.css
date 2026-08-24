@@ -3957,6 +3957,10 @@ input:not([type="checkbox"]):not([type="radio"]):hover,select:hover,textarea:hov
   height:100%;
 }
 .statusbar-plugin-left:empty,.statusbar-plugin-right:empty{display:none}
+/* Status actions are a right-edge command cluster; the message is the only flexible spacer. */
+.statusbar-plugin-left{margin-left:auto}
+.statusbar-plugin-right{margin-left:0}
+.statusbar-plugin-left:empty + .statusbar-plugin-right{margin-left:auto}
 .plugin-status-item{
   --status-accent:#98a2b3;
   min-width:0;

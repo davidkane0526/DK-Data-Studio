@@ -9,7 +9,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.connectivity-center",
       "name": "SMB & AI Services",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "apiVersion": "1.16.0",
       "requiresCore": [
         "runtime",

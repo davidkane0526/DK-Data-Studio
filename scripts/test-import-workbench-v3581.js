@@ -13,14 +13,14 @@ assert(!app.includes('gateFmt('),
 assert(app.includes('Number.isFinite(v)?`<td>${formatImportNumber(v,6)}</td>`'),
   'Import preview table must render through the import formatter.');
 
-const addStart=app.indexOf('async function addImportFiles(){');
-const addEnd=app.indexOf('\n  function openImportWorkbench(options={})',addStart);
-assert(addStart>=0&&addEnd>addStart,'addImportFiles source not found.');
-const add=app.slice(addStart,addEnd);
-const firstRender=add.indexOf('renderImportWorkbench();');
-const readLoop=add.indexOf('for(const meta of metas){',add.indexOf('if(!importDraft.activePath)'));
+const stageStart=app.indexOf('async function stageImportMetas(metas=[]){');
+const stageEnd=app.indexOf('\n  async function addImportFiles(){',stageStart);
+assert(stageStart>=0&&stageEnd>stageStart,'stageImportMetas source not found.');
+const stage=app.slice(stageStart,stageEnd);
+const firstRender=stage.indexOf('renderImportWorkbench();');
+const readLoop=stage.indexOf('for(const meta of metas){',stage.indexOf('if(!importDraft.activePath)'));
 assert(firstRender>=0&&readLoop>firstRender,
-  'Selected-file count must render before sequential file parsing starts.');
+  'Selected-file count must render before sequential file parsing starts, including auto-classified mobile/provider imports.');
 
 const renderStart=app.indexOf('function renderImportWorkbench(){');
 const renderEnd=app.indexOf('\n  async function updateImportSetting',renderStart);

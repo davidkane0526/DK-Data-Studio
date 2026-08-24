@@ -22,6 +22,7 @@ for(const id of ['statusBarMessage','statusBarPluginLeft','statusBarPluginRight'
 assert(html.indexOf('id="statusBar"')>html.indexOf('<div class="workspace">'),'global status bar must live outside the main plot row.');
 assert(css.includes('--dkds-statusbar-height:28px'),'shell must reserve a shared status-bar height.');
 assert(css.includes('.plugin-status-item'),'status-bar plugin controls need a common visual contract.');
+assert(css.includes('.statusbar-plugin-left{margin-left:auto}')&&css.includes('.statusbar-plugin-left:empty + .statusbar-plugin-right{margin-left:auto}'),'desktop status plug-in controls must be clustered at the far-right edge.');
 
 assert(kernel.includes("registerContribution(pluginId,'ui.statusItems'"),'plugin kernel must register status items generically.');
 assert(kernel.includes('statusBar: {')&&kernel.includes('add: spec => addStatusBarItem(pluginId, spec)'),'plugin API must expose ui.statusBar.add().');

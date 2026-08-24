@@ -897,8 +897,16 @@
     toggleCollapsed(){return this.setCollapsed(!this.wrapper?.classList?.contains('is-collapsed'));}
     bindHeldTitleResize(header){
       let gesture=null,timer=null;const cancelTimer=()=>{if(timer){clearTimeout(timer);timer=null;}};
+      const inScrollbarGutter=e=>{
+        const nodes=[this.wrapper,e.target?.closest?.('.dkds-portable-view,.floating-body,.dkds-scroll-region')].filter(Boolean);
+        for(const node of nodes){const r=node.getBoundingClientRect?.();if(!r)continue;const vertical=node.scrollHeight>node.clientHeight+2,horizontal=node.scrollWidth>node.clientWidth+2;if(vertical&&e.clientX>=r.right-20)return true;if(horizontal&&e.clientY>=r.bottom-20)return true;}
+        return false;
+      };
+      // The title bar owns held-resize gestures.  Prevent Android/browser pan
+      // arbitration from handing the same pointer to a nearby overlay scrollbar.
+      const previousTouchAction=header.style.touchAction;header.style.touchAction='none';
       const down=e=>{
-        if(e.isPrimary===false||e.target.closest('button,input,select,textarea,a'))return;
+        if(e.isPrimary===false||e.target.closest('button,input,select,textarea,a,[role=scrollbar],.dkds-portable-resize-handle,.dkds-table-column-resizer')||inScrollbarGutter(e))return;
         const placement=normalizePlacement(this.wrapper?.dataset?.placement);if(!['left','right','bottom','main'].includes(placement))return;
         const frame=this.wrapper.closest('.dkds-plugin-canvas-frame');const splits=frame?.__dkdsCanvasSplits||{};
         gesture={id:e.pointerId,x:e.clientX,y:e.clientY,placement,armed:false,wrapperWidth:this.wrapper.getBoundingClientRect().width,wrapperHeight:this.wrapper.getBoundingClientRect().height,splitSize:splits[placement]?.size||0,splits};
@@ -914,7 +922,7 @@
       };
       const up=e=>{if(!gesture||gesture.id!==e.pointerId)return;cancelTimer();if(gesture.armed){const split=gesture.splits?.[gesture.placement];if(split)split.apply(split.size,{persist:true});const state=this.readState(),dockedBounds={...(state.dockedBounds||{})};const r=this.wrapper.getBoundingClientRect();dockedBounds[gesture.placement]={width:Math.round(r.width),height:Math.round(r.height)};this.writeState({dockedBounds});window.dispatchEvent(new Event('resize'));}this.wrapper.classList.remove('is-held-resizing');gesture=null;};
       header.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
-      this.chromeCleanups.push(()=>{cancelTimer();header.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);});
+      this.chromeCleanups.push(()=>{cancelTimer();header.style.touchAction=previousTouchAction;header.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);});
     }
     bindFloatResize(handle){
       let state=null;

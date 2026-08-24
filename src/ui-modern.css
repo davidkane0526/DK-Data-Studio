@@ -1238,7 +1238,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button
   box-shadow:none!important;
 }
 
-/* v3.61.50 · low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
+/* v3.61.51 · low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,
@@ -1254,7 +1254,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dc-card{--plugin-workspace-panel-border:var(--dkui-border);}
 html[data-dkds-theme="dark"] body.dkds-modern-ui hr{border-color:var(--dkui-border)!important;opacity:.55;}
 
-/* v3.61.50 · legacy structural rules are normalized into the same low-contrast line token.
+/* v3.61.51 · legacy structural rules are normalized into the same low-contrast line token.
    Controls may still use --border-strong; document/panel separators do not. */
 body.dkds-modern-ui .left-panel section,
 body.dkds-modern-ui .inspector-section,
@@ -1270,7 +1270,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-table th,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-table td,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{border-bottom-color:var(--dkui-border)!important;}
 
-/* v3.61.50 · source-aware import/project split commands */
+/* v3.61.51 · source-aware import/project split commands */
 body.dkds-modern-ui .split-command-anchor{display:inline-flex;align-items:stretch;gap:0;position:relative}
 body.dkds-modern-ui .split-command-anchor>.split-command-main{border-top-right-radius:0!important;border-bottom-right-radius:0!important;margin-right:0!important}
 body.dkds-modern-ui .split-command-anchor>.split-command-caret{width:25px;min-width:25px;padding:0!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;margin-left:-1px!important;font-size:11px}
