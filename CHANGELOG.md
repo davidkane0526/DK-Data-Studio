@@ -1,3 +1,9 @@
+# v3.61.49 — Android AppState Typecheck Fix
+
+- Fix the Android React Native shell TypeScript failure in `mobile/App.tsx`: lifecycle publishing accepted a generic `string` and assigned it to a ref inferred as React Native `AppStateStatus`, causing `tsc --noEmit` to stop at `TS2322`. The lifecycle path now carries `AppStateStatus` explicitly from import through ref storage and `publishLifecycle`.
+- Extend the no-dependency mobile architecture regression so `mobile:test` also locks the `AppStateStatus` typing contract. This catches the exact source-level regression before Expo/Gradle build preparation reaches the separate TypeScript gate.
+- Keep SDK **1.17.6** and Plugin API **1.17.0** unchanged. Mobile shell metadata advances to **0.8.2** / Android versionCode **13**.
+
 # v3.61.48 — Connectivity Center Navigation Fix
 
 - Fix the desktop Tools-menu entry for `连接 / SMB / AI / MCP`: the v3.61.47 shortcut called `workspace.openPage()` directly while the page still carried Core's `plugin-activity-hidden` state for the previously active workspace, so the page was opened internally but remained invisible.

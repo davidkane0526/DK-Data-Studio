@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationBar } from 'expo-navigation-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -134,7 +135,7 @@ export default function App() {
   const hostReady = useRef(false);
   const lastBackAt = useRef(0);
   const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const appStateRef = useRef(AppState.currentState);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const { width, height } = useWindowDimensions();
   const landscape = width > height && height < 600;
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
@@ -196,7 +197,7 @@ export default function App() {
     webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'event', event, payload }));
   }, []);
 
-  const publishLifecycle = useCallback((state: string) => {
+  const publishLifecycle = useCallback((state: AppStateStatus) => {
     lifecycleTimers.current.forEach(clearTimeout);
     lifecycleTimers.current = [];
     appStateRef.current = state;

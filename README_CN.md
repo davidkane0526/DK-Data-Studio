@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.48
+# DK Data Studio — v3.61.49
+
+## v3.61.49 Android AppState TypeScript 编译修复
+
+修复 Android 构建在 `mobile` TypeScript 检查阶段停止的问题。`App.tsx` 的 `appStateRef` 实际保存 React Native `AppStateStatus`，但 `publishLifecycle` 参数此前被声明成普通 `string`，因此在 `appStateRef.current = state` 处触发 `TS2322: Type 'string' is not assignable to type 'AppStateStatus'`。现在生命周期状态从类型导入、Ref 到发布函数均显式使用 `AppStateStatus`。同时将这一约束加入 `mobile:test`，避免同类生命周期类型退化再次只在 Android 构建时被发现。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**；移动端更新为 **0.8.2**、Android `versionCode` **13**。
+
 
 ## v3.61.48 连接与 AI 页面导航修复
 

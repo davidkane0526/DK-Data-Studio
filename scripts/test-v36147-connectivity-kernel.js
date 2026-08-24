@@ -2,7 +2,7 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const vm=require('vm');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.48','Connectivity/kernel release must be 3.61.48.');
+assert.equal(pkg.version,'3.61.49','Connectivity/kernel release must be 3.61.49.');
 const html=read('src/index.html'),sdkReference=read('src/core/sdk-authoring-reference.generated.js'),kernel=read('src/core/studio-kernel-runtime.js'),mcp=read('src/core/mcp-runtime.js'),agent=read('src/core/connectivity-runtime.js'),app=read('src/app.js'),main=read('main.js'),preload=read('preload.js'),web=read('src/web-bridge.js'),native=read('mobile/plugins/withDkdsAndroidNativeHost.js'),plugin=read('src/plugins/connectivity-center/plugin.js'),css=read('src/ui-modern.css'),shell=read('mobile/src/Shell.tsx');
 assert(html.includes('core/sdk-authoring-reference.generated.js')&&html.indexOf('core/sdk-authoring-reference.generated.js')<html.indexOf('core/studio-kernel-runtime.js'),'Renderer must load the packaged SDK authoring reference before the shared kernel.');
 assert(html.includes('core/studio-kernel-runtime.js')&&html.includes('core/connectivity-runtime.js')&&html.includes('core/mcp-runtime.js'),'Main renderer must load shared kernel, Agent and MCP runtimes.');
@@ -31,5 +31,5 @@ assert(pkg.scripts['sdk:authoring']?.includes('generate-sdk-authoring-reference.
   assert(templates.result.resourceTemplates.some(row=>row.uriTemplate==='dkds://sdk/file/{path}'),'MCP must publish SDK file resource template.');
   const sdkRead=await M.handle(JSON.stringify({jsonrpc:'2.0',id:2,method:'resources/read',params:{uri:'dkds://sdk/file/'+encodeURIComponent('sdk/contract.json')}}),'2025-06-18');
   assert(sdkRead.result.contents[0].text.includes('1.17.6'),'MCP SDK file resource must resolve into the same packaged authoring corpus.');
-  console.log('v3.61.48 full-kernel AI/MCP, SMB/SAF and low-line UI contracts passed.');
+  console.log('v3.61.49 full-kernel AI/MCP, SMB/SAF and low-line UI contracts passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

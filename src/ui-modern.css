@@ -1238,7 +1238,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button
   box-shadow:none!important;
 }
 
-/* v3.61.48 · low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
+/* v3.61.49 · low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,
@@ -1254,7 +1254,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dc-card{--plugin-workspace-panel-border:var(--dkui-border);}
 html[data-dkds-theme="dark"] body.dkds-modern-ui hr{border-color:var(--dkui-border)!important;opacity:.55;}
 
-/* v3.61.48 · legacy structural rules are normalized into the same low-contrast line token.
+/* v3.61.49 · legacy structural rules are normalized into the same low-contrast line token.
    Controls may still use --border-strong; document/panel separators do not. */
 body.dkds-modern-ui .left-panel section,
 body.dkds-modern-ui .inspector-section,
