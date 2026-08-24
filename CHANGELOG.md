@@ -1,3 +1,12 @@
+# v3.61.46 — Android Mobile Shell Refinement & Resume Reliability
+
+- Keep Undo/Redo exclusively in the Android software header immediately before Data/Parameters. Remove duplicated history controls from every Portable/Plot/Plugin view and remove title-bar context-menu placement so press-hold resize can no longer summon the position menu; placement now opens only from its explicit button.
+- Tighten the single active-project tab and replace the bottom project sheet with a left-side native project drawer. The drawer adds New/Open/Save shortcuts and right-swipe reveal-to-delete for project rows.
+- Refine native bottom chrome with lighter typography, wider status-item spacing, translucent/blurred bottom navigation, and an Android-native process-memory bridge based on PSS instead of misleading WebView JavaScript heap size.
+- Replace the desktop LAN/web-service panel on Android with a compact native popover. The Android host validates packaged web assets, binds a loopback-only `ServerSocket`, packages shared brand assets into the standalone web bundle, exposes native service status/errors, and keeps the desktop LAN status item out of the mobile shell.
+- Harden Android resume: lifecycle projection is fire-and-forget, Core request timers pause while the app is backgrounded, and pending timeouts resume only after the renderer re-announces `ready`. This prevents timers frozen by Android from firing immediately when the app returns to foreground.
+- Keep SDK **1.17.6** and Plugin API **1.17.0**. Mobile package advances to **0.7.1** / Android versionCode **10**; existing plugins require no migration.
+
 # v3.61.45 — Android Native Host Build Fix
 
 - Fix the generated `DkdsNativeHostModule.kt` health-probe request: the Expo config-plugin template previously emitted physical CR/LF characters inside a Kotlin quoted string, so `:app:compileReleaseKotlin` failed at generated line 71 with `Expecting '"'` and a cascade of `Host` / `Connection` parse errors. The generator now emits Kotlin `\r\n` escapes and a regression test validates the generated source itself.

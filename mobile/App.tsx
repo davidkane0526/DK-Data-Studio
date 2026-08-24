@@ -29,6 +29,8 @@ import {
   RendererShellState,
   ShellActionSheet,
   ShellSheet,
+  NativeWebServiceState,
+  WebServicePopover,
 } from './src/Shell';
 
 type NativeRequest = {
@@ -61,7 +63,8 @@ type DkdsNativeHostApi = {
   readDocument?: (uri: string) => Promise<string>;
   createDocument?: (name: string, mimeType: string, content: string, encoding: 'utf8' | 'base64') => Promise<string | null>;
   writeDocument?: (uri: string, content: string, encoding: 'utf8' | 'base64') => Promise<string>;
-  webStatus?: () => Promise<{ running?: boolean; url?: string }>;
+  webStatus?: () => Promise<{ running?: boolean; url?: string; error?: string }>;
+  runtimeStatus?: () => Promise<{ runtime?: string; platform?: string; processCount?: number; memory?: Record<string, number>; components?: any[] }>;
   startWebVersion?: (openBrowser: boolean) => Promise<string>;
   stopWebVersion?: () => Promise<boolean>;
 };
@@ -116,12 +119,16 @@ export default function App() {
   const hostQueue = useRef<string[]>([]);
   const hostReady = useRef(false);
   const lastBackAt = useRef(0);
+  const lifecycleTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const appStateRef = useRef(AppState.currentState);
   const { width, height } = useWindowDimensions();
   const landscape = width > height && height < 600;
   const [shell, setShell] = useState<RendererShellState>(EMPTY_SHELL);
   const [sheet, setSheet] = useState<ShellSheet>(null);
   const [loadError, setLoadError] = useState('');
   const [rendererKey, setRendererKey] = useState(0);
+  const [webServiceVisible, setWebServiceVisible] = useState(false);
+  const [webService, setWebService] = useState<NativeWebServiceState>({ running: false, url: '' });
   const palette = useMemo(() => paletteFor(shell.theme), [shell.theme]);
 
   const resolveWeb = useCallback((id: string | undefined, ok: boolean, value: unknown) => {
@@ -129,28 +136,70 @@ export default function App() {
     webRef.current?.postMessage(JSON.stringify({ __dkdsNativeResponse: true, id, ok, value }));
   }, []);
 
-  const dispatchHostRequest = useCallback((id: string) => {
+  const armHostTimeout = useCallback((id: string) => {
     const pending = hostPending.current.get(id);
-    if (!pending || pending.timer) return;
+    if (!pending || pending.timer || appStateRef.current !== 'active') return;
     pending.timer = setTimeout(() => {
       hostPending.current.delete(id);
       pending.reject(new Error(`移动端 Core 请求超时：${pending.method}`));
     }, pending.timeoutMs);
-    webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'request', id, method: pending.method, payload: pending.payload }));
   }, []);
 
+  const dispatchHostRequest = useCallback((id: string) => {
+    const pending = hostPending.current.get(id);
+    if (!pending || pending.timer || appStateRef.current !== 'active') return;
+    armHostTimeout(id);
+    webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'request', id, method: pending.method, payload: pending.payload }));
+  }, [armHostTimeout]);
+
+  const pauseHostTimeouts = useCallback(() => {
+    for (const pending of hostPending.current.values()) {
+      if (pending.timer) clearTimeout(pending.timer);
+      pending.timer = null;
+    }
+  }, []);
+
+  const resumeHostTimeouts = useCallback(() => {
+    if (!hostReady.current || appStateRef.current !== 'active') return;
+    for (const id of hostPending.current.keys()) armHostTimeout(id);
+  }, [armHostTimeout]);
+
   const flushHostQueue = useCallback(() => {
-    if (!hostReady.current) return;
+    if (!hostReady.current || appStateRef.current !== 'active') return;
     const queued = hostQueue.current.splice(0);
     queued.forEach(dispatchHostRequest);
-  }, [dispatchHostRequest]);
+    resumeHostTimeouts();
+  }, [dispatchHostRequest, resumeHostTimeouts]);
+
+  const postHostEvent = useCallback((event: string, payload: any = {}) => {
+    webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'event', event, payload }));
+  }, []);
+
+  const publishLifecycle = useCallback((state: string) => {
+    lifecycleTimers.current.forEach(clearTimeout);
+    lifecycleTimers.current = [];
+    appStateRef.current = state;
+    if (state !== 'active') {
+      hostReady.current = false;
+      pauseHostTimeouts();
+    } else {
+      hostReady.current = false;
+    }
+    const send = () => postHostEvent('lifecycle', { state });
+    send();
+    if (state === 'active') {
+      lifecycleTimers.current.push(setTimeout(send, 160));
+      lifecycleTimers.current.push(setTimeout(send, 700));
+      lifecycleTimers.current.push(setTimeout(send, 1500));
+    }
+  }, [pauseHostTimeouts, postHostEvent]);
 
   const hostRequest = useCallback((method: string, payload: any = {}) => {
     const id = `host-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     return new Promise<any>((resolve, reject) => {
       const interactiveFileCommand = method === 'command' && ['import', 'project.open', 'project.save'].includes(String(payload?.id || ''));
       hostPending.current.set(id, { resolve, reject, timer: null, method, payload, timeoutMs: interactiveFileCommand ? 10 * 60 * 1000 : 45 * 1000 });
-      if (hostReady.current) dispatchHostRequest(id);
+      if (hostReady.current && appStateRef.current === 'active') dispatchHostRequest(id);
       else hostQueue.current.push(id);
     });
   }, [dispatchHostRequest]);
@@ -163,6 +212,44 @@ export default function App() {
       ToastAndroid.show('再按一次返回键退出', ToastAndroid.SHORT);
     }
   }, []);
+
+  const refreshWebService = useCallback(async () => {
+    try {
+      const state = await nativeHost?.webStatus?.();
+      const next = { running: !!state?.running, url: String(state?.url || ''), error: String(state?.error || '') };
+      setWebService(next);
+      return next;
+    } catch (error: any) {
+      const next = { running: false, url: '', error: error?.message || String(error) };
+      setWebService(next);
+      return next;
+    }
+  }, []);
+
+  useEffect(() => { void refreshWebService(); }, [refreshWebService]);
+
+  const runWebServiceAction = useCallback(async (action: 'start' | 'open' | 'stop' | 'copy') => {
+    if (action === 'copy') {
+      if (webService.url) { await Clipboard.setStringAsync(webService.url); ToastAndroid.show('本机网页版地址已复制', ToastAndroid.SHORT); }
+      return;
+    }
+    setWebService(current => ({ ...current, busy: true, error: '' }));
+    try {
+      if (action === 'stop') await nativeHost?.stopWebVersion?.();
+      else {
+        if (!nativeHost?.startWebVersion) throw new Error('当前安装包没有本机网页版服务。');
+        const url = await nativeHost.startWebVersion(false);
+        if (action === 'open' && url) await Linking.openURL(url);
+      }
+      await refreshWebService();
+    } catch (error: any) {
+      const message = error?.message || String(error);
+      setWebService(current => ({ ...current, busy: false, error: message }));
+      ToastAndroid.show(message, ToastAndroid.LONG);
+    } finally {
+      setWebService(current => ({ ...current, busy: false }));
+    }
+  }, [refreshWebService, webService.url]);
 
   const sendAction = useCallback(async (action: string, payload: any = {}) => {
     try {
@@ -186,21 +273,22 @@ export default function App() {
       else if (action === 'history-undo') await hostRequest('command', { id: 'project.undo' });
       else if (action === 'history-redo') await hostRequest('command', { id: 'project.redo' });
       else if (action === 'plugins') await hostRequest('command', { id: 'system.plugins' });
-      else if (action === 'web-open') {
-        if (!nativeHost?.startWebVersion) throw new Error('当前安装包尚未包含本机网页版服务，请重新构建并安装 APK。');
-        const url = await nativeHost.startWebVersion(true);
-        ToastAndroid.show(`已在浏览器打开 ${url}`, ToastAndroid.SHORT);
+      else if (action === 'web-service' || action === 'web-open') {
+        setWebServiceVisible(true);
+        await refreshWebService();
       }
       else if (action === 'theme-toggle') await hostRequest('command', { id: 'theme.toggle' });
-      else if (action === 'lifecycle') await hostRequest('command', { id: 'lifecycle', state: payload?.state });
       else if (action === 'panel') await hostRequest('panel', { name: payload?.name || 'left' });
       else if (action === 'surface') await hostRequest('surface', { id: payload?.id, activityId: shell.activityId });
       else if (action === 'workspace-action') await hostRequest('action', { id: payload?.id, itemId: payload?.itemId, activityId: shell.activityId });
-      else if (action === 'status-item') await hostRequest('status', { pluginId: payload?.pluginId, id: payload?.id });
+      else if (action === 'status-item') {
+        if (payload?.id === 'lan-web') { setWebServiceVisible(true); await refreshWebService(); }
+        else await hostRequest('status', { pluginId: payload?.pluginId, id: payload?.id });
+      }
     } catch (error: any) {
       ToastAndroid.show(error?.message || String(error), ToastAndroid.LONG);
     }
-  }, [exitAfterUnhandledBack, hostRequest, shell.activities, shell.activityId]);
+  }, [exitAfterUnhandledBack, hostRequest, refreshWebService, shell.activities, shell.activityId]);
 
   const shareTextFile = useCallback(async (name: string, content: string, mimeType?: string, existingUri?: string) => {
     const fileName = safeName(name, 'dkds-export.txt');
@@ -326,9 +414,13 @@ export default function App() {
         resolveWeb(req.id, true, await shareBase64File(req.payload?.name || 'dkds-export.png', raw, req.payload?.mimeType, req.payload?.uri));
         return;
       }
+      if (req.type === 'runtimeStatus') {
+        resolveWeb(req.id, true, await nativeHost?.runtimeStatus?.());
+        return;
+      }
       if (req.type === 'webStatus') {
         const state = await nativeHost?.webStatus?.();
-        resolveWeb(req.id, true, { running: !!state?.running, url: state?.url || '' });
+        resolveWeb(req.id, true, { running: !!state?.running, url: state?.url || '', error: state?.error || '' });
         return;
       }
       if (req.type === 'webStart' || req.type === 'webOpen') {
@@ -364,13 +456,17 @@ export default function App() {
   useEffect(() => {
     NavigationBar.setHidden(true);
     const subscription = AppState.addEventListener('change', state => {
-      if (state === 'active') NavigationBar.setHidden(true);
-      sendAction('lifecycle', { state });
+      if (state === 'active') {
+        NavigationBar.setHidden(true);
+        void refreshWebService();
+      }
+      publishLifecycle(state);
     });
-    return () => subscription.remove();
-  }, [sendAction]);
+    return () => { subscription.remove(); lifecycleTimers.current.forEach(clearTimeout); lifecycleTimers.current = []; };
+  }, [publishLifecycle, refreshWebService, webServiceVisible]);
 
   const retry = useCallback(() => {
+    lifecycleTimers.current.forEach(clearTimeout); lifecycleTimers.current = [];
     nativeFiles.current.clear();
     hostReady.current = false;
     hostQueue.current = [];
@@ -450,16 +546,17 @@ export default function App() {
               <NavigationRail shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
               {webView}
             </View>
-            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} />
+            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} webService={webService} />
           </>
         ) : (
           <>
             <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
             {webView}
             <BottomNavigation shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
-            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} />
+            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} webService={webService} />
           </>
         )}
+        <WebServicePopover visible={webServiceVisible} state={webService} palette={palette} onClose={() => setWebServiceVisible(false)} onAction={action => { void runWebServiceAction(action); }} />
         <ShellActionSheet visible={sheet} shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onClose={() => setSheet(null)} />
       </SafeAreaView>
     </SafeAreaProvider>

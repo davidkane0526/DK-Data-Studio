@@ -73,7 +73,18 @@ async function request(id,method,payload={}){
   return posted.find(row=>row.kind==='response'&&row.id===id);
 }
 
+async function hostEvent(eventName,payload={}){
+  const event={data:JSON.stringify({channel:'dkds.mobile-host.v1',kind:'event',event:eventName,payload})};
+  for(const fn of listeners.document.get('message')||[])await fn(event);
+  await new Promise(resolve=>setTimeout(resolve,1));
+}
+
 (async()=>{
+  const beforeResumeReady=posted.filter(row=>row.kind==='event'&&row.event==='ready').length;
+  await hostEvent('lifecycle',{state:'active'});
+  const resumeReady=posted.filter(row=>row.kind==='event'&&row.event==='ready');
+  assert(resumeReady.length>beforeResumeReady&&resumeReady.at(-1)?.payload?.resumed===true,'active lifecycle must re-establish the Core ready handshake without an acknowledged command');
+
   const bootstrap=await request('r1','bootstrap');
   assert.strictEqual(bootstrap.ok,true);
   assert.deepStrictEqual(Array.from(bootstrap.value.workspaces,row=>row.activityId),['resonance','ter','pulse','data-center']);
@@ -103,5 +114,5 @@ async function request(id,method,payload={}){
   const back=await request('r6','back');
   assert.strictEqual(back.value.handled,true);
   assert(invoked.some(row=>row.id==='workspace-primary:main'));
-  console.log('Mobile Host runtime passed: TOP routes, TER actions, PluginWorkspace surfaces and Core back stack.');
+  console.log('Mobile Host runtime passed: resume handshake, TOP routes, TER actions, PluginWorkspace surfaces and Core back stack.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

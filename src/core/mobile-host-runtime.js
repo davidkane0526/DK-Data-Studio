@@ -45,8 +45,8 @@
 
   function statusRows(){
     return (window.DKDSPlugins?.statusBar?.list?.()||[]).map(row=>{
-      const value=row?.value||{};return {pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',label:text(value.label),icon:text(value.icon),state:text(value.state),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title)};
-    }).filter(row=>row.pluginId&&row.id);
+      const value=row?.value||{};return {pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',label:text(value.label),icon:text(value.icon),state:text(value.state),disabled:!!value.disabled,hidden:!!value.hidden,clickable:typeof value.onClick==='function',title:text(value.title)};
+    }).filter(row=>row.pluginId&&row.id&&!row.hidden&&row.id!=='lan-web').map(({hidden,...row})=>row);
   }
 
   function syncContextStatus(){
@@ -271,7 +271,14 @@
   async function receive(event){
     let message;
     try{message=JSON.parse(text(event?.data));}catch{return;}
-    if(message?.channel!==CHANNEL||message?.kind!=='request'||!message.id||processingIds.has(message.id)||completedIds.has(message.id))return;
+    if(message?.channel!==CHANNEL)return;
+    if(message?.kind==='event'&&message?.event==='lifecycle'){
+      const state=text(message?.payload?.state||'unknown');
+      window.dispatchEvent(new CustomEvent('dkds:native-lifecycle',{detail:{state}}));
+      if(state==='active'){post({kind:'event',event:'ready',payload:{protocol:VERSION,resumed:true}});publish();}
+      return;
+    }
+    if(message?.kind!=='request'||!message.id||processingIds.has(message.id)||completedIds.has(message.id))return;
     processingIds.add(message.id);
     try{post({kind:'response',id:message.id,ok:true,value:await invoke(text(message.method),message.payload||{})});}
     catch(error){post({kind:'response',id:message.id,ok:false,error:text(error?.message||error)});}

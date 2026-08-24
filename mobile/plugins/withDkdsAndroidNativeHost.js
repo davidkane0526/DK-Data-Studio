@@ -20,6 +20,8 @@ function kotlinSource(packageName) {
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Debug
+import android.os.Process
 import android.provider.OpenableColumns
 import android.util.Base64
 import com.facebook.react.ReactPackage
@@ -49,18 +51,35 @@ import kotlin.concurrent.thread
 private object DkdsLocalWebServer {
   @Volatile private var socket: ServerSocket? = null
   @Volatile private var port: Int = 0
+  @Volatile private var lastError: String = ""
 
   @Synchronized fun start(context: ReactApplicationContext): String {
     if (socket?.isClosed == false && port > 0) return "http://127.0.0.1:$port/"
+    lastError = ""
+    try {
+      context.assets.open("dkds/index.html").use { stream ->
+        if (stream.read() < 0) throw IllegalStateException("本机网页版入口文件为空。")
+      }
+    } catch (error: Throwable) {
+      lastError = "APK 未包含完整网页版资源：\${error.message ?: error.javaClass.simpleName}"
+      throw IllegalStateException(lastError, error)
+    }
     val candidates = listOf(45910, 0)
     var created: ServerSocket? = null
+    var bindError: Throwable? = null
     for (candidate in candidates) {
       try {
-        created = ServerSocket(candidate, 24, InetAddress.getByName("127.0.0.1"))
+        created = ServerSocket().apply {
+          reuseAddress = true
+          bind(java.net.InetSocketAddress(InetAddress.getLoopbackAddress(), candidate), 24)
+        }
         break
-      } catch (_: Throwable) {}
+      } catch (error: Throwable) { bindError = error }
     }
-    val server = created ?: throw IllegalStateException("无法启动本机网页版服务。")
+    val server = created ?: run {
+      lastError = "无法绑定 Android 本机回环端口：\${bindError?.message ?: "unknown"}"
+      throw IllegalStateException(lastError, bindError)
+    }
     socket = server
     port = server.localPort
     thread(name = "dkds-local-web", isDaemon = true) {
@@ -68,39 +87,22 @@ private object DkdsLocalWebServer {
         try {
           val client = server.accept()
           thread(name = "dkds-local-web-client", isDaemon = true) { serve(context, client) }
-        } catch (_: Throwable) {
-          if (!server.isClosed) Thread.yield()
+        } catch (error: Throwable) {
+          if (!server.isClosed) lastError = "本机网页服务连接异常：\${error.message ?: error.javaClass.simpleName}"
         }
       }
     }
-    val url = "http://127.0.0.1:$port/"
-    awaitReady(port)
-    return url
+    return "http://127.0.0.1:$port/"
   }
 
-  private fun awaitReady(targetPort: Int) {
-    var last: Throwable? = null
-    repeat(12) {
-      try {
-        Socket("127.0.0.1", targetPort).use { probe ->
-          probe.soTimeout = 1200
-          val out = probe.getOutputStream()
-          out.write("GET /__dkds_health HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n".toByteArray(StandardCharsets.US_ASCII))
-          out.flush()
-          val first = BufferedReader(InputStreamReader(probe.getInputStream(), StandardCharsets.US_ASCII)).readLine() ?: ""
-          if (first.contains(" 200 ")) return
-        }
-      } catch (error: Throwable) { last = error }
-      Thread.sleep(45)
-    }
-    stop()
-    throw IllegalStateException("本机网页版服务启动后未通过健康检查。", last)
-  }
+  fun markError(error: Throwable) { lastError = error.message ?: error.javaClass.simpleName }
+  fun error(): String = lastError
 
   @Synchronized fun stop() {
     try { socket?.close() } catch (_: Throwable) {}
     socket = null
     port = 0
+    lastError = ""
   }
 
   fun status(): Pair<Boolean, String> {
@@ -229,9 +231,50 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
     } catch (error: Throwable) { promise.reject("E_WRITE_DOCUMENT", error) }
   }
 
+  @ReactMethod fun runtimeStatus(promise: Promise) {
+    thread(name = "dkds-runtime-status", isDaemon = true) {
+      try {
+        val info = Debug.MemoryInfo()
+        Debug.getMemoryInfo(info)
+        val pssBytes = info.totalPss.toDouble() * 1024.0
+        val javaRuntime = Runtime.getRuntime()
+        val javaUsed = (javaRuntime.totalMemory() - javaRuntime.freeMemory()).toDouble()
+        val nativeHeap = Debug.getNativeHeapAllocatedSize().toDouble()
+        val component = WritableNativeMap().apply {
+          putString("id", "android:process")
+          putString("type", "process")
+          putInt("pid", Process.myPid())
+          putString("label", "Android 应用进程")
+          putString("pluginId", "")
+          putString("activityId", "")
+          putDouble("workingSetBytes", pssBytes)
+          putDouble("privateBytes", pssBytes)
+          putDouble("peakWorkingSetBytes", pssBytes)
+        }
+        val components = WritableNativeArray().apply { pushMap(component) }
+        val memory = WritableNativeMap().apply {
+          putDouble("workingSetBytes", pssBytes)
+          putDouble("privateBytes", pssBytes)
+          putDouble("javaHeapUsedBytes", javaUsed)
+          putDouble("nativeHeapUsedBytes", nativeHeap)
+          putDouble("jsHeapUsedBytes", 0.0)
+          putDouble("jsHeapLimitBytes", 0.0)
+        }
+        promise.resolve(WritableNativeMap().apply {
+          putString("runtime", "android")
+          putString("platform", "Android")
+          putBoolean("isPackaged", true)
+          putInt("processCount", 1)
+          putMap("memory", memory)
+          putArray("components", components)
+        })
+      } catch (error: Throwable) { promise.reject("E_RUNTIME_STATUS", error) }
+    }
+  }
+
   @ReactMethod fun webStatus(promise: Promise) {
     val (running, url) = DkdsLocalWebServer.status()
-    promise.resolve(WritableNativeMap().apply { putBoolean("running", running); putString("url", url) })
+    promise.resolve(WritableNativeMap().apply { putBoolean("running", running); putString("url", url); putString("error", DkdsLocalWebServer.error()) })
   }
 
   @ReactMethod fun startWebVersion(openBrowser: Boolean, promise: Promise) {
@@ -247,7 +290,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
           } catch (_: Throwable) {}
         }
         promise.resolve(url)
-      } catch (error: Throwable) { promise.reject("E_WEB_VERSION", error) }
+      } catch (error: Throwable) { DkdsLocalWebServer.markError(error); promise.reject("E_WEB_VERSION", error) }
     }
   }
 
@@ -324,6 +367,9 @@ module.exports = function withDkdsAndroidNativeHost(config) {
   config = withAndroidManifest(config, mod => {
     const manifest = mod.modResults.manifest;
     manifest['uses-permission'] = manifest['uses-permission'] || [];
+    manifest.application = manifest.application || [{ $: {} }];
+    manifest.application[0].$ = manifest.application[0].$ || {};
+    manifest.application[0].$['android:usesCleartextTraffic'] = 'true';
     if (!manifest['uses-permission'].some(row => row?.$?.['android:name'] === 'android.permission.INTERNET')) {
       manifest['uses-permission'].push({ $: { 'android:name': 'android.permission.INTERNET' } });
     }

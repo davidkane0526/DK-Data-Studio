@@ -1,4 +1,17 @@
-# DK Data Studio — v3.61.45
+# DK Data Studio — v3.61.46
+
+## v3.61.46 Android 移动壳细化与后台恢复可靠性
+
+本版继续以 Android 原生移动壳为主线收口 UI 与生命周期行为。撤销/恢复现在**只保留在软件顶部“数据 / 参数”左侧**，PortableView、Plot 与插件标题栏不再重复注入历史按钮；同时取消标题栏长按/右键打开位置菜单的路径，固定窗口“按住标题栏后滑动调宽/调高”不会再误触位置面板，位置菜单只由明确的位置按钮打开。
+
+项目标签进一步按内容收窄，点击后从**左侧**展开原生项目管理抽屉；抽屉提供新建、读取、保存快捷入口，并支持项目行右滑露出删除操作。底部导航加入 Android BlurView 透明模糊背景，状态栏文字减轻字重并拉开状态项间距。内存显示不再使用 WebView `performance.memory` 的 JS Heap 近似值，而由 Android Native Host 读取进程 PSS、Java Heap 与 Native Heap，其中状态栏总量以 Android 应用进程 PSS 为准。
+
+Android 网页服务不再打开桌面端的大型 LAN 面板。移动壳拦截网页服务入口并显示小型原生弹窗，直接调用 Android Native Host；服务仅绑定 `127.0.0.1`/loopback，启动前检查 APK 中的离线 `dkds/index.html`，独立网页包同时复制共享 `assets` 并改写资源相对路径，避免浏览器模式下品牌资源 404。移动状态栏使用独立原生网页服务状态，不再复用桌面 LAN 服务状态。
+
+后台恢复的 Core 超时也做了第二层修复：进入后台时暂停所有已发出 Core 请求的超时计时并撤销 ready 状态；回到前台后通过 fire-and-forget lifecycle 事件重新建立 `ready` 握手，只有确认 Core 已恢复后才继续未完成请求的超时计时。这样避免 Android 冻结 JavaScript timer 后，应用恢复瞬间把旧 timer 当成 Core 超时。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。移动端版本更新为 **0.7.1**，Android `versionCode` 更新为 **10**，现有插件无需迁移。
+
 
 ## v3.61.45 Android 原生 Host 编译修复
 

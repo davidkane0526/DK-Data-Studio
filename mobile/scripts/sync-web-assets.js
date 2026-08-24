@@ -28,6 +28,8 @@ function requireFile(rel) {
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 fs.cpSync(source, out, { recursive: true });
+const sharedAssets = path.join(repoRoot, 'assets');
+if (fs.existsSync(sharedAssets)) fs.cpSync(sharedAssets, path.join(out, 'assets'), { recursive: true });
 
 const vendor = path.join(out, 'vendor');
 fs.mkdirSync(vendor, { recursive: true });
@@ -37,6 +39,7 @@ const indexPath = path.join(out, 'index.html');
 let html = fs.readFileSync(indexPath, 'utf8');
 html = html
   .replace('../node_modules/d3/dist/d3.min.js', 'vendor/d3.min.js')
+  .replaceAll('../assets/', 'assets/')
   .replace('<title>DK Data Studio</title>', '<title>DK Data Studio Mobile</title>');
 fs.writeFileSync(indexPath, html, 'utf8');
 

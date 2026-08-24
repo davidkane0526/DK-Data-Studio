@@ -153,7 +153,7 @@
     compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
     issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.17.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.45'
+    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.46'
   });
 
   async function decodeFile(file,encoding='auto') {
@@ -372,6 +372,12 @@
     },
 
     getRuntimeStatus: async()=>{
+      if(nativeBridge){
+        try{
+          const native=await nativeCall('runtimeStatus');
+          if(native?.memory?.workingSetBytes>0)return native;
+        }catch{}
+      }
       const memory=performance?.memory||{};
       return {
         runtime:nativeBridge?'android':'web',
@@ -384,7 +390,7 @@
           jsHeapLimitBytes:Number(memory.jsHeapSizeLimit)||0
         },
         components:[{
-          id:'web:renderer',type:'renderer',pid:0,label:nativeBridge?'Android WebView':'网页 JS Heap',
+          id:'web:renderer',type:'renderer',pid:0,label:nativeBridge?'Android WebView JS Heap':'网页 JS Heap',
           pluginId:'',activityId:'',workingSetBytes:Number(memory.usedJSHeapSize)||0,
           peakWorkingSetBytes:Number(memory.totalJSHeapSize)||0,privateBytes:Number(memory.usedJSHeapSize)||0
         }]

@@ -12,6 +12,7 @@ const mobileHost = read('src/core/mobile-host-runtime.js');
 const mobilePluginPackage = read('src/core/mobile-plugin-package.js');
 const mobileStyle = read('src/mobile.css');
 const nativeHostPlugin = read('mobile/plugins/withDkdsAndroidNativeHost.js');
+const syncWebAssets = read('mobile/scripts/sync-web-assets.js');
 const kernel = read('src/core/plugin-kernel.js');
 const infrastructure = read('src/core/ui-infrastructure.js');
 const index = read('src/index.html');
@@ -20,7 +21,7 @@ const appConfig = JSON.parse(read('mobile/app.json')).expo;
 
 assert(app.includes('BottomNavigation') && app.includes('NavigationRail') && app.includes('NativeStatusBar'), 'Android shell must provide native portrait/landscape navigation and status chrome');
 assert(app.includes('BackHandler.addEventListener') && app.includes("hostRequest('back')"), 'Android system back must route through the Mobile Host Adapter first');
-assert(app.includes("AppState.addEventListener('change'") && app.includes("action === 'lifecycle'"), 'native lifecycle must be projected into Core');
+assert(app.includes("AppState.addEventListener('change'") && app.includes("postHostEvent('lifecycle'") && app.includes('pauseHostTimeouts') && app.includes('resumeHostTimeouts'), 'native lifecycle must be a fire-and-forget Core event and pause request timers while Android is backgrounded');
 assert(app.includes('onRenderProcessGone') && app.includes('setRendererKey'), 'WebView renderer failure must have an in-app recovery path');
 assert(app.includes('nativeFiles.current.set') && app.includes("req.type === 'readFile'"), 'picked files must use lazy native handles rather than eager multi-file Base64 payloads');
 assert(app.includes('openDocumentsExtended') && nativeHostPlugin.includes('Intent.ACTION_OPEN_DOCUMENT') && nativeHostPlugin.includes('Intent.ACTION_GET_CONTENT'), 'Android imports must combine SAF with third-party file-manager providers');
@@ -35,11 +36,11 @@ assert(shell.includes("const navigationItems") && shell.includes("id: 'activitie
 assert(shell.includes('shell.activities.map'), 'analysis sheet must be projected from the plugin activity registry');
 assert(shell.includes('shell.surfaces') && shell.includes("run('surface'"), 'PRIMARY, PRIME and SUB surfaces must be reachable from native navigation');
 assert(shell.includes('shell.actions') && shell.includes("run('workspace-action'"), 'plugin header actions such as TER calculation must be reachable from native navigation');
-assert(shell.includes('activeProject') && shell.includes('onLongPress') && shell.includes("onSheet('projects')"), 'native header must show only the active project and open a project switcher on tap');
+assert(shell.includes('activeProject') && !shell.includes('onLongPress') && shell.includes("onSheet('projects')"), 'native header must show only the active project and open project management only on tap');
 assert(shell.includes('headerHistoryButton') && shell.includes("onAction('history-undo')") && shell.includes("onAction('history-redo')"), 'native header must expose undo/redo immediately before the data/parameter control');
 assert(shell.includes('unifiedHeaderRow') && shell.includes('projectTabGroup') && shell.includes('pluginButtonGroup'), 'project tabs and plugin buttons must share one clearly divided mobile header row');
 assert(!shell.includes('navLabel:'), 'portrait bottom navigation must be icon-only');
-assert(shell.includes("onSheet('history')") && shell.includes("run('history-undo')"), 'mobile More must expose project operation history with undo');
+assert(shell.includes("onSheet('history')") && !shell.includes("run('history-undo')") && !shell.includes("run('history-redo')"), 'mobile More may expose history records but undo/redo controls must exist only in the top software header');
 assert(!shell.includes('readyDot'), 'the unexplained green readiness dot must not consume mobile header space');
 assert(!/builtin\.(resonance|ter|pulse|data-center)/.test(shell), 'native shell must not hard-code domain plugins');
 
@@ -53,6 +54,7 @@ assert(mobileHost.includes("method==='navigate'") && mobileHost.includes('activa
 assert(mobileHost.includes("method==='surface'") && mobileHost.includes('DKDSUI?.workspaces?.invoke'), 'mobile surface routes must use the generic PluginWorkspace API');
 assert(mobileHost.includes("method==='action'") && mobileHost.includes('DKDSUI?.actions?.invoke'), 'mobile actions must use the generic Core ActionGroup registry');
 assert(mobileHost.includes("kind:'response'") && mobileHost.includes("event:'state'") && mobileHost.includes("event:'ready'"), 'Core adapter must return acknowledgements, readiness and state events');
+assert(mobileHost.includes("row.id!=='lan-web'"), 'Android native shell must not project the desktop LAN service status item');
 assert(mobileHost.includes('processingIds') && mobileHost.includes("'project.switch'") && mobileHost.includes("'project.close'"), 'Mobile Host must de-duplicate requests and own project-tab commands');
 assert(mobileHost.includes('bindHeldSwipeKeys') && mobileHost.includes("key='ArrowUp'") && mobileHost.includes("key='ArrowLeft'"), 'held upward/left swipes must map to keyboard navigation');
 assert(!/querySelector\([^\n]+\)\?\.click/.test(mobileHost), 'Core mobile routing must not emulate desktop DOM clicks');
@@ -70,6 +72,10 @@ assert(mobileStyle.includes('.dkds-mobile-panel-edge') && mobileStyle.includes('
 assert(mobileStyle.includes('.dkds-plugin-canvas-right-resizer.active') && /dkds-plugin-canvas-right-resizer\.active,[\s\S]{0,220}display:none!important/.test(mobileStyle), 'mobile must hide full-screen split handles that previously rendered as a blue crosshair');
 assert(infrastructure.includes('bindHeldTitleResize') && infrastructure.includes('is-held-resizing') && infrastructure.includes('mobileOverlay:true'), 'docked PRIME sizing must use title-hold gestures while retaining Core split constraints');
 assert(mobileStyle.includes('#statusBar.statusbar{display:none!important}') && shell.includes('NativeStatusBar'), 'React Native must own the mobile status bar instead of stacking desktop status chrome');
+assert(shell.includes('BlurView') && mobilePackage.dependencies['expo-blur'], 'portrait bottom navigation must use native blur/translucency instead of an opaque web-style bar');
+assert(shell.includes('ProjectDrawer') && shell.includes('PanResponder.create') && shell.includes('projectDeleteAction') && shell.includes('translateX: slide'), 'project management must open from the left and support right-swipe delete actions');
+assert(shell.includes('WebServicePopover') && app.includes("payload?.id === 'lan-web'"), 'Android LAN status must open a small native popup rather than the desktop always-on-top panel');
+assert(bridge.includes("nativeCall('runtimeStatus')"), 'runtime memory on Android must come from the native process bridge when available');
 assert(mobileStyle.includes('#reswinSummary') && mobileStyle.includes('#terSummary') && mobileStyle.includes('.respar-status-row'), 'space-consuming analysis summaries and their empty row must leave the renderer layout');
 assert(mobileStyle.includes('min-height:280px!important'), 'scientific plots must retain a usable phone viewport');
 assert(mobileStyle.includes('@media (orientation:landscape)'), 'shared renderer must have a graph-first landscape layout');
@@ -77,16 +83,19 @@ assert(mobileStyle.includes('grid-template-areas:"center right"'), 'landscape PR
 assert(mobileStyle.includes('#pulseAnalysisPage .pulse-primary-surface'), 'pulse analysis must have a collision-free native flow');
 assert(mobileStyle.includes('.command-menu'), 'web command menus need a touch bottom-sheet presentation');
 assert(bridge.includes('isNativeClient:!!nativeBridge') && bridge.includes('pluginSelectPackage'), 'Android must be a native plugin host, not a web client');
-assert(nativeHostPlugin.includes('InetAddress.getByName("127.0.0.1")') && nativeHostPlugin.includes('startWebVersion') && nativeHostPlugin.includes('__dkds_health') && nativeHostPlugin.includes('awaitReady'), 'Android web version must be loopback-only and health-checked before reporting startup success');
+assert(nativeHostPlugin.includes('InetAddress.getLoopbackAddress()') && nativeHostPlugin.includes('startWebVersion') && nativeHostPlugin.includes('__dkds_health') && nativeHostPlugin.includes('context.assets.open("dkds/index.html")'), 'Android web version must bind loopback directly and validate packaged web assets before reporting startup success');
+assert(syncWebAssets.includes("path.join(repoRoot, 'assets')") && syncWebAssets.includes("replaceAll('../assets/', 'assets/')"), 'standalone Android web service bundle must package shared assets and rewrite root-relative brand references');
+assert(nativeHostPlugin.includes('android.permission.INTERNET') && nativeHostPlugin.includes('android:usesCleartextTraffic'), 'Android loopback HTTP service must have explicit network and cleartext-loopback manifest support');
 const kotlinStart = nativeHostPlugin.indexOf('function kotlinSource(packageName) {');
 const kotlinEnd = nativeHostPlugin.indexOf('\n\nmodule.exports = function', kotlinStart);
 assert(kotlinStart >= 0 && kotlinEnd > kotlinStart, 'native-host Kotlin generator must remain extractable for syntax regression checks');
 const kotlinSourceForTest = new Function(`${nativeHostPlugin.slice(kotlinStart, kotlinEnd)}\nreturn kotlinSource;`)();
 const generatedKotlin = kotlinSourceForTest('com.dk.datastudio');
-assert(generatedKotlin.includes('GET /__dkds_health HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n'), 'generated Kotlin health probe must contain escaped CRLF inside one valid string literal');
-assert(!generatedKotlin.includes('GET /__dkds_health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n'), 'native-host generator must never inject physical CR/LF characters into the Kotlin health-probe string literal');
+assert(generatedKotlin.includes('context.assets.open("dkds/index.html")') && generatedKotlin.includes('InetAddress.getLoopbackAddress()'), 'generated Kotlin must validate the bundled entry point and bind only to Android loopback');
+assert(generatedKotlin.includes('@ReactMethod fun runtimeStatus') && generatedKotlin.includes('Debug.getMemoryInfo(info)'), 'generated Kotlin must expose Android process memory instead of reporting only WebView JS heap');
 assert(infrastructure.includes('dkds-portable-resize-handle') && infrastructure.includes('bindFloatResize') && infrastructure.includes('initialBounds'), 'global floating views must retain bounded source dimensions and provide a touch resize handle');
-assert(infrastructure.includes("DKDSCapabilities?.invoke?.('core.project-history',kind)"), 'portable plugin chrome must expose unified history actions');
+assert(!infrastructure.includes('dkds-portable-history-action') && !infrastructure.includes("DKDSCapabilities?.invoke?.('core.project-history',kind)"), 'portable/plugin chrome must not duplicate the top-level undo/redo controls');
+assert(!infrastructure.includes("header.addEventListener('contextmenu',openPlacementMenu)") && infrastructure.includes("placementButton.addEventListener('click',showPlacementMenu)"), 'title hold-resize must never open placement; placement opens only from its explicit button');
 assert(app.includes('<NavigationBar hidden') && mobilePackage.dependencies['expo-navigation-bar'], 'Android gesture navigation must be hidden through the native system-bar API');
 
 assert.strictEqual(appConfig.android.softwareKeyboardLayoutMode, 'resize', 'Android keyboard must resize the scientific viewport');

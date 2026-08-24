@@ -1,6 +1,8 @@
 import React from 'react';
 import {
+  Animated,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 export type ShellActivity = {
   id: string;
@@ -42,6 +45,13 @@ export type RendererShellState = {
 };
 
 export type ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'more' | null;
+
+export type NativeWebServiceState = {
+  running: boolean;
+  url: string;
+  error?: string;
+  busy?: boolean;
+};
 
 type Palette = {
   background: string;
@@ -89,9 +99,20 @@ type HeaderProps = {
   onSheet: (sheet: Exclude<ShellSheet, null>) => void;
 };
 
+function HistoryGlyph({ direction, color }: { direction: 'undo' | 'redo'; color: string }) {
+  const flip = direction === 'redo' ? -1 : 1;
+  return (
+    <View style={[styles.historyGlyphCanvas, { transform: [{ scaleX: flip }] }]} pointerEvents="none">
+      <View style={[styles.historyGlyphShaft, { backgroundColor: color }]} />
+      <View style={[styles.historyGlyphTurn, { backgroundColor: color }]} />
+      <View style={[styles.historyGlyphHeadA, { backgroundColor: color }]} />
+      <View style={[styles.historyGlyphHeadB, { backgroundColor: color }]} />
+    </View>
+  );
+}
+
 export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps) {
   const { width } = useWindowDimensions();
-  const longPressedProject = React.useRef('');
   const activeProject = (shell.projects || []).find(project => project.active) || (shell.projects || [])[0];
   const directLimit = width >= 700 ? 6 : width >= 480 ? 4 : 3;
   const directRows = [
@@ -107,17 +128,8 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
             {activeProject ? (
               <Pressable
                 accessibilityRole="tab"
-                accessibilityLabel={`${activeProject.title}，当前项目，点击切换项目，长按关闭`}
-                onPress={() => {
-                  if (longPressedProject.current === activeProject.id) { longPressedProject.current = ''; return; }
-                  onSheet('projects');
-                }}
-                onLongPress={() => {
-                  longPressedProject.current = activeProject.id;
-                  setTimeout(() => { if (longPressedProject.current === activeProject.id) longPressedProject.current = ''; }, 900);
-                  onAction('project-close', { id: activeProject.id });
-                }}
-                delayLongPress={520}
+                accessibilityLabel={`${activeProject.title}，当前项目，点击管理项目`}
+                onPress={() => onSheet('projects')}
                 style={({ pressed }) => [styles.projectTab, { borderColor: palette.accent, backgroundColor: palette.accentSoft }, pressed && styles.pressed]}>
                 <Text style={[styles.projectTabText, { color: palette.accent }]} numberOfLines={1}>
                   {activeProject.title || '未命名项目'}
@@ -157,13 +169,13 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
             accessibilityRole="button" accessibilityLabel="撤销" disabled={!shell.history?.canUndo}
             onPress={() => onAction('history-undo')}
             style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canUndo ? 1 : .38 }]}>
-            <Text style={[styles.headerHistoryGlyph, { color: palette.text }]}>↶</Text>
+            <HistoryGlyph direction="undo" color={palette.text} />
           </Pressable>
           <Pressable
             accessibilityRole="button" accessibilityLabel="恢复" disabled={!shell.history?.canRedo}
             onPress={() => onAction('history-redo')}
             style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canRedo ? 1 : .38 }]}>
-            <Text style={[styles.headerHistoryGlyph, { color: palette.text }]}>↷</Text>
+            <HistoryGlyph direction="redo" color={palette.text} />
           </Pressable>
           {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
             <Pressable
@@ -208,7 +220,14 @@ function invokeNavigation(
 
 export function BottomNavigation({ shell, palette, onAction, onSheet }: NavigationProps) {
   return (
-    <View style={[styles.bottomNav, { backgroundColor: palette.surface, borderTopColor: palette.border }]}>
+    <View style={[styles.bottomNavFrame, { borderTopColor: palette.border }]}>
+      <BlurView
+        intensity={22}
+        tint={shell.theme === 'dark' ? 'dark' : 'light'}
+        experimentalBlurMethod="dimezisBlurView"
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.bottomNav, { backgroundColor: shell.theme === 'dark' ? 'rgba(26,32,42,.68)' : 'rgba(248,251,255,.68)' }]}>
       {navigationItems.map(item => {
         const active = item.id === 'home' && !shell.canGoBack;
         return (
@@ -240,25 +259,30 @@ export function BottomNavigation({ shell, palette, onAction, onSheet }: Navigati
           </Pressable>
         );
       })}
+      </View>
     </View>
   );
 }
 
-export function NativeStatusBar({ shell, palette, onAction }: Pick<NavigationProps, 'shell' | 'palette' | 'onAction'>) {
+export function NativeStatusBar({ shell, palette, onAction, webService }: Pick<NavigationProps, 'shell' | 'palette' | 'onAction'> & { webService?: NativeWebServiceState }) {
   const items = shell.statusItems || [];
   return (
     <View style={[styles.nativeStatusBar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}>
       <Text style={[styles.nativeStatusMessage, { color: palette.textSoft }]} numberOfLines={1}>{shell.status || '就绪'}</Text>
-      {items.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nativeStatusScroller} contentContainerStyle={styles.nativeStatusItems}>
-          {items.map(item => (
-            <Pressable key={`${item.pluginId}:${item.id}`} disabled={item.disabled || !item.clickable} onPress={() => onAction('status-item', { pluginId: item.pluginId, id: item.id })} style={styles.nativeStatusItem}>
-              {item.icon ? <Text style={[styles.nativeStatusIcon, { color: palette.accent }]}>{item.icon}</Text> : null}
-              <Text style={[styles.nativeStatusLabel, { color: item.state === 'error' ? '#c95a55' : palette.textSoft }]} numberOfLines={1}>{item.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      ) : null}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nativeStatusScroller} contentContainerStyle={styles.nativeStatusItems}>
+        {items.map(item => (
+          <Pressable key={`${item.pluginId}:${item.id}`} disabled={item.disabled || !item.clickable} onPress={() => onAction('status-item', { pluginId: item.pluginId, id: item.id })} style={styles.nativeStatusItem}>
+            {item.icon ? <Text style={[styles.nativeStatusIcon, { color: palette.accent }]}>{item.icon}</Text> : null}
+            <Text style={[styles.nativeStatusLabel, { color: item.state === 'error' ? '#c95a55' : palette.textSoft }]} numberOfLines={1}>{item.label}</Text>
+          </Pressable>
+        ))}
+        {webService ? (
+          <Pressable onPress={() => onAction('web-service')} style={styles.nativeStatusItem} accessibilityLabel="本机网页服务">
+            <Text style={[styles.nativeStatusIcon, { color: webService.error ? '#c95a55' : webService.running ? '#2f9d62' : palette.textSoft }]}>●</Text>
+            <Text style={[styles.nativeStatusLabel, { color: webService.error ? '#c95a55' : palette.textSoft }]} numberOfLines={1}>{webService.error ? '网页服务 异常' : webService.running ? '网页服务 已开启' : '网页服务 已关闭'}</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -345,7 +369,123 @@ function SheetAction({
   );
 }
 
+function ProjectSwipeRow({ project, palette, onSwitch, onDelete }: {
+  project: { id: string; title: string; active?: boolean; dirty?: boolean };
+  palette: Palette;
+  onSwitch: () => void;
+  onDelete: () => void;
+}) {
+  const translateX = React.useRef(new Animated.Value(0)).current;
+  const opened = React.useRef(false);
+  const pan = React.useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2,
+    onPanResponderGrant: () => { translateX.stopAnimation(); },
+    onPanResponderMove: (_, gesture) => {
+      const base = opened.current ? 68 : 0;
+      translateX.setValue(Math.max(0, Math.min(76, base + gesture.dx)));
+    },
+    onPanResponderRelease: (_, gesture) => {
+      const shouldOpen = (opened.current ? 68 : 0) + gesture.dx > 34;
+      opened.current = shouldOpen;
+      Animated.spring(translateX, { toValue: shouldOpen ? 68 : 0, useNativeDriver: true, speed: 28, bounciness: 0 }).start();
+    },
+    onPanResponderTerminate: () => {
+      Animated.spring(translateX, { toValue: opened.current ? 68 : 0, useNativeDriver: true, speed: 28, bounciness: 0 }).start();
+    },
+  })).current;
+  return (
+    <View style={[styles.projectDrawerRowWrap, { backgroundColor: '#d94f4a' }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`删除项目 ${project.title}`} onPress={onDelete} style={styles.projectDeleteAction}>
+        <Text style={styles.projectDeleteText}>删除</Text>
+      </Pressable>
+      <Animated.View style={{ transform: [{ translateX }] }} {...pan.panHandlers}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onSwitch}
+          style={({ pressed }) => [styles.projectDrawerRow, { backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft, borderColor: project.active ? palette.accent : palette.border }, pressed && styles.pressed]}>
+          <View style={[styles.projectStateDot, { borderColor: palette.accent, backgroundColor: project.active ? palette.accent : 'transparent' }]} />
+          <View style={styles.projectDrawerCopy}>
+            <Text style={[styles.projectDrawerTitle, { color: palette.text }]} numberOfLines={1}>{project.title || '未命名项目'}</Text>
+            <Text style={[styles.projectDrawerDetail, { color: palette.textSoft }]}>{project.active ? '当前项目' : project.dirty ? '有未保存修改' : '点击切换 · 右滑删除'}</Text>
+          </View>
+          <Text style={[styles.projectDrawerChevron, { color: palette.textSoft }]}>›</Text>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, 'shell' | 'palette' | 'onAction' | 'onClose'>) {
+  const run = (action: string, payload?: unknown, close = true) => { if (close) onClose(); onAction(action, payload); };
+  const slide = React.useRef(new Animated.Value(-380)).current;
+  React.useEffect(() => {
+    Animated.timing(slide, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+  }, [slide]);
+  return (
+    <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <View style={[styles.projectDrawerModal, { backgroundColor: palette.scrim }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭项目管理" />
+        <Animated.View style={[styles.projectDrawer, { backgroundColor: palette.surface, borderRightColor: palette.border, transform: [{ translateX: slide }] }]}>
+          <View style={styles.projectDrawerHead}>
+            <View>
+              <Text style={[styles.projectDrawerHeading, { color: palette.text }]}>项目管理</Text>
+              <Text style={[styles.projectDrawerSubheading, { color: palette.textSoft }]}>切换项目，右滑项目标签显示删除</Text>
+            </View>
+            <Pressable onPress={onClose} style={styles.projectDrawerClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
+          </View>
+          <View style={styles.projectQuickActions}>
+            <Pressable onPress={() => run('project-new')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.accentSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.accent }]}>＋ 新建</Text></Pressable>
+            <Pressable onPress={() => run('project-open')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>读取</Text></Pressable>
+            <Pressable onPress={() => run('project-save')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>保存</Text></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.projectDrawerList} showsVerticalScrollIndicator={false}>
+            {(shell.projects || []).map(project => (
+              <ProjectSwipeRow key={project.id} project={project} palette={palette} onSwitch={() => run('project-switch', { id: project.id })} onDelete={() => run('project-close', { id: project.id }, false)} />
+            ))}
+            {!(shell.projects || []).length ? <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前没有项目标签。</Text> : null}
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+export function WebServicePopover({ visible, state, palette, onClose, onAction }: {
+  visible: boolean;
+  state: NativeWebServiceState;
+  palette: Palette;
+  onClose: () => void;
+  onAction: (action: 'start' | 'open' | 'stop' | 'copy') => void;
+}) {
+  if (!visible) return null;
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={styles.webPopoverModal}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭网页服务面板" />
+        <View style={[styles.webPopoverCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+          <View style={styles.webPopoverHead}>
+            <View style={[styles.webStatusDot, { backgroundColor: state.running ? '#2f9d62' : state.error ? '#cf5b55' : '#98a2b3' }]} />
+            <View style={styles.webPopoverHeadCopy}>
+              <Text style={[styles.webPopoverTitle, { color: palette.text }]}>本机网页版</Text>
+              <Text style={[styles.webPopoverState, { color: palette.textSoft }]}>{state.busy ? '正在处理…' : state.running ? '服务运行中' : state.error ? '启动失败' : '服务未启动'}</Text>
+            </View>
+            <Pressable onPress={onClose} style={styles.webPopoverClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
+          </View>
+          {state.url ? <Pressable onPress={() => onAction('copy')}><Text style={[styles.webPopoverUrl, { color: palette.accent }]} numberOfLines={1}>{state.url}</Text></Pressable> : null}
+          {state.error ? <Text style={styles.webPopoverError}>{state.error}</Text> : null}
+          <View style={styles.webPopoverActions}>
+            {!state.running ? <Pressable disabled={state.busy} onPress={() => onAction('start')} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent, opacity: state.busy ? .5 : 1 }]}><Text style={styles.webPopoverPrimaryText}>启动服务</Text></Pressable> : null}
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('open')} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent }]}><Text style={styles.webPopoverPrimaryText}>浏览器打开</Text></Pressable> : null}
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('stop')} style={[styles.webPopoverSecondary, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>停止</Text></Pressable> : null}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, onClose }: SheetProps) {
+  if (visible === 'projects') return <ProjectDrawer shell={shell} palette={palette} onAction={onAction} onClose={onClose} />;
   const run = (action: string, payload?: unknown) => {
     onClose();
     onAction(action, payload);
@@ -360,10 +500,10 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
           <View style={styles.sheetHeading}>
             <View>
               <Text style={[styles.sheetTitle, { color: palette.text }]}> 
-                {visible === 'projects' ? '项目标签' : visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : '项目与应用'}
+                {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : '项目与应用'}
               </Text>
               <Text style={[styles.sheetSubtitle, { color: palette.textSoft }]}> 
-                {visible === 'projects' ? '点击切换，长按顶部标签可关闭' : visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : shell.status || 'DK Data Studio Android'}
+                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : shell.status || 'DK Data Studio Android'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="关闭" onPress={onClose} style={styles.closeButton}>
@@ -371,11 +511,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.sheetBody} showsVerticalScrollIndicator={false}>
-            {visible === 'projects' ? (
-              (shell.projects || []).map(project => (
-                <SheetAction key={project.id} glyph={project.active ? '●' : '○'} label={project.title} detail={project.active ? '当前项目' : '点击切换'} palette={palette} onPress={() => run('project-switch', { id: project.id })} />
-              ))
-            ) : visible === 'activities' ? (
+            {visible === 'activities' ? (
               shell.activities.length ? <>
                 {shell.activities.map(activity => (
                   <SheetAction
@@ -435,15 +571,11 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
               </> : <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前页面没有可用操作。</Text>
             ) : visible === 'history' ? (
               <>
-                <View style={styles.historyActions}>
-                  <Pressable disabled={!shell.history?.canUndo} onPress={() => run('history-undo')} style={({ pressed }) => [styles.historyButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft, opacity: shell.history?.canUndo ? 1 : .45 }, pressed && styles.pressed]}><Text style={[styles.historyButtonText, { color: palette.text }]}>撤销</Text></Pressable>
-                  <Pressable disabled={!shell.history?.canRedo} onPress={() => run('history-redo')} style={({ pressed }) => [styles.historyButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft, opacity: shell.history?.canRedo ? 1 : .45 }, pressed && styles.pressed]}><Text style={[styles.historyButtonText, { color: palette.text }]}>重做</Text></Pressable>
-                </View>
                 {[...(shell.history?.past || [])].reverse().map((entry, index) => (
-                  <SheetAction key={entry.id} glyph={index === 0 ? '↶' : '·'} label={entry.label} detail={index === 0 ? '下一步撤销此操作' : '已执行'} palette={palette} onPress={() => undefined} />
+                  <SheetAction key={entry.id} glyph={index === 0 ? '●' : '·'} label={entry.label} detail={index === 0 ? '下一步撤销此操作' : '已执行'} palette={palette} onPress={() => undefined} />
                 ))}
                 {(shell.history?.future || []).map(entry => (
-                  <SheetAction key={entry.id} glyph="↷" label={entry.label} detail="已撤销，可重做" palette={palette} onPress={() => undefined} />
+                  <SheetAction key={entry.id} glyph="○" label={entry.label} detail="已撤销，可恢复" palette={palette} onPress={() => undefined} />
                 ))}
                 {!(shell.history?.past || []).length && !(shell.history?.future || []).length ? <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前项目还没有可回退的操作。</Text> : null}
               </>
@@ -452,9 +584,9 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
                 <SheetAction glyph="□" label="读取项目" detail="从 Android 文档选择器打开" palette={palette} onPress={() => run('project-open')} />
                 <SheetAction glyph="↓" label="保存 / 分享项目" detail={shell.projectTitle} palette={palette} onPress={() => run('project-save')} />
                 <SheetAction glyph="＋" label="新建项目标签" detail="保留当前项目并创建独立标签" palette={palette} onPress={() => run('project-new')} />
-                <SheetAction glyph="↶" label="操作历史" detail={shell.history?.undoLabel ? `可撤销：${shell.history.undoLabel}` : '查看撤销与重做记录'} palette={palette} onPress={() => { onClose(); onSheet('history'); }} />
+                <SheetAction glyph="≡" label="操作历史" detail={shell.history?.undoLabel ? `可撤销：${shell.history.undoLabel}` : '查看撤销与重做记录'} palette={palette} onPress={() => { onClose(); onSheet('history'); }} />
                 <SheetAction glyph="⬡" label="插件管理" detail="启用、停用与诊断内置插件" palette={palette} onPress={() => run('plugins')} />
-                <SheetAction glyph="↗" label="在浏览器打开网页版" detail="启动本机独立网页服务，不复用原生壳界面" palette={palette} onPress={() => run('web-open')} />
+                <SheetAction glyph="↗" label="本机网页版" detail="启动、停止或在系统浏览器中打开" palette={palette} onPress={() => run('web-service')} />
                 <SheetAction
                   glyph={shell.theme === 'dark' ? '☀' : '☾'}
                   label={shell.theme === 'dark' ? '切换浅色外观' : '切换深色外观'}
@@ -484,7 +616,7 @@ const styles = StyleSheet.create({
   projectTabGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   pluginButtonGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   headerDivider: { width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 1 },
-  projectTab: { minWidth: 92, maxWidth: 190, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingLeft: 12, paddingRight: 28, position: 'relative' },
+  projectTab: { minWidth: 48, maxWidth: 118, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingLeft: 10, paddingRight: 23, position: 'relative', flexShrink: 1 },
   projectTabText: { fontSize: 12, fontWeight: '700' },
   projectChevron: { position: 'absolute', right: 9, top: 7, fontSize: 13, fontWeight: '700' },
   projectAdd: { width: 40, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
@@ -492,29 +624,28 @@ const styles = StyleSheet.create({
   projectAction: { height: 34, minWidth: 76, maxWidth: 150, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
   projectActionText: { fontSize: 10, fontWeight: '700' },
   headerUtilityGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerHistoryButton: { width: 32, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
-  headerHistoryGlyph: { fontSize: 17, lineHeight: 19, fontWeight: '600' },
+  headerHistoryButton: { width: 32, height: 34, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  historyGlyphCanvas: { width: 15, height: 14, position: 'relative' },
+  historyGlyphShaft: { position: 'absolute', left: 3.5, top: 6.3, width: 9, height: 1.2, borderRadius: .6 },
+  historyGlyphTurn: { position: 'absolute', right: 2.5, top: 6.3, width: 1.2, height: 4.2, borderRadius: .6 },
+  historyGlyphHeadA: { position: 'absolute', left: 2.2, top: 4.0, width: 5, height: 1.2, borderRadius: .6, transform: [{ rotate: '-36deg' }] },
+  historyGlyphHeadB: { position: 'absolute', left: 2.2, top: 7.9, width: 5, height: 1.2, borderRadius: .6, transform: [{ rotate: '36deg' }] },
   headerPanelButton: { minHeight: 34, paddingHorizontal: 10, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   headerPanelButtonText: { fontSize: 10, fontWeight: '700' },
-  bottomNav: {
-    height: 42,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingHorizontal: 8,
-  },
+  bottomNavFrame: { height: 42, borderTopWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  bottomNav: { height: 42, flexDirection: 'row', alignItems: 'stretch', paddingHorizontal: 8 },
   navItem: { flex: 1, height: 42, alignItems: 'center', justifyContent: 'center', minWidth: 52 },
   navItemPrimaryWrap: {},
   navGlyphWrap: { width: 46, height: 30, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   navGlyph: { fontSize: 18, lineHeight: 20, fontWeight: '600' },
   moreGlyph: { fontSize: 15, letterSpacing: 1 },
-  nativeStatusBar: { height: 23, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 8 },
-  nativeStatusMessage: { flex: 1, minWidth: 80, maxWidth: '52%', fontSize: 10.5, lineHeight: 14, fontWeight: '500' },
+  nativeStatusBar: { height: 23, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 11 },
+  nativeStatusMessage: { flex: 1, minWidth: 80, maxWidth: '48%', fontSize: 10, lineHeight: 14, fontWeight: '400' },
   nativeStatusScroller: { flexGrow: 0, flexShrink: 1 },
-  nativeStatusItems: { alignItems: 'center', gap: 8, paddingLeft: 2 },
-  nativeStatusItem: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 3 },
-  nativeStatusIcon: { fontSize: 9, fontWeight: '700' },
-  nativeStatusLabel: { fontSize: 9.5, lineHeight: 13, fontWeight: '500' },
+  nativeStatusItems: { alignItems: 'center', gap: 15, paddingLeft: 7, paddingRight: 4 },
+  nativeStatusItem: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  nativeStatusIcon: { fontSize: 9, fontWeight: '500' },
+  nativeStatusLabel: { fontSize: 9.3, lineHeight: 13, fontWeight: '400' },
   rail: {
     width: 62,
     borderRightWidth: StyleSheet.hairlineWidth,
@@ -550,7 +681,38 @@ const styles = StyleSheet.create({
   emptyText: { paddingVertical: 28, textAlign: 'center', fontSize: 12 },
   surfaceHeading: { fontSize: 10, fontWeight: '700', marginTop: 8, marginBottom: 1, paddingHorizontal: 4 },
   actionMenuGroup: { gap: 7 },
-  historyActions: { flexDirection: 'row', gap: 8, marginBottom: 2 },
-  historyButton: { flex: 1, height: 44, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  historyButtonText: { fontSize: 13, fontWeight: '700' },
+  projectDrawerModal: { flex: 1, alignItems: 'flex-start' },
+  projectDrawer: { width: '82%', maxWidth: 350, height: '100%', borderRightWidth: StyleSheet.hairlineWidth, paddingTop: 18 },
+  projectDrawerHead: { minHeight: 66, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 17 },
+  projectDrawerHeading: { fontSize: 17, fontWeight: '700' },
+  projectDrawerSubheading: { fontSize: 9.5, marginTop: 4 },
+  projectDrawerClose: { marginLeft: 'auto', width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  projectQuickActions: { flexDirection: 'row', gap: 7, paddingHorizontal: 13, paddingBottom: 12 },
+  projectQuickButton: { minHeight: 34, flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  projectQuickButtonText: { fontSize: 10.5, fontWeight: '600' },
+  projectDrawerList: { paddingHorizontal: 12, paddingBottom: 22, gap: 8 },
+  projectDrawerRowWrap: { height: 64, borderRadius: 13, overflow: 'hidden', justifyContent: 'center' },
+  projectDeleteAction: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 68, alignItems: 'center', justifyContent: 'center' },
+  projectDeleteText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  projectDrawerRow: { height: 64, borderWidth: StyleSheet.hairlineWidth, borderRadius: 13, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+  projectStateDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.3, marginRight: 11 },
+  projectDrawerCopy: { flex: 1, minWidth: 0 },
+  projectDrawerTitle: { fontSize: 13, fontWeight: '600' },
+  projectDrawerDetail: { fontSize: 9, marginTop: 3 },
+  projectDrawerChevron: { fontSize: 23, fontWeight: '300', marginLeft: 8 },
+  webPopoverModal: { flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: 12, paddingBottom: 72 },
+  webPopoverCard: { width: 310, maxWidth: '88%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, padding: 13, shadowColor: '#000', shadowOpacity: .13, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  webPopoverHead: { flexDirection: 'row', alignItems: 'center' },
+  webStatusDot: { width: 9, height: 9, borderRadius: 5, marginRight: 9 },
+  webPopoverHeadCopy: { flex: 1 },
+  webPopoverTitle: { fontSize: 13.5, fontWeight: '700' },
+  webPopoverState: { fontSize: 9.5, marginTop: 2 },
+  webPopoverClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  webPopoverUrl: { fontSize: 9.5, marginTop: 10, padding: 8, borderRadius: 8 },
+  webPopoverError: { color: '#c6534d', fontSize: 9.3, lineHeight: 14, marginTop: 8 },
+  webPopoverActions: { flexDirection: 'row', gap: 7, marginTop: 11 },
+  webPopoverPrimary: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  webPopoverPrimaryText: { color: '#fff', fontSize: 10.5, fontWeight: '700' },
+  webPopoverSecondary: { minWidth: 74, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  webPopoverSecondaryText: { fontSize: 10.5, fontWeight: '600' },
 });

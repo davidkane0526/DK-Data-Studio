@@ -49,7 +49,7 @@
         <div><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
         <button id="dkdsMemoryPanelClose" type="button" title="关闭">×</button>
       </div>
-      <div class="dkds-memory-panel-note">按 Electron 进程 / 插件窗口统计工作集内存</div>
+      <div class="dkds-memory-panel-note">${ctx.runtime.isNativeClient?'按 Android 应用进程 PSS 统计实际驻留内存':'按 Electron 进程 / 插件窗口统计工作集内存'}</div>
       <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`});
     ctx.ui.dom.append(ctx.ui.dom.query('#app')||ctx.ui.dom.root(),panel);
     const componentList=ctx.ui.dom.query('#dkdsMemoryComponentList',panel);
@@ -85,7 +85,7 @@
     });
 
     const devToolsItem=ctx.ui.statusBar.add({
-      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'info',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||typeof runtimeService.toggleDevTools!=='function',
+      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'info',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||ctx.runtime.isNativeClient||typeof runtimeService.toggleDevTools!=='function',
       title:'打开当前窗口 DevTools',
       onClick:async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();devToolsItem.update({state:'ok',title:'打开 Plugin DevTools；Chromium 可从面板内进入'});return;}const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
     });
@@ -108,7 +108,7 @@
       if(!status||stopped)return;
       runtimeStatus=status;
       const runtime=String(status.runtime||'desktop');
-      const runtimeLabel=runtime==='web'?'网页版':'桌面端';
+      const runtimeLabel=runtime==='web'?'网页版':runtime==='android'?'Android':'桌面端';
       runtimeItem.update({label:runtimeLabel,state:runtime==='web'?'ok':'info',title:`运行模式：${runtimeLabel}`,hidden:runtime==='android'});
       const m=status.memory||{};
       const used=Number(m.workingSetBytes||m.jsHeapUsedBytes)||0;
