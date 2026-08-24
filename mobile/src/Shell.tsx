@@ -44,7 +44,7 @@ export type RendererShellState = {
   statusItems?: { pluginId: string; id: string; label: string; icon?: string; side?: 'left' | 'right'; state?: string; disabled?: boolean; clickable?: boolean; title?: string }[];
 };
 
-export type ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'more' | null;
+export type ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'import' | 'more' | null;
 
 export type NativeWebServiceState = {
   running: boolean;
@@ -214,7 +214,7 @@ function invokeNavigation(
   onAction: NavigationProps['onAction'],
   onSheet: NavigationProps['onSheet'],
 ) {
-  if (id === 'activities' || id === 'more') onSheet(id);
+  if (id === 'activities' || id === 'import' || id === 'more') onSheet(id);
   else onAction(id);
 }
 
@@ -500,10 +500,10 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
           <View style={styles.sheetHeading}>
             <View>
               <Text style={[styles.sheetTitle, { color: palette.text }]}> 
-                {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : '项目与应用'}
+                {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : visible === 'import' ? '导入与读取' : '项目与应用'}
               </Text>
               <Text style={[styles.sheetSubtitle, { color: palette.textSoft }]}> 
-                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : shell.status || 'DK Data Studio Android'}
+                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : visible === 'import' ? '本机文件、第三方 Provider 与 SMB 网络文件' : shell.status || 'DK Data Studio Android'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="关闭" onPress={onClose} style={styles.closeButton}>
@@ -569,6 +569,13 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
                   />
                 ))}
               </> : <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前页面没有可用操作。</Text>
+            ) : visible === 'import' ? (
+              <>
+                <SheetAction glyph="□" label="系统 / 第三方文件" detail="Android 文档选择器、文件管理器与云盘 Provider" palette={palette} onPress={() => run('import')} />
+                <SheetAction glyph="▤" label="SMB 网络数据" detail="浏览服务器、共享与目录后导入数据" palette={palette} onPress={() => run('smb-import')} />
+                <SheetAction glyph="◇" label="读取本地项目" detail="从 Android 文档选择器打开项目" palette={palette} onPress={() => run('project-open')} />
+                <SheetAction glyph="▣" label="读取 SMB 项目" detail="从局域网共享直接打开 DK Data Studio 项目" palette={palette} onPress={() => run('smb-project')} />
+              </>
             ) : visible === 'history' ? (
               <>
                 {[...(shell.history?.past || [])].reverse().map((entry, index) => (
@@ -585,6 +592,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
                 <SheetAction glyph="↓" label="保存 / 分享项目" detail={shell.projectTitle} palette={palette} onPress={() => run('project-save')} />
                 <SheetAction glyph="＋" label="新建项目标签" detail="保留当前项目并创建独立标签" palette={palette} onPress={() => run('project-new')} />
                 <SheetAction glyph="≡" label="操作历史" detail={shell.history?.undoLabel ? `可撤销：${shell.history.undoLabel}` : '查看撤销与重做记录'} palette={palette} onPress={() => { onClose(); onSheet('history'); }} />
+                <SheetAction glyph="✦" label="AI Agent / MCP" detail="模型、API Key 与 MCP Server 设置" palette={palette} onPress={() => run('ai-settings')} />
                 <SheetAction glyph="⬡" label="插件管理" detail="启用、停用与诊断内置插件" palette={palette} onPress={() => run('plugins')} />
                 <SheetAction glyph="↗" label="本机网页版" detail="启动、停止或在系统浏览器中打开" palette={palette} onPress={() => run('web-service')} />
                 <SheetAction

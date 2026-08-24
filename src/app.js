@@ -778,6 +778,43 @@
     renderImportWorkbench();
   }
 
+  function base64ImportBytes(base64){
+    const bin=atob(String(base64||'')),bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  }
+
+  function decodeImportSeed(seed){
+    if(typeof seed?.text==='string')return {text:seed.text.replace(/^\uFEFF/,''),encoding:String(seed.encoding||'utf-8')};
+    const bytes=base64ImportBytes(seed?.base64||'');
+    if(!bytes.length)return {text:'',encoding:String(seed?.encoding||'utf-8')};
+    const requested=String(seed?.encoding||'auto').toLowerCase();
+    if(requested&&requested!=='auto'){
+      const alias=({utf8:'utf-8',gbk:'gb18030',gb2312:'gb18030',sjis:'shift_jis','shift-jis':'shift_jis',latin1:'windows-1252'})[requested]||requested;
+      try{return {text:new TextDecoder(alias,{fatal:false}).decode(bytes).replace(/^\uFEFF/,''),encoding:alias};}catch{}
+    }
+    if(bytes.length>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)return {text:new TextDecoder('utf-8').decode(bytes.subarray(3)),encoding:'utf-8'};
+    if(bytes.length>=2&&bytes[0]===0xff&&bytes[1]===0xfe)return {text:new TextDecoder('utf-16le').decode(bytes.subarray(2)),encoding:'utf-16le'};
+    try{return {text:new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/^\uFEFF/,''),encoding:'utf-8'};}
+    catch{try{return {text:new TextDecoder('gb18030',{fatal:false}).decode(bytes).replace(/^\uFEFF/,''),encoding:'gb18030'};}catch{return {text:new TextDecoder('utf-8',{fatal:false}).decode(bytes).replace(/^\uFEFF/,''),encoding:'utf-8'};}}
+  }
+
+  function ingestImportSeedFiles(files=[]){
+    const rows=Array.isArray(files)?files:[];
+    for(const seed of rows){
+      const name=String(seed?.name||String(seed?.path||'').split(/[\\/]/).pop()||`remote-${importDraft.files.length+1}.txt`);
+      const path=String(seed?.path||`remote://${name}`);
+      if(importDraft.files.some(row=>row.path===path))continue;
+      const decoded=decodeImportSeed(seed);
+      const meta={name,path,size:Number(seed?.size)||base64ImportBytes(seed?.base64||'').length};
+      const provider=chooseImportProvider(meta,ensureImportTargets());
+      const item={...meta,checked:true,text:decoded.text,detectedEncoding:decoded.encoding,loadedEncodingRequest:'auto',importerId:provider?.id||'',settings:provider?.defaultOptions?.()||{},inspection:null,mappingTouched:false,importerTouched:false,loading:false,error:''};
+      importDraft.files.push(item);
+      if(item.text)recomputeImportItem(item,true);
+      if(!importDraft.activePath)importDraft.activePath=path;
+    }
+  }
+
   function openImportWorkbench(options={}){
     const scoped=String(options?.mode||'')==='scoped'||!!options?.consumerId;
     if(scoped){
@@ -792,6 +829,7 @@
       else importDraft.targets=null;
       ensureImportTargets();
     }
+    if(Array.isArray(options?.files)&&options.files.length)ingestImportSeedFiles(options.files);
     if(options?.importerId){
       const provider=importProvider(options.importerId);
       if(provider)for(const item of importDraft.files){
@@ -2366,7 +2404,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.49',
+      version:'3.61.50',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2532,26 +2570,38 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     clearMainView(false);
   }
 
-  async function openProject(){
-    const r=await window.electronAPI.openProject();
-    if(!r)return;
-
+  function openProjectPayload(r){
+    if(!r?.project)return false;
+    const path=String(r.path||'remote://dk-data-project.dkds.json');
     captureActiveProjectTab();
-    const tab=blankProjectTab(projectBaseName(r.path));
+    const tab=blankProjectTab(projectBaseName(path));
     state.projectTabs.push(tab);
     state.activeProjectTabId=tab.id;
     mountProjectTab(tab);
-
-    loadProjectIntoActive(r.project,r.path);
-    tab.title=projectBaseName(r.path);
+    loadProjectIntoActive(r.project,path);
+    tab.title=projectBaseName(path);
     captureActiveProjectTab();
-
     renderProjectTabs();
     renderAll();
     applyGroupPanelLayout();
     applyInspectorPanelLayout();
     scheduleMainPlotRelayout();
-    setStatus(`已在新标签页打开工程：${r.path}`);
+    setStatus(`已在新标签页打开工程：${path}`);
+    return true;
+  }
+
+  function openProjectBase64({base64,path,name}={}){
+    const bytes=base64ImportBytes(base64||'');
+    if(!bytes.length)throw new Error('工程文件为空。');
+    const parsed=window.DKDSProjectFormat?.parseProjectBytes?.(bytes);
+    if(!parsed?.project)throw new Error('无法解析 DK Data Studio 工程文件。');
+    return openProjectPayload({project:parsed.project,path:String(path||name||'remote://dk-data-project.dkds.json')});
+  }
+
+  async function openProject(){
+    const r=await window.electronAPI.openProject();
+    if(!r)return;
+    return openProjectPayload(r);
   }
 
 
@@ -2762,7 +2812,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   });
 
   // Controls
-  $('#openBtn').onclick=importFiles; $('#openProjectBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
+  $('#openBtn').onclick=importFiles; $('#openLocalImportMenuBtn').onclick=importFiles; $('#openProjectBtn').onclick=openProject; $('#openLocalProjectMenuBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
   const dataCenterSystemBtn=$('#dataCenterSystemBtn');if(dataCenterSystemBtn)dataCenterSystemBtn.onclick=()=>openPluginActivityWindow('data-center');
   $('#inspectorDockBtn').onclick=toggleInspectorDock;
   $('#importChooseFilesBtn').onclick=addImportFiles;
@@ -3221,7 +3271,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.49',
+      appVersion:'3.61.50',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3337,6 +3387,37 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     window.DKDSCapabilities?.register?.('core','core.project-history',{
       kind:'service',title:'Project Edit History',version:'1.0.0',remote:true,
       methods:projectHistoryHostApi()
+    });
+    window.DKDSCapabilities?.register?.('core','core.project-loader',{
+      kind:'service',title:'Project Loader',version:'1.0.0',remote:false,
+      methods:{openBase64:payload=>openProjectBase64(payload||{})}
+    });
+    window.DKDSCapabilities?.register?.('core','core.ai-context',{
+      kind:'service',title:'AI Mention Context',version:'1.0.0',remote:false,
+      methods:{
+        catalog:async()=>{
+          const artifacts=await window.DKDSKernel?.call?.('data.artifacts.list',{includeTransient:true})||[];
+          const plots=await window.DKDSKernel?.call?.('plot.inspect',{limit:50})||[];
+          const results=artifacts.filter(row=>String(row.kind||'')==='result'||String(row.kind||'').startsWith('result.')||String(row.semanticType||'').startsWith('result.'));
+          return {artifacts,plots,results};
+        },
+        resolve:async refs=>{
+          const plots=await window.DKDSKernel?.call?.('plot.inspect',{limit:50})||[],out=[];
+          for(const ref of (Array.isArray(refs)?refs:[]).slice(0,8)){
+            const type=String(ref?.type||'artifact'),id=String(ref?.id||'');if(!id)continue;
+            if(type==='plot'){const row=plots.find(plot=>String(plot.id)===id);if(row)out.push({type,id,label:String(ref?.label||row.title||id),plot:row});continue;}
+            const summary=(await window.DKDSKernel?.call?.('data.artifacts.list',{includeTransient:true})||[]).find(row=>String(row.id)===id);
+            if(!summary)continue;
+            const [preview,stats,lineage]=await Promise.all([
+              window.DKDSKernel?.call?.('data.artifacts.preview',{id,limit:120}),
+              window.DKDSKernel?.call?.('data.artifacts.stats',{id}),
+              window.DKDSKernel?.call?.('data.artifacts.lineage',{id})
+            ]);
+            out.push({type,id,label:String(ref?.label||summary.name||id),summary,preview,stats,lineage});
+          }
+          return out;
+        }
+      }
     });
 
     window.electronAPI?.onCapabilityInvokeRequest?.(async request=>{

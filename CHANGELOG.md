@@ -1,3 +1,14 @@
+# v3.61.50 — SMB File Browser & AI/MCP Service UX
+
+- Remove the desktop Connectivity Center activity/page and the Tools-menu `连接 / SMB / AI / MCP` shortcut. Desktop no longer has a generic “connection” page.
+- Move SMB into the actual file workflows: `导入数据` and `读取项目` now have compact source menus, and SMB opens as a reference-project-style file manager with network discovery, server/share navigation, breadcrumbs/path, favorites, directory browsing, guest/account fields, multi-file selection and direct import/project-open actions.
+- Extend the Core import workbench with preloaded remote file payloads and add a non-remote `core.project-loader` capability so SMB data/project reads still enter the canonical Studio import/project lifecycle instead of bypassing it.
+- Move AI Agent / MCP settings into `软件管理` as a compact service window. Remove the artificial MCP 12-character minimum on Android; tokens are any non-empty string up to 256 characters, while the UI still recommends a random long token.
+- Add a bottom-status AI service item. Clicking it opens an AI chat panel; typing `@` can reference current data artifacts, rendered data plots and plugin/analysis results. References resolve through the Core-owned `core.ai-context` capability and are delivered as structured context with stable Studio IDs, while the Agent can continue using the full Kernel tool registry for deeper reads/actions.
+- Upgrade the Agent runtime with multi-turn `chat(messages)` while preserving `run(instruction)` compatibility, and persist MCP service settings separately from AI provider settings.
+- Add matching Android import-source actions for system/third-party Providers, SMB data, local projects and SMB projects; mobile connectivity commands route back through Plugin Kernel rather than duplicating SMB/AI business logic in React Native.
+- Keep SDK **1.17.6** and Plugin API **1.17.0**. Mobile advances to **0.8.3** / Android versionCode **14**.
+
 # v3.61.49 — Android AppState Typecheck Fix
 
 - Fix the Android React Native shell TypeScript failure in `mobile/App.tsx`: lifecycle publishing accepted a generic `string` and assigned it to a ref inferred as React Native `AppStateStatus`, causing `tsc --noEmit` to stop at `TS2322`. The lifecycle path now carries `AppStateStatus` explicitly from import through ref storage and `publishLifecycle`.

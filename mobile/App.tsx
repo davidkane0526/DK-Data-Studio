@@ -287,6 +287,10 @@ export default function App() {
         const result = await hostRequest('back');
         if (!result?.handled) exitAfterUnhandledBack();
       } else if (action === 'import') await hostRequest('command', { id: 'import' });
+      else if (action === 'smb-import') await hostRequest('command', { id: 'connectivity.smb.import' });
+      else if (action === 'smb-project') await hostRequest('command', { id: 'connectivity.smb.project' });
+      else if (action === 'ai-settings') await hostRequest('command', { id: 'connectivity.ai.settings' });
+      else if (action === 'ai-chat') await hostRequest('command', { id: 'connectivity.ai.chat' });
       else if (action === 'project-open') await hostRequest('command', { id: 'project.open' });
       else if (action === 'project-save') await hostRequest('command', { id: 'project.save' });
       else if (action === 'project-new') await hostRequest('command', { id: 'project.new' });

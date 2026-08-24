@@ -2,6 +2,7 @@
   let core={};
   const settingsKey='dkds.connectivity.agent.v2';
   const auditKey='dkds.connectivity.agent.audit.v1';
+  const mcpSettingsKey='dkds.connectivity.mcp.v1';
   const text=value=>String(value??'').trim();
   const presets=[
     {id:'openai',label:'OpenAI',provider:'openai-compatible',endpoint:'https://api.openai.com/v1/chat/completions',models:['gpt-5','gpt-5-mini','gpt-4.1']},
@@ -21,7 +22,14 @@
   function api(name,...args){const fn=window.electronAPI?.[name];if(typeof fn!=='function')throw new Error(`Host capability unavailable: ${name}`);return fn(...args);}
   const files=Object.freeze({openDirectory:()=>api('openDataDirectory'),listDirectory:payload=>api('listDataDirectory',payload||{}),read:payload=>api('readDataDocument',payload||{}),saveText:payload=>api('saveText',payload||{}),saveBase64:payload=>api('saveBase64',payload||{})});
   const smb=Object.freeze({discover:()=>api('smbDiscover'),listShares:connection=>api('smbListShares',normalizeConnection(connection)),list:(connection,path='')=>api('smbList',{connection:normalizeConnection(connection),path:String(path||'')}),read:(connection,paths)=>api('smbRead',{connection:normalizeConnection(connection),paths:Array.isArray(paths)?paths:[]})});
-  const mcp=Object.freeze({status:()=>api('mcpGetStatus'),start:token=>api('mcpStart',{token:String(token||'')}),stop:()=>api('mcpStop')});
+  function loadMcpSettings(){try{return {enabled:false,token:'',...JSON.parse(localStorage.getItem(mcpSettingsKey)||'{}')};}catch{return {enabled:false,token:''};}}
+  function saveMcpSettings(value={}){const current=loadMcpSettings(),token=String(value.token??current.token??'').replace(/[\r\n]/g,'');const next={...current,...value,token,enabled:!!value.enabled};localStorage.setItem(mcpSettingsKey,JSON.stringify(next));return next;}
+  const mcp=Object.freeze({
+    status:()=>api('mcpGetStatus'),
+    start:async token=>{const clean=String(token??loadMcpSettings().token??'').trim();if(!clean)throw new Error('MCP Token 不能为空。');if(clean.length>256)throw new Error('MCP Token 不能超过 256 个字符。');const result=await api('mcpStart',{token:clean});saveMcpSettings({token:clean,enabled:true});return result;},
+    stop:async()=>{const result=await api('mcpStop');saveMcpSettings({enabled:false});return result;},
+    loadSettings:loadMcpSettings,saveSettings:saveMcpSettings
+  });
 
   function kernel(){if(!window.DKDSKernel)throw new Error('Studio Kernel Runtime 尚未就绪。');return window.DKDSKernel;}
   function availableTools(settings=loadSettings()){
@@ -36,8 +44,9 @@
   async function invokeTool(name,args,settings,runId){const row=rowByToolName(name);if(!row)throw new Error(`AI 调用了未知内核工具：${name}`);if(settings.accessMode==='read-only'&&!row.readOnly)throw new Error(`只读模式拒绝修改工具：${row.id}`);const started=performance.now();try{const value=await kernel().call(row.id,args||{},{source:'ai-agent',runId});appendAudit({runId,tool:row.id,args:clone(args),ok:true,durationMs:Math.round(performance.now()-started)});return value;}catch(err){appendAudit({runId,tool:row.id,args:clone(args),ok:false,error:String(err?.message||err),durationMs:Math.round(performance.now()-started)});throw err;}}
   function systemPrompt(settings){return `你是 DK Data Studio 的内核级 AI Agent。你拥有由 Studio Kernel Registry 暴露的${settings.accessMode==='read-only'?'只读':'完整'}能力。你的任务是实际使用工具完成用户要求，而不是只给操作建议。\n规则：\n1. 对数据、图、插件或工程状态的结论必须先调用工具读取真实状态，不得猜测 ID、列名、插件能力或图形内容。\n2. 分析数据优先先 list/preview/stats，再按需读取完整 artifact；清洗和派生必须生成规范 DKDS artifact 并保留 lineage/history。\n3. 绘图使用 plot.render；分析当前图使用 plot.inspect。\n4. 插件已有专用能力时，先 core.capabilities.list/get，再通过 core.capabilities.invoke 深入调用；数据导入/导出/变换/分析 Provider 可通过 data.flows.list/run 直接发现和执行。\n5. 需要新功能时先读取 plugin.authoring.contract；复杂插件必须继续调用 sdk.authoring.search / sdk.authoring.read 查阅随软件打包的完整 SDK 1.17.6、Plugin API 类型、manifest schema、UI/Workspace/DataModel 文档和模板，再编写完整 .dkplugin。先 plugin.package.validate，再 plugin.package.install。插件代码应使用 SDK/Core 契约，不得私接 Electron/React Native bridge。\n6. 文件、SMB、工作流、科学变换、历史和诊断都通过相应 Kernel 工具；需要把分析结果、源码或报告交给用户时可用 filesystem.save.*。\n7. 不要索取或输出 API Key。不要虚构工具执行结果。\n8. 工具已经经过本地权限边界；完整模式下用户明确授权你执行必要的修改操作。\n9. 完成后用简洁中文说明你实际做了什么、生成/修改了哪些数据或插件以及重要分析结论。`;}
   async function http(settings,key,body){const headers=settings.provider==='anthropic'?{'x-api-key':key,'anthropic-version':'2023-06-01'}:{Authorization:`Bearer ${key}`};return api('agentHttpJson',{endpoint:settings.endpoint,headers,body,timeoutMs:120000});}
-  async function runOpenAI(instruction,settings,key,runId){
-    const messages=[{role:'system',content:systemPrompt(settings)},{role:'user',content:String(instruction||'')}],tools=openAiTools(settings),audit=[];
+  function normalizeChatMessages(messages){return (Array.isArray(messages)?messages:[]).map(row=>({role:row?.role==='assistant'?'assistant':'user',content:String(row?.content??row?.text??'')})).filter(row=>row.content.trim()).slice(-24);}
+  async function runOpenAI(history,settings,key,runId){
+    const messages=[{role:'system',content:systemPrompt(settings)},...normalizeChatMessages(history)],tools=openAiTools(settings),audit=[];
     for(let round=0;round<settings.maxToolRounds;round++){
       const body={model:settings.model,messages,tools,tool_choice:'auto'};if(Number.isFinite(Number(settings.temperature)))body.temperature=Number(settings.temperature);
       const response=await http(settings,key,body);if(!response?.ok)throw new Error(`AI 请求失败：HTTP ${response?.status||0} ${response?.body?.error?.message||response?.statusText||''}`.trim());
@@ -48,8 +57,8 @@
     }
     throw new Error(`AI Agent 已达到最大工具轮次 ${settings.maxToolRounds}，请缩小任务或继续下一轮。`);
   }
-  async function runAnthropic(instruction,settings,key,runId){
-    const messages=[{role:'user',content:String(instruction||'')}],tools=anthropicTools(settings),audit=[];
+  async function runAnthropic(history,settings,key,runId){
+    const messages=normalizeChatMessages(history),tools=anthropicTools(settings),audit=[];
     for(let round=0;round<settings.maxToolRounds;round++){
       const body={model:settings.model,max_tokens:4096,system:systemPrompt(settings),messages,tools};if(Number.isFinite(Number(settings.temperature)))body.temperature=Number(settings.temperature);
       const response=await http(settings,key,body);if(!response?.ok)throw new Error(`AI 请求失败：HTTP ${response?.status||0} ${response?.body?.error?.message||response?.statusText||''}`.trim());
@@ -61,12 +70,13 @@
     }
     throw new Error(`AI Agent 已达到最大工具轮次 ${settings.maxToolRounds}，请缩小任务或继续下一轮。`);
   }
-  async function run(instruction,override={}){const settings=saveSettings(override),key=await api('agentGetSecret',settings.presetId||'default');if(!key)throw new Error('请先保存 AI API Key。');if(!text(settings.endpoint)||!text(settings.model))throw new Error('请设置 AI Endpoint 与模型。');const runId=`agent-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;appendAudit({runId,event:'start',accessMode:settings.accessMode,model:settings.model});try{const result=settings.provider==='anthropic'?await runAnthropic(instruction,settings,key,runId):await runOpenAI(instruction,settings,key,runId);appendAudit({runId,event:'finish',ok:true,rounds:result.rounds});return result;}catch(err){appendAudit({runId,event:'finish',ok:false,error:String(err?.message||err)});throw err;}}
+  async function chat(messages,override={}){const settings=saveSettings(override),key=await api('agentGetSecret',settings.presetId||'default');if(!key)throw new Error('请先保存 AI API Key。');if(!text(settings.endpoint)||!text(settings.model))throw new Error('请设置 AI Endpoint 与模型。');const history=normalizeChatMessages(messages);if(!history.length)throw new Error('请输入要交给 AI Agent 的内容。');const runId=`agent-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;appendAudit({runId,event:'start',accessMode:settings.accessMode,model:settings.model,turns:history.length});try{const result=settings.provider==='anthropic'?await runAnthropic(history,settings,key,runId):await runOpenAI(history,settings,key,runId);appendAudit({runId,event:'finish',ok:true,rounds:result.rounds});return result;}catch(err){appendAudit({runId,event:'finish',ok:false,error:String(err?.message||err)});throw err;}}
+  async function run(instruction,override={}){return chat([{role:'user',content:String(instruction||'')}],override);}
   async function test(settingsOverride={}){const settings=saveSettings(settingsOverride),key=await api('agentGetSecret',settings.presetId||'default');if(!key)throw new Error('请先保存 AI API Key。');const body=settings.provider==='anthropic'?{model:settings.model,max_tokens:16,messages:[{role:'user',content:'Reply with OK.'}]}:{model:settings.model,messages:[{role:'user',content:'Reply with OK.'}],max_tokens:8};const response=await http(settings,key,body);if(!response?.ok)throw new Error(`连接失败：HTTP ${response?.status||0}`);return true;}
 
   // Backward-compatible planning APIs remain for older plugins; new UI should use run().
   async function requestPlan(instruction,override={}){return {summary:'完整内核 Agent 已启用；此兼容接口不再生成待确认 UI 计划。',operations:[],agentResult:await run(instruction,override)};}
   async function applyPlan(plan){return plan?.agentResult||plan||null;}
-  const agent=Object.freeze({presets:()=>presets.map(row=>({...row,models:[...row.models]})),loadSettings,saveSettings,getSecret:key=>api('agentGetSecret',key),setSecret:(key,value)=>api('agentSetSecret',{key,value}),test,run,requestPlan,applyPlan,context:snapshot,tools:()=>availableTools(loadSettings()),audit:()=>loadAudit()});
+  const agent=Object.freeze({presets:()=>presets.map(row=>({...row,models:[...row.models]})),loadSettings,saveSettings,getSecret:key=>api('agentGetSecret',key),setSecret:(key,value)=>api('agentSetSecret',{key,value}),test,chat,run,requestPlan,applyPlan,context:snapshot,tools:()=>availableTools(loadSettings()),audit:()=>loadAudit()});
   window.DKDSConnectivity=Object.freeze({configure(next={}){core={...core,...next};},files,smb,agent,mcp});
 })();

@@ -198,7 +198,8 @@ private object DkdsMcpServer {
   @Synchronized fun start(context: ReactApplicationContext, requestedToken: String): WritableMap {
     if (socket?.isClosed == false && port > 0) return status()
     val cleanToken = requestedToken.trim()
-    if (cleanToken.length < 12) throw IllegalArgumentException("MCP Token 至少需要 12 个字符。")
+    if (cleanToken.isEmpty()) throw IllegalArgumentException("MCP Token 不能为空。")
+    if (cleanToken.length > 256) throw IllegalArgumentException("MCP Token 不能超过 256 个字符。")
     token = cleanToken; error = ""
     val server = ServerSocket().apply { reuseAddress = true; bind(java.net.InetSocketAddress("0.0.0.0", 8766), 24) }
     socket = server; port = server.localPort

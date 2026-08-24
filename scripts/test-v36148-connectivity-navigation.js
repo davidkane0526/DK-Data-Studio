@@ -1,14 +1,13 @@
-const fs=require('fs');
-const assert=require('assert');
-const read=p=>fs.readFileSync(p,'utf8');
-const json=p=>JSON.parse(read(p));
-const pkg=json('package.json');
-const plugin=read('src/plugins/connectivity-center/plugin.js');
-const manifest=json('src/plugins/connectivity-center/plugin.json');
-
-assert.equal(pkg.version,'3.61.49','Connectivity navigation regression must run against v3.61.49.');
-assert.equal(manifest.version,'1.1.1','Connectivity Center plugin version must be 1.1.1.');
-assert(plugin.includes("onActivate:()=>ctx.workspace.openPage('connectivityCenterPage')"),'Connectivity Activity must own opening its page.');
-assert(plugin.includes("onClick:()=>ctx.ui.activities.activate('connectivity-center')"),'Tools-menu entry must activate the Connectivity Activity before opening its page.');
-assert(!plugin.includes("menu:'tools',label:'连接 / SMB / AI / MCP',order:34,onClick:()=>ctx.workspace.openPage"),'Tools-menu entry must not bypass Activity visibility state.');
-console.log('v3.61.49 Connectivity tools-menu Activity navigation regression passed.');
+const fs=require('fs');const assert=require('assert');
+const read=p=>fs.readFileSync(p,'utf8');const json=p=>JSON.parse(read(p));
+const pkg=json('package.json'),plugin=read('src/plugins/connectivity-center/plugin.js'),manifest=json('src/plugins/connectivity-center/plugin.json'),html=read('src/index.html'),app=read('mobile/App.tsx'),shell=read('mobile/src/Shell.tsx'),runtime=read('src/core/mobile-host-runtime.js');
+assert.equal(pkg.version,'3.61.50','Connectivity shell regression must run against v3.61.50.');
+assert.equal(manifest.version,'1.2.0','SMB & AI Services plugin version must be 1.2.0.');
+assert(html.includes('data-plugin-menu="import-data"')&&html.includes('data-plugin-menu="open-project"')&&html.includes('data-plugin-menu="manage"'),'Desktop shell must expose source-aware import/project and software-management plugin mounts.');
+assert(html.includes('split-command-anchor')&&html.includes('openImportSourceBtn')&&html.includes('openProjectSourceBtn'),'Import and project read commands must expose compact source menus.');
+assert(plugin.includes("ctx.commands.register('connectivity.smb.import'")&&plugin.includes("ctx.commands.register('connectivity.smb.project'")&&plugin.includes("ctx.commands.register('connectivity.ai.settings'")&&plugin.includes("ctx.commands.register('connectivity.ai.chat'"),'Plugin must expose mobile-safe commands for SMB and AI UI.');
+assert(runtime.includes("id.startsWith('connectivity.')")&&runtime.includes('window.DKDSPlugins?.commands?.run?.(id,payload)'),'Mobile Host must route connectivity commands through Plugin Kernel rather than a duplicate native business layer.');
+assert(shell.includes("ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'import' | 'more'")&&shell.includes('SMB 网络数据')&&shell.includes('读取 SMB 项目')&&shell.includes('AI Agent / MCP'),'Native mobile shell must expose SMB under import/read and AI settings under app management.');
+assert(app.includes("action === 'smb-import'")&&app.includes("id: 'connectivity.smb.import'")&&app.includes("action === 'ai-settings'")&&app.includes("id: 'connectivity.ai.settings'"),'React Native shell actions must reach the shared Core/plugin commands.');
+assert(!plugin.includes('connectivityCenterPage')&&!plugin.includes('连接 / SMB / AI / MCP'),'Legacy aggregated Connectivity Center page/menu must be removed.');
+console.log('v3.61.50 SMB/import and AI/MCP software-management navigation regression passed.');

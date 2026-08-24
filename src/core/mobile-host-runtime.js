@@ -201,7 +201,8 @@
       'theme.toggle':()=>window.DKDSTheme?.toggle?.(),
       lifecycle:()=>window.dispatchEvent(new CustomEvent('dkds:native-lifecycle',{detail:{state:text(payload.state||'unknown')}}))
     };
-    const run=commands[id];
+    let run=commands[id];
+    if(typeof run!=='function'&&id.startsWith('connectivity.'))run=()=>window.DKDSPlugins?.commands?.run?.(id,payload);
     if(typeof run!=='function')throw new Error(`Unsupported mobile command: ${id}`);
     const value=await run(payload);
     publish();

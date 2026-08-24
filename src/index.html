@@ -14,12 +14,28 @@
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.49</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.50</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
-            <button id="openBtn" class="toolbar-btn strong" title="打开数据导入工作台">导入数据</button>
-            <button id="openProjectBtn" class="toolbar-btn" title="读取项目 · Ctrl+O">读取项目</button>
+            <div class="menu-anchor split-command-anchor">
+              <button id="openBtn" class="toolbar-btn strong split-command-main" title="打开数据导入工作台">导入数据</button>
+              <button id="openImportSourceBtn" class="toolbar-btn strong menu-trigger split-command-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择数据导入来源" aria-haspopup="true" aria-expanded="false">⌄</button>
+              <div id="importSourceMenu" class="command-menu hidden">
+                <button id="openLocalImportMenuBtn" type="button">本地 / 系统文件…</button>
+                <div class="command-menu-separator"></div>
+                <div data-plugin-menu="import-data"></div>
+              </div>
+            </div>
+            <div class="menu-anchor split-command-anchor">
+              <button id="openProjectBtn" class="toolbar-btn split-command-main" title="读取项目 · Ctrl+O">读取项目</button>
+              <button id="openProjectSourceBtn" class="toolbar-btn menu-trigger split-command-caret" type="button" data-menu-target="projectSourceMenu" aria-label="选择项目读取来源" aria-haspopup="true" aria-expanded="false">⌄</button>
+              <div id="projectSourceMenu" class="command-menu hidden">
+                <button id="openLocalProjectMenuBtn" type="button">本地 / 系统文件…</button>
+                <div class="command-menu-separator"></div>
+                <div data-plugin-menu="open-project"></div>
+              </div>
+            </div>
             <button id="saveProjectBtn" class="toolbar-btn" title="保存项目 · Ctrl+S">保存项目</button>
           </div>
           <div class="menu-anchor compact-menu-anchor">
@@ -79,6 +95,7 @@
               <button id="pluginManagerBtn" type="button">插件管理</button>
               <button id="automationTestBtn" type="button">自动化测试</button>
               <button id="lanWebBtn" type="button">局域网网页版</button>
+              <div data-plugin-menu="manage"></div>
               <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
             </div>
           </div>

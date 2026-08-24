@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.49
+# DK Data Studio — v3.61.50
+
+## v3.61.50 SMB 文件管理器与 AI/MCP 服务界面
+
+本版取消桌面端原先的“连接 / SMB / AI / MCP”聚合工作区。桌面端不再提供没有明确业务语义的“连接”页面：**SMB 回到文件工作流，AI Agent / MCP 回到软件管理与状态栏服务入口**。
+
+`导入数据` 与 `读取项目` 现在都有紧凑的来源菜单。SMB 入口打开独立文件管理器式窗口，提供局域网设备扫描、服务器/共享导航、目录浏览、收藏、访客/账号连接、多文件选择，并可把网络文件直接送入 Core 数据导入工作台；SMB 项目则通过 Core Project Loader 进入标准项目加载生命周期。Android 的底部“导入”入口同步提供系统/第三方 DocumentsProvider、SMB 数据、本地项目与 SMB 项目，不在 React Native 中复制另一套 SMB 业务逻辑。
+
+AI Agent / MCP 设置移到“软件管理”，使用类似网络服务的紧凑独立小窗口。MCP Token 取消人为的 12 位最小限制，规则统一为**非空且不超过 256 字符**，界面只提示推荐使用随机长 Token。AI Agent 增加多轮 Chat Runtime；底部状态栏新增 AI 服务按钮，可显示 Agent/MCP 状态并展开对话窗口。输入 `@` 可引用当前 Canonical Artifact、实际渲染的数据图和插件/分析结果；引用通过 Core `core.ai-context` 解析为带稳定 ID 的结构化上下文，随后 Agent 仍可使用完整 Studio Kernel 继续读取更深数据、清洗、绘图、运行算法或编写插件。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**；移动端更新为 **0.8.3**、Android `versionCode` **14**。
 
 ## v3.61.49 Android AppState TypeScript 编译修复
 
