@@ -1203,19 +1203,21 @@
       label.textContent=String(current.label??'');
       label.classList.toggle('hidden',current.label===undefined||current.label===null||String(current.label)==='');
       moveToZone();
+      queueMicrotask(()=>eventEmit('status:changed',{pluginId,id,value:{...current}}));
       return controller;
     };
-    button.addEventListener('click',event=>{
-      if(button.disabled||typeof clickHandler!=='function')return;
-      try{clickHandler({event,element:button,pluginId,id,host});}
-      catch(err){console.error(`[DKDS status bar:${pluginId}/${id}]`,err);}
-    });
     const controller={
       id,pluginId,element:button,
       update:patch=>apply(patch),
-      remove:()=>button.remove(),
+      invoke:event=>{
+        if(button.disabled||typeof clickHandler!=='function')return false;
+        try{clickHandler({event,eventSource:'host',element:button,pluginId,id,host});return true;}
+        catch(err){console.error(`[DKDS status bar:${pluginId}/${id}]`,err);return false;}
+      },
+      remove:()=>{button.remove();eventEmit('status:changed',{pluginId,id,removed:true});},
       get value(){return {...current};}
     };
+    button.addEventListener('click',event=>controller.invoke(event));
     registerContribution(pluginId,'ui.statusItems',id,controller);
     addCleanup(pluginId,()=>button.remove());
     apply(current);
@@ -2493,7 +2495,8 @@
       refresh:()=>{renderActivityBar();refreshActivityVisibility();}
     },
     statusBar: {
-      list:()=>listContributions('ui.statusItems').map(row=>({pluginId:row.pluginId,id:row.id,value:row.value?.value||{}}))
+      list:()=>listContributions('ui.statusItems').map(row=>({pluginId:row.pluginId,id:row.id,value:row.value?.value||{}})),
+      invoke:(pluginId,id)=>{const row=listContributions('ui.statusItems').find(row=>row.pluginId===String(pluginId)&&row.id===String(id));return row?.value?.invoke?.()===true;}
     },
     workspace: {
       super:()=>superState(),

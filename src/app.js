@@ -1500,8 +1500,8 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   function projectHistoryHostApi(){
     return {
       state:()=>projectHistorySnapshot(),
-      undo:()=>undoProjectHistory(),
-      redo:()=>redoProjectHistory(),
+      undo:()=>systemUndo(),
+      redo:()=>systemRedo(),
       commitArtifactMutation(payload={}){
         const label=String(payload.label||'数据对象修改'),beforePatch=payload.before&&typeof payload.before==='object'?payload.before:{upserts:[],removedIds:[]},afterPatch=payload.after&&typeof payload.after==='object'?payload.after:{upserts:[],removedIds:[]};
         applyArtifactHistoryPatch(afterPatch,'history-artifact-commit');
@@ -2366,7 +2366,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.43',
+      version:'3.61.44',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3221,7 +3221,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.43',
+      appVersion:'3.61.44',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

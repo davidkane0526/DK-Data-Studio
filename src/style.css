@@ -5140,3 +5140,22 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
 }
 .dkds-d3-chart-tooltip b{display:block;margin-bottom:2px;font-weight:650}
 html[data-dkds-theme="dark"] .dkds-d3-chart-tooltip{background:rgba(20,26,35,.96);border-color:rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+
+/* Portable chrome: unified history + touch-safe resizing. */
+.dkds-portable-history-action{
+  width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:0;border-radius:6px;
+  background:transparent;color:var(--text-secondary,#667085);font:600 16px/26px system-ui,sans-serif;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer
+}
+.dkds-portable-history-action:hover{background:var(--surface-hover,#f1f5f9);color:var(--text-primary,#1f2937)}
+.dkds-portable-resize-handle{
+  display:none;position:absolute;right:0;bottom:0;width:24px;height:24px;z-index:12;
+  cursor:nwse-resize;touch-action:none
+}
+.dkds-portable-view.is-floating>.dkds-portable-resize-handle{display:block}
+.dkds-portable-resize-handle::before,.dkds-portable-resize-handle::after{
+  content:'';position:absolute;right:5px;bottom:5px;width:10px;height:1px;background:var(--text-tertiary,#98a2b3);transform:rotate(-45deg);transform-origin:right center
+}
+.dkds-portable-resize-handle::after{right:4px;bottom:9px;width:6px}
+.dkds-portable-view.is-held-resizing>.dkds-portable-inline-header,
+.dkds-portable-view.is-held-resizing>.dkds-portable-header{touch-action:none;user-select:none}

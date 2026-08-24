@@ -9,7 +9,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.43','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.44','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
   assert(sdk.pluginApiVersion==='1.17.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 

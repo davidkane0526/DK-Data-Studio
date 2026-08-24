@@ -38,6 +38,7 @@ export type RendererShellState = {
   route?: { kind?: string; activityId?: string; pluginId?: string; pageId?: string };
   surfaces?: { id: string; label: string; active?: boolean }[];
   actions?: { id: string; label: string; icon?: string; enabled?: boolean; active?: boolean; menu?: boolean; items?: { id: string; label: string; icon?: string; enabled?: boolean }[] }[];
+  statusItems?: { pluginId: string; id: string; label: string; icon?: string; side?: 'left' | 'right'; state?: string; disabled?: boolean; clickable?: boolean; title?: string }[];
 };
 
 export type ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'more' | null;
@@ -91,6 +92,7 @@ type HeaderProps = {
 export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps) {
   const { width } = useWindowDimensions();
   const longPressedProject = React.useRef('');
+  const activeProject = (shell.projects || []).find(project => project.active) || (shell.projects || [])[0];
   const directLimit = width >= 700 ? 6 : width >= 480 ? 4 : 3;
   const directRows = [
     ...(shell.surfaces || []).map(row => ({ ...row, kind: 'surface' as const })),
@@ -102,31 +104,27 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
       <View style={styles.unifiedHeaderRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unifiedHeaderContent} style={styles.unifiedHeaderScroller}>
           <View style={styles.projectTabGroup} accessibilityLabel="项目标签区">
-            {(shell.projects || []).map(project => (
+            {activeProject ? (
               <Pressable
-              key={project.id}
-              accessibilityRole="tab"
-              accessibilityLabel={`${project.title}${project.active ? '，当前项目' : ''}，长按关闭`}
-              onPress={() => {
-                if (longPressedProject.current === project.id) { longPressedProject.current = ''; return; }
-                project.active ? onSheet('projects') : onAction('project-switch', { id: project.id });
-              }}
-              onLongPress={() => {
-                longPressedProject.current = project.id;
-                setTimeout(() => { if (longPressedProject.current === project.id) longPressedProject.current = ''; }, 900);
-                onAction('project-close', { id: project.id });
-              }}
-              delayLongPress={520}
-              style={({ pressed }) => [
-                styles.projectTab,
-                { borderColor: project.active ? palette.accent : palette.border, backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft },
-                pressed && styles.pressed,
-              ]}>
-              <Text style={[styles.projectTabText, { color: project.active ? palette.accent : palette.text }]} numberOfLines={1}>
-                {project.title || '未命名项目'}
-              </Text>
+                accessibilityRole="tab"
+                accessibilityLabel={`${activeProject.title}，当前项目，点击切换项目，长按关闭`}
+                onPress={() => {
+                  if (longPressedProject.current === activeProject.id) { longPressedProject.current = ''; return; }
+                  onSheet('projects');
+                }}
+                onLongPress={() => {
+                  longPressedProject.current = activeProject.id;
+                  setTimeout(() => { if (longPressedProject.current === activeProject.id) longPressedProject.current = ''; }, 900);
+                  onAction('project-close', { id: activeProject.id });
+                }}
+                delayLongPress={520}
+                style={({ pressed }) => [styles.projectTab, { borderColor: palette.accent, backgroundColor: palette.accentSoft }, pressed && styles.pressed]}>
+                <Text style={[styles.projectTabText, { color: palette.accent }]} numberOfLines={1}>
+                  {activeProject.title || '未命名项目'}
+                </Text>
+                <Text style={[styles.projectChevron, { color: palette.accent }]}>⌄</Text>
               </Pressable>
-            ))}
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="新建项目"
@@ -154,15 +152,28 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
             ) : null}
           </View>
         </ScrollView>
-        {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
+        <View style={styles.headerUtilityGroup}>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="打开数据与参数"
-            onPress={() => onAction('panel', { name: 'left' })}
-            style={[styles.headerPanelButton, { backgroundColor: palette.accentSoft }]}>
-            <Text style={[styles.headerPanelButtonText, { color: palette.accent }]}>数据 / 参数</Text>
+            accessibilityRole="button" accessibilityLabel="撤销" disabled={!shell.history?.canUndo}
+            onPress={() => onAction('history-undo')}
+            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canUndo ? 1 : .38 }]}>
+            <Text style={[styles.headerHistoryGlyph, { color: palette.text }]}>↶</Text>
           </Pressable>
-        ) : null}
+          <Pressable
+            accessibilityRole="button" accessibilityLabel="恢复" disabled={!shell.history?.canRedo}
+            onPress={() => onAction('history-redo')}
+            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canRedo ? 1 : .38 }]}>
+            <Text style={[styles.headerHistoryGlyph, { color: palette.text }]}>↷</Text>
+          </Pressable>
+          {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
+            <Pressable
+              accessibilityRole="button" accessibilityLabel="打开数据与参数"
+              onPress={() => onAction('panel', { name: 'left' })}
+              style={[styles.headerPanelButton, { backgroundColor: palette.accentSoft }]}>
+              <Text style={[styles.headerPanelButtonText, { color: palette.accent }]}>数据 / 参数</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -229,6 +240,25 @@ export function BottomNavigation({ shell, palette, onAction, onSheet }: Navigati
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+export function NativeStatusBar({ shell, palette, onAction }: Pick<NavigationProps, 'shell' | 'palette' | 'onAction'>) {
+  const items = shell.statusItems || [];
+  return (
+    <View style={[styles.nativeStatusBar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}>
+      <Text style={[styles.nativeStatusMessage, { color: palette.textSoft }]} numberOfLines={1}>{shell.status || '就绪'}</Text>
+      {items.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nativeStatusScroller} contentContainerStyle={styles.nativeStatusItems}>
+          {items.map(item => (
+            <Pressable key={`${item.pluginId}:${item.id}`} disabled={item.disabled || !item.clickable} onPress={() => onAction('status-item', { pluginId: item.pluginId, id: item.id })} style={styles.nativeStatusItem}>
+              {item.icon ? <Text style={[styles.nativeStatusIcon, { color: palette.accent }]}>{item.icon}</Text> : null}
+              <Text style={[styles.nativeStatusLabel, { color: item.state === 'error' ? '#c95a55' : palette.textSoft }]} numberOfLines={1}>{item.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 }
@@ -454,31 +484,37 @@ const styles = StyleSheet.create({
   projectTabGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   pluginButtonGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   headerDivider: { width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 1 },
-  projectTab: { minWidth: 92, maxWidth: 190, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingHorizontal: 12 },
+  projectTab: { minWidth: 92, maxWidth: 190, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingLeft: 12, paddingRight: 28, position: 'relative' },
   projectTabText: { fontSize: 12, fontWeight: '700' },
+  projectChevron: { position: 'absolute', right: 9, top: 7, fontSize: 13, fontWeight: '700' },
   projectAdd: { width: 40, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   projectAddText: { fontSize: 21, lineHeight: 23, fontWeight: '500' },
   projectAction: { height: 34, minWidth: 76, maxWidth: 150, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
   projectActionText: { fontSize: 10, fontWeight: '700' },
+  headerUtilityGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerHistoryButton: { width: 32, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  headerHistoryGlyph: { fontSize: 17, lineHeight: 19, fontWeight: '600' },
   headerPanelButton: { minHeight: 34, paddingHorizontal: 10, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   headerPanelButtonText: { fontSize: 10, fontWeight: '700' },
   bottomNav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 26,
-    zIndex: 40,
-    height: 50,
+    height: 42,
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'stretch',
     paddingHorizontal: 8,
   },
-  navItem: { flex: 1, height: 50, alignItems: 'center', justifyContent: 'center', minWidth: 52 },
+  navItem: { flex: 1, height: 42, alignItems: 'center', justifyContent: 'center', minWidth: 52 },
   navItemPrimaryWrap: {},
-  navGlyphWrap: { width: 50, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  navGlyph: { fontSize: 20, lineHeight: 23, fontWeight: '600' },
+  navGlyphWrap: { width: 46, height: 30, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  navGlyph: { fontSize: 18, lineHeight: 20, fontWeight: '600' },
   moreGlyph: { fontSize: 15, letterSpacing: 1 },
+  nativeStatusBar: { height: 23, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 8 },
+  nativeStatusMessage: { flex: 1, minWidth: 80, maxWidth: '52%', fontSize: 10.5, lineHeight: 14, fontWeight: '500' },
+  nativeStatusScroller: { flexGrow: 0, flexShrink: 1 },
+  nativeStatusItems: { alignItems: 'center', gap: 8, paddingLeft: 2 },
+  nativeStatusItem: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  nativeStatusIcon: { fontSize: 9, fontWeight: '700' },
+  nativeStatusLabel: { fontSize: 9.5, lineHeight: 13, fontWeight: '500' },
   rail: {
     width: 62,
     borderRightWidth: StyleSheet.hairlineWidth,

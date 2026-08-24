@@ -23,6 +23,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import {
   BottomNavigation,
   NativeHeader,
+  NativeStatusBar,
   NavigationRail,
   paletteFor,
   RendererShellState,
@@ -56,6 +57,7 @@ type NativeFile = {
 
 type DkdsNativeHostApi = {
   openDocuments?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
+  openDocumentsExtended?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
   readDocument?: (uri: string) => Promise<string>;
   createDocument?: (name: string, mimeType: string, content: string, encoding: 'utf8' | 'base64') => Promise<string | null>;
   writeDocument?: (uri: string, content: string, encoding: 'utf8' | 'base64') => Promise<string>;
@@ -103,13 +105,16 @@ function shellState(value: unknown): RendererShellState {
     activities: Array.isArray(row.activities) ? row.activities : [],
     surfaces: Array.isArray(row.surfaces) ? row.surfaces : [],
     actions: Array.isArray(row.actions) ? row.actions : [],
+    statusItems: Array.isArray(row.statusItems) ? row.statusItems : [],
   };
 }
 
 export default function App() {
   const webRef = useRef<WebView>(null);
   const nativeFiles = useRef(new Map<string, NativeFile>());
-  const hostPending = useRef(new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }>());
+  const hostPending = useRef(new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> | null; method: string; payload: any; timeoutMs: number }>());
+  const hostQueue = useRef<string[]>([]);
+  const hostReady = useRef(false);
   const lastBackAt = useRef(0);
   const { width, height } = useWindowDimensions();
   const landscape = width > height && height < 600;
@@ -124,18 +129,31 @@ export default function App() {
     webRef.current?.postMessage(JSON.stringify({ __dkdsNativeResponse: true, id, ok, value }));
   }, []);
 
+  const dispatchHostRequest = useCallback((id: string) => {
+    const pending = hostPending.current.get(id);
+    if (!pending || pending.timer) return;
+    pending.timer = setTimeout(() => {
+      hostPending.current.delete(id);
+      pending.reject(new Error(`移动端 Core 请求超时：${pending.method}`));
+    }, pending.timeoutMs);
+    webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'request', id, method: pending.method, payload: pending.payload }));
+  }, []);
+
+  const flushHostQueue = useCallback(() => {
+    if (!hostReady.current) return;
+    const queued = hostQueue.current.splice(0);
+    queued.forEach(dispatchHostRequest);
+  }, [dispatchHostRequest]);
+
   const hostRequest = useCallback((method: string, payload: any = {}) => {
     const id = `host-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     return new Promise<any>((resolve, reject) => {
       const interactiveFileCommand = method === 'command' && ['import', 'project.open', 'project.save'].includes(String(payload?.id || ''));
-      const timer = setTimeout(() => {
-        hostPending.current.delete(id);
-        reject(new Error(`移动端 Core 请求超时：${method}`));
-      }, interactiveFileCommand ? 10 * 60 * 1000 : 30 * 1000);
-      hostPending.current.set(id, { resolve, reject, timer });
-      webRef.current?.postMessage(JSON.stringify({ channel: HOST_CHANNEL, kind: 'request', id, method, payload }));
+      hostPending.current.set(id, { resolve, reject, timer: null, method, payload, timeoutMs: interactiveFileCommand ? 10 * 60 * 1000 : 45 * 1000 });
+      if (hostReady.current) dispatchHostRequest(id);
+      else hostQueue.current.push(id);
     });
-  }, []);
+  }, [dispatchHostRequest]);
 
   const exitAfterUnhandledBack = useCallback(() => {
     const now = Date.now();
@@ -178,6 +196,7 @@ export default function App() {
       else if (action === 'panel') await hostRequest('panel', { name: payload?.name || 'left' });
       else if (action === 'surface') await hostRequest('surface', { id: payload?.id, activityId: shell.activityId });
       else if (action === 'workspace-action') await hostRequest('action', { id: payload?.id, itemId: payload?.itemId, activityId: shell.activityId });
+      else if (action === 'status-item') await hostRequest('status', { pluginId: payload?.pluginId, id: payload?.id });
     } catch (error: any) {
       ToastAndroid.show(error?.message || String(error), ToastAndroid.LONG);
     }
@@ -217,8 +236,9 @@ export default function App() {
     const requestedTypes = Array.isArray(request.payload?.type)
       ? request.payload.type.map(String)
       : [String(request.payload?.type || '*/*')];
-    const picked = nativeHost?.openDocuments
-      ? await nativeHost.openDocuments(requestedTypes, request.payload?.multiple !== false)
+    const openNativeDocuments = nativeHost?.openDocumentsExtended || nativeHost?.openDocuments;
+    const picked = openNativeDocuments
+      ? await openNativeDocuments(requestedTypes, request.payload?.multiple !== false)
       : null;
     if (picked) return picked.map(asset => {
       const token = `file-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -255,6 +275,11 @@ export default function App() {
     let req: NativeRequest & HostResponse;
     try { req = JSON.parse(event.nativeEvent.data); } catch { return; }
 
+    if (req.channel === HOST_CHANNEL && req.kind === 'event' && req.event === 'ready') {
+      hostReady.current = true;
+      flushHostQueue();
+      return;
+    }
     if (req.channel === HOST_CHANNEL && req.kind === 'event' && req.event === 'state') {
       setShell(shellState(req.payload));
       return;
@@ -262,7 +287,7 @@ export default function App() {
     if (req.channel === HOST_CHANNEL && req.kind === 'response' && req.id) {
       const pending = hostPending.current.get(req.id);
       if (!pending) return;
-      clearTimeout(pending.timer);
+      if (pending.timer) clearTimeout(pending.timer);
       hostPending.current.delete(req.id);
       if (req.ok) pending.resolve(req.value);
       else pending.reject(new Error(req.error || '移动端 Core 请求失败。'));
@@ -319,7 +344,7 @@ export default function App() {
     } catch (error: any) {
       resolveWeb(req.id, false, error?.message || String(error));
     }
-  }, [openFiles, readFile, resolveWeb, shareBase64File, shareTextFile]);
+  }, [flushHostQueue, openFiles, readFile, resolveWeb, shareBase64File, shareTextFile]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -347,6 +372,10 @@ export default function App() {
 
   const retry = useCallback(() => {
     nativeFiles.current.clear();
+    hostReady.current = false;
+    hostQueue.current = [];
+    for (const pending of hostPending.current.values()) { if (pending.timer) clearTimeout(pending.timer); pending.reject(new Error('移动端工作区已重新载入。')); }
+    hostPending.current.clear();
     setLoadError('');
     setShell(EMPTY_SHELL);
     setRendererKey(value => value + 1);
@@ -374,7 +403,7 @@ export default function App() {
         textZoom={100}
         cacheEnabled
         onMessage={onMessage}
-        onLoadStart={() => setShell(current => ({ ...current, ready: false }))}
+        onLoadStart={() => { hostReady.current = false; setShell(current => ({ ...current, ready: false })); }}
         onLoadEnd={() => hostRequest('bootstrap').then(value => setShell(shellState(value))).catch(error => setLoadError(error?.message || String(error)))}
         onRenderProcessGone={() => setLoadError('Android WebView 渲染进程已退出，请重新载入工作区。')}
         onError={event => setLoadError(event.nativeEvent.description || 'WebView 加载失败')}
@@ -416,15 +445,19 @@ export default function App() {
         <StatusBar style={shell.theme === 'dark' ? 'light' : 'dark'} />
         <NavigationBar hidden style={shell.theme === 'dark' ? 'dark' : 'light'} />
         {landscape ? (
-          <View style={styles.landscapeBody}>
-            <NavigationRail shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
-            {webView}
-          </View>
+          <>
+            <View style={styles.landscapeBody}>
+              <NavigationRail shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
+              {webView}
+            </View>
+            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} />
+          </>
         ) : (
           <>
             <NativeHeader shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
             {webView}
             <BottomNavigation shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} />
+            <NativeStatusBar shell={shell} palette={palette} onAction={sendAction} />
           </>
         )}
         <ShellActionSheet visible={sheet} shell={shell} palette={palette} onAction={sendAction} onSheet={setSheet} onClose={() => setSheet(null)} />

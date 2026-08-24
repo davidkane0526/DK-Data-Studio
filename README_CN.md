@@ -1,4 +1,14 @@
-# DK Data Studio — v3.61.43
+# DK Data Studio — v3.61.44
+
+## v3.61.44 Android 原生移动壳与自适应工作区
+
+本版以 **v3.61.43** 为基线，集中修复 Android / React Native 移动端适配。移动端顶部仅显示当前项目，点击项目标签进入项目切换菜单；撤销/恢复成为原生顶部一级操作。底部导航改为正常文档流并进一步压缩高度，状态栏也由 React Native 原生壳接管，WebView 只承载 Core 科学工作区和插件动态 Surface/Action，从结构上继续脱离“桌面端套壳”。
+
+修复 Mobile Host 在 WebView Core 监听器就绪前发送请求造成的假超时：现在使用显式 `ready` 握手与请求队列，**请求超时从真正发往 Core 后才开始计时**。Android 本机网页版启动增加 loopback 健康检查并在后台线程启动；文件选择在标准 SAF `ACTION_OPEN_DOCUMENT` 之外加入 `ACTION_GET_CONTENT` 入口，以兼容更多第三方文件管理器/Provider。
+
+Core PortableView 同步升级：全界面自由悬浮不再默认铺满屏幕，保留受限的原始视图尺寸并提供右下角触摸缩放手柄；固定在左/右/底部的视图支持“按住标题栏约 320 ms 后滑动”调整尺寸，同时保留双击标题栏切换悬浮的既有逻辑。所有 Core 管理的 Portable/Plot 插件视图标题区加入统一撤销/恢复入口，并接入系统级历史记录。移动端隐藏旧的全屏 SplitController 可视手柄，消除竖屏中出现的蓝色十字线；共振主图下方空的 summary 行也被移除。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。本次改动属于 Host/Core UI 契约增强，现有插件无需迁移。
 
 ## v3.61.43 Android Host Runtime 整合与项目快照收口
 

@@ -1,6 +1,6 @@
 (() => {
   const CHANNEL='dkds.mobile-host.v1';
-  const VERSION=1;
+  const VERSION=2;
   const isNative=!!window.ReactNativeWebView?.postMessage;
   const previewParams=new URLSearchParams(location.search);
   const isPreview=!isNative&&previewParams.has('reactNative');
@@ -42,6 +42,12 @@
   }
 
   function currentStatus(){return contextHint()||lastCoreStatus||text(document.querySelector('#statusBarMessage')?.textContent).trim();}
+
+  function statusRows(){
+    return (window.DKDSPlugins?.statusBar?.list?.()||[]).map(row=>{
+      const value=row?.value||{};return {pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',label:text(value.label),icon:text(value.icon),state:text(value.state),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title)};
+    }).filter(row=>row.pluginId&&row.id);
+  }
 
   function syncContextStatus(){
     const node=document.querySelector('#statusBarMessage');
@@ -106,6 +112,7 @@
         id:text(row.id),label:text(row.label),icon:text(row.icon),enabled:row.enabled!==false,active:!!row.active,menu:!!row.menu,
         items:(row.items||[]).map(item=>({id:text(item.id),label:text(item.label),icon:text(item.icon),enabled:item.enabled!==false}))
       })),
+      statusItems:statusRows(),
       canGoBack:canCloseLayer()
     };
   }
@@ -224,6 +231,12 @@
     return {activityId,surfaceId:id};
   }
 
+  async function status(payload={}){
+    const pluginId=text(payload.pluginId),id=text(payload.id);if(!pluginId||!id)throw new Error('Missing mobile status item.');
+    const ok=window.DKDSPlugins?.statusBar?.invoke?.(pluginId,id);if(ok!==true)throw new Error(`Status item unavailable or passive: ${pluginId}/${id}`);
+    publish();return {pluginId,id};
+  }
+
   async function action(payload={}){
     const activityId=text(payload.activityId||window.DKDSPlugins?.activities?.active?.());
     const id=text(payload.id),itemId=text(payload.itemId);
@@ -241,6 +254,7 @@
     if(method==='panel')return panel(payload);
     if(method==='surface')return surface(payload);
     if(method==='action')return action(payload);
+    if(method==='status')return status(payload);
     throw new Error(`Unsupported mobile host method: ${method}`);
   }
 
@@ -308,6 +322,8 @@
 
   window.addEventListener('message',receive);
   document.addEventListener('message',receive);
+  const announceReady=()=>post({kind:'event',event:'ready',payload:{protocol:VERSION}});
+  announceReady();
   window.DKDSMobileHost=Object.freeze({
     protocol:VERSION,
     configure(next={}){configured={...configured,...next};publish();},
@@ -318,6 +334,7 @@
   window.addEventListener('dkds:project-changed',publish);
   window.addEventListener('dkds:status-changed',event=>{lastCoreStatus=text(event?.detail?.message).trim();publish();});
   window.addEventListener('load',()=>{
+    announceReady();
     lastCoreStatus=text(document.querySelector('#statusBarMessage')?.textContent).trim();
     bindMobilePanelInteractions();
     bindHeldSwipeKeys();
@@ -332,6 +349,7 @@
     summaryObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
     window.DKDSPlugins?.events?.on?.('activity:changed',publish);
     window.DKDSPlugins?.events?.on?.('plugin:manager-changed',publish);
+    window.DKDSPlugins?.events?.on?.('status:changed',publish);
     window.DKDSPlugins?.events?.on?.('app:ready',()=>{
       activatePreviewRoute();
       publish();

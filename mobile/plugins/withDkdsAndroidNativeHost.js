@@ -73,7 +73,28 @@ private object DkdsLocalWebServer {
         }
       }
     }
-    return "http://127.0.0.1:$port/"
+    val url = "http://127.0.0.1:$port/"
+    awaitReady(port)
+    return url
+  }
+
+  private fun awaitReady(targetPort: Int) {
+    var last: Throwable? = null
+    repeat(12) {
+      try {
+        Socket("127.0.0.1", targetPort).use { probe ->
+          probe.soTimeout = 1200
+          val out = probe.getOutputStream()
+          out.write("GET /__dkds_health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n".toByteArray(StandardCharsets.US_ASCII))
+          out.flush()
+          val first = BufferedReader(InputStreamReader(probe.getInputStream(), StandardCharsets.US_ASCII)).readLine() ?: ""
+          if (first.contains(" 200 ")) return
+        }
+      } catch (error: Throwable) { last = error }
+      Thread.sleep(45)
+    }
+    stop()
+    throw IllegalStateException("本机网页版服务启动后未通过健康检查。", last)
   }
 
   @Synchronized fun stop() {
@@ -100,6 +121,7 @@ private object DkdsLocalWebServer {
       val method = parts.getOrNull(0) ?: ""
       if (method != "GET" && method != "HEAD") return response(socket, 405, "text/plain; charset=utf-8", "Method Not Allowed".toByteArray())
       val raw = parts.getOrNull(1)?.substringBefore('?') ?: "/"
+      if (raw == "/__dkds_health") return response(socket, 200, "text/plain; charset=utf-8", "ok".toByteArray())
       val decoded = try { URLDecoder.decode(raw, "UTF-8") } catch (_: Throwable) { raw }
       val relative = decoded.trimStart('/').ifEmpty { "index.html" }
       if (relative.split('/').any { it == ".." }) return response(socket, 403, "text/plain; charset=utf-8", "Forbidden".toByteArray())
@@ -144,17 +166,31 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   override fun getName() = "DkdsNativeHost"
 
   @ReactMethod fun openDocuments(types: ReadableArray?, multiple: Boolean, promise: Promise) {
+    launchDocuments(types, multiple, false, promise)
+  }
+
+  @ReactMethod fun openDocumentsExtended(types: ReadableArray?, multiple: Boolean, promise: Promise) {
+    launchDocuments(types, multiple, true, promise)
+  }
+
+  private fun launchDocuments(types: ReadableArray?, multiple: Boolean, includeThirdParty: Boolean, promise: Promise) {
     val activity = reactApplicationContext.currentActivity ?: return promise.reject("E_NO_ACTIVITY", "Android 文件界面当前不可用。")
     if (openPromise != null) return promise.reject("E_PICKER_BUSY", "已有文件选择操作正在进行。")
     val mimeTypes = mutableListOf<String>()
     if (types != null) for (index in 0 until types.size()) types.getString(index)?.let { if (it.isNotBlank()) mimeTypes.add(it) }
-    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+    fun configure(intent: Intent, persistable: Boolean) = intent.apply {
       addCategory(Intent.CATEGORY_OPENABLE)
       type = if (mimeTypes.size == 1) mimeTypes[0] else "*/*"
       if (mimeTypes.size > 1) putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
       putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple)
-      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      if (persistable) addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
     }
+    val saf = configure(Intent(Intent.ACTION_OPEN_DOCUMENT), true)
+    val intent = if (includeThirdParty) {
+      val content = configure(Intent(Intent.ACTION_GET_CONTENT), false)
+      Intent.createChooser(saf, "选择数据文件").apply { putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(content)) }
+    } else saf
     openPromise = promise
     try { activity.startActivityForResult(intent, openRequest) }
     catch (error: Throwable) { openPromise = null; promise.reject("E_OPEN_DOCUMENT", error) }
@@ -199,11 +235,20 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
   }
 
   @ReactMethod fun startWebVersion(openBrowser: Boolean, promise: Promise) {
-    try {
-      val url = DkdsLocalWebServer.start(context)
-      if (openBrowser) context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-      promise.resolve(url)
-    } catch (error: Throwable) { promise.reject("E_WEB_VERSION", error) }
+    thread(name = "dkds-web-start", isDaemon = true) {
+      try {
+        val url = DkdsLocalWebServer.start(context)
+        if (openBrowser) context.runOnUiQueueThread {
+          try {
+            val view = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            val activity = reactApplicationContext.currentActivity
+            if (activity != null) activity.startActivity(Intent.createChooser(view, "打开 DK Data Studio 网页版"))
+            else context.startActivity(view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+          } catch (_: Throwable) {}
+        }
+        promise.resolve(url)
+      } catch (error: Throwable) { promise.reject("E_WEB_VERSION", error) }
+    }
   }
 
   @ReactMethod fun stopWebVersion(promise: Promise) { DkdsLocalWebServer.stop(); promise.resolve(true) }
@@ -218,8 +263,9 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
       data.clipData?.let { clip -> for (index in 0 until clip.itemCount) uris.add(clip.getItemAt(index).uri) }
       val rows: WritableArray = WritableNativeArray()
       uris.distinct().forEach { uri ->
-        try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Throwable) {}
-        rows.pushMap(documentInfo(uri))
+        var persistable = false
+        try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); persistable = true } catch (_: Throwable) {}
+        rows.pushMap(documentInfo(uri, persistable))
       }
       promise.resolve(rows)
       return
@@ -241,7 +287,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
 
   override fun onNewIntent(intent: Intent) {}
 
-  private fun documentInfo(uri: Uri): WritableMap {
+  private fun documentInfo(uri: Uri, persistable: Boolean): WritableMap {
     var name = uri.lastPathSegment ?: "document"
     var size = 0.0
     var mime = context.contentResolver.getType(uri) ?: ""
@@ -254,7 +300,7 @@ class DkdsNativeHostModule(private val context: ReactApplicationContext) : React
       }
     }
     return WritableNativeMap().apply {
-      putString("uri", uri.toString()); putString("name", name); putDouble("size", size); putString("mimeType", mime); putBoolean("persistable", true)
+      putString("uri", uri.toString()); putString("name", name); putDouble("size", size); putString("mimeType", mime); putBoolean("persistable", persistable)
     }
   }
 

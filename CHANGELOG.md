@@ -1,3 +1,14 @@
+# v3.61.44 — Native Mobile Shell & Adaptive Workspace
+
+- Show exactly one active project tab in the Android native header; tapping it opens the project switcher. Add first-class native Undo/Redo controls before Data/Parameters.
+- Replace the race-prone Mobile Host startup path with an explicit Core `ready` handshake and queued requests. Timeouts now start only after a request is actually dispatched to the renderer, removing the common false `Core request timeout` during WebView startup.
+- Move the persistent mobile status strip into React Native and make bottom navigation normal-flow and shorter, so native chrome no longer overlays plugin/Data Center content. Plugin status contributions are projected dynamically from Core.
+- Harden the Android loopback web version with a `/__dkds_health` probe and background startup before reporting success. Extend document selection with `ACTION_GET_CONTENT` alongside SAF so more third-party Android file managers/providers are available.
+- Remove the empty Resonance summary row below the main plot and hide legacy mobile split handles that rendered as the blue portrait crosshair.
+- Upgrade Core PortableView: bounded source-sized initial global floats, explicit bottom-right pointer resize handle, pointer-based floating drag, and press-hold title gestures for docked width/height resizing while preserving title double-click behavior.
+- Add unified project-history Undo/Redo to Core-managed plugin view chrome and route the project-history capability through system undo/redo so active plugin edit history participates.
+- Keep SDK **1.17.6** and Plugin API **1.17.0**; no plugin migration is required.
+
 # v3.61.43 — Android Host Runtime Integration & Clean Project Snapshot
 
 - Integrate the previously uncommitted Android / React Native host work as one coherent release snapshot: native host runtime, mobile plugin package persistence/validation, TOP/workspace action bridging, native document/file handling, responsive mobile presentation, and Android host tooling.

@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.43');
+assert.equal(json('package.json').version,'3.61.44');
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.17.6');
 assert.equal(contract.pluginApiVersion,'1.17.0');
@@ -14,9 +14,9 @@ assert.equal(contract.minimumAppVersion,'3.61.39');
 
 
 const app=read('src/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
-assert(app.includes("version:'3.61.43'")&&app.includes("appVersion:'3.61.43'"),'Main renderer version metadata must match the release version.');
-assert(index.includes('<span class="version">v3.61.43</span>'),'Visible shell version must match the release version.');
-assert(pluginWindow.includes("appVersion:'3.61.43'"),'Dedicated plugin windows must report the release version.');
+assert(app.includes("version:'3.61.44'")&&app.includes("appVersion:'3.61.44'"),'Main renderer version metadata must match the release version.');
+assert(index.includes('<span class="version">v3.61.44</span>'),'Visible shell version must match the release version.');
+assert(pluginWindow.includes("appVersion:'3.61.44'"),'Dedicated plugin windows must report the release version.');
 
 const chart=read('src/core/chart-runtime.js');
 for(const token of [

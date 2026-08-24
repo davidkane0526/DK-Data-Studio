@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {normalizePluginPackage}=require('../plugin-package');
 
-assert.equal(json('package.json').version,'3.61.43','theme/lifecycle/tool contract release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.44','theme/lifecycle/tool contract release must be v3.61.27');
 
 const ui=read('src/ui-modern.css');
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){
