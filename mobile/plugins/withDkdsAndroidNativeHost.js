@@ -85,7 +85,7 @@ private object DkdsLocalWebServer {
         Socket("127.0.0.1", targetPort).use { probe ->
           probe.soTimeout = 1200
           val out = probe.getOutputStream()
-          out.write("GET /__dkds_health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n".toByteArray(StandardCharsets.US_ASCII))
+          out.write("GET /__dkds_health HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n".toByteArray(StandardCharsets.US_ASCII))
           out.flush()
           val first = BufferedReader(InputStreamReader(probe.getInputStream(), StandardCharsets.US_ASCII)).readLine() ?: ""
           if (first.contains(" 200 ")) return

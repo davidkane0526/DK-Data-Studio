@@ -130,6 +130,8 @@ assert(/pnpm_config_store_dir/.test(backend) && /PNPM_CONFIG_STORE_DIR/.test(bac
   'pnpm must receive a native store-dir configuration binding.');
 assert(backend.includes('currentTarget') && /ReparsePoint/.test(backend) && /Remove-NodeModulesPath\s+\$link/.test(backend) && /New-Item\s+-ItemType\s+Junction/.test(backend),
   'shared node_modules Junctions must be inspected and rebound safely when the selected cache root changes.');
+assert(/\[IO\.Directory\]::Delete\(\$PathToRemove, \$false\)/.test(backend),
+  'replacing a shared node_modules Junction must remove only the link without an interactive child-deletion prompt.');
 assert(/Show-EffectiveBuildCaches\s+-VerifyNpm/.test(backend) && /npm\.cmd config get cache/.test(backend),
   'build actions must display effective caches and verify npm resolved the requested path.');
 assert(/New-Item\s+-ItemType\s+Junction/.test(backend) && /SharedNodeModulesRoot/.test(backend),

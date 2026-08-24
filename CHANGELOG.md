@@ -1,3 +1,9 @@
+# v3.61.45 — Android Native Host Build Fix
+
+- Fix the generated `DkdsNativeHostModule.kt` health-probe request: the Expo config-plugin template previously emitted physical CR/LF characters inside a Kotlin quoted string, so `:app:compileReleaseKotlin` failed at generated line 71 with `Expecting '"'` and a cascade of `Host` / `Connection` parse errors. The generator now emits Kotlin `\r\n` escapes and a regression test validates the generated source itself.
+- Make shared `node_modules` Junction rebinding non-interactive by deleting only the reparse-point link through `System.IO.Directory.Delete(path, false)`. This removes the PowerShell `项具有子项，并且未指定 Recurse` confirmation seen when the mobile dependency signature changes, without recursing into or deleting the shared cache target.
+- Keep all v3.61.44 mobile-shell behavior and SDK **1.17.6** / Plugin API **1.17.0** unchanged. This release is a native build/tooling correction; no plugin migration is required.
+
 # v3.61.44 — Native Mobile Shell & Adaptive Workspace
 
 - Show exactly one active project tab in the Android native header; tapping it opens the project switcher. Add first-class native Undo/Redo controls before Data/Parameters.

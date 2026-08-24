@@ -484,8 +484,9 @@ function Remove-NodeModulesPath([string]$PathToRemove) {
     try {
       $existing = Get-Item -LiteralPath $PathToRemove -Force -ErrorAction Stop
       if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        # Never recurse through a Junction: only remove the link itself.
-        Remove-Item -LiteralPath $PathToRemove -Force -ErrorAction Stop
+        # Never recurse through a Junction and never let Remove-Item prompt for
+        # child deletion. Directory.Delete(path, false) removes only the link.
+        [IO.Directory]::Delete($PathToRemove, $false)
       } else {
         Remove-Item -LiteralPath $PathToRemove -Recurse -Force -ErrorAction Stop
       }

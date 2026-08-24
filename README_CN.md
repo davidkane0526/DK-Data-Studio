@@ -1,4 +1,12 @@
-# DK Data Studio — v3.61.44
+# DK Data Studio — v3.61.45
+
+## v3.61.45 Android 原生 Host 编译修复
+
+本版修复 v3.61.44 Android Release 构建在 `:app:compileReleaseKotlin` 阶段失败的问题。根因不是 Gradle、JDK、NDK 或 Expo 依赖，而是 `withDkdsAndroidNativeHost.js` 生成健康检查 HTTP 请求时，把 `\r\n` 在 JavaScript 模板中提前解释成了真实换行，最终写入 `DkdsNativeHostModule.kt` 的双引号字符串内部，导致 Kotlin 从生成文件第 71 行开始出现 `Expecting '"'`、`Host` / `Connection` 未解析等连锁语法错误。现在生成器明确输出 Kotlin 转义的 `\r\n`，并在 `mobile:test` 中直接生成 Kotlin 源码检查该字符串，防止同类错误再次通过纯 JS 静态测试。
+
+同时修复移动端共享依赖版本变化时 Junction 重绑定会弹出“目录具有子项，是否继续”的 PowerShell 交互确认。对于 reparse point 现在只删除 Junction 本身，不递归触碰共享 `node_modules` 目标，因此自动构建不再需要手工输入 `Y`。
+
+SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**；v3.61.44 的移动端 UI 与 Host 架构保持不变。
 
 ## v3.61.44 Android 原生移动壳与自适应工作区
 

@@ -78,6 +78,13 @@ assert(mobileStyle.includes('#pulseAnalysisPage .pulse-primary-surface'), 'pulse
 assert(mobileStyle.includes('.command-menu'), 'web command menus need a touch bottom-sheet presentation');
 assert(bridge.includes('isNativeClient:!!nativeBridge') && bridge.includes('pluginSelectPackage'), 'Android must be a native plugin host, not a web client');
 assert(nativeHostPlugin.includes('InetAddress.getByName("127.0.0.1")') && nativeHostPlugin.includes('startWebVersion') && nativeHostPlugin.includes('__dkds_health') && nativeHostPlugin.includes('awaitReady'), 'Android web version must be loopback-only and health-checked before reporting startup success');
+const kotlinStart = nativeHostPlugin.indexOf('function kotlinSource(packageName) {');
+const kotlinEnd = nativeHostPlugin.indexOf('\n\nmodule.exports = function', kotlinStart);
+assert(kotlinStart >= 0 && kotlinEnd > kotlinStart, 'native-host Kotlin generator must remain extractable for syntax regression checks');
+const kotlinSourceForTest = new Function(`${nativeHostPlugin.slice(kotlinStart, kotlinEnd)}\nreturn kotlinSource;`)();
+const generatedKotlin = kotlinSourceForTest('com.dk.datastudio');
+assert(generatedKotlin.includes('GET /__dkds_health HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n'), 'generated Kotlin health probe must contain escaped CRLF inside one valid string literal');
+assert(!generatedKotlin.includes('GET /__dkds_health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n'), 'native-host generator must never inject physical CR/LF characters into the Kotlin health-probe string literal');
 assert(infrastructure.includes('dkds-portable-resize-handle') && infrastructure.includes('bindFloatResize') && infrastructure.includes('initialBounds'), 'global floating views must retain bounded source dimensions and provide a touch resize handle');
 assert(infrastructure.includes("DKDSCapabilities?.invoke?.('core.project-history',kind)"), 'portable plugin chrome must expose unified history actions');
 assert(app.includes('<NavigationBar hidden') && mobilePackage.dependencies['expo-navigation-bar'], 'Android gesture navigation must be hidden through the native system-bar API');
