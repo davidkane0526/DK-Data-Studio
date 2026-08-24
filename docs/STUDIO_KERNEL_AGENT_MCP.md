@@ -1,6 +1,6 @@
 # Studio Kernel / AI Agent / MCP Architecture
 
-Version: DK Data Studio 3.61.47
+Version: DK Data Studio 3.61.48
 
 ## 1. One kernel, two clients
 
@@ -15,7 +15,7 @@ This keeps Agent/MCP access broad without binding automation to private renderer
 
 ## 2. Capability domains
 
-The 3.61.47 kernel exposes these domains:
+The 3.61.48 kernel exposes these domains:
 
 - `kernel`: discovery and generic kernel execution.
 - `core`: live Core/plugin Capability Registry discovery and invocation.

@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.47
+# DK Data Studio — v3.61.48
+
+## v3.61.48 连接与 AI 页面导航修复
+
+修复桌面端“工具 → 连接 / SMB / AI / MCP”点击后没有页面的问题。v3.61.47 的菜单入口直接调用 `workspace.openPage()`，但“连接与 AI”页面属于 `connectivity-center` Activity；当当前 Activity 仍是共振分析等工作区时，Core 会继续保留该页面的 `plugin-activity-hidden` 状态，因此页面虽然被打开，仍被 Activity 可见性规则隐藏。现在工具菜单先激活 `connectivity-center` Activity，再由 Activity 打开 `connectivityCenterPage`，页面可见性与当前工作区状态保持一致。
+
+新增专门回归测试，禁止 Activity-owned 页面再次从工具菜单绕过 Activity 状态直接 `openPage()`。Connectivity Center 插件版本更新为 **1.1.1**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**；移动端元数据同步更新为 **0.8.1**、Android `versionCode` **12**。
+
 
 ## v3.61.47 Studio Kernel / AI Agent / MCP / SMB
 

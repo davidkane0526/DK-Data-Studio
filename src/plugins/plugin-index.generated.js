@@ -9,7 +9,7 @@ window.DKDS_BUILTIN_PLUGINS = [
     "manifest": {
       "id": "builtin.connectivity-center",
       "name": "Connectivity & AI Center",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "apiVersion": "1.16.0",
       "requiresCore": [
         "runtime",

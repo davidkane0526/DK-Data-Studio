@@ -1,3 +1,10 @@
+# v3.61.48 — Connectivity Center Navigation Fix
+
+- Fix the desktop Tools-menu entry for `连接 / SMB / AI / MCP`: the v3.61.47 shortcut called `workspace.openPage()` directly while the page still carried Core's `plugin-activity-hidden` state for the previously active workspace, so the page was opened internally but remained invisible.
+- Route the shortcut through `ctx.ui.activities.activate('connectivity-center')`; the Activity now owns opening `connectivityCenterPage`, keeping Core Activity visibility and page visibility synchronized.
+- Add a dedicated regression that rejects any future direct Tools-menu `openPage()` path for an Activity-owned page. Connectivity Center plugin advances to **1.1.1**.
+- Keep SDK **1.17.6** and Plugin API **1.17.0** unchanged. Mobile shell metadata advances to **0.8.1** / Android versionCode **12** so desktop/mobile release artifacts remain synchronized.
+
 # v3.61.47 — Studio Kernel, Full Agent/MCP & Connectivity
 
 - Added a shared Studio Kernel capability registry consumed by both the built-in AI Agent and MCP server.

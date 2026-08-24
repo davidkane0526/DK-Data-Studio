@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','workspace','ui.dom','ui.activities','ui.pages','ui.styles','ui.menus'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'Connectivity & AI Center',version:'1.1.0',apiVersion:'1.16.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'Connectivity & AI Center',version:'1.1.1',apiVersion:'1.16.0',requiresCore:requiresCore,
     order:34,description:'Provider files, SMB, full-kernel AI Agent and MCP connection center.',
     capabilities:['ui.activity','ui.page','files.provider-directory','network.smb','ai.agent.kernel','mcp.kernel-server']
   }, async ctx => {
@@ -35,8 +35,12 @@
           <section class="dkcc-panel" data-panel="mcp"><div class="dkcc-grid"><div class="dkcc-card"><h3>MCP Server</h3><div class="dkcc-note">Streamable HTTP：<code>POST /mcp</code>。语义由 Studio Core 统一处理，桌面与 Android 仅负责网络传输。</div><div class="dkcc-field"><label>访问 Token</label><input id="dkccMcpToken" placeholder="至少 12 个字符"></div><div class="dkcc-row"><button id="dkccMcpStart" class="primary">启动</button><button id="dkccMcpStop">停止</button><button id="dkccMcpRefresh">刷新</button></div></div><div class="dkcc-card"><h3>服务状态</h3><div id="dkccMcpStatus" class="dkcc-status">检查中…</div><pre id="dkccMcpInfo" class="dkcc-result">—</pre></div></div></section>
         </div></div>`
     });
-    ctx.ui.activities.add({id:'connectivity-center',label:'连接与 AI',contextLabel:'连接与 AI',icon:'◎',order:34,navigation:'system',primary:false,description:'SMB、文件 Provider、AI Agent 与 MCP',onActivate:()=>ctx.workspace.openPage(page.id)});
-    if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add)ctx.ui.menus.add({id:'connectivity-center',menu:'tools',label:'连接 / SMB / AI / MCP',order:34,onClick:()=>ctx.workspace.openPage(page.id)});
+    ctx.ui.activities.add({id:'connectivity-center',label:'连接与 AI',contextLabel:'连接与 AI',icon:'◎',order:34,navigation:'system',primary:false,description:'SMB、文件 Provider、AI Agent 与 MCP',onActivate:()=>ctx.workspace.openPage('connectivityCenterPage')});
+    // Pages that belong to an Activity also carry Core's plugin-activity-hidden state.
+    // A tools-menu shortcut must activate that Activity first; directly calling
+    // workspace.openPage() only clears the page's ordinary `hidden` class and
+    // therefore leaves the page invisible while another Activity is active.
+    if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add)ctx.ui.menus.add({id:'connectivity-center',menu:'tools',label:'连接 / SMB / AI / MCP',order:34,onClick:()=>ctx.ui.activities.activate('connectivity-center')});
 
     const $=sel=>dom.query(sel,page),$$=sel=>[...(page.querySelectorAll?.(sel)||[])];
     const setText=(sel,value)=>{const el=$(sel);if(el)el.textContent=String(value??'');};
