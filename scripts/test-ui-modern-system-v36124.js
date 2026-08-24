@@ -8,7 +8,7 @@ const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.htm
 const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.52','modern UI cleanup release must be v3.61.27');
+assert.equal(pkg.version,'3.61.53','modern UI cleanup release must be v3.61.27');
 assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
 assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');
@@ -20,6 +20,10 @@ assert(css.includes('body.dkds-modern-ui #resonanceDedicatedPage'),'Resonance wo
 assert(css.includes('body.dkds-modern-ui .data-center-body'),'Data Center must have an explicit scoped chrome contract');
 assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none!important'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
+
+assert(css.includes('.split-command-caret{width:18px')&&css.includes('display:inline-flex!important;align-items:center!important;justify-content:center!important'),'split-command caret must be compact and geometrically centered beside its label');
+assert(css.includes('.topbar .menu-trigger:not(.strong)')&&css.includes('.split-command-caret.strong'),'dark menu-trigger neutralization must not strip the primary split caret of its accent surface');
+assert(css.includes('--dkui-border:rgba(166,181,202,.045)')&&css.includes('.dkds-plugin-canvas-left-resizer::before'),'dark structural lines must use the low-contrast semantic border rather than legacy light separators');
 assert(chartRuntime.includes('PLOT_THEME_DARK')&&chartRuntime.includes("matchMedia?.('(prefers-color-scheme: dark)')"),'Chart Runtime must own light/dark scientific plot theming instead of CSS targeting Plotly internals');
 assert(!/\b(width|height|min-width|min-height|max-width|max-height)\s*:/i.test(css.split('/* App-owned controls only.')[0]),'high-level visual layer must not redefine shell/card geometry');
 console.log('v3.61.27 scoped modern UI and anti-overlay checks passed.');

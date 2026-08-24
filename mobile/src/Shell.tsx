@@ -67,6 +67,7 @@ type Palette = {
   background: string;
   surface: string;
   surfaceSoft: string;
+  surfaceHover: string;
   border: string;
   text: string;
   textSoft: string;
@@ -81,6 +82,7 @@ export function paletteFor(theme: RendererShellState['theme']): Palette {
       background: '#161b23',
       surface: '#202630',
       surfaceSoft: '#272f3b',
+      surfaceHover: '#2d3745',
       border: 'rgba(166,181,202,0.09)',
       text: '#edf2f8',
       textSoft: '#9ca9ba',
@@ -93,6 +95,7 @@ export function paletteFor(theme: RendererShellState['theme']): Palette {
     background: '#eef4fb',
     surface: '#fbfcfe',
     surfaceSoft: '#f2f6fb',
+    surfaceHover: '#e9f0f8',
     border: 'rgba(102,132,168,0.14)',
     text: '#1c2a43',
     textSoft: '#6c7b92',
@@ -644,9 +647,9 @@ const styles = StyleSheet.create({
   projectTabGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   pluginButtonGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   headerDivider: { width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 1 },
-  projectTab: { minWidth: 48, maxWidth: 118, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingLeft: 10, paddingRight: 23, position: 'relative', flexShrink: 1 },
+  projectTab: { minWidth: 48, maxWidth: 118, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 10, flexShrink: 1 },
   projectTabText: { fontSize: 12, fontWeight: '700' },
-  projectChevron: { position: 'absolute', right: 9, top: 7, fontSize: 13, fontWeight: '700' },
+  projectChevron: { width: 12, textAlign: 'center', fontSize: 12, lineHeight: 16, fontWeight: '700' },
   projectAdd: { width: 40, height: 34, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   projectAddText: { fontSize: 21, lineHeight: 23, fontWeight: '500' },
   projectAction: { height: 34, minWidth: 76, maxWidth: 150, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },

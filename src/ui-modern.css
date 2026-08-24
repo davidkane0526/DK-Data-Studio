@@ -901,14 +901,14 @@ body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
 
 /* v3.61.34+ · plot/theme closure. Legacy menu-trigger declarations may not
    paint a light surface inside an explicit dark host. */
-html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger{
+html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger:not(.strong){
   background:transparent!important;
   border-color:transparent!important;
   color:#c7d2e3!important;
   -webkit-text-fill-color:#c7d2e3!important;
   box-shadow:none!important;
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger:hover:not(:disabled){
+html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger:not(.strong):hover:not(:disabled){
   background:#29313e!important;
   border-color:var(--dkui-border)!important;
   color:#edf2f8!important;
@@ -1273,5 +1273,62 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{bord
 /* v3.61.51 · source-aware import/project split commands */
 body.dkds-modern-ui .split-command-anchor{display:inline-flex;align-items:stretch;gap:0;position:relative}
 body.dkds-modern-ui .split-command-anchor>.split-command-main{border-top-right-radius:0!important;border-bottom-right-radius:0!important;margin-right:0!important}
-body.dkds-modern-ui .split-command-anchor>.split-command-caret{width:25px;min-width:25px;padding:0!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;margin-left:-1px!important;font-size:11px}
+body.dkds-modern-ui .split-command-anchor>.split-command-caret{width:18px;min-width:18px;padding:0!important;border-top-left-radius:0!important;border-bottom-left-radius:0!important;margin-left:-1px!important;font-size:10px;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;text-align:center!important}
 body.dkds-modern-ui .split-command-anchor>.command-menu{left:0;right:auto;min-width:190px}
+
+
+/* v3.61.53 · split-command caret + dark structural-line closure. */
+body.dkds-modern-ui .split-command-anchor>.split-command-main{padding-right:7px!important}
+body.dkds-modern-ui .split-command-anchor>.split-command-caret.strong{
+  background:var(--dkui-accent)!important;
+  border-color:var(--dkui-accent)!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  box-shadow:none!important;
+}
+body.dkds-modern-ui .split-command-anchor>.split-command-caret.strong:hover:not(:disabled){
+  background:var(--dkui-accent-hover)!important;
+  border-color:var(--dkui-accent-hover)!important;
+}
+html[data-dkds-theme="dark"]{
+  --dkui-border:rgba(166,181,202,.045);
+  --dkui-border-strong:rgba(166,181,202,.11);
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .inspector-dock-slot,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .docked-group-slot,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-header,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .group-panel-toolbar,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-header,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-right,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-group-plot-card,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-group-plot-head,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .respar-left-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .respar-inspector-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .respar-group-panel,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .respar-floating-header,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .respar-group-toolbar{
+  border-color:var(--dkui-border)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer::before,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .super-workspace-divider::before{
+  background:var(--dkui-border)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-chip{
+  border-color:var(--dkui-border)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar{
+  border-top-color:var(--dkui-border)!important;
+  box-shadow:none!important;
+}

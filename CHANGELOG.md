@@ -1,3 +1,10 @@
+# v3.61.53 — Dark Shell Closure & Android Palette Type Fix
+
+- 修复桌面端 `导入数据 / 读取项目` 分段命令的下拉 caret：暗色规则不再把 primary caret 清成透明按钮，caret 宽度收紧并使用 flex 几何居中，与主文字距离更近；移动端项目 caret 同步改为同一行紧凑居中。
+- 继续降低暗色模式结构线对比度：工作区侧栏、Inspector/Group dock、PRIME/Portable 面板、Canvas dock/resizer、状态栏及图例外框统一使用更弱的语义结构线；真正的输入/交互控件仍保留较强一级边界。
+- 修复 Android TypeScript 构建阻断：`ProjectRow` 使用了未声明的 `Palette.surfaceHover`。Palette 现在显式声明并为明/暗主题提供该 token，`mobile:test` 增加静态契约，避免再次等到 `tsc --noEmit` 才暴露。
+- Studio 更新为 **3.61.53**；Mobile 更新为 **0.8.6** / Android versionCode **17**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。
+
 # v3.61.52 — Mobile Interaction Polish, Autosave & Collision-Free Grid
 
 - SMB 文件管理器补齐暗色主题输入/按钮样式；局域网扫描按钮增加旋转进度状态和“扫描中”反馈。

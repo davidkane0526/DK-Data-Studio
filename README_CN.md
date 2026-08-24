@@ -1,4 +1,11 @@
-# DK Data Studio — v3.61.52
+# DK Data Studio — v3.61.53
+
+## v3.61.53 暗色界面收口与 Android Palette 类型修复
+
+本版继续清理暗色模式中残留的高对比分割线，并修复 Android 构建在 TypeScript 阶段发现的 `Palette.surfaceHover` 缺失。桌面端 `导入数据 / 读取项目` 的分段下拉按钮现在在暗色模式下保持正确的主按钮颜色，caret 更窄、水平居中且更靠近文字；移动端相同类型的 caret 也使用紧凑行内布局。结构性边界进一步统一到低对比语义 token，而输入框、按钮等真正需要边界感的交互控件仍保留较强边界。
+
+移动端 `Palette` 现在正式包含 `surfaceHover`，明暗主题都有完整值，并将该约束加入无依赖 `mobile:test`，防止以后再次出现结构测试通过、真实 `tsc --noEmit` 才失败的断层。
+
 
 ## v3.61.52 移动交互、自动保存与网格避让
 

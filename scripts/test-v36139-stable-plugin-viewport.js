@@ -16,7 +16,7 @@ const sdkReadme=read('sdk/README.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
 
-assert.equal(pkg.version,'3.61.52');
+assert.equal(pkg.version,'3.61.53');
 assert.equal(contract.sdkVersion,'1.17.6');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 assert.equal(contract.minimumAppVersion,'3.61.39');
