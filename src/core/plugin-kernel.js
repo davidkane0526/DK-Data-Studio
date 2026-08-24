@@ -1580,7 +1580,8 @@
       runtime: Object.freeze({
         appVersion:String(host?.appVersion||''),
         isAuxiliaryWindow:!!host?.isAuxiliaryWindow,
-        isWebClient:!!host?.isWebClient
+        isWebClient:!!host?.isWebClient,
+        isNativeClient:!!host?.isNativeClient
       }),
       status: Object.freeze({set:text=>host?.setStatus?.(String(text??''))}),
       events: {
@@ -2484,7 +2485,11 @@
     activities: {
       list:()=>activityRows().map(x=>({...x.value,pluginId:x.pluginId,isSuper:x.pluginId===superPluginId})),
       active:()=>activeActivityId,
-      set:id=>setActiveActivity(id,{invoke:true}),
+      set:(id,options={})=>setActiveActivity(id,{
+        invoke:options?.invoke!==false,
+        forceEmbedded:options?.forceEmbedded===true||options?.presentation==='embedded'||options?.presentation==='mobile'
+      }),
+      activateEmbedded:(id,options={})=>setActiveActivity(id,{invoke:options?.invoke!==false,forceEmbedded:true}),
       refresh:()=>{renderActivityBar();refreshActivityVisibility();}
     },
     statusBar: {

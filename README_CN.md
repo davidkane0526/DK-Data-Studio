@@ -1,4 +1,10 @@
-# DK Data Studio — v3.61.42
+# DK Data Studio — v3.61.43
+
+## v3.61.43 Android Host Runtime 整合与项目快照收口
+
+本版将上一工作区中已经成套实现但尚未提交的 Android / React Native Host 能力正式收口到项目版本中，并同步完成交付仓库整理。移动端现在包含原生 Host Runtime、移动插件包存储与校验、TOP/工作区动作桥接、原生文件访问与响应式移动布局等基础能力；对应移动架构、Host Runtime 与插件包回归均纳入项目测试。
+
+同时清理交付包中的空 `node_modules` 目录，将当前有效源码全部纳入 Git，保证 `main` / `dev` 指向同一完整快照且工作区无未提交文件。SDK 继续保持 **1.17.6**，Plugin API 继续保持 **1.17.0**，现有桌面插件无需迁移。 移动端识别也已统一通过 `ctx.runtime.isNativeClient` 暴露给插件，第一方插件不再直接读取 Electron bridge，严格 Plugin Boundary 检查恢复为 **0 违规**。
 
 ## v3.61.42 发布前整理与死代码清理
 

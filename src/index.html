@@ -7,13 +7,14 @@
   <link rel="icon" href="../assets/dkds-icon.png" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-modern.css" />
+  <link rel="stylesheet" href="mobile.css" />
   <script src="core/theme-runtime.js"></script>
 </head>
 <body class="dkds-modern-ui">
   <div id="app">
     <header class="topbar">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.42</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.43</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -74,6 +75,7 @@
           <div class="menu-anchor">
             <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
             <div id="manageMenu" class="command-menu hidden">
+              <button id="projectHistoryBtn" type="button">操作历史</button>
               <button id="pluginManagerBtn" type="button">插件管理</button>
               <button id="automationTestBtn" type="button">自动化测试</button>
               <button id="lanWebBtn" type="button">局域网网页版</button>
@@ -501,6 +503,7 @@
 
               <div class="lan-web-actions">
                 <button id="lanWebApplyBtn" class="primary">应用设置</button>
+                <button id="lanWebOpenBtn" class="hidden">在浏览器打开</button>
                 <button id="lanWebStopBtn">停止服务</button>
               </div>
             </div>
@@ -687,6 +690,7 @@
 
   <script src="../node_modules/d3/dist/d3.min.js"></script>
   <script src="core/project-format.js"></script>
+  <script src="core/mobile-plugin-package.js"></script>
   <script src="web-bridge.js"></script>
   <script src="science/common.js"></script>
   <script src="science/presets.js"></script>
@@ -727,6 +731,7 @@
   <script src="core/ui-infrastructure.js"></script>
   <script src="core/capability-runtime.js"></script>
   <script src="core/plugin-kernel.js"></script>
+  <script src="core/mobile-host-runtime.js"></script>
   <script src="core/plugin-devtools.js"></script>
   <script src="core/plugin-manager-ui.js"></script>
   <script src="core/automation-test-runtime.js"></script>

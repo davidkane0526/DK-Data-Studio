@@ -5,11 +5,10 @@ const zlib = require('zlib');
 const root = path.resolve(__dirname, '..');
 
 const COLORS = {
-  bg: [247, 249, 253, 255],
-  border: [215, 224, 238, 255],
-  blue: [49, 94, 251, 255],
-  mint: [37, 184, 166, 255],
-  white: [255, 255, 255, 255]
+  bg: [247, 250, 255, 255],
+  border: [18, 58, 140, 255],
+  grid: [216, 233, 248, 255],
+  blue: [21, 94, 239, 255]
 };
 
 let crcTable = null;
@@ -125,29 +124,24 @@ function renderIcon(size) {
   const q = n => n * s;
   const pixels = Buffer.alloc(size * size * 4, 0);
 
-  // A light squircle keeps the mark legible on both light and dark taskbars.
-  fillRoundedRect(pixels, size, q(24), q(24), q(488), q(488), q(104), COLORS.bg);
-  strokeRoundedRect(pixels, size, q(24), q(24), q(488), q(488), q(104), Math.max(1, q(4)), COLORS.border);
+  // The rounded analytical window is also the small-size silhouette.
+  fillRoundedRect(pixels, size, q(34), q(34), q(478), q(478), q(96), COLORS.bg);
+  strokeRoundedRect(pixels, size, q(34), q(34), q(478), q(478), q(96), Math.max(2, q(16)), COLORS.border);
 
-  // One resonance trace: quiet baseline -> narrow central peak -> quiet baseline.
-  // Fewer visual primitives make 16/24/32 px Windows icons remain recognizable.
-  const trace = [
-    {x:q(88), y:q(306)},
-    {x:q(150),y:q(306)},
-    {x:q(190),y:q(299)},
-    {x:q(230),y:q(282)},
-    {x:q(256),y:q(259)},
-    {x:q(278),y:q(126)},
-    {x:q(300),y:q(261)},
-    {x:q(326),y:q(286)},
-    {x:q(370),y:q(301)},
-    {x:q(424),y:q(306)}
+  if (size >= 32) {
+    strokeLine(pixels, size, q(176), q(82), q(176), q(430), Math.max(.65, q(4.5)), COLORS.grid);
+    strokeLine(pixels, size, q(336), q(82), q(336), q(430), Math.max(.65, q(4.5)), COLORS.grid);
+    strokeLine(pixels, size, q(82), q(320), q(430), q(320), Math.max(.65, q(4.5)), COLORS.grid);
+  }
+
+  const segments = [
+    [{x:q(88),y:q(374)},{x:q(172),y:q(374)},{x:q(206),y:q(358)},{x:q(234),y:q(288)}],
+    [{x:q(234),y:q(288)},{x:q(251),y:q(245)},{x:q(264),y:q(176)},{x:q(291),y:q(176)}],
+    [{x:q(291),y:q(176)},{x:q(318),y:q(176)},{x:q(331),y:q(245)},{x:q(348),y:q(288)}],
+    [{x:q(348),y:q(288)},{x:q(376),y:q(358)},{x:q(410),y:q(374)},{x:q(424),y:q(374)}]
   ];
-  strokePolyline(pixels, size, trace, Math.max(1.1, q(5.5)), COLORS.blue);
-
-  fillCircle(pixels, size, q(278), q(126), q(15), COLORS.white);
-  fillCircle(pixels, size, q(278), q(126), q(10), COLORS.blue);
-  fillCircle(pixels, size, q(278), q(126), q(5), COLORS.mint);
+  for (const points of segments) strokeBezier(pixels, size, points, Math.max(1.5, q(19)), COLORS.border);
+  for (const points of segments) strokeBezier(pixels, size, points, Math.max(1.1, q(12)), COLORS.blue);
 
   return pixels;
 }
@@ -210,7 +204,9 @@ function writeIfChanged(filePath, data) {
   return true;
 }
 
-const png512 = encodePng(512, renderIcon(512));
+const sourceIconPath = path.join(root, 'assets', 'dkds-icon-source.png');
+if (!fs.existsSync(sourceIconPath)) throw new Error(`Brand source icon is missing: ${sourceIconPath}`);
+const sourceIcon = fs.readFileSync(sourceIconPath);
 const icoEntries = [16,32,48,64,128,256].map(size => ({
   size,
   png:encodePng(size, renderIcon(size))
@@ -218,10 +214,10 @@ const icoEntries = [16,32,48,64,128,256].map(size => ({
 const ico = encodeIco(icoEntries);
 
 const outputs = [
-  [path.join(root, 'assets', 'dkds-icon.png'), png512],
+  [path.join(root, 'assets', 'dkds-icon.png'), sourceIcon],
   [path.join(root, 'assets', 'dkds-icon.ico'), ico],
-  [path.join(root, 'mobile', 'assets', 'icon.png'), png512],
-  [path.join(root, 'mobile', 'assets', 'adaptive-icon.png'), png512]
+  [path.join(root, 'mobile', 'assets', 'icon.png'), sourceIcon],
+  [path.join(root, 'mobile', 'assets', 'adaptive-icon.png'), sourceIcon]
 ];
 
 let changed = 0;

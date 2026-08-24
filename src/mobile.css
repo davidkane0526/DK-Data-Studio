@@ -1,0 +1,291 @@
+/* Android React Native presentation. Loaded after the desktop theme so the
+   shared scientific renderer receives a deliberate phone layout, not a
+   compressed desktop shell. Every rule is inert outside the native client. */
+html.react-native-client,
+html.react-native-client body,
+html.react-native-client #app{width:100%;height:100%;min-width:0;overflow:hidden}
+html.react-native-client body{padding:0!important;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+
+html.react-native-client .topbar,
+html.react-native-client .project-tabs-bar,
+html.react-native-client #mainWorkspace,
+html.react-native-client #superWorkspaceDivider{display:none!important}
+
+html.react-native-client{--dkds-mobile-native-nav-height:50px;--dkds-statusbar-height:26px;--dkds-mobile-left-width:min(88vw,390px)}
+html.react-native-client #statusBar.statusbar{
+  display:flex!important;height:var(--dkds-statusbar-height)!important;min-height:var(--dkds-statusbar-height)!important;
+  padding:0 8px!important;font-size:9px!important;z-index:2500!important
+}
+
+html.react-native-client .analysis-page{
+  position:fixed!important;inset:0 0 calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height)) 0!important;width:100%!important;height:auto!important;
+  min-width:0!important;overflow:hidden!important;background:var(--app-bg)!important
+}
+html.react-native-client .analysis-page>.analysis-page-header{display:none!important}
+html.react-native-client .analysis-page>.analysis-page-body{
+  width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+  padding:0!important;overflow:auto!important;box-sizing:border-box!important
+}
+html.react-native-client #pluginManagerPage>.analysis-page-header,
+html.react-native-client #automationTestPage>.analysis-page-header{display:flex!important;min-height:44px!important;padding:6px 8px!important}
+html.react-native-client #pluginManagerPage>.analysis-page-body,
+html.react-native-client #automationTestPage>.analysis-page-body{height:calc(100% - 44px)!important;padding:8px!important}
+
+html.react-native-client .dkds-unified-workbench-body,
+html.react-native-client .dkds-plugin-workbench-root,
+html.react-native-client .dkds-plugin-workspace,
+html.react-native-client .dkds-analysis-workbench{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important}
+html.react-native-client .dkds-analysis-header,
+html.react-native-client .dkds-analysis-nav{display:none!important}
+
+html.react-native-client .dkds-analysis-frame,
+html.react-native-client .dkds-analysis-workbench.has-left .dkds-analysis-frame,
+html.react-native-client .dkds-analysis-workbench.has-right .dkds-analysis-frame,
+html.react-native-client .dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important;
+  gap:0!important;padding:0!important;overflow:hidden!important
+}
+html.react-native-client .dkds-analysis-main{grid-area:1/1!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:auto!important;padding:0!important}
+html.react-native-client .dkds-analysis-primary-host,
+html.react-native-client .dkds-analysis-sub-host{width:100%!important;min-width:0!important;min-height:100%!important;overflow:visible!important}
+html.react-native-client .dkds-analysis-left-resizer,
+html.react-native-client .dkds-analysis-right-resizer,
+html.react-native-client .dkds-analysis-bottom-resizer{display:none!important}
+
+/* Dataset/parameter columns are drawers. Graphs are the default phone
+   surface; the native header opens this generic PRIMARY-left contract. */
+html.react-native-client .dkds-analysis-left{
+  display:none!important;position:fixed!important;z-index:1900!important;left:0!important;top:0!important;bottom:0!important;
+  width:var(--dkds-mobile-left-width)!important;max-width:92vw!important;min-width:240px!important;padding:10px 14px 10px 10px!important;
+  overflow:auto!important;background:var(--surface-primary)!important;border-right:1px solid var(--border-strong)!important;
+  box-shadow:12px 0 36px rgba(15,23,42,.25)!important
+}
+html.react-native-client body.dkds-mobile-panel-open[data-mobile-panel="left"] .dkds-analysis-left{display:flex!important}
+html.react-native-client .dkds-mobile-panel-edge{
+  position:absolute;z-index:4;top:0;right:-7px;bottom:0;width:14px;cursor:col-resize;touch-action:none
+}
+html.react-native-client .dkds-mobile-panel-edge::before{
+  content:'';position:absolute;top:0;bottom:0;left:6px;width:2px;background:var(--border-strong);opacity:.75
+}
+
+/* PRIME keeps the placement selected by the plugin/user. Inline remains in
+   document flow; left/right become side sheets on portrait phones; bottom
+   remains a bottom sheet; float keeps its Core-managed floating position. */
+html.react-native-client .floating-panel:not(.docked),
+html.react-native-client .dkds-prime-floating,
+html.react-native-client .dkds-portable-view.is-floating{
+  position:fixed!important;z-index:1800!important;
+  width:min(88vw,520px)!important;height:min(68vh,560px)!important;
+  min-width:0!important;max-width:calc(100vw - 12px)!important;max-height:calc(100vh - 12px)!important;
+  resize:both!important;border-radius:14px!important;overflow:auto!important
+}
+html.react-native-client .dkds-plugin-canvas-frame,
+html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left,
+html.react-native-client .dkds-plugin-canvas-frame.has-canvas-right,
+html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right,
+html.react-native-client .dkds-plugin-canvas-frame.has-canvas-bottom{
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important;
+  grid-template-areas:"center"!important;overflow:hidden!important
+}
+html.react-native-client .dkds-plugin-canvas-center{grid-area:center!important;width:100%!important;height:100%!important;overflow:auto!important}
+html.react-native-client .dkds-plugin-canvas-left,
+html.react-native-client .dkds-plugin-canvas-right,
+html.react-native-client .dkds-plugin-canvas-bottom{
+  position:fixed!important;z-index:1800!important;top:6px!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height) + 6px)!important;
+  width:min(var(--dkds-plugin-canvas-left-width,410px),calc(100vw - 12px))!important;height:auto!important;min-width:240px!important;max-width:none!important;
+  padding:0!important;overflow:auto!important;background:var(--surface-primary)!important;
+  border:1px solid var(--border-strong)!important;box-shadow:0 18px 54px rgba(15,23,42,.28)!important
+}
+html.react-native-client .dkds-plugin-canvas-left{left:6px!important;right:auto!important;border-radius:8px 16px 16px 8px!important}
+html.react-native-client .dkds-plugin-canvas-right{left:auto!important;right:6px!important;width:min(var(--dkds-plugin-canvas-right-width,410px),calc(100vw - 12px))!important;border-radius:16px 8px 8px 16px!important}
+html.react-native-client .dkds-plugin-canvas-bottom{
+  left:6px!important;right:6px!important;top:auto!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height) + 6px)!important;
+  width:auto!important;height:min(var(--dkds-plugin-canvas-bottom-height,500px),58vh)!important;min-height:190px!important;border-radius:16px 16px 8px 8px!important
+}
+html.react-native-client .dkds-plugin-canvas-left:empty,
+html.react-native-client .dkds-plugin-canvas-right:empty,
+html.react-native-client .dkds-plugin-canvas-bottom:empty{display:none!important}
+html.react-native-client .dkds-plugin-canvas-left>* ,
+html.react-native-client .dkds-plugin-canvas-right>* ,
+html.react-native-client .dkds-plugin-canvas-bottom>*{
+  width:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important
+}
+html.react-native-client .dkds-plugin-canvas-left>.dkds-portable-view,
+html.react-native-client .dkds-plugin-canvas-right>.dkds-portable-view,
+html.react-native-client .dkds-plugin-canvas-bottom>.dkds-portable-view,
+html.react-native-client .dkds-plugin-canvas-left>.dkds-analysis-prime-panel,
+html.react-native-client .dkds-plugin-canvas-right>.dkds-analysis-prime-panel,
+html.react-native-client .dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
+  flex:1 1 auto!important;height:100%!important;min-height:100%!important;max-height:none!important
+}
+html.react-native-client .dkds-plugin-canvas-left-resizer.active,
+html.react-native-client .dkds-plugin-canvas-right-resizer.active,
+html.react-native-client .dkds-plugin-canvas-bottom-resizer.active{display:block!important;position:fixed!important;z-index:1902!important;touch-action:none!important;background:transparent!important}
+html.react-native-client .dkds-plugin-canvas-left-resizer.active{
+  top:6px!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height) + 6px)!important;
+  left:calc(6px + min(var(--dkds-plugin-canvas-left-width,410px),calc(100vw - 12px)) - 12px)!important;width:24px!important
+}
+html.react-native-client .dkds-plugin-canvas-right-resizer.active{
+  top:6px!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height) + 6px)!important;
+  right:calc(6px + min(var(--dkds-plugin-canvas-right-width,410px),calc(100vw - 12px)) - 12px)!important;width:24px!important
+}
+html.react-native-client .dkds-plugin-canvas-bottom-resizer.active{
+  left:6px!important;right:6px!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height) + min(var(--dkds-plugin-canvas-bottom-height,500px),58vh) - 12px)!important;height:24px!important
+}
+html.react-native-client .dkds-plugin-canvas-left-resizer::before,
+html.react-native-client .dkds-plugin-canvas-right-resizer::before{left:10px!important;width:4px!important;border-radius:2px!important;background:var(--accent-primary,#096bfa)!important}
+html.react-native-client .dkds-plugin-canvas-bottom-resizer::before{top:10px!important;height:4px!important;border-radius:2px!important;background:var(--accent-primary,#096bfa)!important}
+
+html.react-native-client button,
+html.react-native-client input,
+html.react-native-client select{touch-action:manipulation}
+html.react-native-client button{min-height:36px}
+html.react-native-client .command-menu{
+  position:fixed!important;z-index:2400!important;left:6px!important;right:6px!important;top:auto!important;bottom:6px!important;
+  width:auto!important;max-height:72vh!important;overflow:auto!important;border-radius:16px!important;padding:8px!important
+}
+html.react-native-client .command-menu button{width:100%!important;min-height:46px!important;text-align:left!important}
+
+/* Scientific canvases get a useful first-frame size on narrow phones. */
+html.react-native-client .scientific-plot,
+html.react-native-client [data-scientific-plot],
+html.react-native-client .dc-chart,
+html.react-native-client .pulse-plot,
+html.react-native-client .ter-plot,
+html.react-native-client .reswin-medium-plot,
+html.react-native-client .reswin-feature-field-plot{width:100%!important;min-width:0!important;min-height:280px!important;height:max(42vh,300px)!important}
+html.react-native-client #resonanceDedicatedPage .respar-main-plot-header{
+  left:6px!important;right:6px!important;max-width:none!important;overflow-x:auto!important;overflow-y:hidden!important;
+  overscroll-behavior-x:contain;scrollbar-width:none
+}
+html.react-native-client #resonanceDedicatedPage .respar-main-plot-header::-webkit-scrollbar{display:none}
+html.react-native-client .ter-chart-grid,
+html.react-native-client .pulse-results-grid,
+html.react-native-client .reswin-two-col,
+html.react-native-client .reswin-gate-grid,
+html.react-native-client .plugin-manager-summary,
+html.react-native-client .plugin-manager-grid{grid-template-columns:minmax(0,1fr)!important}
+
+html.react-native-client .import-panel-overlay{padding:0!important;bottom:calc(var(--dkds-mobile-native-nav-height) + var(--dkds-statusbar-height))!important}
+html.react-native-client .import-workbench{width:100%!important;height:100%!important;max-height:none!important;border:0!important;border-radius:0!important}
+html.react-native-client .import-workbench-body{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(120px,28vh) minmax(0,1fr)!important}
+html.react-native-client .import-file-pane{border-right:0!important;border-bottom:1px solid var(--border-subtle)!important}
+html.react-native-client .import-workbench button,
+html.react-native-client .import-bulk-actions button,
+html.react-native-client .import-workbench-footer button{min-width:108px!important;padding-left:16px!important;padding-right:16px!important;border-radius:10px!important}
+html.react-native-client .import-target-bar{display:flex!important;align-items:center!important;gap:8px!important;padding:7px 10px!important;overflow-x:auto!important;overflow-y:hidden!important}
+html.react-native-client .import-target-heading{flex:0 0 auto!important;min-width:78px!important}
+html.react-native-client .import-target-heading span,
+html.react-native-client .import-target-hint{display:none!important}
+html.react-native-client .import-target-options{display:flex!important;flex:0 0 auto!important;flex-wrap:nowrap!important;gap:7px!important}
+html.react-native-client .import-target-chip{display:inline-flex!important;flex:0 0 150px!important;width:150px!important;height:36px!important;min-height:36px!important;justify-content:flex-start!important;padding:0 13px!important;border-radius:11px!important;box-sizing:border-box!important}
+
+/* The renderer status strip remains visible below the native navigation.
+   Keep each item atomic and scroll the plugin zone instead of squeezing text
+   into overlapping fragments. Expanded status panels always sit above PRIME. */
+html.react-native-client #statusBar .statusbar-message{flex:1 1 34%!important;min-width:0!important}
+html.react-native-client #statusBar .statusbar-plugin-zone{flex:0 1 auto!important;max-width:64%!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important}
+html.react-native-client #statusBar .statusbar-plugin-zone::-webkit-scrollbar{display:none!important}
+html.react-native-client #statusBar .plugin-status-item{flex:0 0 auto!important;min-width:max-content!important;gap:3px!important;padding:0 5px!important}
+html.react-native-client #statusBar .plugin-status-label{display:block!important;max-width:76px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html.react-native-client .dkds-memory-panel,
+html.react-native-client .lan-web-panel{z-index:3200!important}
+html.react-native-client .dkds-memory-panel{bottom:calc(var(--dkds-statusbar-height) + 6px)!important;max-height:calc(100vh - var(--dkds-statusbar-height) - 18px)!important}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-switch-row,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-port-row,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-key-card,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-address-card,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-share-section{display:none!important}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-grid{grid-template-columns:minmax(0,1fr)!important}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-settings-card{padding:8px!important}
+
+/* Compact summaries are projected into the persistent status bar by the
+   Mobile Host so they no longer consume chart space. */
+html.react-native-client #reswinSummary,
+html.react-native-client #terSummary{display:none!important}
+
+/* Pulse cards were authored for a wide desktop canvas. Keep their DOM order,
+   but make every card and action row participate in normal phone flow so
+   headers, plots and controls cannot cover one another. */
+html.react-native-client #pulseAnalysisPage .pulse-primary-surface{
+  display:flex!important;flex-direction:column!important;gap:8px!important;
+  width:100%!important;min-width:0!important;height:auto!important;padding:8px!important;box-sizing:border-box!important
+}
+html.react-native-client #pulseAnalysisPage .pulse-card{
+  position:relative!important;inset:auto!important;display:block!important;
+  width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;
+  margin:0!important;overflow:hidden!important;box-sizing:border-box!important
+}
+html.react-native-client #pulseAnalysisPage .pulse-card-heading{
+  position:relative!important;display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;
+  gap:7px!important;padding:9px 10px!important;min-width:0!important
+}
+html.react-native-client #pulseAnalysisPage .pulse-card-heading>div:first-child{flex:1 1 210px!important;min-width:0!important}
+html.react-native-client #pulseAnalysisPage .pulse-file-actions,
+html.react-native-client #pulseAnalysisPage .pulse-plot-actions,
+html.react-native-client #pulseAnalysisPage .pulse-table-actions{
+  position:static!important;inset:auto!important;display:flex!important;flex:1 1 100%!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;flex-flow:row wrap!important;
+  justify-content:flex-start!important;overflow:visible!important
+}
+html.react-native-client #pulseAnalysisPage .pulse-control-grid{grid-template-columns:minmax(0,1fr)!important;padding:10px!important}
+html.react-native-client #pulseAnalysisPage .pulse-results-grid{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;
+  width:100%!important;min-width:0!important
+}
+html.react-native-client #pulseAnalysisPage .pulse-inline-range{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important}
+html.react-native-client #pulseAnalysisPage .pulse-table-wrap{width:100%!important;max-width:100%!important;overflow:auto!important}
+html.react-native-client #pulseAnalysisPage .pulse-raw-plot,
+html.react-native-client #pulseAnalysisPage .pulse-result-plot{margin:0!important;min-height:290px!important}
+
+@media (orientation:landscape) and (max-height:600px){
+  html.react-native-client{--dkds-mobile-native-nav-height:0px}
+  html.react-native-client .dkds-analysis-header{min-height:36px!important}
+  html.react-native-client .scientific-plot,
+  html.react-native-client [data-scientific-plot],
+  html.react-native-client .dc-chart,
+  html.react-native-client .pulse-plot,
+  html.react-native-client .ter-plot{height:max(70vh,260px)!important;min-height:240px!important}
+  html.react-native-client .dkds-analysis-left{width:min(48vw,390px)!important}
+
+  /* Landscape has enough horizontal space to honour PRIME placement. */
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left{
+    grid-template-columns:minmax(220px,32vw) minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"left center"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-right{
+    grid-template-columns:minmax(0,1fr) minmax(240px,36vw)!important;
+    grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"center right"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right{
+    grid-template-columns:minmax(200px,27vw) minmax(0,1fr) minmax(220px,31vw)!important;
+    grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"left center right"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-bottom{
+    grid-template-rows:minmax(0,1fr) minmax(190px,42vh)!important;grid-template-areas:"center" "bottom"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left.has-canvas-bottom{
+    grid-template-areas:"left center" "bottom bottom"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-right.has-canvas-bottom{
+    grid-template-areas:"center right" "bottom bottom"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right.has-canvas-bottom{
+    grid-template-areas:"left center right" "bottom bottom bottom"!important
+  }
+  html.react-native-client .dkds-plugin-canvas-left,
+  html.react-native-client .dkds-plugin-canvas-right,
+  html.react-native-client .dkds-plugin-canvas-bottom{
+    position:static!important;inset:auto!important;display:flex!important;
+    width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;
+    border-radius:0!important;box-shadow:none!important;overflow:auto!important
+  }
+  html.react-native-client .dkds-plugin-canvas-left{grid-area:left!important}
+  html.react-native-client .dkds-plugin-canvas-right{grid-area:right!important}
+  html.react-native-client .dkds-plugin-canvas-bottom{grid-area:bottom!important}
+  html.react-native-client .dkds-plugin-canvas-left-resizer.active,
+  html.react-native-client .dkds-plugin-canvas-right-resizer.active,
+  html.react-native-client .dkds-plugin-canvas-bottom-resizer.active{
+    position:relative!important;inset:auto!important;width:auto!important;height:auto!important
+  }
+}

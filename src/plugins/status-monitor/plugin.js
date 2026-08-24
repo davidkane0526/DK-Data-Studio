@@ -36,7 +36,7 @@
 
     const runtimeItem=ctx.ui.statusBar.add({
       id:'runtime-mode',side:'right',order:10,icon:'◉',
-      label:ctx.runtime.isWebClient?'网页版':'桌面端',state:'info',className:'compact',title:'当前运行模式',
+      label:ctx.runtime.isWebClient?'网页版':'桌面端',state:'info',className:'compact',title:'当前运行模式',hidden:!!ctx.runtime.isNativeClient,
       onClick:()=>{
         const runtime=runtimeStatus?.runtime|| (ctx.runtime.isWebClient?'web':'desktop');
         const platform=runtimeStatus?.platform||navigator.platform||'';
@@ -108,8 +108,8 @@
       if(!status||stopped)return;
       runtimeStatus=status;
       const runtime=String(status.runtime||'desktop');
-      const runtimeLabel=runtime==='web'?'网页版':runtime==='android'?'Android':'桌面端';
-      runtimeItem.update({label:runtimeLabel,state:runtime==='web'?'ok':'info',title:`运行模式：${runtimeLabel}`});
+      const runtimeLabel=runtime==='web'?'网页版':'桌面端';
+      runtimeItem.update({label:runtimeLabel,state:runtime==='web'?'ok':'info',title:`运行模式：${runtimeLabel}`,hidden:runtime==='android'});
       const m=status.memory||{};
       const used=Number(m.workingSetBytes||m.jsHeapUsedBytes)||0;
       const limit=Number(m.jsHeapLimitBytes)||0;

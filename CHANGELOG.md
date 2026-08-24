@@ -1,3 +1,11 @@
+# v3.61.43 — Android Host Runtime Integration & Clean Project Snapshot
+
+- Integrate the previously uncommitted Android / React Native host work as one coherent release snapshot: native host runtime, mobile plugin package persistence/validation, TOP/workspace action bridging, native document/file handling, responsive mobile presentation, and Android host tooling.
+- Add and retain dedicated mobile architecture, host-runtime, and plugin-package regression tests; the existing full Core/SDK/plugin regression suite remains the release gate.
+- Route native-client detection through `ctx.runtime.isNativeClient` instead of letting the first-party status plugin read the Electron bridge directly; strict Plugin Boundary returns to **0 violations**.
+- Remove the empty ignored root `node_modules` directory from the delivery package and commit all effective source files so the delivered Git worktree is clean.
+- Keep SDK **1.17.6** and Plugin API **1.17.0**; this release extends host capability without requiring existing plugins to migrate.
+
 # v3.61.42 — Release Hygiene & Dead-Code Cleanup
 
 - Remove unreachable and write-only production paths identified by a whole-source unused-symbol audit, including retired Resonance range-menu helpers, obsolete inspector/group placement helpers, stale TER view-model caches, unused peak-detection helper variants, and redundant SUPER/navigation state.

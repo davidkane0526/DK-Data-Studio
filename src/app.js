@@ -115,7 +115,10 @@
     return importProvider(item?.importerId)||chooseImportProvider(item||{},ensureImportTargets());
   }
 
-  function setStatus(t){ status.textContent = t; }
+  function setStatus(t){
+    status.textContent=t;
+    window.dispatchEvent(new CustomEvent('dkds:status-changed',{detail:{message:String(t||'')}}));
+  }
 
   function pushArtifactDeltaToActivityWindows(artifactDelta,reason='artifact-change',options={}){
     const upserts=Array.isArray(artifactDelta?.upserts)?artifactDelta.upserts.filter(row=>row?.id):[];
@@ -284,6 +287,18 @@
     $('#lanWebCopyBaseUrlBtn').disabled=!ready;
     $('#lanWebRefreshQrBtn').disabled=!ready;
 
+    if(status?.localOnly){
+      img.classList.add('hidden');
+      img.removeAttribute('src');
+      placeholder.classList.remove('hidden');
+      placeholder.querySelector('small').textContent=status?.running?'仅限本机浏览器':'启动后可在本机浏览器打开';
+      hint.textContent='Android 安装包使用本机回环地址，不向局域网暴露服务。';
+      badge.textContent='本机回环';
+      badge.className='lan-web-mode-badge ready';
+      security.textContent='该地址只允许当前 Android 设备访问；网页版在系统浏览器中独立运行，不复用原生壳窗口。';
+      return;
+    }
+
     if(!ready){
       img.classList.add('hidden');
       img.removeAttribute('src');
@@ -331,9 +346,18 @@
     const running=!!status.running;
     const dot=$('#lanWebStatusDot');
     if(dot)dot.className=`lan-web-dot ${running?'running':'stopped'}`;
-    $('#lanWebStatusTitle').textContent=running?'网页版服务运行中':'网页版服务未启动';
+    const localOnly=!!status.localOnly;
+    const panel=$('#lanWebPanel');
+    panel?.classList.toggle('native-local-only',localOnly);
+    const title=panel?.querySelector('.lan-web-panel-title>span');
+    const subtitle=panel?.querySelector('.lan-web-panel-title>small');
+    if(title)title.textContent=localOnly?'本机独立网页版':'局域网网页版';
+    if(subtitle)subtitle.textContent=localOnly?'在 Android 系统浏览器中运行完整网页版':'手机 / 平板 / 其他电脑扫码或输入地址即可访问';
+    $('#lanWebStatusTitle').textContent=localOnly?(running?'本机网页版运行中':'本机网页版未启动'):(running?'网页版服务运行中':'网页版服务未启动');
     $('#lanWebStatusText').textContent=status.error
       ? `启动失败：${status.error}`
+      : localOnly
+        ? (running?'可随时在系统浏览器中打开独立网页版。':'启动后可在系统浏览器中打开独立网页版。')
       : running
         ? (status.noKey?'当前无需 Key，局域网设备可直接进入。':'浏览器可手动输入 4 位 Key，也可直接扫描右侧二维码自动配对。')
         : '启动后，同一局域网中的电脑、平板和手机可直接使用浏览器运行完整分析界面。';
@@ -369,6 +393,8 @@
     }
 
     $('#lanWebStopBtn').disabled=!running;
+    $('#lanWebOpenBtn').classList.toggle('hidden',!localOnly);
+    $('#lanWebOpenBtn').disabled=!running;
     $('#lanWebNewKeyBtn').disabled=!!status.noKey||!running;
     $('#lanWebApplyBtn').textContent=running?'应用并刷新':'应用并启动';
     window.DKDSPlugins?.events?.emit?.('lanweb:status',status);
@@ -608,6 +634,8 @@
       };
       host.appendChild(el);
     }
+    const active=activeProjectTab();
+    window.dispatchEvent(new CustomEvent('dkds:project-changed',{detail:{id:active?.id||'',title:active?.title||''}}));
   }
 
   function renderDatasetList(){
@@ -2338,7 +2366,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.42',
+      version:'3.61.43',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2835,6 +2863,10 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     $('#lanWebEnabled').checked=false;
     renderLanWebStatus(status);
   };
+  $('#lanWebOpenBtn').onclick=async()=>{
+    await window.electronAPI.lanWebOpen?.();
+    renderLanWebStatus(await window.electronAPI.lanWebGetStatus());
+  };
   $('#lanWebNewKeyBtn').onclick=async()=>{
     renderLanWebStatus(await window.electronAPI.lanWebRegenerateKey());
   };
@@ -2893,6 +2925,20 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   const systemRedo=async()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('redo')){const handled=await Promise.resolve(edit.invoke('redo'));if(handled!==false)return true;}if(await redoProjectHistory())return true;setStatus('当前工程没有可重做的编辑。');return false;};
   const systemDeselect=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('deselect'))return edit.invoke('deselect');setStatus('当前工作区没有活动选择。');return false;};
   $('#undoBtn').onclick=()=>void systemUndo(); $('#deselectBtn').onclick=systemDeselect;
+  const showProjectHistory=async()=>{
+    const snapshot=projectHistorySnapshot();
+    const past=[...(snapshot.past||[])].reverse().map((row,index)=>`${index===0?'下一步撤销':'已执行'} · ${row.label}`);
+    const future=(snapshot.future||[]).map(row=>`可重做 · ${row.label}`);
+    const action=await window.DKDSUI?.dialogs?.show?.({
+      tone:'info',title:'操作历史',subtitle:activeProjectTab()?.title||'当前项目',
+      message:past.length||future.length?'按项目标签独立记录，可撤销或重做最近操作。':'当前项目还没有可回退的操作。',
+      detail:[...past,...future].join('\n'),detailOpen:true,detailLabel:'历史记录',
+      actions:[{id:'close',label:'关闭'},{id:'redo',label:'重做',kind:'secondary'},{id:'undo',label:'撤销',kind:'primary'}],
+      defaultAction:snapshot.canUndo?'undo':'close'
+    });
+    if(action==='undo')await systemUndo();else if(action==='redo')await systemRedo();
+  };
+  $('#projectHistoryBtn').onclick=()=>void showProjectHistory();
 
   document.querySelectorAll('.analysis-page-close').forEach(b=>b.onclick=()=>closeAnalysisPage(b.dataset.analysisTarget));
 
@@ -3175,10 +3221,11 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.42',
+      appVersion:'3.61.43',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
+      isNativeClient:!!window.electronAPI?.isNativeClient,
       getRuntimeStatus:()=>window.electronAPI?.getRuntimeStatus?.(),
       getLanWebStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),
       openLanWebPanel:showLanWebPanel,
@@ -3206,6 +3253,21 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       makeFloating,
       artifacts:artifactHostApi(),
       services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel})}
+    });
+
+    // Android invokes stable Core commands through the Mobile Host Adapter.
+    // The native shell never needs to locate or click desktop renderer nodes.
+    window.DKDSMobileHost?.configure?.({
+      importFiles:()=>importFiles(),
+      openProject:()=>openProject(),
+      saveProject:()=>saveProject(),
+      newProject:()=>createProjectTab(null,true),
+      switchProject:id=>switchProjectTab(id),
+      closeProject:id=>closeProjectTab(id),
+      historySnapshot:()=>projectHistorySnapshot(),
+      undo:()=>systemUndo(),
+      redo:()=>systemRedo(),
+      openPluginManager:()=>{openAnalysisPage('pluginManagerPage');window.DKDSPluginManagerUI?.render?.();return true;}
     });
 
     window.DKDSCapabilities?.register?.('core','core.data-sources',{

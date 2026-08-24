@@ -183,11 +183,11 @@ This is not a cryptographically signed marketplace system.
 
 ## Web and Android
 
-Runtime installation of executable `.dkplugin` packages is currently **desktop-only**.
+LAN Web remains a non-installing client. Android/React Native is a distinct native host and can install the same SDK-produced text-only `.dkplugin` through Android's document picker. The package is validated and stored in the application's private IndexedDB storage, then loaded by the same Core plugin kernel; there is no Android source conversion step.
 
-LAN Web and Android/React Native use the same built-in plugin architecture, Recipe system, formula engine, and science engine, but arbitrary runtime JavaScript installation is deliberately disabled there for now.
+Algorithm/data/workbench packages using documented Plugin API contracts are portable. `ctx.ui.actions` is projected into the native action sheet, and PluginWorkspace PRIMARY/PRIME/SUB plus true-TOP window contracts are mapped to Android routes/layout. Direct Electron/Node access, private desktop DOM coupling and mouse-only controls are not portable and must be replaced with Core host/platform/input services.
 
-A mobile release can bundle additional plugins at build time. Scientific algorithms should remain shared; do not create a separate Android-only implementation.
+Android currently stores one active version per plugin id. Desktop package-history rollback and LAN package distribution remain desktop capabilities. Scientific algorithms must remain shared; do not create a separate Android-only implementation.
 
 ## Optional dedicated window in an external package
 

@@ -13,7 +13,15 @@ $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Mobile = Join-Path $Root 'mobile'
 $UpdateServer = Join-Path $Root 'services\update-server'
-$MobileDist = Join-Path $Root 'mobile-dist'
+$MobileDist = if ($env:DKDS_ANDROID_OUTPUT_ROOT) {
+  [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($env:DKDS_ANDROID_OUTPUT_ROOT))
+} elseif (Test-Path -LiteralPath 'D:\PyDroidTemp' -PathType Container) {
+  'D:\PyDroidTemp\builds\dk-data-studio'
+} elseif ($env:LOCALAPPDATA) {
+  Join-Path $env:LOCALAPPDATA 'DKDataStudio\mobile-dist'
+} else {
+  Join-Path ([IO.Path]::GetTempPath()) 'DKDataStudio\mobile-dist'
+}
 
 function Get-DeveloperConfigPath {
   if ($env:DKDS_TOOLBOX_CONFIG) { return [IO.Path]::GetFullPath($env:DKDS_TOOLBOX_CONFIG) }
@@ -174,7 +182,10 @@ function Clear-GradleProxyOptions {
 
 function Add-GradleProxyOption([string]$Name,[string]$Value) {
   if ([string]::IsNullOrWhiteSpace($Value)) { return }
-  $token = "-D$Name=$Value"
+  $rawToken = "-D$Name=$Value"
+  # gradlew.bat expands GRADLE_OPTS through cmd.exe. Java nonProxyHosts uses
+  # pipes, which cmd otherwise interprets as a shell pipeline.
+  $token = if ($rawToken -match '[\s&|<>^()]') { '"' + $rawToken.Replace('"','\"') + '"' } else { $rawToken }
   if (-not $env:GRADLE_OPTS) { $env:GRADLE_OPTS = $token; return }
   if ($env:GRADLE_OPTS -notlike ("*" + $token + "*")) { $env:GRADLE_OPTS = ($env:GRADLE_OPTS.Trim() + ' ' + $token) }
 }
@@ -409,7 +420,25 @@ function Invoke-Step {
 
 function Get-NodeModulesSlot([string]$Dir) {
   if ([IO.Path]::GetFullPath($Dir) -ieq [IO.Path]::GetFullPath($Mobile)) { return 'mobile' }
+  $packagePath=Join-Path $Dir 'package.json'
+  if (Test-Path -LiteralPath $packagePath -PathType Leaf) {
+    try {
+      $package=Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json
+      if ([string]$package.name -eq 'dk-data-studio-mobile') { return 'mobile' }
+    } catch {}
+  }
   return 'desktop'
+}
+
+function Get-FileSha256([string]$Path) {
+  $stream=[IO.File]::OpenRead([IO.Path]::GetFullPath($Path))
+  $sha=[Security.Cryptography.SHA256]::Create()
+  try {
+    return [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','').ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
+  }
 }
 
 function Get-DependencySignature([string]$Dir=$Root) {
@@ -419,10 +448,10 @@ function Get-DependencySignature([string]$Dir=$Root) {
   }
 
   $parts = New-Object System.Collections.Generic.List[string]
-  $parts.Add((Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()) | Out-Null
+  $parts.Add((Get-FileSha256 $packagePath)) | Out-Null
   $lockPath = Join-Path $Dir 'package-lock.json'
   if (Test-Path -LiteralPath $lockPath -PathType Leaf) {
-    $parts.Add((Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash.ToLowerInvariant()) | Out-Null
+    $parts.Add((Get-FileSha256 $lockPath)) | Out-Null
   }
   $parts.Add([string]$env:PROCESSOR_ARCHITECTURE) | Out-Null
   $parts.Add((Get-NodeModulesSlot $Dir)) | Out-Null
@@ -879,6 +908,10 @@ function Resolve-AndroidSdk {
   $candidates = @()
   if ($env:ANDROID_HOME) { $candidates += $env:ANDROID_HOME }
   if ($env:ANDROID_SDK_ROOT) { $candidates += $env:ANDROID_SDK_ROOT }
+  if ($SharedCacheRoot) {
+    $candidates += (Join-Path $SharedCacheRoot 'PyDroid\tools\android-sdk')
+    $candidates += (Join-Path $SharedCacheRoot 'android-sdk')
+  }
   if ($SharedToolRoot) {
     $candidates += (Join-Path $SharedToolRoot 'Android\Sdk')
     $candidates += (Join-Path $SharedToolRoot 'Android')
@@ -887,8 +920,21 @@ function Resolve-AndroidSdk {
   if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Android\Sdk') }
   if ($env:USERPROFILE) { $candidates += (Join-Path $env:USERPROFILE 'AppData\Local\Android\Sdk') }
 
-  foreach ($candidate in ($candidates | Select-Object -Unique)) {
-    if (-not $candidate -or -not (Test-Path $candidate)) { continue }
+  # SDK discovery must also return an incomplete installation. Otherwise a new
+  # workstation with command-line tools but without this project's pinned
+  # platform/NDK can never reach the automatic component installer.
+  $available=@($candidates | Select-Object -Unique | Where-Object {
+    $_ -and (Test-Path -LiteralPath $_ -PathType Container)
+  })
+  $completePlatform=@($available | Where-Object {
+    Test-Path -LiteralPath (Join-Path $_ 'platforms\android-36') -PathType Container
+  })
+  $completeNdk=@($available | Where-Object {
+    Test-Path -LiteralPath (Join-Path $_ 'ndk\27.1.12297006\source.properties') -PathType Leaf
+  })
+  # Prefer an already complete SDK/NDK installation. This prevents Gradle from
+  # selecting a half-created NDK directory and attempting an in-build download.
+  foreach ($candidate in (@($completeNdk) + @($completePlatform | Where-Object { $_ -notin $completeNdk }) + @($available | Where-Object { $_ -notin $completeNdk -and $_ -notin $completePlatform }))) {
     $env:ANDROID_HOME = $candidate
     $env:ANDROID_SDK_ROOT = $candidate
     Add-PathEntry (Join-Path $candidate 'platform-tools')
@@ -896,6 +942,76 @@ function Resolve-AndroidSdk {
     return $candidate
   }
   return $null
+}
+
+function Get-AndroidSdkManager([string]$Sdk) {
+  if (-not $Sdk) { return $null }
+  $candidates=@(
+    (Join-Path $Sdk 'cmdline-tools\latest\bin\sdkmanager.bat'),
+    (Join-Path $Sdk 'tools\bin\sdkmanager.bat')
+  )
+  $commandLineRoot=Join-Path $Sdk 'cmdline-tools'
+  if (Test-Path -LiteralPath $commandLineRoot -PathType Container) {
+    $candidates += @(Get-ChildItem -LiteralPath $commandLineRoot -Directory -ErrorAction SilentlyContinue |
+      Sort-Object Name -Descending |
+      ForEach-Object { Join-Path $_.FullName 'bin\sdkmanager.bat' })
+  }
+  return ($candidates | Select-Object -Unique | Where-Object {
+    Test-Path -LiteralPath $_ -PathType Leaf
+  } | Select-Object -First 1)
+}
+
+function Ensure-AndroidSdkComponents {
+  $sdk=Resolve-AndroidSdk
+  if (-not $sdk) {
+    throw 'Android SDK was not found. Install Android Studio command-line tools or set ANDROID_HOME/ANDROID_SDK_ROOT.'
+  }
+
+  $required=[ordered]@{
+    'Platform-Tools' = (Join-Path $sdk 'platform-tools\adb.exe')
+    'Platform 36' = (Join-Path $sdk 'platforms\android-36\android.jar')
+    'Build-Tools 36.0.0' = (Join-Path $sdk 'build-tools\36.0.0\aapt2.exe')
+    'NDK 27.1.12297006' = (Join-Path $sdk 'ndk\27.1.12297006\source.properties')
+    'CMake 3.22.1' = (Join-Path $sdk 'cmake\3.22.1\bin\cmake.exe')
+  }
+  $missing=@($required.GetEnumerator() | Where-Object {
+    -not (Test-Path -LiteralPath $_.Value -PathType Leaf)
+  } | ForEach-Object { $_.Key })
+  if (-not $missing.Count) { return $sdk }
+  if ($env:DKDS_DISABLE_ANDROID_SDK_INSTALL -eq '1') {
+    throw "Android SDK components are missing and automatic installation is disabled: $($missing -join ', ')"
+  }
+
+  $sdkManager=Get-AndroidSdkManager $sdk
+  if (-not $sdkManager) {
+    throw "Android SDK components are missing ($($missing -join ', ')), but sdkmanager.bat was not found below $sdk. Install Android SDK Command-line Tools (latest)."
+  }
+  Write-SectionTitle 'Prepare pinned Android SDK components'
+  Write-Host ("SDK: {0}" -f $sdk) -ForegroundColor Cyan
+  Write-Host ("Installing: {0}" -f ($missing -join ', ')) -ForegroundColor DarkYellow
+
+  # License input is generated in memory; no acceptance or response file is
+  # written into the repository. sdkmanager stores its normal SDK license state
+  # inside the selected external SDK root.
+  $licenseAnswers=@(1..30 | ForEach-Object { 'y' })
+  $licenseAnswers | & $sdkManager "--sdk_root=$sdk" '--licenses' | Out-Host
+  if ($LASTEXITCODE -ne 0) { throw "sdkmanager license acceptance exited with code $LASTEXITCODE" }
+  Invoke-Step -FilePath $sdkManager -Arguments @(
+    "--sdk_root=$sdk",
+    'platform-tools',
+    'platforms;android-36',
+    'build-tools;36.0.0',
+    'ndk;27.1.12297006',
+    'cmake;3.22.1'
+  )
+
+  foreach ($entry in $required.GetEnumerator()) {
+    if (-not (Test-Path -LiteralPath $entry.Value -PathType Leaf)) {
+      throw "Android SDK component installation did not complete: $($entry.Key) ($($entry.Value))"
+    }
+  }
+  [void](Resolve-AndroidSdk)
+  return $sdk
 }
 
 function Get-DkdsToolchainRoot {
@@ -1078,7 +1194,7 @@ function Install-DkdsManagedJdk {
     if ($expectedHash -notmatch '^[0-9A-F]{64}$') {
       throw 'Adoptium checksum response was invalid.'
     }
-    $actualHash = (Get-FileHash -Path $downloadPath -Algorithm SHA256).Hash.ToUpperInvariant()
+    $actualHash = (Get-FileSha256 $downloadPath).ToUpperInvariant()
     if ($actualHash -ne $expectedHash) {
       throw "Managed JDK checksum verification failed. Expected $expectedHash but got $actualHash."
     }
@@ -1185,6 +1301,9 @@ function Check-AndroidEnvironment {
     Write-Host "ANDROID_HOME: $sdk" -ForegroundColor Green
     if (Test-Path (Join-Path $sdk 'platforms\android-36')) { Write-Host 'OK  Android SDK Platform 36' -ForegroundColor Green }
     else { Write-Host 'ERR Android SDK Platform 36 is missing.' -ForegroundColor Red; $ok=$false }
+    $ndkProperties=Join-Path $sdk 'ndk\27.1.12297006\source.properties'
+    if (Test-Path -LiteralPath $ndkProperties -PathType Leaf) { Write-Host 'OK  Android NDK 27.1.12297006' -ForegroundColor Green }
+    else { Write-Host 'ERR Android NDK 27.1.12297006 is missing or incomplete.' -ForegroundColor Red; $ok=$false }
   } else {
     Write-Host 'ERR Android SDK was not found.' -ForegroundColor Red
     $ok=$false
@@ -1287,23 +1406,164 @@ function Invoke-WindowsDist {
   }
 }
 
+function Get-AndroidBuildWorkspaceRoot {
+  if ($env:DKDS_ANDROID_WORK_ROOT) {
+    return [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($env:DKDS_ANDROID_WORK_ROOT))
+  }
+  if (Test-Path -LiteralPath 'D:\PyDroidTemp' -PathType Container) {
+    return 'D:\PyDroidTemp\builds\dk-data-studio-work'
+  }
+  if ($SharedCacheRoot) { return (Join-Path $SharedCacheRoot 'android\dk-data-studio-work') }
+  return (Join-Path ([IO.Path]::GetTempPath()) 'DKDataStudio\android-work')
+}
+
+function Test-PathInside([string]$Path,[string]$Parent) {
+  $resolvedPath=[IO.Path]::GetFullPath($Path).TrimEnd('\')
+  $resolvedParent=[IO.Path]::GetFullPath($Parent).TrimEnd('\')
+  return $resolvedPath.StartsWith($resolvedParent + '\',[StringComparison]::OrdinalIgnoreCase)
+}
+
+function New-AndroidBuildWorkspace {
+  $workRoot=Get-AndroidBuildWorkspaceRoot
+  $stagedMobile=Join-Path $workRoot 'mobile'
+  New-Item -ItemType Directory -Force -Path $workRoot | Out-Null
+  if (-not (Test-PathInside -Path $stagedMobile -Parent $workRoot)) {
+    throw "Refusing to prepare Android workspace outside the configured work root: $stagedMobile"
+  }
+  New-Item -ItemType Directory -Force -Path $stagedMobile | Out-Null
+
+  # Keep only generated/dependency directories that make a later build
+  # incremental. All staged source/configuration is replaced from mobile/, so
+  # deleted source files cannot linger in the external workspace.
+  $preserve=@('android','node_modules','.expo')
+  foreach ($item in Get-ChildItem -LiteralPath $stagedMobile -Force) {
+    if ($item.Name -in $preserve) { continue }
+    if (-not (Test-PathInside -Path $item.FullName -Parent $stagedMobile)) {
+      throw "Refusing to clean Android staging item outside the workspace: $($item.FullName)"
+    }
+    Remove-Item -LiteralPath $item.FullName -Recurse -Force
+  }
+  if ($env:DKDS_ANDROID_CLEAN -eq '1') {
+    $generatedAndroid=Join-Path $stagedMobile 'android'
+    if (Test-Path -LiteralPath $generatedAndroid) {
+      if (-not (Test-PathInside -Path $generatedAndroid -Parent $stagedMobile)) {
+        throw "Refusing to clean Android project outside the workspace: $generatedAndroid"
+      }
+      Remove-Item -LiteralPath $generatedAndroid -Recurse -Force
+    }
+    Write-Host 'Android clean build requested: external generated project will be recreated.' -ForegroundColor DarkYellow
+  }
+
+  foreach ($item in Get-ChildItem -LiteralPath $Mobile -Force) {
+    if ($item.Name -in @('android','ios','node_modules')) { continue }
+    if ($item.Name -eq 'assets' -and $item.PSIsContainer) {
+      $stagedAssets=Join-Path $stagedMobile 'assets'
+      New-Item -ItemType Directory -Force -Path $stagedAssets | Out-Null
+      foreach ($asset in Get-ChildItem -LiteralPath $item.FullName -Force) {
+        if ($asset.Name -eq 'web') { continue }
+        Copy-Item -LiteralPath $asset.FullName -Destination $stagedAssets -Recurse -Force
+      }
+      continue
+    }
+    Copy-Item -LiteralPath $item.FullName -Destination $stagedMobile -Recurse -Force
+  }
+
+  $env:DKDS_REPO_ROOT=$Root
+  Write-Host "Android build workspace: $stagedMobile" -ForegroundColor Cyan
+  Write-Host 'Repository mobile source remains free of node_modules, generated native projects and bundled web assets.' -ForegroundColor DarkGray
+  return $stagedMobile
+}
+
+function Invoke-AndroidSourceChecks([string]$AndroidMobile) {
+  Write-SectionTitle 'Validate Android source contracts'
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','mobile:test') -WorkingDirectory $Root
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','typecheck') -WorkingDirectory $AndroidMobile
+}
+
+function Invoke-AndroidPrebuild([string]$AndroidMobile) {
+  Write-SectionTitle 'Expo prebuild'
+  $arguments=@('expo','prebuild','--platform','android')
+  if ($env:DKDS_ANDROID_CLEAN -eq '1') { $arguments += '--clean' }
+  Invoke-Step -FilePath 'npx.cmd' -Arguments $arguments -WorkingDirectory $AndroidMobile
+}
+
+function Test-AndroidApkArtifact([string]$Path) {
+  $resolved=[IO.Path]::GetFullPath($Path)
+  if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) { throw "Android APK was not generated: $resolved" }
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $required=@(
+    'assets/dkds/mobile.css',
+    'assets/dkds/web-bridge.js',
+    'assets/dkds/core/mobile-host-runtime.js',
+    'assets/dkds/core/mobile-plugin-package.js'
+  )
+  $archive=[IO.Compression.ZipFile]::OpenRead($resolved)
+  try {
+    $entries=@{};foreach ($entry in $archive.Entries) { $entries[$entry.FullName]=$true }
+    $missing=@($required | Where-Object { -not $entries.ContainsKey($_) })
+    if ($missing.Count) { throw "APK is missing required mobile runtime assets: $($missing -join ', ')" }
+  } finally { $archive.Dispose() }
+  $item=Get-Item -LiteralPath $resolved
+  $hash=(Get-FileSha256 $resolved).ToUpperInvariant()
+  Write-Host ("APK: {0}" -f $resolved) -ForegroundColor Green
+  Write-Host ("Size: {0:N2} MiB" -f ($item.Length / 1MB)) -ForegroundColor Green
+  Write-Host ("SHA-256: {0}" -f $hash) -ForegroundColor Green
+}
+
 function Build-AndroidRelease {
   Show-EffectiveBuildCaches -VerifyNpm
+  [void](Ensure-JavaToolchain -AutoProvision $true)
+  [void](Ensure-AndroidSdkComponents)
   if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
-  Ensure-NodeDeps -Dir $Mobile
+  $androidMobile=New-AndroidBuildWorkspace
+  Ensure-NodeDeps -Dir $androidMobile
+  Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
   Initialize-AndroidReleaseSigning
   Write-SectionTitle 'Prepare Android offline renderer'
-  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
-  Write-SectionTitle 'Expo prebuild'
-  Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
+  Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
+  Invoke-AndroidPrebuild -AndroidMobile $androidMobile
   Write-SectionTitle 'Build release APK'
-  Invoke-Step -FilePath '.\gradlew.bat' -Arguments @('assembleRelease','--no-daemon','--stacktrace') -WorkingDirectory (Join-Path $Mobile 'android')
+  $env:NODE_ENV='production'
+  # Android delivery targets current arm64 devices. Building all four React Native
+  # ABIs needlessly multiplies the native/C++ cold-build cost. --no-daemon keeps
+  # Gradle from reusing or retaining a background daemon after this invocation.
+  $androidDirectory=Join-Path $androidMobile 'android'
+  try {
+    Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
+      'assembleRelease',
+      '--no-daemon',
+      '--max-workers=4',
+      '-PreactNativeArchitectures=arm64-v8a',
+      '--stacktrace'
+    ) -WorkingDirectory $androidDirectory
+  } catch {
+    $firstGradleFailure=$_
+    Write-Host 'WARN Gradle release build failed once. Retrying with the same external caches and generated project.' -ForegroundColor Yellow
+    Start-Sleep -Seconds 2
+    $savedGradleOptions=$env:GRADLE_OPTS
+    Clear-GradleProxyOptions
+    try {
+      Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
+        'assembleRelease',
+        '--no-daemon',
+        '--max-workers=4',
+        '-PreactNativeArchitectures=arm64-v8a',
+        '-Dorg.gradle.jvmargs=',
+        '--stacktrace'
+      ) -WorkingDirectory $androidDirectory
+    } catch {
+      throw "Android Gradle release build failed twice. First=$($firstGradleFailure.Exception.Message) Retry=$($_.Exception.Message)"
+    } finally {
+      if ($savedGradleOptions) { $env:GRADLE_OPTS=$savedGradleOptions }
+      else { Remove-Item Env:GRADLE_OPTS -ErrorAction SilentlyContinue }
+    }
+  }
   New-Item -ItemType Directory -Force -Path $MobileDist | Out-Null
-  $src = Join-Path $Mobile 'android\app\build\outputs\apk\release\app-release.apk'
+  $src = Join-Path $androidMobile 'android\app\build\outputs\apk\release\app-release.apk'
   if (-not (Test-Path $src)) { throw "Release APK was not generated: $src" }
   $dst = Join-Path $MobileDist 'DK-Data-Studio.apk'
   Copy-Item -Force $src $dst
-  Write-Host "APK: $dst" -ForegroundColor Green
+  Test-AndroidApkArtifact -Path $dst
 }
 
 function Install-UpdateServerAutostart {
@@ -1380,12 +1640,25 @@ try {
     'android-build' { Build-AndroidRelease }
     'android-run' {
       if (-not (Check-AndroidEnvironment)) { throw 'Android environment is incomplete.' }
-      Ensure-NodeDeps -Dir $Mobile
+      $androidMobile=New-AndroidBuildWorkspace
+      Ensure-NodeDeps -Dir $androidMobile
+      Invoke-AndroidSourceChecks -AndroidMobile $androidMobile
       Initialize-AndroidReleaseSigning
-      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $Mobile
-      Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','prebuild','--platform','android','--clean') -WorkingDirectory $Mobile
+      Invoke-Step -FilePath 'npm.cmd' -Arguments @('run','sync:web') -WorkingDirectory $androidMobile
+      Invoke-AndroidPrebuild -AndroidMobile $androidMobile
       try {
-        Invoke-Step -FilePath 'npx.cmd' -Arguments @('expo','run:android','--variant','release') -WorkingDirectory $Mobile
+        $env:NODE_ENV='production'
+        $androidDir=Join-Path $androidMobile 'android'
+        Invoke-Step -FilePath '.\gradlew.bat' -Arguments @(
+          'assembleRelease',
+          '--no-daemon',
+          '--max-workers=4',
+          '-PreactNativeArchitectures=arm64-v8a',
+          '--stacktrace'
+        ) -WorkingDirectory $androidDir
+        $runApk=Join-Path $androidDir 'app\build\outputs\apk\release\app-release.apk'
+        Test-AndroidApkArtifact -Path $runApk
+        Invoke-Step -FilePath 'adb' -Arguments @('install','-r',$runApk)
       } catch {
         Write-AndroidSigningMigrationHint
         throw

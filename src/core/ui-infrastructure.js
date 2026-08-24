@@ -567,6 +567,35 @@
     setActions(actions=[]){this.actions=Array.isArray(actions)?actions.slice():[];this.render();return this;}
     update(state={}){this.state={...this.state,...state};this.render();return this;}
     value(value,ctx){return typeof value==='function'?value({...this.state,...ctx}):value;}
+    mobileActions(){
+      const rows=[];
+      for(const action of this.actions.slice().sort((a,b)=>(Number(a.order)||100)-(Number(b.order)||100))){
+        const ctx={action,group:this};
+        if(action.type==='separator'||this.value(action.visible,ctx)===false)continue;
+        const enabled=this.value(action.enabled,ctx)!==false;
+        const rawItems=typeof action.items==='function'?action.items({...ctx,state:this.state}):action.items;
+        const items=Array.isArray(rawItems)?rawItems.filter(item=>item?.type!=='separator'&&item?.visible!==false).map(item=>({
+          id:String(item.id||''),label:String(typeof item.label==='function'?item.label({...ctx,item,state:this.state}):item.label||item.id||''),
+          icon:String(item.icon||''),enabled:item.enabled!==false
+        })).filter(item=>item.id):[];
+        rows.push({id:String(action.id||''),label:String(this.value(action.label,ctx)??action.id??''),icon:String(this.value(action.icon,ctx)||''),enabled,active:!!this.value(action.active,ctx),menu:!!action.menu,items});
+      }
+      return rows.filter(row=>row.id);
+    }
+    invokeMobile(actionId,itemId=''){
+      const action=this.actions.find(row=>String(row?.id||'')===String(actionId||''));
+      if(!action)return false;
+      const ctx={action,group:this,state:this.state,event:null,button:null,mobile:true};
+      if(this.value(action.visible,{action,group:this})===false||this.value(action.enabled,{action,group:this})===false)return false;
+      if(itemId){
+        const rawItems=typeof action.items==='function'?action.items(ctx):action.items;
+        const item=(Array.isArray(rawItems)?rawItems:[]).find(row=>String(row?.id||'')===String(itemId));
+        if(!item||item.type==='separator'||item.visible===false||item.enabled===false)return false;
+        (item.onInvoke||item.handler)?.({...ctx,item});return true;
+      }
+      if(action.menu)return false;
+      (action.onInvoke||action.handler)?.(ctx);return true;
+    }
     render(){
       this.cleanups.splice(0).forEach(cleanupCall);
       this.container.innerHTML='';
@@ -882,15 +911,15 @@
       const saved=readJson(this.key,{});this.apply(Number(saved.size)||Number(this.spec.defaultSize)||320,{persist:false});this.bind();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.apply(this.size,{persist:false,emit:false}));this.ro.observe(this.container);}
     }
-    limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const max=Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220));return {min,max:Math.max(min,max)};}
+    limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const mobileOverlay=!!this.spec.mobileOverlay&&document.documentElement.classList.contains('react-native-client');const mobileRatio=Math.max(.45,Math.min(.96,Number(this.spec.mobileMaxRatio)||(this.axis==='x'?.92:.68)));const max=mobileOverlay?Math.max(min,total*mobileRatio):(Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220)));return {min,max:Math.max(min,max)};}
     apply(value,{persist=true,emit=true}={}){const {min,max}=this.limits();const next=Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});return next;}
     bind(){
-      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
-      const move=e=>{if(!this.drag)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.apply(this.drag.size+(point-this.drag.start)*sign,{persist:false});};
-      const up=()=>{if(!this.drag)return;this.drag=null;this.apply(this.size,{persist:true});};
+      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
+      const move=e=>{if(!this.drag||e.pointerId!==this.drag.pointerId)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.apply(this.drag.size+(point-this.drag.start)*sign,{persist:false});e.preventDefault();};
+      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.drag=null;this.apply(this.size,{persist:true});};
       const reset=e=>{e.preventDefault();this.apply(Number(this.spec.defaultSize)||320);};
-      this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);this.handle.addEventListener('dblclick',reset);
-      this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>this.handle.removeEventListener('dblclick',reset));
+      this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);
+      this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>window.removeEventListener('pointercancel',up),()=>this.handle.removeEventListener('dblclick',reset));
     }
     dispose(){this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
   }
@@ -1955,13 +1984,13 @@
       const rightHandle=this.shell.querySelector('.dkds-analysis-right-resizer');
       const bottomHandle=this.shell.querySelector('.dkds-analysis-bottom-resizer');
       if(s.resizableLeft===false)leftHandle?.remove();else if(frame&&leftHandle){
-        this.leftSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-left`,container:frame,handle:leftHandle,target:this.slots.left,cssVar:'--dkds-analysis-left-width',defaultSize:Number(s.leftWidth)||280,min:Number(s.leftMin)||210,reserve:Number(s.leftReserve)||520});
+        this.leftSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-left`,container:frame,handle:leftHandle,target:this.slots.left,cssVar:'--dkds-analysis-left-width',defaultSize:Number(s.leftWidth)||280,min:Number(s.leftMin)||210,reserve:Number(s.leftReserve)||520,mobileOverlay:true,mobileMaxRatio:.92});
       }
       if(s.resizableRight===false)rightHandle?.remove();else if(frame&&rightHandle){
-        this.rightSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-right`,container:frame,handle:rightHandle,target:this.slots.right,cssVar:'--dkds-analysis-right-width',defaultSize:Number(s.rightWidth)||390,min:Number(s.rightMin)||280,reserve:Number(s.rightReserve)||520,reverse:true});
+        this.rightSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-right`,container:frame,handle:rightHandle,target:this.slots.right,cssVar:'--dkds-analysis-right-width',defaultSize:Number(s.rightWidth)||390,min:Number(s.rightMin)||280,reserve:Number(s.rightReserve)||520,reverse:true,mobileOverlay:true,mobileMaxRatio:.92});
       }
       if(s.resizableBottom===false)bottomHandle?.remove();else if(frame&&bottomHandle){
-        this.bottomSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-bottom`,container:frame,handle:bottomHandle,target:this.slots.bottom,cssVar:'--dkds-analysis-bottom-height',axis:'y',defaultSize:Number(s.bottomHeight)||320,min:Number(s.bottomMin)||190,reserve:Number(s.bottomReserve)||260,reverse:true});
+        this.bottomSplit=new SplitController(this.scope,{id:`analysis-${String(s.activity||s.id||'main')}-bottom`,container:frame,handle:bottomHandle,target:this.slots.bottom,cssVar:'--dkds-analysis-bottom-height',axis:'y',defaultSize:Number(s.bottomHeight)||320,min:Number(s.bottomMin)||190,reserve:Number(s.bottomReserve)||260,reverse:true,mobileOverlay:true,mobileMaxRatio:.68});
       }
       const header=this.shell.querySelector('.dkds-analysis-header');
       if(s.header===false)header?.remove();else if(header){
@@ -2165,9 +2194,9 @@
       sub.classList.add('dkds-plugin-sub-page-host');
       this.canvasFrame=frame;this.canvasSlots={main:center,left:frame.querySelector('[data-plugin-canvas-slot="left"]'),right:frame.querySelector('[data-plugin-canvas-slot="right"]'),bottom:frame.querySelector('[data-plugin-canvas-slot="bottom"]'),overlay:frame.querySelector('[data-plugin-canvas-slot="overlay"]')};
       const id=String(spec.activity||spec.id||'main');
-      this.canvasLeftSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-left`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-left-resizer'),target:this.canvasSlots.left,cssVar:'--dkds-plugin-canvas-left-width',defaultSize:Number(spec.canvasLeftWidth)||320,min:Number(spec.canvasLeftMin)||240,reserve:Number(spec.canvasLeftReserve)||520});
-      this.canvasRightSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-right`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-right-resizer'),target:this.canvasSlots.right,cssVar:'--dkds-plugin-canvas-right-width',defaultSize:Number(spec.canvasRightWidth)||390,min:Number(spec.canvasRightMin)||280,reserve:Number(spec.canvasRightReserve)||520,reverse:true});
-      this.canvasBottomSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-bottom`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-bottom-resizer'),target:this.canvasSlots.bottom,cssVar:'--dkds-plugin-canvas-bottom-height',axis:'y',defaultSize:Number(spec.canvasBottomHeight)||320,min:Number(spec.canvasBottomMin)||190,reserve:Number(spec.canvasBottomReserve)||260,reverse:true});
+      this.canvasLeftSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-left`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-left-resizer'),target:this.canvasSlots.left,cssVar:'--dkds-plugin-canvas-left-width',defaultSize:Number(spec.canvasLeftWidth)||320,min:Number(spec.canvasLeftMin)||240,reserve:Number(spec.canvasLeftReserve)||520,mobileOverlay:true,mobileMaxRatio:.92});
+      this.canvasRightSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-right`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-right-resizer'),target:this.canvasSlots.right,cssVar:'--dkds-plugin-canvas-right-width',defaultSize:Number(spec.canvasRightWidth)||390,min:Number(spec.canvasRightMin)||280,reserve:Number(spec.canvasRightReserve)||520,reverse:true,mobileOverlay:true,mobileMaxRatio:.92});
+      this.canvasBottomSplit=new SplitController(this.scope,{id:`plugin-${id}-canvas-bottom`,container:frame,handle:frame.querySelector('.dkds-plugin-canvas-bottom-resizer'),target:this.canvasSlots.bottom,cssVar:'--dkds-plugin-canvas-bottom-height',axis:'y',defaultSize:Number(spec.canvasBottomHeight)||320,min:Number(spec.canvasBottomMin)||190,reserve:Number(spec.canvasBottomReserve)||260,reverse:true,mobileOverlay:true,mobileMaxRatio:.68});
       const sync=()=>this.syncCanvasRegions();
       if(window.MutationObserver){this.canvasObserver=new MutationObserver(sync);for(const el of [this.canvasSlots.left,this.canvasSlots.right,this.canvasSlots.bottom])this.canvasObserver.observe(el,{childList:true,subtree:false});}
       this.syncCanvasRegions();
@@ -2268,7 +2297,11 @@
         add:spec=>this.track(shortcutHub.register(this.owner,spec?.id||`shortcut-${this.cleanups.length}`,spec||{})),
         chord:normalizeChord
       };
-      this.actions={mount:(container,spec)=>this.trackObject(new ActionGroup(this.owner,container,spec))};
+      this.actionGroups=new Set();
+      this.actions={mount:(container,spec)=>{
+        const group=new ActionGroup(this.owner,container,spec);this.actionGroups.add(group);
+        this.track(()=>this.actionGroups.delete(group));return this.trackObject(group);
+      }};
       this.interactions={bind:(target,spec)=>this.trackObject(new InteractionBinding(this.owner,target,spec))};
       this.menus={create:spec=>this.trackObject(new ContextMenu(this.owner,spec)),open:(spec={})=>{const menu=this.trackObject(new ContextMenu(this.owner,spec));menu.open(spec);return menu;}};
       this.entities=window.DKDSEntities?.createScope?.(this.owner)||null;
@@ -2377,6 +2410,43 @@
     },
     shortcuts:{register:(owner,id,spec)=>shortcutHub.register(owner,id,spec),normalizeChord,eventChord},
     createScope,
+    workspaces:{
+      actions(activity=''){
+        const target=String(activity||'');const rows=[];
+        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.workbenches||[])){
+          if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
+          for(const action of workbench.navigationActions?.()||[])rows.push({id:String(action.id||''),label:String(action.label||action.id||''),active:!!action.active?.()});
+        }
+        return rows;
+      },
+      invoke(activity,id){
+        const target=String(activity||''),actionId=String(id||'');
+        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.workbenches||[])){
+          if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
+          const action=(workbench.navigationActions?.()||[]).find(row=>String(row.id)===actionId);
+          if(action){action.onInvoke?.();workbench.resize?.('mobile-navigation');return true;}
+        }
+        return false;
+      }
+    },
+    actions:{
+      list(activity=''){
+        const target=String(activity||''),rows=[];
+        for(const group of scopes.values())for(const scope of group)for(const actionGroup of (scope.actionGroups||[])){
+          if(String(actionGroup.spec?.activity||'')!==target)continue;
+          for(const action of actionGroup.mobileActions?.()||[])rows.push({...action,owner:scope.owner});
+        }
+        return rows;
+      },
+      invoke(activity,id,itemId=''){
+        const target=String(activity||'');
+        for(const group of scopes.values())for(const scope of group)for(const actionGroup of (scope.actionGroups||[])){
+          if(String(actionGroup.spec?.activity||'')!==target)continue;
+          if(actionGroup.invokeMobile?.(id,itemId))return true;
+        }
+        return false;
+      }
+    },
     tables:{mount:(id,container,spec={})=>globalTableSurfaceRegistry.mount(id,container,spec),bind:(id,table,spec={})=>globalTableSurfaceRegistry.bind(id,table,spec),hydrate:(root,spec={})=>globalTableSurfaceRegistry.hydrate(root,spec),observe:(root,spec={})=>globalTableSurfaceRegistry.observe(root,spec),get:value=>globalTableSurfaceRegistry.get(value)},
     dialogs:{show:spec=>dialogService.show(spec),alert:spec=>dialogService.alert(spec),confirm:spec=>dialogService.confirm(spec),prompt:spec=>dialogService.prompt(spec),closeAll:()=>dialogService.closeAll()},
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),resolveId:id=>dataTypeRegistry.resolveId(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),lineage:id=>dataTypeRegistry.lineage(id),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx),validate:()=>dataTypeRegistry.validate()},

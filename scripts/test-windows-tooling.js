@@ -72,18 +72,26 @@ assert(/install-deps/.test(gui) && /doctor/.test(gui) && /toolchain/.test(gui), 
 // Android packaging exposed by the toolbox must produce the final release APK,
 // not a debug build or a debug-suffixed artifact.
 assert(/assembleRelease/.test(backend), 'Android build must use Gradle assembleRelease.');
-assert(/assembleRelease','--no-daemon','--stacktrace'/.test(backend), 'Android release build must avoid persistent Gradle daemon state and retain stack traces.');
+assert(/'assembleRelease'[\s\S]*?'--no-daemon'[\s\S]*?'--max-workers=4'[\s\S]*?'-PreactNativeArchitectures=arm64-v8a'[\s\S]*?'--stacktrace'/.test(backend), 'Android release build must be non-persistent, bounded, arm64-targeted and retain stack traces.');
+assert(/Gradle release build failed once[\s\S]*?Clear-GradleProxyOptions[\s\S]*?'-Dorg\.gradle\.jvmargs='/.test(backend), 'Android release builds must retain a proxy-safe low-memory fallback for Windows process-launch failures.');
 assert(!/assembleDebug/.test(backend), 'Android toolbox must not build the debug variant.');
 assert(/DK-Data-Studio\.apk/.test(backend), 'Android output must use the final DK Data Studio APK name.');
 assert(!/-debug\.apk/i.test(backend + gui), 'Android tooling must not expose a debug APK artifact.');
-assert(/expo','run:android','--variant','release'/.test(backend), 'Connected-device Android run must use the release variant.');
+assert(/'android-run'[\s\S]*?'assembleRelease'[\s\S]*?'adb'[\s\S]*?'install','-r'/.test(backend), 'Connected-device Android run must build the signed release without a persistent daemon and install it with adb.');
 assert(/Initialize-AndroidReleaseSigning/.test(backend), 'Android build must initialize persistent local release signing.');
 assert(/Resolve-AndroidSdk/.test(backend) && /platform-tools/.test(backend), 'Android toolbox must auto-discover the SDK and adb from standard Windows locations.');
+assert(/Ensure-AndroidSdkComponents/.test(backend) && /sdkmanager\.bat/.test(backend), 'Android builds must provision pinned SDK components through the official SDK manager.');
+assert(/'platforms;android-36'[\s\S]*?'build-tools;36\.0\.0'[\s\S]*?'ndk;27\.1\.12297006'[\s\S]*?'cmake;3\.22\.1'/.test(backend), 'Android SDK provisioning must pin the platform, build-tools, NDK and CMake required by the project.');
 assert(/Resolve-JavaToolchain/.test(backend) && /Android Studio\\jbr/.test(backend), 'Android toolbox must auto-discover Android Studio bundled JDK/JBR.');
 assert(/DisplayName.*Android Studio/.test(backend), 'Android JDK discovery should also consult Windows install metadata for custom Android Studio paths.');
 assert(/Install-DkdsManagedJdk/.test(backend) && /Ensure-JavaToolchain/.test(backend), 'Android tooling must be able to provision a managed JDK when the machine has none.');
 assert(/api\.adoptium\.net\/v3\/binary\/latest\/21\/ga\/windows/.test(backend), 'Shared JDK provisioning must use the official Adoptium stable JDK 21 binary API.');
-assert(/Get-FileHash[\s\S]*SHA256/.test(backend) && /sha256\.txt/.test(backend), 'Managed JDK download must verify the published SHA-256 checksum.');
+assert(/(?:Get-FileHash|Get-FileSha256)[\s\S]*SHA256/.test(backend) && /sha256\.txt/.test(backend), 'Managed JDK download must verify the published SHA-256 checksum.');
+assert(/New-AndroidBuildWorkspace/.test(backend) && /DKDS_ANDROID_WORK_ROOT/.test(backend), 'Android builds must stage generated native work outside the repository.');
+assert(/D:\\PyDroidTemp\\builds\\dk-data-studio/.test(backend), 'Android staging and APK output should prefer the shared D:\\PyDroidTemp build area.');
+assert(/DKDS_ANDROID_CLEAN/.test(backend) && /Invoke-AndroidPrebuild/.test(backend), 'Android tooling must default to an incremental external prebuild and expose an explicit clean-build switch.');
+assert(/Invoke-AndroidSourceChecks[\s\S]*?mobile:test[\s\S]*?typecheck/.test(backend), 'Android packaging must run mobile architecture and TypeScript checks before compilation.');
+assert(/Test-AndroidApkArtifact/.test(backend) && /mobile-plugin-package\.js/.test(backend) && /SHA-256/.test(backend), 'Android packaging must verify required offline runtime assets and report the APK checksum.');
 assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling must support a cross-project DK_TOOL_ROOT.');
 assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
 assert(/developer-toolbox\.json/.test(backend) && /developer-toolbox\.json/.test(gui),

@@ -2,12 +2,12 @@
   "expo": {
     "name": "DK Data Studio",
     "slug": "dk-data-studio",
-    "version": "0.4.0",
+    "version": "0.6.0",
     "orientation": "default",
-    "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.dk.datastudio",
-      "versionCode": 6,
+      "versionCode": 8,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#111827"
@@ -15,6 +15,15 @@
     },
     "plugins": [
       "./plugins/withDkdsWebAssets.js",
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": true,
+          "style": "dark"
+        }
+      ],
+      "./plugins/withDkdsAndroidNativeHost.js",
       "./plugins/withDkdsReleaseSigning.js"
     ],
     "icon": "./assets/icon.png"

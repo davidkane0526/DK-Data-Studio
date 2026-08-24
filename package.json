@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.61.42",
+  "version": "3.61.43",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "main.js",
   "author": {
@@ -21,6 +21,7 @@
     "science:parity": "node scripts/verify-science-parity.js",
     "mobile:sync": "cd mobile && npm run sync:web",
     "mobile:android": "cd mobile && npm run android",
+    "mobile:test": "node scripts/test-mobile-react-native-architecture.js && node scripts/test-mobile-host-runtime.js && node scripts/test-mobile-plugin-package.js",
     "plugin-manager:test": "node scripts/test-plugin-manager.js && node scripts/test-plugin-package.js && node scripts/test-plugin-override-policy-v36113.js && node scripts/test-plugin-version-history-v354.js && node scripts/test-algorithm-package-catalog-v355.js",
     "data-center:test": "node scripts/test-data-center-core.js",
     "plugin:package": "node scripts/package-plugin.js",

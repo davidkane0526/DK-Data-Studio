@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio-mobile",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -16,6 +16,7 @@
     "expo": "~57.0.9",
     "expo-clipboard": "~57.0.1",
     "expo-file-system": "~57.0.1",
+    "expo-navigation-bar": "~57.0.2",
     "expo-sharing": "~57.0.6",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",

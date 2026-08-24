@@ -1,15 +1,17 @@
 (() => {
   if (window.electronAPI) return;
 
-  window.__DKDS_WEB_CLIENT__ = true;
-  document.documentElement.classList.add('web-client');
-
   const fileStore = new Map();
   const projectFileHandles = new Map();
   const nativePending = new Map();
+  const pluginInstallPending = new Map();
   const nativeBridge = window.ReactNativeWebView?.postMessage
     ? window.ReactNativeWebView
     : null;
+  const nativePresentationRequested=new URLSearchParams(location.search).has('reactNative');
+  window.__DKDS_WEB_CLIENT__ = !nativeBridge;
+  window.__DKDS_NATIVE_CLIENT__ = !!nativeBridge;
+  document.documentElement.classList.add(nativeBridge?'native-client':'web-client');
 
   function nativeCall(type,payload={}){
     if(!nativeBridge)return null;
@@ -42,8 +44,10 @@
   window.addEventListener('message',receiveNativeMessage);
   document.addEventListener('message',receiveNativeMessage);
 
-  if(nativeBridge){
+  if(nativeBridge||nativePresentationRequested){
     document.documentElement.classList.add('react-native-client');
+  }
+  if(nativeBridge){
     setTimeout(()=>nativeCall('ready',{href:location.href}).catch(()=>{}),0);
   }
 
@@ -105,6 +109,53 @@
     }
   }
 
+  async function nativeFileBytes(file){
+    const base64=file?.base64||await nativeCall('readFile',{token:file?.token});
+    return base64Bytes(base64);
+  }
+
+  function mobilePluginDb(){
+    if(!nativeBridge)return Promise.reject(new Error('Mobile plugin storage is only available in the Android host.'));
+    return new Promise((resolve,reject)=>{
+      const request=indexedDB.open('dkds-mobile-plugins-v1',1);
+      request.onupgradeneeded=()=>{
+        const db=request.result;
+        if(!db.objectStoreNames.contains('packages'))db.createObjectStore('packages',{keyPath:'manifest.id'});
+      };
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error||new Error('Cannot open mobile plugin storage.'));
+    });
+  }
+
+  async function mobilePluginStore(mode,operation){
+    const db=await mobilePluginDb();
+    try{
+      return await new Promise((resolve,reject)=>{
+        const tx=db.transaction('packages',mode),store=tx.objectStore('packages');
+        let request,result=true;
+        try{request=operation(store);}catch(err){reject(err);return;}
+        if(request&&typeof request.onsuccess!=='undefined'){
+          request.onsuccess=()=>{result=request.result;};
+          request.onerror=()=>reject(request.error||new Error('Mobile plugin storage request failed.'));
+        }
+        tx.oncomplete=()=>resolve(result);
+        tx.onerror=()=>reject(tx.error||new Error('Mobile plugin storage transaction failed.'));
+        tx.onabort=()=>reject(tx.error||new Error('Mobile plugin storage transaction was aborted.'));
+      });
+    }finally{db.close();}
+  }
+
+  const mobilePluginGet=id=>mobilePluginStore('readonly',store=>store.get(String(id||'')));
+  const mobilePluginList=()=>mobilePluginStore('readonly',store=>store.getAll());
+  const mobilePluginPut=pkg=>mobilePluginStore('readwrite',store=>store.put(pkg));
+  const mobilePluginDelete=id=>mobilePluginStore('readwrite',store=>store.delete(String(id||'')));
+  const mobileCompatibility=pkg=>({
+    compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
+    issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.17.0'}],
+    requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
+    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.43'
+  });
+
   async function decodeFile(file,encoding='auto') {
     const buf=await file.arrayBuffer();
     const bytes=new Uint8Array(buf);
@@ -165,7 +216,8 @@
   }
 
   window.electronAPI = {
-    isWebClient:true,
+    isWebClient:!nativeBridge,
+    isNativeClient:!!nativeBridge,
 
     openDataFiles: async()=>{
       if(nativeBridge){
@@ -181,7 +233,7 @@
       const file=fileStore.get(payload?.path);
       if(!file)throw new Error('当前会话中的源文件引用已失效，请重新选择该文件。');
       const decoded=file.native
-        ? decodeBytes(base64Bytes(file.base64),payload?.encoding||'auto')
+        ? decodeBytes(await nativeFileBytes(file),payload?.encoding||'auto')
         : await decodeFile(file,payload?.encoding||'auto');
       return {path:payload.path,name:file.name,size:file.size,text:decoded.text,encoding:decoded.encoding};
     },
@@ -192,7 +244,7 @@
         const out=[];
         for(const asset of assets||[]){
           fileStore.set(asset.path,{...asset,native:true});
-          const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
+          const decoded=decodeBytes(await nativeFileBytes(asset),'auto');
           out.push({path:asset.path,name:asset.name,size:asset.size,text:decoded.text});
         }
         return out;
@@ -246,12 +298,16 @@
         ? window.DKDSProjectFormat.serializeProject(payload?.project||{})
         : JSON.stringify(payload?.project||{},null,2);
       if(nativeBridge){
+        const existingUri=mode==='current'&&path.startsWith('native-document://')
+          ? decodeURIComponent(path.slice('native-document://'.length))
+          : '';
         const uri=await nativeCall('saveText',{
           name,
           content,
-          mimeType:'application/json'
+          mimeType:'application/json',
+          uri:existingUri
         });
-        return `native://${uri||name}`;
+        return uri?`native-document://${encodeURIComponent(uri)}`:null;
       }
 
       const currentHandle=mode==='current'?projectFileHandles.get(path):null;
@@ -285,7 +341,7 @@
         const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/*']});
         const asset=assets?.[0];
         if(!asset)return null;
-        const decoded=decodeBytes(base64Bytes(asset.base64),'auto');
+        const decoded=decodeBytes(await nativeFileBytes(asset),'auto');
         const project=window.DKDSProjectFormat?.parseProjectText?window.DKDSProjectFormat.parseProjectText(decoded.text):JSON.parse(decoded.text);
         return {path:asset.path,project};
       }
@@ -335,10 +391,44 @@
       };
     },
 
-    pluginExternalList: async()=>({packages:[],errors:[],unsupported:true}),
-    pluginInstallPackage: async()=>{throw new Error('浏览器 / Android 模式暂不允许安装可执行插件包；请在桌面版安装，或使用内置插件与 Recipe。');},
-    pluginRestorePackage: async()=>false,
-    pluginUninstall: async()=>false,
+    pluginExternalList: async()=>{
+      if(!nativeBridge)return {packages:[],errors:[],unsupported:true};
+      try{return {packages:(await mobilePluginList()).map(pkg=>({...pkg,compatibilityStatus:mobileCompatibility(pkg)})),errors:[],unsupported:false};}
+      catch(err){return {packages:[],errors:[{file:'Android plugin store',error:err.message}],unsupported:false};}
+    },
+    pluginSelectPackage: async()=>{
+      if(!nativeBridge)return {canceled:true};
+      try{
+        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/*','application/octet-stream']});
+        const asset=assets?.[0];if(!asset)return {canceled:true};
+        const decoded=decodeBytes(await nativeFileBytes(asset),'utf-8');
+        const pkg=window.DKDSMobilePluginPackage?.normalize(decoded.text);
+        if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        const previous=await mobilePluginGet(pkg.manifest.id),token=`plugin-${uuid()}`;
+        pluginInstallPending.set(token,{pkg,previous});
+        return {ok:true,token,manifest:pkg.manifest,exists:!!previous,previousVersion:previous?.manifest?.version||null,compatibility:mobileCompatibility(pkg)};
+      }catch(err){return {ok:false,error:{title:'移动端插件包校验失败',message:err.message,code:'mobile-package-invalid'}};}
+    },
+    pluginCancelInstall: async token=>pluginInstallPending.delete(String(token||'')),
+    pluginInstallPackage: async token=>{
+      const pending=pluginInstallPending.get(String(token||''));
+      if(!pending)return {ok:false,error:{message:'插件安装确认已过期，请重新选择插件包。',code:'mobile-install-token-expired'}};
+      pluginInstallPending.delete(String(token||''));
+      const installed={...pending.pkg,installedAt:new Date().toISOString()};
+      await mobilePluginPut(installed);
+      return {ok:true,package:{...installed,previousPackage:pending.previous||null}};
+    },
+    pluginRestorePackage: async payload=>{
+      if(!nativeBridge)return false;
+      const id=String(payload?.id||payload?.package?.manifest?.id||'');
+      if(payload?.package)await mobilePluginPut(payload.package);else if(id)await mobilePluginDelete(id);
+      return true;
+    },
+    pluginUninstall: async payload=>{
+      if(!nativeBridge)return false;
+      await mobilePluginDelete(typeof payload==='string'?payload:payload?.id);
+      return true;
+    },
     pluginOpenFolder: async()=>false,
 
     updateGetStatus: async()=>({
@@ -354,12 +444,26 @@
     updateInstallNow: async()=>false,
     onUpdateStatus: ()=>()=>{},
 
-    lanWebGetStatus: async()=>({running:true,noKey:true,key:'',urls:[location.origin],pairedClients:1,webClient:true}),
+    lanWebGetStatus: async()=>{
+      if(!nativeBridge)return {running:true,noKey:true,key:'',urls:[location.origin],pairedClients:1,webClient:true,nativeClient:false};
+      const state=await nativeCall('webStatus');
+      const url=String(state?.url||'');
+      return {running:!!state?.running,noKey:true,key:'',urls:url?[url]:[],localhostUrl:url,pairedClients:0,webClient:false,nativeClient:true,localOnly:true};
+    },
     lanWebMakeQr: async()=>null,
-    lanWebGetSettings: async()=>({enabled:true,noKey:true,port:Number(location.port)||80}),
-    lanWebSetSettings: async()=>null,
-    lanWebStart: async()=>null,
-    lanWebStop: async()=>null,
+    lanWebGetSettings: async()=>{
+      if(!nativeBridge)return {enabled:true,noKey:true,port:Number(location.port)||80};
+      const state=await nativeCall('webStatus');
+      return {enabled:!!state?.running,noKey:true,port:45910,localOnly:true};
+    },
+    lanWebSetSettings: async settings=>{
+      if(!nativeBridge)return null;
+      if(settings?.enabled===false)await nativeCall('webStop');else await nativeCall('webStart');
+      return window.electronAPI.lanWebGetStatus();
+    },
+    lanWebStart: async()=>nativeBridge?(await nativeCall('webStart'),window.electronAPI.lanWebGetStatus()):null,
+    lanWebStop: async()=>nativeBridge?(await nativeCall('webStop'),window.electronAPI.lanWebGetStatus()):null,
+    lanWebOpen: async()=>nativeBridge?nativeCall('webOpen'):false,
     lanWebRegenerateKey: async()=>null,
     onLanWebStatus: ()=>()=>{}
   };

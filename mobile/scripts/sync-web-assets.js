@@ -3,7 +3,9 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const mobileRoot = path.resolve(__dirname, '..');
-const repoRoot = path.resolve(mobileRoot, '..');
+const repoRoot = process.env.DKDS_REPO_ROOT
+  ? path.resolve(process.env.DKDS_REPO_ROOT)
+  : path.resolve(mobileRoot, '..');
 const source = path.join(repoRoot, 'src');
 const out = path.join(mobileRoot, 'assets', 'web');
 

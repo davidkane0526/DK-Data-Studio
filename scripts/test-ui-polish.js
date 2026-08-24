@@ -44,8 +44,8 @@ assert(css.includes('.dkds-horizontal-wheel-scroll{overscroll-behavior-inline:co
 
 const pathCount = (svg.match(/<path\b/g) || []).length;
 assert.equal(pathCount, 1, 'brand mark should contain one resonance trace');
-assert(svg.includes('#315efb'));
-assert(svg.includes('#25b8a6'));
+assert(svg.includes('#155eef'));
+assert(!svg.includes('#12bfa6') && !/<circle\b/.test(svg), 'brand mark must not restore the removed green peak dot');
 
 assert.equal(ico.readUInt16LE(0), 0);
 assert.equal(ico.readUInt16LE(2), 1);
