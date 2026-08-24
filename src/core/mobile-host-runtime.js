@@ -72,15 +72,16 @@
 
   function workspaceRows(){
     return (window.DKDSPlugins?.activities?.list?.()||[])
-      .filter(row=>row?.id&&contractFor(row))
+      .filter(row=>row?.id&&(contractFor(row)||text(row.navigation)==='system'))
       .map(row=>{
         const contract=contractFor(row);
+        const system=text(row.navigation)==='system';
         return {
           id:text(row.id),activityId:text(row.id),pluginId:text(row.pluginId),
           label:text(row.label||row.name||row.id),icon:text(row.icon||contract?.icon),
-          role:'top',system:text(row.navigation)==='system',isSuper:!!row.isSuper,
-          primary:{id:text(contract?.layout?.primary?.id||'main'),label:text(contract?.layout?.primary?.label||'主界面')},
-          primes:surfaceRows(contract,'prime'),subs:surfaceRows(contract,'sub')
+          role:contract?'top':'system',system,isSuper:!!row.isSuper,
+          primary:contract?{id:text(contract?.layout?.primary?.id||'main'),label:text(contract?.layout?.primary?.label||'主界面')}:{id:'main',label:text(row.label||row.name||'系统工具')},
+          primes:contract?surfaceRows(contract,'prime'):[],subs:contract?surfaceRows(contract,'sub'):[]
         };
       });
   }
@@ -334,7 +335,7 @@
   window.DKDSMobileHost=Object.freeze({
     protocol:VERSION,
     configure(next={}){configured={...configured,...next};publish();},
-    snapshot,publish,navigate
+    snapshot,publish,navigate,invoke
   });
 
   window.addEventListener('dkds:theme-changed',publish);

@@ -38,8 +38,8 @@
   function receiveNativeMessage(event){
     let msg;
     try{msg=JSON.parse(String(event?.data||''));}catch{return;}
-    if(!msg?.__dkdsNativeResponse)return;
-    window.__DKDS_NATIVE_RESOLVE__(msg.id,msg.ok,msg.value);
+    if(msg?.__dkdsNativeResponse){window.__DKDS_NATIVE_RESOLVE__(msg.id,msg.ok,msg.value);return;}
+    if(msg?.__dkdsNativeEvent){window.dispatchEvent(new CustomEvent('dkds:native-event',{detail:msg}));}
   }
   window.addEventListener('message',receiveNativeMessage);
   document.addEventListener('message',receiveNativeMessage);
@@ -153,7 +153,7 @@
     compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
     issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.17.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.46'
+    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.47'
   });
 
   async function decodeFile(file,encoding='auto') {
@@ -227,6 +227,34 @@
       }
       const files=await chooseFiles({multiple:true,accept:'.csv,.txt,.dat,.tsv,.asc,.xy,.iv,.prn,.out,.log,text/*'});
       return files.map(registerFile);
+    },
+
+    openDataDirectory: async()=>{
+      if(nativeBridge)return nativeCall('openDirectory',{});
+      return null;
+    },
+    listDataDirectory: async payload=>{
+      if(nativeBridge)return nativeCall('listDirectory',payload||{});
+      return {entries:[]};
+    },
+    readDataDocument: async payload=>{
+      if(nativeBridge)return nativeCall('readDocumentUri',payload||{});
+      throw new Error('Directory document reading is unavailable in plain web mode.');
+    },
+    smbDiscover: async()=>nativeBridge?nativeCall('smbDiscover',{}):[],
+    smbListShares: async connection=>nativeBridge?nativeCall('smbListShares',{connection:connection||{}}):[],
+    smbList: async payload=>nativeBridge?nativeCall('smbList',payload||{}):[],
+    smbRead: async payload=>nativeBridge?nativeCall('smbRead',payload||{}):[],
+    agentGetSecret: async key=>nativeBridge?nativeCall('agentGetSecret',{key:String(key||'default')}):'',
+    agentSetSecret: async payload=>nativeBridge?nativeCall('agentSetSecret',payload||{}):false,
+    agentHttpJson: async payload=>nativeBridge?nativeCall('agentHttpJson',payload||{}):(()=>{throw new Error('AI Host transport is unavailable in plain web mode.');})(),
+    mcpGetStatus: async()=>nativeBridge?nativeCall('mcpStatus',{}):({running:false}),
+    mcpStart: async payload=>nativeBridge?nativeCall('mcpStart',payload||{}):({running:false}),
+    mcpStop: async()=>nativeBridge?nativeCall('mcpStop',{}):({running:false}),
+    mcpRespond: payload=>nativeBridge?nativeCall('mcpRespond',payload||{}):false,
+    onMcpRequest: callback=>{
+      const handler=event=>{const detail=event?.detail||{};if(detail.event==='mcpRequest')callback(detail.payload||{});};
+      window.addEventListener('dkds:native-event',handler);return()=>window.removeEventListener('dkds:native-event',handler);
     },
 
     readDataText: async payload=>{
@@ -423,6 +451,29 @@
       const installed={...pending.pkg,installedAt:new Date().toISOString()};
       await mobilePluginPut(installed);
       return {ok:true,package:{...installed,previousPackage:pending.previous||null}};
+    },
+    pluginValidateGeneratedPackage: async raw=>{
+      try{
+        const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
+        if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        const compatibility=mobileCompatibility(pkg);
+        if(compatibility?.compatible===false)return {ok:false,error:{title:'插件版本不兼容',message:'生成插件与当前移动端 Plugin API 不兼容。',compatibility}};
+        return {ok:true,package:pkg,manifest:pkg.manifest,compatibility};
+      }catch(err){return {ok:false,error:{title:'生成插件包无效',message:String(err?.message||err),code:'mobile-generated-package-invalid'}};}
+    },
+    pluginInstallGeneratedPackage: async payload=>{
+      if(!nativeBridge)return {ok:false,error:{message:'当前运行环境不支持安装生成插件。'}};
+      try{
+        const raw=payload?.package||payload;
+        const pkg=window.DKDSMobilePluginPackage?.normalize(raw);
+        if(!pkg)throw new Error('Mobile plugin package validator is unavailable.');
+        const compatibility=mobileCompatibility(pkg);
+        if(compatibility?.compatible===false)return {ok:false,error:{title:'插件版本不兼容',message:'生成插件与当前移动端 Plugin API 不兼容。',compatibility}};
+        const previous=await mobilePluginGet(pkg.manifest.id);
+        const installed={...pkg,installedAt:new Date().toISOString(),generatedBy:String(payload?.source||'studio-kernel')};
+        await mobilePluginPut(installed);
+        return {ok:true,package:{...installed,previousPackage:previous||null},compatibility};
+      }catch(err){return {ok:false,error:{title:'生成插件安装失败',message:String(err?.message||err),code:'mobile-generated-install-failed'}};}
     },
     pluginRestorePackage: async payload=>{
       if(!nativeBridge)return false;

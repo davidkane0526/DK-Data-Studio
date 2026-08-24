@@ -2366,7 +2366,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.46',
+      version:'3.61.47',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3221,7 +3221,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.46',
+      appVersion:'3.61.47',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3252,7 +3252,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       saveChartImage,
       makeFloating,
       artifacts:artifactHostApi(),
-      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel})}
+      services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()}),lanWeb:Object.freeze({getStatus:()=>lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),connectivity:window.DKDSConnectivity}
     });
 
     // Android invokes stable Core commands through the Mobile Host Adapter.
@@ -3269,6 +3269,66 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       redo:()=>systemRedo(),
       openPluginManager:()=>{openAnalysisPage('pluginManagerPage');window.DKDSPluginManagerUI?.render?.();return true;}
     });
+
+    const connectivitySnapshot=()=>{
+      if(window.DKDSMobileHost?.snapshot)return window.DKDSMobileHost.snapshot();
+      const activityId=String(window.DKDSPlugins?.activities?.active?.()||'');
+      const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId}));
+      const activities=(window.DKDSPlugins?.activities?.list?.()||[]).map(row=>({id:String(row.id||''),activityId:String(row.id||''),pluginId:String(row.pluginId||''),label:String(row.label||row.name||row.id||'')})).filter(row=>row.id);
+      return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:projectHistorySnapshot(),theme:window.DKDSTheme?.current?.()||'light',activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
+    };
+    const connectivityInvoke=async(method,payload={})=>{
+      if(window.DKDSMobileHost?.invoke)return window.DKDSMobileHost.invoke(method,payload);
+      if(method==='navigate')return window.DKDSPlugins?.activities?.activateEmbedded?.(String(payload.activityId||payload.id||''),{invoke:true});
+      if(method==='action')return window.DKDSUI?.actions?.invoke?.(String(payload.activityId||window.DKDSPlugins?.activities?.active?.()||''),String(payload.id||''),String(payload.itemId||''));
+      if(method==='surface')return window.DKDSUI?.workspaces?.invoke?.(String(payload.activityId||window.DKDSPlugins?.activities?.active?.()||''),String(payload.id||''));
+      if(method==='command'&&payload.id==='project.undo')return systemUndo();
+      if(method==='command'&&payload.id==='project.redo')return systemRedo();
+      throw new Error(`Unsupported Studio Core control: ${method}`);
+    };
+    window.DKDSConnectivity?.configure?.({snapshot:connectivitySnapshot,invoke:connectivityInvoke});
+
+    const kernelArtifactApi=()=>artifactHostApi();
+    const kernelArtifactUpsert=(artifact,label='AI 修改数据对象')=>{
+      if(!artifact?.id)throw new Error('Artifact id is required.');
+      const api=kernelArtifactApi(),previous=api.get(artifact.id),next=window.DKDSData.deepClone(artifact);
+      const before=previous?{upserts:[window.DKDSData.deepClone(previous)],removedIds:[]}:{upserts:[],removedIds:[String(artifact.id)]};
+      const after={upserts:[next],removedIds:[]};
+      projectHistoryHostApi().commitArtifactMutation({label,before,after});
+      return api.get(artifact.id);
+    };
+    const kernelArtifactRemove=(id,label='AI 删除数据对象')=>{
+      const api=kernelArtifactApi(),previous=api.get(id);if(!previous)return false;
+      projectHistoryHostApi().commitArtifactMutation({label,before:{upserts:[window.DKDSData.deepClone(previous)],removedIds:[]},after:{upserts:[],removedIds:[String(id)]}});return true;
+    };
+    const boundedPlotValue=(value,limit=240)=>{
+      if(Array.isArray(value)){if(value.length>limit)return value.slice(0,limit).map(v=>boundedPlotValue(v,limit));return value.map(v=>boundedPlotValue(v,limit));}
+      if(value&&typeof value==='object'){const out={};for(const [key,val] of Object.entries(value)){if(['_context','_fullData','_fullLayout'].includes(key))continue;out[key]=boundedPlotValue(val,limit);}return out;}
+      return value;
+    };
+    const kernelPlotInspect=({limit=20}={})=>[...document.querySelectorAll('[data-dkds-chart-renderer="d3"]')].slice(0,Math.max(1,Math.min(50,Number(limit)||20))).map((el,index)=>({
+      id:el.id||`plot-${index+1}`,title:String(el.layout?.title?.text||el.layout?.title||el.closest?.('.trend-card,.floating-panel')?.querySelector?.('.trend-card-header,.drag-handle')?.textContent||'' ).trim(),
+      traces:boundedPlotValue(el.data||[]),layout:boundedPlotValue(el.layout||{}),renderer:'d3',visible:el.getClientRects().length>0,
+      size:{width:Math.round(el.getBoundingClientRect().width),height:Math.round(el.getBoundingClientRect().height)}
+    }));
+    const kernelPlotPanel=()=>{
+      let panel=document.getElementById('dkdsKernelPlotPanel');if(panel)return panel;
+      panel=document.createElement('section');panel.id='dkdsKernelPlotPanel';panel.className='floating-panel dkds-kernel-plot-panel';panel.style.cssText='position:fixed;left:12vw;top:15vh;width:min(720px,72vw);height:min(520px,68vh);z-index:820;resize:both;overflow:hidden;min-width:320px;min-height:240px;';
+      panel.innerHTML='<div class="drag-handle"><strong>AI Plot</strong><button type="button" class="panel-close" aria-label="关闭">×</button></div><div class="dkds-kernel-plot" style="height:calc(100% - 42px);min-height:0"></div>';
+      document.body.appendChild(panel);panel.querySelector('.panel-close').onclick=()=>panel.classList.add('hidden');makeFloating(panel);return panel;
+    };
+    const kernelPlotRender=async args=>{const traces=Array.isArray(args?.traces)?window.DKDSData.deepClone(args.traces):[];if(!traces.length)throw new Error('No plottable traces were supplied.');const panel=kernelPlotPanel();panel.classList.remove('hidden');panel.querySelector('.drag-handle strong').textContent=String(args?.title||'AI Plot');const target=panel.querySelector('.dkds-kernel-plot');const layout={autosize:true,margin:{l:64,r:24,t:34,b:54},showlegend:true,hovermode:'closest',...(args?.layout||{})};await window.DKDSCharts.react(target,traces,layout,{responsive:true,displayModeBar:true,scrollZoom:true,doubleClick:'reset'});return {ok:true,id:panel.id,traceCount:traces.length};};
+    const kernelRuntimeStatus=async()=>({host:await window.electronAPI?.getRuntimeStatus?.(),charts:window.DKDSCharts?.runtimeState?.()||null,performance:window.DKDSPerformance?.snapshot?.()||null,plugins:window.DKDSPlugins?.diagnostics?.()||null,kernel:window.DKDSKernel?.describe?.()||null});
+    window.DKDSKernel?.configure?.({
+      projectSnapshot:connectivitySnapshot,
+      projectList:()=> (state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty})),
+      projectSwitch:id=>switchProjectTab(String(id||'')),projectNew:args=>createProjectTab(String(args?.title||'').trim()||null,true),projectOpen:()=>openProject(),projectSave:()=>saveProject(),
+      historyState:()=>projectHistorySnapshot(),historyUndo:()=>systemUndo(),historyRedo:()=>systemRedo(),artifacts:kernelArtifactApi,artifactUpsert:kernelArtifactUpsert,artifactRemove:kernelArtifactRemove,
+      plotInspect:kernelPlotInspect,plotRender:kernelPlotRender,plotClose:()=>{document.getElementById('dkdsKernelPlotPanel')?.classList.add('hidden');return true;},
+      pluginList:()=>window.DKDSPlugins?.manager?.list?.()||[],pluginValidate:pkg=>window.DKDSPlugins?.external?.validatePackage?.(pkg),pluginInstallGenerated:(pkg,options)=>window.DKDSPlugins?.external?.installPackage?.(pkg,options),pluginSetEnabled:(id,enabled)=>window.DKDSPlugins?.manager?.setEnabled?.(id,enabled),pluginUninstall:id=>window.DKDSPlugins?.external?.uninstall?.(id),
+      files:()=>window.DKDSConnectivity?.files,smb:()=>window.DKDSConnectivity?.smb,runtimeStatus:kernelRuntimeStatus,automationRun:()=>window.DKDSAutomationTests?.run?.()
+    });
+    window.DKDSMcpRuntime?.configure?.({kernel:window.DKDSKernel});
 
     window.DKDSCapabilities?.register?.('core','core.data-sources',{
       kind:'service',title:'Project Data Sources',version:'1.0.0',remote:true,

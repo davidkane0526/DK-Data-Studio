@@ -1,0 +1,121 @@
+package __PACKAGE__;
+
+import android.util.Base64;
+import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import jcifs.CIFSContext;
+import jcifs.CloseableIterator;
+import jcifs.NameServiceClient;
+import jcifs.NetbiosAddress;
+import jcifs.SmbResource;
+import jcifs.config.PropertyConfiguration;
+import jcifs.context.BaseContext;
+import jcifs.context.SingletonContext;
+import jcifs.netbios.NameServiceClientImpl;
+import jcifs.smb.NtlmPasswordAuthenticator;
+import jcifs.smb.SmbException;
+
+final class DkdsSmbService {
+  static final long MAX_FILE_BYTES = 64L * 1024L * 1024L;
+  static final long MAX_TOTAL_BYTES = 128L * 1024L * 1024L;
+  private DkdsSmbService() {}
+
+  private static String value(ReadableMap map, String key) {
+    try { return map != null && map.hasKey(key) && !map.isNull(key) ? map.getString(key) : ""; } catch (Exception ignored) { return ""; }
+  }
+  private static CIFSContext context(ReadableMap connection) throws Exception {
+    Properties p = new Properties();
+    p.setProperty("jcifs.smb.client.minVersion", "SMB1");
+    p.setProperty("jcifs.smb.client.maxVersion", "SMB311");
+    p.setProperty("jcifs.smb.client.responseTimeout", "15000");
+    p.setProperty("jcifs.smb.client.soTimeout", "20000");
+    CIFSContext base = new BaseContext(new PropertyConfiguration(p));
+    return base.withCredentials(new NtlmPasswordAuthenticator(value(connection,"domain"), value(connection,"username"), value(connection,"password")));
+  }
+  private static String url(ReadableMap connection, String relative) {
+    String server=value(connection,"server").trim(), share=value(connection,"share").trim();
+    if(!server.matches("[A-Za-z0-9._:-]+") || share.isEmpty() || share.contains("/") || share.contains("\\")) throw new IllegalArgumentException("SMB 服务器或共享名称无效");
+    String clean=(relative==null?"":relative).replace('\\','/');
+    if(clean.startsWith("/") || clean.equals("..") || clean.contains("../")) throw new IllegalArgumentException("SMB 路径无效");
+    StringBuilder out=new StringBuilder("smb://").append(server).append('/').append(share).append('/');
+    for(String part: clean.split("/")) if(!part.isEmpty()) out.append(part).append('/');
+    return out.toString();
+  }
+  static WritableArray listShares(ReadableMap connection) throws Exception {
+    String server=value(connection,"server").trim();
+    if(!server.matches("[A-Za-z0-9._:-]+")) throw new IllegalArgumentException("SMB 服务器地址无效");
+    WritableArray result=Arguments.createArray();
+    try(SmbResource root=context(connection).get("smb://"+server+"/"); CloseableIterator<SmbResource> it=root.children()) {
+      while(it.hasNext()) try(SmbResource item=it.next()) { if(item.isDirectory()) result.pushString(item.getName().replaceAll("/$","")); }
+    }
+    return result;
+  }
+  static WritableArray list(ReadableMap connection, String relative) throws Exception {
+    WritableArray result=Arguments.createArray();
+    try(SmbResource dir=context(connection).get(url(connection,relative))) {
+      if(!dir.isDirectory()) throw new IllegalArgumentException("SMB 路径不是文件夹");
+      try(CloseableIterator<SmbResource> it=dir.children()) {
+        while(it.hasNext()) try(SmbResource item=it.next()) {
+          String name=item.getName().replaceAll("/$",""); boolean directory=item.isDirectory();
+          WritableMap row=Arguments.createMap(); row.putString("name",name); row.putBoolean("directory",directory);
+          String parent=relative==null?"":relative; row.putString("path",parent+(parent.isEmpty()?"":"/")+name);
+          row.putDouble("size",directory?0:item.length()); row.putDouble("modifiedAt",item.lastModified()); result.pushMap(row);
+        }
+      }
+    }
+    return result;
+  }
+  static WritableArray read(ReadableMap connection, ReadableArray paths) throws Exception {
+    if(paths==null || paths.size()==0 || paths.size()>100) throw new IllegalArgumentException("请选择 1 到 100 个 SMB 文件");
+    WritableArray result=Arguments.createArray(); long total=0; CIFSContext smb=context(connection);
+    for(int i=0;i<paths.size();i++) {
+      String relative=paths.getString(i); if(relative==null) continue;
+      try(SmbResource file=smb.get(url(connection,relative)); InputStream input=file.openInputStream(); ByteArrayOutputStream output=new ByteArrayOutputStream()) {
+        byte[] buffer=new byte[8192]; int count; long size=0;
+        while((count=input.read(buffer))!=-1) { size+=count; total+=count; if(size>MAX_FILE_BYTES) throw new IllegalArgumentException(relative+" 超过 64 MiB"); if(total>MAX_TOTAL_BYTES) throw new IllegalArgumentException("SMB 文件总大小超过 128 MiB"); output.write(buffer,0,count); }
+        WritableMap row=Arguments.createMap(); row.putString("name",relative.substring(relative.lastIndexOf('/')+1)); row.putString("path",relative); row.putDouble("size",size); row.putString("base64",Base64.encodeToString(output.toByteArray(),Base64.NO_WRAP)); result.pushMap(row);
+      }
+    }
+    return result;
+  }
+  static WritableArray discover() throws Exception {
+    Set<String> candidates=new HashSet<>();
+    for(NetworkInterface net: Collections.list(NetworkInterface.getNetworkInterfaces())) {
+      if(!net.isUp()||net.isLoopback()) continue;
+      for(InetAddress addr: Collections.list(net.getInetAddresses())) if(addr instanceof Inet4Address && addr.isSiteLocalAddress() && !addr.isLoopbackAddress()) {
+        byte[] b=addr.getAddress(); for(int suffix=1;suffix<255;suffix++) candidates.add(String.format(Locale.ROOT,"%d.%d.%d.%d",b[0]&255,b[1]&255,b[2]&255,suffix));
+      }
+    }
+    ExecutorService pool=Executors.newFixedThreadPool(48); CountDownLatch latch=new CountDownLatch(candidates.size()); ArrayList<WritableMap> found=new ArrayList<>(); NameServiceClient nbt=new NameServiceClientImpl(SingletonContext.getInstance());
+    for(String address:candidates) pool.execute(()->{ try(Socket socket=new Socket()) { socket.connect(new InetSocketAddress(address,445),420); String name=address; try{NetbiosAddress[] names=nbt.getNbtAllByAddress(address); if(names.length>0 && names[0].getHostName()!=null && !names[0].getHostName().trim().isEmpty()) name=names[0].getHostName().trim();}catch(Exception ignored){} WritableMap row=Arguments.createMap(); row.putString("address",address); row.putString("name",name); synchronized(found){found.add(row);} } catch(Exception ignored){} finally{latch.countDown();}});
+    latch.await(15,TimeUnit.SECONDS); pool.shutdownNow(); found.sort((a,b)->a.getString("address").compareTo(b.getString("address"))); WritableArray result=Arguments.createArray(); for(WritableMap row:found) result.pushMap(row); return result;
+  }
+  static String message(Throwable error) {
+    String raw=error==null?"":String.valueOf(error.getMessage()); String lower=raw.toLowerCase(Locale.ROOT);
+    if(lower.contains("access denied")) return "拒绝访问，请检查 SMB 账号权限";
+    if(lower.contains("logon")||lower.contains("password")) return "SMB 用户名或密码错误";
+    if(lower.contains("timeout")||lower.contains("timed out")||lower.contains("unreachable")) return "无法连接 SMB 服务器，请检查地址与网络";
+    if(error instanceof SmbException) return raw+" (NT_STATUS 0x"+Integer.toHexString(((SmbException)error).getNtStatus()).toUpperCase(Locale.ROOT)+")";
+    return raw.isEmpty()?"SMB 操作失败":raw;
+  }
+}

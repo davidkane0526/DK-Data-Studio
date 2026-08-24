@@ -1,3 +1,15 @@
+# v3.61.47 — Studio Kernel, Full Agent/MCP & Connectivity
+
+- Added a shared Studio Kernel capability registry consumed by both the built-in AI Agent and MCP server.
+- Exposed project/history, canonical artifacts, data preview/statistics/cleaning/formulas, plugin/Core DataFlow importers-exporters-transformers-analyzers, scientific transforms/workflows, plots, plugins, native file read/write, SMB, UI and diagnostics as stable kernel tools.
+- Added dynamic deep `core.capabilities.invoke`, allowing AI/MCP to call future Core/plugin capabilities without bespoke bridges.
+- Upgraded the Agent to iterative tool execution for OpenAI-compatible and Anthropic providers, with full-kernel and read-only access modes.
+- Added `plugin.authoring.contract` plus generated plugin validation/install pipelines on both desktop and Android, allowing Agent/MCP to inspect the current authoring contract, generate executable `.dkplugin` packages, validate them and install them through the normal Plugin Kernel.
+- Added a generated machine-readable SDK authoring corpus (SDK 1.17.6 / Plugin API 1.17.0 contract, manifest schema, TypeScript definitions, guides and official templates) exposed through `sdk.authoring.describe/files.list/search/read`; Android packages the same corpus inside its offline WebView bundle.
+- Upgraded MCP to dynamically publish Kernel tools and Studio resources over Streamable HTTP, including `dkds://sdk`, `dkds://sdk/files` and `dkds://sdk/file/{path}` resource templates; increased deep-operation transport timeout.
+- Added desktop SMB host and Android jcifs-ng SMB support; expanded Android SAF/DocumentsProvider directory access.
+- Reduced structural divider contrast across desktop/WebView and React Native themes, normalized remaining legacy structural rules to the semantic low-contrast border token, and lowered dark-mode separator opacity further.
+
 # v3.61.46 — Android Mobile Shell Refinement & Resume Reliability
 
 - Keep Undo/Redo exclusively in the Android software header immediately before Data/Parameters. Remove duplicated history controls from every Portable/Plot/Plugin view and remove title-bar context-menu placement so press-hold resize can no longer summon the position menu; placement now opens only from its explicit button.

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   AppState,
   BackHandler,
+  DeviceEventEmitter,
   Linking,
   NativeModules,
   Pressable,
@@ -60,7 +61,20 @@ type NativeFile = {
 type DkdsNativeHostApi = {
   openDocuments?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
   openDocumentsExtended?: (types: string[], multiple: boolean) => Promise<NativeFile[]>;
+  openDocumentTree?: () => Promise<{ uri: string; name?: string; persistable?: boolean } | null>;
+  listDocumentTree?: (uri: string, relativePath: string) => Promise<any[]>;
   readDocument?: (uri: string) => Promise<string>;
+  smbDiscover?: () => Promise<any[]>;
+  smbListShares?: (connection: any) => Promise<string[]>;
+  smbList?: (connection: any, path: string) => Promise<any[]>;
+  smbRead?: (connection: any, paths: string[]) => Promise<any[]>;
+  agentGetSecret?: (key: string) => Promise<string>;
+  agentSetSecret?: (key: string, value: string) => Promise<boolean>;
+  agentHttpJson?: (endpoint: string, headersJson: string, bodyJson: string, timeoutMs: number) => Promise<any>;
+  mcpStatus?: () => Promise<any>;
+  mcpStart?: (token: string) => Promise<any>;
+  mcpStop?: () => Promise<any>;
+  mcpRespond?: (id: string, ok: boolean, value: string) => Promise<boolean>;
   createDocument?: (name: string, mimeType: string, content: string, encoding: 'utf8' | 'base64') => Promise<string | null>;
   writeDocument?: (uri: string, content: string, encoding: 'utf8' | 'base64') => Promise<string>;
   webStatus?: () => Promise<{ running?: boolean; url?: string; error?: string }>;
@@ -130,6 +144,13 @@ export default function App() {
   const [webServiceVisible, setWebServiceVisible] = useState(false);
   const [webService, setWebService] = useState<NativeWebServiceState>({ running: false, url: '' });
   const palette = useMemo(() => paletteFor(shell.theme), [shell.theme]);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('DkdsNativeHostEvent', (payload: any) => {
+      webRef.current?.postMessage(JSON.stringify({ __dkdsNativeEvent: true, event: payload?.event || '', payload: payload?.payload || payload }));
+    });
+    return () => subscription.remove();
+  }, []);
 
   const resolveWeb = useCallback((id: string | undefined, ok: boolean, value: unknown) => {
     if (!id) return;
@@ -395,6 +416,38 @@ export default function App() {
         resolveWeb(req.id, true, await readFile(req.payload?.token));
         return;
       }
+      if (req.type === 'openDirectory') {
+        resolveWeb(req.id, true, await nativeHost?.openDocumentTree?.());
+        return;
+      }
+      if (req.type === 'listDirectory') {
+        resolveWeb(req.id, true, await nativeHost?.listDocumentTree?.(String(req.payload?.uri || ''), String(req.payload?.relativePath || '')) || []);
+        return;
+      }
+      if (req.type === 'readDocumentUri') {
+        const uri = String(req.payload?.uri || '');
+        if (!uri || !nativeHost?.readDocument) throw new Error('Android 文档读取接口不可用。');
+        resolveWeb(req.id, true, { uri, name: String(req.payload?.name || 'document'), base64: await nativeHost.readDocument(uri) });
+        return;
+      }
+      if (req.type === 'smbDiscover') { resolveWeb(req.id, true, await nativeHost?.smbDiscover?.() || []); return; }
+      if (req.type === 'smbListShares') { resolveWeb(req.id, true, await nativeHost?.smbListShares?.(req.payload?.connection || {}) || []); return; }
+      if (req.type === 'smbList') { resolveWeb(req.id, true, await nativeHost?.smbList?.(req.payload?.connection || {}, String(req.payload?.path || '')) || []); return; }
+      if (req.type === 'smbRead') { resolveWeb(req.id, true, await nativeHost?.smbRead?.(req.payload?.connection || {}, Array.isArray(req.payload?.paths) ? req.payload.paths : []) || []); return; }
+      if (req.type === 'agentGetSecret') { resolveWeb(req.id, true, await nativeHost?.agentGetSecret?.(String(req.payload?.key || 'default')) || ''); return; }
+      if (req.type === 'agentSetSecret') { resolveWeb(req.id, true, await nativeHost?.agentSetSecret?.(String(req.payload?.key || 'default'), String(req.payload?.value || '')) || false); return; }
+      if (req.type === 'agentHttpJson') {
+        const payload = req.payload || {};
+        const raw = await nativeHost?.agentHttpJson?.(String(payload.endpoint || ''), JSON.stringify(payload.headers || {}), JSON.stringify(payload.body ?? null), Number(payload.timeoutMs || 45000));
+        const normalized = raw && typeof raw === 'object' && typeof raw.bodyJson === 'string'
+          ? { ...raw, body: (() => { try { return JSON.parse(raw.bodyJson); } catch { return raw.bodyJson; } })() }
+          : raw;
+        resolveWeb(req.id, true, normalized); return;
+      }
+      if (req.type === 'mcpStatus') { resolveWeb(req.id, true, await nativeHost?.mcpStatus?.() || { running: false }); return; }
+      if (req.type === 'mcpStart') { resolveWeb(req.id, true, await nativeHost?.mcpStart?.(String(req.payload?.token || ''))); return; }
+      if (req.type === 'mcpStop') { resolveWeb(req.id, true, await nativeHost?.mcpStop?.()); return; }
+      if (req.type === 'mcpRespond') { resolveWeb(req.id, true, await nativeHost?.mcpRespond?.(String(req.payload?.id || ''), req.payload?.ok !== false, JSON.stringify(req.payload?.value ?? null))); return; }
       if (req.type === 'releaseFiles') {
         for (const token of req.payload?.tokens || []) nativeFiles.current.delete(String(token));
         resolveWeb(req.id, true, true);

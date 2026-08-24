@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.46
+# DK Data Studio — v3.61.47
+
+## v3.61.47 Studio Kernel / AI Agent / MCP / SMB
+
+- 新增共享 **Studio Kernel Registry**：AI Agent 与 MCP 共用同一套内核工具定义，覆盖工程、历史、Canonical Artifact、数据统计/预览、清洗、公式列、插件/Core 注册的 importer / exporter / transformer / analyzer、科学变换、Workflow、绘图、插件、文件 Provider、原生文件读写、SMB、UI 与诊断。
+- `core.capabilities.invoke` 作为稳定的深层扩展入口：任何 Core 或插件注册的新 Capability 都可以被 Agent/MCP 动态发现并调用，无需为每个插件重新增加专用桥接。
+- AI Agent 默认提供“完整内核”模式，支持 OpenAI-compatible 与 Anthropic 多轮工具调用，可实际分析/清洗数据、读取当前数据图、绘图、运行插件数据流和科学流程；`plugin.authoring.contract` + `sdk.authoring.search/read` 让 AI 按需读取随软件打包的 SDK 1.17.6、Plugin API 1.17.0 类型定义、manifest schema、UI/Workspace/DataModel 文档和官方模板，再生成、校验、安装 `.dkplugin`。生成结果还可通过原生文件接口导出为报告、CSV/JSON 与源码。同时保留只读分析模式。
+- MCP 升级为动态 Kernel Server，自动导出 Kernel tools，并提供 `dkds://kernel`、`dkds://project`、`dkds://artifacts`、`dkds://capabilities`、`dkds://plugins`、`dkds://plots`、`dkds://sdk`、`dkds://sdk/files` 以及 `dkds://sdk/file/{path}` 资源模板。
+- 桌面端增加 SMB Host；Android 使用 `jcifs-ng` 支持 SMB，并扩展 Storage Access Framework / DocumentsProvider 目录访问。Agent/MCP 的完整内核架构说明见 `docs/STUDIO_KERNEL_AGENT_MCP.md`。
+- 桌面与移动端暗色边界统一降低对比度，弱化大量结构分割线，主要依赖表面层级和间距建立界面秩序。
 
 ## v3.61.46 Android 移动壳细化与后台恢复可靠性
 

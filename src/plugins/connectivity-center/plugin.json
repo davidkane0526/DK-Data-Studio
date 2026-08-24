@@ -1,0 +1,32 @@
+{
+  "id": "builtin.connectivity-center",
+  "name": "Connectivity & AI Center",
+  "version": "1.1.0",
+  "apiVersion": "1.16.0",
+  "requiresCore": [
+    "runtime",
+    "status",
+    "io",
+    "services",
+    "workspace",
+    "ui.dom",
+    "ui.activities",
+    "ui.pages",
+    "ui.styles",
+    "ui.menus"
+  ],
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 34,
+  "description": "Unified Studio connectivity center for provider files, SMB, full-kernel AI Agent and deep MCP server.",
+  "capabilities": [
+    "ui.activity",
+    "ui.page",
+    "files.provider-directory",
+    "network.smb",
+    "ai.agent.kernel",
+    "mcp.kernel-server"
+  ],
+  "source": "builtin",
+  "pluginType": "foundation"
+}

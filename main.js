@@ -1,4 +1,5 @@
 const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme } = require('electron');
+const { safeStorage } = require('electron');
 const { LanUpdateClient } = require('./update-client');
 const { LanWebServer } = require('./lan-web-server');
 const { resolvePluginWindow, listPluginWindows } = require('./plugin-window-manager');
@@ -11,6 +12,8 @@ const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require
 const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
 const PluginOverridePolicy = require('./plugin-override-policy');
 const PluginSdkContract = require('./sdk/contract.json');
+const SmbService = require('./services/smb-service');
+const { McpServer } = require('./services/mcp-server');
 
 const DKDSProjectFormat = require('./src/core/project-format');
 const APP_NAME = 'DK Data Studio';
@@ -35,6 +38,10 @@ let capabilityRequestSeq = 0;
 let auxiliaryRoleSnapshotSeq = 0;
 let appQuitting = false;
 let appearanceTheme = '';
+let primaryWindow = null;
+let mcpServer = null;
+let mcpRequestSeq = 0;
+const pendingMcpRequests = new Map();
 
 function appearanceSettingsPath(){return path.join(app.getPath('userData'),'appearance.json');}
 function readPersistedAppearanceTheme(){
@@ -375,6 +382,55 @@ function commonWindowPreferences() {
   };
 }
 
+
+function agentSecretsPath(){return path.join(app.getPath('userData'),'agent-secrets.json');}
+function readAgentSecrets(){
+  try{return JSON.parse(fs.readFileSync(agentSecretsPath(),'utf8'))||{};}catch{return {};}
+}
+function writeAgentSecrets(value){
+  const target=agentSecretsPath();fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.writeFileSync(target,JSON.stringify(value,null,2)+'\n','utf8');
+}
+function secretKeyName(key){
+  const value=String(key||'default').trim();
+  if(!/^[A-Za-z0-9._-]{1,80}$/.test(value))throw new Error('无效的密钥标识。');
+  return value;
+}
+function storeAgentSecret(key,value){
+  const name=secretKeyName(key),rows=readAgentSecrets(),plain=String(value||'');
+  if(!plain){delete rows[name];writeAgentSecrets(rows);return true;}
+  if(!safeStorage.isEncryptionAvailable())throw new Error('当前系统安全存储不可用，未保存 API Key。');
+  rows[name]={encrypted:safeStorage.encryptString(plain).toString('base64')};writeAgentSecrets(rows);return true;
+}
+function loadAgentSecret(key){
+  const name=secretKeyName(key),row=readAgentSecrets()[name];if(!row?.encrypted)return '';
+  if(!safeStorage.isEncryptionAvailable())return '';
+  try{return safeStorage.decryptString(Buffer.from(row.encrypted,'base64'));}catch{return '';}
+}
+async function agentHttpJson(payload={}){
+  const endpoint=String(payload.endpoint||'').trim();
+  let url;try{url=new URL(endpoint);}catch{throw new Error('AI Endpoint 无效。');}
+  if(!['https:','http:'].includes(url.protocol))throw new Error('AI Endpoint 只允许 HTTP/HTTPS。');
+  const timeoutMs=Math.max(1000,Math.min(120000,Number(payload.timeoutMs)||60000));
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{method:String(payload.method||'POST').toUpperCase(),headers:{'content-type':'application/json',...(payload.headers||{})},body:payload.body==null?undefined:JSON.stringify(payload.body),signal:controller.signal});
+    const text=await response.text();if(text.length>8*1024*1024)throw new Error('AI 响应超过 8 MiB 限制。');
+    let body=null;try{body=text?JSON.parse(text):null;}catch{body={text};}
+    return {ok:response.ok,status:response.status,statusText:response.statusText,body};
+  }catch(error){if(error?.name==='AbortError')throw new Error('AI 请求超时。');throw error;}finally{clearTimeout(timer);}
+}
+function dispatchMcpToRenderer(request){
+  const win=primaryWindow&&!primaryWindow.isDestroyed()?primaryWindow:BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&!auxiliaryBootstrap.has(candidate.webContents.id));
+  if(!win)throw new Error('Studio Core 尚未就绪。');
+  const id=`mcp-${Date.now()}-${++mcpRequestSeq}`;
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{pendingMcpRequests.delete(id);reject(new Error('Studio MCP Core 响应超时。'));},120000);
+    pendingMcpRequests.set(id,{resolve,reject,timer,webContentsId:win.webContents.id});
+    win.webContents.send('mcp:request',{id,...request});
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1680,
@@ -388,6 +444,8 @@ function createWindow() {
     webPreferences: commonWindowPreferences()
   });
   win.setMenuBarVisibility(false);
+  primaryWindow = win;
+  win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   return win;
 }
@@ -886,7 +944,7 @@ app.whenReady().then(() => {
     const requestId=`cap-${process.pid}-${Date.now()}-${++capabilityRequestSeq}`;
     const request={requestId,id:String(payload.id||''),method:String(payload.method||'invoke'),args:Array.isArray(payload.args)?payload.args:[]};
     return await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{pendingCapabilityInvocations.delete(requestId);reject(new Error(`Capability invocation timed out: ${request.id}.${request.method}`));},15000);
+      const timer=setTimeout(()=>{pendingCapabilityInvocations.delete(requestId);reject(new Error(`Capability invocation timed out: ${request.id}.${request.method}`));},60000);
       pendingCapabilityInvocations.set(requestId,{resolve,reject,timer,ownerId});
       try{ownerWindow.webContents.send('capabilities:invokeRequest',request);}
       catch(err){clearTimeout(timer);pendingCapabilityInvocations.delete(requestId);reject(err);}
@@ -1145,6 +1203,40 @@ app.whenReady().then(() => {
       return {ok:false,error:pluginInstallErrorPayload(err,{manifest,compatibility:packageCompatibility(manifest)})};
     }
   });
+
+  ipcMain.handle('plugins:validateGeneratedPackage', async (_event, raw) => {
+    let manifest=null;
+    try{
+      const serialized=JSON.stringify(raw||{});
+      if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
+      const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      return {ok:true,package:pkg,manifest,compatibility};
+    }catch(err){return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_PACKAGE_INVALID',title:'生成插件包无效',manifest})};}
+  });
+  ipcMain.handle('plugins:installGeneratedPackage', async (_event, payload={}) => {
+    let manifest=null,previousPackage=null,target='';
+    try{
+      const raw=payload?.package||payload;
+      const serialized=JSON.stringify(raw||{});
+      if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
+      const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(manifest.id));
+      if(fs.existsSync(target))previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});
+      if(previousPackage)archiveExternalPluginPackage(previousPackage,'agent-update');
+      const installed={...pkg,installedAt:new Date().toISOString(),generatedBy:String(payload?.source||'studio-kernel')};
+      atomicWritePluginPackage(target,installed);
+      return {ok:true,package:{...installed,installedPath:target,previousPackage},compatibility};
+    }catch(err){
+      try{if(target){if(previousPackage)atomicWritePluginPackage(target,previousPackage);else if(fs.existsSync(target))fs.rmSync(target,{force:true});}}catch{}
+      return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_GENERATED_INSTALL_FAILED',title:'生成插件安装失败',manifest,compatibility:manifest?packageCompatibility(manifest):null})};
+    }
+  });
   ipcMain.handle('plugins:historyList', async (_event, id) => {
     const pluginId=String(id||'');
     return listExternalPluginHistory(pluginId);
@@ -1195,6 +1287,28 @@ app.whenReady().then(() => {
     return dir;
   });
 
+
+  ipcMain.handle('smb:discover', async () => SmbService.safeSmbOperation(()=>SmbService.discoverSmbServers(),'SMB 设备发现失败'));
+  ipcMain.handle('smb:listShares', async (_event, connection={}) => SmbService.safeSmbOperation(()=>SmbService.scanDesktopSmbShares(connection),'SMB 共享枚举失败'));
+  ipcMain.handle('smb:list', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.listDesktopSmb(payload.connection||{},payload.path||''),'SMB 目录读取失败'));
+  ipcMain.handle('smb:read', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.readDesktopSmb(payload.connection||{},Array.isArray(payload.paths)?payload.paths:[]),'SMB 文件读取失败'));
+
+  ipcMain.handle('agent:getSecret', async (_event,key) => loadAgentSecret(key));
+  ipcMain.handle('agent:setSecret', async (_event,payload={}) => storeAgentSecret(payload.key,payload.value));
+  ipcMain.handle('agent:httpJson', async (_event,payload={}) => agentHttpJson(payload));
+
+  ipcMain.handle('mcp:getStatus', async () => mcpServer?.status?.()||{running:false,port:8766,url:'',localUrl:'',lanUrl:'',tokenHeader:'x-dkds-token',protocolVersion:'2025-06-18'});
+  ipcMain.handle('mcp:start', async (_event,payload={}) => {
+    if(!mcpServer)mcpServer=new McpServer({dispatch:dispatchMcpToRenderer,log:message=>console.log(message)});
+    return mcpServer.start(String(payload.token||''));
+  });
+  ipcMain.handle('mcp:stop', async () => mcpServer?.stop?.()||{running:false});
+  ipcMain.on('mcp:response',(event,payload={})=>{
+    const row=pendingMcpRequests.get(String(payload.id||''));if(!row||row.webContentsId!==event.sender.id)return;
+    clearTimeout(row.timer);pendingMcpRequests.delete(String(payload.id));
+    if(payload.ok===false)row.reject(new Error(String(payload.error||'MCP Core request failed')));else row.resolve(payload.value);
+  });
+
   ipcMain.handle('lanweb:getStatus', async () => lanWebServer?.getStatus() || null);
   ipcMain.handle('lanweb:makeQr', async (_event, payload) => {
     const text=String(payload?.text||'').trim();
@@ -1223,6 +1337,25 @@ app.whenReady().then(() => {
       const stat = fs.statSync(filePath);
       return { path: filePath, name: path.basename(filePath), size: stat.size };
     });
+  });
+
+  ipcMain.handle('files:openDataDirectory', async () => {
+    const result=await dialog.showOpenDialog({title:'选择数据文件夹',properties:['openDirectory','createDirectory']});
+    if(result.canceled||!result.filePaths.length)return null;
+    const folder=result.filePaths[0];return {path:folder,name:path.basename(folder)||folder};
+  });
+
+  ipcMain.handle('files:listDataDirectory', async (_event,payload={}) => {
+    const root=path.resolve(String(payload.root||payload.path||''));
+    const relative=String(payload.relativePath||'').replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+    if(!root||!fs.existsSync(root)||!fs.statSync(root).isDirectory())throw new Error('数据文件夹不存在。');
+    if(relative.split('/').includes('..'))throw new Error('文件夹路径无效。');
+    const target=path.resolve(root,relative);if(target!==root&&!target.startsWith(root+path.sep))throw new Error('文件夹路径越界。');
+    const entries=fs.readdirSync(target,{withFileTypes:true}).map(row=>{
+      const full=path.join(target,row.name),stat=fs.statSync(full),rel=path.relative(root,full).replace(/\\/g,'/');
+      return {name:row.name,path:full,relativePath:rel,directory:row.isDirectory(),size:row.isDirectory()?0:stat.size,modifiedAt:stat.mtime?.toISOString?.()||null};
+    }).filter(row=>row.directory||/\.(csv|tsv|txt|dat|json|asc|xy|iv|prn|out|log|png|jpe?g)$/i.test(row.name));
+    return {root,relativePath:relative,entries};
   });
 
   ipcMain.handle('files:readDataText', async (_event, payload) => {
@@ -1406,4 +1539,4 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => { appQuitting = true; try { lanUpdater?.stop(); } catch {} try { lanWebServer?.stop(false); } catch {} });
+app.on('before-quit', () => { appQuitting = true; try { lanUpdater?.stop(); } catch {} try { lanWebServer?.stop(false); } catch {} try { mcpServer?.stop?.(); } catch {} try { SmbService.shutdownSmbSessions?.(); } catch {} });

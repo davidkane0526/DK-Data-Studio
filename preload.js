@@ -3,7 +3,26 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   openCsvFiles: () => ipcRenderer.invoke('files:openCsv'),
   openDataFiles: () => ipcRenderer.invoke('files:openData'),
+  openDataDirectory: () => ipcRenderer.invoke('files:openDataDirectory'),
+  listDataDirectory: payload => ipcRenderer.invoke('files:listDataDirectory', payload || {}),
   readDataText: payload => ipcRenderer.invoke('files:readDataText', payload),
+  readDataDocument: payload => ipcRenderer.invoke('files:readDataText', payload),
+  smbDiscover: () => ipcRenderer.invoke('smb:discover'),
+  smbListShares: connection => ipcRenderer.invoke('smb:listShares', connection || {}),
+  smbList: payload => ipcRenderer.invoke('smb:list', payload || {}),
+  smbRead: payload => ipcRenderer.invoke('smb:read', payload || {}),
+  agentGetSecret: key => ipcRenderer.invoke('agent:getSecret', key),
+  agentSetSecret: payload => ipcRenderer.invoke('agent:setSecret', payload || {}),
+  agentHttpJson: payload => ipcRenderer.invoke('agent:httpJson', payload || {}),
+  mcpGetStatus: () => ipcRenderer.invoke('mcp:getStatus'),
+  mcpStart: payload => ipcRenderer.invoke('mcp:start', payload || {}),
+  mcpStop: () => ipcRenderer.invoke('mcp:stop'),
+  mcpRespond: payload => ipcRenderer.send('mcp:response', payload || {}),
+  onMcpRequest: callback => {
+    const handler = (_event, payload) => callback(payload || {});
+    ipcRenderer.on('mcp:request', handler);
+    return () => ipcRenderer.removeListener('mcp:request', handler);
+  },
   copyText: text => ipcRenderer.invoke('clipboard:writeText', text),
   saveText: payload => ipcRenderer.invoke('files:saveText', payload),
   saveBase64: payload => ipcRenderer.invoke('files:saveBase64', payload),
@@ -96,6 +115,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pluginOverrideList: () => ipcRenderer.invoke('plugins:listOverrides'),
   pluginSelectPackage: () => ipcRenderer.invoke('plugins:selectPackage'),
   pluginInstallPackage: token => ipcRenderer.invoke('plugins:installPackage', token),
+  pluginValidateGeneratedPackage: pkg => ipcRenderer.invoke('plugins:validateGeneratedPackage', pkg || {}),
+  pluginInstallGeneratedPackage: payload => ipcRenderer.invoke('plugins:installGeneratedPackage', payload || {}),
   pluginCancelInstall: token => ipcRenderer.invoke('plugins:cancelInstall', token),
   pluginRestorePackage: payload => ipcRenderer.invoke('plugins:restorePackage', payload),
   pluginHistoryList: id => ipcRenderer.invoke('plugins:historyList', id),

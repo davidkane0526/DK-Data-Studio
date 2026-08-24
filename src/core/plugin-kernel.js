@@ -2353,6 +2353,22 @@
     return replaceExternalPluginPackage(pkg,{statusPrefix:isUpdate?'已更新插件':'已安装插件'});
   }
 
+  async function validateGeneratedPluginPackage(pkg){
+    if(!window.electronAPI?.pluginValidateGeneratedPackage)throw new Error('当前运行环境不支持生成插件校验。');
+    const result=await window.electronAPI.pluginValidateGeneratedPackage(pkg);
+    if(!result?.ok)throw pluginInstallRendererError(result?.error,'生成插件包校验失败。');
+    return result;
+  }
+  async function installGeneratedPluginPackage(pkg,{enable=true}={}){
+    if(!window.electronAPI?.pluginInstallGeneratedPackage)throw new Error('当前运行环境不支持安装生成插件。');
+    const validated=await validateGeneratedPluginPackage(pkg);
+    const committed=await window.electronAPI.pluginInstallGeneratedPackage({package:validated.package||pkg,source:'studio-kernel'});
+    if(!committed?.ok)throw pluginInstallRendererError(committed?.error,'生成插件安装失败。');
+    const state=await replaceExternalPluginPackage(committed.package,{statusPrefix:'已安装生成插件'});
+    if(enable===false&&state?.id)await setPluginEnabled(state.id,false);
+    return state;
+  }
+
   async function uninstallExternalPlugin(id){
     const definition=definitionById(id);
     if(!definition)throw new Error(`Plugin not found: ${id}`);
@@ -2454,6 +2470,8 @@
     external: {
       available:()=>!!window.electronAPI?.pluginSelectPackage&&!!window.electronAPI?.pluginInstallPackage&&!window.electronAPI?.isWebClient,
       install:installExternalPlugin,
+      validatePackage:validateGeneratedPluginPackage,
+      installPackage:installGeneratedPluginPackage,
       uninstall:uninstallExternalPlugin,
       history:id=>window.electronAPI?.pluginHistoryList?.(id)||Promise.resolve([]),
       algorithmCatalog:ref=>window.electronAPI?.pluginAlgorithmCatalog?.(ref)||Promise.resolve({requested:ref,count:0,candidates:[]}),
