@@ -476,7 +476,10 @@
       inspectorDockWidth:390,
       inspectorFloatRect:null,
       mainView:{xDomain:null,yDomain:null,mode:'select'},
-      history:window.DKDSProjectHistory?.create?.({limit:80})||null
+      history:window.DKDSProjectHistory?.create?.({limit:80})||null,
+      dirty:false,
+      lastSavedFingerprint:null,
+      autosavedAt:0
     };
   }
 
@@ -490,9 +493,35 @@
     return tab.history;
   }
   function projectHistorySnapshot(){return activeProjectHistory()?.snapshot?.()||{canUndo:false,canRedo:false,undoLabel:'',redoLabel:'',past:[],future:[]};}
-  function recordProjectHistory(entry){return activeProjectHistory()?.record?.(entry)||false;}
-  async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok)setStatus(`已撤销：${label}`);return ok;}
-  async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok)setStatus(`已重做：${label}`);return ok;}
+  const projectAutosaveTimers=new Map();
+  function projectFingerprint(project){
+    let text='';try{text=window.DKDSProjectFormat?.serializeProject?.(project)||JSON.stringify(project||{});}catch{text=JSON.stringify(project||{});}
+    let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return `${text.length}:${(hash>>>0).toString(16)}`;
+  }
+  function markProjectClean(tab,project=null){if(!tab)return;const snapshot=project||(tab.id===state.activeProjectTabId?makeProject():null);if(snapshot)tab.lastSavedFingerprint=projectFingerprint(snapshot);tab.dirty=false;tab.autosavedAt=Date.now();}
+  async function flushProjectAutosave(tab=activeProjectTab(),{force=false}={}){
+    if(!tab||tab.id!==state.activeProjectTabId)return false;
+    const project=makeProject(),fingerprint=projectFingerprint(project);
+    if(tab.lastSavedFingerprint===null){tab.lastSavedFingerprint=fingerprint;tab.dirty=false;return false;}
+    if(!force&&fingerprint===tab.lastSavedFingerprint){tab.dirty=false;return false;}
+    tab.dirty=true;
+    const path=String(tab.projectPath||''),native=!!window.electronAPI?.isNativeClient,web=!!window.electronAPI?.isWebClient;
+    const autosaveWritable=path&&(native?path.startsWith('native-document://'):web?path.startsWith('webfs://'):!/^\w+:\/\//.test(path));
+    if(!autosaveWritable||!window.electronAPI?.saveProject)return false;
+    try{
+      const saved=await window.electronAPI.saveProject({mode:'current',path:tab.projectPath,defaultName:`${projectBaseName(tab.projectPath)}.dkds.json`,project});
+      if(saved){tab.projectPath=saved;if(tab.id===state.activeProjectTabId)state.projectPath=saved;tab.lastSavedFingerprint=fingerprint;tab.dirty=false;tab.autosavedAt=Date.now();window.dispatchEvent(new CustomEvent('dkds:project-autosaved',{detail:{id:tab.id,path:saved,at:tab.autosavedAt}}));return true;}
+    }catch(err){console.warn('[DKDS autosave]',err);}
+    return false;
+  }
+  function scheduleProjectAutosave(tab=activeProjectTab()){
+    if(!tab)return;const old=projectAutosaveTimers.get(tab.id);if(old)clearTimeout(old);
+    const timer=setTimeout(()=>{projectAutosaveTimers.delete(tab.id);void flushProjectAutosave(tab).then(changed=>{if(changed)renderProjectTabs();});},1800);
+    projectAutosaveTimers.set(tab.id,timer);
+  }
+  function recordProjectHistory(entry){const ok=activeProjectHistory()?.record?.(entry)||false;if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);}return ok;}
+  async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);setStatus(`已撤销：${label}`);}return ok;}
+  async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);setStatus(`已重做：${label}`);}return ok;}
 
   function captureActiveProjectTab(){
     const t=activeProjectTab();
@@ -515,6 +544,7 @@
       xDomain:state.mainView.xDomain?state.mainView.xDomain.slice():null,
       yDomain:state.mainView.yDomain?state.mainView.yDomain.slice():null};
     if(state.projectPath)t.title=projectBaseName(state.projectPath);
+    scheduleProjectAutosave(t);
   }
 
   function mountProjectTab(t){
@@ -546,10 +576,11 @@
     };
     state.zoomChart=null;
     if(window.DKDSPlugins?.project?.restore)window.DKDSPlugins.project.restore(t.pluginState||{});
+    setTimeout(()=>{if(t.id===state.activeProjectTabId&&t.lastSavedFingerprint===null&&!t.dirty){try{t.lastSavedFingerprint=projectFingerprint(makeProject());}catch{}}},0);
   }
 
   function createProjectTab(title=null,activate=true){
-    captureActiveProjectTab();
+    captureActiveProjectTab();void flushProjectAutosave(activeProjectTab());
     const t=blankProjectTab(title);
     state.projectTabs.push(t);
     if(activate){
@@ -567,7 +598,7 @@
 
   function switchProjectTab(id){
     if(id===state.activeProjectTabId)return;
-    captureActiveProjectTab();
+    captureActiveProjectTab();void flushProjectAutosave(activeProjectTab());
     const t=state.projectTabs.find(q=>q.id===id);
     if(!t)return;
     state.activeProjectTabId=id;
@@ -582,35 +613,32 @@
     setTimeout(()=>prewarmDedicatedPluginWindows(),0);
   }
 
-  function closeProjectTab(id){
-    const t=state.projectTabs.find(q=>q.id===id);
-    if(!t)return;
-    if(state.projectTabs.length===1){
-      const ok=!t.datasets.length||window.confirm('当前是最后一个项目标签页。清空当前项目？');
-      if(!ok)return;
-      window.electronAPI?.disposeProjectActivityWindows?.(id);
-      captureActiveProjectTab();
-      const fresh=blankProjectTab('项目 1');
-      fresh.id=t.id;
-      state.projectTabs=[fresh];
-      state.activeProjectTabId=fresh.id;
-      mountProjectTab(fresh);
-      renderProjectTabs();renderAll();applyGroupPanelLayout();applyInspectorPanelLayout();
-      return;
+  async function closeProjectTab(id){
+    let t=state.projectTabs.find(q=>q.id===id);if(!t)return false;
+    if(t.id===state.activeProjectTabId){captureActiveProjectTab();const project=makeProject(),fp=projectFingerprint(project);if(t.lastSavedFingerprint!==null&&fp!==t.lastSavedFingerprint)t.dirty=true;}
+    const pendingBeforePrompt=projectAutosaveTimers.get(t.id);if(pendingBeforePrompt){clearTimeout(pendingBeforePrompt);projectAutosaveTimers.delete(t.id);}
+    const hasContent=!!(t.datasets?.length||t.dirty||t.projectPath);
+    let action='delete';
+    if(window.DKDSUI?.dialogs?.show){
+      const actions=t.dirty
+        ?[{id:'cancel',label:'取消'},{id:'discard',label:'不保存删除',kind:'danger'},{id:'save',label:'保存后删除',kind:'primary',autofocus:true}]
+        :[{id:'cancel',label:'取消'},{id:'delete',label:'删除标签',kind:'danger',autofocus:true}];
+      action=await window.DKDSUI.dialogs.show({tone:t.dirty?'warning':'info',title:'删除项目标签？',subtitle:t.title,message:t.dirty?'当前项目还有未保存修改。建议先保存，再删除项目标签。':hasContent?'项目已保存或没有检测到未保存修改。删除标签不会删除磁盘上的工程文件。':'当前项目为空。确认删除此标签？',actions,defaultAction:t.dirty?'save':'delete',cancelAction:'cancel'});
+    }else if(!window.confirm(`删除“${t.title}”项目标签？${t.dirty?' 当前有未保存修改。':''}`))action='cancel';
+    if(action==='cancel'||action==='dismiss'){scheduleProjectAutosave(t);return false;}
+    if(action==='save'){
+      if(t.id!==state.activeProjectTabId)switchProjectTab(t.id);
+      const saved=await saveProject({mode:t.projectPath?'current':undefined});if(!saved)return false;
+      t=activeProjectTab()||t;
     }
-    const hadData=t.datasets.length;
-    if(hadData&&!window.confirm(`关闭“${t.title}”？未保存修改不会自动写入磁盘。`))return;
+    const pending=projectAutosaveTimers.get(t.id);if(pending){clearTimeout(pending);projectAutosaveTimers.delete(t.id);}
     window.electronAPI?.disposeProjectActivityWindows?.(id);
-    const idx=state.projectTabs.findIndex(q=>q.id===id);
-    const wasActive=id===state.activeProjectTabId;
-    state.projectTabs.splice(idx,1);
-    if(wasActive){
-      const next=state.projectTabs[Math.max(0,idx-1)]||state.projectTabs[0];
-      state.activeProjectTabId=next.id;
-      mountProjectTab(next);
-      renderAll();applyGroupPanelLayout();scheduleMainPlotRelayout();
+    if(state.projectTabs.length===1){
+      const fresh=blankProjectTab('项目 1');fresh.id=t.id;state.projectTabs=[fresh];state.activeProjectTabId=fresh.id;mountProjectTab(fresh);renderProjectTabs();renderAll();applyGroupPanelLayout();applyInspectorPanelLayout();return true;
     }
-    renderProjectTabs();
+    const idx=state.projectTabs.findIndex(q=>q.id===id),wasActive=id===state.activeProjectTabId;state.projectTabs.splice(idx,1);
+    if(wasActive){const next=state.projectTabs[Math.max(0,idx-1)]||state.projectTabs[0];state.activeProjectTabId=next.id;mountProjectTab(next);renderAll();applyGroupPanelLayout();scheduleMainPlotRelayout();}
+    renderProjectTabs();return true;
   }
 
   function renderProjectTabs(){
@@ -2451,7 +2479,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.51',
+      version:'3.61.52',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2538,6 +2566,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const tab=activeProjectTab();
       if(tab){tab.projectPath=saved;tab.title=projectBaseName(saved);}
       captureActiveProjectTab();
+      markProjectClean(tab,makeProject());
       renderProjectTabs();
       const verb=mode==='saveAs'?'工程已另存为':'工程已保存';
       const browserDownload=window.electronAPI?.isWebClient&&String(saved).startsWith('web://');
@@ -2628,6 +2657,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     loadProjectIntoActive(r.project,path);
     tab.title=projectBaseName(path);
     captureActiveProjectTab();
+    markProjectClean(tab,makeProject());
     renderProjectTabs();
     renderAll();
     applyGroupPanelLayout();
@@ -3318,7 +3348,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.51',
+      appVersion:'3.61.52',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

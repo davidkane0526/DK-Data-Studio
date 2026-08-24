@@ -1,3 +1,16 @@
+# v3.61.52 — Mobile Interaction Polish, Autosave & Collision-Free Grid
+
+- SMB 文件管理器补齐暗色主题输入/按钮样式；局域网扫描按钮增加旋转进度状态和“扫描中”反馈。
+- 修正移动端 AI Agent 对话窗设置按钮与关闭按钮的标题栏对齐。
+- Core PortableView 侧边固定视图的长按横向手势现在由 SplitController 真正改变停靠列宽；固定视图填满列宽并继续受 Core min/max 约束，避免“整体平移但宽度不变”。
+- 项目管理移除粗糙的左滑删除动画，改为明确 `×` 删除入口；Core 删除前统一提供保存提醒。
+- 新增工程空闲自动保存：已经有真实可写路径的桌面工程和 Android SAF 工程在修改停止约 1.8 s 后原位保存；未首次保存、SMB/只读来源不会触发隐藏文件选择器，而保持 dirty 状态。
+- 移动端“软件管理”更名为“插件管理”，插件统计/卡片布局压缩为更适合平板/横屏的紧凑密度。
+- Android 文件选择注册常用 Studio MIME 类型，优先覆盖 CSV / DAT / TXT / TSV / JSON 等文本数据和工程文件，同时保留第三方 `ACTION_GET_CONTENT` / SAF Provider。
+- 移动底部状态文本移除固定 48% 宽度限制并允许自适应字号，避免左侧状态被无意义截断。
+- Core GridController 新增 sticky collision avoidance：吸附图真实占用一个网格列，其他图自动重排；单列布局无法避让时自动降级为非覆盖 sticky。TER“全部 Vg 电阻-电压”因此不再需要插件专用避让补丁。
+- React Native Sheet 改为更克制的 fade 过渡，项目抽屉使用 cubic easing，并降低按压态突变，减少展开/收起时的黑色分层感。
+
 # v3.61.51 — Android File Host, LAN Web & Mobile Interaction Closure
 
 - Align Android file selection with the supplied PyDroid Node host contract: extended selection uses `ACTION_GET_CONTENT` as the primary third-party/provider chooser; persistent SAF files retain `ACTION_OPEN_DOCUMENT`; folders use `ACTION_OPEN_DOCUMENT_TREE` / DocumentsProvider; manifest package queries advertise all supported file actions. Mobile file and SMB entry points are semantic-neutral and Core auto-detects Studio projects before routing ordinary files to Import Workbench.

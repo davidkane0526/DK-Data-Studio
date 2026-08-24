@@ -9,6 +9,7 @@
     ? window.ReactNativeWebView
     : null;
   const nativePresentationRequested=new URLSearchParams(location.search).has('reactNative');
+  const studioReadableMimeTypes=['text/csv','text/plain','text/tab-separated-values','application/json','application/octet-stream'];
   window.__DKDS_WEB_CLIENT__ = !nativeBridge;
   window.__DKDS_NATIVE_CLIENT__ = !!nativeBridge;
   document.documentElement.classList.add(nativeBridge?'native-client':'web-client');
@@ -153,7 +154,7 @@
     compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
     issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.17.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.51'
+    pluginApiVersion:'1.17.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.61.52'
   });
 
   async function decodeFile(file,encoding='auto') {
@@ -221,7 +222,7 @@
 
     openDataFiles: async()=>{
       if(nativeBridge){
-        const assets=await nativeCall('openFiles',{multiple:true,type:'*/*'});
+        const assets=await nativeCall('openFiles',{multiple:true,type:studioReadableMimeTypes});
         for(const asset of assets||[])fileStore.set(asset.path,{...asset,native:true});
         return (assets||[]).map(({path,name,size})=>({path,name,size}));
       }
@@ -268,7 +269,7 @@
 
     openCsvFiles: async()=>{
       if(nativeBridge){
-        const assets=await nativeCall('openFiles',{multiple:true,type:'*/*'});
+        const assets=await nativeCall('openFiles',{multiple:true,type:studioReadableMimeTypes});
         const out=[];
         for(const asset of assets||[]){
           fileStore.set(asset.path,{...asset,native:true});
@@ -366,7 +367,7 @@
 
     openProject: async()=>{
       if(nativeBridge){
-        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/*']});
+        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/plain','application/octet-stream']});
         const asset=assets?.[0];
         if(!asset)return null;
         const decoded=decodeBytes(await nativeFileBytes(asset),'auto');
@@ -433,7 +434,7 @@
     pluginSelectPackage: async()=>{
       if(!nativeBridge)return {canceled:true};
       try{
-        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/*','application/octet-stream']});
+        const assets=await nativeCall('openFiles',{multiple:false,type:['application/json','text/plain','application/octet-stream']});
         const asset=assets?.[0];if(!asset)return {canceled:true};
         const decoded=decodeBytes(await nativeFileBytes(asset),'utf-8');
         const pkg=window.DKDSMobilePluginPackage?.normalize(decoded.text);

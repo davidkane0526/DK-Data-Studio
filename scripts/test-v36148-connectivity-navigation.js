@@ -1,13 +1,13 @@
 const fs=require('fs');const assert=require('assert');
 const read=p=>fs.readFileSync(p,'utf8');const json=p=>JSON.parse(read(p));
 const pkg=json('package.json'),plugin=read('src/plugins/connectivity-center/plugin.js'),manifest=json('src/plugins/connectivity-center/plugin.json'),html=read('src/index.html'),app=read('mobile/App.tsx'),shell=read('mobile/src/Shell.tsx'),runtime=read('src/core/mobile-host-runtime.js');
-assert.equal(pkg.version,'3.61.51','Connectivity shell regression must run against v3.61.51.');
-assert.equal(manifest.version,'1.2.1','SMB & AI Services plugin version must be 1.2.1.');
+assert.equal(pkg.version,'3.61.52','Connectivity shell regression must run against v3.61.52.');
+assert.equal(manifest.version,'1.2.2','SMB & AI Services plugin version must be 1.2.2.');
 assert(html.includes('data-plugin-menu="import-data"')&&html.includes('data-plugin-menu="open-project"')&&html.includes('data-plugin-menu="manage"'),'Desktop shell must expose source-aware import/project and software-management plugin mounts.');
 assert(html.includes('split-command-anchor')&&html.includes('openImportSourceBtn')&&html.includes('openProjectSourceBtn'),'Import and project read commands must expose compact source menus.');
 assert(plugin.includes("ctx.commands.register('connectivity.smb.open'")&&plugin.includes("ctx.commands.register('connectivity.ai.settings'")&&plugin.includes("ctx.commands.register('connectivity.ai.chat'"),'Plugin must expose type-agnostic SMB and AI UI commands for the mobile shell.');
 assert(runtime.includes("id.startsWith('connectivity.')")&&runtime.includes('window.DKDSPlugins?.commands?.run?.(id,payload)'),'Mobile Host must route connectivity commands through Plugin Kernel rather than a duplicate native business layer.');
-assert(shell.includes("ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'import' | 'more'")&&shell.includes('选择文件')&&shell.includes('选择文件夹')&&shell.includes('Studio SMB')&&shell.includes('软件管理'),'Native mobile shell must expose a type-agnostic File / Folder / Studio SMB source sheet and keep AI Agent / MCP under software management.');
+assert(shell.includes("ShellSheet = 'projects' | 'activities' | 'actions' | 'history' | 'import' | 'more'")&&shell.includes('选择文件')&&shell.includes('选择文件夹')&&shell.includes('Studio SMB')&&shell.includes('插件管理'),'Native mobile shell must expose a type-agnostic File / Folder / Studio SMB source sheet and keep AI Agent / MCP under plugin management.');
 assert(app.includes("action === 'smb-open'")&&app.includes("id: 'connectivity.smb.open'")&&app.includes("action === 'file-open'")&&app.includes("id: 'file.open'")&&app.includes("action === 'file-folder'")&&app.includes("id: 'file.folder'")&&app.includes("action === 'ai-settings'")&&app.includes("id: 'connectivity.ai.settings'"),'React Native shell must route type-agnostic file/folder/SMB sources and AI settings through shared Core/plugin commands.');
 assert(!plugin.includes('connectivityCenterPage')&&!plugin.includes('连接 / SMB / AI / MCP'),'Legacy aggregated Connectivity Center page/menu must be removed.');
-console.log('v3.61.51 SMB/import and AI/MCP software-management navigation regression passed.');
+console.log('v3.61.52 SMB/import and AI/MCP plugin-management navigation regression passed.');

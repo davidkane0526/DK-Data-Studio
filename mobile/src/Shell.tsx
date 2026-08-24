@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Animated,
   Modal,
-  PanResponder,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -278,7 +278,7 @@ export function NativeStatusBar({ shell, palette, onAction, webService }: Pick<N
   const items = shell.statusItems || [];
   return (
     <View style={[styles.nativeStatusBar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}>
-      <Text style={[styles.nativeStatusMessage, { color: palette.textSoft }]} numberOfLines={1}>{shell.status || '就绪'}</Text>
+      <Text style={[styles.nativeStatusMessage, { color: palette.textSoft }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{shell.status || '就绪'}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nativeStatusScroller} contentContainerStyle={styles.nativeStatusItems}>
         {items.map(item => (
           <Pressable key={`${item.pluginId}:${item.id}`} disabled={item.disabled || !item.clickable} onPress={() => onAction('status-item', { pluginId: item.pluginId, id: item.id })} style={styles.nativeStatusItem}>
@@ -379,60 +379,31 @@ function SheetAction({
   );
 }
 
-function ProjectSwipeRow({ project, palette, onSwitch, onDelete }: {
+function ProjectRow({ project, palette, onSwitch, onDelete }: {
   project: { id: string; title: string; active?: boolean; dirty?: boolean };
   palette: Palette;
   onSwitch: () => void;
   onDelete: () => void;
 }) {
-  const translateX = React.useRef(new Animated.Value(0)).current;
-  const rowHeight = React.useRef(new Animated.Value(64)).current;
-  const rowOpacity = React.useRef(new Animated.Value(1)).current;
-  const opened = React.useRef(false);
-  const settle = React.useCallback((open: boolean) => {
-    opened.current = open;
-    Animated.spring(translateX, { toValue: open ? -72 : 0, useNativeDriver: true, speed: 27, bounciness: 0 }).start();
-  }, [translateX]);
-  const remove = React.useCallback(() => {
-    Animated.timing(translateX, { toValue: -360, duration: 165, useNativeDriver: true }).start(({ finished }) => {
-      if (!finished) return;
-      Animated.parallel([
-        Animated.timing(rowHeight, { toValue: 0, duration: 150, useNativeDriver: false }),
-        Animated.timing(rowOpacity, { toValue: 0, duration: 120, useNativeDriver: false }),
-      ]).start(({ finished: collapsed }) => { if (collapsed) onDelete(); });
-    });
-  }, [onDelete, rowHeight, rowOpacity, translateX]);
-  const pan = React.useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 7 && gesture.dx < 0 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.15,
-    onPanResponderTerminationRequest: () => false,
-    onShouldBlockNativeResponder: () => true,
-    onPanResponderGrant: () => { translateX.stopAnimation(); },
-    onPanResponderMove: (_, gesture) => {
-      const base = opened.current ? -72 : 0;
-      translateX.setValue(Math.min(0, Math.max(-88, base + gesture.dx)));
-    },
-    onPanResponderRelease: (_, gesture) => settle((opened.current ? -72 : 0) + gesture.dx < -34 || gesture.vx < -0.35),
-    onPanResponderTerminate: () => settle(opened.current),
-  })).current;
   return (
-    <Animated.View style={[styles.projectDrawerRowWrap, { backgroundColor: '#d94f4a', height: rowHeight, opacity: rowOpacity }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`删除项目 ${project.title}`} onPress={remove} style={styles.projectDeleteAction}>
-        <Text style={styles.projectDeleteText}>删除</Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onSwitch}
+      style={({ pressed }) => [styles.projectDrawerRow, { backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft, borderColor: project.active ? palette.accent : palette.border }, pressed && styles.pressed]}>
+      <View style={[styles.projectStateDot, { borderColor: palette.accent, backgroundColor: project.active ? palette.accent : 'transparent' }]} />
+      <View style={styles.projectDrawerCopy}>
+        <Text style={[styles.projectDrawerTitle, { color: palette.text }]} numberOfLines={1}>{project.title || '未命名项目'}</Text>
+        <Text style={[styles.projectDrawerDetail, { color: palette.textSoft }]}>{project.active ? '当前项目' : project.dirty ? '有未保存修改' : '点击切换'}</Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`删除项目 ${project.title}`}
+        hitSlop={8}
+        onPress={(event) => { event.stopPropagation(); onDelete(); }}
+        style={({ pressed }) => [styles.projectDeleteIcon, { backgroundColor: pressed ? palette.surfaceHover : 'transparent' }]}>
+        <Text style={[styles.projectDeleteIconText, { color: palette.textSoft }]}>×</Text>
       </Pressable>
-      <Animated.View style={{ transform: [{ translateX }] }} {...pan.panHandlers}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onSwitch}
-          style={({ pressed }) => [styles.projectDrawerRow, { backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft, borderColor: project.active ? palette.accent : palette.border }, pressed && styles.pressed]}>
-          <View style={[styles.projectStateDot, { borderColor: palette.accent, backgroundColor: project.active ? palette.accent : 'transparent' }]} />
-          <View style={styles.projectDrawerCopy}>
-            <Text style={[styles.projectDrawerTitle, { color: palette.text }]} numberOfLines={1}>{project.title || '未命名项目'}</Text>
-            <Text style={[styles.projectDrawerDetail, { color: palette.textSoft }]}>{project.active ? '当前项目' : project.dirty ? '有未保存修改' : '点击切换 · 左滑删除'}</Text>
-          </View>
-          <Text style={[styles.projectDrawerChevron, { color: palette.textSoft }]}>›</Text>
-        </Pressable>
-      </Animated.View>
-    </Animated.View>
+    </Pressable>
   );
 }
 
@@ -440,7 +411,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
   const run = (action: string, payload?: unknown, close = true) => { if (close) onClose(); onAction(action, payload); };
   const slide = React.useRef(new Animated.Value(-380)).current;
   React.useEffect(() => {
-    Animated.timing(slide, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+    Animated.timing(slide, { toValue: 0, duration: 210, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [slide]);
   return (
     <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
@@ -450,7 +421,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
           <View style={styles.projectDrawerHead}>
             <View>
               <Text style={[styles.projectDrawerHeading, { color: palette.text }]}>项目管理</Text>
-              <Text style={[styles.projectDrawerSubheading, { color: palette.textSoft }]}>切换项目，左滑项目标签显示删除</Text>
+              <Text style={[styles.projectDrawerSubheading, { color: palette.textSoft }]}>切换项目；× 删除前会提醒保存</Text>
             </View>
             <Pressable onPress={onClose} style={styles.projectDrawerClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
           </View>
@@ -461,7 +432,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
           </View>
           <ScrollView contentContainerStyle={styles.projectDrawerList} showsVerticalScrollIndicator={false}>
             {(shell.projects || []).map(project => (
-              <ProjectSwipeRow key={project.id} project={project} palette={palette} onSwitch={() => run('project-switch', { id: project.id })} onDelete={() => run('project-close', { id: project.id }, false)} />
+              <ProjectRow key={project.id} project={project} palette={palette} onSwitch={() => run('project-switch', { id: project.id })} onDelete={() => run('project-close', { id: project.id }, true)} />
             ))}
             {!(shell.projects || []).length ? <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前没有项目标签。</Text> : null}
           </ScrollView>
@@ -547,7 +518,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
   };
 
   return (
-    <Modal visible={visible !== null} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal visible={visible !== null} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.modalRoot, { backgroundColor: palette.scrim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭操作面板" />
         <View style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.border }]}>
@@ -558,7 +529,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
                 {visible === 'activities' ? '分析工作区' : visible === 'actions' ? '当前项目按钮' : visible === 'history' ? '操作历史' : visible === 'import' ? '文件' : '更多'}
               </Text>
               <Text style={[styles.sheetSubtitle, { color: palette.textSoft }]}> 
-                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : visible === 'import' ? '由 Studio 自动识别数据、工程与可读取文件夹' : '软件、网页服务与外观'}
+                {visible === 'activities' ? '入口来自当前已启用插件' : visible === 'actions' ? shell.activityLabel : visible === 'history' ? shell.projectTitle : visible === 'import' ? '由 Studio 自动识别数据、工程与可读取文件夹' : '插件、网页服务与外观'}
               </Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="关闭" onPress={onClose} style={styles.closeButton}>
@@ -626,7 +597,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
               </> : <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前页面没有可用操作。</Text>
             ) : visible === 'import' ? (
               <>
-                <SheetAction glyph="□" label="选择文件" detail="系统文件、第三方文件管理器、云盘与支持 ACTION_GET_CONTENT 的应用；Studio 自动识别类型" palette={palette} onPress={() => run('file-open')} />
+                <SheetAction glyph="□" label="选择文件" detail="优先显示 CSV / DAT / TXT / TSV / JSON 等 Studio 常用数据与工程文件；第三方文件管理器和云盘同样可用" palette={palette} onPress={() => run('file-open')} />
                 <SheetAction glyph="▦" label="选择文件夹" detail="Android SAF 树授权；支持 DocumentsProvider 的 NAS / SMB / 云盘应用可直接提供目录" palette={palette} onPress={() => run('file-folder')} />
                 <SheetAction glyph="▤" label="Studio SMB" detail="使用 Studio 内置 SMB 文件管理器浏览服务器、共享与目录；自动识别文件类型" palette={palette} onPress={() => run('smb-open')} />
               </>
@@ -642,7 +613,7 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
               </>
             ) : (
               <>
-                <SheetAction glyph="⬡" label="软件管理" detail="插件以及 AI Agent / MCP 设置" palette={palette} onPress={() => run('plugins')} />
+                <SheetAction glyph="⬡" label="插件管理" detail="安装、启用与管理插件；AI Agent / MCP 设置仍在插件服务中" palette={palette} onPress={() => run('plugins')} />
                 <SheetAction glyph="↗" label="局域网网页版" detail="服务设置、局域网地址与访问状态" palette={palette} onPress={() => run('web-service')} />
                 <SheetAction
                   glyph={shell.theme === 'dark' ? '☀' : '☾'}
@@ -697,7 +668,7 @@ const styles = StyleSheet.create({
   navGlyph: { fontSize: 18, lineHeight: 20, fontWeight: '600' },
   moreGlyph: { fontSize: 15, letterSpacing: 1 },
   nativeStatusBar: { height: 23, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, gap: 11 },
-  nativeStatusMessage: { flex: 1, minWidth: 80, maxWidth: '48%', fontSize: 10, lineHeight: 14, fontWeight: '400' },
+  nativeStatusMessage: { flex: 1, minWidth: 0, fontSize: 10, lineHeight: 14, fontWeight: '400' },
   nativeStatusScroller: { flexGrow: 0, flexShrink: 1, marginLeft: 'auto' },
   nativeStatusItems: { flexGrow: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 17, paddingLeft: 9, paddingRight: 0 },
   nativeStatusItem: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -718,7 +689,7 @@ const styles = StyleSheet.create({
   railItem: { flex: 1, minHeight: 42, maxHeight: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 9 },
   railGlyph: { fontSize: 18, fontWeight: '600' },
   railLabel: { fontSize: 8, fontWeight: '600', marginTop: 1 },
-  pressed: { opacity: .62, transform: [{ scale: .98 }] },
+  pressed: { opacity: .82, transform: [{ scale: .985 }] },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   sheet: { maxHeight: '78%', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: StyleSheet.hairlineWidth, paddingBottom: 10 },
   sheetHandle: { width: 38, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 8, marginBottom: 4 },
@@ -748,10 +719,9 @@ const styles = StyleSheet.create({
   projectQuickButton: { minHeight: 34, flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   projectQuickButtonText: { fontSize: 10.5, fontWeight: '600' },
   projectDrawerList: { paddingHorizontal: 12, paddingBottom: 22, gap: 8 },
-  projectDrawerRowWrap: { height: 64, borderRadius: 13, overflow: 'hidden', justifyContent: 'center' },
-  projectDeleteAction: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 72, alignItems: 'center', justifyContent: 'center' },
-  projectDeleteText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  projectDrawerRow: { height: 64, borderWidth: StyleSheet.hairlineWidth, borderRadius: 13, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+    projectDrawerRow: { height: 58, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingLeft: 12, paddingRight: 7, flexDirection: 'row', alignItems: 'center' },
+  projectDeleteIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  projectDeleteIconText: { fontSize: 22, lineHeight: 24, fontWeight: '300' },
   projectStateDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.3, marginRight: 11 },
   projectDrawerCopy: { flex: 1, minWidth: 0 },
   projectDrawerTitle: { fontSize: 13, fontWeight: '600' },

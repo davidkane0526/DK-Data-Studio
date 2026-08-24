@@ -5163,3 +5163,15 @@ html[data-dkds-theme="dark"] .dkds-d3-chart-tooltip{background:rgba(20,26,35,.96
 .dkds-portable-resize-handle::after{right:4px;bottom:9px;width:6px}
 .dkds-portable-view.is-held-resizing>.dkds-portable-inline-header,
 .dkds-portable-view.is-held-resizing>.dkds-portable-header{touch-action:none;user-select:none}
+
+/* Core grid collision contract: a sticky plot reserves a real grid column.
+   Sibling plots are explicitly reflowed by GridController instead of remaining
+   underneath a visually sticky overlay. */
+.dkds-managed-grid.dkds-grid-sticky-avoidance>.dkds-portable-view.is-sticky,
+.dkds-managed-grid.dkds-grid-sticky-avoidance>.dkds-prime-portable.is-sticky{
+  position:sticky!important;top:var(--dkds-portable-sticky-top,8px)!important;z-index:34!important;align-self:start!important
+}
+.dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-portable-view.is-sticky,
+.dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-prime-portable.is-sticky{
+  position:relative!important;top:auto!important;z-index:auto!important
+}

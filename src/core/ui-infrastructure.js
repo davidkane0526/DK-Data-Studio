@@ -833,6 +833,7 @@
       if(parent?.isConnected){if(next?.parentNode===parent)parent.insertBefore(this.wrapper,next);else parent.appendChild(this.wrapper);return true;}return false;
     }
     place(value,{persist=true,bounds=null}={}){
+      const previousGrid=this.wrapper?.closest?.('.dkds-managed-grid')||null;
       let placement=normalizePlacement(value);if(!this.allowed.includes(placement))placement=this.allowed[0]||'home';
       this.wrapper.classList.remove('is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main');
       this.wrapper.style.removeProperty('left');this.wrapper.style.removeProperty('top');this.wrapper.style.removeProperty('width');this.wrapper.style.removeProperty('height');this.wrapper.style.removeProperty('--dkds-portable-z');
@@ -861,11 +862,18 @@
         const zone=this.zone(placement);if(zone)zone.appendChild(this.wrapper);else this.restoreHome();
         this.wrapper.classList.add('is-docked',`dock-${placement}`);
         const docked=this.readState().dockedBounds?.[placement]||{};
-        if(Number(docked.width)>0)this.wrapper.style.setProperty('width',`${Number(docked.width)}px`,'important');
-        if(Number(docked.height)>0)this.wrapper.style.setProperty('height',`${Number(docked.height)}px`,'important');
+        // Side-docked views fill their dock width; the SplitController owns the
+        // actual column width. Persisting a second wrapper width made held-resize
+        // look like a translation instead of widening the inspector.
+        if(placement==='left'||placement==='right')this.wrapper.style.setProperty('width','100%','important');
+        else if(Number(docked.width)>0)this.wrapper.style.setProperty('width',`${Number(docked.width)}px`,'important');
+        if(placement==='bottom')this.wrapper.style.setProperty('height','100%','important');
+        else if(Number(docked.height)>0)this.wrapper.style.setProperty('height',`${Number(docked.height)}px`,'important');
       }
       this.wrapper.dataset.placement=placement;
       this.refreshPlacementButton?.();
+      const currentGrid=this.wrapper?.closest?.('.dkds-managed-grid')||null;
+      requestAnimationFrame(()=>{previousGrid?.__dkdsGridController?.apply?.();if(currentGrid&&currentGrid!==previousGrid)currentGrid.__dkdsGridController?.apply?.();});
       refreshDockZoneState();
       if(persist)this.writeState({placement,bounds:(placement==='float'||placement==='global')?this.bounds():undefined});
       try{this.spec.onPlacementChanged?.({id:this.id,placement,portable:this,wrapper:this.wrapper});}catch(err){console.warn('[DKDS portable placement]',err);}
@@ -916,11 +924,11 @@
         const p=gesture.placement,split=gesture.splits?.[p];
         if((p==='left'||p==='right')&&Math.abs(dx)>=Math.abs(dy)&&split){const sign=p==='right'?-1:1;split.apply(gesture.splitSize+dx*sign,{persist:false});}
         else if(p==='bottom'&&Math.abs(dy)>Math.abs(dx)&&split)split.apply(gesture.splitSize-dy,{persist:false});
-        else if(p==='left'||p==='right'){const next=Math.max(150,Math.min(window.innerHeight-18,gesture.wrapperHeight+dy));this.wrapper.style.setProperty('height',`${Math.round(next)}px`,'important');}
-        else {const next=Math.max(260,Math.min(window.innerWidth-18,gesture.wrapperWidth+dx));this.wrapper.style.setProperty('width',`${Math.round(next)}px`,'important');}
+        else if(p==='left'||p==='right'){const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{height:window.innerHeight};const next=Math.max(140,Math.min(Math.max(160,zr.height),gesture.wrapperHeight+dy));this.wrapper.style.setProperty('height',`${Math.round(next)}px`,'important');}
+        else {const zone=this.zone(p),zr=zone?.getBoundingClientRect?.()||{width:window.innerWidth};const next=Math.max(260,Math.min(Math.max(280,zr.width),gesture.wrapperWidth+dx));this.wrapper.style.setProperty('width',`${Math.round(next)}px`,'important');}
         if(e.cancelable)e.preventDefault();
       };
-      const up=e=>{if(!gesture||gesture.id!==e.pointerId)return;cancelTimer();if(gesture.armed){const split=gesture.splits?.[gesture.placement];if(split)split.apply(split.size,{persist:true});const state=this.readState(),dockedBounds={...(state.dockedBounds||{})};const r=this.wrapper.getBoundingClientRect();dockedBounds[gesture.placement]={width:Math.round(r.width),height:Math.round(r.height)};this.writeState({dockedBounds});window.dispatchEvent(new Event('resize'));}this.wrapper.classList.remove('is-held-resizing');gesture=null;};
+      const up=e=>{if(!gesture||gesture.id!==e.pointerId)return;cancelTimer();if(gesture.armed){const split=gesture.splits?.[gesture.placement];if(split)split.apply(split.size,{persist:true});const state=this.readState(),dockedBounds={...(state.dockedBounds||{})};const r=this.wrapper.getBoundingClientRect(),p=gesture.placement;dockedBounds[p]={width:(p==='left'||p==='right')?0:Math.round(r.width),height:p==='bottom'?0:Math.round(r.height)};this.writeState({dockedBounds});if(p==='left'||p==='right')this.wrapper.style.setProperty('width','100%','important');window.dispatchEvent(new Event('resize'));}this.wrapper.classList.remove('is-held-resizing');gesture=null;};
       header.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
       this.chromeCleanups.push(()=>{cancelTimer();header.style.touchAction=previousTouchAction;header.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);});
     }
@@ -1227,7 +1235,7 @@
     constructor(scope,container,spec={}){
       this.scope=scope;this.container=resolveElement(container);this.spec={...spec};this.columns=Math.max(1,Number(spec.columns)||3);this.minItemWidth=Math.max(180,Number(spec.minItemWidth)||320);this.maxColumns=Math.max(this.columns,Number(spec.maxColumns)||6);this.ro=null;this.appliedColumns=0;
       if(!this.container)throw new Error('GridController container not found.');
-      this.container.classList.add('dkds-managed-grid');
+      this.container.classList.add('dkds-managed-grid');this.container.__dkdsGridController=this;
       this.apply();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.apply());this.ro.observe(this.container);}
     }
@@ -1237,10 +1245,26 @@
       if(!width)return this.columns;
       return Math.max(1,Math.min(this.columns,this.maxColumns,Math.floor((width+10)/(this.minItemWidth+10))||1));
     }
-    apply(){const cols=this.responsiveColumns();const changed=cols!==this.appliedColumns;this.appliedColumns=cols;this.container.style.setProperty('--dkds-grid-columns',String(cols));this.container.dataset.dkdsGridColumns=String(cols);if(changed)this.scope.emitResize?.({reason:'grid',columns:cols});else this.scope.requestChartResize?.({reason:'grid-observer',columns:cols});return cols;}
+    applyStickyAvoidance(cols){
+      const children=[...this.container.children].filter(node=>node?.nodeType===1);
+      for(const child of children){if(child.dataset?.dkdsGridAvoidance==='1'){child.style.removeProperty('grid-column');child.style.removeProperty('grid-row');delete child.dataset.dkdsGridAvoidance;}}
+      this.container.classList.remove('dkds-grid-sticky-avoidance','dkds-grid-sticky-disabled');
+      const sticky=children.filter(child=>child.classList?.contains('is-sticky'));
+      if(!sticky.length)return;
+      if(cols<2){this.container.classList.add('dkds-grid-sticky-disabled');return;}
+      // Reserve one grid column for the first sticky view. All sibling plots are
+      // deterministically packed into the remaining cells, so pinning one plot
+      // never visually covers another plot on desktop or mobile.
+      const anchor=sticky[0],anchorIndex=Math.max(0,children.indexOf(anchor)),anchorCol=Math.min(cols,(anchorIndex%cols)+1),available=[];
+      for(let col=1;col<=cols;col++)if(col!==anchorCol)available.push(col);
+      const others=children.filter(child=>child!==anchor);let row=1,index=0;
+      for(const child of others){const col=available[index%available.length];row=Math.floor(index/available.length)+1;child.style.setProperty('grid-column',String(col));child.style.setProperty('grid-row',String(row));child.dataset.dkdsGridAvoidance='1';index++;}
+      const rows=Math.max(1,Math.ceil(others.length/available.length));anchor.style.setProperty('grid-column',String(anchorCol));anchor.style.setProperty('grid-row',`1 / span ${rows}`);anchor.dataset.dkdsGridAvoidance='1';this.container.classList.add('dkds-grid-sticky-avoidance');
+    }
+    apply(){const cols=this.responsiveColumns();const changed=cols!==this.appliedColumns;this.appliedColumns=cols;this.container.style.setProperty('--dkds-grid-columns',String(cols));this.container.dataset.dkdsGridColumns=String(cols);this.applyStickyAvoidance(cols);if(changed)this.scope.emitResize?.({reason:'grid',columns:cols});else this.scope.requestChartResize?.({reason:'grid-observer',columns:cols});return cols;}
     setColumns(value){this.columns=Math.max(1,Math.min(this.maxColumns,Number(value)||1));this.apply();return this.columns;}
     getColumns(){return this.columns;}
-    dispose(){this.ro?.disconnect?.();this.container.classList.remove('dkds-managed-grid');this.container.style.removeProperty('--dkds-grid-columns');delete this.container.dataset.dkdsGridColumns;}
+    dispose(){this.ro?.disconnect?.();if(this.container.__dkdsGridController===this)delete this.container.__dkdsGridController;for(const child of this.container.children){if(child.dataset?.dkdsGridAvoidance==='1'){child.style.removeProperty('grid-column');child.style.removeProperty('grid-row');delete child.dataset.dkdsGridAvoidance;}}this.container.classList.remove('dkds-managed-grid','dkds-grid-sticky-avoidance','dkds-grid-sticky-disabled');this.container.style.removeProperty('--dkds-grid-columns');delete this.container.dataset.dkdsGridColumns;}
   }
 
 

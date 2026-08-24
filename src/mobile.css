@@ -263,3 +263,16 @@ html.react-native-client #pulseAnalysisPage .pulse-result-plot{margin:0!importan
   html.react-native-client .dkds-plugin-canvas-right-resizer.active,
   html.react-native-client .dkds-plugin-canvas-bottom-resizer.active{display:none!important}
 }
+
+/* Mobile plugin management is a dense operational surface rather than a
+   desktop dashboard stretched to a tablet viewport. */
+html.react-native-client .plugin-manager-body{gap:7px!important;padding:8px 10px 24px!important}
+html.react-native-client .plugin-manager-summary{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important}
+html.react-native-client .plugin-manager-stat{min-height:48px!important;padding:6px 9px!important;border-radius:9px!important;gap:2px!important}
+html.react-native-client .plugin-manager-stat span{font-size:9px!important}
+html.react-native-client .plugin-manager-stat strong{font-size:16px!important}
+html.react-native-client .plugin-manager-toolbar-card{padding:7px 8px!important;gap:6px!important;grid-template-columns:minmax(180px,1fr) repeat(5,auto)!important}
+html.react-native-client .plugin-manager-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+html.react-native-client .plugin-manager-card{padding:8px!important;border-radius:9px!important}
+html.react-native-client .plugin-manager-card h3{font-size:11px!important;margin:0 0 3px!important}
+html.react-native-client .plugin-manager-card p{font-size:9px!important;line-height:1.35!important}
