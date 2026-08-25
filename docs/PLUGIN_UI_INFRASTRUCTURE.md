@@ -281,7 +281,7 @@ The GRS-derived `PluginWorkspace` now owns an inner scientific-canvas frame with
 - Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
 - Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
 - SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
-- `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.
+- `ctx.ui.edit.register({ id, order, canUndo, canRedo, historyState, undo, redo, deselect, ... })` supplies reversible workspace editing to the System History Coordinator. Undo/Redo handlers may be async and must return `false` when nothing was handled; `historyState()` exposes timestamped local entries so Core can order workspace and project history chronologically. Escape remains an active-plugin edit action.
 ## v3.40 automatic PlotView lifecycle and layered PortableView
 
 `PluginWorkspace` automatically observes its connected view tree and hydrates standard scientific figure cards through the Core `PlotViewRegistry`. Plugins no longer need one-shot `querySelectorAll(...).bind(...)` passes for generic plot capabilities. This matters for PRIME/SUB content because those nodes can be detached at plugin initialization and connected only later.
@@ -299,3 +299,8 @@ Plugin API 1.13 adds `InteractionBehaviorProfile.bind(...)` for ordinary lists, 
 ### Scientific plot container contract
 
 `ctx.ui.scientificPlot.create(...)` accepts an `<svg>` or a normal container element. If the target is not SVG, Core creates/owns the internal SVG and observes the container size. This keeps third-party workbenches independent of D3/SVG implementation details.
+
+
+### History state notifications
+
+When a plugin keeps a fine-grained local undo/redo stack, call `ctx.ui.edit.changed({reason, label})` whenever that stack changes. Core uses this notification to refresh the unified System History state in the desktop shell, dedicated TOP windows and the Android native shell. Do not rely on incidental DOM changes to refresh Undo/Redo availability.

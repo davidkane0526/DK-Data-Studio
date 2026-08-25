@@ -348,6 +348,7 @@
 
     const resonanceCommands=[
       ['builtin.resonance.undo',()=>R.undoLastAction?.()],
+      ['builtin.resonance.redo',()=>R.redoLastAction?.()],
       ['builtin.resonance.sweep-up',()=>R.switchSelectedSweep?.(-1)],['builtin.resonance.sweep-down',()=>R.switchSelectedSweep?.(1)],
       ['builtin.resonance.peak-left',()=>R.moveSelectedPeakBy?.(-1)],['builtin.resonance.peak-right',()=>R.moveSelectedPeakBy?.(1)],
       ['builtin.resonance.peak-left-fast',()=>R.moveSelectedPeakBy?.(-5)],['builtin.resonance.peak-right-fast',()=>R.moveSelectedPeakBy?.(5)],
@@ -360,7 +361,7 @@
     ];
     for(const [id,handler] of resonanceCommands)ctx.commands.register(id,handler);
     ctx.ui.interactionBehaviors.create('resonance-keyboard',{activity:'resonance',bindings:[
-      ['Ctrl+Z','builtin.resonance.undo'],['ArrowUp','builtin.resonance.sweep-up'],['ArrowDown','builtin.resonance.sweep-down'],
+      ['ArrowUp','builtin.resonance.sweep-up'],['ArrowDown','builtin.resonance.sweep-down'],
       ['ArrowLeft','builtin.resonance.peak-left'],['ArrowRight','builtin.resonance.peak-right'],['Shift+ArrowLeft','builtin.resonance.peak-left-fast'],['Shift+ArrowRight','builtin.resonance.peak-right-fast'],
       ['Ctrl+ArrowLeft','builtin.resonance.select-prev'],['Ctrl+ArrowRight','builtin.resonance.select-next'],['Escape','builtin.resonance.deselect'],['L','builtin.resonance.lock'],['Shift+L','builtin.resonance.unlock'],['Delete','builtin.resonance.delete'],['P','builtin.resonance.physics-labels']
     ].map(([chord,command],index)=>({id:`resonance-key-${index}`,gesture:'key',target:'keyboard',chord,command,priority:250}))});
@@ -413,7 +414,7 @@
     // PRIME or SUB surface becomes connected. Detached SUB pages no longer
     // need plugin-side one-shot DOM scans.
     wb.setNavigationPresentation?.('host');
-    ctx.ui.edit?.register?.({id:'resonance',order:10,undo:()=>ctx.commands.run('builtin.resonance.undo'),deselect:()=>ctx.commands.run('builtin.resonance.deselect')});
+    ctx.ui.edit?.register?.({id:'resonance',order:10,canUndo:()=>R.historyState?.().canUndo===true,canRedo:()=>R.historyState?.().canRedo===true,historyState:()=>R.historyState?.()||null,undo:()=>ctx.commands.run('builtin.resonance.undo'),redo:()=>ctx.commands.run('builtin.resonance.redo'),deselect:()=>ctx.commands.run('builtin.resonance.deselect')});
     const primeIdFor=kind=>kind==='inspect'?'curve-inspector':'group-analysis';
     const togglePanel=(kind,force)=>{const id=primeIdFor(kind),row=wb.primes?.get?.(id);if(force===false){wb.closePrime(id);return;}if(force===true||!row?.mounted){wb.openPrime(id);kind==='inspect'?R.renderInspection?.():R.renderGroup?.();}else wb.closePrime(id);};
     page.querySelectorAll('[data-respar-panel]').forEach(btn=>btn.onclick=()=>togglePanel(btn.dataset.resparPanel));

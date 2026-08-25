@@ -68,6 +68,27 @@
     return ['input','textarea','select'].includes(tag) || !!el.isContentEditable;
   }
 
+  const historyRowTime=row=>Number(row?.updatedAt||row?.createdAt)||0;
+  async function runWindowHistory(direction){
+    const edit=window.DKDSPlugins?.edit;
+    let local=null,project=null;
+    try{if(edit?.history)local=await Promise.resolve(edit.history());}catch(err){console.warn('[DKDS window edit history]',err);}
+    try{project=await window.DKDSCapabilities?.invoke?.('core.project-history','state');}catch(err){console.warn('[DKDS window project history]',err);}
+    const candidate=(state,source)=>{const rows=direction==='undo'?state?.past:state?.future,row=Array.isArray(rows)?rows.at(-1):null,allowed=direction==='undo'?state?.canUndo:state?.canRedo;return allowed&&row?{source,time:historyRowTime(row)}:null;};
+    const rows=[candidate(project,'project'),candidate(local,'workspace')].filter(Boolean).sort((a,b)=>b.time-a.time);
+    for(const row of rows){
+      if(row.source==='workspace'&&edit?.supports?.(direction)){
+        if(typeof edit.can==='function'&&edit.can(direction)===false)continue;
+        if(await Promise.resolve(edit.invoke(direction))!==false)return true;
+      }else if(row.source==='project'){
+        if(await window.DKDSCapabilities?.invoke?.('core.project-history',direction))return true;
+      }
+    }
+    if(edit?.supports?.(direction)&&!rows.some(row=>row.source==='workspace'))if(await Promise.resolve(edit.invoke(direction))!==false)return true;
+    if(!rows.some(row=>row.source==='project'))return !!(await window.DKDSCapabilities?.invoke?.('core.project-history',direction));
+    return false;
+  }
+
   // Dedicated TOP windows do not load the main shell toolbar, but system edit
   // semantics must remain host-invariant. Route the same keyboard operations
   // through the active-plugin Edit Contract instead of reimplementing them in
@@ -84,17 +105,13 @@
     }
     if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'z') {
       event.preventDefault();
-      if (event.shiftKey) {
-        if (edit?.supports?.('redo')) edit.invoke('redo');
-        else void window.DKDSCapabilities?.invoke?.('core.project-history','redo');
-      } else if (edit?.supports?.('undo')) edit.invoke('undo');
-      else void window.DKDSCapabilities?.invoke?.('core.project-history','undo');
+      if (event.shiftKey) void runWindowHistory('redo');
+      else void runWindowHistory('undo');
       return;
     }
     if ((event.ctrlKey || event.metaKey) && String(event.key || '').toLowerCase() === 'y') {
       event.preventDefault();
-      if (edit?.supports?.('redo')) edit.invoke('redo');
-      else void window.DKDSCapabilities?.invoke?.('core.project-history','redo');
+      void runWindowHistory('redo');
       return;
     }
     if (event.key === 'Escape' && edit?.supports?.('deselect')) {
@@ -529,7 +546,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.55',
+      appVersion:'3.61.56',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,

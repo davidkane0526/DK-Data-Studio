@@ -557,9 +557,10 @@
     const timer=setTimeout(()=>{projectAutosaveTimers.delete(tab.id);void flushProjectAutosave(tab).then(changed=>{if(changed)renderProjectTabs();});},1800);
     projectAutosaveTimers.set(tab.id,timer);
   }
-  function recordProjectHistory(entry){const ok=activeProjectHistory()?.record?.(entry)||false;if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);}return ok;}
-  async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);setStatus(`已撤销：${label}`);}return ok;}
-  async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);setStatus(`已重做：${label}`);}return ok;}
+  function notifySystemHistory(reason='change',detail={}){try{window.dispatchEvent(new CustomEvent('dkds:history-changed',{detail:{scope:'project',reason,at:Date.now(),...detail}}));}catch{}}
+  function recordProjectHistory(entry){const ok=activeProjectHistory()?.record?.(entry)||false;if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('record',{label:String(entry?.label||'项目修改')});}return ok;}
+  async function undoProjectHistory(){const history=activeProjectHistory();if(!history?.canUndo?.())return false;const label=history.snapshot?.().undoLabel||'项目修改';const ok=await history.undo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('undo',{label});setStatus(`已撤销：${label}`);}return ok;}
+  async function redoProjectHistory(){const history=activeProjectHistory();if(!history?.canRedo?.())return false;const label=history.snapshot?.().redoLabel||'项目修改';const ok=await history.redo();if(ok){const tab=activeProjectTab();if(tab)tab.dirty=true;scheduleProjectAutosave(tab);notifySystemHistory('redo',{label});setStatus(`已重做：${label}`);}return ok;}
 
   function captureActiveProjectTab(){
     const t=activeProjectTab();
@@ -2517,7 +2518,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.55',
+      version:'3.61.56',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3088,18 +3089,69 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   };
 
   $('#newProjectTabBtn').onclick=()=>createProjectTab(null,true);
-  const systemUndo=async()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('undo')){const handled=await Promise.resolve(edit.invoke('undo'));if(handled!==false)return true;}if(await undoProjectHistory())return true;setStatus('当前工程没有可撤销的编辑。');return false;};
-  const systemRedo=async()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('redo')){const handled=await Promise.resolve(edit.invoke('redo'));if(handled!==false)return true;}if(await redoProjectHistory())return true;setStatus('当前工程没有可重做的编辑。');return false;};
+  const historyRowTime=row=>Number(row?.updatedAt||row?.createdAt)||0;
+  const normalizeEditHistory=value=>{
+    const row=value&&typeof value==='object'?value:{};
+    return {scope:'workspace',source:String(row.source||row.pluginId||window.DKDSPlugins?.edit?.activePlugin?.()||'workspace'),canUndo:row.canUndo===true,canRedo:row.canRedo===true,undoLabel:String(row.undoLabel||row.past?.at?.(-1)?.label||''),redoLabel:String(row.redoLabel||row.future?.at?.(-1)?.label||''),past:Array.isArray(row.past)?row.past:[],future:Array.isArray(row.future)?row.future:[]};
+  };
+  const activeEditHistorySnapshot=async()=>{
+    const edit=window.DKDSPlugins?.edit;if(!edit?.activePlugin?.()||typeof edit.history!=='function')return normalizeEditHistory(null);
+    try{return normalizeEditHistory(await Promise.resolve(edit.history()));}catch(err){console.warn('[DKDS edit history]',err);return normalizeEditHistory(null);}
+  };
+  const activeEditHistorySnapshotSync=()=>{
+    const edit=window.DKDSPlugins?.edit;if(!edit?.activePlugin?.()||typeof edit.history!=='function')return normalizeEditHistory(null);
+    try{const value=edit.history();return value&&typeof value.then==='function'?normalizeEditHistory(null):normalizeEditHistory(value);}catch{return normalizeEditHistory(null);}
+  };
+  const historyCandidate=(snapshot,direction,source)=>{
+    const rows=direction==='undo'?snapshot?.past:snapshot?.future,row=Array.isArray(rows)?rows.at(-1):null;
+    const allowed=direction==='undo'?snapshot?.canUndo:snapshot?.canRedo;
+    return allowed&&row?{source,row,time:historyRowTime(row),label:String(row.label||direction)}:null;
+  };
+  const systemHistorySnapshotSync=()=>{
+    const project=projectHistorySnapshot(),workspace=activeEditHistorySnapshotSync();
+    const undoCandidates=[historyCandidate(project,'undo','project'),historyCandidate(workspace,'undo','workspace')].filter(Boolean).sort((a,b)=>b.time-a.time);
+    const redoCandidates=[historyCandidate(project,'redo','project'),historyCandidate(workspace,'redo','workspace')].filter(Boolean).sort((a,b)=>b.time-a.time);
+    return {version:'2.0.0',project,workspace,canUndo:undoCandidates.length>0,canRedo:redoCandidates.length>0,undoLabel:undoCandidates[0]?.label||'',redoLabel:redoCandidates[0]?.label||'',undoSource:undoCandidates[0]?.source||'',redoSource:redoCandidates[0]?.source||''};
+  };
+  const runSystemHistory=async direction=>{
+    const edit=window.DKDSPlugins?.edit,project=projectHistorySnapshot(),workspace=await activeEditHistorySnapshot();
+    const candidates=[historyCandidate(project,direction,'project'),historyCandidate(workspace,direction,'workspace')].filter(Boolean).sort((a,b)=>b.time-a.time);
+    for(const candidate of candidates){
+      try{
+        if(candidate.source==='workspace'&&edit?.supports?.(direction)){
+          if(typeof edit.can==='function'&&edit.can(direction)===false)continue;
+          const handled=await Promise.resolve(edit.invoke(direction));if(handled!==false)return true;
+        }else if(candidate.source==='project'){
+          const handled=direction==='undo'?await undoProjectHistory():await redoProjectHistory();if(handled)return true;
+        }
+      }catch(err){console.error(`[DKDS history:${direction}:${candidate.source}]`,err);setStatus(`${direction==='undo'?'撤销':'重做'}失败：${err?.message||err}`);return false;}
+    }
+    if(edit?.activePlugin?.()&&edit.supports?.(direction)&&!candidates.some(row=>row.source==='workspace')){
+      const handled=await Promise.resolve(edit.invoke(direction));if(handled!==false)return true;
+    }
+    if(!candidates.some(row=>row.source==='project')){
+      const handled=direction==='undo'?await undoProjectHistory():await redoProjectHistory();if(handled)return true;
+    }
+    setStatus(direction==='undo'?'当前工程没有可撤销的编辑。':'当前工程没有可重做的编辑。');return false;
+  };
+  const systemUndo=()=>runSystemHistory('undo');
+  const systemRedo=()=>runSystemHistory('redo');
   const systemDeselect=()=>{const edit=window.DKDSPlugins?.edit;if(edit?.activePlugin?.()&&edit.supports?.('deselect'))return edit.invoke('deselect');setStatus('当前工作区没有活动选择。');return false;};
-  $('#undoBtn').onclick=()=>void systemUndo(); $('#deselectBtn').onclick=systemDeselect;
+  $('#undoBtn').onclick=()=>void systemUndo(); $('#redoBtn').onclick=()=>void systemRedo(); $('#deselectBtn').onclick=systemDeselect;
   const showProjectHistory=async()=>{
-    const snapshot=projectHistorySnapshot();
-    const past=[...(snapshot.past||[])].reverse().map((row,index)=>`${index===0?'下一步撤销':'已执行'} · ${row.label}`);
-    const future=(snapshot.future||[]).map(row=>`可重做 · ${row.label}`);
+    const project=projectHistorySnapshot(),workspace=await activeEditHistorySnapshot(),snapshot=systemHistorySnapshotSync();
+    const rows=[];
+    const pushRows=(history,scopeLabel)=>{
+      for(const row of [...(history.past||[])].reverse())rows.push({kind:'past',scopeLabel,row,time:historyRowTime(row)});
+      for(const row of [...(history.future||[])])rows.push({kind:'future',scopeLabel,row,time:historyRowTime(row)});
+    };
+    pushRows(project,'项目');pushRows(workspace,'当前工作区');rows.sort((a,b)=>b.time-a.time);
+    const detail=rows.map(item=>`${item.kind==='future'?'可重做':'已执行'} · [${item.scopeLabel}] ${item.row.label}${item.time?` · ${new Date(item.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:''}`).join('\n');
     const action=await window.DKDSUI?.dialogs?.show?.({
       tone:'info',title:'操作历史',subtitle:activeProjectTab()?.title||'当前项目',
-      message:past.length||future.length?'按项目标签独立记录，可撤销或重做最近操作。':'当前项目还没有可回退的操作。',
-      detail:[...past,...future].join('\n'),detailOpen:true,detailLabel:'历史记录',
+      message:rows.length?`统一历史：${project.past?.length||0} 条项目操作，${workspace.past?.length||0} 条当前工作区操作。撤销/重做按真实操作时间排序。`:'当前项目还没有可回退的操作。',
+      detail,detailOpen:true,detailLabel:'历史记录',
+      meta:[{label:'下一步撤销',value:snapshot.undoLabel||'—'},{label:'下一步重做',value:snapshot.redoLabel||'—'}],
       actions:[{id:'close',label:'关闭'},{id:'redo',label:'重做',kind:'secondary'},{id:'undo',label:'撤销',kind:'primary'}],
       defaultAction:snapshot.canUndo?'undo':'close'
     });
@@ -3388,7 +3440,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.55',
+      appVersion:'3.61.56',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3433,7 +3485,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       newProject:()=>createProjectTab(null,true),
       switchProject:id=>switchProjectTab(id),
       closeProject:id=>closeProjectTab(id),
-      historySnapshot:()=>projectHistorySnapshot(),
+      historySnapshot:()=>systemHistorySnapshotSync(),
       undo:()=>systemUndo(),
       redo:()=>systemRedo(),
       openPluginManager:()=>{openAnalysisPage('pluginManagerPage');window.DKDSPluginManagerUI?.render?.();return true;}
@@ -3444,7 +3496,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const activityId=String(window.DKDSPlugins?.activities?.active?.()||'');
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId}));
       const activities=(window.DKDSPlugins?.activities?.list?.()||[]).map(row=>({id:String(row.id||''),activityId:String(row.id||''),pluginId:String(row.pluginId||''),label:String(row.label||row.name||row.id||'')})).filter(row=>row.id);
-      return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:projectHistorySnapshot(),theme:window.DKDSTheme?.current?.()||'light',themeTokens:window.DKDSTheme?.tokens?.()||{},activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
+      return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:systemHistorySnapshotSync(),theme:window.DKDSTheme?.current?.()||'light',themeTokens:window.DKDSTheme?.tokens?.()||{},activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
     };
     const connectivityInvoke=async(method,payload={})=>{
       if(window.DKDSMobileHost?.invoke)return window.DKDSMobileHost.invoke(method,payload);
@@ -3492,7 +3544,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       projectSnapshot:connectivitySnapshot,
       projectList:()=> (state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty})),
       projectSwitch:id=>switchProjectTab(String(id||'')),projectNew:args=>createProjectTab(String(args?.title||'').trim()||null,true),projectOpen:()=>openProject(),projectSave:()=>saveProject(),
-      historyState:()=>projectHistorySnapshot(),historyUndo:()=>systemUndo(),historyRedo:()=>systemRedo(),artifacts:kernelArtifactApi,artifactUpsert:kernelArtifactUpsert,artifactRemove:kernelArtifactRemove,
+      historyState:()=>systemHistorySnapshotSync(),historyUndo:()=>systemUndo(),historyRedo:()=>systemRedo(),artifacts:kernelArtifactApi,artifactUpsert:kernelArtifactUpsert,artifactRemove:kernelArtifactRemove,
       plotInspect:kernelPlotInspect,plotRender:kernelPlotRender,plotClose:()=>{document.getElementById('dkdsKernelPlotPanel')?.classList.add('hidden');return true;},
       pluginList:()=>window.DKDSPlugins?.manager?.list?.()||[],pluginValidate:pkg=>window.DKDSPlugins?.external?.validatePackage?.(pkg),pluginInstallGenerated:(pkg,options)=>window.DKDSPlugins?.external?.installPackage?.(pkg,options),pluginSetEnabled:(id,enabled)=>window.DKDSPlugins?.manager?.setEnabled?.(id,enabled),pluginUninstall:id=>window.DKDSPlugins?.external?.uninstall?.(id),
       files:()=>window.DKDSConnectivity?.files,smb:()=>window.DKDSConnectivity?.smb,runtimeStatus:kernelRuntimeStatus,automationRun:()=>window.DKDSAutomationTests?.run?.()

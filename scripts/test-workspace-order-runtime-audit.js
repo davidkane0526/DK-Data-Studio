@@ -51,7 +51,7 @@ assert(resonanceViews.includes("closeSelector:'[data-respar-close=\"inspect\"]'"
 
 // Undo/cancel is a true system edit contract routed to the active plugin.
 assert(kernel.includes("registerTypedContribution(pluginId,'ui.editActions'")&&kernel.includes('invokeEditAction(action,payload={})'),'Plugin kernel must own active-plugin edit contributions.');
-assert(app.includes('const systemUndo=')&&app.includes('const systemDeselect=')&&app.includes("edit.supports?.('undo')"),'Global edit controls must route to the active plugin before legacy state.');
+assert(app.includes('const systemUndo=')&&app.includes('const systemDeselect=')&&app.includes('runSystemHistory')&&app.includes('historyCandidate(workspace')&&app.includes('historyCandidate(project'),'Global edit controls must coordinate active-workspace and project history chronologically rather than blindly prioritizing one scope.');
 assert(resonanceViews.includes('ctx.ui.edit?.register?.')&&!resonanceViews.includes("id:'undo',label:'↶'")&&!resonanceViews.includes("id:'deselect',label:'取消'"),'Resonance must consume system edit commands instead of duplicating them among PRIME/SUB actions.');
 
 // Group plots are live reusable chart surfaces rather than snapshot/recreate UI.
@@ -74,7 +74,7 @@ for(const phrase of ['GRS 工作台交互 · SUPER / TOP 共用同一渲染器',
 }
 
 const topRuntime=read('src/plugin-window/runtime.js');
-assert(topRuntime.includes("edit?.supports?.('undo')") && topRuntime.includes("edit?.supports?.('deselect')"), 'TOP window routes Ctrl+Z/Escape through the active-plugin Edit Contract');
+assert(topRuntime.includes('runWindowHistory') && topRuntime.includes("edit?.supports?.('deselect')"), 'TOP window routes Ctrl+Z/Y through the chronological History Coordinator and Escape through the active-plugin Edit Contract');
 
 
 // Restoring a portable view must return to its stable original slot, not append

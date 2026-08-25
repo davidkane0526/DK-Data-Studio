@@ -344,6 +344,7 @@
 
   window.addEventListener('dkds:theme-changed',publish);
   window.addEventListener('dkds:project-changed',publish);
+  window.addEventListener('dkds:history-changed',publish);
   window.addEventListener('dkds:status-changed',event=>{lastCoreStatus=text(event?.detail?.message).trim();publish();});
   window.addEventListener('load',()=>{
     announceReady();

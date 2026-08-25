@@ -4,7 +4,7 @@ const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.55','Tool window/layout release must be v3.61.32');
+assert.equal(pkg.version,'3.61.56','Tool window/layout release must be v3.61.32');
 
 const modern=read('src/ui-modern.css');
 assert(/#pluginToolsMenu\s*\{[\s\S]*?width\s*:\s*max-content/i.test(modern),'Tools menu must size to its content');

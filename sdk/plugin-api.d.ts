@@ -168,6 +168,11 @@ export interface DKDSLegendGroup { readonly id:string; register(surface:any,seri
 export interface DKDSActiveLayoutSolver { solve(spec:{container?:Element|string;width?:number;height?:number;count?:number;columns?:number|'auto';minItemWidth?:number;minItemHeight?:number;maxColumns?:number;gap?:number;aspectRatio?:number;maxItemHeight?:number}):{columns:number;rows:number;itemWidth:number;itemHeight:number;gap:number;overflowY:boolean} }
 export interface DKDSGroupPlot { setItems(items:any[]):DKDSGroupPlot; layout():any; setColumns(value:number|'auto'):any; diagnostics():any; dispose():void }
 export interface DKDSTooltipRuntime { show(spec:{anchor?:Element|string;point?:{x?:number;y?:number;clientX?:number;clientY?:number};title?:string;text?:string;rows?:Array<{label?:string;key?:string;value:any}>}):HTMLElement; hide():void; bind(target:Element|string,spec:any):()=>void }
+
+export interface DKDSEditHistoryEntry { label:string; createdAt?:number; updatedAt?:number; scope?:string; source?:string; metadata?:Record<string,any> }
+export interface DKDSEditHistoryState { canUndo:boolean; canRedo:boolean; undoLabel?:string; redoLabel?:string; past?:DKDSEditHistoryEntry[]; future?:DKDSEditHistoryEntry[]; scope?:string; source?:string }
+export interface DKDSEditContribution { id:string; order?:number; canUndo?:()=>boolean; canRedo?:()=>boolean; historyState?:()=>DKDSEditHistoryState|Promise<DKDSEditHistoryState>; undo?:()=>boolean|Promise<boolean>; redo?:()=>boolean|Promise<boolean>; deselect?:()=>boolean|Promise<boolean>; actions?:Record<string,(payload?:any)=>any> }
+export interface DKDSEditRuntime { register(spec:DKDSEditContribution):any; changed(detail?:{reason?:string;[key:string]:any}):boolean }
 export interface DKDSProjectHistoryRuntime { state():any; undo():Promise<any>|any; redo():Promise<any>|any; commitArtifactMutation(payload:{label?:string;before:{upserts?:any[];removedIds?:string[]};after:{upserts?:any[];removedIds?:string[]}}):Promise<any>|any }
 export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.17'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
 
@@ -220,7 +225,7 @@ export interface DKDSPluginContext {
     analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:{solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
     topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
-    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:any; designSystem:DKDSDesignSystem
+    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:DKDSEditRuntime; designSystem:DKDSDesignSystem
   };
 }
 export interface DKDSPluginRegistry { define(manifest:DKDSManifest,activate:(ctx:DKDSPluginContext)=>DKDSPluginInstance|Promise<DKDSPluginInstance>|void|Promise<void>):void }

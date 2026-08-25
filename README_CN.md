@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.55
+# DK Data Studio — v3.61.56
+
+## v3.61.56 统一系统历史记录
+
+本版重做 Undo/Redo 的协调逻辑。此前 Core Project History 与共振工作区私有 `undoStack` 相互独立：历史面板只显示工程级历史，插件又会优先截获 Ctrl+Z；更严重的是异步插件 Undo 返回 `Promise<false>` 时仍会被误判为“已处理”，导致工程历史无法继续回退。现在由 Core System History Coordinator 统一比较工程历史与当前工作区历史的真实时间顺序，再执行最近的一条可逆操作。
+
+Plugin Edit Contract 现在可声明 `canUndo / canRedo / historyState / undo / redo`。共振分析已经升级为真实 Undo + Redo 双栈，并向 Core 暴露历史状态；独立 TOP、主窗口、移动端顶部 Undo/Redo 与 Studio Kernel 都使用同一套历史判断。工作区历史变化会通过显式 `history:changed` 通知 Core，移动端不再依赖 DOM 偶然重绘来刷新撤销/恢复状态。操作历史对话框也同时显示“项目”和“当前工作区”记录，并明确下一步撤销/重做的对象。
+
+Core Project History 升级为 v2，增加异步执行锁、失败/拒绝保护、revision、scope/source 与时间信息，失败的撤销不会破坏栈。Studio 为 **3.61.56**；Mobile 为 **0.8.9**、Android `versionCode` **20**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。
+
 
 ## v3.61.55 Vth 内置工作区与 Shell 控件收口
 

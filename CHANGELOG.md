@@ -1,3 +1,13 @@
+# v3.61.56 — Unified System History Coordinator
+
+- Replace the split “project history vs. private resonance undo stack” behavior with a System History Coordinator. Project edits and active-workspace edits now expose comparable timestamps and the shell chooses the chronologically latest reversible operation, so Ctrl/Cmd+Z no longer blindly prioritizes a plugin over a newer project edit.
+- Fix the Edit Contract async handling bug: a plugin returning `Promise<false>` from Undo/Redo is no longer treated as “handled”. The system now falls through to project history when a workspace has no applicable local edit.
+- Extend the Edit Contract with `canUndo / canRedo / historyState` support and expose `edit.can()` / `edit.history()` from Plugin Kernel. Dedicated TOP windows use the same chronological coordinator instead of a different shortcut policy.
+- Upgrade Resonance local history to true Undo + Redo with an explicit redo stack, availability state, timestamps and meaningful labels for common peak edits. The resonance keyboard behavior no longer intercepts Ctrl+Z directly; system history owns Undo/Redo routing.
+- Rebuild the Operation History dialog around the combined history state. It shows project and active-workspace entries together, identifies the next Undo/Redo operation, and reports both scopes instead of incorrectly claiming the project has no history while the active workspace still has reversible edits. Mobile shell and Studio Kernel history snapshots now consume the same combined state; local/workspace history changes publish an explicit `history:changed` signal so native Undo/Redo availability refreshes immediately instead of depending on incidental DOM updates.
+- Upgrade Core Project History to v2 with applying/error/revision state, safe async execution, rejected-operation stack preservation and per-entry scope/source/timing metadata.
+- Studio updates to **3.61.56**; Mobile updates to **0.8.9** / Android versionCode **20**. SDK remains **1.17.6** and Plugin API remains **1.17.0**.
+
 # v3.61.55 — Vth Built-in Workspace & Shell Control Unification
 
 - Promote `transfer-vth-lab` from an SDK example-only package into a first-party built-in TOP workspace while preserving the same Plugin API contract. The main-process dedicated-window registry can now resolve `transfer-vth-lab`, eliminating the toolbar error “独立工作区契约未注册：transfer-vth-lab”.

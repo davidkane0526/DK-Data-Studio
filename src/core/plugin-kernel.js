@@ -484,17 +484,61 @@
     return activityRows().find(row=>row.value?.id===activeActivityId)?.pluginId || superPluginId || '';
   }
 
+  function activeEditRows() {
+    const pluginId=activePluginId();
+    if(!pluginId)return [];
+    return listContributions('ui.editActions').filter(row=>row.pluginId===pluginId).sort((a,b)=>(Number(a.value?.order)||100)-(Number(b.value?.order)||100));
+  }
+
   function invokeEditAction(action,payload={}) {
     const name=String(action||'').trim();if(!name)return false;
-    const pluginId=activePluginId();
-    const rows=listContributions('ui.editActions').filter(row=>row.pluginId===pluginId).sort((a,b)=>(Number(a.value?.order)||100)-(Number(b.value?.order)||100));
-    for(const row of rows){const fn=row.value?.[name]||row.value?.actions?.[name];if(typeof fn!=='function')continue;try{return fn({action:name,payload,host,pluginId,activityId:activeActivityId})!==false;}catch(err){console.error(`[DKDS edit:${pluginId}:${name}]`,err);return false;}}
+    const pluginId=activePluginId(),rows=activeEditRows();
+    for(const row of rows){
+      const fn=row.value?.[name]||row.value?.actions?.[name];if(typeof fn!=='function')continue;
+      try{
+        const result=fn({action:name,payload,host,pluginId,activityId:activeActivityId});
+        if(result&&typeof result.then==='function')return Promise.resolve(result).then(value=>value!==false).catch(err=>{console.error(`[DKDS edit:${pluginId}:${name}]`,err);return false;});
+        return result!==false;
+      }catch(err){console.error(`[DKDS edit:${pluginId}:${name}]`,err);return false;}
+    }
     return false;
   }
 
   function supportsEditAction(action) {
-    const name=String(action||'').trim(),pluginId=activePluginId();if(!name||!pluginId)return false;
-    return listContributions('ui.editActions').some(row=>row.pluginId===pluginId&&typeof (row.value?.[name]||row.value?.actions?.[name])==='function');
+    const name=String(action||'').trim();if(!name)return false;
+    return activeEditRows().some(row=>typeof (row.value?.[name]||row.value?.actions?.[name])==='function');
+  }
+
+  function editActionAvailable(action) {
+    const name=String(action||'').trim();if(!name)return false;
+    for(const row of activeEditRows()){
+      const fn=row.value?.[name]||row.value?.actions?.[name];if(typeof fn!=='function')continue;
+      const guard=name==='undo'?(row.value?.canUndo||row.value?.history?.canUndo):name==='redo'?(row.value?.canRedo||row.value?.history?.canRedo):null;
+      if(typeof guard!=='function')return true;
+      try{if(guard({action:name,host,pluginId:row.pluginId,activityId:activeActivityId})!==false)return true;}catch(err){console.error(`[DKDS edit:${row.pluginId}:${name}:guard]`,err);}
+    }
+    return false;
+  }
+
+  function editHistoryState() {
+    const pluginId=activePluginId();
+    for(const row of activeEditRows()){
+      const fn=row.value?.historyState||row.value?.history?.state;
+      if(typeof fn!=='function')continue;
+      try{
+        const value=fn({host,pluginId,activityId:activeActivityId});
+        if(value&&typeof value.then==='function')return Promise.resolve(value).then(state=>({...state,pluginId,providerId:row.id}));
+        return {...(value||{}),pluginId,providerId:row.id};
+      }catch(err){console.error(`[DKDS edit:${pluginId}:history]`,err);return null;}
+    }
+    return null;
+  }
+
+  function notifyEditHistory(pluginId,detail={}) {
+    const payload={pluginId:String(pluginId||activePluginId()||''),activityId:String(activeActivityId||''),reason:String(detail?.reason||'change'),at:Date.now(),...(detail&&typeof detail==='object'?detail:{})};
+    eventEmit('history:changed',payload);
+    try{window.dispatchEvent(new CustomEvent('dkds:history-changed',{detail:payload}));}catch{}
+    return true;
   }
 
   function reflowActivities(){
@@ -1905,7 +1949,8 @@
         },
         edit: {
           register: spec => {const row=spec&&typeof spec==='object'?spec:{};const id=String(row.id||'default');return registerTypedContribution(pluginId,'ui.editActions',id,{...row,id,pluginId});},
-          invoke: (action,payload) => invokeEditAction(action,payload)
+          invoke: (action,payload) => invokeEditAction(action,payload),
+          changed: detail => notifyEditHistory(pluginId,detail)
         },
         topWorkspace: {
           register: spec => registerTopWorkspace(pluginId,spec),
@@ -2543,6 +2588,9 @@
     edit: {
       invoke:(action,payload)=>invokeEditAction(action,payload),
       supports:action=>supportsEditAction(action),
+      can:action=>editActionAvailable(action),
+      history:()=>editHistoryState(),
+      changed:(detail={})=>notifyEditHistory(activePluginId(),detail),
       activePlugin:()=>activePluginId(),
       providers:()=>listContributions('ui.editActions').map(row=>({pluginId:row.pluginId,id:row.id}))
     },

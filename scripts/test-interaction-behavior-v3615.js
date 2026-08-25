@@ -34,9 +34,10 @@ assert(!feature.includes('onCurveModifiedClick:'),'Resonance reference surface m
 assert(!feature.includes('onMarkerDelete:'),'Resonance reference surface must not own feature-specific right-click deletion handling.');
 assert(views.includes("ctx.ui.interactionBehaviors.create('resonance-keyboard'"),'Resonance keyboard policy must use Interaction Behavior.');
 assert(!views.includes('ctx.ui.shortcuts'),'Resonance reference plugin must not own a parallel shortcut contribution path.');
-for(const chord of ['Ctrl+Z','Ctrl+ArrowLeft','Shift+ArrowLeft','Escape'])assert(views.includes(`'${chord}'`),`Keyboard profile must retain exact chord ${chord}.`);
-assert(feature.includes("commandRuntime.run('builtin.resonance.undo')")&&views.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]"),'Undo button and keyboard binding must converge on the same Command Registry command.');
-assert(views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'System Edit Contract must be an adapter into the same semantic commands, not a parallel business path.');
+for(const chord of ['Ctrl+ArrowLeft','Shift+ArrowLeft','Escape'])assert(views.includes(`'${chord}'`),`Keyboard profile must retain exact chord ${chord}.`);
+assert(!views.includes("['Ctrl+Z','builtin.resonance.undo']"),'System Undo must own Ctrl+Z so project/workspace history can be ordered chronologically.');
+assert(feature.includes("commandRuntime.run('builtin.resonance.undo')")&&views.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]")&&views.includes("['builtin.resonance.redo',()=>R.redoLastAction?.()]"),'Local Undo/Redo commands must remain available to the System Edit Contract.');
+assert(views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("redo:()=>ctx.commands.run('builtin.resonance.redo')")&&views.includes('historyState:()=>R.historyState?.()||null')&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'System Edit Contract must expose reversible state and adapt into the same semantic commands.');
 
 assert(sdkContract.pluginApiVersion==='1.17.0','Standalone SDK must target Plugin API 1.16.0 while preserving older package compatibility.');
 assert(sdk.includes('DKDSInteractionBehaviorBinding')&&sdk.includes('DKDSInteractionBehaviorRuntime'),'Standalone SDK must publish Interaction Behavior types.');

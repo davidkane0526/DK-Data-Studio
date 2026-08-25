@@ -9,7 +9,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.55','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.56','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
   assert(sdk.pluginApiVersion==='1.17.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
@@ -35,7 +35,7 @@ function assert(value,message){if(!value)throw new Error(message);}
   assert(index.includes('core/project-history.js'),'Main shell must load the Core project-history runtime.');
   assert(app.includes("'core.project-history'")&&app.includes('recordProjectHistory({label:`数据用途')&&app.includes('history-source-remove-undo'),'Data-source management must record reversible edits in Core history.');
   assert(app.includes("e.key.toLowerCase()==='y'")&&app.includes('e.shiftKey)void systemRedo()'),'Main shell must support Ctrl/Cmd+Y and Ctrl/Cmd+Shift+Z redo.');
-  assert(windowRuntime.includes("'core.project-history','undo'")&&windowRuntime.includes("'core.project-history','redo'"),'Dedicated TOP windows must fall back to the same Core project history.');
+  assert(windowRuntime.includes('runWindowHistory')&&windowRuntime.includes("'core.project-history','state'")&&windowRuntime.includes("window.DKDSCapabilities?.invoke?.('core.project-history',direction)"),'Dedicated TOP windows must coordinate local edit history with the same Core project history.');
   assert(dc.includes("proxy?.('core.project-history')")&&dc.includes('commitArtifactMutation'),'Data Center non-source artifact edits must use Core history rather than a private undo stack.');
   assert(!dcView.includes('dcTagChips')&&!app.includes('importColumnTagFilter'),'Legacy semantic tag pills must not remain coupled to Data Center / Import UX; semantic helpers stay available only as internal metadata utilities.');
   assert(ui.includes('navigationToolObstacles()')&&ui.includes('avoidNavigationToolCollisions()')&&ui.includes("'.main-legend-bar'")&&ui.includes("'.respar-main-legend'")&&ui.includes('installNavigationObstacleObserver()'),'Core D3 navigation chrome must detect changing legend overlays and reroute around them.');

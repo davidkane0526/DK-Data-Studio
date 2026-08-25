@@ -498,4 +498,9 @@ A plugin may project PRIME/SUB commands to the SUPER host toolbar while using th
 - Portable specs may provide `closeSelector`, `onClose`, `collapseSelector`, `collapseLabel` and `expandLabel`; Core owns the lifecycle and chart resize notifications.
 - Multiple views assigned to one fixed dock are stacked by Core rather than sharing absolute coordinates.
 - SUB pages are composed outside the scientific canvas and receive an independent scrolling page region.
-- `ctx.ui.edit.register({ id, order, undo, deselect, ... })` supplies system Edit behavior for the active plugin. Shell Undo/Escape first dispatch through this contract.
+- `ctx.ui.edit.register({ id, order, canUndo, canRedo, historyState, undo, redo, deselect, ... })` supplies reversible workspace editing to the System History Coordinator. Undo/Redo handlers may be async and must return `false` when nothing was handled; `historyState()` exposes timestamped local entries so Core can order workspace and project history chronologically. Escape remains an active-plugin edit action.
+
+
+### History state notifications
+
+When a plugin keeps a fine-grained local undo/redo stack, call `ctx.ui.edit.changed({reason, label})` whenever that stack changes. Core uses this notification to refresh the unified System History state in the desktop shell, dedicated TOP windows and the Android native shell. Do not rely on incidental DOM changes to refresh Undo/Redo availability.
