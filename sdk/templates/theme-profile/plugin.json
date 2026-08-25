@@ -1,0 +1,10 @@
+{
+  "id": "example.theme-profile",
+  "name": "Example Theme Profile",
+  "version": "1.0.0",
+  "apiVersion": "1.17.0",
+  "entry": "plugin.js",
+  "pluginType": "extension",
+  "requiresCore": ["ui.theme"],
+  "description": "Semantic Theme Contract 2.0 profile example"
+}

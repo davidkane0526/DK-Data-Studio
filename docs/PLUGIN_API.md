@@ -102,7 +102,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 - data: `data.flow`, `data.pipeline`, `data.transforms`, `data.reactive`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
 - analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`, `analysis.detectors`;
 - visualization: `charts`, `charts.providers`;
-- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`, `ui.dialogs`.
+- UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.theme`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`, `ui.dialogs`.
 
 Activation fails before plugin code runs if a declared Core requirement is unavailable.
 
@@ -548,3 +548,9 @@ const ok = await ctx.ui.dialogs.confirm({
 ```
 
 `alert()`、`confirm()` 和 `prompt()` 都返回 Promise；弹窗 DOM 与视觉由宿主拥有。
+
+### Theme profiles (`ctx.ui.theme`)
+
+Studio 2.0 主题契约只允许插件注册**语义 Token**，而不是覆盖 Core/其他插件 DOM。主题插件可通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}}})` 注册 profile，再通过 `ctx.ui.theme.activate(id)` 激活。可用 token 包括 `canvas`, `surface`, `surfaceSoft`, `surfaceElevated`, `surfaceSidebar`, `surfaceHover`, `controlBg`, `controlHover`, `divider`, `dividerHover`, `controlBorder`, `controlBorderHover`, `scrollbar`, `scrollbarHover`, `text`, `textSoft`, `muted`, `accent`, `accentHover`, `accentSoft`, `focus`, `shadow1`, `shadow2`, `shadowFloat`, `radius`, `radiusLg`。
+
+结构分区应优先依靠 surface 色差和间距；`divider` 只用于必须存在的结构线，输入框/按钮使用独立的 `controlBorder`。这使主题插件可以改变整体视觉而不会破坏科学图或组件布局。

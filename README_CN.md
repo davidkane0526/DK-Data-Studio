@@ -1,4 +1,15 @@
-# DK Data Studio — v3.61.53
+# DK Data Studio — v3.61.54
+
+## v3.61.54 统一 Theme Contract 2.0 与暗色层级收口
+
+本版不再以零散暗色 CSS 覆盖修补白线，而是把 Studio 视觉层收敛为一套可插件化的语义主题契约。Core 明确区分 `divider` 与 `controlBorder`：工作区、参数栏、PRIME/Portable/Group 等结构主要通过 `surface` 色阶和间距形成层级，分割线默认极弱或在 Splitter 空闲状态完全隐藏；输入框、按钮等交互控件则继续使用独立的明确边界。左侧参数面板、滚动条、AI/MCP、LAN Web 与旧式控件都由统一 Token 归一化。
+
+`DKDSTheme` 更新为 2.0，并通过 `ctx.ui.theme` 允许主题插件注册明/暗 profile。主题 profile 只提供语义 Token，不直接覆盖其他插件 DOM；已保存的第三方 profile 会在主题插件注册后恢复。移动端 Native Shell 也会从 Web/Core 接收同一 profile Token，因此未来主题插件可以同时覆盖桌面、WebView 与 Android 原生外壳。
+
+图标题/说明与操作按钮也统一采用 Core Surface Header 契约：文字栈和右侧操作区使用独立布局列，Splitter 只保留命中区而不再画穿标题栏，从结构上解决标题、说明、白条/拖动线互相遮挡的问题。
+
+Studio 为 **3.61.54**；Mobile 为 **0.8.7**、Android `versionCode` **18**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**，现有插件无需迁移。
+
 
 ## v3.61.53 暗色界面收口与 Android Palette 类型修复
 

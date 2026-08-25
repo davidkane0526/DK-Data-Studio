@@ -1,3 +1,12 @@
+# v3.61.54 — Theme Contract 2.0 & Surface-Hierarchy Closure
+
+- Replace the remaining dark-mode framework lines with a semantic Theme Contract 2.0. Structural hierarchy now uses `canvas / surface / surfaceSoft / surfaceSidebar / surfaceElevated` contrast and spacing; idle splitters are visually transparent and only reveal `dividerHover` while hovered or dragged. `divider` and `controlBorder` are separate channels, so inputs/buttons remain legible without turning every panel boundary into a bright rule.
+- Normalize legacy first-party controls, scrollbars, left parameter panels, PRIME/Portable/Group headers, AI/MCP settings and LAN Web chrome through the same semantic tokens. Only the actual QR raster keeps a white paper background for scanner reliability.
+- Introduce Core theme profiles through `DKDSTheme` 2.0 and Plugin API `ctx.ui.theme`: theme plugins can register/activate semantic light/dark profiles without patching Core or plugin DOM. Stored third-party profiles restore when their plugin registers, and profile tokens are projected into the Android native shell so desktop/WebView/native chrome share one theme source.
+- Systematically harden plot/PRIME header layout: PortableView stamps Core-owned surface-header/heading-stack classes, title/description and action controls occupy separate layout columns, and resize separators no longer cross title text.
+- Extend regression coverage for Theme Contract 2.0, plugin theme registration, native token projection, quiet splitters, parameter-surface hierarchy and dark control normalization.
+- Studio updates to **3.61.54**; Mobile updates to **0.8.7** / Android versionCode **18**. SDK remains **1.17.6** and Plugin API remains **1.17.0**; `ui.theme` is an additive Core capability and existing plugins require no migration.
+
 # v3.61.53 — Dark Shell Closure & Android Palette Type Fix
 
 - 修复桌面端 `导入数据 / 读取项目` 分段命令的下拉 caret：暗色规则不再把 primary caret 清成透明按钮，caret 宽度收紧并使用 flex 几何居中，与主文字距离更近；移动端项目 caret 同步改为同一行紧凑居中。

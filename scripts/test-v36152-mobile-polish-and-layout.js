@@ -1,6 +1,6 @@
 const fs=require('fs');const assert=require('assert');const read=p=>fs.readFileSync(p,'utf8');const json=p=>JSON.parse(read(p));
 const pkg=json('package.json'),mobilePkg=json('mobile/package.json'),mobileApp=json('mobile/app.json'),shell=read('mobile/src/Shell.tsx'),app=read('src/app.js'),ui=read('src/core/ui-infrastructure.js'),mobileCss=read('src/mobile.css'),style=read('src/style.css'),bridge=read('src/web-bridge.js'),connect=read('src/plugins/connectivity-center/plugin.js'),manifest=json('src/plugins/connectivity-center/plugin.json');
-assert.equal(pkg.version,'3.61.53');assert.equal(mobilePkg.version,'0.8.6');assert.equal(mobileApp.expo.version,'0.8.6');assert.equal(mobileApp.expo.android.versionCode,17);assert.equal(manifest.version,'1.2.2');
+assert.equal(pkg.version,'3.61.54');assert.equal(mobilePkg.version,'0.8.7');assert.equal(mobileApp.expo.version,'0.8.7');assert.equal(mobileApp.expo.android.versionCode,18);assert.equal(manifest.version,'1.2.2');
 assert(connect.includes("button.dataset.busy='true'")&&connect.includes("'扫描中'")&&connect.includes('@keyframes dksmb-spin')&&connect.includes('background:var(--dkui-surface)!important'),'SMB dark controls and discover progress must be explicit.');
 assert(connect.includes('.dkai-chat-head #dkaiChatSettings{margin-left:auto}')&&!connect.includes('.dkai-chat-head button{margin-left:auto'),'AI chat settings must align independently from close.');
 assert(shell.includes('ProjectRow')&&shell.includes('projectDeleteIcon')&&!shell.includes('PanResponder.create')&&shell.includes('删除前会提醒保存'),'Mobile project deletion must use X and save warning, not swipe choreography.');
@@ -11,4 +11,4 @@ assert(bridge.includes("'text/csv'")&&bridge.includes("'text/plain'")&&bridge.in
 assert(shell.includes('adjustsFontSizeToFit')&&!shell.includes("maxWidth: '48%'"),'Left status text must use the available width instead of fixed truncation.');
 assert(ui.includes('applyStickyAvoidance(cols)')&&ui.includes('dkds-grid-sticky-avoidance')&&ui.includes('dkds-grid-sticky-disabled')&&style.includes('dkds-grid-sticky-disabled'),'Core GridController must reserve grid cells for sticky plots and disable overlap on one-column layouts.');
 assert(ui.includes("this.wrapper.style.setProperty('width','100%','important')")&&ui.includes('gesture.splitSize+dx*sign'),'Side-docked PRIME held resize must change the Core split width rather than translate a fixed-width wrapper.');
-console.log('v3.61.53 mobile polish, autosave, file-type and Core sticky-grid regression passed.');
+console.log('v3.61.54 mobile polish, autosave, file-type and Core sticky-grid regression passed.');

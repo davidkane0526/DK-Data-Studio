@@ -2479,7 +2479,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.53',
+      version:'3.61.54',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3348,7 +3348,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.53',
+      appVersion:'3.61.54',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,
@@ -3404,7 +3404,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       const activityId=String(window.DKDSPlugins?.activities?.active?.()||'');
       const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId}));
       const activities=(window.DKDSPlugins?.activities?.list?.()||[]).map(row=>({id:String(row.id||''),activityId:String(row.id||''),pluginId:String(row.pluginId||''),label:String(row.label||row.name||row.id||'')})).filter(row=>row.id);
-      return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:projectHistorySnapshot(),theme:window.DKDSTheme?.current?.()||'light',activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
+      return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:projectHistorySnapshot(),theme:window.DKDSTheme?.current?.()||'light',themeTokens:window.DKDSTheme?.tokens?.()||{},activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
     };
     const connectivityInvoke=async(method,payload={})=>{
       if(window.DKDSMobileHost?.invoke)return window.DKDSMobileHost.invoke(method,payload);

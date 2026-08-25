@@ -171,6 +171,17 @@ export interface DKDSTooltipRuntime { show(spec:{anchor?:Element|string;point?:{
 export interface DKDSProjectHistoryRuntime { state():any; undo():Promise<any>|any; redo():Promise<any>|any; commitArtifactMutation(payload:{label?:string;before:{upserts?:any[];removedIds?:string[]};after:{upserts?:any[];removedIds?:string[]}}):Promise<any>|any }
 export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.17'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
 
+export type DKDSThemeTokenKey = 'canvas'|'surface'|'surfaceSoft'|'surfaceHover'|'surfaceElevated'|'surfaceSidebar'|'controlBg'|'controlHover'|'divider'|'dividerHover'|'controlBorder'|'controlBorderHover'|'scrollbar'|'scrollbarHover'|'text'|'textSoft'|'muted'|'accent'|'accentHover'|'accentSoft'|'focus'|'shadow1'|'shadow2'|'shadowFloat'|'radius'|'radiusLg';
+export type DKDSThemeTokenMap = Partial<Record<DKDSThemeTokenKey,string>>;
+export interface DKDSThemeProfileSpec { label?:string; light?:DKDSThemeTokenMap; dark?:DKDSThemeTokenMap; modes?:{light?:DKDSThemeTokenMap;dark?:DKDSThemeTokenMap}; metadata?:Record<string,any> }
+export interface DKDSThemeCapability {
+  register(id:string,spec:DKDSThemeProfileSpec):{id:string;dispose?:()=>void};
+  activate(id:string):string;
+  current():{mode:'light'|'dark';profile:string};
+  list():Array<{id:string;label:string;owner:string;metadata?:Record<string,any>}>;
+  tokens():Readonly<Record<DKDSThemeTokenKey,string>>|Record<string,string>;
+}
+
 export interface DKDSPluginContext {
   readonly apiVersion:'1.17.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
@@ -209,7 +220,7 @@ export interface DKDSPluginContext {
     analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:{solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
     topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
-    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; edit:any; designSystem:DKDSDesignSystem
+    pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:any; designSystem:DKDSDesignSystem
   };
 }
 export interface DKDSPluginRegistry { define(manifest:DKDSManifest,activate:(ctx:DKDSPluginContext)=>DKDSPluginInstance|Promise<DKDSPluginInstance>|void|Promise<void>):void }

@@ -1969,6 +1969,20 @@
         },
         styles: {
           add: (id, cssText) => addStyle(pluginId, id, cssText)
+        },
+        theme: {
+          register: (id, spec={}) => {
+            const localId=String(id||'').trim();
+            if(!localId) throw new Error('Theme id required.');
+            const themeId=`${pluginId}:${localId}`;
+            const handle=window.DKDSTheme?.registerProfile?.(themeId,{...spec,owner:pluginId});
+            addCleanup(pluginId,()=>{try{window.DKDSTheme?.unregisterProfile?.(themeId);}catch{}});
+            return handle||Object.freeze({id:themeId});
+          },
+          activate: id => window.DKDSTheme?.setProfile?.(String(id||'').includes(':')?String(id):`${pluginId}:${String(id||'')}`),
+          current: () => ({mode:window.DKDSTheme?.current?.()||'light',profile:window.DKDSTheme?.profile?.()||'builtin.default'}),
+          list: () => window.DKDSTheme?.listProfiles?.()||[],
+          tokens: () => window.DKDSTheme?.tokens?.()||{}
         }
       }
     });

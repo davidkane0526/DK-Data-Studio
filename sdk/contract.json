@@ -6,6 +6,7 @@
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.17.6 on Studio 3.61.54 exposes additive ui.theme profile registration: theme plugins provide semantic tokens while Core owns host DOM, surface hierarchy, splitters and native-shell projection. Plugin API remains 1.17.0.",
     "SDK 1.17.6 stabilizes PluginWorkspace safe geometry: Core owns a bounded Primary viewport and scrollbar, while SDK validation/templates flag percentage-height chains and stretched auto-row grids that can make Tool workspaces appear to grow. Plugin API remains 1.17.0.",
     "SDK 1.17.5 closes the external Tool dedicated-window contract: the .dkplugin manifest is canonical in both owner and dedicated renderers, and host smoke tests require the requested activity, TOP workspace, and visible page to mount before PASS. Plugin API remains 1.17.0.",
     "SDK 1.17.4 fixes Core D3 scalar-field automatic limits and adds stable Cartesian autorange padding; Plugin API remains 1.17.0.",

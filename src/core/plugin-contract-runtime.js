@@ -62,6 +62,7 @@
     'ui.shortcuts':api=>!!api?.ui?.shortcuts,
     'ui.pages':api=>!!api?.ui?.pages,
     'ui.styles':api=>!!api?.ui?.styles,
+    'ui.theme':api=>!!api?.ui?.theme,
     'ui.portable':api=>!!api?.ui?.portable,
     'ui.edit':api=>!!api?.ui?.edit
   });

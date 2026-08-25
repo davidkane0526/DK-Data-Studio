@@ -123,6 +123,7 @@ function shellState(value: unknown): RendererShellState {
     ...EMPTY_SHELL,
     ...row,
     theme: row.theme === 'dark' ? 'dark' : 'light',
+    themeTokens: row.themeTokens && typeof row.themeTokens === 'object' ? row.themeTokens as Record<string, string> : {},
     activities: Array.isArray(row.activities) ? row.activities : [],
     surfaces: Array.isArray(row.surfaces) ? row.surfaces : [],
     actions: Array.isArray(row.actions) ? row.actions : [],
@@ -147,7 +148,7 @@ export default function App() {
   const [rendererKey, setRendererKey] = useState(0);
   const [webServiceVisible, setWebServiceVisible] = useState(false);
   const [webService, setWebService] = useState<NativeWebServiceState>({ running: false, enabled: false, noKey: false, port: 45910, key: '', url: '', urls: [], pairedClients: 0 });
-  const palette = useMemo(() => paletteFor(shell.theme), [shell.theme]);
+  const palette = useMemo(() => paletteFor(shell.theme, shell.themeTokens || {}), [shell.theme, shell.themeTokens]);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('DkdsNativeHostEvent', (payload: any) => {
@@ -604,7 +605,7 @@ export default function App() {
 
       {!shell.ready && !loadError ? (
         <View style={[styles.loadingOverlay, { backgroundColor: palette.background }]} pointerEvents="none">
-          <View style={[styles.loadingCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+          <View style={[styles.loadingCard, { backgroundColor: palette.surface, borderColor: palette.controlBorder }]}>
             <ActivityIndicator size="large" color={palette.accent} />
             <Text style={[styles.loadingTitle, { color: palette.text }]}>准备科学工作区</Text>
             <Text style={[styles.loadingDetail, { color: palette.textSoft }]}>正在载入 Core、插件与离线计算引擎</Text>
@@ -614,7 +615,7 @@ export default function App() {
 
       {loadError ? (
         <View style={[styles.errorOverlay, { backgroundColor: palette.background }]}>
-          <View style={[styles.errorCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+          <View style={[styles.errorCard, { backgroundColor: palette.surface, borderColor: palette.controlBorder }]}>
             <Text style={[styles.errorTitle, { color: palette.text }]}>工作区未能载入</Text>
             <Text style={[styles.errorText, { color: palette.textSoft }]}>{loadError}</Text>
             <Pressable onPress={retry} style={[styles.retry, { backgroundColor: palette.accent }]}>

@@ -34,6 +34,7 @@ export type RendererShellState = {
   activityLabel: string;
   status: string;
   theme: 'light' | 'dark';
+  themeTokens?: Record<string, string>;
   activities: ShellActivity[];
   canGoBack: boolean;
   projects?: { id: string; title: string; active?: boolean; dirty?: boolean }[];
@@ -68,7 +69,8 @@ type Palette = {
   surface: string;
   surfaceSoft: string;
   surfaceHover: string;
-  border: string;
+  divider: string;
+  controlBorder: string;
   text: string;
   textSoft: string;
   accent: string;
@@ -76,32 +78,51 @@ type Palette = {
   scrim: string;
 };
 
-export function paletteFor(theme: RendererShellState['theme']): Palette {
-  if (theme === 'dark') {
-    return {
-      background: '#161b23',
-      surface: '#202630',
-      surfaceSoft: '#272f3b',
-      surfaceHover: '#2d3745',
-      border: 'rgba(166,181,202,0.09)',
-      text: '#edf2f8',
-      textSoft: '#9ca9ba',
-      accent: '#4d8dff',
-      accentSoft: '#253b61',
-      scrim: 'rgba(4, 8, 14, .62)',
-    };
-  }
-  return {
+function nativeThemeColor(value: unknown, fallback: string) {
+  const text = String(value || '').trim();
+  if (!text) return fallback;
+  return /^(?:#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|transparent)$/i.test(text) ? text : fallback;
+}
+
+export function paletteFor(theme: RendererShellState['theme'], tokens: Record<string, string> = {}): Palette {
+  const dark = theme === 'dark';
+  const fallback: Palette = dark ? {
+    background: '#151922',
+    surface: '#1d232e',
+    surfaceSoft: '#202733',
+    surfaceHover: '#29313d',
+    divider: 'rgba(166,181,202,0.04)',
+    controlBorder: 'rgba(166,181,202,0.16)',
+    text: '#edf2f8',
+    textSoft: '#9ca9ba',
+    accent: '#4d8dff',
+    accentSoft: '#253b61',
+    scrim: 'rgba(4, 8, 14, .62)',
+  } : {
     background: '#eef4fb',
     surface: '#fbfcfe',
     surfaceSoft: '#f2f6fb',
     surfaceHover: '#e9f0f8',
-    border: 'rgba(102,132,168,0.14)',
+    divider: 'rgba(102,132,168,0.085)',
+    controlBorder: 'rgba(102,132,168,0.22)',
     text: '#1c2a43',
     textSoft: '#6c7b92',
     accent: '#096bfa',
     accentSoft: '#eaf2ff',
     scrim: 'rgba(15, 23, 42, .34)',
+  };
+  return {
+    ...fallback,
+    background: nativeThemeColor(tokens.canvas, fallback.background),
+    surface: nativeThemeColor(tokens.surface, fallback.surface),
+    surfaceSoft: nativeThemeColor(tokens.surfaceSoft, fallback.surfaceSoft),
+    surfaceHover: nativeThemeColor(tokens.surfaceHover, fallback.surfaceHover),
+    divider: nativeThemeColor(tokens.divider, fallback.divider),
+    controlBorder: nativeThemeColor(tokens.controlBorder, fallback.controlBorder),
+    text: nativeThemeColor(tokens.text, fallback.text),
+    textSoft: nativeThemeColor(tokens.textSoft, fallback.textSoft),
+    accent: nativeThemeColor(tokens.accent, fallback.accent),
+    accentSoft: nativeThemeColor(tokens.accentSoft, fallback.accentSoft),
   };
 }
 
@@ -134,7 +155,7 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
   ].slice(0, directLimit);
   const hasOverflow = (shell.surfaces || []).length + (shell.actions || []).length > directRows.length;
   return (
-    <View style={[styles.header, { backgroundColor: palette.surface, borderBottomColor: palette.border }]}>
+    <View style={[styles.header, { backgroundColor: palette.surface, borderBottomColor: palette.divider }]}>
       <View style={styles.unifiedHeaderRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unifiedHeaderContent} style={styles.unifiedHeaderScroller}>
           <View style={styles.projectTabGroup} accessibilityLabel="项目标签区">
@@ -154,11 +175,11 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
               accessibilityRole="button"
               accessibilityLabel="新建项目"
               onPress={() => onAction('project-new')}
-              style={({ pressed }) => [styles.projectAdd, { borderColor: palette.border, backgroundColor: palette.surfaceSoft }, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.projectAdd, { borderColor: palette.controlBorder, backgroundColor: palette.surfaceSoft }, pressed && styles.pressed]}>
               <Text style={[styles.projectAddText, { color: palette.accent }]}>＋</Text>
             </Pressable>
           </View>
-          <View style={[styles.headerDivider, { backgroundColor: palette.border }]} accessibilityElementsHidden />
+          <View style={[styles.headerDivider, { backgroundColor: palette.divider }]} accessibilityElementsHidden />
           <View style={styles.pluginButtonGroup} accessibilityLabel="插件按钮区">
             {directRows.map(row => (
               <Pressable
@@ -166,12 +187,12 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
               accessibilityRole="button"
               accessibilityLabel={row.label}
               onPress={() => row.kind === 'surface' ? onAction('surface', { id: row.id }) : onAction('workspace-action', { id: row.id })}
-              style={({ pressed }) => [styles.projectAction, { backgroundColor: row.active ? palette.accentSoft : palette.surfaceSoft, borderColor: row.active ? palette.accent : palette.border }, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.projectAction, { backgroundColor: row.active ? palette.accentSoft : palette.surfaceSoft, borderColor: row.active ? palette.accent : palette.controlBorder }, pressed && styles.pressed]}>
               <Text style={[styles.projectActionText, { color: row.active ? palette.accent : palette.text }]} numberOfLines={1}>{row.label}</Text>
               </Pressable>
             ))}
             {hasOverflow ? (
-              <Pressable onPress={() => onSheet('actions')} style={({ pressed }) => [styles.projectAction, { backgroundColor: palette.surfaceSoft, borderColor: palette.border }, pressed && styles.pressed]}>
+              <Pressable onPress={() => onSheet('actions')} style={({ pressed }) => [styles.projectAction, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder }, pressed && styles.pressed]}>
                 <Text style={[styles.projectActionText, { color: palette.text }]}>更多 ▾</Text>
               </Pressable>
             ) : null}
@@ -181,13 +202,13 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
           <Pressable
             accessibilityRole="button" accessibilityLabel="撤销" disabled={!shell.history?.canUndo}
             onPress={() => onAction('history-undo')}
-            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canUndo ? 1 : .38 }]}>
+            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder, opacity: shell.history?.canUndo ? 1 : .38 }]}>
             <HistoryGlyph direction="undo" color={palette.text} />
           </Pressable>
           <Pressable
             accessibilityRole="button" accessibilityLabel="恢复" disabled={!shell.history?.canRedo}
             onPress={() => onAction('history-redo')}
-            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border, opacity: shell.history?.canRedo ? 1 : .38 }]}>
+            style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder, opacity: shell.history?.canRedo ? 1 : .38 }]}>
             <HistoryGlyph direction="redo" color={palette.text} />
           </Pressable>
           {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
@@ -233,7 +254,7 @@ function invokeNavigation(
 
 export function BottomNavigation({ shell, palette, onAction, onSheet }: NavigationProps) {
   return (
-    <View style={[styles.bottomNavFrame, { borderTopColor: palette.border }]}>
+    <View style={[styles.bottomNavFrame, { borderTopColor: palette.divider }]}>
       <BlurView
         intensity={22}
         tint={shell.theme === 'dark' ? 'dark' : 'light'}
@@ -280,7 +301,7 @@ export function BottomNavigation({ shell, palette, onAction, onSheet }: Navigati
 export function NativeStatusBar({ shell, palette, onAction, webService }: Pick<NavigationProps, 'shell' | 'palette' | 'onAction'> & { webService?: NativeWebServiceState }) {
   const items = shell.statusItems || [];
   return (
-    <View style={[styles.nativeStatusBar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}>
+    <View style={[styles.nativeStatusBar, { backgroundColor: palette.surface, borderTopColor: palette.divider }]}>
       <Text style={[styles.nativeStatusMessage, { color: palette.textSoft }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{shell.status || '就绪'}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nativeStatusScroller} contentContainerStyle={styles.nativeStatusItems}>
         {items.map(item => (
@@ -302,7 +323,7 @@ export function NativeStatusBar({ shell, palette, onAction, webService }: Pick<N
 
 export function NavigationRail({ shell, palette, onAction, onSheet }: NavigationProps) {
   return (
-    <View style={[styles.rail, { backgroundColor: palette.surface, borderRightColor: palette.border }]}>
+    <View style={[styles.rail, { backgroundColor: palette.surface, borderRightColor: palette.divider }]}>
       <View style={[styles.railBrand, { backgroundColor: palette.accent }]}>
         <Text style={styles.railBrandText}>DK</Text>
       </View>
@@ -367,7 +388,7 @@ function SheetAction({
       onPress={onPress}
       style={({ pressed }) => [
         styles.sheetAction,
-        { backgroundColor: palette.surfaceSoft, borderColor: palette.border },
+        { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder },
         pressed && styles.pressed,
       ]}>
       <View style={[styles.sheetActionGlyph, { backgroundColor: palette.accentSoft }]}>
@@ -392,7 +413,7 @@ function ProjectRow({ project, palette, onSwitch, onDelete }: {
     <Pressable
       accessibilityRole="button"
       onPress={onSwitch}
-      style={({ pressed }) => [styles.projectDrawerRow, { backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft, borderColor: project.active ? palette.accent : palette.border }, pressed && styles.pressed]}>
+      style={({ pressed }) => [styles.projectDrawerRow, { backgroundColor: project.active ? palette.accentSoft : palette.surfaceSoft, borderColor: project.active ? palette.accent : palette.controlBorder }, pressed && styles.pressed]}>
       <View style={[styles.projectStateDot, { borderColor: palette.accent, backgroundColor: project.active ? palette.accent : 'transparent' }]} />
       <View style={styles.projectDrawerCopy}>
         <Text style={[styles.projectDrawerTitle, { color: palette.text }]} numberOfLines={1}>{project.title || '未命名项目'}</Text>
@@ -420,7 +441,7 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
     <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.projectDrawerModal, { backgroundColor: palette.scrim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭项目管理" />
-        <Animated.View style={[styles.projectDrawer, { backgroundColor: palette.surface, borderRightColor: palette.border, transform: [{ translateX: slide }] }]}>
+        <Animated.View style={[styles.projectDrawer, { backgroundColor: palette.surface, borderRightColor: palette.divider, transform: [{ translateX: slide }] }]}>
           <View style={styles.projectDrawerHead}>
             <View>
               <Text style={[styles.projectDrawerHeading, { color: palette.text }]}>项目管理</Text>
@@ -429,9 +450,9 @@ function ProjectDrawer({ shell, palette, onAction, onClose }: Pick<SheetProps, '
             <Pressable onPress={onClose} style={styles.projectDrawerClose}><Text style={[styles.closeButtonText, { color: palette.textSoft }]}>×</Text></Pressable>
           </View>
           <View style={styles.projectQuickActions}>
-            <Pressable onPress={() => run('project-new')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.accentSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.accent }]}>＋ 新建</Text></Pressable>
-            <Pressable onPress={() => run('project-open')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>读取</Text></Pressable>
-            <Pressable onPress={() => run('project-save')} style={[styles.projectQuickButton, { borderColor: palette.border, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>保存</Text></Pressable>
+            <Pressable onPress={() => run('project-new')} style={[styles.projectQuickButton, { borderColor: palette.controlBorder, backgroundColor: palette.accentSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.accent }]}>＋ 新建</Text></Pressable>
+            <Pressable onPress={() => run('project-open')} style={[styles.projectQuickButton, { borderColor: palette.controlBorder, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>读取</Text></Pressable>
+            <Pressable onPress={() => run('project-save')} style={[styles.projectQuickButton, { borderColor: palette.controlBorder, backgroundColor: palette.surfaceSoft }]}><Text style={[styles.projectQuickButtonText, { color: palette.text }]}>保存</Text></Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.projectDrawerList} showsVerticalScrollIndicator={false}>
             {(shell.projects || []).map(project => (
@@ -469,7 +490,7 @@ export function WebServicePopover({ visible, state, palette, onClose, onAction }
     <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.webPopoverModal}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭网页服务面板" />
-        <View style={[styles.webPopoverCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+        <View style={[styles.webPopoverCard, { backgroundColor: palette.surface, borderColor: palette.divider }]}>
           <View style={styles.webPopoverHead}>
             <View style={[styles.webStatusDot, { backgroundColor: state.running ? '#2f9d62' : state.error ? '#cf5b55' : '#98a2b3' }]} />
             <View style={styles.webPopoverHeadCopy}>
@@ -481,16 +502,16 @@ export function WebServicePopover({ visible, state, palette, onClose, onAction }
 
           <View style={styles.webSettingRow}>
             <View style={styles.webSettingCopy}><Text style={[styles.webSettingLabel, { color: palette.text }]}>启用网页服务</Text><Text style={[styles.webSettingHint, { color: palette.textSoft }]}>允许同一局域网设备访问 Studio</Text></View>
-            <Switch value={enabled} onValueChange={setEnabled} trackColor={{ false: palette.border, true: palette.accentSoft }} thumbColor={enabled ? palette.accent : '#a4adba'} />
+            <Switch value={enabled} onValueChange={setEnabled} trackColor={{ false: palette.controlBorder, true: palette.accentSoft }} thumbColor={enabled ? palette.accent : '#a4adba'} />
           </View>
           <View style={styles.webSettingRow}>
             <View style={styles.webSettingCopy}><Text style={[styles.webSettingLabel, { color: palette.text }]}>无需配对 Key</Text><Text style={[styles.webSettingHint, { color: palette.textSoft }]}>关闭后访问设备需要输入 4 位 Key</Text></View>
-            <Switch value={noKey} onValueChange={setNoKey} trackColor={{ false: palette.border, true: palette.accentSoft }} thumbColor={noKey ? palette.accent : '#a4adba'} />
+            <Switch value={noKey} onValueChange={setNoKey} trackColor={{ false: palette.controlBorder, true: palette.accentSoft }} thumbColor={noKey ? palette.accent : '#a4adba'} />
           </View>
           <View style={styles.webPortRow}>
             <Text style={[styles.webSettingLabel, { color: palette.text }]}>端口</Text>
-            <TextInput value={portText} onChangeText={value => setPortText(value.replace(/[^0-9]/g, '').slice(0, 5))} keyboardType="number-pad" style={[styles.webPortInput, { color: palette.text, backgroundColor: palette.surfaceSoft, borderColor: palette.border }]} selectTextOnFocus />
-            {!noKey ? <Pressable onPress={() => onAction('regenerate')} style={[styles.webKeyButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.border }]}><Text style={[styles.webKeyText, { color: palette.text }]}>Key {state.key || '----'}</Text><Text style={[styles.webKeyRefresh, { color: palette.accent }]}>↻</Text></Pressable> : null}
+            <TextInput value={portText} onChangeText={value => setPortText(value.replace(/[^0-9]/g, '').slice(0, 5))} keyboardType="number-pad" style={[styles.webPortInput, { color: palette.text, backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder }]} selectTextOnFocus />
+            {!noKey ? <Pressable onPress={() => onAction('regenerate')} style={[styles.webKeyButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder }]}><Text style={[styles.webKeyText, { color: palette.text }]}>Key {state.key || '----'}</Text><Text style={[styles.webKeyRefresh, { color: palette.accent }]}>↻</Text></Pressable> : null}
           </View>
 
           {primaryAddress ? (
@@ -504,8 +525,8 @@ export function WebServicePopover({ visible, state, palette, onClose, onAction }
 
           <View style={styles.webPopoverActions}>
             <Pressable disabled={state.busy} onPress={apply} style={[styles.webPopoverPrimary, { backgroundColor: palette.accent, opacity: state.busy ? .5 : 1 }]}><Text style={styles.webPopoverPrimaryText}>{enabled ? '应用并启动' : '应用设置'}</Text></Pressable>
-            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('open')} style={[styles.webPopoverSecondary, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>本机浏览器</Text></Pressable> : null}
-            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('stop')} style={[styles.webPopoverSecondarySmall, { borderColor: palette.border }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>停止</Text></Pressable> : null}
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('open')} style={[styles.webPopoverSecondary, { borderColor: palette.controlBorder }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>本机浏览器</Text></Pressable> : null}
+            {state.running ? <Pressable disabled={state.busy} onPress={() => onAction('stop')} style={[styles.webPopoverSecondarySmall, { borderColor: palette.controlBorder }]}><Text style={[styles.webPopoverSecondaryText, { color: palette.text }]}>停止</Text></Pressable> : null}
           </View>
         </View>
       </View>
@@ -524,8 +545,8 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
     <Modal visible={visible !== null} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.modalRoot, { backgroundColor: palette.scrim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="关闭操作面板" />
-        <View style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-          <View style={[styles.sheetHandle, { backgroundColor: palette.border }]} />
+        <View style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.divider }]}>
+          <View style={[styles.sheetHandle, { backgroundColor: palette.divider }]} />
           <View style={styles.sheetHeading}>
             <View>
               <Text style={[styles.sheetTitle, { color: palette.text }]}> 

@@ -795,6 +795,9 @@
       let header=useTarget?resolveElement(this.spec.handle||'.analysis-chart-title',wrapper):null;
       if(!header){header=document.createElement('header');header.className='dkds-portable-header drag-handle';if(useTarget)wrapper.prepend(header);}
       else header.classList.add('dkds-portable-inline-header','drag-handle');
+      header.classList.add('dkds-surface-header');
+      const headingStack=header.querySelector?.(':scope > div:first-child');
+      if(headingStack&&(headingStack.querySelector?.('h1,h2,h3,h4,strong')||headingStack.querySelector?.('p,.analysis-subtitle,[class$="-description"]')))headingStack.classList.add('dkds-surface-heading-stack');
       let title=header.querySelector?.('.dkds-portable-title');
       if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
       const controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb';controls.dataset.dkdsPortableControls=this.id;
@@ -965,9 +968,9 @@
     limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const mobileOverlay=!!this.spec.mobileOverlay&&document.documentElement.classList.contains('react-native-client');const mobileRatio=Math.max(.45,Math.min(.96,Number(this.spec.mobileMaxRatio)||(this.axis==='x'?.92:.68)));const max=mobileOverlay?Math.max(min,total*mobileRatio):(Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220)));return {min,max:Math.max(min,max)};}
     apply(value,{persist=true,emit=true}={}){const {min,max}=this.limits();const next=Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});return next;}
     bind(){
-      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
+      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};this.handle.classList.add('is-dragging');this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{if(!this.drag||e.pointerId!==this.drag.pointerId)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.apply(this.drag.size+(point-this.drag.start)*sign,{persist:false});e.preventDefault();};
-      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.drag=null;this.apply(this.size,{persist:true});};
+      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.drag=null;this.handle.classList.remove('is-dragging');this.apply(this.size,{persist:true});};
       const reset=e=>{e.preventDefault();this.apply(Number(this.spec.defaultSize)||320);};
       this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);
       this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>window.removeEventListener('pointercancel',up),()=>this.handle.removeEventListener('dblclick',reset));

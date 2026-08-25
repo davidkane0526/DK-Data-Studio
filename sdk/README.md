@@ -278,3 +278,9 @@ settings.open();
 
 ### Scientific renderer dependency
 Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.
+
+## Theme Contract 2.0 (`ui.theme`)
+
+Studio 3.61.54 adds an additive semantic theme capability without changing Plugin API 1.17.0 compatibility. Theme plugins register profiles through `ctx.ui.theme.register()` and activate them through `ctx.ui.theme.activate()`. Do not patch Core/other-plugin DOM or ship a parallel light/dark stylesheet for host chrome.
+
+Use surface tokens (`canvas`, `surface`, `surfaceSoft`, `surfaceSidebar`, `surfaceElevated`) to express hierarchy. Keep `divider` for genuinely necessary structural separators and `controlBorder` for interactive controls; they are intentionally separate so dark themes do not become a grid of bright rules. The current profile is projected to dedicated plugin windows and the Android native shell. Start from `sdk/templates/theme-profile/`.

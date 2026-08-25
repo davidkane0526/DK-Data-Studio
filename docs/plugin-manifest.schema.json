@@ -124,6 +124,7 @@
           "ui.shortcuts",
           "ui.pages",
           "ui.styles",
+          "ui.theme",
           "ui.portable",
           "ui.edit",
           "data.importers",
