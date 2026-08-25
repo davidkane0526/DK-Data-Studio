@@ -419,11 +419,49 @@
     window.electronAPI.onLanWebStatus?.(status=>renderLanWebStatus(status));
   }
 
+  function floatingSafeBounds(panel){
+    const margin=10;
+    const shellBottom=Math.max(
+      58,
+      ...['.topbar','.project-tabs-bar','.global-commandbar'].map(selector=>{
+        const el=document.querySelector(selector);
+        if(!el||el.classList?.contains('hidden'))return 0;
+        const r=el.getBoundingClientRect();
+        return Number.isFinite(r.bottom)?r.bottom:0;
+      })
+    );
+    const statusTop=$('#statusBar')?.getBoundingClientRect?.().top||window.innerHeight;
+    return {left:margin,top:Math.ceil(shellBottom+margin),right:Math.max(margin,window.innerWidth-margin),bottom:Math.max(shellBottom+margin,statusTop-margin)};
+  }
+
+  function ensureFloatingPanelVisible(panel,{preferCenter=false}={}){
+    if(!panel)return false;
+    const bounds=floatingSafeBounds(panel);
+    const rect=panel.getBoundingClientRect();
+    const width=Math.min(rect.width||panel.offsetWidth||720,Math.max(320,bounds.right-bounds.left));
+    const height=Math.min(rect.height||panel.offsetHeight||520,Math.max(220,bounds.bottom-bounds.top));
+    const maxLeft=Math.max(bounds.left,bounds.right-width);
+    const maxTop=Math.max(bounds.top,bounds.bottom-height);
+    const fullyVisible=rect.left>=bounds.left&&rect.top>=bounds.top&&rect.right<=bounds.right&&rect.bottom<=bounds.bottom;
+    if(fullyVisible&&!preferCenter)return true;
+    const desiredLeft=preferCenter?(bounds.left+Math.max(0,(bounds.right-bounds.left-width)/2)):rect.left;
+    const desiredTop=preferCenter?(bounds.top+Math.max(0,(bounds.bottom-bounds.top-height)/2)):rect.top;
+    panel.style.transform='none';
+    panel.style.right='auto';panel.style.bottom='auto';
+    panel.style.left=`${Math.round(Math.min(maxLeft,Math.max(bounds.left,Number.isFinite(desiredLeft)?desiredLeft:bounds.left)))}px`;
+    panel.style.top=`${Math.round(Math.min(maxTop,Math.max(bounds.top,Number.isFinite(desiredTop)?desiredTop:bounds.top)))}px`;
+    return true;
+  }
+
   async function showLanWebPanel(){
     if(window.electronAPI?.isWebClient)return false;
     const panel=$('#lanWebPanel');
     if(!panel)return false;
     panel.classList.remove('hidden');
+    // Dedicated service panels must never reopen underneath the shell toolbar.
+    // Respect a user-moved position while it is still visible; otherwise restore
+    // a centered, fully reachable position inside the current work area.
+    requestAnimationFrame(()=>ensureFloatingPanelVisible(panel,{preferCenter:panel.dataset.dkdsUserMoved!=='1'}));
     try{
       await loadLanWebSettings();
       renderLanWebStatus(await window.electronAPI.lanWebGetStatus());
@@ -2479,7 +2517,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.54',
+      version:'3.61.55',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -2863,11 +2901,13 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
   }
 
   function makeFloating(panel){
-    const head=panel.querySelector('.drag-handle');let dragging=false,dx=0,dy=0;
+    const head=panel.querySelector('.drag-handle');if(!head)return;let dragging=false,dx=0,dy=0;
     head.addEventListener('mousedown',e=>{if(e.target.closest('button')||panel.classList.contains('docked')||panel.classList.contains('docked-right'))return;const r=panel.getBoundingClientRect();panel.style.transform='none';panel.style.left=`${r.left}px`;panel.style.top=`${r.top}px`;panel.style.right='auto';panel.style.bottom='auto';dragging=true;dx=e.clientX-r.left;dy=e.clientY-r.top;e.preventDefault();});
-    window.addEventListener('mousemove',e=>{if(!dragging)return;panel.style.left=`${Math.max(0,e.clientX-dx)}px`;panel.style.top=`${Math.max(58,e.clientY-dy)}px`;});
+    window.addEventListener('mousemove',e=>{if(!dragging)return;const bounds=floatingSafeBounds(panel),r=panel.getBoundingClientRect(),maxLeft=Math.max(bounds.left,bounds.right-r.width),maxTop=Math.max(bounds.top,bounds.bottom-r.height);panel.style.left=`${Math.min(maxLeft,Math.max(bounds.left,e.clientX-dx))}px`;panel.style.top=`${Math.min(maxTop,Math.max(bounds.top,e.clientY-dy))}px`;});
     window.addEventListener('mouseup',()=>{
       if(dragging){
+        panel.dataset.dkdsUserMoved='1';
+        ensureFloatingPanelVisible(panel);
         if(panel.id==='inspectorPanel')captureInspectorFloatRect();
         if(panel.id==='groupPanel')captureGroupFloatRect();
       }
@@ -3348,7 +3388,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.54',
+      appVersion:'3.61.55',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

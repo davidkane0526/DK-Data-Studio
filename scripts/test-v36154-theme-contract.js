@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.54','theme contract test tracks the current source version for the Theme Contract 2.0 release');
+assert.equal(json('package.json').version,'3.61.55','theme contract test tracks the current source version for the Theme Contract 2.0 release');
 const theme=read('src/core/theme-runtime.js');
 const css=read('src/ui-modern.css');
 const ui=read('src/core/ui-infrastructure.js');

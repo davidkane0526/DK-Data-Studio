@@ -1,4 +1,12 @@
-# DK Data Studio — v3.61.54
+# DK Data Studio — v3.61.55
+
+## v3.61.55 Vth 内置工作区与 Shell 控件收口
+
+本版修复主工具栏 `Vth 工作台` 无法打开的问题。此前 `transfer-vth-lab` 只存在于 `examples/`，但主工具栏把它当作稳定独立工作区，因此主进程独立窗口注册表无法解析该 activity。现在 Vth 作为正常第一方 TOP 插件进入 `src/plugins/transfer-vth-lab`，继续遵守统一 Plugin API / TOP / dedicated-window 契约，不增加任何特殊宿主路径。
+
+继续清理遗留控件样式：AnalysisWorkbench 中的 `TER 分析 / R–V 联动`、`数据中心 / 图形预览` 与 Core 历史对话框操作按钮统一使用 Theme Contract 的语义 control surface，不再依赖暗色模式下刺眼的旧描边。LAN Web 浮动服务窗口新增 Core safe-area 定位，默认在真实工作区内居中且避开顶部 Shell 与底部状态栏，用户拖动后仍保留位置但不能移出可视区域。底部状态栏则将插件状态与系统状态合并为一个共享命令簇，移除逐按钮分隔线，主窗口与独立插件窗口共用同一结构。
+
+Studio 为 **3.61.55**；Mobile 为 **0.8.8**、Android `versionCode` **19**；内置 Vth Workbench 为 **3.0.3**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。
 
 ## v3.61.54 统一 Theme Contract 2.0 与暗色层级收口
 

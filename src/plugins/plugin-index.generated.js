@@ -863,6 +863,107 @@ window.DKDS_BUILTIN_PLUGINS = [
     }
   },
   {
+    "id": "com.dkds.transfer-vth-lab",
+    "entry": "plugins/transfer-vth-lab/plugin.js",
+    "scripts": [
+      "plugins/transfer-vth-lab/plugin.js"
+    ],
+    "manifest": {
+      "id": "com.dkds.transfer-vth-lab",
+      "name": "Transfer Curve Vth Lab",
+      "version": "3.0.3",
+      "apiVersion": "1.17.0",
+      "entry": "plugin.js",
+      "scripts": [
+        "plugin.js"
+      ],
+      "styles": [
+        "plugin.css"
+      ],
+      "enabled": true,
+      "order": 420,
+      "description": "Built-in threshold-voltage extraction TOP workbench using scoped project sources, Core-owned import and bounded ScientificPlot layout.",
+      "pluginType": "workbench",
+      "requiresCore": [
+        "events",
+        "status",
+        "state",
+        "project",
+        "workspace",
+        "data.model",
+        "data.types",
+        "data.sources",
+        "data.artifacts",
+        "analysis.algorithms",
+        "ui.dom",
+        "ui.workspace",
+        "ui.scientific-plot",
+        "ui.table",
+        "ui.settings",
+        "ui.actions",
+        "ui.interaction-behavior",
+        "ui.activities",
+        "ui.top-workspace",
+        "ui.pages"
+      ],
+      "capabilities": [
+        "analysis.threshold-voltage",
+        "ui.page",
+        "ui.analysis-workbench",
+        "ui.interaction-behavior",
+        "ui.scientific-plot",
+        "ui.batch-results",
+        "data.scoped-sources",
+        "ui.top-workspace"
+      ],
+      "workspace": {
+        "role": "top",
+        "activity": "transfer-vth-lab",
+        "icon": "Vₜ",
+        "title": "Vth 工作台"
+      },
+      "window": {
+        "activity": "transfer-vth-lab",
+        "title": "Vth 工作台",
+        "width": 1420,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 620,
+        "dependencies": [
+          "scientific-renderer",
+          "data-model"
+        ],
+        "prewarm": false,
+        "reuse": true,
+        "persistence": "project",
+        "artifactHydration": "live"
+      },
+      "data": {
+        "accepts": [
+          "science.transport.iv",
+          "science.transport.transfer"
+        ]
+      },
+      "algorithmProvider": true,
+      "algorithmCategories": [
+        "transfer-curve"
+      ],
+      "algorithmProvides": [
+        {
+          "category": "transfer-curve",
+          "id": "transfer.vth-constant-current",
+          "version": "2.0.0",
+          "title": "Threshold voltage by constant-current neighborhood"
+        }
+      ],
+      "compatibility": {
+        "app": ">=3.61.33 <4.0.0",
+        "pluginApi": "^1.17.0"
+      },
+      "source": "builtin"
+    }
+  },
+  {
     "id": "builtin.workspace-safeguards",
     "entry": "plugins/workspace-safeguards/plugin.js",
     "scripts": [
@@ -902,5 +1003,6 @@ window.DKDS_BUILTIN_PLUGIN_ENTRIES = [
   "plugins/standard-transport-algorithms/plugin.js",
   "plugins/status-monitor/plugin.js",
   "plugins/ter-analysis/plugin.js",
+  "plugins/transfer-vth-lab/plugin.js",
   "plugins/workspace-safeguards/plugin.js"
 ];

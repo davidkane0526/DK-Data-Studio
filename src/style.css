@@ -5175,3 +5175,6 @@ html[data-dkds-theme="dark"] .dkds-d3-chart-tooltip{background:rgba(20,26,35,.96
 .dkds-managed-grid.dkds-grid-sticky-disabled>.dkds-prime-portable.is-sticky{
   position:relative!important;top:auto!important;z-index:auto!important
 }
+
+/* v3.61.55: service panel fallback starts below the complete shell chrome. */
+.lan-web-panel{top:104px}

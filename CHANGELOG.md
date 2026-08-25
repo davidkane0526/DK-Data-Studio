@@ -1,3 +1,11 @@
+# v3.61.55 — Vth Built-in Workspace & Shell Control Unification
+
+- Promote `transfer-vth-lab` from an SDK example-only package into a first-party built-in TOP workspace while preserving the same Plugin API contract. The main-process dedicated-window registry can now resolve `transfer-vth-lab`, eliminating the toolbar error “独立工作区契约未注册：transfer-vth-lab”.
+- Normalize remaining legacy AnalysisWorkbench/History controls through semantic Theme Contract surfaces: TER/R–V, Data Center/图形预览 and Core dialog actions no longer use bright outlined legacy button styling in dark mode.
+- Add a Core floating-panel safe-area clamp. LAN Web defaults to a centered, fully reachable work-area position below shell chrome; user-moved positions are preserved but cannot be dragged outside the visible workspace/status-bar bounds.
+- Recompose the bottom status area as one shared command cluster: plugin/system status items live on a single shell surface, separator strokes are removed, and main/dedicated plugin windows use the same status-bar structure.
+- Studio updates to **3.61.55**; Mobile updates to **0.8.8** / Android versionCode **19**. Built-in Vth Workbench updates to **3.0.3**. SDK remains **1.17.6** and Plugin API remains **1.17.0**.
+
 # v3.61.54 — Theme Contract 2.0 & Surface-Hierarchy Closure
 
 - Replace the remaining dark-mode framework lines with a semantic Theme Contract 2.0. Structural hierarchy now uses `canvas / surface / surfaceSoft / surfaceSidebar / surfaceElevated` contrast and spacing; idle splitters are visually transparent and only reveal `dividerHover` while hovered or dragged. `divider` and `controlBorder` are separate channels, so inputs/buttons remain legible without turning every panel boundary into a bright rule.

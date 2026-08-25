@@ -1507,3 +1507,137 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench :where
 body.dkds-modern-ui *{scrollbar-color:var(--dkui-scrollbar) transparent}
 body.dkds-modern-ui *::-webkit-scrollbar-thumb{background:var(--dkui-scrollbar)!important;border-color:transparent!important}
 body.dkds-modern-ui *::-webkit-scrollbar-thumb:hover{background:var(--dkui-scrollbar-hover)!important}
+
+/* ============================================================
+   v3.61.55 · control unification / status cluster
+   Legacy workbench navigation and dialog actions consume the same semantic
+   control surfaces as the modern shell.  Active state is expressed by fill
+   and text contrast, not by bright outlined rectangles.
+   ============================================================ */
+body.dkds-modern-ui .dkds-analysis-nav{
+  gap:8px!important;
+  padding:5px 10px!important;
+}
+body.dkds-modern-ui .dkds-analysis-nav>div{gap:4px!important}
+body.dkds-modern-ui .dkds-analysis-nav-prime:not(:empty),
+body.dkds-modern-ui .dkds-analysis-nav-sub:not(:empty){
+  padding-left:4px!important;
+  border-left:0!important;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn,
+body.dkds-modern-ui .dkds-workbench-tab{
+  min-height:30px;
+  border:0!important;
+  border-radius:8px!important;
+  background:var(--dkui-control-bg,var(--surface-primary))!important;
+  color:var(--dkui-text-soft,var(--text-secondary))!important;
+  box-shadow:none!important;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn:hover:not(:disabled),
+body.dkds-modern-ui .dkds-workbench-tab:hover:not(:disabled){
+  border:0!important;
+  background:var(--dkui-control-hover,var(--surface-hover))!important;
+  color:var(--dkui-text,var(--text-primary))!important;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn.active,
+body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"],
+body.dkds-modern-ui .dkds-workbench-tab.active{
+  border:0!important;
+  background:var(--dkui-accent-soft,var(--accent-soft))!important;
+  color:var(--dkui-accent,var(--accent-primary))!important;
+  -webkit-text-fill-color:var(--dkui-accent,var(--accent-primary))!important;
+  box-shadow:none!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn.active,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"],
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-workbench-tab.active{
+  background:color-mix(in srgb,var(--dkui-accent) 16%,var(--dkui-surface-soft))!important;
+  color:color-mix(in srgb,var(--dkui-accent) 64%,white)!important;
+  -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 64%,white)!important;
+}
+body.dkds-modern-ui .dkds-dialog-action:not(.primary):not(.danger){
+  border:0!important;
+  background:var(--dkui-control-bg,var(--surface-primary))!important;
+  color:var(--dkui-text-soft,var(--text-secondary))!important;
+  box-shadow:none!important;
+}
+body.dkds-modern-ui .dkds-dialog-action:not(.primary):not(.danger):hover:not(:disabled){
+  background:var(--dkui-control-hover,var(--surface-hover))!important;
+  color:var(--dkui-text,var(--text-primary))!important;
+  transform:none!important;
+}
+body.dkds-modern-ui .dkds-dialog-action.primary,
+body.dkds-modern-ui .dkds-dialog-action.danger{border:0!important;box-shadow:none!important}
+body.dkds-modern-ui .dkds-dialog-action:hover:not(:disabled),
+body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:none!important}
+
+/* The status bar is one shell surface.  Its action zones are compact command
+   clusters rather than individual cells separated by miniature vertical rules. */
+body.dkds-modern-ui #statusBar.statusbar{
+  gap:8px!important;
+  padding:2px 5px 2px 9px!important;
+  border-top:0!important;
+  background:color-mix(in srgb,var(--dkui-canvas) 58%,var(--dkui-surface))!important;
+  box-shadow:0 -1px 0 color-mix(in srgb,var(--dkui-divider) 38%,transparent)!important;
+}
+body.dkds-modern-ui .statusbar-plugin-zone{
+  height:24px!important;
+  gap:1px!important;
+  padding:2px!important;
+  border-radius:8px;
+  background:color-mix(in srgb,var(--dkui-surface-soft) 72%,transparent);
+}
+body.dkds-modern-ui .plugin-status-item{
+  height:20px!important;
+  padding:0 6px!important;
+  border:0!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.dkds-modern-ui .plugin-status-item::before{display:none!important}
+body.dkds-modern-ui button.plugin-status-item:hover{
+  background:var(--dkui-control-hover,var(--surface-hover))!important;
+  color:var(--dkui-text,var(--text-primary))!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar{
+  background:color-mix(in srgb,var(--dkui-canvas) 62%,var(--dkui-surface))!important;
+  box-shadow:0 -1px 0 color-mix(in srgb,var(--dkui-divider) 44%,transparent)!important;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar-plugin-zone{
+  background:color-mix(in srgb,var(--dkui-surface-soft) 68%,transparent)!important;
+}
+
+/* v3.61.55 · one-piece status command surface.  Both plugin and system status
+   items live inside one shared shell cluster; individual controls no longer
+   look like cells stitched together with separators. */
+body.dkds-modern-ui #statusBar.statusbar{
+  gap:8px!important;
+}
+body.dkds-modern-ui .statusbar-command-cluster{
+  flex:0 0 auto;
+  min-width:0;
+  height:24px;
+  display:flex;
+  align-items:center;
+  gap:0;
+  padding:2px;
+  border:0;
+  border-radius:9px;
+  background:color-mix(in srgb,var(--dkui-surface-soft) 76%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dkui-divider) 32%,transparent);
+}
+body.dkds-modern-ui .statusbar-plugin-zone{
+  height:20px!important;
+  gap:1px!important;
+  padding:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+body.dkds-modern-ui .statusbar-plugin-left,
+body.dkds-modern-ui .statusbar-plugin-right{margin-left:0!important}
+body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar-command-cluster{
+  background:color-mix(in srgb,var(--dkui-surface-soft) 72%,transparent)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dkui-divider) 26%,transparent)!important;
+}

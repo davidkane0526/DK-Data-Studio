@@ -90,6 +90,8 @@ fs.writeFileSync(indexPath, html, 'utf8');
 for (const relative of [
   path.join('src','app.js'),
   path.join('src','plugin-window','runtime.js'),
+  path.join('src','web-bridge.js'),
+  path.join('src','core','mcp-runtime.js'),
   path.join('src','plugins','resonance-workbench','plugin.js'),
   path.join('src','plugins','resonance-workbench','plugin.json')
 ]) {

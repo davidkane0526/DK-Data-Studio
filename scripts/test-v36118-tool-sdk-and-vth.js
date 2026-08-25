@@ -9,7 +9,7 @@ const json=f=>JSON.parse(read(f));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const cli=path.join(root,'sdk','tools','dkds-plugin.js');
 const runValidate=folder=>cp.execFileSync(process.execPath,[cli,'validate',folder],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
-assert(json('package.json').version==='3.61.54','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.55','Application version must be 3.61.18.');
 const vth=json('examples/transfer-vth-lab/plugin.json');
 assert(vth.version==='3.0.2','Transfer Vth Lab must be 3.0.2.');
 assert(vth.window?.dependencies?.includes('scientific-renderer'),'Vth ScientificCurveSurface must declare the renderer-neutral scientific-renderer dependency.');
