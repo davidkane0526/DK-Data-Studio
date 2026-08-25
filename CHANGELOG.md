@@ -1,3 +1,9 @@
+## v3.61.58
+
+- Data Center: migrate the remaining assignment/purpose filter from the legacy outlined control to the Theme Contract semantic flat filter surface.
+- Data Center: align breadcrumb/field filters with the same borderless semantic surface, hover and focus treatment.
+- Add a release regression that prevents the legacy outlined Data Center filter from returning.
+
 # v3.61.57 — First-party Theme Contract Hardening
 
 - Finish the migration that Theme Contract 2.0 started: first-party Pulse, Data Center, AnalysisWorkbench, PRIME/Portable views and dedicated plugin-window docks now express section hierarchy through semantic surface contrast rather than bright structural outlines. Legacy `#dfe5ee/#edf.../#fff` splitter and panel paint is removed from the shared workspace primitives.

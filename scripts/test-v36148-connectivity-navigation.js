@@ -1,7 +1,7 @@
 const fs=require('fs');const assert=require('assert');
 const read=p=>fs.readFileSync(p,'utf8');const json=p=>JSON.parse(read(p));
 const pkg=json('package.json'),plugin=read('src/plugins/connectivity-center/plugin.js'),manifest=json('src/plugins/connectivity-center/plugin.json'),html=read('src/index.html'),app=read('mobile/App.tsx'),shell=read('mobile/src/Shell.tsx'),runtime=read('src/core/mobile-host-runtime.js');
-assert.equal(pkg.version,'3.61.57','Connectivity shell regression must run against v3.61.57.');
+assert.equal(pkg.version,'3.61.58','Connectivity shell regression must run against v3.61.58.');
 assert.equal(manifest.version,'1.2.2','SMB & AI Services plugin version must be 1.2.2.');
 assert(html.includes('data-plugin-menu="import-data"')&&html.includes('data-plugin-menu="open-project"')&&html.includes('data-plugin-menu="manage"'),'Desktop shell must expose source-aware import/project and software-management plugin mounts.');
 assert(html.includes('split-command-anchor')&&html.includes('openImportSourceBtn')&&html.includes('openProjectSourceBtn'),'Import and project read commands must expose compact source menus.');

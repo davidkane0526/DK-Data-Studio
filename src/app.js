@@ -2518,7 +2518,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.57',
+      version:'3.61.58',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,
@@ -3440,7 +3440,7 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.57',
+      appVersion:'3.61.58',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

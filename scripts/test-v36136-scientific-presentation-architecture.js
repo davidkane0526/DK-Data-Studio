@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.57');
+assert.equal(json('package.json').version,'3.61.58');
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.17.6');
 assert.equal(contract.pluginApiVersion,'1.17.0');
