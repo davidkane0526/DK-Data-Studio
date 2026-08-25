@@ -1,4 +1,13 @@
-# DK Data Studio — v3.61.56
+# DK Data Studio — v3.61.57
+
+## v3.61.57 第一方主题契约彻底收口
+
+本版修正 3.61.54 以后仍然存在的主题迁移缺口。此前虽然已经建立 Theme Contract 2.0，但 Pulse、Data Center、AnalysisWorkbench、PRIME/Portable 和独立 TOP 窗口仍有一部分历史 CSS 在语义主题之后重新绘制亮色边框，因此暗色模式下仍会出现白色竖线、横线和旧式描边按钮。现在第一方工作区结构统一改为依靠 `canvas / surface / surfaceSoft / surfaceSidebar` 色差与间距分区，结构卡片和标题栏不再使用边框作为默认层级。
+
+交互边界与结构边界也真正分离：普通按钮使用无描边 semantic surface，`input / select / textarea` 仍使用 `controlBorder / controlBorderHover`；表格行、科学坐标轴等具有数据语义的线条继续保留。AnalysisWorkbench 与 PluginCanvas 的 Splitter 保留完整拖拽命中区，但空闲状态完全透明，仅在悬停/拖动时显示 `dividerActive`。Data Center 的运行时注入样式、Pulse 文件管理卡片以及独立 TOP Dock 都同步迁移。
+
+新增 `test-v36157-theme-hardening.js` 并加入正式 Release Gate，阻止第一方插件重新写入硬编码亮色结构边框/背景。Studio 为 **3.61.57**；Mobile 为 **0.8.10**、Android `versionCode` **21**。SDK 保持 **1.17.6**，Plugin API 保持 **1.17.0**。
+
 
 ## v3.61.56 统一系统历史记录
 

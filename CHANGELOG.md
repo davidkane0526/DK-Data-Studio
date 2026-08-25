@@ -1,3 +1,12 @@
+# v3.61.57 — First-party Theme Contract Hardening
+
+- Finish the migration that Theme Contract 2.0 started: first-party Pulse, Data Center, AnalysisWorkbench, PRIME/Portable views and dedicated plugin-window docks now express section hierarchy through semantic surface contrast rather than bright structural outlines. Legacy `#dfe5ee/#edf.../#fff` splitter and panel paint is removed from the shared workspace primitives.
+- Separate interaction boundaries from layout boundaries in practice, not only in tokens. Buttons are borderless semantic surface controls, while `input/select/textarea` continue to use `controlBorder/controlBorderHover`; tables/scientific axes keep their semantic lines where those lines carry data meaning.
+- Make all AnalysisWorkbench and PluginCanvas splitter hit areas visually transparent while idle and reveal only `dividerActive` on hover/drag. This removes the persistent white vertical/horizontal rules visible in dark Pulse/Data Center workspaces without shrinking the resize hit target.
+- Migrate Data Center's runtime-injected CSS and Pulse batch/file cards away from outlined boxes. Dedicated TOP window docks also stop restoring their own left/top divider rules after `ui-modern.css`.
+- Add `test-v36157-theme-hardening.js` to the normal release gate. It checks the shared workspace primitives, Pulse/Data Center semantic surfaces, idle-transparent splitters and scans first-party plugin JavaScript for hard-coded light structural border/background paint.
+- Studio updates to **3.61.57**; Mobile updates to **0.8.10** / Android versionCode **21**. SDK remains **1.17.6** and Plugin API remains **1.17.0**.
+
 # v3.61.56 — Unified System History Coordinator
 
 - Replace the split “project history vs. private resonance undo stack” behavior with a System History Coordinator. Project edits and active-workspace edits now expose comparable timestamps and the shell chooses the chronologically latest reversible operation, so Ctrl/Cmd+Z no longer blindly prioritizes a plugin over a newer project edit.
