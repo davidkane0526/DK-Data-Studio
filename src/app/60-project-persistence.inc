@@ -2,7 +2,7 @@
     return {
       format:'dk-data-studio-project',
       schemaVersion:2,
-      version:'3.61.87',
+      version:'3.61.88',
       datasets:state.datasets.map(d=>({
         name:d.name,path:d.path,text:d.text,vg:d.vg,
         sourcePath:d.sourcePath||d.path,

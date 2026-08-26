@@ -628,6 +628,11 @@ module.exports = {
       "file": "tests/test-v36187-composition-boundaries.js",
       "args": []
     }
+,
+    {
+      "file": "tests/test-v36188-importable-core-runtime.js",
+      "args": []
+    }
   ],
   "check": [
     {
@@ -1288,6 +1293,11 @@ module.exports = {
     },
     {
       "file": "tests/test-v36187-composition-boundaries.js",
+      "args": []
+    }
+,
+    {
+      "file": "tests/test-v36188-importable-core-runtime.js",
       "args": []
     }
   ],

@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.87','ordered modern shell release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.88','ordered modern shell release must be v3.61.27');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
 const css=readCoreCss(root);
@@ -44,5 +44,5 @@ assert(manager.includes('plugin-type-badge type-${escapeHtml(typeMeta.id)}'),'Pl
 assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:'工具'"),'Plugin Manager must retain a dedicated Tool category');
 assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
 assert(kernel.includes("pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
-assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
+assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("state.host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
 console.log('ordered modern shell, appearance, memory and Tool runtime checks passed under v3.61.29.');

@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
-assert(json('package.json').version==='3.61.87','Application version must be 3.61.20.');
+assert(json('package.json').version==='3.61.88','Application version must be 3.61.20.');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const css=readCoreCss(root);
 const sdk=JSON.parse(read('sdk/contract.json'));

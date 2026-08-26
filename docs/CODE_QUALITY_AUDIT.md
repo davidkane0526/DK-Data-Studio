@@ -2,7 +2,7 @@
 
 ## Release decision
 
-v3.61.87 continues the structural cleanup without intentionally adding product behavior. The focus is finer Core source boundaries, deterministic runtime composition and smaller stylesheet ownership units.
+v3.61.88 completes the first true importable-module pass without intentionally adding product behavior. The focus is explicit Core dependency graphs, explicit mutable-state ownership and deterministic classic-runtime packaging.
 
 ## Completed
 
@@ -13,8 +13,8 @@ v3.61.87 continues the structural cleanup without intentionally adding product b
 - Core and mobile styles are domain-neutral; plugin geometry remains manifest-owned.
 - Stale generated copies under `src/app.js`, `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are removed. Disposable runtime compositions live only under `src/generated/runtime/` and are Git-ignored.
 - Regression tests enforce the modular-Core root, cascade order, zero-`!important` rule and generated-artifact boundary.
-- UI Infrastructure is authored as 23 responsibility fragments instead of 7 coarse fragments; Plugin Kernel is authored as 13 responsibility fragments instead of 6. The regenerated runtime byte stream is unchanged by the split.
-- Runtime closure composition order is now explicit in `composition.json` manifests. The generator rejects duplicate, missing, stray or >48 KiB composition fragments instead of relying on filename sorting alone.
+- UI Infrastructure is authored as 25 CommonJS modules and Plugin Kernel as 15 CommonJS modules. Neither subsystem contains authored `.inc` implementation fragments.
+- `composition.json` now declares importable module IDs/paths plus a runtime entry. The generator rejects duplicate, missing or >48 KiB modules and deterministically bundles them for the classic renderer.
 - The former 46.7 KiB `analysis-workbench.css` has been split into `analysis-workbench.css`, `plugin-workspace.css` and `workbench-components.css`, preserving rule order while making ownership easier to inspect.
 
 ## Measured debt
@@ -25,8 +25,8 @@ This does not mean the stylesheet is finished. Dense selectors and historical du
 
 ## Remaining debt
 
-1. **Plugin Kernel and UI Infrastructure are still shared-closure compositions, not true importable modules.** Their source boundaries and ordering are now explicit and bounded, but the final step remains migration of shared lexical state into independently loadable services/modules.
-2. **Application composition still uses ordered `.inc` fragments.** Its order is now explicit in `src/app/composition.json`, but the application shell should migrate only after the Core closure migration proves stable.
+1. **Application composition still uses ordered `.inc` fragments.** Its order is explicit in `src/app/composition.json`; it should migrate separately now that the Core module graph has proven stable.
+2. **The classic renderer still consumes generated single-script runtime artifacts.** This is now only a packaging compatibility layer; authored Core no longer depends on shared lexical composition.
 3. **The largest remaining Core closure bodies are concentrated rather than scattered.** `ScientificCurveSurface.render()` and `createApi()` are cohesive but still dense. They should be decomposed by real subsystem boundaries, not by arbitrary line-count surgery.
 4. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
 5. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.

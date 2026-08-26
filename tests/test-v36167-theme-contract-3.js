@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.87');
+assert.equal(json('package.json').version,'3.61.88');
 const theme=read('src/core/theme/runtime.js');
 const modern=readCoreCss(root);
 const base=readCoreCss(root);

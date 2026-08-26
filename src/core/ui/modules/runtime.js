@@ -1,0 +1,25 @@
+'use strict';
+if(!window.DKDSUI){
+  require('./foundation/shortcuts');
+  require('./selection/data-interaction');
+  require('./selection/view-binding');
+  require('./series/primitives');
+  require('./series/layout');
+  require('./interaction/context-actions');
+  require('./interaction/behavior');
+  require('./layout/docking');
+  require('./layout/portable-view');
+  require('./layout/workspace');
+  require('./plot-view/chart');
+  require('./workbench/base');
+  require('./grid/controller');
+  require('./dialog/settings');
+  require('./table/surfaces');
+  require('./tooltip/group-plot');
+  require('./scientific-curve/surface');
+  require('./workbench/analysis');
+  require('./workbench/plugin');
+  require('./scope/plugin-scope');
+  require('./host/api');
+}
+module.exports=window.DKDSUI;

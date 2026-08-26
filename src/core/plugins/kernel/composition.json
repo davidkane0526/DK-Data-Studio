@@ -1,18 +1,68 @@
 {
   "output": "src/generated/runtime/plugin-kernel.js",
-  "modules": [
-    "00-bootstrap-state.inc",
-    "01-top-workspace.inc",
-    "10-events-history.inc",
-    "11-activity-shell.inc",
-    "20-contributions-ui.inc",
-    "21-shortcuts-command-menu.inc",
-    "22-toolbar-commands.inc",
-    "23-typed-contributions.inc",
-    "30-status-project.inc",
-    "31-pages-panels.inc",
-    "40-plugin-api.inc",
-    "50-lifecycle.inc",
-    "51-package-loading-api.inc"
-  ]
+  "moduleRuntimeName": "DKDSPluginKernelModules",
+  "importableModules": [
+    {
+      "id": "kernel/context",
+      "path": "src/core/plugins/kernel/modules/context.js"
+    },
+    {
+      "id": "kernel/bootstrap",
+      "path": "src/core/plugins/kernel/modules/bootstrap.js"
+    },
+    {
+      "id": "kernel/workspace/top",
+      "path": "src/core/plugins/kernel/modules/workspace/top.js"
+    },
+    {
+      "id": "kernel/events/history",
+      "path": "src/core/plugins/kernel/modules/events/history.js"
+    },
+    {
+      "id": "kernel/activity/shell",
+      "path": "src/core/plugins/kernel/modules/activity/shell.js"
+    },
+    {
+      "id": "kernel/contributions/ui",
+      "path": "src/core/plugins/kernel/modules/contributions/ui.js"
+    },
+    {
+      "id": "kernel/shortcuts/menu",
+      "path": "src/core/plugins/kernel/modules/shortcuts/menu.js"
+    },
+    {
+      "id": "kernel/commands/toolbar",
+      "path": "src/core/plugins/kernel/modules/commands/toolbar.js"
+    },
+    {
+      "id": "kernel/contributions/typed",
+      "path": "src/core/plugins/kernel/modules/contributions/typed.js"
+    },
+    {
+      "id": "kernel/project/status",
+      "path": "src/core/plugins/kernel/modules/project/status.js"
+    },
+    {
+      "id": "kernel/pages/panels",
+      "path": "src/core/plugins/kernel/modules/pages/panels.js"
+    },
+    {
+      "id": "kernel/plugin-api",
+      "path": "src/core/plugins/kernel/modules/plugin-api.js"
+    },
+    {
+      "id": "kernel/lifecycle",
+      "path": "src/core/plugins/kernel/modules/lifecycle.js"
+    },
+    {
+      "id": "kernel/package-runtime",
+      "path": "src/core/plugins/kernel/modules/package-runtime.js"
+    },
+    {
+      "id": "kernel/runtime",
+      "path": "src/core/plugins/kernel/modules/runtime.js"
+    }
+  ],
+  "entryModule": "kernel/runtime",
+  "modules": []
 }

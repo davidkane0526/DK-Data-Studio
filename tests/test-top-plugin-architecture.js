@@ -33,7 +33,7 @@ assert(css.includes('.analysis-page.super-workspace-root-page .analysis-page-clo
 assert(css.includes('.import-panel-overlay')&&css.includes('z-index:1500'),'global import workbench must overlay any SUPER analysis surface.');
 assert(!kernel.includes("const migration='builtin.resonance-workbench'"),'core SUPER initialization must not hard-code resonance or any other domain plugin.');
 assert(JSON.parse(read('src/plugins/resonance-workbench/plugin.json')).workspace?.defaultSuper===true,'the preferred initial SUPER must be declared by the plugin manifest, not by core.');
-assert(kernel.includes("const opened=await host?.openActivityWindow?.(spec.id)"),'non-SUPER TOP navigation must use the generic independent-window host.');
+assert(kernel.includes("const opened=await state.host?.openActivityWindow?.(spec.id)"),'non-SUPER TOP navigation must use the generic independent-window host.');
 assert(kernel.includes("if(mode==='split'&&(!layout.left||!layout.main))"),'split TOP workspaces must require left/main regions.');
 assert(kernel.includes("if(mode==='native'&&!rootSelector)"),'native TOP workspaces must validate a root selector without requiring split regions.');
 const pluginWindowRuntime=read('src/plugin-window/runtime.js');

@@ -1,28 +1,108 @@
 {
   "output": "src/generated/runtime/ui-infrastructure.js",
-  "modules": [
-    "00-foundation-shortcuts.inc",
-    "01-selection-data-interaction.inc",
-    "02-selection-view-binding.inc",
-    "03-series-primitives.inc",
-    "10-series-layout.inc",
-    "11-context-actions.inc",
-    "12-interaction-behavior.inc",
-    "13-docking-placement.inc",
-    "20-portable-view.inc",
-    "21-workspace-layout.inc",
-    "22-chart-plot-view.inc",
-    "23-view-host-workbench.inc",
-    "24-grid-controller.inc",
-    "30-dialog-settings.inc",
-    "31-table-surfaces.inc",
-    "32-tooltip-group-plot.inc",
-    "40-scientific-curve-model.inc",
-    "41-scientific-curve-navigation.inc",
-    "42-scientific-curve-render.inc",
-    "50-analysis-workbench.inc",
-    "51-plugin-workspace.inc",
-    "60-plugin-scope.inc",
-    "61-host-api.inc"
-  ]
+  "moduleRuntimeName": "DKDSUIRuntimeModules",
+  "importableModules": [
+    {
+      "id": "ui/foundation/shortcuts",
+      "path": "src/core/ui/modules/foundation/shortcuts.js"
+    },
+    {
+      "id": "ui/selection/data-interaction",
+      "path": "src/core/ui/modules/selection/data-interaction.js"
+    },
+    {
+      "id": "ui/selection/view-binding",
+      "path": "src/core/ui/modules/selection/view-binding.js"
+    },
+    {
+      "id": "ui/series/primitives",
+      "path": "src/core/ui/modules/series/primitives.js"
+    },
+    {
+      "id": "ui/series/layout",
+      "path": "src/core/ui/modules/series/layout.js"
+    },
+    {
+      "id": "ui/interaction/context-actions",
+      "path": "src/core/ui/modules/interaction/context-actions.js"
+    },
+    {
+      "id": "ui/interaction/behavior",
+      "path": "src/core/ui/modules/interaction/behavior.js"
+    },
+    {
+      "id": "ui/layout/docking",
+      "path": "src/core/ui/modules/layout/docking.js"
+    },
+    {
+      "id": "ui/layout/portable-view",
+      "path": "src/core/ui/modules/layout/portable-view.js"
+    },
+    {
+      "id": "ui/layout/workspace",
+      "path": "src/core/ui/modules/layout/workspace.js"
+    },
+    {
+      "id": "ui/plot-view/chart",
+      "path": "src/core/ui/modules/plot-view/chart.js"
+    },
+    {
+      "id": "ui/workbench/base",
+      "path": "src/core/ui/modules/workbench/base.js"
+    },
+    {
+      "id": "ui/grid/controller",
+      "path": "src/core/ui/modules/grid/controller.js"
+    },
+    {
+      "id": "ui/dialog/settings",
+      "path": "src/core/ui/modules/dialog/settings.js"
+    },
+    {
+      "id": "ui/table/surfaces",
+      "path": "src/core/ui/modules/table/surfaces.js"
+    },
+    {
+      "id": "ui/tooltip/group-plot",
+      "path": "src/core/ui/modules/tooltip/group-plot.js"
+    },
+    {
+      "id": "ui/scientific-curve/surface",
+      "path": "src/core/ui/modules/scientific-curve/surface.js"
+    },
+    {
+      "id": "ui/workbench/analysis",
+      "path": "src/core/ui/modules/workbench/analysis.js"
+    },
+    {
+      "id": "ui/workbench/plugin",
+      "path": "src/core/ui/modules/workbench/plugin.js"
+    },
+    {
+      "id": "ui/scope/plugin-scope",
+      "path": "src/core/ui/modules/scope/plugin-scope.js"
+    },
+    {
+      "id": "ui/host/api",
+      "path": "src/core/ui/modules/host/api.js"
+    },
+    {
+      "id": "ui/scientific-curve/model",
+      "path": "src/core/ui/modules/scientific-curve/model.js"
+    },
+    {
+      "id": "ui/scientific-curve/navigation",
+      "path": "src/core/ui/modules/scientific-curve/navigation.js"
+    },
+    {
+      "id": "ui/scientific-curve/render",
+      "path": "src/core/ui/modules/scientific-curve/render.js"
+    },
+    {
+      "id": "ui/runtime",
+      "path": "src/core/ui/modules/runtime.js"
+    }
+  ],
+  "entryModule": "ui/runtime",
+  "modules": []
 }

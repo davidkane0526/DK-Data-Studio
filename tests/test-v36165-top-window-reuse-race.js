@@ -4,7 +4,7 @@ const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const main=fs.readFileSync(path.join(root,'desktop','main.js'),'utf8');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert.strictEqual(pkg.version,'3.61.87');
+assert.strictEqual(pkg.version,'3.61.88');
 const closeStart=main.indexOf('function closeAuxiliaryWindowForReal(win)');
 const closeEnd=main.indexOf('function waitForAuxiliaryWindowClosed',closeStart);
 assert(closeStart>=0&&closeEnd>closeStart,'Dedicated close helpers must exist.');

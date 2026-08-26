@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{if(!fs.existsSync(dir))return out;for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.87');
+assert.equal(json('package.json').version,'3.61.88');
 
 const coreRoot=path.join(root,'src','core');
 const rootFiles=fs.readdirSync(coreRoot,{withFileTypes:true}).filter(row=>row.isFile()).map(row=>row.name);

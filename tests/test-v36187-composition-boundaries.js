@@ -5,38 +5,47 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
-const MAX_FRAGMENT_BYTES=48*1024;
+const {MAX_MODULE_BYTES,buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
 const MAX_STRUCTURE_CSS_BYTES=36*1024;
 
-assert.equal(json('package.json').version,'3.61.87');
+assert.equal(json('package.json').version,'3.61.88');
 
 for(const rel of ['src/core/ui/composition','src/core/plugins/kernel','src/app']){
-  const dir=path.join(root,rel),manifest=json(`${rel}/composition.json`),modules=manifest.modules;
-  assert(Array.isArray(modules)&&modules.length,`${rel} must declare ordered composition modules.`);
-  assert.equal(new Set(modules).size,modules.length,`${rel} composition modules must be unique.`);
+  const dir=path.join(root,rel),manifest=json(`${rel}/composition.json`);
+  const modules=Array.isArray(manifest.modules)?manifest.modules:[];
+  const imports=Array.isArray(manifest.importableModules)?manifest.importableModules:[];
+  assert(modules.length||manifest.entryModule,`${rel} must declare composition fragments or an importable entry module.`);
+  assert.equal(new Set(modules).size,modules.length,`${rel} composition fragments must be unique.`);
   const discovered=fs.readdirSync(dir).filter(name=>name.endsWith('.inc')).sort();
-  assert.deepEqual([...modules].sort(),discovered,`${rel} composition manifest must list every fragment exactly once.`);
+  assert.deepEqual([...modules].sort(),discovered,`${rel} composition manifest must list every remaining .inc fragment exactly once.`);
   for(const name of modules){
     const bytes=fs.statSync(path.join(dir,name)).size;
-    assert(bytes<=MAX_FRAGMENT_BYTES,`${rel}/${name} exceeds the 48 KiB composition boundary (${bytes} bytes).`);
+    assert(bytes<=MAX_MODULE_BYTES,`${rel}/${name} exceeds the 48 KiB composition boundary (${bytes} bytes).`);
   }
+  const ids=new Set(),paths=new Set();
+  for(const row of imports){
+    assert(row?.id&&row?.path,`${rel} importable module rows require id/path.`);
+    assert(!ids.has(row.id),`${rel} duplicate importable module id: ${row.id}`);ids.add(row.id);
+    assert(!paths.has(row.path),`${rel} duplicate importable module path: ${row.path}`);paths.add(row.path);
+    const file=path.join(root,row.path);
+    assert(fs.existsSync(file),`${rel} importable module missing: ${row.path}`);
+    const bytes=fs.statSync(file).size;
+    assert(bytes<=MAX_MODULE_BYTES,`${row.path} exceeds the 48 KiB importable-module boundary (${bytes} bytes).`);
+  }
+  if(manifest.entryModule)assert(ids.has(manifest.entryModule),`${rel} entryModule must be declared in importableModules.`);
   const generated=path.join(root,manifest.output);
-  assert(fs.existsSync(generated),`${manifest.output} must be reproducible before composition verification.`);
-  const source=modules.map(name=>fs.readFileSync(path.join(dir,name),'utf8')).join('');
-  assert.equal(fs.readFileSync(generated,'utf8'),source,`${manifest.output} must be exactly the declared composition byte stream.`);
+  assert(fs.existsSync(generated),`${manifest.output} must exist before composition verification.`);
+  assert.equal(read(manifest.output),buildCompositionSource(rel).source,`${manifest.output} must be exactly reproducible from its declared graph.`);
 }
 
 const ui=json('src/core/ui/composition/composition.json');
 const kernel=json('src/core/plugins/kernel/composition.json');
-assert(ui.modules.length>=23,'UI Infrastructure must remain split into responsibility-focused fragments.');
-assert(kernel.modules.length>=13,'Plugin Kernel must remain split into responsibility-focused fragments.');
-for(const legacy of [
-  'src/core/ui/composition/00-foundation-interaction.inc',
-  'src/core/ui/composition/20-portable-layout-views.inc',
-  'src/core/ui/composition/40-scientific-curves.inc',
-  'src/core/plugins/kernel/20-contributions-commands.inc',
-  'src/core/plugins/kernel/50-lifecycle-packages-api.inc'
-]) assert(!fs.existsSync(path.join(root,legacy)),`${legacy} must not return as a coarse composition bucket.`);
+assert.equal(ui.modules.length,0,'UI Infrastructure must not fall back to authored .inc implementation fragments.');
+assert.equal(kernel.modules.length,0,'Plugin Kernel must not fall back to authored .inc implementation fragments.');
+assert(ui.importableModules.length>=20,'UI Infrastructure must remain decomposed into importable responsibility modules.');
+assert(kernel.importableModules.length>=12,'Plugin Kernel must remain decomposed into importable responsibility modules.');
+assert.equal(ui.entryModule,'ui/runtime');
+assert.equal(kernel.entryModule,'kernel/runtime');
 
 const cascade=read('src/core.css');
 for(const rel of ['analysis-workbench.css','plugin-workspace.css','workbench-components.css']){
@@ -45,4 +54,4 @@ for(const rel of ['analysis-workbench.css','plugin-workspace.css','workbench-com
   assert(bytes<=MAX_STRUCTURE_CSS_BYTES,`${rel} exceeds the structural CSS ownership budget (${bytes} bytes).`);
 }
 
-console.log('v3.61.87 composition boundaries PASS: explicit manifests, <=48 KiB fragments, split workbench CSS and byte-exact generated runtimes.');
+console.log('v3.61.88 importable composition boundaries PASS: UI/Kernel .inc=0, explicit module graphs, <=48 KiB modules, reproducible runtimes.');

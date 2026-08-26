@@ -1,3 +1,12 @@
+# v3.61.88 — Importable Core Runtime Modules
+
+- Migrate UI Infrastructure from authored `.inc` shared-closure fragments to 25 real CommonJS modules plus an explicit `ui/runtime` entry. ScientificCurveSurface is composed from an importable base class, navigation mixin and render mixin instead of a three-file open class body.
+- Migrate Plugin Kernel from authored `.inc` shared-closure fragments to 15 real CommonJS modules plus an explicit `kernel/runtime` entry. Mutable kernel ownership (`host`, SUPER/activity identity, preference caches, package-loading promises and resize dispatch state) now lives in `kernel/modules/context.js` rather than implicit cross-file lexical variables.
+- Remove all authored `.inc` implementation files from `src/core/ui/composition/` and `src/core/plugins/kernel/`. Their `composition.json` files now declare only importable modules and entry modules.
+- Extend `generate-runtime-compositions.js` with a bounded CommonJS module runtime so the classic renderer continues to receive deterministic generated scripts while authored Core remains independently importable and testable.
+- Preserve the 48 KiB source boundary for both legacy application composition fragments and new importable runtime modules; the largest current Core runtime module remains below the limit.
+- Update structural regression tests so they validate reproducible module graphs instead of requiring the old lexical source shape. Full `npm test` passes after the migration.
+
 # v3.61.87 — Composition Boundary Cleanup
 
 - Split UI Infrastructure authored composition from 7 coarse fragments into 23 responsibility-focused fragments and Plugin Kernel from 6 into 13, while preserving the generated runtime byte stream exactly.

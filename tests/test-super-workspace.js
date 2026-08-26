@@ -189,9 +189,9 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     assert(manifest.workspace?.role==='top',`${folder} must declare the generic TOP role.`);
     assert(combined.includes('ctx.ui.topWorkspace.register'),`${folder} must register a complete generic TOP contract before it can become SUPER.`);
   }
-  assert(source.includes('const opened=await host?.openActivityWindow?.(spec.id)'),'non-SUPER TOP navigation must await the generic window host and surface failures instead of silently doing nothing.');
-  assert(source.includes('await host?.prepareSuperTransition?.({previous,pluginId:id,activityId})'),'SUPER promotion must execute the host transition barrier before changing role ownership.');
-  assert(source.includes('superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
+  assert(source.includes('const opened=await state.host?.openActivityWindow?.(spec.id)'),'non-SUPER TOP navigation must await the generic window host and surface failures instead of silently doing nothing.');
+  assert(source.includes('await state.host?.prepareSuperTransition?.({previous,pluginId:id,activityId})'),'SUPER promotion must execute the host transition barrier before changing role ownership.');
+  assert(source.includes('state.superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
 
   assert(app.includes('placePrimeContribution')&&app.includes('primeRightDockSlot')&&app.includes('primeBottomDockSlot'),'main renderer must expose generic PRIME right/bottom/float placement hosts.');
   assert(source.includes('placePrimeContribution')&&source.includes('primePlacementStorageKey'),'plugin kernel must own generic PRIME placement and local persistence.');

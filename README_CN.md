@@ -1,6 +1,6 @@
 # DK Data Studio
 
-当前版本：**v3.61.87**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
+当前版本：**v3.61.88**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
@@ -120,7 +120,7 @@ npm run clean:generated
 
 ## 关于 Core Runtime composition
 
-Core 的**源码组织已经不是单一文件**。目前 Plugin Kernel 与 UI Infrastructure 两个历史子系统仍因共享 lexical state 在构建时生成两个临时 runtime artifact，它们位于 `src/generated/runtime/`、不进入 Git，也不是源码真相。composition 顺序由各目录的 `composition.json` 显式声明，单片段上限为 48 KiB，避免再次膨胀成粗粒度大文件。后续若继续做内部重构，应把这两个 shared-closure composition 迁移为真正可独立加载的模块；新 Core 子系统不再采用这种模式。
+Core 的**源码组织已经不是单一文件**。从 v3.61.88 起，Plugin Kernel 与 UI Infrastructure 已从共享 lexical-state `.inc` composition 迁移为真实 CommonJS 模块图：源码分别位于 `src/core/plugins/kernel/modules/` 与 `src/core/ui/modules/`，依赖通过 `require()`/明确的 runtime entry 表达。`composition.json` 只声明可导入模块与浏览器 entry，生成器把它们确定性打包到 `src/generated/runtime/` 供当前 classic-script renderer 使用；生成物不进入 Git，也不是源码真相。单模块继续执行 48 KiB 上限。Application shell 暂时仍使用显式 `.inc` composition，避免一次性扩大重构范围。
 
 ## 插件开发
 

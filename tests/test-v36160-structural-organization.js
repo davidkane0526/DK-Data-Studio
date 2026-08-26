@@ -6,10 +6,9 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const list=(rel,suffix='')=>fs.readdirSync(path.join(root,rel)).filter(name=>!suffix||name.endsWith(suffix)).sort();
-const concat=(rel,suffix)=>list(rel,suffix).map(name=>read(path.posix.join(rel,name))).join('');
 const pkg=json('package.json');
 
-assert.equal(pkg.version,'3.61.87','Structural organization release must be v3.61.87.');
+assert.equal(pkg.version,'3.61.88','Structural organization release must be v3.61.88.');
 assert.equal(pkg.main,'desktop/main.js','Electron entry must live under desktop/.');
 assert((pkg.build?.files||[]).includes('desktop/**/*'),'Electron packaging must include the desktop host tree.');
 for(const old of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
@@ -37,9 +36,10 @@ assert.equal(coreRootFiles.length,0,`src/core root must contain responsibility d
 for(const dir of ['data','diagnostics','host','performance','plugins','project','recipes','scientific','services','theme','ui','workflow']){
   assert(fs.existsSync(path.join(root,'src','core',dir)),`Core responsibility directory missing: ${dir}`);
 }
-assert.equal(concat('src/core/ui/composition','.inc'),read('src/generated/runtime/ui-infrastructure.js'),'Generated UI composition must exactly match authored fragments.');
-assert.equal(concat('src/core/plugins/kernel','.inc'),read('src/generated/runtime/plugin-kernel.js'),'Generated Plugin Kernel composition must exactly match authored fragments.');
-assert.equal(concat('src/app','.inc'),read('src/generated/runtime/app.js'),'Generated App composition must exactly match authored fragments.');
+const {buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
+assert.equal(buildCompositionSource('src/core/ui/composition').source,read('src/generated/runtime/ui-infrastructure.js'),'Generated UI runtime must exactly match the declared module graph.');
+assert.equal(buildCompositionSource('src/core/plugins/kernel').source,read('src/generated/runtime/plugin-kernel.js'),'Generated Plugin Kernel runtime must exactly match the declared module graph.');
+assert.equal(buildCompositionSource('src/app').source,read('src/generated/runtime/app.js'),'Generated App runtime must exactly match the declared composition.');
 
 const coreCss=read('src/core.css');
 assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window;'),'Core CSS must declare one explicit cascade order.');
@@ -59,4 +59,4 @@ assert(fs.existsSync(path.join(root,'scripts/generate-runtime-compositions.js'))
 assert(fs.existsSync(path.join(root,'scripts/validate-styles.js')),'style architecture validator missing.');
 assert(!fs.existsSync(path.join(root,'scripts/generate-core-styles.js')),'legacy CSS concatenation generator must stay removed.');
 assert(!fs.existsSync(path.join(root,'scripts/generate-core-runtime-bundles.js')),'legacy root-Core bundle generator must stay removed.');
-console.log('v3.61.86 structural organization PASS: host, Core responsibilities, layered CSS and generated-artifact boundaries are canonicalized.');
+console.log('v3.61.88 structural organization PASS: host, importable Core modules, layered CSS and generated-artifact boundaries are canonicalized.');
