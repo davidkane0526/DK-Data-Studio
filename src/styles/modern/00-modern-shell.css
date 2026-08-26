@@ -1,0 +1,391 @@
+/* Ordered modern visual layer
+   Baseline reference token retained for regression trace: --dkui-border:#d8e5f4
+   Scope: visual treatment only. No renderer-internal DOM selectors and no layout geometry overrides. */
+:root{
+  --dkui-canvas:#eef4fb;
+  --dkui-surface:#fbfcfe;
+  --dkui-surface-soft:#f6f9fd;
+  --dkui-surface-hover:#f0f5fc;
+  --dkui-surface-elevated:#ffffff;
+  --dkui-surface-sidebar:#f7f9fc;
+  --dkui-control-bg:#fbfcfe;
+  --dkui-control-hover:#f0f5fc;
+  --dkui-divider:rgba(102,132,168,.085);
+  --dkui-divider-hover:rgba(49,94,251,.42);
+  --dkui-control-border:rgba(102,132,168,.22);
+  --dkui-control-border-hover:rgba(102,132,168,.34);
+  --dkui-scrollbar:rgba(102,132,168,.34);
+  --dkui-scrollbar-hover:rgba(102,132,168,.52);
+  --dkui-border:var(--dkui-divider);
+  --dkui-border-strong:var(--dkui-control-border);
+  --dkui-text:#1c2a43;
+  --dkui-text-soft:#60708c;
+  --dkui-muted:#7f8ba8;
+  --dkui-text-muted:var(--dkui-muted);
+  --dkui-surface-secondary:var(--dkui-surface-soft);
+  --dkui-accent:#096bfa;
+  --dkui-accent-hover:#005de8;
+  --dkui-accent-soft:#eaf2ff;
+  --dkui-selection-bg:var(--dkui-accent-soft);
+  --dkui-selection-border:color-mix(in srgb,var(--dkui-accent) 36%,var(--dkui-control-border));
+  --dkui-focus:0 0 0 3px rgba(9,107,250,.14);
+  --dkui-shadow-1:0 1px 0 rgba(255,255,255,.96) inset,0 -1px 0 rgba(180,202,230,.20) inset,0 3px 8px rgba(91,119,159,.055),0 9px 20px rgba(91,119,159,.065);
+  --dkui-shadow-2:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.24) inset,0 5px 12px rgba(91,119,159,.075),0 15px 32px rgba(91,119,159,.11);
+  --dkui-shadow-float:0 1px 0 rgba(255,255,255,.98) inset,0 8px 20px rgba(70,99,139,.10),0 24px 54px rgba(70,99,139,.16);
+  --dkui-radius:10px;
+  --dkui-radius-lg:13px;
+  --dkui-motion-fast:100ms;
+  --dkui-motion-normal:150ms;
+  --dkui-motion-slow:220ms;
+  --dkui-ease-standard:cubic-bezier(.2,.8,.2,1);
+  --dkui-ease-emphasized:cubic-bezier(.2,.75,.25,1);
+  --dkui-hover-lift:-1px;
+  --dkui-press-scale:.98;
+  --dkui-material-blur:12px;
+  --dkui-material-blur-strong:14px;
+  --dkui-material-saturation:1.08;
+  --dkui-material-tint-opacity:0%;
+  --dkui-specular-highlight:transparent;
+  --dkui-inner-highlight:transparent;
+  --dkui-glass-edge:var(--dkui-divider);
+  --dkui-material-noise-opacity:0%;
+
+  /* Public plugin visual contract. Plugins should consume these semantic tokens
+     instead of owning light/dark color literals. */
+  --app-bg:var(--dkui-canvas);
+  --surface-canvas:var(--dkui-canvas);
+  --surface-primary:var(--dkui-surface);
+  --surface-secondary:var(--dkui-surface-soft);
+  --surface-subtle:var(--dkui-surface-soft);
+  --surface-hover:var(--dkui-surface-hover);
+  --surface-elevated:var(--dkui-surface-elevated);
+  --surface-sidebar:var(--dkui-surface-sidebar);
+  --panel-bg:var(--dkui-surface);
+  --input-bg:var(--dkui-control-bg);
+  --divider-subtle:var(--dkui-divider);
+  --divider-active:var(--dkui-divider-hover);
+  --control-border:var(--dkui-control-border);
+  --control-border-hover:var(--dkui-control-border-hover);
+  --border-subtle:var(--divider-subtle);
+  --border-strong:var(--control-border);
+  --line:var(--divider-subtle);
+  --text-primary:var(--dkui-text);
+  --text-secondary:var(--dkui-text-soft);
+  --text-tertiary:var(--dkui-muted);
+  --accent-primary:var(--dkui-accent);
+  --accent-contrast:#fff;
+  --accent-soft:var(--dkui-accent-soft);
+  --focus-ring:var(--dkui-focus);
+  --surface-shadow:var(--dkui-shadow-1);
+  --surface-shadow-raised:var(--dkui-shadow-2);
+  --success:#15803d;
+  --success-soft:color-mix(in srgb,var(--success) 10%,var(--surface-primary));
+  --warning:#b45309;
+  --warning-soft:color-mix(in srgb,var(--warning) 10%,var(--surface-primary));
+  --danger:#c2413a;
+  --danger-soft:color-mix(in srgb,var(--danger) 10%,var(--surface-primary));
+  /* Legacy aliases remain as a compatibility bridge, but resolve from the same
+     modern token source so old plugin markup cannot force a light surface. */
+  --bg:var(--app-bg);
+  --panel:var(--surface-primary);
+  --border:var(--border-subtle);
+  --text:var(--text-primary);
+  --muted:var(--text-secondary);
+  --accent:var(--accent-primary);
+  --shadow:var(--surface-shadow);
+  --motion-fast:var(--dkui-motion-fast);
+  --motion-normal:var(--dkui-motion-normal);
+  --motion-slow:var(--dkui-motion-slow);
+  --ease-standard:var(--dkui-ease-standard);
+  --ease-emphasized:var(--dkui-ease-emphasized);
+}
+
+html,body,#app{color:var(--dkui-text)}
+
+/* PluginWorkspace is a Core-owned visual boundary. Domain and external plugins
+   inherit these tokens automatically; only data semantics and truly custom
+   visualization marks should remain plugin-owned. */
+body.dkds-modern-ui .dkds-plugin-workspace,
+body.dkds-modern-ui .dkds-analysis-workbench{
+  --plugin-workspace-panel-border:var(--border-subtle);
+  --plugin-workspace-surface:var(--surface-primary);
+  --plugin-workspace-muted-surface:var(--surface-secondary);
+  --plugin-workspace-grid:var(--border-subtle);
+  --plugin-workspace-shadow:var(--surface-shadow-raised);
+  --plugin-surface-bg:var(--surface-primary);
+  background:var(--app-bg);
+  color:var(--text-primary);
+}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis line{stroke:var(--text-tertiary)}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis text{fill:var(--text-secondary)}
+body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis-title{fill:var(--text-primary)}
+
+body.dkds-modern-ui{
+  background:var(--dkui-canvas);
+  background-image:radial-gradient(ellipse at 55% -10%,rgba(255,255,255,.82) 0%,rgba(244,249,255,.40) 34%,rgba(218,232,248,.10) 62%,transparent 78%);
+}
+body.dkds-modern-ui ::selection{background:rgba(49,94,251,.16)}
+
+/* Shell: low-contrast surfaces with a small physical separation from the canvas. */
+body.dkds-modern-ui .topbar{
+  background:rgba(255,255,255,.975);
+  border-bottom-color:var(--dkui-border);
+  box-shadow:0 1px 0 rgba(255,255,255,.92),0 3px 10px rgba(26,39,64,.04);
+}
+body.dkds-modern-ui .brand{color:#1f2b40}
+body.dkds-modern-ui .version{color:var(--dkui-muted)}
+body.dkds-modern-ui .brand-mark{
+  border:1px solid rgba(49,94,251,.12);
+  border-radius:7px;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(34,63,143,.10),0 1px 0 rgba(255,255,255,.92) inset;
+}
+body.dkds-modern-ui .toolbar-group,
+body.dkds-modern-ui .primary-activity-cluster,
+body.dkds-modern-ui .system-core-tools-group{
+  background:#f7f9fc;
+  border-color:#e0e6ef;
+  box-shadow:0 1px 2px rgba(25,39,66,.035),0 1px 0 rgba(255,255,255,.92) inset;
+}
+body.dkds-modern-ui .toolbar-btn,
+body.dkds-modern-ui .activity-tab,
+body.dkds-modern-ui .plugin-toolbar-btn{
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
+}
+body.dkds-modern-ui .toolbar-btn:not(.strong),
+body.dkds-modern-ui .activity-tab,
+body.dkds-modern-ui .plugin-toolbar-btn{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
+body.dkds-modern-ui .activity-tab:hover,
+body.dkds-modern-ui .plugin-toolbar-btn:hover{
+  background:#fff;
+  border-color:#dbe2ec;
+  color:#26354c;
+  box-shadow:var(--dkui-shadow-1);
+  transform:translateY(-1px);
+}
+body.dkds-modern-ui .toolbar-btn:active:not(:disabled),
+body.dkds-modern-ui .activity-tab:active,
+body.dkds-modern-ui .plugin-toolbar-btn:active{transform:none}
+/* Modern shell owns the default control palette. Plugin/page selectors may tune geometry, not fall back to legacy white paint. */
+body.dkds-modern-ui button:not(.primary):not(.strong){background:var(--dkui-control-bg,var(--surface-primary,#fff));border-color:var(--dkui-border,var(--border-subtle,#d8e0eb));color:var(--dkui-text,var(--text-primary,#1c2a43))}
+html[data-dkds-theme="dark"] body.dkds-modern-ui button:not(.primary):not(.strong){background:var(--dkui-control-bg,#242b36);border-color:var(--dkui-border,#384354);color:var(--dkui-text,#dbe2ed);box-shadow:none}
+html[data-dkds-theme="dark"] body.dkds-modern-ui button:not(.primary):not(.strong):hover:not(:disabled){background:var(--dkui-surface-hover,#2b3442);border-color:var(--dkui-border-strong,#4b586b);color:var(--dkui-text,#edf2f8)}
+body.dkds-modern-ui .toolbar-btn.strong,
+body.dkds-modern-ui button.primary{
+  background:var(--dkui-accent);
+  border-color:var(--dkui-accent);
+  color:#fff;
+  box-shadow:0 3px 8px rgba(49,94,251,.18),0 1px 0 rgba(255,255,255,.20) inset;
+}
+body.dkds-modern-ui .toolbar-btn.strong:hover,
+body.dkds-modern-ui button.primary:hover{
+  background:var(--dkui-accent-hover);
+  border-color:var(--dkui-accent-hover);
+  box-shadow:0 5px 12px rgba(49,94,251,.22),0 1px 0 rgba(255,255,255,.22) inset;
+}
+body.dkds-modern-ui .activity-tab.active,
+body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{
+  background:#fff;
+  border-color:#d7e0ee;
+  color:#2857d7;
+  box-shadow:0 2px 5px rgba(33,57,112,.07),0 1px 0 #fff inset;
+}
+
+body.dkds-modern-ui .project-tabs-bar{
+  background:#eef2f7;
+  border-bottom-color:#dde4ed;
+  box-shadow:0 1px 0 rgba(255,255,255,.62) inset;
+}
+body.dkds-modern-ui .project-tab{
+  background:#e9edf4;
+  border-color:#d8e0ea;
+  color:#607087;
+  box-shadow:none;
+}
+body.dkds-modern-ui .project-tab:hover{background:#f4f6f9;color:#37465b}
+body.dkds-modern-ui .project-tab.active{
+  background:#fff;
+  border-color:#d8e0ea;
+  border-bottom-color:#fff;
+  color:#223047;
+  box-shadow:0 -2px 7px rgba(25,39,66,.035);
+}
+
+body.dkds-modern-ui .workspace,
+body.dkds-modern-ui .main-area,
+body.dkds-modern-ui .analysis-page,
+body.dkds-modern-ui .dkds-analysis-workbench{background:var(--dkui-canvas)}
+body.dkds-modern-ui .left-panel{
+  background:#fbfcfe;
+  border-right-color:var(--dkui-border);
+  box-shadow:1px 0 0 rgba(255,255,255,.72) inset;
+}
+body.dkds-modern-ui .statusbar{
+  background:#fbfcfe;
+  border-top-color:#e3e8f0;
+  color:#7c899b;
+  box-shadow:0 1px 0 #fff inset;
+}
+
+/* Modern surface contract: small radius + restrained depth, no glossy gradients. */
+body.dkds-modern-ui .floating-panel,
+body.dkds-modern-ui .trend-card,
+body.dkds-modern-ui .analysis-chart-card,
+body.dkds-modern-ui .plugin-manager-card,
+body.dkds-modern-ui .plugin-manager-stat,
+body.dkds-modern-ui .plugin-manager-toolbar-card,
+body.dkds-modern-ui .import-section,
+body.dkds-modern-ui .dkds-analysis-prime-panel,
+body.dkds-modern-ui .lan-web-settings-card,
+body.dkds-modern-ui .lan-web-address-card,
+body.dkds-modern-ui .lan-web-share-section{
+  background:var(--dkui-surface);
+  border-color:var(--dkui-border);
+  box-shadow:var(--dkui-shadow-1);
+}
+body.dkds-modern-ui .floating-panel{box-shadow:none}
+body.dkds-modern-ui .plugin-manager-card,
+body.dkds-modern-ui .trend-card,
+body.dkds-modern-ui .analysis-chart-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
+body.dkds-modern-ui .reswin-group-card,
+body.dkds-modern-ui .pulse-card,
+body.dkds-modern-ui .dc-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
+body.dkds-modern-ui .plugin-manager-card:hover{
+  border-color:#ced8e5;
+  box-shadow:var(--dkui-shadow-2);
+  transform:translateY(-1px);
+}
+
+body.dkds-modern-ui .floating-header,
+body.dkds-modern-ui .trend-card-header,
+body.dkds-modern-ui .analysis-chart-title,
+body.dkds-modern-ui .dkds-analysis-prime-head{
+  background:#fafbfd;
+  border-color:#e7ebf1;
+  color:#344258;
+  box-shadow:0 1px 0 rgba(255,255,255,.92) inset;
+}
+
+/* App-owned controls only. Renderer-internal elements are deliberately excluded. */
+body.dkds-modern-ui .panel-header-actions button,
+body.dkds-modern-ui .scan-global-buttons button,
+body.dkds-modern-ui .preset-row button,
+body.dkds-modern-ui .action-grid button,
+body.dkds-modern-ui .trend-layout-controls button,
+body.dkds-modern-ui .trend-card-header button,
+body.dkds-modern-ui .main-plot-tools button,
+body.dkds-modern-ui .zoom-actions button,
+body.dkds-modern-ui .plugin-manager-page button,
+body.dkds-modern-ui .plugin-manager-toolbar-card button,
+body.dkds-modern-ui .plugin-card-actions button,
+body.dkds-modern-ui .dkds-analysis-workbench button,
+body.dkds-modern-ui .dkds-settings-dialog button,
+body.dkds-modern-ui .command-menu button{
+  border-color:var(--dkui-border);
+  background:#fff;
+  color:#344258;
+  box-shadow:var(--dkui-shadow-1);
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
+}
+body.dkds-modern-ui .data-center-body button,
+body.dkds-modern-ui #resonanceDedicatedPage button,
+body.dkds-modern-ui .ter-analysis button,
+body.dkds-modern-ui .pulse-analysis button{
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
+}
+body.dkds-modern-ui .panel-header-actions button:hover:not(:disabled),
+body.dkds-modern-ui .scan-global-buttons button:hover:not(:disabled),
+body.dkds-modern-ui .preset-row button:hover:not(:disabled),
+body.dkds-modern-ui .action-grid button:hover:not(:disabled),
+body.dkds-modern-ui .trend-layout-controls button:hover:not(:disabled),
+body.dkds-modern-ui .trend-card-header button:hover:not(:disabled),
+body.dkds-modern-ui .main-plot-tools button:hover:not(:disabled),
+body.dkds-modern-ui .zoom-actions button:hover:not(:disabled),
+body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-settings-dialog button:hover:not(:disabled),
+body.dkds-modern-ui .command-menu button:hover:not(:disabled){
+  background:var(--dkui-surface-hover);
+  border-color:var(--dkui-border-strong);
+  color:#27374f;
+  box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
+  transform:translateY(-1px);
+}
+body.dkds-modern-ui .data-center-body button:hover:not(:disabled),
+body.dkds-modern-ui #resonanceDedicatedPage button:hover:not(:disabled),
+body.dkds-modern-ui .ter-analysis button:hover:not(:disabled),
+body.dkds-modern-ui .pulse-analysis button:hover:not(:disabled){
+  transform:translateY(-1px);
+}
+body.dkds-modern-ui .trend-layout-controls button.active,
+body.dkds-modern-ui .main-plot-tools button.active{
+  background:var(--dkui-accent-soft);
+  border-color:#b8c8f2;
+  color:#2857d7;
+  box-shadow:0 1px 2px rgba(49,94,251,.06) inset;
+}
+
+body.dkds-modern-ui .plugin-manager-search-wrap,
+body.dkds-modern-ui .plugin-manager-toolbar-card select,
+body.dkds-modern-ui .dataset-vg-edit input,
+body.dkds-modern-ui .peak-class-grid input,
+body.dkds-modern-ui .schema-param-field input,
+body.dkds-modern-ui .schema-param-field select,
+body.dkds-modern-ui .schema-param-field textarea,
+body.dkds-modern-ui .dkds-settings-field input[type="text"],
+body.dkds-modern-ui .dkds-settings-field input[type="number"],
+body.dkds-modern-ui .dkds-settings-field select{
+  background:#fff;
+  border-color:#d4dce7;
+  color:#344258;
+  box-shadow:0 1px 2px rgba(26,39,64,.025) inset;
+  transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
+}
+
+body.dkds-modern-ui .data-center-body input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .data-center-body select,
+body.dkds-modern-ui #resonanceDedicatedPage input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui #resonanceDedicatedPage select,
+body.dkds-modern-ui .ter-analysis input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .ter-analysis select,
+body.dkds-modern-ui .pulse-analysis input:not([type="checkbox"]):not([type="radio"]),
+body.dkds-modern-ui .pulse-analysis select{
+  transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
+}
+body.dkds-modern-ui .plugin-manager-search-wrap:focus-within,
+body.dkds-modern-ui .plugin-manager-toolbar-card select:focus-visible,
+body.dkds-modern-ui .dataset-vg-edit input:focus-visible,
+body.dkds-modern-ui .peak-class-grid input:focus-visible,
+body.dkds-modern-ui .schema-param-field input:focus-visible,
+body.dkds-modern-ui .schema-param-field select:focus-visible,
+body.dkds-modern-ui .schema-param-field textarea:focus-visible{
+  outline:none;
+  border-color:#7995e8;
+  box-shadow:var(--dkui-focus);
+}
+
+/* Plugin manager: no overlays or absolute visual layers are introduced here. */
+body.dkds-modern-ui .plugin-manager-body{background:transparent}
+body.dkds-modern-ui .plugin-manager-stat strong{color:#29374d}
+body.dkds-modern-ui .plugin-manager-visible-count,
+body.dkds-modern-ui .plugin-manager-section-count,
+body.dkds-modern-ui .plugin-status-badge,
+body.dkds-modern-ui .plugin-capability-chip{
+  background:#f6f8fb;
+  border-color:#e0e6ee;
+  color:#66758b;
+}
+body.dkds-modern-ui .plugin-card-icon{
+  background:#eef3ff;
+  border:1px solid #dbe5ff;
+  box-shadow:0 2px 5px rgba(49,94,251,.07);
+}
+body.dkds-modern-ui .plugin-manager-note{background:#f7f9fc;border-left-color:#91a0bd;color:#647287}
+body.dkds-modern-ui .plugin-switch-track{box-shadow:0 1px 2px rgba(25,39,66,.11) inset}
+body.dkds-modern-ui .plugin-switch-thumb{box-shadow:0 2px 5px rgba(25,39,66,.18)}

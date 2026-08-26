@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.24.0';
+  const VERSION='1.25.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -40,7 +40,8 @@
       else if(out!==undefined)row.data=clone(out);
     }catch(err){
       row.status='fail';row.detail=sanitizeText(err?.message||String(err));
-      row.data=err?.stack?{stack:sanitizeText(err.stack)}:null;
+      const diagnostic=err?.data!==undefined?clone(err.data):null;
+      row.data=diagnostic&&typeof diagnostic==='object'?{...diagnostic,...(err?.stack?{stack:sanitizeText(err.stack)}:{})}:(err?.stack?{stack:sanitizeText(err.stack)}:diagnostic);
     }
     row.durationMs=Math.round(now()-started);renderResults();return row;
   }
@@ -115,7 +116,7 @@
   }
 
   async function interactionRenderSchedulingSmoke(){
-    const P=window.DKDSScientificPlot;assert(P?.createScope&&P?.VERSION==='2.3.0','ScientificPlot render scheduler unavailable.');
+    const P=window.DKDSScientificPlot;assert(P?.createScope,'ScientificPlot runtime unavailable.');
     const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:640px;height:260px;pointer-events:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;';
     const framePlot=document.createElement('div'),idlePlot=document.createElement('div');framePlot.style.height='220px';idlePlot.style.height='220px';host.append(framePlot,idlePlot);document.body.appendChild(host);
     const scope=P.createScope('core.automation-render-scheduler'),completion=[];
@@ -429,6 +430,19 @@
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
       for(const id of ['app','activityBar','mainWorkspace','statusBar','manageMenu','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
     });
+    await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
+      const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.6.0'&&caps?.renderer?.backdropBlur===true,'Material Renderer 3.6 backdrop capability unavailable.');
+      assert(window.DKDSTheme?.contractVersion==='3.5.0','Theme Contract 3.5 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
+      const thin=window.DKDSThemeMaterialRenderer?.probeRecipe?.('thin-glass','popover');assert(thin?.status==='REAL_MATERIAL'&&thin?.recipe==='thin-glass',`Thin Glass probe ${thin?.status||'none'} / ${thin?.recipe||'none'}`);assert(/blur\(/.test(thin.backdropFilter||''),`Thin Glass did not compute backdrop blur: ${thin.backdropFilter||'none'}`);assert(!thin.edgeBackdropFilter&&!thin.specularBackground,'Thin Glass must not use Liquid optical layers.');
+      const liquid=window.DKDSThemeMaterialRenderer?.probeRecipe?.('liquid-glass','popover');assert(liquid?.opticalStatus==='REAL_LIQUID_MATERIAL','Liquid Glass renderer regression.');
+      state.coverage.themeMaterialRenderer={caps,thin,liquid};return state.coverage.themeMaterialRenderer;
+    });
+    await runCase('ui.theme-coverage','Theme Coverage Contract','UI / Theme',async()=>{
+      const report=window.DKDSTheme?.coverage?.();assert(report?.contractVersion==='3.5.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
+      assert((report.summary?.partial||0)===0&&(report.summary?.unmanaged||0)===0,`Core Theme coverage incomplete: partial=${report.summary?.partial||0} unmanaged=${report.summary?.unmanaged||0}`);
+      assert((report.summary?.brokenMaterial||0)===0,`Core Theme material renderer broken on ${report.summary?.brokenMaterial||0} surface(s).`);
+      return report;
+    });
     await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{
       const smoke=window.DKDSAutomationHost?.runImportWorkbenchSmoke;
       assert(typeof smoke==='function','Host import-workbench automation smoke is unavailable.');
@@ -547,7 +561,7 @@
       for(const top of tops){
         const row=await runCase(`top.${top.activityId}`,`TOP renderer · ${top.name||top.pluginId}`,'TOP / Electron',async()=>{
           testedTopCount+=1;const capabilitySnapshot=currentProjectPayload?.capabilitySnapshot||window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;const out=await window.electronAPI.diagnosticsRunActivitySmoke({activityId:top.activityId,capabilitySnapshot,capabilityRevision:Number(capabilitySnapshot?.revision)||0});
-          assert(out?.ok,`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);assert(out?.lifecycle?.tested&&out?.lifecycle?.ok,`${out?.pluginId||top.pluginId}: TOP hide/reuse lifecycle failed.`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow,algorithmCategories:top.algorithmCategories};
+          if(!out?.ok){const error=new Error(`${out?.pluginId||top.pluginId}: ${out?.error||'TOP smoke failed.'}`);error.data=out;throw error;}assert(out?.lifecycle?.tested&&out?.lifecycle?.ok,`${out?.pluginId||top.pluginId}: TOP hide/reuse lifecycle failed.`);assert(out?.rendererData?.themeRenderer?.renderer?.backdropBlur===true&&out?.rendererData?.themeRenderer?.recipes?.['thin-glass']===true,`${out?.pluginId||top.pluginId}: dedicated TOP Thin Glass material renderer capability missing.`);const materialStatus=String(out?.rendererData?.themeMaterialProbe?.status||'');assert(!['BROKEN_MATERIAL_RENDERER','BROKEN_OPTICAL_RENDERER','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','ENGINE_UNSUPPORTED'].includes(materialStatus),`${out?.pluginId||top.pluginId}: dedicated TOP material probe failed (${materialStatus||'missing'}).`);return {...out,isSuper:top.isSuper,hadWindow:top.hadWindow,algorithmCategories:top.algorithmCategories};
         });
         if(row.status==='pass')passedTopCount+=1;
         topOutcomes.push({pluginId:top.pluginId,activityId:top.activityId,status:row.status,detail:row.detail||''});
@@ -557,6 +571,8 @@
         assert(passedTopCount===tops.length,`${tops.length-passedTopCount}/${tops.length} TOP renderer(s) failed readiness.`);
         return {discovered:tops.length,tested:testedTopCount,passed:passedTopCount,failed:tops.length-passedTopCount,activities:tops.map(row=>row.activityId)};
       });
+      const topCoverageComplete=testedTopCount===tops.length&&passedTopCount===tops.length;
+      const topDependencySkip={skip:!topCoverageComplete,skipReason:`TOP readiness incomplete (${passedTopCount}/${tops.length}); dependent profiler was not evaluated.`};
       await runCase('top.startup-profile','TOP startup phase profiling','TOP / Performance',async()=>{
         const rows=state.results.filter(row=>row.id?.startsWith?.('top.')&&!['top.coverage','top.startup-profile'].includes(row.id)&&row.status==='pass');
         assert(rows.length===tops.length,`Startup profiler only received ${rows.length}/${tops.length} successful TOP rows.`);
@@ -577,7 +593,7 @@
           return {activityId:row.data?.activityId||row.id.slice(4),pluginId:row.data?.pluginId||'',readyMs:Number(row.data?.durationMs)||0,rendererTotalMs:Number(renderer.totalMs)||0,navigationMs:Number(main.navigationMs)||0,createToReadyMs:Number(main.createToReadyMs)||0,dependencyCount:Number(renderer.dependencyCount)||renderer.dependencies.length,scriptCount:Number(renderer.scriptCount)||renderer.scripts?.length||0,domainRuntimes:domainRuntimes.filter(id=>loaded.has(id)),algorithmProviders:clone(renderer.algorithmProviders||[]),chartRuntime:clone(chartRuntime),phases:(renderer.phases||[]).map(item=>({name:item.name,durationMs:item.durationMs})),slowDependencies:renderer.dependencies.slice().sort((a,b)=>(Number(b.durationMs)||0)-(Number(a.durationMs)||0)).slice(0,5).map(item=>({name:item.name,durationMs:item.durationMs}))};
         });
         return {profiles};
-      });
+      },topDependencySkip);
       await runCase('top.d3-single-backend','TOP D3 single-backend runtime contract','TOP / Performance',async()=>{
         const rows=state.results.filter(row=>row.id?.startsWith?.('top.')&&!['top.coverage','top.startup-profile','top.d3-single-backend'].includes(row.id)&&row.status==='pass');
         const profiles=rows.map(row=>{
@@ -589,7 +605,7 @@
         });
         assert(profiles.length===tops.length,`D3 single-backend profiler only received ${profiles.length}/${tops.length} TOP rows.`);
         return {profiles};
-      });
+      },topDependencySkip);
       await runCase('top.algorithm-providers','TOP local Algorithm Provider routing','TOP / Performance',async()=>{
         const diag=window.DKDSPlugins?.diagnostics?.()||{};
         const availableProviders=(diag.plugins||[]).filter(row=>row?.enabled&&row?.algorithmProvider===true&&Array.isArray(row?.algorithmCategories)&&row.algorithmCategories.length);
@@ -605,7 +621,7 @@
           return {activityId:top.activityId,pluginId:top.pluginId,categories:[...targetCategories],expectedProviders:expected,loadedProviders:loaded.map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.categories||[])],source:provider.source||''}))};
         });
         return {profiles};
-      });
+      },topDependencySkip);
     }else{
       await runCase('top.unsupported','TOP independent renderer smoke','TOP / Electron',async()=>{}, {skip:true,skipReason:'当前运行环境没有 Electron 独立窗口测试接口。'});
     }

@@ -124,6 +124,8 @@ function shellState(value: unknown): RendererShellState {
     ...row,
     theme: row.theme === 'dark' ? 'dark' : 'light',
     themeTokens: row.themeTokens && typeof row.themeTokens === 'object' ? row.themeTokens as Record<string, string> : {},
+    themeContractVersion: typeof row.themeContractVersion === 'string' ? row.themeContractVersion : '',
+    themeMaterial: row.themeMaterial && typeof row.themeMaterial === 'object' ? row.themeMaterial as RendererShellState['themeMaterial'] : {base:{},roles:{}},
     activities: Array.isArray(row.activities) ? row.activities : [],
     surfaces: Array.isArray(row.surfaces) ? row.surfaces : [],
     actions: Array.isArray(row.actions) ? row.actions : [],

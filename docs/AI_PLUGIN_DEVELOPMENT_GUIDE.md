@@ -43,7 +43,7 @@ my-plugin/
   feature-runtime.js       # shared SUPER/TOP feature composition
   super-layout.js          # thin SUPER adapter only
   window-runtime.js        # thin TOP adapter only
-  style.css                # domain-specific visual tokens only
+  style.css                # domain layout / data-semantic geometry only; application chrome is Core-owned
   README.md
 ```
 
@@ -214,7 +214,7 @@ For modifications to mature scientific engines, compare output against a preserv
 ```bash
 npm run plugin:index
 npm run plugin:validate
-node scripts/check-plugin-boundaries.js
+node tests/check-plugin-boundaries.js
 npm run check
 ```
 

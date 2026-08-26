@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('fs');
+const assert=require('assert');
+const read=file=>fs.readFileSync(file,'utf8');
+const css=read('src/styles/modern/20-plugin-chrome.css');
+const kernel=read('src/core/plugin-kernel/20-contributions-commands.inc');
+assert(!css.includes('@keyframes dkui-menu-in'),'geometric command-menu entrance keyframe must stay removed');
+assert(css.includes('animation:none!important'),'Core menus must not animate into place');
+assert(css.includes('transform:none!important'),'Core menu geometry must stay stationary');
+assert(css.includes(':is(:hover,:active,:focus-visible){transform:none!important}'),'menu items must not lift on hover/press');
+const visibility=kernel.indexOf("menu.style.visibility='hidden';");
+const reveal=kernel.indexOf("menu.classList.remove('hidden');",visibility);
+const position=kernel.indexOf('positionCommandMenuPortal(button,menu);',reveal);
+const show=kernel.indexOf("menu.style.visibility='';",position);
+assert(visibility>=0&&reveal>visibility&&position>reveal&&show>position,'portal must resolve geometry while paint-hidden before reveal');
+console.log('v3.61.83 stationary menu motion contract OK');

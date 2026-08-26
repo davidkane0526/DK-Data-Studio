@@ -1,0 +1,120 @@
+/* Core-owned material role variables.
+   Runtime assigns semantic Material Roles. CSS consumes those roles only;
+   selectors for concrete UI components must not independently assign roles.
+   Material composition maps each role base surface -> role-specific fill/blur.
+   Theme opacity is authored input; Core applies a role-specific legibility floor only
+   when the active recipe is translucent. The legacy --dkds-material-tint alias is
+   retained internally but is not a control/accent tint. */
+
+body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome){
+  --dkds-material-role:chrome;
+  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-blur:var(--dkui-material-chrome-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-chrome-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-chrome-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-chrome-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:58%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-chrome-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-chrome-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-chrome-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-chrome-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-1);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="sidebar"],.dkds-material-role-sidebar){
+  --dkds-material-role:sidebar;
+  --dkds-material-base:var(--dkui-surface-sidebar);
+  --dkds-material-blur:var(--dkui-material-sidebar-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-sidebar-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-sidebar-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-sidebar-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:62%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-sidebar-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-sidebar-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-sidebar-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-sidebar-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="surface"],.dkds-material-role-surface){
+  --dkds-material-role:surface;
+  --dkds-material-base:var(--dkui-surface);
+  --dkds-material-blur:var(--dkui-material-surface-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-surface-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-surface-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-surface-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:100%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-surface-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-surface-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-surface-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-surface-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-1);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="elevated"],.dkds-material-role-elevated){
+  --dkds-material-role:elevated;
+  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-blur:var(--dkui-material-elevated-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-elevated-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-elevated-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-elevated-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:62%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-elevated-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-elevated-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-elevated-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-elevated-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-2);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover){
+  --dkds-material-role:popover;
+  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-blur:var(--dkui-material-popover-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-popover-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-popover-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-popover-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:78%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-popover-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-popover-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-popover-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-popover-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-float);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control){
+  --dkds-material-role:control;
+  --dkds-material-base:var(--dkui-control-bg);
+  --dkds-material-blur:var(--dkui-material-control-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-control-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-control-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-control-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:100%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-control-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-control-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-control-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-control-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="floating"],.dkds-material-role-floating){
+  --dkds-material-role:floating;
+  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-blur:var(--dkui-material-floating-blur,var(--dkui-material-blur));
+  --dkds-material-blur-strong:var(--dkui-material-floating-blur-strong,var(--dkui-material-blur-strong));
+  --dkds-material-saturation:var(--dkui-material-floating-saturation,var(--dkui-material-saturation));
+  --dkds-material-authored-opacity:var(--dkui-material-floating-tint-opacity,var(--dkui-material-tint-opacity));
+  --dkds-material-fill-floor:58%;
+  --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
+  --dkds-material-tint:var(--dkds-material-authored-opacity);
+  --dkds-material-specular:var(--dkui-material-floating-specular-highlight,var(--dkui-specular-highlight));
+  --dkds-material-inner:var(--dkui-material-floating-inner-highlight,var(--dkui-inner-highlight));
+  --dkds-material-edge:var(--dkui-material-floating-glass-edge,var(--dkui-glass-edge));
+  --dkds-material-noise:var(--dkui-material-floating-noise-opacity,var(--dkui-material-noise-opacity));
+  --dkds-material-shadow:var(--dkui-shadow-float);
+}

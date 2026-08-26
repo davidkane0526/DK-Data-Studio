@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const os = require('os');
+const execFileAsync = promisify(execFile);
 
 const root = path.resolve(__dirname, '..');
 const jsFiles = [];
@@ -17,14 +20,25 @@ function walk(dir) {
 walk(root);
 
 let failed = false;
-for (const file of jsFiles) {
-  const r = spawnSync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8' });
-  if (r.status !== 0) {
-    failed = true;
-    console.error(`Syntax failed: ${path.relative(root, file)}`);
-    console.error(r.stderr);
+async function checkSyntaxFiles() {
+  const concurrency = Math.max(2, Math.min(12, os.cpus()?.length || 4));
+  let cursor = 0;
+  async function worker() {
+    while (cursor < jsFiles.length) {
+      const file = jsFiles[cursor++];
+      try { await execFileAsync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 }); }
+      catch (err) {
+        failed = true;
+        console.error(`Syntax failed: ${path.relative(root, file)}`);
+        console.error(err?.stderr || err?.message || err);
+      }
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, jsFiles.length)) }, () => worker()));
 }
+
+async function main() {
+  await checkSyntaxFiles();
 
 const required = [
   'src/core/plugin-kernel.js',
@@ -34,7 +48,7 @@ const required = [
   'src/core/formula-engine.js',
   'src/core/parameter-schema.js',
   'src/core/workflow-engine.js',
-  'src/plugins/plugin-index.generated.js',
+  'src/generated/plugin-index.js',
   'src/science/common.js',
   'src/science/import.js',
   'src/science/peaks.js',
@@ -43,11 +57,13 @@ const required = [
   'src/science/identity.js',
   'src/science/physics.js',
   'src/science/gate.js',
-  'scripts/verify-science-parity.js',
-  'scripts/test-data-center-core.js',
-  'scripts/test-plugin-package.js',
+  'tests/verify-science-parity.js',
+  'tests/test-data-center-core.js',
+  'tests/test-plugin-package.js',
   'scripts/package-plugin.js',
-  'plugin-package.js',
+  'desktop/plugin-package.js',
+  'sdk/theme-contract.js',
+  'sdk/THEME_CONTRACT.md',
   'src/plugins/data-center/plugin.json',
   'src/plugins/data-center/plugin.js',
   'mobile/App.tsx',
@@ -69,7 +85,7 @@ const required = [
   'sdk/templates/workspace-plugin/plugin.js',
   'sdk/templates/algorithm-provider/plugin.json',
   'sdk/templates/algorithm-provider/plugin.js',
-  'scripts/test-plugin-sdk-v357.js',
+  'tests/test-plugin-sdk-v357.js',
   'docs/ARCHITECTURE.md',
   'docs/PLUGIN_API.md',
   'docs/AI_PLUGIN_DEVELOPMENT_GUIDE.md',
@@ -82,12 +98,11 @@ const required = [
   'docs/PLUGIN_PACKAGES.md',
   'docs/PROJECT_STRUCTURE.md',
   'docs/DEVELOPMENT_GUIDE.md',
-  'docs/HANDOFF_NEXT_SESSION.md',
   'docs/guides/TOOLBOX_CN.md',
   'services/update-server/server.js',
   'services/update-server/publish-release.js',
   'config/update-config.default.json',
-  'scripts/check-plugin-boundaries.js',
+  'tests/check-plugin-boundaries.js',
   'src/plugins/resonance-detector-robust/plugin.json',
   'src/plugins/resonance-detector-robust/plugin.js',
   'examples/external-plugins/resonance-detector-template/plugin.json',
@@ -119,3 +134,5 @@ if (JSON.stringify(allCmds) !== JSON.stringify(expectedCmds)) {
 
 if (failed) process.exit(2);
 console.log(`Project check OK: ${jsFiles.length} JavaScript files + required architecture/docs/toolbox layout.`);
+}
+main().catch(err => { console.error(err); process.exit(2); });

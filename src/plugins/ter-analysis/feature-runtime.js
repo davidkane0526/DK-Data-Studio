@@ -46,7 +46,6 @@
         position:sticky;
         top:8px;
         z-index:30;
-        box-shadow:var(--surface-shadow-raised);
       }
       #terMaxPage .ter-resistance-card .analysis-chart{
         min-height:380px;
@@ -61,15 +60,11 @@
         justify-content:space-between;
         gap:8px;
         padding:5px 8px 5px 10px;
-        background:var(--surface-secondary);
-        border-bottom:1px solid var(--border-subtle);
         flex-wrap:wrap;
       }
       #terMaxPage .ter-card-title-text{
         min-width:0;
         flex:1 1 150px;
-        font-size:12px;
-        font-weight:700;
       }
       #terMaxPage .ter-chart-actions{
         display:flex;
@@ -81,31 +76,20 @@
       #terMaxPage .ter-chart-actions button,
       #terMaxPage .ter-resistance-card-header button{
         min-width:0;
-        min-height:25px;
-        height:25px;
-        padding:2px 7px;
-        font-size:10px;
-        line-height:1;
         white-space:nowrap;
       }
       #terMaxPage .ter-resistance-hint{
         margin:7px 10px 0;
-        color:var(--text-secondary);
-        font-size:11px;
         line-height:1.45;
       }
       #terMaxPage .ter-resistance-selection{
         margin:6px 10px 0;
         min-height:20px;
-        color:var(--text-primary);
-        font-size:11px;
       }
-      #terMaxPage .ter-resistance-selection strong{color:var(--danger)}
       #terMaxPage .ter-layout-controls{
         align-items:center;
       }
       #terMaxPage .ter-layout-controls strong{
-        color:var(--text-primary);
         margin-right:2px;
       }
       #terMaxPage .ter-layout-controls label{
@@ -116,11 +100,6 @@
       #terMaxPage .ter-layout-controls select{
         width:72px;
         min-width:72px;
-        height:30px;
-      }
-      #terMaxPage .ter-layout-controls .ter-layout-note{
-        color:var(--text-secondary);
-        font-size:11px;
       }
       #terMaxPage .ter-layout-controls .ter-sticky-check{
         padding:0 4px;
@@ -128,17 +107,10 @@
       #terMaxPage .ter-layout-controls .ter-sticky-check input{
         min-width:auto;
         width:auto;
-        height:auto;
         margin:0;
       }
       #terMaxPage .heatmap-square-card .ter-heatmap-square{
         width:100%;
-      }
-      .dkds-pointer-coarse #terMaxPage .ter-chart-actions button,
-      .dkds-pointer-coarse #terMaxPage .ter-resistance-card-header button{
-        min-height:var(--dkds-touch-target,44px);
-        height:auto;
-        padding:6px 9px;
       }
       @media(max-width:1180px){
         #terMaxPage .ter-resistance-card .analysis-chart{height:500px}
@@ -712,28 +684,28 @@
         customdata:maxVg.map(d=>[d.vdsAtMax,d.iUp,d.iDown,d.rUp,d.rDown,d.manual?'手动':'自动']),
         hovertemplate:'Vg=%{x}<br>TER_Max–Vg=%{y:.5g}%<br>Vd@max=%{customdata[0]:.5g} V<br>I_up=%{customdata[1]:.5g} A<br>I_down=%{customdata[2]:.5g} A<br>%{customdata[5]} TER_Max<extra></extra>'
       }],{
-        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER_Max–Vg (%)',gridcolor:'#edf0f5'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vg-manual'
+        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vg (V)'},yaxis:{title:'TER_Max–Vg (%)'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vg-manual'
       },clickRow(maxVg,selectionFromMaxVg,'terMaxVgPlot'));
       react('terMaxVgArgPlot',[{
         x:maxVg.map(d=>d.vg),y:maxVg.map(d=>d.vdsAtMax),mode:'lines+markers',line:{width:2},marker:{size:8},
         customdata:maxVg.map(d=>[d.terMax,d.manual?'手动':'自动']),
         hovertemplate:'Vg=%{x}<br>Vd@TER_Max–Vg=%{y:.5g} V<br>TER_Max=%{customdata[0]:.5g}%<br>%{customdata[1]} TER_Max<extra></extra>'
       }],{
-        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vd @ TER_Max–Vg (V)',gridcolor:'#edf0f5'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vg-arg-manual'
+        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vg (V)'},yaxis:{title:'Vd @ TER_Max–Vg (V)'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vg-arg-manual'
       },clickRow(maxVg,selectionFromMaxVg,'terMaxVgArgPlot'));
       react('terMaxVdPlot',[{
         x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.terMax),mode:'lines+markers',line:{width:2},marker:{size:7},
         customdata:maxVd.map(d=>[d.vgAtMax,d.iUp,d.iDown,d.rUp,d.rDown,d.manual?'手动':'自动']),
         hovertemplate:'Vd=%{x}<br>TER_Max–Vd=%{y:.5g}%<br>Vg@max=%{customdata[0]:.5g} V<br>I_up=%{customdata[1]:.5g} A<br>I_down=%{customdata[2]:.5g} A<br>%{customdata[5]} TER_Max<extra></extra>'
       }],{
-        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:'TER_Max–Vd (%)',gridcolor:'#edf0f5'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-manual'
+        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)'},yaxis:{title:'TER_Max–Vd (%)'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-manual'
       },clickRow(maxVd,selectionFromMaxVd,'terMaxVdPlot'));
       react('terMaxVdArgPlot',[{
         x:maxVd.map(d=>d.vds),y:maxVd.map(d=>d.vgAtMax),mode:'lines+markers',line:{width:2},marker:{size:7},
         customdata:maxVd.map(d=>[d.terMax,d.manual?'手动':'自动']),
         hovertemplate:'Vd=%{x}<br>Vg@TER_Max–Vd=%{y:.5g} V<br>TER_Max=%{customdata[0]:.5g}%<br>%{customdata[1]} TER_Max<extra></extra>'
       }],{
-        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vg @ TER_Max–Vd (V)',gridcolor:'#edf0f5'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-arg-manual'
+        margin:{l:72,r:20,t:20,b:60},xaxis:{title:'Vd (V)'},yaxis:{title:'Vg @ TER_Max–Vd (V)'},dragmode:'zoom',autosize:true,uirevision:'ter-max-vd-arg-manual'
       },clickRow(maxVd,selectionFromMaxVd,'terMaxVdArgPlot'));
 
       const vgTable=dom.query('#terMaxVgTable');
@@ -828,7 +800,7 @@
       traces.push({x:[],y:[],mode:'markers',showlegend:false,hoverinfo:'text',marker:{size:12,color:'#dc2626',symbol:'circle',line:{color:'#fff',width:1.5}},text:[]});
       traces.push({x:[],y:[],mode:'markers',showlegend:false,hoverinfo:'text',marker:{size:12,color:'#dc2626',symbol:'diamond',line:{color:'#fff',width:1.5}},text:[]});
       resistanceBaseRevision=resultRevision;
-      const rendered=ctx.ui.scientificPlot.react(plot,traces,{margin:{l:82,r:24,t:22,b:92},xaxis:{title:'Vds (V)',gridcolor:'#edf0f5',zeroline:true,zerolinecolor:'#cbd5e1',automargin:true},yaxis:{title:'R = |Vds / I| (Ω)',type:'log',gridcolor:'#edf0f5',automargin:true},legend:{orientation:'h',x:0,y:-0.23,xanchor:'left',yanchor:'top',font:{size:10},groupclick:'togglegroup'},hovermode:'closest',dragmode:'zoom',autosize:true,shapes:[],uirevision:`ter-resistance-${resultRevision}`},{responsive:true,scrollZoom:true,displaylogo:false,modeBarButtonsToAdd:['select2d'],toImageButtonOptions:{format:'png',filename:'TER_resistance_voltage',width:1400,height:1000,scale:2}},{interaction:T.interaction,source:'ter-resistance',renderKey:`ter-resistance:${resultRevision}`,renderPriority:'frame'});
+      const rendered=ctx.ui.scientificPlot.react(plot,traces,{margin:{l:82,r:24,t:22,b:92},xaxis:{title:'Vds (V)',zeroline:true,automargin:true},yaxis:{title:'R = |Vds / I| (Ω)',type:'log',automargin:true},legend:{orientation:'h',x:0,y:-0.23,xanchor:'left',yanchor:'top',font:{size:10},groupclick:'togglegroup'},hovermode:'closest',dragmode:'zoom',autosize:true,shapes:[],uirevision:`ter-resistance-${resultRevision}`},{responsive:true,scrollZoom:true,displaylogo:false,modeBarButtonsToAdd:['select2d'],toImageButtonOptions:{format:'png',filename:'TER_resistance_voltage',width:1400,height:1000,scale:2}},{interaction:T.interaction,source:'ter-resistance',renderKey:`ter-resistance:${resultRevision}`,renderPriority:'frame'});
       Promise.resolve(rendered).then(()=>applyResistanceSelection()).catch(err=>console.warn('[TER resistance render]',err));
     }
 

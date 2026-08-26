@@ -18,3 +18,15 @@ mobile/android/
 mobile/ios/
 mobile/assets/web/
 mobile-dist/
+
+# Generated runtime/build products. Normal start/test/dist commands recreate them.
+src/app.js
+src/core/ui-infrastructure.js
+src/core/plugin-kernel.js
+src/style.css
+src/ui-modern.css
+src/generated/plugin-index.js
+src/generated/sdk-authoring-reference.js
+assets/dkds-icon.png
+mobile/assets/icon.png
+mobile/assets/adaptive-icon.png

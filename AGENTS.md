@@ -176,7 +176,7 @@ Desktop runtime supports trusted local `.dkplugin` packages. Read `docs/PLUGIN_P
 
 ## v3.20 shell / tooling / repository hygiene
 
-Before changing the desktop header, read `docs/DEVELOPMENT_GUIDE.md` and `docs/HANDOFF_NEXT_SESSION.md`.
+Before changing the desktop header, read `docs/DEVELOPMENT_GUIDE.md` and `docs/ARCHITECTURE.md`.
 
 The top command shell is intentionally one row above project tabs. Do not restore a permanent second context-toolbar row. Plugin actions must use `activity`, `priority`, `order`, and `section`; the host moves lower-priority actions into overflow.
 

@@ -1,0 +1,1605 @@
+const { app, BrowserWindow, dialog, ipcMain, clipboard, Menu, shell, nativeTheme } = require('electron');
+const { safeStorage } = require('electron');
+const { LanUpdateClient } = require('./update-client');
+const { ProjectFileSafety } = require('./project-file-safety');
+const { LanWebServer } = require('./lan-web-server');
+const { resolvePluginWindow, listPluginWindows } = require('./plugin-window-manager');
+const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
+const APP_ROOT = path.resolve(__dirname, '..');
+const crypto = require('crypto');
+const os = require('os');
+const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
+const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
+const PluginOverridePolicy = require('./plugin-override-policy');
+const PluginSdkContract = require('../sdk/contract.json');
+const SmbService = require('../services/smb-service');
+const { McpServer } = require('../services/mcp-server');
+
+const DKDSProjectFormat = require('../src/core/project-format');
+const APP_NAME = 'DK Data Studio';
+const APP_ID = 'com.dk.datastudio';
+
+// Keep development, installed and portable Windows identities consistent.
+app.setName(APP_NAME);
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
+
+let lanUpdater = null;
+let lanWebServer = null;
+const auxiliaryWindows = new Map();
+const auxiliaryBootstrap = new Map();
+const auxiliaryReady = new Set();
+const auxiliaryFailures = new Map();
+const auxiliaryPendingShow = new Set();
+const auxiliaryStartupProfiles = new Map();
+const forcedAuxiliaryClose = new WeakSet();
+const pendingCapabilityInvocations = new Map();
+const pendingAuxiliaryRoleSnapshots = new Map();
+let capabilityRequestSeq = 0;
+let auxiliaryRoleSnapshotSeq = 0;
+let appQuitting = false;
+let appearanceTheme = '';
+let primaryWindow = null;
+let mcpServer = null;
+let mcpRequestSeq = 0;
+const pendingMcpRequests = new Map();
+let projectFileSafety = null;
+
+function getProjectFileSafety(){
+  if(projectFileSafety)return projectFileSafety;
+  const userData=app.getPath('userData');
+  projectFileSafety=new ProjectFileSafety({
+    recoveryRoot:path.join(userData,'project-recovery'),
+    auditPath:path.join(userData,'project-file-audit.jsonl'),
+    parseBytes:bytes=>DKDSProjectFormat.parseProjectBytes(bytes)
+  });
+  return projectFileSafety;
+}
+
+function appearanceSettingsPath(){return path.join(app.getPath('userData'),'appearance.json');}
+function readPersistedAppearanceTheme(){
+  try{
+    const value=String(JSON.parse(fs.readFileSync(appearanceSettingsPath(),'utf8'))?.theme||'').toLowerCase();
+    return ['light','dark'].includes(value)?value:'';
+  }catch{return '';}
+}
+function nativeWindowBackground(theme=appearanceTheme){
+  const effective=['light','dark'].includes(theme)?theme:(nativeTheme.shouldUseDarkColors?'dark':'light');
+  return effective==='dark'?'#151922':'#f5f7fb';
+}
+function applyNativeAppearance(value,{persist=false,broadcast=true}={}){
+  const next=String(value||'').toLowerCase();
+  if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
+  appearanceTheme=next;
+  // Electron nativeTheme owns the non-HTML window chrome on Windows/macOS.
+  // Keeping it in the same transaction as the renderer theme prevents the
+  // native title bar from remaining light while a plugin workspace is dark.
+  try{nativeTheme.themeSource=next;}catch{}
+  const background=nativeWindowBackground(next);
+  for(const win of BrowserWindow.getAllWindows()){
+    if(!win||win.isDestroyed())continue;
+    try{win.setBackgroundColor(background);}catch{}
+    if(broadcast)try{win.webContents.send('system:appearanceThemeChanged',next);}catch{}
+  }
+  if(persist){
+    try{fs.mkdirSync(path.dirname(appearanceSettingsPath()),{recursive:true});fs.writeFileSync(appearanceSettingsPath(),JSON.stringify({theme:next},null,2)+'\n','utf8');}catch(err){console.warn('[DKDS appearance:persist]',err);}
+  }
+  return next;
+}
+
+function externalPluginDirectory() {
+  return path.join(app.getPath('userData'), 'plugins');
+}
+
+function ensureExternalPluginDirectory() {
+  const dir = externalPluginDirectory();
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function pluginOverrideDirectory() {
+  return path.join(app.getPath('userData'), 'plugin-overrides');
+}
+function pluginHistoryRootDirectory(){return path.join(app.getPath('userData'),'plugin-history');}
+function pluginHistoryDirectory(id){
+  const pluginId=String(id||'');
+  if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的插件历史 ID。');
+  return path.join(pluginHistoryRootDirectory(),pluginId);
+}
+function archiveExternalPluginPackage(pkg,reason='update'){
+  if(!pkg?.manifest?.id)return null;
+  const normalized=normalizePluginPackage(pkg,{allowBuiltinId:false});
+  const dir=pluginHistoryDirectory(normalized.manifest.id);fs.mkdirSync(dir,{recursive:true});
+  const version=String(normalized.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  const fileName=`${version}--${stamp}.dkplugin`;
+  const payload={...normalized,archivedAt:new Date().toISOString(),archiveReason:String(reason||'update')};
+  atomicWritePluginPackage(path.join(dir,fileName),payload);
+  return fileName;
+}
+function listExternalPluginHistory(id){
+  const dir=pluginHistoryDirectory(id);const versions=[];if(!fs.existsSync(dir))return versions;
+  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){
+    try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});if(pkg.manifest.id!==id)continue;versions.push({token:name,version:String(pkg.manifest.version||''),name:String(pkg.manifest.name||id),archivedAt:String(raw.archivedAt||''),archiveReason:String(raw.archiveReason||'update')});}catch{}
+  }
+  return versions;
+}
+
+function ensurePluginOverrideDirectory() {
+  const dir=pluginOverrideDirectory();
+  fs.mkdirSync(dir,{recursive:true});
+  return dir;
+}
+
+function pluginLanStatePath(){return path.join(app.getPath('userData'),'plugin-lan-update-state.json');}
+function readPluginLanState(){
+  try{return JSON.parse(fs.readFileSync(pluginLanStatePath(),'utf8'))||{};}catch{return {};}
+}
+function writePluginLanState(state){
+  const target=pluginLanStatePath();fs.mkdirSync(path.dirname(target),{recursive:true});
+  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp,JSON.stringify(state,null,2)+'\n','utf8');
+  if(fs.existsSync(target))fs.rmSync(target,{force:true});
+  fs.renameSync(tmp,target);
+}
+function atomicWritePluginPackage(target,pkg){
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp,JSON.stringify(pkg,null,2)+'\n','utf8');
+  if(fs.existsSync(target))fs.rmSync(target,{force:true});
+  fs.renameSync(tmp,target);
+}
+
+function builtinPluginIds() {
+  const base = path.join(app.getAppPath(), 'src', 'plugins');
+  const ids = new Set();
+  try {
+    for (const name of fs.readdirSync(base)) {
+      if (name.startsWith('_')) continue;
+      const manifestPath = path.join(base, name, 'plugin.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (manifest?.id) ids.add(String(manifest.id));
+      } catch {}
+    }
+  } catch {}
+  return ids;
+}
+
+const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();
+if(!PLUGIN_API_VERSION)throw new Error('sdk/contract.json is missing pluginApiVersion.');
+
+const pendingPluginInstalls=new Map();
+function pluginInstallCompatibilityDetails(result){
+  return (result?.issues||[]).map(issue=>({
+    kind:String(issue?.kind||'compatibility'),
+    id:String(issue?.id||''),
+    required:String(issue?.required||''),
+    actual:String(issue?.actual||'missing')
+  }));
+}
+function pluginInstallErrorPayload(error,{code='PLUGIN_INSTALL_FAILED',title='插件安装失败',manifest=null,compatibility=null}={}){
+  const message=String(error?.message||error||'未知错误').replace(/^Error:\s*/,'').trim();
+  return {
+    code,
+    title,
+    message,
+    plugin:manifest?{id:String(manifest.id||''),name:String(manifest.name||manifest.id||''),version:String(manifest.version||''),type:String(manifest.pluginType||'extension')} : null,
+    compatibility:compatibility?{
+      compatible:!!compatibility.compatible,
+      issues:pluginInstallCompatibilityDetails(compatibility),
+      appVersion:String(app.getVersion()||''),
+      pluginApiVersion:PLUGIN_API_VERSION,
+      requiredApp:String(manifest?.compatibility?.app||'*'),
+      requiredPluginApi:String(manifest?.compatibility?.pluginApi||manifest?.apiVersion||'*')
+    }:null
+  };
+}
+function sweepPendingPluginInstalls(){
+  const cutoff=Date.now()-10*60*1000;
+  for(const [token,row] of pendingPluginInstalls)if(Number(row?.createdAt||0)<cutoff)pendingPluginInstalls.delete(token);
+}
+function readBuiltinPluginManifests(){
+  const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
+  try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
+  return rows;
+}
+
+function readBuiltinPluginPackage(id){
+  const pluginId=String(id||'');const base=path.join(app.getAppPath(),'src','plugins');
+  for(const name of fs.readdirSync(base).sort()){
+    if(name.startsWith('_'))continue;const folder=path.join(base,name),manifestPath=path.join(folder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
+    let manifest;try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}catch{continue;}if(String(manifest?.id||'')!==pluginId)continue;
+    const referenced=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]);
+    if(fs.existsSync(path.join(folder,'README.md')))referenced.add('README.md');const files={};
+    for(const rel of referenced){const normalized=String(rel).replace(/\\/g,'/');const file=path.resolve(folder,normalized);if(!file.startsWith(folder+path.sep)&&file!==folder)throw new Error(`Unsafe built-in plugin path: ${normalized}`);if(!fs.existsSync(file)||!fs.statSync(file).isFile())throw new Error(`Built-in plugin file missing: ${normalized}`);files[normalized]=fs.readFileSync(file,'utf8');}
+    return normalizePluginPackage({schema:1,manifest,files},{allowBuiltinId:true});
+  }
+  return null;
+}
+
+function currentPluginPackage(id){
+  const pluginId=String(id||'');
+  const override=installedPluginOverridePackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(override)return normalizePluginPackage(override,{allowBuiltinId:true});
+  const external=installedExternalPluginPackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(external)return normalizePluginPackage(external,{allowBuiltinId:false});
+  return readBuiltinPluginPackage(pluginId);
+}
+function installedPluginVersionMap(){
+  const map=new Map();for(const row of readBuiltinPluginManifests())map.set(String(row.manifest.id),String(row.manifest.version||''));
+  for(const pkg of installedPluginOverridePackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
+  for(const pkg of installedExternalPluginPackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
+  return map;
+}
+function currentCompatibilityEnvironment(){return {appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,themeContractVersion:String(PluginSdkContract.themeContractVersion||''),installedVersions:installedPluginVersionMap()};}
+function packageCompatibility(manifest){return AlgorithmPackageCatalog.compatibility(manifest,currentCompatibilityEnvironment());}
+function assertPackageCompatible(manifest,action='install'){const result=packageCompatibility(manifest);if(result.compatible)return result;const details=result.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ');throw new Error(`Plugin package is not compatible with this DK Data Studio environment for ${action}: ${details}`);}
+function readAlgorithmHistoryCatalogPackages(){
+  const root=pluginHistoryRootDirectory(),rows=[];if(!fs.existsSync(root))return rows;
+  for(const id of fs.readdirSync(root).sort()){let dir;try{dir=pluginHistoryDirectory(id);}catch{continue;}if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});rows.push({manifest:pkg.manifest,source:'history',token:name,current:false,installed:false});}catch{}}}
+  return rows;
+}
+function algorithmPackageCatalog(ref={}){
+  const builtin=readBuiltinPluginManifests();const overrides=installedPluginOverridePackages().map(pkg=>({manifest:pkg.manifest,source:'override',current:true,installed:true}));const external=installedExternalPluginPackages().map(pkg=>({manifest:pkg.manifest,source:'external',current:true,installed:true}));const history=readAlgorithmHistoryCatalogPackages();
+  const result=AlgorithmPackageCatalog.catalog([...builtin,...overrides,...external,...history],ref,currentCompatibilityEnvironment());
+  return {...result,appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION};
+}
+
+function readInstalledExternalPlugins() {
+  const dir = ensureExternalPluginDirectory();
+  const packages = [];
+  const errors = [];
+  for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.dkplugin')).sort()) {
+    const filePath = path.join(dir, name);
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const pkg = normalizePluginPackage(JSON.parse(raw), { allowBuiltinId:false });
+      if (builtinPluginIds().has(pkg.manifest.id)) throw new Error(`Plugin id conflicts with built-in plugin: ${pkg.manifest.id}`);
+      packages.push({ ...pkg, installedPath:filePath });
+    } catch (err) {
+      errors.push({ file:name, error:err?.message || String(err) });
+    }
+  }
+  return { packages, errors, directory:dir };
+}
+
+function installedExternalPluginPackages() {
+  return readInstalledExternalPlugins().packages || [];
+}
+
+function readInstalledPluginOverrides() {
+  const dir=ensurePluginOverrideDirectory();
+  const packages=[];const errors=[];const builtinIds=builtinPluginIds();
+  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort()){
+    const filePath=path.join(dir,name);
+    try{
+      const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(filePath,'utf8')),{allowBuiltinId:true});
+      if(!pkg.manifest.id.startsWith('builtin.')||!builtinIds.has(pkg.manifest.id))throw new Error(`Override target is not a packaged built-in plugin: ${pkg.manifest.id}`);
+      packages.push({...pkg,installedPath:filePath});
+    }catch(err){errors.push({file:name,error:err?.message||String(err)});}
+  }
+  return {packages,errors,directory:dir};
+}
+function classifyInstalledPluginOverrides(result=readInstalledPluginOverrides()){
+  return PluginOverridePolicy.classify(result?.packages||[],readBuiltinPluginManifests());
+}
+function installedPluginOverridePackages(){return classifyInstalledPluginOverrides().active;}
+
+async function installLanPluginPackage(buffer,metadata={}) {
+  const raw=Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer||'');
+  if(!raw.length)throw new Error('LAN plugin package is empty.');
+  const sha256=crypto.createHash('sha256').update(raw).digest('hex');
+  if(metadata.sha256&&String(metadata.sha256).toLowerCase()!==sha256)throw new Error('LAN plugin package SHA256 mismatch.');
+  const parsed=JSON.parse(raw.toString('utf8'));
+  const id=String(parsed?.manifest?.id||'');
+  if(metadata.id&&String(metadata.id)!==id)throw new Error(`LAN plugin id mismatch: ${id} != ${metadata.id}`);
+  const isBuiltin=id.startsWith('builtin.');
+  const pkg=normalizePluginPackage(parsed,{allowBuiltinId:isBuiltin});
+  assertPackageCompatible(pkg.manifest,'LAN update');
+  const state=readPluginLanState();
+  if(state[id]?.sha256===sha256)return {installed:false,skipped:true,id,version:pkg.manifest.version,sha256};
+
+  let target,kind;
+  if(isBuiltin){
+    if(!builtinPluginIds().has(id))throw new Error(`LAN update cannot introduce unknown built-in plugin: ${id}`);
+    const bundled=readBuiltinPluginManifests().find(row=>String(row?.manifest?.id||'')===id)?.manifest||null;
+    const bundledVersion=String(bundled?.version||'0.0.0');
+    if(!PluginOverridePolicy.isNewerThanBuiltin(pkg,bundledVersion)){
+      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-bundled',bundledVersion};
+    }
+    const installedOverride=readInstalledPluginOverrides().packages.find(row=>String(row?.manifest?.id||'')===id)||null;
+    if(installedOverride&&!PluginOverridePolicy.isNewerThanBuiltin(pkg,String(installedOverride.manifest.version||'0.0.0'))){
+      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-installed-override',installedVersion:String(installedOverride.manifest.version||'')};
+    }
+    target=path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(id));
+    kind='builtin-override';
+  }else{
+    const existing=readInstalledExternalPlugins().packages.find(row=>row.manifest.id===id);
+    if(!existing)return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'external-plugin-not-installed'};
+    target=existing.installedPath;
+    kind='external-update';
+  }
+
+  const installed={...pkg,installedAt:new Date().toISOString()};
+  atomicWritePluginPackage(target,installed);
+  state[id]={sha256,version:installed.manifest.version,revision:metadata.revision||metadata.publishedAt||installed.installedAt,installedAt:installed.installedAt,kind};
+  writePluginLanState(state);
+  const event={id,name:installed.manifest.name,version:installed.manifest.version,kind,sha256,requiresRestart:true};
+  for(const win of BrowserWindow.getAllWindows())if(!win.isDestroyed())win.webContents.send('plugins:lanUpdate',event);
+  return {installed:true,...event};
+}
+
+function resolveConfiguredPluginWindow(activityId) {
+  return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
+}
+
+function listConfiguredPluginWindows() {
+  return listPluginWindows(app.getAppPath(), installedExternalPluginPackages(), installedPluginOverridePackages());
+}
+
+const PACKAGED_TRIAL_DAYS = 30;
+const PACKAGED_EXPIRY_MAX_TIMER_MS = 12 * 60 * 60 * 1000;
+
+function readPackagedBuildInfo() {
+  const infoPath = path.join(APP_ROOT, 'build-info.json');
+  try {
+    const raw = fs.readFileSync(infoPath, 'utf8');
+    const info = JSON.parse(raw);
+    if (
+      info?.buildType !== 'packaged-trial' ||
+      Number(info?.durationDays) !== PACKAGED_TRIAL_DAYS ||
+      !Number.isFinite(Number(info?.builtAtMs)) ||
+      !Number.isFinite(Number(info?.expiresAtMs)) ||
+      Number(info.expiresAtMs) <= Number(info.builtAtMs)
+    ) return null;
+    return info;
+  } catch {
+    return null;
+  }
+}
+
+function packagedBuildIsExpired(info, nowMs = Date.now()) {
+  return !info || nowMs >= Number(info.expiresAtMs);
+}
+
+function exitImmediately() {
+  process.exit(0);
+}
+
+function enforcePackagedExpiry() {
+  if (!app.isPackaged) return;
+  const info = readPackagedBuildInfo();
+  if (packagedBuildIsExpired(info)) {
+    exitImmediately();
+    return;
+  }
+  const scheduleNextExpiryCheck = () => {
+    const remainingMs = Number(info.expiresAtMs) - Date.now();
+    if (remainingMs <= 0) {
+      exitImmediately();
+      return;
+    }
+    const delayMs = Math.min(remainingMs, PACKAGED_EXPIRY_MAX_TIMER_MS);
+    const timer = setTimeout(scheduleNextExpiryCheck, delayMs);
+    if (typeof timer.unref === 'function') timer.unref();
+  };
+  scheduleNextExpiryCheck();
+}
+
+function commonWindowPreferences() {
+  return {
+    preload: path.join(__dirname, 'preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: false
+  };
+}
+
+
+function agentSecretsPath(){return path.join(app.getPath('userData'),'agent-secrets.json');}
+function readAgentSecrets(){
+  try{return JSON.parse(fs.readFileSync(agentSecretsPath(),'utf8'))||{};}catch{return {};}
+}
+function writeAgentSecrets(value){
+  const target=agentSecretsPath();fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.writeFileSync(target,JSON.stringify(value,null,2)+'\n','utf8');
+}
+function secretKeyName(key){
+  const value=String(key||'default').trim();
+  if(!/^[A-Za-z0-9._-]{1,80}$/.test(value))throw new Error('无效的密钥标识。');
+  return value;
+}
+function storeAgentSecret(key,value){
+  const name=secretKeyName(key),rows=readAgentSecrets(),plain=String(value||'');
+  if(!plain){delete rows[name];writeAgentSecrets(rows);return true;}
+  if(!safeStorage.isEncryptionAvailable())throw new Error('当前系统安全存储不可用，未保存 API Key。');
+  rows[name]={encrypted:safeStorage.encryptString(plain).toString('base64')};writeAgentSecrets(rows);return true;
+}
+function loadAgentSecret(key){
+  const name=secretKeyName(key),row=readAgentSecrets()[name];if(!row?.encrypted)return '';
+  if(!safeStorage.isEncryptionAvailable())return '';
+  try{return safeStorage.decryptString(Buffer.from(row.encrypted,'base64'));}catch{return '';}
+}
+async function agentHttpJson(payload={}){
+  const endpoint=String(payload.endpoint||'').trim();
+  let url;try{url=new URL(endpoint);}catch{throw new Error('AI Endpoint 无效。');}
+  if(!['https:','http:'].includes(url.protocol))throw new Error('AI Endpoint 只允许 HTTP/HTTPS。');
+  const timeoutMs=Math.max(1000,Math.min(120000,Number(payload.timeoutMs)||60000));
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{method:String(payload.method||'POST').toUpperCase(),headers:{'content-type':'application/json',...(payload.headers||{})},body:payload.body==null?undefined:JSON.stringify(payload.body),signal:controller.signal});
+    const text=await response.text();if(text.length>8*1024*1024)throw new Error('AI 响应超过 8 MiB 限制。');
+    let body=null;try{body=text?JSON.parse(text):null;}catch{body={text};}
+    return {ok:response.ok,status:response.status,statusText:response.statusText,body};
+  }catch(error){if(error?.name==='AbortError')throw new Error('AI 请求超时。');throw error;}finally{clearTimeout(timer);}
+}
+function dispatchMcpToRenderer(request){
+  const win=primaryWindow&&!primaryWindow.isDestroyed()?primaryWindow:BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&!auxiliaryBootstrap.has(candidate.webContents.id));
+  if(!win)throw new Error('Studio Core 尚未就绪。');
+  const id=`mcp-${Date.now()}-${++mcpRequestSeq}`;
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{pendingMcpRequests.delete(id);reject(new Error('Studio MCP Core 响应超时。'));},120000);
+    pendingMcpRequests.set(id,{resolve,reject,timer,webContentsId:win.webContents.id});
+    win.webContents.send('mcp:request',{id,...request});
+  });
+}
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1680,
+    height: 1040,
+    minWidth: 1200,
+    minHeight: 760,
+    backgroundColor: nativeWindowBackground(),
+    title: APP_NAME,
+    icon: path.join(APP_ROOT, 'assets', 'dkds-icon.png'),
+    autoHideMenuBar: true,
+    webPreferences: commonWindowPreferences()
+  });
+  win.setMenuBarVisibility(false);
+  primaryWindow = win;
+  win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
+  win.loadFile(path.join(APP_ROOT, 'src', 'index.html'));
+  return win;
+}
+
+function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse=true} = {}) {
+  // Reusable TOP/Tool windows are renderer singletons per owner + activity. Project
+  // state is explicitly rehydrated through the bootstrap contract when a different
+  // project opens the same activity. This prevents project-tab prewarm duplicates.
+  return `${ownerWebContentsId}::${reuse !== false ? '__reusable__' : (projectTabId || 'project')}::${activityId}`;
+}
+
+function removeAuxiliaryWindowReferences(win) {
+  if (!win) return;
+  for (const [key, candidate] of auxiliaryWindows) {
+    if (candidate === win) auxiliaryWindows.delete(key);
+  }
+}
+
+function projectSnapshotDigest(project) {
+  try {
+    return crypto.createHash('sha1').update(JSON.stringify(project || null)).digest('hex');
+  } catch {
+    return '';
+  }
+}
+
+function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
+  const project = payload.project || null;
+  const artifactSnapshot = Array.isArray(payload.artifactSnapshot) ? payload.artifactSnapshot : null;
+  return {
+    activityId:String(payload.activityId || '').trim(),
+    projectTabId:String(payload.projectTabId || '').trim(),
+    project,
+    projectDigest:projectSnapshotDigest(project),
+    artifactSnapshot,
+    artifactDigest:projectSnapshotDigest(artifactSnapshot),
+    projectPath:payload.projectPath || null,
+    title:payload.title || '',
+    ownerWebContentsId,
+    prewarm:payload.prewarm === true,
+    capabilitySnapshot:payload.capabilitySnapshot || null,
+    capabilityRevision:Number(payload.capabilityRevision)||0,
+    diagnosticRun:payload.diagnosticRun===true,
+    pluginWindow:pluginWindow ? {...pluginWindow} : null
+  };
+}
+
+function hideDedicatedAuxiliaryWindow(win) {
+  if (!win || win.isDestroyed()) return false;
+  try { win.webContents.send('windows:activityWillHide'); } catch {}
+  win.hide();
+  return true;
+}
+
+function closeAuxiliaryWindowForReal(win) {
+  if (!win || win.isDestroyed()) return;
+  // Once Core has committed to a real close, the window must leave the reuse
+  // registry synchronously. BrowserWindow.close() completes asynchronously on
+  // Windows; leaving the entry mapped until the `closed` event lets an
+  // immediately following open reuse a renderer that is already closing.
+  removeAuxiliaryWindowReferences(win);
+  forcedAuxiliaryClose.add(win);
+  win.close();
+}
+
+function waitForAuxiliaryWindowClosed(win, timeoutMs=1800) {
+  if (!win || win.isDestroyed()) return Promise.resolve(true);
+  return new Promise(resolve=>{
+    let settled=false;
+    const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);resolve(value);};
+    const timer=setTimeout(()=>finish(!!win.isDestroyed()),Math.max(250,Number(timeoutMs)||1800));
+    win.once('closed',()=>finish(true));
+  });
+}
+
+function markAuxiliaryWindowReady(win,payload={}) {
+  if(!win||win.isDestroyed())return;
+  const id=win.webContents.id;
+  const profile=auxiliaryStartupProfiles.get(id)||{};
+  profile.readyAtMs=Date.now();
+  profile.main=profile.main||{};
+  profile.main.createToReadyMs=Math.max(0,profile.readyAtMs-Number(profile.createdAtMs||profile.readyAtMs));
+  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
+  auxiliaryStartupProfiles.set(id,profile);
+  auxiliaryFailures.delete(id);
+  auxiliaryReady.add(id);
+  if(!auxiliaryPendingShow.has(id))return;
+  auxiliaryPendingShow.delete(id);
+  try { win.webContents.send('windows:activityWillShow'); } catch {}
+  win.show();
+  win.focus();
+}
+
+function markAuxiliaryWindowFailed(win,payload={}) {
+  if(!win||win.isDestroyed())return;
+  const id=win.webContents.id;
+  const bootstrap=auxiliaryBootstrap.get(id)||{};
+  const profile=auxiliaryStartupProfiles.get(id)||{};
+  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
+  profile.failedAtMs=Date.now();auxiliaryStartupProfiles.set(id,profile);
+  const failure={
+    activityId:String(bootstrap.activityId||payload.activityId||''),
+    projectTabId:String(bootstrap.projectTabId||payload.projectTabId||''),
+    pluginId:String(bootstrap.pluginWindow?.pluginId||payload.pluginId||''),
+    error:String(payload.error||payload.message||'插件独立窗口启动失败。'),
+    startupProfile:profile
+  };
+  auxiliaryReady.delete(id);
+  auxiliaryFailures.set(id,failure);
+
+  // A user-requested window must never fail invisibly behind `show:false`.
+  // Prewarmed failures stay hidden until the user actually opens the TOP.
+  if(auxiliaryPendingShow.has(id)){
+    auxiliaryPendingShow.delete(id);
+    try{win.show();win.focus();}catch{}
+  }
+
+  const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
+  if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
+}
+
+const diagnosticDelay=ms=>new Promise(resolve=>setTimeout(resolve,Math.max(0,Number(ms)||0)));
+async function diagnosticRendererLifecycleSnapshot(win){
+  if(!win||win.isDestroyed())return null;
+  try{return await win.webContents.executeJavaScript('window.DKDSUI?.lifecycleSnapshot?.() || null',true);}
+  catch{return null;}
+}
+async function diagnosticRendererProjectSnapshot(win){
+  if(!win||win.isDestroyed())return null;
+  try{return await win.webContents.executeJavaScript('window.DKDSPluginWindowDiagnostics?.snapshot?.() || null',true);}
+  catch{return null;}
+}
+function lifecycleSnapshotSuspended(snapshot,expected){
+  const rows=Array.isArray(snapshot?.rows)?snapshot.rows:[];
+  if(!rows.length)return true;
+  return rows.every(row=>row?.resize?.suspended===expected&&(!row?.plots||Number(row.plots.suspended||0)===(expected?Number(row.plots.views||0):0)));
+}
+async function waitForRendererLifecycleContract(win,expected,timeoutMs=2500){
+  const started=Date.now();let snapshot=null;
+  while(Date.now()-started<Math.max(250,Number(timeoutMs)||2500)){
+    snapshot=await diagnosticRendererLifecycleSnapshot(win);
+    if(lifecycleSnapshotSuspended(snapshot,expected))return {ok:true,snapshot,elapsedMs:Date.now()-started};
+    await diagnosticDelay(40);
+  }
+  snapshot=await diagnosticRendererLifecycleSnapshot(win);
+  return {ok:lifecycleSnapshotSuspended(snapshot,expected),snapshot,elapsedMs:Date.now()-started};
+}
+
+function waitForAuxiliaryDiagnosticOutcome(win,timeoutMs=15000){
+  if(!win||win.isDestroyed())return Promise.resolve({ok:false,error:'Diagnostic TOP window was not created.'});
+  const webContentsId=win.webContents.id;
+  const started=Date.now();
+  return new Promise(resolve=>{
+    const tick=()=>{
+      const failure=auxiliaryFailures.get(webContentsId);
+      if(failure)return resolve({ok:false,error:String(failure.error||'TOP renderer failed.'),durationMs:Date.now()-started});
+      if(!win||win.isDestroyed())return resolve({ok:false,error:'Diagnostic TOP window closed before ready.',durationMs:Date.now()-started});
+      if(auxiliaryReady.has(webContentsId))return resolve({ok:true,durationMs:Date.now()-started});
+      if(Date.now()-started>=timeoutMs)return resolve({ok:false,error:`TOP renderer did not reach ready within ${timeoutMs} ms.`,durationMs:Date.now()-started,timeout:true});
+      setTimeout(tick,50);
+    };
+    tick();
+  });
+}
+
+async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
+  const activityId=String(payload?.activityId||'').trim();
+  if(!ownerWindow||ownerWindow.isDestroyed())throw new Error('Main application window is unavailable.');
+  if(!activityId)throw new Error('Diagnostic activity id is required.');
+  const spec=resolveConfiguredPluginWindow(activityId);
+  if(!spec)return {ok:false,activityId,error:'No independent TOP window is configured for this activity.'};
+  const projectTabId=`__dkds_automation__${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const project=payload?.project&&typeof payload.project==='object'
+    ? structuredClone(payload.project)
+    : {version:app.getVersion(),datasets:[],plugins:{},dataModel:{schema:2,artifacts:[]}};
+  const artifactSnapshot=Array.isArray(payload?.artifactSnapshot)?structuredClone(payload.artifactSnapshot):null;
+  const useConfiguredPrewarm=spec.prewarm===true;
+  const basePayload={activityId,projectTabId,project,artifactSnapshot,projectPath:null,title:'自动化测试',diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0};
+  const created=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:useConfiguredPrewarm});
+  const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId,{reuse:spec?.reuse!==false});
+  const win=auxiliaryWindows.get(key);
+  const rendererProcessId=(()=>{try{return Number(win?.webContents?.getOSProcessId?.())||0;}catch{return 0;}})();
+  const timeoutMs=Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000));
+  let outcome=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+  let promotion=null;
+  if(outcome.ok&&useConfiguredPrewarm&&win&&!win.isDestroyed()){
+    promotion=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
+    const hydrated=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+    outcome=hydrated.ok?{...hydrated,prewarmReady:true}:{...hydrated,prewarmReady:true};
+  }
+  let lifecycle={tested:false,ok:false};
+  let rendererData=null;
+  if(outcome.ok&&win&&!win.isDestroyed()){
+    try{
+      if(!win.isVisible()){try{win.webContents.send('windows:activityWillShow');win.show();}catch{}}
+      await diagnosticDelay(Array.isArray(artifactSnapshot)&&artifactSnapshot.length?260:80);
+      rendererData=await diagnosticRendererProjectSnapshot(win);
+      const expectedPluginId=String(spec?.pluginId||'');
+      const expectedActivityId=String(activityId||'');
+      if(rendererData){
+        if(rendererData.projectHydrated!==true||rendererData.activityOpened!==true)throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without hydrated/open lifecycle.`);
+        if(String(rendererData.activeActivityId||'')!==expectedActivityId)throw new Error(`${expectedPluginId||expectedActivityId}: active activity mismatch (${rendererData.activeActivityId||'none'}).`);
+        if(!String(rendererData.visiblePageId||''))throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without a visible page.`);
+        if(expectedPluginId&&String(rendererData.visiblePagePluginId||'')!==expectedPluginId)throw new Error(`${expectedPluginId}: visible page is owned by ${rendererData.visiblePagePluginId||'unknown'}.`);
+        if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'&&rendererData.topWorkspaceRegistered!==true)throw new Error(`${expectedPluginId}: TOP Workspace was not registered.`);
+      }
+      const hidden=hideDedicatedAuxiliaryWindow(win);
+      const hiddenWait=await waitForRendererLifecycleContract(win,true,2500);
+      const hiddenSnapshot=hiddenWait.snapshot;
+      const reopened=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
+      await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
+      const visibleWait=await waitForRendererLifecycleContract(win,false,2500);
+      const visibleSnapshot=visibleWait.snapshot;
+      rendererData=await diagnosticRendererProjectSnapshot(win)||rendererData;
+      lifecycle={tested:true,hidden:!!hidden,reused:reopened?.reused===true,alive:!win.isDestroyed(),visible:!win.isDestroyed()&&win.isVisible(),hiddenContract:hiddenWait.ok===true,visibleContract:visibleWait.ok===true,hiddenWaitMs:hiddenWait.elapsedMs,visibleWaitMs:visibleWait.elapsedMs,hiddenSnapshot,visibleSnapshot};
+      lifecycle.ok=lifecycle.hidden&&lifecycle.reused&&lifecycle.alive&&lifecycle.visible&&lifecycle.hiddenContract&&lifecycle.visibleContract;
+      if(!lifecycle.ok)lifecycle.error=`Dedicated TOP lifecycle failed: hidden=${lifecycle.hidden} reused=${lifecycle.reused} alive=${lifecycle.alive} visible=${lifecycle.visible} hiddenContract=${lifecycle.hiddenContract} visibleContract=${lifecycle.visibleContract} hiddenWaitMs=${lifecycle.hiddenWaitMs} visibleWaitMs=${lifecycle.visibleWaitMs}`;
+    }catch(err){lifecycle={tested:true,ok:false,error:String(err?.message||err)};}
+  }
+  const startupProfile=win&&!win.isDestroyed()?structuredClone(auxiliaryStartupProfiles.get(win.webContents.id)||null):null;
+  const finalOk=outcome.ok===true&&(!lifecycle.tested||lifecycle.ok===true);
+  const finalError=finalOk?'':String(lifecycle.error||outcome.error||'Dedicated Tool/TOP lifecycle validation failed.');
+  const details={...outcome,ok:finalOk,error:finalError,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',configuredPrewarm:useConfiguredPrewarm,created,promotion,startupProfile,lifecycle,rendererData};
+  closeAuxiliaryWindowForReal(win);
+  // Diagnostics intentionally runs TOPs back-to-back. Do not let the next
+  // smoke test overlap the previous renderer's asynchronous BrowserWindow
+  // teardown and accidentally observe/reuse a half-closed process.
+  await waitForAuxiliaryWindowClosed(win,1800);
+  return details;
+}
+
+function diagnosticsDirectory(){
+  const dir=path.join(app.getPath('userData'),'diagnostics');
+  fs.mkdirSync(dir,{recursive:true});
+  return dir;
+}
+
+function diagnosticEnvironment(){
+  const metrics=app.getAppMetrics();
+  const memory=metrics.reduce((sum,row)=>{const m=row?.memory||{};sum.workingSetBytes+=(Number(m.workingSetSize)||0)*1024;sum.privateBytes+=(Number(m.privateBytes)||0)*1024;return sum;},{workingSetBytes:0,privateBytes:0});
+  return {runtime:'desktop',appVersion:app.getVersion(),platform:process.platform,arch:process.arch,osRelease:os.release(),isPackaged:app.isPackaged,locale:app.getLocale?.()||'',processVersions:{electron:process.versions.electron||'',chrome:process.versions.chrome||'',node:process.versions.node||''},processCount:metrics.length,memory,windowCount:BrowserWindow.getAllWindows().filter(win=>!win.isDestroyed()).length,configuredTopWindows:listConfiguredPluginWindows().map(row=>({pluginId:row.pluginId,activity:row.activity,mode:row.mode||'dedicated',version:row.version,prewarm:row.prewarm,reuse:row.reuse,persistence:row.persistence}))};
+}
+
+function requestAuxiliaryRoleSnapshot(win, reason='host-role-change', timeoutMs=1800) {
+  if (!win || win.isDestroyed()) return Promise.resolve(null);
+  const webContentsId=win.webContents.id;
+  if(!auxiliaryReady.has(webContentsId)||auxiliaryFailures.has(webContentsId))return Promise.resolve(null);
+  const bootstrap=auxiliaryBootstrap.get(webContentsId)||null;
+  if(!bootstrap)return Promise.resolve(null);
+  const requestId=`role-${process.pid}-${Date.now()}-${++auxiliaryRoleSnapshotSeq}`;
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>{
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      resolve(null);
+    },Math.max(250,Number(timeoutMs)||1800));
+    pendingAuxiliaryRoleSnapshots.set(requestId,{resolve,timer,webContentsId,bootstrap});
+    try{win.webContents.send('windows:activityRoleSnapshotRequest',{requestId,reason});}
+    catch{
+      clearTimeout(timer);
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      resolve(null);
+    }
+  });
+}
+
+function wrapAuxiliaryRoleSnapshot(bootstrap,snapshot={}) {
+  return {
+    projectTabId:String(bootstrap?.projectTabId||''),
+    activityId:String(bootstrap?.activityId||''),
+    pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
+    persistence:bootstrap?.pluginWindow?.persistence||'project',
+    project:snapshot?.project||null,
+    pluginState:snapshot?.pluginState??null,
+    artifactDelta:snapshot?.artifactDelta||null,
+    final:true
+  };
+}
+
+function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
+  const startupRequestedAtMs=Date.now();
+  const activityId = String(payload.activityId || '').trim();
+  const projectTabId = String(payload.projectTabId || '').trim();
+  if (!activityId || !projectTabId) throw new Error('Missing auxiliary activity/project id.');
+
+  const ownerWebContentsId = ownerWindow?.webContents?.id;
+  if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
+
+  const resolveStartedAtMs=Date.now();
+  const pluginWindow = resolveConfiguredPluginWindow(activityId);
+  const resolveSpecMs=Date.now()-resolveStartedAtMs;
+  const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse:pluginWindow?.reuse !== false});
+  let previous = auxiliaryWindows.get(key);
+  if (previous && !previous.isDestroyed()) {
+    const previousSpec=auxiliaryBootstrap.get(previous.webContents.id)?.pluginWindow||null;
+    const definitionChanged=!!pluginWindow&&!!previousSpec&&(
+      previousSpec.pluginId!==pluginWindow.pluginId
+      ||previousSpec.source!==pluginWindow.source
+      ||previousSpec.revision!==pluginWindow.revision
+    );
+    if(definitionChanged){
+      removeAuxiliaryWindowReferences(previous);
+      closeAuxiliaryWindowForReal(previous);
+      previous=null;
+    }
+  }
+  if (previous && !previous.isDestroyed()) {
+    const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
+    // Prewarm is only allowed to create/warm an empty renderer. Never downgrade an
+    // already hydrated reusable window back into prewarm mode after it is hidden;
+    // doing so used to make a later reopen look like a second first-open lifecycle.
+    if (payload.prewarm === true && cachedBootstrap?.prewarm !== true) {
+      return {reused:true,dedicated:!!pluginWindow,prewarmSkipped:true,ready:auxiliaryReady.has(previous.webContents.id)};
+    }
+    const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
+    const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
+      || cachedBootstrap.projectPath !== nextBootstrap.projectPath
+      || cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest
+      || cachedBootstrap.prewarm !== nextBootstrap.prewarm
+      || cachedBootstrap.capabilityRevision !== nextBootstrap.capabilityRevision;
+    const promoteFromPrewarm = cachedBootstrap?.prewarm === true && nextBootstrap.prewarm !== true;
+    auxiliaryBootstrap.set(previous.webContents.id, nextBootstrap);
+
+    // Runtime-only prewarm marks the hidden renderer ready after Core/plugin/chart
+    // code is loaded, but before domain project state or the activity is mounted.
+    // First user open must therefore wait for a second, hydrated readiness signal.
+    // Never show the prewarmed DOM early just because the runtime shell is warm.
+    if (promoteFromPrewarm) {
+      auxiliaryReady.delete(previous.webContents.id);
+      auxiliaryFailures.delete(previous.webContents.id);
+      auxiliaryPendingShow.add(previous.webContents.id);
+    }
+
+    // A cached plugin renderer keeps its runtime and chart libraries. Only push
+    // bootstrap replacement when project/capability/prewarm state changed.
+    if (projectChanged) previous.webContents.send('windows:activityBootstrapChanged');
+
+    if (payload.prewarm === true) {
+      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:auxiliaryReady.has(previous.webContents.id) };
+    }
+
+    if (previous.isMinimized()) previous.restore();
+    if (promoteFromPrewarm) {
+      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, warming:true, prewarmed:true };
+    }
+    if (pluginWindow && !auxiliaryReady.has(previous.webContents.id)) {
+      const failure=auxiliaryFailures.get(previous.webContents.id);
+      if(failure){
+        try { previous.webContents.send('windows:activityWillShow'); } catch {}
+        previous.show();
+        previous.focus();
+        return { reused:true, dedicated:true, synchronized:projectChanged, failed:true, error:failure.error };
+      }
+      auxiliaryPendingShow.add(previous.webContents.id);
+      return { reused:true, dedicated:true, synchronized:projectChanged, warming:true };
+    }
+
+    try { previous.webContents.send('windows:activityWillShow'); } catch {}
+    previous.show();
+    previous.focus();
+    return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:true };
+  }
+
+  const browserWindowStartedAtMs=Date.now();
+  const win = new BrowserWindow({
+    show: pluginWindow ? false : payload.prewarm !== true,
+    width: pluginWindow?.width || 1480,
+    height: pluginWindow?.height || 940,
+    minWidth: pluginWindow?.minWidth || 920,
+    minHeight: pluginWindow?.minHeight || 650,
+    backgroundColor: nativeWindowBackground(),
+    icon: path.join(APP_ROOT, 'assets', 'dkds-icon.png'),
+    autoHideMenuBar: true,
+    title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
+    webPreferences: {
+      ...commonWindowPreferences(),
+      // A hidden dedicated TOP may be intentionally warming its declared Core,
+      // SDK and chart runtimes. Chromium background throttling must not postpone
+      // that generic warmup until the user finally opens the window.
+      backgroundThrottling:false
+    }
+  });
+  win.setMenuBarVisibility(false);
+  const browserWindowCreateMs=Date.now()-browserWindowStartedAtMs;
+  auxiliaryWindows.set(key, win);
+  const auxiliaryWebContentsId = win.webContents.id;
+  const startupProfile={version:'1.0.0',createdAtMs:startupRequestedAtMs,activityId,pluginId:String(pluginWindow?.pluginId||''),main:{resolveSpecMs,browserWindowCreateMs,navigationMs:null,createToReadyMs:null}};
+  auxiliaryStartupProfiles.set(auxiliaryWebContentsId,startupProfile);
+  auxiliaryBootstrap.set(
+    auxiliaryWebContentsId,
+    makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
+  );
+  if (pluginWindow?.reuse !== false) {
+    win.on('close', event => {
+      if (appQuitting || forcedAuxiliaryClose.has(win)) return;
+      event.preventDefault();
+      hideDedicatedAuxiliaryWindow(win);
+    });
+  }
+  win.on('closed', () => {
+    removeAuxiliaryWindowReferences(win);
+    auxiliaryBootstrap.delete(auxiliaryWebContentsId);
+    auxiliaryReady.delete(auxiliaryWebContentsId);
+    auxiliaryFailures.delete(auxiliaryWebContentsId);
+    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
+    auxiliaryStartupProfiles.delete(auxiliaryWebContentsId);
+    for(const [requestId,pending] of pendingAuxiliaryRoleSnapshots){
+      if(pending.webContentsId!==auxiliaryWebContentsId)continue;
+      clearTimeout(pending.timer);
+      pendingAuxiliaryRoleSnapshots.delete(requestId);
+      pending.resolve(null);
+    }
+  });
+  ownerWindow.once('closed', () => closeAuxiliaryWindowForReal(win));
+  win.webContents.on('render-process-gone', (_event, details={}) => {
+    if(appQuitting||forcedAuxiliaryClose.has(win)||win.isDestroyed())return;
+    const reason=String(details?.reason||'unknown');
+    const bootstrap=auxiliaryBootstrap.get(auxiliaryWebContentsId)||{};
+    const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
+    const failure={
+      activityId:String(bootstrap.activityId||''),
+      projectTabId:String(bootstrap.projectTabId||''),
+      pluginId:String(bootstrap.pluginWindow?.pluginId||''),
+      error:`插件独立窗口异常退出（${reason}），再次打开时将自动重建。`
+    };
+    if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
+    auxiliaryReady.delete(auxiliaryWebContentsId);
+    if(bootstrap.diagnosticRun)auxiliaryFailures.set(auxiliaryWebContentsId,failure);
+    else auxiliaryFailures.delete(auxiliaryWebContentsId);
+    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
+    closeAuxiliaryWindowForReal(win);
+  });
+
+  const navigationStartedAtMs=Date.now();
+  win.webContents.once('did-finish-load',()=>{
+    const profile=auxiliaryStartupProfiles.get(auxiliaryWebContentsId);
+    if(profile){profile.main=profile.main||{};profile.main.navigationMs=Date.now()-navigationStartedAtMs;}
+  });
+  if (!pluginWindow) throw new Error(`Activity ${activityId} has no plugin-owned window contract.`);
+  if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
+  win.loadFile(path.join(APP_ROOT, 'src', 'plugin-window', 'index.html'));
+  return { reused:false, dedicated:!!pluginWindow, warming:!!pluginWindow, prewarmed:payload.prewarm === true };
+}
+
+app.whenReady().then(() => {
+  enforcePackagedExpiry();
+  const persistedAppearance=readPersistedAppearanceTheme();
+  if(persistedAppearance)applyNativeAppearance(persistedAppearance,{persist:false,broadcast:false});
+  else{
+    // v3.61.26 and earlier stored the user's choice in renderer localStorage
+    // only. Keep the native frame on the OS theme until ThemeRuntime performs
+    // its first handshake, so that saved renderer choice can migrate into the
+    // new main-process appearance file instead of being overwritten.
+    appearanceTheme='';
+    try{nativeTheme.themeSource='system';}catch{}
+  }
+  Menu.setApplicationMenu(null);
+
+  ipcMain.handle('windows:openActivity', async (event, payload) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    if (!owner) throw new Error('Unable to resolve the main application window.');
+    return createOrFocusAuxiliaryWindow(owner, payload || {});
+  });
+  ipcMain.handle('windows:listPluginWindows', async () => listConfiguredPluginWindows().map(spec => ({
+    pluginId:spec.pluginId,
+    mode:spec.mode||'dedicated',
+    version:spec.version,
+    revision:spec.revision,
+    activity:spec.activity,
+    title:spec.title,
+    prewarm:spec.prewarm,
+    reuse:spec.reuse,
+    persistence:spec.persistence
+  })));
+  ipcMain.handle('diagnostics:getEnvironment', async () => diagnosticEnvironment());
+  ipcMain.handle('diagnostics:runActivitySmoke', async (event,payload={}) => {
+    const owner=BrowserWindow.fromWebContents(event.sender);
+    if(!owner)throw new Error('Unable to resolve the main application window.');
+    return runDiagnosticActivitySmoke(owner,payload);
+  });
+  ipcMain.handle('diagnostics:writeAutomationReport', async (_event,report={}) => {
+    const dir=diagnosticsDirectory();
+    const appVersion=String(report?.appVersion||app.getVersion()||'runtime').replace(/[^0-9A-Za-z._-]+/g,'-');
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const name=`dkds-automation-${appVersion}-${stamp}.json`;
+    const target=path.join(dir,name);
+    const payload={...report,desktopEnvironment:diagnosticEnvironment()};
+    fs.writeFileSync(target,JSON.stringify(payload,null,2)+'\n','utf8');
+    return {name,path:target,size:fs.statSync(target).size};
+  });
+  ipcMain.handle('diagnostics:openFolder', async () => {
+    const dir=diagnosticsDirectory();
+    const error=await shell.openPath(dir);
+    if(error)throw new Error(error);
+    return true;
+  });
+
+  ipcMain.handle('windows:prewarmActivity', async (event, payload) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    if (!owner) throw new Error('Unable to resolve the main application window.');
+    const activityId = String(payload?.activityId || '').trim();
+    const spec = resolveConfiguredPluginWindow(activityId);
+    if (!spec) return { skipped:true, reason:'not-dedicated' };
+    return createOrFocusAuxiliaryWindow(owner, { ...(payload || {}), prewarm:true });
+  });
+  ipcMain.handle('windows:getActivityBootstrap', async event => auxiliaryBootstrap.get(event.sender.id) || null);
+  ipcMain.handle('capabilities:publishSnapshot', async (event, payload = {}) => {
+    const ownerId=event.sender.id;
+    const snapshot=payload?.snapshot||null;
+    const nextRevision=Number(payload?.revision??snapshot?.revision)||0;
+    let updated=0;
+    for(const win of BrowserWindow.getAllWindows()){
+      if(win.isDestroyed())continue;
+      const current=auxiliaryBootstrap.get(win.webContents.id);
+      if(!current||Number(current.ownerWebContentsId)!==ownerId)continue;
+      if(Number(current.capabilityRevision||0)===nextRevision)continue;
+      auxiliaryBootstrap.set(win.webContents.id,{...current,capabilitySnapshot:snapshot,capabilityRevision:nextRevision});
+      try{win.webContents.send('windows:activityBootstrapChanged');updated+=1;}catch{}
+    }
+    return {updated,revision:nextRevision};
+  });
+  ipcMain.handle('capabilities:invokeOwner', async (event, payload = {}) => {
+    const bootstrap=auxiliaryBootstrap.get(event.sender.id);
+    const ownerId=Number(bootstrap?.ownerWebContentsId)||0;
+    const ownerWindow=BrowserWindow.getAllWindows().find(win=>!win.isDestroyed()&&win.webContents.id===ownerId);
+    if(!ownerWindow)throw new Error('Capability owner window is unavailable.');
+    const requestId=`cap-${process.pid}-${Date.now()}-${++capabilityRequestSeq}`;
+    const request={requestId,id:String(payload.id||''),method:String(payload.method||'invoke'),args:Array.isArray(payload.args)?payload.args:[]};
+    return await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{pendingCapabilityInvocations.delete(requestId);reject(new Error(`Capability invocation timed out: ${request.id}.${request.method}`));},60000);
+      pendingCapabilityInvocations.set(requestId,{resolve,reject,timer,ownerId});
+      try{ownerWindow.webContents.send('capabilities:invokeRequest',request);}
+      catch(err){clearTimeout(timer);pendingCapabilityInvocations.delete(requestId);reject(err);}
+    });
+  });
+  ipcMain.on('capabilities:invokeResponse', (event, payload = {}) => {
+    const requestId=String(payload.requestId||'');
+    const pending=pendingCapabilityInvocations.get(requestId);
+    if(!pending||pending.ownerId!==event.sender.id)return;
+    pendingCapabilityInvocations.delete(requestId);clearTimeout(pending.timer);
+    if(payload.ok===false)pending.reject(new Error(String(payload.error||'Capability invocation failed.')));
+    else pending.resolve(payload.result);
+  });
+  ipcMain.handle('windows:prepareSuperTransition', async (event, payload = {}) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId=owner?.webContents?.id;
+    const activityId=String(payload?.activityId||'').trim();
+    if(!ownerId||!activityId)return {activityId,snapshots:[],closed:0};
+    const targets=[];
+    for(const win of auxiliaryWindows.values()){
+      if(!win||win.isDestroyed())continue;
+      const row=auxiliaryBootstrap.get(win.webContents.id);
+      if(row?.ownerWebContentsId===ownerId&&String(row?.activityId||'')===activityId)targets.push(win);
+    }
+    const snapshots=[];
+    for(const win of targets){
+      const row=auxiliaryBootstrap.get(win.webContents.id);
+      const snapshot=await requestAuxiliaryRoleSnapshot(win,'promote-to-super');
+      if(snapshot&&row)snapshots.push(wrapAuxiliaryRoleSnapshot(row,snapshot));
+    }
+    for(const win of targets)closeAuxiliaryWindowForReal(win);
+    return {activityId,snapshots,closed:targets.length};
+  });
+  ipcMain.on('windows:activityRoleSnapshotResponse', (event, payload = {}) => {
+    const requestId=String(payload?.requestId||'');
+    const pending=pendingAuxiliaryRoleSnapshots.get(requestId);
+    if(!pending||pending.webContentsId!==event.sender.id)return;
+    pendingAuxiliaryRoleSnapshots.delete(requestId);
+    clearTimeout(pending.timer);
+    pending.resolve(payload?.snapshot||null);
+  });
+  ipcMain.handle('windows:disposeProjectActivities', async (event, projectTabId) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    const targetProjectId = String(projectTabId || '').trim();
+    if (!ownerId || !targetProjectId) return 0;
+    const doomed = [];
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId === ownerId && row?.projectTabId === targetProjectId) doomed.push(win);
+    }
+    for (const win of doomed) closeAuxiliaryWindowForReal(win);
+    return doomed.length;
+  });
+  ipcMain.handle('windows:syncPluginActivities', async (event, payload) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    if (!ownerId) return 0;
+    const enabledRows=Array.isArray(payload)?payload:(Array.isArray(payload?.enabled)?payload.enabled:[]);
+    const prewarmRows=Array.isArray(payload)?enabledRows:(Array.isArray(payload?.prewarm)?payload.prewarm:[]);
+    const allowed = new Set(enabledRows.map(v => String(v || '').trim()).filter(Boolean));
+    const allowedPrewarm = new Set(prewarmRows.map(v => String(v || '').trim()).filter(Boolean));
+    const doomed = [];
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId !== ownerId || !row?.pluginWindow) continue;
+      const activity=String(row.activityId||'');
+      if (!allowed.has(activity) || (row.prewarm===true && !allowedPrewarm.has(activity))) doomed.push(win);
+    }
+    for (const win of doomed) closeAuxiliaryWindowForReal(win);
+    return doomed.length;
+  });
+  ipcMain.on('windows:activityReady', (event,payload={}) => {
+    markAuxiliaryWindowReady(BrowserWindow.fromWebContents(event.sender),payload);
+  });
+  ipcMain.on('windows:activityFailed', (event,payload={}) => {
+    markAuxiliaryWindowFailed(BrowserWindow.fromWebContents(event.sender),payload);
+  });
+  ipcMain.handle('windows:closeCurrent', async event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
+    win.close();
+    return true;
+  });
+  ipcMain.on('windows:requestProjectSave', (event, payload={}) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    owner.webContents.send('windows:requestProjectSave', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      persistence: bootstrap.pluginWindow?.persistence || 'project',
+      project: payload?.project || null,
+      pluginState: payload?.pluginState ?? null,
+      artifactDelta: payload?.artifactDelta || null,
+      final: true
+    });
+  });
+  ipcMain.on('windows:requestImportWorkbench', (event, payload={}) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    if (owner.isMinimized()) owner.restore();
+    owner.show();owner.focus();
+    owner.webContents.send('windows:requestImportWorkbench', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      options: payload?.options && typeof payload.options === 'object' ? payload.options : payload || {}
+    });
+  });
+  ipcMain.on('windows:ownerArtifactDelta', (event, payload={}) => {
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    const ownerId = owner?.webContents?.id;
+    const projectTabId = String(payload?.projectTabId || '').trim();
+    const excludeActivityId = String(payload?.excludeActivityId || '').trim();
+    const delta = payload?.artifactDelta && typeof payload.artifactDelta === 'object' ? payload.artifactDelta : null;
+    if (!ownerId || !projectTabId || !delta) return;
+    for (const win of auxiliaryWindows.values()) {
+      if (!win || win.isDestroyed()) continue;
+      const row = auxiliaryBootstrap.get(win.webContents.id);
+      if (row?.ownerWebContentsId !== ownerId || String(row?.projectTabId || '') !== projectTabId) continue;
+      if (excludeActivityId && String(row?.activityId || '') === excludeActivityId) continue;
+      // Runtime-only prewarm has no hydrated domain store yet. The current
+      // project snapshot will be supplied when that renderer is promoted.
+      if (row?.prewarm === true) continue;
+      try {
+        win.webContents.send('windows:ownerArtifactDelta', {
+          projectTabId,
+          reason:String(payload?.reason || 'owner-artifact-change'),
+          artifactDelta:delta
+        });
+      } catch {}
+    }
+  });
+  ipcMain.on('windows:activityProjectSnapshot', (event, payload) => {
+    const bootstrap = auxiliaryBootstrap.get(event.sender.id);
+    if (!bootstrap) return;
+    if (payload?.project && typeof payload.project === 'object') {
+      bootstrap.project = payload.project;
+      bootstrap.projectDigest = projectSnapshotDigest(payload.project);
+    }
+    const owner = BrowserWindow.getAllWindows().find(w => w.webContents?.id === bootstrap.ownerWebContentsId);
+    if (!owner || owner.isDestroyed()) return;
+    owner.webContents.send('windows:activityProjectSnapshot', {
+      projectTabId: bootstrap.projectTabId,
+      activityId: bootstrap.activityId,
+      pluginId: bootstrap.pluginWindow?.pluginId || '',
+      persistence: bootstrap.pluginWindow?.persistence || 'project',
+      project: payload?.project || null,
+      pluginState: payload?.pluginState ?? null,
+      artifactDelta: payload?.artifactDelta || null,
+      final: payload?.final !== false
+    });
+  });
+
+  ipcMain.handle('update:getStatus', async () => lanUpdater?.getStatus() || null);
+  ipcMain.handle('update:getSettings', async () => lanUpdater?.getSettings() || null);
+  ipcMain.handle('update:setSettings', async (_event, settings) => lanUpdater?.setSettings(settings) || null);
+  ipcMain.handle('update:checkNow', async () => lanUpdater?.checkNow() || null);
+  ipcMain.handle('update:downloadNow', async () => lanUpdater?.downloadNow() || false);
+  ipcMain.handle('update:installNow', async () => {
+    const safety=getProjectFileSafety();
+    safety.prepareForQuit('explicit-update-install');
+    const installRoot=path.dirname(process.execPath);
+    const risky=safety.pathsInside(installRoot);
+    if(risky.length){
+      console.error('[DKDS project safety] Refusing update install because an open project is inside the application install directory:',risky);
+      return false;
+    }
+    return lanUpdater?.installNow() || false;
+  });
+
+  function detectBomEncoding(buffer) {
+    if (buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) return 'utf-8';
+    if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) return 'utf-16le';
+    if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) return 'utf-16be';
+    return null;
+  }
+
+  function decodeTextBuffer(buffer, requestedEncoding = 'auto') {
+    const req = String(requestedEncoding || 'auto').toLowerCase();
+    const aliases = {
+      auto: 'auto', utf8: 'utf-8', 'utf-8-bom': 'utf-8', gbk: 'gb18030',
+      gb2312: 'gb18030', sjis: 'shift_jis', 'shift-jis': 'shift_jis',
+      latin1: 'windows-1252', 'iso-8859-1': 'windows-1252'
+    };
+    let enc = aliases[req] || req;
+    if (enc === 'auto') {
+      enc = detectBomEncoding(buffer) || 'utf-8';
+      if (enc === 'utf-8') {
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+          return { text: text.replace(/^\uFEFF/, ''), encoding: 'utf-8' };
+        } catch {
+          enc = 'gb18030';
+        }
+      }
+    }
+    try {
+      let text = new TextDecoder(enc, { fatal: false }).decode(buffer);
+      text = text.replace(/^\uFEFF/, '');
+      return { text, encoding: enc };
+    } catch {
+      return { text: buffer.toString('utf8').replace(/^\uFEFF/, ''), encoding: 'utf-8' };
+    }
+  }
+
+  ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
+  ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides(),classified=classifyInstalledPluginOverrides(result);return {...result,packages:classified.active.map(pkg=>({...pkg,effective:true,compatibilityStatus:packageCompatibility(pkg.manifest)})),shadowed:classified.shadowed.map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest)}))};});
+  ipcMain.handle('plugins:selectPackage', async () => {
+    sweepPendingPluginInstalls();
+    let manifest=null;
+    try{
+      const result=await dialog.showOpenDialog({
+        title:'选择 DK Data Studio 插件',properties:['openFile'],
+        filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']},{name:'JSON',extensions:['json']}]
+      });
+      if(result.canceled||!result.filePaths.length)return {ok:true,canceled:true};
+      const sourcePath=result.filePaths[0],stat=fs.statSync(sourcePath);
+      if(stat.size>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
+      const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(sourcePath,'utf8')),{allowBuiltinId:false});
+      manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible){
+        const details=pluginInstallCompatibilityDetails(compatibility).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required}（当前 ${issue.actual}）`:`${issue.kind} ${issue.required}（当前 ${issue.actual}）`).join('；');
+        return {ok:false,error:pluginInstallErrorPayload(`插件与当前 DK Data Studio 环境不兼容：${details}`,{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      }
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(manifest.id));
+      const exists=fs.existsSync(target);let previousPackage=null;
+      if(exists){
+        try{previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});}
+        catch(err){return {ok:false,error:pluginInstallErrorPayload(`已安装插件包损坏，无法安全更新：${err.message}`,{code:'PLUGIN_EXISTING_PACKAGE_INVALID',title:'无法安全更新插件',manifest,compatibility})};}
+      }
+      const token=crypto.randomUUID();
+      pendingPluginInstalls.set(token,{pkg,target,exists,previousPackage,createdAt:Date.now()});
+      return {ok:true,canceled:false,token,manifest,exists,previousVersion:String(previousPackage?.manifest?.version||''),compatibility:{appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,requiredApp:String(manifest.compatibility?.app||'*'),requiredPluginApi:String(manifest.compatibility?.pluginApi||manifest.apiVersion||'*')}};
+    }catch(err){
+      return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_PACKAGE_INVALID',title:'无法读取插件包',manifest})};
+    }
+  });
+  ipcMain.handle('plugins:cancelInstall', async (_event, token) => {
+    pendingPluginInstalls.delete(String(token||''));return true;
+  });
+  ipcMain.handle('plugins:installPackage', async (_event, token) => {
+    sweepPendingPluginInstalls();const key=String(token||''),pending=pendingPluginInstalls.get(key);
+    if(!pending)return {ok:false,error:pluginInstallErrorPayload('安装会话已失效，请重新选择插件包。',{code:'PLUGIN_INSTALL_SESSION_EXPIRED',title:'安装会话已失效'})};
+    pendingPluginInstalls.delete(key);
+    const {pkg,target,previousPackage}=pending,manifest=pkg.manifest;
+    try{
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('插件环境兼容性在确认期间发生变化，请重新选择插件包。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      if(previousPackage)archiveExternalPluginPackage(previousPackage,'upgrade');
+      const normalized={...pkg,installedAt:new Date().toISOString()};atomicWritePluginPackage(target,normalized);
+      return {ok:true,package:{...normalized,installedPath:target,previousPackage}};
+    }catch(err){
+      try{if(previousPackage)atomicWritePluginPackage(target,previousPackage);else if(fs.existsSync(target))fs.rmSync(target,{force:true});}catch(restoreErr){return {ok:false,error:pluginInstallErrorPayload(`${err.message||err}；写入失败后的自动恢复也失败：${restoreErr.message||restoreErr}`,{code:'PLUGIN_INSTALL_AND_RESTORE_FAILED',title:'插件安装与自动恢复均失败',manifest,compatibility:packageCompatibility(manifest)})};}
+      return {ok:false,error:pluginInstallErrorPayload(err,{manifest,compatibility:packageCompatibility(manifest)})};
+    }
+  });
+
+  ipcMain.handle('plugins:validateGeneratedPackage', async (_event, raw) => {
+    let manifest=null;
+    try{
+      const serialized=JSON.stringify(raw||{});
+      if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)return {ok:false,error:pluginInstallErrorPayload('插件包超过 10 MB 限制。',{code:'PLUGIN_PACKAGE_TOO_LARGE',title:'插件包过大'})};
+      const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      return {ok:true,package:pkg,manifest,compatibility};
+    }catch(err){return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_PACKAGE_INVALID',title:'生成插件包无效',manifest})};}
+  });
+  ipcMain.handle('plugins:installGeneratedPackage', async (_event, payload={}) => {
+    let manifest=null,previousPackage=null,target='';
+    try{
+      const raw=payload?.package||payload;
+      const serialized=JSON.stringify(raw||{});
+      if(Buffer.byteLength(serialized,'utf8')>10*1024*1024)throw new Error('插件包超过 10 MB 限制。');
+      const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});manifest=pkg.manifest;
+      const compatibility=packageCompatibility(manifest);
+      if(!compatibility.compatible)return {ok:false,error:pluginInstallErrorPayload('生成的插件与当前 DK Data Studio 环境不兼容。',{code:'PLUGIN_INCOMPATIBLE',title:'插件版本不兼容',manifest,compatibility})};
+      if(builtinPluginIds().has(manifest.id))return {ok:false,error:pluginInstallErrorPayload(`不能覆盖内置插件：${manifest.id}`,{code:'PLUGIN_BUILTIN_CONFLICT',title:'无法安装插件',manifest,compatibility})};
+      target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(manifest.id));
+      if(fs.existsSync(target))previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});
+      if(previousPackage)archiveExternalPluginPackage(previousPackage,'agent-update');
+      const installed={...pkg,installedAt:new Date().toISOString(),generatedBy:String(payload?.source||'studio-kernel')};
+      atomicWritePluginPackage(target,installed);
+      return {ok:true,package:{...installed,installedPath:target,previousPackage},compatibility};
+    }catch(err){
+      try{if(target){if(previousPackage)atomicWritePluginPackage(target,previousPackage);else if(fs.existsSync(target))fs.rmSync(target,{force:true});}}catch{}
+      return {ok:false,error:pluginInstallErrorPayload(err,{code:'PLUGIN_GENERATED_INSTALL_FAILED',title:'生成插件安装失败',manifest,compatibility:manifest?packageCompatibility(manifest):null})};
+    }
+  });
+  ipcMain.handle('plugins:historyList', async (_event, id) => {
+    const pluginId=String(id||'');
+    return listExternalPluginHistory(pluginId);
+  });
+  ipcMain.handle('plugins:algorithmCatalog', async (_event, ref) => algorithmPackageCatalog(ref||{}));
+  ipcMain.handle('plugins:rollbackVersion', async (_event, payload) => {
+    const id=String(payload?.id||'');const token=path.basename(String(payload?.token||''));
+    if(!validPluginId(id)||id.startsWith('builtin.')||!token.toLowerCase().endsWith('.dkplugin'))throw new Error('无效的插件回退请求。');
+    const historyPath=path.join(pluginHistoryDirectory(id),token);if(!fs.existsSync(historyPath))throw new Error('指定的插件历史版本不存在。');
+    const selected=normalizePluginPackage(JSON.parse(fs.readFileSync(historyPath,'utf8')),{allowBuiltinId:false});if(selected.manifest.id!==id)throw new Error('插件历史版本 ID 不匹配。');
+    assertPackageCompatible(selected.manifest,'rollback');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));let previousPackage=null;
+    if(fs.existsSync(target)){previousPackage=normalizePluginPackage(JSON.parse(fs.readFileSync(target,'utf8')),{allowBuiltinId:false});archiveExternalPluginPackage(previousPackage,'rollback');}
+    const restored={...selected,installedAt:new Date().toISOString()};atomicWritePluginPackage(target,restored);
+    return {...restored,installedPath:target,previousPackage};
+  });
+  ipcMain.handle('plugins:restorePackage', async (_event, payload) => {
+    const id=String(payload?.id||payload?.package?.manifest?.id||'');
+    if(!validPluginId(id)||id.startsWith('builtin.'))throw new Error('无效的插件回滚 ID。');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id));
+    if(!payload?.package){if(fs.existsSync(target))fs.unlinkSync(target);return true;}
+    const pkg=normalizePluginPackage(payload.package,{allowBuiltinId:false});
+    if(pkg.manifest.id!==id)throw new Error('插件回滚包 ID 不匹配。');
+    const tmp=`${target}.rollback-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(tmp,JSON.stringify(pkg,null,2)+'\n','utf8');
+    if(fs.existsSync(target))fs.rmSync(target,{force:true});
+    fs.renameSync(tmp,target);
+    return true;
+  });
+  ipcMain.handle('plugins:uninstall', async (_event, id) => {
+    const pluginId=String(id||'');
+    if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的可卸载插件 ID。');
+    const target=path.join(ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
+    if(fs.existsSync(target))fs.unlinkSync(target);
+    return true;
+  });
+  ipcMain.handle('plugins:exportPackage', async (_event, id) => {
+    const pluginId=String(id||'');if(!validPluginId(pluginId))throw new Error('无效的插件 ID。');
+    const pkg=currentPluginPackage(pluginId);if(!pkg)throw new Error(`未找到插件包：${pluginId}`);
+    const safeId=pluginId.replace(/[^0-9A-Za-z._-]/g,'_'),safeVersion=String(pkg.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
+    const result=await dialog.showSaveDialog({title:`导出插件 · ${pkg.manifest.name||pluginId}`,defaultPath:path.join(app.getPath('downloads'),`${safeId}-${safeVersion}.dkplugin`),filters:[{name:'DK Data Studio Plugin',extensions:['dkplugin']}]});
+    if(result.canceled||!result.filePath)return null;fs.writeFileSync(result.filePath,JSON.stringify(pkg,null,2)+'\n','utf8');return {id:pluginId,name:pkg.manifest.name||pluginId,version:pkg.manifest.version||'',path:result.filePath};
+  });
+  ipcMain.handle('plugins:openFolder', async () => {
+    const dir=ensureExternalPluginDirectory();
+    const error=await shell.openPath(dir);
+    if(error)throw new Error(error);
+    return dir;
+  });
+
+
+  ipcMain.handle('smb:discover', async () => SmbService.safeSmbOperation(()=>SmbService.discoverSmbServers(),'SMB 设备发现失败'));
+  ipcMain.handle('smb:listShares', async (_event, connection={}) => SmbService.safeSmbOperation(()=>SmbService.scanDesktopSmbShares(connection),'SMB 共享枚举失败'));
+  ipcMain.handle('smb:list', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.listDesktopSmb(payload.connection||{},payload.path||''),'SMB 目录读取失败'));
+  ipcMain.handle('smb:read', async (_event, payload={}) => SmbService.safeSmbOperation(()=>SmbService.readDesktopSmb(payload.connection||{},Array.isArray(payload.paths)?payload.paths:[]),'SMB 文件读取失败'));
+
+  ipcMain.handle('agent:getSecret', async (_event,key) => loadAgentSecret(key));
+  ipcMain.handle('agent:setSecret', async (_event,payload={}) => storeAgentSecret(payload.key,payload.value));
+  ipcMain.handle('agent:httpJson', async (_event,payload={}) => agentHttpJson(payload));
+
+  ipcMain.handle('mcp:getStatus', async () => mcpServer?.status?.()||{running:false,port:8766,url:'',localUrl:'',lanUrl:'',tokenHeader:'x-dkds-token',protocolVersion:'2025-06-18'});
+  ipcMain.handle('mcp:start', async (_event,payload={}) => {
+    if(!mcpServer)mcpServer=new McpServer({dispatch:dispatchMcpToRenderer,log:message=>console.log(message)});
+    return mcpServer.start(String(payload.token||''));
+  });
+  ipcMain.handle('mcp:stop', async () => mcpServer?.stop?.()||{running:false});
+  ipcMain.on('mcp:response',(event,payload={})=>{
+    const row=pendingMcpRequests.get(String(payload.id||''));if(!row||row.webContentsId!==event.sender.id)return;
+    clearTimeout(row.timer);pendingMcpRequests.delete(String(payload.id));
+    if(payload.ok===false)row.reject(new Error(String(payload.error||'MCP Core request failed')));else row.resolve(payload.value);
+  });
+
+  ipcMain.handle('lanweb:getStatus', async () => lanWebServer?.getStatus() || null);
+  ipcMain.handle('lanweb:makeQr', async (_event, payload) => {
+    const text=String(payload?.text||'').trim();
+    if(!text) return null;
+    if(text.length>2048) throw new Error('QR content too long.');
+    return QRCode.toDataURL(text,{errorCorrectionLevel:'M',type:'image/png',width:320,margin:2,color:{dark:'#172033',light:'#ffffff'}});
+  });
+  ipcMain.handle('lanweb:getSettings', async () => lanWebServer?.getSettings() || null);
+  ipcMain.handle('lanweb:setSettings', async (_event, settings) => lanWebServer?.setSettings(settings) || null);
+  ipcMain.handle('lanweb:start', async () => lanWebServer?.start() || null);
+  ipcMain.handle('lanweb:stop', async () => lanWebServer?.stop() || null);
+  ipcMain.handle('lanweb:regenerateKey', async () => lanWebServer?.regenerateKey() || null);
+
+  ipcMain.handle('files:openData', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '选择 I-V / 多列数据文件', properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
+        { name: 'CSV', extensions: ['csv'] },
+        { name: 'Text / DAT', extensions: ['txt', 'dat', 'tsv', 'asc', 'xy', 'iv'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    if (result.canceled) return [];
+    return result.filePaths.map(filePath => {
+      const stat = fs.statSync(filePath);
+      return { path: filePath, name: path.basename(filePath), size: stat.size };
+    });
+  });
+
+  ipcMain.handle('files:openDataDirectory', async () => {
+    const result=await dialog.showOpenDialog({title:'选择数据文件夹',properties:['openDirectory','createDirectory']});
+    if(result.canceled||!result.filePaths.length)return null;
+    const folder=result.filePaths[0];return {path:folder,name:path.basename(folder)||folder};
+  });
+
+  ipcMain.handle('files:listDataDirectory', async (_event,payload={}) => {
+    const root=path.resolve(String(payload.root||payload.path||''));
+    const relative=String(payload.relativePath||'').replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+    if(!root||!fs.existsSync(root)||!fs.statSync(root).isDirectory())throw new Error('数据文件夹不存在。');
+    if(relative.split('/').includes('..'))throw new Error('文件夹路径无效。');
+    const target=path.resolve(root,relative);if(target!==root&&!target.startsWith(root+path.sep))throw new Error('文件夹路径越界。');
+    const entries=fs.readdirSync(target,{withFileTypes:true}).map(row=>{
+      const full=path.join(target,row.name),stat=fs.statSync(full),rel=path.relative(root,full).replace(/\\/g,'/');
+      return {name:row.name,path:full,relativePath:rel,directory:row.isDirectory(),size:row.isDirectory()?0:stat.size,modifiedAt:stat.mtime?.toISOString?.()||null};
+    }).filter(row=>row.directory||/\.(csv|tsv|txt|dat|json|asc|xy|iv|prn|out|log|png|jpe?g)$/i.test(row.name));
+    return {root,relativePath:relative,entries};
+  });
+
+  ipcMain.handle('files:readDataText', async (_event, payload) => {
+    const filePath = String(payload?.path || '');
+    if (!filePath || !fs.existsSync(filePath)) throw new Error('Data file not found.');
+    const buffer = fs.readFileSync(filePath);
+    const decoded = decodeTextBuffer(buffer, payload?.encoding || 'auto');
+    return {path:filePath,name:path.basename(filePath),size:buffer.length,text:decoded.text,encoding:decoded.encoding};
+  });
+
+  ipcMain.handle('files:openCsv', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '选择 I-V CSV 数据', properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    if (result.canceled) return [];
+    return result.filePaths.map(filePath => {
+      const buffer = fs.readFileSync(filePath);
+      const decoded = decodeTextBuffer(buffer, 'auto');
+      return { path: filePath, name: path.basename(filePath), text: decoded.text };
+    });
+  });
+
+  ipcMain.handle('clipboard:writeText', async (_event, text) => {
+    clipboard.writeText(String(text ?? ''));
+    return true;
+  });
+
+  ipcMain.handle('files:saveText', async (_event, payload) => {
+    const { defaultName, content, filters } = payload;
+    const result = await dialog.showSaveDialog({defaultPath:defaultName,filters:filters || [{ name: 'Text', extensions: ['txt'] }]});
+    if (result.canceled || !result.filePath) return false;
+    fs.writeFileSync(result.filePath, content, 'utf8');
+    return true;
+  });
+
+  ipcMain.handle('files:saveBase64', async (_event, payload) => {
+    const result = await dialog.showSaveDialog({
+      defaultPath: payload.defaultName || 'dk_data.png',
+      filters: payload.filters || [{ name: 'PNG Image', extensions: ['png'] }]
+    });
+    if (result.canceled || !result.filePath) return false;
+    fs.writeFileSync(result.filePath, Buffer.from(payload.base64, 'base64'));
+    return result.filePath;
+  });
+
+  ipcMain.handle('files:saveProject', async (_event, payload = {}) => {
+    const mode = payload.mode === 'saveAs' ? 'saveAs' : 'current';
+    const currentPath = typeof payload.path === 'string' && !/^(?:web|webfs|native):\/\//i.test(payload.path)
+      ? payload.path
+      : null;
+    let filePath = mode === 'current' ? currentPath : null;
+    if (!filePath) {
+      const result = await dialog.showSaveDialog({
+        title: mode === 'saveAs' ? '项目另存为' : '保存 DK Data Studio 项目',
+        defaultPath: currentPath || payload.defaultName || 'dk_data_project.dkds.json',
+        filters: [{ name: 'DK Data Studio Project', extensions: ['dkds.json', 'json'] }]
+      });
+      if (result.canceled || !result.filePath) return null;
+      filePath = result.filePath;
+    }
+    const serialized=DKDSProjectFormat.serializeProject(payload.project || {});
+    return getProjectFileSafety().safeWrite(filePath, serialized);
+  });
+
+  ipcMain.handle('system:getDevToolsState', async event => {
+    const win=BrowserWindow.fromWebContents(event.sender);
+    if(!win||win.isDestroyed())return {available:false,open:false};
+    return {available:true,open:!!win.webContents?.isDevToolsOpened?.()};
+  });
+  ipcMain.handle('system:toggleDevTools', async event => {
+    const win=BrowserWindow.fromWebContents(event.sender);
+    if(!win||win.isDestroyed())return {available:false,open:false};
+    const contents=win.webContents;if(contents?.isDevToolsOpened?.())contents.closeDevTools();else contents?.openDevTools?.({mode:'detach',activate:true});
+    return {available:true,open:!!contents?.isDevToolsOpened?.()};
+  });
+
+  ipcMain.handle('system:getAppearanceTheme', async () => appearanceTheme || null);
+  ipcMain.handle('system:setAppearanceTheme', async (_event, value) => {
+    const next=String(value||'').toLowerCase();
+    if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
+    if(appearanceTheme===next){
+      // Re-assert nativeTheme: Windows can recreate native chrome when a
+      // BrowserWindow is restored or moved between displays.
+      return applyNativeAppearance(next,{persist:true,broadcast:false});
+    }
+    return applyNativeAppearance(next,{persist:true,broadcast:true});
+  });
+
+  ipcMain.handle('system:getRuntimeStatus', async () => {
+    const metrics = app.getAppMetrics();
+    const rendererMeta=new Map();
+    for(const win of BrowserWindow.getAllWindows()){
+      if(!win||win.isDestroyed())continue;
+      const pid=Number(win.webContents?.getOSProcessId?.())||0;
+      if(!pid)continue;
+      const bootstrap=auxiliaryBootstrap.get(win.webContents.id)||{};
+      const pluginWindow=bootstrap.pluginWindow||{};
+      const pluginId=String(pluginWindow.pluginId||'');
+      const activityId=String(pluginWindow.activity||bootstrap.activityId||'');
+      const title=String(pluginWindow.title||bootstrap.title||win.getTitle?.()||'').trim();
+      const projectTabId=String(bootstrap.projectTabId||'');
+      const projectTitle=String(bootstrap.title||'').trim();
+      const lifecycle=pluginId?(bootstrap.prewarm===true?'预热':(win.isVisible()?'已打开':'已隐藏')):'主界面';
+      rendererMeta.set(pid,{
+        pluginId,activityId,title,projectTabId,projectTitle,lifecycle,visible:win.isVisible(),prewarm:bootstrap.prewarm===true,
+        label:pluginId?`插件 · ${title||pluginId}${projectTitle?` · ${projectTitle}`:''} · ${lifecycle}`:`主界面 · ${title||APP_NAME}`
+      });
+    }
+    const components=metrics.map((row,index)=>{
+      const m=row?.memory||{};
+      const pid=Number(row?.pid)||0;
+      const renderer=rendererMeta.get(pid)||null;
+      const type=String(row?.type||'process');
+      const processName=String(row?.name||row?.serviceName||'').trim();
+      let label=renderer?.label||'';
+      if(!label){
+        if(type==='Browser')label='主进程';
+        else if(type==='GPU')label='GPU 进程';
+        else if(type==='Utility')label=processName?`服务 · ${processName}`:'Utility 服务';
+        else if(type==='Tab')label='渲染进程';
+        else label=processName||`${type} 进程`;
+      }
+      return {
+        id:`${type}:${pid||index}`,
+        type,pid,label,
+        pluginId:renderer?.pluginId||'',
+        activityId:renderer?.activityId||'',
+        projectTabId:renderer?.projectTabId||'',
+        projectTitle:renderer?.projectTitle||'',
+        lifecycle:renderer?.lifecycle||'',
+        visible:renderer?.visible!==false,
+        prewarm:renderer?.prewarm===true,
+        workingSetBytes:(Number(m.workingSetSize)||0)*1024,
+        peakWorkingSetBytes:(Number(m.peakWorkingSetSize)||0)*1024,
+        privateBytes:(Number(m.privateBytes)||0)*1024
+      };
+    }).sort((a,b)=>b.workingSetBytes-a.workingSetBytes);
+    const memory = components.reduce((sum, row) => {
+      sum.workingSetBytes += Number(row.workingSetBytes)||0;
+      sum.peakWorkingSetBytes += Number(row.peakWorkingSetBytes)||0;
+      sum.privateBytes += Number(row.privateBytes)||0;
+      return sum;
+    }, { workingSetBytes:0, peakWorkingSetBytes:0, privateBytes:0 });
+    return {
+      runtime:'desktop',
+      platform:process.platform,
+      isPackaged:app.isPackaged,
+      processCount:metrics.length,
+      memory,
+      components
+    };
+  });
+
+  ipcMain.handle('files:openProject', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '打开 DK Data Studio 项目', properties: ['openFile'],
+      filters: [{ name: 'DK Data Studio Project', extensions: ['json'] }]
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    const filePath = result.filePaths[0];
+    const bytes=fs.readFileSync(filePath);
+    const parsed=DKDSProjectFormat.parseProjectBytes(bytes);
+    getProjectFileSafety().registerOpen(filePath);
+    return {path:filePath,project:parsed.project,encoding:parsed.encoding};
+  });
+
+  lanUpdater = new LanUpdateClient({ app, BrowserWindow, installPluginPackage:installLanPluginPackage });
+  lanUpdater.start();
+  lanWebServer = new LanWebServer({ app, BrowserWindow });
+  if (lanWebServer.getSettings().enabled) lanWebServer.start(false).catch(err => console.error('LAN web server:', err));
+
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  appQuitting = true;
+  try { projectFileSafety?.prepareForQuit('app-before-quit'); } catch (err) { console.error('[DKDS project safety:quit]',err); }
+  try { lanUpdater?.stop(); } catch {}
+  try { lanWebServer?.stop(false); } catch {}
+  try { mcpServer?.stop?.(); } catch {}
+  try { SmbService.shutdownSmbSessions?.(); } catch {}
+});

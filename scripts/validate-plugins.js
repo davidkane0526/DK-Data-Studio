@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const SemverCompat = require('../semver-compat');
+const SemverCompat = require('../desktop/semver-compat');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
@@ -26,7 +26,7 @@ const requirementUsage=[
   ['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.menus',/ctx\.ui\.menus\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],
   ['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],
   ['ui.status-bar',/ctx\.ui\.statusBar\b/],['ui.shortcuts',/ctx\.ui\.shortcuts\b/],['ui.pages',/ctx\.ui\.pages\b/],
-  ['ui.styles',/ctx\.ui\.styles\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
+  ['ui.styles',/ctx\.ui\.styles\b/],['ui.theme',/ctx\.ui\.theme\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
 ];
 
 function fail(message) {
@@ -54,8 +54,9 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
   if (!['1.9.0','1.10.0','1.11.0','1.12.0','1.13.0','1.14.0','1.15.0','1.16.0','1.17.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0, 1.10.0, 1.11.0, 1.12.0, 1.13.0, 1.14.0, 1.15.0, 1.16.0 or 1.17.0`);
-  const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','extension','developer']);
+  const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
   if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
+  if(m.pluginType==='theme'){if(!(m.requiresCore||[]).includes('ui.theme'))fail(`${name}: theme plugins must declare ui.theme`);if((m.requiresCore||[]).includes('ui.styles'))fail(`${name}: theme plugins must use Theme Contract tokens instead of ui.styles`);if(Array.isArray(m.styles)&&m.styles.length)fail(`${name}: theme plugins must not ship arbitrary stylesheets`);if(m.workspace||m.window)fail(`${name}: theme plugins must not own workspace/window contracts`);if(m.algorithmProvider===true)fail(`${name}: theme plugins cannot be Algorithm Providers`);}
   if(!Array.isArray(m.requiresCore))fail(`${name}: requiresCore must be an array`);
   else for(const requirement of m.requiresCore)if(!coreRequirements.has(String(requirement)))fail(`${name}: unknown Core requirement ${requirement}`);
   const algorithmCategories=Array.isArray(m.algorithmCategories)?m.algorithmCategories.map(value=>String(value||'').trim()).filter(Boolean):[];
@@ -77,7 +78,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   }
   if(m.compatibility!==undefined){
     if(!m.compatibility||typeof m.compatibility!=='object'||Array.isArray(m.compatibility))fail(`${name}: compatibility must be an object`);
-    else for(const field of ['app','pluginApi'])if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))fail(`${name}: compatibility.${field} must be a valid version range`);
+    else for(const field of ['app','pluginApi','themeContract'])if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))fail(`${name}: compatibility.${field} must be a valid version range`);
   }
   const pluginDependencies=Array.isArray(m.pluginDependencies)?m.pluginDependencies:[];
   if(m.pluginDependencies!==undefined&&!Array.isArray(m.pluginDependencies))fail(`${name}: pluginDependencies must be an array`);

@@ -1,13 +1,21 @@
 {
-  "sdkVersion": "1.17.6",
+  "sdkVersion": "1.17.16",
   "pluginApiVersion": "1.17.0",
   "packageSchema": 1,
   "minimumAppVersion": "3.61.39",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "SDK 1.17.6 on Studio 3.61.54 exposes additive ui.theme profile registration: theme plugins provide semantic tokens while Core owns host DOM, surface hierarchy, splitters and native-shell projection. Plugin API remains 1.17.0.",
-    "SDK 1.17.6 stabilizes PluginWorkspace safe geometry: Core owns a bounded Primary viewport and scrollbar, while SDK validation/templates flag percentage-height chains and stretched auto-row grids that can make Tool workspaces appear to grow. Plugin API remains 1.17.0.",
+    "SDK 1.17.16 on Studio 3.61.81 stabilizes recipe-owned glass chrome: chrome-owned header/status actions are layout-only hit regions, built-in Thin Glass matches the public SDK visual family, dark-menu context chrome is tokenized, and temporary theme-plugin deactivation no longer overwrites the user's saved profile. Plugin API remains 1.17.0; Theme Contract remains 3.5.0.",
+    "SDK 1.17.15 makes glass rendering recipe-owned rather than built-in-profile-owned, documents materialTintOpacity as semantic base-fill opacity, adds Core legibility floors for translucent roles, and updates the Theme Profile template to readable Thin Glass defaults. Plugin API remains 1.17.0; Theme Contract remains 3.5.0.",
+    "SDK 1.17.14 on Studio 3.61.75 upgrades Theme Contract to 3.5 with the independent Core thin-glass recipe, explicit role-to-recipe policy, MaterialSurface diagnostics, opaque-parent detection, and development Theme Debug inspection. Thin Glass uses low Gaussian backdrop blur with low tint and no Liquid optical effects.",
+    "SDK 1.17.13 on Studio 3.61.74 upgrades Theme Contract to 3.4: optical recipes are profile-owned instead of globally forced, builtin.default is fully clear, theme plugins can expose bounded declarative settings rendered by Core, and the Optical Renderer 3.5 reduces persistent compositor/mutation overhead. Plugin API remains 1.17.0.",
+    "SDK 1.17.12 on Studio 3.61.73 adds the Core Optical Material Renderer policy without new Theme tokens: semantic material roles are decoupled from clear / soft-glass / liquid-glass renderer recipes; popover/floating surfaces gain non-uniform edge lensing and bounded dynamic specular response while scientific content surfaces remain clear. Theme Contract remains 3.3.0.",
+    "SDK 1.17.11 on Studio 3.61.73 finalizes Core material-role coverage without adding Theme tokens: automatic semantic role assignment across Core pages/PluginWorkspace/settings/dedicated workspaces/dialogs/tool panels, derived tooltip/popover contrast guards, integrated command-group material ownership, non-pill plot legends, and render-level coverage diagnostics. Theme Contract remains 3.3.0.",
+    "SDK 1.17.10 on Studio 3.61.71 upgrades Theme Contract to 3.3: contract-vs-renderer capability separation, real Material Renderer capability probing, computed-style Render Coverage, single Core material recipe, optical blur gallery probe, and dedicated TOP material verification.",
+    "SDK 1.17.8 on Studio 3.61.68 upgrades Theme Contract to 3.1 with bounded material tokens: materialBlur, materialBlurStrong, materialSaturation, materialTintOpacity, specularHighlight, innerHighlight, glassEdge and materialNoiseOpacity. Core owns material recipes; Plugin API remains 1.17.0.",
+    "SDK 1.17.7 on Studio 3.61.67 promotes Theme Contract 3.0: pluginType=theme, Plugin Manager profile activation, semantic appearance tokens, bounded motion tokens, and reduced-motion safety. Plugin API remains 1.17.0.",
+    "SDK 1.17.7 stabilizes PluginWorkspace safe geometry: Core owns a bounded Primary viewport and scrollbar, while SDK validation/templates flag percentage-height chains and stretched auto-row grids that can make Tool workspaces appear to grow. Plugin API remains 1.17.0.",
     "SDK 1.17.5 closes the external Tool dedicated-window contract: the .dkplugin manifest is canonical in both owner and dedicated renderers, and host smoke tests require the requested activity, TOP workspace, and visible page to mount before PASS. Plugin API remains 1.17.0.",
     "SDK 1.17.4 fixes Core D3 scalar-field automatic limits and adds stable Cartesian autorange padding; Plugin API remains 1.17.0.",
     "New plugins target Plugin API 1.17.0; Plugin API 1.10-1.16 packages remain loadable.",
@@ -18,5 +26,6 @@
     "ScientificCurveSurface minWidth/minHeight are preferred geometry, not a silent-render gate; Core may recover or render compactly.",
     "Tool/TOP workspaces use one reusable dedicated window contract with Core-owned import, theme, viewport, navigation and status-bar geometry.",
     "The SDK is standalone and does not require DK Data Studio source code."
-  ]
+  ],
+  "themeContractVersion": "3.5.0"
 }

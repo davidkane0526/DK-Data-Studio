@@ -10,29 +10,29 @@
 
       <div class="analysis-page-body pulse-analysis-body">
         <div class="pulse-batch-workspace">
-          <aside class="pulse-card pulse-file-manager-card">
-            <div class="pulse-card-heading pulse-file-manager-heading">
+          <aside class="pulse-card pulse-file-manager-card dkds-surface">
+            <div class="pulse-card-heading dkds-surface-header pulse-file-manager-heading">
               <div>
                 <h3>脉冲数据文件</h3>
                 <p>勾选决定是否参与批量分析和叠加比较；点击文件切换当前编辑对象。</p>
               </div>
             </div>
-            <div class="pulse-file-toolbar">
+            <div class="pulse-file-toolbar dkds-toolbar">
               <button id="pulseCheckAllBtn">全选</button>
               <button id="pulseUncheckAllBtn">全不选</button>
               <button id="pulseRemoveFilesBtn">从脉冲分析移除</button>
             </div>
-            <div id="pulseFileList" class="pulse-file-list"><div class="pulse-file-empty">尚未添加脉冲数据文件</div></div>
-            <div id="pulseBatchFileSummary" class="pulse-file-summary">0 个文件</div>
+            <div id="pulseFileList" class="pulse-file-list dkds-list"><div class="pulse-file-empty">尚未添加脉冲数据文件</div></div>
+            <div id="pulseBatchFileSummary" class="pulse-file-summary dkds-meta">0 个文件</div>
           </aside>
 
-          <section class="pulse-card pulse-config-card">
-            <div class="pulse-card-heading">
+          <section class="pulse-card pulse-config-card dkds-surface">
+            <div class="pulse-card-heading dkds-surface-header">
               <div>
                 <h3>当前文件与提取设置</h3>
                 <p>“自动”会优先使用明确的时间协议；无协议但有电压时保持旧版兼容。仅电流数据请填写写入/读取宽度。</p>
               </div>
-              <div class="pulse-current-file-actions">
+              <div class="pulse-current-file-actions dkds-toolbar">
               </div>
             </div>
 
@@ -44,7 +44,7 @@
                   <div class="pulse-active-path" id="pulseActiveFileName">—</div>
                   <div class="pulse-active-meta" id="pulseActiveFileMeta">—</div>
                 </div>
-                <label class="pulse-label-edit">显示标签
+                <label class="pulse-label-edit dkds-field">显示标签
                   <input id="pulseSeriesLabel" type="text" placeholder="例如 read=0.5 V / Device A">
                 </label>
               </div>
@@ -125,61 +125,61 @@
                 </div>
               </div>
 
-              <div class="pulse-protocol-hint">
+              <div class="pulse-protocol-hint dkds-note">
                 周期数据可直接使用“每周期点数”。例如你的 DataDeal 脚本 <code>segs=300</code> 对应每周期 300 点；若只想统计周期内 105–115 点，可把读取统计区间设为 105–115。留空时会结合电压跳变或读写宽度比例自动确定相位。文件名也可携带 <code>t=0.1s read=0.1 1s</code> 等时间协议。
               </div>
               <div id="pulseSummary" class="pulse-summary pulse-summary-grid">
-                <span class="pulse-summary-placeholder">当前文件尚未分析。</span>
+                <span class="pulse-summary-placeholder dkds-note">当前文件尚未分析。</span>
               </div>
             </div>
           </section>
         </div>
 
-        <section class="pulse-card pulse-raw-card">
-          <div class="pulse-card-heading pulse-plot-heading">
+        <section class="pulse-card pulse-raw-card dkds-surface">
+          <div class="pulse-card-heading dkds-surface-header pulse-plot-heading">
             <div>
               <h3>当前文件 · 原始波形诊断</h3>
               <p id="pulseRawSubtitle">有记录电压时显示电压/电流双轨；仅电流文件只显示电流–时间波形。</p>
             </div>
-            <div class="pulse-plot-actions"></div>
+            <div class="pulse-plot-actions dkds-toolbar"></div>
           </div>
           <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface"></div>
         </section>
 
-        <section class="pulse-card pulse-compare-toolbar-card">
-          <div class="pulse-compare-toolbar">
+        <section class="pulse-card pulse-compare-toolbar-card dkds-surface">
+          <div class="pulse-compare-toolbar dkds-toolbar">
             <div><strong>结果比较</strong><span>有脉冲电压时使用电压横轴；未记录/未指定时自动改用脉冲序号。</span></div>
             <label>显示范围
               <select id="pulseResultScope"><option value="checked">全部勾选文件</option><option value="active">仅当前文件</option></select>
             </label>
-            <div id="pulseComparedSummary" class="pulse-compared-summary">0 个已分析文件</div>
+            <div id="pulseComparedSummary" class="pulse-compared-summary dkds-chip">0 个已分析文件</div>
           </div>
         </section>
 
         <div class="pulse-results-grid">
-          <section class="pulse-card pulse-result-card">
-            <div class="pulse-card-heading pulse-plot-heading">
+          <section class="pulse-card pulse-result-card dkds-surface">
+            <div class="pulse-card-heading dkds-surface-header pulse-plot-heading">
               <div><h3>脉冲条件 → 读取电流</h3><p>优先按脉冲电压比较；电压未知时按脉冲序号显示，不虚构电压。</p></div>
-              <div class="pulse-plot-actions"></div>
+              <div class="pulse-plot-actions dkds-toolbar"></div>
             </div>
             <div id="pulseReadPlot" class="pulse-result-plot pulse-plot-surface"></div>
           </section>
 
-          <section class="pulse-card pulse-result-card">
-            <div class="pulse-card-heading pulse-plot-heading">
+          <section class="pulse-card pulse-result-card dkds-surface">
+            <div class="pulse-card-heading dkds-surface-header pulse-plot-heading">
               <div><h3>脉冲条件 → 脉冲电流</h3><p>支持不同写入/读取宽度；仅电流文件同样可提取并比较。</p></div>
-              <div class="pulse-plot-actions"></div>
+              <div class="pulse-plot-actions dkds-toolbar"></div>
             </div>
             <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface"></div>
           </section>
         </div>
 
-        <section class="pulse-card pulse-results-table-card">
-          <div class="pulse-card-heading pulse-table-heading">
+        <section class="pulse-card pulse-results-table-card dkds-surface">
+          <div class="pulse-card-heading dkds-surface-header pulse-table-heading">
             <div><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
-            <div class="pulse-table-actions"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
+            <div class="pulse-table-actions dkds-toolbar"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
           </div>
-          <div class="pulse-table-wrap"><table id="pulseResultTable" class="physics-table pulse-result-table"></table></div>
+          <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="physics-table pulse-result-table dkds-table"></table></div>
         </section>
       </div>`;
 

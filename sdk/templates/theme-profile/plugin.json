@@ -4,7 +4,14 @@
   "version": "1.0.0",
   "apiVersion": "1.17.0",
   "entry": "plugin.js",
-  "pluginType": "extension",
-  "requiresCore": ["ui.theme"],
-  "description": "Semantic Theme Contract 2.0 profile example"
+  "pluginType": "theme",
+  "requiresCore": [
+    "ui.theme"
+  ],
+  "description": "Theme Contract 3.5 Thin Glass validated semantic color, material-role and motion profile example",
+  "compatibility": {
+    "app": ">=3.61.81 <4.0.0",
+    "pluginApi": "^1.17.0",
+    "themeContract": "^3.5.0"
+  }
 }

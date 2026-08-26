@@ -266,7 +266,7 @@
         for (const item of state.files) {
           const row = dom.create('div');
           const isActive = item.id === state.activeId;
-          row.className = `pulse-batch-file-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`;
+          row.className = `pulse-batch-file-item dkds-list-item ${isActive?'active':''} ${item.error&&!item.result?'error':''} ${item.error&&item.result?'warning':''}`;
           const rv = nullableNumber(item.result?.readVoltage);
           const meta = item.result
             ? `${modeName(resultMode(item.result))} · ${rv!==null?`读取≈${rv.toFixed(4)} V`:'未记录读取电压'} · ${item.result.points.length} 组${item.error?' · 重算失败，保留上次结果':''}`
@@ -278,7 +278,7 @@
                 <div class="pulse-batch-file-label" title="${esc(label(item))}">${esc(label(item))}</div>
                 <div class="pulse-batch-file-name" title="${esc(item.name)}">${esc(item.name)}</div>
               </div>
-              <span class="pulse-file-state ${item.result?'done':item.error?'bad':''}">${item.result?'已分析':item.error?'错误':'待处理'}</span>
+              <span class="pulse-file-state dkds-chip ${item.result?'done':item.error?'bad':''}">${item.result?'已分析':item.error?'错误':'待处理'}</span>
             </div>
             <div class="pulse-batch-file-meta">${esc(meta)}</div>`;
           row.querySelector('.pulse-file-check').onclick = e => {
@@ -308,9 +308,9 @@
         const box = $('#pulseSummary');
         if (!box) return;
         const r = item?.result;
-        if (!item) { box.innerHTML='<span class="pulse-summary-placeholder">请选择文件。</span>'; return; }
-        if (item.error && !r) { box.innerHTML=`<span class="pulse-summary-error">${esc(item.error)}</span>`; return; }
-        if (!r) { box.innerHTML='<span class="pulse-summary-placeholder">当前文件尚未分析。</span>'; return; }
+        if (!item) { box.innerHTML='<span class="pulse-summary-placeholder dkds-note">请选择文件。</span>'; return; }
+        if (item.error && !r) { box.innerHTML=`<span class="pulse-summary-error dkds-status error">${esc(item.error)}</span>`; return; }
+        if (!r) { box.innerHTML='<span class="pulse-summary-placeholder dkds-note">当前文件尚未分析。</span>'; return; }
         const rows = [
           ['分段方式',modeName(resultMode(r))],
           ['读取电压',finiteValue(r.readVoltage)?`${Number(r.readVoltage).toFixed(6)} V`:'未记录 / 未指定'],
@@ -321,7 +321,7 @@
         if (r.protocol?.writeDuration>0) rows.splice(1,0,['写入宽度',`${r.protocol.writeDuration} s`]);
         if (r.protocol?.readDuration>0) rows.splice(2,0,['读取宽度',`${r.protocol.readDuration} s`]);
         if (finiteValue(r.blockSamples)) rows.splice(1,0,['平台点数',String(r.blockSamples)]);
-        box.innerHTML = rows.map(([k,v])=>`<span class="pulse-stat-chip"><span>${esc(k)}</span><strong>${esc(v)}</strong></span>`).join('');
+        box.innerHTML = rows.map(([k,v])=>`<span class="pulse-stat-chip dkds-metric"><span>${esc(k)}</span><strong>${esc(v)}</strong></span>`).join('');
       }
 
       function renderEditor() {
@@ -377,8 +377,8 @@
         charts.react(id,[],{
           margin:{l:25,r:25,t:25,b:25},
           xaxis:{visible:false},yaxis:{visible:false},
-          annotations:[{text:message,x:.5,y:.5,xref:'paper',yref:'paper',showarrow:false,font:{size:13,color:'#98a2b3'}}],
-          paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+          annotations:[{text:message,x:.5,y:.5,xref:'paper',yref:'paper',showarrow:false,font:{size:13}}],
+
         },{responsive:true,displaylogo:false,displayModeBar:false});
       }
 
@@ -400,9 +400,9 @@
             hovertemplate:`Time=%{x:.7g}<br>Id=%{y:.7g} ${scale.unit}<extra>Id</extra>`
           }],{
             margin:{l:82,r:34,t:42,b:66},
-            xaxis:{title:'Time',gridcolor:'#edf0f5',automargin:true},
-            yaxis:{title:`Id (${scale.unit})`,gridcolor:'#edf0f5',automargin:true},
-            hovermode:'x unified',dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+            xaxis:{title:'Time',automargin:true},
+            yaxis:{title:`Id (${scale.unit})`,automargin:true},
+            hovermode:'x unified',dragmode:'zoom',autosize:true
           },config);
           return;
         }
@@ -411,22 +411,22 @@
           {x:r.raw.time,y:r.raw.current.map(v=>v*scale.factor),mode:'lines',name:'Id',line:{width:1.15},yaxis:'y2'}
         ],{
           margin:{l:82,r:34,t:54,b:66},
-          xaxis:{title:'Time',anchor:'y2',gridcolor:'#edf0f5',automargin:true},
-          yaxis:{title:'Vd (V)',domain:[0.57,1],gridcolor:'#edf0f5',automargin:true},
-          yaxis2:{title:`Id (${scale.unit})`,domain:[0,0.42],gridcolor:'#edf0f5',automargin:true},
+          xaxis:{title:'Time',anchor:'y2',automargin:true},
+          yaxis:{title:'Vd (V)',domain:[0.57,1],automargin:true},
+          yaxis2:{title:`Id (${scale.unit})`,domain:[0,0.42],automargin:true},
           legend:{orientation:'h',x:0,y:1.10,yanchor:'bottom'},
-          hovermode:'x unified',dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+          hovermode:'x unified',dragmode:'zoom',autosize:true
         },config);
       }
 
       function baseLayout(yTitle,showLegend=false,xTitle='脉冲电压 (V)') {
         return {
           margin:{l:78,r:24,t:showLegend?48:26,b:64},
-          xaxis:{title:xTitle,gridcolor:'#edf0f5',automargin:true},
-          yaxis:{title:yTitle,gridcolor:'#edf0f5',automargin:true},
+          xaxis:{title:xTitle,automargin:true},
+          yaxis:{title:yTitle,automargin:true},
           hovermode:'closest',showlegend:showLegend,
           legend:{orientation:'h',x:0,y:1.08,yanchor:'bottom'},
-          dragmode:'zoom',autosize:true,paper_bgcolor:'#fff',plot_bgcolor:'#fff'
+          dragmode:'zoom',autosize:true
         };
       }
 

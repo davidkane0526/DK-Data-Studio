@@ -32,6 +32,15 @@ fs.cpSync(source, out, { recursive: true });
 const sharedAssets = path.join(repoRoot, 'assets');
 if (fs.existsSync(sharedAssets)) fs.cpSync(sharedAssets, path.join(out, 'assets'), { recursive: true });
 
+// Theme Contract is shared SDK runtime data, not desktop-only source. Package the
+// exact contract modules consumed by src/index.html so Android uses the same
+// validated Theme/Material/Coverage semantics as Electron.
+const sdkOut = path.join(out, 'sdk');
+fs.mkdirSync(sdkOut, { recursive: true });
+for (const name of ['semver-compat.js','theme-contract.js','theme-coverage-contract.js']) {
+  fs.copyFileSync(path.join(repoRoot, 'sdk', name), path.join(sdkOut, name));
+}
+
 const vendor = path.join(out, 'vendor');
 fs.mkdirSync(vendor, { recursive: true });
 fs.copyFileSync(requireFile('node_modules/d3/dist/d3.min.js'), path.join(vendor, 'd3.min.js'));
@@ -41,6 +50,7 @@ let html = fs.readFileSync(indexPath, 'utf8');
 html = html
   .replace('../node_modules/d3/dist/d3.min.js', 'vendor/d3.min.js')
   .replaceAll('../assets/', 'assets/')
+  .replaceAll('../sdk/', 'sdk/')
   .replace('<title>DK Data Studio</title>', '<title>DK Data Studio Mobile</title>');
 fs.writeFileSync(indexPath, html, 'utf8');
 

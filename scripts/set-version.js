@@ -89,6 +89,8 @@ fs.writeFileSync(indexPath, html, 'utf8');
 // other built-in plugins maintain their own semantic versions.
 for (const relative of [
   path.join('src','app.js'),
+  path.join('src','app','60-project-persistence.inc'),
+  path.join('src','app','80-dedicated-plugin-windows.inc'),
   path.join('src','plugin-window','runtime.js'),
   path.join('src','web-bridge.js'),
   path.join('src','core','mcp-runtime.js'),
@@ -106,7 +108,7 @@ for (const relative of [
 // behavior while also asserting that they run against the current application
 // release. Keep only those current-version assertions synchronized; do not
 // rewrite unrelated historical/minimum-version fixtures.
-const testsDir = path.join(root, 'scripts');
+const testsDir = path.join(root, 'tests');
 if (fs.existsSync(testsDir)) {
   for (const name of fs.readdirSync(testsDir)) {
     if (!/^test-.*\.js$/i.test(name)) continue;

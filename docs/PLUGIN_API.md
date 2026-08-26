@@ -502,7 +502,7 @@ Run before delivery:
 ```bash
 npm run plugin:index
 npm run plugin:validate
-node scripts/check-plugin-boundaries.js
+node tests/check-plugin-boundaries.js
 npm run check
 ```
 
@@ -551,6 +551,11 @@ const ok = await ctx.ui.dialogs.confirm({
 
 ### Theme profiles (`ctx.ui.theme`)
 
-Studio 2.0 主题契约只允许插件注册**语义 Token**，而不是覆盖 Core/其他插件 DOM。主题插件可通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}}})` 注册 profile，再通过 `ctx.ui.theme.activate(id)` 激活。可用 token 包括 `canvas`, `surface`, `surfaceSoft`, `surfaceElevated`, `surfaceSidebar`, `surfaceHover`, `controlBg`, `controlHover`, `divider`, `dividerHover`, `controlBorder`, `controlBorderHover`, `scrollbar`, `scrollbarHover`, `text`, `textSoft`, `muted`, `accent`, `accentHover`, `accentSoft`, `focus`, `shadow1`, `shadow2`, `shadowFloat`, `radius`, `radiusLg`。
+Theme Contract 3.1 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
 
-结构分区应优先依靠 surface 色差和间距；`divider` 只用于必须存在的结构线，输入框/按钮使用独立的 `controlBorder`。这使主题插件可以改变整体视觉而不会破坏科学图或组件布局。
+外观 token 包括 `canvas`, `surface`, `surfaceSoft`, `surfaceElevated`, `surfaceSidebar`, `surfaceHover`, `controlBg`, `controlHover`, `divider`, `dividerHover`, `controlBorder`, `controlBorderHover`, `scrollbar`, `scrollbarHover`, `text`, `textSoft`, `muted`, `accent`, `accentHover`, `accentSoft`, `focus`, `shadow1`, `shadow2`, `shadowFloat`, `radius`, `radiusLg`。Motion token 包括 `motionFast`, `motionNormal`, `motionSlow`, `easeStandard`, `easeEmphasized`, `hoverLift`, `pressScale`。
+
+主题只拥有语义视觉和受控动效，不拥有 Core/其他插件的布局或 DOM。`prefers-reduced-motion: reduce` 始终优先于主题 motion。结构分区应依靠 surface 色差和间距，`divider` 只用于必要结构线，输入框/按钮使用独立 `controlBorder`。
+
+
+Theme Contract 3.1 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.

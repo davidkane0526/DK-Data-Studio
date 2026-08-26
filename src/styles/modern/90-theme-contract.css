@@ -1,0 +1,57 @@
+/* Theme Contract semantic/motion base
+   Theme profiles own semantic appearance plus bounded motion tokens.
+   Core owns the animation recipes and reduced-motion safety. */
+body.dkds-modern-ui :where(button,.dkds-action-button,.project-tab-close,.plugin-manager-card,.dataset-item,.dkds-selection-item){
+  transition-duration:var(--dkui-motion-fast);
+  transition-timing-function:var(--dkui-ease-standard);
+}
+body.dkds-modern-ui :where(.dkds-dialog,.command-menu,.dkds-portable-view){
+  transition-duration:var(--dkui-motion-normal);
+  transition-timing-function:var(--dkui-ease-emphasized);
+}
+body.dkds-modern-ui :where(.dkds-action-button,.project-tab-close):active:not(:disabled){
+  transform:scale(var(--dkui-press-scale));
+}
+@media(prefers-reduced-motion:reduce){
+  :root{
+    --dkui-motion-fast:.001ms;
+    --dkui-motion-normal:.001ms;
+    --dkui-motion-slow:.001ms;
+    --dkui-hover-lift:0px;
+    --dkui-press-scale:1;
+  }
+}
+
+/* Strict semantic closure. This last visual layer intentionally rebinds the
+   remaining shell/page chrome to public Theme tokens so a Theme Profile can
+   actually replace the application appearance instead of only recoloring a
+   subset of components. Data-semantic series/status marks remain untouched. */
+body.dkds-modern-ui{
+  background:var(--dkui-canvas)!important;
+  background-image:radial-gradient(ellipse at 55% -12%,color-mix(in srgb,var(--dkui-accent) 7%,transparent),transparent 66%)!important;
+  color:var(--dkui-text);
+}
+  background:color-mix(in srgb,var(--dkui-surface-elevated) 97%,transparent)!important;
+  border-bottom-color:var(--dkui-divider)!important;
+  box-shadow:var(--dkui-shadow-1)!important;
+}
+body.dkds-modern-ui .brand{color:var(--dkui-text)!important}
+body.dkds-modern-ui .brand-mark{background:var(--dkui-surface-elevated)!important;border-color:var(--dkui-control-border)!important;box-shadow:var(--dkui-shadow-1)!important}
+body.dkds-modern-ui :where(.toolbar-group,.primary-activity-cluster,.system-core-tools-group){background:var(--dkui-surface-soft)!important;border-color:var(--dkui-divider)!important;box-shadow:var(--dkui-shadow-1)!important}
+body.dkds-modern-ui :where(.toolbar-btn:hover:not(.strong):not(:disabled),.activity-tab:hover,.plugin-toolbar-btn:hover){background:var(--dkui-surface-hover)!important;border-color:var(--dkui-control-border)!important;color:var(--dkui-text)!important}
+body.dkds-modern-ui :where(.activity-tab.active,.primary-activity-bar .activity-tab.top-level-activity-tab.active){background:var(--dkui-surface-hover)!important;border-color:var(--dkui-divider)!important;color:color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-text))!important;box-shadow:var(--dkui-shadow-1)!important}
+body.dkds-modern-ui .project-tab{background:var(--dkui-surface-soft)!important;border-color:var(--dkui-divider)!important;color:var(--dkui-text-soft)!important;box-shadow:none!important}
+body.dkds-modern-ui .project-tab:hover{background:var(--dkui-surface-hover)!important;color:var(--dkui-text)!important}
+body.dkds-modern-ui .project-tab.active{background:var(--dkui-surface)!important;border-color:var(--dkui-divider)!important;border-bottom-color:var(--dkui-surface)!important;color:var(--dkui-text)!important}
+body.dkds-modern-ui :where(.plugin-manager-search-wrap,.plugin-manager-toolbar-card select,.dataset-vg-edit input,.peak-class-grid input,.schema-param-field input,.schema-param-field select,.schema-param-field textarea,.plugin-theme-profile-select){background:var(--dkui-control-bg)!important;border-color:var(--dkui-control-border)!important;color:var(--dkui-text)!important}
+body.dkds-modern-ui :where(.analysis-page-header h2,.plugin-manager-section-head strong,.plugin-card-title-line h3,.plugin-manager-stat strong){color:var(--dkui-text)!important}
+body.dkds-modern-ui :where(.analysis-subtitle,.plugin-manager-section-head span,.plugin-card-description,.plugin-card-meta){color:var(--dkui-muted)!important}
+body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent!important;color:var(--dkui-text)!important}
+body.dkds-modern-ui :where(.plugin-manager-visible-count,.plugin-manager-section-count,.plugin-status-badge,.plugin-capability-chip,.plugin-type-badge){background:var(--dkui-control-bg)!important;border-color:var(--dkui-control-border)!important;color:var(--dkui-text-soft)!important}
+body.dkds-modern-ui .plugin-manager-note{background:var(--dkui-surface-soft)!important;border-left-color:var(--dkui-control-border)!important;color:var(--dkui-text-soft)!important}
+body.dkds-modern-ui :where(.trend-card-legend,.main-legend-bar){background:var(--dkui-surface)!important;border-color:var(--dkui-divider)!important;color:var(--dkui-text-soft)!important}
+body.dkds-modern-ui .dkds-scientific-nav-tools button{color:var(--dkui-text-soft)!important}
+body.dkds-modern-ui .dkds-scientific-nav-drag{color:var(--dkui-muted)!important}
+body.dkds-modern-ui .dkds-memory-meter{background:var(--dkui-surface-soft)!important}
+
+body.dkds-modern-ui .dkds-action-button:hover:not(:disabled){transform:translateY(var(--dkui-hover-lift));}

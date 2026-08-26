@@ -1,11 +1,16 @@
-# DK Data Studio Plugin SDK 1.17.6
+# DK Data Studio Plugin SDK 1.17.11
+
+
+## Theme Contract 3.5
+
+Theme plugins are independently versioned from Plugin API 1.17.0. Theme Contract 3.5 includes computed-style **Render Coverage** (`ctx.ui.theme.coverage()`) and seven semantic material roles, including `floating`. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme 3.3 validates token names, value types/ranges and semver compatibility; it also adds canonical nested mode blocks, semantic material roles and a Core Theme Test Gallery. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.39 or newer for the complete SDK 1.17.6 host guarantees. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.61.39 or newer for the base Plugin API 1.17.0 host guarantees; Theme Contract 3.5 authoring requires DK Data Studio 3.61.75 or newer. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
 
 ## Create a plugin
 
@@ -20,7 +25,7 @@ sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent life
 
 For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.17.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.17.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Algorithm plugins
 
@@ -62,7 +67,7 @@ Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
 Plugins own domain logic, domain state, domain types and domain views. Core owns application infrastructure: project persistence, I/O, artifacts, entities, selection, workspace layout, chart lifecycle, scheduling and plugin lifecycle.
 
-### Scientific presentation contract (SDK 1.17.6)
+### Scientific presentation contract (SDK 1.17.8)
 
 The Core D3 scientific renderer is a rendering engine only. Core owns one shared **Scientific Presentation** layer for automatic legend placement, two-row packing, per-surface legend scope, curve-to-legend focus, reversible legend isolation, compact draggable navigation tools, and semantic light/dark styling. A plugin should declare series identity/labels/groups and data; it should not implement its own generic legend packing or renderer chrome.
 
@@ -279,8 +284,18 @@ settings.open();
 ### Scientific renderer dependency
 Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.
 
-## Theme Contract 2.0 (`ui.theme`)
+## Theme Contract 3.5 (`ui.theme`)
 
-Studio 3.61.54 adds an additive semantic theme capability without changing Plugin API 1.17.0 compatibility. Theme plugins register profiles through `ctx.ui.theme.register()` and activate them through `ctx.ui.theme.activate()`. Do not patch Core/other-plugin DOM or ship a parallel light/dark stylesheet for host chrome.
+Studio 3.61.75 exposes Theme Contract 3.5 independently from Plugin API 1.17.0. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
 
-Use surface tokens (`canvas`, `surface`, `surfaceSoft`, `surfaceSidebar`, `surfaceElevated`) to express hierarchy. Keep `divider` for genuinely necessary structural separators and `controlBorder` for interactive controls; they are intentionally separate so dark themes do not become a grid of bright rules. The current profile is projected to dedicated plugin windows and the Android native shell. Start from `sdk/templates/theme-profile/`.
+Theme 3.3 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.1 flat mode values remain load-compatible.
+
+Material roles `chrome / sidebar / surface / elevated / popover / control` let themes tune semantic material depth without selecting DOM. Numeric lengths are logical platform units (Web=CSS px, Android native projection=dp before native blur mapping), durations are milliseconds, opacity is 0..1, and saturation is a multiplier. Core retains deterministic material/animation recipes and `prefers-reduced-motion` safety.
+
+Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light and dark Core UI coverage side by side. Start from `sdk/templates/theme-profile/` and read `sdk/THEME_CONTRACT.md`.
+
+
+
+### Theme Contract 3.5 Thin Glass
+
+SDK 1.17.16 keeps Plugin API 1.17.0 / Theme Contract 3.5.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.

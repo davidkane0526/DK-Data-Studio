@@ -58,6 +58,7 @@
         "workbench",
         "task",
         "tool",
+        "theme",
         "extension",
         "developer"
       ]
@@ -276,6 +277,10 @@
           "minLength": 1
         },
         "pluginApi": {
+          "type": "string",
+          "minLength": 1
+        },
+        "themeContract": {
           "type": "string",
           "minLength": 1
         }

@@ -2,13 +2,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const output = path.join(root, 'src', 'core', 'sdk-authoring-reference.generated.js');
+const output = path.join(root, 'src', 'generated', 'sdk-authoring-reference.js');
 
 const explicit = [
   'sdk/contract.json',
   'sdk/plugin-manifest.schema.json',
   'sdk/plugin-api.d.ts',
   'sdk/README.md',
+  'sdk/THEME_CONTRACT.md',
+  'sdk/theme-contract.js',
+  'sdk/theme-coverage-contract.js',
+  'sdk/semver-compat.js',
   'sdk/TOP_WORKSPACES.md',
   'sdk/TOOL_PLUGINS.md',
   'sdk/layout-contract.js',

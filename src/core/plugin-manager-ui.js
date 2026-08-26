@@ -68,9 +68,25 @@
   }
 
   function pluginCompatibilityText(plugin){
-    const app=plugin?.compatibility?.app||'*',api=plugin?.compatibility?.pluginApi||'*',deps=Array.isArray(plugin?.pluginDependencies)?plugin.pluginDependencies:[];
+    const app=plugin?.compatibility?.app||'*',api=plugin?.compatibility?.pluginApi||'*',theme=plugin?.compatibility?.themeContract||'*',deps=Array.isArray(plugin?.pluginDependencies)?plugin.pluginDependencies:[];
     const depText=deps.length?` · 依赖 ${deps.map(row=>`${row.id} ${row.range}${row.optional?'（可选）':''}`).join('、')}`:'';
-    return `App ${app} · Plugin API ${api}${depText}`;
+    return `App ${app} · Plugin API ${api}${pluginTypeMeta(plugin).id==='theme'?` · Theme ${theme}`:''}${depText}`;
+  }
+
+  function themeProfilesFor(pluginId){
+    const id=String(pluginId||'');
+    return (window.DKDSTheme?.listProfiles?.()||[]).filter(row=>String(row?.owner||'')===id);
+  }
+
+  function themeProfileControls(plugin){
+    if(pluginTypeMeta(plugin).id!=='theme')return '';
+    if(!plugin.active)return '<div class="plugin-theme-profile-block is-disabled"><strong>主题配置</strong><span>启用插件后可选择主题。</span></div>';
+    const profiles=themeProfilesFor(plugin.id),current=String(window.DKDSTheme?.profile?.()||'builtin.default'),coverage=window.DKDSTheme?.coverage?.()?.summary||null;
+    if(!profiles.length)return '<div class="plugin-theme-profile-block is-empty"><strong>主题配置</strong><span>插件已启用，但尚未注册 Theme Profile。</span></div>';
+    const selected=profiles.some(row=>row.id===current)?current:profiles[0].id;
+    const options=profiles.map(row=>`<option value="${escapeHtml(row.id)}" ${row.id===selected?'selected':''}>${escapeHtml(row.label||row.id)}${row.id===current?' · 当前':''}</option>`).join('');
+    const coverageText=coverage?` · Coverage ${coverage.managed}/${coverage.areas}${coverage.pluginIssues?` · 警告 ${coverage.pluginIssues}`:''}`:'';
+    return `<div class="plugin-theme-profile-block"><div><strong>主题配置</strong><span>${profiles.length} 个 Profile · ${current.startsWith(plugin.id+':')?'当前由此插件提供':'当前未使用'}${coverageText}</span></div><div class="plugin-theme-profile-actions"><select class="plugin-theme-profile-select">${options}</select><button class="plugin-theme-activate-btn" type="button" ${selected===current?'disabled':''}>${selected===current?'当前主题':'应用主题'}</button><button class="plugin-theme-settings-btn" type="button" ${profiles.find(row=>row.id===selected)?.settings?'':'disabled'}>参数</button><button class="plugin-theme-gallery-btn" type="button">主题测试</button></div></div>`;
   }
 
   function algorithmVersionControls(plugin){
@@ -94,10 +110,11 @@
     workbench:{label:'分析工作台',description:'面向具体分析任务的 TOP/页面插件，交互由统一 SDK 与基座提供。'},
     task:{label:'任务与自动化',description:'批处理、后台任务、自动化流程与可复用任务执行器。'},
     tool:{label:'工具',description:'工具类工作区与 TOP 使用相同窗口/工作区契约；入口统一收纳在顶部“工具”菜单。'},
+    theme:{label:'主题',description:'通过 Theme Contract 配置颜色、表面、圆角、阴影与动效，不接管应用布局。'},
     extension:{label:'其他扩展',description:'不属于上述类型的通用扩展能力。'},
     developer:{label:'开发与示例',description:'SDK 示例、开发辅助与验证插件。'}
   };
-  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','extension','developer'];
+  const PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','theme','extension','developer'];
   function pluginTypeMeta(plugin){
     const id=String(plugin?.pluginType||'extension');
     return {id,...(PLUGIN_TYPE_META[id]||PLUGIN_TYPE_META.extension)};
@@ -310,10 +327,11 @@
     const disabled=all.filter(p=>!p.enabled).length;
     const errors=all.filter(p=>p.status==='error').length;
     const external=all.filter(p=>p.source==='external').length;
-    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['本地安装',external],['错误',errors]];
+    const themes=all.filter(p=>pluginTypeMeta(p).id==='theme').length;
+    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['主题',themes],['本地安装',external],['错误',errors]];
     const host=$('#pluginManagerSummary');
     if(!host)return;
-    host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${index===4&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
+    host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${label==='错误'&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
   }
 
   function renderList(options={}) {
@@ -395,6 +413,7 @@
         <div class="plugin-card-body">
           <p class="plugin-card-description">${escapeHtml(display.description)}</p>
           <div class="plugin-capability-row">${caps||'<span class="plugin-capability-chip muted">未声明能力</span>'}</div>
+          ${themeProfileControls(plugin)}
           ${plugin.error?`<div class="plugin-error-box"><strong>错误：</strong>${escapeHtml(plugin.error)}</div>`:''}
         </div>
         <div class="plugin-card-footer">
@@ -418,6 +437,7 @@
           ${plugin.hasWindow?`<div><strong>窗口预热：</strong>${plugin.prewarmEnabled?'已开启':'已关闭'} · ${plugin.prewarmPreference===undefined?'插件默认值':'用户设置'}（预热仅影响启动速度与内存，不影响插件功能）</div>`:''}
           <div><strong>技术能力：</strong>${escapeHtml(localizedCaps)}</div>
           ${plugin.algorithmProvider===true?`<div><strong>算法 Provider：</strong>${escapeHtml((plugin.algorithmCategories||[]).join('、')||'—')} · 注册算法 ${(window.DKDSScientificAlgorithms?.list?.({owner:plugin.id})||[]).map(row=>`${row.id}@${row.version}`).join('、')||'—'}</div><div><strong>算法包目录：</strong>${escapeHtml(algorithmCatalogText(plugin))}</div><div><strong>兼容范围：</strong>${escapeHtml(pluginCompatibilityText(plugin))}</div>${algorithmVersionControls(plugin)}`:''}
+          ${typeMeta.id==='theme'?`<div><strong>Theme Contract：</strong>v${escapeHtml(window.DKDSTheme?.version||'?')} · 当前 Profile ${escapeHtml(window.DKDSTheme?.profile?.()||'builtin.default')} · 已注册 ${themeProfilesFor(plugin.id).length}</div>`:''}
           ${plugin.systemLocked&&plugin.workspaceRole==='top'?`<div><strong>系统窗口：</strong>独立系统功能 · 强制启用 · 不参与 SUPER 选择</div>`:(plugin.workspaceRole==='top'?`<div><strong>工作区角色：</strong>${plugin.isSuper?'SUPER（当前主界面）':'TOP（独立工作区）'} · TOP 契约 ${plugin.topContractReady?'完整':'缺失'} · PRIME ${plugin.primeCount||0} · SUB ${plugin.subCount||0}</div>`:'')}
         </div>`;
 
@@ -445,6 +465,17 @@
           renderList({scroll:'top'});
         }
       };
+
+      const themeSelect=card.querySelector('.plugin-theme-profile-select');
+      const themeActivate=card.querySelector('.plugin-theme-activate-btn');
+      if(themeSelect&&themeActivate){
+        themeSelect.onchange=()=>{themeActivate.disabled=themeSelect.value===String(window.DKDSTheme?.profile?.()||'');themeActivate.textContent=themeActivate.disabled?'当前主题':'应用主题';const row=themeProfilesFor(plugin.id).find(item=>item.id===themeSelect.value);if(themeSettings)themeSettings.disabled=!Number(row?.settings||0);};
+        themeActivate.onclick=()=>{try{const profileId=String(themeSelect.value||'');if(!profileId)return;window.DKDSTheme?.setProfile?.(profileId);state.host?.setStatus?.(`已应用主题：${themeProfilesFor(plugin.id).find(row=>row.id===profileId)?.label||profileId}`);renderList({anchorPluginId:plugin.id});}catch(err){state.host?.setStatus?.(`应用主题失败：${err.message}`);}};
+      }
+      const themeSettings=card.querySelector('.plugin-theme-settings-btn');
+      if(themeSettings)themeSettings.onclick=()=>window.DKDSThemeSettingsUI?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));
+      const themeGallery=card.querySelector('.plugin-theme-gallery-btn');
+      if(themeGallery)themeGallery.onclick=()=>window.DKDSThemeGallery?.open?.(String(themeSelect?.value||window.DKDSTheme?.profile?.()||'builtin.default'));
 
       const prewarmToggle=card.querySelector('.plugin-prewarm-input');
       if(prewarmToggle)prewarmToggle.onchange=()=>{
@@ -603,6 +634,7 @@
     window.DKDSPlugins?.events?.on?.('plugin:manager-changed',renderAfterLifecycleChange);
     window.DKDSPlugins?.events?.on?.('plugin:state-changed',renderAfterLifecycleChange);
     window.DKDSPlugins?.events?.on?.('plugins:ready',renderAfterLifecycleChange);
+    window.addEventListener?.('dkds:theme-profile-changed',()=>{const page=$('#pluginManagerPage');if(page&&!page.classList.contains('hidden'))renderList();});
   }
 
   window.DKDSPluginManagerUI={

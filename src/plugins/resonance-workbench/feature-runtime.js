@@ -618,7 +618,7 @@
         const vis=visibilityMap();
         return datasets.map(d=>{
           const row=vis.get(String(d.path))||{forward:true,reverse:true},transform=new Map(workspace.transformPreviewByDataset||[]).get(String(d.path))||'raw';
-          return `<div class="respar-dataset-item${d.excluded===true?' is-excluded':''}" data-dataset-path="${esc(d.path)}" data-entity-id="${esc(datasetEntityId(d.path))}" data-selection-key="${esc(datasetEntityId(d.path))}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''} ${d.excluded===true?'disabled':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform">${transformOptionsHtml(transform)}</select></label></div></div>`;
+          return `<div class="respar-dataset-item dkds-list-item${d.excluded===true?' is-excluded':''}" data-dataset-path="${esc(d.path)}" data-entity-id="${esc(datasetEntityId(d.path))}" data-selection-key="${esc(datasetEntityId(d.path))}"><input class="reswin-master" type="checkbox" ${row.forward!==false&&row.reverse!==false?'checked':''} ${d.excluded===true?'disabled':''}><div class="respar-dataset-content"><div class="respar-dataset-title" title="${esc(d.path)}">${esc(d.name||d.path||'数据')}</div><label class="respar-dataset-vg" title="可直接修改该数据组的栅压标记"><span>Vg</span><input class="reswin-vg" type="number" step="any" value="${finite(d.vg)?Number(d.vg):''}" placeholder="?"><span>V</span></label><div class="respar-scan-toggle"><label><input class="reswin-forward" type="checkbox" ${row.forward!==false?'checked':''}> 正扫</label><label><input class="reswin-reverse" type="checkbox" ${row.reverse!==false?'checked':''}> 反扫</label></div><label class="respar-dataset-transform" title="只改变检查器中的辅助视图；主图与峰位始终使用原始 I–V"><span>辅助</span><select class="reswin-dataset-transform">${transformOptionsHtml(transform)}</select></label></div></div>`;
         }).join('')||'<div class="empty-state">工程中没有数据。</div>';
       }
 
@@ -649,7 +649,7 @@
         const width=$('#reswinShowWidth');if(width)width.checked=display.showWidth!==false;
         const points=$('#reswinShowPoints');if(points)points.checked=display.showPoints!==false;
         const physics=$('#reswinPhysicsLabels');if(physics)physics.checked=workspace.physicsShowLabels!==false;
-        const legend=$('#reswinPeakLegend');if(legend){const cats=(workspace.peakCategories||[]).slice().sort((a,b)=>Number(a.order)-Number(b.order));legend.innerHTML=cats.length?cats.map(cat=>`<span><i style="background:${esc(colorForPeakOrder(cat.order,1))}"></i>${esc(cat.label||`峰${cat.order}`)}</span>`).join(''):'<span>尚无峰类别</span>';}
+        const legend=$('#reswinPeakLegend');if(legend){const cats=(workspace.peakCategories||[]).slice().sort((a,b)=>Number(a.order)-Number(b.order));legend.innerHTML=cats.length?cats.map(cat=>`<span><i class="dkds-series-swatch-line" style="color:${esc(colorForPeakOrder(cat.order,1))}"></i>${esc(cat.label||`峰${cat.order}`)}</span>`).join(''):'<span>尚无峰类别</span>';}
       }
       function peakColor(p){return p?.customColor||colorForPeakOrder(p?.peakOrder||1,p?.direction||1);}
       function movePeakToIndex(p,sw,index){
@@ -684,9 +684,9 @@
         for(const ds of datasets){
           const visible=visibilityMap().get(String(ds.path))||{forward:true,reverse:true};if(!visible.forward&&!visible.reverse)continue;
           const candidates=sweeps.filter(sw=>sw.datasetPath===ds.path&&isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
-          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=datasetEntityId(ds.path);chip.dataset.selectionKey=datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
+          const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip dkds-legend-item';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=datasetEntityId(ds.path);chip.dataset.selectionKey=datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
           const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
-          chip.innerHTML=`<i class="respar-legend-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
+          chip.innerHTML=`<i class="respar-legend-line dkds-series-swatch-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;
           host.appendChild(chip);
         }
       }
@@ -727,6 +727,8 @@
       function ensureMainSurface(){
         const node=$('#reswinMainPlot');if(!node)return null;if(mainSurface&&mainSurface.target===node)return mainSurface;mainSurface?.dispose?.();mainSurface=null;
         const factory=uiRuntime?.scientificPlot;if(!factory?.create)return null;
+        if(!node.hasAttribute('tabindex'))node.tabIndex=-1;
+        const claimKeyboardFocus=()=>{try{node.focus({preventScroll:true});}catch{try{node.focus();}catch{}}};
         mainSurface=factory.create(node,{
           container:'#resparMainPlotWrap',minWidth:260,minHeight:180,legend:false,margin:{top:62,right:30,bottom:50,left:78},xTitle:'Vd (V)',yTitle:'I (A)',xValue:p=>p?.v,yValue:p=>p?.i,
           yTickFormat:v=>{const a=Math.abs(v);return a>=1e-6?`${(v*1e6).toFixed(1)}μA`:a>=1e-9?`${(v*1e9).toFixed(1)}nA`:`${(v*1e12).toFixed(0)}pA`;},
@@ -747,10 +749,10 @@
           getRangeSelection:()=>selectedRange?{xMin:selectedRange.min,xMax:selectedRange.max,yMin:selectedRange.iMin,yMax:selectedRange.iMax}:null,showMarkers:()=>workspace.peakDisplay?.showPoints!==false,showWidth:()=>workspace.peakDisplay?.showWidth!==false,
           getMarkerWidth:marker=>markerWidthSpec(marker),
           onColorScale:scale=>renderMainLegend(scale),
-          onCurveSelect:({curve})=>{clearMainRangeMenu();const sw=curve?.source;if(sw)publishSweepSelection(sw,'resonance-main');},
+          onCurveSelect:({curve})=>{clearMainRangeMenu();claimKeyboardFocus();const sw=curve?.source;if(sw)publishSweepSelection(sw,'resonance-main');},
           onCurveDoubleClick:({curve})=>{const sw=curve?.source;if(sw){publishSweepSelection(sw,'resonance-main');workspaceNavigator?.('inspect');}},
-          onMarkerSelect:({marker,additive})=>{const p=marker?.source;if(p){clearMainRangeMenu();publishPeakSelection(p,'resonance-main',{openInspector:true,additive});}},
-          onMarkerDoubleClick:({marker})=>{const p=marker?.source;if(p)publishPeakSelection(p,'resonance-main',{openInspector:true});},
+          onMarkerSelect:({marker,additive})=>{const p=marker?.source;if(p){clearMainRangeMenu();claimKeyboardFocus();publishPeakSelection(p,'resonance-main',{openInspector:true,additive});}},
+          onMarkerDoubleClick:({marker})=>{const p=marker?.source;if(p){claimKeyboardFocus();publishPeakSelection(p,'resonance-main',{openInspector:true});}},
           onMarkerHover:({marker,event,phase})=>{const tip=$('#resparHoverTip');if(!tip)return;if(phase==='leave'){tip.classList.add('hidden');return;}const p=marker?.source;if(!p)return;if(phase==='enter'){tip.innerHTML=`<b>${esc(directionName(p.direction))} · ${esc(peakLabel(p))}</b><br>Vg=${fmt(p.vg,4)} V · Vd=${fmt(p.v,6)} V<br>I=${fmt(p.i,6)} A${p.locked?' · 已锁定':''}`;tip.classList.remove('hidden');}const wrap=$('#resparMainPlotWrap'),wr=wrap?.getBoundingClientRect?.();if(wr){tip.style.left=`${event.clientX-wr.left+12}px`;tip.style.top=`${event.clientY-wr.top+12}px`; }},
           // Domain-neutral Core manipulation primitives deliver one semantic
           // commit. Resonance merely maps geometry back to its own scientific state.
@@ -765,13 +767,13 @@
           onRangeSelect:({xMin,xMax,yMin,yMax,event,markers,markerIds,target,targetType})=>showMainRangeMenu({vMin:xMin,vMax:xMax,iMin:yMin,iMax:yMax,min:xMin,max:xMax,sweepId:'',markers:markers||[],markerIds:markerIds||[],target:target||'markers',targetType:targetType||'resonance.peak'},event),
           onClearSelection:()=>{selectedSweepId='';selectedPeakId='';selectedPeakIds.clear();interactionSelection?.clear?.({source:'resonance-main'});renderMainPlot();},
           onReset:()=>{workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
-          onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('fill','#6b7280').text('请勾选要显示的正扫/反扫数据');},
+          onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('class','dkds-svg-empty-text').text('请勾选要显示的正扫/反扫数据');},
           afterRender:({dataLayer,x,y,markers})=>{if(workspace.physicsShowLabels===false||workspace.peakDisplay?.showPoints===false)return;try{const ph=physicalAnalysis(),colors={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'},hasSelection=!!selectedSweepId;dataLayer.append('g').selectAll('text.respar-physics-label').data(markers.filter(m=>m.accepted!==false),m=>m.id).join('text').attr('class','respar-physics-label').attr('x',m=>x(Number(m.x))+8).attr('y',m=>y(Number(m.y))-8).attr('opacity',m=>hasSelection?(String(m.curveId)===String(selectedSweepId)?1:.08):.92).attr('fill',m=>colors[ph?.peakMap?.get?.(m.id)?.code||'Q']).text(m=>{const code=ph?.peakMap?.get?.(m.id)?.code||'Q';return code==='Q'?'?':code;});}catch{} }
         });
         return mainSurface;
       }
       function resetMainView(){workspace.mainView={xDomain:null,yDomain:null};clearMainRangeMenu();const surface=ensureMainSurface();if(surface)surface.resetView();else{renderMainPlot();scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');}return true;}
-      function renderMainPlot(){const surface=ensureMainSurface();if(surface){surface.render('resonance');return;}const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap');if(!node||!wrap)return;const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);node.replaceChildren();node.setAttribute('width',String(Math.max(0,width)));node.setAttribute('height',String(Math.max(0,height)));const text=dom.createNS('http://www.w3.org/2000/svg','text');text.setAttribute('x',String(Math.max(0,width)/2));text.setAttribute('y',String(Math.max(0,height)/2));text.setAttribute('text-anchor','middle');text.setAttribute('fill','#b91c1c');text.textContent='ScientificCurveSurface 基座未就绪';node.appendChild(text);}
+      function renderMainPlot(){const surface=ensureMainSurface();if(surface){surface.render('resonance');return;}const node=$('#reswinMainPlot'),wrap=$('#resparMainPlotWrap');if(!node||!wrap)return;const rect=wrap.getBoundingClientRect(),width=Math.round(rect.width),height=Math.round(rect.height);node.replaceChildren();node.setAttribute('width',String(Math.max(0,width)));node.setAttribute('height',String(Math.max(0,height)));const text=dom.createNS('http://www.w3.org/2000/svg','text');text.setAttribute('x',String(Math.max(0,width)/2));text.setAttribute('y',String(Math.max(0,height)/2));text.setAttribute('text-anchor','middle');text.setAttribute('class','dkds-svg-error-text');text.textContent='ScientificCurveSurface 基座未就绪';node.appendChild(text);}
 
       function groupSeries(){
         if(!sharedController)return [];
@@ -781,7 +783,7 @@
       function renderTrend(){
         const plot=$('#reswinTrendPlot');if(!plot||!charts)return;
         const traces=groupSeries().map(sr=>({x:sr.peaks.map(p=>p.vg),y:sr.peaks.map(p=>p.v),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.peaks.map(p=>[p.id,p.sweepId]),hovertemplate:'Vg=%{x}<br>Vpk=%{y:.6g} V<extra></extra>'}));
-        scientificReact(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'Vpk (V)',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
+        scientificReact(plot,traces,{margin:{l:62,r:20,t:36,b:50},xaxis:{title:'Vg (V)'},yaxis:{title:'Vpk (V)'},legend:{orientation:'h',y:-.2},autosize:true},{responsive:true,displaylogo:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-trend',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
       }
 
       function metricProvider(){const rows=algorithmRuntime?.list?.({category:'peak-metrics'})||[];const active=String(workspace.activeMetricAlgorithm||'');let row=rows.find(x=>`${x.id}@${x.version}`===active)||rows.find(x=>x.id===active)||null;if(!row&&active.includes('@'))return null;if(!row)row=rows.find(x=>x.default)||rows[0]||null;if(row&&!workspace.activeMetricAlgorithm)workspace.activeMetricAlgorithm=`${row.id}@${row.version}`;return row;}
@@ -815,11 +817,11 @@
         const host=$('#reswinInspectorBody');if(!host)return;
         const sw=selectedSweep(),p=selectedPeak();normalizeCategories();
         if(!sw&&!p){host.innerHTML='<div class="empty-state">未选中曲线或峰。可在主图中直接点击曲线/峰位。</div>';return;}
-        const transformMarkup=sw?`<div class="respar-inspector-transform"><div class="respar-inspector-hint">辅助视图仅用于检查；主图、峰位与 FWHM 始终基于原始 I–V 采样。</div><div id="reswinInspectPlot" class="analysis-chart respar-inspect-plot"></div></div>`:'';
+        const transformMarkup=sw?`<div class="respar-inspector-transform"><div class="respar-inspector-hint dkds-meta">辅助视图仅用于检查；主图、峰位与 FWHM 始终基于原始 I–V 采样。</div><div id="reswinInspectPlot" class="analysis-chart respar-inspect-plot"></div></div>`:'';
         if(p){
           const psw=sweepById(p.sweepId)||sw,m=peakMetrics(p)||{};
-          const categoryButtons=(workspace.peakCategories||[]).map(c=>`<button type="button" class="peak-category-choice ${Number(c.order)===Number(p.peakOrder)?'selected':''}" data-peak-category="${Number(c.order)}"><span class="category-pair-swatch"><i style="background:${esc(colorForPeakOrder(c.order,1))}"></i><i style="background:${esc(colorForPeakOrder(c.order,-1))}"></i></span><span>${esc(c.label)}</span></button>`).join('');
-          host.innerHTML=`<div class="respar-inspector-section"><h4>选中峰</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(psw?.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(p.vg,5)} V</div><div class="k">扫描</div><div>${directionName(p.direction)}</div><div class="k">Vpk</div><div>${fmt(p.v,6)} V</div><div class="k">Ipk</div><div>${fmt(p.i,6)} A</div><div class="k">FWHM</div><div>${finite(m.fwhm)?`${fmt(m.fwhm,6)} V`:'—（半高交点不完整）'}</div><div class="k">半高交点</div><div>${finite(m.fwhmLeft)&&finite(m.fwhmRight)?`${fmt(m.fwhmLeft,6)} ~ ${fmt(m.fwhmRight,6)} V`:'—'}</div><div class="k">局部基线</div><div>${m.baselineMode==='linear'?`线性 · ${fmt(m.baselineSlope,6)} A/V`:(m.baselineMode==='constant'?'常数':'—')}</div><div class="k">分析窗口</div><div>${finite(m.analysisLeft)&&finite(m.analysisRight)?`${fmt(m.analysisLeft,5)} ~ ${fmt(m.analysisRight,5)} V`:'—'}${p.analysisManual?' · 手动范围':' · 自动范围'}</div><div class="k">Amplitude</div><div>${fmt(m.amplitude,6)} A</div><div class="k">Area</div><div>${fmt(m.area,6)} A·V</div><div class="k">寻峰证据</div><div>${esc((p.supportChannels||p.algorithms||[]).join('、')||'手动')}</div><div class="k">置信度</div><div>${finite(p.confidence)?`${Math.round(Number(p.confidence)*100)}%`:'—'}</div><div class="k">状态</div><div>${p.accepted!==false?'采纳':'不采纳'}${p.locked?' · 已锁定':''}${p.manual?' · 手动':''}</div></div></div><div class="respar-inspector-section"><h4>峰类别 / 峰标签</h4><div class="respar-inspector-hint">点击已有颜色即可把该峰归入现有类别；新增类别会自动分配下一组正扫冷色/反扫暖色。</div><div class="peak-category-palette">${categoryButtons}</div><div class="respar-inspector-row"><button id="reswinAddPeakCategory">＋ 新增类别/颜色</button></div><div class="respar-peak-class-grid"><label>当前类别<input type="text" value="峰${Math.max(1,Number(p.peakOrder)||1)}" disabled></label><label>类别标签<input id="reswinPeakLabelInput" type="text" value="${esc(peakLabel(p))}"></label></div><div class="respar-inspector-row"><button id="reswinApplyPeakLabel">重命名当前类别</button></div></div><div class="respar-inspector-action-grid"><button id="reswinAcceptPeak">${p.accepted!==false?'不采纳':'恢复采纳'}</button><button id="reswinLockPeak">${p.locked?'解除锁定':'锁定峰位'}</button><button id="reswinResetFwhmWindow">FWHM 自动窗口</button><button id="reswinDeletePeak" class="danger-soft">删除峰</button><button id="reswinSelectCurve">选中所属曲线</button></div>${transformMarkup}`;
+          const categoryButtons=(workspace.peakCategories||[]).map(c=>`<button type="button" class="peak-category-choice dkds-action-button dkds-choice-button ${Number(c.order)===Number(p.peakOrder)?'selected':''}" data-peak-category="${Number(c.order)}"><span class="category-pair-swatch dkds-series-swatch-pair"><i style="background:${esc(colorForPeakOrder(c.order,1))}"></i><i style="background:${esc(colorForPeakOrder(c.order,-1))}"></i></span><span>${esc(c.label)}</span></button>`).join('');
+          host.innerHTML=`<div class="respar-inspector-section dkds-inspector-section"><h4>选中峰</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(psw?.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(p.vg,5)} V</div><div class="k">扫描</div><div>${directionName(p.direction)}</div><div class="k">Vpk</div><div>${fmt(p.v,6)} V</div><div class="k">Ipk</div><div>${fmt(p.i,6)} A</div><div class="k">FWHM</div><div>${finite(m.fwhm)?`${fmt(m.fwhm,6)} V`:'—（半高交点不完整）'}</div><div class="k">半高交点</div><div>${finite(m.fwhmLeft)&&finite(m.fwhmRight)?`${fmt(m.fwhmLeft,6)} ~ ${fmt(m.fwhmRight,6)} V`:'—'}</div><div class="k">局部基线</div><div>${m.baselineMode==='linear'?`线性 · ${fmt(m.baselineSlope,6)} A/V`:(m.baselineMode==='constant'?'常数':'—')}</div><div class="k">分析窗口</div><div>${finite(m.analysisLeft)&&finite(m.analysisRight)?`${fmt(m.analysisLeft,5)} ~ ${fmt(m.analysisRight,5)} V`:'—'}${p.analysisManual?' · 手动范围':' · 自动范围'}</div><div class="k">Amplitude</div><div>${fmt(m.amplitude,6)} A</div><div class="k">Area</div><div>${fmt(m.area,6)} A·V</div><div class="k">寻峰证据</div><div>${esc((p.supportChannels||p.algorithms||[]).join('、')||'手动')}</div><div class="k">置信度</div><div>${finite(p.confidence)?`${Math.round(Number(p.confidence)*100)}%`:'—'}</div><div class="k">状态</div><div>${p.accepted!==false?'采纳':'不采纳'}${p.locked?' · 已锁定':''}${p.manual?' · 手动':''}</div></div></div><div class="respar-inspector-section dkds-inspector-section"><h4>峰类别 / 峰标签</h4><div class="respar-inspector-hint dkds-meta">点击已有颜色即可把该峰归入现有类别；新增类别会自动分配下一组正扫冷色/反扫暖色。</div><div class="peak-category-palette">${categoryButtons}</div><div class="respar-inspector-row dkds-toolbar"><button id="reswinAddPeakCategory">＋ 新增类别/颜色</button></div><div class="respar-peak-class-grid"><label>当前类别<input type="text" value="峰${Math.max(1,Number(p.peakOrder)||1)}" disabled></label><label>类别标签<input id="reswinPeakLabelInput" type="text" value="${esc(peakLabel(p))}"></label></div><div class="respar-inspector-row dkds-toolbar"><button id="reswinApplyPeakLabel">重命名当前类别</button></div></div><div class="respar-inspector-action-grid dkds-action-row"><button id="reswinAcceptPeak">${p.accepted!==false?'不采纳':'恢复采纳'}</button><button id="reswinLockPeak">${p.locked?'解除锁定':'锁定峰位'}</button><button id="reswinResetFwhmWindow">FWHM 自动窗口</button><button id="reswinDeletePeak" class="danger-soft">删除峰</button><button id="reswinSelectCurve">选中所属曲线</button></div>${transformMarkup}`;
           host.querySelectorAll('[data-peak-category]').forEach(btn=>btn.onclick=()=>assignPeakCategory(p,btn.dataset.peakCategory));
           host.querySelector('#reswinAddPeakCategory').onclick=()=>createPeakCategoryForPeak(p);
           host.querySelector('#reswinApplyPeakLabel').onclick=()=>renameSelectedCategory(host.querySelector('#reswinPeakLabelInput')?.value);
@@ -830,8 +832,7 @@
           host.querySelector('#reswinSelectCurve').onclick=()=>{const row=sweepById(p.sweepId);if(row)publishSweepSelection(row,'resonance-inspector');};
         }else{
           const count=(workspace.peaks||[]).filter(q=>q.sweepId===sw.id).length;
-          host.innerHTML=`<div class="respar-inspector-section"><h4>选中曲线</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(sw.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(sw.vg,5)} V</div><div class="k">扫描</div><div>${directionName(sw.direction)}</div><div class="k">范围</div><div>${fmt(sw.points?.[0]?.v,4)} ~ ${fmt(sw.points?.at(-1)?.v,4)} V</div><div class="k">数据点</div><div>${sw.points?.length||0}</div><div class="k">峰</div><div>${count}</div></div></div><div class="respar-inspector-section"><div class="respar-inspector-hint">峰序是跨 Vg 的轨迹身份，不是单条曲线中的临时编号。</div><button id="reswinInspectorSort">跨 Vg 智能整理峰序</button></div>${transformMarkup}`;
-          host.querySelector('#reswinInspectorSort').onclick=()=>sortPeakOrderByVd();
+          host.innerHTML=`<div class="respar-inspector-section dkds-inspector-section"><h4>选中曲线</h4><div class="respar-inspector-kv"><div class="k">文件</div><div>${esc(sw.datasetName||'—')}</div><div class="k">Vg</div><div>${fmt(sw.vg,5)} V</div><div class="k">扫描</div><div>${directionName(sw.direction)}</div><div class="k">范围</div><div>${fmt(sw.points?.[0]?.v,4)} ~ ${fmt(sw.points?.at(-1)?.v,4)} V</div><div class="k">数据点</div><div>${sw.points?.length||0}</div><div class="k">峰</div><div>${count}</div></div></div>${transformMarkup}`;
         }
         const plot=host.querySelector('#reswinInspectPlot');if(plot&&charts&&sw){
           const transformId=currentTransform(sw);
@@ -839,7 +840,7 @@
           const traces=[{x:t.points.map(q=>q.v),y:t.points.map(q=>q.y),mode:'lines',name:t.label,line:{width:1.8,color:'#315efb'}}];
           const peaks=(workspace.peaks||[]).filter(q=>q.sweepId===sw.id&&q.accepted!==false);
           if(peaks.length){const xs=t.points.map(q=>q.v),ys=peaks.map(q=>t.points[S.nearestIndex(xs,q.v)]?.y);traces.push({x:peaks.map(q=>q.v),y:ys,mode:'markers',name:'原始峰位投影',marker:{size:9,color:peaks.map(q=>peakColor(q)),symbol:peaks.map(q=>q.manual?'diamond':'circle-open')},customdata:peaks.map(q=>[q.id]),hovertemplate:'Vpk=%{x:.6g} V<extra></extra>'});}
-          scientificReact(plot,traces,{margin:{l:62,r:16,t:20,b:50},xaxis:{title:'Vd (V)',gridcolor:'#edf0f5'},yaxis:{title:t.label||'',gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false,displayModeBar:false},{traceEntity:(trace,index)=>index===0?{id:String(sw.id),type:'resonance.sweep',parents:[datasetEntityId(sw.datasetPath)]}:null,pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const peak=peakById(entity?.id);if(peak)publishPeakSelection(peak,'resonance-inspector',{additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
+          scientificReact(plot,traces,{margin:{l:62,r:16,t:20,b:50},xaxis:{title:'Vd (V)'},yaxis:{title:t.label||''},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false,displayModeBar:false},{traceEntity:(trace,index)=>index===0?{id:String(sw.id),type:'resonance.sweep',parents:[datasetEntityId(sw.datasetPath)]}:null,pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const peak=peakById(entity?.id);if(peak)publishPeakSelection(peak,'resonance-inspector',{additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
         }
       }
 
@@ -864,8 +865,8 @@
       function ensureGroupCard(key,title){
         let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
         const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
-        const card=dom.create('div');card.className='reswin-group-card';card.dataset.groupMetric=String(key);
-        card.innerHTML=`<div class="reswin-group-head"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions"></span></div><div class="reswin-group-plot"></div>`;
+        const card=dom.create('div');card.className='reswin-group-card dkds-surface';card.dataset.groupMetric=String(key);
+        card.innerHTML=`<div class="reswin-group-head dkds-surface-header"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions dkds-toolbar"></span></div><div class="reswin-group-plot"></div>`;
         hostEl.appendChild(card);
         const plot=card.querySelector('.reswin-group-plot');
         row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
@@ -941,7 +942,7 @@
         const plot=$('#reswinPhysicsPlot');if(plot&&charts){
           const rows=Array.isArray(r.v0Delta)?r.v0Delta:[];
           const traces=rows.length?[{x:rows.map(x=>x.vg),y:rows.map(x=>x.V0),mode:'lines+markers',name:'V0'},{x:rows.map(x=>x.vg),y:rows.map(x=>x.delta),mode:'lines+markers',name:'|δ|',yaxis:'y2'}]:[];
-          scientificReact(plot,traces,{margin:{l:64,r:66,t:26,b:54},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:'V0 (V)',gridcolor:'#edf0f5'},yaxis2:{title:'|δ| (V)',overlaying:'y',side:'right',showgrid:false},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});
+          scientificReact(plot,traces,{margin:{l:64,r:66,t:26,b:54},xaxis:{title:'Vg (V)'},yaxis:{title:'V0 (V)'},yaxis2:{title:'|δ| (V)',overlaying:'y',side:'right',showgrid:false},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});
         }
       }
 
@@ -971,7 +972,7 @@
       }
       function renderSpacing(){
         populateSpacing();const s=workspace.spacingSettings;spacingResult=computeSpacingResult(s.seriesA,s.seriesB);
-        const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';scientificReact(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)',gridcolor:'#edf0f5'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)',gridcolor:'#edf0f5'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
+        const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';scientificReact(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
         const table=$('#reswinSpacingTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>VB−VA</th><th>|ΔV|</th></tr></thead><tbody>${spacingResult.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.deltaV,6)}</td><td>${fmt(d.spacing,6)}</td></tr>`).join('')}</tbody>`;
       }
       function spacingCsv(){const rows=['Vg_V,series_A,V_A_V,series_B,V_B_V,delta_V_B_minus_A_V,absolute_spacing_V'];for(const d of spacingResult)rows.push([d.vg,csvCell(d.labelA),d.vA,csvCell(d.labelB),d.vB,d.deltaV,d.spacing].join(','));return rows.join('\n');}
@@ -1073,7 +1074,7 @@
         }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
         return gateResult;
       }
-      function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x,gridcolor:'#edf0f5'},yaxis:{title:y,gridcolor:'#edf0f5'},legend:{orientation:'h',y:-.2},autosize:true};}
+      function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x},yaxis:{title:y},legend:{orientation:'h',y:-.2},autosize:true};}
       function renderGate(){
         populateGate();const r=computeGate(),rows=r.rows||[],a=r.seriesA?.name||'ridge A',b=r.seriesB?.name||'ridge B';
         const summary=$('#reswinGateSummary');if(summary)summary.innerHTML=[`共同 Vg ${rows.length}`,`A ${a}`,`B ${b}`,`TER ${r.terResult?'可用':'不可用'}`,`特征场 ${(r.featureField?.y||[]).length} 序列`].map(t=>`<span>${esc(t)}</span>`).join('');

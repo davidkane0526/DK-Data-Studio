@@ -331,7 +331,9 @@
       dataSourceSyncSnapshot:!!sourceSync,
       dataSourceSourceCount:Array.isArray(sourceSync?.sources)?sourceSync.sources.length:0,
       dataSourceTargetCount:Array.isArray(sourceSync?.targets)?sourceSync.targets.length:0,
-      resonanceGroupDiagnostics:resonanceDiagnostics?clone(resonanceDiagnostics):null
+      resonanceGroupDiagnostics:resonanceDiagnostics?clone(resonanceDiagnostics):null,
+      themeRenderer:window.DKDSTheme?.rendererCapabilities?.()||null,
+      themeMaterialProbe:(()=>{const el=document.querySelector?.('.dkds-material-role-surface,.dkds-plugin-workspace,.dkds-analysis-workbench,.dkds-material-role-sidebar');return el?window.DKDSThemeMaterialRenderer?.inspect?.(el)||null:null;})()
     };
   }
   window.DKDSPluginWindowDiagnostics=Object.freeze({snapshot:pluginWindowDiagnosticSnapshot});
@@ -546,7 +548,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.58',
+      appVersion:'3.61.84',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,
@@ -718,6 +720,14 @@
     startupProfile.dependencyCount=startupProfile.dependencies.length;
     startupProfile.scriptCount=startupProfile.scripts.length;
     startupProfile.algorithmProviders=(spec.algorithmProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.algorithmCategories||[])],source:provider.source}));
+    if(spec.selfAlgorithmProvider){
+      const self=spec.selfAlgorithmProvider;
+      const registered=window.DKDSScientificAlgorithms?.list?.({owner:String(self.pluginId||'')})||[];
+      const registeredCategories=new Set(registered.map(row=>String(row?.category||'')).filter(Boolean));
+      const categories=(self.algorithmCategories||[]).filter(category=>registeredCategories.has(String(category)));
+      if(!categories.length)throw new Error(`目标插件声明为算法 Provider，但未注册声明类别：${self.pluginId}`);
+      startupProfile.algorithmProviders.unshift({pluginId:self.pluginId,version:self.version,categories:[...categories],source:self.source||spec.source||'builtin',local:true});
+    }
     startupProfile.chartRuntime=window.DKDSCharts?.runtimeState?.()||null;
     window.electronAPI?.markActivityWindowReady?.({startupProfile});
     scheduleDeclaredChartWarmup();

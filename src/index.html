@@ -8,13 +8,21 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ui-modern.css" />
   <link rel="stylesheet" href="mobile.css" />
-  <script src="core/theme-runtime.js"></script>
+  <script src="../sdk/semver-compat.js"></script>
+  <script src="../sdk/theme-contract.js"></script>
+  <script src="../sdk/theme-coverage-contract.js"></script>
+  <script src="core/theme/material-renderer.js"></script>
+  <script src="core/theme/runtime.js"></script>
+  <script src="core/theme/settings-ui.js"></script>
+  <script src="core/theme/coverage-runtime.js"></script>
+  <script src="core/theme/debug-runtime.js"></script>
+  <script src="core/theme/test-gallery.js"></script>
 </head>
 <body class="dkds-modern-ui">
   <div id="app">
-    <header class="topbar">
+    <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.58</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.84</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -111,12 +119,12 @@
     <div id="superWorkspaceDivider" class="super-workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整 SUPER 左右工作区宽度" tabindex="0"></div>
 
     <div class="workspace">
-      <aside class="left-panel">
-        <div id="pluginSidebarSections" class="plugin-sidebar-sections" data-plugin-sidebar></div>
+      <aside class="left-panel dkds-material-role-sidebar">
+        <div id="pluginSidebarSections" class="plugin-sidebar-sections dkds-material-role-sidebar" data-plugin-sidebar></div>
       </aside>
 
       <main class="main-area">
-        <div id="mainWorkspace" class="main-workspace">
+        <div id="mainWorkspace" class="main-workspace dkds-material-role-surface">
         <div id="mainPlotWrap" class="plot-wrap">
           <div class="main-plot-header">
           <div class="main-plot-tools" id="mainPlotTools">
@@ -136,7 +144,7 @@
       </main>
     </div>
 
-    <footer id="statusBar" class="statusbar" aria-label="应用状态栏">
+    <footer id="statusBar" class="statusbar dkds-material-role-chrome" aria-label="应用状态栏">
       <div id="statusBarMessage" class="statusbar-message" aria-live="polite">未加载数据</div>
       <div class="statusbar-command-cluster" aria-label="状态与快捷操作">
         <div id="statusBarPluginLeft" class="statusbar-plugin-zone statusbar-plugin-left" aria-label="插件状态"></div>
@@ -154,7 +162,7 @@
       </div>
     </section>
 
-    <section id="pluginManagerPage" class="analysis-page hidden core-analysis-page">
+    <section id="pluginManagerPage" class="analysis-page hidden core-analysis-page dkds-material-role-elevated">
       <div class="analysis-page-header plugin-manager-header">
         <div>
           <h2>插件管理</h2>
@@ -190,6 +198,7 @@
               <option value="workbench">分析工作台</option>
               <option value="task">任务与自动化</option>
               <option value="tool">工具</option>
+              <option value="theme">主题</option>
               <option value="extension">其他扩展</option>
               <option value="developer">开发与示例</option>
             </select>
@@ -212,7 +221,7 @@
 
 
 
-    <section id="automationTestPage" class="analysis-page hidden core-analysis-page">
+    <section id="automationTestPage" class="analysis-page hidden core-analysis-page dkds-material-role-elevated">
       <div class="analysis-page-header automation-test-header">
         <div>
           <h2>自动化测试</h2>
@@ -239,7 +248,7 @@
     </section>
 
     <div id="importPanel" class="import-panel-overlay hidden">
-      <div class="import-workbench">
+      <div class="import-workbench dkds-material-role-elevated">
         <div class="import-workbench-header">
           <div>
             <h2>数据导入工作台</h2>
@@ -440,7 +449,7 @@
 
 
     <div id="projectSaveChoiceDialog" class="project-save-choice-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="projectSaveChoiceTitle">
-      <div class="project-save-choice-card">
+      <div class="project-save-choice-card dkds-material-role-elevated">
         <div class="project-save-choice-icon" aria-hidden="true">▣</div>
         <div class="project-save-choice-copy">
           <strong id="projectSaveChoiceTitle">保存项目</strong>
@@ -454,19 +463,19 @@
       </div>
     </div>
 
-    <div id="lanWebPanel" class="floating-panel lan-web-panel hidden">
+    <div id="lanWebPanel" class="floating-panel lan-web-panel hidden dkds-material-role-elevated">
       <div class="floating-header drag-handle">
         <div class="lan-web-panel-title">
           <span>局域网网页版</span>
           <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
         </div>
-        <div class="panel-header-actions">
+        <div class="panel-header-actions dkds-integrated-action-group">
           <button id="lanWebMinimizeBtn" type="button" title="隐藏到状态栏" aria-label="隐藏到状态栏"><span class="lan-web-minimize-glyph" aria-hidden="true"></span></button>
           <button class="panel-close" data-target="lanWebPanel" title="隐藏面板，网页版服务继续运行">×</button>
         </div>
       </div>
 
-      <div class="floating-body lan-web-body">
+      <div class="floating-body lan-web-body" data-dkds-material-content="true">
         <div class="lan-web-grid">
 
           <section class="lan-web-section lan-web-control-section">
@@ -589,7 +598,7 @@
     <div id="updatePanel" class="floating-panel update-panel hidden">
       <div class="floating-header drag-handle">
         <span>局域网热更新</span>
-        <div class="panel-header-actions">
+        <div class="panel-header-actions dkds-integrated-action-group">
           <button class="panel-close" data-target="updatePanel">×</button>
         </div>
       </div>
@@ -651,7 +660,7 @@
       <div id="inspectorDockResizer" class="inspector-dock-resizer" title="拖动调整右侧检查器宽度"></div>
       <div class="floating-header drag-handle">
         <span id="inspectorPanelHeaderTitle">检查器</span>
-        <div class="panel-header-actions">
+        <div class="panel-header-actions dkds-integrated-action-group">
           <button id="inspectorDockBtn" type="button" title="在悬浮与主图右侧停靠之间切换">停靠右侧</button>
           <button class="panel-close" data-target="inspectorPanel">×</button>
         </div>
@@ -665,7 +674,7 @@
       <div id="groupDockResizer" class="dock-resizer" title="拖动调整底部组图高度"></div>
       <div class="floating-header drag-handle">
         <span id="groupPanelHeaderTitle">组图</span>
-        <div class="panel-header-actions">
+        <div class="panel-header-actions dkds-integrated-action-group">
           <button id="groupDockBtn" type="button" title="将组图停靠到主图下方">停靠底部</button>
           <button id="groupMinimizeBtn" type="button" title="缩小/展开组图">缩小</button>
           <button class="panel-close" data-target="groupPanel">×</button>
@@ -752,14 +761,14 @@
   <script src="core/capability-runtime.js"></script>
   <script src="core/plugin-kernel.js"></script>
   <script src="core/mobile-host-runtime.js"></script>
-  <script src="core/sdk-authoring-reference.generated.js"></script>
+  <script src="generated/sdk-authoring-reference.js"></script>
   <script src="core/studio-kernel-runtime.js"></script>
   <script src="core/connectivity-runtime.js"></script>
   <script src="core/mcp-runtime.js"></script>
   <script src="core/plugin-devtools.js"></script>
   <script src="core/plugin-manager-ui.js"></script>
   <script src="core/automation-test-runtime.js"></script>
-  <script src="plugins/plugin-index.generated.js"></script>
+  <script src="generated/plugin-index.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

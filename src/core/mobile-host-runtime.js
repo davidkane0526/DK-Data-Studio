@@ -107,6 +107,8 @@
       history:typeof configured.historySnapshot==='function'?configured.historySnapshot():{canUndo:false,canRedo:false,past:[],future:[]},
       theme:window.DKDSTheme?.current?.()||document.documentElement.dataset.dkdsTheme||'light',
       themeTokens:window.DKDSTheme?.tokens?.()||{},
+      themeContractVersion:window.DKDSTheme?.contractVersion||window.DKDSTheme?.version||'',
+      themeMaterial:window.DKDSTheme?.materials?.('native')||{base:{},roles:{}},
       route:{...current,pageId:text(page?.id||current.pageId)},workspaces,
       activities:workspaces,
       surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:text(row.id),label:text(row.label),active:!!row.active})),

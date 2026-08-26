@@ -1,6 +1,6 @@
 (() => {
   const MAX_FILES=64,MAX_FILE_CHARS=4*1024*1024,MAX_TOTAL_CHARS=8*1024*1024;
-  const TYPES=new Set(['foundation','data','algorithm','workbench','task','tool','extension','developer']);
+  const TYPES=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
   const validId=value=>/^[a-z0-9][a-z0-9._-]*$/i.test(String(value||''));
   function fileName(value){
     const raw=String(value||'').replace(/\\/g,'/').trim();
@@ -43,6 +43,18 @@
     const styles=Array.isArray(raw.styles)?raw.styles.map(fileName):[];
     for(const script of scripts)if(!Object.hasOwn(files,script)||!script.toLowerCase().endsWith('.js'))throw new Error(`Plugin script is missing or invalid: ${script}`);
     for(const style of styles)if(!Object.hasOwn(files,style)||!style.toLowerCase().endsWith('.css'))throw new Error(`Plugin stylesheet is missing or invalid: ${style}`);
+    if(raw.compatibility!==undefined){
+      if(!raw.compatibility||typeof raw.compatibility!=='object'||Array.isArray(raw.compatibility))throw new Error('Plugin compatibility must be an object.');
+      const semver=globalThis.DKDSSemverCompat;
+      for(const field of ['app','pluginApi','themeContract'])if(raw.compatibility[field]!==undefined&&(!semver?.validateRange?.(raw.compatibility[field])))throw new Error(`Invalid compatibility.${field} range: ${raw.compatibility[field]}`);
+    }
+    if(pluginType==='theme'){
+      const requires=Array.isArray(raw.requiresCore)?raw.requiresCore.map(String):[];
+      if(!requires.includes('ui.theme'))throw new Error('Theme plugins must declare ui.theme.');
+      if(requires.includes('ui.styles')||styles.length)throw new Error('Theme plugins must use Theme Contract tokens instead of arbitrary stylesheets.');
+      if(raw.workspace||raw.window||raw.algorithmProvider===true)throw new Error('Theme plugins cannot own workspace/window/algorithm-provider contracts.');
+      const themeRange=String(raw.compatibility?.themeContract||'*');const currentTheme=String(globalThis.DKDSTheme?.contractVersion||'');if(currentTheme&&themeRange!=='*'&&!globalThis.DKDSSemverCompat?.satisfies?.(currentTheme,themeRange))throw new Error(`Theme plugin requires Theme Contract ${themeRange}; current ${currentTheme}.`);
+    }
     if(pluginType==='tool'){
       const activity=String(raw.workspace?.activity||'').trim();
       if(String(raw.workspace?.role||'').toLowerCase()!=='top'||!validId(activity)||String(raw.window?.activity||'')!==activity){

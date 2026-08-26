@@ -51,7 +51,7 @@
   }
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
   const UI_FONT='Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI, sans-serif';
-  const TOOLTIP_THEME=Object.freeze({bgcolor:'rgba(31,41,55,0.92)',bordercolor:'rgba(255,255,255,0.20)',align:'left',font:Object.freeze({color:'#ffffff',size:12,family:UI_FONT})});
+  const TOOLTIP_THEME=Object.freeze({align:'left',font:Object.freeze({size:12,family:UI_FONT})});
   const PLOT_SERIES_PALETTE=Object.freeze(['#2563eb','#0f9f9a','#dc2626','#f97316','#6d28d9','#db2777','#16a34a','#ca8a04','#0891b2','#7c3aed']);
   const PLOT_THEME_LIGHT=Object.freeze({paper:'#ffffff',plot:'#ffffff',grid:'#e8edf4',zero:'#d3dbe6',axis:'#adb8c7',text:'#46546a',muted:'#6f7d91',legend:'rgba(214,223,235,.72)',colorbar:'#d3dce8'});
   const PLOT_THEME_DARK=Object.freeze({paper:'#1d232e',plot:'#1d232e',grid:'#303a49',zero:'#414d5f',axis:'#5a687c',text:'#d8e0eb',muted:'#9aa7b9',legend:'rgba(72,84,103,.80)',colorbar:'#4b586b'});

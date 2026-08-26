@@ -3,7 +3,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
-const outPath = path.join(pluginsDir, 'plugin-index.generated.js');
+const outPath = path.join(root, 'src', 'generated', 'plugin-index.js');
 
 const plugins = [];
 for (const name of fs.readdirSync(pluginsDir).sort()) {
@@ -21,8 +21,10 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   };
   const entry = normalizeFile(manifest.entry || 'plugin.js');
   const scriptFiles = Array.isArray(manifest.scripts)&&manifest.scripts.length ? manifest.scripts.map(normalizeFile) : [entry];
+  const styleFiles = Array.isArray(manifest.styles) ? manifest.styles.map(normalizeFile) : [];
   if(!scriptFiles.includes(entry))scriptFiles.push(entry);
-  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`,scripts:[...new Set(scriptFiles)].map(file=>`plugins/${name}/${file}`),manifest:{...manifest,source:'builtin'}});
+  const styleSources=styleFiles.map(file=>({file,css:fs.readFileSync(path.join(dir,file),'utf8')}));
+  plugins.push({id:String(manifest.id||''),entry:`plugins/${name}/${entry}`,scripts:[...new Set(scriptFiles)].map(file=>`plugins/${name}/${file}`),styleSources,manifest:{...manifest,source:'builtin'}});
 }
 
 const entries=plugins.map(row=>row.entry);

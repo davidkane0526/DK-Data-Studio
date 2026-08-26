@@ -2,11 +2,11 @@
   DKDSPlugins.define({
     id:'builtin.status-monitor',pluginType:'foundation',
     name:'Status Monitor',
-    version:'1.2.0',
-    apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar"],
+    version:'1.3.0',
+    apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar","ui.theme"],
     order:7,
-    description:'Unified bottom status bar runtime, appearance, memory, DevTools and LAN state monitor.',
-    capabilities:['ui.status-bar','system.runtime-status','lan.web-status']
+    description:'Unified bottom status bar for theme selection, memory, DevTools and LAN state.',
+    capabilities:['ui.status-bar','system.runtime-status','lan.web-status','ui.theme']
   }, async ctx => {
     const runtimeService=ctx.services.require('runtime');
     const lanService=ctx.services.require('lanWeb');
@@ -19,32 +19,75 @@
       const digits=i>=3?2:i>=2?1:0;
       return `${x.toFixed(digits)} ${units[i]}`;
     };
+    const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
     let runtimeStatus=null;
     let lanStatus=null;
     let stopped=false;
     let cancelMemoryHide=null;
 
-    const themeName=()=>String(window.DKDSTheme?.current?.()||'light')==='dark'?'dark':'light';
+    const themeMode=()=>String(window.DKDSTheme?.current?.()||'light')==='dark'?'dark':'light';
+    const themeProfile=()=>String(window.DKDSTheme?.profile?.()||'builtin.default');
+    const themeProfiles=()=>Array.isArray(window.DKDSTheme?.listProfiles?.())?window.DKDSTheme.listProfiles():[];
+    const themeLabel=()=>themeProfiles().find(row=>String(row?.id||'')===themeProfile())?.label||themeProfile();
+
     const themeItem=ctx.ui.statusBar.add({
-      id:'appearance',side:'right',order:5,
-      icon:themeName()==='dark'?'◐':'☼',
-      label:themeName()==='dark'?'暗色':'亮色',state:'info',className:'compact appearance-status-item',
-      title:themeName()==='dark'?'当前为暗色模式；点击切换到亮色模式':'当前为亮色模式；点击切换到暗色模式',
-      onClick:()=>window.DKDSTheme?.toggle?.()
+      id:'theme',side:'right',order:10,icon:'◐',label:'主题',state:'info',className:'compact theme-status-item',
+      title:'选择主题',onClick:()=>toggleThemePanel()
     });
 
-    const runtimeItem=ctx.ui.statusBar.add({
-      id:'runtime-mode',side:'right',order:10,icon:'◉',
-      label:ctx.runtime.isWebClient?'网页版':'桌面端',state:'info',className:'compact',title:'当前运行模式',hidden:!!ctx.runtime.isNativeClient,
-      onClick:()=>{
-        const runtime=runtimeStatus?.runtime|| (ctx.runtime.isWebClient?'web':'desktop');
-        const platform=runtimeStatus?.platform||navigator.platform||'';
-        ctx.status.set(`运行模式：${runtime} ${platform?`· ${platform}`:''}`);
+    const themePanel=ctx.ui.dom.create('aside',{className:'dkds-theme-panel dkds-material-role-popover hidden',attrs:{id:'dkdsThemePanel','aria-label':'主题选择'},html:`
+      <div class="dkds-theme-panel-head dkds-surface-header">
+        <div class="dkds-theme-panel-heading"><strong>主题</strong><span id="dkdsThemeCurrentLabel">—</span></div>
+        <button id="dkdsThemePanelClose" class="dkds-icon-button" type="button" title="关闭" aria-label="关闭">×</button>
+      </div>
+      <div class="dkds-theme-panel-body">
+        <div id="dkdsThemeProfileList" class="dkds-theme-profile-list" role="listbox" aria-label="主题配置"></div>
+        <div class="dkds-theme-mode-row">
+          <span>外观</span>
+          <button id="dkdsThemeSettingsBtn" class="dkds-theme-settings-inline hidden" type="button">参数</button>
+          <div class="dkds-integrated-action-group dkds-material-role-control dkds-theme-mode-switch" role="group" aria-label="亮暗模式">
+            <button type="button" data-dkds-theme-mode="light">亮色</button>
+            <button type="button" data-dkds-theme-mode="dark">暗色</button>
+          </div>
+        </div>
+      </div>`});
+    ctx.ui.dom.append(ctx.ui.dom.query('#app')||ctx.ui.dom.root(),themePanel);
+    const themeList=ctx.ui.dom.query('#dkdsThemeProfileList',themePanel);
+    const themeCurrentLabel=ctx.ui.dom.query('#dkdsThemeCurrentLabel',themePanel);
+    const themeSettingsBtn=ctx.ui.dom.query('#dkdsThemeSettingsBtn',themePanel);
+
+    function renderThemePanel(){
+      const currentProfile=themeProfile(),mode=themeMode(),rows=themeProfiles();
+      if(themeCurrentLabel)themeCurrentLabel.textContent=themeLabel();
+      if(themeList)themeList.innerHTML=rows.map(row=>{
+        const id=String(row?.id||''),active=id===currentProfile;
+        return `<button type="button" class="dkds-theme-profile-option${active?' active':''}" data-theme-profile="${esc(id)}" role="option" aria-selected="${active?'true':'false'}"><span class="dkds-theme-profile-check">${active?'✓':''}</span><span class="dkds-theme-profile-name">${esc(row?.label||id)}</span></button>`;
+      }).join('');
+      if(themeSettingsBtn)themeSettingsBtn.classList.toggle('hidden',!(window.DKDSTheme?.settings?.(currentProfile)||[]).length);
+      for(const button of themePanel.querySelectorAll('[data-dkds-theme-mode]')){
+        const active=button.dataset.dkdsThemeMode===mode;
+        button.classList.toggle('active',active);button.setAttribute('aria-pressed',active?'true':'false');
       }
-    });
+      themeItem.update({icon:mode==='dark'?'◐':'☼',label:'主题',title:`主题：${themeLabel()} · ${mode==='dark'?'暗色':'亮色'}`});
+    }
+    const hideThemePanel=()=>themePanel.classList.add('hidden');
+    const showThemePanel=()=>{renderThemePanel();themePanel.classList.remove('hidden');};
+    function toggleThemePanel(){if(themePanel.classList.contains('hidden'))showThemePanel();else hideThemePanel();}
 
-    const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
+    ctx.ui.dom.on(themeList,'click',event=>{
+      const button=event.target.closest?.('[data-theme-profile]');if(!button)return;
+      const id=String(button.dataset.themeProfile||'');
+      try{window.DKDSTheme?.setProfile?.(id);renderThemePanel();}catch(err){ctx.status.set(`主题切换失败：${err?.message||err}`);}
+    });
+    ctx.ui.dom.on(themePanel,'click',event=>{
+      const button=event.target.closest?.('[data-dkds-theme-mode]');if(!button)return;
+      try{window.DKDSTheme?.set?.(button.dataset.dkdsThemeMode);renderThemePanel();}catch(err){ctx.status.set(`外观切换失败：${err?.message||err}`);}
+    });
+    ctx.ui.dom.on(themeSettingsBtn,'click',()=>window.DKDSThemeSettingsUI?.open?.(themeProfile()));
+    ctx.ui.dom.on(ctx.ui.dom.query('#dkdsThemePanelClose',themePanel),'click',hideThemePanel);
+
+    const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
       <div class="dkds-memory-panel-head">
         <div><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
         <button id="dkdsMemoryPanelClose" type="button" title="关闭">×</button>
@@ -70,9 +113,9 @@
         const used=Number(row.workingSetBytes)||0;
         const ratio=total>0?Math.max(3,Math.min(100,used/total*100)):0;
         const meta=[String(row.type||''),Number(row.pid)>0?`PID ${row.pid}`:''].filter(Boolean).join(' · ');
-        return `<div class="dkds-memory-component-row" data-plugin-id="${String(row.pluginId||'').replace(/["&<>]/g,'')}">
-          <div class="dkds-memory-component-main"><span class="dkds-memory-component-name">${String(row.label||row.type||'组件').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span><strong>${formatBytes(used)}</strong></div>
-          <div class="dkds-memory-component-meta">${meta.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        return `<div class="dkds-memory-component-row" data-plugin-id="${esc(row.pluginId||'')}">
+          <div class="dkds-memory-component-main"><span class="dkds-memory-component-name">${esc(row.label||row.type||'组件')}</span><strong>${formatBytes(used)}</strong></div>
+          <div class="dkds-memory-component-meta">${esc(meta)}</div>
           <div class="dkds-memory-meter"><span style="width:${ratio.toFixed(1)}%"></span></div>
         </div>`;
       }).join('');
@@ -100,16 +143,10 @@
       }
     });
 
-    function applyTheme(){
-      const dark=themeName()==='dark';
-      themeItem.update({icon:dark?'◐':'☼',label:dark?'暗色':'亮色',title:dark?'当前为暗色模式；点击切换到亮色模式':'当前为亮色模式；点击切换到暗色模式'});
-    }
+    function applyTheme(){renderThemePanel();}
     function applyRuntime(status){
       if(!status||stopped)return;
       runtimeStatus=status;
-      const runtime=String(status.runtime||'desktop');
-      const runtimeLabel=runtime==='web'?'网页版':runtime==='android'?'Android':'桌面端';
-      runtimeItem.update({label:runtimeLabel,state:runtime==='web'?'ok':'info',title:`运行模式：${runtimeLabel}`,hidden:runtime==='android'});
       const m=status.memory||{};
       const used=Number(m.workingSetBytes||m.jsHeapUsedBytes)||0;
       const limit=Number(m.jsHeapLimitBytes)||0;
@@ -140,9 +177,13 @@
     const onThemeChanged=()=>applyTheme();
     const onPanelPointerEnter=()=>clearMemoryTimer();
     const onPanelPointerLeave=()=>scheduleMemoryHide(2200);
-    const onOutsidePointer=event=>{if(panel.classList.contains('hidden'))return;if(panel.contains(event.target)||memoryItem.element?.contains?.(event.target))return;hideMemoryPanel();};
-    const onKeyDown=event=>{if(event.key==='Escape'&&!panel.classList.contains('hidden'))hideMemoryPanel();};
+    const onOutsidePointer=event=>{
+      if(!themePanel.classList.contains('hidden')&&!themePanel.contains(event.target)&&!themeItem.element?.contains?.(event.target))hideThemePanel();
+      if(!panel.classList.contains('hidden')&&!panel.contains(event.target)&&!memoryItem.element?.contains?.(event.target))hideMemoryPanel();
+    };
+    const onKeyDown=event=>{if(event.key!=='Escape')return;hideThemePanel();hideMemoryPanel();};
     ctx.ui.dom.on(window,'dkds:theme-changed',onThemeChanged);
+    ctx.ui.dom.on(window,'dkds:theme-profile-changed',onThemeChanged);
     ctx.ui.dom.on(panel,'pointerenter',onPanelPointerEnter);
     ctx.ui.dom.on(panel,'pointerleave',onPanelPointerLeave);
     ctx.ui.dom.on(ctx.ui.dom.query('#dkdsMemoryPanelClose',panel),'click',hideMemoryPanel);
@@ -154,10 +195,8 @@
     const stopPolling=ctx.ui.dom.interval(()=>{void refreshRuntime();void refreshLan();},1500);
 
     return {
-      deactivate(){
-        stopped=true;stopPolling?.();clearMemoryTimer();panel.remove();
-      },
-      getState(){return {runtimeStatus,lanStatus,theme:themeName()};}
+      deactivate(){stopped=true;stopPolling?.();clearMemoryTimer();themePanel.remove();panel.remove();},
+      getState(){return {runtimeStatus,lanStatus,theme:{mode:themeMode(),profile:themeProfile()}};}
     };
   });
 })();

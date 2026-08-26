@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { normalizePluginPackage } = require('../plugin-package');
+const childProcess = require('child_process');
+const { normalizePluginPackage } = require('../desktop/plugin-package');
 
 const args=process.argv.slice(2);
 const allowBuiltin=args.includes('--allow-builtin');
@@ -17,6 +18,12 @@ const manifestPath = path.join(folder, 'plugin.json');
 if (!fs.existsSync(manifestPath)) throw new Error(`plugin.json not found: ${manifestPath}`);
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const builtinId=String(manifest.id || '').startsWith('builtin.');
+if(manifest.pluginType==='theme'&&!builtinId){
+  const validator=path.join(root,'sdk','tools','dkds-plugin.js');
+  const checked=childProcess.spawnSync(process.execPath,[validator,'validate',folder],{encoding:'utf8'});
+  if(checked.status!==0)throw new Error(`Theme SDK validation failed before packaging:
+${checked.stderr||checked.stdout||'unknown validation error'}`);
+}
 if (builtinId && !allowBuiltin) {
   throw new Error('builtin.* plugins are application-owned. Use --allow-builtin only when creating a trusted LAN plugin update package.');
 }

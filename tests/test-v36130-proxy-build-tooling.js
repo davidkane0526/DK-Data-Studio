@@ -1,0 +1,35 @@
+const fs = require('fs');
+const path = require('path');
+const root = path.resolve(__dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8').replace(/^\uFEFF/, '');
+const assert = (ok, message) => { if (!ok) throw new Error(message); };
+
+const pkg = JSON.parse(read('package.json'));
+const tools = read('tools/windows/dkds-tools.ps1');
+const gui = read('tools/windows/dkds-gui.ps1');
+const winWorkflow = read('.github/workflows/build-windows.yml');
+const androidWorkflow = read('.github/workflows/build-android.yml');
+const setVersion = read('scripts/set-version.js');
+
+assert(pkg.version === '3.61.84', 'v3.61.32 proxy tooling regression must run against application 3.61.32.');
+assert(tools.includes('Initialize-NetworkEnvironment'), 'build toolbox must initialize one shared network environment before dependency/build work.');
+assert(tools.includes("Get-ProcessEnvFirst @('HTTP_PROXY','http_proxy','npm_config_proxy','NPM_CONFIG_PROXY')"), 'HTTP proxy inheritance must accept common upper/lower/npm aliases.');
+assert(tools.includes("Get-ProcessEnvFirst @('HTTPS_PROXY','https_proxy','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')"), 'HTTPS proxy inheritance must accept common upper/lower/npm aliases.');
+assert(tools.includes("Set-ProcessEnvAliases @('npm_config_proxy','NPM_CONFIG_PROXY')"), 'effective HTTP proxy must be propagated to npm.');
+assert(tools.includes("Set-ProcessEnvAliases @('npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')"), 'effective HTTPS proxy must be propagated to npm.');
+assert(tools.includes('ELECTRON_GET_USE_PROXY') && tools.includes('GLOBAL_AGENT_HTTPS_PROXY'), 'Electron downloader must explicitly opt into proxy-aware transport.');
+assert(tools.includes("Set-ProcessEnvAliases @('NO_PROXY','no_proxy','npm_config_noproxy','NPM_CONFIG_NOPROXY')"), 'NO_PROXY must be propagated to npm and process tools.');
+assert(tools.includes('Apply-GradleProxy'), 'Gradle must receive the effective proxy rather than relying on accidental environment behavior.');
+assert(tools.includes('Clear-GradleProxyOptions'), 'Gradle proxy setup/off mode must remove stale proxy JVM options before continuing.');
+assert(tools.includes('ProxyCredential'), 'PowerShell-managed downloads must support authenticated HTTP(S) proxy URLs without relying on credentials embedded in the proxy URI.');
+assert(tools.includes('Invoke-DkdsWebRequest -Uri $apiUrl -MaximumRedirection 0'), 'managed JDK redirect lookup must use proxy-aware download wrapper.');
+assert(tools.includes('Invoke-DkdsWebRequest -Uri $downloadUrl -OutFile $downloadPath'), 'managed JDK archive download must use proxy-aware wrapper.');
+assert(tools.includes("Invoke-DkdsWebRequest -Uri ($downloadUrl + '.sha256.txt')"), 'managed JDK checksum download must use proxy-aware wrapper.');
+assert(tools.includes('Test-NoProxyForUri $uri $script:NetworkConfig.NoProxy'), 'explicit PowerShell proxy handling must respect NO_PROXY.');
+assert(tools.includes("$builder.UserName = '***'") && tools.includes("$builder.Password = '***'"), 'proxy logs must redact credentials.');
+assert(gui.includes("$page.Text = '网络与代理'") && gui.includes('保存代理设置'), 'GUI must expose proxy settings.');
+assert(gui.includes('Save-ToolboxConfigPatch'), 'GUI settings must merge into existing developer config instead of destroying cache/proxy keys.');
+assert(setVersion.includes("/^test-.*\\.js$/i") && setVersion.includes("pkg\\.version") && setVersion.includes("README_CN.md"), 'versioning script must keep current-version regression assertions and README heading synchronized automatically.');
+assert(winWorkflow.includes('npm install --no-audit --no-fund'), 'Windows CI dependency strategy must remain compatible with the repository without a lockfile.');
+assert(androidWorkflow.includes('npm install --no-audit --no-fund'), 'Android CI dependency strategy must remain compatible with the repository without a lockfile.');
+console.log('v3.61.30 proxy/build tooling regression checks passed.');

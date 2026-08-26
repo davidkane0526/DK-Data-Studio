@@ -1,0 +1,12 @@
+/* Theme Contract 3.4 · Core-owned Theme Settings UI. */
+body.dkds-modern-ui .dkds-theme-settings-overlay{position:fixed;inset:0;z-index:10060;display:grid;place-items:center;padding:18px;background:color-mix(in srgb,var(--dkui-canvas) 34%,transparent)}
+body.dkds-modern-ui .dkds-theme-settings-dialog{width:min(520px,calc(100vw - 36px));max-height:min(680px,calc(100vh - 36px));display:grid;grid-template-rows:auto minmax(0,1fr) auto;border:1px solid var(--dkui-divider);border-radius:var(--dkui-radius-lg);overflow:hidden;color:var(--dkui-text)}
+body.dkds-modern-ui .dkds-theme-settings-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px 9px 13px;border-bottom:1px solid var(--dkui-divider)}
+body.dkds-modern-ui .dkds-theme-settings-head>div{display:grid;gap:1px}.dkds-theme-settings-head strong{font-size:12px}.dkds-theme-settings-head span{font-size:9px;color:var(--dkui-text-soft)}
+body.dkds-modern-ui .dkds-theme-settings-body{overflow:auto;padding:10px;display:grid;gap:7px}
+body.dkds-modern-ui .dkds-theme-setting-row{min-height:42px;display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,42%);align-items:center;gap:12px;padding:7px 8px;border-radius:8px;background:var(--dkui-surface-soft)}
+body.dkds-modern-ui .dkds-theme-setting-row>span{display:grid;gap:2px;min-width:0}.dkds-theme-setting-row strong{font-size:10px}.dkds-theme-setting-row small{font-size:8px;color:var(--dkui-text-soft);font-weight:400}
+body.dkds-modern-ui .dkds-theme-setting-row input,body.dkds-modern-ui .dkds-theme-setting-row select{width:100%;min-width:0}
+body.dkds-modern-ui .dkds-theme-setting-range>div{display:grid;grid-template-columns:minmax(0,1fr) 70px;align-items:center;gap:7px}
+body.dkds-modern-ui .dkds-theme-settings-actions{display:flex;justify-content:flex-end;gap:6px;padding:8px 10px;border-top:1px solid var(--dkui-divider)}
+body.dkds-modern-ui .dkds-theme-settings-empty{padding:26px;text-align:center;color:var(--dkui-text-soft);font-size:10px}

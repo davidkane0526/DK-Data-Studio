@@ -1,12 +1,19 @@
-const { spawnSync } = require('child_process');
-const path = require('path');
+'use strict';
+const fs=require('fs');
+const path=require('path');
 
-const root = path.resolve(__dirname, '..');
-
-const result = spawnSync(process.execPath, [path.join(root, 'scripts', 'generate-build-info.js')], {
-  cwd: root,
-  stdio: 'inherit'
-});
-if (result.status !== 0) process.exit(result.status || 1);
-
-console.log('Build preparation complete: packaged 30-day metadata is ready. No update keys are required.');
+const root=path.resolve(__dirname,'..');
+const outPath=path.join(root,'build-info.json');
+const builtAtMs=Date.now();
+const durationDays=30;
+const info={
+  schema:1,
+  buildType:'packaged-trial',
+  durationDays,
+  builtAtMs,
+  expiresAtMs:builtAtMs+durationDays*24*60*60*1000
+};
+info.builtAt=new Date(info.builtAtMs).toISOString();
+info.expiresAt=new Date(info.expiresAtMs).toISOString();
+fs.writeFileSync(outPath,JSON.stringify(info,null,2)+'\n','utf8');
+console.log(`Build preparation complete: ${durationDays}-day packaged metadata ${info.builtAt} -> ${info.expiresAt}.`);

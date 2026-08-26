@@ -257,11 +257,13 @@ Rules:
 - Ordinary plugin body text is 12.5 px; form labels are 12 px. Auxiliary/meta/help text must not fall below 11 px in normal desktop layouts.
 - Buttons and compact form controls use a 32 px minimum height and inherit the shared plugin font.
 - Toolbars and action clusters are **single-row-first** (`flex-wrap: nowrap`). If the host is truly narrower than the action set, the row may scroll/overflow horizontally or move low-priority commands into a Core ActionGroup menu; it must not wrap early into two or three rows while usable horizontal space remains.
-- Plugin-owned historical CSS may define older values for legacy/non-workbench pages, but a current `AnalysisWorkbench` surface is normalized by the shared contract. New built-ins should use the variables directly.
-- A parity surface may intentionally opt out only when reproducing an externally defined product UI. The exception must be scoped to a deterministic plugin identity (for dedicated windows `body[data-plugin-id]`) rather than broad selectors. Resonance is the current reference exception because its UI intentionally reproduces the supplied Graphene Resonance Studio workspace.
+- First-party plugins do not own application chrome. Plugin identity selectors may keep domain layout, state hooks and scientific geometry, but must not set theme paint (`background`, `color`, borders, radii, shadows), typography, or private button/input/select sizing.
+- Compose plugin markup with Core semantic roles such as `.dkds-surface`, `.dkds-surface-header`, `.dkds-toolbar`, `.dkds-field`, `.dkds-chip`, `.dkds-list-item`, `.dkds-metric`, `.dkds-table`, `.dkds-dialog-shell`, `.dkds-status`, `.dkds-message` and `.dkds-floating-surface`. `ctx.ui.designSystem.classes` exposes the same roles to code that should not hard-code class names.
+- There is no visual parity opt-out. Mature workspaces may preserve their domain composition and interaction model, but the active theme still owns application chrome. Resonance follows the same rule as every other first-party TOP/SUPER workspace.
+- ScientificPlot presentation is Core-owned. Plugins do not pass theme-specific plot backgrounds, grid colors or zero-line colors; only data-semantic series/category colors belong to the plugin.
 - Renderer dependencies are part of the TOP contract. If a shared View uses ScientificPlot, declare `scientific-renderer` in `plugin.json.window.dependencies`; the generic window host loads the Core D3 renderer instead of exposing a renderer vendor to plugins.
 
-The visual contract belongs to UI infrastructure. Do not solve inconsistent typography or premature toolbar wrapping by adding per-plugin `!important` patches unless the plugin is deliberately implementing a documented parity surface.
+The visual contract belongs to UI infrastructure. `scripts/test-v36159-visual-contract-finalization.js` makes this boundary executable for all first-party plugins.
 
 ## v3.35 GRS-derived base capabilities
 

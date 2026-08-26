@@ -4,12 +4,34 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const {inspectWorkspaceStyles}=require('../layout-contract');
+const ThemeContract=require('../theme-contract');
+const ThemeCoverageContract=require('../theme-coverage-contract');
+const SemverCompat=require('../semver-compat');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
 const schema=JSON.parse(fs.readFileSync(path.join(sdkRoot,contract.manifestSchema),'utf8'));
 const requirements=new Set(schema.properties.requiresCore.items.enum);
 const API=contract.pluginApiVersion;
+const TRANSLUCENT_THEME_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass']);
+const GLASS_FILL_FLOORS=Object.freeze({chrome:.58,sidebar:.62,elevated:.62,popover:.78,floating:.58});
+function opacityNumber(value){
+  if(typeof value==='number')return Number.isFinite(value)?value:null;
+  const text=String(value??'').trim();if(!text)return null;
+  if(text.endsWith('%')){const n=Number(text.slice(0,-1));return Number.isFinite(n)?n/100:null;}
+  const n=Number(text);return Number.isFinite(n)?n:null;
+}
+function warnThemeGlassLegibility(row){
+  for(const mode of ['light','dark']){
+    const resolved=ThemeContract.resolveProfile(row.profile,mode);
+    for(const [role,floor] of Object.entries(GLASS_FILL_FLOORS)){
+      if(!TRANSLUCENT_THEME_RECIPES.has(String(resolved.recipes?.[role]||'')))continue;
+      const value=resolved.material?.roles?.[role]?.materialTintOpacity??resolved.material?.base?.materialTintOpacity;
+      const opacity=opacityNumber(value);
+      if(opacity!=null&&opacity<floor)console.warn(`DKDS SDK THEME WARNING: profile ${row.id} ${mode}.${role} materialTintOpacity=${opacity} is below the Core readability floor ${floor}; runtime will clamp the effective glass fill.`);
+    }
+  }
+}
 
 function die(message){console.error(`DKDS SDK ERROR: ${message}`);process.exit(2);}
 function pluginId(value){return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(value||''));}
@@ -45,13 +67,37 @@ const forbidden=[
   [/\b(?:requestAnimationFrame|cancelAnimationFrame|setInterval|clearInterval|setTimeout|clearTimeout|queueMicrotask)\s*\(/,'raw scheduler lifecycle'],[/\bwindow\.(?:alert|confirm|prompt)\s*\(/,'native browser dialog (use ctx.ui.dialogs)'],[/ctx\.registry\.add\s*\(/,'generic registry bypass'],[/\bDKDSHostRecipes\./,'host recipe global']
 ];
 function stripComments(source){return source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:])\/\/.*$/gm,'$1');}
-function validate(folder){
+
+function staticInjectedStyleRows(source){
+  const rows=[];const text=String(source||'');
+  const templateRe=/ctx\.ui\.styles\.add\s*\(\s*[^,]+,\s*`([\s\S]*?)`\s*\)/g;let m;
+  while((m=templateRe.exec(text))){
+    const content=String(m[1]||'').replace(/\$\{[\s\S]*?\}/g,'');
+    rows.push({name:'ctx.ui.styles.add(template)',content});
+  }
+  const quotedRe=/ctx\.ui\.styles\.add\s*\(\s*[^,]+,\s*(['"])((?:\\.|(?!\1)[\s\S])*?)\1\s*\)/g;
+  while((m=quotedRe.exec(text))){
+    let content=String(m[2]||'');try{content=JSON.parse('"'+content.replace(/"/g,'\\"')+'"');}catch{}
+    rows.push({name:'ctx.ui.styles.add(string)',content});
+  }
+  return rows;
+}
+async function validate(folder){
   folder=path.resolve(folder);const m=readManifest(folder);const errors=[];
   if(!pluginId(m.id))errors.push(`invalid id: ${m.id||'(missing)'}`);if(String(m.id||'').startsWith('builtin.'))errors.push('builtin.* is reserved for application plugins');
   if(!String(m.name||'').trim())errors.push('name is required');if(!version(m.version))errors.push(`version must be semver: ${m.version||'(missing)'}`);
   const pluginTypes=new Set(schema.properties.pluginType?.enum||[]);if(!pluginTypes.has(String(m.pluginType||'')))errors.push(`invalid pluginType: ${m.pluginType||'(missing)'}`);
   if(m.apiVersion!==API)errors.push(`new SDK plugins must target apiVersion ${API}`);if(!Array.isArray(m.requiresCore))errors.push('requiresCore must be an array');
   else {const seen=new Set();for(const r of m.requiresCore){if(!requirements.has(r))errors.push(`unknown Core requirement: ${r}`);if(seen.has(r))errors.push(`duplicate Core requirement: ${r}`);seen.add(r);}}
+  if(m.compatibility!==undefined){
+    if(!m.compatibility||typeof m.compatibility!=='object'||Array.isArray(m.compatibility))errors.push('compatibility must be an object.');
+    else{
+      for(const field of ['app','pluginApi','themeContract']){
+        if(m.compatibility[field]!==undefined&&(typeof m.compatibility[field]!=='string'||!SemverCompat.validateRange(m.compatibility[field])))errors.push(`compatibility.${field} must be a valid semver range.`);
+      }
+    }
+  }
+  if(Array.isArray(m.pluginDependencies))for(const dep of m.pluginDependencies){if(!dep||typeof dep!=='object'||!pluginId(dep.id)||!SemverCompat.validateRange(dep.range))errors.push(`invalid plugin dependency range: ${dep?.id||'(missing)'}@${dep?.range||'(missing)'}`);}
   let files=[];try{files=referencedFiles(m,folder);}catch(e){errors.push(e.message);}
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
   const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
@@ -60,6 +106,24 @@ function validate(folder){
   const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
   const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,ui:m.ui||{},styles:styleRows});
   errors.push(...layoutAudit.errors);for(const warning of layoutAudit.warnings)console.warn(`DKDS SDK WARNING: ${warning}`);
+  if(m.pluginType!=='theme'){
+    const visualStyleRows=[...styleRows,...staticInjectedStyleRows(source)];
+    for(const row of visualStyleRows){
+      const visualIssues=ThemeCoverageContract.auditCss(row.content,{pluginId:m.id,source:row.name});
+      for(const issue of visualIssues)console.warn(`DKDS SDK THEME COVERAGE WARNING: ${row.name} ${issue.selector} ${issue.property}: ${issue.value} (${issue.reason})`);
+    }
+  }
+  if(m.pluginType==='theme'){
+    if(!declared.has('ui.theme'))errors.push('Theme plugins must declare ui.theme.');
+    if(declared.has('ui.styles'))errors.push('Theme plugins must use Theme Contract tokens instead of ui.styles.');
+    if(styleRows.length)errors.push('Theme plugins must not ship arbitrary stylesheets; use Theme Contract tokens and motion tokens.');
+    if(m.workspace||m.window)errors.push('Theme plugins must not own workspace or window contracts.');
+    if(m.algorithmProvider===true)errors.push('Theme plugins cannot be Algorithm Providers.');
+    if(!/ctx\.ui\.theme\.register\s*\(/.test(source))errors.push('Theme plugins must register at least one profile through ctx.ui.theme.register(...).');
+    if(!m.compatibility?.app)errors.push('Theme Contract 3.3 plugins must declare compatibility.app.');
+    if(!m.compatibility?.themeContract)errors.push('Theme Contract 3.3 plugins must declare compatibility.themeContract.');
+    else if(SemverCompat.validateRange(m.compatibility.themeContract)&&!SemverCompat.satisfies(ThemeContract.version,m.compatibility.themeContract))errors.push(`Theme plugin requires Theme Contract ${m.compatibility.themeContract}, but this SDK provides ${ThemeContract.version}.`);
+  }
   const topWorkspace=m?.workspace?.role==='top';
   if(m.pluginType==='tool'&&!topWorkspace){
     if(!declared.has('ui.menus'))errors.push('Command-only Tool plugins must declare ui.menus so Core can place them in the top Tools menu.');
@@ -99,27 +163,44 @@ function validate(folder){
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){
     try{
-      let runtime=null;const sandbox={DKDSPlugins:{define:manifest=>{runtime=manifest;}}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:m.entry||'plugin.js',timeout:1000});
+      let runtime=null,runtimeActivate=null;const sandbox={DKDSPlugins:{define:(manifest,activate)=>{runtime=manifest;runtimeActivate=activate;}}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(fs.readFileSync(entry,'utf8'),sandbox,{filename:m.entry||'plugin.js',timeout:1000});
       if(!runtime)errors.push('entry did not call DKDSPlugins.define(...)');
       else {
         for(const key of ['id','name','version','apiVersion','pluginType'])if(String(runtime[key]??'')!==String(m[key]??''))errors.push(`runtime manifest ${key} does not match plugin.json`);
         for(const key of ['requiresCore','capabilities','workspace','window','data','algorithmCategories','algorithmProvides','compatibility','pluginDependencies'])if(!same(runtime[key]??(Array.isArray(m[key])?[]:null),m[key]??(Array.isArray(runtime[key])?[]:null)))errors.push(`runtime manifest ${key} does not match plugin.json`);
         if(Boolean(runtime.algorithmProvider)!==Boolean(m.algorithmProvider))errors.push('runtime manifest algorithmProvider does not match plugin.json');
+        if(m.pluginType==='theme'){
+          if(typeof runtimeActivate!=='function')errors.push('Theme plugin must provide an activation function.');
+          else{
+            const registered=[];
+            const themeApi=Object.freeze({contractVersion:ThemeContract.version,supports:feature=>{const key=String(feature||'');return key==='renderer.profilePolicy'||key==='renderer.thinGlass'||key==='renderer.recipes.clear'||key==='renderer.recipes.thin-glass'||key==='renderer.recipes.soft-glass'||key==='renderer.recipes.liquid-glass'||ThemeContract.supports(feature);},rendererCapabilities:()=>Object.freeze({version:'sdk-validator',recipeInstalled:false,engine:{},renderer:{backdropBlur:false,saturation:false,noise:false,glassEdge:false,innerHighlight:false,specularHighlight:false,webMaterial:false,nativeBlur:false,thinGlass:true},recipes:{clear:true,'thin-glass':true,'soft-glass':true,'liquid-glass':true},roles:Object.fromEntries(ThemeContract.materialRoles().map(role=>[role,true]))}),register:(id,spec)=>{const local=String(id||'').trim();if(!local)throw new Error('Theme profile id required.');const normalized=ThemeContract.validateProfile(spec,`theme.register(${local})`);registered.push({id:local,profile:normalized});return Object.freeze({id:local,dispose(){}});},activate:()=>'',current:()=>({mode:'light',profile:'builtin.default'}),list:()=>[],tokens:()=>({}),materialRoles:ThemeContract.materialRoles});
+            const activationResult=runtimeActivate(Object.freeze({ui:Object.freeze({theme:themeApi}),manifest:Object.freeze(m),apiVersion:API}));
+            if(activationResult&&typeof activationResult.then==='function')await Promise.race([activationResult,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Theme activation validation timed out.')),1000))]);
+            if(!registered.length)errors.push('Theme plugins must register at least one valid Theme Profile during SDK validation.');
+            for(const row of registered){
+              const missing=ThemeContract.materialRoles().filter(role=>!Object.prototype.hasOwnProperty.call(row.profile.recipes||{},role));
+              if(missing.length)errors.push(`Theme profile ${row.id} must explicitly declare a Material Recipe for every Core role; missing: ${missing.join(', ')}.`);
+              warnThemeGlassLegibility(row);
+            }
+          }
+        }
       }
-    }catch(e){errors.push(`cannot evaluate entry manifest: ${e.message}`);}
+    }catch(e){errors.push(`cannot evaluate entry/theme profile: ${e.message}`);}
   }
   if(m.algorithmProvider===true){if(!Array.isArray(m.algorithmCategories)||!m.algorithmCategories.length)errors.push('algorithmProvider requires algorithmCategories');if(!Array.isArray(m.algorithmProvides)||!m.algorithmProvides.length)errors.push('algorithmProvider requires algorithmProvides');}
   if(errors.length){for(const e of errors)console.error(`- ${e}`);throw new Error(`${errors.length} validation error(s)`);}
   return {manifest:m,files};
 }
-function pack(folder,output){
-  folder=path.resolve(folder);const {manifest,files}=validate(folder);const payload={schema:contract.packageSchema,manifest,files:{}};
+async function pack(folder,output){
+  folder=path.resolve(folder);const {manifest,files}=await validate(folder);const payload={schema:contract.packageSchema,manifest,files:{}};
   for(const rel of files)payload.files[rel]=fs.readFileSync(path.join(folder,rel),'utf8');
   const out=path.resolve(output||`${manifest.id}-${manifest.version}.dkplugin`);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(payload,null,2)+'\n','utf8');return out;
 }
 const [command,folder,output]=process.argv.slice(2);
-try{
-  if(command==='validate'&&folder){const result=validate(folder);console.log(`DKDS SDK validation OK: ${result.manifest.id}@${result.manifest.version}`);}
-  else if(command==='package'&&folder){console.log(`Created DKDS plugin package: ${pack(folder,output)}`);}
-  else die('usage: dkds-plugin.js validate <plugin-folder> | package <plugin-folder> [output.dkplugin]');
-}catch(e){die(e.message);}
+(async()=>{
+  try{
+    if(command==='validate'&&folder){const result=await validate(folder);console.log(`DKDS SDK validation OK: ${result.manifest.id}@${result.manifest.version}`);}
+    else if(command==='package'&&folder){console.log(`Created DKDS plugin package: ${await pack(folder,output)}`);}
+    else die('usage: dkds-plugin.js validate <plugin-folder> | package <plugin-folder> [output.dkplugin]');
+  }catch(e){die(e.message);}
+})();

@@ -1,3 +1,215 @@
+## v3.61.84 — Repository consolidation and ownership cleanup
+
+- Reorganize Electron host files under `desktop/`, all executable regression tests under `tests/`, Theme runtime under `src/core/theme/`, and generated app/Core/CSS bundles under authored composition directories. Root host shims and test scripts in `scripts/` are removed.
+- Make generated runtime bundles, plugin/SDK indexes and derived PNG icon copies reproducible build products rather than tracked source. `npm run clean:generated` now restores a lean source tree; start/test/check/dist regenerate everything they require.
+- Consolidate status-bar chrome ownership into one semantic block and remove the late status-command override stack. Integrated commands remain hit regions of their parent chrome rather than nested material surfaces.
+- Remove release-numbered Theme/Material source commentary and the obsolete `95-theme-material-contract-31.css` compatibility shell. Theme/Material ownership files are now named by responsibility, not historical release.
+- Correct brittle regression tests that asserted version-era comments instead of semantic behavior, and add `test-v36184-repository-hygiene.js` to enforce generated-artifact, source-filename, domain-boundary and patch-debt rules.
+- Freeze current authored CSS override debt as an upper bound (**1597** `!important` declarations total, **663** in the modern layer) so subsequent work must hold or reduce it rather than append another override layer.
+- Remove 50 obsolete per-version verification notes plus stale v3.41/handoff/local-history documents; `CHANGELOG.md` is the single release-history source and `docs/CODE_QUALITY_AUDIT.md` records remaining debt.
+- Merge the one-use build-info generator into `prepare-build.js`, keeping `scripts/` limited to build/maintenance tools.
+- Preserve the v3.61.83 stationary-menu contract and Theme/Material behavior; this release is an architecture/repository cleanup checkpoint, not a new visual redesign.
+
+## v3.61.83 — Stationary menu motion contract
+
+- Removed geometric entrance motion from Core command menus/popovers. Menus now appear at their resolved anchor position instead of translating into place.
+- Removed hover/press vertical translation from command-menu and tool-workspace menu items; menu interaction changes paint only, never geometry.
+- Added a Core regression contract so future theme or Material changes cannot reintroduce fly-up/fly-down menu motion.
+
+## v3.61.82 — Chrome ownership closure & deterministic glass controls
+
+- Fix the v3.61.81 chrome integration regression at the Material Renderer boundary: status-bar commands, PlotView/FWHM actions, panel/trend actions and other integrated hit regions no longer receive a nested `control` Material Role when they live inside a `chrome` owner. The initial semantic scan now includes explicit material-role nodes and integrated containers, so legacy role classes are removed before the first interaction rather than only after a mutation.
+- Remove stale hard-coded `dkds-material-role-control` markers from Core chrome action-group markup. Header/right-side icons and bottom status commands are now layout/hit regions owned by their parent title/status surface.
+- Flatten form controls inside every translucent recipe (`thin-glass / soft-glass / liquid-glass`) with a low-opacity semantic fill and no inset shadow, so SDK-authored glass themes and the built-in profile share one Core control depth model.
+- Make the Theme light/dark segmented state deterministic from the root appearance as well as ARIA state, preventing white text on a clear/light segment during profile registration or appearance synchronization.
+- Keep export-menu context metadata transparent inside the popover material, removing the remaining hard-coded-looking light strip in dark mode.
+- Broadcast the user's `preferredProfile` separately from the temporary `activeProfile`, so plugin reload/fallback cannot propagate `builtin.default` to another window and appear to switch the user's Theme.
+- Retune built-in Thin Glass toward the SDK 1.7.0 optical reference with compact 10/13 px radii and clearer but still restrained surface separation; large LAN Web and AI Agent/MCP windows remain Thin Glass elevated surfaces.
+
+## v3.61.81 — Theme chrome ownership & profile stability
+
+- Make integrated actions a semantic property of Core `chrome` material owners rather than a list of specific header classes. PlotView/FWHM header actions and bottom status commands are layout-only hit regions inside their parent chrome, with no idle card background, border, shadow or separator.
+- Tokenize the analysis/export menu context row so dark mode cannot inherit a hard-coded light strip. Theme mode segmented controls now have an explicit semantic active state with accent fill and readable foreground in both light and dark appearances.
+- Align built-in Thin Glass with the public SDK Thin Glass visual family: translucent semantic base surfaces plus 6/8/10 px role blur, while retaining shallow Core-owned shadows and recipe-driven composition. LAN Web and AI Agent/MCP remain large Thin Glass elevated surfaces.
+- Separate the user's preferred Theme Profile from the currently available effective profile. Temporary plugin deactivation/unregister now falls back only in memory and no longer overwrites the saved Theme choice; re-registering the profile restores it automatically.
+- Make an existing renderer-saved light/dark preference authoritative during the Electron startup appearance handshake, preventing stale host appearance state from silently switching the Theme.
+- Upgrade SDK authoring baseline to **1.17.16** while keeping Plugin API **1.17.0** and Theme Contract **3.5.0**.
+
+## v3.61.80 — Recipe-owned glass Core + SDK authoring correction
+
+- Remove the remaining `builtin.thin-glass` identity branches from Material Renderer composition and shell popover handling. Built-in and SDK Theme profiles now receive the same Core behavior whenever they select the same `thin-glass / soft-glass / liquid-glass` recipe.
+- Make command-menu Backdrop Root escape recipe-driven instead of profile-driven while retaining the v3.61.79 shell-menu ownership boundary, so plugin-owned range/box-selection menus are not globally closed.
+- Correct the historical `materialTintOpacity` implementation/documentation mismatch: it is semantic base-material fill opacity, not an accent-color tint percentage. All glass recipes now consume the same effective fill-opacity pipeline.
+- Add Core readability floors for translucent roles (`chrome` 58%, `sidebar/elevated` 62%, `popover` 78%, `floating` 58%) so externally authored glass themes cannot accidentally collapse transient UI into unreadable transparency.
+- Fix integrated command groups reusing material fill opacity as accent tint, which could turn the entire light/dark Theme switch blue. Glass Theme switches now keep a neutral group and accent only the selected segment.
+- Make form fields inside translucent material owners one flat Core semantic family; legacy inset/recessed paint is suppressed only under glass recipes, preserving the clear/default theme contract.
+- Retune built-in Thin Glass toward a visible frosted material without the nearly opaque v3.61.79 regression: stronger blur, moderate role fill, shallower shadows, and greater light-mode canvas/surface/sidebar separation. LAN Web and AI Agent/MCP remain large Thin Glass `elevated` surfaces.
+- Upgrade SDK authoring baseline to **1.17.15** while keeping Plugin API **1.17.0** and Theme Contract **3.5.0**. The official Theme template now uses readable glass values, documents fill semantics, and the SDK validator warns when authored glass opacity falls below Core floors.
+
+## v3.61.79 — Thin Glass isolation + selection-menu ownership fix
+
+- Restored the built-in default theme visual contract changed unintentionally in v3.61.78. Thin Glass-specific composition overrides are now strictly scoped to `builtin.thin-glass`.
+- Restored default ActionGroup, PlotView, resonance floating-tool and panel-header material classes; Thin Glass flattens nested hit regions through profile-scoped CSS instead of rewriting shared markup.
+- Limited command-menu body portals to the Thin Glass profile. The default theme keeps its original in-place dropdown behavior.
+- Fixed the resonance box-selection menu disappearing after drag selection: shell menu cleanup now closes only shell-owned menus instead of every `.command-menu` in the document.
+- LAN Web and AI Agent/MCP remain large Thin Glass surfaces under the Thin Glass profile.
+
+## v3.61.76 — Renderer Startup Safety
+
+
+## 3.61.78
+
+- Thin Glass large elevated windows (including LAN Web and AI Agent/MCP) now remain true glass surfaces while their internal header/body layers inherit one parent backdrop capture.
+- Command menus are portaled to a body-level popover layer so Chromium can blur the workspace instead of being trapped by a glass parent Backdrop Root.
+- Material-role assignment has one authority in Core runtime; role CSS now only consumes semantic roles.
+- Integrated action/status controls are hit regions inside the parent material rather than nested control surfaces, improving icon/text contrast and visual fusion.
+- Reduced Thin Glass shadows and raised light/dark tint coverage to prevent transparent/readability regressions.
+
+- Move automatic Material Role assignment out of the `MutationObserver` microtask. Class/subtree changes are queued and coalesced on animation frames, preventing observer-driven DOM writes from starving the renderer event loop.
+- Defer the first full semantic-role pass until after the first browser paint. The static shell can render even if later theme/material diagnostics encounter pathological DOM churn.
+- Make runtime role/optical class updates idempotent and ignore Material Renderer-owned class-only mutations when deciding whether semantic reclassification is required.
+- Stabilize Liquid Glass optical positioning anchors so an anchor is not removed merely because the anchor itself changed computed positioning.
+- Add a v3.61.76 startup-safety regression contract covering queued observer updates, first-paint gating, static-shell presence and optical-anchor stability.
+
+## v3.61.75 — Thin Glass Material Architecture
+
+- Upgrade Theme Contract to **3.5.0** and SDK to **1.17.14** while keeping Plugin API **1.17.0**. Add the independent Core `thin-glass` Material Recipe alongside `clear / soft-glass / liquid-glass`; unknown recipes are rejected rather than silently downgraded.
+- Add built-in **Thin Glass** profile using low Gaussian backdrop blur and low tint: chrome/sidebar 6 px, elevated/floating 8 px, popover 10 px, while scientific/data surfaces and ordinary controls remain clear. Thin Glass explicitly disables refraction, displacement, chromatic aberration, noise, dynamic specular and optical pseudo layers.
+- Formalize Core `MaterialSurface`: Core decides Material Role, the active Theme decides the role-to-recipe policy, and the single Core Material Renderer owns backdrop/filter/background material paint. Explicit MaterialSurface roles cannot be overwritten by runtime inference.
+- Complete Material Role coverage for application chrome/status, sidebars/inspectors, PluginWorkspace/Dedicated Workspace, Settings, Plugin Manager, Automation Test, Data Center/Core scientific surfaces, dialogs, menus/tooltips and ScientificPlot floating chrome. Layout wrappers that would occlude backdrop sampling are transparent.
+- Add development Theme Debug (`Ctrl+Alt+T`) and hard Render Coverage diagnostics for `ROLE_MISSING`, `RECIPE_MISSING`, `BACKDROP_FILTER_NONE`, `OPAQUE_PARENT_OCCLUSION` and `ENGINE_UNSUPPORTED`. Opaque-parent material failures now make coverage fail rather than merely warn.
+- Remove remaining first-party plugin-owned backdrop filters and legacy Core material paint from Resonance range menus, Connectivity overlays, D3 tooltip hosts, ScientificPlot floating chrome, topbar/sidebar/statusbar and legacy command/settings shells. First-party plugins may keep domain layout/data-semantic color only; material paint is Core-owned.
+- Preserve overlay scrim blur as a modal-background effect rather than a MaterialSurface recipe. The renderer never uses `filter: blur()` on UI content.
+
+## v3.61.74 — Theme Profile Policy, Adjustable Parameters & Optical Memory Discipline
+
+- Upgrade Theme Contract to **3.4.0** and SDK to **1.17.13** while keeping Plugin API **1.17.0**. Optical recipes are now owned by the active Theme Profile instead of being globally forced by Core. The built-in DK Data Studio profile explicitly maps all seven material roles to `clear`, so ordinary/default UI no longer becomes translucent just because the Optical Renderer is installed.
+- Add declarative Theme settings. Theme plugins may publish bounded `range` / `number` / `select` parameters targeting semantic tokens, motion, material values or per-role recipes; Core validates and persists values and renders the settings UI. Theme plugins still cannot inject arbitrary CSS or custom settings DOM.
+- Adapt both Plugin Manager and the bottom **主题** picker to the same Core Theme Settings surface. Profiles with settings expose a **参数** action; profiles without settings remain read-only except for profile/light-dark selection.
+- Reduce Optical Renderer memory/compositor overhead: remove persistent `will-change: backdrop-filter`, bound transform promotion to active pointer interaction, and replace whole-document role rescans on every mutation with incremental changed-node/subtree assignment.
+- Advance Optical Material Renderer to **3.5.0**. Renderer policy is resolved through `DKDSTheme.recipePolicy()`; legacy Theme 3.2/3.3 glass-family profiles without explicit recipes remain load-compatible, while Theme 3.4 profiles can explicitly select `clear / soft-glass / liquid-glass` per material role.
+- Publish Liquid Glass **1.3.0** as a Theme 3.4 example: it explicitly opts popover/floating into liquid-glass and exposes Core-rendered controls for blur, saturation, tint and popover/floating recipe selection.
+
+## v3.61.73 — Optical Material Renderer 3.4
+
+- Theme Contract remains 3.3.0; SDK 1.17.12 decouples semantic material roles from Core-owned clear / soft-glass / liquid-glass recipes.
+- Popover/floating materials now use a clearer center, masked strong-blur optical edge, bounded lens offset/scale and directional pointer-responsive specular highlight.
+- Scientific/content surfaces and ordinary controls default to clear; chrome/sidebar/elevated use soft glass.
+- Render Coverage and automation now verify the liquid edge layer and report BROKEN_OPTICAL_RENDERER.
+- Reduced-motion disables dynamic optical displacement.
+
+## 3.61.73 — Material Role Coverage & Scientific UI Coherence
+- Finalize Core semantic Material Role assignment across application pages, PluginWorkspace canvas/sidebars, settings bodies/dialogs, dedicated TOP workspaces, portable/docked/floating tool panels and Core chrome without plugin-identity selectors. Theme Contract stays at 3.3.0; SDK advances to 1.17.11.
+- Fix the Material Renderer cascade that repainted integrated command-cluster child buttons as independent material controls. ScientificPlot navigation and header action groups now have one parent material object; child hit regions stay transparent.
+- Make plot legends label-like rather than pill controls. Resonance uses the public `dkds-legend-item` primitive and the renderer explicitly excludes legend items from control-material paint.
+- Simplify Resonance inspector content into one host surface and remove the duplicate curve-level “跨 Vg 智能整理峰序” action; the main-plot “智能峰序” command remains the single entry for the same operation.
+- Remove the PluginWorkspace bottom-dock decorative gap by reducing the structural split seam to 1 px while preserving a 7 px resize hit target.
+- Add a Core-derived popover/tooltip foreground contrast guard (target contrast >= 4.5) and Render Coverage status `LOW_CONTRAST_MATERIAL`, preventing light material + light tooltip text or dark material + dark text.
+
+## 3.61.71 — Theme Renderer Verification
+- Theme Contract 3.3 separates contract capabilities from real renderer capabilities, adds computed-style material coverage, a single material renderer recipe, optical blur harness, and dedicated TOP renderer diagnostics.
+
+# 3.61.71 — Integrated Command Chrome & Status Theme Picker
+
+- Replace independent header/plot action cards with a Core integrated command-cluster contract: one material shell, shared radius/background/shadow, and internal hit regions with no per-button card shadow or hover lift.
+- Apply the fused command contract to ScientificPlot navigation, PlotView/FWHM headers, portable controls, floating panel headers, Resonance inspector/group headers, and Core trend-card actions without plugin-specific visual ownership.
+- Remove the permanent desktop runtime identity control from the bottom status bar. Replace the old appearance/runtime pair with a single **主题** command that opens a Core-themed profile picker with installed Theme Profiles and light/dark selection.
+- Status Monitor now declares `ui.theme`; Theme switching remains within Theme Contract 3.2 and does not permit theme plugins to split integrated command chrome into independent buttons.
+
+# 3.61.69 — Theme Contract 3.2
+
+- Theme validator now executes Theme Profile registration and rejects unknown tokens and invalid material/motion values.
+- SDK compatibility ranges are parsed as semver; Theme templates declare app and Theme Contract minimums.
+- `ctx.ui.theme.contractVersion` and `supports()` expose Theme Contract capability independently from Plugin API.
+- Canonical mode structure is `modes.<mode>.tokens/motion/material`; legacy 3.1 flat mode values remain compatible with documented precedence.
+- Adds semantic material roles: chrome, sidebar, surface, elevated, popover, control and floating.
+- Adds platform-neutral numeric material/motion units and documents Web px / Android dp projection plus deterministic material composition.
+- Adds Core Theme Test Gallery with side-by-side light/dark component coverage.
+- Adds Theme Coverage Contract (`ctx.ui.theme.coverage()`), runtime plugin visual auditing, and SDK warnings for hard-coded plugin chrome that bypasses semantic tokens/material roles.
+- Core material role mapping now covers app chrome, sidebars, workspaces, tables/cards, dialogs, menus/tooltips, controls, ScientificPlot chrome and floating surfaces.
+
+# v3.61.68 — Theme Contract 3.1 / Material Tokens
+
+- Upgrade Core Theme Runtime to **3.1.0** and standalone SDK to **1.17.8** while keeping Plugin API **1.17.0**.
+- Add bounded material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, and `materialNoiseOpacity`. Theme profiles may supply them in a shared `material` block; light/dark mode maps may override them.
+- Core owns the material recipes (`dkds-material`, strong blur and noise recipes) and applies the contract to existing glass-like shell chrome. Theme plugins still cannot inject arbitrary CSS or choose host DOM targets.
+- Extend SDK TypeScript declarations, authoring template/docs and regression coverage for Theme Contract 3.1 material authoring.
+
+# v3.61.67 — Theme Contract 3.0 / First-class Theme Plugins
+
+- Close the remaining dark-theme leak in Automation Test Center. Its notice/log surfaces no longer fall back through the undefined legacy `--surface-soft` variable to `#f4f7fb`; all automation surfaces and status states now consume semantic Core tokens.
+- Upgrade Theme Runtime from 2.0 to **Theme Contract 3.0**. Theme Profiles now own a bounded semantic appearance contract plus Core-controlled motion tokens (`motionFast`, `motionNormal`, `motionSlow`, standard/emphasized easing, hover lift and press scale). Core retains animation recipes and automatically neutralizes motion under `prefers-reduced-motion`.
+- Add a final semantic closure layer so shell chrome, project tabs, toolbars, sidebars, status bar, dialogs, Plugin Manager and common surfaces are rebound to `--dkui-*` tokens rather than being trapped behind historical hard-coded modern-theme colors.
+- Introduce first-class `pluginType: "theme"` across Core, Desktop package validation, Mobile package validation and SDK schemas. Theme plugins must declare `ui.theme`, cannot own workspaces/windows or Algorithm Providers, and cannot ship arbitrary CSS / request `ui.styles`; appearance and motion must go through Theme Contract tokens.
+- Adapt Plugin Manager with a Theme category/filter, theme count, registered-profile selector, current-profile status and explicit “应用主题” action. Installing/enabling a theme registers profiles but does not silently activate them.
+- Upgrade standalone SDK to **1.17.7** while keeping Plugin API **1.17.0**. Types, manifest schema, authoring docs, validator and `sdk/templates/theme-profile` now cover Theme Contract 3.0 and bounded motion authoring.
+- Add `test-v36167-theme-contract-3.js` regression coverage for Theme Runtime 3.0, automation surfaces, theme package routing, Plugin Manager integration, SDK authoring and arbitrary-CSS rejection.
+
+# v3.61.66 — Project Tab Polish, Self-Provider Routing & Forensics Removal
+
+- Normalize the project-tab close action as a Core icon button instead of a generic control: transparent idle state, no shadow, fixed 24×24 square geometry and a true circular neutral hover/active surface. This removes the accidental color split inside active project tabs.
+- Preserve a TOP's own `algorithmProvider` identity in the dedicated-window spec and report/validate the target plugin's self-registered algorithms in the renderer startup profile without loading the target plugin script twice. This fixes Transfer Vth Lab `transfer-curve` provider routing in automation.
+- Remove the temporary `ProjectExitForensics` and detached watchdog modules after two clean shutdown investigations showed the Downloads project still present after Electron exit. Keep permanent ProjectFileSafety, recovery copies, safe project writes and disabled auto-install-on-quit behavior.
+- Studio updates to **3.61.66**. SDK and Plugin API remain unchanged.
+
+## 3.61.65 — TOP Window Reuse Race / Exit Diagnostics Accessibility
+
+- Fix a real dedicated-TOP reuse race exposed by the Windows automation report. A BrowserWindow committed to real close is now removed from the Core reuse registry **before** asynchronous `BrowserWindow.close()`, so the immediately following TOP test/open cannot reuse a renderer that is already closing.
+- Back-to-back TOP diagnostics now wait for the previous dedicated renderer's `closed` event before proceeding. This addresses the Data Center result where `created.reused=true` was followed immediately by `alive=false / visible=false`.
+- Keep the recycle-bin investigation isolated as temporary diagnostics. `project-exit-forensics.jsonl` now lives in the normal `userData/diagnostics/` directory and the automation environment reports its exact path. The module remains marked for full removal after the project-file incident is conclusively identified.
+- The supplied v3.61.64 exit-forensics run did **not** reproduce deletion: the tracked Downloads project remained present through Electron exit and the entire 20 s watchdog interval, with no recycle-bin metadata match.
+- Add `test-v36165-top-window-reuse-race.js` to prevent a closing dedicated window from re-entering the reuse path.
+
+## 3.61.64 — Exit File Forensics / Automation Diagnostics
+
+- Added a **temporary**, isolated exit-file forensic module for the reproducible Downloads-project recycle-bin incident. It records `window-all-closed`, `before-quit`, `will-quit`, `quit`, `process-exit`, updater/service shutdown actions and exact tracked-file states. A detached 20 s watchdog survives the Electron parent long enough to detect post-exit disappearance and, on Windows, matches `$Recycle.Bin/$I*` metadata back to the original project path. This module is explicitly marked for removal once the incident is identified.
+- Kept v3.61.63 project recovery/safe-write and `autoInstallOnAppQuit=false` protections unchanged.
+- Fixed Automation Runner's stale `ScientificPlot === 2.3.0` assertion. Runtime 2.5.0 is now exercised by behavior rather than rejected by version string.
+- Replaced fixed 100/80 ms TOP lifecycle sleeps with deterministic Core suspended/resumed contract polling. Failed TOP diagnostics now retain lifecycle snapshots and wait timings. Dependent startup/D3/provider profilers skip when TOP coverage is incomplete instead of generating cascaded failures.
+- Automation Runner is now 1.25.0.
+
+## v3.61.63 — Project File Safety
+
+- Normal application quit no longer triggers automatic NSIS update installation. Updates may still download automatically, but installation is explicit only.
+- Desktop project open now snapshots the exact source file into `userData/project-recovery/` without modifying the original path.
+- Project save now writes through `ProjectFileSafety`: same-directory temp write + fsync + parse validation + atomic rename, with a recovery snapshot outside the source directory.
+- `before-quit` checkpoints every opened native project and records a local `project-file-audit.jsonl` trail.
+- Explicit update installation is refused if any currently tracked project lives inside the application install tree.
+- Added a regression that opens an old project under a simulated Downloads folder, saves it and closes the app boundary while asserting that the original file remains present and recoverable.
+
+## v3.61.62 — Neutral Selection & Plot Focus Frame
+
+- Removed the browser focus outline around focused ScientificCurveSurface plots while retaining keyboard focus for resonance peak nudging.
+- Added semantic Core selection surface/border tokens. Dark-mode selected rows now use restrained translucent white rather than blue accent fill.
+- Added `test-v36162-neutral-selection-plot-focus.js` regression coverage.
+
+## v3.61.61 — Visual State Coverage & Resonance Keyboard Restore
+
+- Fix dark-mode linked-selection surfaces at the Core level. Focused/selected dataset rows no longer mix against hard-coded white or `#eef3ff`; they now consume `accentSoft`, semantic text and theme-aware border tokens. Scrollbar and legacy selected-row fallbacks are likewise tokenized.
+- Unify active button states through Core semantic containers (`dkds-toolbar`, `dkds-action-row`, `dkds-surface-header`, `dkds-analysis-workbench`) and synchronize Data Center tabs with `aria-pressed`, removing the dark-mode mismatch between `.active` and ARIA state.
+- Remove the bright perimeter rule from floating utility windows and normalize LAN Web controls, inputs, header actions and QR surroundings through Core theme surfaces. Only the QR raster itself retains white paper for scanner reliability.
+- Restore Resonance arrow-key peak movement by transferring keyboard focus to the scientific plot after curve/peak selection. Input controls keep normal arrow-key editing; once a peak is selected, Left/Right moves one sample and Shift+Left/Right keeps the fast step behavior.
+- Make reused Interaction Behavior profiles refresh their specification/bindings instead of silently retaining stale handlers after remount.
+- Add `test-v36161-visual-state-keyboard-regression.js`, including an executable Core ShortcutHub → InteractionBehavior → resonance command path check, plus visual-state assertions for selection, active controls and floating panels.
+
+## v3.61.60 — Structural Organization
+
+- Move Electron/desktop host implementation out of the repository root into `desktop/` and update packaging/runtime references without host behavior changes.
+- Move regression/contract tests to `tests/` and replace the oversized `package.json` test/check command chains with `tests/run.js` + explicit ordered manifests.
+- Move generated Plugin Index and SDK Authoring Reference to `src/generated/`.
+- Split authored `src/app.js`, `src/core/ui-infrastructure.js` and `src/core/plugin-kernel.js` into ordered responsibility-based composition units while preserving the existing runtime bundle paths and exact bytes.
+- Split Core/base and modern CSS into ordered modules; generated `style.css` / `ui-modern.css` remain byte-identical runtime bundles.
+- Add a structural release gate that enforces root/desktop ownership, test separation, generated-artifact placement and bundle/source equality.
+
+## v3.61.59 — Visual Contract Finalization
+
+- Finalize first-party visual ownership: Pulse, Data Center, TER, Resonance, Connectivity and Vth now consume Core semantic primitives for surfaces, headers, toolbars, fields, chips, lists, metrics, tables, dialogs, status blocks, messages and floating surfaces. Plugin identity classes remain only for domain layout, state hooks and scientific semantics.
+- Remove the Resonance parity visual opt-out. Resonance now inherits the same AnalysisWorkbench and dedicated TOP visual contract as every other first-party workbench; its specialized scientific composition remains plugin-owned without carrying a private theme.
+- Strip plugin-owned colors, backgrounds, borders, radii, shadows, typography and private control sizing from first-party CSS and runtime-injected CSS. Core theme files are likewise prohibited from carrying visual paint under `.pulse-*`, `.dc-*`, `.ter-*`, `.respar-*`, `.reswin-*`, Connectivity or Vth identity selectors.
+- Move scientific presentation defaults fully into Core: first-party ScientificPlot calls no longer pass legacy white plot backgrounds or fixed gray grid/zero-line colors. Series/category colors remain domain data semantics.
+- Extend `ctx.ui.designSystem` with semantic class roles and add Core data-swatch/choice primitives so theme plugins can restyle first-party workspaces without knowing plugin identities.
+- Add `test-v36159-visual-contract-finalization.js` to `npm test` and `npm run check`. The release gate now rejects reintroduced first-party visual chrome, Resonance visual exceptions and legacy hard-coded ScientificPlot presentation paint.
+
 ## v3.61.58
 
 - Data Center: migrate the remaining assignment/purpose filter from the legacy outlined control to the Theme Contract semantic flat filter surface.
