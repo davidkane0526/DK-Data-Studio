@@ -1,3 +1,10 @@
+# v3.61.91 — Application Module Export Contract
+
+- Fix the v3.61.89 Application-shell migration regression where `src/app/modules/import-workbench.js` retained an empty CommonJS export object even though Foundation, Startup, Data Artifact Host, Floating Docks, Dedicated Windows, Project Persistence and Workspace Shell consume its public functions. This caused renderer startup to stop at `dataConsumerTargets is not a function` after the Electron main-process fix in v3.61.90.
+- Restore the complete Import Workbench cross-module contract (`dataConsumerTargets`, scoped import opening, directory/file import helpers, dataset-list rendering, import settings/actions and byte decoding) instead of patching only the first failing symbol.
+- Add an Application CommonJS export-contract regression that scans every declared Application module and verifies direct, destructured and namespace local `require()` symbol use against the target module's explicit exports. The current graph checks 226 cross-module symbol uses and prevents a module migration from shipping with resolvable paths but missing exports.
+- Update architecture/code-quality documentation to reflect that Application, UI Infrastructure and Plugin Kernel all use importable CommonJS module graphs with zero authored `.inc` implementations.
+
 # v3.61.90 — Electron Startup Dependency Resolution
 
 - Fix the Electron main-process project-format import after the Core project module moved to `src/core/project/format.js`; v3.61.89 could fail before creating a window because `desktop/main.js` still referenced the removed pre-refactor location.

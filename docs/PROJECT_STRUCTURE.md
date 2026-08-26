@@ -37,7 +37,7 @@ Do not recreate `src/styles/base/` or `src/styles/modern/`. Do not use `!importa
 
 Runtime compositions, Plugin Index, SDK Authoring Reference and derived PNG assets are generated and ignored by Git. Build/test/start commands recreate them. Use `npm run clean:generated` before a source handoff.
 
-Plugin Kernel and UI Infrastructure now use independently addressable CommonJS modules. Their `composition.json` manifests declare module IDs/paths and one entry module, and the generator emits deterministic classic-script compatibility bundles under `src/generated/runtime/`. The 48 KiB authored-module limit remains enforced. The application shell is the only remaining ordered `.inc` composition and should be migrated independently rather than reintroducing shared lexical state into Core.
+Plugin Kernel, UI Infrastructure and the Application shell use independently addressable CommonJS modules. Their `composition.json` manifests declare module IDs/paths and one entry module, and the generator emits deterministic classic-script compatibility bundles under `src/generated/runtime/`. The 48 KiB authored-module limit remains enforced. Authored `.inc` runtime implementations are no longer used in these three graphs; Application cross-module imports are checked for both path resolution and exported-symbol compatibility.
 
 ## Dependency locks
 

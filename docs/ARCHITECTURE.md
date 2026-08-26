@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.61.87
+# DK Data Studio Architecture — v3.61.91
 
 ## 1. Runtime layers
 
@@ -48,7 +48,7 @@ src/core/
 
 Implementation files are forbidden directly under `src/core/`. Legacy authored/derived files such as `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are forbidden.
 
-Plugin Kernel and UI Infrastructure are authored as independently importable CommonJS module graphs. Their local `composition.json` manifests declare module IDs, source paths and one runtime entry; the build generator packages that graph into **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. The generated scripts are compatibility artifacts, not source of truth. The generator rejects duplicate/missing modules and any authored runtime module above 48 KiB. Only the application shell still uses ordered `.inc` composition.
+Plugin Kernel, UI Infrastructure and the Application shell are authored as independently importable CommonJS module graphs. Their local `composition.json` manifests declare module IDs, source paths and one runtime entry; the build generator packages those graphs into **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. The generated scripts are compatibility artifacts, not source of truth. The generator rejects duplicate/missing modules and any authored runtime module above 48 KiB. Cross-module Application symbol use is additionally checked against explicit CommonJS exports so a resolvable module path cannot silently ship with an incomplete runtime contract.
 
 ## 3. Ownership boundaries
 

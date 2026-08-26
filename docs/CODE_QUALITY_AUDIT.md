@@ -25,7 +25,7 @@ This does not mean the stylesheet is finished. Dense selectors and historical du
 
 ## Remaining debt
 
-1. **Application composition still uses ordered `.inc` fragments.** Its order is explicit in `src/app/composition.json`; it should migrate separately now that the Core module graph has proven stable.
+1. **Application module-boundary regressions must remain release-gated.** The Application shell is now an importable CommonJS graph with zero authored `.inc` fragments. Both local path resolution and consumed exported symbols are checked so file moves or incomplete `module.exports` objects fail before runtime.
 2. **The classic renderer still consumes generated single-script runtime artifacts.** This is now only a packaging compatibility layer; authored Core no longer depends on shared lexical composition.
 3. **The largest remaining Core closure bodies are concentrated rather than scattered.** `ScientificCurveSurface.render()` and `createApi()` are cohesive but still dense. They should be decomposed by real subsystem boundaries, not by arbitrary line-count surgery.
 4. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.

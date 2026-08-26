@@ -3,7 +3,7 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert.strictEqual(pkg.version,'3.61.90');
+assert.strictEqual(pkg.version,'3.61.91');
 
 const modern=fs.readFileSync(path.join(root,'src','styles','presentation','control-status.css'),'utf8');
 assert(modern.includes('body.dkds-modern-ui .project-tab-close{'),'Project tab close must have an explicit Core icon-action rule.');

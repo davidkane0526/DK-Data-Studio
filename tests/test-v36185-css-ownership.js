@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.90','current-version assertion is synchronized by set-version');
+assert.equal(json('package.json').version,'3.61.91','current-version assertion is synchronized by set-version');
 
 // Domain workbench CSS belongs to each plugin. Core authored CSS may only target
 // semantic Core roles, never TER/Pulse/Data Center/Resonance DOM identities.

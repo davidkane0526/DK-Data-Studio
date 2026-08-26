@@ -890,4 +890,25 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
     }
   }
 
-module.exports=Object.freeze({});
+module.exports=Object.freeze({
+  addImportFiles,
+  applyCurrentImportSettingsToAll,
+  applyImportColumnFieldFilter,
+  base64ImportBytes,
+  closeImportWorkbench,
+  commitImportWorkbench,
+  dataConsumerTargets,
+  decodeImportSeed,
+  ensureImportTargets,
+  handleImportListShortcut,
+  invertImportChecked,
+  openDirectoryAuto,
+  openFilesAuto,
+  openImportWorkbench,
+  readImportItemText,
+  recomputeImportItem,
+  renderDatasetList,
+  renderImportWorkbench,
+  resetCurrentImportAuto,
+  updateImportSetting
+});

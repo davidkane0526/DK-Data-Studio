@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 
-assert.equal(json('package.json').version,'3.61.90');
+assert.equal(json('package.json').version,'3.61.91');
 const renderer=read('src/core/theme/material-renderer.js');
 
 for(const token of [
