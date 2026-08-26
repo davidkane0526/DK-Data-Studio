@@ -636,6 +636,10 @@ module.exports = {
     {
       "file": "tests/test-v36189-application-modules.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36190-main-process-module-resolution.js",
+      "args": []
     }
   ],
   "check": [
@@ -1306,6 +1310,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36189-application-modules.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36190-main-process-module-resolution.js",
       "args": []
     }
   ],

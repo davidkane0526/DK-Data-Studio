@@ -129,7 +129,9 @@ if (fs.existsSync(testsDir)) {
 const readmePath = path.join(root, 'README_CN.md');
 if (fs.existsSync(readmePath)) {
   const before = fs.readFileSync(readmePath, 'utf8');
-  const after = before.replace(/^# DK Data Studio — v[^\r\n]+/m, `# DK Data Studio — v${version}`);
+  const after = before
+    .replace(/^# DK Data Studio — v[^\r\n]+/m, `# DK Data Studio — v${version}`)
+    .replace(/^(当前版本：\*\*v)[^*]+(\*\*)/m, `$1${version}$2`);
   if (after !== before) fs.writeFileSync(readmePath, after, 'utf8');
 }
 

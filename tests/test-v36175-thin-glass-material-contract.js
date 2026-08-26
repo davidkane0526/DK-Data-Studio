@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
-assert.equal(json('package.json').version,'3.61.89');
+assert.equal(json('package.json').version,'3.61.90');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
 assert.equal(Theme.version,'3.5.0');

@@ -1,3 +1,15 @@
+# v3.61.90 — Electron Startup Dependency Resolution
+
+- Fix the Electron main-process project-format import after the Core project module moved to `src/core/project/format.js`; v3.61.89 could fail before creating a window because `desktop/main.js` still referenced the removed pre-refactor location.
+- Add a recursive main-process local-module resolution regression that starts from `desktop/main.js` and rejects unresolved relative CommonJS dependencies before release.
+- Keep release metadata synchronized by teaching `set-version.js` to update the current README version marker and checking it against `package.json`.
+
+# v3.61.89 — Importable Application Shell
+
+- Migrate the Application shell from ordered `.inc` composition to 12 real CommonJS modules plus an explicit runtime entry, leaving UI Infrastructure, Plugin Kernel and Application with zero authored `.inc` implementations.
+- Centralize Application mutable state in an explicit context owner and replace composition-order coupling with explicit or lazy module imports.
+- Update release/test tooling to consume the Application module graph rather than deleted composition fragments, with a dedicated v3.61.89 architecture regression.
+
 # v3.61.88 — Importable Core Runtime Modules
 
 - Migrate UI Infrastructure from authored `.inc` shared-closure fragments to 25 real CommonJS modules plus an explicit `ui/runtime` entry. ScientificCurveSurface is composed from an importable base class, navigation mixin and render mixin instead of a three-file open class body.

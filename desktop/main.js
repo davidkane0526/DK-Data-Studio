@@ -17,7 +17,7 @@ const PluginSdkContract = require('../sdk/contract.json');
 const SmbService = require('../services/smb-service');
 const { McpServer } = require('../services/mcp-server');
 
-const DKDSProjectFormat = require('../src/core/project-format');
+const DKDSProjectFormat = require('../src/core/project/format');
 const APP_NAME = 'DK Data Studio';
 const APP_ID = 'com.dk.datastudio';
 
