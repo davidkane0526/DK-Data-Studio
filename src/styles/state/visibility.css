@@ -1,0 +1,2 @@
+/* Global interaction state owns visibility above structural/presentation layers. */
+.hidden{display:none;}

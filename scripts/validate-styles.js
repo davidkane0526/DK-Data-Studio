@@ -42,6 +42,12 @@ const coreCss=authored.filter(p=>p.includes(`${path.sep}src${path.sep}styles${pa
 const pluginIdentity=/(?:\.ter-|\.pulse-|\.dc-|\.respar-|\.reswin-|\.resonance-|#ter\w*|#pulse\w*|#resonance\w*)/i;
 for(const file of coreCss){const css=fs.readFileSync(file,'utf8');if(pluginIdentity.test(css))violations.push(`${path.relative(root,file)}: Core CSS contains plugin identity selector.`);}
 const entry=fs.readFileSync(path.join(root,'src','core.css'),'utf8');
-for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
+const visibilityPath=path.join(root,'src','styles','state','visibility.css');
+const foundationPath=path.join(root,'src','styles','foundation','foundation.css');
+if(!fs.existsSync(visibilityPath))violations.push('src/styles/state/visibility.css: global visibility-state owner is missing.');
+else if(!/\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(fs.readFileSync(visibilityPath,'utf8')))violations.push('src/styles/state/visibility.css: .hidden must own display:none in the highest cascade state layer.');
+if(fs.existsSync(foundationPath)&&/\.hidden\s*\{[^}]*display\s*:\s*none/i.test(fs.readFileSync(foundationPath,'utf8')))violations.push('src/styles/foundation/foundation.css: .hidden visibility state must not live in the low-priority foundation layer.');
+if(!entry.includes('@import url("./styles/state/visibility.css") layer(dkds.state);'))violations.push('src/core.css: state visibility stylesheet must be imported through dkds.state.');
+for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window','state'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

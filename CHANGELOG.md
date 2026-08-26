@@ -1,3 +1,12 @@
+# v3.61.92 — Renderer Interactivity / Visibility-State Fix
+
+- Fixed the startup-wide click lock where the project-save backdrop was visible before the save workflow had opened it.
+- Moved the global `.hidden { display: none; }` contract out of the low-priority foundation layer into a dedicated highest-priority `dkds.state` cascade layer. Structural `display:grid/flex` rules can no longer override hidden interaction state.
+- The same state ownership now protects conditional Import Workbench controls and other initially hidden renderer surfaces from equivalent cascade-layer regressions.
+- Extended style validation to require explicit visibility-state ownership and forbid moving global `.hidden` back into foundation.
+- Added the v3.61.92 renderer interactivity regression gate covering startup save-modal visibility and event-driven save invocation.
+- Validation: `npm test` 162/162 PASS; `npm run check` 170/170 PASS; authored CSS remains at 0 `!important`.
+
 # v3.61.91 — Application Module Export Contract
 
 - Fix the v3.61.89 Application-shell migration regression where `src/app/modules/import-workbench.js` retained an empty CommonJS export object even though Foundation, Startup, Data Artifact Host, Floating Docks, Dedicated Windows, Project Persistence and Workspace Shell consume its public functions. This caused renderer startup to stop at `dataConsumerTargets is not a function` after the Electron main-process fix in v3.61.90.

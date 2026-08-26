@@ -645,6 +645,11 @@ module.exports = {
       "file": "tests/test-v36191-application-module-export-contract.js",
       "args": []
     }
+,
+    {
+      "file": "tests/test-v36192-renderer-interactivity-gate.js",
+      "args": []
+    }
   ],
   "check": [
     {
@@ -1322,6 +1327,11 @@ module.exports = {
     },
     {
       "file": "tests/test-v36191-application-module-export-contract.js",
+      "args": []
+    }
+,
+    {
+      "file": "tests/test-v36192-renderer-interactivity-gate.js",
       "args": []
     }
   ],

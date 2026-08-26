@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{if(!fs.existsSync(dir))return out;for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.91');
+assert.equal(json('package.json').version,'3.61.92');
 
 const coreRoot=path.join(root,'src','core');
 const rootFiles=fs.readdirSync(coreRoot,{withFileTypes:true}).filter(row=>row.isFile()).map(row=>row.name);
@@ -27,7 +27,7 @@ for(const file of cssFiles){
 }
 assert(!fs.existsSync(path.join(root,'src','styles','base'))&&!fs.existsSync(path.join(root,'src','styles','modern')),'base/modern specificity split must not return.');
 const cascade=read('src/core.css');
-assert(cascade.includes('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window;'),'Canonical cascade order is missing.');
+assert(cascade.includes('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.state;'),'Canonical cascade order is missing.');
 
 const pluginIdentity=/(?:\.(?:ter|pulse|dc|respar|reswin)[-_]|#(?:ter|pulse|resonanceDedicatedPage|reswin|respar))/i;
 for(const file of walk(path.join(root,'src','styles')).filter(f=>f.endsWith('.css'))){

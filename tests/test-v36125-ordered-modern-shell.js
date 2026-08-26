@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.91','ordered modern shell release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.92','ordered modern shell release must be v3.61.27');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
 const css=readCoreCss(root);
