@@ -1,10 +1,11 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 
-assert.equal(json('package.json').version,'3.61.86');
+assert.equal(json('package.json').version,'3.61.87');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').pluginApiVersion,'1.17.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
@@ -15,7 +16,7 @@ assert(material.includes('nestedParentOwnsBackdrop'),'Nested material ownership 
 assert(!material.includes('thinGlassActive'),'Core renderer must not special-case the built-in profile.');
 assert(!material.includes("profile?.()==='builtin.thin-glass'"),'Core renderer must not branch on built-in Thin Glass identity.');
 
-const kernel=read('src/core/plugins/kernel/20-contributions-commands.inc');
+const kernel=readComposition(root,'src/core/plugins/kernel');
 assert(kernel.includes("const TRANSLUCENT_COMMAND_MENU_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass'])"),'Popover Backdrop Root policy must be recipe-owned.');
 assert(kernel.includes("globalThis.DKDSTheme?.recipePolicy?.()?.popover"),'Popover portal must read the resolved popover recipe.');
 assert(!kernel.includes("profile?.()==='builtin.thin-glass'"),'Popover portal must not special-case built-in Thin Glass.');

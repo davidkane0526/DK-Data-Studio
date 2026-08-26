@@ -1,0 +1,15 @@
+{
+  "output": "src/generated/runtime/app.js",
+  "modules": [
+    "00-host-status-lan.inc",
+    "10-project-tabs-history.inc",
+    "20-import-workbench.inc",
+    "30-data-artifact-host.inc",
+    "40-workspace-super-shell.inc",
+    "50-scientific-panels-export.inc",
+    "60-project-persistence.inc",
+    "70-floating-docks.inc",
+    "80-dedicated-plugin-windows.inc",
+    "90-startup.inc"
+  ]
+}

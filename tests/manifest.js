@@ -623,6 +623,10 @@ module.exports = {
     {
       "file": "tests/test-v36186-modular-core-cascade.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36187-composition-boundaries.js",
+      "args": []
     }
   ],
   "check": [
@@ -1280,6 +1284,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36186-modular-core-cascade.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36187-composition-boundaries.js",
       "args": []
     }
   ],

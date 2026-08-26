@@ -3,11 +3,12 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.86','current-version assertion is synchronized by set-version');
+assert.equal(json('package.json').version,'3.61.87','current-version assertion is synchronized by set-version');
 
 // Domain workbench CSS belongs to each plugin. Core authored CSS may only target
 // semantic Core roles, never TER/Pulse/Data Center/Resonance DOM identities.
@@ -29,13 +30,13 @@ for(const id of ownedPlugins){
 }
 
 // Built-in and packaged plugin styles share one explicit cascade owner.
-const styleLoader=read('src/core/plugins/kernel/30-project-pages-panels.inc');
+const styleLoader=readComposition(root,'src/core/plugins/kernel');
 assert(styleLoader.includes('@layer dkds.plugin')&&styleLoader.includes('document.head.appendChild(el)'),'Plugin stylesheet lifecycle must use the dkds.plugin cascade layer independent of activation order.');
 
 // Mobile/plot infrastructure observes semantic markers instead of named plugins.
 const mobile=read('src/core/host/mobile-host-runtime.js');
 assert(mobile.includes('[data-dkds-mobile-summary]')&&!mobile.includes('#reswinSummary')&&!mobile.includes('#terSummary'),'Mobile summary observation must be semantic and plugin-neutral.');
-const curves=read('src/core/ui/composition/40-scientific-curves.inc');
+const curves=readComposition(root,'src/core/ui/composition');
 assert(curves.includes('[data-dkds-legend]')&&curves.includes('[data-dkds-plot-scope]'),'Scientific navigation collision handling must use semantic legend/scope markers.');
 assert(!/respar-main-legend|respar-peak-legend|reswin-group-legend/.test(curves),'Scientific Core must not know Resonance legend selectors.');
 

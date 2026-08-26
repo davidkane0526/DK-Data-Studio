@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.86');
+assert.equal(json('package.json').version,'3.61.87');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
 const renderer=read('src/core/theme/material-renderer.js');
@@ -14,7 +14,7 @@ assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Mate
 assert(modernRenderer.includes('--dkds-on-popover'),'Popover/tooltip renderer must consume the derived readable foreground.');
 const command=read('src/styles/theme/integrated-command-chrome.css');
 assert(command.includes('Integrated command chrome.'));assert(command.includes('border-radius:0'));assert(command.includes('background:transparent'));
-const base=read('src/styles/structure/analysis-workbench.css');assert(base.includes('grid-template-rows:minmax(0,1fr) 1px'));assert(base.includes('.dkds-plugin-canvas-bottom{padding-top:0;gap:0'));
+const base=['analysis-workbench.css','plugin-workspace.css','workbench-components.css'].map(name=>read(`src/styles/structure/${name}`)).join('');assert(base.includes('grid-template-rows:minmax(0,1fr) 1px'));assert(base.includes('.dkds-plugin-canvas-bottom{padding-top:0;gap:0'));
 const semantic=read('src/styles/structure/sdk-semantic-surfaces.css');assert(semantic.includes('Plot legends are labels, not pill buttons'));assert(semantic.includes('.dkds-inspector-section'));
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');assert(!resonance.includes('reswinInspectorSort'));assert(!resonance.includes('跨 Vg 智能整理峰序</button></div>${transformMarkup}'));assert(resonance.includes("respar-legend-chip dkds-legend-item"));
 console.log('v3.61.73 material role coverage, tooltip contrast, integrated command, inspector, dock and legend contracts passed.');

@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.86
+# Code quality audit — v3.61.87
 
 ## Release decision
 
-v3.61.86 is a structural cleanup checkpoint. No product feature is intentionally added. The focus is removal of CSS override debt, explicit ownership and Core source organization.
+v3.61.87 continues the structural cleanup without intentionally adding product behavior. The focus is finer Core source boundaries, deterministic runtime composition and smaller stylesheet ownership units.
 
 ## Completed
 
@@ -12,7 +12,10 @@ v3.61.86 is a structural cleanup checkpoint. No product feature is intentionally
 - `scripts/validate-styles.js` validates brace/string/comment balance, rejects `!important`, rejects legacy specificity directories and rejects domain-plugin identities in Core styles.
 - Core and mobile styles are domain-neutral; plugin geometry remains manifest-owned.
 - Stale generated copies under `src/app.js`, `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are removed. Disposable runtime compositions live only under `src/generated/runtime/` and are Git-ignored.
-- Regression tests now enforce the modular-Core root, cascade order, zero-`!important` rule and generated-artifact boundary.
+- Regression tests enforce the modular-Core root, cascade order, zero-`!important` rule and generated-artifact boundary.
+- UI Infrastructure is authored as 23 responsibility fragments instead of 7 coarse fragments; Plugin Kernel is authored as 13 responsibility fragments instead of 6. The regenerated runtime byte stream is unchanged by the split.
+- Runtime closure composition order is now explicit in `composition.json` manifests. The generator rejects duplicate, missing, stray or >48 KiB composition fragments instead of relying on filename sorting alone.
+- The former 46.7 KiB `analysis-workbench.css` has been split into `analysis-workbench.css`, `plugin-workspace.css` and `workbench-components.css`, preserving rule order while making ownership easier to inspect.
 
 ## Measured debt
 
@@ -22,10 +25,11 @@ This does not mean the stylesheet is finished. Dense selectors and historical du
 
 ## Remaining debt
 
-1. **Plugin Kernel and UI Infrastructure are not yet true importable modules.** Their source is split by responsibility, but two historical shared-closure subsystems are still assembled at build time into untracked browser artifacts. This is materially better than one authored Core file, but it is not the final modular runtime design. Future work should migrate shared lexical state into explicit subsystem state/services and load independently addressable modules.
-2. **Application composition still uses ordered `.inc` fragments.** This is outside Core but follows the same historical build-time composition model. It should be revisited only after the Core kernel/UI migration is stable.
-3. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
-4. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.
+1. **Plugin Kernel and UI Infrastructure are still shared-closure compositions, not true importable modules.** Their source boundaries and ordering are now explicit and bounded, but the final step remains migration of shared lexical state into independently loadable services/modules.
+2. **Application composition still uses ordered `.inc` fragments.** Its order is now explicit in `src/app/composition.json`, but the application shell should migrate only after the Core closure migration proves stable.
+3. **The largest remaining Core closure bodies are concentrated rather than scattered.** `ScientificCurveSurface.render()` and `createApi()` are cohesive but still dense. They should be decomposed by real subsystem boundaries, not by arbitrary line-count surgery.
+4. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
+5. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.
 
 ## Non-negotiable rules
 

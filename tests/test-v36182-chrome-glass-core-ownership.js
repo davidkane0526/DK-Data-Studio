@@ -3,10 +3,11 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.86');
+assert.equal(json('package.json').version,'3.61.87');
 
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');
@@ -15,14 +16,13 @@ assert(material.includes("function inferRole(el){if(chromeOwnedIntegrated(el))re
 assert(material.includes("el.classList.remove('dkds-material-role-control')"),'renderer must remove legacy nested control-role paint under chrome');
 assert(material.includes('root.querySelectorAll(INTEGRATED_CONTAINER_SELECTOR)'),'initial role scan must include integrated containers instead of waiting for a mutation');
 
-for(const rel of [
-  'src/index.html',
-  'src/app/50-scientific-panels-export.inc',
-  'src/plugins/resonance-workbench/view-components.js',
-  'src/core/ui/composition/20-portable-layout-views.inc'
+for(const [label,source] of [
+  ['src/index.html',read('src/index.html')],
+  ['src/app/50-scientific-panels-export.inc',read('src/app/50-scientific-panels-export.inc')],
+  ['src/plugins/resonance-workbench/view-components.js',read('src/plugins/resonance-workbench/view-components.js')],
+  ['src/core/ui/composition',readComposition(root,'src/core/ui/composition')]
 ]){
-  const source=read(rel);
-  assert(!/(?:panel-header-actions|trend-header-actions|dkds-plot-view-actions)[^"'\n]*dkds-material-role-control/.test(source),`${rel} must not hard-code a nested control MaterialSurface in chrome`);
+  assert(!/(?:panel-header-actions|trend-header-actions|dkds-plot-view-actions)[^"'\n]*dkds-material-role-control/.test(source),`${label} must not hard-code a nested control MaterialSurface in chrome`);
 }
 
 const css=read('src/styles/theme/material-renderer.css');

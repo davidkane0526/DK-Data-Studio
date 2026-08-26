@@ -3,13 +3,14 @@ const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.86','integrated command chrome release must be v3.61.86');
-const actionCore=read('src/core/ui/composition/10-series-layout-actions.inc');
-const portable=read('src/core/ui/composition/20-portable-layout-views.inc');
-const curves=read('src/core/ui/composition/40-scientific-curves.inc');
+assert.equal(json('package.json').version,'3.61.87','integrated command chrome release must be v3.61.87');
+const actionCore=readComposition(root,'src/core/ui/composition');
+const portable=readComposition(root,'src/core/ui/composition');
+const curves=readComposition(root,'src/core/ui/composition');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 const appPanels=read('src/app/50-scientific-panels-export.inc');
 const index=read('src/index.html');

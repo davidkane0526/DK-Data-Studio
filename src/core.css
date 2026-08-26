@@ -2,6 +2,8 @@
 @import url("./styles/foundation/foundation.css") layer(dkds.foundation);
 @import url("./styles/structure/analysis-shell.css") layer(dkds.structure);
 @import url("./styles/structure/analysis-workbench.css") layer(dkds.structure);
+@import url("./styles/structure/plugin-workspace.css") layer(dkds.structure);
+@import url("./styles/structure/workbench-components.css") layer(dkds.structure);
 @import url("./styles/structure/connectivity-panels.css") layer(dkds.structure);
 @import url("./styles/structure/schema-and-plugin-ui.css") layer(dkds.structure);
 @import url("./styles/structure/sdk-semantic-surfaces.css") layer(dkds.structure);

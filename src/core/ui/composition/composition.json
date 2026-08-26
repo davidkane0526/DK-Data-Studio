@@ -1,0 +1,28 @@
+{
+  "output": "src/generated/runtime/ui-infrastructure.js",
+  "modules": [
+    "00-foundation-shortcuts.inc",
+    "01-selection-data-interaction.inc",
+    "02-selection-view-binding.inc",
+    "03-series-primitives.inc",
+    "10-series-layout.inc",
+    "11-context-actions.inc",
+    "12-interaction-behavior.inc",
+    "13-docking-placement.inc",
+    "20-portable-view.inc",
+    "21-workspace-layout.inc",
+    "22-chart-plot-view.inc",
+    "23-view-host-workbench.inc",
+    "24-grid-controller.inc",
+    "30-dialog-settings.inc",
+    "31-table-surfaces.inc",
+    "32-tooltip-group-plot.inc",
+    "40-scientific-curve-model.inc",
+    "41-scientific-curve-navigation.inc",
+    "42-scientific-curve-render.inc",
+    "50-analysis-workbench.inc",
+    "51-plugin-workspace.inc",
+    "60-plugin-scope.inc",
+    "61-host-api.inc"
+  ]
+}

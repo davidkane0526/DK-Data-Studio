@@ -1,4 +1,4 @@
-# Project structure policy — v3.61.86
+# Project structure policy — v3.61.87
 
 ## Authored source
 
@@ -7,8 +7,8 @@
 - `src/core/data/`: canonical data/entity/flow/formula/state contracts.
 - `src/core/project/`: project format and history.
 - `src/core/scientific/`: renderer-neutral scientific plot/pipeline/transform/algorithm runtimes.
-- `src/core/plugins/`: plugin contract/module/manager/devtools plus kernel composition.
-- `src/core/ui/`: semantic UI infrastructure and current UI composition fragments.
+- `src/core/plugins/`: plugin contract/module/manager/devtools plus bounded kernel composition; ordering is declared in `src/core/plugins/kernel/composition.json`.
+- `src/core/ui/`: semantic UI infrastructure and bounded UI composition fragments; ordering is declared in `src/core/ui/composition/composition.json`.
 - `src/core/theme/`: Theme runtime, Material renderer, coverage/debug utilities.
 - `src/core/host/`, `services/`, `performance/`, `workflow/`, `diagnostics/`, `recipes/`: cross-plugin Core responsibilities.
 - `src/styles/foundation/`: reset/foundation rules.
@@ -37,7 +37,7 @@ Do not recreate `src/styles/base/` or `src/styles/modern/`. Do not use `!importa
 
 Runtime compositions, Plugin Index, SDK Authoring Reference and derived PNG assets are generated and ignored by Git. Build/test/start commands recreate them. Use `npm run clean:generated` before a source handoff.
 
-The current Plugin Kernel and UI Infrastructure still use build-time ordered closure composition because their historical implementations share lexical state. They are authored as multiple responsibility fragments, but generated browser artifacts are not source files. New Core modules must be independently addressable; do not expand the closure-composition pattern.
+The current Plugin Kernel and UI Infrastructure still use build-time ordered closure composition because their historical implementations share lexical state. Composition order is declared explicitly in local `composition.json` manifests; the generator rejects unlisted/duplicate fragments and fragments larger than 48 KiB. Generated browser artifacts are not source files. New Core modules must be independently addressable; do not expand the closure-composition pattern.
 
 ## Dependency locks
 

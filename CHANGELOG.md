@@ -1,3 +1,11 @@
+# v3.61.87 — Composition Boundary Cleanup
+
+- Split UI Infrastructure authored composition from 7 coarse fragments into 23 responsibility-focused fragments and Plugin Kernel from 6 into 13, while preserving the generated runtime byte stream exactly.
+- Replace implicit filename-sort composition with explicit local `composition.json` manifests for UI Infrastructure, Plugin Kernel and application composition. The generator now rejects duplicate, missing, stray and oversized (>48 KiB) fragments.
+- Split the 46.7 KiB Analysis Workbench structural stylesheet into AnalysisWorkbench shell, PluginWorkspace contract and shared workbench-component ownership files without changing rule order or cascade layer.
+- Keep the zero-`!important`, no-`base/modern`, plugin-neutral Core styling rules from v3.61.86 and add regression coverage for bounded composition/source ownership.
+- This remains a structural cleanup release: no intentional scientific, project-format or plugin behavior change.
+
 # v3.61.86 — Modular Core & Cascade Ownership
 
 - Reorganize authored Core under responsibility directories (`data / project / scientific / plugins / ui / theme / services / host / performance / workflow / diagnostics / recipes`) and forbid implementation files at `src/core/` root. Legacy generated `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are removed from authored source.

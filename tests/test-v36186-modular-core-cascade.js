@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{if(!fs.existsSync(dir))return out;for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.86');
+assert.equal(json('package.json').version,'3.61.87');
 
 const coreRoot=path.join(root,'src','core');
 const rootFiles=fs.readdirSync(coreRoot,{withFileTypes:true}).filter(row=>row.isFile()).map(row=>row.name);
@@ -36,7 +36,10 @@ for(const file of walk(path.join(root,'src','styles')).filter(f=>f.endsWith('.cs
 assert(!pluginIdentity.test(read('src/mobile.css')),'mobile Core stylesheet must remain plugin-neutral.');
 
 const runtimeGenerator=read('scripts/generate-runtime-compositions.js');
-assert(runtimeGenerator.includes("src/generated/runtime/ui-infrastructure.js")&&runtimeGenerator.includes("src/generated/runtime/plugin-kernel.js"),'Legacy closure compositions must emit only into src/generated/runtime/.');
+const uiComposition=json('src/core/ui/composition/composition.json');
+const kernelComposition=json('src/core/plugins/kernel/composition.json');
+assert.equal(uiComposition.output,'src/generated/runtime/ui-infrastructure.js','UI composition must emit only into generated runtime.');
+assert.equal(kernelComposition.output,'src/generated/runtime/plugin-kernel.js','Plugin Kernel composition must emit only into generated runtime.');
 assert(!runtimeGenerator.includes("src/core/ui-infrastructure.js")&&!runtimeGenerator.includes("src/core/plugin-kernel.js"),'Generator must never recreate monolithic files inside src/core/.');
 
 if(fs.existsSync(path.join(root,'.git'))){

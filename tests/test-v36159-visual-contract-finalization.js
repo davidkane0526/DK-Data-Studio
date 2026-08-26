@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.86','Visual Contract Finalization must ship as v3.61.86.');
+assert(pkg.version==='3.61.87','Visual Contract Finalization must ship as v3.61.87.');
 
 const coreCss=readCoreCss(root);
 const modernCss=readCoreCss(root);

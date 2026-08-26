@@ -1,6 +1,6 @@
 # DK Data Studio
 
-当前版本：**v3.61.86**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
+当前版本：**v3.61.87**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
@@ -120,7 +120,7 @@ npm run clean:generated
 
 ## 关于 Core Runtime composition
 
-Core 的**源码组织已经不是单一文件**。目前 Plugin Kernel 与 UI Infrastructure 两个历史子系统仍因共享 lexical state 在构建时生成两个临时 runtime artifact，它们位于 `src/generated/runtime/`、不进入 Git，也不是源码真相。后续若继续做内部重构，应把这两个 shared-closure composition 迁移为真正可独立加载的模块；新 Core 子系统不再采用这种模式。
+Core 的**源码组织已经不是单一文件**。目前 Plugin Kernel 与 UI Infrastructure 两个历史子系统仍因共享 lexical state 在构建时生成两个临时 runtime artifact，它们位于 `src/generated/runtime/`、不进入 Git，也不是源码真相。composition 顺序由各目录的 `composition.json` 显式声明，单片段上限为 48 KiB，避免再次膨胀成粗粒度大文件。后续若继续做内部重构，应把这两个 shared-closure composition 迁移为真正可独立加载的模块；新 Core 子系统不再采用这种模式。
 
 ## 插件开发
 

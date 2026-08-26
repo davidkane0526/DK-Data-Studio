@@ -1,0 +1,18 @@
+{
+  "output": "src/generated/runtime/plugin-kernel.js",
+  "modules": [
+    "00-bootstrap-state.inc",
+    "01-top-workspace.inc",
+    "10-events-history.inc",
+    "11-activity-shell.inc",
+    "20-contributions-ui.inc",
+    "21-shortcuts-command-menu.inc",
+    "22-toolbar-commands.inc",
+    "23-typed-contributions.inc",
+    "30-status-project.inc",
+    "31-pages-panels.inc",
+    "40-plugin-api.inc",
+    "50-lifecycle.inc",
+    "51-package-loading-api.inc"
+  ]
+}

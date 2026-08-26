@@ -1,9 +1,12 @@
 'use strict';
 const fs=require('fs');
 const assert=require('assert');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=file=>fs.readFileSync(file,'utf8');
 const css=read('src/styles/presentation/plugin-chrome.css');
-const kernel=read('src/core/plugins/kernel/20-contributions-commands.inc');
+const kernel=readComposition(root,'src/core/plugins/kernel');
 assert(!css.includes('@keyframes dkui-menu-in'),'geometric command-menu entrance keyframe must stay removed');
 assert(css.includes('animation:none'),'Core menus must not animate into place');
 assert(css.includes('transform:none'),'Core menu geometry must stay stationary');

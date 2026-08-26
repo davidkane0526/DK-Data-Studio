@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.61.86
+# DK Data Studio Architecture — v3.61.87
 
 ## 1. Runtime layers
 
@@ -48,7 +48,7 @@ src/core/
 
 Implementation files are forbidden directly under `src/core/`. Legacy authored/derived files such as `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are forbidden.
 
-Two older shared-closure subsystems — Plugin Kernel and UI Infrastructure — are still authored as ordered composition fragments and emitted to **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. They are not the source of truth. Converting those cyclic closure compositions to independently importable runtime modules is a future internal refactor; new Core subsystems must not adopt this pattern.
+Two older shared-closure subsystems — Plugin Kernel and UI Infrastructure — are still authored as ordered composition fragments and emitted to **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. Their exact order is declared in local `composition.json` manifests, and the generator rejects missing, stray, duplicate or >48 KiB fragments. They are not the source of truth. Converting those cyclic closure compositions to independently importable runtime modules is the remaining internal refactor; new Core subsystems must not adopt this pattern.
 
 ## 3. Ownership boundaries
 

@@ -1,9 +1,10 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
+const readComposition=require('./helpers/read-composition');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.86');
+assert.equal(json('package.json').version,'3.61.87');
 
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes("elevated:'thin-glass'"),'Large elevated windows such as LAN Web and AI/MCP must use Thin Glass.');
@@ -21,7 +22,7 @@ assert(rendererCss.includes('.command-menu.dkds-command-menu-portal'),'Command m
 assert(rendererCss.includes('[data-dkds-material-content="true"]'),'Large glass windows must expose transparent content layers behind the owner surface.');
 assert(rendererCss.includes('.statusbar-command-cluster'),'Statusbar command buttons must be able to fuse into translucent statusbar material.');
 
-const kernel=read('src/core/plugins/kernel/20-contributions-commands.inc');
+const kernel=readComposition(root,'src/core/plugins/kernel');
 for(const fn of ['portalCommandMenu','restoreCommandMenu','closeCommandMenu','positionCommandMenuPortal','repositionPortaledCommandMenus'])
   assert(kernel.includes(`function ${fn}`),`Command-menu Backdrop Root escape missing ${fn}.`);
 assert(kernel.includes("const TRANSLUCENT_COMMAND_MENU_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass'])"),'Command-menu portal must follow the resolved popover recipe.');
