@@ -8,6 +8,7 @@ const modern=read('src/ui-modern.css');
 const dataCenter=read('src/plugins/data-center/feature-runtime.js');
 const dataCenterViews=read('src/plugins/data-center/shared-views.js');
 const pluginWindow=read('src/plugin-window/style.css');
+const pulseStyle=read('src/plugins/pulse-analysis/plugin.css');
 
 assert(modern.includes('.left-panel section')&&modern.includes('.dkds-analysis-nav-btn'),'semantic first-party surface closure is missing.');
 assert(modern.includes('button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret)'),'First-party button surface normalization is missing.');
@@ -18,8 +19,8 @@ assert(!/dkds-plugin-canvas-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee
 assert(style.includes('--plugin-workspace-panel-border:var(--divider-subtle,transparent)'),'PluginWorkspace panel border must come from Theme Contract.');
 assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);background:transparent'),'PluginWorkspace layout wrapper must remain transparent so explicit MaterialSurface roles can sample the real backdrop.');
 assert(style.includes('.dkds-plugin-canvas-center{')&&modern.includes('.dkds-plugin-canvas-center')&&modern.includes('background-color:transparent!important'),'PluginWorkspace material-bearing canvas must be Core-role managed without an opaque wrapper blocking backdrop sampling.');
-assert(/\.pulse-card\{[\s\S]*?border:0;/.test(style),'Pulse cards must not retain legacy structural outlines.');
-assert(/\.pulse-card-heading\{[\s\S]*?border-bottom:0;/.test(style),'Pulse card heading must use surface contrast instead of a horizontal line.');
+assert(/\.pulse-card\{/.test(pulseStyle)&&!/\.pulse-card\{[^}]*border\s*:/.test(pulseStyle),'Pulse plugin must own its card geometry without private structural border paint.');
+assert(/\.pulse-card-heading\{/.test(pulseStyle)&&!/\.pulse-card-heading\{[^}]*border-bottom\s*:/.test(pulseStyle),'Pulse plugin heading must rely on the Core surface-header contract instead of private divider paint.');
 assert(dataCenterViews.includes('dc-card dc-artifact-pane dkds-surface')&&dataCenterViews.includes('dc-card dc-source-preview dkds-surface'),'Data Center cards must consume the Core surface primitive instead of owning outlined box paint.');
 assert(dataCenterViews.includes('dc-section-head dkds-surface-header')&&dataCenterViews.includes('dc-tool-title dkds-surface-header'),'Data Center headings must consume the Core surface-header primitive instead of private divider/background paint.');
 assert(!pluginWindow.includes('border-left:1px solid var(--line,#e3e7ee)'),'Dedicated window right dock must not restore legacy divider line.');

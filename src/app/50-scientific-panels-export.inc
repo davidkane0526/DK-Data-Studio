@@ -125,6 +125,7 @@
       const unit=result.unit||provider.unit||'';
       const card=document.createElement('div');
       card.className='trend-card';
+      card.dataset.dkdsPlotScope='1';
       card.dataset.groupChartId=provider.id;
       card.innerHTML=`
         <div class="trend-card-header">
@@ -135,7 +136,7 @@
           </span>
         </div>
         <div class="trend-plot"></div>
-        <div class="trend-card-legend"></div>`;
+        <div class="trend-card-legend" data-dkds-legend></div>`;
       host.appendChild(card);
       const plot=card.querySelector('.trend-plot');
       const legend=card.querySelector('.trend-card-legend');

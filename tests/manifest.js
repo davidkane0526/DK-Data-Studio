@@ -615,6 +615,10 @@ module.exports = {
     {
       "file": "tests/test-v36184-repository-hygiene.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36185-css-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1264,6 +1268,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36184-repository-hygiene.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36185-css-ownership.js",
       "args": []
     }
   ],

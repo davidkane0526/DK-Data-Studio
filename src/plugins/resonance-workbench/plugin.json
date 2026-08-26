@@ -37,7 +37,6 @@
     "ui.top-workspace",
     "ui.toolbar",
     "ui.pages",
-    "ui.styles",
     "ui.edit",
     "ui.scientific-plot",
     "ui.settings"
@@ -133,5 +132,8 @@
     "accepts": [
       "science.transport.iv"
     ]
-  }
+  },
+  "styles": [
+    "plugin.css"
+  ]
 }

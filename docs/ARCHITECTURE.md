@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.61.84
+# DK Data Studio Architecture — v3.61.85
 
 ## 1. Runtime layers
 
@@ -31,11 +31,13 @@ Project and data lifecycle, plugin activation and package policy, generic worksp
 
 ### Plugins own
 
-Domain models, domain-specific panels and geometry, analysis orchestration, domain labels, plugin-specific chart composition, plugin state slices, and Algorithm Provider implementations.
+Domain models, domain-specific panels and geometry, analysis orchestration, domain labels, plugin-specific chart composition, plugin state slices, and Algorithm Provider implementations. Static domain layout belongs in `plugin.css` declared through `manifest.styles`; first-party plugins do not receive a separate style-injection path.
 
 ### SDK owns the public authoring contract
 
 The SDK describes supported capabilities and semantic components. It must not teach plugin authors to reproduce private Core DOM, hard-code host colors, or patch backdrop behavior. Built-in and packaged plugins use the same manifest/script/style semantics.
+
+Static stylesheet order is also part of the contract: base Core structure loads first, manifest-owned plugin layout is inserted next, and `ui-modern.css` / Theme-Material chrome remains the final visual authority. Plugin activation order therefore cannot turn domain CSS into an accidental late theme override.
 
 ## 3. Scientific algorithms
 

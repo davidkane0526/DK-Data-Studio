@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.84');
+assert.equal(json('package.json').version,'3.61.85');
 const theme=read('src/core/theme/runtime.js');
 const modern=read('src/ui-modern.css');
 const base=read('src/style.css');
@@ -27,7 +27,7 @@ for(const cssVar of ['--dkui-motion-fast','--dkui-motion-normal','--dkui-motion-
 assert(modern.includes('@media(prefers-reduced-motion:reduce)'),'Core Theme motion must respect reduced-motion.');
 assert(!base.includes('.automation-test-note,.automation-test-log-path{padding:10px 12px;border-radius:9px;background:var(--surface-soft'),'Automation page must not use the undefined legacy --surface-soft token.');
 assert(base.includes('.automation-test-note,.automation-test-log-path')&&base.includes('background:var(--surface-secondary,var(--surface-primary))'),'Automation note/log surfaces must use semantic theme surfaces.');
-assert(base.includes('.automation-test-row.pass .automation-test-status{background:var(--success-soft);color:var(--success)}'),'Automation statuses must use semantic success tokens.');
+assert(/\.automation-test-row\.pass \.automation-test-status\s*\{[^}]*background:var\(--success-soft\)[^}]*color:var\(--success\)/.test(base),'Automation statuses must use semantic success tokens.');
 
 const pluginTypes=schema.properties.pluginType.enum||[];
 assert(pluginTypes.includes('theme'),'SDK manifest schema must expose pluginType=theme.');

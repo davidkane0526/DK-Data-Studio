@@ -15,7 +15,7 @@ const pulse=read('src/plugins/pulse-analysis/analysis-service.js');
 // PRIMARY is a viewport contract, not a plugin-specific overflow patch.
 assert(ui.includes("['contained','auto','safe'].includes(String(spec.primaryScroll||'safe'))")&&ui.includes("this.setPrimaryScrollMode(this.primaryScrollMode)"),'PluginWorkspace must expose safe/auto/contained PRIMARY scrolling, defaulting new workspaces to Host-safe recovery.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="auto"] .dkds-plugin-canvas-center{overflow:auto'),'Auto PRIMARY workspaces must own a real scroll viewport.');
-assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center')&&css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-plugin-canvas-center{overflow:hidden;min-height:0;align-items:stretch}'),'Contained and safe scientific canvases must remain bounded interaction surfaces.');
+assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="contained"] .dkds-plugin-canvas-center')&&/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow:hidden[^}]*min-height:0[^}]*align-items:stretch/.test(css),'Contained and safe scientific canvases must remain bounded interaction surfaces.');
 assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-analysis-primary-host'),'Safe PRIMARY must expose a Host-owned fallback scroll viewport for third-party content.');
 for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   const views=read(`src/plugins/${folder}/shared-views.js`);

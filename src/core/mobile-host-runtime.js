@@ -29,7 +29,7 @@
   }
 
   function contextHint(){
-    const selectors=['#reswinSummary','#terSummary'];
+    const selectors=['[data-dkds-mobile-summary]'];
     for(const selector of selectors){
       const node=document.querySelector(selector);
       const page=node?.closest?.('.analysis-page');
@@ -356,8 +356,8 @@
     const summaryObserver=new MutationObserver(mutations=>{
       const relevant=mutations.some(mutation=>{
         const parent=mutation.target?.nodeType===1?mutation.target:mutation.target?.parentElement;
-        if(parent?.closest?.('#reswinSummary,#terSummary'))return true;
-        return [...(mutation.addedNodes||[])].some(node=>node?.nodeType===1&&(node.matches?.('#reswinSummary,#terSummary')||node.querySelector?.('#reswinSummary,#terSummary')));
+        if(parent?.closest?.('[data-dkds-mobile-summary]'))return true;
+        return [...(mutation.addedNodes||[])].some(node=>node?.nodeType===1&&(node.matches?.('[data-dkds-mobile-summary]')||node.querySelector?.('[data-dkds-mobile-summary]')));
       });
       if(relevant)publish();
     });

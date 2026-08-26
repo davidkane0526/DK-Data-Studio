@@ -8,7 +8,7 @@ const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.htm
 const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.84','modern UI cleanup release must be v3.61.27');
+assert.equal(pkg.version,'3.61.85','modern UI cleanup release must be v3.61.27');
 assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
 assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');
@@ -16,8 +16,13 @@ assert(!css.includes('.js-plotly-plot .plotly .modebar'),'modern CSS must never 
 assert(!/^\s*button\s*[,\{]/m.test(css),'modern CSS must not use a global button selector');
 assert(!/^\s*(input|select|textarea)\s*[,\{]/m.test(css),'modern CSS must not use global form-control selectors');
 assert(css.includes('body.dkds-modern-ui .plugin-manager-card'),'plugin manager must have an explicit scoped surface contract');
-assert(css.includes('body.dkds-modern-ui #resonanceDedicatedPage'),'Resonance workbench must have explicit scoped chrome without Plotly internals');
-assert(css.includes('body.dkds-modern-ui .data-center-body'),'Data Center must have an explicit scoped chrome contract');
+const resonanceManifest=JSON.parse(fs.readFileSync(path.join(root,'src','plugins','resonance-workbench','plugin.json'),'utf8'));
+const dataCenterManifest=JSON.parse(fs.readFileSync(path.join(root,'src','plugins','data-center','plugin.json'),'utf8'));
+const resonanceCss=fs.readFileSync(path.join(root,'src','plugins','resonance-workbench','plugin.css'),'utf8');
+const dataCenterCss=fs.readFileSync(path.join(root,'src','plugins','data-center','plugin.css'),'utf8');
+assert(!css.includes('#resonanceDedicatedPage')&&!css.includes('.data-center-body'),'Core modern CSS must not own domain-plugin selectors');
+assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css')&&resonanceCss.includes('#resonanceDedicatedPage'),'Resonance domain layout must be manifest-owned plugin CSS');
+assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.includes('plugin.css')&&dataCenterCss.includes('.data-center-body'),'Data Center domain layout must be manifest-owned plugin CSS');
 assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none!important'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 

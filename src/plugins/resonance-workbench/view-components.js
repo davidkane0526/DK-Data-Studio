@@ -47,7 +47,7 @@
 <label>V<sub>CNP</sub> (V)
             <input id="gateCnp" placeholder="0" step="any" type="number"/>
 </label>
-<span class="analysis-inline-formula">n<sub>g</sub> = C<sub>g</sub>(V<sub>g</sub>−V<sub>CNP</sub>)/e</span>
+<span class="analysis-inline-formula dkds-chip">n<sub>g</sub> = C<sub>g</sub>(V<sub>g</sub>−V<sub>CNP</sub>)/e</span>
 </div>
 <div class="analysis-note gate-analysis-note">
           两条 ridge 应尽量选择同一扫描方向，并由你根据独立证据决定是否可称为 AB/BA。
@@ -56,7 +56,7 @@
           峰宽 w 默认使用 HWHM。回滞页显示的是同一峰标签的正/反扫峰位差 ΔV<sub>R</sub>，
           <b>不把它自动当作 coercive voltage V<sub>c</sub></b>。
         </div>
-<div class="ter-summary" id="gateAnalysisSummary"></div>
+<div class="dkds-summary-row" id="gateAnalysisSummary"></div>
 <div class="gate-analysis-grid">
 <div class="analysis-chart-card">
 <div class="analysis-chart-title">1. 共振轨迹 V<sub>R,A</sub>(V<sub>g</sub>) / V<sub>R,B</sub>(V<sub>g</sub>)</div>
@@ -108,7 +108,7 @@
 </div>
 </div>
 <h3 class="analysis-section-title">自动分析报告</h3>
-<div class="gate-analysis-report" id="gateAnalysisReport"></div>
+<div class="gate-analysis-report dkds-surface" id="gateAnalysisReport"></div>
 <h3 class="analysis-section-title">派生数据</h3>
 <div class="analysis-table-wrap gate-analysis-table-wrap">
 <table class="analysis-table dkds-table" id="gateAnalysisTable"></table>
@@ -178,7 +178,7 @@
                 <details class="respar-advanced"><summary>高级设置（一般不用改）</summary><div id="reswinDetectorParams"></div></details>
                 <div class="respar-detect-actions dkds-action-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
                 <button id="reswinSortPeaks" class="wide">跨 Vg 智能整理峰序</button>
-                <div id="reswinPeakLegend" class="respar-peak-legend dkds-toolbar dkds-surface-muted"></div>
+                <div id="reswinPeakLegend" class="respar-peak-legend dkds-toolbar dkds-surface-muted" data-dkds-legend></div>
               </section>
               <section>
                 <h3>显示</h3>
@@ -195,7 +195,7 @@
             </aside>
             <main class="respar-main-area">
               <div class="respar-main-workspace">
-                <div class="respar-plot-wrap" id="resparMainPlotWrap">
+                <div class="respar-plot-wrap" id="resparMainPlotWrap" data-dkds-plot-scope>
                   <div class="respar-main-plot-header">
                     <div class="respar-main-tools dkds-toolbar dkds-floating-surface">
                       <button type="button" data-respar-lock="1">锁定所选</button>
@@ -204,7 +204,7 @@
                       <button type="button" id="resparTogglePhysics">物理标记</button>
                       <button type="button" id="resparResetView">重新居中</button>
                     </div>
-                    <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-toolbar dkds-surface"></div>
+                    <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-toolbar dkds-surface" data-dkds-legend></div>
                   </div>
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
                   <div id="resparRangeMenu" class="respar-range-menu command-menu hidden">
@@ -216,7 +216,7 @@
                   <div id="resparHoverTip" class="respar-hover-tip dkds-tooltip hidden"></div>
                 </div>
               </div>
-              <div class="respar-status-row"><div id="reswinSummary" class="respar-summary"></div></div>
+              <div class="respar-status-row"><div id="reswinSummary" class="respar-summary" data-dkds-mobile-summary></div></div>
             </main>
           </section>
 
@@ -242,91 +242,16 @@
           <section class="respar-derived hidden" data-reswin-view-panel="gate">
             <div class="respar-derived-header dkds-surface-header"><h3>栅压物理分析</h3><button data-reswin-view="main">返回主图</button></div>
             <div class="analysis-control-card reswin-gate-controls dkds-inline-form-row"><label>ridge A<select id="reswinGateA"></select></label><label>ridge B<select id="reswinGateB"></select></label><label>回滞峰<select id="reswinGateHysteresis"></select></label><label>峰宽<select id="reswinGateWidth"><option value="hwhm">HWHM</option><option value="fwhm">FWHM</option></select></label><label>特征场<select id="reswinGateFeatureMetric"><option value="v">峰位 V_R</option><option value="fwhm">FWHM</option><option value="amplitude">峰高</option><option value="prominence">Prominence</option><option value="area">峰面积</option><option value="baseline">局域基线</option><option value="peakToBg">峰/背景比</option></select></label><label>特征场扫描<select id="reswinGateFeatureDirection"><option value="all">正扫 + 反扫</option><option value="forward">仅正扫</option><option value="reverse">仅反扫</option></select></label><label class="inline-check"><input id="reswinGateUseDensity" type="checkbox">换算 n<sub>g</sub></label><label>Cg (F/m²)<input id="reswinGateCg" type="number" step="any"></label><label>V<sub>CNP</sub> (V)<input id="reswinGateCnp" type="number" step="any"></label><button id="reswinGateRun" class="primary">刷新分析</button><button id="reswinGateExportCsv">数据 CSV</button><button id="reswinGateFeatureExport">特征场 CSV</button><button id="reswinGateExportReport">报告</button></div>
-            <div id="reswinGateSummary" class="ter-summary reswin-summary"></div><div class="reswin-gate-grid"><div class="analysis-chart-card"><div class="analysis-chart-title">共振 ridge</div><div id="reswinGateRidges" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">共振中心 V0</div><div id="reswinGateV0" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">有效分裂 δ</div><div id="reswinGateDelta" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰宽与 |δ|/w</div><div id="reswinGateWidthPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax</div><div id="reswinGateTer" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">最佳读出偏压 Vd*</div><div id="reswinGateVStar" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">正反扫回滞</div><div id="reswinGateHysteresisPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰高与有效权重</div><div id="reswinGateAmplitude" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax vs |δ|/w</div><div id="reswinGateTerCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">Vd* vs V0</div><div id="reswinGateReadoutCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">局域背景与峰/背景比</div><div id="reswinGateBackground" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">载流子浓度依赖（可选）</div><div id="reswinGateDensity" class="analysis-chart"></div></div><div class="analysis-chart-card reswin-feature-field-card"><div class="analysis-chart-title"><span id="reswinGateFeatureFieldTitle">跨曲线特征场</span></div><div id="reswinGateFeatureFieldMeta" class="respar-note dkds-note"></div><div id="reswinGateFeatureField" class="analysis-chart reswin-feature-field-plot"></div></div></div><div id="reswinGateReport" class="reswin-report"></div><div class="analysis-table-wrap dkds-table-wrap"><table id="reswinGateTable" class="analysis-table dkds-table"></table></div>
+            <div id="reswinGateSummary" class="dkds-summary-row reswin-summary"></div><div class="reswin-gate-grid"><div class="analysis-chart-card"><div class="analysis-chart-title">共振 ridge</div><div id="reswinGateRidges" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">共振中心 V0</div><div id="reswinGateV0" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">有效分裂 δ</div><div id="reswinGateDelta" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰宽与 |δ|/w</div><div id="reswinGateWidthPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax</div><div id="reswinGateTer" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">最佳读出偏压 Vd*</div><div id="reswinGateVStar" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">正反扫回滞</div><div id="reswinGateHysteresisPlot" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">峰高与有效权重</div><div id="reswinGateAmplitude" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">TERmax vs |δ|/w</div><div id="reswinGateTerCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">Vd* vs V0</div><div id="reswinGateReadoutCorrelation" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">局域背景与峰/背景比</div><div id="reswinGateBackground" class="analysis-chart"></div></div><div class="analysis-chart-card"><div class="analysis-chart-title">载流子浓度依赖（可选）</div><div id="reswinGateDensity" class="analysis-chart"></div></div><div class="analysis-chart-card reswin-feature-field-card"><div class="analysis-chart-title"><span id="reswinGateFeatureFieldTitle">跨曲线特征场</span></div><div id="reswinGateFeatureFieldMeta" class="respar-note dkds-note"></div><div id="reswinGateFeatureField" class="analysis-chart reswin-feature-field-plot"></div></div></div><div id="reswinGateReport" class="reswin-report"></div><div class="analysis-table-wrap dkds-table-wrap"><table id="reswinGateTable" class="analysis-table dkds-table"></table></div>
           </section>
         </div>
       </div>`;
   }
 
-  const TOP_STYLES=`
-    #resonanceDedicatedPage .resonance-dedicated-body{padding:0!important;overflow:hidden!important}
-    #resonanceDedicatedPage .resonance-parity-root{position:relative;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
-    #resonanceDedicatedPage .respar-header-actions{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto}#resonanceDedicatedPage .respar-header-divider{width:1px;height:22px;flex:0 0 auto}
-    #resonanceDedicatedPage .respar-primary{width:100%;height:100%;min-width:0;min-height:0;display:grid;grid-template-columns:280px minmax(0,1fr)}
-    #resonanceDedicatedPage .respar-left-panel{min-width:0;overflow:auto;padding:12px}
-    #resonanceDedicatedPage .respar-left-panel section{padding-bottom:12px;margin-bottom:12px}
-    #resonanceDedicatedPage .respar-left-panel h3{margin:0 0 8px}
-    #resonanceDedicatedPage .respar-scan-global{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px}
-    #resonanceDedicatedPage .respar-scan-global button{width:100%}
-    #resonanceDedicatedPage .respar-select-label{display:flex;flex-direction:column;gap:4px;margin:6px 0}
-    #resonanceDedicatedPage .respar-select-label select{width:100%}
-    #resonanceDedicatedPage .respar-dataset-list{display:flex;flex-direction:column;gap:4px;max-height:300px;overflow:auto;margin-top:6px}
-    #resonanceDedicatedPage .reswin-dataset{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:7px;cursor:pointer}
-    #resonanceDedicatedPage .reswin-dataset-title{grid-column:1/-1;min-width:0}#resonanceDedicatedPage .reswin-vg{width:72px;height:25px;padding:2px 5px}#resonanceDedicatedPage .reswin-transform-row{grid-column:1/-1;display:flex;align-items:center;gap:5px}#resonanceDedicatedPage .reswin-dataset-transform{flex:1;min-width:0;height:26px}
-    #resonanceDedicatedPage .respar-note,#resonanceDedicatedPage .respar-hint{line-height:1.6}#resonanceDedicatedPage .respar-note{padding:7px}
-    #resonanceDedicatedPage .respar-preset-row label{display:flex;align-items:center;gap:7px}#resonanceDedicatedPage .respar-preset-row select{flex:1}#resonanceDedicatedPage .respar-advanced{margin-top:7px}#resonanceDedicatedPage .respar-advanced summary{cursor:pointer;padding:4px 0}
-    #resonanceDedicatedPage .respar-detect-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}
-    #resonanceDedicatedPage .respar-peak-legend{margin-top:8px;padding:7px;display:flex;flex-wrap:wrap;gap:5px 9px}#resonanceDedicatedPage .respar-peak-legend span{display:inline-flex;align-items:center;gap:4px}#resonanceDedicatedPage .respar-peak-legend i{width:9px;height:9px;display:inline-block}
-    #resonanceDedicatedPage .respar-main-area{position:relative;min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) auto}
-    #resonanceDedicatedPage .respar-main-workspace{position:relative;min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);height:100%}#resonanceDedicatedPage .respar-plot-wrap{position:relative;min-width:0;min-height:0;overflow:hidden}
-    #resonanceDedicatedPage .respar-main-plot-header{position:absolute;left:82px;right:18px;top:8px;z-index:42;display:flex;align-items:center;gap:8px;min-width:0;pointer-events:none}#resonanceDedicatedPage .respar-main-plot-header>*{pointer-events:auto}
-    #resonanceDedicatedPage .respar-main-tools{display:flex;gap:4px;padding:4px;flex:0 0 auto}
-    #resonanceDedicatedPage .respar-main-legend{min-width:0;flex:1;height:36px;display:flex;align-items:center;gap:5px;overflow-x:auto;white-space:nowrap;padding:3px 5px}
-    #resonanceDedicatedPage .respar-legend-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;height:26px;padding:3px 7px}#resonanceDedicatedPage .respar-legend-line{width:18px;height:0}
-    #resonanceDedicatedPage .respar-main-svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:hidden}#resonanceDedicatedPage .respar-curve-hit{stroke-width:14px;pointer-events:stroke;cursor:pointer}#resonanceDedicatedPage .respar-peak-hit{pointer-events:all;cursor:pointer}#resonanceDedicatedPage .respar-peak-hit.editable{cursor:grab}#resonanceDedicatedPage .respar-peak-point{pointer-events:none}#resonanceDedicatedPage .respar-peak-point.dimmed{opacity:.12}#resonanceDedicatedPage .respar-physics-label{pointer-events:none}#resonanceDedicatedPage .respar-width-band{opacity:.075;pointer-events:none}#resonanceDedicatedPage .respar-width-line{stroke-width:1.5;pointer-events:none}#resonanceDedicatedPage .respar-width-handle{cursor:ew-resize;pointer-events:all}#resonanceDedicatedPage .respar-direct-box{pointer-events:none;stroke-width:1.4}#resonanceDedicatedPage .respar-direct-box.range{stroke-dasharray:5 3}#resonanceDedicatedPage .respar-direct-box.zoom{stroke-dasharray:3 3}#resonanceDedicatedPage .respar-persisted-range{stroke-width:1;stroke-dasharray:5 4;pointer-events:none}
-    #resonanceDedicatedPage .respar-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;padding:4px 8px}#resonanceDedicatedPage .respar-summary{display:flex;gap:10px;white-space:nowrap;overflow:hidden}#resonanceDedicatedPage .respar-export-row{display:flex;gap:4px;flex:0 0 auto}
-    #resonanceDedicatedPage .respar-hover-tip{position:absolute;z-index:80;max-width:320px}
-    #resonanceDedicatedPage .respar-range-menu{position:absolute;z-index:90;width:290px;padding:8px}#resonanceDedicatedPage .respar-range-summary{margin-bottom:6px}#resonanceDedicatedPage .respar-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}#resonanceDedicatedPage .respar-range-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px;padding-top:6px}
-    #resonanceDedicatedPage .respar-range-identity{display:grid;grid-template-columns:1fr;gap:5px;margin-top:7px;padding-top:7px}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}#resonanceDedicatedPage .respar-floating-panel{position:absolute;z-index:160;resize:both;overflow:hidden;min-width:320px;min-height:220px}#resonanceDedicatedPage .respar-inspector-panel{right:24px;top:56px;width:390px;height:560px}#resonanceDedicatedPage .respar-group-panel{right:24px;bottom:44px;width:min(880px,calc(100% - 48px));height:620px}#resonanceDedicatedPage .respar-floating-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none}#resonanceDedicatedPage .respar-floating-header>div{display:flex;gap:5px}#resonanceDedicatedPage .respar-floating-body{height:calc(100% - 36px);overflow:auto;padding:10px}#resonanceDedicatedPage .respar-group-panel.collapsed{height:36px!important;min-height:36px!important;resize:none!important}#resonanceDedicatedPage .respar-group-panel.collapsed .respar-floating-body{display:none}
-    #resonanceDedicatedPage .respar-inspect-controls{display:flex;flex-direction:column;gap:7px}#resonanceDedicatedPage .respar-inspect-controls>label{display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .reswin-kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 8px}#resonanceDedicatedPage .respar-inline-actions,#resonanceDedicatedPage .respar-label-editor{display:flex;gap:6px;align-items:flex-end;margin:7px 0}#resonanceDedicatedPage .respar-label-editor label{flex:1;display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
-    #resonanceDedicatedPage .respar-group-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;position:sticky;top:0;z-index:3}#resonanceDedicatedPage .respar-group-cols{display:flex;align-items:center;gap:4px}
-    #resonanceDedicatedPage .reswin-group-grid{--reswin-group-cols:3;display:grid;grid-template-columns:repeat(var(--reswin-group-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-card{overflow:hidden;min-width:0;display:grid;grid-template-rows:auto minmax(210px,var(--reswin-group-height,240px))}#resonanceDedicatedPage .reswin-group-head{min-height:34px;height:auto;padding:5px 8px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:8px}#resonanceDedicatedPage .reswin-group-head button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
-    #resonanceDedicatedPage .respar-derived{position:absolute;inset:0;z-index:130;overflow:auto;padding:12px}#resonanceDedicatedPage .respar-derived-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#resonanceDedicatedPage .respar-derived-header h3{margin:0}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#resonanceDedicatedPage .reswin-medium-plot{height:380px}#resonanceDedicatedPage .reswin-feature-field-card{grid-column:1/-1}#resonanceDedicatedPage .reswin-feature-field-plot{height:360px;min-height:320px}#resonanceDedicatedPage .reswin-report{padding:12px;line-height:1.65}
-    #resonanceDedicatedPage .reswin-gate-controls{flex-flow:row nowrap!important;align-items:flex-end!important;gap:9px!important}
-    #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 150px;min-width:118px}
-    #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>select,#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>input{width:100%;min-width:0!important}
-    #resonanceDedicatedPage .reswin-gate-controls>.inline-check,#resonanceDedicatedPage .reswin-gate-controls>button{flex:0 0 auto;white-space:nowrap}
-    #resonanceDedicatedPage .reswin-gate-controls sub{display:inline;line-height:0}
-    #resonanceDedicatedPage .analysis-chart-title.dkds-plot-view-head{min-height:38px;height:auto;padding:5px 8px}
-    /* v3.36: exact GRS-derived data/inspector/range visual language */
-    #resonanceDedicatedPage .respar-dataset-list{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow:auto;margin-top:6px}
-    #resonanceDedicatedPage .respar-dataset-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;padding:7px;cursor:pointer}#resonanceDedicatedPage .respar-dataset-item.is-excluded{opacity:.52}#resonanceDedicatedPage .respar-dataset-item>.reswin-master{align-self:start;margin-top:2px}
-    #resonanceDedicatedPage .respar-dataset-content{min-width:0}#resonanceDedicatedPage .respar-dataset-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #resonanceDedicatedPage .respar-dataset-vg{display:flex;align-items:center;gap:4px;margin-top:3px}
-    #resonanceDedicatedPage .respar-dataset-vg input{width:76px}
-    #resonanceDedicatedPage .respar-scan-toggle{display:flex;gap:12px;margin-top:5px}#resonanceDedicatedPage .respar-scan-toggle label{display:flex;align-items:center;gap:4px;cursor:pointer}
-    #resonanceDedicatedPage .respar-dataset-transform{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:5px;margin-top:5px}#resonanceDedicatedPage .respar-dataset-transform select{min-width:0;width:100%}
-    #resonanceDedicatedPage .respar-range-menu{position:absolute;z-index:150;width:260px;padding:8px}
-    #resonanceDedicatedPage .respar-range-summary{padding:2px 3px 7px;margin:0}#resonanceDedicatedPage .respar-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-    #resonanceDedicatedPage .respar-range-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:7px;padding-top:6px}
-    #resonanceDedicatedPage .respar-range-identity{margin-top:7px;padding-top:7px;display:grid;grid-template-columns:86px minmax(0,1fr);gap:5px}
-    #resonanceDedicatedPage .respar-range-identity>div{grid-column:1/-1}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input{min-width:0;width:auto}#resonanceDedicatedPage .respar-range-identity button{grid-column:1/-1}#resonanceDedicatedPage .respar-inspector-section{padding-bottom:10px;margin-bottom:10px}#resonanceDedicatedPage .respar-inspector-section h4{margin:0 0 7px}
-    #resonanceDedicatedPage .respar-inspector-kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:4px 8px}
-    #resonanceDedicatedPage .respar-inspector-hint{line-height:1.7;margin-bottom:7px}
-    #resonanceDedicatedPage .respar-inspector-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-    #resonanceDedicatedPage .respar-peak-class-grid{display:grid;grid-template-columns:110px minmax(0,1fr);gap:7px;margin-top:8px}#resonanceDedicatedPage .respar-peak-class-grid label{display:flex;flex-direction:column;gap:3px;min-width:0}#resonanceDedicatedPage .respar-peak-class-grid input{min-width:0;width:100%}
-    #resonanceDedicatedPage .respar-inspector-row{display:flex;align-items:center;gap:6px;margin-top:7px}
-    #resonanceDedicatedPage .respar-inspector-transform{margin-top:10px;padding-top:10px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
-    #resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start;padding:6px 8px;min-width:0}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px!important;height:18px!important}
-    #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px!important;min-height:280px!important;resize:both!important}
-    #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px!important}
-    #resonanceDedicatedPage .hidden{display:none!important}
 
-    #resonanceDedicatedPage .respar-group-context{margin-left:6px}
-    #resonanceDedicatedPage .reswin-group-card-actions{display:flex;align-items:center;gap:3px;white-space:nowrap;min-width:0;flex:0 0 auto}
-    #resonanceDedicatedPage .reswin-group-card-actions>.dkds-portable-controls{display:flex;align-items:center;gap:2px;margin:0;padding:0;flex:0 0 auto}
-    #resonanceDedicatedPage .reswin-group-card-actions .dkds-portable-placement-trigger{min-width:28px;height:24px;padding:2px 5px}
-    #resonanceDedicatedPage .reswin-group-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-    #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px!important;min-height:300px!important;resize:both!important}
-
-    @media(max-width:1250px){#resonanceDedicatedPage .reswin-gate-controls{flex-wrap:wrap!important}#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 180px}}
-    @media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
-  `;
 
   function mountUnified(ctx,controller,{mode='top',adapter={}}={}){
     const R=controller.service;
-    ctx.ui.styles.add('resonance-grs-parity',TOP_STYLES);
     const isTop=mode==='top'||ctx.runtime.isAuxiliaryWindow;
     ctx.ui.activities.add({id:'resonance',label:'共振分析',contextLabel:'共振分析',icon:'∿',order:10,default:true,primary:true,openMode:'window',description:'共振曲线、峰位与物理分析',onActivate:()=>{ctx.workspace.openPage('resonanceDedicatedPage');controller.render();}});
     const page=ctx.ui.pages.add({id:'resonance-dedicated',pageId:'resonanceDedicatedPage',activity:'resonance',toolbar:false,label:'共振分析',order:10,html:topPageHtml(ctx),onOpen:()=>controller.render()});
@@ -454,10 +379,10 @@
     components.physics=Object.freeze({...components.physics,superPanelTitle:'物理机制'});
     components.spacing=Object.freeze({...components.spacing,superPageHtml:superSpacingPageHtml});
     components.gate=Object.freeze({...components.gate,superPageHtml:superGatePageHtml});
-    return Object.freeze({controller,catalog:VIEW_CATALOG,byId:id=>components[id]||null,...components,topPageHtml,topStyles:TOP_STYLES});
+    return Object.freeze({controller,catalog:VIEW_CATALOG,byId:id=>components[id]||null,...components,topPageHtml});
   }
 
   window.DKDSPluginModules.define('builtin.resonance-workbench','view-components',Object.freeze({
-    VIEW_CATALOG,byId,create,topPageHtml,TOP_STYLES,mountUnified,mountTop,superGatePageHtml,superSpacingPageHtml
+    VIEW_CATALOG,byId,create,topPageHtml,mountUnified,mountTop,superGatePageHtml,superSpacingPageHtml
   }));
 })();

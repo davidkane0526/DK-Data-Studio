@@ -149,20 +149,20 @@
     }
     navigationToolObstacles(){
       const container=this.container,tools=this.navTools;if(!container||!tools)return [];
-      const hostRect=container.getBoundingClientRect(),selectors=['.main-legend-bar','.respar-main-legend','.respar-peak-legend','.reswin-group-legend','.trend-card-legend','.dkds-plot-legend','[data-dkds-legend]'],seen=new Set(),rows=[];
+      const hostRect=container.getBoundingClientRect(),selectors=['.dkds-plot-legend','[data-dkds-legend]'],seen=new Set(),rows=[];
       for(const selector of selectors)for(const el of document.querySelectorAll(selector)){if(!el||el===tools||seen.has(el)||el.closest?.('.dkds-scientific-nav-tools'))continue;seen.add(el);const style=getComputedStyle(el);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)continue;const r=el.getBoundingClientRect();const left=Math.max(hostRect.left,r.left),right=Math.min(hostRect.right,r.right),top=Math.max(hostRect.top,r.top),bottom=Math.min(hostRect.bottom,r.bottom);if(right>left&&bottom>top)rows.push({el,rect:r});}
       return rows;
     }
     isNavigationLegendNode(node){
       const el=node?.nodeType===1?node:node?.parentElement;if(!el?.closest)return false;
-      return !!el.closest('.main-legend-bar,.respar-main-legend,.respar-peak-legend,.reswin-group-legend,.trend-card-legend,.dkds-plot-legend,[data-dkds-legend]');
+      return !!el.closest('.dkds-plot-legend,[data-dkds-legend]');
     }
     scheduleNavigationCollisionCheck(){
       if(this.disposed||this.navCollisionFrame)return;this.navCollisionFrame=requestAnimationFrame(()=>{this.navCollisionFrame=0;if(!this.disposed)this.avoidNavigationToolCollisions();});
     }
     installNavigationObstacleObserver(){
       if(!window.MutationObserver||this.navObstacleObserver)return false;
-      const root=this.container?.closest?.('.dkds-workbench,.respar-main-card,.trend-card,.card')||this.container?.parentElement||this.container;if(!root)return false;
+      const root=this.container?.closest?.('[data-dkds-plot-scope],.dkds-workbench,.dkds-surface,.card')||this.container?.parentElement||this.container;if(!root)return false;
       this.navObstacleObserver=new MutationObserver(records=>{for(const record of records){if(this.isNavigationLegendNode(record.target)||[...(record.addedNodes||[])].some(node=>this.isNavigationLegendNode(node))||[...(record.removedNodes||[])].some(node=>this.isNavigationLegendNode(node))){this.scheduleNavigationCollisionCheck();break;}}});
       this.navObstacleObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});return true;
     }

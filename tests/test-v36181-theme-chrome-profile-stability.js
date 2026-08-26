@@ -5,7 +5,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.84');
+assert.equal(pkg.version,'3.61.85');
 
 const rendererCss=read('src/styles/modern/98-theme-material-renderer.css');
 const chromeCss=read('src/styles/modern/96-integrated-command-chrome.css');

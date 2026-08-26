@@ -22,7 +22,10 @@ assert(entry.includes('shared.createController')&&entry.includes('views.mountTop
 assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific markup.');
 for(const token of ['VIEW_CATALOG','createController','normalizeWorkspace','buildTrendModel','computeSpacingRows'])assert(shared.includes(token),`Shared Controller layer missing ${token}.`);
 assert(!shared.includes('reswinMainPlot')&&!shared.includes('gateAnalysisPage'),'Controller layer must not own renderer markup.');
-for(const token of ['topPageHtml','TOP_STYLES','mountUnified','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
+for(const token of ['topPageHtml','mountUnified','mountTop','superGatePageHtml','superSpacingPageHtml','function create(controller)'])assert(views.includes(token),`Shared View component layer missing ${token}.`);
+const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
+assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css'),'Resonance domain CSS must be manifest-owned.');
+assert(!resonanceManifest.requiresCore.includes('ui.styles'),'Resonance must not inject static CSS through ui.styles.');
 for(const label of ['共振分析','曲线检查','组图分析','物理机制','峰间距','栅压分析'])assert(shared.includes(label),`Canonical view catalog missing ${label}.`);
 for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
   assert(adapter.split(/\r?\n/).length<45,`${name} adapter must remain host-only.`);

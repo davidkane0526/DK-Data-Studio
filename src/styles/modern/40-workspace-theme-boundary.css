@@ -86,11 +86,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace button:d
   box-shadow:none!important;
   opacity:.72;
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .pulse-analysis button:disabled,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .ter-analysis button:disabled{
-  -webkit-text-fill-color:var(--text-tertiary)!important;
-  opacity:.72;
-}
 html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui.plugin-window-host #statusBar.statusbar{
   background:color-mix(in srgb,var(--surface-primary) 96%,transparent)!important;
@@ -184,9 +179,6 @@ body.dkds-modern-ui .action-grid button,
 body.dkds-modern-ui .trend-layout-controls button,
 body.dkds-modern-ui .main-plot-tools button,
 body.dkds-modern-ui .dkds-analysis-workbench button{
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease!important;
-}
-body.dkds-modern-ui .data-center-body button{
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease!important;
 }
 body.dkds-modern-ui .system-core-tools-group>.toolbar-btn:hover:not(:disabled),

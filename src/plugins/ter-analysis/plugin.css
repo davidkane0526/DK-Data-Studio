@@ -1,0 +1,111 @@
+/* TER Analysis owns domain chart/grid layout; Core owns semantic workbench regions, controls and scientific surfaces. */
+#terMaxPage .ter-chart-grid{
+  --dkds-grid-columns:3;
+  display:grid!important;
+  grid-template-columns:repeat(var(--dkds-grid-columns),minmax(0,1fr))!important;
+  grid-auto-rows:auto!important;
+  align-items:start;
+  gap:14px;
+}
+#terMaxPage .ter-chart-grid > .heatmap-square-card,
+#terMaxPage .ter-chart-grid > .ter-resistance-card{
+  width:100%;
+  max-width:none;
+  align-self:start;
+}
+#terMaxPage .ter-resistance-card{
+  min-width:0;
+  position:relative;
+  z-index:4;
+}
+#terMaxPage .ter-resistance-card.ter-sticky-enabled{
+  position:sticky;
+  top:8px;
+  z-index:30;
+}
+#terMaxPage .ter-resistance-card .analysis-chart{
+  min-height:380px;
+  height:clamp(400px,42vw,590px);
+}
+#terMaxPage .ter-card-title-row,
+#terMaxPage .ter-resistance-card-header{
+  min-height:38px;
+  height:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:5px 8px 5px 10px;
+  flex-wrap:wrap;
+}
+#terMaxPage .ter-card-title-text{
+  min-width:0;
+  flex:1 1 150px;
+}
+#terMaxPage .ter-chart-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:5px;
+  flex:0 0 auto;
+}
+#terMaxPage .ter-chart-actions button,
+#terMaxPage .ter-resistance-card-header button{
+  min-width:0;
+  white-space:nowrap;
+}
+#terMaxPage .ter-resistance-hint{
+  margin:7px 10px 0;
+  line-height:1.45;
+}
+#terMaxPage .ter-resistance-selection{
+  margin:6px 10px 0;
+  min-height:20px;
+}
+#terMaxPage .ter-layout-controls{
+  align-items:center;
+}
+#terMaxPage .ter-layout-controls strong{
+  margin-right:2px;
+}
+#terMaxPage .ter-layout-controls label{
+  flex-direction:row;
+  align-items:center;
+  gap:6px;
+}
+#terMaxPage .ter-layout-controls select{
+  width:72px;
+  min-width:72px;
+}
+#terMaxPage .ter-layout-controls .ter-sticky-check{
+  padding:0 4px;
+}
+#terMaxPage .ter-layout-controls .ter-sticky-check input{
+  min-width:auto;
+  width:auto;
+  margin:0;
+}
+#terMaxPage .heatmap-square-card .ter-heatmap-square{
+  width:100%;
+}
+@media(max-width:1180px){
+  #terMaxPage .ter-resistance-card .analysis-chart{height:500px}
+}
+@media(max-width:850px){
+  #terMaxPage .ter-resistance-card .analysis-chart{height:450px}
+}
+@media(max-width:680px){
+  #terMaxPage .ter-resistance-card .analysis-chart{height:410px;min-height:340px}
+  #terMaxPage .ter-card-title-row,
+  #terMaxPage .ter-resistance-card-header{align-items:flex-start}
+}
+
+/* TER-owned page controls, heatmap geometry and report section spacing. */
+.analysis-control-card.ter-controls input{min-width:118px;width:135px;}
+#terMaxPage .heatmap-square-card{width:min(860px,calc(100vw - 70px));max-width:100%;align-self:center;}
+#terMaxPage .ter-heatmap-square{width:100%;height:auto!important;min-height:0!important;aspect-ratio:1 / 1;}
+#terMaxPage .heatmap-display-controls{align-items:end;}
+#terMaxPage .heatmap-display-controls strong{align-self:center;margin-right:4px;}
+#terMaxPage .heatmap-display-controls select,
+#terMaxPage .heatmap-display-controls input{min-width:105px;width:112px;}
+@media(max-width:950px){#terMaxPage .heatmap-square-card{width:min(760px,calc(100vw - 44px));}}

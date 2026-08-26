@@ -16,16 +16,16 @@ const sdkReadme=read('sdk/README.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
 
-assert.equal(pkg.version,'3.61.84');
+assert.equal(pkg.version,'3.61.85');
 assert.equal(contract.sdkVersion,'1.17.16');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 assert.equal(contract.minimumAppVersion,'3.61.39');
 
 const safeHost='[data-primary-scroll="safe"] .dkds-analysis-primary-host';
-assert(css.includes('.dkds-plugin-canvas-frame[data-primary-scroll="safe"] .dkds-plugin-canvas-center{overflow:hidden;min-height:0;align-items:stretch}'),'safe mode must keep the outer canvas geometry bounded instead of making it the scroll owner.');
-assert(css.includes(`${safeHost}{\n  height:100%!important;min-height:0!important;overflow:auto!important;flex:1 1 auto!important;`),'safe mode must make the Primary host the single bounded Core-owned scroll container.');
-assert(!css.includes(`${safeHost}{\n  height:auto!important;min-height:100%!important;overflow:visible!important`),'safe mode must never return to document-flow self-growth semantics.');
-assert(css.includes('[data-primary-scroll="auto"] .dkds-analysis-primary-host{height:auto!important;min-height:100%!important;overflow:visible!important;flex:0 0 auto!important}'),'auto mode must remain the explicit document-flow growth contract.');
+assert(/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow\s*:\s*hidden[^}]*min-height\s*:\s*0[^}]*align-items\s*:\s*stretch/i.test(css),'safe mode must keep the outer canvas geometry bounded instead of making it the scroll owner.');
+assert(/\[data-primary-scroll="safe"\] \.dkds-analysis-primary-host\s*\{[^}]*height\s*:\s*100%!important[^}]*min-height\s*:\s*0!important[^}]*overflow\s*:\s*auto!important[^}]*flex\s*:\s*1 1 auto!important/i.test(css),'safe mode must make the Primary host the single bounded Core-owned scroll container.');
+assert(!/\[data-primary-scroll="safe"\] \.dkds-analysis-primary-host\s*\{[^}]*height\s*:\s*auto!important[^}]*min-height\s*:\s*100%!important[^}]*overflow\s*:\s*visible!important/i.test(css),'safe mode must never return to document-flow self-growth semantics.');
+assert(/\[data-primary-scroll="auto"\] \.dkds-analysis-primary-host\s*\{[^}]*height\s*:\s*auto!important[^}]*min-height\s*:\s*100%!important[^}]*overflow\s*:\s*visible!important[^}]*flex\s*:\s*0 0 auto!important/i.test(css),'auto mode must remain the explicit document-flow growth contract.');
 
 for(const [name,text] of [['tool template',toolCss],['TOP template',topCss]]){
   assert(!/min-height\s*:\s*100%/i.test(text),`${name} must not teach percentage min-height chains inside safe workspaces.`);

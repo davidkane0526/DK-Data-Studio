@@ -1,0 +1,364 @@
+/* Pulse Analysis owns its domain layout. Core supplies semantic surfaces,
+   portable views, controls, tables and scientific plot presentation. */
+.pulse-analysis-body{
+  width:min(1840px,100%);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding-bottom:34px;
+}
+.pulse-page-header{padding-left:max(18px,calc((100vw - 1840px)/2 + 18px));padding-right:max(18px,calc((100vw - 1840px)/2 + 18px))}
+.pulse-card{
+  overflow:hidden;
+  min-width:0;
+}
+.pulse-config-card{
+  display:block!important;
+  padding:0!important;
+  margin:0!important;
+}
+.pulse-card-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  padding:13px 15px 12px;
+}
+.pulse-card-heading>div:first-child{min-width:0}
+.pulse-card-heading h3{
+  margin:0;
+  line-height:1.35;
+}
+.pulse-card-heading p{
+  margin:4px 0 0;
+  line-height:1.55;
+}
+.pulse-control-grid{
+  padding:12px 14px 11px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(145px,1fr));
+  gap:9px 11px;
+}
+.pulse-control-grid label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.pulse-control-grid input,
+.pulse-control-grid select{
+  min-width:0;
+  width:100%;
+  box-sizing:border-box;
+}
+.pulse-inline-range{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:5px;align-items:center}
+.pulse-inline-range>span{text-align:center}
+.pulse-inline-range input{min-width:0}
+.pulse-analyze-cell{display:flex;align-items:flex-end}
+.pulse-analyze-cell button{width:100%}
+.pulse-summary{
+  margin:0 14px 13px!important;
+  padding:0!important;
+  line-height:1.55;
+}
+.pulse-summary-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.pulse-summary-placeholder{
+  display:block;
+  width:100%;
+  padding:8px 10px;
+}
+.pulse-stat-chip{
+  min-width:128px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:7px 9px;
+}
+.pulse-plot-heading{align-items:center}
+.pulse-plot-actions{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.pulse-plot-actions button{
+  white-space:nowrap;
+}
+.pulse-plot-surface{
+  width:100%;
+  min-width:0;
+}
+.pulse-raw-card{min-height:600px}
+.pulse-raw-plot{
+  height:530px!important;
+  min-height:500px;
+  margin:0!important;
+  padding:0 4px 6px;
+}
+.pulse-results-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.pulse-result-card{
+  min-height:520px!important;
+  display:flex;
+  flex-direction:column;
+}
+.pulse-result-plot{
+  flex:1 1 auto;
+  height:455px;
+  min-height:430px;
+}
+.pulse-results-table-card{overflow:hidden}
+.pulse-table-heading{align-items:center}
+.pulse-table-heading p{max-width:950px}
+.pulse-table-actions{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  margin:0!important;
+}
+.pulse-table-wrap{
+  max-height:520px!important;
+  overflow:auto;
+}
+.pulse-result-table{
+  width:100%;
+}
+.pulse-result-table thead th{
+  position:sticky;
+  top:0;
+  z-index:3;
+}
+.pulse-result-table th,
+.pulse-result-table td{
+  padding:7px 9px!important;
+  white-space:nowrap;
+  text-align:right;
+}
+.pulse-result-table th:first-child,
+.pulse-result-table td:first-child{text-align:center}
+@media(max-width:1220px){
+  .pulse-control-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}
+  .pulse-card-heading{flex-wrap:wrap}
+    .pulse-plot-actions{flex:1 1 100%;justify-content:flex-start}
+}
+@media(max-width:980px){
+  .pulse-results-grid{grid-template-columns:1fr}
+  .pulse-result-card{min-height:500px!important}
+  .pulse-result-plot{height:440px}
+}
+@media(max-height:780px){
+  .pulse-raw-plot{height:440px!important;min-height:420px}
+  .pulse-raw-card{min-height:500px}
+}
+
+
+/* ============================================================
+   Pulse batch workspace
+   ============================================================ */
+.pulse-batch-workspace{
+  display:grid;
+  grid-template-columns:330px minmax(0,1fr);
+  gap:14px;
+  align-items:stretch;
+}
+.pulse-file-manager-card{
+  min-height:430px;
+  display:flex;
+  flex-direction:column;
+}
+.pulse-file-manager-heading{
+  align-items:center;
+}
+.pulse-file-manager-heading button{
+  flex:0 0 auto;
+}
+.pulse-file-toolbar{
+  display:flex;
+  gap:5px;
+  padding:8px 10px;
+}
+.pulse-file-toolbar button{
+  flex:1 1 0;
+}
+.pulse-file-list{
+  flex:1 1 auto;
+  min-height:260px;
+  max-height:460px;
+  overflow:auto;
+  padding:7px;
+}
+.pulse-file-empty,
+.pulse-current-empty{
+  min-height:150px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:20px;
+}
+.pulse-batch-file-item{
+  padding:8px;
+  margin-bottom:6px;
+  cursor:pointer;
+  transition:border-color .12s,background .12s,box-shadow .12s;
+}
+.pulse-batch-file-main{
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr) auto;
+  align-items:start;
+  gap:6px;
+}
+.pulse-file-check{
+  margin:2px 0 0;
+}
+.pulse-batch-file-text{
+  min-width:0;
+}
+.pulse-batch-file-label{
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.pulse-batch-file-name{
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  margin-top:2px;
+}
+.pulse-file-state{
+  padding:2px 5px;
+  white-space:nowrap;
+}
+.pulse-batch-file-meta{
+  margin:5px 0 0 24px;
+  line-height:1.4;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.pulse-file-summary{
+  padding:8px 10px;
+}
+.pulse-current-file-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;
+}
+.pulse-active-file-head{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(220px,330px);
+  align-items:end;
+  gap:14px;
+  padding:11px 14px 2px;
+}
+.pulse-active-path{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.pulse-active-meta{
+  margin-top:3px;
+}
+.pulse-label-edit{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.pulse-label-edit input{
+  width:100%;
+  box-sizing:border-box;
+}
+.pulse-summary-error{
+  width:100%;
+  padding:8px 10px;
+}
+.pulse-compare-toolbar-card{
+  overflow:visible;
+}
+.pulse-compare-toolbar{
+  min-height:58px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 220px auto;
+  align-items:center;
+  gap:16px;
+  padding:10px 14px;
+}
+.pulse-compare-toolbar>div:first-child{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.pulse-compare-toolbar label{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  white-space:nowrap;
+}
+.pulse-compare-toolbar select{
+  width:140px;
+}
+.pulse-compared-summary{
+  justify-self:end;
+  padding:5px 8px;
+  white-space:nowrap;
+}
+.pulse-table-label,
+.pulse-table-source{
+  max-width:190px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:left!important;
+}
+@media(max-width:1180px){
+  .pulse-batch-workspace{
+    grid-template-columns:280px minmax(0,1fr);
+  }
+  .pulse-active-file-head{
+    grid-template-columns:1fr;
+  }
+  .pulse-compare-toolbar{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .pulse-compare-toolbar label{
+    justify-content:flex-start;
+  }
+  .pulse-compared-summary{
+    justify-self:start;
+  }
+}
+@media(max-width:900px){
+  .pulse-batch-workspace{
+    grid-template-columns:1fr;
+  }
+  .pulse-file-manager-card{
+    min-height:0;
+  }
+  .pulse-file-list{
+    max-height:260px;
+  }
+}
+
+
+
+/* Domain header composition; Theme only paints the semantic surface. */
+.pulse-card-heading{min-height:0!important;height:auto!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:start!important;column-gap:12px!important;row-gap:3px!important;padding:10px 12px!important;}
+.pulse-card-heading>.pulse-plot-actions,.pulse-card-heading>.pulse-table-actions,.pulse-card-heading>.pulse-current-file-actions{min-width:max-content;align-self:start;}

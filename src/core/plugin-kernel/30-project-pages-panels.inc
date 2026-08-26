@@ -108,7 +108,14 @@
     el.dataset.pluginId = pluginId;
     el.dataset.pluginStyle = id;
     el.textContent = String(cssText || '');
-    document.head.appendChild(el);
+    // Plugin styles own domain layout/content, while Core modern/theme styles own
+    // semantic controls, Material recipes and shell chrome. Keep every built-in
+    // and packaged plugin in the same cascade slot: after base Core structure
+    // but before ui-modern.css. This prevents plugin-local CSS from becoming a
+    // late host/theme override simply because the plugin activated later.
+    const modern = [...document.querySelectorAll('link[rel="stylesheet"]')].find(node => /(?:^|\/)ui-modern\.css(?:[?#].*)?$/.test(String(node.getAttribute('href')||'')));
+    if (modern?.parentNode) modern.parentNode.insertBefore(el, modern);
+    else document.head.appendChild(el);
     return addCleanup(pluginId, () => el.remove());
   }
 

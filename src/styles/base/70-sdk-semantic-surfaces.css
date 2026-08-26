@@ -194,7 +194,7 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
   color:var(--text-primary,#eef3fa)!important;
 }
 
-/* v3.61.36 · single-backend scientific chart surface. D3 owns drawing;
+/* Single-backend scientific chart surface. D3 owns drawing;
    Core owns presentation, interaction state and application chrome. */
 .dkds-scientific-chart-host{position:relative;min-width:0;min-height:0}
 .dkds-scientific-curve-surface:focus,.dkds-scientific-curve-surface:focus-visible{outline:none}
@@ -242,11 +242,11 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
   position:relative!important;top:auto!important;z-index:auto!important
 }
 
-/* v3.61.55: service panel fallback starts below the complete shell chrome. */
+/* Service-panel fallback starts below the complete shell chrome. */
 .lan-web-panel{top:104px}
 
 /* ============================================================
-   v3.61.59 · Visual Contract Finalization
+   Visual Contract Finalization
    Core owns visual appearance. Plugins may keep domain/layout identity classes,
    but first-party visual styling is expressed only through these semantic roles.
    ============================================================ */
@@ -349,7 +349,7 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
 .plugin-status-item[data-state="busy"] .plugin-status-icon{color:var(--accent-primary)}
 .plugin-status-item[data-state="error"] .plugin-status-icon{color:var(--danger)}
 
-/* v3.61.73 · inspector content is typography inside one host surface.
+/* Inspector content is typography inside one host surface.
    Nested information blocks must not become darker/lighter mini-cards. */
 .dkds-inspector-section{
   padding:0 0 11px!important;
@@ -374,3 +374,7 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
 }
 .dkds-legend-item:hover{background:transparent!important;box-shadow:none!important;color:var(--text-primary,var(--dkui-text))!important}
 .dkds-legend-item:is(.selected,.is-selected,.is-solo,[aria-pressed="true"]){background:transparent!important;box-shadow:none!important;color:var(--text-primary,var(--dkui-text))!important;font-weight:700!important}
+
+/* Shared compact summary rows used by scientific workbenches. */
+.dkds-summary-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;}
+.dkds-summary-chip{padding:5px 8px;}

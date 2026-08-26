@@ -34,7 +34,6 @@
     "ui.top-workspace",
     "ui.shortcuts",
     "ui.pages",
-    "ui.styles",
     "ui.portable",
     "ui.scientific-plot"
   ],
@@ -122,5 +121,8 @@
     "transport-scalar-field",
     "ter-analysis"
   ],
-  "pluginType": "workbench"
+  "pluginType": "workbench",
+  "styles": [
+    "plugin.css"
+  ]
 }

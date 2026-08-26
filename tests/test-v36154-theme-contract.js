@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.84','theme contract test tracks the current source version for the Theme Contract 3.1 compatibility release');
+assert.equal(json('package.json').version,'3.61.85','theme contract test tracks the current source version for the Theme Contract 3.1 compatibility release');
 const theme=read('src/core/theme/runtime.js');
 const materialRenderer=read('src/core/theme/material-renderer.js');
 const css=read('src/ui-modern.css');
@@ -31,7 +31,8 @@ assert(css.includes('background:transparent!important;box-shadow:none!important'
 assert(css.includes('background:var(--dkui-surface-sidebar,var(--surface-sidebar))!important')&&css.includes('.left-panel>section'),'parameter sidebars must be separated by surface contrast instead of bright rules.');
 assert(css.includes('background:var(--dkui-control-bg,var(--surface-primary))!important')&&css.includes('border-color:var(--dkui-control-border,var(--control-border))!important'),'legacy inputs must be normalized through semantic dark/light control tokens.');
 assert(css.includes('.lan-web-qr-image{background:#fff;border-color:#fff}')&&css.includes('.lan-web-qr-frame{background:var(--dkui-surface-soft)!important'),'only actual QR pixels may retain white paper while the LAN service chrome remains themeable.');
-assert(css.includes('.pulse-card-heading{')&&css.includes('grid-template-columns:minmax(0,1fr) auto!important')&&css.includes('.dkds-surface-heading-stack'),'portable/chart headers must reserve independent text and control columns so title/description cannot overlap actions.');
+const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
+assert(pulseCss.includes('.pulse-card-heading{')&&pulseCss.includes('grid-template-columns:minmax(0,1fr) auto!important')&&css.includes('.dkds-surface-heading-stack'),'domain headers own geometry while Core keeps the shared surface-heading text/control contract.');
 assert(ui.includes("header.classList.add('dkds-surface-header')")&&ui.includes("headingStack.classList.add('dkds-surface-heading-stack')"),'PortableView must stamp Core-owned semantic header classes.');
 assert(ui.includes("this.handle.classList.add('is-dragging')")&&ui.includes("this.handle.classList.remove('is-dragging')"),'splitters must expose interaction state to the semantic divider theme.');
 assert(kernel.includes('theme: Object.freeze({')&&kernel.includes('window.DKDSTheme?.registerProfile?.'),'plugins must be able to register theme profiles through Core rather than painting host DOM directly.');

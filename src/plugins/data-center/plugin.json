@@ -35,7 +35,6 @@
     "ui.activities",
     "ui.top-workspace",
     "ui.pages",
-    "ui.styles",
     "ui.portable",
     "ui.scientific-plot"
   ],
@@ -118,5 +117,8 @@
     "plugin.js"
   ],
   "systemCritical": true,
-  "pluginType": "foundation"
+  "pluginType": "foundation",
+  "styles": [
+    "plugin.css"
+  ]
 }

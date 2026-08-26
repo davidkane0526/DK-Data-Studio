@@ -5,7 +5,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.84','Visual Contract Finalization must ship as v3.61.84.');
+assert(pkg.version==='3.61.85','Visual Contract Finalization must ship as v3.61.85.');
 
 const coreCss=read('src/style.css');
 const modernCss=read('src/ui-modern.css');
@@ -54,18 +54,17 @@ const pluginCssFiles=[];
 for(const file of pluginCssFiles)scanCss(fs.readFileSync(file,'utf8'),path.relative(root,file));
 scanCss(read('examples/transfer-vth-lab/plugin.css'),'examples/transfer-vth-lab/plugin.css');
 
-function extractTemplate(source,startNeedle,label){
-  const start=source.indexOf(startNeedle); assert(start>=0,`${label}: style block missing`);
-  const tick=source.indexOf('`',start); assert(tick>=0,`${label}: opening template literal missing`);
-  const end=source.indexOf('`',tick+1); assert(end>tick,`${label}: closing template literal missing`);
-  return source.slice(tick+1,end);
+for(const [pluginDir,jsFile] of [
+  ['connectivity-center','plugin.js'],
+  ['data-center','feature-runtime.js'],
+  ['ter-analysis','feature-runtime.js'],
+  ['resonance-workbench','view-components.js']
+]){
+  const manifest=JSON.parse(read(`src/plugins/${pluginDir}/plugin.json`));
+  const source=read(`src/plugins/${pluginDir}/${jsFile}`);
+  assert(Array.isArray(manifest.styles)&&manifest.styles.length>0,`${pluginDir} static domain CSS must be manifest-owned.`);
+  assert(!source.includes('ctx.ui.styles.add('),`${pluginDir} must not inject static CSS at runtime.`);
 }
-for(const [file,needle,label] of [
-  ['src/plugins/connectivity-center/plugin.js',"ctx.ui.styles.add('smb-ai-services'",'Connectivity injected CSS'],
-  ['src/plugins/data-center/feature-runtime.js',"ctx.ui.styles.add('data-center'",'Data Center injected CSS'],
-  ['src/plugins/ter-analysis/feature-runtime.js',"ctx.ui.styles.add('linked-resistance-voltage'",'TER injected CSS'],
-  ['src/plugins/resonance-workbench/view-components.js','const TOP_STYLES=','Resonance TOP_STYLES']
-]) scanCss(extractTemplate(read(file),needle,label),label);
 
 const pluginRoot=path.join(root,'src','plugins');
 const offenders=[];

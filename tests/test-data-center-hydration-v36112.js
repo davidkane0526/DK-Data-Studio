@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 const pkg=json('package.json');
-assert(pkg.version==='3.61.84','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.85','Application version must be 3.61.18.');
 
 const runtime=read('src/plugin-window/runtime.js');
 assert(runtime.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}'),'An empty live snapshot must be distinguishable from no live snapshot.');
@@ -35,9 +35,10 @@ assert(mixed.list({includeTransient:true}).length===2,'Live canonical Artifacts 
 
 const views=read('src/plugins/data-center/shared-views.js');
 const feature=read('src/plugins/data-center/feature-runtime.js');
+const dcStyle=read('src/plugins/data-center/plugin.css');
 assert(views.includes('class="dc-section-copy"')&&views.includes('class="dc-preview-actions dkds-toolbar"'),'Data Center must distinguish copy blocks from action blocks structurally.');
 assert(!feature.includes('.dc-section-head>div,.dc-tool-title>div'),'Generic direct-child styling must not force Data Center action groups into a column.');
-assert(feature.includes('.dc-preview-actions{display:flex!important;flex-direction:row!important'),'Preview tabs and Edit must remain one horizontal action group.');
+assert(dcStyle.includes('.dc-preview-actions{display:flex!important;flex-direction:row!important'),'Preview tabs and Edit must remain one horizontal action group in plugin-owned CSS.');
 
 const schema=json('sdk/plugin-manifest.schema.json');
 assert(schema.properties.window.properties.artifactHydration.enum.includes('live'),'SDK machine manifest must expose window.artifactHydration.');

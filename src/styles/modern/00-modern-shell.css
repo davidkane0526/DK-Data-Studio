@@ -253,9 +253,6 @@ body.dkds-modern-ui .floating-panel{box-shadow:none}
 body.dkds-modern-ui .plugin-manager-card,
 body.dkds-modern-ui .trend-card,
 body.dkds-modern-ui .analysis-chart-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
-body.dkds-modern-ui .reswin-group-card,
-body.dkds-modern-ui .pulse-card,
-body.dkds-modern-ui .dc-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
 body.dkds-modern-ui .plugin-manager-card:hover{
   border-color:#ced8e5;
   box-shadow:var(--dkui-shadow-2);
@@ -293,12 +290,6 @@ body.dkds-modern-ui .command-menu button{
   box-shadow:var(--dkui-shadow-1);
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
 }
-body.dkds-modern-ui .data-center-body button,
-body.dkds-modern-ui #resonanceDedicatedPage button,
-body.dkds-modern-ui .ter-analysis button,
-body.dkds-modern-ui .pulse-analysis button{
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
-}
 body.dkds-modern-ui .panel-header-actions button:hover:not(:disabled),
 body.dkds-modern-ui .scan-global-buttons button:hover:not(:disabled),
 body.dkds-modern-ui .preset-row button:hover:not(:disabled),
@@ -315,12 +306,6 @@ body.dkds-modern-ui .command-menu button:hover:not(:disabled){
   border-color:var(--dkui-border-strong);
   color:#27374f;
   box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
-  transform:translateY(-1px);
-}
-body.dkds-modern-ui .data-center-body button:hover:not(:disabled),
-body.dkds-modern-ui #resonanceDedicatedPage button:hover:not(:disabled),
-body.dkds-modern-ui .ter-analysis button:hover:not(:disabled),
-body.dkds-modern-ui .pulse-analysis button:hover:not(:disabled){
   transform:translateY(-1px);
 }
 body.dkds-modern-ui .trend-layout-controls button.active,
@@ -348,16 +333,6 @@ body.dkds-modern-ui .dkds-settings-field select{
   transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
 }
 
-body.dkds-modern-ui .data-center-body input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui .data-center-body select,
-body.dkds-modern-ui #resonanceDedicatedPage input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui #resonanceDedicatedPage select,
-body.dkds-modern-ui .ter-analysis input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui .ter-analysis select,
-body.dkds-modern-ui .pulse-analysis input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui .pulse-analysis select{
-  transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
-}
 body.dkds-modern-ui .plugin-manager-search-wrap:focus-within,
 body.dkds-modern-ui .plugin-manager-toolbar-card select:focus-visible,
 body.dkds-modern-ui .dataset-vg-edit input:focus-visible,

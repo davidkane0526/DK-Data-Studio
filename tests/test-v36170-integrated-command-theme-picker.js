@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.84','integrated command chrome release must be v3.61.84');
+assert.equal(json('package.json').version,'3.61.85','integrated command chrome release must be v3.61.85');
 const actionCore=read('src/core/ui-infrastructure/10-series-layout-actions.inc');
 const portable=read('src/core/ui-infrastructure/20-portable-layout-views.inc');
 const curves=read('src/core/ui-infrastructure/40-scientific-curves.inc');

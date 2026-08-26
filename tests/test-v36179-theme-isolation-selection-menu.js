@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.84');
+assert.equal(json('package.json').version,'3.61.85');
 
 // builtin.default remains clear because composition is gated by recipe, not profile id.
 const runtime=read('src/core/theme/runtime.js');

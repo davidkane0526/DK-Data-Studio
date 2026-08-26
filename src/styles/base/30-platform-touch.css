@@ -182,11 +182,6 @@
 .dkds-size-compact .import-mapping-grid{
   grid-template-columns:1fr;
 }
-.dkds-size-compact .pulse-batch-workspace,
-.dkds-size-compact .pulse-results-grid{
-  grid-template-columns:1fr;
-}
-
 /* Landscape phones/tablets prioritize the graph and keep controls as a narrower rail. */
 .dkds-size-compact.dkds-orientation-landscape .workspace{
   grid-template-columns:minmax(220px,30vw) minmax(0,1fr);
@@ -422,7 +417,7 @@
 .react-native-client.dkds-orientation-landscape .analysis-subtitle{display:none}
 
 /* ============================================================
-   v3.17 core plugin manager
+   Core Plugin Manager
    ============================================================ */
 .plugin-manager-header-actions{
   display:flex;

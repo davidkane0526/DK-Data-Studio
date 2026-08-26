@@ -202,7 +202,7 @@
           return result;
         }catch(err){
           result=null;reactive?.touch?.('ter.result',{reason:'calculate-failed'});
-          if($('#terSummary'))$('#terSummary').innerHTML=`<span class="ter-summary-chip dkds-chip">计算失败：${String(err.message||err)}</span>`;
+          if($('#terSummary'))$('#terSummary').innerHTML=`<span class="dkds-summary-chip dkds-chip">计算失败：${String(err.message||err)}</span>`;
           setStatus(`TER_max 计算失败：${err.message||err}`);
           return null;
         }
@@ -216,7 +216,7 @@
           `Vds：${r.used.vmin} ~ ${r.used.vmax} V`,`step=${r.used.vstep} V`,
           `tolerance=${r.used.tolerance} V`,`current floor=${r.used.currentFloor} A`,
           `算法：${r.algorithm?.algorithmId||terAlgorithmRef.id}@${r.algorithm?.algorithmVersion||terAlgorithmRef.version}`
-        ].map(t=>`<span class="ter-summary-chip dkds-chip">${t}</span>`).join('');
+        ].map(t=>`<span class="dkds-summary-chip dkds-chip">${t}</span>`).join('');
         const maxVg=r.terMaxByVg||r.terMax||[],maxVd=r.terMaxByVd||[];
         if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML=`
           <thead><tr><th>Vg (V)</th><th>TER_Max–Vg (%)</th><th>Vd@max (V)</th><th>I_up (A)</th><th>I_down (A)</th><th>R_up (Ω)</th><th>R_down (Ω)</th></tr></thead>
@@ -231,7 +231,7 @@
         syncInputs();syncDisplay();
         if(result)renderResult();
         else{
-          if($('#terSummary'))$('#terSummary').innerHTML='<span class="ter-summary-chip dkds-chip">尚未计算 TER_max</span>';
+          if($('#terSummary'))$('#terSummary').innerHTML='<span class="dkds-summary-chip dkds-chip">尚未计算 TER_max</span>';
           if($('#terMaxVgTable'))$('#terMaxVgTable').innerHTML='';
           if($('#terMaxVdTable'))$('#terMaxVdTable').innerHTML='';
         }

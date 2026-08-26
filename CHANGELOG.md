@@ -1,3 +1,12 @@
+# v3.61.85 — CSS Ownership Reduction
+
+- Move first-party static domain layout for Connectivity Center, Data Center, Pulse Analysis, Resonance Workbench and TER Analysis into manifest-owned `plugin.css` files; remove runtime static-style injection and first-party style privileges.
+- Give built-in and packaged plugin styles one deterministic cascade slot between base Core structure and modern/Theme chrome, so plugin activation order cannot become a theme override mechanism.
+- Remove TER/Pulse/Data Center/Resonance selectors from Core authored CSS. AnalysisWorkbench, mobile summary observation, ScientificPlot legend collision handling and portable-view layout now consume semantic Core markers instead of plugin identities.
+- Remove Resonance `TOP_STYLES` and migrate remaining Resonance dock/PRIME/gate geometry into plugin-owned layout while keeping Material, colors, borders and shared control appearance Core-owned.
+- Correct regression tests that protected historical selector placement or exact CSS punctuation rather than the semantic contract. Add a CSS-ownership gate preventing domain selectors and runtime static CSS from returning to Core.
+- Reduce Core authored `!important` debt from 1597 to 1492, and modern-layer debt from 663 to 651, with both new values enforced as non-regression ceilings.
+
 ## v3.61.84 — Repository consolidation and ownership cleanup
 
 - Reorganize Electron host files under `desktop/`, all executable regression tests under `tests/`, Theme runtime under `src/core/theme/`, and generated app/Core/CSS bundles under authored composition directories. Root host shims and test scripts in `scripts/` are removed.
