@@ -42,12 +42,14 @@ const coreCss=authored.filter(p=>p.includes(`${path.sep}src${path.sep}styles${pa
 const pluginIdentity=/(?:\.ter-|\.pulse-|\.dc-|\.respar-|\.reswin-|\.resonance-|#ter\w*|#pulse\w*|#resonance\w*)/i;
 for(const file of coreCss){const css=fs.readFileSync(file,'utf8');if(pluginIdentity.test(css))violations.push(`${path.relative(root,file)}: Core CSS contains plugin identity selector.`);}
 const entry=fs.readFileSync(path.join(root,'src','core.css'),'utf8');
-const visibilityPath=path.join(root,'src','styles','state','visibility.css');
 const foundationPath=path.join(root,'src','styles','foundation','foundation.css');
-if(!fs.existsSync(visibilityPath))violations.push('src/styles/state/visibility.css: global visibility-state owner is missing.');
-else if(!/\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(fs.readFileSync(visibilityPath,'utf8')))violations.push('src/styles/state/visibility.css: .hidden must own display:none in the highest cascade state layer.');
-if(fs.existsSync(foundationPath)&&/\.hidden\s*\{[^}]*display\s*:\s*none/i.test(fs.readFileSync(foundationPath,'utf8')))violations.push('src/styles/foundation/foundation.css: .hidden visibility state must not live in the low-priority foundation layer.');
-if(!entry.includes('@import url("./styles/state/visibility.css") layer(dkds.state);'))violations.push('src/core.css: state visibility stylesheet must be imported through dkds.state.');
-for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window','state'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
+if(!fs.existsSync(foundationPath)||!/\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(fs.readFileSync(foundationPath,'utf8')))violations.push('src/styles/foundation/foundation.css: generic .hidden fallback must own display:none.');
+if(entry.includes('dkds.state')||entry.includes('styles/state/visibility.css'))violations.push('src/core.css: global top-priority visibility state is forbidden; components with structural display must own targeted hidden rules.');
+for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
+const superTopPath=path.join(root,'src','styles','structure','super-top-contract.css');
+if(fs.existsSync(superTopPath)){
+  const superTop=fs.readFileSync(superTopPath,'utf8');
+  if(/\.dkds-analysis-(?:frame|left|main|right|bottom)\s*\{[^}]*grid-(?:column|row|template)/s.test(superTop))violations.push('src/styles/structure/super-top-contract.css: SUPER/TOP chrome must not own AnalysisWorkbench grid geometry.');
+}
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

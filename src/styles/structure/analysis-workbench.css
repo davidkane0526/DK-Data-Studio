@@ -77,6 +77,13 @@
 .dkds-analysis-parking{display:none;}
 .dkds-analysis-overlay{grid-column:1/-1;grid-row:1/-1;position:relative;inset:auto;pointer-events:none;z-index:120;min-width:0;min-height:0;}
 .dkds-analysis-overlay>.dkds-portable-view,.dkds-analysis-overlay>.dkds-analysis-prime-panel{pointer-events:auto;}
+
+/* PRIME surface structure belongs to AnalysisWorkbench, not SUPER/TOP chrome. */
+.dkds-analysis-prime-panel{min-width:0;background:var(--panel,#fff);border:0;border-radius:9px;overflow:hidden;display:flex;flex-direction:column;}
+.dkds-analysis-prime-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-bottom:0;background:var(--surface-secondary,var(--panel,#fff));min-height:34px;box-sizing:border-box;}
+.dkds-analysis-prime-body{min-width:0;min-height:0;overflow:auto;padding:8px;}
+.dkds-analysis-prime-chrome{display:flex;align-items:center;gap:2px;}
+.dkds-prime-hidden{display:none;}
 .dkds-analysis-workbench .dkds-portable-view.is-docked{position:relative;inset:auto;width:100%;max-width:none;max-height:none;margin:0;box-shadow:none;flex:0 0 auto;}
 .dkds-analysis-right>.dkds-portable-view,.dkds-analysis-right>.dkds-analysis-prime-panel{width:100%;min-width:0;}
 .dkds-analysis-bottom>.dkds-portable-view,.dkds-analysis-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%);flex:1 1 520px;max-width:none;}

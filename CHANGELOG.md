@@ -1,3 +1,12 @@
+# v3.61.93 — Workbench Hydration / Visual Contract Recovery
+
+- Fixed the blank PRIMARY content regression where Data Center could restore 105 data objects and Resonance could restore VG groups while their main table/plot region was effectively invisible. The canonical AnalysisWorkbench uses five grid columns (left / resizer / main / resizer / right), but `super-top-contract.css` still contained an obsolete three-column compatibility block that reassigned `.dkds-analysis-main` to column 2, collapsing the real main canvas into the 7 px left-resizer column.
+- Removed the duplicate AnalysisWorkbench geometry, typography and control ownership from SUPER/TOP chrome. `analysis-workbench.css` and `plugin-workspace.css` are again the single owners of Workbench layout; reusable PRIME/sticky rules were moved into their canonical Workbench component styles instead of being deleted.
+- Replaced the v3.61.92 global top-priority `dkds.state` visibility layer with the original foundation `.hidden` fallback plus targeted structural hidden rules. The project-save backdrop and Import Workbench helper note now explicitly hide at the same structural priority as their active `display:grid/flex` declarations, avoiding both the startup modal lock and global visibility side effects.
+- Added a Workbench hydration/visual regression contract that forbids SUPER/TOP from re-owning AnalysisWorkbench grid geometry and verifies Data Center/Resonance both compose their PRIMARY main nodes through PluginWorkspace. Style validation now rejects a global `dkds.state` layer and legacy AnalysisWorkbench geometry in SUPER/TOP CSS.
+- Browser computed-style validation with Chromium confirms a 1200 px Workbench now resolves to 280 px left rail + 7 px resizer + 897 px PRIMARY/main content, instead of the previous 7 px main region; the project-save backdrop and conditional Import helper remain hidden when inactive.
+- Validation: `npm test` 163/163 PASS; `npm run check` 171/171 PASS; Chromium Workbench/Data Center computed-style smoke PASS; authored CSS remains at 0 `!important`.
+
 # v3.61.92 — Renderer Interactivity / Visibility-State Fix
 
 - Fixed the startup-wide click lock where the project-save backdrop was visible before the save workflow had opened it.

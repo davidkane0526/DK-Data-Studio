@@ -181,3 +181,6 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-plugin-canvas-bottom-resizer::before{top:-3px;height:7px;background:transparent;}
 .dkds-plugin-canvas-bottom-resizer:is(:hover,:focus-visible,.is-dragging)::before{
   top:-1px;height:3px;background:var(--divider-active,var(--dkui-divider-hover));}
+/* Sticky is a portable-view placement mode, independent of SUPER/TOP host chrome. */
+.dkds-portable-view.is-sticky{position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;align-self:start;}
+.dkds-managed-grid>.dkds-portable-view.is-sticky{position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;}

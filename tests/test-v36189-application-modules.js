@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {MAX_MODULE_BYTES,buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
 
-assert.equal(json('package.json').version,'3.61.92');
+assert.equal(json('package.json').version,'3.61.93');
 const manifest=json('src/app/composition.json');
 assert.deepEqual(manifest.modules,[],'Application shell must not retain ordered .inc implementation fragments.');
 assert.equal(manifest.entryModule,'app/runtime','Application shell must have one explicit runtime entry.');

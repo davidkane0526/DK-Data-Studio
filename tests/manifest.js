@@ -649,6 +649,10 @@ module.exports = {
     {
       "file": "tests/test-v36192-renderer-interactivity-gate.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36193-workbench-hydration-visual-contract.js",
+      "args": []
     }
   ],
   "check": [
@@ -1332,6 +1336,10 @@ module.exports = {
 ,
     {
       "file": "tests/test-v36192-renderer-interactivity-gate.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36193-workbench-hydration-visual-contract.js",
       "args": []
     }
   ],

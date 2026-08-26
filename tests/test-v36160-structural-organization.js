@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 const list=(rel,suffix='')=>fs.readdirSync(path.join(root,rel)).filter(name=>!suffix||name.endsWith(suffix)).sort();
 const pkg=json('package.json');
 
-assert.equal(pkg.version,'3.61.92','Structural organization release must be v3.61.92.');
+assert.equal(pkg.version,'3.61.93','Structural organization release must be v3.61.93.');
 assert.equal(pkg.main,'desktop/main.js','Electron entry must live under desktop/.');
 assert((pkg.build?.files||[]).includes('desktop/**/*'),'Electron packaging must include the desktop host tree.');
 for(const old of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
@@ -42,7 +42,7 @@ assert.equal(buildCompositionSource('src/core/plugins/kernel').source,read('src/
 assert.equal(buildCompositionSource('src/app').source,read('src/generated/runtime/app.js'),'Generated App runtime must exactly match the declared composition.');
 
 const coreCss=read('src/core.css');
-assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.state;'),'Core CSS must declare one explicit cascade order.');
+assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window;'),'Core CSS must declare one explicit cascade order.');
 for(const layer of ['foundation','structure','presentation','theme','platform']){
   assert(coreCss.includes(`styles/${layer}/`),`Core CSS entry must import ${layer} modules.`);
 }
