@@ -5,6 +5,7 @@ const assert=require('assert');
 
 const root=path.resolve(__dirname,'..');
 const app=fs.readFileSync(path.join(root,'src','generated','runtime','app.js'),'utf8');
+const importWorkbench=fs.readFileSync(path.join(root,'src','app','modules','import-workbench.js'),'utf8');
 
 assert(app.includes('function formatImportNumber(value,digits=6){'),
   'Import workbench must own a domain-neutral numeric formatter.');
@@ -13,29 +14,29 @@ assert(!app.includes('gateFmt('),
 assert(app.includes('Number.isFinite(v)?`<td>${formatImportNumber(v,6)}</td>`'),
   'Import preview table must render through the import formatter.');
 
-const stageStart=app.indexOf('async function stageImportMetas(metas=[]){');
-const stageEnd=app.indexOf('\n  async function addImportFiles(){',stageStart);
+const stageStart=importWorkbench.indexOf('async function stageImportMetas(metas=[]){');
+const stageEnd=importWorkbench.indexOf('async function addImportFiles(){',stageStart);
 assert(stageStart>=0&&stageEnd>stageStart,'stageImportMetas source not found.');
-const stage=app.slice(stageStart,stageEnd);
+const stage=importWorkbench.slice(stageStart,stageEnd);
 const firstRender=stage.indexOf('renderImportWorkbench();');
-const readLoop=stage.indexOf('for(const meta of metas){',stage.indexOf('if(!importDraft.activePath)'));
+const readLoop=stage.indexOf('for(const meta of metas){',stage.indexOf('if(!state.importDraft.activePath)'));
 assert(firstRender>=0&&readLoop>firstRender,
   'Selected-file count must render before sequential file parsing starts, including auto-classified mobile/provider imports.');
 
-const renderStart=app.indexOf('function renderImportWorkbench(){');
-const renderEnd=app.indexOf('\n  async function updateImportSetting',renderStart);
+const renderStart=importWorkbench.indexOf('function renderImportWorkbench(){');
+const renderEnd=importWorkbench.indexOf('async function updateImportSetting',renderStart);
 assert(renderStart>=0&&renderEnd>renderStart,'renderImportWorkbench source not found.');
-const render=app.slice(renderStart,renderEnd);
+const render=importWorkbench.slice(renderStart,renderEnd);
 assert(render.indexOf('renderImportGlobalSummary();')<render.indexOf('renderImportEditor();'),
   'Selection summary must update before preview/editor rendering.');
 
-const summaryStart=app.indexOf('function renderImportGlobalSummary(){');
-const summaryEnd=app.indexOf('\n  function renderImportWorkbench()',summaryStart);
+const summaryStart=importWorkbench.indexOf('function renderImportGlobalSummary(){');
+const summaryEnd=importWorkbench.indexOf('function renderImportWorkbench()',summaryStart);
 assert(summaryStart>=0&&summaryEnd>summaryStart,'renderImportGlobalSummary source not found.');
-const summary=app.slice(summaryStart,summaryEnd);
-assert(summary.includes('importDraft.files.filter(f=>f.checked)'),
+const summary=importWorkbench.slice(summaryStart,summaryEnd);
+assert(summary.includes('state.importDraft.files.filter(f=>f.checked)'),
   'Import summary must derive selected count from the same draft used by the file list.');
-assert(summary.includes('`${checked.length}/${importDraft.files.length} 个文件已勾选'),
+assert(summary.includes('`${checked.length}/${state.importDraft.files.length} 个文件已勾选'),
   'Import summary must display selected/total file counts.');
 assert(summary.includes("$('#importCommitBtn').disabled=!checked.length"),
   'Import button enablement must track selected files.');

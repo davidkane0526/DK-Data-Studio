@@ -5,12 +5,14 @@ const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const app=read('src/generated/runtime/app.js');
+const projectPersistence=read('src/app/modules/project-persistence.js');
+const pluginHost=read('src/app/modules/dedicated-plugin-windows.js');
 const format=read('src/core/project/format.js');
 
-const makeStart=app.indexOf('function makeProject(){');
-const makeEnd=app.indexOf('\n  let projectSaveChoicePromise',makeStart);
+const makeStart=projectPersistence.indexOf('function makeProject(){');
+const makeEnd=projectPersistence.indexOf('let projectSaveChoicePromise',makeStart);
 assert(makeStart>=0&&makeEnd>makeStart,'makeProject source not found.');
-const make=app.slice(makeStart,makeEnd);
+const make=projectPersistence.slice(makeStart,makeEnd);
 for(const token of [
   'scanVisibility:','peaks:','peakCategories:','algorithms:','physicsShowLabels:',
   'spacingSettings:','gateAnalysisSettings:','transformPreviewByDataset:',
@@ -20,10 +22,10 @@ assert(make.includes("format:'dk-data-studio-project'")&&make.includes('schemaVe
 assert(make.includes('dataModel:')&&make.includes('plugins:')&&make.includes('host:{'),'Canonical project must persist generic data model + plugin + host namespaces.');
 assert(make.includes('panelLayout:{'),'Generic panel layout must live under the host namespace.');
 
-const configStart=app.indexOf('window.DKDSPlugins.configure({');
-const configEnd=app.indexOf('\n    });',configStart);
+const configStart=pluginHost.indexOf('window.DKDSPlugins.configure({');
+const configEnd=pluginHost.indexOf('\n  });',configStart);
 assert(configStart>=0&&configEnd>configStart,'plugin host configure source not found.');
-const config=app.slice(configStart,configEnd);
+const config=pluginHost.slice(configStart,configEnd);
 for(const token of ['resonanceHostApi','terHostApi','pulseHostApi','panels:{','getState:()=>state'])assert(!config.includes(token),`Host configure must not expose historical domain surface ${token}`);
 for(const token of ['function resonanceHostApi','function terHostApi','function pulseHostApi'])assert(!app.includes(token),`Dead host domain adapter must be removed: ${token}`);
 

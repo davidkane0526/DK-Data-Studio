@@ -1,3 +1,18 @@
+'use strict';
+const {$, state}=require('./context');
+const {availableImportProviders, chooseImportProvider, diffArtifactRows, escapeHtml, flexibleImportProvider, importActiveItem, importProvider, importScope, providerForImportItem, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
+const captureActiveProjectTab=(...args)=>require('./project-tabs-history').captureActiveProjectTab(...args);
+const pluginUiContext=(...args)=>require('./data-artifact-host').pluginUiContext(...args);
+const syncDatasetArtifacts=(...args)=>require('./data-artifact-host').syncDatasetArtifacts(...args);
+const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
+const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
+const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
+const makeProject=(...args)=>require('./project-persistence').makeProject(...args);
+const openProjectBase64=(...args)=>require('./project-persistence').openProjectBase64(...args);
+const openProjectPayload=(...args)=>require('./project-persistence').openProjectPayload(...args);
+const capabilitySnapshotForWindows=(...args)=>require('./dedicated-plugin-windows').capabilitySnapshotForWindows(...args);
+const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows').publishCapabilitySnapshot(...args);
+
   function renderDatasetList(){
     window.DKDSPlugins?.events?.emit?.('sidebar:data-render',{context:pluginUiContext()});
   }
@@ -88,7 +103,7 @@
         item.settings.yCol=Math.min(Math.max(0,Number(item.settings.yCol)||0),max);
         item.settings.pairStart=Math.min(Math.max(0,Number(item.settings.pairStart)||0),max);
         item.settings.yCols=(item.settings.yCols||[]).filter(c=>c>=0&&c<=max&&c!==item.settings.xCol);
-        if(importDraft.columnFieldFilter)applyImportColumnFieldFilter(item,{touch:false});
+        if(state.importDraft.columnFieldFilter)applyImportColumnFieldFilter(item,{touch:false});
       }
     }catch(err){
       item.error=err?.message||String(err);
@@ -100,7 +115,7 @@
     metas=(Array.isArray(metas)?metas:[]).filter(meta=>meta?.path);
     if(!metas.length)return false;
     for(const meta of metas){
-      let item=importDraft.files.find(f=>f.path===meta.path);
+      let item=state.importDraft.files.find(f=>f.path===meta.path);
       if(!item){
         const provider=chooseImportProvider(meta,ensureImportTargets());
         item={
@@ -108,14 +123,14 @@
           importerId:provider?.id||'',settings:provider?.defaultOptions?.()||{},inspection:null,
           mappingTouched:false,loading:false,error:''
         };
-        importDraft.files.push(item);
+        state.importDraft.files.push(item);
       }
     }
-    if(!importDraft.activePath)importDraft.activePath=metas[0].path;
+    if(!state.importDraft.activePath)state.importDraft.activePath=metas[0].path;
     renderImportWorkbench();
     // Read sequentially to keep the UI responsive for many instrument files.
     for(const meta of metas){
-      const item=importDraft.files.find(f=>f.path===meta.path);
+      const item=state.importDraft.files.find(f=>f.path===meta.path);
       await readImportItemText(item);
     }
     renderImportWorkbench();
@@ -123,20 +138,20 @@
   }
 
   async function addImportFiles(){
-    if(importDraft.fileDialogOpen)return;
-    importDraft.fileDialogOpen=true;
+    if(state.importDraft.fileDialogOpen)return;
+    state.importDraft.fileDialogOpen=true;
     let metas=[];
     try{metas=await window.electronAPI.openDataFiles();}
-    finally{importDraft.fileDialogOpen=false;}
+    finally{state.importDraft.fileDialogOpen=false;}
     return stageImportMetas(metas);
   }
 
   async function openFilesAuto(){
-    if(importDraft.fileDialogOpen)return;
-    importDraft.fileDialogOpen=true;
+    if(state.importDraft.fileDialogOpen)return;
+    state.importDraft.fileDialogOpen=true;
     let metas=[];
     try{metas=await window.electronAPI.openDataFiles();}
-    finally{importDraft.fileDialogOpen=false;}
+    finally{state.importDraft.fileDialogOpen=false;}
     if(!metas?.length)return false;
     const data=[];let openedProjects=0;
     for(const meta of metas){
@@ -209,16 +224,16 @@
   function ingestImportSeedFiles(files=[]){
     const rows=Array.isArray(files)?files:[];
     for(const seed of rows){
-      const name=String(seed?.name||String(seed?.path||'').split(/[\\/]/).pop()||`remote-${importDraft.files.length+1}.txt`);
+      const name=String(seed?.name||String(seed?.path||'').split(/[\\/]/).pop()||`remote-${state.importDraft.files.length+1}.txt`);
       const path=String(seed?.path||`remote://${name}`);
-      if(importDraft.files.some(row=>row.path===path))continue;
+      if(state.importDraft.files.some(row=>row.path===path))continue;
       const decoded=decodeImportSeed(seed);
       const meta={name,path,size:Number(seed?.size)||base64ImportBytes(seed?.base64||'').length};
       const provider=chooseImportProvider(meta,ensureImportTargets());
       const item={...meta,checked:true,text:decoded.text,detectedEncoding:decoded.encoding,loadedEncodingRequest:'auto',importerId:provider?.id||'',settings:provider?.defaultOptions?.()||{},inspection:null,mappingTouched:false,importerTouched:false,loading:false,error:''};
-      importDraft.files.push(item);
+      state.importDraft.files.push(item);
       if(item.text)recomputeImportItem(item,true);
-      if(!importDraft.activePath)importDraft.activePath=path;
+      if(!state.importDraft.activePath)state.importDraft.activePath=path;
     }
   }
 
@@ -228,18 +243,18 @@
       const consumerId=String(options?.consumerId||options?.targets?.[0]||'').trim();
       const target=dataConsumerTargets().find(row=>row.id===consumerId)||null;
       const accepts=Array.isArray(options?.accepts)?options.accepts.map(String).filter(Boolean):(target?.accepts||[]);
-      importDraft.scope={mode:'scoped',consumerId,label:String(options?.consumerLabel||target?.label||consumerId||'当前工作台'),icon:String(options?.consumerIcon||target?.icon||'◇'),accepts};
-      importDraft.targets=consumerId?[consumerId]:[];
+      state.importDraft.scope={mode:'scoped',consumerId,label:String(options?.consumerLabel||target?.label||consumerId||'当前工作台'),icon:String(options?.consumerIcon||target?.icon||'◇'),accepts};
+      state.importDraft.targets=consumerId?[consumerId]:[];
     }else{
-      importDraft.scope=null;
-      if(Array.isArray(options?.targets))importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
-      else importDraft.targets=null;
+      state.importDraft.scope=null;
+      if(Array.isArray(options?.targets))state.importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
+      else state.importDraft.targets=null;
       ensureImportTargets();
     }
     if(Array.isArray(options?.files)&&options.files.length)ingestImportSeedFiles(options.files);
     if(options?.importerId){
       const provider=importProvider(options.importerId);
-      if(provider)for(const item of importDraft.files){
+      if(provider)for(const item of state.importDraft.files){
         item.importerId=provider.id;item.importerTouched=true;item.settings=provider.defaultOptions?.()||{};item.mappingTouched=false;if(item.text)recomputeImportItem(item,true);
       }
     }else autoRouteImportersForTargets();
@@ -262,12 +277,12 @@
   }
 
   function ensureImportTargets(){
-    if(Array.isArray(importDraft.targets))return importDraft.targets;
-    const active=activeDataConsumerId();importDraft.targets=active?[active]:[];return importDraft.targets;
+    if(Array.isArray(state.importDraft.targets))return state.importDraft.targets;
+    const active=activeDataConsumerId();state.importDraft.targets=active?[active]:[];return state.importDraft.targets;
   }
 
   function autoRouteImportersForTargets(){
-    for(const item of importDraft.files){
+    for(const item of state.importDraft.files){
       if(item.importerTouched)continue;
       const provider=chooseImportProvider(item,ensureImportTargets());
       if(!provider||provider.id===item.importerId)continue;
@@ -289,12 +304,12 @@
     const host=$('#importTargetOptions');if(!host)return;
     if(scope){host.innerHTML='';return;}
     const targets=dataConsumerTargets(),selected=new Set(ensureImportTargets());host.innerHTML='';
-    for(const row of targets){const label=document.createElement('label');label.className='import-target-chip';label.innerHTML=`<input type="checkbox" value="${escapeHtml(row.id)}" ${selected.has(row.id)?'checked':''}><span class="import-target-icon">${escapeHtml(row.icon)}</span><span>${escapeHtml(row.label)}</span>`;label.querySelector('input').onchange=()=>{importDraft.targets=[...host.querySelectorAll('input:checked')].map(input=>String(input.value));autoRouteImportersForTargets();renderImportWorkbench();};host.appendChild(label);}
+    for(const row of targets){const label=document.createElement('label');label.className='import-target-chip';label.innerHTML=`<input type="checkbox" value="${escapeHtml(row.id)}" ${selected.has(row.id)?'checked':''}><span class="import-target-icon">${escapeHtml(row.icon)}</span><span>${escapeHtml(row.label)}</span>`;label.querySelector('input').onchange=()=>{state.importDraft.targets=[...host.querySelectorAll('input:checked')].map(input=>String(input.value));autoRouteImportersForTargets();renderImportWorkbench();};host.appendChild(label);}
     renderImportTargetHint();
   }
 
   function renderImportTargetHint(){
-    const hint=$('#importTargetHint');if(!hint)return;const selected=new Set(Array.isArray(importDraft.targets)?importDraft.targets:[]),targets=dataConsumerTargets(),labels=targets.filter(row=>selected.has(row.id)).map(row=>row.label);
+    const hint=$('#importTargetHint');if(!hint)return;const selected=new Set(Array.isArray(state.importDraft.targets)?state.importDraft.targets:[]),targets=dataConsumerTargets(),labels=targets.filter(row=>selected.has(row.id)).map(row=>row.label);
     hint.textContent=labels.length?`将分配给：${labels.join('、')}。同一数据仅保存一份，可同时供多个工作台使用。`:'未选择分析用途：数据将只进入数据中心，之后可再分配。';
   }
 
@@ -302,20 +317,20 @@
     $('#importPanel').classList.add('hidden');
   }
 
-  function importFileIndex(path){return importDraft.files.findIndex(item=>String(item.path)===String(path));}
+  function importFileIndex(path){return state.importDraft.files.findIndex(item=>String(item.path)===String(path));}
 
   function setImportCheckedRange(fromPath,toPath,checked=true){
     const from=importFileIndex(fromPath),to=importFileIndex(toPath);if(from<0||to<0)return false;
-    const lo=Math.min(from,to),hi=Math.max(from,to);for(let i=lo;i<=hi;i++)importDraft.files[i].checked=!!checked;return true;
+    const lo=Math.min(from,to),hi=Math.max(from,to);for(let i=lo;i<=hi;i++)state.importDraft.files[i].checked=!!checked;return true;
   }
 
-  function invertImportChecked(){for(const item of importDraft.files)item.checked=!item.checked;renderImportWorkbench();}
+  function invertImportChecked(){for(const item of state.importDraft.files)item.checked=!item.checked;renderImportWorkbench();}
 
   function handleImportListShortcut(event){
     if($('#importPanel')?.classList.contains('hidden'))return;
     if(event.target?.closest?.('input,select,textarea,[contenteditable="true"]')&&event.target?.id!=='importFileList')return;
     const mod=event.ctrlKey||event.metaKey,key=String(event.key||'').toLowerCase();
-    if(mod&&key==='a'){event.preventDefault();importDraft.files.forEach(f=>f.checked=true);renderImportWorkbench();}
+    if(mod&&key==='a'){event.preventDefault();state.importDraft.files.forEach(f=>f.checked=true);renderImportWorkbench();}
     else if(mod&&key==='i'){event.preventDefault();invertImportChecked();}
   }
 
@@ -323,9 +338,9 @@
     const host=$('#importFileList');
     if(!host)return;
     host.innerHTML='';
-    for(const item of importDraft.files){
+    for(const item of state.importDraft.files){
       const el=document.createElement('div');
-      el.className=`import-file-item ${item.path===importDraft.activePath?'active':''} ${item.error?'error':''}`;
+      el.className=`import-file-item ${item.path===state.importDraft.activePath?'active':''} ${item.error?'error':''}`;
       const ins=item.inspection;
       const provider=providerForImportItem(item);
       const layout=ins&&provider?.id==='flexible-text'?importResolvedLayout(item):'';
@@ -342,18 +357,18 @@
       el.querySelector('input').onclick=e=>{
         e.stopPropagation();
         const next=!!e.target.checked;
-        if(e.shiftKey&&importDraft.selectionAnchorPath)setImportCheckedRange(importDraft.selectionAnchorPath,item.path,next);
+        if(e.shiftKey&&state.importDraft.selectionAnchorPath)setImportCheckedRange(state.importDraft.selectionAnchorPath,item.path,next);
         else item.checked=next;
-        importDraft.selectionAnchorPath=item.path;
-        importDraft.activePath=item.path;
+        state.importDraft.selectionAnchorPath=item.path;
+        state.importDraft.activePath=item.path;
         renderImportWorkbench();
       };
       el.onclick=e=>{
         const additive=!!(e.ctrlKey||e.metaKey),range=!!e.shiftKey;
-        importDraft.activePath=item.path;
-        if(range&&importDraft.selectionAnchorPath)setImportCheckedRange(importDraft.selectionAnchorPath,item.path,true);
+        state.importDraft.activePath=item.path;
+        if(range&&state.importDraft.selectionAnchorPath)setImportCheckedRange(state.importDraft.selectionAnchorPath,item.path,true);
         else if(additive)item.checked=!item.checked;
-        if(!range)importDraft.selectionAnchorPath=item.path;
+        if(!range)state.importDraft.selectionAnchorPath=item.path;
         renderImportWorkbench();
       };
       host.appendChild(el);
@@ -368,7 +383,7 @@
   function normalizeImportFieldName(value){return String(value||'').trim().toLocaleLowerCase();}
   function importAvailableColumnFields(){
     const counts=new Map(),labels=new Map();
-    for(const item of importDraft.files){
+    for(const item of state.importDraft.files){
       if(!item?.inspection||providerForImportItem(item)?.id!=='flexible-text')continue;
       const xCol=Number(item.settings?.xCol);
       const seen=new Set();
@@ -381,29 +396,29 @@
     return [...counts.entries()].map(([key,count])=>({key,label:labels.get(key)||key,count})).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label));
   }
   function applyImportColumnFieldFilter(item,{touch=true}={}){
-    const ins=item?.inspection;if(!ins)return false;const wanted=normalizeImportFieldName(importDraft.columnFieldFilter);if(!wanted)return false;
+    const ins=item?.inspection;if(!ins)return false;const wanted=normalizeImportFieldName(state.importDraft.columnFieldFilter);if(!wanted)return false;
     const layout=importResolvedLayout(item);if(layout!=='single'&&layout!=='sharedX')return false;
     const eligible=(ins.columns||[]).filter(column=>column.index!==Number(item.settings.xCol)&&Number(column.numericFraction)>=.5&&normalizeImportFieldName(column.header)===wanted);
     if(layout==='sharedX')item.settings.yCols=eligible.map(column=>column.index);
     else{item.settings.yCol=eligible.length?eligible[0].index:-1;item.settings.yCols=eligible.length?[eligible[0].index]:[];}
     if(touch)item.mappingTouched=true;return true;
   }
-  function applyImportFieldFilterToAll(){for(const item of importDraft.files)if(item?.inspection&&providerForImportItem(item)?.id==='flexible-text')applyImportColumnFieldFilter(item);renderImportWorkbench();}
+  function applyImportFieldFilterToAll(){for(const item of state.importDraft.files)if(item?.inspection&&providerForImportItem(item)?.id==='flexible-text')applyImportColumnFieldFilter(item);renderImportWorkbench();}
   function clearImportColumnFieldFilter({restoreAuto=false}={}){
-    importDraft.columnFieldFilter='';
-    if(restoreAuto)for(const row of importDraft.files){if(row?.inspection&&providerForImportItem(row)?.id==='flexible-text'){row.mappingTouched=false;recomputeImportItem(row,true);}}
+    state.importDraft.columnFieldFilter='';
+    if(restoreAuto)for(const row of state.importDraft.files){if(row?.inspection&&providerForImportItem(row)?.id==='flexible-text'){row.mappingTouched=false;recomputeImportItem(row,true);}}
   }
   function renderImportColumnFieldFilter(item){
     const wrap=$('#importColumnFieldFilter'),select=$('#importColumnFieldSelect');if(!wrap||!select)return;
     const layout=importResolvedLayout(item),rows=importAvailableColumnFields(),supported=layout==='single'||layout==='sharedX';
     wrap.classList.toggle('hidden',!rows.length||!supported);if(!rows.length||!supported){select.innerHTML='<option value="">全部 / 自动</option>';return;}
-    const current=normalizeImportFieldName(importDraft.columnFieldFilter);
+    const current=normalizeImportFieldName(state.importDraft.columnFieldFilter);
     select.innerHTML='<option value="">全部 / 自动</option>'+rows.map(row=>`<option value="${escapeHtml(row.key)}">${escapeHtml(row.label)}${row.count>1?` · ${row.count} 文件`:''}</option>`).join('');
     select.value=[...select.options].some(option=>normalizeImportFieldName(option.value)===current)?current:'';
-    if(current&&!select.value)importDraft.columnFieldFilter='';
+    if(current&&!select.value)state.importDraft.columnFieldFilter='';
     select.onchange=()=>{
-      importDraft.columnFieldFilter=select.value||'';
-      if(importDraft.columnFieldFilter)applyImportFieldFilterToAll();
+      state.importDraft.columnFieldFilter=select.value||'';
+      if(state.importDraft.columnFieldFilter)applyImportFieldFilterToAll();
       else{clearImportColumnFieldFilter({restoreAuto:true});renderImportWorkbench();}
     };
   }
@@ -423,7 +438,7 @@
       label.innerHTML=`<input type="checkbox" value="${c.index}" ${selected.has(c.index)?'checked':''}><span>${c.index+1}: ${escapeHtml(c.header)}</span>`;
       label.querySelector('input').onchange=()=>{
         const values=[...host.querySelectorAll('input:checked')].map(x=>Number(x.value));
-        importDraft.columnFieldFilter='';
+        state.importDraft.columnFieldFilter='';
         item.settings.yCols=values;
         item.mappingTouched=true;
         renderImportSeriesVgRows(item);
@@ -622,7 +637,7 @@
   }
 
   function renderImportGlobalSummary(){
-    const checked=importDraft.files.filter(f=>f.checked);
+    const checked=state.importDraft.files.filter(f=>f.checked);
     let objects=0,errors=0;
     const providerNames=new Set();
     for(const item of checked){
@@ -639,7 +654,7 @@
     }
     const parserText=providerNames.size?` · ${[...providerNames].join(' / ')}`:'';
     $('#importGlobalSummary').textContent=
-      `${checked.length}/${importDraft.files.length} 个文件已勾选 · 预计生成 ${objects} 个数据对象${parserText}${errors?` · ${errors} 个文件需检查`:''}`;
+      `${checked.length}/${state.importDraft.files.length} 个文件已勾选 · 预计生成 ${objects} 个数据对象${parserText}${errors?` · ${errors} 个文件需检查`:''}`;
     $('#importCommitBtn').disabled=!checked.length||checked.every(f=>f.error||!f.inspection);
   }
 
@@ -651,7 +666,7 @@
   }
 
   async function runImportWorkbenchAutomationSmoke(){
-    const savedDraft=importDraft;
+    const savedDraft=state.importDraft;
     const panel=$('#importPanel');
     const panelWasHidden=panel?.classList.contains('hidden')!==false;
     try{
@@ -663,7 +678,7 @@
       };
       recomputeImportItem(item,true);
       if(item.error||!item.inspection)throw new Error(item.error||'Synthetic import inspection failed.');
-      importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path,columnFieldFilter:''};
+      state.importDraft={files:[item],activePath:item.path,loading:false,fileDialogOpen:false,targets:[],scope:null,selectionAnchorPath:item.path,columnFieldFilter:''};
       renderImportWorkbench();
 
       const checkbox=$('#importFileList input[type="checkbox"]');
@@ -686,7 +701,7 @@
       if(!restoredSummary.includes('1/1 个文件已勾选'))throw new Error(`Checkbox did not restore selected summary: ${restoredSummary}`);
       return {selectedSummary:checkedSummary,uncheckedSummary,restoredSummary,previewRows,commitEnabled};
     }finally{
-      importDraft=savedDraft;
+      state.importDraft=savedDraft;
       renderImportWorkbench();
       if(panel)panel.classList.toggle('hidden',panelWasHidden);
     }
@@ -735,7 +750,7 @@
     const current=importActiveItem();
     if(!current)return;
     const template=JSON.parse(JSON.stringify(current.settings));
-    for(const item of importDraft.files){
+    for(const item of state.importDraft.files){
       if(item.path===current.path)continue;
       item.importerId=current.importerId;
       item.importerTouched=true;
@@ -760,17 +775,17 @@
   }
 
   async function commitImportWorkbench(){
-    const selected=importDraft.files.filter(f=>f.checked);
+    const selected=state.importDraft.files.filter(f=>f.checked);
     if(!selected.length)return;
 
     $('#importCommitBtn').disabled=true;
-    importDraft.loading=true;
+    state.importDraft.loading=true;
     try{
       const beforeArtifactRows=snapshotArtifactRows();
       const legacyRows=[];
       const artifactRows=[];
       const reports=[];
-      const requestedAssignments=Array.isArray(importDraft.targets)?importDraft.targets.map(String).filter(Boolean):[];
+      const requestedAssignments=Array.isArray(state.importDraft.targets)?state.importDraft.targets.map(String).filter(Boolean):[];
       const assignmentUnion=(previous=[])=>{
         const prior=(Array.isArray(previous)?previous:[]).map(String).filter(Boolean);
         return prior.includes('*')?['*']:[...new Set([...prior,...requestedAssignments])];
@@ -858,19 +873,21 @@ ${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
       refreshOpenAnalysisPage();
       captureActiveProjectTab();
 
-      importDraft.files=[];
-      importDraft.activePath=null;
-      importDraft.targets=null;
-      importDraft.scope=null;
-      importDraft.selectionAnchorPath=null;
-      importDraft.columnFieldFilter='';
+      state.importDraft.files=[];
+      state.importDraft.activePath=null;
+      state.importDraft.targets=null;
+      state.importDraft.scope=null;
+      state.importDraft.selectionAnchorPath=null;
+      state.importDraft.columnFieldFilter='';
       closeImportWorkbench();
       setStatus(`导入完成：${reports.join('；')}。`);
     }catch(err){
       console.error(err);
       setStatus(`导入失败：${err?.message||String(err)}`);
     }finally{
-      importDraft.loading=false;
+      state.importDraft.loading=false;
       $('#importCommitBtn').disabled=false;
     }
   }
+
+module.exports=Object.freeze({});

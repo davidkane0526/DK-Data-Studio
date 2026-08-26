@@ -7,12 +7,12 @@ const readComposition=require('./helpers/read-composition');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.88','integrated command chrome release must be v3.61.88');
+assert.equal(json('package.json').version,'3.61.89','integrated command chrome release must be v3.61.89');
 const actionCore=readComposition(root,'src/core/ui/composition');
 const portable=readComposition(root,'src/core/ui/composition');
 const curves=readComposition(root,'src/core/ui/composition');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
-const appPanels=read('src/app/50-scientific-panels-export.inc');
+const appPanels=readComposition(root,'src/app');
 const index=read('src/index.html');
 const modern=read('src/styles/theme/integrated-command-chrome.css');
 const materialModern=read('src/styles/theme/material-renderer.css');

@@ -15,7 +15,7 @@ const pulsePlugin=read('src/plugins/pulse-analysis/plugin.js');
 const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('tests/check-plugin-boundaries.js');
 
-assert(pkg.version==='3.61.88','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.89','Application version must be 3.61.18.');
 assert(contract.pluginApiVersion==='1.17.0'&&contract.minimumAppVersion==='3.61.39','Current complete SDK contract must require app 3.61.32 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
@@ -24,7 +24,7 @@ assert(kernel.includes("section:'DATA'")&&kernel.includes('embeddedSuper'),'Embe
 assert(kernel.includes("if(!header){")&&kernel.includes("if(pageActivity){"),'Workbench pages without a standard header must fall back to the host contextual action instead of losing import access.');
 assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList.toggle('hidden',!!scope)"),'Scoped Import Workbench must hide the global target chooser.');
 assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
-assert(app.includes("importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
+assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
 assert(index.includes('id="importTargetOptions"'),'Global Import Workbench target routing must remain available.');
 assert(sdkManifest.apiVersion==='1.17.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
 assert(sdk.includes('data-dkds-slot="workbench-import"'),'SDK template must mark the Core-owned import-action position.');

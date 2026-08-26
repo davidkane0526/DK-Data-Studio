@@ -1,15 +1,56 @@
 {
   "output": "src/generated/runtime/app.js",
-  "modules": [
-    "00-host-status-lan.inc",
-    "10-project-tabs-history.inc",
-    "20-import-workbench.inc",
-    "30-data-artifact-host.inc",
-    "40-workspace-super-shell.inc",
-    "50-scientific-panels-export.inc",
-    "60-project-persistence.inc",
-    "70-floating-docks.inc",
-    "80-dedicated-plugin-windows.inc",
-    "90-startup.inc"
-  ]
+  "moduleRuntimeName": "DKDSAppRuntimeModules",
+  "importableModules": [
+    {
+      "id": "app/context",
+      "path": "src/app/modules/context.js"
+    },
+    {
+      "id": "app/foundation",
+      "path": "src/app/modules/foundation.js"
+    },
+    {
+      "id": "app/project-tabs-history",
+      "path": "src/app/modules/project-tabs-history.js"
+    },
+    {
+      "id": "app/import-workbench",
+      "path": "src/app/modules/import-workbench.js"
+    },
+    {
+      "id": "app/data-artifact-host",
+      "path": "src/app/modules/data-artifact-host.js"
+    },
+    {
+      "id": "app/workspace-super-shell",
+      "path": "src/app/modules/workspace-super-shell.js"
+    },
+    {
+      "id": "app/scientific-panels-export",
+      "path": "src/app/modules/scientific-panels-export.js"
+    },
+    {
+      "id": "app/project-persistence",
+      "path": "src/app/modules/project-persistence.js"
+    },
+    {
+      "id": "app/floating-docks",
+      "path": "src/app/modules/floating-docks.js"
+    },
+    {
+      "id": "app/dedicated-plugin-windows",
+      "path": "src/app/modules/dedicated-plugin-windows.js"
+    },
+    {
+      "id": "app/startup",
+      "path": "src/app/modules/startup.js"
+    },
+    {
+      "id": "app/runtime",
+      "path": "src/app/modules/runtime.js"
+    }
+  ],
+  "entryModule": "app/runtime",
+  "modules": []
 }

@@ -69,7 +69,7 @@ assert.strictEqual(duplicates.rows.length,1);
 assert.strictEqual(duplicates.rows[0].exactPath,true);
 
 const appSource=fs.readFileSync(path.join(__dirname,'..','src','generated','runtime','app.js'),'utf8');
-const resetAt=appSource.indexOf('importDraft.files=[];');
+const resetAt=appSource.indexOf('state.importDraft.files=[];');
 const closeAt=appSource.indexOf('closeImportWorkbench();',resetAt);
 assert(resetAt>=0&&closeAt>resetAt,'Successful import must clear the pending import session before closing, so reopening Import cannot replay the previous folder selection.');
 

@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.88','v3.61.88 shell polish test tracks the release source version.');
+assert.equal(json('package.json').version,'3.61.89','v3.61.89 shell polish test tracks the release source version.');
 
 // Vth is a first-party TOP workspace and therefore must be present in the same
 // built-in machine-readable registry used by every other dedicated workspace.

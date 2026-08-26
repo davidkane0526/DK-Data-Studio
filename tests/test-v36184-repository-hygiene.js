@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){if(['.git','node_modules','dist'].includes(name))continue;const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(pkg.version,'3.61.88');
+assert.equal(pkg.version,'3.61.89');
 assert.equal(pkg.main,'desktop/main.js');
 assert.equal(fs.readdirSync(path.join(root,'scripts')).filter(n=>n.endsWith('.js')).length<=12,true,'scripts/ must contain build/maintenance tools only.');
 assert(!fs.existsSync(path.join(root,'scripts/generate-build-info.js')),'build-info generation must stay inside prepare-build, not another one-use script.');

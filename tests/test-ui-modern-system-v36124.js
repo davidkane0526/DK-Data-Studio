@@ -9,7 +9,7 @@ const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.htm
 const css=readCoreCss(root,['presentation','theme']);
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','scientific','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.88','modern UI cleanup release must be v3.61.27');
+assert.equal(pkg.version,'3.61.89','modern UI cleanup release must be v3.61.27');
 assert(html.includes('core.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the layered Core visual system');
 assert(pluginHtml.includes('../core.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same layered Core visual system');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');

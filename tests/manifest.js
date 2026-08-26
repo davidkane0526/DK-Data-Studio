@@ -632,6 +632,10 @@ module.exports = {
     {
       "file": "tests/test-v36188-importable-core-runtime.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36189-application-modules.js",
+      "args": []
     }
   ],
   "check": [
@@ -1298,6 +1302,10 @@ module.exports = {
 ,
     {
       "file": "tests/test-v36188-importable-core-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36189-application-modules.js",
       "args": []
     }
   ],

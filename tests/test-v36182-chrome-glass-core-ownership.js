@@ -7,7 +7,7 @@ const readComposition=require('./helpers/read-composition');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.88');
+assert.equal(json('package.json').version,'3.61.89');
 
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');
@@ -18,7 +18,7 @@ assert(material.includes('root.querySelectorAll(INTEGRATED_CONTAINER_SELECTOR)')
 
 for(const [label,source] of [
   ['src/index.html',read('src/index.html')],
-  ['src/app/50-scientific-panels-export.inc',read('src/app/50-scientific-panels-export.inc')],
+  ['src/app/composition',readComposition(root,'src/app')],
   ['src/plugins/resonance-workbench/view-components.js',read('src/plugins/resonance-workbench/view-components.js')],
   ['src/core/ui/composition',readComposition(root,'src/core/ui/composition')]
 ]){

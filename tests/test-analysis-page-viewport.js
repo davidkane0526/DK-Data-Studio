@@ -25,7 +25,7 @@ assert(app.includes('function measureAnalysisPageTop()'),'app must measure the l
 assert(app.includes("document.querySelector('.topbar')")&&app.includes("document.querySelector('.project-tabs-bar')"),'viewport measurement must use the actual shell elements.');
 assert(app.includes('window.visualViewport?.height'),'viewport sync must handle effective viewport changes.');
 assert(app.includes('function syncAnalysisPageViewport()'),'app must expose a reusable viewport repair routine.');
-assert(app.includes("window.addEventListener('resize',()=>{\n    syncAnalysisPageViewport();"),'generic window resize handling must repair open analysis pages.');
+assert(/window\.addEventListener\('resize',\(\)=>\{\s*syncAnalysisPageViewport\(\);/.test(app),'generic window resize handling must repair open analysis pages.');
 assert(app.includes("window.DKDSPlugins.events.on('plugin:state-changed'"),'plugin lifecycle changes must repair analysis-page geometry.');
 assert(app.includes("window.DKDSPlugins.events.on('plugin:manager-changed'")&&app.includes('syncAnalysisPageViewport();'),'manager changes must repair analysis-page geometry.');
 assert(manager.includes('scheduleViewportRepair'),'plugin manager rerender must trigger viewport repair.');

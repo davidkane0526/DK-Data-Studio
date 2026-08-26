@@ -89,8 +89,8 @@ fs.writeFileSync(indexPath, html, 'utf8');
 // other built-in plugins maintain their own semantic versions.
 for (const relative of [
   path.join('src','app.js'),
-  path.join('src','app','60-project-persistence.inc'),
-  path.join('src','app','80-dedicated-plugin-windows.inc'),
+  path.join('src','app','modules','project-persistence.js'),
+  path.join('src','app','modules','dedicated-plugin-windows.js'),
   path.join('src','plugin-window','runtime.js'),
   path.join('src','web-bridge.js'),
   path.join('src','core','services','mcp-runtime.js'),

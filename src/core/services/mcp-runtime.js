@@ -1,6 +1,6 @@
 (() => {
   let configured={};
-  const VERSION='3.61.88';
+  const VERSION='3.61.89';
   const PROTOCOLS=new Set(['2025-06-18','2025-11-25']);
   const result=(id,value)=>({jsonrpc:'2.0',id,result:value});
   const error=(id,code,message,data)=>({jsonrpc:'2.0',id,error:{code,message,...(data===undefined?{}:{data})}});

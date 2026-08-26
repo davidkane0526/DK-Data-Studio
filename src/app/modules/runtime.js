@@ -1,0 +1,11 @@
+'use strict';
+require('./foundation');
+require('./project-tabs-history');
+require('./import-workbench');
+require('./data-artifact-host');
+require('./workspace-super-shell');
+require('./scientific-panels-export');
+require('./project-persistence');
+require('./floating-docks');
+require('./dedicated-plugin-windows');
+module.exports=require('./startup');
