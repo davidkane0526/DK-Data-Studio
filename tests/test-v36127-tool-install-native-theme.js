@@ -1,13 +1,14 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const vm=require('vm');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85','tool-install/native-theme release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.86','tool-install/native-theme release must be v3.61.27');
 
 // Regression for the real external Tool installation failure reported as
 // "sources is not iterable". data.sources is documented as a synchronous read
@@ -22,7 +23,7 @@ const sandbox={
 sandbox.window=sandbox;sandbox.globalThis=sandbox;sandbox.window.dispatchEvent=()=>{};
 sandbox.document={querySelector:()=>null,querySelectorAll:()=>[],getElementById:()=>null,createElement:()=>({style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},appendChild(){},remove(){}}),head:{appendChild(){}}};
 vm.createContext(sandbox);
-vm.runInContext(read('src/core/capability-runtime.js'),sandbox,{filename:'capability-runtime.js'});
+vm.runInContext(read('src/core/host/capability-runtime.js'),sandbox,{filename:'capability-runtime.js'});
 sandbox.window.DKDSCapabilities.register('core','core.data-sources',{
   kind:'service',title:'Project Data Sources',version:'1.0.0',remote:true,
   methods:{
@@ -36,7 +37,7 @@ assert(generic&&typeof generic.then==='function','Generic capability proxy shoul
 const direct=sandbox.window.DKDSCapabilities.localProxy('core.data-sources').list();
 assert(Array.isArray(direct)&&direct.length===1,'Local capability proxy must preserve synchronous provider reads.');
 
-vm.runInContext(read('src/core/plugin-kernel.js'),sandbox,{filename:'plugin-kernel.js'});
+vm.runInContext(read('src/generated/runtime/plugin-kernel.js'),sandbox,{filename:'plugin-kernel.js'});
 let observed=[];
 sandbox.window.DKDSPlugins.define({
   id:'test.tool-install-sources',name:'Tool Install Sources',version:'1.0.0',apiVersion:'1.15.0',enabled:true,
@@ -60,19 +61,23 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
   assert(main.includes("nativeTheme.themeSource='system'"),'When no main-process preference exists, the bootstrap must leave renderer localStorage free to migrate its saved theme.');
   assert(main.includes('backgroundColor: nativeWindowBackground()'),'Main and plugin BrowserWindows must use the active appearance background.');
 
-  const modern=read('src/ui-modern.css');
+  const modern=readCoreCss(root);
   for(const selector of ['.analysis-control-card','.analysis-note','.analysis-table-wrap']){
     assert(modern.includes(selector),`Shared modern theme must cover ${selector}.`);
   }
   assert(modern.includes('background:var(--surface-primary)')&&modern.includes('background:var(--input-bg)'),'Legacy built-in analysis surfaces/controls must resolve through semantic theme tokens.');
 
   const shell=read('src/core/recipes/shell-navigation.js');
-  assert(!shell.includes('background:#fff!important'),'Late shell recipe must not force light-only toolbar surfaces.');
-  assert(shell.includes('var(--surface-hover)')&&shell.includes('var(--text-primary)'),'Late shell recipe must consume the Core theme contract.');
+  const shellCss=read('src/styles/structure/shell-navigation.css');
+  assert(!shell.includes('ctx.ui.styles.add'),'Shell navigation recipe must own behavior only; static Core CSS belongs to the structure layer.');
+  assert(!shellCss.includes('background:#fff'),'Shell navigation CSS must not force light-only toolbar surfaces.');
+  assert(shellCss.includes('var(--surface-hover)')&&shellCss.includes('var(--text-primary)'),'Shell navigation CSS must consume the Core theme contract.');
   const safeguards=read('src/core/recipes/workspace-safeguards.js');
-  assert(safeguards.includes('.import-file-actions{flex:0 0 auto!important;position:relative;z-index:6;background:var(--surface-primary)}'),'Import action toolbar must inherit the active theme.');
-  assert(safeguards.includes('background:var(--warning-soft)')&&safeguards.includes('background:var(--danger-soft)'),'Import warning states must use semantic warning/danger surfaces in both themes.');
-  assert(!safeguards.includes('#fff8e8')&&!safeguards.includes('#fffaf0'),'Late import safeguards must not reintroduce light-only warning surfaces.');
+  const safeguardCss=read('src/styles/structure/workspace-safeguards.css');
+  assert(!safeguards.includes('ctx.ui.styles.add'),'Workspace safeguards recipe must own behavior only; static Core CSS belongs to the structure layer.');
+  assert(safeguardCss.includes('.import-file-actions{flex:0 0 auto;position:relative;z-index:6;background:var(--surface-primary)}'),'Import action toolbar must inherit the active theme.');
+  assert(safeguardCss.includes('background:var(--warning-soft)')&&safeguardCss.includes('background:var(--danger-soft)'),'Import warning states must use semantic warning/danger surfaces in both themes.');
+  assert(!safeguardCss.includes('#fff8e8')&&!safeguardCss.includes('#fffaf0'),'Import safeguards must not reintroduce light-only warning surfaces.');
 
   console.log('v3.61.27 Tool install synchronous sources + native title-bar/theme completeness checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

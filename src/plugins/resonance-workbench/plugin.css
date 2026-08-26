@@ -1,5 +1,5 @@
 /* Resonance Workbench owns domain layout and composition. Core owns semantic surfaces, controls, PlotView/ScientificPlot, Theme and Material rendering. */
-#resonanceDedicatedPage .resonance-dedicated-body{padding:0!important;overflow:hidden!important}
+#resonanceDedicatedPage .resonance-dedicated-body{padding:0;overflow:hidden}
 #resonanceDedicatedPage .resonance-parity-root{position:relative;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
 #resonanceDedicatedPage .respar-header-actions{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto}#resonanceDedicatedPage .respar-header-divider{width:1px;height:22px;flex:0 0 auto}
 #resonanceDedicatedPage .respar-primary{width:100%;height:100%;min-width:0;min-height:0;display:grid;grid-template-columns:280px minmax(0,1fr)}
@@ -27,14 +27,14 @@
 #resonanceDedicatedPage .respar-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;padding:4px 8px}#resonanceDedicatedPage .respar-summary{display:flex;gap:10px;white-space:nowrap;overflow:hidden}#resonanceDedicatedPage .respar-export-row{display:flex;gap:4px;flex:0 0 auto}
 #resonanceDedicatedPage .respar-hover-tip{position:absolute;z-index:80;max-width:320px}
 #resonanceDedicatedPage .respar-range-menu{position:absolute;z-index:90;width:290px;padding:8px}#resonanceDedicatedPage .respar-range-summary{margin-bottom:6px}#resonanceDedicatedPage .respar-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}#resonanceDedicatedPage .respar-range-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px;padding-top:6px}
-#resonanceDedicatedPage .respar-range-identity{display:grid;grid-template-columns:1fr;gap:5px;margin-top:7px;padding-top:7px}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}#resonanceDedicatedPage .respar-floating-panel{position:absolute;z-index:160;resize:both;overflow:hidden;min-width:320px;min-height:220px}#resonanceDedicatedPage .respar-inspector-panel{right:24px;top:56px;width:390px;height:560px}#resonanceDedicatedPage .respar-group-panel{right:24px;bottom:44px;width:min(880px,calc(100% - 48px));height:620px}#resonanceDedicatedPage .respar-floating-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none}#resonanceDedicatedPage .respar-floating-header>div{display:flex;gap:5px}#resonanceDedicatedPage .respar-floating-body{height:calc(100% - 36px);overflow:auto;padding:10px}#resonanceDedicatedPage .respar-group-panel.collapsed{height:36px!important;min-height:36px!important;resize:none!important}#resonanceDedicatedPage .respar-group-panel.collapsed .respar-floating-body{display:none}
+#resonanceDedicatedPage .respar-range-identity{display:grid;grid-template-columns:1fr;gap:5px;margin-top:7px;padding-top:7px}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}#resonanceDedicatedPage .respar-floating-panel{position:absolute;z-index:160;resize:both;overflow:hidden;min-width:320px;min-height:220px}#resonanceDedicatedPage .respar-inspector-panel{right:24px;top:56px;width:390px;height:560px}#resonanceDedicatedPage .respar-group-panel{right:24px;bottom:44px;width:min(880px,calc(100% - 48px));height:620px}#resonanceDedicatedPage .respar-floating-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none}#resonanceDedicatedPage .respar-floating-header>div{display:flex;gap:5px}#resonanceDedicatedPage .respar-floating-body{height:calc(100% - 36px);overflow:auto;padding:10px}#resonanceDedicatedPage .respar-group-panel.collapsed{height:36px;min-height:36px;resize:none}#resonanceDedicatedPage .respar-group-panel.collapsed .respar-floating-body{display:none}
 #resonanceDedicatedPage .respar-inspect-controls{display:flex;flex-direction:column;gap:7px}#resonanceDedicatedPage .respar-inspect-controls>label{display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .reswin-kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 8px}#resonanceDedicatedPage .respar-inline-actions,#resonanceDedicatedPage .respar-label-editor{display:flex;gap:6px;align-items:flex-end;margin:7px 0}#resonanceDedicatedPage .respar-label-editor label{flex:1;display:flex;flex-direction:column;gap:3px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
 #resonanceDedicatedPage .respar-group-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;position:sticky;top:0;z-index:3}#resonanceDedicatedPage .respar-group-cols{display:flex;align-items:center;gap:4px}
 #resonanceDedicatedPage .reswin-group-grid{--reswin-group-cols:3;display:grid;grid-template-columns:repeat(var(--reswin-group-cols),minmax(0,1fr));gap:12px;align-items:start;width:100%}#resonanceDedicatedPage .reswin-group-card{overflow:hidden;min-width:0;display:grid;grid-template-rows:auto minmax(210px,var(--reswin-group-height,240px))}#resonanceDedicatedPage .reswin-group-head{min-height:34px;height:auto;padding:5px 8px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:8px}#resonanceDedicatedPage .reswin-group-head button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
 #resonanceDedicatedPage .respar-derived{position:absolute;inset:0;z-index:130;overflow:auto;padding:12px}#resonanceDedicatedPage .respar-derived-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}#resonanceDedicatedPage .respar-derived-header h3{margin:0}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#resonanceDedicatedPage .reswin-medium-plot{height:380px}#resonanceDedicatedPage .reswin-feature-field-card{grid-column:1/-1}#resonanceDedicatedPage .reswin-feature-field-plot{height:360px;min-height:320px}#resonanceDedicatedPage .reswin-report{padding:12px;line-height:1.65}
-#resonanceDedicatedPage .reswin-gate-controls{flex-flow:row nowrap!important;align-items:flex-end!important;gap:9px!important}
+#resonanceDedicatedPage .reswin-gate-controls{flex-flow:row nowrap;align-items:flex-end;gap:9px}
 #resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 150px;min-width:118px}
-#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>select,#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>input{width:100%;min-width:0!important}
+#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>select,#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check)>input{width:100%;min-width:0}
 #resonanceDedicatedPage .reswin-gate-controls>.inline-check,#resonanceDedicatedPage .reswin-gate-controls>button{flex:0 0 auto;white-space:nowrap}
 #resonanceDedicatedPage .reswin-gate-controls sub{display:inline;line-height:0}
 #resonanceDedicatedPage .analysis-chart-title.dkds-plot-view-head{min-height:38px;height:auto;padding:5px 8px}
@@ -57,10 +57,10 @@
 #resonanceDedicatedPage .respar-peak-class-grid{display:grid;grid-template-columns:110px minmax(0,1fr);gap:7px;margin-top:8px}#resonanceDedicatedPage .respar-peak-class-grid label{display:flex;flex-direction:column;gap:3px;min-width:0}#resonanceDedicatedPage .respar-peak-class-grid input{min-width:0;width:100%}
 #resonanceDedicatedPage .respar-inspector-row{display:flex;align-items:center;gap:6px;margin-top:7px}
 #resonanceDedicatedPage .respar-inspector-transform{margin-top:10px;padding-top:10px}#resonanceDedicatedPage .respar-inspect-plot{height:210px;min-height:180px}
-#resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start;padding:6px 8px;min-width:0}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px!important;height:18px!important}
-#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px!important;min-height:280px!important;resize:both!important}
-#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px!important}
-#resonanceDedicatedPage .hidden{display:none!important}
+#resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start;padding:6px 8px;min-width:0}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px;height:18px}
+#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px;min-height:280px;resize:both}
+#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px}
+#resonanceDedicatedPage .hidden{display:none}
 
 #resonanceDedicatedPage .respar-group-context{margin-left:6px}
 #resonanceDedicatedPage .reswin-group-card-actions{display:flex;align-items:center;gap:3px;white-space:nowrap;min-width:0;flex:0 0 auto}
@@ -68,9 +68,9 @@
 #resonanceDedicatedPage .reswin-group-card-actions .dkds-portable-placement-trigger{min-width:28px;height:24px;padding:2px 5px}
 #resonanceDedicatedPage .reswin-group-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px!important;min-height:300px!important;resize:both!important}
+#resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-global-floating{min-width:380px;min-height:300px;resize:both}
 
-@media(max-width:1250px){#resonanceDedicatedPage .reswin-gate-controls{flex-wrap:wrap!important}#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 180px}}
+@media(max-width:1250px){#resonanceDedicatedPage .reswin-gate-controls{flex-wrap:wrap}#resonanceDedicatedPage .reswin-gate-controls>label:not(.inline-check){flex:1 1 180px}}
 @media(max-width:1050px){#resonanceDedicatedPage .respar-primary{grid-template-columns:240px minmax(0,1fr)}#resonanceDedicatedPage .respar-main-plot-header{left:72px;right:10px}#resonanceDedicatedPage .reswin-two-col,#resonanceDedicatedPage .reswin-gate-grid{grid-template-columns:1fr}}
 
 /* Gate-voltage domain layout; visual presentation comes from Core semantic surfaces. */
@@ -86,10 +86,10 @@
 .gate-density-card.disabled{opacity:.5;}
 @media(max-width:1050px){.gate-analysis-grid{grid-template-columns:1fr}}
 
-.dkds-analysis-prime-body>.reswin-view,.dkds-analysis-sub-view>.reswin-view{display:block!important;width:100%;min-width:0;}
+.dkds-analysis-prime-body>.reswin-view,.dkds-analysis-sub-view>.reswin-view{display:block;width:100%;min-width:0;}
 .dkds-analysis-prime-body>.reswin-view .reswin-inspect-grid{grid-template-columns:minmax(220px,32%) minmax(0,1fr);}
-.dkds-analysis-prime-body>.reswin-view .reswin-inspect-column{position:static!important;}
-.dkds-analysis-prime-body>.reswin-view .reswin-inspect-plot{height:360px!important;}
+.dkds-analysis-prime-body>.reswin-view .reswin-inspect-column{position:static;}
+.dkds-analysis-prime-body>.reswin-view .reswin-inspect-plot{height:360px;}
 .dkds-analysis-prime-body>.reswin-view .reswin-group-grid{grid-template-columns:repeat(var(--reswin-group-cols,2),minmax(0,1fr));}
 @media(max-width:1050px){
   .dkds-analysis-prime-body>.reswin-view .reswin-inspect-grid{grid-template-columns:1fr}
@@ -97,13 +97,24 @@
 
 /* Resonance portable panel composition on the generic Core docking system. */
 #resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked,
-#resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked{position:relative!important;inset:auto!important;width:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;height:auto!important;max-height:none!important;resize:none!important;}
+#resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked{position:relative;inset:auto;width:100%;min-width:0;min-height:0;max-width:none;height:auto;max-height:none;resize:none;}
 #resonanceDedicatedPage .respar-group-panel.dkds-portable-view.is-docked .respar-floating-body,
 #resonanceDedicatedPage .respar-inspector-panel.dkds-portable-view.is-docked .respar-floating-body{min-height:0;}
-#resonanceDedicatedPage .dkds-plugin-canvas-bottom>.respar-group-panel.dkds-portable-view{min-width:0!important;flex:0 0 auto!important;}
+#resonanceDedicatedPage .dkds-plugin-canvas-bottom>.respar-group-panel.dkds-portable-view{min-width:0;flex:0 0 auto;}
 #resonanceDedicatedPage .dkds-portable-view.is-collapsed .respar-floating-body,
 #resonanceDedicatedPage .dkds-portable-view.is-collapsed .reswin-group-plot,
-#resonanceDedicatedPage .dkds-portable-view.is-collapsed .reswin-group-legend{display:none!important;}
+#resonanceDedicatedPage .dkds-portable-view.is-collapsed .reswin-group-legend{display:none;}
 #resonanceDedicatedPage .dkds-portable-view.is-collapsed>.respar-floating-header{min-height:36px;}
 
-#resonanceDedicatedPage .respar-left-panel>section{padding:10px!important;margin:0 0 8px!important;}
+#resonanceDedicatedPage .respar-left-panel>section{padding:10px;margin:0 0 8px;}
+
+/* Resonance detector/display domain layout. */
+.resonance-detector-picker{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:6px;}
+.resonance-detector-picker select{min-width:0;}
+.resonance-display-grid{display:grid;grid-template-columns:1fr 1fr;}
+.resonance-display-grid label{display:flex;align-items:center;gap:4px;min-width:0;}
+.resonance-display-grid{gap:4px 7px;}
+
+/* Mobile resonance domain geometry; Core platform layer targets semantic roles only. */
+html.react-native-client #resonanceDedicatedPage .respar-main-plot-header{left:6px;right:6px;max-width:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+html.react-native-client #resonanceDedicatedPage .respar-main-plot-header::-webkit-scrollbar{display:none}

@@ -1,0 +1,227 @@
+/* ============================================================
+   Control unification / status-bar composition
+   Legacy workbench navigation and dialog actions consume the same semantic
+   control surfaces as the modern shell.  Active state is expressed by fill
+   and text contrast, not by bright outlined rectangles.
+   ============================================================ */
+body.dkds-modern-ui .dkds-analysis-nav{
+  gap:8px;
+  padding:5px 10px;
+}
+body.dkds-modern-ui .dkds-analysis-nav>div{gap:4px}
+body.dkds-modern-ui .dkds-analysis-nav-prime:not(:empty),
+body.dkds-modern-ui .dkds-analysis-nav-sub:not(:empty){
+  padding-left:4px;
+  border-left:0;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn,
+body.dkds-modern-ui .dkds-workbench-tab{
+  min-height:30px;
+  border:0;
+  border-radius:8px;
+  background:var(--dkui-control-bg,var(--surface-primary));
+  color:var(--dkui-text-soft,var(--text-secondary));
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn:hover:not(:disabled),
+body.dkds-modern-ui .dkds-workbench-tab:hover:not(:disabled){
+  border:0;
+  background:var(--dkui-control-hover,var(--surface-hover));
+  color:var(--dkui-text,var(--text-primary));
+}
+body.dkds-modern-ui .dkds-analysis-nav-btn.active,
+body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"],
+body.dkds-modern-ui .dkds-workbench-tab.active{
+  border:0;
+  background:var(--dkui-accent-soft,var(--accent-soft));
+  color:var(--dkui-accent,var(--accent-primary));
+  -webkit-text-fill-color:var(--dkui-accent,var(--accent-primary));
+  box-shadow:none;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn.active,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"],
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-workbench-tab.active{
+  background:color-mix(in srgb,var(--dkui-accent) 16%,var(--dkui-surface-soft));
+  color:color-mix(in srgb,var(--dkui-accent) 64%,white);
+  -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 64%,white);
+}
+body.dkds-modern-ui .dkds-dialog-action:not(.primary):not(.danger){
+  border:0;
+  background:var(--dkui-control-bg,var(--surface-primary));
+  color:var(--dkui-text-soft,var(--text-secondary));
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-dialog-action:not(.primary):not(.danger):hover:not(:disabled){
+  background:var(--dkui-control-hover,var(--surface-hover));
+  color:var(--dkui-text,var(--text-primary));
+  transform:none;
+}
+body.dkds-modern-ui .dkds-dialog-action.primary,
+body.dkds-modern-ui .dkds-dialog-action.danger{border:0;box-shadow:none}
+body.dkds-modern-ui .dkds-dialog-action:hover:not(:disabled),
+body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:none}
+
+/* Status-bar chrome ownership ------------------------------------------------
+   The bar is the only material surface. Command clusters and their controls are
+   layout/hit regions, so idle state never reads as nested buttons or capsules. */
+body.dkds-modern-ui #statusBar.statusbar{
+  gap:8px;
+  padding:2px 5px 2px 9px;
+  border-top:0;
+  background:color-mix(in srgb,var(--dkui-canvas) 58%,var(--dkui-surface));
+  box-shadow:0 -1px 0 color-mix(in srgb,var(--dkui-divider) 38%,transparent);
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar{
+  background:color-mix(in srgb,var(--dkui-canvas) 62%,var(--dkui-surface));
+  box-shadow:0 -1px 0 color-mix(in srgb,var(--dkui-divider) 44%,transparent);
+}
+body.dkds-modern-ui .statusbar-command-cluster{
+  flex:0 0 auto;
+  min-width:0;
+  height:24px;
+  display:flex;
+  align-items:center;
+  gap:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .statusbar-plugin-zone{
+  height:20px;
+  gap:1px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .statusbar-plugin-left,
+body.dkds-modern-ui .statusbar-plugin-right{margin-left:0}
+body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
+body.dkds-modern-ui .plugin-status-item{
+  height:20px;
+  padding:0 6px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .plugin-status-item::before{display:none}
+body.dkds-modern-ui button.plugin-status-item:hover{
+  background:var(--dkui-control-hover,var(--surface-hover));
+  color:var(--dkui-text,var(--text-primary));
+}
+
+/* ============================================================
+   First-party semantic surface closure
+   Structure is expressed by surface contrast. Dividers are reserved for
+   interactive resize affordances and tabular/scientific semantics, not for
+   boxing every workspace section. First-party buttons are surface controls,
+   not outlined legacy widgets.
+   ============================================================ */
+body.dkds-modern-ui .left-panel section,
+body.dkds-modern-ui .plugin-sidebar-section,
+body.dkds-modern-ui .inspector-section{
+  border:0;
+}
+body.dkds-modern-ui .left-panel,
+body.dkds-modern-ui .dkds-analysis-left,
+body.dkds-modern-ui .dkds-plugin-canvas-left,
+body.dkds-modern-ui .dkds-plugin-canvas-right{
+  background:var(--dkui-surface-sidebar,var(--surface-sidebar));
+}
+body.dkds-modern-ui .analysis-control-card,
+body.dkds-modern-ui .analysis-chart-card,
+body.dkds-modern-ui .dkds-analysis-prime-panel,
+body.dkds-modern-ui .dkds-portable-view{
+  border:0;
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-portable-header,
+body.dkds-modern-ui .dkds-chart-head,
+body.dkds-modern-ui .dkds-analysis-prime-head,
+body.dkds-modern-ui .dkds-analysis-header,
+body.dkds-modern-ui .dkds-analysis-nav,
+body.dkds-modern-ui .dkds-workbench-header,
+body.dkds-modern-ui .dkds-workbench-tabs{
+  border-color:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-portable-header,
+body.dkds-modern-ui .dkds-chart-head,
+body.dkds-modern-ui .dkds-analysis-prime-head,
+body.dkds-modern-ui .dkds-analysis-nav,
+body.dkds-modern-ui .dkds-workbench-tabs{
+  background:var(--surface-secondary);
+}
+body.dkds-modern-ui button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret),
+body.dkds-modern-ui .dkds-action-button,
+body.dkds-modern-ui .dkds-analysis-nav-btn,
+body.dkds-modern-ui .dkds-workbench-tab{
+  border-color:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret):hover:not(:disabled){
+  border-color:transparent;
+}
+body.dkds-modern-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body.dkds-modern-ui select,
+body.dkds-modern-ui textarea{
+  border-color:var(--control-border);
+}
+body.dkds-modern-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover,
+body.dkds-modern-ui select:hover,
+body.dkds-modern-ui textarea:hover{
+  border-color:var(--control-border-hover);
+}
+/* Splitters keep their hit area but no idle paint. */
+body.dkds-modern-ui .dkds-analysis-left-resizer::before,
+body.dkds-modern-ui .dkds-analysis-right-resizer::before,
+body.dkds-modern-ui .dkds-analysis-bottom-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer::before{
+  background:transparent;
+}
+body.dkds-modern-ui .dkds-analysis-left-resizer:hover::before,
+body.dkds-modern-ui .dkds-analysis-right-resizer:hover::before,
+body.dkds-modern-ui .dkds-analysis-bottom-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before{
+  background:var(--divider-active);
+}
+
+
+/* Project tab close is an icon action, not a regular control button.
+   Keep the active tab as one continuous surface and use a circular hover target. */
+body.dkds-modern-ui .project-tab-close{
+  flex:0 0 24px;
+  width:24px;
+  height:24px;
+  min-width:24px;
+  min-height:24px;
+  padding:0;
+  display:inline-grid;
+  place-items:center;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  box-shadow:none;
+  color:var(--dkui-muted,var(--text-secondary,#667085));
+  line-height:1;
+  transform:none;
+}
+body.dkds-modern-ui .project-tab-close:hover:not(:disabled){
+  background:color-mix(in srgb,var(--dkui-text,var(--text-primary,#1c2a43)) 8%,transparent);
+  border-color:transparent;
+  color:var(--dkui-text,var(--text-primary,#1c2a43));
+  box-shadow:none;
+  transform:none;
+}
+body.dkds-modern-ui .project-tab-close:active:not(:disabled){
+  background:color-mix(in srgb,var(--dkui-text,var(--text-primary,#1c2a43)) 12%,transparent);
+  transform:none;
+}

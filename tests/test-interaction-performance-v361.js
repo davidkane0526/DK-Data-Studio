@@ -5,11 +5,11 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 
-const ui=read('src/core/ui-infrastructure.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
 const terService=read('src/plugins/ter-analysis/analysis-service.js');
-const scientificPlot=read('src/core/scientific-plot-runtime.js');
+const scientificPlot=read('src/core/scientific/plot-runtime.js');
 const topRuntime=read('src/plugin-window/runtime.js');
 const mainProcess=read('desktop/main.js');
 const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
@@ -56,7 +56,7 @@ const calls=[];
 const chartScope={async react(target,data){calls.push(target.id);target.data=data;},resize(){return true;},purge(){},restyle(){},relayout(){}};
 const frames=[];
 const context={console,structuredClone,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;},cancelAnimationFrame(){},document:{getElementById:id=>targets.get(id)||null,querySelector:()=>null},DKDSCharts:{createScope:()=>chartScope,resize(){},purge(){}}};
-context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(read('src/core/entity-runtime.js'),context);vm.runInContext(scientificPlot,context);
+context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(read('src/core/data/entity-runtime.js'),context);vm.runInContext(scientificPlot,context);
 
 (async()=>{
   const scope=context.DKDSScientificPlot.createScope('perf');

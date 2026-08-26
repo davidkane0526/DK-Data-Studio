@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
@@ -11,7 +12,7 @@ const {inspectWorkspaceStyles}=require(path.join(root,'sdk/layout-contract.js'))
 assert(Number(pkg.version.split('.').at(-1))>=32,'Core UI contract regression requires v3.61.32+');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Plugin API must preserve the 1.16 Core UI contract');
 
-const ui=read('src/core/ui-infrastructure.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 assert(ui.includes("data-dkds-core-surface")||ui.includes("dkdsCoreSurface='table'"),'TableSurface must mark Core-owned table internals');
 assert(ui.includes('applyAppearance()'),'TableSurface must own declared appearance variants');
 assert(ui.includes('computeLegendLayout(width,height,curves,baseMargin)'),'D3 ScientificPlot must compute a Core legend footprint');
@@ -19,18 +20,18 @@ assert(ui.includes("interaction:'isolate'"),'D3 default legend interaction must 
 assert(ui.includes('containmentY')&&ui.includes("['hidden','clip','visible']"),'PluginWorkspace must detect visual containment overflow, not only clipping');
 assert(ui.includes('risks:Object.freeze(risks)'),'PluginWorkspace diagnostics must expose predicted layout risks');
 
-const chart=read('src/core/chart-runtime.js');
+const chart=read('src/core/scientific/chart-runtime.js');
 assert(/const VERSION='(?:1\.(?:[7-9]|[1-9]\d)\.\d+|[2-9]\d*\.\d+\.\d+)'/.test(chart),'Chart Runtime must publish the smart-legend revision');
 assert(chart.includes('smartLegendLayout')&&chart.includes('presentation.LegendController')&&chart.includes('current.legendSoloKey'),'Core Chart Runtime must provide renderer-neutral default legend linkage.');
 assert(chart.includes('legendMetrics')&&chart.includes('legendBaseLayouts'),'Core renderer facade must expose legend footprint and recompute it from the base layout.');
 
-const scientific=read('src/core/scientific-plot-runtime.js');
+const scientific=read('src/core/scientific/plot-runtime.js');
 assert(scientific.includes('layout:()=>view.chart?.legendMetrics'),'ScientificPlot legend controller must expose Core legend layout');
 assert(scientific.includes('legendMetrics(target)'),'ScientificPlot scope must expose legend metrics');
 
-const style=read('src/style.css');
+const style=readCoreCss(root);
 assert(style.includes('.dkds-table-surface-host')&&style.includes('.dkds-managed-table'),'Core TableSurface visual contract must exist');
-assert(style.includes('background:var(--surface-primary,#fff)!important;color:var(--text-primary,#1c2a43)!important'),'Core must own table base visual styling');
+assert(style.includes('background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43)'),'Core must own table base visual styling');
 const statusBlock=style.slice(style.indexOf('#statusBar.statusbar'),style.indexOf('.workspace{',style.indexOf('#statusBar.statusbar')));
 assert(statusBlock.includes('var(--surface-primary')&&statusBlock.includes('var(--border-subtle'),'Status bar must use semantic theme tokens');
 const pulseStart=style.indexOf('v3.13 pulse batch workspace');
@@ -45,7 +46,7 @@ const stripe=inspectWorkspaceStyles({apiVersion:'1.16.0',pluginType:'tool',works
 assert.equal(stripe.errors.length,0,'Explicit row-striping exception must remain available');
 assert(stripe.warnings.length>0,'Direct row CSS exceptions must remain visible in validation output');
 
-const main=read('desktop/main.js'),preload=read('desktop/preload.js'),app=read('src/app.js'),status=read('src/plugins/status-monitor/plugin.js'),pluginWindow=read('src/plugin-window/runtime.js');
+const main=read('desktop/main.js'),preload=read('desktop/preload.js'),app=read('src/generated/runtime/app.js'),status=read('src/plugins/status-monitor/plugin.js'),pluginWindow=read('src/plugin-window/runtime.js');
 assert(main.includes("ipcMain.handle('system:toggleDevTools'")&&main.includes("ipcMain.handle('system:getDevToolsState'"),'Electron host must expose DevTools controls');
 assert(preload.includes('toggleDevTools')&&preload.includes('getDevToolsState'),'Preload must expose DevTools controls safely');
 assert(app.includes('toggleDevTools:()=>window.electronAPI?.toggleDevTools'),'Main plugin runtime service must expose DevTools');

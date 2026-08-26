@@ -1,14 +1,15 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-const app=read('src/app.js');
-const css=read('src/style.css');
-const kernel=read('src/core/plugin-kernel.js');
-const manager=read('src/core/plugin-manager-ui.js');
-const ui=read('src/core/ui-infrastructure.js');
+const app=read('src/generated/runtime/app.js');
+const css=readCoreCss(root);
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const manager=read('src/core/plugins/manager-ui.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 
 const plugins={
   resonance:{folder:'resonance-workbench',root:'resonance'},

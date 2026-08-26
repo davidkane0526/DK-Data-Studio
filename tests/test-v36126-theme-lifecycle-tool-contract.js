@@ -1,14 +1,15 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {normalizePluginPackage}=require('../desktop/plugin-package');
 
-assert.equal(json('package.json').version,'3.61.85','theme/lifecycle/tool contract release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.86','theme/lifecycle/tool contract release must be v3.61.27');
 
-const ui=read('src/ui-modern.css');
+const ui=readCoreCss(root);
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){
   assert(ui.includes(token),`Core modern UI must publish semantic plugin token ${token}`);
 }
@@ -59,7 +60,7 @@ let rejected=false;
 try{normalizePluginPackage({...validTool,manifest:{...validTool.manifest,workspace:{role:'top',activity:'other-tool'}}});}catch{rejected=true;}
 assert(rejected,'Tool packages with a workspace/window activity mismatch must be rejected rather than silently classified/hosted incorrectly.');
 
-const manager=read('src/core/plugin-manager-ui.js');
+const manager=read('src/core/plugins/manager-ui.js');
 assert(manager.includes('state.typeFilter=type')&&manager.includes('window.DKDSPlugins?.activities?.refresh?.()'),'Installing a package must reveal its actual normalized type and rebuild the top Tool menu immediately.');
 
 console.log('v3.61.27 shared plugin theme, reusable TOP lifecycle and Tool classification contracts passed.');

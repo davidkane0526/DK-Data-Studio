@@ -26,7 +26,7 @@ for(const [file,expected] of [['src/plugins/resonance-detector-robust/plugin.jso
 }
 const main=fs.readFileSync(path.join(root,'desktop/main.js'),'utf8');assert(main.includes("ipcMain.handle('plugins:algorithmCatalog'"));assert(main.includes('const compatibility=packageCompatibility(manifest)')&&main.includes("code:'PLUGIN_INCOMPATIBLE'"));assert(main.includes("assertPackageCompatible(selected.manifest,'rollback')"));
 const preload=fs.readFileSync(path.join(root,'desktop/preload.js'),'utf8');assert(preload.includes('pluginAlgorithmCatalog'));
-const kernel=fs.readFileSync(path.join(root,'src/core/plugin-kernel.js'),'utf8');assert(kernel.includes('locate:locateAlgorithmPackage'));assert(kernel.includes('recover:recoverAlgorithmPackage'));
+const kernel=fs.readFileSync(path.join(root,'src/generated/runtime/plugin-kernel.js'),'utf8');assert(kernel.includes('locate:locateAlgorithmPackage'));assert(kernel.includes('recover:recoverAlgorithmPackage'));
 const ter=fs.readFileSync(path.join(root,'src/plugins/ter-analysis/analysis-service.js'),'utf8');assert(ter.includes('terRecoverAlgorithmBtn'));assert(ter.includes('api.recover'));
 const resonance=fs.readFileSync(path.join(root,'src/plugins/resonance-workbench/view-components.js'),'utf8');assert(resonance.includes('reswinRecoverDetector'));assert(resonance.includes('reswinRecoverMetricAlgorithm'));assert(resonance.includes('recoverLockedAlgorithm'));
 console.log('Algorithm package catalog/recovery v3.55 OK');

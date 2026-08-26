@@ -1,29 +1,30 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.17.16');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 assert.equal(contract.minimumAppVersion,'3.61.39');
 
-const presentation=read('src/core/plot-presentation-runtime.js');
-const chart=read('src/core/chart-runtime.js');
-const plot=read('src/core/scientific-plot-runtime.js');
-const ui=read('src/core/ui-infrastructure.js');
-const css=read('src/style.css');
-const modern=read('src/ui-modern.css');
+const presentation=read('src/core/scientific/plot-presentation-runtime.js');
+const chart=read('src/core/scientific/chart-runtime.js');
+const plot=read('src/core/scientific/plot-runtime.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const css=readCoreCss(root);
+const modern=readCoreCss(root);
 const index=read('src/index.html');
 const dedicated=read('src/plugin-window/runtime.js');
 
-assert(index.indexOf('core/plot-presentation-runtime.js') < index.indexOf('core/chart-runtime.js'),'Presentation runtime must load before Chart Runtime.');
-assert(dedicated.includes("'plot-presentation-runtime':'../core/plot-presentation-runtime.js'")&&dedicated.indexOf("'plot-presentation-runtime'")<dedicated.indexOf("'chart-runtime'"),'Dedicated windows must load the shared presentation runtime before charts.');
+assert(index.indexOf('core/scientific/plot-presentation-runtime.js') < index.indexOf('core/scientific/chart-runtime.js'),'Presentation runtime must load before Chart Runtime.');
+assert(dedicated.includes("'plot-presentation-runtime':'../core/scientific/plot-presentation-runtime.js'")&&dedicated.indexOf("'plot-presentation-runtime'")<dedicated.indexOf("'chart-runtime'"),'Dedicated windows must load the shared presentation runtime before charts.');
 assert(chart.includes("const VERSION='2.0.0'")&&chart.includes('const presentation=window.DKDSPlotPresentation'),'Core chart facade must consume the shared presentation runtime as a D3-only backend.');
 assert(ui.includes("const VERSION = '7.1.0'")&&ui.includes('const plotPresentation = window.DKDSPlotPresentation || null'),'Core UI surfaces must consume the same presentation runtime.');
 assert(plot.includes("const VERSION='2.5.0'")&&plot.includes('selectLegendForTrace'),'ScientificPlot selection must bridge curve selection to Core legend focus.');
@@ -35,12 +36,12 @@ assert(!chart.includes('function packedLegendRows')&&!ui.includes('function pack
 assert(presentation.includes('class LegendController')&&presentation.includes('function solveLegend'),'Legend rendering and placement must have one shared implementation.');
 assert(presentation.includes('this.buttonMap=new Map()')&&presentation.includes('line.appendChild(button)')&&presentation.includes('host.replaceChildren(fragment)'),'Legend controls must be stable semantic nodes that are reparented instead of recreated across solver updates.');
 assert(presentation.includes("reason:'stable-single-series-slot'"),'Dynamic plots must preserve legend geometry across transient single-series states.');
-assert(css.includes('Scientific Presentation Contract 1.0')&&css.includes('opacity:0!important')&&css.includes('pointer-events:none!important'),'Floating scientific toolbar must auto-hide without entering layout flow.');
-assert(!css.includes('opacity:.64!important'),'Permanent visible plot toolbar regression must be removed.');
-assert(!css.includes('overflow-x:auto!important'),'Horizontal legend scrollbar must not be forced visible.');
-assert(css.includes('.dkds-plot-legend-item.is-selected')&&css.includes('width:18px!important'),'Legend selection must use restrained swatch emphasis rather than a blue chip.');
-assert(css.includes('.dkds-plot-view-head')&&css.includes('height:28px!important'),'Standard plot title bars must use compact Core geometry.');
-assert(modern.includes('body.dkds-modern-ui button:hover:not(:disabled)')&&modern.includes('transform:none!important'),'Modern hover states must not move buttons.');
+assert(css.includes('Scientific Presentation Contract 1.0')&&css.includes('opacity:0')&&css.includes('pointer-events:none'),'Floating scientific toolbar must auto-hide without entering layout flow.');
+assert(!css.includes('opacity:.64'),'Permanent visible plot toolbar regression must be removed.');
+assert(/\.dkds-plot-legend\.dkds-scientific-auto-legend\s*\{[^}]*overflow:hidden/s.test(css),'Horizontal legend scrollbar must not be forced visible.');
+assert(css.includes('.dkds-plot-legend-item.is-selected')&&css.includes('width:18px'),'Legend selection must use restrained swatch emphasis rather than a blue chip.');
+assert(css.includes('.dkds-plot-view-head')&&css.includes('height:28px'),'Standard plot title bars must use compact Core geometry.');
+assert(modern.includes('body.dkds-modern-ui button:hover:not(:disabled)')&&modern.includes('transform:none'),'Modern hover states must not move buttons.');
 
 // Execute the pure shared layout solver without a browser dependency.
 const context={window:{},console};vm.createContext(context);vm.runInContext(presentation,context);

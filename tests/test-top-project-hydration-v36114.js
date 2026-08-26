@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.85','Application version must be 3.61.18.');
+assert(json('package.json').version==='3.61.86','Application version must be 3.61.18.');
 
 const runtime=read('src/plugin-window/runtime.js');
 const prime=runtime.indexOf("measureSync('artifact-store-prime'");
@@ -22,10 +22,10 @@ assert(main.includes('const project=payload?.project')&&main.includes('payload?.
 assert(main.includes('const useConfiguredPrewarm=spec.prewarm===true'),'Diagnostic TOP smoke must follow each plugin\'s real prewarm policy instead of prewarming every plugin unconditionally.');
 assert(main.includes('diagnosticRendererProjectSnapshot')&&main.includes('rendererData'),'Electron diagnostic TOP smoke must inspect the renderer\'s actual hydrated state.');
 
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 assert(app.includes('function currentProjectWindowSmokePayload()')&&app.includes('artifactSnapshot=snapshotArtifactRows()'),'Main renderer must expose the current project to the isolated automation smoke path.');
 
-const automation=read('src/core/automation-test-runtime.js');
+const automation=read('src/core/diagnostics/automation-test-runtime.js');
 assert(automation.includes("'project.data-center-live','Current project → Data Center live hydration'"),'Automation Center must exercise the currently open project through a real Data Center TOP window.');
 for(const token of ['projectDatasetCount','artifactCount','dataTableCount','totalTableRows','renderedArtifactRows'])assert(automation.includes(token),`Current-project Data Center smoke missing assertion: ${token}`);
 assert(automation.includes("setColumnVisible('Name',false")&&automation.includes("visibleTableText().includes('Name\\tValue\\tNote')"),'TableSurface runtime smoke must address the columns that actually exist in its synthetic table.');

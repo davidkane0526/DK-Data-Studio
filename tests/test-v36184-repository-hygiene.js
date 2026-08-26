@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){if(['.git','node_modules','dist'].includes(name))continue;const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(pkg.version,'3.61.85');
+assert.equal(pkg.version,'3.61.86');
 assert.equal(pkg.main,'desktop/main.js');
 assert.equal(fs.readdirSync(path.join(root,'scripts')).filter(n=>n.endsWith('.js')).length<=12,true,'scripts/ must contain build/maintenance tools only.');
 assert(!fs.existsSync(path.join(root,'scripts/generate-build-info.js')),'build-info generation must stay inside prepare-build, not another one-use script.');
@@ -18,21 +18,20 @@ assert(!fs.readdirSync(path.join(root,'docs')).some(n=>/^VERIFICATION_V|^verific
 
 const sourceStyleFiles=walk(path.join(root,'src/styles')).filter(file=>file.endsWith('.css'));
 const importantTotal=sourceStyleFiles.reduce((sum,file)=>sum+(fs.readFileSync(file,'utf8').match(/!important/g)||[]).length,0);
-const modernImportant=sourceStyleFiles.filter(file=>file.includes(`${path.sep}modern${path.sep}`)).reduce((sum,file)=>sum+(fs.readFileSync(file,'utf8').match(/!important/g)||[]).length,0);
-assert(importantTotal<=1597,`authored CSS !important debt increased (${importantTotal}>1597); reduce ownership conflicts instead of adding overrides.`);
-assert(modernImportant<=663,`modern CSS !important debt increased (${modernImportant}>663); edit the owning semantic rule instead of appending overrides.`);
+assert.equal(importantTotal,0,'authored Core CSS must not use !important; cascade ownership is the only override mechanism.');
+assert(!fs.existsSync(path.join(root,'src/styles/base'))&&!fs.existsSync(path.join(root,'src/styles/modern')),'legacy base/modern specificity directories must not return.');
 for(const file of walk(path.join(root,'src'))){
   const rel=path.relative(root,file).replace(/\\/g,'/');
   assert(!/v\d+(?:\.\d+)+|material-contract-\d+|renderer-\d+/i.test(path.basename(rel)),`${rel} uses a release/version-era source filename.`);
 }
 const generated=[
-  'src/app.js','src/core/ui-infrastructure.js','src/core/plugin-kernel.js','src/style.css','src/ui-modern.css',
+  'src/generated/runtime/app.js','src/generated/runtime/ui-infrastructure.js','src/generated/runtime/plugin-kernel.js',
   'src/generated/plugin-index.js','src/generated/sdk-authoring-reference.js','assets/dkds-icon.png','mobile/assets/icon.png','mobile/assets/adaptive-icon.png'
 ];
 const ignore=read('.gitignore');
 for(const rel of generated)assert(ignore.includes(rel),`${rel} must be declared generated in .gitignore.`);
 
-const ownedSources=[...walk(path.join(root,'src/core/theme')), ...walk(path.join(root,'src/styles/modern'))];
+const ownedSources=[...walk(path.join(root,'src/core/theme')), ...walk(path.join(root,'src/styles/theme'))];
 for(const file of ownedSources){
   const rel=path.relative(root,file).replace(/\\/g,'/');
   const text=fs.readFileSync(file,'utf8');

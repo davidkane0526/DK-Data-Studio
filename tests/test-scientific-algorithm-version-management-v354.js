@@ -1,7 +1,7 @@
 const assert=require('assert');const fs=require('fs');const vm=require('vm');
 const storage=new Map();const localStorage={getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
 const context={window:{},console,structuredClone,localStorage};context.window=context;context.globalThis=context;vm.createContext(context);
-vm.runInContext(fs.readFileSync('src/core/scientific-algorithm-runtime.js','utf8'),context,{filename:'scientific-algorithm-runtime.js'});
+vm.runInContext(fs.readFileSync('src/core/scientific/algorithm-runtime.js','utf8'),context,{filename:'scientific-algorithm-runtime.js'});
 const A=context.DKDSScientificAlgorithms;assert.strictEqual(A.VERSION,'1.1.0');
 A.register('provider','probe',{category:'test',version:'1.0.0',run:()=>1});A.register('provider','probe',{category:'test',version:'2.0.0',default:true,run:()=>2});
 assert.strictEqual(A.resolve('probe',{category:'test'}).version,'2.0.0');A.setPreferred({category:'test',id:'probe',version:'1.0.0'});assert.strictEqual(A.resolve('probe',{category:'test'}).version,'1.0.0');

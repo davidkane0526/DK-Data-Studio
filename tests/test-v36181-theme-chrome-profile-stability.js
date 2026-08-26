@@ -5,17 +5,17 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.85');
+assert.equal(pkg.version,'3.61.86');
 
-const rendererCss=read('src/styles/modern/98-theme-material-renderer.css');
-const chromeCss=read('src/styles/modern/96-integrated-command-chrome.css');
-const baseCss=read('src/styles/base/10-analysis-shell.css');
+const rendererCss=read('src/styles/theme/material-renderer.css');
+const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
+const baseCss=read('src/styles/structure/analysis-shell.css');
 const runtimeSource=read('src/core/theme/runtime.js');
 
 assert(chromeCss.includes('Chrome owns its actions.'),'chrome-owned command integration invariant missing');
 assert(chromeCss.includes('[data-dkds-material-role="chrome"]')&&chromeCss.includes('.statusbar-command-cluster'),'status-bar/header integration must be semantic-role-owned');
-assert(chromeCss.includes('#statusBar.statusbar .plugin-status-item::before{display:none!important}'),'status-bar item separators must remain invisible');
-assert(chromeCss.includes('data-dkds-theme-mode="light"')&&chromeCss.includes('background:var(--dkui-accent)!important'),'theme mode active state must have an explicit readable fill');
+assert(chromeCss.includes('#statusBar.statusbar .plugin-status-item::before{display:none}'),'status-bar item separators must remain invisible');
+assert(chromeCss.includes('data-dkds-theme-mode="light"')&&chromeCss.includes('background:var(--dkui-accent)'),'theme mode active state must have an explicit readable fill');
 assert(baseCss.includes('background:var(--dkui-surface-soft')&&baseCss.includes('color:var(--dkui-text-soft'),'export-menu context row must use theme tokens');
 assert(!/\.plugin-export-context\s*\{[^}]*background\s*:\s*#f8fafc/s.test(baseCss),'export-menu context must not hard-code a light background');
 assert(runtimeSource.includes('preferredProfile')&&runtimeSource.includes('suspended:key'),'theme runtime must distinguish preferred profile from temporarily active fallback');

@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'src/core/scientific-reactive-runtime.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'src/core/scientific/reactive-runtime.js'),'utf8');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const context={console,structuredClone:global.structuredClone,setTimeout,clearTimeout,queueMicrotask,performance:{now:()=>Date.now()},requestAnimationFrame:fn=>setTimeout(()=>fn(Date.now()),0),cancelAnimationFrame:clearTimeout};
 context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'scientific-reactive-runtime.js'});

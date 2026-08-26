@@ -2,12 +2,12 @@
 const fs=require('fs');
 const assert=require('assert');
 const read=file=>fs.readFileSync(file,'utf8');
-const css=read('src/styles/modern/20-plugin-chrome.css');
-const kernel=read('src/core/plugin-kernel/20-contributions-commands.inc');
+const css=read('src/styles/presentation/plugin-chrome.css');
+const kernel=read('src/core/plugins/kernel/20-contributions-commands.inc');
 assert(!css.includes('@keyframes dkui-menu-in'),'geometric command-menu entrance keyframe must stay removed');
-assert(css.includes('animation:none!important'),'Core menus must not animate into place');
-assert(css.includes('transform:none!important'),'Core menu geometry must stay stationary');
-assert(css.includes(':is(:hover,:active,:focus-visible){transform:none!important}'),'menu items must not lift on hover/press');
+assert(css.includes('animation:none'),'Core menus must not animate into place');
+assert(css.includes('transform:none'),'Core menu geometry must stay stationary');
+assert(css.includes(':is(:hover,:active,:focus-visible){transform:none}'),'menu items must not lift on hover/press');
 const visibility=kernel.indexOf("menu.style.visibility='hidden';");
 const reveal=kernel.indexOf("menu.classList.remove('hidden');",visibility);
 const position=kernel.indexOf('positionCommandMenuPortal(button,menu);',reveal);

@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const context={console,performance,structuredClone,setTimeout,clearTimeout,Map,Set,WeakMap,Date,Math,JSON,Number,String,Array,Object,Int8Array};
 context.window=context;context.globalThis=context;vm.createContext(context);
-for(const file of ['src/science/common.js','src/core/performance-runtime.js','src/science/peaks.js','src/core/data-model.js'])vm.runInContext(read(file),context,{filename:file});
+for(const file of ['src/science/common.js','src/core/performance/runtime.js','src/science/peaks.js','src/core/data/model.js'])vm.runInContext(read(file),context,{filename:file});
 const perf=context.DKDSPerformance;
 assert(perf&&Number(String(perf.VERSION||'0').split('.')[0])>=1,'Performance Runtime v1+ must load.');
 perf.clear('test.memo');perf.resetMetrics('test.memo');let computeCount=0;

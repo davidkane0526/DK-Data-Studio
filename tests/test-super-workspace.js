@@ -1,9 +1,10 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const vm=require('vm');
 
 const root=path.resolve(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'src','core','plugin-kernel.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'src','generated','runtime','plugin-kernel.js'),'utf8');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
@@ -152,9 +153,9 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   }
 
   // Source-level invariants for the main shell and manager UI.
-  const app=read('src/app.js');
-  const css=read('src/style.css');
-  const managerUi=read('src/core/plugin-manager-ui.js');
+  const app=read('src/generated/runtime/app.js');
+  const css=readCoreCss(root);
+  const managerUi=read('src/core/plugins/manager-ui.js');
   const windowManager=read('desktop/plugin-window-manager.js');
   const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
   const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
@@ -166,8 +167,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   assert(css.includes('.dkds-super-composed-root')&&css.includes('.dkds-super-slot-left')&&css.includes('.dkds-super-slot-main'),'core SUPER layout must be driven by semantic TOP slots.');
   assert(!css.includes('#pulseAnalysisPage.super-workspace-page')&&!css.includes('#terMaxPage.super-workspace-page')&&!css.includes('#builtin-data-center-data-center-page.super-workspace-page'),'core SUPER CSS must not hard-code built-in TOP plugin names.');
   assert(app.includes('applySuperWorkspaceComposition')&&app.includes('querySuperContractSelectors'),'main renderer must compose TOP contracts generically at runtime.');
-  assert(css.includes('box-shadow:none!important'),'selected top-level buttons must not retain the blue bottom underline.');
-  assert(css.includes('height:34px!important'),'top command buttons must share a single height.');
+  assert(css.includes('box-shadow:none'),'selected top-level buttons must not retain the blue bottom underline.');
+  assert(css.includes('height:34px'),'top command buttons must share a single height.');
   assert(managerUi.includes('plugin-super-selector')&&managerUi.includes('setSuper'),'plugin manager must expose an explicit SUPER selector for TOP plugins.');
   assert(managerUi.includes('topContractReady'),'plugin manager must expose whether a TOP contract is valid.');
   assert(!windowManager.includes('normalizeWindowMode')&&!windowManager.includes("mode:'compatibility'")&&!windowManager.includes("mode:'embedded'"),'TOP lifecycle must expose only the plugin-owned dedicated renderer model.');

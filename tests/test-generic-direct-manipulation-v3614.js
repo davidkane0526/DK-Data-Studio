@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-const ui=read('src/core/ui-infrastructure.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const sdk=read('sdk/plugin-api.d.ts');
 const docs=read('sdk/README.md');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');

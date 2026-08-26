@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {readCoreCss}=require('./css-source');
 const assert = require('assert');
 
 const root = path.resolve(__dirname, '..');
@@ -7,9 +8,9 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const main = fs.readFileSync(path.join(root, 'desktop/main.js'), 'utf8');
 const navRegistration = fs.readFileSync(path.join(root, 'src', 'plugins', 'shell-navigation', 'plugin.js'), 'utf8');
 const nav = fs.readFileSync(path.join(root, 'src', 'core', 'recipes', 'shell-navigation.js'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'src', 'style.css'), 'utf8');
+const css = readCoreCss(root);
 const html = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
-const pluginManager = fs.readFileSync(path.join(root, 'src', 'core', 'plugin-manager-ui.js'), 'utf8');
+const pluginManager = fs.readFileSync(path.join(root, 'src', 'core', 'plugins', 'manager-ui.js'), 'utf8');
 const svg = fs.readFileSync(path.join(root, 'assets', 'dkds-mark.svg'), 'utf8');
 const ico = fs.readFileSync(path.join(root, 'assets', 'dkds-icon.ico'));
 
@@ -27,7 +28,7 @@ assert(nav.includes('primaryButtons'),'navigation hierarchy must derive from reg
 assert(!nav.includes('data-nav-density'),'dead width-density navigation mode must not return');
 assert(css.includes('--ui-font-family:'));
 assert(css.includes('button:focus-visible'));
-assert(/\.lan-web-panel\s*\{[^}]*z-index\s*:\s*1100\s*!important/i.test(css), 'LAN panel must stay above SUPER workspace divider');
+assert(/\.lan-web-panel\s*\{[^}]*z-index\s*:\s*1100\s*/i.test(css), 'LAN panel must stay above SUPER workspace divider');
 assert(css.includes('.lan-web-panel .panel-header-actions>.panel-close'), 'LAN minimize/close controls must share one geometry contract');
 assert(/\.global-commandbar\s+\.compact-menu-anchor>#editMenuBtn\s*\{[^}]*min-width\s*:\s*72px/i.test(css), 'edit command must match file-command button width');
 assert(html.includes('class="lan-web-minimize-glyph"'), 'LAN minimize button must use a compact drawn glyph instead of a long text dash');
@@ -36,7 +37,7 @@ assert(/\.global-commandbar\s+\.file-command-group\s*\{[^}]*height\s*:\s*42px/i.
 assert(/#pluginManagerList\s*,\s*\.plugin-manager-card\s*\{[^}]*overflow-anchor\s*:\s*none/i.test(css), 'plugin manager must disable browser scroll anchoring during card replacement');
 assert(pluginManager.includes('captureManagerScroll')&&pluginManager.includes('restoreManagerScroll'), 'plugin manager must explicitly preserve its scroll position across enable/disable rerenders');
 assert(pluginManager.includes("renderList({scroll:'top'})"), 'opening or filtering plugin manager should deliberately reset to the top instead of inheriting a stale scroll position');
-assert(/\.system-commandbar>\.menu-anchor>#manageMenuBtn\s*\{[^}]*height\s*:\s*42px\s*!important[^}]*min-height\s*:\s*42px\s*!important/i.test(css), 'standalone shell menus must override the shared toolbar rule and match the file-command group outer height');
+assert(/\.system-commandbar>\.menu-anchor>#manageMenuBtn\s*\{[^}]*height\s*:\s*42px\s*[^}]*min-height\s*:\s*42px\s*/i.test(css), 'standalone shell menus must override the shared toolbar rule and match the file-command group outer height');
 assert(/input\[type="checkbox"\]\s*,\s*input\[type="radio"\]\s*\{[^}]*accent-color\s*:\s*var\(--accent\)/i.test(css), 'Core must provide the default blue native checkbox/radio selected state.');
 assert(/\.dkds-scroll-x-compact\s*\{[^}]*scrollbar-width\s*:\s*none/i.test(css)&&/\.dkds-scroll-x-compact::\-webkit-scrollbar\s*\{[^}]*display\s*:\s*none[^}]*width\s*:\s*0[^}]*height\s*:\s*0/i.test(css), 'Core horizontal strips must hide scrollbar chrome.');
 assert(/\.dkds-horizontal-wheel-scroll\s*\{[^}]*overscroll-behavior-inline\s*:\s*contain/i.test(css)&&/\.dkds-selection-item\.dkds-selection-focused\s*\{/i.test(css), 'Core must own wheel-to-horizontal scrolling and linked-selection focus presentation.');

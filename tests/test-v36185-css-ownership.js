@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.85','current-version assertion is synchronized by set-version');
+assert.equal(json('package.json').version,'3.61.86','current-version assertion is synchronized by set-version');
 
 // Domain workbench CSS belongs to each plugin. Core authored CSS may only target
 // semantic Core roles, never TER/Pulse/Data Center/Resonance DOM identities.
@@ -28,23 +28,22 @@ for(const id of ownedPlugins){
   }
 }
 
-// Built-in and packaged plugin styles use the same cascade slot. Plugin layout
-// comes after base structure and before modern/theme chrome so activation order
-// cannot silently turn plugin CSS into a late theme override.
-const styleLoader=read('src/core/plugin-kernel/30-project-pages-panels.inc');
-assert(styleLoader.includes('ui-modern\\.css')&&styleLoader.includes('insertBefore(el, modern)'),'Plugin stylesheet lifecycle must insert manifest CSS before ui-modern.css.');
+// Built-in and packaged plugin styles share one explicit cascade owner.
+const styleLoader=read('src/core/plugins/kernel/30-project-pages-panels.inc');
+assert(styleLoader.includes('@layer dkds.plugin')&&styleLoader.includes('document.head.appendChild(el)'),'Plugin stylesheet lifecycle must use the dkds.plugin cascade layer independent of activation order.');
 
 // Mobile/plot infrastructure observes semantic markers instead of named plugins.
-const mobile=read('src/core/mobile-host-runtime.js');
+const mobile=read('src/core/host/mobile-host-runtime.js');
 assert(mobile.includes('[data-dkds-mobile-summary]')&&!mobile.includes('#reswinSummary')&&!mobile.includes('#terSummary'),'Mobile summary observation must be semantic and plugin-neutral.');
-const curves=read('src/core/ui-infrastructure/40-scientific-curves.inc');
+const curves=read('src/core/ui/composition/40-scientific-curves.inc');
 assert(curves.includes('[data-dkds-legend]')&&curves.includes('[data-dkds-plot-scope]'),'Scientific navigation collision handling must use semantic legend/scope markers.');
 assert(!/respar-main-legend|respar-peak-legend|reswin-group-legend/.test(curves),'Scientific Core must not know Resonance legend selectors.');
 
 // This release is a reduction checkpoint: debt ceilings may only move down.
 const importantTotal=coreCssFiles.reduce((sum,file)=>sum+(fs.readFileSync(file,'utf8').match(/!important/g)||[]).length,0);
-const modernImportant=coreCssFiles.filter(file=>file.includes(`${path.sep}modern${path.sep}`)).reduce((sum,file)=>sum+(fs.readFileSync(file,'utf8').match(/!important/g)||[]).length,0);
-assert(importantTotal<=1492,`authored Core CSS !important debt regressed (${importantTotal}>1492).`);
-assert(modernImportant<=651,`modern Core CSS !important debt regressed (${modernImportant}>651).`);
+assert.equal(importantTotal,0,'Authored Core CSS must not use !important; use cascade ownership layers.');
+assert(!fs.existsSync(path.join(root,'src','styles','base'))&&!fs.existsSync(path.join(root,'src','styles','modern')),'Legacy base/modern specificity directories must not return.');
+const cascade=read('src/core.css');
+for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window'])assert(cascade.includes(`dkds.${layer}`),`Core cascade is missing dkds.${layer}.`);
 
-console.log(`v3.61.85 CSS ownership PASS: plugin geometry is manifest-owned; Core is domain-neutral; !important debt=${importantTotal}/${modernImportant}.`);
+console.log('v3.61.86 CSS ownership PASS: plugin geometry is manifest-owned; Core is domain-neutral; !important debt=0 and cascade ownership is explicit.');

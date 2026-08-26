@@ -1,0 +1,741 @@
+/* ============================================================
+   plugin branch: platform-adaptive shell / touch foundations
+   ============================================================ */
+.plugin-toolbar-slot{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+}
+.plugin-toolbar-btn[data-plugin-id]{
+  position:relative;
+}
+.plugin-toolbar-btn[data-plugin-id]::after{
+  content:'';
+  position:absolute;
+  left:6px;
+  right:6px;
+  bottom:1px;
+  height:1px;
+  background:currentColor;
+  opacity:.10;
+  pointer-events:none;
+}
+
+/* Coarse-pointer devices need larger targets without changing desktop density. */
+.dkds-pointer-coarse button,
+.dkds-pointer-coarse input,
+.dkds-pointer-coarse select{
+  min-height:var(--dkds-touch-target,44px);
+}
+.dkds-pointer-coarse .toolbar-btn{
+  height:var(--dkds-touch-target,44px);
+  padding-left:11px;
+  padding-right:11px;
+}
+.dkds-pointer-coarse .width-handle{
+  stroke-width:12px;
+}
+.dkds-pointer-coarse .main-plot-tools button{
+  min-height:40px;
+}
+.dkds-pointer-coarse .project-tab{
+  min-height:40px;
+}
+.dkds-pointer-coarse .scan-toggle-row{
+  gap:18px;
+}
+
+/* Tablet-sized layouts: preserve the scientific canvas and allow side controls to scroll. */
+.dkds-size-medium .workspace{
+  grid-template-columns:minmax(230px,260px) minmax(0,1fr);
+}
+.dkds-size-medium .left-panel{
+  padding:9px;
+}
+.dkds-size-medium .brand{
+  max-width:170px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.dkds-size-medium .inspector-dock-slot.active{
+  max-width:38vw;
+}
+
+/* Compact portrait/mobile: two-stage layout rather than squeezing the desktop grid. */
+.dkds-size-compact .topbar{
+  height:auto;
+  min-height:58px;
+  flex-wrap:wrap;
+  align-content:center;
+  gap:3px 8px;
+  padding:5px 7px;
+}
+.dkds-size-compact .brand{
+  width:100%;
+  max-width:none;
+  height:27px;
+  display:flex;
+  align-items:center;
+  font-size:12px;
+}
+.dkds-size-compact .toolbar{
+  width:100%;
+  flex:1 0 100%;
+  justify-content:flex-start;
+  padding:2px 0 4px;
+  scroll-snap-type:x proximity;
+}
+.dkds-size-compact .toolbar-group{
+  scroll-snap-align:start;
+}
+.dkds-size-compact .project-tabs-bar{
+  height:42px;
+  padding-left:6px;
+  padding-right:6px;
+}
+.dkds-size-compact .project-tab{
+  min-width:145px;
+}
+.dkds-size-compact .workspace{
+  height:calc(100% - 126px);
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,34vh) minmax(0,1fr);
+}
+.dkds-size-compact .left-panel{
+  min-height:0;
+  border-right:0;
+  border-bottom:1px solid var(--border);
+  padding:8px;
+}
+.dkds-size-compact .left-panel section{
+  margin-bottom:9px;
+  padding-bottom:9px;
+}
+.dkds-size-compact .dataset-list{
+  max-height:175px;
+}
+.dkds-size-compact .main-area{
+  min-height:0;
+}
+.dkds-size-compact .main-plot-header{
+  left:10px;
+  right:8px;
+  top:6px;
+  align-items:flex-start;
+}
+.dkds-size-compact .main-plot-tools{
+  max-width:62vw;
+  overflow-x:auto;
+}
+.dkds-size-compact .main-legend-bar{
+  max-width:35vw;
+}
+.dkds-size-compact .group-panel.docked:not(.collapsed){
+  height:min(42vh,330px);
+}
+.dkds-size-compact .inspector-dock-slot.active{
+  position:absolute;
+  z-index:115;
+  right:6px;
+  top:58px;
+  bottom:34px;
+  width:min(92vw,420px);
+  max-width:none;
+  height:auto;
+  border:1px solid var(--border);
+  border-radius:10px 0 0 10px;
+  box-shadow:var(--shadow);
+}
+.dkds-size-compact .main-workspace{
+  position:relative;
+  grid-template-columns:minmax(0,1fr);
+}
+.dkds-size-compact .floating-panel{
+  max-width:calc(100vw - 12px);
+  max-height:calc(100vh - 80px);
+}
+.dkds-size-compact .analysis-page-header{
+  min-height:56px;
+  height:auto;
+  padding:8px 10px;
+}
+.dkds-size-compact .analysis-page-body{
+  padding:9px;
+}
+.dkds-size-compact .import-panel-overlay{
+  padding:5px;
+}
+.dkds-size-compact .import-workbench{
+  width:100%;
+  height:100%;
+  border-radius:8px;
+}
+.dkds-size-compact .import-workbench-body{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(150px,28vh) minmax(0,1fr);
+}
+.dkds-size-compact .import-file-pane{
+  border-right:0;
+  border-bottom:1px solid #dfe5ef;
+}
+.dkds-size-compact .import-basic-grid,
+.dkds-size-compact .import-mapping-grid{
+  grid-template-columns:1fr;
+}
+/* Landscape phones/tablets prioritize the graph and keep controls as a narrower rail. */
+.dkds-size-compact.dkds-orientation-landscape .workspace{
+  grid-template-columns:minmax(220px,30vw) minmax(0,1fr);
+  grid-template-rows:1fr;
+}
+.dkds-size-compact.dkds-orientation-landscape .left-panel{
+  border-right:1px solid var(--border);
+  border-bottom:0;
+}
+.dkds-size-compact.dkds-orientation-landscape .dataset-list{
+  max-height:230px;
+}
+
+/* Android/WebView safe-area support. */
+.dkds-platform-android body{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-right:env(safe-area-inset-right,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:env(safe-area-inset-left,0px);
+}
+
+/* React Native owns Android system chrome and primary navigation. The shared
+   renderer keeps project tabs and scientific/plugin surfaces, but no longer
+   compresses the desktop command bar into the phone viewport. */
+.react-native-client{
+  --dkds-statusbar-height:26px;
+  overscroll-behavior:none;
+}
+.react-native-client body{
+  padding:0;
+  overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.react-native-client .topbar{display:none}
+.react-native-client .project-tabs-bar{
+  height:40px;
+  min-height:40px;
+  padding:4px 6px;
+  gap:5px;
+  touch-action:pan-x;
+}
+.react-native-client .project-tabs{
+  overflow-x:auto;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+}
+.react-native-client .project-tabs::-webkit-scrollbar{display:none}
+.react-native-client .project-tab{
+  min-width:min(62vw,230px);
+  min-height:32px;
+  scroll-snap-align:start;
+  border-radius:8px;
+}
+.react-native-client .project-tab-close{
+  min-width:30px;
+  min-height:30px;
+}
+.react-native-client .new-project-tab{
+  min-width:34px;
+  width:34px;
+  min-height:32px;
+  border-radius:9px;
+}
+.react-native-client .workspace{
+  height:calc(100% - 40px - var(--dkds-statusbar-height,26px));
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(118px,27vh) minmax(0,1fr);
+}
+.react-native-client .left-panel{
+  padding:7px;
+  border-right:0;
+  border-bottom:1px solid var(--border-subtle,var(--border));
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.react-native-client .left-panel section{
+  margin-bottom:7px;
+  padding-bottom:7px;
+}
+.react-native-client .dataset-list{max-height:150px}
+.react-native-client .statusbar{
+  height:var(--dkds-statusbar-height,26px);
+  min-height:var(--dkds-statusbar-height,26px);
+  padding:4px 8px;
+  font-size:9px;
+}
+.react-native-client .statusbar-plugin-zone{max-width:34vw}
+.react-native-client .analysis-page{
+  top:40px;
+  bottom:var(--dkds-statusbar-height,26px);
+}
+.react-native-client .analysis-page-header{
+  min-height:50px;
+  padding:7px 9px;
+  gap:7px;
+  align-items:flex-start;
+}
+.react-native-client .analysis-page-header h2{font-size:15px}
+.react-native-client .analysis-subtitle{font-size:9px;line-height:1.35}
+.react-native-client .analysis-page-header>div:last-child,
+.react-native-client .plugin-manager-header-actions,
+.react-native-client .automation-test-header-actions{
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  max-width:56vw;
+  scrollbar-width:none;
+}
+.react-native-client .analysis-page-close{min-width:max-content}
+.react-native-client .analysis-page-body{
+  padding:8px 8px 20px;
+  overscroll-behavior:contain;
+}
+.react-native-client .command-menu{
+  position:fixed;
+  z-index:2800;
+  left:7px;
+  right:7px;
+  top:auto;
+  bottom:7px;
+  width:auto;
+  max-height:min(72vh,560px);
+  overflow:auto;
+  padding:7px;
+  border-radius:14px;
+  box-shadow:0 18px 54px rgba(15,23,42,.25);
+}
+.react-native-client .command-menu button{
+  width:100%;
+  min-height:46px;
+  justify-content:space-between;
+  text-align:left;
+}
+.react-native-client .floating-panel:not(.docked){
+  position:fixed;
+  z-index:1500;
+  left:6px;
+  right:6px;
+  top:auto;
+  bottom:calc(var(--dkds-statusbar-height,26px) + 6px);
+  width:auto;
+  height:min(64vh,560px);
+  max-width:none;
+  max-height:none;
+  transform:none;
+  resize:none;
+  border-radius:15px 15px 10px 10px;
+}
+.react-native-client .floating-header{
+  min-height:44px;
+  height:44px;
+  cursor:default;
+}
+.react-native-client .floating-body{height:calc(100% - 44px)}
+.react-native-client .inspector-dock-slot.active{
+  position:fixed;
+  z-index:1450;
+  left:6px;
+  right:6px;
+  top:auto;
+  bottom:calc(var(--dkds-statusbar-height,26px) + 6px);
+  width:auto;
+  height:min(58vh,520px);
+  max-width:none;
+  border-radius:15px 15px 9px 9px;
+}
+.react-native-client .import-panel-overlay{padding:0}
+.react-native-client .import-workbench{
+  width:100%;
+  height:100%;
+  max-height:none;
+  border:0;
+  border-radius:0;
+}
+.react-native-client .import-workbench-header{
+  padding:8px 10px;
+  gap:8px;
+}
+.react-native-client .import-workbench-header h2{font-size:15px}
+.react-native-client .import-workbench-subtitle{display:none}
+.react-native-client .import-header-actions{flex-wrap:nowrap}
+.react-native-client .import-target-bar{
+  padding:7px 9px;
+  grid-template-columns:1fr;
+  gap:6px;
+}
+.react-native-client .import-target-heading span{display:none}
+.react-native-client .import-target-options{
+  overflow-x:auto;
+  flex-wrap:nowrap;
+  scrollbar-width:none;
+}
+.react-native-client .import-workbench-body{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(130px,24vh) minmax(0,1fr);
+}
+.react-native-client .import-file-pane{
+  border-right:0;
+  border-bottom:1px solid var(--border-subtle,#dfe5ef);
+}
+.react-native-client .import-selection-hint{display:none}
+.react-native-client .import-file-actions{
+  display:flex;
+  overflow-x:auto;
+  padding:5px;
+}
+.react-native-client .import-file-actions button{min-width:max-content}
+.react-native-client .dkds-dialog-overlay,
+.react-native-client .dkds-settings-overlay{padding:7px;align-items:end}
+.react-native-client .dkds-dialog,
+.react-native-client .dkds-settings-dialog{
+  width:100%;
+  max-height:82vh;
+  border-radius:16px 16px 10px 10px;
+}
+.react-native-client.dkds-pointer-coarse button:hover,
+.react-native-client.dkds-pointer-coarse .activity-tab:hover,
+.react-native-client.dkds-pointer-coarse .plugin-toolbar-btn:hover{transform:none}
+
+/* Landscape phones use the native navigation rail and reserve nearly all of
+   the remaining width for the scientific canvas. */
+.react-native-client.dkds-orientation-landscape .workspace{
+  grid-template-columns:minmax(190px,30vw) minmax(0,1fr);
+  grid-template-rows:1fr;
+}
+.react-native-client.dkds-orientation-landscape .left-panel{
+  border-right:1px solid var(--border-subtle,var(--border));
+  border-bottom:0;
+}
+.react-native-client.dkds-orientation-landscape .analysis-page-header{
+  min-height:44px;
+  align-items:center;
+}
+.react-native-client.dkds-orientation-landscape .analysis-subtitle{display:none}
+
+/* ============================================================
+   Core Plugin Manager
+   ============================================================ */
+.plugin-manager-header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.plugin-manager-body{
+  width:min(1500px,100%);
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding-bottom:34px;
+}
+.plugin-manager-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:10px;
+}
+.plugin-manager-stat{
+  min-height:74px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  padding:12px 14px;
+  border:1px solid #dfe5ef;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+.plugin-manager-stat span{font-size:10px;color:#7d8798}
+.plugin-manager-stat strong{font-size:22px;line-height:1;color:#253047;font-variant-numeric:tabular-nums}
+.plugin-manager-stat.has-error{border-color:#efc5c1;background:#fff9f8}
+.plugin-manager-stat.has-error strong{color:#b42318}
+.plugin-manager-toolbar-card{
+  display:grid;
+  grid-template-columns:minmax(240px,1fr) auto auto auto auto auto;
+  align-items:center;
+  gap:9px;
+  padding:10px 12px;
+  border:1px solid #dfe5ef;
+  border-radius:10px;
+  background:#fff;
+}
+.plugin-manager-search-wrap{
+  min-width:0;
+  height:34px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 9px;
+  border:1px solid var(--border-strong,#c6d8ee);
+  border-radius:7px;
+  background:#fff;
+  color:var(--text-tertiary,#7f8ba8);
+}
+.plugin-manager-search-wrap:focus-within{border-color:#7190ed;box-shadow:0 0 0 3px rgba(49,94,251,.08)}
+.plugin-manager-search-wrap input{
+  width:100%;
+  min-width:0;
+  height:30px;
+  padding:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#273244;
+  font-size:11px;
+}
+.plugin-manager-toolbar-card>label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--text-secondary,#60708c);
+  font-size:10px;
+  white-space:nowrap;
+}
+.plugin-manager-toolbar-card select{
+  min-width:110px;
+  height:34px;
+  border:1px solid var(--border-strong,#c6d8ee);
+  border-radius:7px;
+  background:#fff;
+  padding:3px 7px;
+  font-size:10px;
+}
+.plugin-manager-toolbar-card>button{height:34px}
+.plugin-manager-visible-count{
+  padding:5px 8px;
+  border:1px solid #e1e6ef;
+  border-radius:999px;
+  background:#f7f9fc;
+  color:var(--text-secondary,#60708c);
+  font-size:9px;
+  white-space:nowrap;
+}
+.plugin-manager-note{
+  padding:9px 11px;
+  border-left:3px solid #8091b8;
+  border-radius:5px;
+  background:#f7f9fc;
+  color:var(--text-secondary,#60708c);
+  font-size:10px;
+  line-height:1.55;
+}
+.plugin-manager-section{grid-column:1/-1;display:grid;gap:8px;min-width:0}
+.plugin-manager-section+.plugin-manager-section{margin-top:8px}
+.plugin-manager-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 2px 0}
+.plugin-manager-section-head>div{display:grid;gap:2px;min-width:0}
+.plugin-manager-section-head strong{font-size:14px;color:#172033}
+.plugin-manager-section-head span{font-size:11px;color:#7b8799}
+.plugin-manager-section-count{flex:0 0 auto;min-width:24px;text-align:center;padding:2px 7px;border:1px solid #dbe2ec;border-radius:999px;background:#f7f9fc;color:var(--text-secondary,#60708c);font-size:11px}
+.plugin-manager-section-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.plugin-manager-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;
+}
+.plugin-manager-empty{
+  grid-column:1/-1;
+  min-height:190px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed #cfd7e5;
+  border-radius:10px;
+  background:var(--surface-secondary,#f6f9fd);
+  color:var(--text-tertiary,#7f8ba8);
+  font-size:11px;
+}
+.plugin-manager-card{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid #dfe5ef;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+.plugin-manager-card.status-active{border-color:#cdd9f6}
+.plugin-manager-card.status-error{border-color:#efc5c1}
+.plugin-manager-card.status-disabled{background:#fbfcfe}
+.plugin-card-head{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px 9px;
+}
+.plugin-card-icon{
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#eef3ff;
+  color:#315efb;
+  font-size:16px;
+  font-weight:800;
+}
+.status-disabled .plugin-card-icon{background:#f0f2f5;color:#7d8798}
+.status-error .plugin-card-icon{background:#fff0ef;color:#b42318}
+.plugin-card-title-wrap{min-width:0}
+.plugin-card-title-line{display:flex;align-items:center;gap:7px;min-width:0}
+.plugin-card-title-line h3{
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:#253047;
+  font-size:13px;
+}
+.plugin-card-id{
+  margin-top:3px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:var(--text-tertiary,#7f8ba8);
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:8.5px;
+}
+.plugin-status-badge{
+  flex:0 0 auto;
+  padding:2px 6px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.plugin-status-badge.active{background:#edf8f1;color:#237a46}
+.plugin-status-badge.disabled{background:#eef1f5;color:#667085}
+.plugin-status-badge.available{background:#fff8e8;color:#8b5d00}
+.plugin-status-badge.error{background:#fff0ef;color:#b42318}
+.plugin-enable-switch{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+.plugin-enable-switch input{position:absolute;opacity:0;pointer-events:none}
+.plugin-switch-track{
+  position:relative;
+  width:36px;
+  height:20px;
+  border-radius:999px;
+  background:#c9d1dc;
+  transition:background .15s;
+}
+.plugin-switch-thumb{
+  position:absolute;
+  width:16px;
+  height:16px;
+  left:2px;
+  top:2px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(15,23,42,.25);
+  transition:transform .15s;
+}
+.plugin-enable-switch input:checked + .plugin-switch-track{background:#315efb}
+.plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(16px)}
+.plugin-enable-switch input:disabled + .plugin-switch-track{opacity:.45}
+.plugin-switch-label{min-width:24px;color:var(--text-secondary,#60708c);font-size:9px}
+.plugin-card-body{padding:0 13px 10px}
+.plugin-card-description{
+  min-height:31px;
+  margin:0 0 8px;
+  color:var(--text-secondary,#60708c);
+  font-size:10px;
+  line-height:1.55;
+}
+.plugin-capability-row{display:flex;flex-wrap:wrap;gap:5px}
+.plugin-capability-chip{
+  padding:3px 6px;
+  border:1px solid #dce4f3;
+  border-radius:999px;
+  background:#f7f9fd;
+  color:#566176;
+  font-size:8px;
+}
+.plugin-capability-chip.muted{color:#98a2b3}
+.plugin-error-box{
+  margin-top:8px;
+  padding:7px 8px;
+  border:1px solid #efc5c1;
+  border-radius:6px;
+  background:#fff7f6;
+  color:#b42318;
+  font-size:9px;
+  line-height:1.45;
+  word-break:break-word;
+}
+.plugin-card-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:42px;
+  padding:7px 10px 7px 13px;
+  border-top:1px solid #edf0f5;
+  background:var(--surface-secondary,#f6f9fd);
+}
+.plugin-card-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--text-tertiary,#7f8ba8);font-size:8px}
+.plugin-card-actions{display:flex;align-items:center;gap:5px}
+.plugin-card-actions button{height:28px;padding:3px 8px;font-size:9px}
+.plugin-card-details{
+  padding:9px 13px 10px;
+  border-top:1px solid #edf0f5;
+  background:#f8faff;
+  color:var(--text-secondary,#60708c);
+  font-size:9px;
+  line-height:1.65;
+  word-break:break-word;
+}
+.plugin-card-details.hidden{display:none}
+.dkds-pointer-coarse .plugin-switch-track{width:46px;height:26px}
+.dkds-pointer-coarse .plugin-switch-thumb{width:22px;height:22px}
+.dkds-pointer-coarse .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(20px)}
+.dkds-pointer-coarse .plugin-card-actions button{min-height:40px}
+@media(max-width:1050px){
+  .plugin-manager-list{grid-template-columns:1fr}.plugin-manager-section-list{grid-template-columns:1fr}
+}
+@media(max-width:920px){
+  .plugin-manager-toolbar-card{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+  .plugin-manager-toolbar-card>label{justify-content:flex-start}
+  .plugin-manager-toolbar-card>button{width:100%}
+  .plugin-manager-visible-count{justify-self:start}
+}
+@media(max-width:760px){
+  .plugin-manager-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plugin-manager-toolbar-card{grid-template-columns:1fr 1fr}
+  .plugin-manager-search-wrap{grid-column:1/-1}
+  .plugin-manager-visible-count{justify-self:start}
+  .plugin-card-head{grid-template-columns:40px minmax(0,1fr)}
+  .plugin-enable-switch{grid-column:1/-1;justify-self:end;margin-top:-3px}
+  .plugin-card-footer{align-items:flex-start;flex-direction:column}
+  .plugin-card-actions{width:100%;justify-content:flex-end}
+  .plugin-manager-header-actions{width:100%;justify-content:flex-start}
+}
+@media(max-width:480px){
+  .plugin-manager-toolbar-card{grid-template-columns:1fr}
+  .plugin-manager-search-wrap{grid-column:auto}
+  .plugin-manager-summary{gap:7px}
+  .plugin-manager-stat{min-height:62px;padding:9px 10px}
+}
+
+
+/* Theme Contract 3.1 · Plugin Manager profile control */
+.plugin-theme-profile-block{margin-top:9px;padding:8px 9px;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-secondary);color:var(--text-primary)}
+.plugin-theme-profile-block>div:first-child{display:grid;gap:2px;min-width:0}
+.plugin-theme-profile-block strong{font-size:10px}
+.plugin-theme-profile-block span{font-size:9px;color:var(--text-secondary)}
+.plugin-theme-profile-actions{display:flex;align-items:center;gap:6px;min-width:min(320px,48%)}
+.plugin-theme-profile-select{height:28px;min-width:140px;flex:1 1 auto;border:1px solid var(--control-border);border-radius:7px;background:var(--input-bg);color:var(--text-primary);padding:0 24px 0 8px;font-size:9px}
+.plugin-theme-activate-btn{height:28px;min-height:28px;padding:0 9px}
+.plugin-theme-profile-block.is-disabled,.plugin-theme-profile-block.is-empty{justify-content:flex-start}
+@media(max-width:760px){.plugin-theme-profile-block{align-items:stretch;flex-direction:column}.plugin-theme-profile-actions{min-width:0;width:100%}}

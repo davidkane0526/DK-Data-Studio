@@ -1,13 +1,14 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const ui=read('src/core/ui-infrastructure.js');
-const kernel=read('src/core/plugin-kernel.js');
-const css=read('src/style.css');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const css=readCoreCss(root);
 const sdk=read('sdk/plugin-api.d.ts');
-const automation=read('src/core/automation-test-runtime.js');
+const automation=read('src/core/diagnostics/automation-test-runtime.js');
 
 for(const token of ['class TableSurface','class TableSurfaceRegistry','globalTableSurfaceRegistry','table:not([data-dkds-table="off"])','setColumnWidth(index,width','autoSizeColumn(index','autoSizeAll()','sort(index,direction','setColumnVisible(index','showAllColumns()','visibleColumnKeys()','visibleTableText(','copyVisibleTable(','resetState(','menuItems(value,context)','headerMenuItems','cellMenuItems','hydrateAddedNode(node,spec={})','anonymousId(table)','hydrationId(table)','persistAnonymous','openHeaderMenu(event,th)','openCellMenu(event,cell)','restoreColumnState(value','mount(id,container,spec={})']){
   assert(ui.includes(token),`Unified TableSurface missing: ${token}`);

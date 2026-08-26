@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const context={window:{},structuredClone:global.structuredClone,performance:{now:()=>Date.now()},console};context.window.window=context.window;context.globalThis=context.window;context.window.performance=context.performance;
 vm.createContext(context);
-for(const file of ['src/core/data-model.js','src/core/performance-runtime.js','src/core/scientific-pipeline-runtime.js'])vm.runInContext(read(file),context,{filename:file});
+for(const file of ['src/core/data/model.js','src/core/performance/runtime.js','src/core/scientific/pipeline-runtime.js'])vm.runInContext(read(file),context,{filename:file});
 const D=context.window.DKDSData,perf=context.window.DKDSPerformance,pipeline=context.window.DKDSScientificPipeline;
 const parents={
   'science.transport.didv':['data.transform'],

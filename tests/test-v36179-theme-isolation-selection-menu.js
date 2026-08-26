@@ -3,25 +3,25 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 
 // builtin.default remains clear because composition is gated by recipe, not profile id.
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes("profiles.set('builtin.default'"));
 assert(runtime.includes("recipes:{chrome:'clear',sidebar:'clear',surface:'clear',elevated:'clear',popover:'clear',control:'clear',floating:'clear'}"),'Default theme must remain all-clear.');
-const rendererCss=read('src/styles/modern/98-theme-material-renderer.css');
+const rendererCss=read('src/styles/theme/material-renderer.css');
 assert(!rendererCss.includes('data-dkds-theme-profile="builtin.thin-glass"'),'Theme-specific Core CSS is forbidden; composition must be recipe-owned.');
 for(const recipe of ['thin-glass','soft-glass','liquid-glass'])assert(rendererCss.includes(`[data-dkds-material-recipe="${recipe}"]`),`Missing recipe-owned composition for ${recipe}.`);
 
-const actions=read('src/core/ui-infrastructure/10-series-layout-actions.inc');
+const actions=read('src/core/ui/composition/10-series-layout-actions.inc');
 assert(actions.includes("'dkds-action-group','dkds-integrated-action-group','dkds-material-role-control'"),'ActionGroup semantic role contract must be preserved.');
-const portable=read('src/core/ui-infrastructure/20-portable-layout-views.inc');
+const portable=read('src/core/ui/composition/20-portable-layout-views.inc');
 assert(portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group'")&&!portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control'"),'PlotView header actions must remain integrated but be owned by the chrome MaterialSurface.');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 assert(resonance.includes('id="resparRangeMenu" class="respar-range-menu command-menu hidden"'),'Resonance box-selection menu contract must remain present.');
 
 // Shell menu management must not close plugin-owned command menus such as resparRangeMenu.
-const kernel=read('src/core/plugin-kernel/20-contributions-commands.inc');
+const kernel=read('src/core/plugins/kernel/20-contributions-commands.inc');
 assert(kernel.includes('function shellCommandMenus()'),'Shell command menus need an explicit ownership boundary.');
 assert(kernel.includes("document.querySelectorAll('.menu-anchor .command-menu')"),'Only shell menu-anchor command menus should be collected.');
 assert(kernel.includes("document.querySelectorAll('.command-menu.dkds-command-menu-portal')"),'Portaled shell menus must remain manageable.');

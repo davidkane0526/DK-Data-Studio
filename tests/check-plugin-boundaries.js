@@ -4,9 +4,9 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const fail=msg=>{console.error(`PLUGIN BOUNDARY ERROR: ${msg}`);process.exitCode=2;};
 const html=read('src/index.html');
-const app=read('src/app.js');
-const kernel=read('src/core/plugin-kernel.js');
-const ui=read('src/core/ui-infrastructure.js');
+const app=read('src/generated/runtime/app.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const detector=read('src/plugins/resonance-detector-robust/plugin.js');
 const allPluginFiles=[];
 for(const dirent of fs.readdirSync(path.join(root,'src/plugins'),{withFileTypes:true})){
@@ -43,7 +43,7 @@ for(const file of allPluginFiles){
     if(manifest?.pluginType==='workbench'&&/ctx\.data\.importWorkbench/.test(src))fail(`${rel}: workbench import UI is Core-owned in Plugin API 1.14; declare data.accepts and use the standard workbench import action instead.`);
   }
 }
-for(const token of ['core/io-runtime.js','core/entity-runtime.js','core/chart-runtime.js','core/scientific-plot-runtime.js','core/component-runtime.js','core/data-flow-runtime.js','core/scientific-pipeline-runtime.js','core/service-runtime.js','core/plugin-module-runtime.js','core/plugin-contract-runtime.js','core/host-recipe-runtime.js']){
+for(const token of ['core/host/io-runtime.js','core/data/entity-runtime.js','core/scientific/chart-runtime.js','core/scientific/plot-runtime.js','core/ui/component-runtime.js','core/data/flow-runtime.js','core/scientific/pipeline-runtime.js','core/services/service-runtime.js','core/plugins/module-runtime.js','core/plugins/contract-runtime.js','core/host/recipe-runtime.js']){
   if(!html.includes(token))fail(`main renderer must load ${token}`);
 }
 for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','pipeline: scientificPipelineScope','dom: componentScope','components: Object.freeze','providers: Object.freeze','workspace: Object.freeze','status: Object.freeze']){
@@ -58,8 +58,8 @@ if(!detector.includes('parameterSchema')||detector.includes('renderSettings('))f
 if(!read('src/plugins/shell-navigation/plugin.js').includes("ctx.recipes.use('shell-navigation'"))fail('shell-navigation plugin must consume the Core recipe API.');
 if(!read('src/plugins/workspace-safeguards/plugin.js').includes("ctx.recipes.use('workspace-safeguards'"))fail('workspace-safeguards plugin must consume the Core recipe API.');
 if(!ui.includes('class ScientificCurveSurface'))fail('Core must own D3 scientific plot interaction surface.');
-if(!read('src/core/scientific-plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own scientific renderer interaction lifecycle.');
-if(!read('src/core/entity-runtime.js').includes('class EntityRegistry'))fail('Core must own canonical entity identity/relationship state.');
+if(!read('src/core/scientific/plot-runtime.js').includes('class ScientificPlotView'))fail('Core must own scientific renderer interaction lifecycle.');
+if(!read('src/core/data/entity-runtime.js').includes('class EntityRegistry'))fail('Core must own canonical entity identity/relationship state.');
 if(!kernel.includes("const API_VERSION = '1.17.0'"))fail('Plugin API must be 1.17.0.');
 if(process.exitCode)process.exit(process.exitCode);
 console.log('Plugin Boundary=0');

@@ -1,12 +1,13 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const vm=require('vm');
 const assert=(v,m)=>{if(!v)throw new Error(m);};
 const root=path.resolve(__dirname,'..');
 const read=r=>fs.readFileSync(path.join(root,r),'utf8');
-const base=read('src/style.css');
-const modern=read('src/ui-modern.css');
-const ui=read('src/core/ui-infrastructure.js');
+const base=readCoreCss(root);
+const modern=readCoreCss(root);
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const dc=read('src/plugins/data-center/feature-runtime.js');
@@ -14,9 +15,9 @@ const dcViews=read('src/plugins/data-center/shared-views.js');
 
 assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--accent-soft'), 'Core linked selection must use semantic accent surface.');
 assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
-assert(modern.includes('body.dkds-modern-ui .dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-bg,var(--dkui-accent-soft))!important'),'Modern selected rows must be theme-token driven.');
+assert(modern.includes('body.dkds-modern-ui .dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-bg,var(--dkui-accent-soft))'),'Modern selected rows must be theme-token driven.');
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button.active'),'Dark mode must cover class-based active buttons, not only aria-pressed buttons.');
-assert(modern.includes('body.dkds-modern-ui .floating-panel{border-color:transparent!important;outline:0!important}'),'Floating utility panels must not expose a bright perimeter border.');
+assert(modern.includes('body.dkds-modern-ui .floating-panel{border-color:transparent;outline:0}'),'Floating utility panels must not expose a bright perimeter border.');
 assert(modern.includes('.lan-web-panel button:not(.primary):not(.panel-close)'),'LAN utility controls must consume host control surfaces.');
 assert(dcViews.includes('data-dc-tab="formula" class="active" aria-pressed="true"'),'Data Center initial tab state must expose aria-pressed.');
 assert(dc.includes("b.setAttribute('aria-pressed',active?'true':'false')"),'Data Center tab changes must synchronize aria-pressed.');

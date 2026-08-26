@@ -6,15 +6,15 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.85','integrated command chrome release must be v3.61.85');
-const actionCore=read('src/core/ui-infrastructure/10-series-layout-actions.inc');
-const portable=read('src/core/ui-infrastructure/20-portable-layout-views.inc');
-const curves=read('src/core/ui-infrastructure/40-scientific-curves.inc');
+assert.equal(json('package.json').version,'3.61.86','integrated command chrome release must be v3.61.86');
+const actionCore=read('src/core/ui/composition/10-series-layout-actions.inc');
+const portable=read('src/core/ui/composition/20-portable-layout-views.inc');
+const curves=read('src/core/ui/composition/40-scientific-curves.inc');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 const appPanels=read('src/app/50-scientific-panels-export.inc');
 const index=read('src/index.html');
-const modern=read('src/styles/modern/96-integrated-command-chrome.css');
-const materialModern=read('src/styles/modern/98-theme-material-renderer.css');
+const modern=read('src/styles/theme/integrated-command-chrome.css');
+const materialModern=read('src/styles/theme/material-renderer.css');
 const status=read('src/plugins/status-monitor/plugin.js');
 const statusManifest=json('src/plugins/status-monitor/plugin.json');
 
@@ -28,8 +28,8 @@ assert(resonance.includes('曲线检查器</span><div class="dkds-integrated-act
 assert(resonance.includes('组图面板')&&resonance.includes('data-respar-group-cols-menu-host'),'Resonance group header must keep its menu inside the same action cluster.');
 assert(modern.includes('[data-dkds-material-role="chrome"]')&&modern.includes('.statusbar-command-cluster'),'Core chrome ownership must flatten nested action paint independent of Theme profile identity.');
 
-assert(modern.includes('display:contents!important')&&modern.includes('background:transparent!important')&&modern.includes('box-shadow:none!important')&&modern.includes('transform:none!important'),'nested/child command actions must not retain independent card visuals or hover lift.');
-assert(modern.includes('.dkds-scientific-nav-tools')&&modern.includes('border-radius:9px!important'),'ScientificPlot navigation must expose one outer rounded material shell.');
+assert(modern.includes('display:contents')&&modern.includes('background:transparent')&&modern.includes('box-shadow:none')&&modern.includes('transform:none'),'nested/child command actions must not retain independent card visuals or hover lift.');
+assert(modern.includes('.dkds-scientific-nav-tools')&&modern.includes('border-radius:9px'),'ScientificPlot navigation must expose one outer rounded material shell.');
 assert(modern.includes('button:is(.panel-close,.dkds-portable-close-action):hover'),'close regions may use danger hover while remaining inside the shared command shell.');
 
 assert(status.includes("id:'theme'")&&status.includes("label:'主题'"),'bottom status bar must expose a Theme command.');

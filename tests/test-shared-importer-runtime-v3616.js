@@ -11,7 +11,7 @@ const assert=(v,m)=>{if(!v)throw new Error(m);};
   sandbox.window=sandbox;sandbox.globalThis=sandbox;sandbox.crypto={randomUUID:()=> 'runtime-test'};
   sandbox.DKDSScience={median:values=>{const rows=[...(values||[])].filter(Number.isFinite).sort((a,b)=>a-b);return rows.length?rows[Math.floor(rows.length/2)]:NaN;}};
   vm.createContext(sandbox);
-  vm.runInContext(read('src/core/data-model.js'),sandbox,{filename:'data-model.js'});
+  vm.runInContext(read('src/core/data/model.js'),sandbox,{filename:'data-model.js'});
   vm.runInContext(read('src/science/import.js'),sandbox,{filename:'science/import.js'});
   let definition=null;
   sandbox.DKDSPlugins={define:(manifest,activate)=>{definition={manifest,activate};}};

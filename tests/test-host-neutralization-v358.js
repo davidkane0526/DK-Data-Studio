@@ -4,8 +4,8 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-const app=read('src/app.js');
-const format=read('src/core/project-format.js');
+const app=read('src/generated/runtime/app.js');
+const format=read('src/core/project/format.js');
 
 const makeStart=app.indexOf('function makeProject(){');
 const makeEnd=app.indexOf('\n  let projectSaveChoicePromise',makeStart);
@@ -28,13 +28,13 @@ for(const token of ['resonanceHostApi','terHostApi','pulseHostApi','panels:{','g
 for(const token of ['function resonanceHostApi','function terHostApi','function pulseHostApi'])assert(!app.includes(token),`Dead host domain adapter must be removed: ${token}`);
 
 const forbiddenHostDomain=/\b(peaks?|fwhm|ter|maxter|gateAnalysis|pulseAnalysis|scanVisibility|detectorSettings|physicsShowLabels|spacingSettings|resonance|sweep)\b/i;
-assert(!forbiddenHostDomain.test(app),'src/app.js must remain scientifically domain-neutral.');
+assert(!forbiddenHostDomain.test(app),'src/generated/runtime/app.js must remain scientifically domain-neutral.');
 for(const token of ['window.Analysis','runDetection','rebuildSweeps','mergeCompatibilityActivityProject'])assert(!app.includes(token),`Host must not retain removed legacy science/runtime path ${token}`);
 const main=read('desktop/main.js');
 const windowManager=read('desktop/plugin-window-manager.js');
 for(const token of ['legacyRenderer','compatibilityRenderer','hostRendererFallback','fullHostRenderer'])assert(!windowManager.includes(token),`TOP window manager must not expose historical renderer fallback ${token}.`);
 
-const kernel=read('src/core/plugin-kernel.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 assert(!kernel.includes('legacyProject'),'Plugin Kernel must not carry historical project-root migration state; project-format is the single migration boundary.');
 for(const rel of [
   'src/plugins/resonance-workbench/feature-runtime.js',

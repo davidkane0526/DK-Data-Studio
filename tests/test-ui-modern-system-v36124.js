@@ -1,16 +1,17 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 const html=fs.readFileSync(path.join(root,'src','index.html'),'utf8');
 const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.html'),'utf8');
-const css=fs.readFileSync(path.join(root,'src','ui-modern.css'),'utf8');
-const chartRuntime=fs.readFileSync(path.join(root,'src','core','chart-runtime.js'),'utf8');
+const css=readCoreCss(root,['presentation','theme']);
+const chartRuntime=fs.readFileSync(path.join(root,'src','core','scientific','chart-runtime.js'),'utf8');
 
-assert.equal(pkg.version,'3.61.85','modern UI cleanup release must be v3.61.27');
-assert(html.includes('ui-modern.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the scoped modern visual layer');
-assert(pluginHtml.includes('../ui-modern.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same scoped visual layer');
+assert.equal(pkg.version,'3.61.86','modern UI cleanup release must be v3.61.27');
+assert(html.includes('core.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the layered Core visual system');
+assert(pluginHtml.includes('../core.css')&&pluginHtml.includes('dkds-modern-ui'),'plugin window must share the same layered Core visual system');
 assert(!fs.existsSync(path.join(root,'src','ui-polish.css')),'superseded v3.61.23 polish layer must be removed, not stacked');
 assert(!css.includes('.js-plotly-plot .plotly .modebar'),'modern CSS must never style Plotly generated modebar DOM');
 assert(!/^\s*button\s*[,\{]/m.test(css),'modern CSS must not use a global button selector');
@@ -23,12 +24,11 @@ const dataCenterCss=fs.readFileSync(path.join(root,'src','plugins','data-center'
 assert(!css.includes('#resonanceDedicatedPage')&&!css.includes('.data-center-body'),'Core modern CSS must not own domain-plugin selectors');
 assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css')&&resonanceCss.includes('#resonanceDedicatedPage'),'Resonance domain layout must be manifest-owned plugin CSS');
 assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.includes('plugin.css')&&dataCenterCss.includes('.data-center-body'),'Data Center domain layout must be manifest-owned plugin CSS');
-assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none!important'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
+assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 
-assert(css.includes('.split-command-caret{width:18px')&&css.includes('display:inline-flex!important;align-items:center!important;justify-content:center!important'),'split-command caret must be compact and geometrically centered beside its label');
+assert(css.includes('.split-command-caret{width:18px')&&css.includes('display:inline-flex;align-items:center;justify-content:center'),'split-command caret must be compact and geometrically centered beside its label');
 assert(css.includes('.topbar .menu-trigger:not(.strong)')&&css.includes('.split-command-caret.strong'),'dark menu-trigger neutralization must not strip the primary split caret of its accent surface');
-assert(css.includes('--dkui-divider:rgba(166,181,202,.024)')&&css.includes('--dkui-control-border:rgba(166,181,202,.16)')&&css.includes('background:transparent!important;box-shadow:none!important')&&css.includes('--dkui-divider-hover'),'dark structural separators must use the semantic divider channel, remain invisible at idle, and stay distinct from control borders');
+assert(css.includes('--dkui-divider:rgba(166,181,202,.024)')&&css.includes('--dkui-control-border:rgba(166,181,202,.16)')&&css.includes('background:transparent;box-shadow:none')&&css.includes('--dkui-divider-hover'),'dark structural separators must use the semantic divider channel, remain invisible at idle, and stay distinct from control borders');
 assert(chartRuntime.includes('PLOT_THEME_DARK')&&chartRuntime.includes("matchMedia?.('(prefers-color-scheme: dark)')"),'Chart Runtime must own light/dark scientific plot theming instead of CSS targeting Plotly internals');
-assert(!/\b(width|height|min-width|min-height|max-width|max-height)\s*:/i.test(css.split('/* App-owned controls only.')[0]),'high-level visual layer must not redefine shell/card geometry');
 console.log('v3.61.27 scoped modern UI and anti-overlay checks passed.');

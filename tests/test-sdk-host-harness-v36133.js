@@ -12,7 +12,7 @@ const contract=JSON.parse(read('sdk/contract.json'));
 assert.equal(contract.sdkVersion,'1.17.16');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 
-const kernel=read('src/core/plugin-kernel.js'),infra=read('src/core/ui-infrastructure.js'),chart=read('src/core/chart-runtime.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js'),infra=read('src/generated/runtime/ui-infrastructure.js'),chart=read('src/core/scientific/chart-runtime.js');
 const requiredHostTokens=[
   [kernel,'history: Object.freeze'],[kernel,'series: infrastructureScope?.series'],[kernel,'legends: infrastructureScope?.legends'],[kernel,'groupPlots: infrastructureScope?.groupPlots'],[kernel,'tooltips: infrastructureScope?.tooltips'],
   [infra,'class SeriesRegistry'],[infra,'class LegendGroup'],[infra,'class ActiveLayoutSolver'],[infra,'class GroupPlot'],[chart,'smartLegendLayout'],
@@ -42,7 +42,7 @@ try{
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
 
 // First-party equality gate: no special host legend/layout service is introduced for Resonance.
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const configureStart=app.indexOf('window.DKDSPlugins.configure({'),configureEnd=app.indexOf('\n    });',configureStart),hostConfigure=app.slice(configureStart,configureEnd);
 for(const forbidden of ['resonanceLegend','resonanceLayoutSolver','resonanceGroupPlot','resonanceTooltip'])assert(!hostConfigure.includes(forbidden),`First-party privilege detected: ${forbidden}`);
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');

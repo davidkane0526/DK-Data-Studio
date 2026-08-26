@@ -9,7 +9,7 @@ const list=(rel,suffix='')=>fs.readdirSync(path.join(root,rel)).filter(name=>!su
 const concat=(rel,suffix)=>list(rel,suffix).map(name=>read(path.posix.join(rel,name))).join('');
 const pkg=json('package.json');
 
-assert.equal(pkg.version,'3.61.85','Structural organization release must be v3.61.85.');
+assert.equal(pkg.version,'3.61.86','Structural organization release must be v3.61.86.');
 assert.equal(pkg.main,'desktop/main.js','Electron entry must live under desktop/.');
 assert((pkg.build?.files||[]).includes('desktop/**/*'),'Electron packaging must include the desktop host tree.');
 for(const old of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){
@@ -26,11 +26,27 @@ assert(pkg.scripts.test.includes('node tests/run.js test'),'npm test must use th
 assert(pkg.scripts.check.includes('node tests/run.js check'),'npm check must use the centralized test runner.');
 assert(pkg.scripts['mobile:test']==='node tests/run.js mobile','mobile tests must use the centralized runner.');
 
-assert.equal(concat('src/core/ui-infrastructure','.inc'),read('src/core/ui-infrastructure.js'),'UI infrastructure runtime bundle must exactly match its composition modules.');
-assert.equal(concat('src/core/plugin-kernel','.inc'),read('src/core/plugin-kernel.js'),'Plugin kernel runtime bundle must exactly match its composition modules.');
-assert.equal(concat('src/app','.inc'),read('src/app.js'),'App runtime bundle must exactly match its composition modules.');
-assert.equal(concat('src/styles/base','.css'),read('src/style.css'),'Base CSS runtime bundle must exactly match its authored modules.');
-assert.equal(concat('src/styles/modern','.css'),read('src/ui-modern.css'),'Modern CSS runtime bundle must exactly match its authored modules.');
+// Authored Core is organized by responsibility. The browser still receives two
+// generated composition artifacts for legacy shared-closure subsystems, but the
+// generated files are not authored Core and must never live in src/core/.
+for(const legacy of ['src/core/plugin-kernel.js','src/core/ui-infrastructure.js','src/app.js']){
+  assert(!fs.existsSync(path.join(root,legacy)),`legacy generated runtime must not live in authored source: ${legacy}`);
+}
+const coreRootFiles=fs.readdirSync(path.join(root,'src','core'),{withFileTypes:true}).filter(e=>e.isFile());
+assert.equal(coreRootFiles.length,0,`src/core root must contain responsibility directories only; found ${coreRootFiles.map(e=>e.name).join(', ')}`);
+for(const dir of ['data','diagnostics','host','performance','plugins','project','recipes','scientific','services','theme','ui','workflow']){
+  assert(fs.existsSync(path.join(root,'src','core',dir)),`Core responsibility directory missing: ${dir}`);
+}
+assert.equal(concat('src/core/ui/composition','.inc'),read('src/generated/runtime/ui-infrastructure.js'),'Generated UI composition must exactly match authored fragments.');
+assert.equal(concat('src/core/plugins/kernel','.inc'),read('src/generated/runtime/plugin-kernel.js'),'Generated Plugin Kernel composition must exactly match authored fragments.');
+assert.equal(concat('src/app','.inc'),read('src/generated/runtime/app.js'),'Generated App composition must exactly match authored fragments.');
+
+const coreCss=read('src/core.css');
+assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window;'),'Core CSS must declare one explicit cascade order.');
+for(const layer of ['foundation','structure','presentation','theme','platform']){
+  assert(coreCss.includes(`styles/${layer}/`),`Core CSS entry must import ${layer} modules.`);
+}
+assert(!fs.existsSync(path.join(root,'src/styles/base'))&&!fs.existsSync(path.join(root,'src/styles/modern')),'legacy base/modern specificity directories must stay removed.');
 
 assert(fs.existsSync(path.join(root,'src/generated/sdk-authoring-reference.js')),'SDK authoring reference must live under src/generated/.');
 assert(fs.existsSync(path.join(root,'src/generated/plugin-index.js')),'Plugin index must live under src/generated/.');
@@ -39,5 +55,8 @@ assert(!fs.existsSync(path.join(root,'src/plugins/plugin-index.generated.js')),'
 const html=read('src/index.html');
 assert(html.includes('generated/sdk-authoring-reference.js')&&html.includes('generated/plugin-index.js'),'renderer must load generated artifacts from src/generated/.');
 
-for(const buildScript of ['scripts/generate-core-runtime-bundles.js','scripts/generate-core-styles.js'])assert(fs.existsSync(path.join(root,buildScript)),`${buildScript} missing.`);
-console.log('v3.61.60 structural organization PASS: root/desktop, tests runner, Core/app composition, CSS modules and generated artifacts are canonicalized.');
+assert(fs.existsSync(path.join(root,'scripts/generate-runtime-compositions.js')),'runtime composition generator missing.');
+assert(fs.existsSync(path.join(root,'scripts/validate-styles.js')),'style architecture validator missing.');
+assert(!fs.existsSync(path.join(root,'scripts/generate-core-styles.js')),'legacy CSS concatenation generator must stay removed.');
+assert(!fs.existsSync(path.join(root,'scripts/generate-core-runtime-bundles.js')),'legacy root-Core bundle generator must stay removed.');
+console.log('v3.61.86 structural organization PASS: host, Core responsibilities, layered CSS and generated-artifact boundaries are canonicalized.');

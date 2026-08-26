@@ -3,7 +3,7 @@ const path=require('path');
 const vm=require('vm');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
-const code=fs.readFileSync(path.join(root,'src/core/ui-infrastructure.js'),'utf8');
+const code=fs.readFileSync(path.join(root,'src/generated/runtime/ui-infrastructure.js'),'utf8');
 
 const rafQueue=[];let rafSeq=0;
 const window={addEventListener(){},removeEventListener(){},innerWidth:1200,innerHeight:800,ResizeObserver:null};

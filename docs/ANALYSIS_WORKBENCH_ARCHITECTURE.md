@@ -27,7 +27,7 @@ Host adapter
 
 ## 2. Analysis Workbench
 
-`src/core/ui-infrastructure.js` provides **AnalysisWorkbench v5**. The shell owns all outer geometry; plugin roots are mounted as content and are never rewritten into a second Grid/Flex layout by Core.
+`src/generated/runtime/ui-infrastructure.js` provides **AnalysisWorkbench v5**. The shell owns all outer geometry; plugin roots are mounted as content and are never rewritten into a second Grid/Flex layout by Core.
 
 The workbench owns:
 
@@ -98,7 +98,7 @@ Resize is a frame signal. Plugin-scope and global dispatch coalesce resize repor
 
 ## 5. Capability Runtime
 
-`src/core/capability-runtime.js` provides the generic Capability Runtime.
+`src/core/host/capability-runtime.js` provides the generic Capability Runtime.
 
 A provider is described by:
 

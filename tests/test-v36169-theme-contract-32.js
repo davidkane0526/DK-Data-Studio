@@ -10,7 +10,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(Theme.version,'3.5.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('material.roles.chrome')&&Theme.supports('platform.logical-units'));assert(!Theme.supports('materialBlur'));
@@ -65,13 +65,13 @@ dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSyn
 dir=tempTheme(d=>{const p=path.join(d,'plugin.js');fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('materialTintOpacity:.66',"materialTintOpacity:'900%'"));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('between 0 and 100'));fs.rmSync(dir,{recursive:true,force:true});
 dir=tempTheme(d=>{const p=path.join(d,'plugin.json'),j=JSON.parse(fs.readFileSync(p,'utf8'));j.compatibility.themeContract='definitely-not-a-semver-range';fs.writeFileSync(p,JSON.stringify(j,null,2));});r=validateDir(dir);assert.notEqual(r.status,0);assert((r.stderr+r.stdout).includes('valid semver range'));fs.rmSync(dir,{recursive:true,force:true});
 
-const roleCss=read('src/styles/modern/92-material-roles.css');
+const roleCss=read('src/styles/theme/material-roles.css');
 for(const role of ['chrome','sidebar','surface','elevated','popover','control','floating'])assert(roleCss.includes(`material-${role}-blur`));
 assert(roleCss.includes('base surface -> accent tint')||roleCss.includes('base surface'));
-const gallery=read('src/core/theme/test-gallery.js');const manager=read('src/core/plugin-manager-ui.js');
+const gallery=read('src/core/theme/test-gallery.js');const manager=read('src/core/plugins/manager-ui.js');
 assert(gallery.includes("data-gallery-mode=\"${mode}\"")&&gallery.includes('ScientificPlot')&&gallery.includes('Popover')&&gallery.includes('Floating'));
 assert(manager.includes('plugin-theme-gallery-btn')&&manager.includes('DKDSThemeGallery'));
 const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Material composition order')&&docs.includes('Web/Electron: 1 logical unit -> 1 CSS px')&&docs.includes('Theme Test Gallery'));
-const kernel=read('src/core/plugin-kernel.js');assert(kernel.includes('contractVersion: window.DKDSTheme')&&kernel.includes('supports: feature => window.DKDSTheme'));
-const mobileHost=read('src/core/mobile-host-runtime.js');assert(mobileHost.includes('themeContractVersion:window.DKDSTheme')&&mobileHost.includes("themeMaterial:window.DKDSTheme?.materials?.('native')"),'Native shell bridge must receive Theme Contract version and normalized material roles.');
+const kernel=read('src/generated/runtime/plugin-kernel.js');assert(kernel.includes('contractVersion: window.DKDSTheme')&&kernel.includes('supports: feature => window.DKDSTheme'));
+const mobileHost=read('src/core/host/mobile-host-runtime.js');assert(mobileHost.includes('themeContractVersion:window.DKDSTheme')&&mobileHost.includes("themeMaterial:window.DKDSTheme?.materials?.('native')"),'Native shell bridge must receive Theme Contract version and normalized material roles.');
 console.log('v3.61.69 Theme Contract 3.2 strict validation + material roles + gallery checks passed.');

@@ -5,8 +5,8 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-const dataModel=read('src/core/data-model.js');
-const app=read('src/app.js');
+const dataModel=read('src/core/data/model.js');
+const app=read('src/generated/runtime/app.js');
 const dcFeature=read('src/plugins/data-center/feature-runtime.js');
 const dcViews=read('src/plugins/data-center/shared-views.js');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');

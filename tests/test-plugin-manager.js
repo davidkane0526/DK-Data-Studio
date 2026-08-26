@@ -30,8 +30,8 @@ sandbox.document = {
 };
 sandbox.window.dispatchEvent=()=>{};
 
-const source = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-kernel.js'),'utf8');
-const managerUi = fs.readFileSync(path.join(__dirname,'..','src','core','plugin-manager-ui.js'),'utf8');
+const source = fs.readFileSync(path.join(__dirname,'..','src','generated','runtime','plugin-kernel.js'),'utf8');
+const managerUi = fs.readFileSync(path.join(__dirname,'..','src','core','plugins','manager-ui.js'),'utf8');
 assert(managerUi.includes("PLUGIN_TYPE_ORDER=['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']"),'Plugin Manager must render explicit capability/domain sections instead of only builtin/user source groups.');
 assert(!managerUi.includes("label:'系统插件'")&&!managerUi.includes("label:'用户插件'"),'Plugin Manager must not use source-only sections as its primary information architecture.');
 assert(managerUi.includes('const groupId=pluginTypeMeta(plugin).id')&&!managerUi.includes("plugin.source==='builtin'?'system':'user'"),'Plugin cards must mount into the explicit pluginType section rather than the legacy source group.');

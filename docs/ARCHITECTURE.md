@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.61.85
+# DK Data Studio Architecture — v3.61.86
 
 ## 1. Runtime layers
 
@@ -9,41 +9,80 @@ Platform shells
 └─ Mobile
         ↓
 Host-neutral Core
-├─ project / data lifecycle
+├─ data / project lifecycle
 ├─ plugin kernel
-├─ scientific UI infrastructure
-├─ algorithm / transform registries
+├─ scientific runtimes
+├─ semantic UI infrastructure
 ├─ Theme + Material renderer
-└─ service bridges
+├─ host/service bridges
+└─ workflow / diagnostics / performance
         ↓
 Plugin API / SDK
         ↓
 Domain plugins and Algorithm Providers
 ```
 
-The dependency direction is one-way. Core may expose generic contracts to plugins; Core must not import or special-case a domain plugin. A first-party plugin has no private host privilege merely because it ships with the application.
+Dependency direction is one-way. Core may expose generic contracts to plugins; Core must not import or special-case a domain plugin. A first-party plugin receives no private host privilege merely because it ships with the application.
 
-## 2. Ownership boundaries
+## 2. Authored Core organization
+
+`src/core/` is a responsibility root, not an implementation file dump:
+
+```text
+src/core/
+├─ data/
+├─ project/
+├─ scientific/
+├─ plugins/
+│  └─ kernel/
+├─ ui/
+│  └─ composition/
+├─ theme/
+├─ services/
+├─ host/
+├─ performance/
+├─ workflow/
+├─ diagnostics/
+└─ recipes/
+```
+
+Implementation files are forbidden directly under `src/core/`. Legacy authored/derived files such as `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are forbidden.
+
+Two older shared-closure subsystems — Plugin Kernel and UI Infrastructure — are still authored as ordered composition fragments and emitted to **untracked build products** under `src/generated/runtime/` for the current classic-script renderer. They are not the source of truth. Converting those cyclic closure compositions to independently importable runtime modules is a future internal refactor; new Core subsystems must not adopt this pattern.
+
+## 3. Ownership boundaries
 
 ### Core owns
 
-Project and data lifecycle, plugin activation and package policy, generic workspaces, PlotView/ScientificPlot, Table/Selection/History primitives, import routing, algorithm registries, Theme role assignment, Material rendering, status/shell chrome, and host-neutral service interfaces.
+Project and data lifecycle, plugin activation/package policy, generic workspaces, PlotView/ScientificPlot, Table/Selection/History primitives, import routing, algorithm registries, Theme role assignment, Material rendering, shell/status chrome and host-neutral service interfaces.
 
 ### Plugins own
 
-Domain models, domain-specific panels and geometry, analysis orchestration, domain labels, plugin-specific chart composition, plugin state slices, and Algorithm Provider implementations. Static domain layout belongs in `plugin.css` declared through `manifest.styles`; first-party plugins do not receive a separate style-injection path.
+Domain models, domain-specific panels and geometry, analysis orchestration, domain labels, plugin-specific chart composition, plugin state slices and Algorithm Provider implementations. Static domain layout belongs in `plugin.css` declared through `manifest.styles`.
 
 ### SDK owns the public authoring contract
 
-The SDK describes supported capabilities and semantic components. It must not teach plugin authors to reproduce private Core DOM, hard-code host colors, or patch backdrop behavior. Built-in and packaged plugins use the same manifest/script/style semantics.
+The SDK describes supported capabilities and semantic components. It must not teach plugin authors to reproduce private Core DOM, hard-code host paint or patch backdrop behavior. Built-in and packaged plugins use the same manifest/script/style semantics.
 
-Static stylesheet order is also part of the contract: base Core structure loads first, manifest-owned plugin layout is inserted next, and `ui-modern.css` / Theme-Material chrome remains the final visual authority. Plugin activation order therefore cannot turn domain CSS into an accidental late theme override.
+## 4. CSS cascade ownership
 
-## 3. Scientific algorithms
+The old `base/modern` specificity architecture is removed. Authored renderer CSS uses one explicit cascade order:
 
-Reusable scientific algorithms are versioned providers. A plugin resolves an algorithm by category/id/version, passes explicit parameters and receives provenance. UI plugins should not silently embed a second implementation of an algorithm already represented by a provider contract.
+```text
+dkds.foundation
+    < dkds.plugin
+    < dkds.structure
+    < dkds.presentation
+    < dkds.theme
+    < dkds.platform
+    < dkds.window
+```
 
-## 4. Theme and Material architecture
+`src/core.css` is the canonical import entry. Core authored CSS, first-party plugin CSS, mobile CSS and dedicated-window CSS may not use `!important`. Overrides are expressed by ownership layer and semantic selector, not by escalating specificity.
+
+Core styles may not contain TER/Pulse/Data Center/Resonance identities. If multiple plugins need one behavior, Core exposes a semantic class/attribute/SDK contract and plugins opt in.
+
+## 5. Theme and Material architecture
 
 ```text
 Theme Profile
@@ -57,34 +96,33 @@ Core Material Renderer
 clear | thin-glass | soft-glass | liquid-glass
 ```
 
-Theme identity must never appear in Material composition selectors. Recipe behavior is shared by built-in and SDK themes. A translucent MaterialSurface owns one backdrop layer; nested headers/content/action groups are transparent composition children unless they explicitly request an independent material surface.
+Theme identity must never appear in Material composition selectors. A translucent MaterialSurface owns one backdrop layer; nested headers/content/action groups are transparent composition children unless they explicitly request an independent material surface. Integrated actions inside a `chrome` surface are hit regions, not nested cards. Status-bar commands follow the same rule.
 
-Integrated actions inside a `chrome` surface are hit regions, not nested cards. Status-bar commands follow the same rule. Popovers use a body-level portal only when the selected recipe requires an independent backdrop root.
+## 6. Scientific algorithms
 
-## 5. Generated runtime policy
+Reusable scientific algorithms are versioned providers. A plugin resolves an algorithm by category/id/version, passes explicit parameters and receives provenance. UI plugins should not silently embed a second implementation of an algorithm already represented by a provider contract.
 
-Authored sources are split into ordered modules:
+## 7. Generated artifacts
+
+Generated files are disposable and untracked:
 
 ```text
-src/app/*.inc                         → src/app.js
-src/core/ui-infrastructure/*.inc      → src/core/ui-infrastructure.js
-src/core/plugin-kernel/*.inc          → src/core/plugin-kernel.js
-src/styles/base/*.css                 → src/style.css
-src/styles/modern/*.css               → src/ui-modern.css
+src/generated/runtime/app.js
+src/generated/runtime/ui-infrastructure.js
+src/generated/runtime/plugin-kernel.js
+src/generated/plugin-index.js
+src/generated/sdk-authoring-reference.js
+assets/dkds-icon.png
+mobile/assets/icon.png
+mobile/assets/adaptive-icon.png
 ```
 
-Plugin Index, SDK Authoring Reference and derived PNG icons are also generated. Normal `start/test/check/dist` commands regenerate them. They are not source-of-truth files and are excluded from the clean source repository.
+Normal `start/test/check/dist` commands regenerate what they need. `npm run clean:generated` returns the repository to authored-source form.
 
-## 6. Repository organization
+## 8. Compatibility policy
 
-Root JavaScript host files are forbidden. Electron host files live under `desktop/`; generation/validation under `scripts/`; regression tests under `tests/`; Windows-only developer tooling under `tools/windows/`; Theme runtime under `src/core/theme/`.
+Compatibility code is permitted only at explicit boundaries: project-format migration, public SDK/API compatibility, external plugin package compatibility and documented runtime capability negotiation. Compatibility selectors or domain-plugin fallbacks do not belong in generic Core layout/Material code.
 
-The CSS order number expresses ownership/layering, not release chronology. Do not create files named after release numbers and do not append `v3.61.xx fix` blocks to the end of a stylesheet. When a rule changes, edit the owning semantic block.
+## 9. Validation
 
-## 7. Compatibility policy
-
-Compatibility code is permitted only at explicit boundaries: project-format migration, public SDK/API compatibility, external plugin package compatibility, and documented runtime capability negotiation. Compatibility selectors or domain-plugin fallbacks do not belong in generic Core layout/Material code.
-
-## 8. Validation
-
-`npm run check` is the release gate for source contracts, generation parity, plugin manifests, boundary checks and regression suites. It is intentionally not treated as a substitute for Electron visual validation, GPU/backdrop-filter behavior or device-specific layout validation.
+`npm run check` is the release gate for generation, syntax, plugin manifests, source boundaries, CSS structure/cascade contracts and regression suites. It is not a substitute for Windows Electron visual validation, GPU/backdrop-filter behavior or device-specific layout validation.

@@ -143,7 +143,7 @@
             </div>
             <div class="pulse-plot-actions dkds-toolbar"></div>
           </div>
-          <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface"></div>
+          <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface" data-scientific-plot></div>
         </section>
 
         <section class="pulse-card pulse-compare-toolbar-card dkds-surface">
@@ -156,13 +156,13 @@
           </div>
         </section>
 
-        <div class="pulse-results-grid">
+        <div class="pulse-results-grid" data-dkds-mobile-stack>
           <section class="pulse-card pulse-result-card dkds-surface">
             <div class="pulse-card-heading dkds-surface-header pulse-plot-heading">
               <div><h3>脉冲条件 → 读取电流</h3><p>优先按脉冲电压比较；电压未知时按脉冲序号显示，不虚构电压。</p></div>
               <div class="pulse-plot-actions dkds-toolbar"></div>
             </div>
-            <div id="pulseReadPlot" class="pulse-result-plot pulse-plot-surface"></div>
+            <div id="pulseReadPlot" class="pulse-result-plot pulse-plot-surface" data-scientific-plot></div>
           </section>
 
           <section class="pulse-card pulse-result-card dkds-surface">
@@ -170,7 +170,7 @@
               <div><h3>脉冲条件 → 脉冲电流</h3><p>支持不同写入/读取宽度；仅电流文件同样可提取并比较。</p></div>
               <div class="pulse-plot-actions dkds-toolbar"></div>
             </div>
-            <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface"></div>
+            <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface" data-scientific-plot></div>
           </section>
         </div>
 

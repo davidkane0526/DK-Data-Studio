@@ -1,20 +1,21 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85','theme contract test tracks the current source version for the Theme Contract 3.1 compatibility release');
+assert.equal(json('package.json').version,'3.61.86','theme contract test tracks the current source version for the Theme Contract 3.1 compatibility release');
 const theme=read('src/core/theme/runtime.js');
 const materialRenderer=read('src/core/theme/material-renderer.js');
-const css=read('src/ui-modern.css');
-const ui=read('src/core/ui-infrastructure.js');
-const kernel=read('src/core/plugin-kernel.js');
-const contract=read('src/core/plugin-contract-runtime.js');
+const css=readCoreCss(root);
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const contract=read('src/core/plugins/contract-runtime.js');
 const sdkSchema=json('sdk/plugin-manifest.schema.json');
-const mobileHost=read('src/core/mobile-host-runtime.js');
+const mobileHost=read('src/core/host/mobile-host-runtime.js');
 const mobileShell=read('mobile/src/Shell.tsx');
 const mobileApp=read('mobile/App.tsx');
 const apiTypes=read('sdk/plugin-api.d.ts');
@@ -27,12 +28,12 @@ assert(materialRenderer.includes("const VERSION='3.6.0'")&&materialRenderer.incl
 for(const token of ['--dkui-divider:','--dkui-control-border:','--dkui-scrollbar:','--surface-sidebar:','--control-border:']){
   assert(css.includes(token),`semantic visual token missing ${token}`);
 }
-assert(css.includes('background:transparent!important;box-shadow:none!important')&&css.includes('--dkui-divider-hover'),'Core splitters must have no idle structural line and only reveal a semantic active divider during interaction.');
-assert(css.includes('background:var(--dkui-surface-sidebar,var(--surface-sidebar))!important')&&css.includes('.left-panel>section'),'parameter sidebars must be separated by surface contrast instead of bright rules.');
-assert(css.includes('background:var(--dkui-control-bg,var(--surface-primary))!important')&&css.includes('border-color:var(--dkui-control-border,var(--control-border))!important'),'legacy inputs must be normalized through semantic dark/light control tokens.');
-assert(css.includes('.lan-web-qr-image{background:#fff;border-color:#fff}')&&css.includes('.lan-web-qr-frame{background:var(--dkui-surface-soft)!important'),'only actual QR pixels may retain white paper while the LAN service chrome remains themeable.');
+assert(css.includes('background:transparent;box-shadow:none')&&css.includes('--dkui-divider-hover'),'Core splitters must have no idle structural line and only reveal a semantic active divider during interaction.');
+assert(css.includes('background:var(--dkui-surface-sidebar,var(--surface-sidebar))')&&css.includes('.left-panel>section'),'parameter sidebars must be separated by surface contrast instead of bright rules.');
+assert(css.includes('background:var(--dkui-control-bg,var(--surface-primary))')&&css.includes('border-color:var(--dkui-control-border,var(--control-border))'),'legacy inputs must be normalized through semantic dark/light control tokens.');
+assert(css.includes('.lan-web-qr-image{background:#fff;border-color:#fff}')&&css.includes('.lan-web-qr-frame{background:var(--dkui-surface-soft)'),'only actual QR pixels may retain white paper while the LAN service chrome remains themeable.');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
-assert(pulseCss.includes('.pulse-card-heading{')&&pulseCss.includes('grid-template-columns:minmax(0,1fr) auto!important')&&css.includes('.dkds-surface-heading-stack'),'domain headers own geometry while Core keeps the shared surface-heading text/control contract.');
+assert(pulseCss.includes('.pulse-card-heading{')&&pulseCss.includes('grid-template-columns:minmax(0,1fr) auto')&&css.includes('.dkds-surface-heading-stack'),'domain headers own geometry while Core keeps the shared surface-heading text/control contract.');
 assert(ui.includes("header.classList.add('dkds-surface-header')")&&ui.includes("headingStack.classList.add('dkds-surface-heading-stack')"),'PortableView must stamp Core-owned semantic header classes.');
 assert(ui.includes("this.handle.classList.add('is-dragging')")&&ui.includes("this.handle.classList.remove('is-dragging')"),'splitters must expose interaction state to the semantic divider theme.');
 assert(kernel.includes('theme: Object.freeze({')&&kernel.includes('window.DKDSTheme?.registerProfile?.'),'plugins must be able to register theme profiles through Core rather than painting host DOM directly.');

@@ -1,11 +1,12 @@
 'use strict';
 const fs=require('fs');const path=require('path');const assert=require('assert');const vm=require('vm');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.85','SMB/AI shell release must be 3.61.85.');
-const html=read('src/index.html'),sdkReference=read('src/generated/sdk-authoring-reference.js'),kernel=read('src/core/studio-kernel-runtime.js'),mcp=read('src/core/mcp-runtime.js'),agent=read('src/core/connectivity-runtime.js'),app=read('src/app.js'),main=read('desktop/main.js'),preload=read('desktop/preload.js'),web=read('src/web-bridge.js'),native=read('mobile/plugins/withDkdsAndroidNativeHost.js'),plugin=read('src/plugins/connectivity-center/plugin.js'),css=read('src/ui-modern.css'),shell=read('mobile/src/Shell.tsx');
-assert(html.includes('generated/sdk-authoring-reference.js')&&html.indexOf('generated/sdk-authoring-reference.js')<html.indexOf('core/studio-kernel-runtime.js'),'Renderer must load packaged SDK authoring reference before shared kernel.');
-assert(html.includes('core/studio-kernel-runtime.js')&&html.includes('core/connectivity-runtime.js')&&html.includes('core/mcp-runtime.js'),'Main renderer must load shared kernel, Agent and MCP runtimes.');
+assert.equal(pkg.version,'3.61.86','SMB/AI shell release must be 3.61.86.');
+const html=read('src/index.html'),sdkReference=read('src/generated/sdk-authoring-reference.js'),kernel=read('src/core/host/studio-kernel-runtime.js'),mcp=read('src/core/services/mcp-runtime.js'),agent=read('src/core/services/connectivity-runtime.js'),app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),preload=read('desktop/preload.js'),web=read('src/web-bridge.js'),native=read('mobile/plugins/withDkdsAndroidNativeHost.js'),plugin=read('src/plugins/connectivity-center/plugin.js'),css=readCoreCss(root),shell=read('mobile/src/Shell.tsx');
+assert(html.includes('generated/sdk-authoring-reference.js')&&html.indexOf('generated/sdk-authoring-reference.js')<html.indexOf('core/host/studio-kernel-runtime.js'),'Renderer must load packaged SDK authoring reference before shared kernel.');
+assert(html.includes('core/host/studio-kernel-runtime.js')&&html.includes('core/services/connectivity-runtime.js')&&html.includes('core/services/mcp-runtime.js'),'Main renderer must load shared kernel, Agent and MCP runtimes.');
 for(const token of ["id:'sdk.authoring.describe'","id:'sdk.authoring.read'","id:'sdk.authoring.search'","id:'core.capabilities.invoke'","id:'data.artifacts.preview'","id:'data.clean.table'","id:'data.formula.derive'","id:'transform.run.curve'","id:'workflow.run'","id:'plot.inspect'","id:'plot.render'","id:'plugin.package.install'","id:'filesystem.provider.read'","id:'smb.read'","id:'diagnostics.performance'"])assert(kernel.includes(token),`Kernel missing deep tool ${token}`);
 assert(kernel.includes('AI Agent and MCP share this registry'),'Kernel registry must explicitly be shared by Agent and MCP.');
 assert(app.includes('window.DKDSKernel?.configure?.')&&app.includes('artifactUpsert:kernelArtifactUpsert')&&app.includes('plotRender:kernelPlotRender'),'Owner renderer must bind project/artifact/plot host adapters to kernel.');

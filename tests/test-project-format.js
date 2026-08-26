@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const F=require('../src/core/project-format.js');
+const F=require('../src/core/project/format.js');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
@@ -56,7 +56,7 @@ assert.strictEqual(decoded16.encoding,'utf-16le');
 assert.strictEqual(decoded16.project.datasets[0].name,'embedded.csv','UTF-16LE project must open');
 assert.throws(()=>F.parseProjectText('{"datasets":{}}'),/datasets/,'damaged dataset schema must be rejected');
 
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const web=read('src/web-bridge.js');
 const main=read('desktop/main.js');
 const makeStart=app.indexOf('function makeProject(){');

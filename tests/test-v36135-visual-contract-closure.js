@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
@@ -14,12 +15,12 @@ assert.equal(contract.pluginApiVersion,'1.17.0');
 assert.equal(contract.minimumAppVersion,'3.61.39');
 
 
-const app=read('src/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
+const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
 assert(app.includes(`version:'${release}'`)&&app.includes(`appVersion:'${release}'`),'Main renderer version metadata must match the release version.');
 assert(index.includes(`<span class="version">v${release}</span>`),'Visible shell version must match the release version.');
 assert(pluginWindow.includes(`appVersion:'${release}'`),'Dedicated plugin windows must report the release version.');
 
-const chart=read('src/core/chart-runtime.js');
+const chart=read('src/core/scientific/chart-runtime.js');
 for(const token of [
   "const VERSION='2.0.0'",'function legendEntriesFor','function traceLegendGroup',
   'legendgroup:','function applyPlotLegendFocus','restyle(el','function ensurePlotPresentationHost',
@@ -29,21 +30,21 @@ assert(chart.indexOf('ensurePlotPresentationHost(el);')<chart.indexOf('renderPlo
 assert(!chart.includes('dw<12&&dh<12'),'Resize stabilization must not depend on the old geometry feedback threshold.');
 assert(chart.includes("preferredRenderer:'d3'")&&chart.includes('singleBackend:true'),'Scientific renderer must remain D3-only.');
 
-const presentation=read('src/core/plot-presentation-runtime.js');
+const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 assert(presentation.includes('stable-single-series-slot'),'Shared presentation solver must preserve transient legend geometry.');
 
-const css=read('src/style.css');
+const css=readCoreCss(root);
 for(const token of ['.dkds-plot-legend-row','Scientific Presentation Contract 1.0','.dkds-scientific-chart-host'])assert(css.includes(token),`Plot CSS closure missing ${token}`);
-assert(!css.includes('overflow-x:auto!important'),'Core legend must not expose a permanent horizontal scrollbar.');
-assert(!css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn:hover,.system-core-tools-group>.toolbar-btn:hover{background:#fff!important'),'System Core hover must not paint white in dark mode.');
+assert(/\.dkds-plot-legend\.dkds-scientific-auto-legend\s*\{[^}]*overflow:hidden/s.test(css),'Core legend must remain clipped/auto-managed rather than expose a permanent horizontal scrollbar.');
+assert(!css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn:hover,.system-core-tools-group>.toolbar-btn:hover{background:#fff'),'System Core hover must not paint white in dark mode.');
 
-const modern=read('src/ui-modern.css');
+const modern=readCoreCss(root);
 for(const token of [
-  'transform:none!important','body.dkds-modern-ui .import-workbench',
+  'transform:none','body.dkds-modern-ui .import-workbench',
   'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
-  'background:#29313e!important','body.dkds-modern-ui button:hover:not(:disabled)'
+  'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
-assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.includes('box-shadow:0 1px 2px rgba(33,57,112,.06)!important'),'Activity tabs must not use a white inset top rim.');
+assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.includes('box-shadow:0 1px 2px rgba(33,57,112,.06)'),'Activity tabs must not use a white inset top rim.');
 
 const readme=read('sdk/README.md');
 for(const token of ['scoped to its own surface host','at most two balanced rows','`legendgroup`','does not visibly twitch'])assert(readme.includes(token),`SDK visual contract docs missing ${token}`);

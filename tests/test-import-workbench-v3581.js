@@ -4,7 +4,7 @@ const path=require('path');
 const assert=require('assert');
 
 const root=path.resolve(__dirname,'..');
-const app=fs.readFileSync(path.join(root,'src','app.js'),'utf8');
+const app=fs.readFileSync(path.join(root,'src','generated','runtime','app.js'),'utf8');
 
 assert(app.includes('function formatImportNumber(value,digits=6){'),
   'Import workbench must own a domain-neutral numeric formatter.');
@@ -40,7 +40,7 @@ assert(summary.includes('`${checked.length}/${importDraft.files.length} 个文�
 assert(summary.includes("$('#importCommitBtn').disabled=!checked.length"),
   'Import button enablement must track selected files.');
 
-const automation=fs.readFileSync(path.join(root,'src','core','automation-test-runtime.js'),'utf8');
+const automation=fs.readFileSync(path.join(root,'src','core','diagnostics','automation-test-runtime.js'),'utf8');
 assert(app.includes('runImportWorkbenchSmoke:runImportWorkbenchAutomationSmoke'),
   'Host must expose the import workbench smoke to the built-in automation center.');
 assert(automation.includes("'ui.import-workbench','Import workbench selection & preview'"),

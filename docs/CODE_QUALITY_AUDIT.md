@@ -1,42 +1,39 @@
-# Code quality audit — v3.61.85
+# Code quality audit — v3.61.86
 
 ## Release decision
 
-v3.61.85 continues the v3.61.84 structural cleanup. No new product capability is introduced. This checkpoint removes a substantial Core/domain CSS ownership leak and converts several first-party workspaces from runtime-injected styling to the same manifest-owned stylesheet path used by packaged plugins.
+v3.61.86 is a structural cleanup checkpoint. No product feature is intentionally added. The focus is removal of CSS override debt, explicit ownership and Core source organization.
 
-## Changes completed
+## Completed
 
-- Electron host, tests, Theme runtime, generated bundles and release-history organization from v3.61.84 remain canonical.
-- First-party static domain CSS now uses `manifest.styles` and the normal plugin stylesheet lifecycle. Connectivity Center, Data Center, Pulse Analysis, Resonance Workbench and TER Analysis own their domain geometry in `plugin.css`.
-- Plugin styles occupy one deterministic cascade slot: after base Core structure and before `ui-modern.css` / Theme-Material chrome. Built-in activation order no longer grants a late-CSS privilege.
-- Core authored CSS no longer contains `.ter-*`, `.pulse-*`, `.dc-*`, `.respar-*`, `.reswin-*` or the corresponding domain page IDs. AnalysisWorkbench regions use semantic Core classes instead.
-- Core ScientificPlot navigation detects legends and plot scopes through `data-dkds-legend` / `data-dkds-plot-scope`; it no longer names Resonance legend implementations.
-- Mobile summary observation uses `data-dkds-mobile-summary` instead of hard-coded Resonance/TER element IDs.
-- Resonance no longer injects `TOP_STYLES` at runtime or requests `ui.styles` solely for static CSS. Data Center, TER and Connectivity static CSS injection paths were removed as well.
-- Historical regression tests that required domain selectors inside Core or depended on exact CSS serialization were rewritten around semantic ownership/behavior.
-- A v3.61.85 CSS-ownership gate prevents migrated domain selectors from returning to Core and fixes the new CSS-debt ceiling.
+- Authored Core is grouped by responsibility under `src/core/{data,project,scientific,plugins,ui,theme,services,host,performance,workflow,diagnostics,recipes}`. `src/core/` root implementation files are forbidden.
+- Legacy `base/modern` CSS layering is removed and replaced by explicit Cascade Layers: `foundation < plugin < structure < presentation < theme < platform < window`.
+- Authored renderer CSS now contains **0 `!important` declarations** across Core styles, first-party `plugin.css`, mobile CSS and dedicated plugin-window CSS.
+- `scripts/validate-styles.js` validates brace/string/comment balance, rejects `!important`, rejects legacy specificity directories and rejects domain-plugin identities in Core styles.
+- Core and mobile styles are domain-neutral; plugin geometry remains manifest-owned.
+- Stale generated copies under `src/app.js`, `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are removed. Disposable runtime compositions live only under `src/generated/runtime/` and are Git-ignored.
+- Regression tests now enforce the modular-Core root, cascade order, zero-`!important` rule and generated-artifact boundary.
 
 ## Measured debt
 
-- Authored Core CSS now contains **1492** `!important` declarations, down from **1597** at v3.61.84.
-- `src/styles/modern/` contains **651**, down from **663**.
-- This is meaningful reduction, but the totals remain high. They are now hard upper bounds in regression tests and must not grow.
-- Domain plugin CSS still contains some legacy geometry-level `!important` declarations and dense selectors. Those should be simplified only when the corresponding workspace can be behaviorally verified; moving theme paint into plugins is not an acceptable way to reduce Core counts.
+The previous v3.61.85 CSS debt was 1492 Core `!important` declarations plus 651 in the former modern layer. That debt is now **0** in authored renderer CSS. The old base/modern specificity split no longer exists.
+
+This does not mean the stylesheet is finished. Dense selectors and historical duplication remain in some modules, but they can now be reduced without fighting a second specificity layer.
 
 ## Remaining debt
 
-1. Base CSS still contains older generic selector stacks and specificity that force the modern layer to use `!important`. The next cleanup should consolidate semantic controls/surfaces at their owning base rule rather than append another modern override.
-2. Some first-party plugin CSS is mechanically dense because it was extracted from historical inline templates. Formatting and selector simplification can continue, but plugin CSS must remain geometry/data-semantic only; Core keeps color, Material, typography scale and shared control chrome.
-3. Some long-lived tests still assert implementation strings. v3.61.85 corrected the ones that blocked this ownership migration; remaining ones should be converted only when their owning subsystem is touched, not mass-weakened.
-4. Windows Electron/GPU visual validation remains a separate release gate. Source/contract tests cannot prove backdrop-filter, font rasterization or exact visual alignment.
+1. **Plugin Kernel and UI Infrastructure are not yet true importable modules.** Their source is split by responsibility, but two historical shared-closure subsystems are still assembled at build time into untracked browser artifacts. This is materially better than one authored Core file, but it is not the final modular runtime design. Future work should migrate shared lexical state into explicit subsystem state/services and load independently addressable modules.
+2. **Application composition still uses ordered `.inc` fragments.** This is outside Core but follows the same historical build-time composition model. It should be revisited only after the Core kernel/UI migration is stable.
+3. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
+4. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.
 
-## Non-negotiable repository rules
+## Non-negotiable rules
 
-- Core/Theme CSS must not name domain-plugin selectors or page IDs.
-- First-party and packaged plugins use the same `manifest.styles` lifecycle; static CSS must not be injected with `ctx.ui.styles.add`.
-- Plugin CSS owns domain geometry, not host theme/material paint.
-- Do not create release-numbered source/CSS files or append versioned hotfix blocks.
-- Generated runtime bundles and derived assets remain untracked.
-- When several workspaces need one behavior, add/use a semantic Core/SDK contract instead of enumerating known plugin selectors.
+- No `!important` in authored renderer CSS or runtime-injected CSS.
+- No `base/modern` specificity directories.
+- No domain-plugin selector identities in Core/Theme/mobile Core styles.
+- No implementation files directly under `src/core/`.
+- Generated runtime artifacts remain untracked and reproducible.
+- Do not append release-numbered hotfix blocks; edit the owning semantic module.
 
-Run `npm run check` before each release checkpoint and `npm run clean:generated` before clean-source packaging.
+Run `npm run check` before release and `npm run clean:generated` before creating a Lean Source handoff.

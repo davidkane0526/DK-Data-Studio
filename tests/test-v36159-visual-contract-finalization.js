@@ -1,15 +1,16 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.85','Visual Contract Finalization must ship as v3.61.85.');
+assert(pkg.version==='3.61.86','Visual Contract Finalization must ship as v3.61.86.');
 
-const coreCss=read('src/style.css');
-const modernCss=read('src/ui-modern.css');
-const kernel=read('src/core/plugin-kernel.js');
+const coreCss=readCoreCss(root);
+const modernCss=readCoreCss(root);
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 
 for(const cls of [
   '.dkds-surface{','.dkds-surface-muted{','.dkds-surface-header{','.dkds-toolbar,',
@@ -47,8 +48,8 @@ function scanCss(css,label,{identityOnly=false}={}){
   assert(!failures.length,`${label} still owns plugin visual chrome:\n${failures.slice(0,18).join('\n')}`);
 }
 
-scanCss(coreCss,'src/style.css',{identityOnly:true});
-scanCss(modernCss,'src/ui-modern.css',{identityOnly:true});
+scanCss(coreCss,'Core authored CSS',{identityOnly:true});
+scanCss(modernCss,'Core authored CSS mirror',{identityOnly:true});
 const pluginCssFiles=[];
 (function walkPluginCss(dir){for(const ent of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,ent.name);if(ent.isDirectory())walkPluginCss(p);else if(/\.css$/i.test(ent.name))pluginCssFiles.push(p);}})(path.join(root,'src','plugins'));
 for(const file of pluginCssFiles)scanCss(fs.readFileSync(file,'utf8'),path.relative(root,file));

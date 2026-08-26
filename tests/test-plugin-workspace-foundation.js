@@ -1,12 +1,13 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-const ui=read('src/core/ui-infrastructure.js');
-const css=read('src/style.css');
-const kernel=read('src/core/plugin-kernel.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const css=readCoreCss(root);
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 

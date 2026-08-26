@@ -5,12 +5,12 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-const ui=read('src/core/ui-infrastructure.js');
-const cap=read('src/core/capability-runtime.js');
-const kernel=read('src/core/plugin-kernel.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const cap=read('src/core/host/capability-runtime.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
 
 assert(/const VERSION\s*=\s*'[7-9][0-9]*\.[0-9]+\.[0-9]+'/.test(ui)||/const VERSION\s*=\s*'6\.[0-9]+\.[0-9]+'/.test(ui),'UI infrastructure must ship the v6+ PluginWorkspace/scientific interaction runtime.');

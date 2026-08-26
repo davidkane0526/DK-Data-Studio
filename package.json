@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.61.85",
+  "version": "3.61.86",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -12,10 +12,10 @@
     "postinstall": "npm run brand:assets",
     "plugin:index": "node scripts/generate-plugin-index.js",
     "plugin:validate": "node scripts/validate-plugins.js",
-    "start": "npm run core:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
-    "test": "npm run core:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
-    "check": "npm run core:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
-    "dist": "npm run core:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
+    "start": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
+    "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
+    "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
+    "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",
     "update-server": "node services/update-server/server.js",
     "publish:update": "node services/update-server/publish-release.js dist",
     "science:parity": "node tests/verify-science-parity.js",
@@ -57,9 +57,9 @@
     "sdk:harness": "node tests/test-v36138-external-tool-host-contract.js && node tests/test-v36139-stable-plugin-viewport.js && node tests/test-sdk-host-harness-v36133.js",
     "renderer:test": "node tests/test-v36136-d3-cutover-readiness.js && node tests/test-d3-single-backend-v36136.js && node tests/test-v36136-scientific-presentation-architecture.js && node tests/test-v36137-d3-heatmap-autorange.js",
     "sdk:authoring": "node scripts/generate-sdk-authoring-reference.js",
-    "styles:build": "node scripts/generate-core-styles.js",
-    "core:build": "node scripts/generate-core-runtime-bundles.js",
-    "clean:generated": "node scripts/clean-generated.js"
+    "styles:build": "node scripts/validate-styles.js",
+    "clean:generated": "node scripts/clean-generated.js",
+    "runtime:build": "node scripts/generate-runtime-compositions.js"
   },
   "dependencies": {
     "d3": "^7.9.0",

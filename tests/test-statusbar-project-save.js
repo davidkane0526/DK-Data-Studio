@@ -1,13 +1,16 @@
+const {readCoreCss}=require('./css-source');
 const fs=require('fs');
+const path=require('path');
 const vm=require('vm');
+const root=path.resolve(__dirname,'..');
 function read(p){return fs.readFileSync(p,'utf8');}
 function assert(c,m){if(!c)throw new Error(m);}
 
 const html=read('src/index.html');
-const css=read('src/style.css');
-const modernCss=read('src/ui-modern.css');
-const app=read('src/app.js');
-const kernel=read('src/core/plugin-kernel.js');
+const css=readCoreCss(root);
+const modernCss=readCoreCss(root);
+const app=read('src/generated/runtime/app.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const bridge=read('src/web-bridge.js');
 const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
@@ -24,7 +27,7 @@ assert(html.indexOf('id="statusBar"')>html.indexOf('<div class="workspace">'),'g
 assert(css.includes('--dkds-statusbar-height:28px'),'shell must reserve a shared status-bar height.');
 assert(css.includes('.plugin-status-item'),'status-bar plugin controls need a common visual contract.');
 assert(html.includes('class="statusbar-command-cluster"')&&dedicatedHtml.includes('class="statusbar-command-cluster"'),'desktop and dedicated status actions must share one integrated command-cluster wrapper.');
-assert(modernCss.includes('.statusbar-message + .statusbar-command-cluster{margin-left:auto}')&&modernCss.includes('.statusbar-plugin-left,')&&modernCss.includes('.statusbar-plugin-right{margin-left:0!important}'),'status command cluster must sit at the far-right edge without separate zone spacing.');
+assert(modernCss.includes('.statusbar-message + .statusbar-command-cluster{margin-left:auto}')&&modernCss.includes('.statusbar-plugin-left,')&&modernCss.includes('.statusbar-plugin-right{margin-left:0}'),'status command cluster must sit at the far-right edge without separate zone spacing.');
 
 assert(kernel.includes("registerContribution(pluginId,'ui.statusItems'"),'plugin kernel must register status items generically.');
 assert(kernel.includes('statusBar: {')&&kernel.includes('add: spec => addStatusBarItem(pluginId, spec)'),'plugin API must expose ui.statusBar.add().');
@@ -52,8 +55,8 @@ assert(bridge.includes('getRuntimeStatus: async()=>'),'web runtime metrics fallb
 assert(dedicatedRuntime.includes("const statusEl = $('#statusBarMessage') || $('#statusBar');"),'dedicated window status text must not overwrite plugin status controls.');
 
 for(const file of [
-  'desktop/main.js','desktop/preload.js','src/web-bridge.js','src/app.js','src/core/plugin-kernel.js',
-  'src/core/plugin-manager-ui.js','src/plugins/status-monitor/plugin.js','src/plugin-window/runtime.js'
+  'desktop/main.js','desktop/preload.js','src/web-bridge.js','src/generated/runtime/app.js','src/generated/runtime/plugin-kernel.js',
+  'src/core/plugins/manager-ui.js','src/plugins/status-monitor/plugin.js','src/plugin-window/runtime.js'
 ]){
   new vm.Script(read(file),{filename:file});
 }

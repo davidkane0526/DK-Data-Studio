@@ -1,0 +1,169 @@
+/* Material Renderer 3.6.
+   Material role describes UI semantics. Material recipe describes optical
+   rendering. Core owns selectors/composition; Theme profiles only provide
+   semantic tokens and role-to-recipe policy. */
+:root{--dkds-material-renderer-version:"3.6.0"}
+
+/* Recipes --------------------------------------------------------------- */
+body.dkds-modern-ui [data-dkds-material-recipe="clear"]{
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  background-color:var(--dkds-material-base,var(--dkui-surface));
+  background-image:none;
+  border-color:var(--dkds-material-edge,var(--dkui-divider));
+  box-shadow:var(--dkds-material-shadow,var(--dkui-shadow-1));
+}
+body.dkds-modern-ui [data-dkds-material-recipe="thin-glass"]{
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:none;
+  border-color:var(--dkds-material-edge,var(--dkui-divider));
+  box-shadow:var(--dkds-material-shadow,var(--dkui-shadow-1));
+  filter:none;
+}
+body.dkds-modern-ui [data-dkds-material-recipe="soft-glass"]{
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .45px,transparent .55px);
+  background-size:3px 3px;
+  border-color:var(--dkds-material-edge,var(--dkui-divider));
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 62%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-1));
+}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{
+  --dkds-optical-x:50%;--dkds-optical-y:18%;--dkds-optical-shift-x:0px;--dkds-optical-shift-y:0px;
+  isolation:isolate;
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
+  background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
+  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .42px,transparent .55px);
+  background-size:3px 3px;
+  border-color:color-mix(in srgb,var(--dkds-material-edge,var(--dkui-glass-edge)) 82%,transparent);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 66%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-float));
+}
+
+body.dkds-modern-ui .dkds-optical-position-anchor{position:relative}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  -webkit-backdrop-filter:blur(var(--dkds-material-blur-strong,var(--dkui-material-blur-strong))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation))) brightness(1.025);
+  backdrop-filter:blur(var(--dkds-material-blur-strong,var(--dkui-material-blur-strong))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation))) brightness(1.025);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,transparent 0 55%,rgba(0,0,0,.16) 67%,rgba(0,0,0,.72) 84%,#000 100%);
+  mask-image:radial-gradient(ellipse at 50% 50%,transparent 0 55%,rgba(0,0,0,.16) 67%,rgba(0,0,0,.72) 84%,#000 100%);
+  transform:translate3d(var(--dkds-optical-shift-x),var(--dkds-optical-shift-y),0) scale(1.012);
+  transform-origin:var(--dkds-optical-x) var(--dkds-optical-y);opacity:.78;
+}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"].dkds-optical-active::before{will-change:transform}
+body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle at var(--dkds-optical-x) var(--dkds-optical-y),color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 82%,transparent) 0,transparent 34%),linear-gradient(145deg,color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 72%,transparent) 0,transparent 24%,transparent 72%,color-mix(in srgb,var(--dkds-material-edge,var(--dkui-glass-edge)) 42%,transparent) 100%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dkds-material-edge,var(--dkui-glass-edge)) 58%,transparent),inset 0 1px 0 color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 58%,transparent);
+  opacity:.72;
+}
+
+/* Composition ----------------------------------------------------------- */
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) > :where(.dkds-surface-header,.floating-header,[data-dkds-material-content="true"],.dkds-dialog-body){
+  background-color:transparent;
+  background-image:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:none;
+}
+
+/* Popover surfaces own the optical material. Menu rows are hit regions. */
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not([data-dkds-material-opaque="true"]){
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  filter:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not([data-dkds-material-opaque="true"]):hover{
+  background:var(--dkui-control-hover);
+}
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+  :where([aria-selected="true"],[aria-checked="true"],.selected,.active){background:var(--dkui-accent-soft)}
+body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+  :where(.primary,.strong,[data-dkds-material-opaque="true"]){
+  background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;
+}
+
+/* Layout-only descendants must not put an opaque sheet between a glass owner
+   and its backdrop. */
+body.dkds-modern-ui :where(.analysis-page-body,.plugin-manager-body,.automation-test-body,.dkds-settings-body,.floating-body,.dkds-plugin-canvas-center,.dkds-analysis-primary-host){
+  background-color:transparent;background-image:none;
+}
+
+/* Integrated actions inside translucent surfaces remain ordinary hit regions;
+   the semantic owner supplies the material. */
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) :where(.dkds-integrated-action-group,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
+  :where(button,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn,.project-tab-close,.dkds-dialog-action){
+  background-color:transparent;background-image:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+}
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) :where(.dkds-integrated-action-group,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
+  :where(button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn):is(.active,[aria-pressed="true"],[aria-selected="true"]){
+  background:var(--dkui-accent-soft);color:var(--dkui-accent);-webkit-text-fill-color:var(--dkui-accent);
+}
+
+/* Glass form controls are one flat Core-owned family. Geometry may be supplied
+   by components, but legacy inset/elevated paint cannot leak through. */
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){
+  background-color:color-mix(in srgb,var(--dkui-surface) 30%,transparent);
+  background-image:none;
+  border-color:color-mix(in srgb,var(--dkui-divider) 48%,transparent);
+  color:var(--dkui-text,var(--text-primary));
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  filter:none;
+}
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):hover{
+  border-color:color-mix(in srgb,var(--dkui-divider-hover) 82%,transparent);
+}
+body.dkds-modern-ui :where(
+  [data-dkds-material-recipe="thin-glass"],
+  [data-dkds-material-recipe="soft-glass"],
+  [data-dkds-material-recipe="liquid-glass"]
+) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):focus-visible{
+  border-color:var(--dkui-accent);box-shadow:var(--dkui-focus);outline:none;
+}
+
+/* Portal is a rendering capability, not a theme identity. */
+body.dkds-modern-ui .command-menu.dkds-command-menu-portal{
+  position:fixed;right:auto;margin:0;z-index:1900;max-height:min(70vh,620px);overflow:auto;
+}
+
+body.dkds-modern-ui .project-tab-close:not(:hover):not(:focus-visible){background-color:transparent;box-shadow:none}
+body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item){background-color:transparent;background-image:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu,.dkds-material-role-popover){color:var(--dkds-on-popover,var(--dkui-text))}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip) :where(b,strong,span,div){color:inherit}
+body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip) .dkds-tooltip-key{color:color-mix(in srgb,var(--dkds-on-popover,var(--dkui-text)) 72%,transparent)}
+body.dkds-modern-ui :where(.command-menu,.dkds-material-role-popover) .plugin-export-context{background:transparent;color:var(--dkui-text-soft);border-bottom-color:color-mix(in srgb,var(--dkui-divider) 78%,transparent);box-shadow:none}
+
+@media(prefers-reduced-motion:reduce){
+  body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::before{transform:none;will-change:auto}
+  body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{--dkds-optical-x:50%;--dkds-optical-y:18%;--dkds-optical-shift-x:0px;--dkds-optical-shift-y:0px}
+}

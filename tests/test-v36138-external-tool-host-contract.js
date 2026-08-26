@@ -34,9 +34,9 @@ assert.equal(spec.packageManifest?.apiVersion,'1.17.0','Dedicated window must ca
 assert.equal(spec.packageManifest?.pluginType,'tool','Dedicated window must not trust stale plugin.js metadata for plugin type.');
 assert.equal(spec.packageManifest?.workspace?.role,'top','Dedicated window must carry canonical TOP workspace metadata.');
 
-const kernel=read('src/core/plugin-kernel.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const runtime=read('src/plugin-window/runtime.js');
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const main=read('desktop/main.js');
 const manager=read('desktop/plugin-window-manager.js');
 

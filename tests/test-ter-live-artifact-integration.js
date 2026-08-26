@@ -12,10 +12,10 @@ const context={
 };
 context.window=context;context.globalThis=context;
 vm.createContext(context);
-vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
-vm.runInContext(read('src/core/performance-runtime.js'),context,{filename:'performance-runtime.js'});
-vm.runInContext(read('src/core/scientific-pipeline-runtime.js'),context,{filename:'scientific-pipeline-runtime.js'});
-vm.runInContext(read('src/core/plugin-module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
+vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/core/performance/runtime.js'),context,{filename:'performance-runtime.js'});
+vm.runInContext(read('src/core/scientific/pipeline-runtime.js'),context,{filename:'scientific-pipeline-runtime.js'});
+vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{filename:'ter-analysis-service.js'});
 
 function sweepDataset(){

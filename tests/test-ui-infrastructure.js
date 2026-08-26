@@ -4,8 +4,8 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-const ui=read('src/core/ui-infrastructure.js');
-const kernel=read('src/core/plugin-kernel.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const windowManager=read('desktop/plugin-window-manager.js');
 const resonanceSuper=read('src/plugins/resonance-workbench/super-layout.js');
 const resonanceTop=read('src/plugins/resonance-workbench/window-runtime.js');

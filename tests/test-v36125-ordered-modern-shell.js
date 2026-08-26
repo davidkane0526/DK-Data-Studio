@@ -1,22 +1,23 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.85','ordered modern shell release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.86','ordered modern shell release must be v3.61.27');
 const html=read('src/index.html');
 const pluginHtml=read('src/plugin-window/index.html');
-const css=read('src/ui-modern.css');
+const css=readCoreCss(root);
 const theme=read('src/core/theme/runtime.js');
-const charts=read('src/core/chart-runtime.js');
+const charts=read('src/core/scientific/chart-runtime.js');
 const status=read('src/plugins/status-monitor/plugin.js');
 const main=read('desktop/main.js');
 const web=read('src/web-bridge.js');
-const manager=read('src/core/plugin-manager-ui.js');
-const kernel=read('src/core/plugin-kernel.js');
+const manager=read('src/core/plugins/manager-ui.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const preload=read('desktop/preload.js');
 
 assert(html.includes('core/theme/runtime.js'),'main shell must initialize the explicit appearance runtime before app startup');
@@ -29,8 +30,8 @@ assert(css.includes('body.dkds-modern-ui .topbar{position:relative;z-index:1400'
 assert(css.includes('body.dkds-modern-ui .command-menu{z-index:1650}'),'top dropdown menus must stay above workbench content');
 assert(!css.includes('.js-plotly-plot .plotly .modebar'),'visual system must not style Plotly-generated modebar internals');
 assert(css.includes('--dkui-canvas:#eef4fb')&&css.includes('--dkui-border:#d8e5f4')&&css.includes('rgba(91,119,159,.065)'),'light material must follow the supplied cool soft-depth reference without heavy skeuomorphism');
-assert(css.includes('button[aria-pressed="true"]')&&css.includes('-webkit-text-fill-color:var(--dkui-accent)!important')&&css.includes('var(--dkui-accent-soft)!important'),'host-owned selected controls must derive both selected surface and readable foreground from the shared theme contract');
-assert(css.includes('.toolbar-btn.strong')&&css.includes('button.primary')&&css.includes('color:#fff!important'),'semantic primary commands must keep readable foreground colors over accent surfaces');
+assert(css.includes('button[aria-pressed="true"]')&&css.includes('-webkit-text-fill-color:var(--dkui-accent)')&&css.includes('var(--dkui-accent-soft)'),'host-owned selected controls must derive both selected surface and readable foreground from the shared theme contract');
+assert(css.includes('.toolbar-btn.strong')&&css.includes('button.primary')&&css.includes('color:#fff'),'semantic primary commands must keep readable foreground colors over accent surfaces');
 assert(css.includes('.plugin-toolbar-btn')&&css.includes('white-space:nowrap'),'command labels must remain atomic and rely on existing overflow/reflow behavior instead of wrapping into collisions');
 
 assert(status.includes("id:'theme'")&&status.includes('dkdsThemePanel')&&status.includes('window.DKDSTheme?.setProfile?.')&&status.includes('window.DKDSTheme?.set?.'),'status bar must expose the integrated Theme picker instead of a standalone light/dark toggle');

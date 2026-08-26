@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
 assert.equal(Theme.version,'3.5.0');
@@ -22,12 +22,12 @@ assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const
 assert(renderer.includes("el.dataset.dkdsMaterialRoleClassOwner='material-surface'"),'MaterialSurface role ownership must be explicit.');
 assert(renderer.includes("roleClassOwner==='core-runtime'"),'runtime inference must only remove runtime-owned role classes.');
 
-const css=read('src/styles/modern/98-theme-material-renderer.css');
+const css=read('src/styles/theme/material-renderer.css');
 const thin=css.match(/\[data-dkds-material-recipe="thin-glass"\][\s\S]*?\n\}/)?.[0]||'';
 assert(thin,'independent thin-glass CSS recipe missing');
 assert(/backdrop-filter:blur\(/.test(thin),'thin-glass must use backdrop-filter blur');
 assert(/saturate\(/.test(thin),'thin-glass must use backdrop saturation');
-assert(/filter:none!important/.test(thin),'thin-glass must explicitly avoid filter: blur on UI content');
+assert(/filter:none/.test(thin),'thin-glass must explicitly avoid filter: blur on UI content');
 assert(!/noise|specular|inner-highlight|optical|displacement|refraction|chromatic/i.test(thin.replace(/\/\*[\s\S]*?\*\//g,'')),'thin-glass recipe must not contain Liquid optical effects');
 assert(!/\[data-dkds-material-recipe="thin-glass"\]::(?:before|after)/.test(css),'thin-glass must not use Liquid optical pseudo layers');
 
@@ -62,9 +62,9 @@ assert(templateJs.includes("popover:'thin-glass'")&&templateJs.includes("surface
 
 // Core material renderer is the only place allowed to paint real material surfaces.
 for(const [file,selector] of [
-  ['src/styles/base/00-foundation.css','.dkds-tooltip'],
-  ['src/styles/base/60-analysis-workbench.css','.dkds-settings-dialog'],
-  ['src/styles/modern/20-plugin-chrome.css','.dkds-settings-dialog']
+  ['src/styles/foundation/foundation.css','.dkds-tooltip'],
+  ['src/styles/structure/analysis-workbench.css','.dkds-settings-dialog'],
+  ['src/styles/presentation/plugin-chrome.css','.dkds-settings-dialog']
 ]){
   const text=read(file);
   if(selector==='.dkds-tooltip') assert(!/\.dkds-tooltip[^\n]*backdrop-filter/i.test(text),`${file} still owns tooltip backdrop material`);

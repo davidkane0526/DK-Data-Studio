@@ -207,7 +207,7 @@
     });
 
     window.DKDSPlugins.configure({
-      appVersion:'3.61.85',
+      appVersion:'3.61.86',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:false,
       isWebClient:!!window.electronAPI?.isWebClient,

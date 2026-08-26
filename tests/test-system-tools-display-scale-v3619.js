@@ -7,27 +7,27 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
-assert(json('package.json').version==='3.61.85','Application version must be v3.61.18.');
+assert(json('package.json').version==='3.61.86','Application version must be v3.61.18.');
 assert(json('sdk/contract.json').pluginApiVersion==='1.17.0','Standalone SDK must publish Plugin API 1.16.');
 assert(json('sdk/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'SDK manifest schema must expose the tool plugin category.');
 assert(json('docs/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'Application manifest schema must accept tool plugins.');
 
-const chartRuntime=read('src/core/chart-runtime.js');
+const chartRuntime=read('src/core/scientific/chart-runtime.js');
 assert(chartRuntime.includes('displayScaleStates')&&chartRuntime.includes('toggleYAxisDisplay')&&chartRuntime.includes("el.addEventListener?.('dblclick',state.handler,true)"),'Base chart runtime must own Y-axis/left-label double-click display-scale switching for every managed scientific chart.');
 assert(chartRuntime.includes('Math.abs(n)')&&chartRuntime.includes("next.y=trace.y.map(absNumber)"),'Scientific logarithmic display must use |Y| display values while leaving source series arrays untouched.');
 assert(chartRuntime.includes("trace.type")||chartRuntime.includes('Array.isArray(trace.y)'),'Display-scale projection must be trace-generic so scalar fields/heatmaps and ordinary XY charts share the same Core path.');
-const scientificPlot=read('src/core/scientific-plot-runtime.js');
+const scientificPlot=read('src/core/scientific/plot-runtime.js');
 assert(scientificPlot.includes('this.chart?.toggleYAxisDisplay?.(this.target)'),'ScientificPlot must delegate scale switching to the base chart runtime instead of owning a resonance-specific implementation.');
-const d3surface=read('src/core/ui-infrastructure.js');
+const d3surface=read('src/generated/runtime/ui-infrastructure.js');
 assert(d3surface.includes("this.displayYAxisType==='log'?'linear':'log'")&&d3surface.includes('d3.scaleLog()')&&d3surface.includes('dkds-scientific-y-axis-hit'),'ScientificCurveSurface must provide the same Core-owned Y-axis/left-label display toggle.');
 assert(d3surface.includes("Math.abs(n)")&&d3surface.includes('yDisplayValue(value)'),'D3 logarithmic display must use |Y| without mutating the source samples.');
 
-const kernel=read('src/core/plugin-kernel.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 assert(kernel.includes("tool:'⌁'")&&kernel.includes("defaultMenu=pluginTypeForManifest(definition?.manifest||{})==='tool'?'tools':'export'"),'Core must provide tool defaults and route tool contributions to the Tools menu.');
 assert(kernel.includes('isSystemLockedDefinition')&&kernel.includes('系统与基座插件是应用运行所必需的，不能停用'),'Core must enforce non-disableable built-in system/foundation plugins.');
 assert(kernel.includes("String(row.value?.navigation||'')!=='system'"),'System activities must be separable from ordinary plugin activity navigation.');
 
-const manager=read('src/core/plugin-manager-ui.js');
+const manager=read('src/core/plugins/manager-ui.js');
 assert(manager.includes("tool:{label:'工具'")&&manager.includes("'tool'"),'Plugin Manager must render a Tools category.');
 assert(manager.includes('plugin-export-btn')&&manager.includes('DKDSPlugins.external.export'),'Plugin Manager must expose plugin package export.');
 assert(manager.includes("plugin.systemLocked?'系统功能由基座管理，不能停用'")&&manager.includes("busy||plugin.isSuper||plugin.systemLocked"),'System lock must be represented by the existing disabled enable switch.');

@@ -22,9 +22,9 @@ assert(derived.includes('platform')&&derived.includes('plugin-kernel'),'All dedi
 const runtime=read('src/plugin-window/runtime.js');
 const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
-const app=read('src/app.js');
-assert(runtime.includes("'parameter-schema':'../core/parameter-schema.js'"),'Dedicated runtime allowlist must include parameter-schema.');
-assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js'"),'Dedicated runtime allowlist must include Scientific Pipeline Runtime.');
+const app=read('src/generated/runtime/app.js');
+assert(runtime.includes("'parameter-schema':'../core/data/parameter-schema.js'"),'Dedicated runtime allowlist must include parameter-schema.');
+assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific/pipeline-runtime.js'"),'Dedicated runtime allowlist must include Scientific Pipeline Runtime.');
 assert(runtime.includes('window.electronAPI?.markActivityWindowFailed?.'),'Dedicated startup catch must report failure to the main process.');
 assert(main.includes('const auxiliaryFailures = new Map()'),'Main process must retain explicit failed-window state.');
 assert(main.includes("ipcMain.on('windows:activityFailed'"),'Main process must receive dedicated startup failures.');

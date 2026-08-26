@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 
-const source=fs.readFileSync(path.join(__dirname,'..','src','core','mobile-plugin-package.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'..','src','core','host','mobile-plugin-package.js'),'utf8');
 const window={};
 vm.runInNewContext(source,{window,Object,Set,JSON,Error},{filename:'mobile-plugin-package.js'});
 const normalize=window.DKDSMobilePluginPackage.normalize;

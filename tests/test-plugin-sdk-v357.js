@@ -57,7 +57,7 @@ for(const [rel,id] of [
   ['src/plugins/pulse-analysis/analysis-service.js','builtin.pulse-analysis.runtime']
 ])assert(read(rel).includes(`serviceName:'${id}'`),`${rel} must publish a namespaced plugin-owned service.`);
 
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const start=app.indexOf('window.DKDSPlugins.configure({');
 const end=start>=0?app.indexOf('\n    });',start):-1;
 const configure=start>=0&&end>start?app.slice(start,end):'';

@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
-const code=fs.readFileSync(path.join(root,'src/core/scientific-plot-runtime.js'),'utf8');
+const code=fs.readFileSync(path.join(root,'src/core/scientific/plot-runtime.js'),'utf8');
 function classList(){const s=new Set();return {add:(...xs)=>xs.forEach(x=>s.add(x)),remove:(...xs)=>xs.forEach(x=>s.delete(x)),toggle(x,on){if(on===undefined)on=!s.has(x);on?s.add(x):s.delete(x);return on;},contains:x=>s.has(x)};}
 const target={nodeType:1,id:'plot',dataset:{},classList:classList(),data:[],handlers:new Map(),domHandlers:new Map(),on(name,fn){this.handlers.set(name,fn);},removeListener(name,fn){if(this.handlers.get(name)===fn)this.handlers.delete(name);},addEventListener(name,fn){this.domHandlers.set(name,fn);},removeEventListener(name,fn){if(this.domHandlers.get(name)===fn)this.domHandlers.delete(name);}};
 const calls={react:0,restyle:[],relayout:[],save:[],purge:0};

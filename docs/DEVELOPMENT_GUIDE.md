@@ -118,4 +118,4 @@ Start from `sdk/templates/top-workspace-plugin/` for a dedicated TOP, `sdk/templ
 
 The desktop shell uses one command row above project tabs. Do not reintroduce a permanent second toolbar row. New plugin actions must declare `priority`, `order`, `section` and `activity`; the host decides what stays visible and what moves to overflow.
 
-Use the semantic font/control tokens in `src/style.css` rather than introducing new arbitrary font sizes for ordinary controls.
+Use the semantic font/control tokens exposed through `src/core.css` / Theme Contract rather than introducing arbitrary font sizes for ordinary controls.

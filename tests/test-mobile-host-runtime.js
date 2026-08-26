@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 
-const source=fs.readFileSync(path.join(__dirname,'..','src','core','mobile-host-runtime.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'..','src','core','host','mobile-host-runtime.js'),'utf8');
 const listeners={window:new Map(),document:new Map()};
 const posted=[];
 const activated=[];

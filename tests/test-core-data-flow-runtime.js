@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'src/core/data-flow-runtime.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'src/core/data/flow-runtime.js'),'utf8');
 const context={window:{}};context.window.window=context.window;vm.createContext(context);vm.runInContext(source,context,{filename:'data-flow-runtime.js'});
 const flow=context.window.DKDSDataFlow;
 const scope=flow.createScope('test.synthetic');

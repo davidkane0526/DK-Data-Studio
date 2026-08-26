@@ -2,12 +2,13 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const assert=require('assert');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
-const code=fs.readFileSync(path.join(root,'src/core/chart-runtime.js'),'utf8');
+const code=fs.readFileSync(path.join(root,'src/core/scientific/chart-runtime.js'),'utf8');
 let captured=null;
 const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
 const window={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(el);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
-const document={currentScript:{src:'file:///tmp/src/core/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
+const document={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
 const context={window,document,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;window.window=window;window.document=document;
 vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.js'});
 (async()=>{
@@ -17,7 +18,7 @@ vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.
   assert.equal(captured.layout.hoverlabel.font.color,'green','renderer-neutral chart metadata may retain caller hover text color; D3 does not use Plotly hoverlabel paint');
   assert.equal(captured.layout.hoverlabel.font.size,12,'Core must normalize tooltip typography');
   assert.equal(captured.layout.hoverlabel.namelength,-1,'non-visual hoverlabel behavior may remain chart-specific');
-  const css=fs.readFileSync(path.join(root,'src/style.css'),'utf8');
+  const css=readCoreCss(root);
   assert(css.includes('.dkds-tooltip,.hover-tip')&&css.includes('background:transparent;box-shadow:none'),'custom tooltip geometry must not paint its own material');
   assert(css.includes('.dkds-d3-chart-tooltip')&&css.includes('border:1px solid transparent;background:transparent;color:inherit;box-shadow:none'),'D3 tooltip host must leave visual material to Core Material Renderer');
   const material=fs.readFileSync(path.join(root,'src/core/theme/material-renderer.js'),'utf8');

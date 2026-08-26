@@ -15,10 +15,10 @@ const ctx=vm.createContext({
 });
 ctx.window=ctx;ctx.globalThis=ctx;
 
-load('src/core/data-model.js',ctx);
-load('src/core/formula-engine.js',ctx);
-load('src/core/parameter-schema.js',ctx);
-load('src/core/workflow-engine.js',ctx);
+load('src/core/data/model.js',ctx);
+load('src/core/data/formula-engine.js',ctx);
+load('src/core/data/parameter-schema.js',ctx);
+load('src/core/workflow/engine.js',ctx);
 
 const D=ctx.DKDSData,F=ctx.DKDSFormula,P=ctx.DKDSParameters,W=ctx.DKDSWorkflow;
 function assert(cond,msg){if(!cond)throw new Error(msg);}

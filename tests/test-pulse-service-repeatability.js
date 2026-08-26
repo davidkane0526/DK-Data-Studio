@@ -22,7 +22,7 @@ const context={
 };
 context.window.window=context.window;context.window.document=document;context.window.requestAnimationFrame=context.requestAnimationFrame;context.globalThis=context;
 vm.createContext(context);
-vm.runInContext(fs.readFileSync(path.join(root,'src/core/plugin-module-runtime.js'),'utf8'),context,{filename:'plugin-module-runtime.js'});
+vm.runInContext(fs.readFileSync(path.join(root,'src/core/plugins/module-runtime.js'),'utf8'),context,{filename:'plugin-module-runtime.js'});
 vm.runInContext(fs.readFileSync(path.join(root,'src/plugins/pulse-analysis/analysis-service.js'),'utf8'),context,{filename:'analysis-service.js'});
 
 (async()=>{

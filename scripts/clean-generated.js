@@ -3,11 +3,9 @@ const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const generated=[
-  'src/app.js',
-  'src/core/ui-infrastructure.js',
-  'src/core/plugin-kernel.js',
-  'src/style.css',
-  'src/ui-modern.css',
+  'src/generated/runtime/app.js',
+  'src/generated/runtime/ui-infrastructure.js',
+  'src/generated/runtime/plugin-kernel.js',
   'src/generated/plugin-index.js',
   'src/generated/sdk-authoring-reference.js',
   'assets/dkds-icon.png',

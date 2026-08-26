@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 function assert(v,m){if(!v)throw new Error(m);}
 (async()=>{
-  const chart=read('src/core/chart-runtime.js');
+  const chart=read('src/core/scientific/chart-runtime.js');
   assert(chart.includes("const VERSION='2.0.0'"),'Chart runtime must advance for corrected display-scale semantics.');
   assert(chart.includes("hasHeatmap(data)?'z'")&&chart.includes('isColorScaleInteraction'),'Heatmap display scale must target Z/colorbar rather than the coordinate Y axis.');
   assert(chart.includes('Math.log10(n)')&&chart.includes('const magnitudeZ=rawZ.map'),'Heatmap log view must project log10(|Z|) while retaining display access to original magnitudes.');
@@ -15,7 +15,7 @@ function assert(v,m){if(!v)throw new Error(m);}
   let captured=null;
   const plot={nodeType:1,dataset:{},classList:{add(){},remove(){}},addEventListener(){},removeEventListener(){},dispatchEvent(){}};
   const fakeWindow={d3:{},DKDSD3Renderer:{supports:()=>true,react(el,data,layout,config){captured={el,data,layout,config};el.data=data;el.layout=layout;el._context=config;el.dataset.dkdsChartRenderer='d3';return Promise.resolve(true);},restyle(){return Promise.resolve(true);},relayout(){return Promise.resolve(true);},resize(){return true;},purge(){return true;},toImage(){return Promise.resolve('');}}};
-  const fakeDocument={currentScript:{src:'file:///tmp/src/core/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
+  const fakeDocument={currentScript:{src:'file:///tmp/src/core/scientific/chart-runtime.js'},getElementById:id=>id==='plot'?plot:null,querySelector:()=>null};
   const context={window:fakeWindow,document:fakeDocument,console,Promise,WeakMap,Map,Set,URL,performance:{now:()=>0},structuredClone:global.structuredClone,CustomEvent:function(){}};context.globalThis=context;fakeWindow.window=fakeWindow;fakeWindow.document=fakeDocument;vm.createContext(context);vm.runInContext(chart,context,{filename:'chart-runtime.js'});
 
   const lineY=[-1e-5,-1e-6,0,1e-7];
@@ -35,12 +35,12 @@ function assert(v,m){if(!v)throw new Error(m);}
   assert(captured.data[0].customdata[0][0]===100&&captured.data[0].hovertemplate.includes('%{customdata:.4g}'),'Heatmap hover must report original |Z| magnitude instead of the logarithm exponent.');
   assert(JSON.stringify(heatZ)===JSON.stringify([[-100,-10,0],[1,10,100],[1000,10000,100000]]),'Heatmap source Z matrix must not be mutated.');
 
-  const projectFormat=require('../src/core/project-format.js');
+  const projectFormat=require('../src/core/project/format.js');
   const legacy=projectFormat.canonicalizeProject({
     format:'graphene-resonance-studio-project',schemaVersion:1,version:'3.17.0',
     datasets:[{name:'VG=0',path:'legacy://VG=0',text:'V,I\n0,1e-9\n1,2e-9',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}]
   });
-  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data-model.js'),dataContext,{filename:'data-model.js'});
+  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});
   const D=dataContext.window.DKDSData,ownerStore=D.restoreStore(legacy.dataModel||{schema:1,artifacts:[]});
   D.syncLegacyDatasetArtifacts(ownerStore,legacy.datasets);
   const liveSnapshot=ownerStore.list({includeTransient:true});
@@ -48,10 +48,10 @@ function assert(v,m){if(!v)throw new Error(m);}
   const dataCenterStore=D.restoreStore({schema:2,artifacts:liveSnapshot});
   assert(dataCenterStore.list({includeTransient:true}).length===1,'Data Center live hydration must restore transient legacy adapters instead of showing an empty store.');
 
-  const ui=read('src/core/ui-infrastructure.js');
+  const ui=read('src/generated/runtime/ui-infrastructure.js');
   assert(ui.includes('logDecadeTicks(domain)')&&ui.includes('yAxisGenerator.tickValues(this.logDecadeTicks(y.domain()))'),'D3 ScientificCurveSurface must label only powers of ten in log Y mode.');
 
-  const app=read('src/app.js'),main=read('desktop/main.js'),aux=read('src/plugin-window/runtime.js');
+  const app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),aux=read('src/plugin-window/runtime.js');
   assert(app.includes("artifactHydration||''")&&app.includes("==='live'?snapshotArtifactRows():null"),'Activities that declare live Artifact hydration must receive the owner snapshot without adding the payload to every heavy TOP window.');
   const dc=read('src/plugins/data-center/feature-runtime.js');assert(dc.includes("artifactHydration:'live'"),'Data Center must explicitly request live Artifact hydration as a generic activity contract.');
   assert(main.includes('artifactSnapshot')&&main.includes('artifactDigest')&&main.includes('cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest'),'Main must track live Artifact snapshot changes when reusing TOP windows.');

@@ -3,18 +3,18 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert.strictEqual(pkg.version,'3.61.85');
+assert.strictEqual(pkg.version,'3.61.86');
 
-const modern=fs.readFileSync(path.join(root,'src','styles','modern','80-control-status-unification.css'),'utf8');
+const modern=fs.readFileSync(path.join(root,'src','styles','presentation','control-status.css'),'utf8');
 assert(modern.includes('body.dkds-modern-ui .project-tab-close{'),'Project tab close must have an explicit Core icon-action rule.');
 for(const needle of [
-  'width:24px!important',
-  'height:24px!important',
-  'min-width:24px!important',
-  'min-height:24px!important',
-  'border-radius:50%!important',
-  'background:transparent!important',
-  'box-shadow:none!important'
+  'width:24px',
+  'height:24px',
+  'min-width:24px',
+  'min-height:24px',
+  'border-radius:50%',
+  'background:transparent',
+  'box-shadow:none'
 ]) assert(modern.includes(needle),`Project tab close rule missing: ${needle}`);
 assert(modern.includes('.project-tab-close:hover:not(:disabled)'), 'Project tab close must own its hover state.');
 assert(modern.includes('color-mix(in srgb,var(--dkui-text'), 'Project tab close hover must use a neutral semantic tint.');

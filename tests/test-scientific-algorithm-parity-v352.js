@@ -8,7 +8,7 @@ for(const file of [
   'src/science/common.js',
   'src/science/presets.js',
   'src/science/peaks.js',
-  'src/core/plugin-module-runtime.js',
+  'src/core/plugins/module-runtime.js',
   'src/plugins/resonance-detector-robust/algorithm.js'
 ]) vm.runInContext(read(file),context,{filename:file});
 

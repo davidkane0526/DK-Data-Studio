@@ -7,7 +7,7 @@ const {readBuiltinPluginWindows,normalizeDependencies}=require('../desktop/plugi
 const runtime=read('src/plugin-window/runtime.js');
 const preload=read('desktop/preload.js');
 const main=read('desktop/main.js');
-const automation=read('src/core/automation-test-runtime.js');
+const automation=read('src/core/diagnostics/automation-test-runtime.js');
 
 const domains=['scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime'];
 assert(runtime.includes("for(const id of ['entity-runtime','io-runtime','plot-presentation-runtime','d3-chart-renderer','chart-runtime','performance-runtime','scientific-plot-runtime','component-runtime','data-flow-runtime','service-runtime','plugin-contract-runtime','plugin-module-runtime'])"),'Dedicated TOP stable infrastructure list changed unexpectedly.');

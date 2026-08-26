@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DK Data Studio</title>
   <link rel="icon" href="../assets/dkds-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="ui-modern.css" />
+<link rel="stylesheet" href="core.css" />
   <link rel="stylesheet" href="mobile.css" />
   <script src="../sdk/semver-compat.js"></script>
   <script src="../sdk/theme-contract.js"></script>
@@ -22,7 +21,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.85</span></div>
+        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.61.86</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group" title="工程与数据">
@@ -718,8 +717,8 @@
   </div>
 
   <script src="../node_modules/d3/dist/d3.min.js"></script>
-  <script src="core/project-format.js"></script>
-  <script src="core/mobile-plugin-package.js"></script>
+  <script src="core/project/format.js"></script>
+  <script src="core/host/mobile-plugin-package.js"></script>
   <script src="web-bridge.js"></script>
   <script src="science/common.js"></script>
   <script src="science/presets.js"></script>
@@ -731,44 +730,44 @@
   <script src="science/physics.js"></script>
   <script src="science/gate.js"></script>
   <script src="analysis.js"></script>
-  <script src="core/data-model.js"></script>
-  <script src="core/project-history.js"></script>
-  <script src="core/entity-runtime.js"></script>
-  <script src="core/formula-engine.js"></script>
-  <script src="core/parameter-schema.js"></script>
-  <script src="core/workflow-engine.js"></script>
-  <script src="core/platform.js"></script>
-  <script src="core/state-store.js"></script>
-  <script src="core/io-runtime.js"></script>
-  <script src="core/plot-presentation-runtime.js"></script>
-  <script src="core/d3-chart-renderer.js"></script>
-  <script src="core/chart-runtime.js"></script>
-  <script src="core/performance-runtime.js"></script>
-  <script src="core/scientific-plot-runtime.js"></script>
-  <script src="core/component-runtime.js"></script>
-  <script src="core/data-flow-runtime.js"></script>
-  <script src="core/scientific-reactive-runtime.js"></script>
-  <script src="core/scientific-pipeline-runtime.js"></script>
-  <script src="core/scientific-transform-runtime.js"></script>
-  <script src="core/scientific-algorithm-runtime.js"></script>
-  <script src="core/service-runtime.js"></script>
-  <script src="core/plugin-module-runtime.js"></script>
-    <script src="core/plugin-contract-runtime.js"></script>
-  <script src="core/host-recipe-runtime.js"></script>
+  <script src="core/data/model.js"></script>
+  <script src="core/project/history.js"></script>
+  <script src="core/data/entity-runtime.js"></script>
+  <script src="core/data/formula-engine.js"></script>
+  <script src="core/data/parameter-schema.js"></script>
+  <script src="core/workflow/engine.js"></script>
+  <script src="core/host/platform.js"></script>
+  <script src="core/data/state-store.js"></script>
+  <script src="core/host/io-runtime.js"></script>
+  <script src="core/scientific/plot-presentation-runtime.js"></script>
+  <script src="core/scientific/d3-chart-renderer.js"></script>
+  <script src="core/scientific/chart-runtime.js"></script>
+  <script src="core/performance/runtime.js"></script>
+  <script src="core/scientific/plot-runtime.js"></script>
+  <script src="core/ui/component-runtime.js"></script>
+  <script src="core/data/flow-runtime.js"></script>
+  <script src="core/scientific/reactive-runtime.js"></script>
+  <script src="core/scientific/pipeline-runtime.js"></script>
+  <script src="core/scientific/transform-runtime.js"></script>
+  <script src="core/scientific/algorithm-runtime.js"></script>
+  <script src="core/services/service-runtime.js"></script>
+  <script src="core/plugins/module-runtime.js"></script>
+    <script src="core/plugins/contract-runtime.js"></script>
+  <script src="core/host/recipe-runtime.js"></script>
   <script src="core/recipes/shell-navigation.js"></script>
   <script src="core/recipes/workspace-safeguards.js"></script>
-  <script src="core/ui-infrastructure.js"></script>
-  <script src="core/capability-runtime.js"></script>
-  <script src="core/plugin-kernel.js"></script>
-  <script src="core/mobile-host-runtime.js"></script>
+  <script src="generated/runtime/ui-infrastructure.js"></script>
+  <script src="core/host/capability-runtime.js"></script>
+  <script src="generated/runtime/plugin-kernel.js"></script>
+  <script src="core/host/mobile-host-runtime.js"></script>
   <script src="generated/sdk-authoring-reference.js"></script>
-  <script src="core/studio-kernel-runtime.js"></script>
-  <script src="core/connectivity-runtime.js"></script>
-  <script src="core/mcp-runtime.js"></script>
-  <script src="core/plugin-devtools.js"></script>
-  <script src="core/plugin-manager-ui.js"></script>
-  <script src="core/automation-test-runtime.js"></script>
+  <script src="core/host/studio-kernel-runtime.js"></script>
+  <script src="core/services/connectivity-runtime.js"></script>
+  <script src="core/services/mcp-runtime.js"></script>
+  <script src="core/plugins/devtools.js"></script>
+  <script src="core/plugins/manager-ui.js"></script>
+  <script src="core/diagnostics/automation-test-runtime.js"></script>
   <script src="generated/plugin-index.js"></script>
-  <script src="app.js"></script>
+  <script src="generated/runtime/app.js"></script>
 </body>
 </html>

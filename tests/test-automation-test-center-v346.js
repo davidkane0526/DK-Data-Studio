@@ -3,7 +3,7 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const runtime=read('src/core/automation-test-runtime.js');
+const runtime=read('src/core/diagnostics/automation-test-runtime.js');
 const main=read('desktop/main.js');
 const match=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);
 assert(match,'Automation Test runner version must be declared.');

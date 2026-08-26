@@ -1,13 +1,14 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-const ui=read('src/core/ui-infrastructure.js');
-const css=read('src/style.css');
-const kernel=read('src/core/plugin-kernel.js');
-const app=read('src/app.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const css=readCoreCss(root);
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const app=read('src/generated/runtime/app.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const pulse=read('src/plugins/pulse-analysis/analysis-service.js');
@@ -41,7 +42,7 @@ assert(resonanceFeature.includes("placements:['home','left','right','bottom','gl
 
 // Dock locations are stacks, not absolute piles.
 assert(css.includes('A dock slot is a stack, never a pile'),'Core must document same-location dock ordering.');
-assert(css.includes('flex-flow:column nowrap!important')&&css.includes('.dkds-plugin-canvas-bottom>.dkds-portable-view'),'Bottom dock must flow multiple panels sequentially.');
+assert(css.includes('flex-flow:column nowrap')&&css.includes('.dkds-plugin-canvas-bottom>.dkds-portable-view'),'Bottom dock must flow multiple panels sequentially.');
 assert(ui.includes('syncCanvasRegions()'),'Dock geometry must be recomputed from live portable contents.');
 
 // PRIME close/minimize is a generic Core lifecycle.

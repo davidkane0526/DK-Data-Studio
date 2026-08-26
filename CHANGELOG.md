@@ -1,3 +1,13 @@
+# v3.61.86 — Modular Core & Cascade Ownership
+
+- Reorganize authored Core under responsibility directories (`data / project / scientific / plugins / ui / theme / services / host / performance / workflow / diagnostics / recipes`) and forbid implementation files at `src/core/` root. Legacy generated `src/core/plugin-kernel.js` and `src/core/ui-infrastructure.js` are removed from authored source.
+- Replace the historical `base/modern` specificity stack with explicit Cascade Layers: `foundation < plugin < structure < presentation < theme < platform < window`. Core CSS is now imported through `src/core.css`; CSS generation by concatenation is removed.
+- Remove `!important` from all authored renderer CSS, including Core styles, first-party plugin styles, mobile styles and dedicated-window styles. `scripts/validate-styles.js` rejects new `!important`, malformed CSS structure, legacy specificity directories and domain-plugin identities inside Core styles.
+- Keep first-party domain geometry in manifest-owned `plugin.css` while Core/Theme retains semantic control, typography, Material and chrome ownership. Mobile and Core styles are domain-neutral.
+- Add v3.61.86 architecture regression gates for modular Core organization, zero-`!important` CSS, explicit cascade order, generated-artifact boundaries and plugin-neutral styling.
+- Remove stale generated runtime copies from authored source and keep disposable runtime compositions only under `src/generated/runtime/`, excluded from Git and reproducible by `npm run runtime:build`.
+- Update architecture/project-structure/code-quality documentation to reflect the current responsibility layout and the remaining build-time composition debt instead of the obsolete base/modern or monolithic-Core descriptions.
+
 # v3.61.85 — CSS Ownership Reduction
 
 - Move first-party static domain layout for Connectivity Center, Data Center, Pulse Analysis, Resonance Workbench and TER Analysis into manifest-owned `plugin.css` files; remove runtime static-style injection and first-party style privileges.
@@ -206,7 +216,7 @@
 - Move Electron/desktop host implementation out of the repository root into `desktop/` and update packaging/runtime references without host behavior changes.
 - Move regression/contract tests to `tests/` and replace the oversized `package.json` test/check command chains with `tests/run.js` + explicit ordered manifests.
 - Move generated Plugin Index and SDK Authoring Reference to `src/generated/`.
-- Split authored `src/app.js`, `src/core/ui-infrastructure.js` and `src/core/plugin-kernel.js` into ordered responsibility-based composition units while preserving the existing runtime bundle paths and exact bytes.
+- Split authored `src/generated/runtime/app.js`, `src/generated/runtime/ui-infrastructure.js` and `src/generated/runtime/plugin-kernel.js` into ordered responsibility-based composition units while preserving the existing runtime bundle paths and exact bytes.
 - Split Core/base and modern CSS into ordered modules; generated `style.css` / `ui-modern.css` remain byte-identical runtime bundles.
 - Add a structural release gate that enforces root/desktop ownership, test separation, generated-artifact placement and bundle/source equality.
 
@@ -794,7 +804,7 @@
 
 # v3.58.0 — Host Neutralization & Canonical Plugin-Owned Project State
 
-- Removed the historical Resonance/Peak/FWHM/TER/Gate/Pulse/Sweep implementation and domain state from `src/app.js`; the main host now owns only generic project, Artifact, plugin lifecycle, UI, I/O and platform responsibilities.
+- Removed the historical Resonance/Peak/FWHM/TER/Gate/Pulse/Sweep implementation and domain state from `src/generated/runtime/app.js`; the main host now owns only generic project, Artifact, plugin lifecycle, UI, I/O and platform responsibilities.
 - Upgraded the project format to schema v2. Current saves keep domain persistence under `plugins[pluginId]`; historical domain root fields are stripped from the canonical project.
 - Made `src/core/project-format.js` the single legacy-project migration boundary. Old root fields are migrated once into first-party plugin slices during parse/canonicalization.
 - Removed `legacyProject` from Plugin Kernel runtime restoration and from Resonance, TER and Pulse project-slice restore paths. Missing slices now mean reset/fresh state; runtime code never consumes an old project root.
@@ -1229,7 +1239,7 @@
 
 - Fixed the remaining Plugin Manager blank-area jump by treating plugin lifecycle rerenders as top-reset transactions and repeatedly clamping the real scroll container through late Chromium layout/scroll-anchor frames. Empty filter results use the same repair path.
 - Expanded the dedicated Resonance TOP renderer from the v3.24 minimal extraction to a full plugin-owned workbench with main I–V/peak editing, curve inspection, grouped plots, physical-family analysis, peak spacing and gate-dependent analysis.
-- Resonance remains a true dedicated plugin renderer and does not fall back to a second full `src/app.js` instance. SUPER and TOP now expose the same major analysis domains while keeping their own presentation shells.
+- Resonance remains a true dedicated plugin renderer and does not fall back to a second full `src/generated/runtime/app.js` instance. SUPER and TOP now expose the same major analysis domains while keeping their own presentation shells.
 - Added `science-ter` to the Resonance dedicated dependency contract so gate-dependent TER analysis stays inside the plugin window.
 - Project files remain self-contained and backward-compatible; no dataset `text` or parsed `points` fields are removed by these runtime/UI changes.
 

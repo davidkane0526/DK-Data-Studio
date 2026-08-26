@@ -1,7 +1,7 @@
 const assert=require('assert');const fs=require('fs');const vm=require('vm');
 const read=f=>fs.readFileSync(f,'utf8');
 const context={window:{},console,structuredClone,performance:{now:()=>0},setTimeout,clearTimeout};context.window=context;context.globalThis=context;vm.createContext(context);
-vm.runInContext(read('src/core/scientific-algorithm-runtime.js'),context,{filename:'scientific-algorithm-runtime.js'});
+vm.runInContext(read('src/core/scientific/algorithm-runtime.js'),context,{filename:'scientific-algorithm-runtime.js'});
 const A=context.DKDSScientificAlgorithms;assert(A?.register&&A?.resolve&&A?.run,'Algorithm Registry missing.');
 A.register('plugin.a','same',{category:'probe',version:'1.0.0',run:()=>1});A.register('plugin.a','same',{category:'probe',version:'2.0.0',default:true,run:()=>2});
 assert.strictEqual(A.list({category:'probe'}).length,2,'Multiple algorithm versions must coexist.');

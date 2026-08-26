@@ -1,6 +1,7 @@
 const fs=require('fs');
 const os=require('os');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const cp=require('child_process');
 const root=path.resolve(__dirname,'..');
@@ -12,19 +13,19 @@ const contract=json('sdk/contract.json');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.16 host guarantees');
 assert(/^3\.61\.(?:3[2-9]|[4-9]\d|\d{3,})$/.test(contract.minimumAppVersion),'Current SDK minimum app must include the hardened Plugin Host baseline');
 
-const components=read('src/core/component-runtime.js');
+const components=read('src/core/ui/component-runtime.js');
 assert(components.includes('isEventTarget')&&components.includes("value===window||value===document"),'scoped DOM runtime must support lifecycle-safe window/document EventTargets');
 const status=read('src/plugins/status-monitor/plugin.js');
 assert(status.includes('ctx.ui.dom.create')&&status.includes("ctx.ui.dom.on(window,'dkds:theme-changed'")&&status.includes('ctx.ui.dom.timeout'),'Status Monitor must use scoped DOM/scheduler APIs');
 assert(!/\bdocument\./.test(status)&&!/(^|[^.])\b(?:setTimeout|clearTimeout|setInterval|clearInterval)\s*\(/m.test(status),'Status Monitor must have zero raw DOM/scheduler boundary exceptions');
 
-const infra=read('src/core/ui-infrastructure.js');
-for(const token of ['prepareLayoutGeometry()','layoutDiagnostics()','dkds-scientific-layout-fallback','hardMinHeight','applyLayoutSafety()','layoutDiagnostics()','DKDS PluginWorkspace layout recovery','dkds-layout-overflow-fallback',"setProperty('overflow-y','auto','important')","spec.primaryScroll||'safe'"]){
+const infra=read('src/generated/runtime/ui-infrastructure.js');
+for(const token of ['prepareLayoutGeometry()','layoutDiagnostics()','dkds-scientific-layout-fallback','hardMinHeight','applyLayoutSafety()','layoutDiagnostics()','DKDS PluginWorkspace layout recovery','dkds-layout-overflow-fallback',"setProperty('overflow-y','auto')","spec.primaryScroll||'safe'"]){
   assert(infra.includes(token),`Plugin Host/ScientificPlot hardening missing ${token}`);
 }
 assert(!infra.includes('if(width<minWidth||height<minHeight){this.awaitingLayout=true;return false;}'),'ScientificCurveSurface must not silently blank solely because preferred min geometry was missed');
-const css=read('src/style.css');
-assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('overflow:auto!important'),'safe PluginWorkspace mode must provide host-owned scrolling');
+const css=readCoreCss(root);
+assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('overflow:auto'),'safe PluginWorkspace mode must provide host-owned scrolling');
 assert(css.includes('.dkds-scientific-surface-host.dkds-scientific-layout-fallback'),'ScientificCurveSurface must have a host-owned minimum-height recovery style');
 
 const {inspectWorkspaceStyles}=require('../sdk/layout-contract');

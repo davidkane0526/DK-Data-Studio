@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');
 const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const context={console,structuredClone,TextEncoder,TextDecoder,setTimeout,clearTimeout};context.window=context;context.globalThis=context;vm.createContext(context);
-for(const file of ['src/science/common.js','src/science/peaks.js','src/science/ter.js','src/core/plugin-module-runtime.js','src/plugins/standard-transport-algorithms/algorithm.js'])vm.runInContext(read(file),context,{filename:file});
+for(const file of ['src/science/common.js','src/science/peaks.js','src/science/ter.js','src/core/plugins/module-runtime.js','src/plugins/standard-transport-algorithms/algorithm.js'])vm.runInContext(read(file),context,{filename:file});
 const S=context.DKDSScience,A=context.DKDSPluginModules.require('builtin.standard-transport-algorithms','algorithm');assert(A&&S,'Science/provider runtime missing.');
 const close=(a,b,tol=1e-12)=>Number.isNaN(a)&&Number.isNaN(b)||Math.abs(Number(a)-Number(b))<=tol*Math.max(1,Math.abs(Number(a)),Math.abs(Number(b)));
 const sweep={id:'v353:sweep',datasetPath:'v353',datasetName:'v353',vg:0,direction:1,step:.01,points:Array.from({length:161},(_,k)=>{const v=-.8+k*.01;return {v,i:2e-9*v+8e-9*Math.exp(-0.5*((v-.17)/.08)**2)};})};

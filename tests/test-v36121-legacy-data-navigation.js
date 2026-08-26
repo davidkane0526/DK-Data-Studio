@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
@@ -10,13 +11,13 @@ function assert(value,message){if(!value)throw new Error(message);}
 const pkg=json('package.json');
 const dc=json('src/plugins/data-center/plugin.json');
 const sdk=json('sdk/contract.json');
-assert(pkg.version==='3.61.85','Application version must be 3.61.27.');
+assert(pkg.version==='3.61.86','Application version must be 3.61.27.');
 assert(dc.version==='1.13.6','Data Center version must advance to 1.13.6.');
 assert(sdk.pluginApiVersion==='1.17.0','Data navigation / legacy restoration / Core plot chrome must not bump the Plugin SDK.');
 
 // The legacy project migrator must recover meaningful root state even when an
 // intermediate build wrote empty namespaced placeholders.
-const PF=require('../src/core/project-format.js');
+const PF=require('../src/core/project/format.js');
 global.DKDSScience={};
 require('../src/science/common.js');
 require('../src/science/import.js');
@@ -67,14 +68,14 @@ const opts={...S.defaultImportOptions(),layout:'single',xCol:0,yCol:1,yCols:[1]}
 const parsed=S.parseFlexibleData({name:'fixture.csv',path:'fixture.csv',text,encoding:'utf-8'},opts);
 assert(parsed.datasets.length===1&&parsed.datasets[0].importSpec.yHeader==='id(0.0)','Saved exact Id mapping must parse only Id, not auxiliary Ig.');
 
-const app=read('src/app.js');
-const projectFormat=read('src/core/project-format.js');
+const app=read('src/generated/runtime/app.js');
+const projectFormat=read('src/core/project/format.js');
 const resRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 const dcView=read('src/plugins/data-center/shared-views.js');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
 const index=read('src/index.html');
-const css=read('src/style.css');
-const automation=read('src/core/automation-test-runtime.js');
+const css=readCoreCss(root);
+const automation=read('src/core/diagnostics/automation-test-runtime.js');
 assert(app.includes('...savedSpec')&&app.includes('path:single&&source.path?source.path:dataset.path'),'Self-contained old projects must reparse embedded text with the saved importSpec and preserve the original dataset path.');
 assert(projectFormat.includes('const adoptedPaths=new Set')&&projectFormat.includes('assignments:[]'),'Legacy auxiliary channels omitted from the explicit adopted-data list must be translated once into generic Data Center-only assignments by Project Format.');
 assert(!app.includes('builtin.resonance-workbench'),'The host app must remain scientifically domain-neutral; legacy Resonance interpretation belongs only to Project Format migration.');

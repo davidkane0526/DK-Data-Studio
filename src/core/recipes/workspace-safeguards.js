@@ -5,41 +5,6 @@
 
   root.DKDSHostRecipes.register('workspace-safeguards',async ctx=>{
 
-    ctx.ui.styles.add('workspace-safeguards',`
-      /* Use the actual free width in the top command bar. The old max-width on
-         activity-switcher left a large unusable blank area before More Workspace. */
-      .workspace-commandbar{flex:1 1 auto!important;min-width:0!important}
-      .primary-activity-cluster{flex:0 1 auto!important;min-width:0!important;width:auto!important;max-width:none!important}
-      .primary-activity-bar{flex:0 0 auto!important}
-      .context-commandbar{flex:0 1 auto!important;min-width:0!important}
-      .plugin-context-toolbar{flex:0 1 auto!important;min-width:0!important}
-      .activity-switcher{flex:1 1 0!important;min-width:72px!important;max-width:none!important;width:auto!important}
-      #activityBar{min-width:0!important;flex:0 1 auto!important}
-
-      /* The import file list is the scroll region. The action row must never be
-         pushed below the visible workbench when many files are selected. */
-      .import-workbench-header,.import-workbench-footer{flex:0 0 auto!important}
-      .import-workbench-body{min-height:0!important;overflow:hidden!important}
-      .import-file-pane{min-height:0!important;overflow:hidden!important}
-      .import-file-list{min-height:0!important;overflow:auto!important;overscroll-behavior:contain}
-      .import-file-actions{flex:0 0 auto!important;position:relative;z-index:6;background:var(--surface-primary)}
-      .import-main-pane{min-height:0!important}
-
-      .import-duplicate-warning{
-        flex:0 0 auto;margin:0;padding:7px 9px;border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));
-        background:var(--warning-soft);color:var(--warning);font-size:var(--plugin-font-meta,11px);line-height:1.45;
-      }
-      .import-file-item.import-name-warning{border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));background:var(--warning-soft)}
-      .import-file-item.import-replace-warning{border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));background:var(--danger-soft)}
-      .import-duplicate-badge{
-        flex:0 0 auto;margin-left:auto;padding:2px 5px;border-radius:999px;
-        background:var(--warning-soft);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));color:var(--warning);font-size:var(--plugin-font-meta,11px);font-weight:700;
-      }
-      .import-file-item.import-replace-warning .import-duplicate-badge{
-        background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger);
-      }
-    `);
-
     let duplicateReport={rows:[],hasDuplicates:false};
     let duplicateRefreshQueued=false;
     let shellRefreshQueued=false;

@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const context={console,performance,structuredClone,setTimeout,clearTimeout,Map,Set,WeakMap,Date,Math,JSON,Number,String,Array,Object};
 context.window=context;context.globalThis=context;vm.createContext(context);
-vm.runInContext(read('src/core/performance-runtime.js'),context,{filename:'src/core/performance-runtime.js'});
+vm.runInContext(read('src/core/performance/runtime.js'),context,{filename:'src/core/performance/runtime.js'});
 const perf=context.DKDSPerformance;
 assert(perf&&perf.VERSION==='1.2.0','Performance Runtime v1.2.0 must load.');
 

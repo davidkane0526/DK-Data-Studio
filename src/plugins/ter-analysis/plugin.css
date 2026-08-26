@@ -1,9 +1,9 @@
 /* TER Analysis owns domain chart/grid layout; Core owns semantic workbench regions, controls and scientific surfaces. */
 #terMaxPage .ter-chart-grid{
   --dkds-grid-columns:3;
-  display:grid!important;
-  grid-template-columns:repeat(var(--dkds-grid-columns),minmax(0,1fr))!important;
-  grid-auto-rows:auto!important;
+  display:grid;
+  grid-template-columns:repeat(var(--dkds-grid-columns),minmax(0,1fr));
+  grid-auto-rows:auto;
   align-items:start;
   gap:14px;
 }
@@ -103,7 +103,7 @@
 /* TER-owned page controls, heatmap geometry and report section spacing. */
 .analysis-control-card.ter-controls input{min-width:118px;width:135px;}
 #terMaxPage .heatmap-square-card{width:min(860px,calc(100vw - 70px));max-width:100%;align-self:center;}
-#terMaxPage .ter-heatmap-square{width:100%;height:auto!important;min-height:0!important;aspect-ratio:1 / 1;}
+#terMaxPage .ter-heatmap-square{width:100%;height:auto;min-height:0;aspect-ratio:1 / 1;}
 #terMaxPage .heatmap-display-controls{align-items:end;}
 #terMaxPage .heatmap-display-controls strong{align-self:center;margin-right:4px;}
 #terMaxPage .heatmap-display-controls select,

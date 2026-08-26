@@ -4,7 +4,7 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
-const preload=read('desktop/preload.js'),main=read('desktop/main.js'),runtime=read('src/plugin-window/runtime.js'),app=read('src/app.js');
+const preload=read('desktop/preload.js'),main=read('desktop/main.js'),runtime=read('src/plugin-window/runtime.js'),app=read('src/generated/runtime/app.js');
 assert(preload.includes("requestOwnerImportWorkbench: payload => ipcRenderer.send('windows:requestImportWorkbench'"),'Preload must expose the dedicated-window import request.');
 assert(preload.includes('onOwnerImportWorkbenchRequest'),'Owner window must receive import requests through preload.');
 assert(main.includes("ipcMain.on('windows:requestImportWorkbench'"),'Main process must route dedicated-window import requests.');

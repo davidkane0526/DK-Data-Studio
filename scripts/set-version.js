@@ -93,7 +93,7 @@ for (const relative of [
   path.join('src','app','80-dedicated-plugin-windows.inc'),
   path.join('src','plugin-window','runtime.js'),
   path.join('src','web-bridge.js'),
-  path.join('src','core','mcp-runtime.js'),
+  path.join('src','core','services','mcp-runtime.js'),
   path.join('src','plugins','resonance-workbench','plugin.js'),
   path.join('src','plugins','resonance-workbench','plugin.json')
 ]) {

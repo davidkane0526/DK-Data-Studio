@@ -5,8 +5,8 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
-const plot=read('src/core/scientific-plot-runtime.js');
-const ui=read('src/core/ui-infrastructure.js');
+const plot=read('src/core/scientific/plot-runtime.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const terService=read('src/plugins/ter-analysis/analysis-service.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const terWindowRuntime=read('src/plugins/ter-analysis/window-runtime.js');

@@ -1,10 +1,11 @@
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
-const ui=read('src/core/ui-infrastructure.js');
-const kernel=read('src/core/plugin-kernel.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
@@ -12,8 +13,8 @@ const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
 const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
 const dataCenterViews=read('src/plugins/data-center/shared-views.js');
-const css=read('src/style.css');
-const app=read('src/app.js');
+const css=readCoreCss(root);
+const app=read('src/generated/runtime/app.js');
 
 assert(ui.includes('class PlotView'),'Core must expose PlotView as the standard scientific data-figure contract.');
 for(const token of ['dkds-plot-view-actions','exportCsv()','copyCsv()','exportImage(format)','DKDSCharts.toImage','traceCsv()','bindPortable()'])assert(ui.includes(token),`PlotView missing ${token}`);
@@ -30,7 +31,7 @@ assert(resonanceFeature.includes('uiRuntime?.plotViews?.bind?.(`resonance-group:
 assert(resonanceViews.includes("actionHost:'[data-respar-group-cols-menu-host]'")&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("每行 ${value} 个子图"),'Group layout must be a PRIME action supplied through the Core ActionGroup lifecycle.');
 assert(app.includes('function ensurePluginWorkspaceVisible(activityId)')&&kernel.includes('host?.ensurePluginWorkspaceVisible?.(spec.activity)'),'System plugin-toolbar commands must restore the active SUPER workspace before opening PRIME/SUB content.');
 assert(app.includes("layout.root?.selector")&&app.includes("closest?.('.analysis-page')"),'SUPER root resolution must support native PluginWorkspace root.selector contracts.');
-assert(resonanceViews.includes('reswin-gate-controls dkds-inline-form-row')&&css.includes('.dkds-inline-form-row>label:not(.inline-check)')&&css.includes('display:block!important'),'Wide scientific forms must use the Core inline-form contract so labels containing sub/sup stay on one text line.');
+assert(resonanceViews.includes('reswin-gate-controls dkds-inline-form-row')&&css.includes('.dkds-inline-form-row>label:not(.inline-check)')&&css.includes('display:block'),'Wide scientific forms must use the Core inline-form contract so labels containing sub/sup stay on one text line.');
 assert(terFeature.includes("ctx.ui.plotViews.bind(`ter:${spec.key}`")&&!terFeature.includes('decoratePlotCard(spec)'),'TER data figures must consume Core PlotView instead of hand-built per-chart export chrome.');
 assert(pulseFeature.includes("ctx.ui.plotViews.bind(`pulse:${viewId}`")&&!pulseViews.includes('pulseRawExportBtn'),'Pulse data figures must consume Core PlotView instead of hand-built CSV/SVG/PNG buttons.');
 assert(dataCenterFeature.includes("ctx.ui.plotViews.bind('data-center:preview'")&&!dataCenterViews.includes('dcExportChart'),'Data Center chart preview must consume Core PlotView instead of a plugin-specific PNG button.');

@@ -45,8 +45,8 @@ fs.rmSync(tmp,{recursive:true,force:true});
 
 const main=fs.readFileSync(path.join(__dirname,'..','desktop/main.js'),'utf8');
 const preload=fs.readFileSync(path.join(__dirname,'..','desktop/preload.js'),'utf8');
-const kernel=fs.readFileSync(path.join(__dirname,'..','src/core/plugin-kernel.js'),'utf8');
-const manager=fs.readFileSync(path.join(__dirname,'..','src/core/plugin-manager-ui.js'),'utf8');
+const kernel=fs.readFileSync(path.join(__dirname,'..','src/generated/runtime/plugin-kernel.js'),'utf8');
+const manager=fs.readFileSync(path.join(__dirname,'..','src/core/plugins/manager-ui.js'),'utf8');
 assert(main.includes("ipcMain.handle('plugins:installPackage'")&&main.includes("ipcMain.handle('plugins:uninstall'"),'desktop main process must own plugin installation/uninstallation IPC');
 assert(preload.includes('pluginInstallPackage')&&preload.includes('pluginExternalList')&&preload.includes('pluginRestorePackage')&&preload.includes('pluginOverrideList')&&preload.includes('pluginExportPackage'),'preload must expose external-plugin IPC, rollback, and trusted built-in override discovery without Node access in renderer');
 assert(kernel.includes('loadExternalPackage')&&kernel.includes('loadOverridePackage')&&kernel.includes('uninstallExternalPlugin')&&kernel.includes('pluginRestorePackage'),'plugin kernel must load LAN built-in overrides before packaged built-ins while preserving external plugin rollback.');

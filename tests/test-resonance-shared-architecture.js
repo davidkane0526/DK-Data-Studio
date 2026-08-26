@@ -12,7 +12,7 @@ const views=read('src/plugins/resonance-workbench/view-components.js');
 const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const superLayout=read('src/plugins/resonance-workbench/super-layout.js');
 const runtime=read('src/plugins/resonance-workbench/window-runtime.js');
-const kernel=read('src/core/plugin-kernel.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const generated=read('src/generated/plugin-index.js');
 
 assert((manifest.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-runtime.js,super-layout.js,plugin.js','Resonance main renderer must load Controller, shared Views, feature runtime, SUPER adapter, then thin entry.');
@@ -50,7 +50,7 @@ assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspec
 assert(feature.includes('publishPeakSelection')&&feature.includes('publishSweepSelection')&&feature.includes('publishRangeSelection'),'Resonance feature runtime must use one shared interaction path for main/inspector/group/trend.');
 assert(feature.includes('pointEntity:peakPointEntity')&&feature.includes('onEntitySelect')&&feature.includes("'resonance-trend'")&&feature.includes("'resonance-group'")&&!feature.includes('updateGroupHighlights')&&!feature.includes('charts.restyle('),'Resonance trend/group views must delegate peak focus styling and selection to Core ScientificPlot instead of private restyle logic.');
 assert(feature.includes('selectRegion')&&feature.includes('peaksInRange')&&feature.includes('applyRangeIdentity')&&feature.includes('setRangeLocked'),'Resonance range selection must preserve multi-peak operations without the retired duplicate range menu path.');
-const ui=read('src/core/ui-infrastructure.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 assert(ui.includes('d3.scaleSequential(d3.interpolateTurbo)')&&ui.includes("Number(curve.direction)<0?'7 4':null"),'Core ScientificCurveSurface must own the GRS Turbo palette and reverse-direction dash semantics.');
 assert(ui.includes('d3.drag().clickDistance(7)')&&ui.includes("routeInteraction('context','marker'")&&ui.includes('getManipulators')&&ui.includes('emitManipulation'),'Core ScientificCurveSurface must own domain-neutral direct manipulation while right-click policy resolves through Interaction Behavior.');
 assert(feature.includes("gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point'")&&views.includes("['builtin.resonance.add-point',payload=>"),'Modified curve-click semantics must be declared as Interaction Behavior and execute through a plugin Command.');

@@ -1,5 +1,5 @@
 const assert=require('assert');const fs=require('fs');
-const main=fs.readFileSync('desktop/main.js','utf8'),preload=fs.readFileSync('desktop/preload.js','utf8'),kernel=fs.readFileSync('src/core/plugin-kernel.js','utf8'),ui=fs.readFileSync('src/core/plugin-manager-ui.js','utf8');
+const main=fs.readFileSync('desktop/main.js','utf8'),preload=fs.readFileSync('desktop/preload.js','utf8'),kernel=fs.readFileSync('src/generated/runtime/plugin-kernel.js','utf8'),ui=fs.readFileSync('src/core/plugins/manager-ui.js','utf8');
 assert(main.includes("plugin-history")&&main.includes("plugins:historyList")&&main.includes("plugins:rollbackVersion"),'Main-process plugin history / rollback IPC is missing.');
 assert(main.includes("archiveExternalPluginPackage(previousPackage,'upgrade')")&&main.includes("archiveExternalPluginPackage(previousPackage,'rollback')"),'Plugin upgrade/rollback does not archive the previous package.');
 assert(preload.includes('pluginHistoryList')&&preload.includes('pluginRollbackVersion'),'Preload does not expose plugin version history APIs.');

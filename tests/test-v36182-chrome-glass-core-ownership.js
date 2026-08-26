@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');
@@ -19,19 +19,19 @@ for(const rel of [
   'src/index.html',
   'src/app/50-scientific-panels-export.inc',
   'src/plugins/resonance-workbench/view-components.js',
-  'src/core/ui-infrastructure/20-portable-layout-views.inc'
+  'src/core/ui/composition/20-portable-layout-views.inc'
 ]){
   const source=read(rel);
   assert(!/(?:panel-header-actions|trend-header-actions|dkds-plot-view-actions)[^"'\n]*dkds-material-role-control/.test(source),`${rel} must not hard-code a nested control MaterialSurface in chrome`);
 }
 
-const css=read('src/styles/modern/98-theme-material-renderer.css');
-const chromeCss=read('src/styles/modern/96-integrated-command-chrome.css');
+const css=read('src/styles/theme/material-renderer.css');
+const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
 assert(chromeCss.includes('Chrome owns its actions.'),'semantic chrome CSS invariant missing');
 assert(chromeCss.includes('.statusbar-command-cluster')&&chromeCss.includes('[data-dkds-material-role="chrome"]'),'statusbar fusion must be role-owned rather than widget-specific material paint');
-assert(css.includes('background-color:color-mix(in srgb,var(--dkui-surface) 30%,transparent)!important;'),'glass fields must use a flat translucent fill rather than an opaque recessed control surface');
+assert(css.includes('background-color:color-mix(in srgb,var(--dkui-surface) 30%,transparent);'),'glass fields must use a flat translucent fill rather than an opaque recessed control surface');
 assert(chromeCss.includes('#dkdsThemePanel .dkds-theme-mode-switch>button[data-dkds-theme-mode="light"]'),'theme switch must have deterministic root-mode styling');
-assert(css.includes('.plugin-export-context{')&&css.includes('background:transparent!important'),'export context metadata must not create an opaque light strip inside dark popovers');
+assert(css.includes('.plugin-export-context{')&&css.includes('background:transparent'),'export context metadata must not create an opaque light strip inside dark popovers');
 
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes('channel?.postMessage?.({theme:next,preferredProfile,activeProfile})'),'appearance broadcast must preserve preferred profile instead of temporary fallback profile');

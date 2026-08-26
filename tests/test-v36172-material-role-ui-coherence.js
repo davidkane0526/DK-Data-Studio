@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
 const renderer=read('src/core/theme/material-renderer.js');
@@ -8,13 +8,13 @@ for(const token of ['#pluginManagerPage','#automationTestPage','dkds-settings-di
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Core material role assignment must not know plugin identity selectors.');
 const coverage=read('src/core/theme/coverage-runtime.js');
 for(const token of ['Core Scientific/Data Content','Settings / Plugin Manager / Automation / Dedicated Panels','Docked Tool / Portable Panels','Floating Surfaces / Tool Panels','LOW_CONTRAST_MATERIAL'])assert(coverage.includes(token),`missing coverage area/status: ${token}`);
-const modernRenderer=read('src/styles/modern/98-theme-material-renderer.css');
+const modernRenderer=read('src/styles/theme/material-renderer.css');
 assert(modernRenderer.includes('Integrated actions inside translucent surfaces remain ordinary hit regions'),'Material renderer must flatten nested command buttons after control rendering.');
 assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Material renderer must exempt legends from control pill rendering.');
 assert(modernRenderer.includes('--dkds-on-popover'),'Popover/tooltip renderer must consume the derived readable foreground.');
-const command=read('src/styles/modern/96-integrated-command-chrome.css');
-assert(command.includes('Integrated command chrome.'));assert(command.includes('border-radius:0!important'));assert(command.includes('background:transparent!important'));
-const base=read('src/styles/base/60-analysis-workbench.css');assert(base.includes('grid-template-rows:minmax(0,1fr) 1px'));assert(base.includes('.dkds-plugin-canvas-bottom{padding-top:0!important;gap:0!important'));
-const semantic=read('src/styles/base/70-sdk-semantic-surfaces.css');assert(semantic.includes('Plot legends are labels, not pill buttons'));assert(semantic.includes('.dkds-inspector-section'));
+const command=read('src/styles/theme/integrated-command-chrome.css');
+assert(command.includes('Integrated command chrome.'));assert(command.includes('border-radius:0'));assert(command.includes('background:transparent'));
+const base=read('src/styles/structure/analysis-workbench.css');assert(base.includes('grid-template-rows:minmax(0,1fr) 1px'));assert(base.includes('.dkds-plugin-canvas-bottom{padding-top:0;gap:0'));
+const semantic=read('src/styles/structure/sdk-semantic-surfaces.css');assert(semantic.includes('Plot legends are labels, not pill buttons'));assert(semantic.includes('.dkds-inspector-section'));
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');assert(!resonance.includes('reswinInspectorSort'));assert(!resonance.includes('跨 Vg 智能整理峰序</button></div>${transformMarkup}'));assert(resonance.includes("respar-legend-chip dkds-legend-item"));
 console.log('v3.61.73 material role coverage, tooltip contrast, integrated command, inspector, dock and legend contracts passed.');

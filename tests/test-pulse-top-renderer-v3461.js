@@ -27,7 +27,7 @@ assert(moduleValue?.create,'Pulse analysis service module was not registered.');
   assert(windowRuntime.includes('targetPluginState'),'Dedicated TOP runtime must inspect target plugin activation state.');
   assert(windowRuntime.includes('插件激活失败：'),'Dedicated TOP runtime must report the original activation failure.');
 
-  const automation=fs.readFileSync('src/core/automation-test-runtime.js','utf8');
+  const automation=fs.readFileSync('src/core/diagnostics/automation-test-runtime.js','utf8');
   assert(automation.includes('passedTopCount'),'Automation coverage must distinguish exercised TOPs from successful TOPs.');
   assert(automation.includes('TOP renderer(s) failed readiness'),'TOP coverage must fail when any renderer does not reach ready.');
   console.log('Pulse TOP renderer hotfix v3.46.1 tests passed.');

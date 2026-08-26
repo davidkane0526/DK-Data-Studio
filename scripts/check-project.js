@@ -41,13 +41,13 @@ async function main() {
   await checkSyntaxFiles();
 
 const required = [
-  'src/core/plugin-kernel.js',
-  'src/core/plugin-manager-ui.js',
-  'src/core/platform.js',
-  'src/core/data-model.js',
-  'src/core/formula-engine.js',
-  'src/core/parameter-schema.js',
-  'src/core/workflow-engine.js',
+  'src/generated/runtime/plugin-kernel.js',
+  'src/core/plugins/manager-ui.js',
+  'src/core/host/platform.js',
+  'src/core/data/model.js',
+  'src/core/data/formula-engine.js',
+  'src/core/data/parameter-schema.js',
+  'src/core/workflow/engine.js',
   'src/generated/plugin-index.js',
   'src/science/common.js',
   'src/science/import.js',

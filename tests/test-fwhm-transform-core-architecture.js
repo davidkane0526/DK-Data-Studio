@@ -3,7 +3,7 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const ui=read('src/core/ui-infrastructure.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const peaks=read('src/science/peaks.js');
 const terScience=read('src/science/ter.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');

@@ -16,8 +16,8 @@ const shellStyle=read('src/plugin-window/style.css');
 const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
 const manager=read('desktop/plugin-window-manager.js');
-const kernel=read('src/core/plugin-kernel.js');
-const app=read('src/app.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const app=read('src/generated/runtime/app.js');
 const pulseRuntime=read('src/plugins/pulse-analysis/window-runtime.js');
 const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const terRuntime=read('src/plugins/ter-analysis/window-runtime.js');
@@ -26,12 +26,12 @@ const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const resonanceRuntime=read('src/plugins/resonance-workbench/window-runtime.js');
 const resonanceFeatureRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 
-assert(!shellHtml.includes('../app.js'),'Dedicated plugin window must not load the full src/app.js renderer.');
+assert(!shellHtml.includes('../generated/runtime/app.js'),'Dedicated plugin window must not load the full src/generated/runtime/app.js renderer.');
 assert(!shellHtml.includes('plugin-index'),'Dedicated plugin window must not load the full generated plugin index.');
 assert(!shellHtml.includes('正在打开插件'),'Dedicated plugin window must not show a startup/loading page.');
 assert(!shellHtml.includes('plotly.min.js'),'Plugin dependencies must be loaded on demand, not statically by the shell.');
 assert(!shellHtml.includes('../science/'),'Plugin science dependencies must be loaded on demand.');
-assert(!shellHtml.includes('../core/plugin-kernel.js'),'Plugin kernel must be loaded on demand with the target plugin dependencies.');
+assert(!shellHtml.includes('../generated/runtime/plugin-kernel.js'),'Plugin kernel must be loaded on demand with the target plugin dependencies.');
 assert(!shellStyle.includes('.plugin-window-loading'),'Startup loading overlay CSS must be removed.');
 assert(shellRuntime.includes('DEPENDENCY_SCRIPTS'),'Dedicated runtime must have an allowlisted shared dependency map.');
 assert(shellRuntime.includes('loadDependencies(spec)'),'Dedicated runtime must load dependencies declared by the target plugin.');
@@ -189,7 +189,7 @@ assert(withOverride.get('ter-override')?.source==='override','built-in override 
 
 // Resonance must now use a real dedicated plugin renderer rather than launching
 // a second copy of the full application renderer.
-assert(!resonanceRuntime.includes('../app.js'),'Resonance dedicated runtime must not load the full application renderer.');
+assert(!resonanceRuntime.includes('../generated/runtime/app.js'),'Resonance dedicated runtime must not load the full application renderer.');
 assert(resonanceFeatureRuntime.includes("serviceName:'builtin.resonance-workbench.runtime'"),'Resonance feature runtime must expose the normal plugin-window service contract while window-runtime stays host-only.');
 assert(resonanceFeatureRuntime.includes("builtin.resonance-workbench"),'Resonance feature runtime must restore only its namespaced plugin state.');
 assert(!app.includes('serializeResonanceWorkspace')&&!app.includes('restoreResonanceWorkspace'),'Main host must not retain a resonance project adapter after v3.58 neutralization.');
@@ -224,8 +224,8 @@ for(const rel of [
   'desktop/plugin-window-manager.js',
   'desktop/preload.js',
   'desktop/main.js',
-  'src/app.js',
-  'src/core/plugin-kernel.js'
+  'src/generated/runtime/app.js',
+  'src/generated/runtime/plugin-kernel.js'
 ]){
   try{new vm.Script(read(rel),{filename:rel});}
   catch(err){fail(`${rel}: JavaScript syntax error: ${err.message}`);}

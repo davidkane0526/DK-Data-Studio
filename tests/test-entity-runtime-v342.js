@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'src/core/entity-runtime.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'src/core/data/entity-runtime.js'),'utf8');
 const context={console,structuredClone};context.window=context;context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'entity-runtime.js'});
 const {EntityRegistry}=context.DKDSEntities;
 const r=new EntityRegistry();

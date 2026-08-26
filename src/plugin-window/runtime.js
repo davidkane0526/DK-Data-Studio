@@ -12,7 +12,7 @@
 
   const DEPENDENCY_SCRIPTS = Object.freeze({
     d3:'../../node_modules/d3/dist/d3.min.js',
-    'd3-chart-renderer':'../core/d3-chart-renderer.js',
+    'd3-chart-renderer':'../core/scientific/d3-chart-renderer.js',
     'science-common':'../science/common.js',
     'science-import':'../science/import.js',
     'science-presets':'../science/presets.js',
@@ -22,31 +22,31 @@
     'science-gate':'../science/gate.js',
     'science-pulse':'../science/pulse.js',
     'science-ter':'../science/ter.js',
-    'data-model':'../core/data-model.js',
-    'entity-runtime':'../core/entity-runtime.js',
-    'formula-engine':'../core/formula-engine.js',
-    'parameter-schema':'../core/parameter-schema.js',
-    'workflow-engine':'../core/workflow-engine.js',
-    platform:'../core/platform.js',
-    'state-store':'../core/state-store.js',
-    'io-runtime':'../core/io-runtime.js',
-    'plot-presentation-runtime':'../core/plot-presentation-runtime.js',
-    'chart-runtime':'../core/chart-runtime.js',
-    'performance-runtime':'../core/performance-runtime.js',
-    'scientific-plot-runtime':'../core/scientific-plot-runtime.js',
-    'component-runtime':'../core/component-runtime.js',
-    'data-flow-runtime':'../core/data-flow-runtime.js',
-    'scientific-reactive-runtime':'../core/scientific-reactive-runtime.js',
-    'scientific-pipeline-runtime':'../core/scientific-pipeline-runtime.js',
-    'scientific-transform-runtime':'../core/scientific-transform-runtime.js',
-    'scientific-algorithm-runtime':'../core/scientific-algorithm-runtime.js',
-    'service-runtime':'../core/service-runtime.js',
-    'plugin-contract-runtime':'../core/plugin-contract-runtime.js',
-    'plugin-module-runtime':'../core/plugin-module-runtime.js',
-    'ui-infrastructure':'../core/ui-infrastructure.js',
-    'capability-runtime':'../core/capability-runtime.js',
-    'plugin-devtools':'../core/plugin-devtools.js',
-    'plugin-kernel':'../core/plugin-kernel.js'
+    'data-model':'../core/data/model.js',
+    'entity-runtime':'../core/data/entity-runtime.js',
+    'formula-engine':'../core/data/formula-engine.js',
+    'parameter-schema':'../core/data/parameter-schema.js',
+    'workflow-engine':'../core/workflow/engine.js',
+    platform:'../core/host/platform.js',
+    'state-store':'../core/data/state-store.js',
+    'io-runtime':'../core/host/io-runtime.js',
+    'plot-presentation-runtime':'../core/scientific/plot-presentation-runtime.js',
+    'chart-runtime':'../core/scientific/chart-runtime.js',
+    'performance-runtime':'../core/performance/runtime.js',
+    'scientific-plot-runtime':'../core/scientific/plot-runtime.js',
+    'component-runtime':'../core/ui/component-runtime.js',
+    'data-flow-runtime':'../core/data/flow-runtime.js',
+    'scientific-reactive-runtime':'../core/scientific/reactive-runtime.js',
+    'scientific-pipeline-runtime':'../core/scientific/pipeline-runtime.js',
+    'scientific-transform-runtime':'../core/scientific/transform-runtime.js',
+    'scientific-algorithm-runtime':'../core/scientific/algorithm-runtime.js',
+    'service-runtime':'../core/services/service-runtime.js',
+    'plugin-contract-runtime':'../core/plugins/contract-runtime.js',
+    'plugin-module-runtime':'../core/plugins/module-runtime.js',
+    'ui-infrastructure':'../generated/runtime/ui-infrastructure.js',
+    'capability-runtime':'../core/host/capability-runtime.js',
+    'plugin-devtools':'../core/plugins/devtools.js',
+    'plugin-kernel':'../generated/runtime/plugin-kernel.js'
   });
 
   let bootstrap = null;
@@ -175,7 +175,7 @@
   function loadInlineStyle(source,label) {
     const style=document.createElement('style');
     style.dataset.dkdsExternalWindowStyle=label;
-    style.textContent=String(source||'');
+    style.textContent=`@layer dkds.plugin {\n${String(source||'')}\n}`;
     document.head.appendChild(style);
     return style;
   }
@@ -548,7 +548,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.85',
+      appVersion:'3.61.86',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,

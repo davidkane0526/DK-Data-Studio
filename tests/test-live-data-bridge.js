@@ -11,8 +11,8 @@ const context={
 };
 context.window=context;context.globalThis=context;
 vm.createContext(context);
-vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
-vm.runInContext(read('src/core/plugin-module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
+vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 const D=context.DKDSData;
 
 const legacyA={

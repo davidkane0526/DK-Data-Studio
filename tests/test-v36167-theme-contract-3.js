@@ -1,19 +1,20 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 const theme=read('src/core/theme/runtime.js');
-const modern=read('src/ui-modern.css');
-const base=read('src/style.css');
-const manager=read('src/core/plugin-manager-ui.js');
-const kernel=read('src/core/plugin-kernel.js');
+const modern=readCoreCss(root);
+const base=readCoreCss(root);
+const manager=read('src/core/plugins/manager-ui.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 const desktopPackage=read('desktop/plugin-package.js');
-const mobilePackage=read('src/core/mobile-plugin-package.js');
+const mobilePackage=read('src/core/host/mobile-plugin-package.js');
 const validator=read('sdk/tools/dkds-plugin.js');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const templateJson=json('sdk/templates/theme-profile/plugin.json');

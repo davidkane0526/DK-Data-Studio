@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const assert=(ok,msg)=>{if(!ok){console.error(`V3.61.8 LIVE ARTIFACT SYNC ERROR: ${msg}`);process.exit(2);}};
 
 const pkg=JSON.parse(read('package.json'));
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
 const aux=read('src/plugin-window/runtime.js');
@@ -14,7 +14,7 @@ const dataCenter=read('src/plugins/data-center/feature-runtime.js');
 const sdkReadme=read('sdk/README.md');
 const sdkTypes=read('sdk/plugin-api.d.ts');
 
-assert(pkg.version==='3.61.85','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.86','Application version must be 3.61.18.');
 assert(preload.includes("pushActivityArtifactDelta: payload => ipcRenderer.send('windows:ownerArtifactDelta'")&&preload.includes("onOwnerArtifactDelta: callback =>"),'Preload must expose owner-to-TOP Artifact delta transport in both directions of the IPC boundary.');
 assert(main.includes("ipcMain.on('windows:ownerArtifactDelta'")&&main.includes("win.webContents.send('windows:ownerArtifactDelta'")&&main.includes("if (row?.prewarm === true) continue")&&main.includes('excludeActivityId'),'Main process must forward live Artifact deltas to matching hydrated TOP windows, skip the origin activity, and avoid waking runtime-only prewarm windows.');
 assert(app.includes('function pushArtifactDeltaToActivityWindows(')&&app.includes("pushArtifactDeltaToActivityWindows(importDelta,'import')")&&app.includes("pushArtifactDeltaToActivityWindows(payload.artifactDelta||{},'activity-merge'"),'Import commits and auxiliary-window result merges must publish exact Artifact deltas to other already-open TOP windows.');
@@ -26,7 +26,7 @@ assert(sdkTypes.includes('export interface DKDSDataModelRuntime')&&sdkTypes.incl
 
 const sandbox={window:{},console};
 vm.createContext(sandbox);
-vm.runInContext(read('src/core/data-model.js'),sandbox,{filename:'data-model.js'});
+vm.runInContext(read('src/core/data/model.js'),sandbox,{filename:'data-model.js'});
 const D=sandbox.window.DKDSData;
 const store=D.createStore();
 const dataset={path:'transfer-vth',name:'Vth transfer',sourcePath:'C:/data/vth.txt',sourceName:'vth.txt',assignments:['com.dkds.transfer-vth-lab'],points:[{v:-1,i:1e-12},{v:0,i:2e-10},{v:1,i:2e-9}],importSpec:{xHeader:'Gate voltage (V)',yHeader:'Drain current (A)'}};

@@ -9,12 +9,12 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.85','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.86','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
   assert(sdk.pluginApiVersion==='1.17.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
   const dataContext={window:{},console,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.window=dataContext;
-  vm.runInNewContext(read('src/core/data-model.js'),dataContext,{filename:'data-model.js'});
+  vm.runInNewContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});
   const D=dataContext.DKDSData;
   assert(JSON.stringify(D.dataTagsFromText('vg=-40V · ig(0.0)'))===JSON.stringify(['vg','ig']),'Transport labels must infer Vg/Ig deterministically.');
   assert(D.dataTagsFromText('grid').length===0,'Tag inference must not misclassify substrings such as grid -> Id.');
@@ -24,15 +24,15 @@ function assert(value,message){if(!value)throw new Error(message);}
   assert(D.dataTagLabel('didv')==='dI/dV'&&D.dataTagLabel('ig')==='Ig','Canonical tag labels must remain human-readable.');
 
   const historyContext={window:{},console};historyContext.window=historyContext;
-  vm.runInNewContext(read('src/core/project-history.js'),historyContext,{filename:'project-history.js'});
+  vm.runInNewContext(read('src/core/project/history.js'),historyContext,{filename:'project-history.js'});
   const history=historyContext.DKDSProjectHistory.create({limit:4});let value=2;
   history.record({label:'set 2',undo:()=>{value=1;},redo:()=>{value=2;}});
   assert(history.canUndo()&&!history.canRedo(),'Recorded project edit must expose undo state.');
   await history.undo();assert(value===1&&history.canRedo(),'Project history undo must execute the inverse and expose redo.');
   await history.redo();assert(value===2&&history.canUndo(),'Project history redo must replay the edit.');
 
-  const app=read('src/app.js'),windowRuntime=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcView=read('src/plugins/data-center/shared-views.js'),ui=read('src/core/ui-infrastructure.js'),index=read('src/index.html'),automation=read('src/core/automation-test-runtime.js');
-  assert(index.includes('core/project-history.js'),'Main shell must load the Core project-history runtime.');
+  const app=read('src/generated/runtime/app.js'),windowRuntime=read('src/plugin-window/runtime.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcView=read('src/plugins/data-center/shared-views.js'),ui=read('src/generated/runtime/ui-infrastructure.js'),index=read('src/index.html'),automation=read('src/core/diagnostics/automation-test-runtime.js');
+  assert(index.includes('core/project/history.js'),'Main shell must load the Core project-history runtime.');
   assert(app.includes("'core.project-history'")&&app.includes('recordProjectHistory({label:`数据用途')&&app.includes('history-source-remove-undo'),'Data-source management must record reversible edits in Core history.');
   assert(app.includes("e.key.toLowerCase()==='y'")&&app.includes('e.shiftKey)void systemRedo()'),'Main shell must support Ctrl/Cmd+Y and Ctrl/Cmd+Shift+Z redo.');
   assert(windowRuntime.includes('runWindowHistory')&&windowRuntime.includes("'core.project-history','state'")&&windowRuntime.includes("window.DKDSCapabilities?.invoke?.('core.project-history',direction)"),'Dedicated TOP windows must coordinate local edit history with the same Core project history.');

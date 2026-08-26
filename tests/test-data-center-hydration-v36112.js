@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(v,m){if(!v)throw new Error(m);}
 
 const pkg=json('package.json');
-assert(pkg.version==='3.61.85','Application version must be 3.61.18.');
+assert(pkg.version==='3.61.86','Application version must be 3.61.18.');
 
 const runtime=read('src/plugin-window/runtime.js');
 assert(runtime.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}'),'An empty live snapshot must be distinguishable from no live snapshot.');
@@ -16,13 +16,13 @@ assert(runtime.includes('if (artifactStore && window.DKDSData?.syncLegacyDataset
 assert(!runtime.includes('if (!liveSnapshot && artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts'),'Legacy dataset hydration must not be skipped merely because a live snapshot array exists.');
 assert(runtime.includes('const liveArtifactsChanged =')&&runtime.includes("type:'owner-live-replace'"),'Reused live-hydration windows must refresh on Artifact digest changes even when the serialized project is unchanged.');
 
-const app=read('src/app.js');
+const app=read('src/generated/runtime/app.js');
 assert(app.includes('pluginWindowSpec')&&app.includes('pluginWindowSpec?.artifactHydration'),'Window manifest hydration must be a generic fallback when an Activity contribution is not yet mounted.');
 const dcManifest=json('src/plugins/data-center/plugin.json');
 assert(dcManifest.window?.artifactHydration==='live','Data Center machine manifest must request live Artifact hydration.');
 
 const context={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};
-context.globalThis=context;context.window.window=context.window;vm.createContext(context);vm.runInContext(read('src/core/data-model.js'),context,{filename:'data-model.js'});
+context.globalThis=context;context.window.window=context.window;vm.createContext(context);vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
 const D=context.window.DKDSData;
 const legacyDatasets=[{name:'VG=0',path:'legacy://VG=0',sourcePath:'legacy://VG=0.csv',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}];
 const emptyLive=D.restoreStore({schema:2,artifacts:[]});
@@ -38,7 +38,7 @@ const feature=read('src/plugins/data-center/feature-runtime.js');
 const dcStyle=read('src/plugins/data-center/plugin.css');
 assert(views.includes('class="dc-section-copy"')&&views.includes('class="dc-preview-actions dkds-toolbar"'),'Data Center must distinguish copy blocks from action blocks structurally.');
 assert(!feature.includes('.dc-section-head>div,.dc-tool-title>div'),'Generic direct-child styling must not force Data Center action groups into a column.');
-assert(dcStyle.includes('.dc-preview-actions{display:flex!important;flex-direction:row!important'),'Preview tabs and Edit must remain one horizontal action group in plugin-owned CSS.');
+assert(dcStyle.includes('.dc-preview-actions{display:flex;flex-direction:row'),'Preview tabs and Edit must remain one horizontal action group in plugin-owned CSS.');
 
 const schema=json('sdk/plugin-manifest.schema.json');
 assert(schema.properties.window.properties.artifactHydration.enum.includes('live'),'SDK machine manifest must expose window.artifactHydration.');

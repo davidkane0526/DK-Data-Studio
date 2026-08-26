@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 // Machine-readable and runtime contract must describe the same stable Core surface.
 const schema=JSON.parse(read('docs/plugin-manifest.schema.json'));
 const allowed=new Set(schema.properties.requiresCore.items.enum);
-const contractSource=read('src/core/plugin-contract-runtime.js');
+const contractSource=read('src/core/plugins/contract-runtime.js');
 const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(sandbox);vm.runInContext(contractSource,sandbox,{filename:'plugin-contract-runtime.js'});
 const contract=sandbox.window.DKDSPluginContract;
 assert(contract&&contract.API_VERSION==='1.17.0','Core contract must target Plugin API 1.17.0.');
@@ -30,7 +30,7 @@ for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){
   assert(entry.includes('requiresCore:'),`${dir}: runtime manifest must declare requiresCore too.`);
 }
 
-const kernel=read('src/core/plugin-kernel.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
 for(const token of ['io: ioScope','science: window.DKDSScience','services: serviceScope','modules: moduleScope','flow: dataFlowScope','reactive: scientificReactiveScope','pipeline: scientificPipelineScope','entities: infrastructureScope?.entities','scientificPlot: infrastructureScope?.scientificPlot','dom: componentScope','providers: Object.freeze','status: Object.freeze','workspace: Object.freeze','DKDSPluginContract?.assertApi']){
   assert(kernel.includes(token),`Kernel v1.8 surface missing ${token}`);
 }

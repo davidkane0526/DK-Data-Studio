@@ -1,22 +1,23 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {readCoreCss}=require('./css-source');
 const vm=require('vm');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.85');
+assert.equal(json('package.json').version,'3.61.86');
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.17.16');
 assert.equal(contract.pluginApiVersion,'1.17.0');
 assert.equal(contract.minimumAppVersion,'3.61.39');
 
-const scientific=read('src/core/scientific-plot-runtime.js');
-const renderer=read('src/core/d3-chart-renderer.js');
+const scientific=read('src/core/scientific/plot-runtime.js');
+const renderer=read('src/core/scientific/d3-chart-renderer.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
-const css=read('src/style.css');
+const css=readCoreCss(root);
 
 assert(scientific.includes("const VERSION='2.5.0'"),'ScientificPlot must advance for nullable scalar-field limits.');
 assert(renderer.includes("const VERSION='1.2.0'"),'D3 renderer must advance for heatmap and autorange corrections.');

@@ -4,12 +4,12 @@ const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 
-const plot=read('src/core/scientific-plot-runtime.js');
-const ui=read('src/core/ui-infrastructure.js');
+const plot=read('src/core/scientific/plot-runtime.js');
+const ui=read('src/generated/runtime/ui-infrastructure.js');
 const runtime=read('src/plugin-window/runtime.js');
 const main=read('desktop/main.js');
-const kernel=read('src/core/plugin-kernel.js');
-const automation=read('src/core/automation-test-runtime.js');
+const kernel=read('src/generated/runtime/plugin-kernel.js');
+const automation=read('src/core/diagnostics/automation-test-runtime.js');
 
 assert(plot.includes("const VERSION='2.5.0'"),'ScientificPlot v2.3.0 must preserve renderer lifecycle.');
 for(const token of ['async suspend(options={})','async resume(options={})','rendererPurges','resumeRenders','purgeManaged'])assert(plot.includes(token),`ScientificPlot lifecycle token missing: ${token}`);

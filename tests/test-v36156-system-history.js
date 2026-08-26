@@ -3,9 +3,9 @@ const fs=require('fs');const path=require('path');const vm=require('vm');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));const assert=(v,m)=>{if(!v)throw new Error(m);};
 (async()=>{
-  const pkg=json('package.json');assert(pkg.version==='3.61.85','current-version assertion is synchronized by set-version');
+  const pkg=json('package.json');assert(pkg.version==='3.61.86','current-version assertion is synchronized by set-version');
   const context={window:{},console,setTimeout,clearTimeout};context.window=context;
-  vm.runInNewContext(read('src/core/project-history.js'),context,{filename:'project-history.js'});
+  vm.runInNewContext(read('src/core/project/history.js'),context,{filename:'project-history.js'});
   const history=context.DKDSProjectHistory.create({limit:3});let value=0;
   history.record({label:'A',scope:'project',source:'test',undo:()=>{value=0;},redo:()=>{value=1;}});value=1;
   history.record({label:'B',undo:async()=>{await Promise.resolve();value=1;},redo:async()=>{await Promise.resolve();value=2;}});value=2;
@@ -15,17 +15,17 @@ const json=rel=>JSON.parse(read(rel));const assert=(v,m)=>{if(!v)throw new Error
   await history.redo();assert(value===2&&history.canUndo(),'Async redo must restore the entry.');
   history.record({label:'reject',undo:()=>false,redo:()=>true});const before=history.snapshot().past.length;assert(await history.undo()===false&&history.snapshot().past.length===before,'Rejected undo must never corrupt the stack.');
 
-  const kernel=read('src/core/plugin-kernel.js');
+  const kernel=read('src/generated/runtime/plugin-kernel.js');
   assert(kernel.includes("typeof result.then==='function'")&&kernel.includes('Promise.resolve(result).then(value=>value!==false)'),'Edit Contract must preserve asynchronous false instead of treating Promise<false> as handled.');
   assert(kernel.includes('editActionAvailable')&&kernel.includes('editHistoryState')&&kernel.includes('can:action=>editActionAvailable(action)')&&kernel.includes('history:()=>editHistoryState()'),'Edit Contract must expose availability and local history state.');
   assert(kernel.includes('notifyEditHistory')&&kernel.includes('changed: detail => notifyEditHistory(pluginId,detail)'),'Edit providers must be able to publish local history changes through Core.');
 
   const index=read('src/index.html');assert(index.includes('id="undoBtn"')&&index.includes('id="redoBtn"'),'Desktop Edit menu must expose both Undo and Redo.');
-  const app=read('src/app.js');
+  const app=read('src/generated/runtime/app.js');
   assert(app.includes('systemHistorySnapshotSync')&&app.includes('runSystemHistory')&&app.includes("historyCandidate(project,direction,'project')")&&app.includes("historyCandidate(workspace,direction,'workspace')"),'Main shell must coordinate project and workspace history.');
   assert(app.includes('撤销/重做按真实操作时间排序')&&app.includes("[${item.scopeLabel}]")&&app.includes('下一步撤销'),'History dialog must describe the real combined history rather than project-only state.');
   assert(app.includes('history:systemHistorySnapshotSync()')&&app.includes('historyState:()=>systemHistorySnapshotSync()')&&app.includes('historySnapshot:()=>systemHistorySnapshotSync()'),'Mobile and Kernel history state must expose the same system coordinator state.');
-  assert(app.includes("dkds:history-changed")&&read('src/core/mobile-host-runtime.js').includes("window.addEventListener('dkds:history-changed',publish)"),'History changes must proactively refresh the native mobile shell.');
+  assert(app.includes("dkds:history-changed")&&read('src/core/host/mobile-host-runtime.js').includes("window.addEventListener('dkds:history-changed',publish)"),'History changes must proactively refresh the native mobile shell.');
 
   const windowRuntime=read('src/plugin-window/runtime.js');
   assert(windowRuntime.includes('runWindowHistory')&&windowRuntime.includes("candidate(project,'project')")&&windowRuntime.includes("candidate(local,'workspace')"),'Dedicated TOP windows must use the same chronological history policy.');

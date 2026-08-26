@@ -240,7 +240,7 @@ bottom navigation, landscape rail, plugin activity sheet, project actions,
 Android back handling, app lifecycle and renderer recovery. Plugin activities
 are read from the Core registry rather than hard-coded into the native shell.
 
-`src/core/platform.js` automatically supplies coarse-pointer/mobile interaction sizes.
+`src/core/host/platform.js` automatically supplies coarse-pointer/mobile interaction sizes.
 
 On touch devices the current renderer increases:
 - button/input targets;
