@@ -21,25 +21,26 @@ assert(derived.includes('platform')&&derived.includes('plugin-kernel'),'All dedi
 
 const runtime=read('src/plugin-window/runtime.js');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const preload=read('desktop/preload.js');
 const app=read('src/generated/runtime/app.js');
 assert(runtime.includes("'parameter-schema':'../core/data/parameter-schema.js'"),'Dedicated runtime allowlist must include parameter-schema.');
 assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific/pipeline-runtime.js'"),'Dedicated runtime allowlist must include Scientific Pipeline Runtime.');
 assert(runtime.includes('window.electronAPI?.markActivityWindowFailed?.'),'Dedicated startup catch must report failure to the main process.');
-assert(main.includes('const auxiliaryFailures = new Map()'),'Main process must retain explicit failed-window state.');
+assert(auxiliary.includes('const auxiliaryFailures=new Map()'),'Auxiliary-window runtime must retain explicit failed-window state.');
 assert(main.includes("ipcMain.on('windows:activityFailed'"),'Main process must receive dedicated startup failures.');
-assert(main.includes('if(auxiliaryPendingShow.has(id))')&&main.includes('win.show();win.focus();'),'A user-requested failed TOP must become visible instead of failing behind show:false.');
-assert(main.includes('const failure=auxiliaryFailures.get(previous.webContents.id)'),'Reopening a failed cached TOP must surface the existing failure instead of waiting forever for ready.');
+assert(auxiliary.includes('if(auxiliaryPendingShow.has(id))')&&auxiliary.includes('win.show();win.focus();'),'A user-requested failed TOP must become visible instead of failing behind show:false.');
+assert(auxiliary.includes('const failure=auxiliaryFailures.get(previous.webContents.id)'),'Reopening a failed cached TOP must surface the existing failure instead of waiting forever for ready.');
 assert(preload.includes('onActivityWindowFailed'),'Failure state must reach the owner renderer.');
 assert(app.includes('onActivityWindowFailed?.(payload=>'),'Main renderer must surface TOP startup failure in the host status area.');
 
 
 assert(main.includes("ipcMain.handle('windows:prepareSuperTransition'"),'Main process must expose an explicit host-role transition barrier.');
-assert(main.includes("windows:activityRoleSnapshotRequest")&&main.includes("windows:activityRoleSnapshotResponse"),'SUPER promotion must request and await a final TOP renderer snapshot before retiring it.');
-assert(main.includes("win.webContents.on('render-process-gone'"),'A crashed dedicated TOP renderer must be detected by the main process.');
-assert(main.includes('forcedAuxiliaryClose.has(win)'),'Intentional role-transition/window teardown must not be reported as a renderer crash.');
+assert(auxiliary.includes("windows:activityRoleSnapshotRequest")&&main.includes("windows:activityRoleSnapshotResponse"),'SUPER promotion must request and await a final TOP renderer snapshot before retiring it.');
+assert(auxiliary.includes("win.webContents.on('render-process-gone'"),'A crashed dedicated TOP renderer must be detected by the auxiliary-window runtime.');
+assert(auxiliary.includes('forcedAuxiliaryClose.has(win)'),'Intentional role-transition/window teardown must not be reported as a renderer crash.');
 assert(runtime.includes('roleTransitionSnapshotTaken')&&runtime.includes('roleTransitionSnapshotTaken || !window.electronAPI?.pushActivityProjectSnapshot'),'A completed dedicated-renderer role snapshot must suppress duplicate unload snapshots without owner-renderer legacy flags.');
-assert(main.includes('再次打开时将自动重建'),'Renderer crash handling must explicitly make the cached TOP reconstructable.');
+assert(auxiliary.includes('再次打开时将自动重建'),'Renderer crash handling must explicitly make the cached TOP reconstructable.');
 assert(preload.includes('prepareSuperTransition')&&preload.includes('onActivityRoleSnapshotRequest')&&preload.includes('respondActivityRoleSnapshot'),'Preload must bridge the host-transition snapshot handshake.');
 assert(runtime.includes('function buildSnapshotPayload(final=false)')&&runtime.includes('onActivityRoleSnapshotRequest?.(request=>'),'Dedicated TOP runtime must provide a synchronous role-transition snapshot payload.');
 assert(app.includes('function preparePluginSuperTransition(change={})')&&app.includes('applyActivityProjectSnapshot(snapshot)'),'The owner renderer must merge returned dedicated TOP plugin slices before embedding the promoted plugin.');

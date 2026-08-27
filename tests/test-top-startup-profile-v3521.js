@@ -7,6 +7,7 @@ const {readBuiltinPluginWindows,normalizeDependencies}=require('../desktop/plugi
 const runtime=read('src/plugin-window/runtime.js');
 const preload=read('desktop/preload.js');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const automation=read('src/core/diagnostics/automation-test-runtime.js');
 
 const domains=['scientific-pipeline-runtime','scientific-transform-runtime','scientific-algorithm-runtime'];
@@ -15,8 +16,8 @@ for(const id of domains)assert(!runtime.includes(`'data-flow-runtime','${id}`),`
 assert(runtime.includes("measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies"),'Dedicated renderer must profile each dependency load.');
 assert(runtime.includes("measure('plugins-activate'")&&runtime.includes("`${reason}:activity-open`")&&runtime.includes('startupProfile.totalMs'),'Dedicated renderer must profile activation and workspace open phases.');
 assert(preload.includes("markActivityWindowReady: payload => ipcRenderer.send('windows:activityReady', payload || {})"),'Startup profile must cross preload IPC with the ready signal.');
-assert(main.includes('auxiliaryStartupProfiles')&&main.includes('profile.renderer=payload.startupProfile'),'Main process must retain renderer startup profiles.');
-assert(main.includes('navigationMs')&&main.includes('createToReadyMs'),'Main process startup profile must include navigation and create-to-ready timing.');
+assert(auxiliary.includes('auxiliaryStartupProfiles')&&auxiliary.includes('profile.renderer=payload.startupProfile'),'Auxiliary-window runtime must retain renderer startup profiles.');
+assert(auxiliary.includes('navigationMs')&&auxiliary.includes('createToReadyMs'),'Auxiliary-window runtime startup profile must include navigation and create-to-ready timing.');
 
 const derived=normalizeDependencies([],['data.pipeline','data.transforms','analysis.algorithms']);
 for(const id of domains)assert(derived.includes(id),`requiresCore must still derive ${id}.`);

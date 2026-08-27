@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const policy=require(path.join(root,'desktop','plugin-override-policy'));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert(pkg.version==='3.61.97','Application version must be 3.61.18.');
+
 
 const builtins=[
   {manifest:{id:'builtin.data-center',version:'1.13.2'}},
@@ -26,8 +26,9 @@ assert(policy.isNewerThanBuiltin({manifest:{version:'1.13.2'}},'1.13.2')===false
 assert(policy.isNewerThanBuiltin({manifest:{version:'1.12.9'}},'1.13.2')===false,'Older override version must not shadow bundled code.');
 
 const main=fs.readFileSync(path.join(root,'desktop/main.js'),'utf8');
-assert(main.includes('PluginOverridePolicy.classify')&&main.includes('classifyInstalledPluginOverrides().active'),'Main process must pass only effective overrides to plugin/window/catalog resolution.');
-assert(main.includes("reason:'not-newer-than-bundled'")&&main.includes("reason:'not-newer-than-installed-override'"),'LAN updater must reject stale/downgrade built-in override packages.');
+const packages=fs.readFileSync(path.join(root,'desktop/main-modules/plugin-package-runtime.js'),'utf8');
+assert(packages.includes('PluginOverridePolicy.classify')&&packages.includes('classifyInstalledPluginOverrides().active'),'Plugin package runtime must pass only effective overrides to plugin/window/catalog resolution.');
+assert(packages.includes("reason:'not-newer-than-bundled'")&&packages.includes("reason:'not-newer-than-installed-override'"),'LAN updater must reject stale/downgrade built-in override packages.');
 assert(main.includes('shadowed:classified.shadowed'),'Plugin override IPC must keep stale packages diagnosable without executing them.');
 assert((pkg.build?.files||[]).includes('desktop/**/*'),'Packaged app must include the override precedence policy module.');
 console.log('v3.61.14 built-in override precedence checks passed.');

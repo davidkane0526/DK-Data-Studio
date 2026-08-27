@@ -104,27 +104,9 @@ for (const relative of [
   if (after !== before) fs.writeFileSync(target, after, 'utf8');
 }
 
-// A number of long-lived regression files intentionally validate historical
-// behavior while also asserting that they run against the current application
-// release. Keep only those current-version assertions synchronized; do not
-// rewrite unrelated historical/minimum-version fixtures.
-const testsDir = path.join(root, 'tests');
-if (fs.existsSync(testsDir)) {
-  for (const name of fs.readdirSync(testsDir)) {
-    if (!/^test-.*\.js$/i.test(name)) continue;
-    const target = path.join(testsDir, name);
-    const before = fs.readFileSync(target, 'utf8');
-    const lines = before.split(/(?<=\n)/);
-    let changed = false;
-    const after = lines.map(line => {
-      if (!line.includes(current)) return line;
-      if (!/(?:pkg\.version|json\(['"]package\.json['"]\)\.version)/.test(line)) return line;
-      changed = true;
-      return line.split(current).join(version);
-    }).join('');
-    if (changed && after !== before) fs.writeFileSync(target, after, 'utf8');
-  }
-}
+// Historical regression tests are release-independent. Current release identity is
+// validated once by the active release gate instead of rewriting dozens of old
+// test files on every patch release.
 
 const readmePath = path.join(root, 'README_CN.md');
 if (fs.existsSync(readmePath)) {

@@ -11,7 +11,7 @@ const winWorkflow = read('.github/workflows/build-windows.yml');
 const androidWorkflow = read('.github/workflows/build-android.yml');
 const setVersion = read('scripts/set-version.js');
 
-assert(pkg.version === '3.61.97', 'v3.61.32 proxy tooling regression must run against application 3.61.32.');
+
 assert(tools.includes('Initialize-NetworkEnvironment'), 'build toolbox must initialize one shared network environment before dependency/build work.');
 assert(tools.includes("Get-ProcessEnvFirst @('HTTP_PROXY','http_proxy','npm_config_proxy','NPM_CONFIG_PROXY')"), 'HTTP proxy inheritance must accept common upper/lower/npm aliases.');
 assert(tools.includes("Get-ProcessEnvFirst @('HTTPS_PROXY','https_proxy','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')"), 'HTTPS proxy inheritance must accept common upper/lower/npm aliases.');
@@ -29,7 +29,7 @@ assert(tools.includes('Test-NoProxyForUri $uri $script:NetworkConfig.NoProxy'), 
 assert(tools.includes("$builder.UserName = '***'") && tools.includes("$builder.Password = '***'"), 'proxy logs must redact credentials.');
 assert(gui.includes("$page.Text = '网络与代理'") && gui.includes('保存代理设置'), 'GUI must expose proxy settings.');
 assert(gui.includes('Save-ToolboxConfigPatch'), 'GUI settings must merge into existing developer config instead of destroying cache/proxy keys.');
-assert(setVersion.includes("/^test-.*\\.js$/i") && setVersion.includes("pkg\\.version") && setVersion.includes("README_CN.md"), 'versioning script must keep current-version regression assertions and README heading synchronized automatically.');
+assert(!setVersion.includes("readdirSync(testsDir)") && !setVersion.includes("path.join(root, 'tests')") && setVersion.includes("README_CN.md"), 'versioning script must update release identity without rewriting historical regression tests.');
 assert(winWorkflow.includes('npm install --no-audit --no-fund'), 'Windows CI dependency strategy must remain compatible with the repository without a lockfile.');
 assert(androidWorkflow.includes('npm install --no-audit --no-fund'), 'Android CI dependency strategy must remain compatible with the repository without a lockfile.');
 console.log('v3.61.30 proxy/build tooling regression checks passed.');

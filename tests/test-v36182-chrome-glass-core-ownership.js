@@ -7,7 +7,7 @@ const readComposition=require('./helpers/read-composition');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97');
+
 
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');

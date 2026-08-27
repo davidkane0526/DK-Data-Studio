@@ -10,7 +10,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
-assert.equal(json('package.json').version,'3.61.97');
+
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(Theme.version,'3.5.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('material.roles.chrome')&&Theme.supports('platform.logical-units'));assert(!Theme.supports('materialBlur'));

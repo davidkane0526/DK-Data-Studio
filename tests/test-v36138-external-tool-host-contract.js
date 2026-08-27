@@ -38,6 +38,7 @@ const kernel=read('src/generated/runtime/plugin-kernel.js');
 const runtime=read('src/plugin-window/runtime.js');
 const app=read('src/generated/runtime/app.js');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const manager=read('desktop/plugin-window-manager.js');
 
 assert(kernel.includes('function applyPackagedManifest('),'Plugin Kernel must own one packaged-manifest merge path.');
@@ -51,8 +52,8 @@ assert(runtime.includes('插件工作区已激活但没有显示页面'),'A rend
 assert(runtime.includes('visiblePagePluginId')&&runtime.includes('targetPluginState'),'Dedicated diagnostics must expose plugin/page ownership, not only a ready boolean.');
 assert(manager.includes('packageManifest:Object.freeze({...manifest})'),'Window manager must propagate the canonical .dkplugin manifest.');
 assert(app.includes('独立工作区契约未注册'),'Tool open must preflight the main-process machine window contract instead of silently doing nothing.');
-assert(main.includes('renderer reached ready without a visible page'),'Electron diagnostic smoke must validate a real visible page after ready.');
-assert(main.includes('active activity mismatch'),'Electron diagnostic smoke must validate the requested activity is actually active.');
-assert(main.includes('const finalOk=outcome.ok===true&&(!lifecycle.tested||lifecycle.ok===true)'),'A failed lifecycle/page validation must make the smoke test fail, not remain PASS because the renderer emitted ready once.');
+assert(auxiliary.includes('renderer reached ready without a visible page'),'Electron diagnostic smoke must validate a real visible page after ready.');
+assert(auxiliary.includes('active activity mismatch'),'Electron diagnostic smoke must validate the requested activity is actually active.');
+assert(auxiliary.includes('const finalOk=outcome.ok===true&&(!lifecycle.tested||lifecycle.ok===true)'),'A failed lifecycle/page validation must make the smoke test fail, not remain PASS because the renderer emitted ready once.');
 
 console.log('v3.61.38 external Tool host contract PASS');

@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97','Workbench hydration/visual contract test must track the current release.');
+
 
 const coreCss=read('src/core.css');
 const foundation=read('src/styles/foundation/foundation.css');

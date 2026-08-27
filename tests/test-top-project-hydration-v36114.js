@@ -6,7 +6,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
-assert(json('package.json').version==='3.61.97','Application version must be 3.61.18.');
+
 
 const runtime=read('src/plugin-window/runtime.js');
 const prime=runtime.indexOf("measureSync('artifact-store-prime'");
@@ -18,9 +18,10 @@ assert(runtime.includes('artifactStorePrimedForBootstrap')&&runtime.includes("re
 assert(runtime.includes('DKDSPluginWindowDiagnostics')&&runtime.includes('renderedArtifactRows'),'Dedicated renderer diagnostics must report hydrated Artifact and rendered-row counts without exporting scientific values.');
 
 const main=read('desktop/main.js');
-assert(main.includes('const project=payload?.project')&&main.includes('payload?.artifactSnapshot'),'Electron diagnostic TOP smoke must accept the actual owner project and Artifact snapshot.');
-assert(main.includes('const useConfiguredPrewarm=spec.prewarm===true'),'Diagnostic TOP smoke must follow each plugin\'s real prewarm policy instead of prewarming every plugin unconditionally.');
-assert(main.includes('diagnosticRendererProjectSnapshot')&&main.includes('rendererData'),'Electron diagnostic TOP smoke must inspect the renderer\'s actual hydrated state.');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
+assert(auxiliary.includes('const project=payload?.project')&&auxiliary.includes('payload?.artifactSnapshot'),'Electron diagnostic TOP smoke must accept the actual owner project and Artifact snapshot.');
+assert(auxiliary.includes('const useConfiguredPrewarm=spec.prewarm===true'),'Diagnostic TOP smoke must follow each plugin\'s real prewarm policy instead of prewarming every plugin unconditionally.');
+assert(auxiliary.includes('diagnosticRendererProjectSnapshot')&&auxiliary.includes('rendererData'),'Electron diagnostic TOP smoke must inspect the renderer\'s actual hydrated state.');
 
 const app=read('src/generated/runtime/app.js');
 assert(app.includes('function currentProjectWindowSmokePayload()')&&app.includes('artifactSnapshot=snapshotArtifactRows()'),'Main renderer must expose the current project to the isolated automation smoke path.');

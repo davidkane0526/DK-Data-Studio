@@ -8,6 +8,7 @@ const plot=read('src/core/scientific/plot-runtime.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const runtime=read('src/plugin-window/runtime.js');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const automation=read('src/core/diagnostics/automation-test-runtime.js');
 
@@ -22,8 +23,8 @@ assert(ui.includes("window.DKDSPerformance?.skip?.('ui.suspended-resize')"),'Sus
 assert(runtime.includes("DKDSUI?.lifecycle?.('hidden'")&&runtime.includes("DKDSUI?.lifecycle?.('visible'"),'Dedicated TOP runtime must route hide/show through Core UI lifecycle.');
 assert(runtime.includes("DKDSPerformance?.lifecycle?.('hidden'"),'TOP hide must still contract Core scientific caches after UI suspension.');
 
-assert(main.includes('diagnosticRendererLifecycleSnapshot')&&main.includes('lifecycleSnapshotSuspended'),'Real Electron diagnostics must inspect renderer lifecycle state.');
-assert(main.includes('hideDedicatedAuxiliaryWindow(win)')&&main.includes('reused:reopened?.reused===true'),'Real TOP automation must exercise hide/reuse, not readiness only.');
+assert(auxiliary.includes('diagnosticRendererLifecycleSnapshot')&&auxiliary.includes('lifecycleSnapshotSuspended'),'Real Electron diagnostics must inspect renderer lifecycle state.');
+assert(auxiliary.includes('hideDedicatedAuxiliaryWindow(win)')&&auxiliary.includes('reused:reopened?.reused===true'),'Real TOP automation must exercise hide/reuse, not readiness only.');
 
 assert(kernel.includes("trimPrefix?.(`${pluginId}.`,{targetEntries:0,dropWeak:true,reason:'plugin-deactivate'})"),'Plugin deactivation must release its Core performance namespace.');
 

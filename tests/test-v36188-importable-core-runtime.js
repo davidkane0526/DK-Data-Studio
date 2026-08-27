@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 const {MAX_MODULE_BYTES,buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
 
-assert.equal(json('package.json').version,'3.61.97');
+
 
 const uiManifest=json('src/core/ui/composition/composition.json');
 const kernelManifest=json('src/core/plugins/kernel/composition.json');

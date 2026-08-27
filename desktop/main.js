@@ -9,13 +9,14 @@ const fs = require('fs');
 const path = require('path');
 const APP_ROOT = path.resolve(__dirname, '..');
 const crypto = require('crypto');
-const os = require('os');
 const { normalizePluginPackage, pluginPackageFileName, validPluginId } = require('./plugin-package');
-const AlgorithmPackageCatalog = require('./algorithm-package-catalog');
-const PluginOverridePolicy = require('./plugin-override-policy');
-const PluginSdkContract = require('../sdk/contract.json');
 const SmbService = require('../services/smb-service');
 const { McpServer } = require('../services/mcp-server');
+const { createAppearanceRuntime } = require('./main-modules/appearance-runtime');
+const { createPluginPackageRuntime } = require('./main-modules/plugin-package-runtime');
+const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
+const { createAgentRuntime } = require('./main-modules/agent-runtime');
+const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 const APP_NAME = 'DK Data Studio';
@@ -27,19 +28,9 @@ if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 let lanUpdater = null;
 let lanWebServer = null;
-const auxiliaryWindows = new Map();
-const auxiliaryBootstrap = new Map();
-const auxiliaryReady = new Set();
-const auxiliaryFailures = new Map();
-const auxiliaryPendingShow = new Set();
-const auxiliaryStartupProfiles = new Map();
-const forcedAuxiliaryClose = new WeakSet();
 const pendingCapabilityInvocations = new Map();
-const pendingAuxiliaryRoleSnapshots = new Map();
 let capabilityRequestSeq = 0;
-let auxiliaryRoleSnapshotSeq = 0;
 let appQuitting = false;
-let appearanceTheme = '';
 let primaryWindow = null;
 let mcpServer = null;
 let mcpRequestSeq = 0;
@@ -57,278 +48,19 @@ function getProjectFileSafety(){
   return projectFileSafety;
 }
 
-function appearanceSettingsPath(){return path.join(app.getPath('userData'),'appearance.json');}
-function readPersistedAppearanceTheme(){
-  try{
-    const value=String(JSON.parse(fs.readFileSync(appearanceSettingsPath(),'utf8'))?.theme||'').toLowerCase();
-    return ['light','dark'].includes(value)?value:'';
-  }catch{return '';}
-}
-function nativeWindowBackground(theme=appearanceTheme){
-  const effective=['light','dark'].includes(theme)?theme:(nativeTheme.shouldUseDarkColors?'dark':'light');
-  return effective==='dark'?'#151922':'#f5f7fb';
-}
-function applyNativeAppearance(value,{persist=false,broadcast=true}={}){
-  const next=String(value||'').toLowerCase();
-  if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
-  appearanceTheme=next;
-  // Electron nativeTheme owns the non-HTML window chrome on Windows/macOS.
-  // Keeping it in the same transaction as the renderer theme prevents the
-  // native title bar from remaining light while a plugin workspace is dark.
-  try{nativeTheme.themeSource=next;}catch{}
-  const background=nativeWindowBackground(next);
-  for(const win of BrowserWindow.getAllWindows()){
-    if(!win||win.isDestroyed())continue;
-    try{win.setBackgroundColor(background);}catch{}
-    if(broadcast)try{win.webContents.send('system:appearanceThemeChanged',next);}catch{}
-  }
-  if(persist){
-    try{fs.mkdirSync(path.dirname(appearanceSettingsPath()),{recursive:true});fs.writeFileSync(appearanceSettingsPath(),JSON.stringify({theme:next},null,2)+'\n','utf8');}catch(err){console.warn('[DKDS appearance:persist]',err);}
-  }
-  return next;
-}
-
-function externalPluginDirectory() {
-  return path.join(app.getPath('userData'), 'plugins');
-}
-
-function ensureExternalPluginDirectory() {
-  const dir = externalPluginDirectory();
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
-function pluginOverrideDirectory() {
-  return path.join(app.getPath('userData'), 'plugin-overrides');
-}
-function pluginHistoryRootDirectory(){return path.join(app.getPath('userData'),'plugin-history');}
-function pluginHistoryDirectory(id){
-  const pluginId=String(id||'');
-  if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的插件历史 ID。');
-  return path.join(pluginHistoryRootDirectory(),pluginId);
-}
-function archiveExternalPluginPackage(pkg,reason='update'){
-  if(!pkg?.manifest?.id)return null;
-  const normalized=normalizePluginPackage(pkg,{allowBuiltinId:false});
-  const dir=pluginHistoryDirectory(normalized.manifest.id);fs.mkdirSync(dir,{recursive:true});
-  const version=String(normalized.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
-  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-  const fileName=`${version}--${stamp}.dkplugin`;
-  const payload={...normalized,archivedAt:new Date().toISOString(),archiveReason:String(reason||'update')};
-  atomicWritePluginPackage(path.join(dir,fileName),payload);
-  return fileName;
-}
-function listExternalPluginHistory(id){
-  const dir=pluginHistoryDirectory(id);const versions=[];if(!fs.existsSync(dir))return versions;
-  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){
-    try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});if(pkg.manifest.id!==id)continue;versions.push({token:name,version:String(pkg.manifest.version||''),name:String(pkg.manifest.name||id),archivedAt:String(raw.archivedAt||''),archiveReason:String(raw.archiveReason||'update')});}catch{}
-  }
-  return versions;
-}
-
-function ensurePluginOverrideDirectory() {
-  const dir=pluginOverrideDirectory();
-  fs.mkdirSync(dir,{recursive:true});
-  return dir;
-}
-
-function pluginLanStatePath(){return path.join(app.getPath('userData'),'plugin-lan-update-state.json');}
-function readPluginLanState(){
-  try{return JSON.parse(fs.readFileSync(pluginLanStatePath(),'utf8'))||{};}catch{return {};}
-}
-function writePluginLanState(state){
-  const target=pluginLanStatePath();fs.mkdirSync(path.dirname(target),{recursive:true});
-  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(tmp,JSON.stringify(state,null,2)+'\n','utf8');
-  if(fs.existsSync(target))fs.rmSync(target,{force:true});
-  fs.renameSync(tmp,target);
-}
-function atomicWritePluginPackage(target,pkg){
-  fs.mkdirSync(path.dirname(target),{recursive:true});
-  const tmp=`${target}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(tmp,JSON.stringify(pkg,null,2)+'\n','utf8');
-  if(fs.existsSync(target))fs.rmSync(target,{force:true});
-  fs.renameSync(tmp,target);
-}
-
-function builtinPluginIds() {
-  const base = path.join(app.getAppPath(), 'src', 'plugins');
-  const ids = new Set();
-  try {
-    for (const name of fs.readdirSync(base)) {
-      if (name.startsWith('_')) continue;
-      const manifestPath = path.join(base, name, 'plugin.json');
-      if (!fs.existsSync(manifestPath)) continue;
-      try {
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-        if (manifest?.id) ids.add(String(manifest.id));
-      } catch {}
-    }
-  } catch {}
-  return ids;
-}
-
-const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();
-if(!PLUGIN_API_VERSION)throw new Error('sdk/contract.json is missing pluginApiVersion.');
-
-const pendingPluginInstalls=new Map();
-function pluginInstallCompatibilityDetails(result){
-  return (result?.issues||[]).map(issue=>({
-    kind:String(issue?.kind||'compatibility'),
-    id:String(issue?.id||''),
-    required:String(issue?.required||''),
-    actual:String(issue?.actual||'missing')
-  }));
-}
-function pluginInstallErrorPayload(error,{code='PLUGIN_INSTALL_FAILED',title='插件安装失败',manifest=null,compatibility=null}={}){
-  const message=String(error?.message||error||'未知错误').replace(/^Error:\s*/,'').trim();
-  return {
-    code,
-    title,
-    message,
-    plugin:manifest?{id:String(manifest.id||''),name:String(manifest.name||manifest.id||''),version:String(manifest.version||''),type:String(manifest.pluginType||'extension')} : null,
-    compatibility:compatibility?{
-      compatible:!!compatibility.compatible,
-      issues:pluginInstallCompatibilityDetails(compatibility),
-      appVersion:String(app.getVersion()||''),
-      pluginApiVersion:PLUGIN_API_VERSION,
-      requiredApp:String(manifest?.compatibility?.app||'*'),
-      requiredPluginApi:String(manifest?.compatibility?.pluginApi||manifest?.apiVersion||'*')
-    }:null
-  };
-}
-function sweepPendingPluginInstalls(){
-  const cutoff=Date.now()-10*60*1000;
-  for(const [token,row] of pendingPluginInstalls)if(Number(row?.createdAt||0)<cutoff)pendingPluginInstalls.delete(token);
-}
-function readBuiltinPluginManifests(){
-  const base=path.join(app.getAppPath(),'src','plugins'),rows=[];
-  try{for(const name of fs.readdirSync(base).sort()){if(name.startsWith('_'))continue;const manifestPath=path.join(base,name,'plugin.json');if(!fs.existsSync(manifestPath))continue;try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));if(manifest?.id)rows.push({manifest,source:'builtin',current:true,installed:true});}catch{}}}catch{}
-  return rows;
-}
-
-function readBuiltinPluginPackage(id){
-  const pluginId=String(id||'');const base=path.join(app.getAppPath(),'src','plugins');
-  for(const name of fs.readdirSync(base).sort()){
-    if(name.startsWith('_'))continue;const folder=path.join(base,name),manifestPath=path.join(folder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
-    let manifest;try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}catch{continue;}if(String(manifest?.id||'')!==pluginId)continue;
-    const referenced=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]);
-    if(fs.existsSync(path.join(folder,'README.md')))referenced.add('README.md');const files={};
-    for(const rel of referenced){const normalized=String(rel).replace(/\\/g,'/');const file=path.resolve(folder,normalized);if(!file.startsWith(folder+path.sep)&&file!==folder)throw new Error(`Unsafe built-in plugin path: ${normalized}`);if(!fs.existsSync(file)||!fs.statSync(file).isFile())throw new Error(`Built-in plugin file missing: ${normalized}`);files[normalized]=fs.readFileSync(file,'utf8');}
-    return normalizePluginPackage({schema:1,manifest,files},{allowBuiltinId:true});
-  }
-  return null;
-}
-
-function currentPluginPackage(id){
-  const pluginId=String(id||'');
-  const override=installedPluginOverridePackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(override)return normalizePluginPackage(override,{allowBuiltinId:true});
-  const external=installedExternalPluginPackages().find(pkg=>String(pkg?.manifest?.id||'')===pluginId);if(external)return normalizePluginPackage(external,{allowBuiltinId:false});
-  return readBuiltinPluginPackage(pluginId);
-}
-function installedPluginVersionMap(){
-  const map=new Map();for(const row of readBuiltinPluginManifests())map.set(String(row.manifest.id),String(row.manifest.version||''));
-  for(const pkg of installedPluginOverridePackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
-  for(const pkg of installedExternalPluginPackages())map.set(String(pkg.manifest.id),String(pkg.manifest.version||''));
-  return map;
-}
-function currentCompatibilityEnvironment(){return {appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION,themeContractVersion:String(PluginSdkContract.themeContractVersion||''),installedVersions:installedPluginVersionMap()};}
-function packageCompatibility(manifest){return AlgorithmPackageCatalog.compatibility(manifest,currentCompatibilityEnvironment());}
-function assertPackageCompatible(manifest,action='install'){const result=packageCompatibility(manifest);if(result.compatible)return result;const details=result.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ');throw new Error(`Plugin package is not compatible with this DK Data Studio environment for ${action}: ${details}`);}
-function readAlgorithmHistoryCatalogPackages(){
-  const root=pluginHistoryRootDirectory(),rows=[];if(!fs.existsSync(root))return rows;
-  for(const id of fs.readdirSync(root).sort()){let dir;try{dir=pluginHistoryDirectory(id);}catch{continue;}if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});rows.push({manifest:pkg.manifest,source:'history',token:name,current:false,installed:false});}catch{}}}
-  return rows;
-}
-function algorithmPackageCatalog(ref={}){
-  const builtin=readBuiltinPluginManifests();const overrides=installedPluginOverridePackages().map(pkg=>({manifest:pkg.manifest,source:'override',current:true,installed:true}));const external=installedExternalPluginPackages().map(pkg=>({manifest:pkg.manifest,source:'external',current:true,installed:true}));const history=readAlgorithmHistoryCatalogPackages();
-  const result=AlgorithmPackageCatalog.catalog([...builtin,...overrides,...external,...history],ref,currentCompatibilityEnvironment());
-  return {...result,appVersion:String(app.getVersion()||''),pluginApiVersion:PLUGIN_API_VERSION};
-}
-
-function readInstalledExternalPlugins() {
-  const dir = ensureExternalPluginDirectory();
-  const packages = [];
-  const errors = [];
-  for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.dkplugin')).sort()) {
-    const filePath = path.join(dir, name);
-    try {
-      const raw = fs.readFileSync(filePath, 'utf8');
-      const pkg = normalizePluginPackage(JSON.parse(raw), { allowBuiltinId:false });
-      if (builtinPluginIds().has(pkg.manifest.id)) throw new Error(`Plugin id conflicts with built-in plugin: ${pkg.manifest.id}`);
-      packages.push({ ...pkg, installedPath:filePath });
-    } catch (err) {
-      errors.push({ file:name, error:err?.message || String(err) });
-    }
-  }
-  return { packages, errors, directory:dir };
-}
-
-function installedExternalPluginPackages() {
-  return readInstalledExternalPlugins().packages || [];
-}
-
-function readInstalledPluginOverrides() {
-  const dir=ensurePluginOverrideDirectory();
-  const packages=[];const errors=[];const builtinIds=builtinPluginIds();
-  for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort()){
-    const filePath=path.join(dir,name);
-    try{
-      const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(filePath,'utf8')),{allowBuiltinId:true});
-      if(!pkg.manifest.id.startsWith('builtin.')||!builtinIds.has(pkg.manifest.id))throw new Error(`Override target is not a packaged built-in plugin: ${pkg.manifest.id}`);
-      packages.push({...pkg,installedPath:filePath});
-    }catch(err){errors.push({file:name,error:err?.message||String(err)});}
-  }
-  return {packages,errors,directory:dir};
-}
-function classifyInstalledPluginOverrides(result=readInstalledPluginOverrides()){
-  return PluginOverridePolicy.classify(result?.packages||[],readBuiltinPluginManifests());
-}
-function installedPluginOverridePackages(){return classifyInstalledPluginOverrides().active;}
-
-async function installLanPluginPackage(buffer,metadata={}) {
-  const raw=Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer||'');
-  if(!raw.length)throw new Error('LAN plugin package is empty.');
-  const sha256=crypto.createHash('sha256').update(raw).digest('hex');
-  if(metadata.sha256&&String(metadata.sha256).toLowerCase()!==sha256)throw new Error('LAN plugin package SHA256 mismatch.');
-  const parsed=JSON.parse(raw.toString('utf8'));
-  const id=String(parsed?.manifest?.id||'');
-  if(metadata.id&&String(metadata.id)!==id)throw new Error(`LAN plugin id mismatch: ${id} != ${metadata.id}`);
-  const isBuiltin=id.startsWith('builtin.');
-  const pkg=normalizePluginPackage(parsed,{allowBuiltinId:isBuiltin});
-  assertPackageCompatible(pkg.manifest,'LAN update');
-  const state=readPluginLanState();
-  if(state[id]?.sha256===sha256)return {installed:false,skipped:true,id,version:pkg.manifest.version,sha256};
-
-  let target,kind;
-  if(isBuiltin){
-    if(!builtinPluginIds().has(id))throw new Error(`LAN update cannot introduce unknown built-in plugin: ${id}`);
-    const bundled=readBuiltinPluginManifests().find(row=>String(row?.manifest?.id||'')===id)?.manifest||null;
-    const bundledVersion=String(bundled?.version||'0.0.0');
-    if(!PluginOverridePolicy.isNewerThanBuiltin(pkg,bundledVersion)){
-      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-bundled',bundledVersion};
-    }
-    const installedOverride=readInstalledPluginOverrides().packages.find(row=>String(row?.manifest?.id||'')===id)||null;
-    if(installedOverride&&!PluginOverridePolicy.isNewerThanBuiltin(pkg,String(installedOverride.manifest.version||'0.0.0'))){
-      return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'not-newer-than-installed-override',installedVersion:String(installedOverride.manifest.version||'')};
-    }
-    target=path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(id));
-    kind='builtin-override';
-  }else{
-    const existing=readInstalledExternalPlugins().packages.find(row=>row.manifest.id===id);
-    if(!existing)return {installed:false,ignored:true,id,version:pkg.manifest.version,reason:'external-plugin-not-installed'};
-    target=existing.installedPath;
-    kind='external-update';
-  }
-
-  const installed={...pkg,installedAt:new Date().toISOString()};
-  atomicWritePluginPackage(target,installed);
-  state[id]={sha256,version:installed.manifest.version,revision:metadata.revision||metadata.publishedAt||installed.installedAt,installedAt:installed.installedAt,kind};
-  writePluginLanState(state);
-  const event={id,name:installed.manifest.name,version:installed.manifest.version,kind,sha256,requiresRestart:true};
-  for(const win of BrowserWindow.getAllWindows())if(!win.isDestroyed())win.webContents.send('plugins:lanUpdate',event);
-  return {installed:true,...event};
-}
+const appearanceRuntime=createAppearanceRuntime({app,BrowserWindow,nativeTheme});
+const {readPersistedAppearanceTheme,nativeWindowBackground,applyNativeAppearance}=appearanceRuntime;
+const pluginPackageRuntime=createPluginPackageRuntime({app,BrowserWindow});
+const {
+  PLUGIN_API_VERSION,pendingPluginInstalls,
+  ensureExternalPluginDirectory,pluginHistoryDirectory,archiveExternalPluginPackage,listExternalPluginHistory,
+  atomicWritePluginPackage,builtinPluginIds,pluginInstallErrorPayload,sweepPendingPluginInstalls,
+  algorithmPackageCatalog,readInstalledExternalPlugins,installedExternalPluginPackages,
+  readInstalledPluginOverrides,classifyInstalledPluginOverrides,installedPluginOverridePackages,
+  currentPluginPackage,packageCompatibility,installLanPluginPackage
+}=pluginPackageRuntime;
+const {enforcePackagedExpiry}=createPackagedExpiryRuntime({app,appRoot:APP_ROOT});
+const {storeAgentSecret,loadAgentSecret,agentHttpJson}=createAgentRuntime({app,safeStorage});
 
 function resolveConfiguredPluginWindow(activityId) {
   return resolvePluginWindow(app.getAppPath(), activityId, installedExternalPluginPackages(), installedPluginOverridePackages());
@@ -336,55 +68,6 @@ function resolveConfiguredPluginWindow(activityId) {
 
 function listConfiguredPluginWindows() {
   return listPluginWindows(app.getAppPath(), installedExternalPluginPackages(), installedPluginOverridePackages());
-}
-
-const PACKAGED_TRIAL_DAYS = 30;
-const PACKAGED_EXPIRY_MAX_TIMER_MS = 12 * 60 * 60 * 1000;
-
-function readPackagedBuildInfo() {
-  const infoPath = path.join(APP_ROOT, 'build-info.json');
-  try {
-    const raw = fs.readFileSync(infoPath, 'utf8');
-    const info = JSON.parse(raw);
-    if (
-      info?.buildType !== 'packaged-trial' ||
-      Number(info?.durationDays) !== PACKAGED_TRIAL_DAYS ||
-      !Number.isFinite(Number(info?.builtAtMs)) ||
-      !Number.isFinite(Number(info?.expiresAtMs)) ||
-      Number(info.expiresAtMs) <= Number(info.builtAtMs)
-    ) return null;
-    return info;
-  } catch {
-    return null;
-  }
-}
-
-function packagedBuildIsExpired(info, nowMs = Date.now()) {
-  return !info || nowMs >= Number(info.expiresAtMs);
-}
-
-function exitImmediately() {
-  process.exit(0);
-}
-
-function enforcePackagedExpiry() {
-  if (!app.isPackaged) return;
-  const info = readPackagedBuildInfo();
-  if (packagedBuildIsExpired(info)) {
-    exitImmediately();
-    return;
-  }
-  const scheduleNextExpiryCheck = () => {
-    const remainingMs = Number(info.expiresAtMs) - Date.now();
-    if (remainingMs <= 0) {
-      exitImmediately();
-      return;
-    }
-    const delayMs = Math.min(remainingMs, PACKAGED_EXPIRY_MAX_TIMER_MS);
-    const timer = setTimeout(scheduleNextExpiryCheck, delayMs);
-    if (typeof timer.unref === 'function') timer.unref();
-  };
-  scheduleNextExpiryCheck();
 }
 
 function commonWindowPreferences() {
@@ -396,44 +79,17 @@ function commonWindowPreferences() {
   };
 }
 
+const auxiliaryWindowRuntime=createAuxiliaryWindowRuntime({
+  app,BrowserWindow,appRoot:APP_ROOT,resolveConfiguredPluginWindow,listConfiguredPluginWindows,
+  nativeWindowBackground,commonWindowPreferences,isAppQuitting:()=>appQuitting
+});
+const {
+  auxiliaryWindows,auxiliaryBootstrap,auxiliaryReady,auxiliaryFailures,auxiliaryPendingShow,auxiliaryStartupProfiles,pendingAuxiliaryRoleSnapshots,
+  projectSnapshotDigest,hideDedicatedAuxiliaryWindow,closeAuxiliaryWindowForReal,markAuxiliaryWindowReady,markAuxiliaryWindowFailed,
+  runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,createOrFocusAuxiliaryWindow
+}=auxiliaryWindowRuntime;
 
-function agentSecretsPath(){return path.join(app.getPath('userData'),'agent-secrets.json');}
-function readAgentSecrets(){
-  try{return JSON.parse(fs.readFileSync(agentSecretsPath(),'utf8'))||{};}catch{return {};}
-}
-function writeAgentSecrets(value){
-  const target=agentSecretsPath();fs.mkdirSync(path.dirname(target),{recursive:true});
-  fs.writeFileSync(target,JSON.stringify(value,null,2)+'\n','utf8');
-}
-function secretKeyName(key){
-  const value=String(key||'default').trim();
-  if(!/^[A-Za-z0-9._-]{1,80}$/.test(value))throw new Error('无效的密钥标识。');
-  return value;
-}
-function storeAgentSecret(key,value){
-  const name=secretKeyName(key),rows=readAgentSecrets(),plain=String(value||'');
-  if(!plain){delete rows[name];writeAgentSecrets(rows);return true;}
-  if(!safeStorage.isEncryptionAvailable())throw new Error('当前系统安全存储不可用，未保存 API Key。');
-  rows[name]={encrypted:safeStorage.encryptString(plain).toString('base64')};writeAgentSecrets(rows);return true;
-}
-function loadAgentSecret(key){
-  const name=secretKeyName(key),row=readAgentSecrets()[name];if(!row?.encrypted)return '';
-  if(!safeStorage.isEncryptionAvailable())return '';
-  try{return safeStorage.decryptString(Buffer.from(row.encrypted,'base64'));}catch{return '';}
-}
-async function agentHttpJson(payload={}){
-  const endpoint=String(payload.endpoint||'').trim();
-  let url;try{url=new URL(endpoint);}catch{throw new Error('AI Endpoint 无效。');}
-  if(!['https:','http:'].includes(url.protocol))throw new Error('AI Endpoint 只允许 HTTP/HTTPS。');
-  const timeoutMs=Math.max(1000,Math.min(120000,Number(payload.timeoutMs)||60000));
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
-  try{
-    const response=await fetch(url,{method:String(payload.method||'POST').toUpperCase(),headers:{'content-type':'application/json',...(payload.headers||{})},body:payload.body==null?undefined:JSON.stringify(payload.body),signal:controller.signal});
-    const text=await response.text();if(text.length>8*1024*1024)throw new Error('AI 响应超过 8 MiB 限制。');
-    let body=null;try{body=text?JSON.parse(text):null;}catch{body={text};}
-    return {ok:response.ok,status:response.status,statusText:response.statusText,body};
-  }catch(error){if(error?.name==='AbortError')throw new Error('AI 请求超时。');throw error;}finally{clearTimeout(timer);}
-}
+
 function dispatchMcpToRenderer(request){
   const win=primaryWindow&&!primaryWindow.isDestroyed()?primaryWindow:BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&!auxiliaryBootstrap.has(candidate.webContents.id));
   if(!win)throw new Error('Studio Core 尚未就绪。');
@@ -464,445 +120,6 @@ function createWindow() {
   return win;
 }
 
-function auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse=true} = {}) {
-  // Reusable TOP/Tool windows are renderer singletons per owner + activity. Project
-  // state is explicitly rehydrated through the bootstrap contract when a different
-  // project opens the same activity. This prevents project-tab prewarm duplicates.
-  return `${ownerWebContentsId}::${reuse !== false ? '__reusable__' : (projectTabId || 'project')}::${activityId}`;
-}
-
-function removeAuxiliaryWindowReferences(win) {
-  if (!win) return;
-  for (const [key, candidate] of auxiliaryWindows) {
-    if (candidate === win) auxiliaryWindows.delete(key);
-  }
-}
-
-function projectSnapshotDigest(project) {
-  try {
-    return crypto.createHash('sha1').update(JSON.stringify(project || null)).digest('hex');
-  } catch {
-    return '';
-  }
-}
-
-function makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow) {
-  const project = payload.project || null;
-  const artifactSnapshot = Array.isArray(payload.artifactSnapshot) ? payload.artifactSnapshot : null;
-  return {
-    activityId:String(payload.activityId || '').trim(),
-    projectTabId:String(payload.projectTabId || '').trim(),
-    project,
-    projectDigest:projectSnapshotDigest(project),
-    artifactSnapshot,
-    artifactDigest:projectSnapshotDigest(artifactSnapshot),
-    projectPath:payload.projectPath || null,
-    title:payload.title || '',
-    ownerWebContentsId,
-    prewarm:payload.prewarm === true,
-    capabilitySnapshot:payload.capabilitySnapshot || null,
-    capabilityRevision:Number(payload.capabilityRevision)||0,
-    diagnosticRun:payload.diagnosticRun===true,
-    pluginWindow:pluginWindow ? {...pluginWindow} : null
-  };
-}
-
-function hideDedicatedAuxiliaryWindow(win) {
-  if (!win || win.isDestroyed()) return false;
-  try { win.webContents.send('windows:activityWillHide'); } catch {}
-  win.hide();
-  return true;
-}
-
-function closeAuxiliaryWindowForReal(win) {
-  if (!win || win.isDestroyed()) return;
-  // Once Core has committed to a real close, the window must leave the reuse
-  // registry synchronously. BrowserWindow.close() completes asynchronously on
-  // Windows; leaving the entry mapped until the `closed` event lets an
-  // immediately following open reuse a renderer that is already closing.
-  removeAuxiliaryWindowReferences(win);
-  forcedAuxiliaryClose.add(win);
-  win.close();
-}
-
-function waitForAuxiliaryWindowClosed(win, timeoutMs=1800) {
-  if (!win || win.isDestroyed()) return Promise.resolve(true);
-  return new Promise(resolve=>{
-    let settled=false;
-    const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);resolve(value);};
-    const timer=setTimeout(()=>finish(!!win.isDestroyed()),Math.max(250,Number(timeoutMs)||1800));
-    win.once('closed',()=>finish(true));
-  });
-}
-
-function markAuxiliaryWindowReady(win,payload={}) {
-  if(!win||win.isDestroyed())return;
-  const id=win.webContents.id;
-  const profile=auxiliaryStartupProfiles.get(id)||{};
-  profile.readyAtMs=Date.now();
-  profile.main=profile.main||{};
-  profile.main.createToReadyMs=Math.max(0,profile.readyAtMs-Number(profile.createdAtMs||profile.readyAtMs));
-  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
-  auxiliaryStartupProfiles.set(id,profile);
-  auxiliaryFailures.delete(id);
-  auxiliaryReady.add(id);
-  if(!auxiliaryPendingShow.has(id))return;
-  auxiliaryPendingShow.delete(id);
-  try { win.webContents.send('windows:activityWillShow'); } catch {}
-  win.show();
-  win.focus();
-}
-
-function markAuxiliaryWindowFailed(win,payload={}) {
-  if(!win||win.isDestroyed())return;
-  const id=win.webContents.id;
-  const bootstrap=auxiliaryBootstrap.get(id)||{};
-  const profile=auxiliaryStartupProfiles.get(id)||{};
-  if(payload?.startupProfile&&typeof payload.startupProfile==='object')profile.renderer=payload.startupProfile;
-  profile.failedAtMs=Date.now();auxiliaryStartupProfiles.set(id,profile);
-  const failure={
-    activityId:String(bootstrap.activityId||payload.activityId||''),
-    projectTabId:String(bootstrap.projectTabId||payload.projectTabId||''),
-    pluginId:String(bootstrap.pluginWindow?.pluginId||payload.pluginId||''),
-    error:String(payload.error||payload.message||'插件独立窗口启动失败。'),
-    startupProfile:profile
-  };
-  auxiliaryReady.delete(id);
-  auxiliaryFailures.set(id,failure);
-
-  // A user-requested window must never fail invisibly behind `show:false`.
-  // Prewarmed failures stay hidden until the user actually opens the TOP.
-  if(auxiliaryPendingShow.has(id)){
-    auxiliaryPendingShow.delete(id);
-    try{win.show();win.focus();}catch{}
-  }
-
-  const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
-  if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
-}
-
-const diagnosticDelay=ms=>new Promise(resolve=>setTimeout(resolve,Math.max(0,Number(ms)||0)));
-async function diagnosticRendererLifecycleSnapshot(win){
-  if(!win||win.isDestroyed())return null;
-  try{return await win.webContents.executeJavaScript('window.DKDSUI?.lifecycleSnapshot?.() || null',true);}
-  catch{return null;}
-}
-async function diagnosticRendererProjectSnapshot(win){
-  if(!win||win.isDestroyed())return null;
-  try{return await win.webContents.executeJavaScript('window.DKDSPluginWindowDiagnostics?.snapshot?.() || null',true);}
-  catch{return null;}
-}
-function lifecycleSnapshotSuspended(snapshot,expected){
-  const rows=Array.isArray(snapshot?.rows)?snapshot.rows:[];
-  if(!rows.length)return true;
-  return rows.every(row=>row?.resize?.suspended===expected&&(!row?.plots||Number(row.plots.suspended||0)===(expected?Number(row.plots.views||0):0)));
-}
-async function waitForRendererLifecycleContract(win,expected,timeoutMs=2500){
-  const started=Date.now();let snapshot=null;
-  while(Date.now()-started<Math.max(250,Number(timeoutMs)||2500)){
-    snapshot=await diagnosticRendererLifecycleSnapshot(win);
-    if(lifecycleSnapshotSuspended(snapshot,expected))return {ok:true,snapshot,elapsedMs:Date.now()-started};
-    await diagnosticDelay(40);
-  }
-  snapshot=await diagnosticRendererLifecycleSnapshot(win);
-  return {ok:lifecycleSnapshotSuspended(snapshot,expected),snapshot,elapsedMs:Date.now()-started};
-}
-
-function waitForAuxiliaryDiagnosticOutcome(win,timeoutMs=15000){
-  if(!win||win.isDestroyed())return Promise.resolve({ok:false,error:'Diagnostic TOP window was not created.'});
-  const webContentsId=win.webContents.id;
-  const started=Date.now();
-  return new Promise(resolve=>{
-    const tick=()=>{
-      const failure=auxiliaryFailures.get(webContentsId);
-      if(failure)return resolve({ok:false,error:String(failure.error||'TOP renderer failed.'),durationMs:Date.now()-started});
-      if(!win||win.isDestroyed())return resolve({ok:false,error:'Diagnostic TOP window closed before ready.',durationMs:Date.now()-started});
-      if(auxiliaryReady.has(webContentsId))return resolve({ok:true,durationMs:Date.now()-started});
-      if(Date.now()-started>=timeoutMs)return resolve({ok:false,error:`TOP renderer did not reach ready within ${timeoutMs} ms.`,durationMs:Date.now()-started,timeout:true});
-      setTimeout(tick,50);
-    };
-    tick();
-  });
-}
-
-async function runDiagnosticActivitySmoke(ownerWindow,payload={}){
-  const activityId=String(payload?.activityId||'').trim();
-  if(!ownerWindow||ownerWindow.isDestroyed())throw new Error('Main application window is unavailable.');
-  if(!activityId)throw new Error('Diagnostic activity id is required.');
-  const spec=resolveConfiguredPluginWindow(activityId);
-  if(!spec)return {ok:false,activityId,error:'No independent TOP window is configured for this activity.'};
-  const projectTabId=`__dkds_automation__${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-  const project=payload?.project&&typeof payload.project==='object'
-    ? structuredClone(payload.project)
-    : {version:app.getVersion(),datasets:[],plugins:{},dataModel:{schema:2,artifacts:[]}};
-  const artifactSnapshot=Array.isArray(payload?.artifactSnapshot)?structuredClone(payload.artifactSnapshot):null;
-  const useConfiguredPrewarm=spec.prewarm===true;
-  const basePayload={activityId,projectTabId,project,artifactSnapshot,projectPath:null,title:'自动化测试',diagnosticRun:true,capabilitySnapshot:payload?.capabilitySnapshot||null,capabilityRevision:Number(payload?.capabilityRevision)||0};
-  const created=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:useConfiguredPrewarm});
-  const key=auxiliaryWindowKey(ownerWindow.webContents.id,projectTabId,activityId,{reuse:spec?.reuse!==false});
-  const win=auxiliaryWindows.get(key);
-  const rendererProcessId=(()=>{try{return Number(win?.webContents?.getOSProcessId?.())||0;}catch{return 0;}})();
-  const timeoutMs=Math.max(4000,Math.min(30000,Number(payload?.timeoutMs)||15000));
-  let outcome=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
-  let promotion=null;
-  if(outcome.ok&&useConfiguredPrewarm&&win&&!win.isDestroyed()){
-    promotion=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
-    const hydrated=await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
-    outcome=hydrated.ok?{...hydrated,prewarmReady:true}:{...hydrated,prewarmReady:true};
-  }
-  let lifecycle={tested:false,ok:false};
-  let rendererData=null;
-  if(outcome.ok&&win&&!win.isDestroyed()){
-    try{
-      if(!win.isVisible()){try{win.webContents.send('windows:activityWillShow');win.show();}catch{}}
-      await diagnosticDelay(Array.isArray(artifactSnapshot)&&artifactSnapshot.length?260:80);
-      rendererData=await diagnosticRendererProjectSnapshot(win);
-      const expectedPluginId=String(spec?.pluginId||'');
-      const expectedActivityId=String(activityId||'');
-      if(rendererData){
-        if(rendererData.projectHydrated!==true||rendererData.activityOpened!==true)throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without hydrated/open lifecycle.`);
-        if(String(rendererData.activeActivityId||'')!==expectedActivityId)throw new Error(`${expectedPluginId||expectedActivityId}: active activity mismatch (${rendererData.activeActivityId||'none'}).`);
-        if(!String(rendererData.visiblePageId||''))throw new Error(`${expectedPluginId||expectedActivityId}: renderer reached ready without a visible page.`);
-        if(expectedPluginId&&String(rendererData.visiblePagePluginId||'')!==expectedPluginId)throw new Error(`${expectedPluginId}: visible page is owned by ${rendererData.visiblePagePluginId||'unknown'}.`);
-        if(String(spec?.packageManifest?.workspace?.role||'').toLowerCase()==='top'&&rendererData.topWorkspaceRegistered!==true)throw new Error(`${expectedPluginId}: TOP Workspace was not registered.`);
-      }
-      const hidden=hideDedicatedAuxiliaryWindow(win);
-      const hiddenWait=await waitForRendererLifecycleContract(win,true,2500);
-      const hiddenSnapshot=hiddenWait.snapshot;
-      const reopened=createOrFocusAuxiliaryWindow(ownerWindow,{...basePayload,prewarm:false});
-      await waitForAuxiliaryDiagnosticOutcome(win,timeoutMs);
-      const visibleWait=await waitForRendererLifecycleContract(win,false,2500);
-      const visibleSnapshot=visibleWait.snapshot;
-      rendererData=await diagnosticRendererProjectSnapshot(win)||rendererData;
-      lifecycle={tested:true,hidden:!!hidden,reused:reopened?.reused===true,alive:!win.isDestroyed(),visible:!win.isDestroyed()&&win.isVisible(),hiddenContract:hiddenWait.ok===true,visibleContract:visibleWait.ok===true,hiddenWaitMs:hiddenWait.elapsedMs,visibleWaitMs:visibleWait.elapsedMs,hiddenSnapshot,visibleSnapshot};
-      lifecycle.ok=lifecycle.hidden&&lifecycle.reused&&lifecycle.alive&&lifecycle.visible&&lifecycle.hiddenContract&&lifecycle.visibleContract;
-      if(!lifecycle.ok)lifecycle.error=`Dedicated TOP lifecycle failed: hidden=${lifecycle.hidden} reused=${lifecycle.reused} alive=${lifecycle.alive} visible=${lifecycle.visible} hiddenContract=${lifecycle.hiddenContract} visibleContract=${lifecycle.visibleContract} hiddenWaitMs=${lifecycle.hiddenWaitMs} visibleWaitMs=${lifecycle.visibleWaitMs}`;
-    }catch(err){lifecycle={tested:true,ok:false,error:String(err?.message||err)};}
-  }
-  const startupProfile=win&&!win.isDestroyed()?structuredClone(auxiliaryStartupProfiles.get(win.webContents.id)||null):null;
-  const finalOk=outcome.ok===true&&(!lifecycle.tested||lifecycle.ok===true);
-  const finalError=finalOk?'':String(lifecycle.error||outcome.error||'Dedicated Tool/TOP lifecycle validation failed.');
-  const details={...outcome,ok:finalOk,error:finalError,activityId,pluginId:spec.pluginId,mode:spec.mode||'dedicated',version:spec.version||'',rendererProcessId,dependencies:[...(spec.dependencies||[])],scripts:[...(spec.scripts||[])],persistence:spec.persistence||'',configuredPrewarm:useConfiguredPrewarm,created,promotion,startupProfile,lifecycle,rendererData};
-  closeAuxiliaryWindowForReal(win);
-  // Diagnostics intentionally runs TOPs back-to-back. Do not let the next
-  // smoke test overlap the previous renderer's asynchronous BrowserWindow
-  // teardown and accidentally observe/reuse a half-closed process.
-  await waitForAuxiliaryWindowClosed(win,1800);
-  return details;
-}
-
-function diagnosticsDirectory(){
-  const dir=path.join(app.getPath('userData'),'diagnostics');
-  fs.mkdirSync(dir,{recursive:true});
-  return dir;
-}
-
-function diagnosticEnvironment(){
-  const metrics=app.getAppMetrics();
-  const memory=metrics.reduce((sum,row)=>{const m=row?.memory||{};sum.workingSetBytes+=(Number(m.workingSetSize)||0)*1024;sum.privateBytes+=(Number(m.privateBytes)||0)*1024;return sum;},{workingSetBytes:0,privateBytes:0});
-  return {runtime:'desktop',appVersion:app.getVersion(),platform:process.platform,arch:process.arch,osRelease:os.release(),isPackaged:app.isPackaged,locale:app.getLocale?.()||'',processVersions:{electron:process.versions.electron||'',chrome:process.versions.chrome||'',node:process.versions.node||''},processCount:metrics.length,memory,windowCount:BrowserWindow.getAllWindows().filter(win=>!win.isDestroyed()).length,configuredTopWindows:listConfiguredPluginWindows().map(row=>({pluginId:row.pluginId,activity:row.activity,mode:row.mode||'dedicated',version:row.version,prewarm:row.prewarm,reuse:row.reuse,persistence:row.persistence}))};
-}
-
-function requestAuxiliaryRoleSnapshot(win, reason='host-role-change', timeoutMs=1800) {
-  if (!win || win.isDestroyed()) return Promise.resolve(null);
-  const webContentsId=win.webContents.id;
-  if(!auxiliaryReady.has(webContentsId)||auxiliaryFailures.has(webContentsId))return Promise.resolve(null);
-  const bootstrap=auxiliaryBootstrap.get(webContentsId)||null;
-  if(!bootstrap)return Promise.resolve(null);
-  const requestId=`role-${process.pid}-${Date.now()}-${++auxiliaryRoleSnapshotSeq}`;
-  return new Promise(resolve=>{
-    const timer=setTimeout(()=>{
-      pendingAuxiliaryRoleSnapshots.delete(requestId);
-      resolve(null);
-    },Math.max(250,Number(timeoutMs)||1800));
-    pendingAuxiliaryRoleSnapshots.set(requestId,{resolve,timer,webContentsId,bootstrap});
-    try{win.webContents.send('windows:activityRoleSnapshotRequest',{requestId,reason});}
-    catch{
-      clearTimeout(timer);
-      pendingAuxiliaryRoleSnapshots.delete(requestId);
-      resolve(null);
-    }
-  });
-}
-
-function wrapAuxiliaryRoleSnapshot(bootstrap,snapshot={}) {
-  return {
-    projectTabId:String(bootstrap?.projectTabId||''),
-    activityId:String(bootstrap?.activityId||''),
-    pluginId:String(bootstrap?.pluginWindow?.pluginId||''),
-    persistence:bootstrap?.pluginWindow?.persistence||'project',
-    project:snapshot?.project||null,
-    pluginState:snapshot?.pluginState??null,
-    artifactDelta:snapshot?.artifactDelta||null,
-    final:true
-  };
-}
-
-function createOrFocusAuxiliaryWindow(ownerWindow, payload = {}) {
-  const startupRequestedAtMs=Date.now();
-  const activityId = String(payload.activityId || '').trim();
-  const projectTabId = String(payload.projectTabId || '').trim();
-  if (!activityId || !projectTabId) throw new Error('Missing auxiliary activity/project id.');
-
-  const ownerWebContentsId = ownerWindow?.webContents?.id;
-  if (!ownerWebContentsId) throw new Error('Main window is no longer available.');
-
-  const resolveStartedAtMs=Date.now();
-  const pluginWindow = resolveConfiguredPluginWindow(activityId);
-  const resolveSpecMs=Date.now()-resolveStartedAtMs;
-  const key = auxiliaryWindowKey(ownerWebContentsId, projectTabId, activityId, {reuse:pluginWindow?.reuse !== false});
-  let previous = auxiliaryWindows.get(key);
-  if (previous && !previous.isDestroyed()) {
-    const previousSpec=auxiliaryBootstrap.get(previous.webContents.id)?.pluginWindow||null;
-    const definitionChanged=!!pluginWindow&&!!previousSpec&&(
-      previousSpec.pluginId!==pluginWindow.pluginId
-      ||previousSpec.source!==pluginWindow.source
-      ||previousSpec.revision!==pluginWindow.revision
-    );
-    if(definitionChanged){
-      removeAuxiliaryWindowReferences(previous);
-      closeAuxiliaryWindowForReal(previous);
-      previous=null;
-    }
-  }
-  if (previous && !previous.isDestroyed()) {
-    const cachedBootstrap = auxiliaryBootstrap.get(previous.webContents.id) || null;
-    // Prewarm is only allowed to create/warm an empty renderer. Never downgrade an
-    // already hydrated reusable window back into prewarm mode after it is hidden;
-    // doing so used to make a later reopen look like a second first-open lifecycle.
-    if (payload.prewarm === true && cachedBootstrap?.prewarm !== true) {
-      return {reused:true,dedicated:!!pluginWindow,prewarmSkipped:true,ready:auxiliaryReady.has(previous.webContents.id)};
-    }
-    const nextBootstrap = makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow);
-    const projectChanged = !cachedBootstrap || cachedBootstrap.projectDigest !== nextBootstrap.projectDigest
-      || cachedBootstrap.projectPath !== nextBootstrap.projectPath
-      || cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest
-      || cachedBootstrap.prewarm !== nextBootstrap.prewarm
-      || cachedBootstrap.capabilityRevision !== nextBootstrap.capabilityRevision;
-    const promoteFromPrewarm = cachedBootstrap?.prewarm === true && nextBootstrap.prewarm !== true;
-    auxiliaryBootstrap.set(previous.webContents.id, nextBootstrap);
-
-    // Runtime-only prewarm marks the hidden renderer ready after Core/plugin/chart
-    // code is loaded, but before domain project state or the activity is mounted.
-    // First user open must therefore wait for a second, hydrated readiness signal.
-    // Never show the prewarmed DOM early just because the runtime shell is warm.
-    if (promoteFromPrewarm) {
-      auxiliaryReady.delete(previous.webContents.id);
-      auxiliaryFailures.delete(previous.webContents.id);
-      auxiliaryPendingShow.add(previous.webContents.id);
-    }
-
-    // A cached plugin renderer keeps its runtime and chart libraries. Only push
-    // bootstrap replacement when project/capability/prewarm state changed.
-    if (projectChanged) previous.webContents.send('windows:activityBootstrapChanged');
-
-    if (payload.prewarm === true) {
-      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:auxiliaryReady.has(previous.webContents.id) };
-    }
-
-    if (previous.isMinimized()) previous.restore();
-    if (promoteFromPrewarm) {
-      return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, warming:true, prewarmed:true };
-    }
-    if (pluginWindow && !auxiliaryReady.has(previous.webContents.id)) {
-      const failure=auxiliaryFailures.get(previous.webContents.id);
-      if(failure){
-        try { previous.webContents.send('windows:activityWillShow'); } catch {}
-        previous.show();
-        previous.focus();
-        return { reused:true, dedicated:true, synchronized:projectChanged, failed:true, error:failure.error };
-      }
-      auxiliaryPendingShow.add(previous.webContents.id);
-      return { reused:true, dedicated:true, synchronized:projectChanged, warming:true };
-    }
-
-    try { previous.webContents.send('windows:activityWillShow'); } catch {}
-    previous.show();
-    previous.focus();
-    return { reused:true, dedicated:!!pluginWindow, synchronized:projectChanged, ready:true };
-  }
-
-  const browserWindowStartedAtMs=Date.now();
-  const win = new BrowserWindow({
-    show: pluginWindow ? false : payload.prewarm !== true,
-    width: pluginWindow?.width || 1480,
-    height: pluginWindow?.height || 940,
-    minWidth: pluginWindow?.minWidth || 920,
-    minHeight: pluginWindow?.minHeight || 650,
-    backgroundColor: nativeWindowBackground(),
-    icon: path.join(APP_ROOT, 'assets', 'dkds-icon.png'),
-    autoHideMenuBar: true,
-    title: `DK Data Studio · ${pluginWindow?.title || payload.title || activityId}`,
-    webPreferences: {
-      ...commonWindowPreferences(),
-      // A hidden dedicated TOP may be intentionally warming its declared Core,
-      // SDK and chart runtimes. Chromium background throttling must not postpone
-      // that generic warmup until the user finally opens the window.
-      backgroundThrottling:false
-    }
-  });
-  win.setMenuBarVisibility(false);
-  const browserWindowCreateMs=Date.now()-browserWindowStartedAtMs;
-  auxiliaryWindows.set(key, win);
-  const auxiliaryWebContentsId = win.webContents.id;
-  const startupProfile={version:'1.0.0',createdAtMs:startupRequestedAtMs,activityId,pluginId:String(pluginWindow?.pluginId||''),main:{resolveSpecMs,browserWindowCreateMs,navigationMs:null,createToReadyMs:null}};
-  auxiliaryStartupProfiles.set(auxiliaryWebContentsId,startupProfile);
-  auxiliaryBootstrap.set(
-    auxiliaryWebContentsId,
-    makeAuxiliaryBootstrap(ownerWebContentsId, payload, pluginWindow)
-  );
-  if (pluginWindow?.reuse !== false) {
-    win.on('close', event => {
-      if (appQuitting || forcedAuxiliaryClose.has(win)) return;
-      event.preventDefault();
-      hideDedicatedAuxiliaryWindow(win);
-    });
-  }
-  win.on('closed', () => {
-    removeAuxiliaryWindowReferences(win);
-    auxiliaryBootstrap.delete(auxiliaryWebContentsId);
-    auxiliaryReady.delete(auxiliaryWebContentsId);
-    auxiliaryFailures.delete(auxiliaryWebContentsId);
-    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
-    auxiliaryStartupProfiles.delete(auxiliaryWebContentsId);
-    for(const [requestId,pending] of pendingAuxiliaryRoleSnapshots){
-      if(pending.webContentsId!==auxiliaryWebContentsId)continue;
-      clearTimeout(pending.timer);
-      pendingAuxiliaryRoleSnapshots.delete(requestId);
-      pending.resolve(null);
-    }
-  });
-  ownerWindow.once('closed', () => closeAuxiliaryWindowForReal(win));
-  win.webContents.on('render-process-gone', (_event, details={}) => {
-    if(appQuitting||forcedAuxiliaryClose.has(win)||win.isDestroyed())return;
-    const reason=String(details?.reason||'unknown');
-    const bootstrap=auxiliaryBootstrap.get(auxiliaryWebContentsId)||{};
-    const owner=BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&candidate.webContents.id===bootstrap.ownerWebContentsId);
-    const failure={
-      activityId:String(bootstrap.activityId||''),
-      projectTabId:String(bootstrap.projectTabId||''),
-      pluginId:String(bootstrap.pluginWindow?.pluginId||''),
-      error:`插件独立窗口异常退出（${reason}），再次打开时将自动重建。`
-    };
-    if(!bootstrap.diagnosticRun)try{owner?.webContents?.send?.('windows:activityFailed',failure);}catch{}
-    auxiliaryReady.delete(auxiliaryWebContentsId);
-    if(bootstrap.diagnosticRun)auxiliaryFailures.set(auxiliaryWebContentsId,failure);
-    else auxiliaryFailures.delete(auxiliaryWebContentsId);
-    auxiliaryPendingShow.delete(auxiliaryWebContentsId);
-    closeAuxiliaryWindowForReal(win);
-  });
-
-  const navigationStartedAtMs=Date.now();
-  win.webContents.once('did-finish-load',()=>{
-    const profile=auxiliaryStartupProfiles.get(auxiliaryWebContentsId);
-    if(profile){profile.main=profile.main||{};profile.main.navigationMs=Date.now()-navigationStartedAtMs;}
-  });
-  if (!pluginWindow) throw new Error(`Activity ${activityId} has no plugin-owned window contract.`);
-  if (payload.prewarm !== true) auxiliaryPendingShow.add(auxiliaryWebContentsId);
-  win.loadFile(path.join(APP_ROOT, 'src', 'plugin-window', 'index.html'));
-  return { reused:false, dedicated:!!pluginWindow, warming:!!pluginWindow, prewarmed:payload.prewarm === true };
-}
-
 app.whenReady().then(() => {
   enforcePackagedExpiry();
   const persistedAppearance=readPersistedAppearanceTheme();
@@ -912,7 +129,7 @@ app.whenReady().then(() => {
     // only. Keep the native frame on the OS theme until ThemeRuntime performs
     // its first handshake, so that saved renderer choice can migrate into the
     // new main-process appearance file instead of being overwritten.
-    appearanceTheme='';
+    appearanceRuntime.setInitialAppearance('');
     try{nativeTheme.themeSource='system';}catch{}
   }
   Menu.setApplicationMenu(null);
@@ -1490,11 +707,11 @@ app.whenReady().then(() => {
     return {available:true,open:!!contents?.isDevToolsOpened?.()};
   });
 
-  ipcMain.handle('system:getAppearanceTheme', async () => appearanceTheme || null);
+  ipcMain.handle('system:getAppearanceTheme', async () => appearanceRuntime.currentAppearance() || null);
   ipcMain.handle('system:setAppearanceTheme', async (_event, value) => {
     const next=String(value||'').toLowerCase();
     if(!['light','dark'].includes(next))throw new Error('Invalid appearance theme.');
-    if(appearanceTheme===next){
+    if(appearanceRuntime.currentAppearance()===next){
       // Re-assert nativeTheme: Windows can recreate native chrome when a
       // BrowserWindow is restored or moved between displays.
       return applyNativeAppearance(next,{persist:true,broadcast:false});

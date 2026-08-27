@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {normalizePluginPackage}=require('../desktop/plugin-package');
 
-assert.equal(json('package.json').version,'3.61.97','theme/lifecycle/tool contract release must be v3.61.27');
+
 
 const ui=readCoreCss(root);
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){
@@ -34,8 +34,9 @@ const pluginWindowStyle=read('src/plugin-window/style.css');
 assert(pluginWindowStyle.includes('background:var(--surface-primary)')&&pluginWindowStyle.includes('color:var(--text-tertiary)'),'Dedicated plugin-window status chrome must inherit the shared theme contract.');
 
 const main=read('desktop/main.js');
-assert(main.includes("reuse !== false ? '__reusable__'"),'Reusable TOP/Tool renderers must be keyed by owner+activity, not duplicated per project tab.');
-assert(main.includes('payload.prewarm === true && cachedBootstrap?.prewarm !== true')&&main.includes('prewarmSkipped:true'),'Prewarm must never downgrade a hydrated hidden reusable renderer back to an empty prewarm lifecycle.');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
+assert(auxiliary.includes("reuse !== false ? '__reusable__'"),'Reusable TOP/Tool renderers must be keyed by owner+activity, not duplicated per project tab.');
+assert(auxiliary.includes('payload.prewarm === true && cachedBootstrap?.prewarm !== true')&&auxiliary.includes('prewarmSkipped:true'),'Prewarm must never downgrade a hydrated hidden reusable renderer back to an empty prewarm lifecycle.');
 assert(main.includes("bootstrap.prewarm===true?'预热':(win.isVisible()?'已打开':'已隐藏')"),'Memory inspection must expose reusable plugin renderer lifecycle instead of presenting duplicate-looking anonymous rows.');
 
 const pulseImport=json('src/plugins/pulse-import/plugin.json');

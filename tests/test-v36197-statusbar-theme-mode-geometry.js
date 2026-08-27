@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97','v3.61.97 status/theme geometry contract must track the application version.');
+
 
 const status=read('src/styles/presentation/control-status.css');
 const theme=read('src/styles/theme/integrated-command-chrome.css');

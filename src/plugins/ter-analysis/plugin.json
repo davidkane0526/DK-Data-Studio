@@ -97,6 +97,7 @@
     "scripts": [
       "controller.js",
       "shared-views.js",
+      "feature-utils.js",
       "feature-runtime.js",
       "analysis-service.js",
       "super-layout.js"
@@ -112,6 +113,7 @@
     "controller.js",
     "shared-views.js",
     "analysis-service.js",
+    "feature-utils.js",
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"

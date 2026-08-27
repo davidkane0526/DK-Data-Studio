@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const runtime=read('src/core/diagnostics/automation-test-runtime.js');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const match=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);
 assert(match,'Automation Test runner version must be declared.');
 const version=match.slice(1).map(Number);
@@ -18,5 +19,5 @@ assert(runtime.includes("'plot.interactions'")&&runtime.includes('ScientificPlot
 assert(runtime.includes("'runtime.package-mode'")&&runtime.includes('isPackaged===false'),'Automation Test must distinguish development runtime from packaged build validation.');
 assert(runtime.includes('coverage:{topRenderers:{discovered:tops.length,tested:testedTopCount,passed:passedTopCount'),'Report must persist discovered/tested/passed TOP coverage metadata.');
 assert(runtime.includes('scientificPlotControllers'),'Report must disclose which shared plot controllers were verified.');
-assert(main.includes('runDiagnosticActivitySmoke')&&main.includes('waitForAuxiliaryDiagnosticOutcome'),'TOP checks must still create and await a real Electron renderer.');
+assert(main.includes('runDiagnosticActivitySmoke')&&auxiliary.includes('waitForAuxiliaryDiagnosticOutcome'),'TOP checks must still create and await a real Electron renderer.');
 console.log('v3.46 Automation Test Center TOP coverage regression checks passed.');

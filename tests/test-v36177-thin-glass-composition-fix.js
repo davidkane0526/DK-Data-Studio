@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.97');
+
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes("const cssTokenValue=(key,value)=>"),'Theme Runtime must serialize ratio material tokens for CSS.');
 assert(runtime.includes("['materialTintOpacity','materialNoiseOpacity']"),'Material ratio serialization coverage missing.');

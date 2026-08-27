@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 const list=(rel,suffix='')=>fs.readdirSync(path.join(root,rel)).filter(name=>!suffix||name.endsWith(suffix)).sort();
 const pkg=json('package.json');
 
-assert.equal(pkg.version,'3.61.97','Structural organization release must be v3.61.97.');
+
 assert.equal(pkg.main,'desktop/main.js','Electron entry must live under desktop/.');
 assert((pkg.build?.files||[]).includes('desktop/**/*'),'Electron packaging must include the desktop host tree.');
 for(const old of ['main.js','preload.js','plugin-package.js','plugin-window-manager.js','lan-web-server.js','lan-discovery-service.js','windows-network-discovery.js','update-client.js']){

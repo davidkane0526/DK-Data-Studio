@@ -1,5 +1,7 @@
 (() => {
   async function mount(ctx,controller=null,views=null,adapter={}){
+    const featureUtils=window.DKDSPluginModules.require('builtin.ter-analysis','feature-utils');
+    const {finiteNumber,nearlyEqual,formatNumber,csvCell,sanitizeLayout,heatmapCsv,resistanceCsv,maxVgCsv,maxVgArgCsv,maxVdCsv,maxVdArgCsv}=featureUtils;
     const dom=ctx.ui.dom;
     const T=controller;
     const sharedViews=views||window.DKDSPluginModules.get('builtin.ter-analysis','shared-views')?.create?.(controller)||null;
@@ -21,43 +23,6 @@
     let gridController=null;
     let layoutSettings={rows:3,cols:3,sticky:true};
     let transformPanel=null;
-
-    function finiteNumber(v){
-      if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;
-      const n=Number(v);
-      return Number.isFinite(n)?n:null;
-    }
-
-    function nearlyEqual(a,b){
-      const x=finiteNumber(a),y=finiteNumber(b);
-      if(x===null||y===null)return false;
-      return Math.abs(x-y)<=Math.max(1e-10,Math.max(Math.abs(x),Math.abs(y))*1e-9);
-    }
-
-    function formatNumber(v,digits=6){
-      const n=finiteNumber(v);
-      if(n===null)return '—';
-      if(n===0)return '0';
-      const a=Math.abs(n);
-      if(a>=1e5||a<1e-4)return n.toExponential(Math.min(4,digits));
-      return Number(n.toPrecision(digits)).toString();
-    }
-
-    function csvCell(value){
-      const s=String(value??'');
-      return /[",\n\r]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
-    }
-
-    function sanitizeLayout(raw){
-      const input=raw&&typeof raw==='object'?raw:{};
-      let cols=GRID_COLUMNS.includes(Number(input.cols))?Number(input.cols):3;
-      let rows=Math.max(1,Math.ceil(CHART_COUNT/cols));
-      if(Number.isFinite(Number(input.rows))&&Number(input.rows)>0&&Number(input.cols)<=0){
-        rows=Math.max(1,Math.min(CHART_COUNT,Math.round(Number(input.rows))));
-        cols=Math.max(1,Math.ceil(CHART_COUNT/rows));
-      }
-      return {rows,cols,sticky:input.sticky!==false};
-    }
 
     function syncLayoutControls(){
       const rows=dom.query('#terLayoutRows');
@@ -229,57 +194,6 @@
           terPlotViews.set(spec.key,view);
         }catch(err){console.warn('[TER PlotView]',spec.key,err);}
       }
-    }
-
-    function heatmapCsv(result){
-      const rows=['Vg_V,Vds_V,TER_percent'];
-      for(let yi=0;yi<(result?.vgs||[]).length;yi++){
-        for(let xi=0;xi<(result?.targets||[]).length;xi++){
-          const value=result.matrix?.[yi]?.[xi];
-          rows.push([result.vgs[yi],result.targets[xi],Number.isFinite(value)?value:''].join(','));
-        }
-      }
-      return rows.join('\n');
-    }
-
-    function resistanceCsv(result){
-      const rows=['Vg_V,Vds_V,R_forward_ohm,R_reverse_ohm,I_forward_A,I_reverse_A,TER_percent,source_file'];
-      for(const d of (result?.records||[])){
-        rows.push([d.vg,d.vds,d.rUp,d.rDown,d.iUp,d.iDown,d.ter,csvCell(d.sourceFile)].join(','));
-      }
-      return rows.join('\n');
-    }
-
-    function maxVgCsv(result){
-      const rows=['Vg_V,TER_Max_Vg_percent,Vd_at_max_V,I_forward_A,I_reverse_A,R_forward_ohm,R_reverse_ohm,selection_mode,source_file'];
-      for(const d of (result?.terMaxByVg||result?.terMax||[])){
-        rows.push([d.vg,d.terMax,d.vdsAtMax,d.iUp,d.iDown,d.rUp,d.rDown,d.manual?'manual':'auto',csvCell(d.sourceFile)].join(','));
-      }
-      return rows.join('\n');
-    }
-
-    function maxVgArgCsv(result){
-      const rows=['Vg_V,Vd_at_TER_Max_Vg_V,TER_Max_Vg_percent,selection_mode,source_file'];
-      for(const d of (result?.terMaxByVg||result?.terMax||[])){
-        rows.push([d.vg,d.vdsAtMax,d.terMax,d.manual?'manual':'auto',csvCell(d.sourceFile)].join(','));
-      }
-      return rows.join('\n');
-    }
-
-    function maxVdCsv(result){
-      const rows=['Vds_V,TER_Max_Vd_percent,Vg_at_max_V,I_forward_A,I_reverse_A,R_forward_ohm,R_reverse_ohm,selection_mode,source_file'];
-      for(const d of (result?.terMaxByVd||[])){
-        rows.push([d.vds,d.terMax,d.vgAtMax,d.iUp,d.iDown,d.rUp,d.rDown,d.manual?'manual':'auto',csvCell(d.sourceFile)].join(','));
-      }
-      return rows.join('\n');
-    }
-
-    function maxVdArgCsv(result){
-      const rows=['Vds_V,Vg_at_TER_Max_Vd_V,TER_Max_Vd_percent,selection_mode,source_file'];
-      for(const d of (result?.terMaxByVd||[])){
-        rows.push([d.vds,d.vgAtMax,d.terMax,d.manual?'manual':'auto',csvCell(d.sourceFile)].join(','));
-      }
-      return rows.join('\n');
     }
 
     function exportSpec(key){

@@ -14,6 +14,7 @@ const shellHtml=read('src/plugin-window/index.html');
 const shellRuntime=read('src/plugin-window/runtime.js');
 const shellStyle=read('src/plugin-window/style.css');
 const main=read('desktop/main.js');
+const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const preload=read('desktop/preload.js');
 const manager=read('desktop/plugin-window-manager.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
@@ -41,15 +42,15 @@ assert(shellRuntime.includes('pushSnapshot(true);'),'Dedicated runtime must pers
 assert(shellRuntime.includes('artifactDeltaPayload()'),'Dedicated runtime must send artifact deltas instead of relying on whole-project replacement.');
 assert(shellRuntime.includes('pluginState:pluginId'),'Dedicated runtime must send only its namespaced project-slice state.');
 
-assert(main.includes("src', 'plugin-window', 'index.html"),'main.js must route dedicated activities to src/plugin-window/index.html.');
+assert(auxiliary.includes("src', 'plugin-window', 'index.html"),'Auxiliary-window runtime must route dedicated activities to src/plugin-window/index.html.');
 assert(!main.includes("mode !== 'compatibility'")&&!main.includes("query: { aux: activityId }"),'TOP windows must not fall back to the full host renderer.');
 assert(main.includes('resolveConfiguredPluginWindow'),'main.js must resolve built-in and external plugin-owned window manifests.');
 assert(main.includes('listConfiguredPluginWindows'),'main.js must enumerate built-in and external dedicated windows from manifests.');
 assert(main.includes("ipcMain.handle('windows:listPluginWindows'"),'renderer must be able to discover all dedicated-window policies.');
 assert(main.includes('hideDedicatedAuxiliaryWindow'),'Dedicated windows must support hide/reuse.');
-assert(main.includes("win.on('close', event =>")&&main.includes('pluginWindow?.reuse !== false'),'native close interception must follow generic manifest reuse policy.');
+assert(auxiliary.includes("win.on('close', event =>")&&auxiliary.includes('pluginWindow?.reuse !== false'),'native close interception must follow generic manifest reuse policy.');
 assert(main.includes('projectSnapshotDigest'),'Cached windows must avoid renderer/project replacement when the snapshot is unchanged.');
-assert(main.includes('synchronized:projectChanged'),'Reuse result must record whether a hidden renderer required project synchronization.');
+assert(auxiliary.includes('synchronized:projectChanged'),'Reuse result must record whether a hidden renderer required project synchronization.');
 assert(main.includes("windows:syncPluginActivities"),'disabled independent plugins must dispose cached windows generically.');
 assert(main.includes('pluginState: payload?.pluginState'),'main process must forward namespaced plugin state.');
 assert(main.includes('artifactDelta: payload?.artifactDelta'),'main process must forward incremental artifact changes.');
@@ -76,10 +77,10 @@ assert(shellRuntime.includes('markActivityWindowReady'),'dedicated runtime must 
 assert(shellRuntime.includes('markActivityWindowFailed'),'dedicated runtime must report startup failure instead of remaining hidden forever.');
 assert(preload.includes("markActivityWindowFailed: payload => ipcRenderer.send('windows:activityFailed'"),'preload must expose dedicated-window startup failure reporting.');
 assert(preload.includes('onActivityWindowFailed'),'owner renderer must receive dedicated-window startup failures.');
-assert(main.includes('markAuxiliaryWindowFailed')&&main.includes('auxiliaryFailures'),'main process must track failed dedicated windows separately from ready windows.');
+assert(main.includes('markAuxiliaryWindowFailed')&&auxiliary.includes('auxiliaryFailures'),'main process must track failed dedicated windows separately from ready windows.');
 assert(shellRuntime.includes('const previousBootstrap=bootstrap')&&shellRuntime.includes('const promoteFromPrewarm=previousBootstrap?.prewarm===true&&nextBootstrap.prewarm!==true')&&shellRuntime.includes("reason:promoteFromPrewarm?'prewarm-open':'project-hydrate'"),'Runtime-only prewarm -> first-open must hydrate the project exactly when the hidden renderer is promoted to a real activity.');
 assert(shellRuntime.includes("if(bootstrap.prewarm===true)")&&shellRuntime.includes("startupProfile.prewarmMode='runtime-only'"),'Hidden prewarm must stop before domain project/activity rendering.');
-assert(main.includes('if (promoteFromPrewarm)')&&main.includes('auxiliaryReady.delete(previous.webContents.id)')&&main.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'Main must wait for a second hydrated ready signal before showing a runtime-only prewarmed window.');
+assert(auxiliary.includes('if (promoteFromPrewarm)')&&auxiliary.includes('auxiliaryReady.delete(previous.webContents.id)')&&auxiliary.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'Main-process auxiliary runtime must wait for a second hydrated ready signal before showing a runtime-only prewarmed window.');
 assert(shellRuntime.includes('onActivityWillShow'),'dedicated runtime must relayout the scientific renderer when a prewarmed/cached window becomes visible.');
 assert(manager.includes('manifest?.window'),'plugin-window-manager must read manifest.window.');
 assert(manager.includes('normalizePackagedPluginWindow')&&manager.includes('packageFiles'),'plugin-window-manager must support packaged external and trusted-override dedicated windows.');
@@ -224,6 +225,7 @@ for(const rel of [
   'desktop/plugin-window-manager.js',
   'desktop/preload.js',
   'desktop/main.js',
+  'desktop/main-modules/auxiliary-window-runtime.js',
   'src/generated/runtime/app.js',
   'src/generated/runtime/plugin-kernel.js'
 ]){

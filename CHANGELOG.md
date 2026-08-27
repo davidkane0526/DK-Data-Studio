@@ -1,3 +1,12 @@
+# v3.61.98 — Repository Hygiene / Main-Process Modules
+
+- Synchronize the Plugin SDK README title with the current SDK **1.17.16** contract and add a metadata consistency release gate.
+- Refactor the Electron main process into importable responsibility modules for Appearance, plugin package/history/LAN update, auxiliary window lifecycle/diagnostics, packaged expiry and Agent secret/HTTP handling. `desktop/main.js` is now below the 48 KiB composition-entry boundary.
+- Extract TER numerical/layout/CSV helpers into `feature-utils.js`, returning the TER feature runtime below the 48 KiB authored-module boundary without changing public plugin behavior.
+- Add a repository large-module audit: new >48 KiB authored JS modules are rejected; the remaining Resonance feature context and Automation diagnostics runtime are explicitly bounded temporary exceptions.
+- Define compact handoff policy: Dev Repo retains Git history after garbage collection; Source Release uses tracked-source archiving and excludes generated/dependency/build artifacts.
+
+
 # v3.61.97 — Status Bar Rhythm / Theme Appearance Geometry
 
 - Increased the bottom-right status-command rhythm from 6 px to 8 px and reserved a 14 px right safe area on the shared status bar, moving the Theme / Memory / DevTool / Web / AI cluster slightly left without giving AI a plugin-specific margin.

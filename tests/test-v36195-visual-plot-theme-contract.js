@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97','v3.61.97 visual/plot/theme contract must track the application version.');
+
 
 const workbench=read('src/styles/structure/analysis-workbench.css');
 const shell=read('src/styles/structure/analysis-shell.css');

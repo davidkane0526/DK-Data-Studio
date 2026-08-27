@@ -669,6 +669,10 @@ module.exports = {
     {
       "file": "tests/test-v36197-statusbar-theme-mode-geometry.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36198-repository-module-hygiene.js",
+      "args": []
     }
   ],
   "check": [
@@ -1372,6 +1376,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36197-statusbar-theme-mode-geometry.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36198-repository-module-hygiene.js",
       "args": []
     }
   ],

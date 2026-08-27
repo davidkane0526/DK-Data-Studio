@@ -12,6 +12,7 @@ const terService=read('src/plugins/ter-analysis/analysis-service.js');
 const scientificPlot=read('src/core/scientific/plot-runtime.js');
 const topRuntime=read('src/plugin-window/runtime.js');
 const mainProcess=read('desktop/main.js');
+const auxiliaryProcess=read('desktop/main-modules/auxiliary-window-runtime.js');
 const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
 const terManifest=JSON.parse(read('src/plugins/ter-analysis/plugin.json'));
 const pkg=JSON.parse(read('package.json'));
@@ -42,7 +43,7 @@ const prewarmStart=topRuntime.indexOf('if(bootstrap.prewarm===true)');
 const prewarmEnd=topRuntime.indexOf('}else{',prewarmStart);
 const prewarmBranch=topRuntime.slice(prewarmStart,prewarmEnd);
 assert(prewarmStart>0&&prewarmBranch.includes("await measure('declared-chart-prewarm',()=>ensureDeclaredChartWarm())")&&prewarmBranch.includes("startupProfile.prewarmMode='runtime-only'")&&!prewarmBranch.includes('hydrateProjectAndOpenActivity'),'Dedicated TOP prewarm must warm Core/plugin/chart runtimes without restoring project state, opening the analysis activity, calculating or drawing domain results.');
-assert(mainProcess.includes('const promoteFromPrewarm = cachedBootstrap?.prewarm === true')&&mainProcess.includes('auxiliaryReady.delete(previous.webContents.id)')&&mainProcess.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'First open after runtime-only prewarm must wait for project hydration/activity mount before showing the window.');
+assert(auxiliaryProcess.includes('const promoteFromPrewarm = cachedBootstrap?.prewarm === true')&&auxiliaryProcess.includes('auxiliaryReady.delete(previous.webContents.id)')&&auxiliaryProcess.includes('auxiliaryPendingShow.add(previous.webContents.id)'),'First open after runtime-only prewarm must wait for project hydration/activity mount before showing the window.');
 
 assert(scientificPlot.includes("const VERSION='2.5.0'")&&scientificPlot.includes('const renderQueue=new Map()'),'ScientificPlot v2.3 must own the multi-view render scheduler.');
 assert(scientificPlot.includes('renderPriority')&&scientificPlot.includes('scheduleRender(this.renderScheduleKey'),'ScientificPlot render priority must be enforced by Core.');

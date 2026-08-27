@@ -8,7 +8,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97','tool-install/native-theme release must be v3.61.27');
+
 
 // Regression for the real external Tool installation failure reported as
 // "sources is not iterable". data.sources is documented as a synchronous read
@@ -55,11 +55,13 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
   assert.deepEqual(observed,['artifact:1'],'Tool activation must receive iterable synchronous data.sources rows in the owner renderer.');
 
   const main=read('desktop/main.js');
+  const appearance=read('desktop/main-modules/appearance-runtime.js');
+  const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
   assert(main.includes("shell, nativeTheme } = require('electron')"),'Desktop main process must import Electron nativeTheme.');
-  assert(main.includes('nativeTheme.themeSource=next'),'Appearance transaction must synchronize Electron native chrome.');
+  assert(appearance.includes('nativeTheme.themeSource=next'),'Appearance runtime must synchronize Electron native chrome.');
   assert(main.includes('const persistedAppearance=readPersistedAppearanceTheme()'),'Persisted native appearance must be restored before creating the first BrowserWindow.');
   assert(main.includes("nativeTheme.themeSource='system'"),'When no main-process preference exists, the bootstrap must leave renderer localStorage free to migrate its saved theme.');
-  assert(main.includes('backgroundColor: nativeWindowBackground()'),'Main and plugin BrowserWindows must use the active appearance background.');
+  assert(main.includes('backgroundColor: nativeWindowBackground()')&&auxiliary.includes('backgroundColor: nativeWindowBackground()'),'Main and plugin BrowserWindows must use the active appearance background.');
 
   const modern=readCoreCss(root);
   for(const selector of ['.analysis-control-card','.analysis-note','.analysis-table-wrap']){

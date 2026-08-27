@@ -8,7 +8,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.97');
+
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.17.16');
 assert.equal(contract.pluginApiVersion,'1.17.0');
@@ -17,6 +17,7 @@ assert.equal(contract.minimumAppVersion,'3.61.39');
 const scientific=read('src/core/scientific/plot-runtime.js');
 const renderer=read('src/core/scientific/d3-chart-renderer.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
+const terUtils=read('src/plugins/ter-analysis/feature-utils.js');
 const css=readCoreCss(root);
 
 assert(scientific.includes("const VERSION='2.5.0'"),'ScientificPlot must advance for nullable scalar-field limits.');
@@ -29,7 +30,7 @@ assert(renderer.includes("key.includes('cividis')")&&renderer.includes("key.incl
 assert(renderer.includes('const rawValue=z?.[yi]?.[xi];if(!finite(rawValue))continue;const value=Number(rawValue);'),'Missing heatmap cells must be skipped instead of rendered as zero.');
 assert(renderer.includes('return manual?scale:scale.nice()'),'Explicit Cartesian ranges must remain exact while automatic ranges use nice ticks.');
 assert(renderer.includes("value!==null&&value!==undefined&&!(typeof value==='string'&&!value.trim())"),'D3 missing scalar values must not silently become numeric zero.');
-assert(ter.includes("if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;"),'TER optional display limits must preserve automatic heatmap scaling.');
+assert(terUtils.includes("if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;"),'TER optional display limits must preserve automatic heatmap scaling.');
 assert(css.includes('width:11px;height:20px;flex:0 0 11px')&&css.includes('width:23px;height:20px;min-width:23px'),'Scientific floating navigation chrome must keep the reduced 20 px control height without compressing its horizontal width.');
 
 // scalarFieldSpec is pure enough to execute without a browser. Null/blank optional
