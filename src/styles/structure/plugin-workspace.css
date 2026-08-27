@@ -87,8 +87,8 @@
 .dkds-plugin-workspace .dkds-analysis-main{display:flex;flex-direction:column;min-width:0;min-height:0;}
 .dkds-plugin-workspace .dkds-plugin-canvas-frame{flex:1 1 auto;min-width:0;min-height:0;}
 .dkds-plugin-workspace .dkds-plugin-sub-page-host{flex:1 1 0%;height:0;max-height:100%;width:100%;min-width:0;min-height:0;overflow:auto;padding:0;}
-.dkds-plugin-workspace .dkds-plugin-sub-page-host.hidden{display:none;}
-.dkds-plugin-workspace .dkds-plugin-canvas-frame.hidden{display:none;}
+
+
 /* PRIMARY scroll policy is owned by Core and has exactly three meanings.
    contained: fixed viewport, no host scrolling (canvas-style workspaces).
    safe:      fixed viewport, Core-owned Primary scrolling (default).

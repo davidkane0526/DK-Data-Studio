@@ -3,7 +3,7 @@ const path=require('path');
 function read(rel){return fs.readFileSync(path.join(__dirname,'..',rel),'utf8');}
 function assert(cond,msg){if(!cond)throw new Error(msg);}
 const pkg=JSON.parse(read('package.json'));
-assert(pkg.version==='3.61.93','current-version assertion is synchronized by set-version');
+assert(pkg.version==='3.61.94','current-version assertion is synchronized by set-version');
 const src=read('src/plugins/data-center/feature-runtime.js');
 const views=read('src/plugins/data-center/shared-views.js');
 assert(views.includes('dc-assignment-filter dkds-field-control'),'Data Center assignment filter must consume the Core field-control primitive.');

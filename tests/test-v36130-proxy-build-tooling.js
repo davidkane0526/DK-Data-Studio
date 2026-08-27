@@ -11,7 +11,7 @@ const winWorkflow = read('.github/workflows/build-windows.yml');
 const androidWorkflow = read('.github/workflows/build-android.yml');
 const setVersion = read('scripts/set-version.js');
 
-assert(pkg.version === '3.61.93', 'v3.61.32 proxy tooling regression must run against application 3.61.32.');
+assert(pkg.version === '3.61.94', 'v3.61.32 proxy tooling regression must run against application 3.61.32.');
 assert(tools.includes('Initialize-NetworkEnvironment'), 'build toolbox must initialize one shared network environment before dependency/build work.');
 assert(tools.includes("Get-ProcessEnvFirst @('HTTP_PROXY','http_proxy','npm_config_proxy','NPM_CONFIG_PROXY')"), 'HTTP proxy inheritance must accept common upper/lower/npm aliases.');
 assert(tools.includes("Get-ProcessEnvFirst @('HTTPS_PROXY','https_proxy','npm_config_https_proxy','NPM_CONFIG_HTTPS_PROXY')"), 'HTTPS proxy inheritance must accept common upper/lower/npm aliases.');

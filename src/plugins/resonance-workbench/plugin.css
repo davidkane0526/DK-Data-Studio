@@ -60,7 +60,6 @@
 #resonanceDedicatedPage .peak-category-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}#resonanceDedicatedPage .peak-category-choice{display:flex;align-items:center;gap:7px;justify-content:flex-start;padding:6px 8px;min-width:0}#resonanceDedicatedPage .category-pair-swatch{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}#resonanceDedicatedPage .category-pair-swatch i{display:block;width:14px;height:18px}
 #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-floating{min-width:360px;min-height:280px;resize:both}
 #resonanceDedicatedPage .reswin-group-card.dkds-portable-view.is-docked{min-height:300px}
-#resonanceDedicatedPage .hidden{display:none}
 
 #resonanceDedicatedPage .respar-group-context{margin-left:6px}
 #resonanceDedicatedPage .reswin-group-card-actions{display:flex;align-items:center;gap:3px;white-space:nowrap;min-width:0;flex:0 0 auto}

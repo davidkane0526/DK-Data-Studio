@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.93');
+assert.equal(json('package.json').version,'3.61.94');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
 const renderer=read('src/core/theme/material-renderer.js');

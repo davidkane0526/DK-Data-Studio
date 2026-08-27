@@ -6,22 +6,23 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.93','Workbench hydration/visual contract test must track the current release.');
+assert.equal(json('package.json').version,'3.61.94','Workbench hydration/visual contract test must track the current release.');
 
 const coreCss=read('src/core.css');
 const foundation=read('src/styles/foundation/foundation.css');
+const utility=read('src/styles/utility/visibility.css');
 const analysisCss=read('src/styles/structure/analysis-workbench.css');
 const pluginCss=read('src/styles/structure/plugin-workspace.css');
 const superCss=read('src/styles/structure/super-top-contract.css');
 const dataCenter=read('src/plugins/data-center/shared-views.js');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 
-assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window;'),
-  'Core must use the canonical seven-layer cascade; global visibility must not be promoted above component structure.');
+assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;'),
+  'Core must keep workbench geometry below a final paint-free visibility utility.');
 assert(!coreCss.includes('dkds.state')&&!coreCss.includes('styles/state/visibility.css'),
-  'A global top-priority visibility layer must not return; it changes existing component visibility semantics globally.');
-assert(/\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(foundation),
-  'Generic .hidden belongs to foundation; structural components that declare display must own their own .hidden override.');
+  'Legacy dkds.state must not return; visibility is a narrow utility contract rather than a general state/paint layer.');
+assert(!/(^|[},])\s*\.hidden\s*\{\s*display\s*:\s*none/m.test(foundation)&&/:where\(\.hidden,\[hidden\]\)\{display:none;\}/.test(utility),
+  'Global hidden state must be single-owned by the final utility layer without changing Workbench grid geometry.');
 
 assert(analysisCss.includes('grid-template-areas:\n    "left lsplit main rsplit right"'),
   'AnalysisWorkbench must retain the five-column left/resizer/main/resizer/right geometry.');

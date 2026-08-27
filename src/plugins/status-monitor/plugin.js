@@ -88,9 +88,9 @@
     ctx.ui.dom.on(ctx.ui.dom.query('#dkdsThemePanelClose',themePanel),'click',hideThemePanel);
 
     const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
-      <div class="dkds-memory-panel-head">
-        <div><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
-        <button id="dkdsMemoryPanelClose" type="button" title="关闭">×</button>
+      <div class="dkds-memory-panel-head dkds-surface-header">
+        <div class="dkds-memory-panel-title"><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
+        <div class="dkds-integrated-action-group"><button id="dkdsMemoryPanelClose" class="dkds-icon-button" type="button" title="关闭" aria-label="关闭">×</button></div>
       </div>
       <div class="dkds-memory-panel-note">${ctx.runtime.isNativeClient?'按 Android 应用进程 PSS 统计实际驻留内存':'按 Electron 进程 / 插件窗口统计工作集内存'}</div>
       <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`});

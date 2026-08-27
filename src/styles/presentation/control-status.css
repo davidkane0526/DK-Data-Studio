@@ -90,7 +90,7 @@ body.dkds-modern-ui .statusbar-command-cluster{
 }
 body.dkds-modern-ui .statusbar-plugin-zone{
   height:20px;
-  gap:1px;
+  gap:4px;
   padding:0;
   border:0;
   border-radius:0;

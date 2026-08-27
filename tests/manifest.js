@@ -653,6 +653,10 @@ module.exports = {
     {
       "file": "tests/test-v36193-workbench-hydration-visual-contract.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36194-ui-lifecycle-visual-contract.js",
+      "args": []
     }
   ],
   "check": [
@@ -1340,6 +1344,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36193-workbench-hydration-visual-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36194-ui-lifecycle-visual-contract.js",
       "args": []
     }
   ],

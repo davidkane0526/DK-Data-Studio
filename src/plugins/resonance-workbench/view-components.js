@@ -161,7 +161,7 @@
             <aside class="respar-left-panel dkds-surface-muted">
               <section>
                 <h3>数据列表</h3>
-                <div class="respar-scan-global dkds-action-row">
+                <div class="respar-scan-global">
                   <button id="reswinShowAll">全部扫描</button><button id="reswinShowForward">仅正扫</button>
                   <button id="reswinShowReverse">仅反扫</button><button id="reswinHideAll">全不选</button>
                 </div>
@@ -176,7 +176,7 @@
                 <div id="reswinMetricAlgorithmDescription" class="respar-note dkds-note">FWHM、峰高、面积与局部基线由可版本化算法插件计算。</div>
                 <div class="respar-preset-row"><label>预设<select id="reswinPreset"><option value="strict">可靠</option><option value="balanced">平衡</option><option value="sensitive">灵敏</option></select></label></div>
                 <details class="respar-advanced"><summary>高级设置（一般不用改）</summary><div id="reswinDetectorParams"></div></details>
-                <div class="respar-detect-actions dkds-action-row"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
+                <div class="respar-detect-actions"><button id="reswinDetectSelected" class="primary">当前扫描寻峰</button><button id="reswinDetectAll">全部可见寻峰</button></div>
                 <button id="reswinSortPeaks" class="wide">跨 Vg 智能整理峰序</button>
                 <div id="reswinPeakLegend" class="respar-peak-legend dkds-toolbar dkds-surface-muted" data-dkds-legend></div>
               </section>
@@ -207,7 +207,7 @@
                     <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-toolbar dkds-surface" data-dkds-legend></div>
                   </div>
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
-                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden">
+                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden" data-dkds-menu-behavior="rich">
                     <div id="resparRangeSummary" class="respar-range-summary">已框选区域</div>
                     <div class="respar-range-grid"><button id="resparRangeDetect" class="primary">局部寻峰</button><button id="resparRangeDelete" class="danger-soft">删除框选峰</button><button id="resparRangeLock">锁定框选峰</button><button id="resparRangeUnlock">解锁框选峰</button></div>
                     <div class="respar-range-identity"><div>统一峰序 / 峰标签</div><select id="resparRangeOrder"></select><input id="resparRangeLabel" type="text" placeholder="类别标签，例如 峰3 / AB"><button id="resparRangeApplyIdentity">应用到框选峰</button></div>

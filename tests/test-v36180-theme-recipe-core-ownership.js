@@ -5,7 +5,7 @@ const readComposition=require('./helpers/read-composition');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 
-assert.equal(json('package.json').version,'3.61.93');
+assert.equal(json('package.json').version,'3.61.94');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').pluginApiVersion,'1.17.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
@@ -34,7 +34,7 @@ for(const recipe of ['thin-glass','soft-glass','liquid-glass']){
   const block=renderer.match(new RegExp(`\\[data-dkds-material-recipe="${recipe}"\\]\\{[\\s\\S]*?\\n\\}`))?.[0]||'';
   assert(block.includes('--dkds-material-fill-opacity'),`${recipe} must consume the same semantic fill-opacity pipeline.`);
 }
-assert(renderer.includes(':not(.primary):not(.strong):not([data-dkds-material-opaque="true"])'),'Popover transparent-child reset must preserve accent actions.');
+assert(renderer.includes(':not(.primary):not(.strong):not(.danger-soft):not(.accent-soft)')&&renderer.includes(':not([data-dkds-material-opaque="true"])'),'Popover menu-row reset must preserve semantic accent/danger actions.');
 assert(renderer.includes('Glass form controls are one flat Core-owned family'),'Glass form-control invariant must be recipe-owned.');
 assert(renderer.includes('box-shadow:none'),'Glass field renderer must suppress legacy recessed paint.');
 

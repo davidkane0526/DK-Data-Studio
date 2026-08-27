@@ -695,7 +695,7 @@
   line-height:1.65;
   word-break:break-word;
 }
-.plugin-card-details.hidden{display:none}
+
 .dkds-pointer-coarse .plugin-switch-track{width:46px;height:26px}
 .dkds-pointer-coarse .plugin-switch-thumb{width:22px;height:22px}
 .dkds-pointer-coarse .plugin-enable-switch input:checked + .plugin-switch-track .plugin-switch-thumb{transform:translateX(20px)}

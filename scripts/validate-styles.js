@@ -43,9 +43,20 @@ const pluginIdentity=/(?:\.ter-|\.pulse-|\.dc-|\.respar-|\.reswin-|\.resonance-|
 for(const file of coreCss){const css=fs.readFileSync(file,'utf8');if(pluginIdentity.test(css))violations.push(`${path.relative(root,file)}: Core CSS contains plugin identity selector.`);}
 const entry=fs.readFileSync(path.join(root,'src','core.css'),'utf8');
 const foundationPath=path.join(root,'src','styles','foundation','foundation.css');
-if(!fs.existsSync(foundationPath)||!/\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(fs.readFileSync(foundationPath,'utf8')))violations.push('src/styles/foundation/foundation.css: generic .hidden fallback must own display:none.');
-if(entry.includes('dkds.state')||entry.includes('styles/state/visibility.css'))violations.push('src/core.css: global top-priority visibility state is forbidden; components with structural display must own targeted hidden rules.');
-for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
+const utilityPath=path.join(root,'src','styles','utility','visibility.css');
+const foundationCss=fs.existsSync(foundationPath)?fs.readFileSync(foundationPath,'utf8'):'';
+const utilityCss=fs.existsSync(utilityPath)?fs.readFileSync(utilityPath,'utf8'):'';
+if(/(^|[},])\s*\.hidden\s*\{\s*display\s*:\s*none/m.test(foundationCss))violations.push('src/styles/foundation/foundation.css: global hidden state must not live below structural display rules.');
+if(!/:where\(\.hidden,\[hidden\]\)\s*\{\s*display\s*:\s*none\s*;?\s*\}/.test(utilityCss))violations.push('src/styles/utility/visibility.css: final utility layer must own .hidden/[hidden] display:none.');
+for(const file of authored){
+  const rel=path.relative(root,file).replace(/\\/g,'/');
+  if(rel==='src/styles/utility/visibility.css')continue;
+  const css=fs.readFileSync(file,'utf8');
+  if(/(?:^|[},])[^{}]*\.hidden\s*\{\s*display\s*:\s*none\s*;?\s*\}/m.test(css))violations.push(`${rel}: component-specific .hidden display ownership is forbidden; use the final utility layer.`);
+}
+if(!entry.includes('dkds.utility')||!entry.includes('styles/utility/visibility.css'))violations.push('src/core.css: final dkds.utility visibility layer is required.');
+if(entry.includes('dkds.state')||entry.includes('styles/state/visibility.css'))violations.push('src/core.css: legacy dkds.state visibility layer must not return; use the paint-free dkds.utility layer.');
+for(const layer of ['foundation','plugin','structure','presentation','theme','platform','window','utility'])if(!entry.includes(`dkds.${layer}`))violations.push(`src/core.css: missing dkds.${layer} cascade layer.`);
 const superTopPath=path.join(root,'src','styles','structure','super-top-contract.css');
 if(fs.existsSync(superTopPath)){
   const superTop=fs.readFileSync(superTopPath,'utf8');

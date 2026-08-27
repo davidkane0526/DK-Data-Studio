@@ -75,8 +75,8 @@ body.dkds-modern-ui :where(
 }
 
 /* Popover surfaces own the optical material. Menu rows are hit regions. */
-body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not([data-dkds-material-opaque="true"]){
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
+  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not(.danger-soft):not(.accent-soft):not(.selected):not(.active):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-checked="true"]):not([data-dkds-material-opaque="true"]){
   background:transparent;
   border-color:transparent;
   box-shadow:none;
@@ -84,15 +84,21 @@ body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-ro
   backdrop-filter:none;
   filter:none;
 }
-body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not([data-dkds-material-opaque="true"]):hover{
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
+  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not(.danger-soft):not(.accent-soft):not(.selected):not(.active):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-checked="true"]):not([data-dkds-material-opaque="true"]):hover{
   background:var(--dkui-control-hover);
 }
-body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
   :where([aria-selected="true"],[aria-checked="true"],.selected,.active){background:var(--dkui-accent-soft)}
-body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover)
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
   :where(.primary,.strong,[data-dkds-material-opaque="true"]){
   background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;
+}
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu) :where(.danger-soft){
+  background:var(--dkui-danger-soft,var(--danger-soft));border-color:color-mix(in srgb,var(--dkui-danger,var(--danger)) 28%,var(--dkui-control-border));color:var(--dkui-danger,var(--danger));-webkit-text-fill-color:var(--dkui-danger,var(--danger));
+}
+body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu) :where(.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"]){
+  background:var(--dkui-accent-soft);color:var(--dkui-accent);-webkit-text-fill-color:var(--dkui-accent);
 }
 
 /* Layout-only descendants must not put an opaque sheet between a glass owner

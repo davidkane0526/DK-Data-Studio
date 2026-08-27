@@ -318,7 +318,7 @@ body.dkds-modern-ui .dkds-memory-panel{
   box-shadow:none;
 }
 body.dkds-modern-ui .dkds-memory-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px 8px;border-bottom:1px solid var(--dkui-border)}
-body.dkds-modern-ui .dkds-memory-panel-head>div{display:flex;align-items:baseline;gap:8px;min-width:0}
+body.dkds-modern-ui .dkds-memory-panel-title{display:flex;align-items:baseline;gap:8px;min-width:0}
 body.dkds-modern-ui .dkds-memory-panel-head strong{font-size:13px;color:var(--dkui-text)}
 body.dkds-modern-ui .dkds-memory-panel-head span{font-size:11px;color:var(--dkui-muted)}
 body.dkds-modern-ui .dkds-memory-panel-head button{width:26px;height:26px;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--dkui-muted);box-shadow:none}

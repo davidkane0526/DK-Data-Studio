@@ -22,9 +22,11 @@
   ]);
   const ROLE_CLASSES=Object.freeze((globalThis.DKDSThemeContract?.materialRoles?.()||[]).map(role=>`${ROLE_CLASS_PREFIX}${role}`));
   function explicitRole(el){const owner=String(el?.dataset?.dkdsMaterialRoleClassOwner||'');return ROLE_CLASSES.find(cls=>el?.classList?.contains(cls)&&owner!=='core-runtime')||'';}
-  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,[data-dkds-material-integrated="true"]';
-  const INTEGRATED_CHILD_SELECTOR='.dkds-integrated-action-group button,.panel-header-actions button,.trend-header-actions button,.dkds-plot-view-actions button,.statusbar-command-cluster button,[data-dkds-material-integrated="true"] button,.dkds-scientific-nav-tools button';
+  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
+  const INTEGRATED_CHILD_SELECTOR='.dkds-integrated-action-group button,.panel-header-actions button,.trend-header-actions button,.dkds-plot-view-actions button,.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button,[data-dkds-material-integrated="true"] button,.dkds-scientific-nav-tools button';
   const CHROME_SEMANTIC_SELECTOR='[data-dkds-material-role="chrome"],.dkds-material-role-chrome,.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head';
+  const SEMANTIC_CONTROL_PAINT_SELECTOR='.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
+  const semanticControlOwnsPaint=el=>!!el?.matches?.(SEMANTIC_CONTROL_PAINT_SELECTOR);
   function chromeOwnedIntegrated(el){
     if(!el?.closest?.(CHROME_SEMANTIC_SELECTOR))return false;
     if(el.matches?.(INTEGRATED_CONTAINER_SELECTOR))return true;
@@ -43,7 +45,7 @@
     const role=parentMaterialRole(el);
     return !!role&&TRANSLUCENT_RECIPES.has(String(recipePolicy()[role]||''));
   }
-  function inferRole(el){if(chromeOwnedIntegrated(el))return '';if(nestedParentOwnsBackdrop(el))return '';for(const [role,selector] of ROLE_BINDINGS){try{if(el.matches?.(selector))return role;}catch{}}return '';}
+  function inferRole(el){if(chromeOwnedIntegrated(el))return '';if(nestedParentOwnsBackdrop(el))return '';for(const [role,selector] of ROLE_BINDINGS){try{if(el.matches?.(selector)){if(role==='control'&&semanticControlOwnsPaint(el))return '';return role;}}catch{}}return '';}
   function inferRecipe(el,role){
     if(!role)return '';
     if(role==='control'&&el.matches?.(INTEGRATED_CHILD_SELECTOR))return '';

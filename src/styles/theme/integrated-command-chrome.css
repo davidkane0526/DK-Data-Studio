@@ -154,7 +154,7 @@ body.dkds-modern-ui .dkds-theme-panel{
   border-radius:12px;
   color:var(--dkui-text);
 }
-body.dkds-modern-ui .dkds-theme-panel.hidden{display:none}
+
 body.dkds-modern-ui .dkds-theme-panel-head{
   min-height:42px;
   padding:7px 8px 7px 11px;

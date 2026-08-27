@@ -1,3 +1,13 @@
+# v3.61.94 — UI Lifecycle / Visual Ownership Recovery
+
+- Fixed UI surfaces that could appear by themselves or refuse to close, including the memory breakdown panel and dedicated-plugin error overlay. Visibility is now single-owned by a final paint-free `dkds.utility` cascade layer; all component-specific `.hidden { display:none }` patches were removed and style validation forbids them from returning.
+- Restored semantic control paint ownership. The Material Renderer no longer repaints `.primary`, `.strong`, `.danger-soft`, `.accent-soft`, active/selected controls, or top-bar toolbar/activity controls as generic Material controls, fixing unreadable action text and toolbar-style drift.
+- Restored resonance-workbench control geometry: scan/detection button grids no longer also claim the generic flex action-row contract, the range-selection popover is explicitly a rich control popover, and subplot actions are integrated into the subplot title chrome from first paint.
+- Integrated the memory-panel close action into its surface header and increased right-side status-bar contribution spacing from 1 px to 4 px.
+- Kept Data Center and Automation Test Center on their existing real runtime paths: dedicated-window error state starts hidden, Data Center hydration/window lifecycle tests pass, and the authored Automation Center `运行全部自动化测试` action remains wired to `runAll()`.
+- Added the v3.61.94 UI lifecycle/visual-contract regression and tightened the style validator so visibility, semantic control paint, rich-popover behavior, resonance layout ownership, subplot chrome and automation action wiring cannot silently regress.
+- Validation: `npm test` 164/164 PASS; `npm run check` complete coverage 172/172 PASS; SDK Harness PASS; Plugin Boundary=0; 33 authored CSS files with 0 `!important`.
+
 # v3.61.93 — Workbench Hydration / Visual Contract Recovery
 
 - Fixed the blank PRIMARY content regression where Data Center could restore 105 data objects and Resonance could restore VG groups while their main table/plot region was effectively invisible. The canonical AnalysisWorkbench uses five grid columns (left / resizer / main / resizer / right), but `super-top-contract.css` still contained an obsolete three-column compatibility block that reassigned `.dkds-analysis-main` to column 2, collapsing the real main canvas into the 7 px left-resizer column.

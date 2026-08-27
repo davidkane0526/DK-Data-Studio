@@ -317,7 +317,7 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo{
 .dkds-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--surface-secondary) 60%,transparent)}
 .dkds-table tbody tr:hover{background:var(--surface-hover)}
 .dkds-overlay{position:fixed;inset:0;z-index:920;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(11,18,30,.28);backdrop-filter:blur(2px)}
-.dkds-overlay.hidden{display:none}
+
 .dkds-dialog-shell{box-sizing:border-box;min-width:0;overflow:hidden;border:1px solid transparent;border-radius:14px;background:transparent;color:var(--text-primary);box-shadow:none}
 .dkds-dialog-shell>.dkds-surface-header{min-height:46px}
 .dkds-icon-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;min-height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);box-shadow:none;cursor:pointer}
