@@ -38,17 +38,10 @@ for(const base of ['src','desktop'])for(const file of walk(path.join(root,base))
   const size=fs.statSync(file).size;
   if(size>moduleLimit)large.push([path.relative(root,file).replace(/\\/g,'/'),size]);
 }
-const allowed=new Map([
-  ['src/core/diagnostics/automation-test-runtime.js',80*1024]
-]);
-for(const [rel,size] of large){
-  assert(allowed.has(rel),`${rel} is a new >48 KiB authored JS module; split by responsibility instead of growing the large-module allowlist.`);
-  assert(size<=allowed.get(rel),`${rel} exceeded its temporary audit ceiling (${size} > ${allowed.get(rel)} bytes).`);
-}
-for(const rel of allowed.keys())assert(large.some(([row])=>row===rel),`${rel} large-module exception disappeared; remove it from the v3.61.98 audit allowlist.`);
+assert(!large.length,`Authored JS module(s) exceed the 48 KiB boundary: ${large.map(([rel,size])=>`${rel}=${size}`).join(', ')}`);
 
 const audit=read('docs/CODE_QUALITY_AUDIT.md');
 assert(audit.includes('Resonance feature context'),'Code-quality audit must document the Resonance feature-context modularization history and remaining interaction work.');
 assert(audit.includes('Dev Repo')&&audit.includes('Source Release'),'Repository audit must document the two handoff package forms.');
 
-console.log(`v3.61.98 repository/module hygiene PASS: desktop entry=${bytes('desktop/main.js')} B, TER feature=${bytes('src/plugins/ter-analysis/feature-runtime.js')} B, large exceptions=${large.length}.`);
+console.log(`v3.61.98 repository/module hygiene PASS: desktop entry=${bytes('desktop/main.js')} B, TER feature=${bytes('src/plugins/ter-analysis/feature-runtime.js')} B, large exceptions=0.`);

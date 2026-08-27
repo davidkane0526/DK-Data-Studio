@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const index=read('src/index.html'),runtime=read('src/plugin-window/runtime.js'),manager=read('desktop/plugin-window-manager.js'),kernel=read('src/generated/runtime/plugin-kernel.js'),contract=read('src/core/plugins/contract-runtime.js'),data=read('src/core/data/model.js'),automation=read('src/core/diagnostics/automation-test-runtime.js');
+const index=read('src/index.html'),runtime=read('src/plugin-window/runtime.js'),manager=read('desktop/plugin-window-manager.js'),kernel=read('src/generated/runtime/plugin-kernel.js'),contract=read('src/core/plugins/contract-runtime.js'),data=read('src/core/data/model.js'),automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 const terPlugin=read('src/plugins/ter-analysis/plugin.js'),terService=read('src/plugins/ter-analysis/analysis-service.js'),resPlugin=read('src/plugins/resonance-workbench/plugin.js'),resFeature=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
 assert(index.includes('core/scientific/pipeline-runtime.js'),'Main renderer must load Scientific Pipeline Runtime.');
 assert(runtime.includes("'scientific-pipeline-runtime':'../core/scientific/pipeline-runtime.js'"),'Dedicated TOP runtime must allow Scientific Pipeline Runtime.');

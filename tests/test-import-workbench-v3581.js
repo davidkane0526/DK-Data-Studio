@@ -41,7 +41,7 @@ assert(summary.includes('`${checked.length}/${state.importDraft.files.length} ä¸
 assert(summary.includes("$('#importCommitBtn').disabled=!checked.length"),
   'Import button enablement must track selected files.');
 
-const automation=fs.readFileSync(path.join(root,'src','core','diagnostics','automation-test-runtime.js'),'utf8');
+const automation=(fs.readFileSync(path.join(root,'src','core','diagnostics','automation-test-runtime.js'),'utf8')+fs.readFileSync(path.join(root,'src','core','diagnostics','automation-smoke-cases.js'),'utf8'));
 assert(app.includes('runImportWorkbenchSmoke:runImportWorkbenchAutomationSmoke'),
   'Host must expose the import workbench smoke to the built-in automation center.');
 assert(automation.includes("'ui.import-workbench','Import workbench selection & preview'"),

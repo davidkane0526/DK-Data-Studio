@@ -21,7 +21,7 @@ const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
-const automationRuntime=read('src/core/diagnostics/automation-test-runtime.js');
+const automationRuntime=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 const index=read('src/index.html');
 
 assert(coreCss.startsWith('@layer dkds.foundation, dkds.plugin, dkds.structure, dkds.presentation, dkds.theme, dkds.platform, dkds.window, dkds.utility;'),

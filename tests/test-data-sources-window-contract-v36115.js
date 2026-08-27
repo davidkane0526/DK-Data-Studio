@@ -28,7 +28,7 @@ assert(kernel.includes("if(prop==='list')return options=>")&&kernel.includes("if
 assert(kernel.includes("descriptor?.remote===true"),'Local main-window data source methods must not be shadowed by the remote-read facade.');
 assert(kernel.includes("rename:pluginType==='data'||pluginType==='foundation'")&&kernel.includes("remove:pluginType==='data'||pluginType==='foundation'"),'Foundation/data plugins must receive the host-owned source management methods promised to Data Center.');
 
-const automation=read('src/core/diagnostics/automation-test-runtime.js');
+const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 assert(automation.includes("const VERSION='1.26.0'"),'Automation runner must identify the v3.61.18 contract diagnostics.');
 assert(automation.includes('currentProjectPayload.capabilitySnapshot'),'Current-project Data Center smoke must use the same synchronized capability snapshot as real TOP windows.');
 

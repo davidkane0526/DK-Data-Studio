@@ -1,3 +1,10 @@
+# v3.61.101 — Automation Diagnostics Modules
+
+- Split the last oversized authored Core JavaScript module by separating Automation Test Center smoke-case implementations into `src/core/diagnostics/automation-smoke-cases.js` while keeping runner lifecycle, result collection, report persistence and UI binding in `automation-test-runtime.js`.
+- Preserve the existing runtime behavior through one immutable `DKDSAutomationSmokeCases` contract loaded before the runner; historical automation regression tests now follow the real case owner instead of assuming every diagnostic implementation lives in one file.
+- Remove the temporary 80 KiB diagnostics exception from the repository hygiene gate. **All authored JavaScript under `src/` and `desktop/` is now bounded to 48 KiB per module.**
+- Add the v3.61.101 diagnostics modularization gate covering script order, ownership and the 48 KiB boundary. The runner protocol version remains unchanged because the split does not alter report semantics.
+
 # v3.61.100 — Resonance Peak Interaction Modules
 
 - Complete Resonance feature-context stage 2 by extracting peak detector/metric ownership into `feature-peak-runtime.js`, sweep/peak/range selection and keyboard commands into `feature-selection-runtime.js`, Inspector rendering/edit entry points into `feature-inspector-runtime.js`, ScientificCurveSurface direct manipulation/range-menu state into `feature-main-plot-runtime.js`, and dataset/visibility/transform controls into `feature-controls-runtime.js`.

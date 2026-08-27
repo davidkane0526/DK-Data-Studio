@@ -9,6 +9,6 @@ assert(!read('src/styles/theme/material-roles.css').includes('backdrop-filter'))
 const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Liquid Glass Optical Probe')&&gallery.includes('DKDSThemeMaterialRenderer?.inspect'));
 for(const html of [read('src/index.html'),read('src/plugin-window/index.html')])assert(html.includes('core/theme/material-renderer.js')&&html.indexOf('core/theme/material-renderer.js')<html.indexOf('core/theme/runtime.js'));
 const aux=read('src/plugin-window/runtime.js');assert(aux.includes('themeRenderer:')&&aux.includes('themeMaterialProbe:'));
-const automation=read('src/core/diagnostics/automation-test-runtime.js');assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
+const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
 const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.17.16');assert.equal(contract.themeContractVersion,'3.5.0');
 console.log('v3.61.71 Theme Contract 3.3 renderer verification checks passed.');

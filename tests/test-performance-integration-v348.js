@@ -6,7 +6,7 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const perf=read('src/core/performance/runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const runtime=read('src/plugin-window/runtime.js');
-const automation=read('src/core/diagnostics/automation-test-runtime.js');
+const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 const ter=read('src/plugins/ter-analysis/analysis-service.js');
 const resonance=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
 const perfVersion=(perf.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);

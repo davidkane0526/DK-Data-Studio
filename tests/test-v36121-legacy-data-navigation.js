@@ -75,7 +75,7 @@ const dcView=read('src/plugins/data-center/shared-views.js');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
 const index=read('src/index.html');
 const css=readCoreCss(root);
-const automation=read('src/core/diagnostics/automation-test-runtime.js');
+const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 assert(app.includes('...savedSpec')&&app.includes('path:single&&source.path?source.path:dataset.path'),'Self-contained old projects must reparse embedded text with the saved importSpec and preserve the original dataset path.');
 assert(projectFormat.includes('const adoptedPaths=new Set')&&projectFormat.includes('assignments:[]'),'Legacy auxiliary channels omitted from the explicit adopted-data list must be translated once into generic Data Center-only assignments by Project Format.');
 assert(!app.includes('builtin.resonance-workbench'),'The host app must remain scientifically domain-neutral; legacy Resonance interpretation belongs only to Project Format migration.');

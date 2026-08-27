@@ -681,6 +681,10 @@ module.exports = {
     {
       "file": "tests/test-v361100-resonance-peak-interaction-context.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361101-automation-diagnostics-modules.js",
+      "args": []
     }
   ],
   "check": [
@@ -1396,6 +1400,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361100-resonance-peak-interaction-context.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361101-automation-diagnostics-modules.js",
       "args": []
     }
   ],

@@ -26,7 +26,7 @@ assert(auxiliary.includes('diagnosticRendererProjectSnapshot')&&auxiliary.includ
 const app=read('src/generated/runtime/app.js');
 assert(app.includes('function currentProjectWindowSmokePayload()')&&app.includes('artifactSnapshot=snapshotArtifactRows()'),'Main renderer must expose the current project to the isolated automation smoke path.');
 
-const automation=read('src/core/diagnostics/automation-test-runtime.js');
+const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
 assert(automation.includes("'project.data-center-live','Current project → Data Center live hydration'"),'Automation Center must exercise the currently open project through a real Data Center TOP window.');
 for(const token of ['projectDatasetCount','artifactCount','dataTableCount','totalTableRows','renderedArtifactRows'])assert(automation.includes(token),`Current-project Data Center smoke missing assertion: ${token}`);
 assert(automation.includes("setColumnVisible('Name',false")&&automation.includes("visibleTableText().includes('Name\\tValue\\tNote')"),'TableSurface runtime smoke must address the columns that actually exist in its synthetic table.');
