@@ -1,3 +1,12 @@
+# v3.61.100 — Resonance Peak Interaction Modules
+
+- Complete Resonance feature-context stage 2 by extracting peak detector/metric ownership into `feature-peak-runtime.js`, sweep/peak/range selection and keyboard commands into `feature-selection-runtime.js`, Inspector rendering/edit entry points into `feature-inspector-runtime.js`, ScientificCurveSurface direct manipulation/range-menu state into `feature-main-plot-runtime.js`, and dataset/visibility/transform controls into `feature-controls-runtime.js`.
+- Keep all extracted responsibilities on the existing live `feature-context.js` boundary so project/workspace/runtime changes are observed dynamically rather than captured as stale initialization snapshots.
+- Reduce the coordinating `feature-runtime.js` from about 104 KiB at the start of stage 2 to **48,760 bytes**, bringing it and every new Resonance feature module below the 48 KiB authored-module boundary while preserving the existing public service contract.
+- Preserve legacy project peak reconciliation, FWHM/metric invalidation, Ctrl+Z/redo history, keyboard peak movement, box/range selection, linked selection, group charts, Gate/physics analysis and TOP/SUPER loading paths through delegation rather than duplicate implementations.
+- Add the v3.61.100 Resonance peak-interaction architecture gate to lock module loading order, mutable-state ownership and the 48 KiB boundary.
+- Validation: `npm test` 170/170 PASS; `npm run check` 178/178 PASS; Plugin Boundary=0; scientific Python/JS parity PASS; SDK Harness PASS; authored CSS remains at 0 `!important`.
+
 # v3.61.99 — Resonance Feature Context / Analysis Modules
 
 - Introduce an explicit Resonance `feature-context.js` with live getters so extracted feature responsibilities observe current project/workspace/runtime state instead of sharing the `createTop()` lexical closure.

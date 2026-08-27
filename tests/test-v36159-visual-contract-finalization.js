@@ -78,10 +78,11 @@ const vthExample=read('examples/transfer-vth-lab/plugin.js');
 assert(!/style="[^"]+"/.test(vthExample),'Vth SDK example must not teach static inline visual/layout styles.');
 for(const cls of ['dkds-surface','dkds-field','dkds-metric'])assert(vthExample.includes(cls),`Vth SDK example must consume Core semantic role ${cls}.`);
 
-const resonanceRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
-assert(resonanceRuntime.includes('dkds-series-swatch-line'),'Resonance legend swatches must use the Core data-swatch primitive.');
-assert(resonanceRuntime.includes('dkds-choice-button'),'Resonance category choices must use the Core choice-button primitive.');
-assert(resonanceRuntime.includes('dkds-series-swatch-pair'),'Resonance category swatches must use the Core pair-swatch primitive.');
+const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
+const resonanceInspector=read('src/plugins/resonance-workbench/feature-inspector-runtime.js');
+assert(resonanceMainPlot.includes('dkds-series-swatch-line'),'Resonance legend swatches must use the Core data-swatch primitive through the main-plot runtime owner.');
+assert(resonanceInspector.includes('dkds-choice-button'),'Resonance category choices must use the Core choice-button primitive through the Inspector runtime owner.');
+assert(resonanceInspector.includes('dkds-series-swatch-pair'),'Resonance category swatches must use the Core pair-swatch primitive through the Inspector runtime owner.');
 assert(!/\.category-pair-swatch i\{[^}]*?(?:border|box-shadow|background|color)\s*:/i.test(coreCss),'Legacy resonance category swatch chrome must not remain in Core CSS.');
 
 for(const [file,required] of [

@@ -57,6 +57,11 @@ vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{fi
   vm.runInContext(read('src/plugins/resonance-workbench/feature-context.js'),context,{filename:'feature-context.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-group-runtime.js'),context,{filename:'feature-group-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-analysis-runtime.js'),context,{filename:'feature-analysis-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-peak-runtime.js'),context,{filename:'feature-peak-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-selection-runtime.js'),context,{filename:'feature-selection-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-inspector-runtime.js'),context,{filename:'feature-inspector-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-main-plot-runtime.js'),context,{filename:'feature-main-plot-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-controls-runtime.js'),context,{filename:'feature-controls-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
   const resonanceFeature=context.DKDSPluginModules.require('builtin.resonance-workbench','feature-runtime');
   const resonance=await resonanceFeature.createTop({

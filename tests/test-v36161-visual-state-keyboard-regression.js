@@ -8,7 +8,7 @@ const read=r=>fs.readFileSync(path.join(root,r),'utf8');
 const base=readCoreCss(root);
 const modern=readCoreCss(root);
 const ui=read('src/generated/runtime/ui-infrastructure.js');
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonance=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const dc=read('src/plugins/data-center/feature-runtime.js');
 const dcViews=read('src/plugins/data-center/shared-views.js');

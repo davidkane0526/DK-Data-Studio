@@ -7,7 +7,7 @@ const read=r=>fs.readFileSync(path.join(root,r),'utf8');
 const pkg=JSON.parse(read('package.json'));
 const base=readCoreCss(root);
 const modern=readCoreCss(root);
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonance=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 
 
 assert(base.includes('.dkds-scientific-curve-surface:focus,.dkds-scientific-curve-surface:focus-visible{outline:none}'),'Focused scientific surfaces must not expose a browser focus rectangle around the plot.');

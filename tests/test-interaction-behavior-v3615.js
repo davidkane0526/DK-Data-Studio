@@ -8,6 +8,7 @@ const ui=read('src/generated/runtime/ui-infrastructure.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const contract=read('src/core/plugins/contract-runtime.js');
 const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const mainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 const views=read('src/plugins/resonance-workbench/view-components.js');
 const manifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
 const sdk=read('sdk/plugin-api.d.ts');
@@ -28,10 +29,10 @@ assert(contract.includes("'ui.interaction-behavior':api=>!!api?.ui?.interactionB
 
 assert(manifest.apiVersion==='1.13.0','Resonance reference plugin must target Plugin API 1.13.0.');
 assert(manifest.requiresCore.includes('ui.interaction-behavior'),'Resonance must explicitly declare the Interaction Behavior Core dependency.');
-assert(feature.includes("gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point'"),'Shift+click add-point must be a declared interaction binding.');
-assert(feature.includes("gesture:'context',target:'marker',button:'secondary'"),'Right-click marker behavior must be declared through Interaction Behavior.');
-assert(!feature.includes('onCurveModifiedClick:'),'Resonance reference surface must not own feature-specific modified-click handling.');
-assert(!feature.includes('onMarkerDelete:'),'Resonance reference surface must not own feature-specific right-click deletion handling.');
+assert(mainPlot.includes("gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point'"),'Shift+click add-point must be a declared interaction binding in the main-plot owner.');
+assert(mainPlot.includes("gesture:'context',target:'marker',button:'secondary'"),'Right-click marker behavior must be declared through Interaction Behavior in the main-plot owner.');
+assert(!mainPlot.includes('onCurveModifiedClick:'),'Resonance reference surface must not own feature-specific modified-click handling.');
+assert(!mainPlot.includes('onMarkerDelete:'),'Resonance reference surface must not own feature-specific right-click deletion handling.');
 assert(views.includes("ctx.ui.interactionBehaviors.create('resonance-keyboard'"),'Resonance keyboard policy must use Interaction Behavior.');
 assert(!views.includes('ctx.ui.shortcuts'),'Resonance reference plugin must not own a parallel shortcut contribution path.');
 for(const chord of ['Ctrl+ArrowLeft','Shift+ArrowLeft','Escape'])assert(views.includes(`'${chord}'`),`Keyboard profile must retain exact chord ${chord}.`);

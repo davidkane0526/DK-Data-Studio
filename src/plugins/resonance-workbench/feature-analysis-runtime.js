@@ -198,7 +198,7 @@
     installPipeline();
     return Object.freeze({
       physicalAnalysis,renderPhysics,renderSpacing,spacingCsv,renderGate,gateCsv,gateReportText,
-      gateFeatureFieldCsv,getGateFeatureField,invalidatePhysics,installPipeline,getState
+      gateFeatureFieldCsv,getGateFeatureField,invalidatePhysics,installPipeline,readGate,getState
     });
   }
   window.DKDSPluginModules.define('builtin.resonance-workbench','feature-analysis-runtime',Object.freeze({create}));

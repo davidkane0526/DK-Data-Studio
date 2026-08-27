@@ -12,6 +12,7 @@ const app=read('src/generated/runtime/app.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+const resonanceSelectionFeature=read('src/plugins/resonance-workbench/feature-selection-runtime.js');
 const pulse=read('src/plugins/pulse-analysis/analysis-service.js');
 
 // PRIMARY is a viewport contract, not a plugin-specific overflow patch.
@@ -61,7 +62,7 @@ assert(resonanceGroupFeature.includes('const groupCards=new Map()')&&!resonanceG
 assert(resonanceGroupFeature.includes('groupDataFingerprint()')&&resonanceGroupFeature.includes('nextKey===groupRenderKey'),'Group data refresh must avoid redundant renderer work when only selection emphasis changes.');
 assert(resonanceGroupFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceGroupFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
 assert(resonanceGroupFeature.includes('visibleSweepIds().map(String)')&&resonanceGroupFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
-assert(resonanceFeature.includes("if(includeGroup){const context=$('#reswinGroupContext')")&&!resonanceFeature.includes('updateGroupHighlights()'),'Selection changes must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
+assert(resonanceSelectionFeature.includes('if(includeGroup)actions.updateGroupContext()')&&!resonanceSelectionFeature.includes('updateGroupHighlights()'),'Selection runtime must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
 assert(ui.includes("this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')")&&ui.includes('window.DKDSCharts?.resize?.(plot)'),'PortableView resize must resize renderer-neutral scientific charts by default.');
 
 // Pulse analysis must be repeatable and must not destroy the last valid result on a failed rerun.

@@ -9,14 +9,15 @@ const terScience=read('src/science/ter.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const terView=read('src/plugins/ter-analysis/shared-views.js');
 const terService=read('src/plugins/ter-analysis/analysis-service.js');
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonancePeak=read('src/plugins/resonance-workbench/feature-peak-runtime.js');
+const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
 
 assert(ui.includes('windowLeft')&&ui.includes('dkds-scientific-baseline-line')&&ui.includes('onWidthReset'),
   'FWHM analysis-window presentation must be a Core ScientificCurveSurface capability');
 assert(peaks.includes('function peakAnalysisWindow')&&peaks.includes('function baselineForWindow')&&peaks.includes('fwhmLeft')&&peaks.includes('fwhmRight'),
   'baseline-corrected FWHM must live in shared Science Runtime');
-assert(resonance.includes('S.peakMetrics')&&resonance.includes('analysisLeft')&&resonance.includes('analysisRight'),
-  'Resonance must consume shared FWHM science and expose only domain mapping');
+assert(resonancePeak.includes('S.peakMetrics')&&resonanceMainPlot.includes('analysisLeft')&&resonanceMainPlot.includes('analysisRight'),
+  'Resonance Peak runtime must consume shared FWHM science while the main-plot owner exposes only domain mapping');
 assert(terScience.includes('function computeSweepTransformMatrix')&&terScience.includes('transformSweep(sweep,type,transformOptions)'),
   'transformed Vg-Vd matrix must reuse shared transformSweep science');
 assert(terService.includes('A.computeSweepTransformMatrix')&&terService.includes('serialize:()=>({schema:3')&&terService.includes('transform:cloneSerializable(transform)')&&terFeature.includes("ctx.project.registerSlice('workspace'"),

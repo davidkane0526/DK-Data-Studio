@@ -1,11 +1,11 @@
 (() => {
   // Explicit live context for Resonance feature sub-runtimes.
-  // Mutable values remain owned by createTop(), while extracted responsibilities
-  // observe the current values through typed getters instead of shared lexical scope.
+  // Mutable values remain owned by their responsibility runtime; extracted modules
+  // observe current cross-cutting state through live getters instead of shared lexical scope.
   function create({live={},services={},actions={},utils={}}={}){
     const liveView={};
     for(const name of [
-      'workspace','project','datasets','sweeps','selectedPeakId','selectedSweepId',
+      'workspace','project','datasets','sweeps','selectedPeakId','selectedSweepId','selectedRange','interactionRuntime','interactionSelection','workspaceNavigator',
       'sharedController','algorithmRuntime','pipelineRuntime','reactiveRuntime',
       'uiRuntime','workspaceRuntime','peakMetricRevision'
     ]){

@@ -677,6 +677,10 @@ module.exports = {
     {
       "file": "tests/test-v36199-resonance-feature-context.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361100-resonance-peak-interaction-context.js",
+      "args": []
     }
   ],
   "check": [
@@ -1388,6 +1392,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36199-resonance-feature-context.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361100-resonance-peak-interaction-context.js",
       "args": []
     }
   ],

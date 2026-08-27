@@ -45,6 +45,6 @@ try{
 const app=read('src/generated/runtime/app.js');
 const configureStart=app.indexOf('window.DKDSPlugins.configure({'),configureEnd=app.indexOf('\n    });',configureStart),hostConfigure=app.slice(configureStart,configureEnd);
 for(const forbidden of ['resonanceLegend','resonanceLayoutSolver','resonanceGroupPlot','resonanceTooltip'])assert(!hostConfigure.includes(forbidden),`First-party privilege detected: ${forbidden}`);
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
-assert(resonance.includes('legend:false'),'First-party Resonance must suppress a duplicate legend through the same public plot spec available to SDK plugins');
+const resonance=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
+assert(resonance.includes('legend:false'),'First-party Resonance main-plot owner must suppress a duplicate legend through the same public plot spec available to SDK plugins');
 console.log('SDK Harness=PASS');

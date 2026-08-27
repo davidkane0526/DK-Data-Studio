@@ -29,7 +29,8 @@ assert(kernel.includes("const API_VERSION = '1.17.0'"));
 for(const token of ['history: Object.freeze','series: infrastructureScope?.series','legends: infrastructureScope?.legends','groupPlots: infrastructureScope?.groupPlots','tooltips: infrastructureScope?.tooltips',"name:'DK Data Studio Design System'","version:'1.17'"])assert(kernel.includes(token),`Plugin API missing ${token}`);
 
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
-assert(resonance.includes("legend:false,margin:{top:62"),'Resonance must declare that its domain-owned main legend suppresses the generic Core legend');
+const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
+assert(resonanceMainPlot.includes("legend:false,margin:{top:62"),'Resonance main-plot owner must declare that its domain-owned legend suppresses the generic Core legend');
 assert(!resonance.includes('reswin-group-legend'),'Resonance must not own a duplicate group legend');
 
 const devtools=read('src/core/plugins/devtools.js');

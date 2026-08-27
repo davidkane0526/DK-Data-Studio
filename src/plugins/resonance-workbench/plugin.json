@@ -113,6 +113,11 @@
       "feature-context.js",
       "feature-group-runtime.js",
       "feature-analysis-runtime.js",
+      "feature-peak-runtime.js",
+      "feature-selection-runtime.js",
+      "feature-inspector-runtime.js",
+      "feature-main-plot-runtime.js",
+      "feature-controls-runtime.js",
       "feature-runtime.js"
     ]
   },
@@ -122,6 +127,11 @@
     "feature-context.js",
     "feature-group-runtime.js",
     "feature-analysis-runtime.js",
+    "feature-peak-runtime.js",
+    "feature-selection-runtime.js",
+    "feature-inspector-runtime.js",
+    "feature-main-plot-runtime.js",
+    "feature-controls-runtime.js",
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"

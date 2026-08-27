@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.99
+# Code quality audit — v3.61.100
 
 ## Release decision
 
-v3.61.99 extends the importable-module cleanup into the Resonance feature runtime. The focus remains explicit live-state ownership, bounded authored modules and behavior-preserving extraction rather than mechanical file splitting.
+v3.61.100 completes the second Resonance feature-runtime extraction stage. The focus remains explicit mutable-state ownership, bounded authored modules and behavior-preserving delegation rather than mechanical file splitting.
 
 ## Completed
 
@@ -21,7 +21,8 @@ v3.61.99 extends the importable-module cleanup into the Resonance feature runtim
 - TER feature utilities and CSV serializers are isolated in `feature-utils.js`, returning `feature-runtime.js` below **48 KiB** without changing its controller/view contract.
 - SDK documentation metadata is release-gated: `sdk/README.md` must advertise the exact `sdk/contract.json` SDK version.
 - Repository handoff has two intended forms: **Dev Repo** keeps `.git` after `git gc --prune=now`; **Source Release** contains tracked source only and may be created with `git archive`. Generated runtimes, dependency folders and build outputs remain excluded from both.
-- Resonance feature context stage 1 is complete. `feature-context.js` provides live state accessors, `feature-group-runtime.js` owns group-card/PlotView/render-key state, and `feature-analysis-runtime.js` owns physics/spacing/Gate results and pipeline installation. The coordinating `feature-runtime.js` fell from about **138 KiB to 102 KiB** without changing the external feature service.
+- Resonance feature context stage 1 remains intact: `feature-context.js` provides live state accessors, `feature-group-runtime.js` owns group-card/PlotView/render-key state, and `feature-analysis-runtime.js` owns physics/spacing/Gate results and pipeline installation.
+- Resonance interaction stage 2 is complete. `feature-selection-runtime.js` owns sweep/peak/range selection and keyboard selection commands; `feature-peak-runtime.js` owns detector/metric providers and metric cache state; `feature-inspector-runtime.js` owns Inspector rendering/edit entry points; `feature-main-plot-runtime.js` owns ScientificCurveSurface direct manipulation/range-menu state; and `feature-controls-runtime.js` owns dataset/visibility/transform controls. The coordinating `feature-runtime.js` is now **below 48 KiB**.
 
 ## Measured debt
 
@@ -33,7 +34,7 @@ This does not mean the stylesheet is finished. Dense selectors and historical du
 
 1. **Application module-boundary regressions must remain release-gated.** The Application shell is now an importable CommonJS graph with zero authored `.inc` fragments. Both local path resolution and consumed exported symbols are checked so file moves or incomplete `module.exports` objects fail before runtime.
 2. **The classic renderer still consumes generated single-script runtime artifacts.** This is now only a packaging compatibility layer; authored Core no longer depends on shared lexical composition.
-3. **Resonance feature context is partially extracted, not finished.** `src/plugins/resonance-workbench/feature-runtime.js` is now about 102 KiB and no longer owns group-plot or physics/spacing/Gate result state. Its v3.61.99 transition ceiling is **108 KiB**. The next safe extraction targets are peak selection/editing/inspection and their interaction state; keep live state access explicit and do not replace the old closure with a giant service locator.
+3. **Resonance is modularized but still has orchestration density.** The coordinator is now below the 48 KiB authored-module boundary and no longer owns group, analysis, selection, detector/metric, Inspector, main-plot or dataset-control mutable state. Remaining work should target only clearly separable orchestration responsibilities such as project reconciliation/entity publication/history if they grow; do not split further merely to reduce line count or replace explicit context with a giant service locator.
 4. **Automation diagnostics is intentionally dense but bounded.** `src/core/diagnostics/automation-test-runtime.js` remains above 48 KiB and is temporarily capped at 80 KiB while test-case groups are separated from the runner lifecycle.
 5. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
 6. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.

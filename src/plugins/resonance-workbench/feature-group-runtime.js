@@ -104,7 +104,7 @@
 
     function invalidate(){groupRenderKey='';}
     function state(){return {cards:groupCards.size,plots:groupPlotViews.size,renderKey:groupRenderKey};}
-    return Object.freeze({render:renderGroup,dispose:disposeGroupViews,invalidate,state});
+    return Object.freeze({render:renderGroup,dispose:disposeGroupViews,invalidate,state,contextText:groupContextText});
   }
   window.DKDSPluginModules.define('builtin.resonance-workbench','feature-group-runtime',Object.freeze({create}));
 })();

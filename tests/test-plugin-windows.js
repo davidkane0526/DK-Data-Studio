@@ -200,7 +200,12 @@ const resonanceFeatureGraph=[
   resonanceFeatureRuntime,
   read('src/plugins/resonance-workbench/feature-context.js'),
   read('src/plugins/resonance-workbench/feature-group-runtime.js'),
-  read('src/plugins/resonance-workbench/feature-analysis-runtime.js')
+  read('src/plugins/resonance-workbench/feature-analysis-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-peak-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-selection-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-inspector-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-main-plot-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-controls-runtime.js')
 ].join('\n');
 for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
   assert(resonanceShared.includes(label),`Resonance shared workbench must retain ${label}.`);
@@ -229,6 +234,11 @@ for(const rel of [
   'src/plugins/resonance-workbench/feature-context.js',
   'src/plugins/resonance-workbench/feature-group-runtime.js',
   'src/plugins/resonance-workbench/feature-analysis-runtime.js',
+  'src/plugins/resonance-workbench/feature-peak-runtime.js',
+  'src/plugins/resonance-workbench/feature-selection-runtime.js',
+  'src/plugins/resonance-workbench/feature-inspector-runtime.js',
+  'src/plugins/resonance-workbench/feature-main-plot-runtime.js',
+  'src/plugins/resonance-workbench/feature-controls-runtime.js',
   'src/plugins/resonance-workbench/feature-runtime.js',
   'src/plugins/ter-analysis/plugin.js',
   'desktop/plugin-window-manager.js',
