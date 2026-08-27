@@ -20,7 +20,7 @@ function makeProject(){
   return {
     format:'dk-data-studio-project',
     schemaVersion:2,
-    version:'3.61.105',
+    version:'3.61.106',
     datasets:state.datasets.map(d=>({
       name:d.name,path:d.path,text:d.text,vg:d.vg,
       sourcePath:d.sourcePath||d.path,

@@ -1,12 +1,12 @@
-# Code quality audit — v3.61.105
+# Code quality audit — v3.61.106
 
 ## Release decision
 
-v3.61.104 completes the next presentation-ownership pass by making scientific card paint and floating utility chrome single-owned. The focus remains explicit responsibility ownership, semantic themeability, bounded modules and behavior-preserving consolidation rather than mechanical file splitting.
+v3.61.106 closes the runtime responsibility regression exposed by the built-in automation report: Core plugin-host code no longer validates ownerless contributions as plugin manifests, Theme popovers retain their own material role inside Chrome, and automation diagnostics now report Core, foundation-contract, algorithm-provider, workbench and external-package failures separately.
 
 ## Completed
 
-- Authored Core is grouped by responsibility under `src/core/{data,project,scientific,plugins,ui,theme,services,host,performance,workflow,diagnostics,recipes}`. `src/core/` root implementation files are forbidden.
+- Authored Core is grouped by responsibility under `src/core/{data,project,scientific,plugins,ui,theme,services,host,performance,workflow,recipes}`. `src/core/` root implementation files are forbidden.
 - Legacy `base/modern` CSS layering is removed and replaced by explicit Cascade Layers: `foundation < plugin < structure < presentation < theme < platform < window`.
 - Authored renderer CSS now contains **0 `!important` declarations** across Core styles, first-party `plugin.css`, mobile CSS and dedicated plugin-window CSS.
 - `scripts/validate-styles.js` validates brace/string/comment balance, rejects `!important`, rejects legacy specificity directories and rejects domain-plugin identities in Core styles.
@@ -25,6 +25,8 @@ v3.61.104 completes the next presentation-ownership pass by making scientific ca
 - Resonance interaction stage 2 is complete. `feature-selection-runtime.js` owns sweep/peak/range selection and keyboard selection commands; `feature-peak-runtime.js` owns detector/metric providers and metric cache state; `feature-inspector-runtime.js` owns Inspector rendering/edit entry points; `feature-main-plot-runtime.js` owns ScientificCurveSurface direct manipulation/range-menu state; and `feature-controls-runtime.js` owns dataset/visibility/transform controls. The coordinating `feature-runtime.js` is now **below 48 KiB**.
 - Automation diagnostics is now split by responsibility: `automation-smoke-cases.js` owns executable smoke-case implementations, while `automation-test-runtime.js` owns runner lifecycle, report assembly/persistence and UI binding. Both are below **48 KiB**, so the previous 80 KiB exception is removed and there are now **zero oversized authored JavaScript modules** under `src/` and `desktop/`.
 - Shell navigation now has one structural/behavioral owner. `shell-navigation.css` exclusively owns the command-bar/activity geometry, while `shell-navigation.js` owns secondary-activity overflow/reflow. `workspace-safeguards` is again limited to import safeguards, and plugin-manager typography has moved back to `schema-and-plugin-ui.css`. Structure-layer duplicated selectors fell from **89 to 73**, with cross-file ownership edges reduced from **100 to 78**. `validate-styles.js` now rejects shell-navigation geometry outside its owner.
+- Runtime failure ownership is now explicit. Strict `pluginType` validation remains mandatory for real plugin manifests, while Core/ownerless Activity and menu contributions are guarded before plugin classification. Theme popovers override enclosing Chrome ownership. Automation reports separate Core Theme, Plugin Runtime, External Packages, Scientific Data Contracts foundation, Algorithm Provider, Resonance Workbench and TER Workbench responsibilities.
+- Integration diagnostics live under `src/diagnostics/`, and legacy project/data adapters live under `src/migrations/`; neither is a Core responsibility.
 - Presentation state ownership is now narrower. `control-status.css` exclusively owns AnalysisWorkbench navigation and status-bar/plugin-status state; `shell.css` owns generic shell hover/motion; `scientific.css` no longer carries global shell-control hover rules; and `workspace-theme-boundary.css` no longer acts as a late nav/status/shell-control patch layer. The card/surface pass now gives `scientific.css` sole presentation ownership of `trend-card`, `analysis-chart-card` and GroupPlot card/header/legend paint, while `shell.css` solely owns `floating-panel` / `floating-header` paint. Exact duplicate selectors across the five main presentation modules have fallen from **91 to 42**, with cross-file ownership edges reduced to **42**. `validate-styles.js` enforces these owners and treats 42/42 as monotonic debt ceilings.
 
 ## Measured debt

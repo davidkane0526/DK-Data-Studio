@@ -39,6 +39,6 @@ function assert(value,message){if(!value)throw new Error(message);}
   assert(dc.includes("proxy?.('core.project-history')")&&dc.includes('commitArtifactMutation'),'Data Center non-source artifact edits must use Core history rather than a private undo stack.');
   assert(!dcView.includes('dcTagChips')&&!app.includes('importColumnTagFilter'),'Legacy semantic tag pills must not remain coupled to Data Center / Import UX; semantic helpers stay available only as internal metadata utilities.');
   assert(ui.includes('navigationToolObstacles()')&&ui.includes('avoidNavigationToolCollisions()')&&ui.includes("'[data-dkds-legend]'")&&ui.includes('[data-dkds-plot-scope]')&&ui.includes('installNavigationObstacleObserver()')&&!ui.includes("'.respar-main-legend'"),'Core D3 navigation chrome must consume semantic legend/plot-scope markers instead of plugin-specific selectors.');
-  assert(automation.includes("const VERSION='1.26.0'")&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract.');
+  {const v=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);assert(v.length===3&&(v[0]>1||(v[0]===1&&v[1]>=26))&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract on runner v1.26+.');}
   console.log('v3.61.20 semantic tags + unified project history + legend-aware D3 toolbar checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

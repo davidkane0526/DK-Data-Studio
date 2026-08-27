@@ -701,6 +701,10 @@ module.exports = {
     {
       "file": "tests/test-v361105-core-plugin-ownership.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361106-runtime-responsibility-boundaries.js",
+      "args": []
     }
   ],
   "check": [
@@ -1436,6 +1440,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361105-core-plugin-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361106-runtime-responsibility-boundaries.js",
       "args": []
     }
   ],

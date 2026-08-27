@@ -29,7 +29,7 @@ assert(kernel.includes("descriptor?.remote===true"),'Local main-window data sour
 assert(kernel.includes("rename:pluginType==='data'||pluginType==='foundation'")&&kernel.includes("remove:pluginType==='data'||pluginType==='foundation'"),'Foundation/data plugins must receive the host-owned source management methods promised to Data Center.');
 
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
-assert(automation.includes("const VERSION='1.26.0'"),'Automation runner must identify the v3.61.18 contract diagnostics.');
+{const v=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);assert(v.length===3&&(v[0]>1||(v[0]===1&&v[1]>=26)),'Automation runner must preserve v1.26+ data-source diagnostics.');}
 assert(automation.includes('currentProjectPayload.capabilitySnapshot'),'Current-project Data Center smoke must use the same synchronized capability snapshot as real TOP windows.');
 
 const pluginWindow=read('src/plugin-window/runtime.js');

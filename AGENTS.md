@@ -78,7 +78,7 @@ Run `npm run plugin:index` after adding/removing plugin folders. Normal `npm sta
 
 ## Shared science and algorithm-provider rule (v3.52+)
 
-Stable runtime-independent mathematical primitives and legacy compatibility APIs may live in `src/science/`. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
+Stable runtime-independent mathematical primitives may live in `src/science/`. Legacy project/data conversion belongs only in `src/migrations/`. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
 
 Examples already moved there:
 - import/parser primitives;
@@ -89,7 +89,7 @@ Examples already moved there:
 - TER;
 - pulse/read extraction.
 
-Do not copy an algorithm between feature plugins. A versioned Algorithm Plugin owns the implementation; Workbench plugins resolve it through `ctx.analysis.algorithms`. Existing `DKDSScience` algorithm entry points are compatibility/reference APIs while migrations are completed.
+Do not copy an algorithm between feature plugins. A versioned Algorithm Plugin owns the implementation; Workbench plugins resolve it through `ctx.analysis.algorithms`. `DKDSScience` is the canonical runtime-independent science entry; do not recreate the removed `Analysis` global or `ctx.analysis.detectors` compatibility facades.
 
 Algorithm version rule (v3.54+): versionless resolution is only for a new analysis choice. Once an analysis/project stores an algorithm reference, persist an exact `category + id + version`. If that exact version is unavailable, report `missing-version` and alternatives; never silently migrate the project to a newer/default algorithm. External provider package rollback is managed by Core Plugin Manager history; do not build per-workbench update/rollback UI.
 

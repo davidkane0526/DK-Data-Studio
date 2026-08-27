@@ -51,7 +51,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
     for(const row of rows){
       const spec=row.value||{};
       const definition=definitionById(row.pluginId);
-      const toolWorkspace=pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId;
+      const toolWorkspace=!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId;
       if(!toolWorkspace)continue;
       const toolButton=document.createElement('button');
       toolButton.type='button';toolButton.className='plugin-menu-item tool-workspace-menu-item';
@@ -84,7 +84,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
     for(const row of rows){
       const spec=row.value||{};
       const definition=definitionById(row.pluginId);
-      const toolWorkspace=pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
+      const toolWorkspace=!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
       if(toolWorkspace)continue;
       const button=document.createElement('button');
       button.type='button';

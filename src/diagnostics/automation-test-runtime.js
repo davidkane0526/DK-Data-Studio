@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.26.0';
+  const VERSION='1.27.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[],coverage:{}};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -59,7 +59,7 @@
 
   const smokeCases=window.DKDSAutomationSmokeCases;
   if(!smokeCases)throw new Error('Automation smoke-case module unavailable.');
-  const {rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginSmoke}=smokeCases;
+  const {rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginContractSmoke,pluginSmoke,externalPluginPackageSmoke}=smokeCases;
 
   async function runAll(){
     if(state.running)return state.latest;
@@ -85,8 +85,8 @@
     });
     await runCase('ui.theme-coverage','Theme Coverage Contract','UI / Theme',async()=>{
       const report=window.DKDSTheme?.coverage?.();assert(report?.contractVersion==='3.5.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
-      assert((report.summary?.partial||0)===0&&(report.summary?.unmanaged||0)===0,`Core Theme coverage incomplete: partial=${report.summary?.partial||0} unmanaged=${report.summary?.unmanaged||0}`);
-      assert((report.summary?.brokenMaterial||0)===0,`Core Theme material renderer broken on ${report.summary?.brokenMaterial||0} surface(s).`);
+      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0;
+      if(partial||unmanaged||broken){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken}`);err.data={responsibility:'core.theme',summary:report.summary,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
       return report;
     });
     await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{
@@ -94,8 +94,11 @@
       assert(typeof smoke==='function','Host import-workbench automation smoke is unavailable.');
       return await smoke();
     });
-    await runCase('plugins.activation','Plugin activation & registry','Plugins',pluginSmoke);
-    await runCase('types.contract','Scientific Data Type Registry','Data Contract',dataTypeSmoke);
+    await runCase('plugins.activation','Plugin activation & registry','Plugins / Runtime',pluginSmoke);
+    await runCase('plugins.external-packages','External plugin package conflicts','Plugins / External',externalPluginPackageSmoke);
+    await runCase('plugin.resonance-contract','Resonance Workbench integration contract','Plugins / Resonance',()=>pluginContractSmoke('builtin.resonance-workbench'));
+    await runCase('plugin.ter-contract','TER Analysis integration contract','Plugins / TER',()=>pluginContractSmoke('builtin.ter-analysis'));
+    await runCase('types.contract','Scientific Data Contracts foundation','Data Contract / Foundation',dataTypeSmoke);
     await runCase('selection.contract','Typed Selection Contract','Data Contract',selectionContractSmoke);
     await runCase('artifacts.roundtrip','Artifact Store & lineage round-trip','Data Contract',artifactRoundTripSmoke);
     await runCase('data.sources.lifecycle','Project source data lifecycle','Data Contract',dataSourceLifecycleSmoke);
@@ -103,7 +106,7 @@
     await runCase('reactive.contract','Scientific Reactive Dependency','Data Contract',scientificReactiveSmoke);
     await runCase('pipeline.contract','Scientific Data Pipeline','Data Contract',scientificPipelineSmoke);
     await runCase('transforms.registry','Scientific Transform Registry & Scalar Field','Data Contract',scientificTransformRegistrySmoke);
-    await runCase('scalar-field.shared','Scientific Scalar Field & resonance feature field','Data Contract',scientificScalarFieldSmoke);
+    await runCase('scalar-field.shared','Core Scientific Scalar Field renderer','Data Contract / Core',scientificScalarFieldSmoke);
     await runCase('algorithms.registry','Scientific Algorithm Registry & Version Lock','Data Contract',scientificAlgorithmRegistrySmoke);
     await runCase('algorithms.version-management','Algorithm default / lock / missing-version management','Data Contract',scientificAlgorithmVersionManagementSmoke);
     await runCase('algorithms.package-catalog','Algorithm Package Catalog & compatibility','Data Contract',scientificAlgorithmPackageCatalogSmoke);

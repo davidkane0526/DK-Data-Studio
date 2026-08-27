@@ -1,3 +1,12 @@
+# v3.61.106 — Runtime Responsibility Boundaries
+
+- Fix a Core Plugin Host regression introduced by strict `pluginType` enforcement: Activity and menu rendering now guard ownerless/Core contributions before plugin classification, while real plugin manifests remain strictly required to declare `pluginType`.
+- Fix Core Theme material-role precedence so semantic popovers remain `popover` surfaces even when mounted inside toolbar/Chrome containers; Theme Coverage no longer reports those menus as partially managed Chrome.
+- Split automation responsibility reporting into Plugin Runtime, External Plugin Packages, Scientific Data Contracts foundation, Algorithm Provider, Core Scalar Field renderer, Resonance Workbench and TER Workbench checks. Plugin-owned types/Pipeline stages are no longer reported as Core failures.
+- Report external `.dkplugin` conflicts independently from built-in plugin activation, so an installed package ID collision cannot be confused with a Core host/runtime failure.
+- Add the v3.61.106 runtime-responsibility regression gate and update historical automation tests to protect the current owner boundaries instead of the former mixed diagnostics.
+- Validation: source test suite **176/176 PASS**; release check suite **184/184 PASS**; Plugin Boundary=0; scientific Python/JS parity PASS; SDK Harness PASS; first-party plugin manifests **14/14 PASS**; authored CSS remains at 0 `!important`.
+
 # v3.61.105 — Core / Plugin Ownership Boundary
 
 - Move integration diagnostics out of `src/core` into `src/diagnostics`; Core no longer owns domain-aware automation diagnostics.

@@ -1,4 +1,4 @@
-# Project structure policy — v3.61.87
+# Project structure policy — v3.61.106
 
 ## Authored source
 
@@ -10,7 +10,9 @@
 - `src/core/plugins/`: plugin contract/module/manager/devtools plus the importable Plugin Kernel module graph under `kernel/modules/`; its runtime entry is declared in `kernel/composition.json`.
 - `src/core/ui/`: semantic UI infrastructure plus the importable UI module graph under `modules/`; its runtime entry is declared in `composition/composition.json`.
 - `src/core/theme/`: Theme runtime, Material renderer, coverage/debug utilities.
-- `src/core/host/`, `services/`, `performance/`, `workflow/`, `diagnostics/`, `recipes/`: cross-plugin Core responsibilities.
+- `src/core/host/`, `services/`, `performance/`, `workflow/`, `recipes/`: cross-plugin Core responsibilities.
+- `src/diagnostics/`: integration diagnostics across Core and plugins; diagnostics may know domain plugins, so they are explicitly outside Core.
+- `src/migrations/`: isolated one-way compatibility adapters for old project/data formats; migration code must not flow back into the current Core model.
 - `src/styles/foundation/`: reset/foundation rules.
 - `src/styles/structure/`: geometry and structural contracts.
 - `src/styles/presentation/`: shared visual component presentation.

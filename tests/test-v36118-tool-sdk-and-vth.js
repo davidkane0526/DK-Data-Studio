@@ -24,7 +24,7 @@ const tool=json('sdk/templates/tool-plugin/plugin.json');
 assert(tool.pluginType==='tool'&&tool.workspace?.role==='top','Default Tool template must be a TOP-equivalent Tool Workspace.');
 assert(tool.workspace.activity===tool.window?.activity,'Tool Workspace activity/window contract must match.');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
-assert(kernel.includes("pluginTypeForManifest(definition?.manifest||{})==='tool'&&spec.role==='top'"),'Core activity navigation must classify Tool Workspaces.');
+assert(kernel.includes("!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'"),'Core activity navigation must classify Tool Workspaces.');
 assert(kernel.includes("toolsMenu.appendChild(toolButton)"),'Tool Workspace opener must be collected under the Core Tools menu.');
 const docs=read('sdk/TOOL_PLUGINS.md');
 assert(docs.includes('当前版本刻意不定义额外的工具语义')&&docs.includes('与 TOP 使用相同'),'Tool SDK docs must preserve the intentionally minimal TOP-equivalent Tool contract.');

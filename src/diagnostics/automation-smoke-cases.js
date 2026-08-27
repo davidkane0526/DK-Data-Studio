@@ -202,7 +202,7 @@
   }
 
   function scientificTransformRegistrySmoke(){
-    const T=window.DKDSScientificTransforms,D=window.DKDSData,P=window.DKDSScientificPipeline;
+    const T=window.DKDSScientificTransforms,D=window.DKDSData;
     assert(T?.list&&T?.runCurve&&T?.runScalarField,'Scientific Transform Registry unavailable.');
     const rows=T.list({public:true});const ids=rows.map(row=>row.id);
     for(const id of ['raw','detrend','didv','d2idv2','dlog','dvdi','resistance'])assert(ids.includes(id),`Missing canonical transform: ${id}`);
@@ -211,24 +211,18 @@
     const curve=T.runCurve('didv',a);assert(curve.semanticType==='science.transport.didv'&&curve.points.length===a.x.length,'Canonical curve transform failed.');
     const field=T.runScalarField('didv',[a,b],{targets:[-0.2,0,0.2],vgs:[0,1],direction:1,tolerance:.03});
     assert(field.semanticType==='science.transport.conductance-field'&&field.matrix.length===2&&field.matrix[0].length===3,'Canonical scalar-field projection failed.');
-    assert(P?.list?.({owner:'builtin.ter-analysis'}).some(row=>row.id==='scalar-field.didv'),'TER did not receive Core transform Pipeline stages.');
-    assert(P?.list?.({owner:'builtin.resonance-workbench'}).some(row=>row.id==='transform.didv'),'Resonance did not receive Core transform Pipeline stages.');
-    return {version:T.VERSION,registered:rows.length,curveType:curve.semanticType,fieldType:field.semanticType,fieldShape:[field.vgs.length,field.targets.length],terPipeline:true,resonancePipeline:true};
+    return {version:T.VERSION,owner:'builtin.standard-transport-algorithms',registered:rows.length,curveType:curve.semanticType,fieldType:field.semanticType,fieldShape:[field.vgs.length,field.targets.length]};
   }
 
   function scientificScalarFieldSmoke(){
-    const P=window.DKDSScientificPlot,types=window.DKDSUI?.dataTypes,pipeline=window.DKDSScientificPipeline;
-    assert(P?.scalarFieldSpec&&types&&pipeline?.get,'Shared Scientific Scalar Field runtime unavailable.');
-    const field={x:[0,1],y:['反扫 · 峰1','正扫 · 峰1'],z:[[-.12,.08],[-.05,.15]],xName:'Vg',yName:'峰族 / 扫描',xUnit:'V',valueName:'峰位 V_R',valueUnit:'V',semanticType:'resonance.feature-field'};
+    const P=window.DKDSScientificPlot;
+    assert(P?.scalarFieldSpec,'Shared Scientific Scalar Field runtime unavailable.');
+    const field={x:[0,1],y:['row-1','row-2'],z:[[-.12,.08],[-.05,.15]],xName:'X',yName:'Group',xUnit:'a.u.',valueName:'Value',valueUnit:'a.u.',semanticType:'science.scalar-field'};
     const spec=P.scalarFieldSpec(field,{diverging:true,renderKey:'automation-scalar-field-v1'});
     assert(spec?.traces?.[0]?.type==='heatmap','Shared scalar-field projection did not create a heatmap trace.');
     assert(spec.traces[0].zmid===0&&spec.traces[0].reversescale===true,'Diverging scalar-field defaults are incorrect.');
-    assert(spec.traces[0].colorbar?.title?.text==='峰位 V_R (V)','Scalar-field colorbar metadata is incomplete.');
-    assert(types.get('resonance.feature-field'),'Typed resonance.feature-field contract is not registered.');
-    assert(types.isA('resonance.feature-field','science.scalar-field'),'Resonance feature field is not compatible with the canonical scalar-field type.');
-    const gate=pipeline.get('builtin.resonance-workbench','gate-analysis');
-    assert(gate?.outputTypes?.includes?.('resonance.feature-field'),'Resonance gate Pipeline does not publish a feature-field output.');
-    return {version:P.VERSION,traceType:spec.traces[0].type,diverging:spec.traces[0].zmid===0,semanticType:'resonance.feature-field',gateOutputTypes:[...(gate.outputTypes||[])]};
+    assert(spec.traces[0].colorbar?.title?.text==='Value (a.u.)','Scalar-field colorbar metadata is incomplete.');
+    return {version:P.VERSION,owner:'core.scientific-plot',traceType:spec.traces[0].type,diverging:spec.traces[0].zmid===0};
   }
 
   function scientificAlgorithmRegistrySmoke(){
@@ -346,21 +340,47 @@
   function dataTypeSmoke(){
     const types=window.DKDSUI?.dataTypes;assert(types,'Data Type Registry unavailable.');
     const required=['science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.transport.current-field','science.transport.background-removed-current-field','science.transport.conductance-field','science.transport.second-derivative-current-field','science.transport.log-current-slope-field','science.transport.differential-resistance-field','science.transport.resistance-field','science.resonance.peak','science.resonance.peak-set','science.resonance.peak-metrics','science.resonance.fwhm','science.ter.value','science.ter.matrix'];
-    for(const id of required)assert(types.get(id),`Missing canonical data type: ${id}`);
-    assert(types.isA('resonance.peak','science.resonance.peak'),'Resonance peak is not compatible with canonical resonance peak.');
-    assert(types.isA('ter.matrix-point','science.ter.value'),'TER point is not compatible with canonical TER value.');
-    const validation=types.validate?.()||{ok:true,errors:[]};assert(validation.ok,`Data Type Registry invalid: ${(validation.errors||[]).join('; ')}`);
-    return {required:required.length,registered:types.list().length,validation};
+    for(const id of required)assert(types.get(id),`Missing canonical scientific contract: ${id}`);
+    const validation=types.validate?.()||{ok:true,errors:[]};assert(validation.ok,`Scientific Data Contracts registry invalid: ${(validation.errors||[]).join('; ')}`);
+    return {owner:'builtin.scientific-data-contracts',required:required.length,registered:types.list().length,validation};
+  }
+
+  function pluginContractSmoke(pluginId){
+    const diag=window.DKDSPlugins?.diagnostics?.();assert(diag,'Plugin diagnostics unavailable.');
+    const row=(diag.plugins||[]).find(item=>item?.id===pluginId)||null;
+    if(!row?.enabled)return {pluginId,status:'disabled',checked:false};
+    if(!row?.active)return {pluginId,status:row?.status||'inactive',checked:false,deferredTo:'plugins.activation',error:row?.error||''};
+    const types=window.DKDSUI?.dataTypes,pipeline=window.DKDSScientificPipeline;assert(types&&pipeline,'Plugin scientific integration runtime unavailable.');
+    if(pluginId==='builtin.resonance-workbench'){
+      assert(types.isA('resonance.peak','science.resonance.peak'),'Resonance Workbench type resonance.peak does not extend science.resonance.peak.');
+      assert(types.isA('resonance.feature-field','science.scalar-field'),'Resonance Workbench feature-field does not extend science.scalar-field.');
+      assert(pipeline.list?.({owner:pluginId}).some(item=>item.id==='transform.didv'),'Resonance Workbench transform.didv Pipeline stage is not registered.');
+      const gate=pipeline.get(pluginId,'gate-analysis');assert(gate?.outputTypes?.includes?.('resonance.feature-field'),'Resonance Workbench gate-analysis does not publish resonance.feature-field.');
+      return {pluginId,status:'active',checked:true,types:['resonance.peak','resonance.feature-field'],pipelines:['transform.didv','gate-analysis']};
+    }
+    if(pluginId==='builtin.ter-analysis'){
+      assert(types.isA('ter.matrix-point','science.ter.value'),'TER Analysis type ter.matrix-point does not extend science.ter.value.');
+      assert(pipeline.list?.({owner:pluginId}).some(item=>item.id==='scalar-field.didv'),'TER Analysis scalar-field.didv Pipeline stage is not registered.');
+      return {pluginId,status:'active',checked:true,types:['ter.matrix-point'],pipelines:['scalar-field.didv']};
+    }
+    return {pluginId,status:'active',checked:false};
   }
 
   function pluginSmoke(){
     const diag=window.DKDSPlugins?.diagnostics?.();assert(diag,'Plugin diagnostics unavailable.');
     const failures=(diag.plugins||[]).filter(row=>row?.enabled&&row?.status==='error');
-    assert(!failures.length,`Enabled plugins with errors: ${failures.map(row=>row.id).join(', ')}`);
+    if(failures.length){const err=new Error(`Enabled plugins with activation errors: ${failures.map(row=>row.id).join(', ')}`);err.data={responsibility:'activation-boundary',failures:failures.map(row=>({id:row.id,source:row.source||'',pluginType:row.pluginType||'',error:row.error||''}))};throw err;}
     assert((diag.active||[]).length>0,'No plugins are active.');
     return {definitions:(diag.definitions||[]).length,active:(diag.active||[]).length,disabled:Object.keys(diag.disabled||{}).length,registryKinds:Object.keys(diag.registries||{}).length};
   }
 
+  function externalPluginPackageSmoke(){
+    const diag=window.DKDSPlugins?.diagnostics?.();assert(diag,'Plugin diagnostics unavailable.');
+    const errors=Array.isArray(diag.external?.errors)?diag.external.errors:[];
+    if(errors.length){const err=new Error(`External plugin package errors: ${errors.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:errors.map(row=>({file:row?.file||'',pluginId:row?.pluginId||'',error:row?.error||String(row||'')}))};throw err;}
+    return {responsibility:'external-plugin-package',errors:0};
+  }
 
-  window.DKDSAutomationSmokeCases=Object.freeze({rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginSmoke});
+
+  window.DKDSAutomationSmokeCases=Object.freeze({rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginContractSmoke,pluginSmoke,externalPluginPackageSmoke});
 })();

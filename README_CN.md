@@ -1,13 +1,13 @@
 # DK Data Studio
 
-当前版本：**v3.61.105**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
+当前版本：**v3.61.106**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
 ## 当前架构原则
 
 - **Core 保持领域中立。** 共振、TER、Pulse、Vth 等领域逻辑不得进入 Core selector、Material role 判定或通用布局 fallback。
-- **Core 按职责组织。** `src/core/` 根目录不放实现文件，代码进入 `data / project / scientific / plugins / ui / theme / services / host / performance / workflow / diagnostics / recipes`。
+- **Core 按职责组织。** `src/core/` 根目录不放实现文件，代码进入 `data / project / scientific / plugins / ui / theme / services / host / performance / workflow / recipes`。
 - **插件声明语义，Core 提供基础设施。** PlotView、ScientificPlot、Table、ActionGroup、Selection、History、Theme Material 等由 Core/SDK 统一实现。
 - **算法可替换。** 峰检测、FWHM/基线、TER、transport transform 等通过 Algorithm Provider 注册、版本化并记录 provenance。
 - **CSS 依靠所有权而不是 specificity。** 已删除 `base/modern` 双层结构和 authored CSS 中的 `!important`，统一使用 Cascade Layers。
@@ -30,7 +30,7 @@ DK-Data-Studio/
 │  │  ├─ ui/                   通用 UI infrastructure
 │  │  ├─ theme/                Theme runtime / Material renderer
 │  │  ├─ host/ services/       Host-neutral bridges
-│  │  └─ performance/ workflow/ diagnostics/ recipes/
+│  │  └─ performance/ workflow/ recipes/
 │  ├─ styles/
 │  │  ├─ foundation/
 │  │  ├─ structure/
@@ -38,7 +38,9 @@ DK-Data-Studio/
 │  │  ├─ theme/
 │  │  └─ platform/
 │  ├─ plugins/                 第一方插件及 manifest-owned plugin.css
-│  ├─ science/                 与 UI 无关的科学算法
+│  ├─ science/                 与 UI 无关的科学基础代码
+│  ├─ diagnostics/             跨层集成诊断，不属于 Core
+│  ├─ migrations/              旧项目/旧数据到当前模型的隔离迁移层
 │  └─ generated/               可重建运行时产物/索引
 ├─ sdk/                        外部插件 SDK、契约与模板
 ├─ tests/                      回归、契约、边界与性能测试

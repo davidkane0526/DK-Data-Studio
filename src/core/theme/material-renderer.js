@@ -11,9 +11,10 @@
   const backdropOf=style=>String(style?.backdropFilter||style?.webkitBackdropFilter||prop(style,'backdrop-filter')||prop(style,'-webkit-backdrop-filter')||'').trim();
   const px=value=>{const m=String(value||'').match(/(-?[\d.]+)px/i);return m?Number(m[1]):0;};
   const ROLE_CLASS_PREFIX='dkds-material-role-';
+  const POPOVER_SEMANTIC_SELECTOR='.command-menu,.dkds-context-menu,.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.hover-tip,.activity-more-menu,.context-overflow-menu,.range-action-menu,[role="menu"],[data-dkds-popover]';
   const ROLE_BINDINGS=Object.freeze([
     ['floating','.dkds-floating-surface,.floating-panel,.dkds-prime-floating,.dkds-memory-panel,.dkds-scientific-nav-tools,.zoom-panel,.dkds-portable-view.is-floating,.dkds-portable-view.is-global-floating'],
-    ['popover','.command-menu,.dkds-context-menu,.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.hover-tip,.activity-more-menu,.context-overflow-menu,.range-action-menu,[role="menu"],[data-dkds-popover]'],
+    ['popover',POPOVER_SEMANTIC_SELECTOR],
     ['elevated','#pluginManagerPage,#automationTestPage,.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog'],
     ['chrome','.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head'],
     ['sidebar','.left-panel,.plugin-sidebar-sections,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-analysis-left,.dkds-analysis-right'],
@@ -28,6 +29,7 @@
   const SEMANTIC_CONTROL_PAINT_SELECTOR='.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
   const semanticControlOwnsPaint=el=>!!el?.matches?.(SEMANTIC_CONTROL_PAINT_SELECTOR);
   function chromeOwnedIntegrated(el){
+    if(el?.matches?.(POPOVER_SEMANTIC_SELECTOR))return false;
     if(!el?.closest?.(CHROME_SEMANTIC_SELECTOR))return false;
     if(el.matches?.(INTEGRATED_CONTAINER_SELECTOR))return true;
     return !!el.closest?.(INTEGRATED_CONTAINER_SELECTOR);

@@ -106,7 +106,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
   }
 
   function addMenuItem(pluginId,spec={}) {
-    const definition=definitionById(pluginId);const defaultMenu=pluginTypeForManifest(definition?.manifest||{})==='tool'?'tools':'export';
+    const definition=definitionById(pluginId);const defaultMenu=definition&&pluginTypeForManifest(definition.manifest)==='tool'?'tools':'export';
     const menu=String(spec.menu||defaultMenu);
     const mount=document.querySelector(`[data-plugin-menu="${menu}"]`);
     if(!mount)throw new Error(`Plugin menu mount not found: ${menu}`);
