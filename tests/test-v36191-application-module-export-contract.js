@@ -99,5 +99,5 @@ for(const name of importConsumers){
 }
 
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-assert.equal(pkg.version,'3.61.96','Application export-contract regression must ship as v3.61.96.');
+assert.equal(pkg.version,'3.61.97','Application export-contract regression must ship as v3.61.97.');
 console.log(`v3.61.91 Application module export-contract PASS (${requirements.length} cross-module symbol uses checked; ${importConsumers.size} Import Workbench exports consumed).`);

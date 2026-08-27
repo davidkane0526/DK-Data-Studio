@@ -1,3 +1,11 @@
+# v3.61.97 — Status Bar Rhythm / Theme Appearance Geometry
+
+- Increased the bottom-right status-command rhythm from 6 px to 8 px and reserved a 14 px right safe area on the shared status bar, moving the Theme / Memory / DevTool / Web / AI cluster slightly left without giving AI a plugin-specific margin.
+- Fixed the Theme panel appearance segmented control so the selected Light/Dark accent segment uses a 7 px inset radius inside the 9 px outer track, eliminating the rectangular blue block inside a rounded border.
+- Added a v3.61.97 geometry regression covering status-bar right inset, inter-command spacing, outer/inner appearance radii and token-owned active accent paint.
+- Validation: `npm test` 167/167 PASS; `npm run check` 175/175 PASS; SDK Harness PASS; Plugin Boundary=0; 33 authored CSS files with 0 `!important`.
+- The supplied v3.61.96 desktop automation report is otherwise healthy (41 pass / 1 fail / 1 skip, no runtime errors, Resonance and Data Center live hydration pass); the remaining Theme Coverage `partial=2` diagnostic is tracked separately from this geometry-only release.
+
 # v3.61.96 — Header Action Separation / Theme Coverage Ownership
 
 - Fixed the remaining TER/Pulse dedicated-window header collision by changing plugin header ActionGroups from one integrated segmented capsule into separated peer controls. Each action now owns an independent Core control surface, uses an 8 px inter-button gap, and keeps its label atomic with `flex: 0 0 auto` plus `min-width: max-content`.

@@ -220,6 +220,7 @@ body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch{
 body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch>button{
   min-width:52px;
   padding:0 9px;
+  border-radius:7px;
   background:transparent;
   color:var(--dkui-text-soft);
   -webkit-text-fill-color:var(--dkui-text-soft);

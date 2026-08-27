@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.96','v3.61.96 visual/plot/theme contract must track the application version.');
+assert.equal(json('package.json').version,'3.61.97','v3.61.97 visual/plot/theme contract must track the application version.');
 
 const workbench=read('src/styles/structure/analysis-workbench.css');
 const shell=read('src/styles/structure/analysis-shell.css');
@@ -38,7 +38,7 @@ assert(integrated.includes('.dkds-group-plot-head')&&integrated.includes('border
   'Integrated plot actions must flatten directly into surface/group title chrome.');
 
 // Bottom command cluster needs readable separation.
-assert(/\.statusbar-command-cluster\{[\s\S]*?gap:6px;/.test(status)&&/\.statusbar-plugin-zone\{[\s\S]*?gap:6px;/.test(status),
+assert(/\.statusbar-command-cluster\{[\s\S]*?gap:8px;/.test(status)&&/\.statusbar-plugin-zone\{[\s\S]*?gap:8px;/.test(status),
   'Status-bar command and plugin zones must preserve a 6px rhythm.');
 
 // Thin Glass inputs/selects share one Core geometry and one role-owned paint family.

@@ -7,7 +7,7 @@ const readComposition=require('./helpers/read-composition');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const json=file=>JSON.parse(read(file));
 
-assert.equal(json('package.json').version,'3.61.96','integrated command chrome release must be v3.61.96');
+assert.equal(json('package.json').version,'3.61.97','integrated command chrome release must be v3.61.97');
 const actionCore=readComposition(root,'src/core/ui/composition');
 const portable=readComposition(root,'src/core/ui/composition');
 const curves=readComposition(root,'src/core/ui/composition');

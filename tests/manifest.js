@@ -665,6 +665,10 @@ module.exports = {
     {
       "file": "tests/test-v36196-header-action-spacing-theme-coverage.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36197-statusbar-theme-mode-geometry.js",
+      "args": []
     }
   ],
   "check": [
@@ -1364,6 +1368,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36196-header-action-spacing-theme-coverage.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36197-statusbar-theme-mode-geometry.js",
       "args": []
     }
   ],
