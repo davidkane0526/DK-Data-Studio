@@ -20,7 +20,8 @@ assert(!/\.dkds-scientific-width-band\{[^}]*opacity:/.test(structure),'Structure
 
 const contract=read('src/styles/theme/contract.css');
 const material=read('src/styles/theme/material-renderer.css');
-assert(contract.includes('--dkui-selected-shadow:0 0 0 1px'),'Selected-state shadow must use a single centered rim plus halo, not a stacked 2px ring.');
+assert(contract.includes('--dkui-selected-shadow:0 0 8px'),'Selected-state shadow must remain a single centered semantic halo.');
+assert(!contract.includes('--dkui-selected-shadow:0 0 0 1px'),'Selected-state shadow must not reintroduce the hard 1px rim that visually stacks selection styles.');
 assert(material.includes('box-shadow:var(--dkui-selected-shadow);'),'Theme material closure must preserve selected-mode shadow across profiles.');
 const thin=read('src/core/theme/runtime.js');
 for(const token of ["divider:'rgba(104,121,144,.14)'","controlBorder:'rgba(104,121,144,.22)'","glassEdge:'rgba(203,213,225,.30)'","divider:'rgba(100,116,139,.15)'","controlBorder:'rgba(100,116,139,.24)'"])assert(thin.includes(token),`Thin Glass low-line material hierarchy missing ${token}`);

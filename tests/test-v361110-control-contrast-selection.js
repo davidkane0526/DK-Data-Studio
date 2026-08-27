@@ -11,7 +11,8 @@ const controls=read('src/plugins/resonance-workbench/feature-controls-runtime.js
 const view=read('src/plugins/resonance-workbench/view-components.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
 const automation=read('src/diagnostics/automation-test-runtime.js');
-assert(contract.includes('--dkui-selected-fg')&&contract.includes('--dkui-selected-shadow:0 0 0 1px'),'selected state must use a centered semantic halo, not a displaced shadow/ring stack');
+assert(contract.includes('--dkui-selected-fg')&&contract.includes('--dkui-selected-shadow:0 0 8px'),'selected state must use one centered semantic halo without an extra hard rim');
+assert(!contract.includes('--dkui-selected-shadow:0 0 0 1px'),'selected state must not reintroduce the hard 1px rim');
 assert(contract.includes(':where(button.primary,.toolbar-btn.strong){background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff'),'primary paint must pair accent fill with white foreground in the final Theme layer');
 assert(material.includes('box-shadow:var(--dkui-selected-shadow)'),'integrated glass actions must preserve selected-state shadow');
 assert(shell.includes('background:var(--dkui-control-bg)')&&shell.includes('color:var(--dkui-text)'),'Core shell controls must use semantic fill/foreground tokens');

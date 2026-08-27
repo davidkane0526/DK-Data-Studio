@@ -6,21 +6,6 @@
   align-items:center;
   gap:3px;
 }
-.plugin-toolbar-btn[data-plugin-id]{
-  position:relative;
-}
-.plugin-toolbar-btn[data-plugin-id]::after{
-  content:'';
-  position:absolute;
-  left:6px;
-  right:6px;
-  bottom:1px;
-  height:1px;
-  background:currentColor;
-  opacity:.10;
-  pointer-events:none;
-}
-
 /* Coarse-pointer devices need larger targets without changing desktop density. */
 .dkds-pointer-coarse button,
 .dkds-pointer-coarse input,

@@ -721,6 +721,10 @@ module.exports = {
     {
       "file": "tests/test-v361110-control-contrast-selection.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361111-topbar-selection-cleanup.js",
+      "args": []
     }
   ],
   "check": [
@@ -1476,6 +1480,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361110-control-contrast-selection.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361111-topbar-selection-cleanup.js",
       "args": []
     }
   ],

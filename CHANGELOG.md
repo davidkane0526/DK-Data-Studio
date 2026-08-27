@@ -1,3 +1,9 @@
+# v3.61.111 — Topbar Selection Cleanup
+
+- Remove the historical plugin-toolbar underline pseudo-element from `platform/touch.css`; PRIME/SUB context actions such as 检查、组图、物理机制、峰间距、栅压分析与设置 no longer receive decorative bottom rules.
+- Simplify the semantic selected-state shadow to one centered halo, removing the extra 1 px rim that visually stacked two selection styles on the active top-level activity button.
+- Add a v3.61.111 regression gate so platform CSS cannot reintroduce plugin-toolbar underlines or a hard selection rim.
+
 # v3.61.110 — Computed Contrast & Selection State
 
 - Make Resonance scan-visibility commands publish a real semantic mode state (`active` + `aria-pressed`) so the currently selected visibility mode receives the same Theme-owned selected shadow as other mode controls.

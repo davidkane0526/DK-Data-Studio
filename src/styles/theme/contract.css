@@ -28,7 +28,7 @@ body.dkds-modern-ui :where(.dkds-action-button,.project-tab-close):active:not(:d
    subset of components. Data-semantic series/status marks remain untouched. */
 body.dkds-modern-ui{
   --dkui-selected-fg:color-mix(in srgb,var(--dkui-accent) 52%,var(--dkui-text));
-  --dkui-selected-shadow:0 0 0 1px color-mix(in srgb,var(--dkui-accent) 30%,transparent),0 0 9px color-mix(in srgb,var(--dkui-accent) 22%,transparent);
+  --dkui-selected-shadow:0 0 8px color-mix(in srgb,var(--dkui-accent) 30%,transparent);
   background:var(--dkui-canvas);
   background-image:radial-gradient(ellipse at 55% -12%,color-mix(in srgb,var(--dkui-accent) 7%,transparent),transparent 66%);
   color:var(--dkui-text);
