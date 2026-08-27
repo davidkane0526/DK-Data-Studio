@@ -51,12 +51,13 @@
   }
   function track(owner,off){const id=String(owner||'plugin');if(!ownerBindings.has(id))ownerBindings.set(id,new Set());ownerBindings.get(id).add(off);return()=>{try{off();}finally{ownerBindings.get(id)?.delete(off);}};}
   const UI_FONT='Segoe UI Variable Text, Microsoft YaHei UI, Segoe UI, sans-serif';
-  const TOOLTIP_THEME=Object.freeze({align:'left',font:Object.freeze({size:12,family:UI_FONT})});
+  const TOOLTIP_BASE=Object.freeze({align:'left',font:Object.freeze({size:12,family:UI_FONT})});
   const PLOT_SERIES_PALETTE=Object.freeze(['#2563eb','#0f9f9a','#dc2626','#f97316','#6d28d9','#db2777','#16a34a','#ca8a04','#0891b2','#7c3aed']);
-  const PLOT_THEME_LIGHT=Object.freeze({paper:'#ffffff',plot:'#ffffff',grid:'#e8edf4',zero:'#d3dbe6',axis:'#adb8c7',text:'#46546a',muted:'#6f7d91',legend:'rgba(214,223,235,.72)',colorbar:'#d3dce8'});
-  const PLOT_THEME_DARK=Object.freeze({paper:'#1d232e',plot:'#1d232e',grid:'#303a49',zero:'#414d5f',axis:'#5a687c',text:'#d8e0eb',muted:'#9aa7b9',legend:'rgba(72,84,103,.80)',colorbar:'#4b586b'});
+  const PLOT_THEME_LIGHT=Object.freeze({paper:'#ffffff',plot:'#ffffff',grid:'#e8edf4',zero:'#d3dbe6',axis:'#adb8c7',text:'#46546a',muted:'#6f7d91',legend:'rgba(214,223,235,.72)',colorbar:'#d3dce8',tooltip:'rgba(255,255,255,.96)',tooltipBorder:'#d8e0eb'});
+  const PLOT_THEME_DARK=Object.freeze({paper:'#1d232e',plot:'#1d232e',grid:'#303a49',zero:'#414d5f',axis:'#5a687c',text:'#d8e0eb',muted:'#9aa7b9',legend:'rgba(72,84,103,.80)',colorbar:'#4b586b',tooltip:'rgba(17,24,39,.96)',tooltipBorder:'#465369'});
   const activeThemeName=()=>String(window.DKDSTheme?.current?.()||document.documentElement?.dataset?.dkdsTheme||'').toLowerCase()|| (globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches?'dark':'light');
   const plotTheme=()=>activeThemeName()==='dark'?PLOT_THEME_DARK:PLOT_THEME_LIGHT;
+  const currentTooltipTheme=()=>{const theme=plotTheme();return Object.freeze({...TOOLTIP_BASE,bgcolor:theme.tooltip,bordercolor:theme.tooltipBorder,font:Object.freeze({...TOOLTIP_BASE.font,color:theme.text})});};
   const isPlainWhite=value=>['','#fff','#ffffff','white','rgb(255, 255, 255)','rgba(255, 255, 255, 1)'].includes(String(value??'').trim().toLowerCase());
   const oldGrid=value=>['','#edf0f5','#e8edf5','#e5e9f0','#dfe5ef'].includes(String(value??'').trim().toLowerCase());
   function themeAxis(axis={},theme=plotTheme()){
@@ -72,7 +73,7 @@
     if(isPlainWhite(source.plot_bgcolor))next.plot_bgcolor=theme.plot;
     if(source.legend&&typeof source.legend==='object')next.legend={...source.legend,bgcolor:isPlainWhite(source.legend.bgcolor)?'rgba(255,255,255,0)':source.legend.bgcolor,bordercolor:source.legend.bordercolor||theme.legend,borderwidth:Number(source.legend.borderwidth)||0,font:{family:UI_FONT,size:11,color:theme.text,...(source.legend.font||{})}};
     next.modebar={bgcolor:'rgba(0,0,0,0)',color:theme.muted,activecolor:theme.text,...(source.modebar||{})};
-    next.hoverlabel={...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}};
+    const tooltip=currentTooltipTheme();next.hoverlabel={...tooltip,...hover,font:{...tooltip.font,...(hover.font||{}),family:UI_FONT,size:TOOLTIP_BASE.font.size}};
     return next;
   }
   function normalizeHoverTemplate(value){
@@ -82,7 +83,7 @@
   function themeTrace(trace={}){
     if(!trace||typeof trace!=='object')return trace;
     const hover=trace.hoverlabel&&typeof trace.hoverlabel==='object'?trace.hoverlabel:{};
-    const next={...trace,hoverlabel:{...hover,...TOOLTIP_THEME,font:{...(hover.font||{}),...TOOLTIP_THEME.font}}};
+    const tooltip=currentTooltipTheme();const next={...trace,hoverlabel:{...tooltip,...hover,font:{...tooltip.font,...(hover.font||{}),family:UI_FONT,size:TOOLTIP_BASE.font.size}}};
     if(trace.colorbar&&typeof trace.colorbar==='object'){const theme=plotTheme(),title=trace.colorbar.title&&typeof trace.colorbar.title==='object'?trace.colorbar.title:{text:trace.colorbar.title};next.colorbar={...trace.colorbar,outlinecolor:trace.colorbar.outlinecolor||theme.colorbar,tickfont:{family:UI_FONT,size:10,color:theme.muted,...(trace.colorbar.tickfont||{})},title:{...title,font:{family:UI_FONT,size:11,color:theme.text,...(title.font||{})}}};}
     if(typeof trace.hovertemplate==='string')next.hovertemplate=normalizeHoverTemplate(trace.hovertemplate);
     return next;
@@ -313,7 +314,7 @@
     const id=String(owner||'plugin');
     return Object.freeze({
       version:VERSION,owner:id,element,runtimeState,rendererFor,
-      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,
+      react,restyle,relayout,resize,purge,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,get tooltipTheme(){return currentTooltipTheme();},
       bind:(target,event,handler,options)=>bind(id,target,event,handler,options),
       symbols:Object.freeze({type:d3Symbol,path:symbolPath}),
       raw:Object.freeze({get d3(){return window.d3;}})
@@ -322,5 +323,5 @@
   function refreshRenderedTheme(){if(typeof document==='undefined')return;document.querySelectorAll('[data-dkds-chart-renderer="d3"]').forEach(el=>{try{d3Renderer()?.resize?.(el);}catch{}});}
   try{globalThis.addEventListener?.('dkds:theme-changed',()=>queueMicrotask(refreshRenderedTheme));}catch{}
   function disposeOwner(owner){const id=String(owner||'');for(const off of [...(ownerBindings.get(id)||[])])try{off();}catch{}ownerBindings.delete(id);}
-  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,rendererFor,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,tooltipTheme:TOOLTIP_THEME,symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
+  window.DKDSCharts=Object.freeze({VERSION,configureRuntime,runtimeState,rendererFor,createScope,disposeOwner,element,react,restyle,relayout,resize,purge,bind,toImage,saveImage,themeLayout,themeData,normalizeConfig,legendMetrics,selectLegendForTrace,clearLegendSelection,displayScaleState,adoptDisplayScale,toggleDisplayScale,toggleYAxisDisplay,get tooltipTheme(){return currentTooltipTheme();},symbols:Object.freeze({type:d3Symbol,path:symbolPath})});
 })();

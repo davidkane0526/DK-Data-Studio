@@ -898,6 +898,15 @@
         const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','峰突出度','A']];
         const visibleIds=new Set(visibleSweepIds().map(String));
         const acceptedVisible=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.has(String(p.sweepId)));
+        let empty=hostEl.querySelector('.reswin-group-empty');
+        if(!acceptedVisible.length){
+          for(const row of groupCards.values())row.card.classList.add('hidden');
+          if(!empty){empty=dom.create('div');empty.className='reswin-group-empty dkds-note';hostEl.appendChild(empty);}
+          empty.textContent=(workspace.peaks||[]).length?'当前可见扫描没有已采纳峰，组图没有可绘制的数据。':'当前工程没有已保存共振峰。组图会在完成寻峰或恢复已保存峰后自动生成。';
+          uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-empty'});
+          return;
+        }
+        empty?.remove?.();
         const labels=[...new Set(acceptedVisible.map(peakLabel))];
         const terSeries=labels.map(label=>{const representative=acceptedVisible.find(p=>peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {name:`共振TER·${label}`,label,order,color:colorForPeakOrder(order,1),points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,[...visibleIds])||[]};}).filter(x=>x.points.length);
         const count=defs.length+(terSeries.length?1:0);

@@ -62,6 +62,6 @@ const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runti
   assert(runtimeSource.includes('canonical.filter(assignedToResonance)'),'Artifact-backed Resonance datasets must preserve the scoped assignment boundary.');
   assert(runtimeSource.includes('reconcileSavedPeakSweeps')&&runtimeSource.includes('getGroupDiagnostics'),'Resonance runtime must reconcile old peak identities and expose live diagnostics.');
   assert(windowRuntime.includes('resonanceGroupDiagnostics'),'Dedicated renderer diagnostics must report the live Resonance runtime rather than an external reconstructed model.');
-  assert(automation.includes("const VERSION='1.25.0'")&&automation.includes("'project.resonance-live'"),'Windows automation must execute current-project Resonance restoration inside a real dedicated renderer.');
+  assert(automation.includes("const VERSION='1.26.0'")&&automation.includes("'project.resonance-live'"),'Windows automation must execute current-project Resonance restoration inside a real dedicated renderer.');
   console.log('v3.61.22 legacy Resonance scoped-artifact + peak identity reconciliation runtime checks passed.');
 })().catch(err=>{console.error(err);process.exit(1);});

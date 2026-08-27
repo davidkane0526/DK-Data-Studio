@@ -16,12 +16,14 @@
     {id:'floating',label:'Floating Surfaces / Tool Panels',role:'floating',selector:'.dkds-floating-surface,.floating-panel,.dkds-prime-floating,.dkds-memory-panel,.zoom-panel,.dkds-portable-view.is-floating,.dkds-portable-view.is-global-floating,.dkds-material-role-floating'}
   ]);
   const roleOf=el=>String(getComputedStyle(el).getPropertyValue('--dkds-material-role')||'').trim().replace(/["']/g,'');
-  const OK_RENDER=new Set(['REAL_MATERIAL','MATERIAL_DISABLED','MATERIAL_SEMANTIC_OVERRIDE']);
+  const OK_RENDER=new Set(['REAL_MATERIAL','MATERIAL_DISABLED','MATERIAL_SEMANTIC_OVERRIDE','MATERIAL_CHROME_OWNED','MATERIAL_PARENT_OWNED']);
   function areaCoverage(){
     const Renderer=window.DKDSThemeMaterialRenderer;
     return ROLE_AREAS.map(area=>{
-      const nodes=[...document.querySelectorAll(area.selector)],managed=nodes.filter(el=>roleOf(el)===area.role).length;
-      const renderRows=nodes.map(el=>Renderer?.inspect?.(el,area.role)||{status:'BROKEN_MATERIAL_RENDERER',role:roleOf(el),expectedRole:area.role});
+      const nodes=[...document.querySelectorAll(area.selector)];
+      const ownershipRows=nodes.map(el=>Renderer?.ownership?.(el,area.role)||{managed:roleOf(el)===area.role,status:roleOf(el)===area.role?'MATERIAL_ROLE_OWNED':'ROLE_MISSING',role:roleOf(el),expectedRole:area.role});
+      const managed=ownershipRows.filter(row=>row?.managed===true).length;
+      const renderRows=nodes.map((el,index)=>{const owner=ownershipRows[index];if(owner?.managed&&owner.status!=='MATERIAL_ROLE_OWNED')return owner;return Renderer?.inspect?.(el,area.role)||{status:'BROKEN_MATERIAL_RENDERER',role:roleOf(el),expectedRole:area.role};});
       const broken=renderRows.filter(row=>['BROKEN_MATERIAL_RENDERER','BROKEN_OPTICAL_RENDERER','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','ENGINE_UNSUPPORTED','LOW_CONTRAST_MATERIAL'].includes(row.status)).length;
       const occluded=renderRows.filter(row=>row.status==='OPAQUE_PARENT_OCCLUSION').length;
       const real=renderRows.filter(row=>OK_RENDER.has(row.status)).length;
@@ -44,7 +46,7 @@
     const managed=present.filter(x=>x.status==='managed').length,partial=present.filter(x=>x.status==='partial').length,unmanaged=present.filter(x=>x.status==='unmanaged').length;
     const brokenMaterial=present.reduce((n,x)=>n+x.brokenMaterial,0),occludedMaterial=present.reduce((n,x)=>n+x.occludedMaterial,0),realMaterial=present.reduce((n,x)=>n+x.realMaterial,0);
     const rendererCapabilities=window.DKDSTheme?.rendererCapabilities?.()||null;
-    return Object.freeze({version:'2.2.0',contractVersion:window.DKDSTheme?.contractVersion||'0.0.0',profile:window.DKDSTheme?.profile?.()||'builtin.default',mode:window.DKDSTheme?.current?.()||'light',rendererCapabilities,core:Object.freeze(core),plugins:Object.freeze({issues:Object.freeze(issues),summary:Contract.summarize(issues)}),summary:Object.freeze({areas:present.length,managed,partial,unmanaged,realMaterial,brokenMaterial,occludedMaterial,pluginIssues:issues.length,rendererOk:brokenMaterial===0&&occludedMaterial===0,ok:partial===0&&unmanaged===0&&brokenMaterial===0&&occludedMaterial===0&&issues.length===0})});
+    return Object.freeze({version:'2.3.0',contractVersion:window.DKDSTheme?.contractVersion||'0.0.0',profile:window.DKDSTheme?.profile?.()||'builtin.default',mode:window.DKDSTheme?.current?.()||'light',rendererCapabilities,core:Object.freeze(core),plugins:Object.freeze({issues:Object.freeze(issues),summary:Contract.summarize(issues)}),summary:Object.freeze({areas:present.length,managed,partial,unmanaged,realMaterial,brokenMaterial,occludedMaterial,pluginIssues:issues.length,rendererOk:brokenMaterial===0&&occludedMaterial===0,ok:partial===0&&unmanaged===0&&brokenMaterial===0&&occludedMaterial===0&&issues.length===0})});
   }
-  window.DKDSThemeCoverage=Object.freeze({version:'2.2.0',areas:()=>ROLE_AREAS.map(x=>({...x})),scan,auditPluginStyles:pluginStyleIssues});
+  window.DKDSThemeCoverage=Object.freeze({version:'2.3.0',areas:()=>ROLE_AREAS.map(x=>({...x})),scan,auditPluginStyles:pluginStyleIssues});
 })();

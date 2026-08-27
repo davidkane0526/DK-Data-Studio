@@ -132,9 +132,26 @@ body.dkds-modern-ui .dkds-scientific-nav-tools :where(button,.dkds-scientific-na
 body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
 
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
   flex:0 0 auto;
   margin-left:auto;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  background-image:none;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  overflow:visible;
+}
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
+  border-color:transparent;
+  background:transparent;
+  background-image:none;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
 }
 
 /* Status commands are hit regions of one status-bar surface. */

@@ -1,8 +1,8 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.25.0';
-  const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[]};
+  const VERSION='1.26.0';
+  const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[],coverage:{}};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
   const clone=value=>{try{return structuredClone(value);}catch{try{return JSON.parse(JSON.stringify(value));}catch{return value;}}};
@@ -417,7 +417,7 @@
 
   async function runAll(){
     if(state.running)return state.latest;
-    state.running=true;state.results=[];state.reportPath='';render();
+    state.running=true;state.results=[];state.reportPath='';state.coverage={};render();
     const startedAt=new Date().toISOString();const errorStart=state.consoleEvents.length;
     let environment={};
     try{environment=await (window.electronAPI?.diagnosticsGetEnvironment?.()||window.electronAPI?.getRuntimeStatus?.()||Promise.resolve({runtime:'unknown'}));}catch(err){environment={runtime:'unknown',error:sanitizeText(err.message)};}

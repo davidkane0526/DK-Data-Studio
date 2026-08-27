@@ -55,6 +55,14 @@
   const addClass=(el,cls)=>{if(!hasClass(el,cls)){el.classList.add(cls);return true;}return false;};
   const removeClass=(el,cls)=>{if(hasClass(el,cls)){el.classList.remove(cls);return true;}return false;};
   const setData=(el,key,value)=>{const next=String(value??'');if(String(el?.dataset?.[key]??'')!==next)el.dataset[key]=next;};
+  function ownership(el,expectedRole=''){
+    const expected=String(expectedRole||''),actual=roleOf(el);
+    if(expected==='control'&&semanticControlOwnsPaint(el))return Object.freeze({managed:true,status:'MATERIAL_SEMANTIC_OVERRIDE',role:actual||'semantic-control',expectedRole:expected});
+    if(expected==='control'&&el?.matches?.(INTEGRATED_CHILD_SELECTOR))return Object.freeze({managed:true,status:'MATERIAL_CHROME_OWNED',role:actual||'integrated-hit-region',expectedRole:expected});
+    if(expected==='control'&&chromeOwnedIntegrated(el))return Object.freeze({managed:true,status:'MATERIAL_CHROME_OWNED',role:actual||'chrome-owned-control',expectedRole:expected});
+    if(expected==='chrome'&&nestedParentOwnsBackdrop(el))return Object.freeze({managed:true,status:'MATERIAL_PARENT_OWNED',role:actual||'parent-owned-chrome',expectedRole:expected});
+    return Object.freeze({managed:!!actual&&(!expected||actual===expected),status:actual&&(!expected||actual===expected)?'MATERIAL_ROLE_OWNED':'ROLE_MISSING',role:actual,expectedRole:expected});
+  }
   function assignSemanticRole(el){
     if(!el?.classList)return '';
     // Chrome owns integrated command hit regions. Legacy markup may still carry
@@ -311,6 +319,6 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootAssignments,{once:true});else bootAssignments();
   globalThis.addEventListener?.('dkds:theme-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
   globalThis.addEventListener?.('dkds:theme-profile-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
-  window.DKDSThemeMaterialRenderer=Object.freeze({version:VERSION,capabilities,supports,inspect,probeRole,probeRecipe,roleOf,recipeOf,assignSemanticRoles,refreshDerivedContrast,materialRecipes:()=>MATERIAL_RECIPES.slice(),materialPolicy:()=>({...recipePolicy()}),materialSurface:Object.freeze({apply:applyMaterialSurface,create:createMaterialSurface})});
+  window.DKDSThemeMaterialRenderer=Object.freeze({version:VERSION,capabilities,supports,inspect,ownership,probeRole,probeRecipe,roleOf,recipeOf,assignSemanticRoles,refreshDerivedContrast,materialRecipes:()=>MATERIAL_RECIPES.slice(),materialPolicy:()=>({...recipePolicy()}),materialSurface:Object.freeze({apply:applyMaterialSurface,create:createMaterialSurface})});
   window.DKDSMaterialSurface=Object.freeze({version:'1.0.0',apply:applyMaterialSurface,create:createMaterialSurface,inspect,roleOf,recipeOf});
 })();

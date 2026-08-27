@@ -28,6 +28,21 @@
   background:#fff;
   border-bottom:1px solid var(--border);
 }
+.analysis-page-header>div:first-child{min-width:0;flex:1 1 auto;}
+.analysis-page-header>.dkds-plugin-header-actions{
+  flex:0 1 auto;
+  min-width:0;
+  max-width:min(72%,780px);
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+}
+.analysis-page-header>.dkds-plugin-header-actions.dkds-action-group{flex-wrap:nowrap;}
+.analysis-page-header>.dkds-plugin-header-actions :where(button,.dkds-action-button){flex:0 0 auto;}
+.analysis-page-header>.analysis-page-close{flex:0 0 auto;}
 .analysis-page-header h2{margin:0;font-size:19px;}
 .analysis-subtitle{font-size:11px;color:#7b8495;margin-top:3px;}
 .analysis-page-close{min-width:92px;}

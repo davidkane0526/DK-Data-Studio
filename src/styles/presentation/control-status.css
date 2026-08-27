@@ -81,7 +81,7 @@ body.dkds-modern-ui .statusbar-command-cluster{
   height:24px;
   display:flex;
   align-items:center;
-  gap:0;
+  gap:6px;
   padding:0;
   border:0;
   border-radius:0;
@@ -90,7 +90,7 @@ body.dkds-modern-ui .statusbar-command-cluster{
 }
 body.dkds-modern-ui .statusbar-plugin-zone{
   height:20px;
-  gap:4px;
+  gap:6px;
   padding:0;
   border:0;
   border-radius:0;
@@ -102,7 +102,7 @@ body.dkds-modern-ui .statusbar-plugin-right{margin-left:0}
 body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
 body.dkds-modern-ui .plugin-status-item{
   height:20px;
-  padding:0 6px;
+  padding:0 7px;
   border:0;
   border-radius:6px;
   background:transparent;

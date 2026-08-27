@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.94','UI lifecycle/visual contract must track v3.61.94.');
+assert.equal(json('package.json').version,'3.61.95','UI lifecycle/visual contract must track v3.61.95.');
 
 const coreCss=read('src/core.css');
 const utility=read('src/styles/utility/visibility.css');
@@ -74,8 +74,8 @@ assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
 assert(resonanceFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
   'Group-plot card actions must be integrated into the subplot title bar from first paint.');
 
-assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:20px;\s*gap:4px;/.test(statusCss),
-  'Status-bar contribution spacing must preserve a readable 4px rhythm.');
+assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:20px;\s*gap:6px;/.test(statusCss),
+  'Status-bar contribution spacing must preserve a readable 6px rhythm.');
 
 assert(index.includes('id="automationTestRunBtn" class="primary">运行全部自动化测试</button>'),
   'Automation center must author an explicit run action.');

@@ -5,7 +5,7 @@ const readComposition=require('./helpers/read-composition');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 
-assert.equal(json('package.json').version,'3.61.94');
+assert.equal(json('package.json').version,'3.61.95');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 assert.equal(json('sdk/contract.json').pluginApiVersion,'1.17.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');

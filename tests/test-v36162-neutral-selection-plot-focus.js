@@ -9,7 +9,7 @@ const base=readCoreCss(root);
 const modern=readCoreCss(root);
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 
-assert(pkg.version==='3.61.94','Expected application version 3.61.94.');
+assert(pkg.version==='3.61.95','Expected application version 3.61.95.');
 assert(base.includes('.dkds-scientific-curve-surface:focus,.dkds-scientific-curve-surface:focus-visible{outline:none}'),'Focused scientific surfaces must not expose a browser focus rectangle around the plot.');
 assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&&resonance.includes('claimKeyboardFocus()'),'Plot keyboard ownership must remain enabled while its visible focus rectangle is suppressed.');
 assert(modern.includes('--dkui-selection-bg:var(--dkui-accent-soft);'),'Light mode must keep the semantic selection token.');

@@ -3,7 +3,7 @@ const fs=require('fs');const path=require('path');const assert=require('assert')
 const {readCoreCss}=require('./css-source');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'3.61.94','SMB/AI shell release must be 3.61.94.');
+assert.equal(pkg.version,'3.61.95','SMB/AI shell release must be 3.61.95.');
 const html=read('src/index.html'),sdkReference=read('src/generated/sdk-authoring-reference.js'),kernel=read('src/core/host/studio-kernel-runtime.js'),mcp=read('src/core/services/mcp-runtime.js'),agent=read('src/core/services/connectivity-runtime.js'),app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),preload=read('desktop/preload.js'),web=read('src/web-bridge.js'),native=read('mobile/plugins/withDkdsAndroidNativeHost.js'),plugin=read('src/plugins/connectivity-center/plugin.js'),css=readCoreCss(root),shell=read('mobile/src/Shell.tsx');
 assert(html.includes('generated/sdk-authoring-reference.js')&&html.indexOf('generated/sdk-authoring-reference.js')<html.indexOf('core/host/studio-kernel-runtime.js'),'Renderer must load packaged SDK authoring reference before shared kernel.');
 assert(html.includes('core/host/studio-kernel-runtime.js')&&html.includes('core/services/connectivity-runtime.js')&&html.includes('core/services/mcp-runtime.js'),'Main renderer must load shared kernel, Agent and MCP runtimes.');

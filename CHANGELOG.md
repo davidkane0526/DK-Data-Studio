@@ -1,3 +1,12 @@
+# v3.61.95 — Visual Rhythm / Plot Theme / Group-State Recovery
+
+- Restored bounded, single-line analysis header action geometry so long TER actions scroll instead of overlapping the dedicated-window close action; AnalysisWorkbench navigation rows now remain horizontal instead of stacking labels such as `TER 分析` / `R–V 联动`.
+- Integrated group-plot title actions directly into Core surface-header chrome from first paint, increased right-side status-bar contribution spacing to 6 px, and normalized AnalysisWorkbench input/select/textarea geometry so Thin Glass controls share one Core-owned field contract.
+- Fixed Theme/Material diagnostics exposed by the v3.61.94 desktop automation report: Automation Runner initializes coverage state before Theme probes, Theme Coverage 2.3 understands delegated semantic/chrome/parent Material ownership, and ScientificPlot exposes the active Core tooltip theme without overwriting caller hover-color metadata.
+- Added an explicit Resonance group empty-state when there are genuinely no accepted visible peaks, instead of rendering misleading empty Vpk/Ipk/FWHM axes. Legacy root `peaks` / `scanVisibility` migration and old-project group-series generation remain executable regression requirements; saved peaks are not fabricated for peakless projects.
+- Added the v3.61.95 visual/plot/theme regression covering header/nav geometry, title-action integration, status rhythm, Thin Glass fields, Material ownership, Tooltip theme exposure, Automation coverage initialization and Resonance peakless group state.
+- Automation Runner advances to 1.26.0; Theme Coverage advances to 2.3.0. Validation covers all 165 `npm test` cases and all 173 `npm run check` cases (completed in segmented runs because the outer execution window timed out), plus SDK Harness PASS, Plugin Boundary=0, scientific Python/JS parity PASS and 33 authored CSS files with 0 `!important`.
+
 # v3.61.94 — UI Lifecycle / Visual Ownership Recovery
 
 - Fixed UI surfaces that could appear by themselves or refuse to close, including the memory breakdown panel and dedicated-plugin error overlay. Visibility is now single-owned by a final paint-free `dkds.utility` cascade layer; all component-specific `.hidden { display:none }` patches were removed and style validation forbids them from returning.

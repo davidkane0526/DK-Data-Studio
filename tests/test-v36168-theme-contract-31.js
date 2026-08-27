@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.94');
+assert.equal(json('package.json').version,'3.61.95');
 assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');

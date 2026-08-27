@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert.equal(json('package.json').version,'3.61.94','Renderer interactivity gate must track v3.61.94.');
+assert.equal(json('package.json').version,'3.61.95','Renderer interactivity gate must track v3.61.95.');
 
 const coreCss=read('src/core.css');
 const foundation=read('src/styles/foundation/foundation.css');

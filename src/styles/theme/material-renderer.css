@@ -126,6 +126,24 @@ body.dkds-modern-ui :where(
   background:var(--dkui-accent-soft);color:var(--dkui-accent);-webkit-text-fill-color:var(--dkui-accent);
 }
 
+/* Core control recipe owns field paint even when the field itself is the
+   material owner (Thin Glass intentionally maps controls to the clear recipe).
+   Parent-glass rules below remain as a compatibility fallback for legacy DOM. */
+body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){
+  box-sizing:border-box;
+  background:var(--dkui-control-bg);
+  background-image:none;
+  border:1px solid var(--dkui-control-border);
+  border-radius:7px;
+  color:var(--dkui-text,var(--text-primary));
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  filter:none;
+}
+body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):hover{border-color:var(--dkui-control-border-hover);}
+body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):focus-visible{border-color:var(--dkui-accent);box-shadow:var(--dkui-focus);outline:none;}
+
 /* Glass form controls are one flat Core-owned family. Geometry may be supplied
    by components, but legacy inset/elevated paint cannot leak through. */
 body.dkds-modern-ui :where(

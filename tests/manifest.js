@@ -657,6 +657,10 @@ module.exports = {
     {
       "file": "tests/test-v36194-ui-lifecycle-visual-contract.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36195-visual-plot-theme-contract.js",
+      "args": []
     }
   ],
   "check": [
@@ -1348,6 +1352,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36194-ui-lifecycle-visual-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36195-visual-plot-theme-contract.js",
       "args": []
     }
   ],

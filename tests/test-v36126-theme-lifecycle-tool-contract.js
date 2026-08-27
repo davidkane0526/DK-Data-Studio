@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const {normalizePluginPackage}=require('../desktop/plugin-package');
 
-assert.equal(json('package.json').version,'3.61.94','theme/lifecycle/tool contract release must be v3.61.27');
+assert.equal(json('package.json').version,'3.61.95','theme/lifecycle/tool contract release must be v3.61.27');
 
 const ui=readCoreCss(root);
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){

@@ -9,7 +9,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
-  assert(pkg.version==='3.61.94','Application version must be 3.61.20.');
+  assert(pkg.version==='3.61.95','Application version must be 3.61.20.');
   assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
   assert(sdk.pluginApiVersion==='1.17.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
@@ -39,6 +39,6 @@ function assert(value,message){if(!value)throw new Error(message);}
   assert(dc.includes("proxy?.('core.project-history')")&&dc.includes('commitArtifactMutation'),'Data Center non-source artifact edits must use Core history rather than a private undo stack.');
   assert(!dcView.includes('dcTagChips')&&!app.includes('importColumnTagFilter'),'Legacy semantic tag pills must not remain coupled to Data Center / Import UX; semantic helpers stay available only as internal metadata utilities.');
   assert(ui.includes('navigationToolObstacles()')&&ui.includes('avoidNavigationToolCollisions()')&&ui.includes("'[data-dkds-legend]'")&&ui.includes('[data-dkds-plot-scope]')&&ui.includes('installNavigationObstacleObserver()')&&!ui.includes("'.respar-main-legend'"),'Core D3 navigation chrome must consume semantic legend/plot-scope markers instead of plugin-specific selectors.');
-  assert(automation.includes("const VERSION='1.25.0'")&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract.');
+  assert(automation.includes("const VERSION='1.26.0'")&&automation.includes("'project.history'"),'Windows automation must expose the unified project-history contract.');
   console.log('v3.61.20 semantic tags + unified project history + legend-aware D3 toolbar checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

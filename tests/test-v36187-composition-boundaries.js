@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 const {MAX_MODULE_BYTES,buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
 const MAX_STRUCTURE_CSS_BYTES=36*1024;
 
-assert.equal(json('package.json').version,'3.61.94');
+assert.equal(json('package.json').version,'3.61.95');
 
 for(const rel of ['src/core/ui/composition','src/core/plugins/kernel','src/app']){
   const dir=path.join(root,rel),manifest=json(`${rel}/composition.json`);
