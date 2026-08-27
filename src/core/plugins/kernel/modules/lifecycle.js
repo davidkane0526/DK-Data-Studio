@@ -84,14 +84,9 @@ const {createApi}=require('./plugin-api');
   function pluginTypeForManifest(manifest={}) {
     const declared=String(manifest?.pluginType||'').trim().toLowerCase();
     const allowed=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
-    if(allowed.has(declared))return declared;
-    // Backward compatibility for older external packages that predate pluginType.
-    // New SDK packages should declare it explicitly; inference is only a safe UI fallback.
-    const caps=Array.isArray(manifest?.capabilities)?manifest.capabilities:[];
-    if(manifest?.algorithmProvider===true||caps.some(cap=>String(cap).startsWith('analysis.algorithm')))return 'algorithm';
-    if(caps.some(cap=>String(cap).startsWith('data.import')||String(cap)==='data.model'||String(cap)==='data.formula'))return 'data';
-    if(manifest?.workspace?.role==='top')return 'workbench';
-    return manifest?.source==='builtin'?'foundation':'extension';
+    if(!declared)throw new Error(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`);
+    if(!allowed.has(declared))throw new Error(`Plugin ${manifest?.id||'(unknown)'} declares invalid pluginType: ${declared}`);
+    return declared;
   }
 
   function pluginStateRow(definition) {

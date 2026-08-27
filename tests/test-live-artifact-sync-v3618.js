@@ -27,6 +27,7 @@ assert(sdkTypes.includes('export interface DKDSDataModelRuntime')&&sdkTypes.incl
 const sandbox={window:{},console};
 vm.createContext(sandbox);
 vm.runInContext(read('src/core/data/model.js'),sandbox,{filename:'data-model.js'});
+vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),sandbox,{filename:'legacy-dataset-adapter.js'});
 const D=sandbox.window.DKDSData;
 const store=D.createStore();
 const dataset={path:'transfer-vth',name:'Vth transfer',sourcePath:'C:/data/vth.txt',sourceName:'vth.txt',assignments:['com.dkds.transfer-vth-lab'],points:[{v:-1,i:1e-12},{v:0,i:2e-10},{v:1,i:2e-9}],importSpec:{xHeader:'Gate voltage (V)',yHeader:'Drain current (A)'}};

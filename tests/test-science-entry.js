@@ -1,9 +1,7 @@
 const assert=require('assert');
-const A=require('../src/analysis.js');
+const A=require('../src/science/index.js');
 
-// The facade is intentionally small: it proves that callers using the preserved
-// `Analysis` entry still reach the shared science engine. UI/host architecture
-// is covered by dedicated Core/plugin regression tests, not this compatibility file.
+// Canonical CommonJS entry aggregates the shared science modules used by tests and tooling.
 const points=[];
 for(let v=0;v<=2.0001;v+=0.02)points.push({v:+v.toFixed(2),i:v});
 for(let v=2;v>=-2.0001;v-=0.02)points.push({v:+v.toFixed(2),i:v});
@@ -34,4 +32,4 @@ const ter=A.computeTerForLabel(fakePeaks,fakeSweeps,'峰1');
 assert.strictEqual(ter.length,1,'TER label pairing changed');
 assert(Math.abs(ter[0].ter-100)<1e-9,'TER 2/1 compatibility result changed');
 
-console.log('Analysis compatibility facade smoke checks passed.');
+console.log('Canonical DKDSScience entry smoke checks passed.');

@@ -33,9 +33,11 @@ for(const legacy of ['src/core/plugin-kernel.js','src/core/ui-infrastructure.js'
 }
 const coreRootFiles=fs.readdirSync(path.join(root,'src','core'),{withFileTypes:true}).filter(e=>e.isFile());
 assert.equal(coreRootFiles.length,0,`src/core root must contain responsibility directories only; found ${coreRootFiles.map(e=>e.name).join(', ')}`);
-for(const dir of ['data','diagnostics','host','performance','plugins','project','recipes','scientific','services','theme','ui','workflow']){
+for(const dir of ['data','host','performance','plugins','project','recipes','scientific','services','theme','ui','workflow']){
   assert(fs.existsSync(path.join(root,'src','core',dir)),`Core responsibility directory missing: ${dir}`);
 }
+assert(fs.existsSync(path.join(root,'src','diagnostics')),'Integration diagnostics layer missing: src/diagnostics');
+assert(!fs.existsSync(path.join(root,'src','core','diagnostics')),'Diagnostics must not live under Core');
 const {buildCompositionSource}=require('../scripts/generate-runtime-compositions.js');
 assert.equal(buildCompositionSource('src/core/ui/composition').source,read('src/generated/runtime/ui-infrastructure.js'),'Generated UI runtime must exactly match the declared module graph.');
 assert.equal(buildCompositionSource('src/core/plugins/kernel').source,read('src/generated/runtime/plugin-kernel.js'),'Generated Plugin Kernel runtime must exactly match the declared module graph.');

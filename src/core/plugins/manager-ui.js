@@ -10,40 +10,6 @@
 
   const $ = selector => document.querySelector(selector);
 
-  const BUILTIN_DISPLAY = {
-    'builtin.workspace-safeguards': {
-      name:'工作区保护',
-      description:'自适应顶部导航、增量导入结果保护和同名数据提醒。'
-    },
-    'builtin.resonance-workbench': {
-      name:'共振分析工作台',
-      description:'共振 I–V、寻峰、曲线检查、组图、物理机制、峰间距和栅压分析工作区。'
-    },
-    'builtin.data-center': {
-      name:'数据中心',
-      description:'标准数据模型、公式派生列、可配置工作流、参数面板与图表预览。'
-    },
-    'builtin.flexible-import': {
-      name:'灵活数据导入',
-      description:'面向 CSV、TXT、DAT 等实验数据的编码、分隔符、列映射和单位识别。'
-    },
-    'builtin.resonance-detector-robust': {
-      name:'稳健共振寻峰',
-      description:'面向共振 I–V 数据的稳健多证据寻峰算法。'
-    },
-    'builtin.standard-transport-algorithms': {
-      name:'标准输运算法',
-      description:'提供 I–V 变换、Vg–Vd 标量场与 TER 的可版本化标准算法。'
-    },
-    'builtin.ter-analysis': {
-      name:'TER 分析',
-      description:'同一 Vd 下的 TER 矩阵、热图、极值与最佳读出偏压分析。'
-    },
-    'builtin.pulse-analysis': {
-      name:'脉冲 / 读取分析',
-      description:'批量脉冲与读取瞬态数据提取、比较和导出。'
-    }
-  };
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -55,10 +21,9 @@
   }
 
   function displayMeta(plugin) {
-    const mapped=BUILTIN_DISPLAY[plugin?.id]||null;
     return {
-      name:mapped?.name || plugin?.name || plugin?.id || '未命名插件',
-      description:mapped?.description || plugin?.description || '未提供插件说明。'
+      name:plugin?.name || plugin?.id || '未命名插件',
+      description:plugin?.description || '未提供插件说明。'
     };
   }
 

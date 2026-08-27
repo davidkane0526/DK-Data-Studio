@@ -137,7 +137,7 @@ Plugin API 1.12 exposes, among other APIs:
 - `ctx.ui.charts`;
 - `ctx.state.create()`;
 - `ctx.capabilities` (`list/query`, `require`, `proxy`, `invoke`, `watch`);
-- `ctx.analysis.detectors`;
+- `ctx.analysis.algorithms` (`category: peak-detector` for detector implementations);
 - `ctx.workflow.processors/analyzers/charts`.
 
 A plugin scope owns every registered listener, ResizeObserver, shortcut, chart surface and portable panel and releases them at deactivation.

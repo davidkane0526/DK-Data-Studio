@@ -255,7 +255,8 @@ Core only owns card layout, docking, zoom host and generic copy/export plumbing.
 Peak-finding algorithms are independently installable contributions:
 
 ```js
-ctx.analysis.detectors.register('my-detector-v2', {
+ctx.analysis.algorithms.register('my-detector-v2', {
+  category: 'peak-detector',
   name: 'My Detector',
   version: '2.1.0',
   description: '...',

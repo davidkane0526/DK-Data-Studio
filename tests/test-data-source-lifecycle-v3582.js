@@ -18,6 +18,7 @@ const context={window:{},console,structuredClone,crypto:{randomUUID:()=>`uuid-${
 context.window.window=context.window;
 vm.createContext(context);
 vm.runInContext(dataModel,context,{filename:'data-model.js'});
+vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
 const D=context.window.DKDSData;
 assert(D&&typeof D.removeLegacyDatasets==='function','Core Data Model must expose the generic imported-source removal primitive.');
 

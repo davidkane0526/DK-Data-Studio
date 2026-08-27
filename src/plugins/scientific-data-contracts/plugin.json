@@ -1,0 +1,21 @@
+{
+  "id": "builtin.scientific-data-contracts",
+  "pluginType": "foundation",
+  "name": "Scientific Data Contracts",
+  "version": "1.0.0",
+  "apiVersion": "1.17.0",
+  "requiresCore": [
+    "data.types"
+  ],
+  "entry": "plugin.js",
+  "enabled": true,
+  "order": 60,
+  "description": "Shared scientific semantic data contracts for transport, resonance, TER and pulse plugins. Contains no numerical algorithms or workbench UI.",
+  "capabilities": [
+    "data.scientific-contracts"
+  ],
+  "compatibility": {
+    "app": ">=3.61.105 <4.0.0",
+    "pluginApi": "^1.17.0"
+  }
+}

@@ -100,7 +100,7 @@ The exact list is machine-readable through `DKDSPluginContract.requirements` and
 - runtime/lifecycle: `runtime`, `events`, `status`, `state`, `project`, `workspace`;
 - base services: `io`, `science`, `performance`, `services`, `modules`, `recipes`, `capabilities`, `parameters`;
 - data: `data.flow`, `data.pipeline`, `data.transforms`, `data.reactive`, `data.artifacts`, `data.entities`, `data.types`, `data.model`, `data.formula`;
-- analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`, `analysis.detectors`;
+- analysis/workflow: `workflow`, `analysis.providers`, `analysis.algorithms`;
 - visualization: `charts`, `charts.providers`;
 - UI: `ui.dom`, `ui.components`, `ui.workspace`, `ui.scientific-plot`, `ui.plot-views`, `ui.actions`, `ui.selection`, `ui.interaction`, `ui.menus`, `ui.context-menus`, `ui.activities`, `ui.top-workspace`, `ui.toolbar`, `ui.status-bar`, `ui.shortcuts`, `ui.pages`, `ui.styles`, `ui.theme`, `ui.portable`, `ui.edit`, `ui.table`, `ui.settings`, `ui.dialogs`.
 
@@ -474,16 +474,24 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
 
 A consumer with a missing exact project lock may use `ctx.analysis.algorithms.locate(ref)` to list compatible current/history candidates and `recover(ref, candidate)` to restore one. Recovery must preserve the original `{category,id,version}` lock, restore/enable the package, and then verify that the exact algorithm version registered successfully. An incompatible candidate may be shown diagnostically but must not be auto-activated. Override candidates are located but are not hot-swapped into a running host.
 
-`ctx.analysis.detectors` remains a compatibility facade for older detector plugins. New detector implementations should register `analysis.algorithms` with `category:'peak-detector'`.
+Peak detectors are ordinary versioned Scientific Algorithms. Register them through `ctx.analysis.algorithms` with `category:'peak-detector'`; there is no detector-specific compatibility registry.
 
-## 15. Analysis providers, detectors and workflows
+```js
+ctx.analysis.algorithms.register('my.detector',{
+  category:'peak-detector',
+  inputTypes:['science.iv.raw'],
+  outputTypes:['science.resonance.peak'],
+  run(input,{parameters}){ return detect(input,parameters); }
+});
+```
+
+
+## 15. Analysis providers, algorithms and workflows
 
 ```js
 ctx.analysis.providers.register('my.analysis',{name:'My analysis',run});
 ctx.analysis.algorithms.register('my.detector',{category:'peak-detector',version:'1.0.0',title:'Detector',parameterSchema,run});
 
-// Legacy compatibility only:
-ctx.analysis.detectors.register('legacy.detector',{name:'Detector',parameterSchema,detect});
 ctx.workflow.processors.register('my.processor',{name:'Processor',inputKinds:['data.table'],outputKinds:['data.table'],parameterSchema,run});
 ```
 

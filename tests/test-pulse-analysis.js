@@ -1,6 +1,6 @@
 const assert = require('assert');
 const path = require('path');
-const A = require(path.join(__dirname, '..', 'src', 'analysis.js'));
+const A = require(path.join(__dirname, '..', 'src', 'science', 'index.js'));
 
 function makeTimingCsv({cycles=3,writeDuration=.2,readDuration=.4,dt=.02,voltage=false}){
   const rows=[voltage?'Time,Current,Voltage':'Time,Current'];

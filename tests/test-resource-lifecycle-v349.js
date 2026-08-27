@@ -10,7 +10,7 @@ const runtime=read('src/plugin-window/runtime.js');
 const main=read('desktop/main.js');
 const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
-const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 
 assert(plot.includes("const VERSION='2.5.0'"),'ScientificPlot v2.3.0 must preserve renderer lifecycle.');
 for(const token of ['async suspend(options={})','async resume(options={})','rendererPurges','resumeRenders','purgeManaged'])assert(plot.includes(token),`ScientificPlot lifecycle token missing: ${token}`);

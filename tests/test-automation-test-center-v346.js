@@ -3,7 +3,7 @@ const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const runtime=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const runtime=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 const main=read('desktop/main.js');
 const auxiliary=read('desktop/main-modules/auxiliary-window-runtime.js');
 const match=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);

@@ -9,7 +9,7 @@
     order:80,
     algorithmProvider:true,algorithmCategories:['peak-detector','peak-metrics'],
     algorithmProvides:[{category:'peak-detector',id:'robust-ricker-v1',version:'1.0.0',title:'稳健多通道 / 多尺度'},{category:'peak-metrics',id:'baseline-fwhm-v1',version:'1.0.0',title:'局部基线 FWHM'}],
-    compatibility:{app:'>=3.55.0 <4.0.0',pluginApi:'^1.8.0'},
+    pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],compatibility:{app:'>=3.55.0 <4.0.0',pluginApi:'^1.8.0'},
     capabilities:['analysis.algorithm','analysis.peak-detector','analysis.peak-metrics']
   }, async ctx => {
     const S=ctx.science;

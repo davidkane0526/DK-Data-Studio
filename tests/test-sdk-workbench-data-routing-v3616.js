@@ -8,8 +8,10 @@ const pkg=JSON.parse(read('package.json'));
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const contract=read('src/core/plugins/contract-runtime.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
+const scientificContracts=read('src/plugins/scientific-data-contracts/plugin.js');
 const app=read('src/generated/runtime/app.js');
 const dataModel=read('src/core/data/model.js');
+const legacyDatasetMigration=read('src/migrations/legacy-dataset-adapter.js');
 const dataCenter=read('src/plugins/data-center/feature-runtime.js');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.json'));
@@ -30,7 +32,8 @@ assert(kernel.includes('if (standaloneWorkbench)')&&kernel.includes('primary:tru
 assert(ui.includes("document.createElementNS('http://www.w3.org/2000/svg','svg')")&&ui.includes('this.ownsTarget=true'),'ScientificCurveSurface must accept a normal container and let Core own its internal SVG.');
 assert(!ui.includes("requestRender('await-layout')"),'A hidden/unlaid-out scientific surface must not spin a private frame retry loop.');
 assert(ui.includes('bind(target,spec={})')&&ui.includes("context:'contextmenu'"),'Interaction Behavior must provide generic DOM delegation including context gestures.');
-assert(ui.includes("'science.transport.iv'")&&ui.includes("'science.pulse.trace'"),'Core Data Type Registry must know the shared imported transport and pulse semantic types.');
+assert(!ui.includes("dataTypeRegistry.register('core','science.transport.iv'")&&!ui.includes("dataTypeRegistry.register('core','science.pulse.trace'"),'Core must stay domain-neutral and must not own transport/pulse semantic types.');
+assert(scientificContracts.includes('science.transport.iv')&&scientificContracts.includes('science.pulse.trace'),'Scientific Data Contracts foundation plugin must own shared transport and pulse semantic types.');
 
 assert(contract.includes("'data.importers':api=>!!api?.data?.importers")&&contract.includes("'data.import-workbench':api=>!!api?.data?.importWorkbench"),'Plugin Contract must validate shared importer and Import Workbench requirements.');
 assert(kernel.includes('consumer:pluginId'),'Workbench data-source reads must be automatically scoped by plugin ID.');
@@ -49,8 +52,8 @@ assert(app.includes('if(row?.artifactId)return null'),'Generic artifact source r
 const html=read('src/index.html');
 assert(html.includes('id="importTargetOptions"')&&html.includes('数据用途'),'Global Import Workbench must expose centralized multi-workbench data assignment.');
 assert(html.includes('id="importProvider"'),'Global Import Workbench must expose the selected importer without letting workbenches own parser UI.');
-assert(dataModel.includes("['*']")&&dataModel.includes('dataAssignments'),'Legacy project datasets must retain wildcard visibility when assignment metadata is absent.');
-assert(dataModel.includes("semanticType:'science.transport.iv'"),'Legacy flexible I–V datasets must project into the typed shared artifact catalog.');
+assert(legacyDatasetMigration.includes("['*']")&&legacyDatasetMigration.includes('dataAssignments'),'Legacy project datasets must retain wildcard visibility when assignment metadata is absent.');
+assert(legacyDatasetMigration.includes("semanticType:'science.transport.iv'"),'Legacy flexible I–V datasets must project into the typed shared artifact catalog.');
 
 assert(dataCenter.includes('const sourceCapability=ctx.data.sources'),'Data Center must consume the public data.sources API rather than a private capability name.');
 assert(dataCenter.includes('dcAssignmentFilter')&&dataCenter.includes('assignmentActionItems'),'Data Center must provide one canonical source catalog with usage filtering/reassignment.');

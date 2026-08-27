@@ -3,7 +3,7 @@ const path=require('path');
 const vm=require('vm');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
-const Analysis=require(path.join(root,'src','analysis.js'));
+const Analysis=require(path.join(root,'src','science','index.js'));
 
 function periodicCsv(){
   const rows=['Time,Current,Voltage'];
@@ -16,7 +16,7 @@ function periodicCsv(){
 
 const document={querySelector:()=>null,getElementById:()=>null};
 const context={
-  window:{Analysis,electronAPI:{}},
+  window:{DKDSScience:Analysis,electronAPI:{}},
   document,console,structuredClone,JSON,Date,Math,Number,String,Array,Set,Map,Promise,
   requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame:()=>{},setTimeout,clearTimeout
 };

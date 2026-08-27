@@ -36,11 +36,12 @@ function assert(v,m){if(!v)throw new Error(m);}
   assert(JSON.stringify(heatZ)===JSON.stringify([[-100,-10,0],[1,10,100],[1000,10000,100000]]),'Heatmap source Z matrix must not be mutated.');
 
   const projectFormat=require('../src/core/project/format.js');
+require('../src/migrations/project-v1-domain.js').register(projectFormat);
   const legacy=projectFormat.canonicalizeProject({
     format:'graphene-resonance-studio-project',schemaVersion:1,version:'3.17.0',
     datasets:[{name:'VG=0',path:'legacy://VG=0',text:'V,I\n0,1e-9\n1,2e-9',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}]
   });
-  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});
+  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),dataContext,{filename:'legacy-dataset-adapter.js'});
   const D=dataContext.window.DKDSData,ownerStore=D.restoreStore(legacy.dataModel||{schema:1,artifacts:[]});
   D.syncLegacyDatasetArtifacts(ownerStore,legacy.datasets);
   const liveSnapshot=ownerStore.list({includeTransient:true});

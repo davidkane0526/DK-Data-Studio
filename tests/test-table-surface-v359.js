@@ -8,7 +8,7 @@ const ui=read('src/generated/runtime/ui-infrastructure.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const css=readCoreCss(root);
 const sdk=read('sdk/plugin-api.d.ts');
-const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 
 for(const token of ['class TableSurface','class TableSurfaceRegistry','globalTableSurfaceRegistry','table:not([data-dkds-table="off"])','setColumnWidth(index,width','autoSizeColumn(index','autoSizeAll()','sort(index,direction','setColumnVisible(index','showAllColumns()','visibleColumnKeys()','visibleTableText(','copyVisibleTable(','resetState(','menuItems(value,context)','headerMenuItems','cellMenuItems','hydrateAddedNode(node,spec={})','anonymousId(table)','hydrationId(table)','persistAnonymous','openHeaderMenu(event,th)','openCellMenu(event,cell)','restoreColumnState(value','mount(id,container,spec={})']){
   assert(ui.includes(token),`Unified TableSurface missing: ${token}`);

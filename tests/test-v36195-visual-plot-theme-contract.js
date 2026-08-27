@@ -16,11 +16,12 @@ const materialCss=read('src/styles/theme/material-renderer.css');
 const materialJs=read('src/core/theme/material-renderer.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');
-const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const projectFormat=read('src/core/project/format.js');
+const projectMigration=read('src/migrations/project-v1-domain.js');
 
 // Analysis navigation is a single horizontal semantic row, not stacked block divs.
 assert(/\.dkds-analysis-nav\{[\s\S]*?display:flex;[\s\S]*?flex-wrap:nowrap;[\s\S]*?overflow-x:auto;/.test(workbench),
@@ -71,7 +72,7 @@ assert(resonanceGroup.includes("当前工程没有已保存共振峰。组图会
   'Resonance group surface must explain the no-peak state instead of showing empty axes.');
 assert(resonanceCss.includes('.reswin-group-empty{grid-column:1/-1;'),
   'Resonance group empty state must span the group grid.');
-assert(projectFormat.includes('if(out[key]!==undefined&&(workspace[key]===undefined||(empty(workspace[key])&&!empty(out[key]))))workspace[key]=clone(out[key]);'),
+assert(projectMigration.includes('if(out[key]!==undefined&&(workspace[key]===undefined||(empty(workspace[key])&&!empty(out[key]))))workspace[key]=clone(out[key]);'),
   'Legacy root peaks/visibility must continue to win over an empty namespaced placeholder.');
 
 console.log('v3.61.95 visual + plot + theme contract PASS: header/nav geometry, group chrome, Thin Glass controls, tooltip/theme coverage and peakless group state are explicit.');

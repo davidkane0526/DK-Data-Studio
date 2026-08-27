@@ -4,15 +4,16 @@ const path=require('path');
 const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-const Analysis=require('../src/analysis.js');
+const Analysis=require('../src/science/index.js');
 
 const context={
-  console,structuredClone,setTimeout,clearTimeout,crypto:global.crypto,Analysis,
+  console,structuredClone,setTimeout,clearTimeout,crypto:global.crypto,DKDSScience:Analysis,
   document:{querySelector:()=>null,querySelectorAll:()=>[],getElementById:()=>null}
 };
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
 vm.runInContext(read('src/core/performance/runtime.js'),context,{filename:'performance-runtime.js'});
 vm.runInContext(read('src/core/scientific/pipeline-runtime.js'),context,{filename:'scientific-pipeline-runtime.js'});
 vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});

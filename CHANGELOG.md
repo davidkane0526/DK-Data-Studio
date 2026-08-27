@@ -1,3 +1,12 @@
+# v3.61.105 — Core / Plugin Ownership Boundary
+
+- Move integration diagnostics out of `src/core` into `src/diagnostics`; Core no longer owns domain-aware automation diagnostics.
+- Add `builtin.scientific-data-contracts` as a foundation plugin for shared transport, pulse, resonance and TER semantic data types.
+- Move standard transport transform definitions from Core into `builtin.standard-transport-algorithms`; Core retains only generic transform registry/pipeline mechanics.
+- Require explicit `pluginType` in runtime manifests and remove Plugin Manager hard-coded first-party display metadata.
+- Neutralize Core provenance defaults and update architecture tests to protect the new ownership direction rather than historical coupling.
+- Remove the legacy `Analysis` global / `src/analysis.js` facade; `DKDSScience` and `src/science/index.js` are the only current scientific entry points.
+
 # v3.61.104 — Scientific Surface Ownership
 
 - Consolidate `trend-card`, `analysis-chart-card`, GroupPlot card/header paint and trend legend paint into `scientific.css`; remove the previous three-stage paint chain through `control-status.css`, `shell.css` and `workspace-theme-boundary.css`.
@@ -26,7 +35,7 @@
 
 # v3.61.101 — Automation Diagnostics Modules
 
-- Split the last oversized authored Core JavaScript module by separating Automation Test Center smoke-case implementations into `src/core/diagnostics/automation-smoke-cases.js` while keeping runner lifecycle, result collection, report persistence and UI binding in `automation-test-runtime.js`.
+- Split the last oversized authored Core JavaScript module by separating Automation Test Center smoke-case implementations into `src/diagnostics/automation-smoke-cases.js` while keeping runner lifecycle, result collection, report persistence and UI binding in `automation-test-runtime.js`.
 - Preserve the existing runtime behavior through one immutable `DKDSAutomationSmokeCases` contract loaded before the runner; historical automation regression tests now follow the real case owner instead of assuming every diagnostic implementation lives in one file.
 - Remove the temporary 80 KiB diagnostics exception from the repository hygiene gate. **All authored JavaScript under `src/` and `desktop/` is now bounded to 48 KiB per module.**
 - Add the v3.61.101 diagnostics modularization gate covering script order, ownership and the 48 KiB boundary. The runner protocol version remains unchanged because the split does not alter report semantics.

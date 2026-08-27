@@ -28,7 +28,7 @@ assert(kernel.includes("if(prop==='list')return options=>")&&kernel.includes("if
 assert(kernel.includes("descriptor?.remote===true"),'Local main-window data source methods must not be shadowed by the remote-read facade.');
 assert(kernel.includes("rename:pluginType==='data'||pluginType==='foundation'")&&kernel.includes("remove:pluginType==='data'||pluginType==='foundation'"),'Foundation/data plugins must receive the host-owned source management methods promised to Data Center.');
 
-const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 assert(automation.includes("const VERSION='1.26.0'"),'Automation runner must identify the v3.61.18 contract diagnostics.');
 assert(automation.includes('currentProjectPayload.capabilitySnapshot'),'Current-project Data Center smoke must use the same synchronized capability snapshot as real TOP windows.');
 
@@ -60,7 +60,7 @@ assert(raw&&typeof raw.then==='function','Regression setup failed: raw remote ca
 vm.runInContext(read('src/generated/runtime/plugin-kernel.js'),sandbox,{filename:'plugin-kernel.js'});
 let observed=null;
 sandbox.window.DKDSPlugins.define({
-  id:'test.data-sources-contract',name:'Data Sources Contract',version:'1.0.0',enabled:true,
+  id:'test.data-sources-contract',pluginType:'extension',name:'Data Sources Contract',version:'1.0.0',enabled:true,
   apiVersion:'1.15.0',pluginType:'data',source:'builtin'
 },async ctx=>{
   observed={

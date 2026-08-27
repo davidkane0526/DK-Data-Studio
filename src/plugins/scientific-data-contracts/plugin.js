@@ -1,0 +1,29 @@
+(() => {
+  const manifest={id:'builtin.scientific-data-contracts',pluginType:'foundation',name:'Scientific Data Contracts',version:'1.0.0',apiVersion:'1.17.0',requiresCore:['data.types'],entry:'plugin.js',enabled:true,order:60,description:'Shared scientific semantic data contracts for transport, resonance, TER and pulse plugins. Contains no numerical algorithms or workbench UI.',capabilities:['data.scientific-contracts'],compatibility:{app:'>=3.61.105 <4.0.0',pluginApi:'^1.17.0'}};
+  window.DKDSPlugins.define(manifest,ctx=>{
+    ctx.data.types.register("science.iv.raw",{"title":"原始 I–V","parents":["data.sweep","science.curve"],"kind":"data","quantity":"current","shape":"curve","unit":"A","tags":["transport","iv","raw"],"axes":[{"name":"V","unit":"V"},{"name":"I","unit":"A"}],"metadata":{"transformKey":"raw"}});
+    ctx.data.types.register("science.transport.iv",{"title":"输运 I–V 数据表","parent":"data.table","kind":"data","shape":"table","tags":["transport","iv","imported"]});
+    ctx.data.types.register("science.pulse.trace",{"title":"脉冲/读取数据表","parent":"data.table","kind":"data","shape":"table","tags":["pulse","read","imported"]});
+    ctx.data.types.register("science.iv.background-removed",{"title":"去背景 I–V","parents":["data.transform","science.curve"],"kind":"data","quantity":"current","shape":"curve","unit":"A","tags":["transport","iv","transform"],"metadata":{"transformKey":"detrend"}});
+    ctx.data.types.register("science.iv.derivative",{"title":"I–V 导数","parents":["data.transform","science.curve"],"kind":"data","shape":"curve","tags":["transport","iv","transform"]});
+    ctx.data.types.register("science.transport.didv",{"title":"dI/dV","parent":"science.iv.derivative","kind":"data","quantity":"conductance","shape":"curve","unit":"A/V","tags":["transport","conductance","transform"],"metadata":{"transformKey":"didv"}});
+    ctx.data.types.register("science.transport.d2idv2",{"title":"d²I/dV²","parent":"science.iv.derivative","kind":"data","quantity":"second-derivative-current","shape":"curve","unit":"A/V²","tags":["transport","transform"],"metadata":{"transformKey":"d2idv2"}});
+    ctx.data.types.register("science.transport.dlnabsidv",{"title":"d ln|I|/dV","parent":"science.iv.derivative","kind":"data","quantity":"log-current-slope","shape":"curve","unit":"1/V","tags":["transport","transform"],"metadata":{"transformKey":"dlog"}});
+    ctx.data.types.register("science.transport.dvdi",{"title":"dV/dI","parents":["data.transform","science.curve"],"kind":"data","quantity":"differential-resistance","shape":"curve","unit":"V/A","tags":["transport","resistance","transform"],"metadata":{"transformKey":"dvdi"}});
+    ctx.data.types.register("science.transport.resistance",{"title":"R = |V/I|","parents":["data.transform","science.curve"],"kind":"data","quantity":"resistance","shape":"curve","unit":"Ω","tags":["transport","resistance","transform"],"metadata":{"transformKey":"resistance"}});
+    ctx.data.types.register("science.transport.current-field",{"title":"I(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"current","shape":"matrix","unit":"A","tags":["transport","field","heatmap"]});
+    ctx.data.types.register("science.transport.background-removed-current-field",{"title":"去背景 I(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"current","shape":"matrix","unit":"A","tags":["transport","field","heatmap"]});
+    ctx.data.types.register("science.transport.conductance-field",{"title":"dI/dV(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"conductance","shape":"matrix","unit":"A/V","tags":["transport","conductance","field","heatmap"]});
+    ctx.data.types.register("science.transport.second-derivative-current-field",{"title":"d²I/dV²(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"second-derivative-current","shape":"matrix","unit":"A/V²","tags":["transport","field","heatmap"]});
+    ctx.data.types.register("science.transport.log-current-slope-field",{"title":"d ln|I|/dV(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"log-current-slope","shape":"matrix","unit":"1/V","tags":["transport","field","heatmap"]});
+    ctx.data.types.register("science.transport.differential-resistance-field",{"title":"dV/dI(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"differential-resistance","shape":"matrix","unit":"V/A","tags":["transport","resistance","field","heatmap"]});
+    ctx.data.types.register("science.transport.resistance-field",{"title":"R(Vd,Vg)","parent":"science.scalar-field","kind":"result","quantity":"resistance","shape":"matrix","unit":"Ω","tags":["transport","resistance","field","heatmap"]});
+    ctx.data.types.register("science.resonance.peak",{"title":"共振峰","parents":["data.point","science.scalar"],"kind":"result","quantity":"resonance-peak","shape":"point","tags":["resonance","peak"]});
+    ctx.data.types.register("science.resonance.peak-set",{"title":"共振峰集合","parent":"result.analysis","kind":"result","quantity":"resonance-peaks","shape":"collection","tags":["resonance","peak","collection"]});
+    ctx.data.types.register("science.resonance.peak-metrics",{"title":"共振峰度量","parent":"result.analysis","kind":"result","quantity":"resonance-peak-metrics","shape":"record","tags":["resonance","peak","metrics"]});
+    ctx.data.types.register("science.resonance.fwhm",{"title":"FWHM","parent":"science.scalar","kind":"result","quantity":"width","shape":"scalar","unit":"V","tags":["resonance","width"]});
+    ctx.data.types.register("science.ter.value",{"title":"TER","parent":"science.scalar","kind":"result","quantity":"ter","shape":"scalar","tags":["ter","transport"]});
+    ctx.data.types.register("science.ter.matrix",{"title":"TER heatmap","parents":["science.scalar-field","result.matrix"],"kind":"result","quantity":"ter","shape":"matrix","tags":["ter","transport","heatmap"]});
+    return {deactivate(){}};
+  });
+})();

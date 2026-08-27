@@ -1,7 +1,8 @@
 (() => {
   DKDSPlugins.define({
     id:'builtin.pulse-import',pluginType:'data',name:'Pulse Text Import',version:'1.0.0',apiVersion:'1.13.0',
-    requiresCore:['science','data.model','data.importers'],description:'Typed pulse/read text importer for the shared Import Workbench.',source:'builtin',order:18,
+    requiresCore:['science','data.model','data.importers'],pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
+    description:'Typed pulse/read text importer for the shared Import Workbench.',source:'builtin',order:18,
     capabilities:['data.importer','data.inspector']
   }, async ctx => {
     const A=ctx.science;

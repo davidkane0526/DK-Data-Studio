@@ -9,11 +9,12 @@ if(!fs.existsSync(input)){console.error(`v3.42 real-project regression input not
 const project=JSON.parse(fs.readFileSync(input,'utf8'));
 assert.strictEqual(project.format,'graphene-resonance-studio-project');assert.strictEqual(project.schemaVersion,1);assert(Array.isArray(project.datasets));
 const ProjectFormat=require('../src/core/project/format.js');
+require('../src/migrations/project-v1-domain.js').register(ProjectFormat);
 const serializedProject=ProjectFormat.serializeProject(project);const reopenedProject=ProjectFormat.parseProjectText(serializedProject);
 assert.strictEqual(reopenedProject.datasets.length,project.datasets.length,'legacy full-project save/reopen must preserve datasets');assert.strictEqual(reopenedProject.peaks.length,project.peaks.length,'legacy full-project save/reopen must preserve saved peaks');
-const A=require('../src/analysis.js');
+const A=require('../src/science/index.js');
 const context={console,structuredClone,setTimeout,clearTimeout,crypto:global.crypto,document:{querySelector:()=>null,querySelectorAll:()=>[]}};context.window=context;context.globalThis=context;vm.createContext(context);
-for(const file of ['src/core/data/model.js','src/core/data/entity-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+for(const file of ['src/core/data/model.js','src/migrations/legacy-dataset-adapter.js','src/core/data/entity-runtime.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
 const D=context.DKDSData,E=context.DKDSEntities;
 const direct=project.datasets;
 const directSweeps=direct.flatMap(ds=>A.buildSweeps(ds));

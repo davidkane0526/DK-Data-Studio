@@ -3,7 +3,7 @@ const vm = require('vm');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const current = require(path.join(root, 'src', 'analysis.js'));
+const current = require(path.join(root, 'src', 'science', 'index.js'));
 const baselineLabel = 'v3.61.58 fixture';
 const baselineRoot = process.env.DKDS_PARITY_BASELINE_DIR
   ? path.resolve(process.env.DKDS_PARITY_BASELINE_DIR)

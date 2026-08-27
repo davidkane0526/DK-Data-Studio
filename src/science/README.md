@@ -1,8 +1,8 @@
 # Shared Scientific Engine
 
-The mature scientific algorithms are no longer implemented in one monolithic `analysis.js`.
+The mature scientific algorithms are implemented as focused modules under `src/science/`.
 
-`analysis.js` is now only a backward-compatible facade.
+`index.js` is the canonical CommonJS aggregation entry for tests and tooling; the browser loads the focused modules directly. No `Analysis` compatibility global is maintained.
 
 Modules:
 
@@ -26,4 +26,4 @@ The rewrite is guarded by:
 npm run science:parity
 ```
 
-This loads the preserved `main` branch v3.14 implementation through Git and compares representative mature workflows against the rewritten modular engine. Additional unit tests cover identity tracking and gate-analysis formulas that historically lived in the UI controller rather than `analysis.js`.
+This loads the preserved `main` branch v3.14 implementation through Git and compares representative mature workflows against the rewritten modular engine. Additional unit tests cover identity tracking and gate-analysis formulas that historically lived in the UI controller rather than the shared science modules.

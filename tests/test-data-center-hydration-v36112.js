@@ -23,6 +23,7 @@ assert(dcManifest.window?.artifactHydration==='live','Data Center machine manife
 
 const context={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};
 context.globalThis=context;context.window.window=context.window;vm.createContext(context);vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
 const D=context.window.DKDSData;
 const legacyDatasets=[{name:'VG=0',path:'legacy://VG=0',sourcePath:'legacy://VG=0.csv',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}];
 const emptyLive=D.restoreStore({schema:2,artifacts:[]});

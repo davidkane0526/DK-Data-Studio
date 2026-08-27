@@ -215,7 +215,7 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
         isAuxiliary:()=>!!state.host?.isAuxiliaryWindow
       }),
       io: ioScope,
-      science: window.DKDSScience || window.Analysis || null,
+      science: window.DKDSScience || null,
       performance: Object.freeze({
         memoWeak:(namespace,target,key,compute,options={})=>window.DKDSPerformance?.memoWeak?.(`${pluginId}.${String(namespace||'core')}`,target,key,compute,options)??compute?.(),
         memo:(namespace,key,compute,options={})=>window.DKDSPerformance?.memo?.(`${pluginId}.${String(namespace||'core')}`,key,compute,options)??compute?.(),
@@ -396,14 +396,7 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
           recover:recoverAlgorithmPackage,
           snapshot:()=>window.DKDSScientificAlgorithms?.snapshot?.()||{version:'',count:0,algorithms:[]}
         }) : null,
-        detectors: {
-          // Compatibility facade: detector providers are now versioned Scientific Algorithms.
-          register: (id, spec={}) => {
-            const descriptor=registerAlgorithm(id,{...spec,category:'peak-detector',run:spec.run||spec.detect,inputTypes:spec.inputTypes||['science.iv.raw'],outputTypes:spec.outputTypes||['science.resonance.peak']});
-            return {...descriptor,name:spec.name||spec.title||id,shortName:spec.shortName||'',presets:spec.presets||[],detect:(input,settings,options={})=>runAlgorithm({id,version:descriptor.version,category:'peak-detector'},input,{...options,parameters:settings||{}}),getPreset:spec.getPreset,defaultSettings:spec.defaultSettings};
-          },
-          list: () => algorithmList({category:'peak-detector'}).map(row=>({...row,name:row.title,shortName:row.metadata?.shortName||row.title,description:row.description,presets:row.metadata?.presets||[],detect:(input,settings,options={})=>row.run(input,{...options,parameters:settings||{}})}))
-        }
+
       },
       parameters: {
         render: (container, schema, options) => window.DKDSParameters.render(container, schema, options),

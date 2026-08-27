@@ -1,5 +1,5 @@
 (() => {
-  const A=window.Analysis;
+  const A=window.DKDSScience;
   const D=window.DKDSData;
 
   function finite(value){return value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));}

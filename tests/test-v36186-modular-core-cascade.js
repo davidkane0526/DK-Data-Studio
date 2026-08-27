@@ -13,12 +13,15 @@ const walk=(dir,out=[])=>{if(!fs.existsSync(dir))return out;for(const name of fs
 const coreRoot=path.join(root,'src','core');
 const rootFiles=fs.readdirSync(coreRoot,{withFileTypes:true}).filter(row=>row.isFile()).map(row=>row.name);
 assert.deepEqual(rootFiles,[],'Core root must contain no implementation files; use responsibility directories.');
-for(const dir of ['data','project','scientific','plugins','ui','theme','services','host','performance','workflow','diagnostics','recipes']){
+for(const dir of ['data','project','scientific','plugins','ui','theme','services','host','performance','workflow','recipes']){
   assert(fs.existsSync(path.join(coreRoot,dir)),`Missing Core responsibility directory: ${dir}`);
 }
 for(const legacy of ['src/core/plugin-kernel.js','src/core/ui-infrastructure.js','scripts/generate-core-runtime-bundles.js','scripts/generate-core-styles.js']){
   assert(!fs.existsSync(path.join(root,legacy)),`Legacy monolithic Core artifact returned: ${legacy}`);
 }
+
+assert(fs.existsSync(path.join(root, 'src', 'diagnostics')), 'Integration diagnostics layer missing: src/diagnostics');
+assert(!fs.existsSync(path.join(root, 'src', 'core', 'diagnostics')), 'Diagnostics must not live under Core');
 
 const cssFiles=[...walk(path.join(root,'src','styles')),path.join(root,'src','mobile.css'),path.join(root,'src','plugin-window','style.css'),...walk(path.join(root,'src','plugins')).filter(f=>f.endsWith('plugin.css'))].filter(f=>fs.existsSync(f)&&f.endsWith('.css'));
 for(const file of cssFiles){

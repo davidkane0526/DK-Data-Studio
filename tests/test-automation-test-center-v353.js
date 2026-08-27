@@ -2,7 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const assert=require('assert');
 const root=path.resolve(__dirname,'..');
-const runtime=(fs.readFileSync(path.join(root,'src/core/diagnostics/automation-test-runtime.js'),'utf8')+fs.readFileSync(path.join(root,'src/core/diagnostics/automation-smoke-cases.js'),'utf8'));
+const runtime=(fs.readFileSync(path.join(root,'src/diagnostics/automation-test-runtime.js'),'utf8')+fs.readFileSync(path.join(root,'src/diagnostics/automation-smoke-cases.js'),'utf8'));
 const match=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);
 assert(match,'Automation runner version missing.');
 const version=match.slice(1).map(Number);

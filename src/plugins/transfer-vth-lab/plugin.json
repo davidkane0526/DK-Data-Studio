@@ -89,5 +89,11 @@
   "compatibility": {
     "app": ">=3.61.33 <4.0.0",
     "pluginApi": "^1.17.0"
-  }
+  },
+  "pluginDependencies": [
+    {
+      "id": "builtin.scientific-data-contracts",
+      "range": "^1.0.0"
+    }
+  ]
 }

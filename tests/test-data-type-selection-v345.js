@@ -19,6 +19,9 @@ const localStorage={getItem(){return null;},setItem(){}};
 const context={window,document,localStorage,structuredClone,CustomEvent,console,setTimeout,clearTimeout,requestAnimationFrame:fn=>{fn();return 1;},cancelAnimationFrame(){},globalThis:null};
 context.globalThis=context;window.window=window;window.document=document;window.localStorage=localStorage;window.CustomEvent=CustomEvent;
 vm.createContext(context);vm.runInContext(code,context,{filename:'ui-infrastructure.js'});
+const contractScope=window.DKDSUI.createScope('builtin.scientific-data-contracts');
+window.DKDSPlugins={define(_manifest,activate){activate({data:{types:contractScope.dataTypes}});}};
+vm.runInContext(fs.readFileSync(path.join(root,'src/plugins/scientific-data-contracts/plugin.js'),'utf8'),context,{filename:'scientific-data-contracts/plugin.js'});
 const T=window.DKDSUI.dataTypes;
 for(const id of ['data.table','science.iv.raw','science.iv.background-removed','science.transport.didv','science.transport.d2idv2','science.transport.dlnabsidv','science.transport.dvdi','science.transport.resistance','science.resonance.peak','science.resonance.fwhm','science.ter.value','science.ter.matrix'])assert(T.get(id),`missing canonical type ${id}`);
 assert(T.isA('science.transport.didv','science.iv.derivative'));
@@ -48,5 +51,5 @@ assert(observed?.snapshot?.focus?.id==='peak-1','cross-plugin selection event no
 assert(sink.accepts(observed.snapshot.focus),'consumer must accept producer subtype via canonical parent');
 sink.importSelection(observed.snapshot,{acceptTypes:['science.resonance.peak']});
 assert.equal(sink.get().focus.id,'peak-1');
-producer.dispose();consumer.dispose();
+producer.dispose();consumer.dispose();contractScope.dispose();
 console.log('v3.45 canonical scientific data types + cross-plugin Selection Contract checks passed.');

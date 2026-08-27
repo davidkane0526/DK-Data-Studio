@@ -18,6 +18,7 @@ assert(sdk.pluginApiVersion==='1.17.0','Data navigation / legacy restoration / C
 // The legacy project migrator must recover meaningful root state even when an
 // intermediate build wrote empty namespaced placeholders.
 const PF=require('../src/core/project/format.js');
+require('../src/migrations/project-v1-domain.js').register(PF);
 global.DKDSScience={};
 require('../src/science/common.js');
 require('../src/science/import.js');
@@ -70,16 +71,17 @@ assert(parsed.datasets.length===1&&parsed.datasets[0].importSpec.yHeader==='id(0
 
 const app=read('src/generated/runtime/app.js');
 const projectFormat=read('src/core/project/format.js');
+const projectMigration=read('src/migrations/project-v1-domain.js');
 const resRuntime=read('src/plugins/resonance-workbench/feature-runtime.js');
 const dcView=read('src/plugins/data-center/shared-views.js');
 const dcRuntime=read('src/plugins/data-center/feature-runtime.js');
 const index=read('src/index.html');
 const css=readCoreCss(root);
-const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
 assert(app.includes('...savedSpec')&&app.includes('path:single&&source.path?source.path:dataset.path'),'Self-contained old projects must reparse embedded text with the saved importSpec and preserve the original dataset path.');
-assert(projectFormat.includes('const adoptedPaths=new Set')&&projectFormat.includes('assignments:[]'),'Legacy auxiliary channels omitted from the explicit adopted-data list must be translated once into generic Data Center-only assignments by Project Format.');
+assert(projectMigration.includes('const adoptedPaths=new Set')&&projectMigration.includes('assignments:[]'),'Legacy auxiliary channels omitted from the explicit adopted-data list must be translated once into generic Data Center-only assignments by Project Format.');
 assert(!app.includes('builtin.resonance-workbench'),'The host app must remain scientifically domain-neutral; legacy Resonance interpretation belongs only to Project Format migration.');
-assert(projectFormat.includes('legacyVisibilityExplicit=true')&&resRuntime.includes('legacyVisibilityDatasetPaths')&&resRuntime.includes('forward:!hiddenLegacy'),'Resonance must preserve explicit legacy adoption/visibility semantics so stored Ig auxiliaries do not reappear.');
+assert(projectMigration.includes('legacyVisibilityExplicit=true')&&resRuntime.includes('legacyVisibilityDatasetPaths')&&resRuntime.includes('forward:!hiddenLegacy'),'Resonance must preserve explicit legacy adoption/visibility semantics so stored Ig auxiliaries do not reappear.');
 assert(dcView.includes('dcLineageFilter')&&dcView.includes('dcFieldFilter')&&!dcView.includes('dcTagChips'),'Data Center must use compact lineage/actual-field navigation rather than semantic tag pills.');
 assert(dcRuntime.includes("a?.kind==='data.table'")&&dcRuntime.includes('c?.name||c?.key')&&dcRuntime.includes('artifactOrigin(a)'),'Data Center field filtering must use actual column/field labels and Core lineage.');
 assert(index.includes('importColumnFieldSelect')&&!index.includes('importColumnTagChips'),'Import Workbench must expose a compact exact-column dropdown, not semantic tag chips.');

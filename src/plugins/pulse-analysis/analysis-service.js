@@ -1,5 +1,5 @@
 (() => {
-  const A = window.Analysis;
+  const A = window.DKDSScience;
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({

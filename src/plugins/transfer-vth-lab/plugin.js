@@ -8,7 +8,7 @@
     window:{activity:'transfer-vth-lab',title:'Vth 工作台',width:1420,height:900,minWidth:900,minHeight:620,dependencies:['scientific-renderer','data-model'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
     data:{accepts:['science.transport.iv','science.transport.transfer']},algorithmProvider:true,algorithmCategories:['transfer-curve'],
     algorithmProvides:[{category:'transfer-curve',id:'transfer.vth-constant-current',version:'2.0.0',title:'Threshold voltage by constant-current neighborhood'}],
-    compatibility:{app:'>=3.61.33 <4.0.0',pluginApi:'^1.17.0'}
+    pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],compatibility:{app:'>=3.61.33 <4.0.0',pluginApi:'^1.17.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     const finite=v=>Number.isFinite(Number(v));

@@ -97,7 +97,7 @@
     return {source:String(source||''),ast,references:[...collectReferences(ast)],evaluate:(rowIndex,rowObject)=>evalNode(ast,rowIndex,rowObject)};
   }
 
-  function deriveColumn(table,{name,key=null,formula,unit='',role='',replace=false,providerId='core.formula',pluginId='builtin.data-center',version='1.0.0'}={}){
+  function deriveColumn(table,{name,key=null,formula,unit='',role='',replace=false,providerId='core.formula',pluginId='',version='1.0.0'}={}){
     if(table?.kind!=='data.table')throw new Error('公式派生列需要 DataTable 输入。');
     const columnName=String(name||'Derived').trim();if(!columnName)throw new Error('派生列名称不能为空。');
     const columnKey=String(key||columnName).trim();const compiled=compile(formula,table);const values=[];let nonFinite=0;

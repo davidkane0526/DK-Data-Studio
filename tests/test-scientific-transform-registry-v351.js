@@ -9,6 +9,10 @@ vm.createContext(context);
 for(const file of ['src/science/common.js','src/science/peaks.js','src/science/ter.js','src/core/data/model.js','src/core/performance/runtime.js','src/core/scientific/pipeline-runtime.js','src/core/scientific/transform-runtime.js'])vm.runInContext(read(file),context,{filename:file});
 const S=context.window.DKDSScience,D=context.window.DKDSData,P=context.window.DKDSScientificPipeline,T=context.window.DKDSScientificTransforms,perf=context.window.DKDSPerformance;
 const tv=T.VERSION.split('.').map(Number);assert(tv[0]>1||(tv[0]===1&&tv[1]>=0),'Scientific Transform Runtime must remain v1.x compatible or newer.');
+const testDefinitions=[
+  ['raw','science.iv.raw','science.transport.current-field','current','A',true],['detrend','science.iv.background-removed','science.transport.background-removed-current-field','current','A',true],['didv','science.transport.didv','science.transport.conductance-field','conductance','A/V',true],['d2idv2','science.transport.d2idv2','science.transport.second-derivative-current-field','second-derivative-current','A/V²',true],['dlog','science.transport.dlnabsidv','science.transport.log-current-slope-field','log-current-slope','1/V',true],['dvdi','science.transport.dvdi','science.transport.differential-resistance-field','differential-resistance','V/A',true],['resistance','science.transport.resistance','science.transport.resistance-field','resistance','Ω',false]
+];
+for(const [id,outputType,fieldType,quantity,unit,diverging] of testDefinitions)T.register('test.transport-contract',id,{title:id,outputType,fieldType,quantity,unit,diverging,transformKey:id,public:true,supportsScalarField:true});
 const ids=T.list({public:true}).map(row=>row.id);
 for(const id of ['raw','detrend','didv','d2idv2','dlog','dvdi','resistance'])assert(ids.includes(id),`missing transform ${id}`);
 assert.strictEqual(T.get('didv').outputType,'science.transport.didv');
@@ -44,5 +48,5 @@ assert.strictEqual(fieldResult.artifacts[0].semanticType,'science.transport.cond
 assert.strictEqual(fieldResult.viewModel.kind,'heatmap');assert.strictEqual(fieldResult.viewModel.diverging,true);
 transformScope.register('abs-current',{title:'|I|',outputType:'science.iv.raw',supportsScalarField:false,run:sw=>({points:sw.points.map(p=>({v:p.v,y:Math.abs(p.i)})),label:'|I|',unit:'A'})});
 assert(scope.get('transform.abs-current'),'custom transform registered after pipeline binding must receive a pipeline stage');
-T.removeOwner('test.transforms');P.removeOwner('test.transforms');
+T.removeOwner('test.transforms');T.removeOwner('test.transport-contract');P.removeOwner('test.transforms');
 console.log('Scientific Transform Registry v3.51: canonical curve/scalar-field stages, parity, dynamic registration and pipeline bridge passed.');

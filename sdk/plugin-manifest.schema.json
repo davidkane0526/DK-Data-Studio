@@ -96,7 +96,6 @@
           "workflow",
           "analysis.providers",
           "analysis.algorithms",
-          "analysis.detectors",
           "charts",
           "charts.providers",
           "ui.dom",

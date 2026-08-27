@@ -43,7 +43,7 @@ let activations=0;
 const tab={pluginState:{}};
 
 P.define({
-  id:'test.stateful',name:'Stateful',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
+  id:'test.stateful',pluginType:'extension',name:'Stateful',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
 },async ctx=>{
   activations++;
   ctx.project.registerSlice('settings',{
@@ -58,7 +58,7 @@ P.define({
 
 let migrationMarker='stale';
 P.define({
-  id:'test.project-slice-reset',name:'Project Slice Reset',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
+  id:'test.project-slice-reset',pluginType:'extension',name:'Project Slice Reset',version:'1.0.0',enabled:true,apiVersion:'1.0.0'
 },async ctx=>{
   ctx.project.registerSlice('workspace',{
     serialize:()=>({marker:migrationMarker}),
@@ -69,14 +69,14 @@ P.define({
 });
 
 P.define({
-  id:'test.default-off',name:'Default Off',version:'1.0.0',enabled:false,apiVersion:'1.0.0'
+  id:'test.default-off',pluginType:'extension',name:'Default Off',version:'1.0.0',enabled:false,apiVersion:'1.0.0'
 },async ctx=>{
   ctx.registry.add('analysis.providers','default-off',{id:'default-off'});
   return {};
 });
 
 P.define({
-  id:'test.error',name:'Broken',version:'1.0.0',enabled:false,apiVersion:'1.0.0'
+  id:'test.error',pluginType:'extension',name:'Broken',version:'1.0.0',enabled:false,apiVersion:'1.0.0'
 },async ctx=>{
   ctx.registry.add('analysis.providers','broken-partial',{id:'broken-partial'});
   throw new Error('expected activation failure');
@@ -93,7 +93,7 @@ P.define({
 },async()=>({}));
 
 P.define({
-  id:'test.duplicate',name:'Duplicate provider',version:'1.0.0',enabled:false,apiVersion:'1.1.0'
+  id:'test.duplicate',pluginType:'extension',name:'Duplicate provider',version:'1.0.0',enabled:false,apiVersion:'1.1.0'
 },async ctx=>{
   ctx.registry.add('analysis.providers','stateful',{id:'stateful'});
   return {};

@@ -8,6 +8,7 @@ const app=read('src/generated/runtime/app.js');
 const projectPersistence=read('src/app/modules/project-persistence.js');
 const pluginHost=read('src/app/modules/dedicated-plugin-windows.js');
 const format=read('src/core/project/format.js');
+const legacyMigration=read('src/migrations/project-v1-domain.js');
 
 const makeStart=projectPersistence.indexOf('function makeProject(){');
 const makeEnd=projectPersistence.indexOf('let projectSaveChoicePromise',makeStart);
@@ -48,8 +49,8 @@ for(const rel of [
 assert(!main.includes('aux=')&&!main.includes('src/index.html?'),'Main process must not reload the full host renderer as a legacy TOP fallback.');
 
 assert(format.includes("const SCHEMA_VERSION=2"),'Project format must declare schema v2.');
-assert(format.includes('DOMAIN_ROOT_FIELDS'),'Project format must centrally define legacy domain roots.');
-assert(format.includes("plugins['builtin.resonance-workbench']")&&format.includes("plugins['builtin.ter-analysis']")&&format.includes("plugins['builtin.pulse-analysis']"),'Legacy migration must terminate in plugin namespaces.');
+assert(!format.includes('DOMAIN_ROOT_FIELDS')&&legacyMigration.includes('DOMAIN_ROOT_FIELDS'),'Legacy domain roots must live only in the migration layer, not Core Project Format.');
+assert(legacyMigration.includes("plugins['builtin.resonance-workbench']")&&legacyMigration.includes("plugins['builtin.ter-analysis']")&&legacyMigration.includes("plugins['builtin.pulse-analysis']"),'Legacy migration must terminate in plugin namespaces outside Core.');
 
 assert(app.includes("window.DKDSPlugins.project.restore(t.pluginState||{})")&&app.includes("restore?.(pr.plugins||{})"),'Live main-host restore must consume plugin slices only.');
 const dedicated=read('src/plugin-window/runtime.js');

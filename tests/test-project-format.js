@@ -2,6 +2,8 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const F=require('../src/core/project/format.js');
+const LegacyProjectMigration=require('../src/migrations/project-v1-domain.js');
+LegacyProjectMigration.register(F);
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
@@ -41,12 +43,12 @@ assert.deepStrictEqual(canonical.plugins['builtin.ter-analysis'].workspace.setti
 assert.deepStrictEqual(canonical.plugins['builtin.ter-analysis'].workspace.result,legacyProject.terMaxResult,'legacy TER result must migrate to the TER plugin slice');
 assert.deepStrictEqual(canonical.plugins['builtin.pulse-analysis'].workspace,legacyProject.pulseAnalysis,'legacy pulse state must migrate to the pulse plugin slice');
 assert.strictEqual(canonical.host.panelLayout.groupPanelMode,'floating','legacy generic panel layout must migrate into the generic host namespace');
-for(const key of F.DOMAIN_ROOT_FIELDS)assert.strictEqual(Object.prototype.hasOwnProperty.call(canonical,key),false,`canonical project root must not contain ${key}`);
+for(const key of LegacyProjectMigration.fields)assert.strictEqual(Object.prototype.hasOwnProperty.call(canonical,key),false,`canonical project root must not contain ${key}`);
 
 const text=F.serializeProject(canonical,2);
 const parsed=JSON.parse(text);
 assert.strictEqual(parsed.schemaVersion,2,'serialized project must use canonical schema v2');
-for(const key of F.DOMAIN_ROOT_FIELDS)assert.strictEqual(Object.prototype.hasOwnProperty.call(parsed,key),false,`serialized project root must remain domain-neutral: ${key}`);
+for(const key of LegacyProjectMigration.fields)assert.strictEqual(Object.prototype.hasOwnProperty.call(parsed,key),false,`serialized project root must remain domain-neutral: ${key}`);
 
 const utf8bom=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from(text,'utf8')]);
 assert.strictEqual(F.parseProjectBytes(utf8bom).project.datasets[0].points.length,2,'UTF-8 BOM project must open');

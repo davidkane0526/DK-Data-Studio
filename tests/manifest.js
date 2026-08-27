@@ -485,7 +485,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-analysis-compat-facade.js",
+      "file": "tests/test-science-entry.js",
       "args": []
     },
     {
@@ -696,6 +696,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361104-scientific-surface-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361105-core-plugin-ownership.js",
       "args": []
     }
   ],
@@ -1197,7 +1201,7 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-analysis-compat-facade.js",
+      "file": "tests/test-science-entry.js",
       "args": []
     },
     {
@@ -1428,6 +1432,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361104-scientific-surface-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361105-core-plugin-ownership.js",
       "args": []
     }
   ],

@@ -23,6 +23,7 @@
     'science-pulse':'../science/pulse.js',
     'science-ter':'../science/ter.js',
     'data-model':'../core/data/model.js',
+    'legacy-dataset-migration':'../migrations/legacy-dataset-adapter.js',
     'entity-runtime':'../core/data/entity-runtime.js',
     'formula-engine':'../core/data/formula-engine.js',
     'parameter-schema':'../core/data/parameter-schema.js',
@@ -198,6 +199,7 @@
       if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
       if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
     }
+    if (ordered.includes('data-model') && !ordered.includes('legacy-dataset-migration')) ordered.splice(ordered.indexOf('data-model')+1,0,'legacy-dataset-migration');
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
     // Stable host infrastructure remains available to every dedicated TOP, but
@@ -213,7 +215,6 @@
 
     for (const id of ordered) await measure(id,()=>loadScript(DEPENDENCY_SCRIPTS[id]),startupProfile.dependencies,{src:DEPENDENCY_SCRIPTS[id]});
     window.DKDSCharts?.configureRuntime?.({preferredRenderer:'d3',host:'dedicated-top'});
-    if (window.DKDSScience) window.Analysis = window.DKDSScience;
     if (!window.DKDSPlugins) throw new Error('插件内核未加载。');
     window.DKDSUI?.host?.configure?.({
       root:'#app',
@@ -548,7 +549,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.104',
+      appVersion:'3.61.105',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,

@@ -12,6 +12,7 @@ const context={
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
+vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
 vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
 const D=context.DKDSData;
 
@@ -35,7 +36,7 @@ roundTrip=D.legacyDatasetsFromArtifacts(store.list({includeTransient:true}));
 assert.strictEqual(roundTrip.map(d=>d.path).join('|'),legacyB.path,'bridge must prune replaced transient source artifacts');
 
 let terSeen=[];
-context.Analysis={
+context.DKDSScience={
   detectTerVoltageParameters(rows){terSeen=rows;return {vmin:-1,vmax:1,vstep:0.1};},
   computeTerMatrix(){throw new Error('not needed in bridge test');}
 };

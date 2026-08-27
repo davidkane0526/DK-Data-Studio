@@ -153,12 +153,12 @@ try{
 const externalPkg=normalizePluginPackage({
   schema:1,
   manifest:{
-    id:'example.external-window',name:'External Window',version:'1.0.0',apiVersion:'1.3.0',entry:'plugin.js',
+    id:'example.external-window',pluginType:'workbench',name:'External Window',version:'1.0.0',apiVersion:'1.3.0',entry:'plugin.js',
     scripts:['plugin.js'],styles:['style.css'],
     window:{activity:'external-window',runtime:'window-runtime.js',scripts:['engine.js'],dependencies:[],prewarm:true,reuse:true,persistence:'project'}
   },
   files:{
-    'plugin.js':'DKDSPlugins.define({id:"example.external-window",name:"External Window",version:"1.0.0"},async()=>({}));',
+    'plugin.js':'DKDSPlugins.define({id:"example.external-window",pluginType:"workbench",name:"External Window",version:"1.0.0"},async()=>({}));',
     'window-runtime.js':'window.DKDSPluginWindowRuntime={create:async()=>({})};',
     'engine.js':'window.__externalWindowEngine=true;',
     'style.css':'.external-window{}'

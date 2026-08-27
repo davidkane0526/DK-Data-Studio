@@ -11,7 +11,7 @@ const elements={
   pulseActiveEditor:{classList:{toggle(){}}}
 };
 const dom={query(selector){const id=String(selector||'').replace(/^#/,'');return elements[id]||null;},create(){return {className:'',innerHTML:'',querySelector(){return null;},appendChild(){}};},frame(fn){fn?.();}};
-const context={console,structuredClone,window:{Analysis:{},DKDSPluginModules:{define(_plugin,id,value){if(id==='analysis-service')moduleValue=value;}}}};
+const context={console,structuredClone,window:{DKDSScience:{},DKDSPluginModules:{define(_plugin,id,value){if(id==='analysis-service')moduleValue=value;}}}};
 vm.createContext(context);
 vm.runInContext(source,context,{filename:'pulse-analysis-service.js'});
 assert(moduleValue?.create,'Pulse analysis service module was not registered.');
@@ -27,7 +27,7 @@ assert(moduleValue?.create,'Pulse analysis service module was not registered.');
   assert(windowRuntime.includes('targetPluginState'),'Dedicated TOP runtime must inspect target plugin activation state.');
   assert(windowRuntime.includes('插件激活失败：'),'Dedicated TOP runtime must report the original activation failure.');
 
-  const automation=(fs.readFileSync('src/core/diagnostics/automation-test-runtime.js','utf8')+fs.readFileSync('src/core/diagnostics/automation-smoke-cases.js','utf8'));
+  const automation=(fs.readFileSync('src/diagnostics/automation-test-runtime.js','utf8')+fs.readFileSync('src/diagnostics/automation-smoke-cases.js','utf8'));
   assert(automation.includes('passedTopCount'),'Automation coverage must distinguish exercised TOPs from successful TOPs.');
   assert(automation.includes('TOP renderer(s) failed readiness'),'TOP coverage must fail when any renderer does not reach ready.');
   console.log('Pulse TOP renderer hotfix v3.46.1 tests passed.');

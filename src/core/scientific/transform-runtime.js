@@ -30,6 +30,15 @@
   function normalizeSweep(value){
     if(!value||typeof value!=='object')return null;
     if(Array.isArray(value.points))return value;
+    if(value.kind==='data.table'&&Array.isArray(value.columns)){
+      const xColumn=value.columns.find(c=>c?.role==='x')||value.columns[0],yColumn=value.columns.find(c=>c?.role==='y')||value.columns[1],groupColumn=value.columns.find(c=>c?.role==='group');
+      if(xColumn&&yColumn){
+        const x=safeArray(xColumn.values),y=safeArray(yColumn.values),n=Math.min(x.length,y.length),points=[];
+        for(let index=0;index<n;index++)points.push({v:Number(x[index]),i:Number(y[index]),index});
+        const groupValues=safeArray(groupColumn?.values).map(Number).filter(Number.isFinite);
+        return normalizeSweep({id:value.id,name:value.name,x:points.map(p=>p.v),y:points.map(p=>p.i),vg:groupValues[0],metadata:{...(value.metadata||{}),xName:xColumn.name||xColumn.key||'X',xUnit:xColumn.unit||'',yName:yColumn.name||yColumn.key||'Y',yUnit:yColumn.unit||'',groupName:groupColumn?.name||groupColumn?.key||'Group',groupUnit:groupColumn?.unit||''}});
+      }
+    }
     if(Array.isArray(value.x)&&Array.isArray(value.y)){
       const n=Math.min(value.x.length,value.y.length),points=[];
       for(let index=0;index<n;index++)points.push({v:Number(value.x[index]),i:Number(value.y[index]),index});
@@ -43,10 +52,6 @@
   function sweepsFromInput(input){
     const rows=safeArray(input).filter(Boolean),direct=rows.map(normalizeSweep).filter(Boolean);
     if(direct.length===rows.length&&direct.length)return direct;
-    const data=window.DKDSData,science=window.DKDSScience||window.Analysis;
-    const tables=rows.filter(row=>row?.kind==='data.table');
-    const datasets=data?.legacyDatasetsFromArtifacts?.(tables)||[];
-    if(datasets.length&&typeof science?.buildSweeps==='function')return datasets.flatMap(ds=>science.buildSweeps(ds)||[]);
     return direct;
   }
 
@@ -59,7 +64,7 @@
       outputType,fieldType,quantity:String(spec.quantity||''),unit:String(spec.unit||''),diverging:spec.diverging!==false,
       tags:Object.freeze(normalizeList(spec.tags)),inputTypes:Object.freeze(normalizeList(spec.inputTypes||['science.iv.raw','data.sweep'])),
       transformKey:String(spec.transformKey||name),parameterSchema:spec.parameterSchema||null,metadata:Object.freeze({...spec.metadata}),
-      algorithmRef:normalizeAlgorithmRef(spec.algorithmRef,'transport-transform'),fieldAlgorithmRef:normalizeAlgorithmRef(spec.fieldAlgorithmRef,'transport-scalar-field'),
+      algorithmRef:normalizeAlgorithmRef(spec.algorithmRef),fieldAlgorithmRef:normalizeAlgorithmRef(spec.fieldAlgorithmRef),
       run:typeof spec.run==='function'?spec.run:null,field:typeof spec.field==='function'?spec.field:null,public:spec.public!==false,supportsScalarField:spec.supportsScalarField!==false
     });
     registry.set(name,row);if(!ownerIndex.has(o))ownerIndex.set(o,new Set());ownerIndex.get(o).add(name);
@@ -74,8 +79,8 @@
 
   function runCurve(id,input,options={}){
     const row=resolve(id);if(!row)throw new Error(`Scientific transform not found: ${id}`);const sweep=normalizeSweep(input);if(!sweep)throw new Error(`${row.id}: expected a sweep/curve input.`);
-    const science=window.DKDSScience||window.Analysis;const parameters=clone(options.parameters||options.transformOptions||{});
-    const provider=executeAlgorithmSync(row.algorithmRef,sweep,{...options,category:'transport-transform',parameters,transform:{id:row.id,transformKey:row.transformKey,outputType:row.outputType,fieldType:row.fieldType}});
+    const science=window.DKDSScience;const parameters=clone(options.parameters||options.transformOptions||{});
+    const provider=executeAlgorithmSync(row.algorithmRef,sweep,{...options,category:row.algorithmRef?.category||'',parameters,transform:{id:row.id,transformKey:row.transformKey,outputType:row.outputType,fieldType:row.fieldType}});
     const result=provider?.value??(row.run?row.run(sweep,{...options,parameters,transform:row}):science?.transformSweep?.(sweep,row.transformKey,parameters));
     if(!result)throw new Error(`${row.id}: transform returned no result.`);
     return {...result,type:row.id,transformId:row.id,semanticType:row.outputType||result.semanticType||'',label:result.label||row.label,unit:result.unit||row.unit,quantity:row.quantity,diverging:row.diverging,algorithm:provider?.algorithm||result.algorithm||null};
@@ -83,10 +88,10 @@
 
   function runScalarField(id,input,options={}){
     const row=resolve(id);if(!row)throw new Error(`Scientific transform not found: ${id}`);if(!row.supportsScalarField)throw new Error(`${row.id}: scalar-field projection is not supported.`);
-    const sweeps=sweepsFromInput(input),science=window.DKDSScience||window.Analysis;
+    const sweeps=sweepsFromInput(input),science=window.DKDSScience;
     const targets=safeArray(options.targets).map(Number).filter(Number.isFinite),groups=safeArray(options.vgs||options.groups).map(Number).filter(Number.isFinite);
     const params={...clone(options),type:row.transformKey,transformId:row.id,vgs:groups,targets,transformAlgorithmRef:row.algorithmRef};delete params.groups;
-    const provider=executeAlgorithmSync(row.fieldAlgorithmRef,sweeps,{...options,category:'transport-scalar-field',parameters:params,targets,groups,transform:{id:row.id,transformKey:row.transformKey,outputType:row.outputType,fieldType:row.fieldType,algorithmRef:row.algorithmRef}});
+    const provider=executeAlgorithmSync(row.fieldAlgorithmRef,sweeps,{...options,category:row.fieldAlgorithmRef?.category||'',parameters:params,targets,groups,transform:{id:row.id,transformKey:row.transformKey,outputType:row.outputType,fieldType:row.fieldType,algorithmRef:row.algorithmRef}});
     const result=provider?.value??(row.field?row.field(sweeps,params,{transform:row}):science?.computeSweepScalarField?.(sweeps,targets,groups,params)||science?.computeSweepTransformMatrix?.(sweeps,targets,groups,params));
     if(!result)throw new Error(`${row.id}: scalar-field transform returned no result.`);
     return {...result,type:row.id,transformId:row.id,semanticType:row.fieldType||'science.scalar-field',label:result.label||row.label,unit:result.unit||row.unit,quantity:row.quantity,diverging:row.diverging,algorithm:provider?.algorithm||result.algorithm||null,transformAlgorithmRef:row.algorithmRef||result.transformAlgorithmRef||null};
@@ -95,11 +100,11 @@
   function curveArtifact(row,input,result,context={}){
     const data=window.DKDSData,sweep=normalizeSweep(input);if(!data?.createTransform||!sweep)return null;
     const x=(result.points||[]).map(p=>p.v),y=(result.points||[]).map(p=>p.y),sourceId=String(input?.id||sweep?.id||sweep?.datasetPath||'sweep');
-    return data.createTransform({id:`scientific.transform:${sanitizeToken(context.owner)}:${sanitizeToken(row.id)}:${sanitizeToken(sourceId)}`,name:result.label||row.label,semanticType:row.outputType,x,y,xName:'Vd',yName:result.label||row.label,xUnit:'V',yUnit:result.unit||row.unit,transform:row.id,parameters:clone(context.parameters||{}),metadata:{scientificTransform:{id:row.id,quantity:row.quantity,diverging:row.diverging,algorithmRef:row.algorithmRef||null},algorithm:result.algorithm||null}});
+    return data.createTransform({id:`scientific.transform:${sanitizeToken(context.owner)}:${sanitizeToken(row.id)}:${sanitizeToken(sourceId)}`,name:result.label||row.label,semanticType:row.outputType,x,y,xName:sweep.metadata?.xName||'X',yName:result.label||row.label,xUnit:sweep.metadata?.xUnit||'',yUnit:result.unit||row.unit,transform:row.id,parameters:clone(context.parameters||{}),metadata:{scientificTransform:{id:row.id,quantity:row.quantity,diverging:row.diverging,algorithmRef:row.algorithmRef||null},algorithm:result.algorithm||null}});
   }
   function fieldArtifact(row,result,context={}){
     const data=window.DKDSData;if(!data?.createMatrix)return null;const direction=Number(result.direction)<0?-1:1;
-    return data.createMatrix({id:`scientific.field:${sanitizeToken(context.owner)}:${sanitizeToken(row.id)}:${direction}`,name:`${result.label||row.label} · ${direction<0?'反扫':'正扫'}`,semanticType:row.fieldType||'science.scalar-field',x:result.targets||[],y:result.vgs||[],z:result.matrix||[],xName:'Vd',yName:'Vg',valueName:result.label||row.label,xUnit:'V',yUnit:'V',valueUnit:result.unit||row.unit,parameters:{transformId:row.id,direction,...clone(context.parameters||{})},metadata:{scientificTransform:{id:row.id,outputType:row.outputType,fieldType:row.fieldType,quantity:row.quantity,diverging:row.diverging,algorithmRef:row.algorithmRef||null,fieldAlgorithmRef:row.fieldAlgorithmRef||null},algorithm:result.algorithm||null}});
+    return data.createMatrix({id:`scientific.field:${sanitizeToken(context.owner)}:${sanitizeToken(row.id)}:${direction}`,name:`${result.label||row.label} · ${direction<0?'反扫':'正扫'}`,semanticType:row.fieldType||'science.scalar-field',x:result.targets||[],y:result.vgs||[],z:result.matrix||[],xName:context.xName||'X',yName:context.groupName||'Group',valueName:result.label||row.label,xUnit:context.xUnit||'',yUnit:context.groupUnit||'',valueUnit:result.unit||row.unit,parameters:{transformId:row.id,direction,...clone(context.parameters||{})},metadata:{scientificTransform:{id:row.id,outputType:row.outputType,fieldType:row.fieldType,quantity:row.quantity,diverging:row.diverging,algorithmRef:row.algorithmRef||null,fieldAlgorithmRef:row.fieldAlgorithmRef||null},algorithm:result.algorithm||null}});
   }
   function curveStageId(row){return `transform.${row.id}`;}
   function fieldStageId(row){return `scalar-field.${row.id}`;}
@@ -125,17 +130,6 @@
     return Object.freeze({version:VERSION,owner:o,register:(id,spec)=>register(o,id,spec),unregister:id=>unregister(o,id),get,resolve,list,runCurve,runScalarField,installPipeline:pipeline=>installPipeline(o,pipeline),curveStageId:id=>{const row=resolve(id);return row?curveStageId(row):'';},fieldStageId:id=>{const row=resolve(id);return row?fieldStageId(row):'';}});
   }
 
-  const FIELD_ALGORITHM=Object.freeze({category:'transport-scalar-field',id:'transport.scalar-field',version:'1.0.0'});
-  const BUILTINS=[
-    {id:'raw',title:'原始 I–V',outputType:'science.iv.raw',fieldType:'science.transport.current-field',quantity:'current',unit:'A',diverging:true,tags:['transport','iv','raw'],algorithmRef:{category:'transport-transform',id:'transport.raw',version:'1.0.0'}},
-    {id:'detrend',title:'去背景 I−Ibg',outputType:'science.iv.background-removed',fieldType:'science.transport.background-removed-current-field',quantity:'current',unit:'A',diverging:true,tags:['transport','iv','transform'],algorithmRef:{category:'transport-transform',id:'transport.detrend',version:'1.0.0'}},
-    {id:'didv',title:'dI/dV（微分电导）',outputType:'science.transport.didv',fieldType:'science.transport.conductance-field',quantity:'conductance',unit:'A/V',diverging:true,tags:['transport','conductance','transform'],algorithmRef:{category:'transport-transform',id:'transport.didv',version:'1.0.0'}},
-    {id:'d2idv2',title:'d²I/dV²',outputType:'science.transport.d2idv2',fieldType:'science.transport.second-derivative-current-field',quantity:'second-derivative-current',unit:'A/V²',diverging:true,tags:['transport','transform'],algorithmRef:{category:'transport-transform',id:'transport.d2idv2',version:'1.0.0'}},
-    {id:'dlog',title:'d ln|I|/dV',outputType:'science.transport.dlnabsidv',fieldType:'science.transport.log-current-slope-field',quantity:'log-current-slope',unit:'1/V',diverging:true,tags:['transport','transform'],algorithmRef:{category:'transport-transform',id:'transport.dlog',version:'1.0.0'}},
-    {id:'dvdi',title:'dV/dI（微分电阻）',outputType:'science.transport.dvdi',fieldType:'science.transport.differential-resistance-field',quantity:'differential-resistance',unit:'V/A',diverging:true,tags:['transport','resistance','transform'],algorithmRef:{category:'transport-transform',id:'transport.dvdi',version:'1.0.0'}},
-    {id:'resistance',title:'R = |V/I|',outputType:'science.transport.resistance',fieldType:'science.transport.resistance-field',quantity:'resistance',unit:'Ω',diverging:false,tags:['transport','resistance','transform'],algorithmRef:{category:'transport-transform',id:'transport.resistance',version:'1.0.0'}}
-  ].map(row=>({...row,fieldAlgorithmRef:FIELD_ALGORITHM}));
-  for(const spec of BUILTINS)register('core',spec.id,{...spec,transformKey:spec.id,public:true,supportsScalarField:true});
 
   window.DKDSScientificTransforms=Object.freeze({VERSION,createScope,register,unregister,removeOwner,get,resolve,list,runCurve,runScalarField,installPipeline,curveStageId:id=>{const row=resolve(id);return row?curveStageId(row):'';},fieldStageId:id=>{const row=resolve(id);return row?fieldStageId(row):'';}});
 })();

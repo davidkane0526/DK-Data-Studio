@@ -66,7 +66,7 @@ const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runti
   assert(diag.series>=2&&diag.seriesPoints===2,'The real Resonance runtime must produce non-empty group series after legacy restoration.');
   const runtimeSource=read('src/plugins/resonance-workbench/feature-runtime.js');
   const windowRuntime=read('src/plugin-window/runtime.js');
-  const automation=(read('src/core/diagnostics/automation-test-runtime.js')+read('src/core/diagnostics/automation-smoke-cases.js'));
+  const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
   assert(runtimeSource.includes('canonical.filter(assignedToResonance)'),'Artifact-backed Resonance datasets must preserve the scoped assignment boundary.');
   assert(runtimeSource.includes('reconcileSavedPeakSweeps')&&runtimeSource.includes('getGroupDiagnostics'),'Resonance runtime must reconcile old peak identities and expose live diagnostics.');
   assert(windowRuntime.includes('resonanceGroupDiagnostics'),'Dedicated renderer diagnostics must report the live Resonance runtime rather than an external reconstructed model.');

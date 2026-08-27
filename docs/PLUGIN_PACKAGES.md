@@ -34,7 +34,7 @@ Schema version 1:
     "scripts": ["plugin.js"],
     "styles": ["style.css"],
     "enabled": true,
-    "requiresCore": ["analysis.algorithms", "analysis.detectors"],
+    "requiresCore": ["analysis.algorithms"],
   "capabilities": ["analysis.peak-detector"]
   },
   "files": {
@@ -110,7 +110,8 @@ Uninstalling a plugin does **not** delete its namespaced project data. Reinstall
 Peak detectors are normal plugins. A detector registers a provider:
 
 ```js
-ctx.analysis.detectors.register('my-detector-v1', {
+ctx.analysis.algorithms.register('my-detector-v1', {
+  category: 'peak-detector',
   name: 'My Detector',
   description: '...',
   default: false,

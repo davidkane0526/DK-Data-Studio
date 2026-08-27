@@ -45,7 +45,7 @@ function makeSandbox(initial={}){
 
 function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,failActivate=false}={}){
   P.define({
-    id,name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.3.0',
+    id,pluginType:'workbench',name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.3.0',
     workspace:{role:'top',activity,icon:'T',title:id}
   },async ctx=>{
     ctx.ui.activities.add({id:activity,label:activity,openMode:'window',onActivate:failActivate?async()=>{throw new Error(`activate failed: ${id}`);}:undefined});
@@ -70,7 +70,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     defineTop(P,'test.top-b','top-b');
     defineTop(P,'test.incomplete','broken',{complete:false});
     defineTop(P,'test.fail-top','fail-top',{failActivate:true});
-    P.define({id:'test.support',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.3.0'},async()=>({}));
+    P.define({id:'test.support',pluginType:'extension',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.3.0'},async()=>({}));
     P.configure({
       openActivityWindow:async id=>opened.push(id),
       prepareSuperTransition:async change=>{transitions.push({...change});return {snapshots:[],closed:0};},
