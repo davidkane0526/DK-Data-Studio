@@ -114,7 +114,33 @@ for(const [name,css] of Object.entries(presentationText))for(const selector of p
 }
 const presentationDuplicates=[...presentationOwners.values()].filter(owners=>owners.size>1);
 const presentationEdges=presentationDuplicates.reduce((sum,owners)=>sum+owners.size-1,0);
-if(presentationDuplicates.length>55)violations.push(`presentation selector debt grew: ${presentationDuplicates.length} duplicate selectors > 55 ceiling.`);
-if(presentationEdges>58)violations.push(`presentation ownership debt grew: ${presentationEdges} cross-file edges > 58 ceiling.`);
+const scientificSurfaceTargets=new Set([
+  'body.dkds-modern-ui .trend-card',
+  'body.dkds-modern-ui .analysis-chart-card',
+  'body.dkds-modern-ui .trend-card-header',
+  'body.dkds-modern-ui .analysis-chart-title',
+  'body.dkds-modern-ui .trend-card-legend',
+  'body.dkds-modern-ui .trend-legend-chip',
+  'body.dkds-modern-ui .dkds-group-plot-card',
+  'body.dkds-modern-ui .dkds-group-plot-head'
+]);
+for(const [name,css] of Object.entries(presentationText)){
+  const selectors=presentationSelectors(css);
+  for(const target of scientificSurfaceTargets){
+    if(name!=='scientific.css'&&selectors.includes(target))violations.push(`src/styles/presentation/${name}: ${target} paint belongs to scientific.css.`);
+    const dark=`html[data-dkds-theme="dark"] ${target}`;
+    if(name!=='scientific.css'&&selectors.includes(dark))violations.push(`src/styles/presentation/${name}: dark ${target} paint must remain semantic in scientific.css.`);
+  }
+}
+for(const [name,css] of Object.entries(presentationText)){
+  if(name==='shell.css')continue;
+  const selectors=presentationSelectors(css);
+  for(const target of ['body.dkds-modern-ui .floating-panel','body.dkds-modern-ui .floating-header',
+    'html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel','html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-header']){
+    if(selectors.includes(target))violations.push(`src/styles/presentation/${name}: ${target} paint belongs to shell.css.`);
+  }
+}
+if(presentationDuplicates.length>42)violations.push(`presentation selector debt grew: ${presentationDuplicates.length} duplicate selectors > 42 ceiling.`);
+if(presentationEdges>42)violations.push(`presentation ownership debt grew: ${presentationEdges} cross-file edges > 42 ceiling.`);
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

@@ -693,6 +693,10 @@ module.exports = {
     {
       "file": "tests/test-v361103-presentation-ownership.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361104-scientific-surface-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1420,6 +1424,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361103-presentation-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361104-scientific-surface-ownership.js",
       "args": []
     }
   ],

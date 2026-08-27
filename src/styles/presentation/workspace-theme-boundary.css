@@ -17,7 +17,6 @@ body.dkds-modern-ui .analysis-table-wrap{
 }
 body.dkds-modern-ui .analysis-control-card label,
 body.dkds-modern-ui .analysis-subtitle,
-body.dkds-modern-ui .analysis-chart-title,
 body.dkds-modern-ui .analysis-table,
 body.dkds-modern-ui .analysis-section-title{
   color:var(--text-secondary);
@@ -39,7 +38,6 @@ body.dkds-modern-ui .analysis-note{
   border-left-color:color-mix(in srgb,var(--accent-primary) 58%,var(--border-strong));
   color:var(--text-secondary);
 }
-body.dkds-modern-ui .analysis-chart-title,
 body.dkds-modern-ui .analysis-table th{
   background:var(--surface-secondary);
   border-color:var(--border-subtle);
@@ -118,32 +116,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools{
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools button{color:#d7deeb}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-drag{color:#98a4b8}
-
-/* Semantic structural bridge. Remaining legacy scientific cards may
-   keep their class names, but no light-only border/surface literal is allowed to
-   survive the modern theme boundary. */
-body.dkds-modern-ui .trend-card,
-body.dkds-modern-ui .analysis-chart-card,
-body.dkds-modern-ui .dkds-group-plot-card{
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-}
-body.dkds-modern-ui .trend-card-header,
-body.dkds-modern-ui .analysis-chart-title,
-body.dkds-modern-ui .dkds-group-plot-head{
-  background:var(--surface-secondary);
-  border-color:var(--border-subtle);
-  color:var(--text-primary);
-  box-shadow:none;
-}
-body.dkds-modern-ui .trend-card-legend,
-body.dkds-modern-ui .group-panel-toolbar,
-body.dkds-modern-ui .dkds-plot-legend{
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  color:var(--text-secondary);
-  box-shadow:none;
-}
 
 /* Import Workbench is Core UI. All of its surfaces and text resolve through
    semantic tokens instead of the legacy white/light palette. */

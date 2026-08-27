@@ -1,3 +1,12 @@
+# v3.61.104 — Scientific Surface Ownership
+
+- Consolidate `trend-card`, `analysis-chart-card`, GroupPlot card/header paint and trend legend paint into `scientific.css`; remove the previous three-stage paint chain through `control-status.css`, `shell.css` and `workspace-theme-boundary.css`.
+- Make scientific card colors fully semantic in dark mode by removing hard-coded card/header aliases from `plugin-chrome.css`; the default dark palette remains equivalent while theme profiles can now supply the surface tokens without being shadowed by higher-specificity dark selectors.
+- Make `floating-panel` and `floating-header` presentation paint shell-owned. Floating panel geometry remains in foundation/structure, its perimeter stays visually quiet, and header paint resolves from semantic surface tokens.
+- Reduce exact duplicate selectors across the five primary presentation modules from **55 to 42**, and cross-file ownership edges from **58 to 42**.
+- Extend `validate-styles.js` with scientific-surface and floating-surface ownership gates; add the v3.61.104 regression gate while retaining the earlier scientific plot and floating-panel visual contracts.
+- Validation: `npm test` **174/174 PASS**; `npm run check` **182/182 PASS**; SDK Harness **PASS**; Plugin Boundary=0; scientific Python/JS parity PASS; authored CSS remains at 0 `!important`; SDK remains **1.17.16**.
+
 # v3.61.103 — Presentation Ownership Consolidation
 
 - Consolidate AnalysisWorkbench navigation state into `control-status.css`; `plugin-chrome.css` and `workspace-theme-boundary.css` no longer repaint `.dkds-analysis-nav-btn` after its semantic owner.

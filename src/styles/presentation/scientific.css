@@ -16,6 +16,47 @@ body.dkds-modern-ui .dkds-plot-legend-item.is-selected,
 body.dkds-modern-ui .dkds-plot-legend-item.is-solo{
   background:transparent;color:var(--text-primary);box-shadow:none;
 }
+
+/* Scientific card/surface paint ownership. Geometry remains in structure; this
+   file owns semantic paint for trend, analysis and GroupPlot cards so their
+   light/dark appearance no longer depends on late cross-file overrides. */
+body.dkds-modern-ui .trend-card{
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  box-shadow:var(--surface-shadow);
+  transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease;
+}
+body.dkds-modern-ui .analysis-chart-card{
+  background:var(--surface-primary);
+  border:0;
+  box-shadow:var(--surface-shadow);
+  transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease;
+}
+body.dkds-modern-ui .dkds-group-plot-card{
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+}
+body.dkds-modern-ui .trend-card-header,
+body.dkds-modern-ui .analysis-chart-title,
+body.dkds-modern-ui .dkds-group-plot-head{
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:none;
+}
+body.dkds-modern-ui .trend-card-legend,
+body.dkds-modern-ui .group-panel-toolbar,
+body.dkds-modern-ui .dkds-plot-legend{
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-secondary);
+  box-shadow:none;
+}
+body.dkds-modern-ui .trend-legend-chip{
+  border-color:var(--border-subtle);
+  background:var(--surface-secondary);
+  color:var(--text-primary);
+}
 body.dkds-modern-ui .dkds-scientific-nav-tools{opacity:0;pointer-events:none;transform:none}
 body.dkds-modern-ui .dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
 body.dkds-modern-ui .dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
@@ -50,8 +91,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-header,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav{border-color:var(--dkui-border);}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card{--plugin-workspace-panel-border:var(--dkui-border);}
 html[data-dkds-theme="dark"] body.dkds-modern-ui hr{border-color:var(--dkui-border);opacity:.55;}
 
@@ -61,9 +100,6 @@ body.dkds-modern-ui .left-panel section,
 body.dkds-modern-ui .inspector-section,
 body.dkds-modern-ui .docked-group-slot,
 body.dkds-modern-ui .group-panel-toolbar,
-body.dkds-modern-ui .trend-card-header,
-body.dkds-modern-ui .trend-card-legend,
-body.dkds-modern-ui .dkds-group-plot-head,
 body.dkds-modern-ui .dkds-dialog-footer,
 body.dkds-modern-ui .dkds-dialog-details pre,
 body.dkds-modern-ui .plugin-window-status{border-color:var(--dkui-border);}
@@ -94,20 +130,13 @@ body.dkds-modern-ui .split-command-anchor>.split-command-caret.strong:hover:not(
 html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .inspector-dock-slot,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .docked-group-slot,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-header,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .group-panel-toolbar,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-header,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-right,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-group-plot-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-group-plot-head{
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom{
   border-color:var(--dkui-border);
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
@@ -215,7 +244,6 @@ body.dkds-modern-ui .dkds-portable-inline-header>.dkds-portable-controls{grid-co
    service UI remains themeable. */
 
 /* Floating utility windows use elevation instead of a bright perimeter rule. */
-body.dkds-modern-ui .floating-panel{border-color:transparent;outline:0}
 body.dkds-modern-ui .floating-panel>.floating-header{border-bottom-color:var(--dkui-divider)}
 body.dkds-modern-ui .lan-web-panel .panel-header-actions>button{background:transparent;border-color:transparent;box-shadow:none;color:var(--dkui-muted)}
 body.dkds-modern-ui .lan-web-panel .panel-header-actions>button:hover{background:var(--dkui-control-hover);border-color:transparent;color:var(--dkui-text);box-shadow:none;transform:none}

@@ -61,10 +61,8 @@ body.dkds-modern-ui .dkds-plugin-workspace select:focus-visible,
 body.dkds-modern-ui .dkds-plugin-workspace textarea:focus-visible{outline:none;border-color:var(--accent-primary);box-shadow:var(--focus-ring)}
 
 /* Scientific workbenches: style application card chrome only, never renderer internals. */
-body.dkds-modern-ui .trend-card-legend,
 body.dkds-modern-ui .main-legend-bar{background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)}
-body.dkds-modern-ui .main-legend-chip,
-body.dkds-modern-ui .trend-legend-chip{
+body.dkds-modern-ui .main-legend-chip{
   border-color:var(--border-subtle);
   background:var(--surface-secondary);
   color:var(--text-primary);
@@ -169,9 +167,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab{background:#202631
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab:hover{background:#252d39;color:#d4dbe6}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab.active{background:#1d232e;border-color:var(--dkui-border);border-bottom-color:#1d232e;color:#edf2f8}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar{color:var(--dkui-text-soft)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-chart-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-stat,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-toolbar-card,
@@ -180,9 +175,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-settings-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-address-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-share-section{background:#1d232e;border-color:var(--dkui-border)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-header,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-header,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-chart-title,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-head{background:#202631;border-color:var(--dkui-border);color:#dce3ed}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-search-wrap,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-toolbar-card select,
@@ -204,7 +196,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-settings-dialog button,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .command-menu button{background:transparent;border-color:transparent;color:var(--dkui-text);box-shadow:none}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .command-menu,html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-settings-dialog{color:var(--dkui-text)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{background:#1d232e;border-color:var(--dkui-border)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools{color:var(--dkui-text)}
 
@@ -251,7 +242,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-visible-count,
 
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-note{background:#1d2430;border-left-color:#64789d;color:#98a5b6}
 
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-legend,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{color:#aeb8c7}
 
 

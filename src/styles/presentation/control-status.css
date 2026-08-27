@@ -180,7 +180,6 @@ body.dkds-modern-ui .dkds-plugin-canvas-right{
   background:var(--dkui-surface-sidebar,var(--surface-sidebar));
 }
 body.dkds-modern-ui .analysis-control-card,
-body.dkds-modern-ui .analysis-chart-card,
 body.dkds-modern-ui .dkds-analysis-prime-panel,
 body.dkds-modern-ui .dkds-portable-view{
   border:0;

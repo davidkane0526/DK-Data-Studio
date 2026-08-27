@@ -249,8 +249,6 @@ body.dkds-modern-ui .statusbar{
 
 /* Modern surface contract: small radius + restrained depth, no glossy gradients. */
 body.dkds-modern-ui .floating-panel,
-body.dkds-modern-ui .trend-card,
-body.dkds-modern-ui .analysis-chart-card,
 body.dkds-modern-ui .plugin-manager-card,
 body.dkds-modern-ui .plugin-manager-stat,
 body.dkds-modern-ui .plugin-manager-toolbar-card,
@@ -263,19 +261,21 @@ body.dkds-modern-ui .lan-web-share-section{
   border-color:var(--dkui-border);
   box-shadow:var(--dkui-shadow-1);
 }
+body.dkds-modern-ui .floating-panel{border-color:transparent;outline:0}
 body.dkds-modern-ui .floating-panel{box-shadow:none}
-body.dkds-modern-ui .plugin-manager-card,
-body.dkds-modern-ui .trend-card,
-body.dkds-modern-ui .analysis-chart-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
+body.dkds-modern-ui .plugin-manager-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
 body.dkds-modern-ui .plugin-manager-card:hover{
   border-color:#ced8e5;
   box-shadow:var(--dkui-shadow-2);
   transform:translateY(-1px);
 }
 
-body.dkds-modern-ui .floating-header,
-body.dkds-modern-ui .trend-card-header,
-body.dkds-modern-ui .analysis-chart-title,
+body.dkds-modern-ui .floating-header{
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:none;
+}
 body.dkds-modern-ui .dkds-analysis-prime-head{
   background:#fafbfd;
   border-color:#e7ebf1;
