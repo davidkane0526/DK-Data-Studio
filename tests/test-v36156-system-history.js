@@ -3,7 +3,7 @@ const fs=require('fs');const path=require('path');const vm=require('vm');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));const assert=(v,m)=>{if(!v)throw new Error(m);};
 (async()=>{
-  const pkg=json('package.json');assert(pkg.version==='3.61.95','current-version assertion is synchronized by set-version');
+  const pkg=json('package.json');assert(pkg.version==='3.61.96','current-version assertion is synchronized by set-version');
   const context={window:{},console,setTimeout,clearTimeout};context.window=context;
   vm.runInNewContext(read('src/core/project/history.js'),context,{filename:'project-history.js'});
   const history=context.DKDSProjectHistory.create({limit:3});let value=0;

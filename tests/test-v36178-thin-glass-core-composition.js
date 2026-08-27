@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');
 const readComposition=require('./helpers/read-composition');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
-assert.equal(json('package.json').version,'3.61.95');
+assert.equal(json('package.json').version,'3.61.96');
 
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes("elevated:'thin-glass'"),'Large elevated windows such as LAN Web and AI/MCP must use Thin Glass.');

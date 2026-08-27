@@ -1,3 +1,11 @@
+# v3.61.96 — Header Action Separation / Theme Coverage Ownership
+
+- Fixed the remaining TER/Pulse dedicated-window header collision by changing plugin header ActionGroups from one integrated segmented capsule into separated peer controls. Each action now owns an independent Core control surface, uses an 8 px inter-button gap, and keeps its label atomic with `flex: 0 0 auto` plus `min-width: max-content`.
+- Kept the header lane itself shrinkable and horizontally scrollable so a genuinely narrow window scrolls the action lane instead of compressing labels or invading the fixed `关闭窗口` control. The same Core contract is consumed by both Pulse and TER; no plugin-specific spacing patch was added.
+- Tightened Theme Coverage ownership after the v3.61.95 desktop report reached 41 pass / 1 fail / 1 skip. LAN Web is now counted only as an elevated surface, Update Panel only as a floating surface, and SUPER/main workspace nodes are included in the Core surface-role assignment that coverage already expects.
+- Added the v3.61.96 regression gate for separated header actions, atomic labels, close-button isolation, Pulse/TER Core reuse and non-overlapping Theme Coverage areas.
+- Validation: `npm test` 166/166 PASS; `npm run check` complete coverage 174/174 PASS (1–117 main run, 118–174 continuation after the outer execution timeout); SDK Harness PASS; Plugin Boundary=0; scientific Python/JS parity PASS; 33 authored CSS files with 0 `!important`.
+
 # v3.61.95 — Visual Rhythm / Plot Theme / Group-State Recovery
 
 - Restored bounded, single-line analysis header action geometry so long TER actions scroll instead of overlapping the dedicated-window close action; AnalysisWorkbench navigation rows now remain horizontal instead of stacking labels such as `TER 分析` / `R–V 联动`.

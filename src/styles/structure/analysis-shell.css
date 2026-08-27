@@ -40,8 +40,8 @@
   overflow-y:hidden;
   scrollbar-width:thin;
 }
-.analysis-page-header>.dkds-plugin-header-actions.dkds-action-group{flex-wrap:nowrap;}
-.analysis-page-header>.dkds-plugin-header-actions :where(button,.dkds-action-button){flex:0 0 auto;}
+.analysis-page-header>.dkds-plugin-header-actions.dkds-action-group{flex-wrap:nowrap;gap:8px;}
+.analysis-page-header>.dkds-plugin-header-actions :where(button,.dkds-action-button){flex:0 0 auto;min-width:max-content;}
 .analysis-page-header>.analysis-page-close{flex:0 0 auto;}
 .analysis-page-header h2{margin:0;font-size:19px;}
 .analysis-subtitle{font-size:11px;color:#7b8495;margin-top:3px;}

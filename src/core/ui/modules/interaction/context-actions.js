@@ -48,6 +48,12 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
       this.owner=owner;this.container=resolveElement(container);this.spec={...spec};this.actions=[];this.state={};this.cleanups=[];this.menu=null;
       if(!this.container)throw new Error('ActionGroup container not found.');
       this.container.classList.add('dkds-action-group','dkds-integrated-action-group','dkds-material-role-control');
+      const separatedHeader=this.container.classList.contains('dkds-plugin-header-actions')||spec.integrated===false;
+      if(separatedHeader){
+        this.container.classList.add('dkds-separated-action-group');
+        this.container.classList.remove('dkds-integrated-action-group','dkds-material-role-control');
+        this.container.dataset.dkdsActionLayout='separated';
+      }else this.container.dataset.dkdsActionLayout='integrated';
       if(spec.className)this.container.classList.add(...String(spec.className).split(/\s+/).filter(Boolean));
       this.setActions(spec.actions||[]);
     }

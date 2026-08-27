@@ -27,6 +27,32 @@ body.dkds-modern-ui .dkds-plugin-workspace button:hover:not(:disabled){
   background:var(--surface-hover);
   border-color:var(--border-strong);
 }
+
+/* Page-header actions are peers, not one segmented capsule. Keeping each
+   command on its own Core control surface prevents adjacent labels/icons from
+   visually collapsing into one another (especially Pulse and TER headers). */
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group{
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button{
+  min-height:32px;
+  height:32px;
+  padding:0 11px;
+  border:1px solid var(--dkui-control-border,var(--border-subtle));
+  border-radius:9px;
+  background:var(--dkui-control-bg,var(--surface-primary));
+  box-shadow:var(--dkui-shadow-1,var(--surface-shadow));
+}
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button:hover:not(:disabled){
+  border-color:var(--dkui-control-border-hover,var(--border-strong));
+  background:var(--dkui-control-hover,var(--surface-hover));
+}
 body.dkds-modern-ui .dkds-plugin-workspace input:not([type="checkbox"]):not([type="radio"]),
 body.dkds-modern-ui .dkds-plugin-workspace select,
 body.dkds-modern-ui .dkds-plugin-workspace textarea{
