@@ -8,7 +8,6 @@ const json=rel=>JSON.parse(read(rel));
 const bytes=rel=>fs.statSync(path.join(root,rel)).size;
 const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){const full=path.join(dir,name),st=fs.statSync(full);if(st.isDirectory())walk(full,out);else out.push(full);}return out;};
 
-assert.equal(json('package.json').version,'3.61.98');
 const sdk=json('sdk/contract.json');
 const sdkReadme=read('sdk/README.md');
 assert(sdkReadme.startsWith(`# DK Data Studio Plugin SDK ${sdk.sdkVersion}\n`),'SDK README title must match sdk/contract.json sdkVersion.');

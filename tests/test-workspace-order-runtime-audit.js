@@ -11,6 +11,7 @@ const kernel=read('src/generated/runtime/plugin-kernel.js');
 const app=read('src/generated/runtime/app.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const pulse=read('src/plugins/pulse-analysis/analysis-service.js');
 
 // PRIMARY is a viewport contract, not a plugin-specific overflow patch.
@@ -38,7 +39,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   assert(feature.includes("'global'"),`${folder} portable plots must offer whole-workspace free float.`);
 }
-assert(resonanceFeature.includes("placements:['home','left','right','bottom','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
+assert(resonanceGroupFeature.includes("placements:['home','left','right','bottom','global']"),'Resonance group child plots must be able to leave the scientific canvas.');
 
 // Dock locations are stacks, not absolute piles.
 assert(css.includes('A dock slot is a stack, never a pile'),'Core must document same-location dock ordering.');
@@ -56,10 +57,10 @@ assert(app.includes('const systemUndo=')&&app.includes('const systemDeselect=')&
 assert(resonanceViews.includes('ctx.ui.edit?.register?.')&&!resonanceViews.includes("id:'undo',label:'↶'")&&!resonanceViews.includes("id:'deselect',label:'取消'"),'Resonance must consume system edit commands instead of duplicating them among PRIME/SUB actions.');
 
 // Group plots are live reusable chart surfaces rather than snapshot/recreate UI.
-assert(resonanceFeature.includes('const groupCards=new Map()')&&!resonanceFeature.includes('const groupCharts=new Map()'),'Group cards stay stable while renderer ownership belongs to Core ScientificPlot, not a plugin-local groupCharts registry.');
-assert(resonanceFeature.includes('groupDataFingerprint()')&&resonanceFeature.includes('nextKey===groupRenderKey'),'Group data refresh must avoid redundant renderer work when only selection emphasis changes.');
-assert(resonanceFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
-assert(resonanceFeature.includes('visibleSweepIds().map(String)')&&resonanceFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
+assert(resonanceGroupFeature.includes('const groupCards=new Map()')&&!resonanceGroupFeature.includes('const groupCharts=new Map()'),'Group cards stay stable while renderer ownership belongs to Core ScientificPlot, not a plugin-local groupCharts registry.');
+assert(resonanceGroupFeature.includes('groupDataFingerprint()')&&resonanceGroupFeature.includes('nextKey===groupRenderKey'),'Group data refresh must avoid redundant renderer work when only selection emphasis changes.');
+assert(resonanceGroupFeature.includes('scientificReact')&&resonanceFeature.includes('uiRuntime?.scientificPlot')&&!resonanceGroupFeature.includes('Plotly.newPlot'),'Resonance derived plots must update existing graphs through Core ScientificPlot.');
+assert(resonanceGroupFeature.includes('visibleSweepIds().map(String)')&&resonanceGroupFeature.includes('acceptedVisible'),'Group data source must follow currently visible, accepted resonance peaks.');
 assert(resonanceFeature.includes("if(includeGroup){const context=$('#reswinGroupContext')")&&!resonanceFeature.includes('updateGroupHighlights()'),'Selection changes must update group context while Core ScientificPlot owns group focus styling without plugin rerenders.');
 assert(ui.includes("this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')")&&ui.includes('window.DKDSCharts?.resize?.(plot)'),'PortableView resize must resize renderer-neutral scientific charts by default.');
 

@@ -19,6 +19,7 @@ const statusPlugin=read('src/plugins/status-monitor/plugin.js');
 const pluginWindowHtml=read('src/plugin-window/index.html');
 const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const automationRuntime=read('src/core/diagnostics/automation-test-runtime.js');
 const index=read('src/index.html');
@@ -71,7 +72,7 @@ assert(resonanceView.includes('data-dkds-menu-behavior="rich"'),
   'Range-selection panel must identify itself as a rich popover so its buttons retain normal control chrome.');
 assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
   'Resonance must not duplicate global visibility ownership.');
-assert(resonanceFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
+assert(resonanceGroupFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
   'Group-plot card actions must be integrated into the subplot title bar from first paint.');
 
 assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:20px;\s*gap:8px;/.test(statusCss),

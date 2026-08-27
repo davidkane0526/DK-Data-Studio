@@ -10,13 +10,17 @@ const entry=read('src/plugins/resonance-workbench/plugin.js');
 const shared=read('src/plugins/resonance-workbench/workbench-shared.js');
 const views=read('src/plugins/resonance-workbench/view-components.js');
 const feature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const featureContext=read('src/plugins/resonance-workbench/feature-context.js');
+const groupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+const analysisFeature=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
+const featureLayers=[feature,featureContext,groupFeature,analysisFeature].join('\n');
 const superLayout=read('src/plugins/resonance-workbench/super-layout.js');
 const runtime=read('src/plugins/resonance-workbench/window-runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const generated=read('src/generated/plugin-index.js');
 
-assert((manifest.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-runtime.js,super-layout.js,plugin.js','Resonance main renderer must load Controller, shared Views, feature runtime, SUPER adapter, then thin entry.');
-assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-runtime.js','Resonance TOP must load the same Controller/View/feature layers; runtime is only a host adapter.');
+assert((manifest.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-context.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-runtime.js,super-layout.js,plugin.js','Resonance main renderer must load Controller, shared Views, feature runtime, SUPER adapter, then thin entry.');
+assert((manifest.window?.scripts||[]).join(',')==='workbench-shared.js,view-components.js,feature-context.js,feature-group-runtime.js,feature-analysis-runtime.js,feature-runtime.js','Resonance TOP must load the same Controller/View/feature layers; runtime is only a host adapter.');
 assert(entry.split(/\r?\n/).length<60,'Resonance plugin entry must stay a thin layout dispatcher.');
 assert(entry.includes('shared.createController')&&entry.includes('views.mountTop')&&entry.includes('layout.mount'),'Resonance entry must dispatch through shared Controller/View layers.');
 assert(!entry.includes('reswinMainPlot')&&!entry.includes('gateAnalysisPage'),'Thin entry must not contain feature-specific markup.');
@@ -33,7 +37,7 @@ for(const [name,adapter] of [['SUPER',superLayout],['TOP',runtime]]){
 }
 assert(superLayout.includes("mode:'super'")&&superLayout.includes("root:ctx.ui.dom.query('#app')")&&superLayout.includes("reason:'resonance-super-adapter'"),'SUPER adapter may only select the common workbench host and resize lifecycle.');
 assert(runtime.includes("mode:'top'")&&runtime.includes("root:dom?.query?.('#app')")&&runtime.includes("DKDSPluginModules.define('builtin.resonance-workbench','window-runtime'"),'TOP adapter may only map dedicated-window host surfaces through Core Module Registry.');
-for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSPluginModules'])assert(feature.includes(token),`Feature runtime missing shared behavior: ${token}.`);
+for(const token of ['mountSuper','createTop','Shared.normalizeWorkspace','Shared.pluginSliceFromProject','sharedController.buildTrendModel()','sharedController?.computeSpacingRows','DKDSPluginModules'])assert(featureLayers.includes(token),`Resonance feature module graph missing shared behavior: ${token}.`);
 assert(views.includes('resparInspectorPanel')&&views.includes('resparGroupPanel')&&!views.includes('data-respar-dock="inspect"')&&!views.includes('data-respar-dock="group"'),'Shared View composition must own the reference inspector/group surfaces while placement chrome comes only from Core PortableView.');
 assert(views.includes('wb.compose')&&views.includes('existingNode:inspector')&&views.includes('existingNode:group')&&views.includes("stateVersion:'workspace-v2'"),'GRS-parity PRIME surfaces must be hosted and placement-persisted by the shared PluginWorkspace/PortableView system.');
 assert(views.includes('ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace')&&views.includes("hostMode:isTop?'top':'super'"),'Resonance must mount the same PluginWorkspace for SUPER and TOP; host mode may not select a different internal view.');
@@ -48,7 +52,7 @@ assert(feature.includes('undoLastAction')&&feature.includes('applyRangeIdentity'
 assert(views.includes("ctx.ui.edit?.register?.")&&views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'Resonance system edit actions must converge on the same Command Registry used by Interaction Behavior.');
 assert(!feature.includes('ctx.ui.sidebar.add')&&!feature.includes('ctx.ui.inspectors')&&!feature.includes('ctx.ui.groupViews'),'Feature runtime must not retain the legacy SUPER-only UI composition.');
 assert(feature.includes('publishPeakSelection')&&feature.includes('publishSweepSelection')&&feature.includes('publishRangeSelection'),'Resonance feature runtime must use one shared interaction path for main/inspector/group/trend.');
-assert(feature.includes('pointEntity:peakPointEntity')&&feature.includes('onEntitySelect')&&feature.includes("'resonance-trend'")&&feature.includes("'resonance-group'")&&!feature.includes('updateGroupHighlights')&&!feature.includes('charts.restyle('),'Resonance trend/group views must delegate peak focus styling and selection to Core ScientificPlot instead of private restyle logic.');
+assert(featureLayers.includes('pointEntity:peakPointEntity')&&featureLayers.includes('onEntitySelect')&&featureLayers.includes("'resonance-trend'")&&featureLayers.includes("'resonance-group'")&&!featureLayers.includes('updateGroupHighlights')&&!featureLayers.includes('charts.restyle('),'Resonance trend/group views must delegate peak focus styling and selection to Core ScientificPlot instead of private restyle logic.');
 assert(feature.includes('selectRegion')&&feature.includes('peaksInRange')&&feature.includes('applyRangeIdentity')&&feature.includes('setRangeLocked'),'Resonance range selection must preserve multi-peak operations without the retired duplicate range menu path.');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 assert(ui.includes('d3.scaleSequential(d3.interpolateTurbo)')&&ui.includes("Number(curve.direction)<0?'7 4':null"),'Core ScientificCurveSurface must own the GRS Turbo palette and reverse-direction dash semantics.');
@@ -59,12 +63,12 @@ assert(ui.includes('dkds-direct-range-handle')&&ui.includes("kind==='range'")&&f
 assert(feature.includes('uiRuntime?.scientificPlot')&&!feature.includes('d3.drag().clickDistance(7)')&&!feature.includes('wheel.resmain'),'Resonance must consume Core ScientificCurveSurface rather than retain a private D3 interaction implementation.');
 assert(feature.includes('fitVisibleData')&&feature.includes('mainSurface?.fitToData?.')&&feature.includes("fitVisibleData('visibility')")&&feature.includes("fitVisibleData('visibility-all')"),'Visibility changes must auto-fit the main plot to the currently visible sweeps through Core ScientificCurveSurface.');
 assert(feature.includes('respar-dataset-item')&&feature.includes('respar-dataset-vg')&&feature.includes('respar-dataset-transform'),'Resonance dataset rows must use the GRS-derived compact data-list structure.');
-assert(feature.includes('uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&feature.includes("placements:['home','left','right','bottom','global']"),'Every group subplot must consume Core PlotView, remain independently portable, and support whole-interface free float.');
-assert(feature.includes("line:{color:sr.color,dash:sr.direction<0?'dash':'solid'}")&&feature.includes('marker:{color:sr.color'),'Group/trend traces must preserve reference peak-family cool/warm color semantics.');
+assert(groupFeature.includes('live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&groupFeature.includes("placements:['home','left','right','bottom','global']"),'Every group subplot must consume Core PlotView, remain independently portable, and support whole-interface free float.');
+assert(featureLayers.includes("line:{color:sr.color,dash:sr.direction<0?'dash':'solid'}")&&featureLayers.includes('marker:{color:sr.color'),'Group/trend traces must preserve reference peak-family cool/warm color semantics.');
 assert(shared.includes('registerDataTypes'),'Resonance must register domain data/result types through the shared plugin contract.');
 
 assert(kernel.includes('row?.scripts')&&kernel.includes('for(const script of scripts)await loadScript(script)'),'Built-in plugin loader must support plugin-owned support scripts.');
-assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/feature-runtime.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated plugin index must preserve Controller/View/feature/adapter support-script order.');
+assert(generated.includes('plugins/resonance-workbench/workbench-shared.js')&&generated.includes('plugins/resonance-workbench/view-components.js')&&generated.includes('plugins/resonance-workbench/feature-context.js')&&generated.includes('plugins/resonance-workbench/feature-group-runtime.js')&&generated.includes('plugins/resonance-workbench/feature-analysis-runtime.js')&&generated.includes('plugins/resonance-workbench/feature-runtime.js')&&generated.includes('plugins/resonance-workbench/super-layout.js'),'Generated plugin index must preserve Controller/View/feature/adapter support-script order.');
 
 // Execute the shared Controller and View component layers in isolation.
 const modules=new Map();

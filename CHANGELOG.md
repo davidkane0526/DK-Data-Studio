@@ -1,3 +1,12 @@
+# v3.61.99 — Resonance Feature Context / Analysis Modules
+
+- Introduce an explicit Resonance `feature-context.js` with live getters so extracted feature responsibilities observe current project/workspace/runtime state instead of sharing the `createTop()` lexical closure.
+- Extract group-chart ownership into `feature-group-runtime.js`, including group cards, PlotView/portable handles, group render keys, CSV export and the no-peak group state.
+- Extract physics, peak-spacing and Gate analysis into `feature-analysis-runtime.js`, including their caches/results, Gate feature-field export and dynamic pipeline installation.
+- Reduce `feature-runtime.js` from about 138 KiB to about 102 KiB while keeping the existing public Resonance service and legacy project/group-series behavior. Tighten its temporary large-module ceiling from 144 KiB to 108 KiB; all new extracted modules remain below 48 KiB.
+- Update static architecture tests to follow the new real owners instead of requiring analysis/group implementation text to remain in the coordinator. Add the v3.61.99 feature-context regression gate to prevent extracted state from flowing back into the main closure.
+
+
 # v3.61.98 — Repository Hygiene / Main-Process Modules
 
 - Synchronize the Plugin SDK README title with the current SDK **1.17.16** contract and add a metadata consistency release gate.

@@ -54,7 +54,10 @@ vm.runInContext(read('src/plugins/ter-analysis/analysis-service.js'),context,{fi
 
   context.DKDSScience={preset:()=>({_preset:'balanced'}),parseCsv:()=>({points:[]}),buildSweeps:dataset=>[{id:`${dataset.path}:f`,datasetPath:dataset.path,datasetName:dataset.name,vg:dataset.vg,direction:1,points:dataset.points}]};
   vm.runInContext(read('src/plugins/resonance-workbench/workbench-shared.js'),context,{filename:'workbench-shared.js'});
-  vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
+  vm.runInContext(read('src/plugins/resonance-workbench/feature-context.js'),context,{filename:'feature-context.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-group-runtime.js'),context,{filename:'feature-group-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-analysis-runtime.js'),context,{filename:'feature-analysis-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
   const resonanceFeature=context.DKDSPluginModules.require('builtin.resonance-workbench','feature-runtime');
   const resonance=await resonanceFeature.createTop({
     artifacts:{list:opts=>store.list(opts)},project:{datasets:[legacyA]},setStatus(){},scheduleSnapshot(){},copyTextToClipboard(){},saveChartImage(){}

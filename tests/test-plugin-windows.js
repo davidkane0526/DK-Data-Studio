@@ -196,6 +196,12 @@ assert(resonanceFeatureRuntime.includes("builtin.resonance-workbench"),'Resonanc
 assert(!app.includes('serializeResonanceWorkspace')&&!app.includes('restoreResonanceWorkspace'),'Main host must not retain a resonance project adapter after v3.58 neutralization.');
 assert(read('src/plugins/resonance-workbench/view-components.js').includes("ctx.project.registerSlice('workspace'"),'Resonance plugin must own its namespaced project slice.');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
+const resonanceFeatureGraph=[
+  resonanceFeatureRuntime,
+  read('src/plugins/resonance-workbench/feature-context.js'),
+  read('src/plugins/resonance-workbench/feature-group-runtime.js'),
+  read('src/plugins/resonance-workbench/feature-analysis-runtime.js')
+].join('\n');
 for(const label of ['曲线检查','组图分析','物理机制','峰间距','栅压分析']){
   assert(resonanceShared.includes(label),`Resonance shared workbench must retain ${label}.`);
 }
@@ -203,7 +209,7 @@ const resonanceManifest=JSON.parse(read('src/plugins/resonance-workbench/plugin.
 assert((resonanceManifest.window?.scripts||[]).includes('workbench-shared.js'),'Resonance TOP runtime must load the same shared View/Controller layer as SUPER.');
 assert((resonanceManifest.scripts||[]).includes('super-layout.js'),'Resonance SUPER layout adapter must be declared as a plugin-owned support script.');
 for(const marker of ['function renderInspection()','function renderGroup()','function renderPhysics()','function renderSpacing()','function renderGate()','analyzePhysicalFamilies','computeResonantTerForLabel','pairGateSeries']){
-  assert(resonanceFeatureRuntime.includes(marker),`Resonance feature runtime parity marker missing: ${marker}`);
+  assert(resonanceFeatureGraph.includes(marker),`Resonance feature module graph parity marker missing: ${marker}`);
 }
 
 // Persistence contract: reuse preserves renderer/Plotly memory; restart-safe
@@ -220,6 +226,9 @@ for(const rel of [
   'src/plugins/pulse-analysis/window-runtime.js',
   'src/plugins/ter-analysis/window-runtime.js',
   'src/plugins/resonance-workbench/window-runtime.js',
+  'src/plugins/resonance-workbench/feature-context.js',
+  'src/plugins/resonance-workbench/feature-group-runtime.js',
+  'src/plugins/resonance-workbench/feature-analysis-runtime.js',
   'src/plugins/resonance-workbench/feature-runtime.js',
   'src/plugins/ter-analysis/plugin.js',
   'desktop/plugin-window-manager.js',

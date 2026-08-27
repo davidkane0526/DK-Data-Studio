@@ -24,6 +24,9 @@ context.DKDSScience={
 };
 vm.createContext(context);
 vm.runInContext(read('src/plugins/resonance-workbench/workbench-shared.js'),context,{filename:'workbench-shared.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-context.js'),context,{filename:'feature-context.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-group-runtime.js'),context,{filename:'feature-group-runtime.js'});
+vm.runInContext(read('src/plugins/resonance-workbench/feature-analysis-runtime.js'),context,{filename:'feature-analysis-runtime.js'});
 vm.runInContext(read('src/plugins/resonance-workbench/feature-runtime.js'),context,{filename:'feature-runtime.js'});
 const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runtime');
 assert(feature?.createTop,'Resonance feature runtime module must expose createTop.');

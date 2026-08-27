@@ -12,6 +12,9 @@ const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const terWindowRuntime=read('src/plugins/ter-analysis/window-runtime.js');
 const resonanceShared=read('src/plugins/resonance-workbench/workbench-shared.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceContext=read('src/plugins/resonance-workbench/feature-context.js');
+const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+const resonanceAnalysis=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 
 assert(plot.includes("const VERSION='2.5.0'"),'ScientificPlot 2.3.0 must own the shared scalar-field surface.');
@@ -39,8 +42,8 @@ assert(!terFeature.includes("type:'heatmap',colorscale:signed"),'TER transform h
   assert.strictEqual(received.charts,undefined,'TER TOP analysis service must not receive a chart renderer.');
 }
 assert(resonanceShared.includes("'resonance.feature-field'"),'Resonance must register a typed feature-field contract.');
-assert(resonanceFeature.includes("outputTypes:['resonance.gate-analysis','resonance.feature-field']"),'Gate analysis Pipeline must publish the feature field as a second typed output.');
-for(const token of ['gateFeatureField(settings=workspace.gateAnalysisSettings||{})','gateFeatureArtifact(field)','cellPeakIds','reswinGateFeatureField','scientificPlot.scalarField(fieldPlot'])assert(resonanceFeature.includes(token),`Resonance feature-field implementation missing: ${token}`);
+assert(resonanceAnalysis.includes("outputTypes:['resonance.gate-analysis','resonance.feature-field']"),'Gate analysis Pipeline must publish the feature field as a second typed output.');
+for(const token of ['gateFeatureField(settings=live.workspace.gateAnalysisSettings||{})','gateFeatureArtifact(field)','cellPeakIds','reswinGateFeatureField','scientificPlot.scalarField(fieldPlot'])assert(resonanceAnalysis.includes(token),`Resonance feature-field implementation missing: ${token}`);
 for(const id of ['reswinGateFeatureMetric','reswinGateFeatureDirection','reswinGateFeatureExport','reswinGateFeatureField'])assert(resonanceViews.includes(id),`Resonance feature-field UI missing #${id}.`);
 
 // Dynamic regression: feature-field computation must not depend on an attached UI controller.
@@ -59,6 +62,9 @@ context.DKDSScience={
 };
 vm.createContext(context);
 vm.runInContext(resonanceShared,context,{filename:'workbench-shared.js'});
+vm.runInContext(resonanceContext,context,{filename:'feature-context.js'});
+vm.runInContext(resonanceGroup,context,{filename:'feature-group-runtime.js'});
+vm.runInContext(resonanceAnalysis,context,{filename:'feature-analysis-runtime.js'});
 vm.runInContext(resonanceFeature,context,{filename:'feature-runtime.js'});
 const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runtime');
 

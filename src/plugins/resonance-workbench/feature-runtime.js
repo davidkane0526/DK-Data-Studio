@@ -8,6 +8,9 @@
   const Shared=window.DKDSPluginModules.require('builtin.resonance-workbench','workbench-shared');
   const S=window.DKDSScience;
   const D=window.DKDSData;
+  const FeatureContext=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-context');
+  const GroupRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-group-runtime');
+  const AnalysisRuntime=window.DKDSPluginModules.require('builtin.resonance-workbench','feature-analysis-runtime');
   const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const finite=value=>value!==null&&value!==undefined&&String(value).trim()!==''&&Number.isFinite(Number(value));
@@ -16,6 +19,7 @@
   const fmt=(value,digits=5)=>{const n=Number(value);if(!Number.isFinite(n))return '—';if(Math.abs(n)>=1e4||(Math.abs(n)>0&&Math.abs(n)<1e-3))return n.toExponential(3);return n.toFixed(digits);};
   if(!Shared)throw new Error('Resonance shared workbench layer is unavailable.');
   if(!S)throw new Error('Resonance science runtime is unavailable.');
+  if(!FeatureContext||!GroupRuntime||!AnalysisRuntime)throw new Error('Resonance feature sub-runtimes are unavailable.');
   // SUPER/TOP adapters are intentionally limited to container/lifecycle mapping.
   async function mountSuper(ctx,controller,adapter={}){
     const views=window.DKDSPluginModules.get('builtin.resonance-workbench','view-components');
@@ -75,9 +79,6 @@
       let selectedPeakIds=new Set();
       let uiBound=false;
       let currentView='main';
-      let spacingResult=[];
-      let gateResult=null;
-      let gateComputeKey='';
       let sharedController=null;
       let workspaceNavigator=null;
       let detectorRuntime=null;
@@ -94,27 +95,49 @@
       let datasetContextBehavior=null;
       let dataSourcesRuntime=null;
       let selectedRange=null;
-      let physicsCache={key:'',value:null};
       let resizeRaf=0;
       let uiRuntime=null;
       let commandRuntime=null;
       let entityRuntime=null;
       let workspaceRuntime=null;
       let mainSurface=null;
-      const groupPortables=new Map();
-      const groupCards=new Map();
-      const groupPlotViews=new Map();
       const registeredEntityIds=new Set();
-      let groupRenderKey='';
       let runtimeDefaults={groupColumns:'auto'};
       let reactiveRuntime=reactive||null;
       let reactiveViewsInstalled=false;
+      const featureContext=FeatureContext.create({
+        live:{
+          workspace:()=>workspace,project:()=>project,datasets:()=>datasets,sweeps:()=>sweeps,
+          selectedPeakId:()=>selectedPeakId,selectedSweepId:()=>selectedSweepId,sharedController:()=>sharedController,
+          algorithmRuntime:()=>algorithmRuntime,pipelineRuntime:()=>pipelineRuntime,reactiveRuntime:()=>reactiveRuntime,
+          uiRuntime:()=>uiRuntime,workspaceRuntime:()=>workspaceRuntime,peakMetricRevision:()=>peakMetricRevision
+        },
+        services:{$,dom,charts,artifacts,performance,S,D,copyTextToClipboard},
+        actions:{
+          groupSeries,peakMetrics,selectedPeak,selectedSweep,visibleSweeps,visibleSweepIds,peakLabel,colorForPeakOrder,
+          scientificReact,peakPointEntity,peakById,publishPeakSelection,resize,sweepById,category
+        },
+        utils:{esc,fmt,csvCell,finite,directionName}
+      });
+      const groupRuntime=GroupRuntime.create(featureContext);
+      const analysisRuntime=AnalysisRuntime.create(featureContext);
+      function renderGroup(){return groupRuntime.render();}
+      function disposeGroupViews(){return groupRuntime.dispose();}
+      function physicalAnalysis(){return analysisRuntime.physicalAnalysis();}
+      function renderPhysics(){return analysisRuntime.renderPhysics();}
+      function renderSpacing(){return analysisRuntime.renderSpacing();}
+      function spacingCsv(){return analysisRuntime.spacingCsv();}
+      function renderGate(){return analysisRuntime.renderGate();}
+      function gateCsv(){return analysisRuntime.gateCsv();}
+      function gateReportText(){return analysisRuntime.gateReportText();}
+      function gateFeatureFieldCsv(field){return analysisRuntime.gateFeatureFieldCsv(field);}
+
       const reactivePeakGeometry=p=>`resonance.peak.geometry:${String(p?.id||'')}`;
       const reactivePeakMetricInput=p=>`resonance.peak.metric-input:${String(p?.id||'')}`;
       const reactivePeakMetricValue=p=>`resonance.peak.metrics:${String(p?.id||'')}`;
       function reactiveTouch(keys,meta={}){try{return reactiveRuntime?.touch?.(keys,meta)||null;}catch(err){console.warn('[resonance reactive touch]',err);return null;}}
       function invalidatePeakMetric(p,{geometry=false,reason='peak-edit',refresh=true}={}){
-        if(!p)return;peakMetricCache.delete(p);peakMetricRevision+=1;physicsCache={key:'',value:null};
+        if(!p)return;peakMetricCache.delete(p);peakMetricRevision+=1;analysisRuntime.invalidatePhysics();
         const keys=[reactivePeakMetricInput(p),'resonance.peak.metric-input'];
         if(geometry)keys.push(reactivePeakGeometry(p),'resonance.peak.geometry');
         if(reactiveRuntime?.transact)reactiveRuntime.transact(`resonance:${reason}`,tx=>tx.touch(keys,{peakId:p.id,reason}));else reactiveTouch(keys,{peakId:p.id,reason});
@@ -135,7 +158,7 @@
         if(reactiveViewsInstalled||!reactiveRuntime?.effect)return;reactiveViewsInstalled=true;
         reactiveRuntime.effect('resonance.view.main',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.visibility'],scheduler:'frame',effect:()=>{if($('#reswinMainPlot')?.offsetParent!==null)ensureMainSurface()?.requestRender?.('reactive');}});
         reactiveRuntime.effect('resonance.view.inspector',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.selection'],scheduler:'frame',effect:()=>{if($('#reswinInspectorBody')?.offsetParent!==null)renderInspection();}});
-        reactiveRuntime.effect('resonance.view.group',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.visibility','resonance.group.settings'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null){groupRenderKey='';renderGroup();}}});
+        reactiveRuntime.effect('resonance.view.group',{dependsOn:['resonance.peak.geometry','resonance.peak.metrics','resonance.peak.identity','resonance.visibility','resonance.group.settings'],scheduler:'frame',effect:()=>{if($('#resparGroupPanel')?.offsetParent!==null){groupRuntime.invalidate();renderGroup();}}});
       }
       let undoStack=[],redoStack=[];
       let committedWorkspace=null;
@@ -157,7 +180,7 @@
         committedWorkspace=current;persistSnapshot?.();return true;
       }
       function applyHistoryWorkspace(next,source){
-        workspace=normalizeWorkspace(next,project);committedWorkspace=clone(workspace);currentView=workspace.activeView||'main';physicsCache={key:'',value:null};selectedRange=null;selectedPeakIds.clear();rebuild();
+        workspace=normalizeWorkspace(next,project);committedWorkspace=clone(workspace);currentView=workspace.activeView||'main';analysisRuntime.invalidatePhysics();selectedRange=null;selectedPeakIds.clear();rebuild();
         if(selectedPeakId&&!peakById(selectedPeakId))selectedPeakId='';if(selectedSweepId&&!sweepById(selectedSweepId))selectedSweepId='';
         interactionSelection?.clear?.({source});render();persistSnapshot?.();return true;
       }
@@ -266,14 +289,14 @@
         const hasY=Number.isFinite(Number(range.iMin??range.yMin))&&Number.isFinite(Number(range.iMax??range.yMax)),yLo=hasY?Math.min(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN,yHi=hasY?Math.max(Number(range.iMin??range.yMin),Number(range.iMax??range.yMax)):NaN;
         return (workspace.peaks||[]).filter(p=>(!range.sweepId||p.sweepId===range.sweepId)&&Number(p.v)>=lo&&Number(p.v)<=hi&&(!hasY||(Number(p.i)>=yLo&&Number(p.i)<=yHi)));
       }
-      function setRangeLocked(value){for(const p of peaksInRange())p.locked=!!value;physicsCache={key:'',value:null};renderLinkedSelection();scheduleSnapshot();}
+      function setRangeLocked(value){for(const p of peaksInRange())p.locked=!!value;analysisRuntime.invalidatePhysics();renderLinkedSelection();scheduleSnapshot();}
       function applyRangeIdentity(order,label=''){
         const n=Math.max(1,Math.round(Number(order)||1)),rows=peaksInRange();if(!rows.length)return false;normalizeCategories();let c=category(n);const text=String(label||'').trim();
         if(text){const cat=(workspace.peakCategories||[]).find(row=>Number(row.order)===n);if(cat)cat.label=text;for(const p of workspace.peaks||[])if(Number(p.peakOrder)===n)p.peakLabel=text;c={...c,label:text};}
         for(const p of rows){p.peakOrder=n;p.peakLabel=c.label;p.manual=true;p.orderAnchor=true;}
-        physicsCache={key:'',value:null};render();scheduleSnapshot({label:'修改峰序身份'});setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${c.label}。`);return true;
+        analysisRuntime.invalidatePhysics();render();scheduleSnapshot({label:'修改峰序身份'});setStatus(`已将框选的 ${rows.length} 个峰统一设为 ${c.label}。`);return true;
       }
-      function deleteRangePeaks(){const ids=new Set(peaksInRange().filter(p=>!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(p.id));if(ids.has(selectedPeakId))selectedPeakId='';for(const id of ids)selectedPeakIds.delete(String(id));physicsCache={key:'',value:null};render();scheduleSnapshot();}
+      function deleteRangePeaks(){const ids=new Set(peaksInRange().filter(p=>!p.locked).map(p=>p.id));workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(p.id));if(ids.has(selectedPeakId))selectedPeakId='';for(const id of ids)selectedPeakIds.delete(String(id));analysisRuntime.invalidatePhysics();render();scheduleSnapshot();}
       function installAlgorithmPipeline(){
         if(!pipelineRuntime?.register||!algorithmRuntime||algorithmPipelineInstalled)return false;
         if(!pipelineRuntime.get?.('peaks.detect'))pipelineRuntime.register('peaks.detect',{
@@ -794,7 +817,7 @@
         const sw=sweepById(p?.sweepId),current=metricProvider();
         if(!sw||!current||metricSignature(p,sw,current)!==signature)return null;
         const ref={id:provider.id,version:provider.version,category:'peak-metrics'},next={...value,algorithm:algorithmRuntime?.provenance?.(ref)||{pluginId:provider.owner||'',algorithmId:provider.id,algorithmVersion:provider.version,category:'peak-metrics',title:provider.title||provider.id}};
-        peakMetricCache.set(p,{signature,value:next,promise:null});peakMetricRevision+=1;physicsCache={key:'',value:null};publishPeakMetricValue(p);return next;
+        peakMetricCache.set(p,{signature,value:next,promise:null});peakMetricRevision+=1;analysisRuntime.invalidatePhysics();publishPeakMetricValue(p);return next;
       }
       function tryPeakMetricSync(p,sw,provider,signature){
         const ref={id:provider.id,version:provider.version,category:'peak-metrics'};installAlgorithmPipeline();
@@ -844,272 +867,7 @@
         }
       }
 
-      function groupMetricRows(metric){
-        const series=groupSeries();
-        return series.map(sr=>({
-          ...sr,
-          rows:sr.peaks.map(p=>{const m=peakMetrics(p)||{};return {p,value:metric==='v'?p.v:metric==='i'?p.i:metric==='prominence'?Number(p.prominence):Number(m[metric])};}).filter(r=>Number.isFinite(r.value))
-        })).filter(sr=>sr.rows.length);
-      }
-      function groupCsv(title,series){
-        const rows=['series,label,direction,Vg,value'];
-        for(const sr of series)for(const r of sr.rows){const direction=Number.isFinite(Number(sr.direction))?directionName(sr.direction):'';rows.push([sr.name,sr.label,direction,r.p.vg,r.value].map(csvCell).join(','));}
-        return rows.join('\n');
-      }
-      function groupContextText(){
-        const p=selectedPeak(),sw=selectedSweep(),visible=visibleSweeps().length;
-        if(p)return `主图可见数据：${directionName(p.direction)} · ${peakLabel(p)} · ${visible} 条扫描`;
-        if(sw)return `主图可见数据：${directionName(sw.direction)} · 当前曲线峰族 · ${visible} 条扫描`;
-        return `主图可见数据：全部已采纳峰族 · ${visible} 条扫描`;
-      }
-      function ensureGroupCard(key,title){
-        let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
-        const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
-        const card=dom.create('div');card.className='reswin-group-card dkds-surface';card.dataset.groupMetric=String(key);
-        card.innerHTML=`<div class="reswin-group-head dkds-surface-header"><span class="reswin-group-title">${esc(title)}</span><span class="reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group"></span></div><div class="reswin-group-plot"></div>`;
-        hostEl.appendChild(card);
-        const plot=card.querySelector('.reswin-group-plot');
-        row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
-        const plotView=uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
-          plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
-          placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,portableFactory:(id,node,spec)=>workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
-        })||null;
-        if(plotView){row.plotView=plotView;row.portable=plotView.portable||null;groupPlotViews.set(String(key),plotView);if(row.portable)groupPortables.set(String(key),row.portable);}
-        return row;
-      }
-      function disposeGroupViews(){
-        groupRenderKey='';
-        for(const view of groupPlotViews.values())try{view?.dispose?.();}catch{}groupPlotViews.clear();groupPortables.clear();
-        for(const row of groupCards.values())try{row.card?.remove?.();}catch{}groupCards.clear();
-      }
-      function groupDataFingerprint(){
-        const visibleIds=visibleSweepIds().map(String).sort();
-        const peaks=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.includes(String(p.sweepId))).map(p=>[
-          p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,peakLabel(p),p.prominence,p.widthLeft,p.widthRight,p.analysisLeft,p.analysisRight,p.manual?1:0,p.locked?1:0
-        ].join(':')).join('|');
-        return `${workspace.groupColumns||'auto'}##${visibleIds.join(',')}##${peaks}`;
-      }
-      function renderGroup(){
-        const hostEl=$('#reswinGroupGrid');if(!hostEl||!charts)return;
-        const context=$('#reswinGroupContext');if(context)context.textContent=groupContextText();
-        const nextKey=groupDataFingerprint();
-        if(nextKey===groupRenderKey&&groupCards.size){uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-focus'});return;}
-        groupRenderKey=nextKey;
-        const defs=[['v','峰位 Vpk','V'],['i','峰电流 Ipk','A'],['fwhm','FWHM','V'],['amplitude','峰高 A','A'],['area','峰面积 S','A·V'],['prominence','峰突出度','A']];
-        const visibleIds=new Set(visibleSweepIds().map(String));
-        const acceptedVisible=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.has(String(p.sweepId)));
-        let empty=hostEl.querySelector('.reswin-group-empty');
-        if(!acceptedVisible.length){
-          for(const row of groupCards.values())row.card.classList.add('hidden');
-          if(!empty){empty=dom.create('div');empty.className='reswin-group-empty dkds-note';hostEl.appendChild(empty);}
-          empty.textContent=(workspace.peaks||[]).length?'当前可见扫描没有已采纳峰，组图没有可绘制的数据。':'当前工程没有已保存共振峰。组图会在完成寻峰或恢复已保存峰后自动生成。';
-          uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-empty'});
-          return;
-        }
-        empty?.remove?.();
-        const labels=[...new Set(acceptedVisible.map(peakLabel))];
-        const terSeries=labels.map(label=>{const representative=acceptedVisible.find(p=>peakLabel(p)===label),order=Number(representative?.peakOrder)||1;return {name:`共振TER·${label}`,label,order,color:colorForPeakOrder(order,1),points:S.computeResonantTerForLabel?.(workspace.peaks,sweeps,label,[...visibleIds])||[]};}).filter(x=>x.points.length);
-        const count=defs.length+(terSeries.length?1:0);
-        let cols=workspace.groupColumns==='auto'?Math.max(1,Math.min(6,Math.floor((hostEl.clientWidth||1000)/330))):Number(workspace.groupColumns)||2;
-        cols=Math.min(Math.max(1,cols),Math.max(1,count));
-        hostEl.style.setProperty('--reswin-group-cols',String(cols));
-        const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(230,Math.min(360,Math.round(cardWidth*.62)))}px`);
-        const activeKeys=new Set();
-        for(const [metric,title,unit] of defs){
-          activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;
-          const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
-          const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)'},yaxis:{title:unit},autosize:true};
-          scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false},{pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
-        }
-        const terKey='ter';
-        if(terSeries.length){
-          activeKeys.add(terKey);const row=ensureGroupCard(terKey,'共振 TER');if(row){row.card.classList.remove('hidden');row.title='共振 TER';row.series=terSeries.map(sr=>({...sr,rows:sr.points.map(p=>({p:{vg:p.vg},value:p.ter}))}));row.card.querySelector('.reswin-group-title').textContent='共振 TER';
-            const traces=terSeries.map(sr=>({x:sr.points.map(p=>p.vg),y:sr.points.map(p=>p.ter),mode:'lines+markers',name:sr.label,line:{color:sr.color},marker:{color:sr.color},hovertemplate:'Vg=%{x}<br>TER=%{y:.4g}%<extra>%{fullData.name}</extra>'}));
-            const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)'},yaxis:{title:'TER (%)'},autosize:true};
-            scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false}).catch(()=>{});
-          }
-        }
-        for(const [key,row] of groupCards)row.card.classList.toggle('hidden',!activeKeys.has(key));
-        uiRuntime?.infrastructure?.requestChartResize?.({reason:'resonance-group-render'});dom.frame(()=>resize());
-      }
 
-      function physicalAnalysis(){
-        const peakKey=(workspace.peaks||[]).map(p=>`${p.id}:${p.sweepId}:${p.v}:${p.i}:${p.vg}:${p.direction}:${p.peakOrder}:${p.accepted!==false?1:0}:${p.locked?1:0}`).join('|');
-        const dataKey=(workspace.datasetMeta||[]).map(d=>`${d.path}:${d.vg}`).join('|');
-        const key=`${peakKey}##${dataKey}`;
-        if(physicsCache.key===key&&physicsCache.value)return physicsCache.value;
-        try{
-          const value=S.analyzePhysicalFamilies?.({peaks:workspace.peaks||[],sweepById,peakMetrics:p=>peakMetrics(p)||{},labelForOrder:o=>category(o).label})||{families:[],modelCode:'M0',modelTitle:'数据不足',modelText:'当前稳定峰轨迹不足。',v0Delta:null};
-          physicsCache={key,value};return value;
-        }catch(err){console.warn('[resonance physical analysis]',err);const value={families:[],modelCode:'M0',modelTitle:'计算失败',modelText:err.message||String(err),v0Delta:null};physicsCache={key,value};return value;}
-      }
-      function renderPhysics(){
-        const r=physicalAnalysis();
-        const summary=$('#reswinPhysicsSummary');if(summary)summary.innerHTML=[`模型 ${r.modelCode||'—'}`,`峰族 ${r.families?.length||0}`,`稳定双向 ${(r.families||[]).filter(f=>f.bothStable).length}`].map(t=>`<div>${esc(t)}</div>`).join('');
-        const model=$('#reswinPhysicsModel');if(model)model.innerHTML=`<strong>${esc(r.modelTitle||'')}</strong><p>${esc(r.modelText||'')}</p><p>该判断来自当前已采纳峰轨迹的稳定性、正反扫差异与峰宽尺度；它是模型筛选依据，不等同于对微观机制的唯一证明。</p>`;
-        const table=$('#reswinPhysicsTable');if(table)table.innerHTML=`<thead><tr><th>峰族</th><th>类型</th><th>正扫点</th><th>反扫点</th><th>共同 Vg</th><th>中位 |ΔV|</th><th>中位峰宽</th></tr></thead><tbody>${(r.families||[]).map(f=>`<tr><td>${esc(f.label||`峰${f.order}`)}</td><td>${esc(f.type||f.code||'')}</td><td>${f.forwardCount||0}</td><td>${f.reverseCount||0}</td><td>${f.commonCount||0}</td><td>${fmt(f.medianDelta,5)}</td><td>${fmt(f.medianWidth,5)}</td></tr>`).join('')}</tbody>`;
-        const plot=$('#reswinPhysicsPlot');if(plot&&charts){
-          const rows=Array.isArray(r.v0Delta)?r.v0Delta:[];
-          const traces=rows.length?[{x:rows.map(x=>x.vg),y:rows.map(x=>x.V0),mode:'lines+markers',name:'V0'},{x:rows.map(x=>x.vg),y:rows.map(x=>x.delta),mode:'lines+markers',name:'|δ|',yaxis:'y2'}]:[];
-          scientificReact(plot,traces,{margin:{l:64,r:66,t:26,b:54},xaxis:{title:'Vg (V)'},yaxis:{title:'V0 (V)'},yaxis2:{title:'|δ| (V)',overlaying:'y',side:'right',showgrid:false},legend:{orientation:'h',y:-.18},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});
-        }
-      }
-
-      function dataSeriesOptions(){
-        const visible=new Set(visibleSweepIds().map(String)),seen=new Map();
-        for(const p of workspace.peaks||[]){
-          if(p.accepted===false||!visible.has(String(p.sweepId)))continue;
-          const label=peakLabel(p),direction=Number(p.direction),key=`${direction}::${label}`;
-          if(!seen.has(key))seen.set(key,{key,direction,label,name:`${directionName(direction)} · ${label}`});
-        }
-        return [...seen.values()].sort((a,b)=>a.direction-b.direction||a.label.localeCompare(b.label,'zh-CN'));
-      }
-      function acceptedSeriesOptions(){
-        const rows=sharedController?.acceptedSeriesOptions?.()||[];
-        return rows.length?rows:dataSeriesOptions();
-      }
-      function chooseRepresentativePeak(list){return list.slice().sort((a,b)=>Number(b.locked)-Number(a.locked)||Number(b.manual)-Number(a.manual)||(Number(b.score)||0)-(Number(a.score)||0))[0]||null;}
-      function computeSpacingResult(keyA,keyB){return sharedController?.computeSpacingRows?.(keyA,keyB)||[];}
-      function populateSpacing(){
-        const opts=acceptedSeriesOptions(),valid=new Set(opts.map(o=>o.key)),s=workspace.spacingSettings||{};
-        if(!valid.has(s.seriesA))s.seriesA=opts[0]?.key||'';
-        if(!valid.has(s.seriesB)||s.seriesB===s.seriesA)s.seriesB=opts.find(o=>o.key!==s.seriesA)?.key||s.seriesA||'';
-        workspace.spacingSettings=s;
-        const markup=opts.map(o=>`<option value="${esc(o.key)}">${esc(o.name)}</option>`).join('');
-        const a=$('#reswinSpacingA'),b=$('#reswinSpacingB');if(a){a.innerHTML=markup;a.value=s.seriesA;}if(b){b.innerHTML=markup;b.value=s.seriesB;}
-        const mode=$('#reswinSpacingMode');if(mode)mode.value=s.mode||'abs';
-      }
-      function renderSpacing(){
-        populateSpacing();const s=workspace.spacingSettings;spacingResult=computeSpacingResult(s.seriesA,s.seriesB);
-        const plot=$('#reswinSpacingPlot');if(plot&&charts){const key=s.mode==='signed'?'deltaV':'spacing';scientificReact(plot,[{x:spacingResult.map(d=>d.vg),y:spacingResult.map(d=>d[key]),mode:'lines+markers',name:'峰间距',customdata:spacingResult.map(d=>[d.vA,d.vB])}],{margin:{l:68,r:20,t:28,b:56},xaxis:{title:'Vg (V)'},yaxis:{title:s.mode==='signed'?'VB − VA (V)':'|VB − VA| (V)'},autosize:true},{responsive:true,displaylogo:false}).catch(()=>{});}
-        const table=$('#reswinSpacingTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>VB−VA</th><th>|ΔV|</th></tr></thead><tbody>${spacingResult.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.deltaV,6)}</td><td>${fmt(d.spacing,6)}</td></tr>`).join('')}</tbody>`;
-      }
-      function spacingCsv(){const rows=['Vg_V,series_A,V_A_V,series_B,V_B_V,delta_V_B_minus_A_V,absolute_spacing_V'];for(const d of spacingResult)rows.push([d.vg,csvCell(d.labelA),d.vA,csvCell(d.labelB),d.vB,d.deltaV,d.spacing].join(','));return rows.join('\n');}
-
-      function gateSeriesRows(key){
-        const [dirS,label]=String(key||'').split('::'),direction=Number(dirS);if(!label||!Number.isFinite(direction))return [];
-        const grouped=new Map();
-        for(const p of (workspace.peaks||[]).filter(p=>p.accepted!==false&&p.direction===direction&&peakLabel(p)===label)){if(!grouped.has(String(p.vg)))grouped.set(String(p.vg),[]);grouped.get(String(p.vg)).push(p);}
-        const rows=[];
-        for(const list of grouped.values()){const p=chooseRepresentativePeak(list),sw=sweepById(p?.sweepId);if(!p||!sw)continue;const m=peakMetrics(p)||{},baseline=Number(m.baseline),peakToBg=Number.isFinite(baseline)&&Math.abs(baseline)>Number.EPSILON?Math.abs(Number(p.i))/Math.abs(baseline):NaN;rows.push({vg:p.vg,peak:p,v:p.v,i:p.i,fwhm:m.fwhm,hwhm:Number(m.fwhm)/2,amplitude:m.amplitude,baseline:m.baseline,area:m.area,prominence:Number(p.prominence),peakToBg});}
-        return rows.sort((a,b)=>a.vg-b.vg);
-      }
-      const GATE_FEATURE_METRICS=Object.freeze({
-        v:{label:'峰位 V_R',unit:'V',diverging:true},fwhm:{label:'FWHM',unit:'V',diverging:false},amplitude:{label:'峰高',unit:'A',diverging:false},
-        prominence:{label:'Prominence',unit:'',diverging:false},area:{label:'峰面积',unit:'A·V',diverging:false},baseline:{label:'局域基线',unit:'A',diverging:true},peakToBg:{label:'峰/背景比',unit:'',diverging:false}
-      });
-      function gateFeatureDefinition(metric){return GATE_FEATURE_METRICS[String(metric||'fwhm')]||GATE_FEATURE_METRICS.fwhm;}
-      function gateFeatureField(settings=workspace.gateAnalysisSettings||{}){
-        const metric=GATE_FEATURE_METRICS[settings.featureMetric]?settings.featureMetric:'fwhm',direction=['all','forward','reverse'].includes(String(settings.featureDirection))?String(settings.featureDirection):'all';
-        const definition=gateFeatureDefinition(metric),allowed=direction==='forward'?1:(direction==='reverse'?-1:0);
-        const options=acceptedSeriesOptions().filter(row=>!allowed||Number(String(row.key||'').split('::')[0])===allowed);
-        const series=options.map(option=>({option,rows:gateSeriesRows(option.key)})).filter(row=>row.rows.length);
-        const x=[...new Set(series.flatMap(row=>row.rows.map(item=>Number(item.vg))).filter(Number.isFinite))].sort((a,b)=>a-b),y=series.map(row=>row.option.name||row.option.key),seriesKeys=series.map(row=>row.option.key);
-        const z=[],cellPeakIds=[];let missing=0;
-        for(const row of series){const byVg=new Map(row.rows.map(item=>[String(Number(item.vg)),item]));const zr=[],ids=[];for(const vg of x){const item=byVg.get(String(Number(vg))),value=Number(item?.[metric]);if(Number.isFinite(value)){zr.push(value);ids.push(String(item?.peak?.id||''));}else{zr.push(NaN);ids.push('');missing++;}}z.push(zr);cellPeakIds.push(ids);}
-        return {metric,direction,label:definition.label,unit:definition.unit,diverging:definition.diverging,x,y,z,xName:'Vg',yName:'峰族 / 扫描',xUnit:'V',yUnit:'',valueName:definition.label,valueUnit:definition.unit,semanticType:'resonance.feature-field',seriesKeys,cellPeakIds,missing};
-      }
-      function gateFeatureArtifact(field){
-        if(!field||!D?.createMatrix)return null;const sourcePeakIds=[...new Set((field.cellPeakIds||[]).flat().map(String).filter(Boolean))],sourcePeaks=new Set(sourcePeakIds),parents=[...new Set((workspace.peaks||[]).filter(p=>sourcePeaks.has(String(p.id))).map(p=>`resonance.peaks:${p.sweepId}`))];
-        return D.createMatrix({id:`resonance.feature-field:${field.metric}:${field.direction}`,name:`${field.label} · 跨曲线特征场`,semanticType:'resonance.feature-field',transient:true,x:field.x,y:field.y,z:field.z,xName:'Vg',yName:'峰族 / 扫描',valueName:field.label,xUnit:'V',valueUnit:field.unit,parameters:{metric:field.metric,direction:field.direction},metadata:{metric:field.metric,direction:field.direction,seriesKeys:field.seriesKeys,cellPeakIds:field.cellPeakIds,sourcePeakCount:sourcePeakIds.length,metricAlgorithmRef:workspace.activeMetricAlgorithm||'',missing:field.missing},lineage:{parents,role:'analysis',producer:'builtin.resonance-workbench',operation:'project-peak-feature-field',parameters:{metric:field.metric,direction:field.direction,metricAlgorithmRef:workspace.activeMetricAlgorithm||''}}});
-      }
-      function gateFeatureFieldCsv(field=gateResult?.featureField||gateFeatureField()){
-        if(!field?.x?.length)return '';const rows=[['series',...field.x.map(v=>`Vg_${v}`)].join(',')];for(let i=0;i<field.y.length;i++)rows.push([csvCell(field.y[i]),...(field.z[i]||[]).map(v=>Number.isFinite(Number(v))?Number(v):'')].join(','));return rows.join('\n');
-      }
-      function peakFromFeatureFieldPoint(field,event){
-        const point=event?.points?.[0];if(!point||!field)return null;let ri=field.y.indexOf(point.y),ci=field.x.findIndex(v=>Number(v)===Number(point.x));if(Array.isArray(point.pointNumber)){ri=Number(point.pointNumber[0]);ci=Number(point.pointNumber[1]);}const id=field.cellPeakIds?.[ri]?.[ci]||'';return id?peakById(id):null;
-      }
-      function gateHysteresisRows(label){
-        if(!label)return [];const up=gateSeriesRows(`1::${label}`),down=gateSeriesRows(`-1::${label}`),u=new Map(up.map(r=>[String(r.vg),r])),d=new Map(down.map(r=>[String(r.vg),r]));
-        return [...u.keys()].filter(k=>d.has(k)).map(k=>{const a=u.get(k),b=d.get(k);return {vg:a.vg,forwardV:a.v,reverseV:b.v,deltaVR:a.v-b.v,absDeltaVR:Math.abs(a.v-b.v)};}).sort((a,b)=>a.vg-b.vg);
-      }
-      function gateLabels(){const labels=[...new Set((workspace.peaks||[]).filter(p=>p.accepted!==false).map(peakLabel))];return labels.filter(label=>{const ps=(workspace.peaks||[]).filter(p=>p.accepted!==false&&peakLabel(p)===label);return ps.some(p=>p.direction>0)&&ps.some(p=>p.direction<0);});}
-      function populateGate(){
-        const opts=acceptedSeriesOptions(),valid=new Set(opts.map(o=>o.key)),s=workspace.gateAnalysisSettings||{};
-        const defaultA=opts[0]?.key||'',defaultB=opts.find(o=>o.key!==defaultA)?.key||defaultA;
-        if(!valid.has(s.seriesA))s.seriesA=defaultA;if(!valid.has(s.seriesB)||s.seriesB===s.seriesA)s.seriesB=defaultB;
-        const markup=opts.map(o=>`<option value="${esc(o.key)}">${esc(o.name)}</option>`).join('');
-        for(const [id,value] of [['reswinGateA',s.seriesA],['reswinGateB',s.seriesB]]){const el=$('#'+id);if(el){el.innerHTML=markup;el.value=value||'';}}
-        const labels=gateLabels();if(!labels.includes(s.hysteresisLabel))s.hysteresisLabel=labels[0]||'';
-        const hys=$('#reswinGateHysteresis');if(hys){hys.innerHTML=labels.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');hys.value=s.hysteresisLabel||'';}
-        const width=$('#reswinGateWidth');if(width)width.value=s.widthMode||'hwhm';
-        s.featureMetric=GATE_FEATURE_METRICS[s.featureMetric]?s.featureMetric:'fwhm';s.featureDirection=['all','forward','reverse'].includes(String(s.featureDirection))?String(s.featureDirection):'all';
-        const featureMetric=$('#reswinGateFeatureMetric');if(featureMetric)featureMetric.value=s.featureMetric;const featureDirection=$('#reswinGateFeatureDirection');if(featureDirection)featureDirection.value=s.featureDirection;
-        const use=$('#reswinGateUseDensity');if(use)use.checked=!!s.useCarrierDensity;
-        const cg=$('#reswinGateCg');if(cg)cg.value=finite(s.cg)?s.cg:'';
-        const cnp=$('#reswinGateCnp');if(cnp)cnp.value=finite(s.cnp)?s.cnp:0;
-        workspace.gateAnalysisSettings=s;
-      }
-      function readGate(){
-        const num=id=>{const raw=$('#'+id)?.value?.trim?.()??'';if(raw==='')return null;const n=Number(raw);return Number.isFinite(n)?n:null;};
-        const previous=workspace.gateAnalysisSettings||{};
-        workspace.gateAnalysisSettings={...previous,seriesA:$('#reswinGateA')?.value||'',seriesB:$('#reswinGateB')?.value||'',hysteresisLabel:$('#reswinGateHysteresis')?.value||'',widthMode:$('#reswinGateWidth')?.value||'hwhm',featureMetric:$('#reswinGateFeatureMetric')?.value||'fwhm',featureDirection:$('#reswinGateFeatureDirection')?.value||'all',useCarrierDensity:!!$('#reswinGateUseDensity')?.checked,cg:num('reswinGateCg'),cnp:num('reswinGateCnp')??0};
-      }
-      function gateOption(key){return acceptedSeriesOptions().find(o=>o.key===key)||null;}
-      function gateTerSettings(){return {vmin:null,vmax:null,vstep:null,tolerance:null,currentFloor:1e-15,onlyFullyVisible:false,...(workspace.gateAnalysisSettings?.terSettings||{})};}
-      function gateTerAlgorithmRef(){const ref=workspace.gateAnalysisSettings?.terAlgorithmRef||{category:'ter-analysis',id:'ter.high-low-ratio',version:'1.0.0'};return typeof ref==='string'?(()=>{const at=ref.lastIndexOf('@');return {category:'ter-analysis',id:at>0?ref.slice(0,at):ref,version:at>0?ref.slice(at+1):''};})():{category:String(ref.category||'ter-analysis'),id:String(ref.id||ref.algorithmId||'ter.high-low-ratio'),version:String(ref.version||ref.algorithmVersion||'1.0.0')};}
-      function computeGateTer(settings={}){const ref=gateTerAlgorithmRef(),row=algorithmRuntime?.resolve?.(ref,{category:'ter-analysis'});if(row&&algorithmRuntime?.run){const value=algorithmRuntime.run({id:row.id,version:row.version,category:'ter-analysis'},datasets,{category:'ter-analysis',parameters:{settings}});if(value&&typeof value.then==='function')throw new Error(`Gate TER requires a local Algorithm Provider: ${row.id}@${row.version}`);return {...value,algorithm:algorithmRuntime.provenance?.({id:row.id,version:row.version,category:'ter-analysis'})||value?.algorithm||null};}return S.computeTerMatrix?.(datasets,settings)||null;}
-      if(pipelineRuntime?.register){
-        pipelineRuntime.register('gate-analysis',{
-          title:'Gate-dependent resonance analysis',kind:'analysis',inputTypes:['science.transport.iv','data.table'],outputTypes:['resonance.gate-analysis','resonance.feature-field'],allowEmptyInput:true,cacheLimit:6,
-          run:(_input,{parameters})=>{
-            const s={...(parameters?.settings||workspace.gateAnalysisSettings||{})};
-            const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;
-            try{terResult=computeGateTer(parameters?.terSettings||gateTerSettings());}catch{}
-            const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];
-            const hysteresis=gateHysteresisRows(s.hysteresisLabel);
-            const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};const featureField=gateFeatureField(s);
-            const value={settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,featureField,fits:summary.fits||{},correlations:summary.correlations||{}};
-            const artifact=D.createAnalysisResult({id:'resonance.analysis:gate',name:'栅压依赖共振分析',summary:{rows:rows.length,hysteresis:hysteresis.length,hasTer:!!terResult,featureSeries:featureField.y.length},payload:value,transient:true}),featureArtifact=gateFeatureArtifact(featureField);
-            return {artifacts:[artifact,...(featureArtifact?[featureArtifact]:[])],value};
-          },
-          selection:({artifacts,value})=>artifacts[0]?[{type:'resonance.gate-analysis',id:artifacts[0].id,ref:{artifactId:artifacts[0].id},value:{id:artifacts[0].id,rows:value?.rows?.length||0}}]:[],
-          project:({value})=>({kind:'series-group',series:{A:value?.Arows||[],B:value?.Brows||[],hysteresis:value?.hysteresis||[],paired:value?.rows||[]}})
-        });
-      }
-
-      function computeGate(){
-        readGate();const s=workspace.gateAnalysisSettings;
-        const peakKey=(workspace.peaks||[]).filter(p=>p.accepted!==false).map(p=>[p.id,p.sweepId,p.v,p.i,p.vg,p.direction,p.peakOrder,p.peakLabel,p.analysisLeft,p.analysisRight]).flat().join('|');
-        const dataRevision=artifacts?.revision?.('data.table')||0;
-        const terSettings=gateTerSettings(),terAlgorithmRef=gateTerAlgorithmRef();
-        const key=`${dataRevision}::metric:${peakMetricRevision}::${JSON.stringify(s)}::${JSON.stringify(terSettings)}::${JSON.stringify(terAlgorithmRef)}::${peakKey}`;
-        const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=computeGateTer(terSettings);}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};const featureField=gateFeatureField(s);return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,featureField,fits:summary.fits||{},correlations:summary.correlations||{}};};
-        gateComputeKey=key;
-        if(pipelineRuntime?.runSync){
-          const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>a?.metadata?.adapter==='legacy-dataset');
-          const executed=pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...terSettings},terAlgorithmRef,peakKey,metricRevision:peakMetricRevision},publish:true,revision:dataRevision});
-          gateResult=executed?.value||null;
-        }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();
-        return gateResult;
-      }
-      function gateBase(x,y){return {margin:{l:66,r:26,t:20,b:52},xaxis:{title:x},yaxis:{title:y},legend:{orientation:'h',y:-.2},autosize:true};}
-      function renderGate(){
-        populateGate();const r=computeGate(),rows=r.rows||[],a=r.seriesA?.name||'ridge A',b=r.seriesB?.name||'ridge B';
-        const summary=$('#reswinGateSummary');if(summary)summary.innerHTML=[`共同 Vg ${rows.length}`,`A ${a}`,`B ${b}`,`TER ${r.terResult?'可用':'不可用'}`,`特征场 ${(r.featureField?.y||[]).length} 序列`].map(t=>`<span>${esc(t)}</span>`).join('');
-        const plots={
-          reswinGateRidges:{traces:[{x:r.Arows.map(d=>d.vg),y:r.Arows.map(d=>d.v),mode:'lines+markers',name:a},{x:r.Brows.map(d=>d.vg),y:r.Brows.map(d=>d.v),mode:'lines+markers',name:b}],layout:gateBase('Vg (V)','V_R (V)')},
-          reswinGateV0:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.V0),mode:'lines+markers',name:'V0'}],layout:gateBase('Vg (V)','V0 (V)')},
-          reswinGateDelta:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.delta),mode:'lines+markers',name:'δ'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.absDelta),mode:'lines+markers',name:'|δ|',line:{dash:'dot'}}],layout:gateBase('Vg (V)','δ (V)')},
-          reswinGateWidthPlot:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d[(r.settings.widthMode||'hwhm')+'A']),mode:'lines+markers',name:'宽度 A'},{x:rows.map(d=>d.vg),y:rows.map(d=>d[(r.settings.widthMode||'hwhm')+'B']),mode:'lines+markers',name:'宽度 B'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.deltaOverW),mode:'lines+markers',name:'|δ|/w',yaxis:'y2'}],layout:{...gateBase('Vg (V)',r.settings.widthMode==='fwhm'?'FWHM (V)':'HWHM (V)'),yaxis2:{title:'|δ|/w',overlaying:'y',side:'right',showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
-          reswinGateTer:{traces:[{x:rows.filter(d=>Number.isFinite(d.terMax)).map(d=>d.vg),y:rows.filter(d=>Number.isFinite(d.terMax)).map(d=>d.terMax),mode:'lines+markers',name:'TERmax'}],layout:gateBase('Vg (V)','TERmax (%)')},
-          reswinGateVStar:{traces:[{x:rows.filter(d=>Number.isFinite(d.vStar)).map(d=>d.vg),y:rows.filter(d=>Number.isFinite(d.vStar)).map(d=>d.vStar),mode:'lines+markers',name:'Vd*'}],layout:gateBase('Vg (V)','Vd* (V)')},
-          reswinGateHysteresisPlot:{traces:[{x:r.hysteresis.map(d=>d.vg),y:r.hysteresis.map(d=>d.forwardV),mode:'lines+markers',name:'正扫'},{x:r.hysteresis.map(d=>d.vg),y:r.hysteresis.map(d=>d.reverseV),mode:'lines+markers',name:'反扫'},{x:r.hysteresis.map(d=>d.vg),y:r.hysteresis.map(d=>d.absDeltaVR),mode:'lines+markers',name:'|ΔV_R|',yaxis:'y2'}],layout:{...gateBase('Vg (V)','V_R (V)'),yaxis2:{title:'|ΔV_R| (V)',overlaying:'y',side:'right',showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
-          reswinGateAmplitude:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.amplitudeA),mode:'lines+markers',name:'A_A'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.amplitudeB),mode:'lines+markers',name:'A_B'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.etaEff),mode:'lines+markers',name:'η_eff',yaxis:'y2'}],layout:{...gateBase('Vg (V)','峰高 (A)'),yaxis2:{title:'η_eff',overlaying:'y',side:'right',range:[0,1],showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
-          reswinGateTerCorrelation:{traces:[{x:rows.filter(d=>Number.isFinite(d.terMax)&&Number.isFinite(d.deltaOverW)).map(d=>d.deltaOverW),y:rows.filter(d=>Number.isFinite(d.terMax)&&Number.isFinite(d.deltaOverW)).map(d=>d.terMax),mode:'markers',name:'TERmax'}],layout:gateBase('|δ|/w','TERmax (%)')},
-          reswinGateReadoutCorrelation:{traces:[{x:rows.filter(d=>Number.isFinite(d.V0)&&Number.isFinite(d.vStar)).map(d=>d.V0),y:rows.filter(d=>Number.isFinite(d.V0)&&Number.isFinite(d.vStar)).map(d=>d.vStar),mode:'markers',name:'Vd*'}],layout:gateBase('V0 (V)','Vd* (V)')},
-          reswinGateBackground:{traces:[{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineA),mode:'lines+markers',name:'背景 A'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.baselineB),mode:'lines+markers',name:'背景 B'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgA),mode:'lines+markers',name:'峰/背景 A',yaxis:'y2'},{x:rows.map(d=>d.vg),y:rows.map(d=>d.peakToBgB),mode:'lines+markers',name:'峰/背景 B',yaxis:'y2'}],layout:{...gateBase('Vg (V)','局域背景 (A)'),yaxis2:{title:'峰/背景比',overlaying:'y',side:'right',showgrid:false},margin:{l:66,r:64,t:20,b:52}}},
-          reswinGateDensity:{traces:r.settings.useCarrierDensity?[{x:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)).map(d=>d.delta),mode:'lines+markers',name:'δ'},{x:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.ng_cm2),y:rows.filter(d=>Number.isFinite(d.ng_cm2)&&Number.isFinite(d.terMax)).map(d=>d.terMax),mode:'lines+markers',name:'TERmax',yaxis:'y2'}]:[],layout:{...gateBase('n_g (cm⁻²)','δ (V)'),yaxis2:{title:'TERmax (%)',overlaying:'y',side:'right',showgrid:false},margin:{l:74,r:64,t:20,b:52}}}
-        };
-        for(const [id,spec] of Object.entries(plots)){const el=$('#'+id);if(el)scientificReact(el,spec.traces,spec.layout,{responsive:true,displaylogo:false},{renderKey:`gate:${gateComputeKey}:${id}`}).catch(()=>{});}
-        const field=r.featureField||gateFeatureField(r.settings||{}),fieldPlot=$('#reswinGateFeatureField'),fieldTitle=$('#reswinGateFeatureFieldTitle'),fieldMeta=$('#reswinGateFeatureFieldMeta');
-        if(fieldTitle)fieldTitle.textContent=`跨曲线特征场 · ${field.label}`;if(fieldMeta)fieldMeta.textContent=`${field.y.length} 个峰序列 × ${field.x.length} 个 Vg · 缺失 ${field.missing} · 点击单元格可定位真实峰`;
-        if(fieldPlot){if(field.x.length&&field.y.length&&uiRuntime?.scientificPlot?.scalarField){uiRuntime.scientificPlot.scalarField(fieldPlot,field,{diverging:field.diverging,colorscale:field.diverging?'RdBu':'Viridis',reversescale:field.diverging,zmid:field.diverging?0:undefined,yaxis:{type:'category',automargin:true},source:'resonance-feature-field',renderKey:`gate-feature:${gateComputeKey}:${field.metric}:${field.direction}:${field.missing}`,hovertemplate:`Vg=%{x:.6g} V<br>%{y}<br>${field.label}=%{z:.6g}${field.unit?` ${field.unit}`:''}<extra></extra>`,onClick:event=>{const peak=peakFromFeatureFieldPoint(field,event);if(peak)publishPeakSelection(peak,'resonance-feature-field',{openInspector:true});}}).catch(()=>{});}else if(!field.x.length||!field.y.length)try{uiRuntime?.scientificPlot?.purge?.(fieldPlot);}catch{}}
-        const report=$('#reswinGateReport');if(report){const f=r.fits||{},c=r.correlations||{};report.innerHTML=`<strong>栅压物理分析摘要</strong><p>V0 表示两条所选共振 ridge 的共模位置；δ=(VB−VA)/2 表示有效分裂。用于可分辨度比较时使用 |δ|/w。</p><p>dV0/dVg=${fmt(f.V0?.slope,6)}，R²=${fmt(f.V0?.r2,4)}；d|δ|/dVg=${fmt(f.deltaAbs?.slope,6)}；r[TERmax, |δ|/w]=${fmt(c.terVsDeltaOverW,4)}；r[Vd*, V0]=${fmt(c.vStarVsV0,4)}。</p><p>这些相关量用于检验机制假设，不把 η_eff 直接解释为畴面积，也不把正反扫峰位差直接等同于 coercive voltage。</p>`;}
-        const table=$('#reswinGateTable');if(table)table.innerHTML=`<thead><tr><th>Vg</th><th>VA</th><th>VB</th><th>V0</th><th>δ</th><th>|δ|/w</th><th>TERmax</th><th>Vd*</th><th>η_eff</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${fmt(d.vg,5)}</td><td>${fmt(d.vA,6)}</td><td>${fmt(d.vB,6)}</td><td>${fmt(d.V0,6)}</td><td>${fmt(d.delta,6)}</td><td>${fmt(d.deltaOverW,5)}</td><td>${fmt(d.terMax,4)}</td><td>${fmt(d.vStar,6)}</td><td>${fmt(d.etaEff,4)}</td></tr>`).join('')}</tbody>`;
-      }
-      function gateCsv(){const rows=['Vg,V_A,V_B,V0,delta,abs_delta,delta_over_w,TER_max,Vd_star,eta_eff'];for(const d of gateResult?.rows||[])rows.push([d.vg,d.vA,d.vB,d.V0,d.delta,d.absDelta,d.deltaOverW,d.terMax,d.vStar,d.etaEff].join(','));return rows.join('\n');}
-      function gateReportText(){const r=gateResult||computeGate(),f=r.fits||{},c=r.correlations||{};return ['# 栅压物理分析报告','',`ridge A: ${r.seriesA?.name||'—'}`,`ridge B: ${r.seriesB?.name||'—'}`,`共同 Vg 点: ${r.rows?.length||0}`,'',`dV0/dVg = ${fmt(f.V0?.slope,7)} V/V`,`R²(V0) = ${fmt(f.V0?.r2,4)}`,`d|δ|/dVg = ${fmt(f.deltaAbs?.slope,7)} V/V`,`Pearson r[TERmax, |δ|/w] = ${fmt(c.terVsDeltaOverW,4)}`,`Pearson r[Vd*, V0] = ${fmt(c.vStarVsV0,4)}`,'','解释边界：V0 是共模轨迹位置；δ 是有效共振分裂；η_eff 是有效电学权重；正反扫峰位差不自动等同于 coercive voltage。'].join('\n');}
 
       function renderSummary(){const el=$('#reswinSummary');if(el)el.innerHTML=`<span>数据 ${datasets.length}</span><span>扫描 ${sweeps.length}</span><span>可见 ${visibleSweeps().length}</span><span>峰 ${(workspace.peaks||[]).length}</span><span>手动 ${(workspace.peaks||[]).filter(p=>p.manual).length}</span>`;}
       function renderMain(){renderControls();renderSummary();renderMainPlot();renderTrend();}
@@ -1208,11 +966,11 @@
       function lockSelectedPeaks(value=true){
         const ids=selectedPeakIds.size?new Set(selectedPeakIds):(selectedPeakId?new Set([String(selectedPeakId)]):new Set());if(!ids.size)return false;
         let count=0;for(const p of workspace.peaks||[])if(ids.has(String(p.id))){p.locked=!!value;count++;}
-        physicsCache={key:'',value:null};renderLinkedSelection({includeGroup:true});scheduleSnapshot();setStatus(`${value?'已锁定':'已解锁'} ${count} 个峰。`);return true;
+        analysisRuntime.invalidatePhysics();renderLinkedSelection({includeGroup:true});scheduleSnapshot();setStatus(`${value?'已锁定':'已解锁'} ${count} 个峰。`);return true;
       }
       function deleteSelectedPeaks(){
         const ids=selectedPeakIds.size?new Set(selectedPeakIds):(selectedPeakId?new Set([String(selectedPeakId)]):new Set());if(!ids.size)return false;
-        workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(String(p.id)));selectedPeakIds.clear();selectedPeakId='';physicsCache={key:'',value:null};
+        workspace.peaks=(workspace.peaks||[]).filter(p=>!ids.has(String(p.id)));selectedPeakIds.clear();selectedPeakId='';analysisRuntime.invalidatePhysics();
         interactionSelection?.clear?.({source:'resonance-delete',keepRanges:true,keepContext:true});render();scheduleSnapshot({label:'删除峰'});setStatus(`已删除 ${ids.size} 个峰。`);return true;
       }
       function clearSelectedRange(){clearMainRangeMenu();interactionSelection?.clearRange?.({source:'resonance-range-clear'});renderMainPlot();return true;}
@@ -1226,9 +984,9 @@
         restore(data){workspace=normalizeWorkspace(data,project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,
-        renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(gateResult?.featureField||gateFeatureField()),gateFeatureFieldCsv,
+        renderMain,renderInspection,renderGroup,renderPhysics,renderSpacing,renderGate,getGateFeatureField:()=>clone(analysisRuntime.getGateFeatureField()),gateFeatureFieldCsv,
         getGroupColumns:()=>String(workspace.groupColumns||'auto'),setGroupColumns(value){const next=['auto','1','2','3','4','5','6'].includes(String(value))?String(value):'auto';workspace.groupColumns=next;reactiveTouch('resonance.group.settings',{reason:'group-columns'});scheduleSnapshot();return next;},closeGroupViews:disposeGroupViews,
-        setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRenderKey='';if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
+        setUserDefaults(value={},options={}){const groupColumns=['auto','1','2','3','4','5','6'].includes(String(value?.groupColumns))?String(value.groupColumns):'auto';runtimeDefaults={...runtimeDefaults,...clone(value||{}),groupColumns};const saved=pluginSliceFromProject(project);if(options.applyCurrent===true||saved?.groupColumns===undefined){workspace.groupColumns=groupColumns;groupRuntime.invalidate();if($('#resparGroupPanel')?.offsetParent!==null)renderGroup();}return clone(runtimeDefaults);},
         setWorkspaceNavigator(fn){workspaceNavigator=typeof fn==='function'?fn:null;},
         openInspector(){workspaceNavigator?.('inspect');return true;},
         setWorkspaceRuntime(runtime){workspaceRuntime=runtime||null;},
@@ -1237,7 +995,7 @@
         setEntityRuntime(runtime){entityRuntime=runtime||null;syncEntities();},
         setDetectorRuntime(runtime){detectorRuntime=runtime||null;},
         setAlgorithmRuntime(runtime){algorithmRuntime=runtime||null;installAlgorithmPipeline();scheduleMetricRefresh(workspace.peaks||[]);},
-        setPipelineRuntime(runtime){pipelineRuntime=runtime||null;installAlgorithmPipeline();},
+        setPipelineRuntime(runtime){pipelineRuntime=runtime||null;installAlgorithmPipeline();analysisRuntime.installPipeline();},
         setInteractionRuntime(runtime={}){interactionSelectionOff?.();interactionSelectionOff=null;interactionRuntime=runtime.runtime||null;interactionSelection=runtime.selection||interactionRuntime?.selection||null;if(interactionSelection?.subscribe)interactionSelectionOff=interactionSelection.subscribe(applyInteractionSelection,{immediate:false});bindLinkedSelectionViews();if(interactionSelection&&!interactionSelection.get?.()?.focus&&selectedSweep())publishSweepSelection(selectedSweep(),'resonance-initial');},
         setDataSourceRuntime(runtime){dataSourcesRuntime=runtime||null;},
         selection:()=>interactionSelection?.get?.()||null,
@@ -1245,7 +1003,7 @@
         selectSweep:(id,options={})=>{const sw=sweepById(id);return sw?publishSweepSelection(sw,options.source||'resonance-api'):false;},
         selectRange:(range,options={})=>publishRangeSelection(range,options.source||'resonance-api'),
         setActiveDetector(id){workspace.activeDetector=String(id||'');renderControls();scheduleSnapshot();},
-        setActiveMetricAlgorithm(id){workspace.activeMetricAlgorithm=String(id||'');peakMetricCache=new WeakMap();peakMetricRevision+=1;physicsCache={key:'',value:null};reactiveTouch(['resonance.peak.metric-input','resonance.peak.metrics'],{reason:'metric-algorithm'});scheduleMetricRefresh(workspace.peaks||[]);renderControls();scheduleSnapshot();},
+        setActiveMetricAlgorithm(id){workspace.activeMetricAlgorithm=String(id||'');peakMetricCache=new WeakMap();peakMetricRevision+=1;analysisRuntime.invalidatePhysics();reactiveTouch(['resonance.peak.metric-input','resonance.peak.metrics'],{reason:'metric-algorithm'});scheduleMetricRefresh(workspace.peaks||[]);renderControls();scheduleSnapshot();},
         setDetectorSettings(id,value){const key=String(id||workspace.activeDetector||'');if(!key)return;workspace.detectorSettings={...(workspace.detectorSettings||{}),[key]:clone(value||{})};scheduleSnapshot();},
         setPeakDisplay(key,value){workspace.peakDisplay={...(workspace.peakDisplay||{}),[String(key)]:!!value};renderMainPlot();scheduleSnapshot();},
         switchSelectedSweep,moveSelectedPeakBy,selectAdjacentPeak,lockSelectedPeaks,deleteSelectedPeaks,clearSelectedRange,clearSelection,undoLastAction,redoLastAction,historyState,togglePhysicsLabels,
@@ -1256,7 +1014,7 @@
         copyMainCsv:()=>copyTextToClipboard(mainCsv(),'主图 CSV'),
         exportMainSvg,exportMainPng,
         resetMainView,detectSelectedRange:()=>detectRange(selectedRange),deleteSelectedRangePeaks:()=>deleteRangePeaks(),setSelectedRangeLocked:value=>setRangeLocked(value),applySelectedRangeIdentity:(order,label)=>applyRangeIdentity(order,label),
-        getState:()=>({workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult,gateResult}),
+        getState:()=>{const analysis=analysisRuntime.getState();return {workspace,datasets,sweeps,selectedSweep:selectedSweep(),selectedPeak:selectedPeak(),activeView:currentView,spacingResult:analysis.spacingResult,gateResult:analysis.gateResult};},
         getGroupDiagnostics(){const visibleIds=new Set(visibleSweepIds().map(String)),matched=(workspace.peaks||[]).filter(p=>p.accepted!==false&&visibleIds.has(String(p.sweepId))),unresolved=(workspace.peaks||[]).filter(p=>p.accepted!==false&&!sweeps.some(sw=>String(sw.id)===String(p.sweepId)));const series=groupSeries();return {datasets:datasets.length,sweeps:sweeps.length,visibleSweeps:visibleIds.size,peaks:(workspace.peaks||[]).length,matchedPeaks:matched.length,unresolvedPeaks:unresolved.length,series:series.length,seriesPoints:series.reduce((n,row)=>n+(row.peaks?.length||0),0)};}
       };
       sharedController=Shared.createController(service,{mode:'top-runtime',science:S});

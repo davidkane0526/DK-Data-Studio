@@ -9,7 +9,7 @@ const scientific=read('src/core/scientific/plot-runtime.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const ter=read('src/plugins/ter-analysis/analysis-service.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonance=read('src/plugins/resonance-workbench/feature-analysis-runtime.js');
 const automation=read('src/core/diagnostics/automation-test-runtime.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 assert(index.includes('core/performance/runtime.js'),'main renderer must load Performance Runtime');

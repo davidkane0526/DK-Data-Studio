@@ -18,6 +18,7 @@ const coverage=read('src/core/theme/coverage-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');
 const automation=read('src/core/diagnostics/automation-test-runtime.js');
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const projectFormat=read('src/core/project/format.js');
 
@@ -65,8 +66,8 @@ assert(chart.includes('get tooltipTheme(){return currentTooltipTheme();}'),
   'Scientific chart scopes must expose tooltipTheme dynamically across theme switches.');
 
 // A truly peak-less project must not render misleading empty axes; saved legacy peaks still migrate.
-assert(resonance.includes("current project has no saved resonance peaks")===false,'User-facing group empty state must stay localized.');
-assert(resonance.includes("当前工程没有已保存共振峰。组图会在完成寻峰或恢复已保存峰后自动生成。"),
+assert(resonanceGroup.includes("current project has no saved resonance peaks")===false,'User-facing group empty state must stay localized.');
+assert(resonanceGroup.includes("当前工程没有已保存共振峰。组图会在完成寻峰或恢复已保存峰后自动生成。"),
   'Resonance group surface must explain the no-peak state instead of showing empty axes.');
 assert(resonanceCss.includes('.reswin-group-empty{grid-column:1/-1;'),
   'Resonance group empty state must span the group grid.');

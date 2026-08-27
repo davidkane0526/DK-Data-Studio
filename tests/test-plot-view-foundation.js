@@ -8,6 +8,7 @@ const ui=read('src/generated/runtime/ui-infrastructure.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
 const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js');
+const resonanceGroupFeature=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
@@ -27,7 +28,7 @@ assert(!ui.includes("this.button('CSV'")&&!ui.includes("this.button('复制'")&&
 assert(ui.includes('dkds-plot-view-menu-trigger dkds-portable-placement-trigger')&&ui.includes('dkds-plot-view-file-svg')&&css.includes('.dkds-plot-view-file-svg'),'Core export breadcrumb must reuse portable placement chrome exactly and differ only by the file glyph.');
 assert(kernel.includes('openContextOverflowPopup')&&kernel.includes("new Menu('core.shell'")&&!kernel.includes('toggle(overflowBtn,overflowMenu)'),'Responsive More actions must use the Core viewport-level ContextMenu instead of a menu clipped by the commandbar.');
 assert(!resonanceViews.includes("page.querySelectorAll('.respar-derived .analysis-chart-card')")&&ui.includes('queueMicrotask(()=>this.scope.plotViews?.hydrate?.(container'),'Resonance SUB charts must be hydrated by the PluginWorkspace lifecycle rather than a plugin-side one-shot DOM scan.');
-assert(resonanceFeature.includes('uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&!resonanceFeature.includes('<button type="button" data-csv>CSV</button>'),'Resonance group child plots must consume Core PlotView rather than duplicate CSV/copy chrome.');
+assert(resonanceGroupFeature.includes('live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`')&&!resonanceGroupFeature.includes('<button type="button" data-csv>CSV</button>'),'Resonance group child plots must consume Core PlotView rather than duplicate CSV/copy chrome.');
 assert(resonanceViews.includes("actionHost:'[data-respar-group-cols-menu-host]'")&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("每行 ${value} 个子图"),'Group layout must be a PRIME action supplied through the Core ActionGroup lifecycle.');
 assert(app.includes('function ensurePluginWorkspaceVisible(activityId)')&&kernel.includes('host?.ensurePluginWorkspaceVisible?.(spec.activity)'),'System plugin-toolbar commands must restore the active SUPER workspace before opening PRIME/SUB content.');
 assert(app.includes("layout.root?.selector")&&app.includes("closest?.('.analysis-page')"),'SUPER root resolution must support native PluginWorkspace root.selector contracts.');

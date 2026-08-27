@@ -110,12 +110,18 @@
     "scripts": [
       "workbench-shared.js",
       "view-components.js",
+      "feature-context.js",
+      "feature-group-runtime.js",
+      "feature-analysis-runtime.js",
       "feature-runtime.js"
     ]
   },
   "scripts": [
     "workbench-shared.js",
     "view-components.js",
+    "feature-context.js",
+    "feature-group-runtime.js",
+    "feature-analysis-runtime.js",
     "feature-runtime.js",
     "super-layout.js",
     "plugin.js"

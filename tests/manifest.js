@@ -673,6 +673,10 @@ module.exports = {
     {
       "file": "tests/test-v36198-repository-module-hygiene.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36199-resonance-feature-context.js",
+      "args": []
     }
   ],
   "check": [
@@ -1380,6 +1384,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36198-repository-module-hygiene.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36199-resonance-feature-context.js",
       "args": []
     }
   ],
