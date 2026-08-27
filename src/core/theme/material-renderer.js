@@ -47,7 +47,7 @@
     const role=parentMaterialRole(el);
     return !!role&&TRANSLUCENT_RECIPES.has(String(recipePolicy()[role]||''));
   }
-  function inferRole(el){if(chromeOwnedIntegrated(el))return '';if(nestedParentOwnsBackdrop(el))return '';for(const [role,selector] of ROLE_BINDINGS){try{if(el.matches?.(selector)){if(role==='control'&&semanticControlOwnsPaint(el))return '';return role;}}catch{}}return '';}
+  function inferRole(el){if(el?.matches?.('.dkds-portable-view'))return el.matches('.is-floating,.is-global-floating')?'floating':'surface';if(chromeOwnedIntegrated(el))return '';if(nestedParentOwnsBackdrop(el))return '';for(const [role,selector] of ROLE_BINDINGS){try{if(el.matches?.(selector)){if(role==='control'&&semanticControlOwnsPaint(el))return '';return role;}}catch{}}return '';}
   function inferRecipe(el,role){
     if(!role)return '';
     if(role==='control'&&el.matches?.(INTEGRATED_CHILD_SELECTOR))return '';

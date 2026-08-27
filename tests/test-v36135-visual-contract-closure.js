@@ -44,7 +44,7 @@ for(const token of [
   'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
   'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
-assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.includes('box-shadow:0 1px 2px rgba(33,57,112,.06)'),'Activity tabs must not use a white inset top rim.');
+assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.includes('box-shadow:var(--dkui-selected-shadow)'),'Activity tabs must use the centered semantic selected shadow rather than an offset/inset legacy rim.');
 
 const readme=read('sdk/README.md');
 for(const token of ['scoped to its own surface host','at most two balanced rows','`legendgroup`','does not visibly twitch'])assert(readme.includes(token),`SDK visual contract docs missing ${token}`);

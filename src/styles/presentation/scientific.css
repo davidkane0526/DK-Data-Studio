@@ -80,6 +80,19 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-solo{
   background:transparent;color:var(--text-primary);
 }
 
+/* GroupPlot legends are semantic labels, never elevated controls. */
+body.dkds-modern-ui .dkds-group-plot-card :where(.dkds-plot-legend,.dkds-plot-legend-item,.dkds-plot-legend-swatch){box-shadow:none;}
+body.dkds-modern-ui .dkds-group-plot-card .dkds-plot-legend{background:transparent;border-color:transparent;}
+
+/* Measurement width is a Core scientific presentation primitive. */
+body.dkds-modern-ui .dkds-scientific-width-band{opacity:.065;pointer-events:none;}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band{opacity:.10;}
+
+/* Dark scientific views keep context visible but make focus unmistakable. */
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-curve.is-dimmed{opacity:.045;stroke-width:.9px;}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-curve.is-focused{opacity:1;stroke-width:3.4px;}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-marker.is-dimmed{opacity:.05;}
+
 
 /* Low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar,

@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.108
+# Code quality audit — v3.61.109
 
 ## Release decision
 
-v3.61.108 retains the v3.61.107 manifest-validation boundary and closes the next UI ownership/performance pass: Plugin Manager structure is no longer hidden in platform CSS, split dragging no longer drives continuous chart reflow, PortableView material roles resynchronize after placement, Resonance group visuals remain plugin-owned, and Thin Glass hierarchy remains theme-owned.
+v3.61.109 retains the manifest-validation and UI ownership boundaries while closing the next visual-semantic pass: selected modes share one centered Theme-derived shadow, ScientificCurve owns FWHM width-band presentation and focus contrast, GroupPlot legends remain shadow-free, PortableView placement owns its current Material role, Resonance keeps only domain-specific menu/legend composition, and Thin Glass separates hierarchy primarily through material tone rather than framework lines.
 
 ## Completed
 

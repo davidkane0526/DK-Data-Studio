@@ -27,6 +27,7 @@ body.dkds-modern-ui :where(.dkds-action-button,.project-tab-close):active:not(:d
    actually replace the application appearance instead of only recoloring a
    subset of components. Data-semantic series/status marks remain untouched. */
 body.dkds-modern-ui{
+  --dkui-selected-shadow:0 0 0 2px color-mix(in srgb,var(--dkui-accent) 20%,transparent),0 0 10px color-mix(in srgb,var(--dkui-accent) 12%,transparent);
   background:var(--dkui-canvas);
   background-image:radial-gradient(ellipse at 55% -12%,color-mix(in srgb,var(--dkui-accent) 7%,transparent),transparent 66%);
   color:var(--dkui-text);
@@ -35,7 +36,7 @@ body.dkds-modern-ui .brand{color:var(--dkui-text)}
 body.dkds-modern-ui .brand-mark{background:var(--dkui-surface-elevated);border-color:var(--dkui-control-border);box-shadow:var(--dkui-shadow-1)}
 body.dkds-modern-ui :where(.toolbar-group,.primary-activity-cluster,.system-core-tools-group){background:var(--dkui-surface-soft);border-color:var(--dkui-divider);box-shadow:var(--dkui-shadow-1)}
 body.dkds-modern-ui :where(.toolbar-btn:hover:not(.strong):not(:disabled),.activity-tab:hover,.plugin-toolbar-btn:hover){background:var(--dkui-surface-hover);border-color:var(--dkui-control-border);color:var(--dkui-text)}
-body.dkds-modern-ui :where(.activity-tab.active,.primary-activity-bar .activity-tab.top-level-activity-tab.active){background:var(--dkui-surface-hover);border-color:var(--dkui-divider);color:color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-text));box-shadow:var(--dkui-shadow-1)}
+body.dkds-modern-ui :where(.activity-tab.active,.primary-activity-bar .activity-tab.top-level-activity-tab.active){background:var(--dkui-surface-hover);border-color:var(--dkui-divider);color:color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-text));box-shadow:var(--dkui-selected-shadow)}
 body.dkds-modern-ui .project-tab{background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft);box-shadow:none}
 body.dkds-modern-ui .project-tab:hover{background:var(--dkui-surface-hover);color:var(--dkui-text)}
 body.dkds-modern-ui .project-tab.active{background:var(--dkui-surface);border-color:var(--dkui-divider);border-bottom-color:var(--dkui-surface);color:var(--dkui-text)}

@@ -24,8 +24,8 @@ for(const name of ['scientific.css','workspace-theme-boundary.css']){
 }
 assert(!css['scientific.css'].includes('body.dkds-modern-ui button:hover:not(:disabled)'),'Scientific presentation must not own generic button hover geometry.');
 assert(css['shell.css'].includes('body.dkds-modern-ui button:hover:not(:disabled){transform:none}'),'Shell must own geometry-stable generic button hover.');
-assert(css['shell.css'].includes('box-shadow:0 1px 2px rgba(33,57,112,.06)'),'Shell must own the flat light selected Activity shadow.');
-assert(css['plugin-chrome.css'].includes('box-shadow:0 1px 2px rgba(0,0,0,.18)'),'Plugin chrome must retain the matching dark selected Activity shadow.');
+assert(css['shell.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Shell must consume the semantic centered selected Activity shadow.');
+assert(css['plugin-chrome.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Plugin chrome must consume the same semantic selected Activity shadow in dark mode.');
 
 function selectors(text){
   const clean=text.replace(/\/\*[\s\S]*?\*\//g,'');

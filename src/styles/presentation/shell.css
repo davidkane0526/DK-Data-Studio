@@ -195,20 +195,20 @@ body.dkds-modern-ui button.primary{
   background:var(--dkui-accent);
   border-color:var(--dkui-accent);
   color:#fff;
-  box-shadow:0 3px 8px rgba(49,94,251,.18),0 1px 0 rgba(255,255,255,.20) inset;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--dkui-accent) 22%,transparent),0 0 10px color-mix(in srgb,var(--dkui-accent) 14%,transparent),0 1px 0 rgba(255,255,255,.20) inset;
 }
 body.dkds-modern-ui .toolbar-btn.strong:hover,
 body.dkds-modern-ui button.primary:hover{
   background:var(--dkui-accent-hover);
   border-color:var(--dkui-accent-hover);
-  box-shadow:0 5px 12px rgba(49,94,251,.22),0 1px 0 rgba(255,255,255,.22) inset;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--dkui-accent) 24%,transparent),0 0 12px color-mix(in srgb,var(--dkui-accent) 18%,transparent),0 1px 0 rgba(255,255,255,.22) inset;
 }
 body.dkds-modern-ui .activity-tab.active,
 body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{
   background:#fff;
   border-color:#d7e0ee;
   color:#2857d7;
-  box-shadow:0 1px 2px rgba(33,57,112,.06);
+  box-shadow:var(--dkui-selected-shadow);
 }
 
 body.dkds-modern-ui .project-tabs-bar{

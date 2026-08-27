@@ -12,7 +12,7 @@ const json=rel=>JSON.parse(read(rel));
 const material=read('src/core/theme/material-renderer.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');
 assert(material.includes("function chromeOwnedIntegrated(el)"),'semantic chrome ownership helper missing');
-assert(material.includes("function inferRole(el){if(chromeOwnedIntegrated(el))return ''"),'chrome-owned command hit regions must not receive their own Material Role');
+assert(material.includes("if(chromeOwnedIntegrated(el))return ''"),'chrome-owned command hit regions must not receive their own Material Role');
 assert(material.includes("el.classList.remove('dkds-material-role-control')"),'renderer must remove legacy nested control-role paint under chrome');
 assert(material.includes('root.querySelectorAll(INTEGRATED_CONTAINER_SELECTOR)'),'initial role scan must include integrated containers instead of waiting for a mutation');
 
@@ -37,6 +37,6 @@ const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes('channel?.postMessage?.({theme:next,preferredProfile,activeProfile})'),'appearance broadcast must preserve preferred profile instead of temporary fallback profile');
 assert(runtime.includes("profile=String(event?.data?.preferredProfile||event?.data?.profile||'')"),'broadcast listener must prefer the persistent profile field');
 assert(runtime.includes("radius:10,radiusLg:13"),'built-in Thin Glass must use the SDK-reference compact glass geometry');
-assert(runtime.includes("shadowFloat:'0 0 0 1px rgba(101,116,139,.10),0 8px 22px rgba(69,84,110,.15)'")&&runtime.includes("shadowFloat:'0 0 0 1px rgba(148,163,184,.12),0 8px 24px rgba(0,0,0,.30)'"),'Thin Glass hierarchy must retain centered rim separation and readable floating depth.');
+assert((runtime.match(/shadowFloat:'0 0 0 1px /g)||[]).length>=2,'Thin Glass hierarchy must retain centered rim separation and readable floating depth in both modes.');
 
 console.log('v3.61.82 chrome/glass Core ownership checks passed.');

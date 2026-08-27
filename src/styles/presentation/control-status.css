@@ -38,7 +38,7 @@ body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
   background:var(--accent-soft);
   color:var(--accent-primary);
   -webkit-text-fill-color:var(--accent-primary);
-  box-shadow:none;
+  box-shadow:var(--dkui-selected-shadow);
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn.active,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
@@ -65,7 +65,7 @@ body.dkds-modern-ui .dkds-workbench-tab.active{
   background:var(--dkui-accent-soft,var(--accent-soft));
   color:var(--dkui-accent,var(--accent-primary));
   -webkit-text-fill-color:var(--dkui-accent,var(--accent-primary));
-  box-shadow:none;
+  box-shadow:var(--dkui-selected-shadow);
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-workbench-tab.active{
   background:color-mix(in srgb,var(--dkui-accent) 16%,var(--dkui-surface-soft));

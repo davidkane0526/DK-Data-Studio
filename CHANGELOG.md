@@ -1,3 +1,14 @@
+# v3.61.109 — Selection Semantics & Scientific Focus
+
+- Restore the Core ScientificCurve FWHM/measurement width band while keeping width-band paint in the scientific presentation owner rather than Resonance-private CSS.
+- Keep Resonance range-menu actions visually neutral, prevent peak-legend labels from wrapping internally, and strengthen dark focused-curve contrast through generic ScientificCurve focus classes.
+- Introduce one centered semantic selected-mode shadow derived from the active Theme accent; Activity, Workbench, scan/preset/action and other mode controls consume the same state without offset depth.
+- Keep GroupPlot legends shadow-free in every Theme Profile.
+- Refine Thin Glass light/dark hierarchy with quieter divider/control edges and stronger surface-tone separation instead of bright framework lines.
+- Make PortableView placement authoritative for Material role inference so a docked portable cannot remain semantically `floating` because of legacy DOM classes.
+- Add the v3.61.109 selection/measurement/theme gate and relax historical visual tests that encoded obsolete exact color/shadow values rather than semantic invariants.
+- Validation: `npm test` **179/179 PASS**; `npm run check` **187/187 PASS**; SDK Harness **PASS**; first-party plugin manifests **14/14 PASS**; authored CSS remains at **0 `!important`**; SDK remains **1.17.16**.
+
 # v3.61.108 — Visual Ownership & Resize Lifecycle
 
 - Restore Resonance range-menu semantic action styling by preventing generic command-menu paint from overriding primary/danger actions; keep the fix in shared UI semantics rather than plugin-specific button colors.

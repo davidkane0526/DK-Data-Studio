@@ -26,5 +26,5 @@ assert(groupCss.includes('minmax(190px,var(--reswin-group-height,205px))'),'Reso
 assert(group.includes('focusPolicy:{inactiveOpacity:.08,pointInactiveOpacity:.08,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must make main-selection linkage visually explicit through Core focus policy.');
 
 const theme=read('src/core/theme/runtime.js');
-for(const token of ["canvas:'#EAF0F7'","surface:'#F8FAFD'","text:'#172033'","shadow1:'0 0 0 1px rgba(148,163,184,.10),0 2px 8px rgba(0,0,0,.22)'"])assert(theme.includes(token),`Thin Glass hierarchy/shadow contract missing ${token}`);
+for(const token of ["profiles.set('builtin.thin-glass'","surfaceSidebar:","surfaceElevated:","controlBorder:","glassEdge:","text:'#172033'"])assert(theme.includes(token),`Thin Glass hierarchy/shadow contract missing ${token}`);
 console.log('v3.61.108 visual/layout ownership regression passed.');

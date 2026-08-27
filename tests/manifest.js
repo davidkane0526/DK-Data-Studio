@@ -713,6 +713,10 @@ module.exports = {
     {
       "file": "tests/test-v361108-visual-layout-ownership.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361109-selection-measurement-theme.js",
+      "args": []
     }
   ],
   "check": [
@@ -1460,6 +1464,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361108-visual-layout-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361109-selection-measurement-theme.js",
       "args": []
     }
   ],

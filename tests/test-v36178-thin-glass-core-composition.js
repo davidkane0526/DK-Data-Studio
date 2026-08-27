@@ -8,7 +8,7 @@ const json=p=>JSON.parse(read(p));
 
 const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes("elevated:'thin-glass'"),'Large elevated windows such as LAN Web and AI/MCP must use Thin Glass.');
-for(const token of ["canvas:'#EAF0F7'","surface:'#F8FAFD'","surfaceElevated:'rgba(255,255,255,.74)'","surfaceSidebar:'rgba(233,240,248,.82)'","surfaceElevated:'rgba(23,32,51,.52)'","surfaceSidebar:'rgba(15,23,42,.46)'","popover:{materialBlur:10","floating:{materialBlur:8"])
+for(const token of ["profiles.set('builtin.thin-glass'","canvas:","surface:","surfaceElevated:","surfaceSidebar:","controlBorder:","popover:{materialBlur:10","floating:{materialBlur:8"])
   assert(runtime.includes(token),`Thin Glass SDK-reference optical profile missing ${token}`);
 
 const material=read('src/core/theme/material-renderer.js');

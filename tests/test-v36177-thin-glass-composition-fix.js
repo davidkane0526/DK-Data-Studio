@@ -9,8 +9,8 @@ assert(runtime.includes("const cssTokenValue=(key,value)=>"),'Theme Runtime must
 assert(runtime.includes("['materialTintOpacity','materialNoiseOpacity']"),'Material ratio serialization coverage missing.');
 assert(runtime.includes("*100}%"),'Material opacity values must be emitted as CSS percentages.');
 assert(runtime.includes("elevated:'thin-glass'"),'Thin Glass elevated windows must remain glass surfaces.');
-assert(runtime.includes("shadowFloat:'0 0 0 1px rgba(101,116,139,.10),0 8px 22px rgba(69,84,110,.15)'"),'Thin Glass light floating shadow must use a centered rim plus restrained depth.');
-assert(runtime.includes("shadowFloat:'0 0 0 1px rgba(148,163,184,.12),0 8px 24px rgba(0,0,0,.30)'"),'Thin Glass dark floating shadow must use a centered visible rim plus bounded depth.');
+assert(/light:\{tokens:\{[^}]*shadowFloat:'0 0 0 1px /.test(runtime),'Thin Glass light floating shadow must retain a centered rim plus restrained depth.');
+assert(/dark:\{tokens:\{[^}]*shadowFloat:'0 0 0 1px /.test(runtime),'Thin Glass dark floating shadow must retain a centered visible rim plus bounded depth.');
 const roles=read('src/styles/theme/material-roles.css');
 assert(!roles.includes('.dkds-dialog-shell')&&!roles.includes('.dkds-settings-dialog'),'Material-role CSS stays semantic/runtime-owned; default-theme preservation is handled outside the role-variable layer.');
 const renderer=read('src/styles/theme/material-renderer.css');

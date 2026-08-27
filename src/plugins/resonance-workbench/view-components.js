@@ -209,7 +209,7 @@
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
                   <div id="resparRangeMenu" class="respar-range-menu command-menu hidden" data-dkds-menu-behavior="rich">
                     <div id="resparRangeSummary" class="respar-range-summary">已框选区域</div>
-                    <div class="respar-range-grid"><button id="resparRangeDetect" class="primary">局部寻峰</button><button id="resparRangeDelete" class="danger-soft">删除框选峰</button><button id="resparRangeLock">锁定框选峰</button><button id="resparRangeUnlock">解锁框选峰</button></div>
+                    <div class="respar-range-grid"><button id="resparRangeDetect">局部寻峰</button><button id="resparRangeDelete" class="danger-soft">删除框选峰</button><button id="resparRangeLock">锁定框选峰</button><button id="resparRangeUnlock">解锁框选峰</button></div>
                     <div class="respar-range-identity"><div>统一峰序 / 峰标签</div><select id="resparRangeOrder"></select><input id="resparRangeLabel" type="text" placeholder="类别标签，例如 峰3 / AB"><button id="resparRangeApplyIdentity">应用到框选峰</button></div>
                     <div class="respar-range-footer"><span>峰位始终落在原始 I–V 采样点</span><button id="resparRangeClose">关闭</button></div>
                   </div>

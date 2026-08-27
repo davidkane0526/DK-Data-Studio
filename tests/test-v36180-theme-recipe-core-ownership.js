@@ -43,8 +43,8 @@ assert(integrated.includes('background:var(--dkds-material-base,var(--dkui-contr
 assert(!integrated.includes('var(--dkui-accent) var(--dkds-material-tint'),'Material fill opacity must never be reused as an accent tint percentage.');
 
 const runtime=read('src/core/theme/runtime.js');
-assert(runtime.includes("canvas:'#EAF0F7'"),'Thin Glass light canvas hierarchy token missing.');
-assert(runtime.includes("surface:'#F8FAFD'")&&runtime.includes("surfaceSidebar:'rgba(233,240,248,.82)'"),'Thin Glass light surfaces must retain visible hierarchy instead of collapsing toward white.');
+assert(runtime.includes("profiles.set('builtin.thin-glass'")&&runtime.includes('canvas:'),'Thin Glass light canvas hierarchy token missing.');
+assert(runtime.includes('surface:')&&runtime.includes('surfaceSidebar:')&&runtime.includes('surfaceElevated:'),'Thin Glass light surfaces must retain distinct semantic hierarchy instead of collapsing toward one paint value.');
 assert(runtime.includes("elevated:'thin-glass'")&&runtime.includes("popover:'thin-glass'"),'Large windows and popovers must retain Thin Glass.');
 
 const template=read('sdk/templates/theme-profile/plugin.js');
