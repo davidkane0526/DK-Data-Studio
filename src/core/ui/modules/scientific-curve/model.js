@@ -20,7 +20,7 @@ const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot')
       this.layoutFallbackOwned=false;this.legendHost=null;this.legendController=null;this.legendSoloId='';this.legendSelectedId='';this.legendGroup=null;this.legendGroupOff=null;this.legendLayoutState={enabled:false,placement:'none',count:0,rows:0,width:0,height:0,reserve:0};
       this.installLegendHost();
       this.installNavigationTools();
-      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{this.clampNavigationTools();this.requestRender('resize');this.scheduleNavigationCollisionCheck();}):null;
+      this.resizeObserver=window.ResizeObserver?new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.clampNavigationTools();this.requestRender('resize');this.scheduleNavigationCollisionCheck();}):null;
       this.resizeObserver?.observe(this.container);
       this.installNavigationObstacleObserver();
       this.setInteraction(spec.interaction||null);

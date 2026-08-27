@@ -1,4 +1,4 @@
-# Project structure policy — v3.61.107
+# Project structure policy — v3.61.108
 
 ## Authored source
 

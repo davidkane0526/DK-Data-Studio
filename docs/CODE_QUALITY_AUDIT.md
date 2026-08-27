@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.107
+# Code quality audit — v3.61.108
 
 ## Release decision
 
-v3.61.107 closes the runtime responsibility regression exposed by the built-in automation report: Core plugin-host code no longer validates ownerless contributions as plugin manifests, Theme popovers retain their own material role inside Chrome, and automation diagnostics now report Core, foundation-contract, algorithm-provider, workbench and external-package failures separately.
+v3.61.108 retains the v3.61.107 manifest-validation boundary and closes the next UI ownership/performance pass: Plugin Manager structure is no longer hidden in platform CSS, split dragging no longer drives continuous chart reflow, PortableView material roles resynchronize after placement, Resonance group visuals remain plugin-owned, and Thin Glass hierarchy remains theme-owned.
 
 ## Completed
 
@@ -65,3 +65,7 @@ git archive --format=zip --prefix=DK-Data-Studio-vX.Y.Z-Source/ -o DK-Data-Studi
 ```
 
 Do not delete tests, fixtures, SDK material or source modules merely to reduce ZIP size.
+
+- SplitController drag lifecycle is now geometry-first: pointer moves do not emit resize, Core plot/workbench observers suppress reflow during the gesture, and one resize notification is emitted on release.
+- Plugin Manager common layout is structure-owned; `platform/touch.css` contains only coarse-pointer adaptations, allowing every Theme profile to control Plugin Manager paint consistently.
+- Resonance GroupPlot compactness and selection emphasis are plugin-owned, while Thin Glass contrast/shadow hierarchy remains profile-owned.

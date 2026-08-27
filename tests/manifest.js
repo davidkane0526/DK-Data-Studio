@@ -709,6 +709,10 @@ module.exports = {
     {
       "file": "tests/test-v361107-manifest-validation-boundary.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361108-visual-layout-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1452,6 +1456,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361107-manifest-validation-boundary.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361108-visual-layout-ownership.js",
       "args": []
     }
   ],

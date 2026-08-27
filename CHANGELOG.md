@@ -1,3 +1,14 @@
+# v3.61.108 — Visual Ownership & Resize Lifecycle
+
+- Restore Resonance range-menu semantic action styling by preventing generic command-menu paint from overriding primary/danger actions; keep the fix in shared UI semantics rather than plugin-specific button colors.
+- Tighten Resonance GroupPlot geometry and make main-plot selection linkage visually explicit through the existing ScientificPlot focus controller, without adding Resonance-specific behavior to Core.
+- Coalesce SplitController resize work: drag updates geometry only, plot/view ResizeObservers remain quiet during the gesture, and one resize is emitted at drag end.
+- Move generic Plugin Manager desktop layout out of `platform/touch.css` into its structural owner so Theme profiles can actually control light/dark paint; platform CSS is again limited to pointer/touch adaptations.
+- Rebalance the built-in Thin Glass light palette for stronger surface/text hierarchy and strengthen centered dark control shadows while preserving semantic Theme ownership.
+- Reassign PortableView material roles after placement changes so docked surfaces cannot retain a stale floating role.
+- Add the v3.61.108 visual/layout ownership gate and update historical Thin Glass tests to protect current readability/hierarchy invariants instead of obsolete white-surface constants.
+- Validation: `npm test` **178/178 PASS**; `npm run check` **186/186 PASS**; SDK Harness **PASS**; first-party plugin manifests **14/14 PASS**; authored CSS remains at **0 `!important`**; SDK remains **1.17.16**.
+
 # v3.61.107 — Manifest Validation Boundary
 
 - Fix the remaining `Plugin (unknown) must declare pluginType` activation regression by moving strict plugin-type validation to the manifest ingestion boundary instead of UI/workspace consumption paths.

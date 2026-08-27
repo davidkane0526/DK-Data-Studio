@@ -59,7 +59,7 @@ const {normalizePlacement, refreshDockZoneState}=require('./docking');
       const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
       wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));
       const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});
-      const requestPortableResize=()=>{this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;for(const plot of this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')||[]){try{window.DKDSCharts?.resize?.(plot);}catch{}}});};
+      const requestPortableResize=()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.scope.requestChartResize?.({id:this.id,reason:'portable-resize'});if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=requestAnimationFrame(()=>{this.resizeFrame=0;for(const plot of this.wrapper.querySelectorAll?.('[data-dkds-chart-renderer],.dkds-scientific-chart-host')||[]){try{window.DKDSCharts?.resize?.(plot);}catch{}}});};
       const ro=window.ResizeObserver?new ResizeObserver(requestPortableResize):null;ro?.observe(wrapper);this.resizeObserver=ro;
     }
     zone(placement){return this.spec.layout?.slot?.(placement)||hostState.zones.get(placement)||null;}
@@ -107,6 +107,7 @@ const {normalizePlacement, refreshDockZoneState}=require('./docking');
         else if(Number(docked.height)>0)this.wrapper.style.setProperty('height',`${Number(docked.height)}px`);
       }
       this.wrapper.dataset.placement=placement;
+      window.DKDSThemeMaterialRenderer?.assignSemanticRoles?.(this.wrapper);
       this.refreshPlacementButton?.();
       const currentGrid=this.wrapper?.closest?.('.dkds-managed-grid')||null;
       requestAnimationFrame(()=>{previousGrid?.__dkdsGridController?.apply?.();if(currentGrid&&currentGrid!==previousGrid)currentGrid.__dkdsGridController?.apply?.();});

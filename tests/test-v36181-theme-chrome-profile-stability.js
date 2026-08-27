@@ -20,7 +20,7 @@ assert(baseCss.includes('background:var(--dkui-surface-soft')&&baseCss.includes(
 assert(!/\.plugin-export-context\s*\{[^}]*background\s*:\s*#f8fafc/s.test(baseCss),'export-menu context must not hard-code a light background');
 assert(runtimeSource.includes('preferredProfile')&&runtimeSource.includes('suspended:key'),'theme runtime must distinguish preferred profile from temporarily active fallback');
 assert(runtimeSource.includes("if(bootTheme){if(next!==current)void native.appearanceSetTheme?.(current);}"),'explicit saved appearance must win the startup native handshake');
-assert(runtimeSource.includes("surfaceElevated:'rgba(255,255,255,.42)'")&&runtimeSource.includes("surfaceElevated:'rgba(23,32,51,.42)'"),'built-in Thin Glass must use the SDK-reference translucent surface family');
+assert(runtimeSource.includes("surfaceElevated:'rgba(255,255,255,.74)'")&&runtimeSource.includes("surfaceElevated:'rgba(23,32,51,.52)'"),'built-in Thin Glass must keep readable elevated-surface separation in both modes');
 
 // Execute ThemeRuntime against a minimal host to prove that a temporary theme-plugin
 // deactivate/reactivate cycle cannot overwrite the user's selected profile.

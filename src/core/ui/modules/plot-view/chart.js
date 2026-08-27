@@ -10,7 +10,7 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
       this.container.classList.add('dkds-chart-surface');
       if(spec.title||spec.actions?.length)this.buildChrome();
       else this.plot=this.container;
-      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.scope.requestChartResize?.({reason:'chart-surface-observer'}));this.ro.observe(this.container);}
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.scope.requestChartResize?.({reason:'chart-surface-observer'});});this.ro.observe(this.container);}
       if(spec.data||spec.layout)this.set(spec);
     }
     buildChrome(){
@@ -46,7 +46,7 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
       if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
       this.header.classList.add('dkds-plot-view-head');
       this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();
-      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>this.resize('observer'));this.ro.observe(this.card);}
+      if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.resize('observer');});this.ro.observe(this.card);}
     }
     configure(spec={}){
       this.spec={...this.spec,...spec};

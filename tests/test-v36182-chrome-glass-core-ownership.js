@@ -37,6 +37,6 @@ const runtime=read('src/core/theme/runtime.js');
 assert(runtime.includes('channel?.postMessage?.({theme:next,preferredProfile,activeProfile})'),'appearance broadcast must preserve preferred profile instead of temporary fallback profile');
 assert(runtime.includes("profile=String(event?.data?.preferredProfile||event?.data?.profile||'')"),'broadcast listener must prefer the persistent profile field');
 assert(runtime.includes("radius:10,radiusLg:13"),'built-in Thin Glass must use the SDK-reference compact glass geometry');
-assert(runtime.includes("shadowFloat:'0 6px 18px rgba(100,116,139,.12),0 1px 4px rgba(100,116,139,.09)'")&&runtime.includes("shadowFloat:'0 6px 18px rgba(0,0,0,.14),0 1px 4px rgba(0,0,0,.08)'"),'Thin Glass hierarchy must retain visible but restrained optical separation');
+assert(runtime.includes("shadowFloat:'0 0 0 1px rgba(101,116,139,.10),0 8px 22px rgba(69,84,110,.15)'")&&runtime.includes("shadowFloat:'0 0 0 1px rgba(148,163,184,.12),0 8px 24px rgba(0,0,0,.30)'"),'Thin Glass hierarchy must retain centered rim separation and readable floating depth.');
 
 console.log('v3.61.82 chrome/glass Core ownership checks passed.');
