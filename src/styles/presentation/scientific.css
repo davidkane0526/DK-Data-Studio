@@ -40,31 +40,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-solo{
 }
 
 
-/* Geometry-stable controls. Hover changes paint only, never position. */
-body.dkds-modern-ui button:hover:not(:disabled),
-body.dkds-modern-ui .toolbar-btn:hover:not(:disabled),
-body.dkds-modern-ui .activity-tab:hover,
-body.dkds-modern-ui .plugin-toolbar-btn:hover{
-  transform:none;
-}
-body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
-body.dkds-modern-ui .activity-tab:hover,
-body.dkds-modern-ui .plugin-toolbar-btn:hover,
-body.dkds-modern-ui .zoom-actions button:hover:not(:disabled),
-body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-settings-dialog button:hover:not(:disabled),
-body.dkds-modern-ui .command-menu button:hover:not(:disabled){
-  box-shadow:0 2px 6px rgba(26,39,64,.055);
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
-html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab:hover,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn:hover,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .zoom-actions button:hover:not(:disabled),
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled){
-  box-shadow:none;
-}
-
 /* Low-line Studio shell: structural separation comes from surface tone and spacing, not visible rules. */
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar,

@@ -151,7 +151,7 @@ body.dkds-modern-ui .system-core-tools-group{
 body.dkds-modern-ui .toolbar-btn,
 body.dkds-modern-ui .activity-tab,
 body.dkds-modern-ui .plugin-toolbar-btn{
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
 body.dkds-modern-ui .toolbar-btn:not(.strong),
 body.dkds-modern-ui .activity-tab,
@@ -166,12 +166,26 @@ body.dkds-modern-ui .plugin-toolbar-btn:hover{
   background:#fff;
   border-color:#dbe2ec;
   color:#26354c;
-  box-shadow:var(--dkui-shadow-1);
-  transform:translateY(-1px);
+  box-shadow:none;
+  transform:none;
 }
 body.dkds-modern-ui .toolbar-btn:active:not(:disabled),
 body.dkds-modern-ui .activity-tab:active,
 body.dkds-modern-ui .plugin-toolbar-btn:active{transform:none}
+
+body.dkds-modern-ui .system-core-tools-group>.toolbar-btn:hover:not(:disabled),
+body.dkds-modern-ui .system-core-tools-group>.menu-anchor>.toolbar-btn:hover:not(:disabled){
+  background:var(--surface-hover);
+  border-color:transparent;
+  color:var(--text-primary);
+  box-shadow:none;
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.toolbar-btn:hover:not(:disabled),
+html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.menu-anchor>.toolbar-btn:hover:not(:disabled){
+  background:#29313e;
+  color:#edf2f8;
+  -webkit-text-fill-color:#edf2f8;
+}
 /* Modern shell owns the default control palette. Plugin/page selectors may tune geometry, not fall back to legacy white paint. */
 body.dkds-modern-ui button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn){background:var(--dkui-control-bg,var(--surface-primary,#fff));border-color:var(--dkui-border,var(--border-subtle,#d8e0eb));color:var(--dkui-text,var(--text-primary,#1c2a43))}
 html[data-dkds-theme="dark"] body.dkds-modern-ui button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn){background:var(--dkui-control-bg,#242b36);border-color:var(--dkui-border,#384354);color:var(--dkui-text,#dbe2ed);box-shadow:none}
@@ -194,7 +208,7 @@ body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.a
   background:#fff;
   border-color:#d7e0ee;
   color:#2857d7;
-  box-shadow:0 2px 5px rgba(33,57,112,.07),0 1px 0 #fff inset;
+  box-shadow:0 1px 2px rgba(33,57,112,.06);
 }
 
 body.dkds-modern-ui .project-tabs-bar{
@@ -269,6 +283,9 @@ body.dkds-modern-ui .dkds-analysis-prime-head{
   box-shadow:0 1px 0 rgba(255,255,255,.92) inset;
 }
 
+/* Hover may change paint, never control geometry. */
+body.dkds-modern-ui button:hover:not(:disabled){transform:none}
+
 /* App-owned controls only. Renderer-internal elements are deliberately excluded. */
 body.dkds-modern-ui .panel-header-actions button,
 body.dkds-modern-ui .scan-global-buttons button,
@@ -288,7 +305,7 @@ body.dkds-modern-ui .command-menu button{
   background:#fff;
   color:#344258;
   box-shadow:var(--dkui-shadow-1);
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .10s ease;
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
 body.dkds-modern-ui .panel-header-actions button:hover:not(:disabled),
 body.dkds-modern-ui .scan-global-buttons button:hover:not(:disabled),
@@ -306,7 +323,7 @@ body.dkds-modern-ui .command-menu button:hover:not(:disabled){
   border-color:var(--dkui-border-strong);
   color:#27374f;
   box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
-  transform:translateY(-1px);
+  transform:none;
 }
 body.dkds-modern-ui .trend-layout-controls button.active,
 body.dkds-modern-ui .main-plot-tools button.active{

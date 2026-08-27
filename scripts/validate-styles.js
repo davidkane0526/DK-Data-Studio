@@ -76,5 +76,45 @@ for(const file of coreCss.filter(p=>p.startsWith(structureDir+path.sep))){
 }
 const shellNavigationCss=fs.readFileSync(path.join(root,shellNavigationRel),'utf8');
 if(/\.plugin-manager-|\.plugin-card-|\.plugin-capability-chip/.test(shellNavigationCss))violations.push(`${shellNavigationRel}: plugin-manager typography/layout must stay with schema-and-plugin-ui.css.`);
+
+// Presentation ownership: state/chrome must stay with its semantic owner rather
+// than accumulating as late workspace-theme patches.  Keep the measured
+// duplicate-selector debt monotonic while the remaining legacy visual aliases
+// are consolidated deliberately.
+const presentationDir=path.join(root,'src','styles','presentation');
+const presentationFiles=['control-status.css','plugin-chrome.css','scientific.css','shell.css','workspace-theme-boundary.css'];
+const presentationText=Object.fromEntries(presentationFiles.map(name=>[name,fs.readFileSync(path.join(presentationDir,name),'utf8')]));
+for(const [name,css] of Object.entries(presentationText)){
+  if(name==='control-status.css')continue;
+  for(const selector of ['dkds-analysis-nav-btn','plugin-status-item'])if(css.includes(`.${selector}`))violations.push(`src/styles/presentation/${name}: .${selector} state belongs to control-status.css.`);
+  if(css.includes('#statusBar.statusbar'))violations.push(`src/styles/presentation/${name}: #statusBar.statusbar chrome belongs to control-status.css.`);
+}
+for(const name of ['scientific.css','workspace-theme-boundary.css']){
+  const css=presentationText[name];
+  for(const selector of ['.toolbar-btn:hover','.activity-tab:hover','.plugin-toolbar-btn:hover'])if(css.includes(selector))violations.push(`src/styles/presentation/${name}: ${selector} shell motion/hover paint belongs to shell.css.`);
+}
+if(presentationText['scientific.css'].includes('body.dkds-modern-ui button:hover:not(:disabled)'))violations.push('src/styles/presentation/scientific.css: generic button hover motion belongs to shell.css.');
+function presentationSelectors(css){
+  const clean=css.replace(/\/\*[\s\S]*?\*\//g,'');
+  const selectors=[];
+  for(const match of clean.matchAll(/([^{}]+)\{/g)){
+    const pre=match[1].trim();
+    if(!pre||pre.startsWith('@'))continue;
+    for(const raw of pre.split(',')){
+      const selector=raw.replace(/\s+/g,' ').trim();
+      if(selector&&!selector.includes(';'))selectors.push(selector);
+    }
+  }
+  return selectors;
+}
+const presentationOwners=new Map();
+for(const [name,css] of Object.entries(presentationText))for(const selector of presentationSelectors(css)){
+  if(!presentationOwners.has(selector))presentationOwners.set(selector,new Set());
+  presentationOwners.get(selector).add(name);
+}
+const presentationDuplicates=[...presentationOwners.values()].filter(owners=>owners.size>1);
+const presentationEdges=presentationDuplicates.reduce((sum,owners)=>sum+owners.size-1,0);
+if(presentationDuplicates.length>55)violations.push(`presentation selector debt grew: ${presentationDuplicates.length} duplicate selectors > 55 ceiling.`);
+if(presentationEdges>58)violations.push(`presentation ownership debt grew: ${presentationEdges} cross-file edges > 58 ceiling.`);
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

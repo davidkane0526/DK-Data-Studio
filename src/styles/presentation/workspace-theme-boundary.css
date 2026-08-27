@@ -86,19 +86,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace button:d
   box-shadow:none;
   opacity:.72;
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar,
-html[data-dkds-theme="dark"] body.dkds-modern-ui.plugin-window-host #statusBar.statusbar{
-  background:color-mix(in srgb,var(--surface-primary) 96%,transparent);
-  border-top-color:var(--border-subtle);
-  color:var(--text-tertiary);
-}
-body.dkds-modern-ui .plugin-status-item.active,
-body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
-  background:var(--accent-soft);
-  color:var(--accent-primary);
-  -webkit-text-fill-color:var(--accent-primary);
-}
-
 /* SDK 1.17 app-native Plugin DevTools */
 .dkds-plugin-devtools{position:fixed;inset:0;z-index:11000;display:flex;align-items:stretch;justify-content:flex-end;background:rgba(14,20,31,.18);backdrop-filter:blur(2px)}
 .dkds-plugin-devtools-window{width:min(720px,92vw);height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:var(--dkui-surface,var(--surface-primary,#fff));border-left:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));box-shadow:-18px 0 44px rgba(15,23,42,.18);color:var(--dkui-text,var(--text-primary,#1c2a43))}
@@ -156,72 +143,6 @@ body.dkds-modern-ui .dkds-plot-legend{
   border-color:var(--border-subtle);
   color:var(--text-secondary);
   box-shadow:none;
-}
-
-/* ============================================================
-   Core visual closure
-   One theme boundary owns shell controls, import workbench, status chrome and
-   AnalysisWorkbench navigation. Hover never changes control geometry.
-   ============================================================ */
-body.dkds-modern-ui button:hover:not(:disabled),
-body.dkds-modern-ui .toolbar-btn:hover:not(:disabled),
-body.dkds-modern-ui .activity-tab:hover,
-body.dkds-modern-ui .plugin-toolbar-btn:hover{
-  transform:none;
-}
-body.dkds-modern-ui .toolbar-btn,
-body.dkds-modern-ui .activity-tab,
-body.dkds-modern-ui .plugin-toolbar-btn,
-body.dkds-modern-ui .panel-header-actions button,
-body.dkds-modern-ui .scan-global-buttons button,
-body.dkds-modern-ui .preset-row button,
-body.dkds-modern-ui .action-grid button,
-body.dkds-modern-ui .trend-layout-controls button,
-body.dkds-modern-ui .main-plot-tools button,
-body.dkds-modern-ui .dkds-analysis-workbench button{
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
-}
-body.dkds-modern-ui .system-core-tools-group>.toolbar-btn:hover:not(:disabled),
-body.dkds-modern-ui .system-core-tools-group>.menu-anchor>.toolbar-btn:hover:not(:disabled){
-  background:var(--surface-hover);
-  border-color:transparent;
-  color:var(--text-primary);
-  box-shadow:none;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.toolbar-btn:hover:not(:disabled),
-html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.menu-anchor>.toolbar-btn:hover:not(:disabled){
-  background:#29313e;
-  color:#edf2f8;
-  -webkit-text-fill-color:#edf2f8;
-}
-
-/* AnalysisWorkbench navigation uses the same selected-state contract as all
-   other Core controls. No light-only blue outline/text survives dark mode. */
-body.dkds-modern-ui .dkds-analysis-nav-btn{
-  background:transparent;
-  border-color:transparent;
-  color:var(--text-secondary);
-  box-shadow:none;
-}
-body.dkds-modern-ui .dkds-analysis-nav-btn:hover:not(:disabled){
-  background:var(--surface-hover);
-  border-color:var(--border-subtle);
-  color:var(--text-primary);
-}
-body.dkds-modern-ui .dkds-analysis-nav-btn.active,
-body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
-  background:var(--accent-soft);
-  border-color:color-mix(in srgb,var(--accent-primary) 34%,var(--border-subtle));
-  color:var(--accent-primary);
-  -webkit-text-fill-color:var(--accent-primary);
-  box-shadow:none;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
-  background:#24354a;
-  border-color:#405a78;
-  color:#bed7f5;
-  -webkit-text-fill-color:#bed7f5;
 }
 
 /* Import Workbench is Core UI. All of its surfaces and text resolve through
@@ -307,61 +228,4 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .import-panel-overlay{
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .import-workbench{
   box-shadow:0 24px 70px rgba(0,0,0,.48);
-}
-
-/* Status items use short internal separators. They no longer draw full-height
-   bright borders that visually cross the status-bar top rule. */
-body.dkds-modern-ui #statusBar.statusbar{
-  border-top-color:color-mix(in srgb,var(--border-subtle) 72%,transparent);
-  box-shadow:none;
-}
-body.dkds-modern-ui .plugin-status-item{
-  position:relative;
-  border-left:0;
-  height:20px;
-}
-body.dkds-modern-ui .plugin-status-item::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:50%;
-  width:1px;
-  height:11px;
-  transform:translateY(-50%);
-  background:color-mix(in srgb,var(--border-subtle) 64%,transparent);
-  pointer-events:none;
-}
-body.dkds-modern-ui .statusbar-plugin-zone>.plugin-status-item:first-child::before{display:none}
-html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar{
-  border-top-color:#2b3442;
-  background:#171d26;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item::before{background:#354151}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
-  background:#22324a;
-  color:#b9d2f2;
-  -webkit-text-fill-color:#b9d2f2;
-}
-
-/* Shell controls are flat interactive surfaces. The previous inset highlight
-   painted a 1 px white rim across the top of activity/toolbar buttons and made
-   hover look like the label jumped even after geometry was fixed. */
-body.dkds-modern-ui .toolbar-btn:not(.strong),
-body.dkds-modern-ui .activity-tab,
-body.dkds-modern-ui .plugin-toolbar-btn{
-  box-shadow:none;
-}
-body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
-body.dkds-modern-ui .activity-tab:hover,
-body.dkds-modern-ui .plugin-toolbar-btn:hover{
-  box-shadow:none;
-}
-body.dkds-modern-ui .activity-tab.active,
-body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{
-  box-shadow:0 1px 2px rgba(33,57,112,.06);
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{
-  box-shadow:0 1px 2px rgba(0,0,0,.18);
 }

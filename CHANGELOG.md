@@ -1,3 +1,12 @@
+# v3.61.103 — Presentation Ownership Consolidation
+
+- Consolidate AnalysisWorkbench navigation state into `control-status.css`; `plugin-chrome.css` and `workspace-theme-boundary.css` no longer repaint `.dkds-analysis-nav-btn` after its semantic owner.
+- Consolidate status-bar chrome and plugin status states into `control-status.css`, preserving the integrated borderless command cluster and removing a dead pseudo-separator rule that remained hidden by the existing `display:none` contract.
+- Move generic shell hover/motion ownership out of `scientific.css` and the late workspace-theme closure into `shell.css`. Hover remains geometry-stable, flat shell controls retain their current no-shadow treatment, and selected Activity shadows retain the accepted light/dark appearance.
+- Reduce exact duplicate presentation selectors across `control-status.css`, `plugin-chrome.css`, `scientific.css`, `shell.css` and `workspace-theme-boundary.css` from **91 to 55**, with cross-file ownership edges reduced to **58**.
+- Extend `validate-styles.js` with presentation-owner enforcement and monotonic debt ceilings; add the v3.61.103 presentation ownership regression gate.
+- Validation: `npm test` **173/173 PASS**; `npm run check` **181/181 PASS**; SDK Harness **PASS**; Plugin Boundary=0; scientific Python/JS parity PASS; authored CSS remains at 0 `!important`.
+
 # v3.61.102 — Shell Navigation Ownership
 
 - Move secondary Activity overflow/reflow out of `workspace-safeguards.js` and into the actual `shell-navigation.js` owner, preserving activity order, active-item priority, More-menu behavior and resize/mutation refreshes.
