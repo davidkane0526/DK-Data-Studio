@@ -1,3 +1,10 @@
+# v3.61.107 — Manifest Validation Boundary
+
+- Fix the remaining `Plugin (unknown) must declare pluginType` activation regression by moving strict plugin-type validation to the manifest ingestion boundary instead of UI/workspace consumption paths.
+- Add `kernel/manifest` with separate `requirePluginType()` and non-throwing `pluginTypeOf()` responsibilities. Real plugin manifests remain strict; Shell, Workspace, Page, menu and icon rendering only consume already-validated metadata.
+- Extend `DKDSPluginContract.validateManifest()` and packaged-manifest merge validation so missing/invalid `pluginType` fails immediately with the real plugin id.
+- Add a v3.61.107 dynamic regression gate proving a missing type is rejected at `DKDSPlugins.define()` while a valid workbench activates normally.
+
 # v3.61.106 — Runtime Responsibility Boundaries
 
 - Fix a Core Plugin Host regression introduced by strict `pluginType` enforcement: Activity and menu rendering now guard ownerless/Core contributions before plugin classification, while real plugin manifests remain strictly required to declare `pluginType`.

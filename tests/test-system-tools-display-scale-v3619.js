@@ -23,7 +23,7 @@ assert(d3surface.includes("this.displayYAxisType==='log'?'linear':'log'")&&d3sur
 assert(d3surface.includes("Math.abs(n)")&&d3surface.includes('yDisplayValue(value)'),'D3 logarithmic display must use |Y| without mutating the source samples.');
 
 const kernel=read('src/generated/runtime/plugin-kernel.js');
-assert(kernel.includes("tool:'⌁'")&&kernel.includes("defaultMenu=definition&&pluginTypeForManifest(definition.manifest)==='tool'?'tools':'export'"),'Core must provide tool defaults and route tool contributions to the Tools menu.');
+assert(kernel.includes("tool:'⌁'")&&kernel.includes("defaultMenu=definition&&pluginTypeOf(definition.manifest)==='tool'?'tools':'export'"),'Core must provide tool defaults and route tool contributions to the Tools menu.');
 assert(kernel.includes('isSystemLockedDefinition')&&kernel.includes('系统与基座插件是应用运行所必需的，不能停用'),'Core must enforce non-disableable built-in system/foundation plugins.');
 assert(kernel.includes("String(row.value?.navigation||'')!=='system'"),'System activities must be separable from ordinary plugin activity navigation.');
 

@@ -43,6 +43,6 @@ assert(html.includes('pluginManagerTypeFilter'),'Plugin Manager must expose a fi
 assert(manager.includes('plugin-type-badge type-${escapeHtml(typeMeta.id)}'),'Plugin Manager cards must show the plugin type as a first-class tag');
 assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:'工具'"),'Plugin Manager must retain a dedicated Tool category');
 assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
-assert(kernel.includes("!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
+assert(kernel.includes("!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
 assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("state.host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
 console.log('ordered modern shell, appearance, memory and Tool runtime checks passed under v3.61.29.');

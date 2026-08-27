@@ -3,7 +3,7 @@ const {state, active, disabled}=require('../context');
 const {definitionById, isTopDefinition, topActivityIdForPlugin, superState}=require('../bootstrap');
 const {eventEmit, activityRows, activeActivity}=require('../events/history');
 const reflowContextToolbar=(...args)=>require('../contributions/ui').reflowContextToolbar(...args);
-const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForManifest(...args);
+const {pluginTypeOf}=require('../manifest');
 
 
   function reflowActivities(){
@@ -51,7 +51,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
     for(const row of rows){
       const spec=row.value||{};
       const definition=definitionById(row.pluginId);
-      const toolWorkspace=!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId;
+      const toolWorkspace=!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId;
       if(!toolWorkspace)continue;
       const toolButton=document.createElement('button');
       toolButton.type='button';toolButton.className='plugin-menu-item tool-workspace-menu-item';
@@ -84,7 +84,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
     for(const row of rows){
       const spec=row.value||{};
       const definition=definitionById(row.pluginId);
-      const toolWorkspace=!!definition&&pluginTypeForManifest(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
+      const toolWorkspace=!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
       if(toolWorkspace)continue;
       const button=document.createElement('button');
       button.type='button';

@@ -4,6 +4,7 @@ const {writePreferences, preferenceFor, isSystemLockedDefinition, isDefinitionEn
 const {activateSuperWorkspace}=require('./workspace/top');
 const {getRegistry, eventEmit}=require('./events/history');
 const {createApi}=require('./plugin-api');
+const {requirePluginType}=require('./manifest');
 
   function restorePluginProjectState(pluginId, data={}) {
     const slices = projectSlices.get(pluginId);
@@ -81,13 +82,7 @@ const {createApi}=require('./plugin-api');
     eventEmit('plugin:state-changed', { id, reason:'deactivated' });
   }
 
-  function pluginTypeForManifest(manifest={}) {
-    const declared=String(manifest?.pluginType||'').trim().toLowerCase();
-    const allowed=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
-    if(!declared)throw new Error(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`);
-    if(!allowed.has(declared))throw new Error(`Plugin ${manifest?.id||'(unknown)'} declares invalid pluginType: ${declared}`);
-    return declared;
-  }
+  const pluginTypeForManifest=requirePluginType;
 
   function pluginStateRow(definition) {
     const m = definition.manifest;

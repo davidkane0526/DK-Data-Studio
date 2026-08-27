@@ -10,7 +10,7 @@ const {registerTypedContribution, listContributions, registerProviderCapability,
 const {addStatusBarItem, registerProjectSlice}=require('./project/status');
 const {addStyle, addPage, addPanel, addPanelToggle}=require('./pages/panels');
 const deactivate=(...args)=>require('./lifecycle').deactivate(...args);
-const pluginTypeForManifest=(...args)=>require('./lifecycle').pluginTypeForManifest(...args);
+const {requirePluginType}=require('./manifest');
 const setPluginEnabled=(...args)=>require('./lifecycle').setPluginEnabled(...args);
 const reloadPlugin=(...args)=>require('./lifecycle').reloadPlugin(...args);
 const replaceExternalPluginPackage=(...args)=>require('./package-runtime').replaceExternalPluginPackage(...args);
@@ -18,7 +18,7 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
 
   function createApi(definition) {
     const pluginId = definition.manifest.id;
-    const pluginType=pluginTypeForManifest(definition.manifest);
+    const pluginType=requirePluginType(definition.manifest);
     const dataAssignmentsMatch=(artifact)=>{
       if(pluginType!=='workbench')return true;
       const raw=artifact?.metadata?.dataAssignments;

@@ -13,10 +13,10 @@ const sandbox={window:{}};sandbox.window.window=sandbox.window;vm.createContext(
 const contract=sandbox.window.DKDSPluginContract;
 assert(contract&&contract.API_VERSION==='1.17.0','Core contract must target Plugin API 1.17.0.');
 assert.deepStrictEqual([...contract.requirements].sort(),[...allowed].sort(),'Runtime and JSON schema Core requirement catalogs must stay identical.');
-assert(contract.validateManifest({apiVersion:'1.17.0',requiresCore:['io','charts','data.reactive','ui.scientific-plot']}).ok,'Current Plugin API 1.17 manifests must validate against the public Core contract.');
-assert(contract.validateManifest({apiVersion:'1.10.0',requiresCore:['io','charts','data.reactive','data.pipeline','data.entities','analysis.algorithms','ui.scientific-plot','ui.table','ui.settings']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');
-assert(contract.validateManifest({apiVersion:'1.9.0',requiresCore:['io']}).ok,'Plugin API 1.17 host must retain 1.9 manifest compatibility.');
-assert(!contract.validateManifest({apiVersion:'1.10.0',requiresCore:['private.magic']}).ok,'Unknown private infrastructure requirements must be rejected.');
+assert(contract.validateManifest({id:'test.contract-current',pluginType:'extension',apiVersion:'1.17.0',requiresCore:['io','charts','data.reactive','ui.scientific-plot']}).ok,'Current Plugin API 1.17 manifests must validate against the public Core contract.');
+assert(contract.validateManifest({id:'test.contract-110',pluginType:'extension',apiVersion:'1.10.0',requiresCore:['io','charts','data.reactive','data.pipeline','data.entities','analysis.algorithms','ui.scientific-plot','ui.table','ui.settings']}).ok,'Known Core requirements, including v3.42 additive Entity/ScientificPlot surfaces, must validate.');
+assert(contract.validateManifest({id:'test.contract-19',pluginType:'extension',apiVersion:'1.9.0',requiresCore:['io']}).ok,'Plugin API 1.17 host must retain 1.9 manifest compatibility.');
+assert(!contract.validateManifest({id:'test.contract-invalid-core',pluginType:'extension',apiVersion:'1.10.0',requiresCore:['private.magic']}).ok,'Unknown private infrastructure requirements must be rejected.');
 
 for(const dir of fs.readdirSync(path.join(root,'src/plugins'))){
   if(dir.startsWith('_'))continue;

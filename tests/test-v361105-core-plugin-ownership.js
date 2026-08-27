@@ -34,8 +34,8 @@ assert(Array.isArray(contracts.requiresCore)&&contracts.requiresCore.includes('d
 
 const manager=read('src/core/plugins/manager-ui.js');
 assert(!manager.includes('BUILTIN_DISPLAY'),'Plugin Manager must not hard-code first-party plugin presentation metadata.');
-const lifecycle=read('src/core/plugins/kernel/modules/lifecycle.js');
-assert(lifecycle.includes('pluginType')&&/invalid pluginType|pluginType.*required|requires explicit pluginType/i.test(lifecycle),'Plugin lifecycle must require explicit pluginType rather than infer legacy types.');
+const manifestRuntime=read('src/core/plugins/kernel/modules/manifest.js');
+assert(manifestRuntime.includes('requirePluginType')&&manifestRuntime.includes('must declare pluginType')&&manifestRuntime.includes('declares invalid pluginType'),'Plugin manifest boundary must require explicit pluginType rather than infer legacy types.');
 const pluginApi=read('src/core/plugins/kernel/modules/plugin-api.js');
 assert(!pluginApi.includes('detectors:'),'Legacy analysis.detectors facade must not return to Plugin API.');
 const contractRuntime=read('src/core/plugins/contract-runtime.js');

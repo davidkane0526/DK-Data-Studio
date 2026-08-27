@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.106
+# Code quality audit — v3.61.107
 
 ## Release decision
 
-v3.61.106 closes the runtime responsibility regression exposed by the built-in automation report: Core plugin-host code no longer validates ownerless contributions as plugin manifests, Theme popovers retain their own material role inside Chrome, and automation diagnostics now report Core, foundation-contract, algorithm-provider, workbench and external-package failures separately.
+v3.61.107 closes the runtime responsibility regression exposed by the built-in automation report: Core plugin-host code no longer validates ownerless contributions as plugin manifests, Theme popovers retain their own material role inside Chrome, and automation diagnostics now report Core, foundation-contract, algorithm-provider, workbench and external-package failures separately.
 
 ## Completed
 

@@ -69,6 +69,10 @@
   const normalize=list=>[...new Set((Array.isArray(list)?list:[]).map(v=>String(v||'').trim()).filter(Boolean))];
   function validateManifest(manifest={}){
     const errors=[];
+    const pluginType=String(manifest.pluginType||'').trim().toLowerCase();
+    const allowedPluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
+    if(!pluginType)errors.push(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`);
+    else if(!allowedPluginTypes.has(pluginType))errors.push(`Plugin ${manifest?.id||'(unknown)'} declares invalid pluginType: ${pluginType}`);
     const requested=normalize(manifest.requiresCore);
     for(const id of requested)if(!REQUIREMENTS[id])errors.push(`Unknown Core requirement: ${id}`);
     const api=String(manifest.apiVersion||API_VERSION);

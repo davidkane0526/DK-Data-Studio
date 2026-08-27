@@ -8,7 +8,7 @@ const {bindShellOnce}=require('./shortcuts/menu');
 const {runCommand}=require('./commands/toolbar');
 const {listContributions, listProvidersWithCapabilities}=require('./contributions/typed');
 const {serializeProject, restoreProject, resetProjectSlices}=require('./project/status');
-const {restorePluginProjectState, activateDefinition, deactivate, pluginStateRow, listPluginStates, setPluginEnabled, setPluginPrewarm, reloadPlugin, resetPluginPreferences}=require('./lifecycle');
+const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForManifest, pluginStateRow, listPluginStates, setPluginEnabled, setPluginPrewarm, reloadPlugin, resetPluginPreferences}=require('./lifecycle');
 
 
   function removeDefinition(id){
@@ -44,6 +44,9 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginStateRow
     // dedicated windows and the owner renderer must resolve the exact same
     // metadata before contract validation/activation.
     definition.manifest={...definition.manifest,...manifest,source:String(source||definition.manifest?.source||'external')};
+    const contractCheck=window.DKDSPluginContract?.validateManifest?.(definition.manifest);
+    if(contractCheck&&!contractCheck.ok)throw new Error(`Plugin ${pluginId}: ${contractCheck.errors.join(' ')}`);
+    pluginTypeForManifest(definition.manifest);
     return definition;
   }
 
@@ -282,6 +285,7 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginStateRow
       assertId(manifest.id);
       const contractCheck=window.DKDSPluginContract?.validateManifest?.(manifest);
       if(contractCheck&&!contractCheck.ok)throw new Error(`Plugin ${manifest.id}: ${contractCheck.errors.join(' ')}`);
+      pluginTypeForManifest(manifest);
       if (definitions.some(d => d.manifest.id === manifest.id)) throw new Error(`Duplicate plugin id: ${manifest.id}`);
       if (typeof activate !== 'function') throw new Error(`Plugin ${manifest.id} must provide activate(api).`);
       definitions.push({ manifest: { apiVersion: API_VERSION, order: 100, ...manifest }, activate });

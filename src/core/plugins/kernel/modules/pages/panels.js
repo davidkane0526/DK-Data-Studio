@@ -5,7 +5,7 @@ const {addCleanup}=require('../events/history');
 const {refreshActivityVisibility}=require('../activity/shell');
 const {registerActivity}=require('../contributions/ui');
 const {createToolbarButton, registerCommand, runCommand, registerContribution}=require('../commands/toolbar');
-const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForManifest(...args);
+const {pluginTypeOf}=require('../manifest');
 
 
   function addStyle(pluginId, id, cssText) {
@@ -21,7 +21,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
   }
 
   function workbenchImportMeta(manifest={}){
-    const type=pluginTypeForManifest(manifest),workspace=workspaceMeta(manifest);
+    const type=pluginTypeOf(manifest),workspace=workspaceMeta(manifest);
     const accepts=Array.isArray(manifest?.data?.accepts)?manifest.data.accepts.map(String).filter(Boolean):[];
     if(type!=='workbench'&&!(type==='tool'&&workspace.role==='top'&&accepts.length))return null;
     return {accepts,label:String(workspace.title||manifest.name||manifest.id||'当前工作台'),icon:String(workspace.icon||defaultPluginIcon(manifest))};
@@ -67,7 +67,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
       addCleanup(pluginId, () => page.remove());
     }
     if (!page) throw new Error(`Plugin page not found: ${spec.pageId || spec.id}`);
-    const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'&&!workspaceMeta(manifest).role&&!spec.activity&&spec.presentation!=='toolbar'&&spec.primary!==false;
+    const standaloneWorkbench=pluginTypeOf(manifest)==='workbench'&&!workspaceMeta(manifest).role&&!spec.activity&&spec.presentation!=='toolbar'&&spec.primary!==false;
     const pageActivity=String(spec.activity||(standaloneWorkbench?spec.activityId||spec.id:'')||page.dataset.pluginActivity||'');
     page.dataset.pluginActivity = pageActivity;
     mountWorkbenchImportAction(pluginId,page,pageActivity,manifest,spec);

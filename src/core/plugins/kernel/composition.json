@@ -7,6 +7,10 @@
       "path": "src/core/plugins/kernel/modules/context.js"
     },
     {
+      "id": "kernel/manifest",
+      "path": "src/core/plugins/kernel/modules/manifest.js"
+    },
+    {
       "id": "kernel/bootstrap",
       "path": "src/core/plugins/kernel/modules/bootstrap.js"
     },

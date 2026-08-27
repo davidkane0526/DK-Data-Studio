@@ -2,7 +2,7 @@
 const {state, definitions, active}=require('./context');
 const activityRows=(...args)=>require('./events/history').activityRows(...args);
 const listContributions=(...args)=>require('./contributions/typed').listContributions(...args);
-const pluginTypeForManifest=(...args)=>require('./lifecycle').pluginTypeForManifest(...args);
+const {pluginTypeOf}=require('./manifest');
 
   const preferenceStorageKey = 'dkds.plugin.state.preferences.v1';
   const prewarmPreferenceStorageKey = 'dkds.plugin.prewarm.v1';
@@ -31,7 +31,7 @@ const pluginTypeForManifest=(...args)=>require('./lifecycle').pluginTypeForManif
   }
 
   function isSystemLockedDefinition(definition) {
-    const manifest=definition?.manifest||{};return String(manifest.source||'builtin')==='builtin'&&(pluginTypeForManifest(manifest)==='foundation'||manifest.systemCritical===true);
+    if(!definition?.manifest)return false;const manifest=definition.manifest;return String(manifest.source||'builtin')==='builtin'&&(pluginTypeOf(manifest)==='foundation'||manifest.systemCritical===true);
   }
 
   function isDefinitionEnabled(definition) {
@@ -97,7 +97,7 @@ const pluginTypeForManifest=(...args)=>require('./lifecycle').pluginTypeForManif
   });
   function defaultPluginIcon(manifest={}) {
     const explicit=String(manifest?.icon||manifest?.workspace?.icon||'').trim();
-    return explicit||DEFAULT_PLUGIN_ICONS[pluginTypeForManifest(manifest)]||'⬡';
+    return explicit||DEFAULT_PLUGIN_ICONS[pluginTypeOf(manifest)]||'⬡';
   }
 
   function workspaceMeta(manifest={}) {

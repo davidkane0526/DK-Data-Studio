@@ -705,6 +705,10 @@ module.exports = {
     {
       "file": "tests/test-v361106-runtime-responsibility-boundaries.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361107-manifest-validation-boundary.js",
+      "args": []
     }
   ],
   "check": [
@@ -1444,6 +1448,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361106-runtime-responsibility-boundaries.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361107-manifest-validation-boundary.js",
       "args": []
     }
   ],

@@ -7,14 +7,13 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 const shell=read('src/core/plugins/kernel/modules/activity/shell.js');
 const uiContrib=read('src/core/plugins/kernel/modules/contributions/ui.js');
-assert(!shell.includes("pluginTypeForManifest(definition?.manifest||{})"),'Core shell must not feed ownerless/Core contributions into strict plugin manifest validation.');
-const guarded=(shell.match(/!!definition&&pluginTypeForManifest\(definition\.manifest\)==='tool'/g)||[]).length;
-assert(guarded>=2,'Activity and Tools navigation must guard non-plugin owners before reading pluginType.');
-assert(!uiContrib.includes("pluginTypeForManifest(definition?.manifest||{})"),'Core contribution routing must not feed missing plugin definitions into strict pluginType validation.');
-assert(uiContrib.includes("definition&&pluginTypeForManifest(definition.manifest)==='tool'"),'Tool/export contribution routing must explicitly guard missing plugin definitions.');
+assert(!shell.includes('pluginTypeForManifest('),'Core Activity/Tools rendering must not perform strict manifest validation during UI consumption.');
+assert(shell.includes("pluginTypeOf(definition.manifest)==='tool'"),'Activity and Tools navigation must consume the already-validated plugin type without re-validating transient owners.');
+assert(!uiContrib.includes('pluginTypeForManifest('),'Core contribution routing must not perform strict manifest validation during UI consumption.');
+assert(uiContrib.includes("pluginTypeOf(definition.manifest)==='tool'"),'Tool/export contribution routing must consume the already-validated plugin type.');
 
-const lifecycle=read('src/core/plugins/kernel/modules/lifecycle.js');
-assert(lifecycle.includes("if(!declared)throw new Error(`Plugin ${manifest?.id||'(unknown)'} must declare pluginType.`)"),'Real plugin manifests must remain strict; the Core shell fix must not restore type inference.');
+const manifestRuntime=read('src/core/plugins/kernel/modules/manifest.js');
+assert(manifestRuntime.includes('function requirePluginType')&&manifestRuntime.includes("Plugin ${manifest?.id||'(unknown)'} must declare pluginType."),'Real plugin manifests must remain strict at the manifest boundary.');
 for(const id of ['resonance-workbench','ter-analysis','pulse-analysis','transfer-vth-lab']){
   const manifest=JSON.parse(read(`src/plugins/${id}/plugin.json`));
   assert.strictEqual(manifest.pluginType,'workbench',`${manifest.id||id} must explicitly own its workbench type.`);

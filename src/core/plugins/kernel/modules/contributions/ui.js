@@ -8,7 +8,7 @@ const closeOtherCommandMenus=(...args)=>require('../shortcuts/menu').closeOtherC
 const runCommand=(...args)=>require('../commands/toolbar').runCommand(...args);
 const registerContribution=(...args)=>require('../commands/toolbar').registerContribution(...args);
 const registerTypedContribution=(...args)=>require('./typed').registerTypedContribution(...args);
-const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForManifest(...args);
+const {pluginTypeOf}=require('../manifest');
 
   function registerActivity(pluginId,id,spec={}) {
     const definition=definitionById(pluginId);
@@ -106,7 +106,7 @@ const pluginTypeForManifest=(...args)=>require('../lifecycle').pluginTypeForMani
   }
 
   function addMenuItem(pluginId,spec={}) {
-    const definition=definitionById(pluginId);const defaultMenu=definition&&pluginTypeForManifest(definition.manifest)==='tool'?'tools':'export';
+    const definition=definitionById(pluginId);const defaultMenu=definition&&pluginTypeOf(definition.manifest)==='tool'?'tools':'export';
     const menu=String(spec.menu||defaultMenu);
     const mount=document.querySelector(`[data-plugin-menu="${menu}"]`);
     if(!mount)throw new Error(`Plugin menu mount not found: ${menu}`);

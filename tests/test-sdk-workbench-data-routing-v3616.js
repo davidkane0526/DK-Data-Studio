@@ -26,7 +26,7 @@ const sdk=read('sdk/plugin-api.d.ts');
 
 assert(kernel.includes("const API_VERSION = '1.17.0'"),'Plugin Kernel must publish Plugin API 1.14.');
 assert(kernel.includes('const DEFAULT_PLUGIN_ICONS=Object.freeze')&&kernel.includes("workbench:'◇'"),'Core must guarantee category default icons when a plugin omits icon metadata.');
-assert(kernel.includes("const standaloneWorkbench=pluginTypeForManifest(manifest)==='workbench'")&&kernel.includes("spec.presentation!=='toolbar'"),'A standalone workbench page must default to a primary activity rather than a contextual toolbar contribution.');
+assert(kernel.includes("const standaloneWorkbench=pluginTypeOf(manifest)==='workbench'")&&kernel.includes("spec.presentation!=='toolbar'"),'A standalone workbench page must default to a primary activity rather than a contextual toolbar contribution.');
 assert(kernel.includes('if (standaloneWorkbench)')&&kernel.includes('primary:true'),'Standalone workbench page registration must create a primary activity.');
 
 assert(ui.includes("document.createElementNS('http://www.w3.org/2000/svg','svg')")&&ui.includes('this.ownsTarget=true'),'ScientificCurveSurface must accept a normal container and let Core own its internal SVG.');
