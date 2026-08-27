@@ -161,40 +161,23 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:hover:not(.strong)
   html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab:hover,
   html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn:hover{background:#29313e;border-color:var(--dkui-border);color:#edf2f8}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab.active,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{background:#29313d;border-color:var(--dkui-border);color:#aac0ff;box-shadow:var(--dkui-selected-shadow)}
+  html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{background:#29313d;border-color:transparent;color:var(--dkui-selected-fg);box-shadow:var(--dkui-selected-shadow)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar{background:#181e27;border-bottom-color:var(--dkui-border)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab{background:#202631;border-color:var(--dkui-border);color:#9ca9bb}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab:hover{background:#252d39;color:#d4dbe6}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab.active{background:#1d232e;border-color:var(--dkui-border);border-bottom-color:#1d232e;color:#edf2f8}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar{color:var(--dkui-text-soft)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-stat,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-toolbar-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .import-section,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-settings-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-address-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-share-section{background:#1d232e;border-color:var(--dkui-border)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-head{background:#202631;border-color:var(--dkui-border);color:#dce3ed}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-search-wrap,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-toolbar-card select,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dataset-vg-edit input,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .peak-class-grid input,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field input,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field select,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field textarea{background:#202733;border-color:var(--dkui-border);color:#e0e6ef}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .panel-header-actions button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .scan-global-buttons button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .preset-row button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .action-grid button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-layout-controls button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-card-header button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-plot-tools button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .zoom-actions button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-settings-dialog button,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .command-menu button{background:transparent;border-color:transparent;color:var(--dkui-text);box-shadow:none}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .command-menu,html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-settings-dialog{color:var(--dkui-text)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{background:#1d232e;border-color:var(--dkui-border)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools{color:var(--dkui-text)}
@@ -220,27 +203,10 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header,
   html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-header,
   html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-header{color:var(--dkui-text)}
 
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header h2,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-section-head strong,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-card-title-line h3,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-stat strong{color:#e6ebf3}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header h2{color:#e6ebf3}
 
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-subtitle,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-section-head span,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-card-description,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-card-meta{color:#8f9bad}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-subtitle{color:#8f9bad}
 
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent;color:#e2e8f0}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-card-footer,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-card-details{background:#202631;border-color:var(--dkui-border);color:#aab5c5}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-visible-count,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-section-count,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-badge,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-capability-chip{background:#242c38;border-color:#394455;color:#aeb9c8}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-note{background:#1d2430;border-left-color:#64789d;color:#98a5b6}
 
 html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{color:#aeb8c7}
 
@@ -261,7 +227,6 @@ html[data-dkds-theme="light"] body.dkds-modern-ui .system-core-tools-group{
   background:rgba(251,252,254,.90);border-color:#d8e5f4;
   box-shadow:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.16) inset,0 4px 12px rgba(91,119,159,.055);
 }
-html[data-dkds-theme="light"] body.dkds-modern-ui .plugin-manager-card,
 html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
 html[data-dkds-theme="light"] body.dkds-modern-ui .analysis-chart-card{
   background:#fbfcfe;border-color:#d8e5f4;border-radius:11px;

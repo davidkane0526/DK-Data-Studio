@@ -98,7 +98,7 @@ body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[
   background:var(--dkui-danger-soft,var(--danger-soft));border-color:color-mix(in srgb,var(--dkui-danger,var(--danger)) 28%,var(--dkui-control-border));color:var(--dkui-danger,var(--danger));-webkit-text-fill-color:var(--dkui-danger,var(--danger));
 }
 body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu) :where(.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"]){
-  background:var(--dkui-accent-soft);color:var(--dkui-accent);-webkit-text-fill-color:var(--dkui-accent);
+  background:var(--dkui-accent-soft);color:var(--dkui-selected-fg,var(--dkui-text));-webkit-text-fill-color:var(--dkui-selected-fg,var(--dkui-text));box-shadow:var(--dkui-selected-shadow);
 }
 
 /* Layout-only descendants must not put an opaque sheet between a glass owner

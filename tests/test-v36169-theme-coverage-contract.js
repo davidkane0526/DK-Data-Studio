@@ -6,7 +6,7 @@ assert.equal(C.version,'1.0.0');assert.equal(Theme.version,'3.5.0');assert(Theme
 assert.equal(C.auditCss('.x{background:var(--dkui-surface);color:var(--dkui-text);border-color:var(--dkui-divider)}',{pluginId:'x'}).length,0);
 let rows=C.auditCss('.x{background:#fff;color:rgb(0,0,0);box-shadow:0 1px 4px rgba(0,0,0,.2)}',{pluginId:'x',source:'plugin.css'});assert(rows.length>=3);assert(rows.every(x=>x.kind==='unmanaged-visual'));
 rows=C.auditCss('.x{backdrop-filter:blur(30px)}',{pluginId:'x'});assert.equal(rows.length,1);assert.equal(rows[0].property,'backdrop-filter');
-const runtime=read('src/core/theme/coverage-runtime.js');assert(runtime.includes("version:'2.3.0'"));assert(runtime.includes("id:'app-chrome'")&&runtime.includes("id:'scientific-floating'")&&runtime.includes("role:'floating'")&&runtime.includes('style[data-plugin-id]'));
+const runtime=read('src/core/theme/coverage-runtime.js');assert(runtime.includes("version:'2.4.0'"));assert(runtime.includes("id:'app-chrome'")&&runtime.includes("id:'scientific-floating'")&&runtime.includes("role:'floating'")&&runtime.includes('style[data-plugin-id]'));
 const themeRuntime=read('src/core/theme/runtime.js');assert(themeRuntime.includes('coverage:()=>globalThis.DKDSThemeCoverage'));
 const kernel=read('src/generated/runtime/plugin-kernel.js');assert(kernel.includes('coverage: () => window.DKDSTheme?.coverage?.()'));
 const dts=read('sdk/plugin-api.d.ts');assert(dts.includes("'floating'")&&dts.includes('DKDSThemeCoverageReport')&&dts.includes('coverage():DKDSThemeCoverageReport'));

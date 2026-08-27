@@ -1,3 +1,14 @@
+# v3.61.110 — Computed Contrast & Selection State
+
+- Make Resonance scan-visibility commands publish a real semantic mode state (`active` + `aria-pressed`) so the currently selected visibility mode receives the same Theme-owned selected shadow as other mode controls.
+- Reduce the selected Activity treatment to one centered 1 px accent rim plus a soft halo, avoiding the previous stacked-border appearance inside the shared Activity cluster.
+- Remove remaining Plugin Manager light/dark hard-coded paint from presentation ownership and bind cards, summary tiles, toolbars, footer/details, empty states, controls and badges to semantic Theme tokens.
+- Move final primary-button fill/foreground pairing into the Theme layer so an accent-filled primary button cannot inherit an unreadable foreground from an earlier presentation rule.
+- Upgrade Theme Coverage to **2.4.0** with computed control contrast inspection for Plugin Manager controls, selected mode buttons and active Activity controls. Effective foreground/background colors are resolved from the real DOM/cascade instead of inferred only from Theme tokens.
+- Automation Runner **1.28.0** now checks the active Theme Profile in both light and dark modes, restores the original mode afterward, and fails with concrete control ids/classes/colors/contrast ratios when readability falls below the gate.
+- Stop Theme Coverage from double-classifying docked PortableViews as floating surfaces; the current placement/Material role remains authoritative.
+- Add the v3.61.110 control-contrast/selection gate and update historical coverage-version assertions to the current semantic contract.
+
 # v3.61.109 — Selection Semantics & Scientific Focus
 
 - Restore the Core ScientificCurve FWHM/measurement width band while keeping width-band paint in the scientific presentation owner rather than Resonance-private CSS.

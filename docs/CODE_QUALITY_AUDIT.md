@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.109
+# Code quality audit — v3.61.110
 
 ## Release decision
 
-v3.61.109 retains the manifest-validation and UI ownership boundaries while closing the next visual-semantic pass: selected modes share one centered Theme-derived shadow, ScientificCurve owns FWHM width-band presentation and focus contrast, GroupPlot legends remain shadow-free, PortableView placement owns its current Material role, Resonance keeps only domain-specific menu/legend composition, and Thin Glass separates hierarchy primarily through material tone rather than framework lines.
+v3.61.110 retains the manifest-validation and UI ownership boundaries while closing the control-readability gap: selected-mode state is published by the owning workbench, Plugin Manager paint is fully semantic and Theme-owned, actual computed control foreground/background contrast is audited in both light and dark modes, and docked PortableViews are no longer double-classified as floating surfaces.
 
 ## Completed
 

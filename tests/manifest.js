@@ -717,6 +717,10 @@ module.exports = {
     {
       "file": "tests/test-v361109-selection-measurement-theme.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361110-control-contrast-selection.js",
+      "args": []
     }
   ],
   "check": [
@@ -1468,6 +1472,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361109-selection-measurement-theme.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361110-control-contrast-selection.js",
       "args": []
     }
   ],

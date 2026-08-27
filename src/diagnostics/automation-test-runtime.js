@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.27.0';
+  const VERSION='1.28.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[],coverage:{}};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -84,10 +84,22 @@
       state.coverage.themeMaterialRenderer={caps,thin,liquid};return state.coverage.themeMaterialRenderer;
     });
     await runCase('ui.theme-coverage','Theme Coverage Contract','UI / Theme',async()=>{
-      const report=window.DKDSTheme?.coverage?.();assert(report?.contractVersion==='3.5.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
-      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0;
-      if(partial||unmanaged||broken){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken}`);err.data={responsibility:'core.theme',summary:report.summary,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
-      return report;
+      const Theme=window.DKDSTheme,Coverage=window.DKDSThemeCoverage;
+      const originalMode=Theme?.current?.()||'light',contrastModes=[];
+      const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      try{
+        for(const mode of ['light','dark']){
+          if(Theme?.current?.()!==mode){Theme?.set?.(mode);await settle();}
+          const contrast=Coverage?.contrast?.()||{checked:0,issues:[{text:'Theme contrast runtime unavailable'}],ok:false};
+          contrastModes.push({mode,checked:contrast.checked||0,issues:contrast.issues||[],ok:contrast.ok===true});
+        }
+      }finally{
+        if(Theme?.current?.()!==originalMode){Theme?.set?.(originalMode);await settle();}
+      }
+      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.5.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
+      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
+      if(partial||unmanaged||broken||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
+      return {...report,contrastModes};
     });
     await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{
       const smoke=window.DKDSAutomationHost?.runImportWorkbenchSmoke;

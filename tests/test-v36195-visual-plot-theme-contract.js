@@ -54,7 +54,7 @@ for(const token of ['function ownership(el,expectedRole','MATERIAL_SEMANTIC_OVER
   assert(materialJs.includes(token),`Material ownership contract missing ${token}.`);
   assert(coverage.includes(token==='function ownership(el,expectedRole'?'Renderer?.ownership?.':token),`Theme coverage must consume ownership semantics for ${token}.`);
 }
-assert(coverage.includes("version:'2.3.0'"),'Theme coverage runtime must advance to ownership-aware v2.3.0.');
+assert(coverage.includes("version:'2.4.0'"),'Theme coverage runtime must include ownership-aware material and computed-control contrast checks.');
 
 // Automation report state must be able to record theme coverage and start clean every run.
 assert(automation.includes('consoleEvents:[],coverage:{}')&&automation.includes("state.coverage={};render();"),

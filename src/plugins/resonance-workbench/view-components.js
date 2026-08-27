@@ -161,7 +161,7 @@
             <aside class="respar-left-panel dkds-surface-muted">
               <section>
                 <h3>数据列表</h3>
-                <div class="respar-scan-global">
+                <div class="respar-scan-global dkds-mode-group" role="group" aria-label="扫描可见性模式">
                   <button id="reswinShowAll">全部扫描</button><button id="reswinShowForward">仅正扫</button>
                   <button id="reswinShowReverse">仅反扫</button><button id="reswinHideAll">全不选</button>
                 </div>

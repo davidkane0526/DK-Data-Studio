@@ -265,7 +265,7 @@ body.dkds-modern-ui .floating-panel{border-color:transparent;outline:0}
 body.dkds-modern-ui .floating-panel{box-shadow:none}
 body.dkds-modern-ui .plugin-manager-card{transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease}
 body.dkds-modern-ui .plugin-manager-card:hover{
-  border-color:#ced8e5;
+  border-color:var(--dkui-control-border-hover);
   box-shadow:var(--dkui-shadow-2);
   transform:translateY(-1px);
 }
@@ -301,9 +301,9 @@ body.dkds-modern-ui .plugin-card-actions button,
 body.dkds-modern-ui .dkds-analysis-workbench button,
 body.dkds-modern-ui .dkds-settings-dialog button,
 body.dkds-modern-ui .command-menu button{
-  border-color:var(--dkui-border);
-  background:#fff;
-  color:#344258;
+  border-color:var(--dkui-control-border);
+  background:var(--dkui-control-bg);
+  color:var(--dkui-text);
   box-shadow:var(--dkui-shadow-1);
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
@@ -319,9 +319,9 @@ body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled),
 body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled),
 body.dkds-modern-ui .dkds-settings-dialog button:hover:not(:disabled),
 body.dkds-modern-ui .command-menu button:hover:not(:disabled){
-  background:var(--dkui-surface-hover);
-  border-color:var(--dkui-border-strong);
-  color:#27374f;
+  background:var(--dkui-control-hover);
+  border-color:var(--dkui-control-border-hover);
+  color:var(--dkui-text);
   box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
   transform:none;
 }
@@ -343,9 +343,9 @@ body.dkds-modern-ui .schema-param-field textarea,
 body.dkds-modern-ui .dkds-settings-field input[type="text"],
 body.dkds-modern-ui .dkds-settings-field input[type="number"],
 body.dkds-modern-ui .dkds-settings-field select{
-  background:#fff;
-  border-color:#d4dce7;
-  color:#344258;
+  background:var(--dkui-control-bg);
+  border-color:var(--dkui-control-border);
+  color:var(--dkui-text);
   box-shadow:0 1px 2px rgba(26,39,64,.025) inset;
   transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
 }
@@ -364,20 +364,20 @@ body.dkds-modern-ui .schema-param-field textarea:focus-visible{
 
 /* Plugin manager: no overlays or absolute visual layers are introduced here. */
 body.dkds-modern-ui .plugin-manager-body{background:transparent}
-body.dkds-modern-ui .plugin-manager-stat strong{color:#29374d}
+body.dkds-modern-ui .plugin-manager-stat strong{color:var(--dkui-text)}
 body.dkds-modern-ui .plugin-manager-visible-count,
 body.dkds-modern-ui .plugin-manager-section-count,
 body.dkds-modern-ui .plugin-status-badge,
 body.dkds-modern-ui .plugin-capability-chip{
-  background:#f6f8fb;
-  border-color:#e0e6ee;
-  color:#66758b;
+  background:var(--dkui-control-bg);
+  border-color:var(--dkui-control-border);
+  color:var(--dkui-text-soft);
 }
 body.dkds-modern-ui .plugin-card-icon{
-  background:#eef3ff;
-  border:1px solid #dbe5ff;
+  background:var(--dkui-accent-soft);
+  border:1px solid color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-control-border));
   box-shadow:0 2px 5px rgba(49,94,251,.07);
 }
-body.dkds-modern-ui .plugin-manager-note{background:#f7f9fc;border-left-color:#91a0bd;color:#647287}
+body.dkds-modern-ui .plugin-manager-note{background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)}
 body.dkds-modern-ui .plugin-switch-track{box-shadow:0 1px 2px rgba(25,39,66,.11) inset}
 body.dkds-modern-ui .plugin-switch-thumb{box-shadow:0 2px 5px rgba(25,39,66,.18)}
