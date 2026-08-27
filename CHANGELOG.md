@@ -1,3 +1,11 @@
+# v3.61.102 — Shell Navigation Ownership
+
+- Move secondary Activity overflow/reflow out of `workspace-safeguards.js` and into the actual `shell-navigation.js` owner, preserving activity order, active-item priority, More-menu behavior and resize/mutation refreshes.
+- Consolidate `workspace-commandbar`, `primary-activity-cluster`, `primary-activity-bar`, `activity-switcher`, `activity-bar`, `context-commandbar` and `plugin-context-toolbar` structure geometry into `shell-navigation.css`; remove the competing copies from `schema-and-plugin-ui.css` and `workspace-safeguards.css`.
+- Move plugin-manager typography out of shell navigation and back to `schema-and-plugin-ui.css`, matching responsibility boundaries.
+- Add style-architecture gates that reject shell-navigation geometry outside its owner and reject plugin-manager selectors inside shell navigation. Structure-layer duplicated selectors drop from **89 to 73**, and cross-file ownership edges from **100 to 78**.
+- Add the v3.61.102 shell-navigation ownership regression gate and update the visual-contract test to follow the real plugin-manager style owner.
+
 # v3.61.101 — Automation Diagnostics Modules
 
 - Split the last oversized authored Core JavaScript module by separating Automation Test Center smoke-case implementations into `src/core/diagnostics/automation-smoke-cases.js` while keeping runner lifecycle, result collection, report persistence and UI binding in `automation-test-runtime.js`.

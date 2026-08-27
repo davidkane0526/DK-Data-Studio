@@ -685,6 +685,10 @@ module.exports = {
     {
       "file": "tests/test-v361101-automation-diagnostics-modules.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v361102-shell-navigation-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1404,6 +1408,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361101-automation-diagnostics-modules.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v361102-shell-navigation-ownership.js",
       "args": []
     }
   ],

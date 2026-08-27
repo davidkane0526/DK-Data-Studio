@@ -9,6 +9,7 @@ const css=readCoreCss(root);
 const shell=read('src/core/recipes/shell-navigation.js');
 const safeguards=read('src/core/recipes/workspace-safeguards.js');
 const shellCss=read('src/styles/structure/shell-navigation.css');
+const schemaCss=read('src/styles/structure/schema-and-plugin-ui.css');
 const safeguardCss=read('src/styles/structure/workspace-safeguards.css');
 const runtime=read('src/plugin-window/runtime.js');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
@@ -33,7 +34,7 @@ for(const [pluginCss,classes] of [[dataCenterCss,['.dc-tabs','.dc-inline-actions
 assert(css.includes('.dkds-toolbar')&&css.includes('flex-flow:row nowrap'),'Core semantic toolbar must consume available horizontal room before wrapping without owning domain selectors.');
 assert(!css.includes('.dc-tabs')&&!css.includes('.pulse-file-toolbar')&&!css.includes('.ter-chart-actions'),'Core CSS must not own plugin toolbar selectors.');
 assert(dataCenterRuntime.includes('dc-artifact-meta dkds-meta')&&dataCenterRuntime.includes('dc-prov-time dkds-meta')&&parameterSchema.includes('schema-param-help dkds-meta'),'Data Center/schema metadata must consume the Core meta-text primitive instead of plugin-specific typography.');
-assert(!shell.includes('ctx.ui.styles.add')&&shellCss.includes('var(--plugin-font-body')&&shellCss.includes('var(--plugin-font-meta')&&shellCss.includes('var(--plugin-control-height'),'Plugin manager must consume shared Core text/control tokens from the structure layer rather than runtime-injected CSS.');
+assert(!shell.includes('ctx.ui.styles.add')&&schemaCss.includes('var(--plugin-font-body')&&schemaCss.includes('var(--plugin-font-meta')&&schemaCss.includes('var(--plugin-control-height'),'Plugin manager must consume shared Core text/control tokens from its schema/plugin UI structure owner rather than shell navigation or runtime-injected CSS.');
 assert(!safeguards.includes('ctx.ui.styles.add')&&safeguardCss.includes('var(--plugin-font-meta'),'Import/workspace warnings must consume the shared plugin meta text token from Core structure CSS.');
 assert(runtime.includes('document.body.dataset.pluginId'),'Dedicated TOP windows must expose plugin identity for domain/lifecycle routing without using identity as a visual-theme opt-out.');
 assert(runtime.includes("d3:'../../node_modules/d3/dist/d3.min.js'"),'Dedicated plugin dependency loader must support D3 for the GRS main renderer.');

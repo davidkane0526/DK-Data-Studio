@@ -7,10 +7,7 @@
 
     let duplicateReport={rows:[],hasDuplicates:false};
     let duplicateRefreshQueued=false;
-    let shellRefreshQueued=false;
     let fileListObserver=null;
-    let shellMutationObserver=null;
-    let shellResizeObserver=null;
 
     function pendingImportRows(){
       return [...document.querySelectorAll('#importFileList .import-file-item')].map(el=>{
@@ -105,68 +102,8 @@
       }
     }
 
-    function reflowSecondaryActivities(){
-      shellRefreshQueued=false;
-      const wrap=document.querySelector('.activity-switcher');
-      const bar=document.querySelector('#activityBar');
-      const menu=document.querySelector('#activityMoreMenu');
-      const more=document.querySelector('#activityMoreBtn');
-      if(!wrap||!bar||!menu||!more)return;
-
-      shellMutationObserver?.disconnect();
-      try{
-        const buttons=[
-          ...bar.querySelectorAll(':scope > .activity-tab'),
-          ...menu.querySelectorAll(':scope > .activity-tab')
-        ];
-        buttons.sort((a,b)=>(Number(a.dataset.activityOrder)||100)-(Number(b.dataset.activityOrder)||100));
-        for(const button of buttons)bar.appendChild(button);
-        menu.classList.add('hidden');
-        more.classList.add('hidden');
-        more.setAttribute('aria-expanded','false');
-        if(!buttons.length)return;
-
-        const width=Math.max(0,Math.floor(wrap.getBoundingClientRect().width));
-        if(!width)return;
-        const widths=new Map(buttons.map(b=>[b,Math.ceil(b.getBoundingClientRect().width)+4]));
-        const total=buttons.reduce((sum,b)=>sum+(widths.get(b)||0),0);
-        if(total<=width)return;
-
-        more.classList.remove('hidden');
-        const moreWidth=Math.ceil(more.getBoundingClientRect().width)||86;
-        const available=Math.max(0,width-moreWidth-4);
-        const activeId=ctx.ui.activities.active?.()||'';
-        const ranked=buttons.slice().sort((a,b)=>{
-          const aa=a.dataset.activityId===activeId?1:0;
-          const bb=b.dataset.activityId===activeId?1:0;
-          return bb-aa||(Number(a.dataset.activityOrder)||100)-(Number(b.dataset.activityOrder)||100);
-        });
-        const keep=new Set();
-        let used=0;
-        for(const button of ranked){
-          const w=widths.get(button)||0;
-          if((used+w<=available)||keep.size===0){keep.add(button);used+=w;}
-        }
-        for(const button of buttons)if(!keep.has(button))menu.appendChild(button);
-      }finally{
-        if(shellMutationObserver){
-          shellMutationObserver.observe(bar,{childList:true});
-          shellMutationObserver.observe(menu,{childList:true});
-        }
-      }
-    }
-
-    function scheduleShellRefresh(){
-      if(shellRefreshQueued)return;
-      shellRefreshQueued=true;
-      requestAnimationFrame(reflowSecondaryActivities);
-    }
-
     ctx.events.on('data:artifacts-changed',scheduleDuplicateRefresh);
-    ctx.events.on('workspace:render',()=>{
-      scheduleDuplicateRefresh();
-      scheduleShellRefresh();
-    });
+    ctx.events.on('workspace:render',scheduleDuplicateRefresh);
 
     const fileList=document.querySelector('#importFileList');
     if(fileList){
@@ -175,35 +112,12 @@
     }
     document.querySelector('#importCommitBtn')?.addEventListener('click',onImportCommitCapture,true);
 
-    const activityBar=document.querySelector('#activityBar');
-    const activityMenu=document.querySelector('#activityMoreMenu');
-    if(activityBar&&activityMenu){
-      shellMutationObserver=new MutationObserver(scheduleShellRefresh);
-      shellMutationObserver.observe(activityBar,{childList:true});
-      shellMutationObserver.observe(activityMenu,{childList:true});
-    }
-    if(root.ResizeObserver){
-      shellResizeObserver=new ResizeObserver(scheduleShellRefresh);
-      for(const el of [
-        document.querySelector('.topbar-primary'),
-        document.querySelector('.workspace-commandbar'),
-        document.querySelector('.primary-activity-cluster'),
-        document.querySelector('.activity-switcher')
-      ])if(el)shellResizeObserver.observe(el);
-    }else{
-      root.addEventListener('resize',scheduleShellRefresh,{passive:true});
-    }
-
     scheduleDuplicateRefresh();
-    scheduleShellRefresh();
 
     return {
       deactivate(){
         fileListObserver?.disconnect();
-        shellMutationObserver?.disconnect();
-        shellResizeObserver?.disconnect();
         document.querySelector('#importCommitBtn')?.removeEventListener('click',onImportCommitCapture,true);
-        if(!root.ResizeObserver)root.removeEventListener('resize',scheduleShellRefresh);
         document.querySelector('.import-duplicate-warning')?.remove();
       }
     };

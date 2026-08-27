@@ -62,5 +62,19 @@ if(fs.existsSync(superTopPath)){
   const superTop=fs.readFileSync(superTopPath,'utf8');
   if(/\.dkds-analysis-(?:frame|left|main|right|bottom)\s*\{[^}]*grid-(?:column|row|template)/s.test(superTop))violations.push('src/styles/structure/super-top-contract.css: SUPER/TOP chrome must not own AnalysisWorkbench grid geometry.');
 }
+const structureDir=path.join(root,'src','styles','structure');
+const shellNavigationRel='src/styles/structure/shell-navigation.css';
+const shellOwnedSelectors=['workspace-commandbar','primary-activity-cluster','primary-activity-bar','activity-switcher','activity-bar','context-commandbar','plugin-context-toolbar'];
+for(const file of coreCss.filter(p=>p.startsWith(structureDir+path.sep))){
+  const rel=path.relative(root,file).replace(/\\/g,'/');
+  if(rel===shellNavigationRel)continue;
+  const css=fs.readFileSync(file,'utf8');
+  for(const selector of shellOwnedSelectors){
+    const exact=new RegExp(`(?:^|})\\s*\\.${selector}\\s*\\{`,'m');
+    if(exact.test(css))violations.push(`${rel}: .${selector} geometry belongs to shell-navigation.css.`);
+  }
+}
+const shellNavigationCss=fs.readFileSync(path.join(root,shellNavigationRel),'utf8');
+if(/\.plugin-manager-|\.plugin-card-|\.plugin-capability-chip/.test(shellNavigationCss))violations.push(`${shellNavigationRel}: plugin-manager typography/layout must stay with schema-and-plugin-ui.css.`);
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

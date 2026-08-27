@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.101
+# Code quality audit — v3.61.102
 
 ## Release decision
 
-v3.61.101 completes the authored JavaScript module-boundary cleanup. The focus remains explicit responsibility ownership, bounded modules and behavior-preserving delegation rather than mechanical file splitting.
+v3.61.102 continues the cleanup at the CSS/recipe ownership boundary. The focus remains explicit responsibility ownership, bounded modules and behavior-preserving delegation rather than mechanical file splitting.
 
 ## Completed
 
@@ -24,6 +24,7 @@ v3.61.101 completes the authored JavaScript module-boundary cleanup. The focus r
 - Resonance feature context stage 1 remains intact: `feature-context.js` provides live state accessors, `feature-group-runtime.js` owns group-card/PlotView/render-key state, and `feature-analysis-runtime.js` owns physics/spacing/Gate results and pipeline installation.
 - Resonance interaction stage 2 is complete. `feature-selection-runtime.js` owns sweep/peak/range selection and keyboard selection commands; `feature-peak-runtime.js` owns detector/metric providers and metric cache state; `feature-inspector-runtime.js` owns Inspector rendering/edit entry points; `feature-main-plot-runtime.js` owns ScientificCurveSurface direct manipulation/range-menu state; and `feature-controls-runtime.js` owns dataset/visibility/transform controls. The coordinating `feature-runtime.js` is now **below 48 KiB**.
 - Automation diagnostics is now split by responsibility: `automation-smoke-cases.js` owns executable smoke-case implementations, while `automation-test-runtime.js` owns runner lifecycle, report assembly/persistence and UI binding. Both are below **48 KiB**, so the previous 80 KiB exception is removed and there are now **zero oversized authored JavaScript modules** under `src/` and `desktop/`.
+- Shell navigation now has one structural/behavioral owner. `shell-navigation.css` exclusively owns the command-bar/activity geometry, while `shell-navigation.js` owns secondary-activity overflow/reflow. `workspace-safeguards` is again limited to import safeguards, and plugin-manager typography has moved back to `schema-and-plugin-ui.css`. Structure-layer duplicated selectors fell from **89 to 73**, with cross-file ownership edges reduced from **100 to 78**. `validate-styles.js` now rejects shell-navigation geometry outside its owner.
 
 ## Measured debt
 
@@ -36,7 +37,7 @@ This does not mean the stylesheet is finished. Dense selectors and historical du
 1. **Application module-boundary regressions must remain release-gated.** The Application shell is now an importable CommonJS graph with zero authored `.inc` fragments. Both local path resolution and consumed exported symbols are checked so file moves or incomplete `module.exports` objects fail before runtime.
 2. **The classic renderer still consumes generated single-script runtime artifacts.** This is now only a packaging compatibility layer; authored Core no longer depends on shared lexical composition.
 3. **Resonance is modularized but still has orchestration density.** The coordinator is now below the 48 KiB authored-module boundary and no longer owns group, analysis, selection, detector/metric, Inspector, main-plot or dataset-control mutable state. Remaining work should target only clearly separable orchestration responsibilities such as project reconciliation/entity publication/history if they grow; do not split further merely to reduce line count or replace explicit context with a giant service locator.
-4. **Some selectors remain dense.** Zero `!important` prevents further override escalation, but duplicated semantic rules should continue to be merged into one owner when touched.
+4. **Presentation selectors remain denser than structure selectors.** The shell-navigation structure conflict is now closed, but some visual selectors still appear across `plugin-chrome.css`, `scientific.css`, `shell.css` and `workspace-theme-boundary.css`. These should be consolidated only when their semantic owner is clear and visual parity can be preserved.
 5. **Visual validation remains separate.** Source and regression tests cannot prove exact Electron font rendering, GPU blur, backdrop-filter or final alignment.
 
 ## Non-negotiable rules
