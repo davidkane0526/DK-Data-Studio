@@ -44,6 +44,20 @@ The authoritative schema is `docs/plugin-manifest.schema.json`. `npm run plugin:
 
 Plugin IDs are permanent once project files persist state under them.
 
+## 1.1 Bundled baseline and same-ID updates
+
+A plugin ID is stable identity, not an installation-location identity. A plugin shipped in the application is the **bundled baseline** for that ID. On Desktop, a `.dkplugin` with the **same ID** may update that baseline when all of the following are true:
+
+- the package passes the same Plugin API / manifest / layout validation as any external package;
+- its application and Plugin API compatibility ranges match the current host;
+- its semantic plugin version is **strictly newer than the current effective version**.
+
+Core installs such a package as a **managed override** in the user-data `plugin-overrides` layer. The application installation directory is never modified. Because a bundled plugin may already be running when the user installs an update, managed overrides activate on the next application start rather than hot-replacing executing first-party code. Plugin Manager keeps version history, can roll back to another eligible override, and can remove the override to restore the bundled baseline.
+
+If a later DK Data Studio release ships the same or a newer bundled version, that bundled baseline automatically wins over a stale override. This keeps exported/upgraded plugins useful without turning the application bundle into mutable state. Unknown IDs in the reserved `builtin.*` namespace are still rejected; stable first-party IDs outside that prefix are governed by actual bundled membership, not name heuristics.
+
+The bundled source and exported `.dkplugin` paths are intentionally held to the **same package contract**. Release validation packages and normalizes every bundled plugin through Plugin API 1.18, so first-party code cannot rely on CSS/layout patterns that an SDK package would fail.
+
 ## 2. Ownership boundary
 
 **Core owns:**

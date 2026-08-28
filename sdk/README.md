@@ -59,6 +59,8 @@ node sdk/tools/dkds-plugin.js package path/to/my-plugin my-plugin.dkplugin
 
 Install the resulting `.dkplugin` from DK Data Studio's Plugin Manager.
 
+If the package uses the same stable ID as a plugin bundled with DK Data Studio, Plugin Manager treats a **strictly newer** compatible version as a managed update rather than an ID conflict. The bundled copy remains an immutable fallback; the user update is stored separately and becomes active after restart. Removing the update restores the bundled baseline. Therefore an exported first-party plugin can be independently iterated and upgraded without editing the application source for every local release.
+
 ## Public contract
 
 - `plugin-manifest.schema.json` — machine-readable manifest contract.

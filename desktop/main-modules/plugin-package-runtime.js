@@ -25,12 +25,16 @@ function pluginOverrideDirectory() {
 function pluginHistoryRootDirectory(){return path.join(app.getPath('userData'),'plugin-history');}
 function pluginHistoryDirectory(id){
   const pluginId=String(id||'');
-  if(!validPluginId(pluginId)||pluginId.startsWith('builtin.'))throw new Error('无效的插件历史 ID。');
+  if(!validPluginId(pluginId))throw new Error('无效的插件历史 ID。');
   return path.join(pluginHistoryRootDirectory(),pluginId);
 }
-function archiveExternalPluginPackage(pkg,reason='update'){
+function normalizePackageForInstalledId(pkg,id=''){
+  const pluginId=String(id||pkg?.manifest?.id||'').trim();
+  return normalizePluginPackage(pkg,{allowBuiltinId:builtinPluginIds().has(pluginId)});
+}
+function archivePluginPackage(pkg,reason='update'){
   if(!pkg?.manifest?.id)return null;
-  const normalized=normalizePluginPackage(pkg,{allowBuiltinId:false});
+  const normalized=normalizePackageForInstalledId(pkg);
   const dir=pluginHistoryDirectory(normalized.manifest.id);fs.mkdirSync(dir,{recursive:true});
   const version=String(normalized.manifest.version||'0.0.0').replace(/[^0-9A-Za-z._-]/g,'_');
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
@@ -39,10 +43,11 @@ function archiveExternalPluginPackage(pkg,reason='update'){
   atomicWritePluginPackage(path.join(dir,fileName),payload);
   return fileName;
 }
-function listExternalPluginHistory(id){
-  const dir=pluginHistoryDirectory(id);const versions=[];if(!fs.existsSync(dir))return versions;
+function listPluginHistory(id){
+  const pluginId=String(id||'');const dir=pluginHistoryDirectory(pluginId);const versions=[];if(!fs.existsSync(dir))return versions;
+  const allowBuiltinId=builtinPluginIds().has(pluginId);
   for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){
-    try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});if(pkg.manifest.id!==id)continue;versions.push({token:name,version:String(pkg.manifest.version||''),name:String(pkg.manifest.name||id),archivedAt:String(raw.archivedAt||''),archiveReason:String(raw.archiveReason||'update')});}catch{}
+    try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId});if(pkg.manifest.id!==pluginId)continue;versions.push({token:name,version:String(pkg.manifest.version||''),name:String(pkg.manifest.name||pluginId),archivedAt:String(raw.archivedAt||''),archiveReason:String(raw.archiveReason||'update')});}catch{}
   }
   return versions;
 }
@@ -115,6 +120,10 @@ function pluginInstallErrorPayload(error,{code='PLUGIN_INSTALL_FAILED',title='�
       pluginApiVersion:PLUGIN_API_VERSION,
       requiredApp:String(manifest?.compatibility?.app||'*'),
       requiredPluginApi:String(manifest?.compatibility?.pluginApi||manifest?.apiVersion||'*')
+    }:null,
+    versionContext:(error?.currentVersion||error?.bundledVersion)?{
+      currentVersion:String(error?.currentVersion||''),
+      bundledVersion:String(error?.bundledVersion||'')
     }:null
   };
 }
@@ -158,7 +167,8 @@ function packageCompatibility(manifest){return AlgorithmPackageCatalog.compatibi
 function assertPackageCompatible(manifest,action='install'){const result=packageCompatibility(manifest);if(result.compatible)return result;const details=result.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ');throw new Error(`Plugin package is not compatible with this DK Data Studio environment for ${action}: ${details}`);}
 function readAlgorithmHistoryCatalogPackages(){
   const root=pluginHistoryRootDirectory(),rows=[];if(!fs.existsSync(root))return rows;
-  for(const id of fs.readdirSync(root).sort()){let dir;try{dir=pluginHistoryDirectory(id);}catch{continue;}if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:false});rows.push({manifest:pkg.manifest,source:'history',token:name,current:false,installed:false});}catch{}}}
+  const bundledIds=builtinPluginIds();
+  for(const id of fs.readdirSync(root).sort()){let dir;try{dir=pluginHistoryDirectory(id);}catch{continue;}if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir).filter(n=>n.toLowerCase().endsWith('.dkplugin')).sort().reverse()){try{const raw=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8')),pkg=normalizePluginPackage(raw,{allowBuiltinId:bundledIds.has(id)});rows.push({manifest:pkg.manifest,source:'history',token:name,current:false,installed:false});}catch{}}}
   return rows;
 }
 function algorithmPackageCatalog(ref={}){
@@ -201,7 +211,7 @@ function readInstalledPluginOverrides() {
     const filePath=path.join(dir,name);
     try{
       const pkg=normalizePluginPackage(JSON.parse(fs.readFileSync(filePath,'utf8')),{allowBuiltinId:true});
-      if(!pkg.manifest.id.startsWith('builtin.')||!builtinIds.has(pkg.manifest.id))throw new Error(`Override target is not a packaged built-in plugin: ${pkg.manifest.id}`);
+      if(!builtinIds.has(pkg.manifest.id))throw new Error(`Override target is not a packaged built-in plugin: ${pkg.manifest.id}`);
       packages.push({...pkg,installedPath:filePath});
     }catch(err){errors.push({file:name,error:err?.message||String(err)});}
   }
@@ -212,6 +222,60 @@ function classifyInstalledPluginOverrides(result=readInstalledPluginOverrides())
 }
 function installedPluginOverridePackages(){return classifyInstalledPluginOverrides().active;}
 
+function isBundledPluginId(id){return builtinPluginIds().has(String(id||''));}
+function normalizeInstallCandidate(raw){
+  const id=String(raw?.manifest?.id||'').trim();
+  return normalizePluginPackage(raw,{allowBuiltinId:isBundledPluginId(id)});
+}
+function bundledManifest(id){return readBuiltinPluginManifests().find(row=>String(row?.manifest?.id||'')===String(id||''))?.manifest||null;}
+function installedOverridePackage(id){return readInstalledPluginOverrides().packages.find(pkg=>String(pkg?.manifest?.id||'')===String(id||''))||null;}
+function installedExternalPackage(id){return readInstalledExternalPlugins().packages.find(pkg=>String(pkg?.manifest?.id||'')===String(id||''))||null;}
+function pluginInstallPlan(raw){
+  const pkg=normalizeInstallCandidate(raw),manifest=pkg.manifest,id=String(manifest.id||''),compatibility=packageCompatibility(manifest);
+  const bundled=isBundledPluginId(id),bundledRow=bundled?bundledManifest(id):null;
+  if(bundled){
+    const activeOverride=installedPluginOverridePackages().find(row=>String(row?.manifest?.id||'')===id)||null;
+    const effectiveVersion=String(activeOverride?.manifest?.version||bundledRow?.version||'0.0.0');
+    if(!PluginOverridePolicy.isNewerVersion(String(manifest.version||'0.0.0'),effectiveVersion)){
+      const error=new Error(`内置插件更新版本必须高于当前有效版本：${manifest.version} ≤ ${effectiveVersion}`);
+      error.code='PLUGIN_VERSION_NOT_NEWER';error.title='插件版本未提高';error.currentVersion=effectiveVersion;error.bundledVersion=String(bundledRow?.version||'');throw error;
+    }
+    const previousPackage=installedOverridePackage(id);
+    return {pkg,manifest,compatibility,installationKind:'override',requiresRestart:true,target:path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(id)),exists:true,previousPackage,previousVersion:effectiveVersion,bundledVersion:String(bundledRow?.version||'')};
+  }
+  const previousPackage=installedExternalPackage(id);
+  return {pkg,manifest,compatibility,installationKind:'external',requiresRestart:false,target:path.join(ensureExternalPluginDirectory(),pluginPackageFileName(id)),exists:!!previousPackage,previousPackage,previousVersion:String(previousPackage?.manifest?.version||''),bundledVersion:''};
+}
+function pluginRollbackPlan(id,raw){
+  const pluginId=String(id||'');if(!validPluginId(pluginId))throw new Error('无效的插件回退 ID。');
+  const bundled=isBundledPluginId(pluginId),pkg=normalizePluginPackage(raw,{allowBuiltinId:bundled});if(pkg.manifest.id!==pluginId)throw new Error('插件历史版本 ID 不匹配。');
+  const compatibility=packageCompatibility(pkg.manifest);
+  if(bundled){
+    const bundledVersion=String(bundledManifest(pluginId)?.version||'0.0.0');
+    if(!PluginOverridePolicy.isNewerVersion(String(pkg.manifest.version||'0.0.0'),bundledVersion)){
+      const error=new Error(`历史版本 ${pkg.manifest.version} 已不高于当前内置基线 ${bundledVersion}；请直接恢复内置版本。`);error.code='PLUGIN_HISTORY_SHADOWED_BY_BUNDLED';error.title='历史版本已被内置版本取代';throw error;
+    }
+    return {pkg,manifest:pkg.manifest,compatibility,installationKind:'override',requiresRestart:true,target:path.join(ensurePluginOverrideDirectory(),pluginPackageFileName(pluginId)),previousPackage:installedOverridePackage(pluginId),previousVersion:String(installedPluginOverridePackages().find(row=>String(row?.manifest?.id||'')===pluginId)?.manifest?.version||bundledVersion),bundledVersion};
+  }
+  const previousPackage=installedExternalPackage(pluginId);
+  return {pkg,manifest:pkg.manifest,compatibility,installationKind:'external',requiresRestart:false,target:path.join(ensureExternalPluginDirectory(),pluginPackageFileName(pluginId)),previousPackage,previousVersion:String(previousPackage?.manifest?.version||''),bundledVersion:''};
+}
+
+function commitPluginInstall(plan,{archiveReason='upgrade',generatedBy=''}={}){
+  const {pkg,target,previousPackage,installationKind,requiresRestart}=plan||{};if(!pkg?.manifest?.id||!target)throw new Error('无效的插件安装计划。');
+  if(previousPackage)archivePluginPackage(previousPackage,archiveReason);
+  const installed={...pkg,installedAt:new Date().toISOString(),...(generatedBy?{generatedBy:String(generatedBy)}:{})};
+  atomicWritePluginPackage(target,installed);
+  return {...installed,installedPath:target,previousPackage,installationKind,requiresRestart:!!requiresRestart};
+}
+function restoreInstalledPackage(id,pkg=null){
+  const pluginId=String(id||pkg?.manifest?.id||'');if(!validPluginId(pluginId))throw new Error('无效的插件回滚 ID。');
+  const bundled=isBundledPluginId(pluginId),target=path.join(bundled?ensurePluginOverrideDirectory():ensureExternalPluginDirectory(),pluginPackageFileName(pluginId));
+  if(!pkg){if(fs.existsSync(target))fs.rmSync(target,{force:true});return {ok:true,id:pluginId,installationKind:bundled?'override':'external',requiresRestart:bundled};}
+  const normalized=normalizePluginPackage(pkg,{allowBuiltinId:bundled});if(normalized.manifest.id!==pluginId)throw new Error('插件回滚包 ID 不匹配。');
+  atomicWritePluginPackage(target,normalized);return {ok:true,id:pluginId,package:{...normalized,installedPath:target},installationKind:bundled?'override':'external',requiresRestart:bundled};
+}
+
 async function installLanPluginPackage(buffer,metadata={}) {
   const raw=Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer||'');
   if(!raw.length)throw new Error('LAN plugin package is empty.');
@@ -220,7 +284,7 @@ async function installLanPluginPackage(buffer,metadata={}) {
   const parsed=JSON.parse(raw.toString('utf8'));
   const id=String(parsed?.manifest?.id||'');
   if(metadata.id&&String(metadata.id)!==id)throw new Error(`LAN plugin id mismatch: ${id} != ${metadata.id}`);
-  const isBuiltin=id.startsWith('builtin.');
+  const isBuiltin=isBundledPluginId(id);
   const pkg=normalizePluginPackage(parsed,{allowBuiltinId:isBuiltin});
   assertPackageCompatible(pkg.manifest,'LAN update');
   const state=readPluginLanState();
@@ -260,12 +324,13 @@ async function installLanPluginPackage(buffer,metadata={}) {
     pendingPluginInstalls,
     externalPluginDirectory,ensureExternalPluginDirectory,
     pluginOverrideDirectory,ensurePluginOverrideDirectory,
-    pluginHistoryRootDirectory,pluginHistoryDirectory,archiveExternalPluginPackage,listExternalPluginHistory,
+    pluginHistoryRootDirectory,pluginHistoryDirectory,archivePluginPackage,listPluginHistory,
     readPluginLanState,writePluginLanState,atomicWritePluginPackage,builtinPluginIds,
     pluginInstallCompatibilityDetails,pluginInstallErrorPayload,sweepPendingPluginInstalls,
     readBuiltinPluginManifests,readBuiltinPluginPackage,currentPluginPackage,installedPluginVersionMap,
     currentCompatibilityEnvironment,packageCompatibility,assertPackageCompatible,readAlgorithmHistoryCatalogPackages,algorithmPackageCatalog,
     readInstalledExternalPlugins,installedExternalPluginPackages,readInstalledPluginOverrides,classifyInstalledPluginOverrides,installedPluginOverridePackages,
+    isBundledPluginId,normalizeInstallCandidate,pluginInstallPlan,pluginRollbackPlan,commitPluginInstall,restoreInstalledPackage,
     installLanPluginPackage
   });
 }

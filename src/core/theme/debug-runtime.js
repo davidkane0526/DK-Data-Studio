@@ -16,7 +16,7 @@
     const Renderer=globalThis.DKDSThemeMaterialRenderer,target=materialTarget(el);
     if(!target||!Renderer?.inspect)return Object.freeze({component:componentName(el),role:'',recipe:'',status:'ROLE_MISSING'});
     const row=Renderer.inspect(target);
-    return Object.freeze({component:componentName(target),element:target,role:row.role||'',recipe:row.recipe||'',blur:row.expectedBlur||'',saturation:row.expectedSaturation||'',background:row.backgroundColor||'',backdropFilter:row.backdropFilter||'',renderer:row.status||'',opaqueParent:row.opaqueParent||null});
+    return Object.freeze({component:componentName(target),element:target,role:row.role||'',recipe:row.recipe||'',baseToken:row.baseToken||'',baseColor:row.baseColor||'',blur:row.expectedBlur||'',saturation:row.expectedSaturation||'',background:row.backgroundColor||'',backdropFilter:row.backdropFilter||'',renderer:row.status||'',opaqueParent:row.opaqueParent||null,occludingChild:row.occludingChild||null});
   }
   function ensureOverlay(){
     if(overlay?.isConnected)return overlay;
@@ -25,17 +25,20 @@
     document.body.appendChild(overlay);globalThis.DKDSMaterialSurface?.apply?.(overlay,'popover');return overlay;
   }
   function render(row){
-    const host=ensureOverlay(),opaque=row.opaqueParent;
+    const host=ensureOverlay(),opaque=row.opaqueParent,occluding=row.occludingChild;
     host.innerHTML=`<div><b>Theme Debug</b> · ${esc(globalThis.DKDSTheme?.contractVersion||'')}</div>`+
       `<div>component: ${esc(row.component)}</div>`+
       `<div>role: ${esc(row.role||'none')}</div>`+
       `<div>recipe: ${esc(row.recipe||'none')}</div>`+
+      `<div>base token: ${esc(row.baseToken||'none')}</div>`+
+      `<div>base color: ${esc(row.baseColor||'')}</div>`+
       `<div>blur: ${esc(row.blur||'')}</div>`+
       `<div>saturation: ${esc(row.saturation||'')}</div>`+
       `<div>background: ${esc(row.background||'')}</div>`+
       `<div>computed backdrop-filter: ${esc(row.backdropFilter||'none')}</div>`+
       `<div>renderer: ${esc(row.renderer||'')}</div>`+
-      (opaque?`<div>opaque parent: ${esc(opaque.id?`#${opaque.id}`:opaque.className||opaque.tag)} · ${esc(opaque.backgroundColor)}</div>`:'');
+      (opaque?`<div>opaque parent: ${esc(opaque.id?`#${opaque.id}`:opaque.className||opaque.tag)} · ${esc(opaque.backgroundColor)}</div>`:'')+
+      (occluding?`<div>occluding child: ${esc(occluding.id?`#${occluding.id}`:occluding.className||occluding.tag)} · ${esc(occluding.backgroundColor)} · ${(Number(occluding.coverage||0)*100).toFixed(0)}%</div>`:'');
   }
   function enable(){
     if(enabled)return true;enabled=true;ensureOverlay();

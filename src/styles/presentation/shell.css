@@ -284,10 +284,10 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger:not(.stro
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.menu-anchor:before{background:var(--dkui-border)}
 body.dkds-modern-ui .left-panel section{border:0}
-body.dkds-modern-ui .left-panel{background:var(--surface-primary);border-right-color:var(--border-subtle);box-shadow:1px 0 0 rgba(255,255,255,.72) inset}
+body.dkds-modern-ui .left-panel{border-right-color:var(--border-subtle);box-shadow:1px 0 0 rgba(255,255,255,.72) inset}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar{color:var(--text-primary);border-color:transparent;box-shadow:none}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar{background:color-mix(in srgb,var(--app-bg) 84%,var(--surface-primary));border-color:transparent;box-shadow:none}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel{background:var(--surface-sidebar);border-right-color:var(--border-subtle);color:var(--text-secondary)}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel{border-right-color:var(--border-subtle);color:var(--text-secondary)}
 body.dkds-modern-ui button.primary{-webkit-text-fill-color:var(--accent-contrast);text-shadow:none}
 body.dkds-modern-ui select,body.dkds-modern-ui textarea{box-shadow:none}
 body.dkds-modern-ui *{scrollbar-color:var(--dkui-scrollbar) transparent}
@@ -463,7 +463,6 @@ body.dkds-modern-ui button:not(.primary):not(.strong):hover:not(:disabled){borde
 body.dkds-modern-ui .left-panel>section{
   border:0;
   border-radius:9px;
-  background:var(--dkui-surface-soft,var(--surface-secondary));
   padding:10px;
   margin:0 0 8px;
 }
@@ -526,9 +525,6 @@ body.dkds-modern-ui .plugin-status-badge{
   background:var(--dkui-control-bg);
   border-color:var(--dkui-control-border);
   color:var(--dkui-text-soft);
-}
-body.dkds-modern-ui .dkds-analysis-left{
-  background:var(--dkui-surface-sidebar,var(--surface-sidebar));
 }
 body.dkds-modern-ui .dkds-chart-head{
   border-color:transparent;
@@ -894,7 +890,7 @@ body.dkds-modern-ui textarea:focus-visible{
 .project-tab.active{
   font-weight:650;background:#fff;color:#202b3c;border-color:#d6dce6;border-bottom-color:#fff;box-shadow:0 -1px 0 rgba(255,255,255,.9);
 }
-.left-panel{background:transparent;border-right-color:transparent;
+.left-panel{border-right-color:transparent;
 }
 .left-panel section{border-bottom-color:#edf0f4;
 }

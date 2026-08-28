@@ -92,6 +92,10 @@ Theme Contract 3.6 defines seven semantic material roles:
 
 Each role may override any material token through `material.roles.<role>` or `modes.<mode>.material.roles.<role>`. Core decides which UI owns each role; plugins cannot attach roles to arbitrary host DOM.
 
+A semantic workspace slot owns its **base MaterialSurface**. For example, a Core Sidebar slot resolves the `sidebar` role to `surfaceSidebar`; a plugin mounted directly inside that slot contributes domain content and is transparent by default. It must not repaint the slot root with `surfaceSoft` or another base surface. If a nested region is genuinely an independent card/elevated surface, request/use the corresponding Core surface primitive explicitly rather than relying on a CSS background override.
+
+Theme Debug reports the resolved role, recipe, base token/base color and large opaque child occlusion. This distinction is intentional: `role=sidebar + base=surfaceSidebar` can still look wrong if a child covers most of the slot with another surface, and that is a composition-ownership defect rather than a Theme-profile token defect.
+
 ## Material composition order
 
 Core uses one deterministic material recipe. Theme values are composed in this order:

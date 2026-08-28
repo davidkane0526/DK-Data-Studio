@@ -29,7 +29,8 @@ for(const token of ['--dkui-divider:','--dkui-control-border:','--dkui-scrollbar
   assert(css.includes(token),`semantic visual token missing ${token}`);
 }
 assert(css.includes('background:transparent;box-shadow:none')&&css.includes('--dkui-divider-hover'),'Core splitters must have no idle structural line and only reveal a semantic active divider during interaction.');
-assert(css.includes('background:var(--dkui-surface-sidebar,var(--surface-sidebar))')&&css.includes('.left-panel>section'),'parameter sidebars must be separated by surface contrast instead of bright rules.');
+assert(materialRenderer.includes("sidebar:['surfaceSidebar','--dkui-surface-sidebar']")&&css.includes('.dkds-material-role-sidebar')&&css.includes('--dkds-material-base:var(--dkui-surface-sidebar)'),'parameter sidebars must consume the semantic surfaceSidebar token through the Core Material role.');
+assert(!/\.dkds-analysis-left\s*\{[^}]*background\s*:/i.test(css)&&!/\.left-panel\s*>\s*section\s*\{[^}]*background\s*:/i.test(css),'Presentation CSS must not repaint Sidebar base surfaces behind the Material role owner.');
 assert(css.includes('background:var(--dkui-control-bg,var(--surface-primary))')&&css.includes('border-color:var(--dkui-control-border,var(--control-border))'),'Core form controls must resolve through semantic dark/light control tokens.');
 assert(/(?:body\.dkds-modern-ui\s+)?\.lan-web-qr-image\s*\{[^}]*background:#fff[^}]*border-color:#fff/i.test(css)&&/(?:body\.dkds-modern-ui\s+)?\.lan-web-qr-frame\s*\{[^}]*background:var\(--dkui-surface-soft\)/i.test(css),'only actual QR pixels may retain white paper while the LAN service chrome remains themeable.');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');

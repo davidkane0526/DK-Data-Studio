@@ -1,6 +1,6 @@
 (() => {
   const manifest={
-    id:'com.dkds.tools.pulse-sampler',name:'脉冲与采样处理',version:'1.4.0',apiVersion:'1.18.0',pluginType:'tool',
+    id:'com.dkds.tools.pulse-sampler',name:'脉冲与采样处理',version:'1.4.1',apiVersion:'1.18.0',pluginType:'tool',
     requiresCore:['events','status','state','project','workspace','data.sources','data.artifacts','data.model','ui.dom','ui.workspace','ui.scientific-plot','ui.series','ui.table','ui.actions','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table','data.scoped-sources'],
     workspace:{role:'top',activity:'pulse-sampler-tool',icon:'⌁',title:'脉冲与采样处理'},

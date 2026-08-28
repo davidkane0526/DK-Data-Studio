@@ -141,15 +141,23 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       throw err;
     }
   }
+  function stagedOverrideState(pkg,statusPrefix='内置插件更新已安装'){
+    const id=String(pkg?.manifest?.id||''),definition=definitionById(id),version=String(pkg?.manifest?.version||'?');
+    state.host?.setStatus?.(`${statusPrefix} ${pkg?.manifest?.name||id} v${version}；重启 DK Data Studio 后启用。`);
+    const current=definition?pluginStateRow(definition):{id,name:pkg?.manifest?.name||id,version:'',pluginType:pkg?.manifest?.pluginType||'extension',source:'builtin'};
+    return {...current,pendingVersion:version,installationKind:'override',requiresRestart:true};
+  }
+
   async function rollbackExternalPlugin(id,token){
     if(!window.electronAPI?.pluginRollbackVersion||window.electronAPI?.isWebClient)throw new Error('当前运行环境不支持插件版本回退。');
     const pkg=await window.electronAPI.pluginRollbackVersion({id,token});if(!pkg)return null;
+    if(pkg.requiresRestart||pkg.installationKind==='override')return stagedOverrideState(pkg,'内置插件历史版本已安装');
     return replaceExternalPluginPackage(pkg,{statusPrefix:'已回退插件'});
   }
   function pluginInstallRendererError(payload,fallback='插件安装失败。'){
     const row=payload&&typeof payload==='object'?payload:{message:String(payload||fallback)};
     const error=new Error(String(row.message||fallback));
-    const compatibility=row.compatibility||null,plugin=row.plugin||null;
+    const compatibility=row.compatibility||null,plugin=row.plugin||null,versionContext=row.versionContext||null;
     const issueText=Array.isArray(compatibility?.issues)?compatibility.issues.map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required}（当前 ${issue.actual||'missing'}）`:`${issue.kind} ${issue.required}（当前 ${issue.actual||'unknown'}）`).join('\n'):'';
     error.dkdsDialog={
       tone:'error',title:String(row.title||'插件安装失败'),message:String(row.message||fallback),
@@ -159,7 +167,9 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
         compatibility?.requiredPluginApi?{label:'要求 Plugin API',value:compatibility.requiredPluginApi}:null,
         compatibility?.pluginApiVersion?{label:'当前 Plugin API',value:compatibility.pluginApiVersion}:null,
         compatibility?.requiredApp?{label:'要求应用版本',value:compatibility.requiredApp}:null,
-        compatibility?.appVersion?{label:'当前应用版本',value:compatibility.appVersion}:null
+        compatibility?.appVersion?{label:'当前应用版本',value:compatibility.appVersion}:null,
+        versionContext?.currentVersion?{label:'当前有效版本',value:versionContext.currentVersion}:null,
+        versionContext?.bundledVersion?{label:'内置基线版本',value:versionContext.bundledVersion}:null
       ].filter(Boolean),
       detail:issueText||String(row.code||''),detailLabel:'兼容性 / 技术详情'
     };
@@ -170,24 +180,26 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
     const selection=await window.electronAPI.pluginSelectPackage();
     if(selection?.canceled)return null;
     if(!selection?.ok)throw pluginInstallRendererError(selection?.error);
-    const manifest=selection.manifest||{},isUpdate=selection.exists===true;
+    const manifest=selection.manifest||{},isBundledUpdate=selection.installationKind==='override',isUpdate=selection.exists===true;
     const dialogs=window.DKDSUI?.dialogs;if(!dialogs?.confirm)throw new Error('Core Dialog Runtime 未就绪，无法安全确认插件安装。');
     const confirmed=await dialogs.confirm({
-      tone:'warning',title:isUpdate?'更新插件':'安装插件',subtitle:isUpdate?'将替换当前已安装版本':'本地可执行扩展',
-      message:'插件包含可执行 JavaScript，并可访问其声明的 DKDS 能力和工作区数据。请仅安装你信任或已经审查过的插件包。',
+      tone:'warning',title:isBundledUpdate?'更新内置插件':isUpdate?'更新插件':'安装插件',subtitle:isBundledUpdate?'保留发行版基线，通过版本化 Override 更新':isUpdate?'将替换当前已安装版本':'本地可执行扩展',
+      message:isBundledUpdate?'该包将作为内置插件的本地更新层安装，不修改应用安装目录。重启后新版本生效；可随时在插件管理器恢复发行版内置版本。':'插件包含可执行 JavaScript，并可访问其声明的 DKDS 能力和工作区数据。请仅安装你信任或已经审查过的插件包。',
       meta:[
         {label:'插件',value:`${manifest.name||manifest.id||'未命名'} v${manifest.version||'?'}`},
         {label:'插件 ID',value:manifest.id||''},
         {label:'类型',value:manifest.pluginType||'extension'},
         {label:'Plugin API',value:selection.compatibility?.requiredPluginApi||manifest.compatibility?.pluginApi||manifest.apiVersion||'*'},
-        isUpdate&&selection.previousVersion?{label:'当前版本',value:selection.previousVersion}:null
+        isUpdate&&selection.previousVersion?{label:'当前有效版本',value:selection.previousVersion}:null,
+        isBundledUpdate&&selection.bundledVersion?{label:'发行版内置基线',value:selection.bundledVersion}:null
       ].filter(Boolean),
-      cancelLabel:'取消',confirmLabel:isUpdate?'更新插件':'安装插件'
+      cancelLabel:'取消',confirmLabel:isBundledUpdate?'安装更新':isUpdate?'更新插件':'安装插件'
     });
     if(!confirmed){await window.electronAPI?.pluginCancelInstall?.(selection.token);return null;}
     const committed=await window.electronAPI.pluginInstallPackage(selection.token);
     if(!committed?.ok)throw pluginInstallRendererError(committed?.error);
     const pkg=committed.package;if(!pkg)return null;
+    if(committed.requiresRestart||pkg.requiresRestart||committed.installationKind==='override'||pkg.installationKind==='override')return stagedOverrideState(pkg,'内置插件更新已安装');
     return replaceExternalPluginPackage(pkg,{statusPrefix:isUpdate?'已更新插件':'已安装插件'});
   }
 
@@ -202,25 +214,29 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
     const validated=await validateGeneratedPluginPackage(pkg);
     const committed=await window.electronAPI.pluginInstallGeneratedPackage({package:validated.package||pkg,source:'studio-kernel'});
     if(!committed?.ok)throw pluginInstallRendererError(committed?.error,'生成插件安装失败。');
-    const state=await replaceExternalPluginPackage(committed.package,{statusPrefix:'已安装生成插件'});
-    if(enable===false&&state?.id)await setPluginEnabled(state.id,false);
-    return state;
+    const installedPackage=committed.package;
+    if(committed.requiresRestart||installedPackage?.requiresRestart||committed.installationKind==='override'||installedPackage?.installationKind==='override')return stagedOverrideState(installedPackage,'内置插件生成更新已安装');
+    const installedState=await replaceExternalPluginPackage(installedPackage,{statusPrefix:'已安装生成插件'});
+    if(enable===false&&installedState?.id)await setPluginEnabled(installedState.id,false);
+    return installedState;
   }
 
   async function uninstallExternalPlugin(id){
     const definition=definitionById(id);
     if(!definition)throw new Error(`Plugin not found: ${id}`);
-    if(definition.manifest.source!=='external')throw new Error('内置插件不能卸载；可以在插件管理器中停用。');
+    const source=String(definition.manifest.source||'');
+    if(source==='override'){
+      await window.electronAPI?.pluginUninstall?.(id);
+      state.host?.setStatus?.(`已移除 ${definition.manifest.name||id} 的本地更新层；重启后恢复发行版内置版本。`);
+      return {ok:true,id,restoredBundled:true,requiresRestart:true};
+    }
+    if(source!=='external')throw new Error('发行版内置基线不能卸载；安装同 ID 的更高版本 .dkplugin 可更新它。');
     if(id===state.superPluginId)throw new Error('当前 SUPER 主界面不能直接卸载。请先将另一个 TOP 插件设为主界面。');
     await deactivate(id,{captureProject:true});
-    removeDefinition(id);
-    externalPackages.delete(id);
-    clearPreference(id);
-    await window.electronAPI?.pluginUninstall?.(id);
-    chooseFallbackActivity();
-    eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+    removeDefinition(id);externalPackages.delete(id);clearPreference(id);
+    await window.electronAPI?.pluginUninstall?.(id);chooseFallbackActivity();eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
     state.host?.setStatus?.(`已卸载插件 ${definition.manifest.name||id}；工程中的插件命名空间数据仍会保留。`);
-    return true;
+    return {ok:true,id,requiresRestart:false};
   }
 
   function loadScript(src) {

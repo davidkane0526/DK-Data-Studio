@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const SemverCompat = require('../desktop/semver-compat');
+const {normalizePluginPackage}=require('../desktop/plugin-package');
 
 const root = path.resolve(__dirname, '..');
 const pluginsDir = path.join(root, 'src', 'plugins');
@@ -159,4 +160,16 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
   }
 }
 
-if (!process.exitCode) console.log(`Plugin manifests OK: ${count}`);
+if(!process.exitCode){
+  for(const name of fs.readdirSync(pluginsDir).sort()){
+    if(name.startsWith('_'))continue;const dir=path.join(pluginsDir,name);if(!fs.statSync(dir).isDirectory())continue;
+    const manifestPath=path.join(dir,'plugin.json');if(!fs.existsSync(manifestPath))continue;
+    try{
+      const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+      const referenced=new Set([manifest.entry||'plugin.js',...(manifest.scripts||[]),...(manifest.styles||[]),...(manifest.window?.runtime?[manifest.window.runtime]:[]),...(manifest.window?.scripts||[])]),files={};
+      for(const rel of referenced){const file=path.join(dir,String(rel));if(fs.existsSync(file)&&fs.statSync(file).isFile())files[String(rel).replace(/\\/g,'/')]=fs.readFileSync(file,'utf8');}
+      normalizePluginPackage({schema:1,manifest,files},{allowBuiltinId:true});
+    }catch(err){fail(`${name}: bundled export/package contract failed: ${err.message}`);}
+  }
+}
+if (!process.exitCode) console.log(`Plugin manifests/packages OK: ${count}`);

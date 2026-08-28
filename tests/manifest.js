@@ -737,6 +737,10 @@ module.exports = {
     {
       "file": "tests/test-v3624-plot-header-runtime-composition.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3625-semantic-surface-plugin-overrides.js",
+      "args": []
     }
   ],
   "check": [
@@ -1508,6 +1512,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3624-plot-header-runtime-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3625-semantic-surface-plugin-overrides.js",
       "args": []
     }
   ],

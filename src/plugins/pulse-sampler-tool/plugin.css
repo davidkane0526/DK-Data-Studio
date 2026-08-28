@@ -7,8 +7,8 @@
 .ps-field input,.ps-field select{width:100%;min-width:0;box-sizing:border-box}
 .ps-channel-tabs,.ps-actions,.ps-result-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ps-channel-tabs button{min-width:52px}
-.ps-main{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(300px,1fr) minmax(190px,.55fr);gap:8px;align-content:start}
-.ps-wave-card,.ps-result-card{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+.ps-main{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,.55fr);gap:8px;align-content:start}
+.ps-wave-card,.ps-result-card{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr)}
 .ps-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;min-width:0}
 .ps-card-head>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ps-wave-grid{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:8px;padding:8px}

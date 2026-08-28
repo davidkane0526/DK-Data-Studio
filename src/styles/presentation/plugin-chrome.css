@@ -303,10 +303,6 @@ body.dkds-modern-ui .plugin-card-icon {
 }
 body.dkds-modern-ui .plugin-manager-note {background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)
 }
-body.dkds-modern-ui .dkds-plugin-canvas-left,
-body.dkds-modern-ui .dkds-plugin-canvas-right {
-  background:var(--dkui-surface-sidebar,var(--surface-sidebar))
-}
 body.dkds-modern-ui .dkds-portable-view {
   border:0;
   box-shadow:none
@@ -530,5 +526,5 @@ body.dkds-modern-ui .dkds-plugin-workspace {
   --plugin-workspace-grid:color-mix(in srgb,var(--text-tertiary,#7f8ba8) 14%,transparent);
   --plugin-workspace-shadow:0 14px 40px rgba(20,30,60,.16)
 }
-body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px;background:var(--surface-secondary);padding:10px;margin:0 0 8px
+body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px;padding:10px;margin:0 0 8px
 }

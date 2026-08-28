@@ -36,3 +36,8 @@ Keep commits scoped. Do not mix broad formatting changes with scientific algorit
 ## Algorithm versioning (v3.54+)
 
 Replaceable scientific algorithms are versioned providers. New-analysis defaults may change, but persisted scientific results/projects must store exact algorithm references. Tests must prove that changing a default does not change an exact lock, and missing exact versions must be diagnosed rather than silently upgraded. External `.dkplugin` provider upgrades use the Core Plugin Manager history/rollback path.
+## Bundled plugin package parity
+
+First-party plugins are not exempt from the standalone package contract. `npm run plugin:validate` packages/normalizes every bundled manifest through Plugin API 1.18. If a bundled plugin fails because of semantic clipping, host-owned selectors or layout ownership, fix the plugin/Core ownership; do not weaken the external SDK validator.
+
+When publishing a same-ID update to a bundled plugin, increment that plugin's own semantic version. The Desktop Plugin Manager installs a strictly newer compatible package as a managed override and activates it after restart; the bundled version remains the rollback baseline. App patch versions and plugin versions remain independent.

@@ -1,6 +1,6 @@
 # DK Data Studio
 
-当前版本：**v3.62.4**  ·  Plugin API：**1.18.0**  ·  SDK：**1.18.0**  ·  Theme Contract：**3.6.0**
+当前版本：**v3.62.5**  ·  Plugin API：**1.18.0**  ·  SDK：**1.18.0**  ·  Theme Contract：**3.6.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
@@ -12,6 +12,8 @@ DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron
 - **算法可替换。** 峰检测、FWHM/基线、TER、transport transform 等通过 Algorithm Provider 注册、版本化并记录 provenance。
 - **CSS 依靠所有权而不是 specificity。** 已删除 `base/modern` 双层结构和 authored CSS 中的 `!important`，统一使用 Cascade Layers。
 - **Theme 采用 Role → Recipe → Tokens。** Core 决定 `chrome/sidebar/surface/elevated/popover/control/floating` 语义角色，主题决定 `clear/thin-glass/soft-glass/liquid-glass` recipe 与 token。
+- **语义 Surface 只有一个 base-paint owner。** Workbench 的 Sidebar/Elevated/Surface slot 由 Core 决定 Material Role 与基础 token；插件放入 slot 的直接内容默认透明，不得再用 `surfaceSoft` 覆盖父级语义 Surface。
+- **内置插件是可回退的发行版基线，不是不可升级特权。** 同 ID 且版本更高的 `.dkplugin` 可作为 managed override 安装，重启后生效；移除更新层即可恢复 bundled baseline。
 - **生成文件不是源码。** `src/generated/` 中的 runtime、Plugin Index、SDK Authoring Reference 和派生图标均可重建，不应手工编辑或提交 Git。
 - **自动化测试不等同于实机视觉验收。** Windows Electron 的最终布局、字体与 GPU backdrop-filter 仍需实机确认。
 

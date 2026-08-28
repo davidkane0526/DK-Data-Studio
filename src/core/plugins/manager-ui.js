@@ -291,9 +291,10 @@
     const active=all.filter(p=>p.active).length;
     const disabled=all.filter(p=>!p.enabled).length;
     const errors=all.filter(p=>p.status==='error').length;
-    const external=all.filter(p=>p.source==='external').length;
+    const local=all.filter(p=>p.source==='external'||p.source==='override').length;
+    const overrides=all.filter(p=>p.source==='override').length;
     const themes=all.filter(p=>pluginTypeMeta(p).id==='theme').length;
-    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['主题',themes],['本地安装',external],['错误',errors]];
+    const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['主题',themes],['本地插件',local],['内置更新',overrides],['错误',errors]];
     const host=$('#pluginManagerSummary');
     if(!host)return;
     host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${label==='错误'&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
@@ -314,7 +315,7 @@
     const note=$('#pluginManagerNote');
     if(note)note.innerHTML=externalErrors.length
       ? `<strong>本地插件加载警告：</strong>${externalErrors.map(row=>`${escapeHtml(row.file)}：${escapeHtml(row.error)}`).join('<br>')}`
-      : '普通插件可停用，工程数据不会因此删除；<strong>基座与系统</strong>属于应用运行必需功能，保留启用开关用于状态展示但不允许关闭。桌面版可安装或导出 <code>.dkplugin</code> 插件包。';
+      : '发行版内置插件是可回退的基线；安装<strong>同 ID、版本更高</strong>的 <code>.dkplugin</code> 会建立本地更新层，重启后生效，并可随时恢复内置版本。普通外部插件仍可直接安装、更新与卸载。';
     const plugins=filteredPlugins();
     $('#pluginManagerVisibleCount').textContent=`显示 ${plugins.length} / ${all.length}`;
 
@@ -343,7 +344,7 @@
       card.className=`plugin-manager-card status-${status.className}`;
       card.dataset.pluginId=plugin.id;
       const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
-      const source=plugin.source==='builtin'?'内置插件':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
+      const source=plugin.source==='builtin'?'内置基线':plugin.source==='override'?'本地更新 · 内置基线':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
       const typeMeta=pluginTypeMeta(plugin);
       const actionLabel=plugin.status==='error'?'重试':plugin.active?'重新加载':'加载';
       const localizedCaps=(plugin.capabilities||[]).map(capabilityLabel).join('、')||'—';
@@ -392,7 +393,7 @@
             <button class="plugin-details-btn" type="button">详情</button>
             <button class="plugin-export-btn" type="button" ${busy?'disabled':''}>导出</button>
             <button class="plugin-reload-btn" type="button" ${(!plugin.enabled||busy)?'disabled':''}>${busy?'处理中…':actionLabel}</button>
-            ${plugin.source==='external'?`<button class="plugin-history-btn" type="button" ${busy?'disabled':''}>版本历史</button><button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>卸载</button>`:''}
+            ${(plugin.source==='external'||plugin.source==='override')?`<button class="plugin-history-btn" type="button" ${busy?'disabled':''}>版本历史</button><button class="plugin-uninstall-btn danger-soft" type="button" ${busy?'disabled':''}>${plugin.source==='override'?'恢复内置版本':'卸载'}</button>`:''}
           </div>
         </div>
         <div class="plugin-card-details hidden">
@@ -495,10 +496,11 @@
 
       const uninstall=card.querySelector('.plugin-uninstall-btn');
       if(uninstall)uninstall.onclick=async()=>{
-        const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:'卸载本地插件',message:`卸载 ${display.name}？工程中已保存的插件数据不会删除，重新安装同 ID 插件后仍可恢复。`,meta:[{label:'插件 ID',value:plugin.id},{label:'当前版本',value:`v${plugin.version||'?'}`}],cancelLabel:'取消',confirmLabel:'卸载插件',destructive:true});if(!confirmed)return;
+        const restoring=plugin.source==='override';
+        const confirmed=await window.DKDSUI?.dialogs?.confirm?.({tone:'warning',title:restoring?'恢复发行版内置版本':'卸载本地插件',message:restoring?`移除 ${display.name} 的本地更新层？当前窗口仍运行 v${plugin.version||'?'}，重启 DK Data Studio 后恢复发行版内置基线。`:`卸载 ${display.name}？工程中已保存的插件数据不会删除，重新安装同 ID 插件后仍可恢复。`,meta:[{label:'插件 ID',value:plugin.id},{label:'当前版本',value:`v${plugin.version||'?'}`}],cancelLabel:'取消',confirmLabel:restoring?'恢复内置版本':'卸载插件',destructive:!restoring});if(!confirmed)return;
         state.busy.add(plugin.id);renderList({anchorPluginId:plugin.id});
         try{await window.DKDSPlugins.external.uninstall(plugin.id);}
-        catch(err){state.host?.setStatus?.(`卸载插件失败：${err.message}`);}
+        catch(err){state.host?.setStatus?.(`${restoring?'恢复内置版本':'卸载插件'}失败：${err.message}`);}
         finally{state.busy.delete(plugin.id);renderList({anchorPluginId:plugin.id});}
       };
 
@@ -557,14 +559,12 @@
         const installed=await window.DKDSPlugins.external.install();
         if(installed){
           const type=pluginTypeMeta(installed).id;
-          state.query='';
-          state.filter='all';
-          state.typeFilter=type;
+          state.query='';state.filter='all';state.typeFilter=type;
           const search=$('#pluginManagerSearch');if(search)search.value='';
           const filter=$('#pluginManagerFilter');if(filter)filter.value='all';
           const typeFilter=$('#pluginManagerTypeFilter');if(typeFilter)typeFilter.value=type;
-          state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装为“${pluginTypeMeta(installed).label}”并载入。`);
-          window.DKDSPlugins?.activities?.refresh?.();
+          if(installed.requiresRestart)state.host?.setStatus?.(`插件 ${displayMeta(installed).name} v${installed.pendingVersion||'?'} 更新层已安装；重启后启用。`);
+          else{state.host?.setStatus?.(`插件 ${displayMeta(installed).name} 已安装为“${pluginTypeMeta(installed).label}”并载入。`);window.DKDSPlugins?.activities?.refresh?.();}
         }
       }catch(err){await showPluginInstallFailure(err);}
       renderList();

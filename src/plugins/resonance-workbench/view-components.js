@@ -158,7 +158,7 @@
       <div class="analysis-page-body resonance-dedicated-body">
         <div class="resonance-parity-root">
           <section class="respar-primary dkds-surface" data-reswin-view-panel="main">
-            <aside class="respar-left-panel dkds-surface-muted">
+            <aside class="respar-left-panel">
               <section>
                 <h3>数据列表</h3>
                 <div class="respar-scan-global dkds-mode-group" role="group" aria-label="扫描可见性模式">

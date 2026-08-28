@@ -3,6 +3,10 @@
   const VERSION='3.6.0';
   const STRONG_ROLES=new Set(['elevated','popover','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
+  const ROLE_BASE_TOKENS=Object.freeze({
+    chrome:['surfaceElevated','--dkui-surface-elevated'],sidebar:['surfaceSidebar','--dkui-surface-sidebar'],surface:['surface','--dkui-surface'],
+    elevated:['surfaceElevated','--dkui-surface-elevated'],popover:['surfaceElevated','--dkui-surface-elevated'],floating:['surfaceElevated','--dkui-surface-elevated'],control:['controlBg','--dkui-control-bg']
+  });
   const recipePolicy=()=>Object.freeze({...(globalThis.DKDSTheme?.recipePolicy?.()||{})});
   const LIQUID_ROLES=new Set(['popover','floating']);
   const recipeOf=el=>{const role=roleOf(el);if(!role)return '';const explicit=String(el?.dataset?.dkdsMaterialRecipe||'').trim();if(explicit)return explicit;return String(recipePolicy()[role]||'').trim();};
@@ -69,7 +73,7 @@
     if(!el?.classList)return '';
     // Chrome owns integrated command hit regions. Remove invalid nested control
     // material unless a caller explicitly opts into an independent surface.
-    if(chromeOwnedIntegrated(el)&&el.dataset.dkdsMaterialOwnSurface!=='true'&&el.classList.contains('dkds-material-role-control')){
+    if(chromeOwnedIntegrated(el)&&el.dataset.dkdsMaterialSurface!=='core'&&el.classList.contains('dkds-material-role-control')){
       el.classList.remove('dkds-material-role-control');
       if(el.dataset.dkdsMaterialRoleClassOwner==='core-runtime')delete el.dataset.dkdsMaterialRoleClassOwner;
       if(el.dataset.dkdsMaterialRecipeOwner==='core-runtime'){delete el.dataset.dkdsMaterialRecipe;delete el.dataset.dkdsMaterialRecipeOwner;}
@@ -223,11 +227,26 @@
     return null;
   }
 
+  function occludingChildOf(el){
+    const parentRect=el?.getBoundingClientRect?.();if(!parentRect||parentRect.width<=0||parentRect.height<=0)return null;
+    const parentArea=parentRect.width*parentRect.height;let best=null;
+    for(const child of [...(el.children||[])]){
+      if(child.dataset?.dkdsMaterialSurface==='core')continue;
+      const rect=child.getBoundingClientRect?.();if(!rect||rect.width<=0||rect.height<=0)continue;
+      const coverage=Math.min(parentRect.width,rect.width)*Math.min(parentRect.height,rect.height)/parentArea;if(coverage<.6)continue;
+      const style=getComputedStyle(child),backgroundColor=String(style.backgroundColor||''),alpha=alphaOf(backgroundColor);if(alpha===null||alpha<.72)continue;
+      if(!best||coverage>best.coverage)best={tag:String(child.tagName||'').toLowerCase(),id:String(child.id||''),className:String(child.className||''),backgroundColor,alpha,coverage:Number(coverage.toFixed(3))};
+    }
+    return best?Object.freeze(best):null;
+  }
+
   function inspect(el,expectedRole=''){
     if(!el||typeof getComputedStyle!=='function')return Object.freeze({status:'NO_ELEMENT',role:'',expectedRole,recipe:'clear'});
     const style=getComputedStyle(el),role=roleOf(el),recipe=recipeOf(el),engine=engineCapabilities(),backdropFilter=backdropOf(style);
     const expectedBlur=prop(style,'--dkds-material-blur'),expectedBlurStrong=prop(style,'--dkds-material-blur-strong'),expectedSaturation=prop(style,'--dkds-material-saturation');
     const backgroundColor=String(style.backgroundColor||'').trim(),backgroundAlpha=alphaOf(backgroundColor),foregroundColor=String(style.color||'').trim();
+    const baseTokenRow=ROLE_BASE_TOKENS[role]||null,baseToken=baseTokenRow?`${baseTokenRow[0]} / ${baseTokenRow[1]}`:'',baseColor=baseTokenRow?prop(style,baseTokenRow[1]):'';
+    const occludingChild=['sidebar','surface','elevated'].includes(role)?occludingChildOf(el):null;
     let contrastRatio=null;
     if(role==='popover'){
       const fg=parseRgb(foregroundColor),bg0=parseRgb(backgroundColor),canvas=resolveCssColor('var(--dkui-canvas)','backgroundColor')||{r:255,g:255,b:255,a:1};
@@ -259,7 +278,7 @@
     if(status==='REAL_MATERIAL'&&recipe!=='clear'&&backgroundAlpha!==null&&backgroundAlpha>=.985)status='OPAQUE_PARENT_OCCLUSION';
     if(status==='REAL_MATERIAL'&&recipe!=='clear'&&opaqueParent)status='OPAQUE_PARENT_OCCLUSION';
     if(status==='REAL_MATERIAL'&&role==='popover'&&Number.isFinite(contrastRatio)&&contrastRatio<4.5)status='LOW_CONTRAST_MATERIAL';
-    return Object.freeze({status,opticalStatus,role,expectedRole,recipe,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,recipeInstalled:recipeInstalled(),engine});
+    return Object.freeze({status,opticalStatus,role,expectedRole,recipe,baseToken,baseColor,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,occludingChild,recipeInstalled:recipeInstalled(),engine});
   }
   function probeRole(role){
     if(!document?.body)return Object.freeze({role,status:'NO_BODY'});

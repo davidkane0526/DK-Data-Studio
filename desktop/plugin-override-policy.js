@@ -11,9 +11,10 @@ function versionMap(builtins=[]){
   }
   return map;
 }
+function isNewerVersion(candidateVersion,currentVersion){return SemverCompat.compare(String(candidateVersion||'0.0.0'),String(currentVersion||'0.0.0'))>0;}
 function isNewerThanBuiltin(pkg,builtinVersion){
   const overrideVersion=String(pkg?.manifest?.version||'0.0.0');
-  return SemverCompat.compare(overrideVersion,String(builtinVersion||'0.0.0'))>0;
+  return isNewerVersion(overrideVersion,builtinVersion);
 }
 function classify(packages=[],builtins=[]){
   const versions=versionMap(builtins),active=[],shadowed=[];
@@ -28,4 +29,4 @@ function classify(packages=[],builtins=[]){
   return {active,shadowed};
 }
 
-module.exports={versionMap,isNewerThanBuiltin,classify};
+module.exports={versionMap,isNewerVersion,isNewerThanBuiltin,classify};
