@@ -5,62 +5,30 @@ DKDSPlugins.define({
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.6.0'}
+  compatibility:{app:'>=3.63.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.7.0'}
 }, async ctx => {
-  if(!ctx.ui.theme.supports('contract.material.recipes')||!ctx.ui.theme.supports('contract.theme.settings'))throw new Error(`Theme Contract 3.6 Thin Glass recipes/settings required; host provides ${ctx.ui.theme.contractVersion}`);
+  const required=['contract.appearance.roles','contract.scientific.seriesPalette','contract.material.recipes','contract.theme.settings'];
+  const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
+  if(missing.length)throw new Error(`Theme Contract 3.7 features required: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   const profile=ctx.ui.theme.register('default',{
     label:'Example Theme',
     recipes:{chrome:'thin-glass',sidebar:'thin-glass',surface:'clear',elevated:'thin-glass',popover:'thin-glass',control:'clear',floating:'thin-glass'},
+    appearance:{roles:{
+      chrome:{surface:'#F3F1FC'},sidebar:{surface:'#EEF7F5'},elevated:{surface:'#FFF5F8'},popover:{surface:'#F0F3FF'},floating:{surface:'#EEF8FA'}
+    }},
+    scientific:{seriesPalette:['#2563EB','#14B8A6','#8B5CF6','#EF4444','#F59E0B','#0891B2']},
     settings:[
       {id:'popoverBlur',label:'Popover blur',target:{scope:'material',role:'popover',key:'materialBlurStrong'},type:'range',min:0,max:64,step:1},
       {id:'popoverRecipe',label:'Popover material',target:{scope:'recipe',role:'popover'},type:'select',options:['clear','thin-glass','soft-glass','liquid-glass']}
     ],
     material:{
-      // Theme 3.6 uses platform-neutral numbers: logical length units,
-      // opacity 0..1, and saturation multipliers.
-      materialBlur:12, materialBlurStrong:18, materialSaturation:1.055,
-      // Historical token name: materialTintOpacity is the semantic base-material
-      // fill opacity used by Core glass recipes, not an accent-color tint amount.
-      // Values near .03 mean almost fully transparent; use readable glass values.
-      materialTintOpacity:.66, specularHighlight:'rgba(255,255,255,.18)',
-      innerHighlight:'rgba(255,255,255,.10)', glassEdge:'rgba(148,163,184,.22)',
-      materialNoiseOpacity:.015,
-      roles:{
-        chrome:{materialBlur:10,materialTintOpacity:.62},
-        sidebar:{materialBlur:12,materialTintOpacity:.68},
-        elevated:{materialBlur:16,materialBlurStrong:18,materialTintOpacity:.66},
-        popover:{materialBlur:18,materialBlurStrong:22,materialTintOpacity:.84},
-        control:{materialBlur:0,materialTintOpacity:1},
-        floating:{materialBlur:14,materialBlurStrong:18,materialTintOpacity:.64}
-      }
-    },
-    motion:{
-      motionFast:90, motionNormal:150, motionSlow:240,
-      easeStandard:'cubic-bezier(.2,.8,.2,1)',
-      easeEmphasized:'cubic-bezier(.2,.75,.25,1)',
-      hoverLift:-1, pressScale:.98
-    },
+      // Historical name: materialTintOpacity is the semantic base-material fill opacity, not an accent-color tint amount.
+      materialBlur:12,materialBlurStrong:18,materialSaturation:1.055,materialTintOpacity:.66,specularHighlight:'rgba(255,255,255,.18)',innerHighlight:'rgba(255,255,255,.10)',glassEdge:'rgba(148,163,184,.22)',materialNoiseOpacity:.015,roles:{chrome:{materialBlur:10,materialTintOpacity:.62},sidebar:{materialBlur:12,materialTintOpacity:.68},elevated:{materialBlur:16,materialBlurStrong:18,materialTintOpacity:.66},popover:{materialBlur:18,materialBlurStrong:22,materialTintOpacity:.84},control:{materialBlur:0,materialTintOpacity:1},floating:{materialBlur:14,materialBlurStrong:18,materialTintOpacity:.64}}},
+    motion:{motionFast:90,motionNormal:150,motionSlow:240,easeStandard:'cubic-bezier(.2,.8,.2,1)',easeEmphasized:'cubic-bezier(.2,.75,.25,1)',hoverLift:-1,pressScale:.98},
     modes:{
-      light:{
-        tokens:{
-          canvas:'#eef4fb', surface:'#fbfcfe', surfaceSoft:'#f6f9fd', surfaceSidebar:'#f7f9fc',
-          controlBg:'#fbfcfe', divider:'rgba(102,132,168,.085)', controlBorder:'rgba(102,132,168,.22)',
-          text:'#1c2a43', textSoft:'#60708c', muted:'#7f8ba8', accent:'#096bfa', accentSoft:'#eaf2ff'
-        },
-        material:{roles:{chrome:{materialTintOpacity:.64},sidebar:{materialBlur:12,materialTintOpacity:.70},elevated:{materialTintOpacity:.68},popover:{materialTintOpacity:.86},floating:{materialTintOpacity:.66}}}
-      },
-      dark:{
-        tokens:{
-          canvas:'#151922', surface:'#1d232e', surfaceSoft:'#202733', surfaceSidebar:'#191f29',
-          controlBg:'#232b37', divider:'rgba(166,181,202,.024)', controlBorder:'rgba(166,181,202,.16)',
-          text:'#e4e9f2', textSoft:'#b5c0d0', muted:'#8995a8', accent:'#4d8dff', accentSoft:'#202d55'
-        },
-        material:{materialBlur:12,roles:{chrome:{materialTintOpacity:.60},sidebar:{materialTintOpacity:.68},elevated:{materialTintOpacity:.64},popover:{materialBlurStrong:22,materialTintOpacity:.82},floating:{materialTintOpacity:.62}}}
-      }
+      light:{tokens:{canvas:'#F5F7FC',surface:'#FFFFFF',surfaceSoft:'#F3F1FC',surfaceSidebar:'#EEF7F5',surfaceElevated:'#FFF5F8',controlBg:'#FFFFFF',divider:'rgba(79,91,116,.12)',controlBorder:'rgba(79,91,116,.22)',text:'#1C2740',textSoft:'#59677F',muted:'#7B879B',accent:'#705CE8',accentHover:'#604BD9',accentSoft:'rgba(112,92,232,.12)',accentAlt:'#17A7A0',accentAltHover:'#128E88',accentAltSoft:'rgba(23,167,160,.12)',focus:'rgba(23,167,160,.20)',success:'#15803D',successSoft:'#EAF8EF',warning:'#B45309',warningSoft:'#FFF4E5',danger:'#C2414B',dangerSoft:'#FFF0F2',info:'#2563EB',infoSoft:'#EDF4FF',selectionSurface:'rgba(112,92,232,.14)',selectionText:'#352A79',selectionBorder:'rgba(112,92,232,.45)',activeSurface:'rgba(23,167,160,.13)',activeText:'#0D615D',disabledSurface:'#EEF1F5',disabledText:'#98A2B3'}},
+      dark:{tokens:{canvas:'#101420',surface:'#171C28',surfaceSoft:'#211D37',surfaceSidebar:'#14262B',surfaceElevated:'#2A202B',controlBg:'#1B2230',divider:'rgba(186,198,218,.12)',controlBorder:'rgba(186,198,218,.20)',text:'#EEF2F8',textSoft:'#C6CFDD',muted:'#929EB0',accent:'#9887FF',accentHover:'#AA9BFF',accentSoft:'rgba(152,135,255,.16)',accentAlt:'#39C5BC',accentAltHover:'#56D4CC',accentAltSoft:'rgba(57,197,188,.14)',focus:'rgba(57,197,188,.24)',success:'#58C784',successSoft:'rgba(88,199,132,.14)',warning:'#F2B45F',warningSoft:'rgba(242,180,95,.14)',danger:'#F07B85',dangerSoft:'rgba(240,123,133,.14)',info:'#75A7FF',infoSoft:'rgba(117,167,255,.14)',selectionSurface:'rgba(152,135,255,.18)',selectionText:'#F2EFFF',selectionBorder:'rgba(152,135,255,.55)',activeSurface:'rgba(57,197,188,.16)',activeText:'#D9FFFC',disabledSurface:'#202633',disabledText:'#697589'}}
     }
   });
-
-  // Registration does not force activation. Plugin Manager owns user selection;
-  // a theme may still call ctx.ui.theme.activate(...) from an explicit user action.
-  return { deactivate(){ profile?.dispose?.(); } };
+  return {deactivate(){profile?.dispose?.();}};
 });

@@ -161,7 +161,7 @@ export interface DKDSEditRuntime { register(spec:DKDSEditContribution):any; chan
 export interface DKDSProjectHistoryRuntime { state():any; undo():Promise<any>|any; redo():Promise<any>|any; commitArtifactMutation(payload:{label?:string;before:{upserts?:any[];removedIds?:string[]};after:{upserts?:any[];removedIds?:string[]}}):Promise<any>|any }
 export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.18'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
 
-export type DKDSThemeAppearanceTokenKey = 'canvas'|'surface'|'surfaceSoft'|'surfaceHover'|'surfaceElevated'|'surfaceSidebar'|'controlBg'|'controlHover'|'divider'|'dividerHover'|'controlBorder'|'controlBorderHover'|'scrollbar'|'scrollbarHover'|'text'|'textSoft'|'muted'|'accent'|'accentHover'|'accentSoft'|'focus'|'shadow1'|'shadow2'|'shadowFloat'|'radius'|'radiusLg';
+export type DKDSThemeAppearanceTokenKey = 'canvas'|'surface'|'surfaceSoft'|'surfaceHover'|'surfaceElevated'|'surfaceSidebar'|'controlBg'|'controlHover'|'divider'|'dividerHover'|'controlBorder'|'controlBorderHover'|'scrollbar'|'scrollbarHover'|'text'|'textSoft'|'muted'|'accent'|'accentHover'|'accentSoft'|'accentAlt'|'accentAltHover'|'accentAltSoft'|'focus'|'success'|'successSoft'|'warning'|'warningSoft'|'danger'|'dangerSoft'|'info'|'infoSoft'|'selectionSurface'|'selectionText'|'selectionBorder'|'activeSurface'|'activeText'|'disabledSurface'|'disabledText'|'shadow1'|'shadow2'|'shadowFloat'|'radius'|'radiusLg';
 export type DKDSThemeMotionTokenKey = 'motionFast'|'motionNormal'|'motionSlow'|'easeStandard'|'easeEmphasized'|'hoverLift'|'pressScale';
 export type DKDSThemeMaterialTokenKey = 'materialBlur'|'materialBlurStrong'|'materialSaturation'|'materialTintOpacity'|'specularHighlight'|'innerHighlight'|'glassEdge'|'materialNoiseOpacity';
 export type DKDSThemeTokenKey = DKDSThemeAppearanceTokenKey|DKDSThemeMotionTokenKey|DKDSThemeMaterialTokenKey;
@@ -177,7 +177,10 @@ export type DKDSThemeTokenMap = Partial<Record<DKDSThemeTokenKey,string|number>>
 export interface DKDSThemeMotionSpec { motionFast?:DKDSThemeDuration; motionNormal?:DKDSThemeDuration; motionSlow?:DKDSThemeDuration; easeStandard?:string; easeEmphasized?:string; hoverLift?:DKDSThemeLogicalLength; pressScale?:DKDSThemeScale }
 export interface DKDSThemeMaterialValues { materialBlur?:DKDSThemeLogicalLength; materialBlurStrong?:DKDSThemeLogicalLength; materialSaturation?:DKDSThemeSaturation; materialTintOpacity?:DKDSThemeOpacity; specularHighlight?:DKDSThemeColor; innerHighlight?:DKDSThemeColor; glassEdge?:DKDSThemeColor; materialNoiseOpacity?:DKDSThemeOpacity }
 export interface DKDSThemeMaterialSpec extends DKDSThemeMaterialValues { roles?:Partial<Record<DKDSThemeMaterialRole,DKDSThemeMaterialValues>> }
-export interface DKDSThemeModeSpec { tokens?:DKDSThemeAppearanceTokenMap; motion?:DKDSThemeMotionSpec; material?:DKDSThemeMaterialSpec }
+export interface DKDSThemeRoleAppearanceValues { surface?:DKDSThemeColor; border?:DKDSThemeColor; text?:DKDSThemeColor }
+export interface DKDSThemeRoleAppearanceSpec { roles?:Partial<Record<DKDSThemeMaterialRole,DKDSThemeRoleAppearanceValues>> }
+export interface DKDSThemeScientificSpec { seriesPalette?:DKDSThemeColor[] }
+export interface DKDSThemeModeSpec { tokens?:DKDSThemeAppearanceTokenMap; motion?:DKDSThemeMotionSpec; material?:DKDSThemeMaterialSpec; appearance?:DKDSThemeRoleAppearanceSpec; scientific?:DKDSThemeScientificSpec }
 export interface DKDSThemeSettingTarget { scope:'token'|'motion'|'material'|'recipe'; key?:DKDSThemeAppearanceTokenKey|DKDSThemeMotionTokenKey|DKDSThemeMaterialTokenKey; role?:DKDSThemeMaterialRole; mode?:'all'|'light'|'dark' }
 export interface DKDSThemeSettingSpec { id:string; label?:string; description?:string; target:DKDSThemeSettingTarget; type?:'range'|'number'|'select'; min?:number; max?:number; step?:number; options?:Array<string|{value:string;label?:string}> }
 export interface DKDSThemeProfileSpec {
@@ -185,6 +188,10 @@ export interface DKDSThemeProfileSpec {
   modes:{light:DKDSThemeModeSpec;dark:DKDSThemeModeSpec};
   motion?:DKDSThemeMotionSpec;
   material?:DKDSThemeMaterialSpec;
+  /** Optional semantic appearance overrides per Core-owned Material Role. Theme never selects DOM; Core selects the role. */
+  appearance?:DKDSThemeRoleAppearanceSpec;
+  /** Optional defaults for scientific presentation. Explicit plugin/user series colors always win. */
+  scientific?:DKDSThemeScientificSpec;
   /** Theme-owned optical policy. builtin.default is fully clear; glass themes opt into soft/liquid recipes explicitly. */
   recipes?:Partial<Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>>;
   /** Declarative Core-rendered settings. Theme plugins never own their settings DOM. */
@@ -200,7 +207,7 @@ export interface DKDSThemeRendererCapabilities { version:string; recipeInstalled
 export interface DKDSThemeControlContrastIssue { tag:string; id:string; className:string; text:string; foreground:string; background:string; effectiveBackground:{r:number;g:number;b:number;a:number}; ratio:number; minimum:number; disabled:boolean }
 export interface DKDSThemeCoverageReport { version:string; contractVersion:string; profile:string; mode:'light'|'dark'; rendererCapabilities:DKDSThemeRendererCapabilities|null; core:ReadonlyArray<DKDSThemeCoverageArea & {renderStatus:string;realMaterial:number;occludedMaterial:number;brokenMaterial:number;render:ReadonlyArray<{status:DKDSThemeMaterialRenderStatus;role:string;expectedRole:string;recipe:DKDSMaterialRecipe|string;expectedBlur:string;expectedBlurStrong?:string;expectedSaturation:string;backdropFilter:string;backgroundColor:string;opaqueParent?:any}>}>; contrast:{checked:number;issues:ReadonlyArray<DKDSThemeControlContrastIssue>;ok:boolean}; plugins:{issues:ReadonlyArray<DKDSThemeCoverageIssue>;summary:{total:number;warnings:number;plugins:string[]}}; summary:{areas:number;managed:number;partial:number;unmanaged:number;realMaterial:number;brokenMaterial:number;occludedMaterial:number;lowContrastControls:number;pluginIssues:number;rendererOk:boolean;ok:boolean} }
 export interface DKDSThemeCapability {
-  readonly contractVersion:'3.6.0';
+  readonly contractVersion:'3.7.0';
   supports(feature:string):boolean;
   rendererCapabilities():DKDSThemeRendererCapabilities;
   register(id:string,spec:DKDSThemeProfileSpec):{id:string;dispose?:()=>void};
@@ -210,6 +217,8 @@ export interface DKDSThemeCapability {
   tokens():Readonly<Record<DKDSThemeTokenKey,string>>|Record<string,string>;
   materialRoles():DKDSThemeMaterialRole[];
   materials(platform?:'web'|'native'):{base:Readonly<Record<string,string|number>>;roles:Partial<Record<DKDSThemeMaterialRole,Readonly<Record<string,string|number>>>>};
+  appearanceRoles():{roles:Partial<Record<DKDSThemeMaterialRole,Readonly<DKDSThemeRoleAppearanceValues>>>};
+  scientific():{seriesPalette:readonly string[]};
   recipePolicy(id?:string):Partial<Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>>;
   settings(id?:string):Array<DKDSThemeSettingSpec & {value:any}>;
   setSetting(id:string,key:string,value:any):any;

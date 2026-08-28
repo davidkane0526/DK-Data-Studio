@@ -9,7 +9,7 @@ const policy=require(path.join(root,'desktop','plugin-override-policy'));
 // Theme semantic surface ownership: role -> base token is Core-owned, while a
 // Workbench sidebar's direct composition child cannot silently repaint the base.
 const material=read('src/core/theme/material-renderer.js');
-assert(material.includes("sidebar:['surfaceSidebar','--dkui-surface-sidebar']"),'Sidebar material role must resolve the surfaceSidebar token.');
+assert(material.includes("sidebar:{token:'appearance.roles.sidebar.surface',cssVar:'--dkui-role-sidebar-surface',fallbackToken:'surfaceSidebar',fallbackVar:'--dkui-surface-sidebar'}"),'Sidebar material role must resolve role-specific appearance first and preserve surfaceSidebar as the Core fallback token.');
 assert(material.includes('baseToken')&&material.includes('occludingChild'),'Theme Material inspect/debug must expose base-token and occluding-child diagnostics.');
 const debug=read('src/core/theme/debug-runtime.js');
 assert(debug.includes('base token:')&&debug.includes('occluding child:'),'Theme Debug must show semantic base-token and occluding-child ownership.');

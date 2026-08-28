@@ -126,6 +126,8 @@ function shellState(value: unknown): RendererShellState {
     themeTokens: row.themeTokens && typeof row.themeTokens === 'object' ? row.themeTokens as Record<string, string> : {},
     themeContractVersion: typeof row.themeContractVersion === 'string' ? row.themeContractVersion : '',
     themeMaterial: row.themeMaterial && typeof row.themeMaterial === 'object' ? row.themeMaterial as RendererShellState['themeMaterial'] : {base:{},roles:{}},
+    themeAppearance: row.themeAppearance && typeof row.themeAppearance === 'object' ? row.themeAppearance as RendererShellState['themeAppearance'] : {roles:{}},
+    themeScientific: row.themeScientific && typeof row.themeScientific === 'object' ? row.themeScientific as RendererShellState['themeScientific'] : {seriesPalette:[]},
     activities: Array.isArray(row.activities) ? row.activities : [],
     surfaces: Array.isArray(row.surfaces) ? row.surfaces : [],
     actions: Array.isArray(row.actions) ? row.actions : [],

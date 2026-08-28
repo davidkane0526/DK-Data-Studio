@@ -7,7 +7,7 @@ const {inspectWorkspaceStyles}=require('../layout-contract');
 const ThemeContract=require('../theme-contract');
 const ThemeCoverageContract=require('../theme-coverage-contract');
 const SemverCompat=require('../semver-compat');
-const {inspectPluginSource}=require('../source-contract');
+const {inspectPluginSource,usesThemeRegister}=require('../source-contract');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
@@ -121,7 +121,7 @@ async function validate(folder){
     if(styleRows.length)errors.push('Theme plugins must not ship arbitrary stylesheets; use Theme Contract tokens and motion tokens.');
     if(m.workspace||m.window)errors.push('Theme plugins must not own workspace or window contracts.');
     if(m.algorithmProvider===true)errors.push('Theme plugins cannot be Algorithm Providers.');
-    if(!/ctx\.ui\.theme\.register\s*\(/.test(source))errors.push('Theme plugins must register at least one profile through ctx.ui.theme.register(...).');
+    if(!usesThemeRegister(rawSource))errors.push('Theme plugins must register at least one profile through ctx.ui.theme.register(...) or a stable ctx.ui.theme alias.');
     if(!m.compatibility?.app)errors.push('Theme plugins must declare compatibility.app.');
     if(!m.compatibility?.themeContract)errors.push('Theme plugins must declare compatibility.themeContract.');
     else if(SemverCompat.validateRange(m.compatibility.themeContract)&&!SemverCompat.satisfies(ThemeContract.version,m.compatibility.themeContract))errors.push(`Theme plugin requires Theme Contract ${m.compatibility.themeContract}, but this SDK provides ${ThemeContract.version}.`);

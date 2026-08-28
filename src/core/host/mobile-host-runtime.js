@@ -109,6 +109,8 @@
       themeTokens:window.DKDSTheme?.tokens?.()||{},
       themeContractVersion:window.DKDSTheme?.contractVersion||window.DKDSTheme?.version||'',
       themeMaterial:window.DKDSTheme?.materials?.('native')||{base:{},roles:{}},
+      themeAppearance:window.DKDSTheme?.appearanceRoles?.()||{roles:{}},
+      themeScientific:window.DKDSTheme?.scientific?.()||{seriesPalette:[]},
       route:{...current,pageId:text(page?.id||current.pageId)},workspaces,
       activities:workspaces,
       surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:text(row.id),label:text(row.label),active:!!row.active})),

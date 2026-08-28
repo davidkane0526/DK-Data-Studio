@@ -7,7 +7,9 @@
 
 body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome){
   --dkds-material-role:chrome;
-  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-base:var(--dkui-role-chrome-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-chrome-border,var(--dkui-divider));
+  color:var(--dkui-role-chrome-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-chrome-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-chrome-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-chrome-saturation,var(--dkui-material-saturation));
@@ -22,7 +24,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-rol
 }
 body.dkds-modern-ui :where([data-dkds-material-role="sidebar"],.dkds-material-role-sidebar){
   --dkds-material-role:sidebar;
-  --dkds-material-base:var(--dkui-surface-sidebar);
+  --dkds-material-base:var(--dkui-role-sidebar-surface,var(--dkui-surface-sidebar));
+  --dkds-material-border:var(--dkui-role-sidebar-border,var(--dkui-divider));
+  color:var(--dkui-role-sidebar-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-sidebar-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-sidebar-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-sidebar-saturation,var(--dkui-material-saturation));
@@ -37,7 +41,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="sidebar"],.dkds-material-ro
 }
 body.dkds-modern-ui :where([data-dkds-material-role="surface"],.dkds-material-role-surface){
   --dkds-material-role:surface;
-  --dkds-material-base:var(--dkui-surface);
+  --dkds-material-base:var(--dkui-role-surface-surface,var(--dkui-surface));
+  --dkds-material-border:var(--dkui-role-surface-border,var(--dkui-divider));
+  color:var(--dkui-role-surface-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-surface-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-surface-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-surface-saturation,var(--dkui-material-saturation));
@@ -52,7 +58,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="surface"],.dkds-material-ro
 }
 body.dkds-modern-ui :where([data-dkds-material-role="elevated"],.dkds-material-role-elevated){
   --dkds-material-role:elevated;
-  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-base:var(--dkui-role-elevated-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-elevated-border,var(--dkui-divider));
+  color:var(--dkui-role-elevated-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-elevated-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-elevated-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-elevated-saturation,var(--dkui-material-saturation));
@@ -67,7 +75,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="elevated"],.dkds-material-r
 }
 body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-role-popover){
   --dkds-material-role:popover;
-  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-base:var(--dkui-role-popover-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-popover-border,var(--dkui-divider));
+  color:var(--dkui-role-popover-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-popover-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-popover-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-popover-saturation,var(--dkui-material-saturation));
@@ -82,7 +92,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-ro
 }
 body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control){
   --dkds-material-role:control;
-  --dkds-material-base:var(--dkui-control-bg);
+  --dkds-material-base:var(--dkui-role-control-surface,var(--dkui-control-bg));
+  --dkds-material-border:var(--dkui-role-control-border,var(--dkui-control-border));
+  color:var(--dkui-role-control-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-control-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-control-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-control-saturation,var(--dkui-material-saturation));
@@ -97,7 +109,9 @@ body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-ro
 }
 body.dkds-modern-ui :where([data-dkds-material-role="floating"],.dkds-material-role-floating){
   --dkds-material-role:floating;
-  --dkds-material-base:var(--dkui-surface-elevated);
+  --dkds-material-base:var(--dkui-role-floating-surface,var(--dkui-surface-elevated));
+  --dkds-material-border:var(--dkui-role-floating-border,var(--dkui-divider));
+  color:var(--dkui-role-floating-text,var(--dkui-text));
   --dkds-material-blur:var(--dkui-material-floating-blur,var(--dkui-material-blur));
   --dkds-material-blur-strong:var(--dkui-material-floating-blur-strong,var(--dkui-material-blur-strong));
   --dkds-material-saturation:var(--dkui-material-floating-saturation,var(--dkui-material-saturation));

@@ -1,7 +1,7 @@
 {
   "id": "com.dkds.theme.liquid-glass",
   "name": "Thin Glass",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "apiVersion": "1.18.0",
   "entry": "plugin.js",
   "scripts": [
@@ -9,7 +9,7 @@
   ],
   "enabled": true,
   "order": 30,
-  "description": "Thin Glass Theme 3.6 profile with low-radius real backdrop blur, restrained optical edge/inner highlights, clear scientific content surfaces and no nested glass controls.",
+  "description": "Thin Glass Theme 3.7 profile using Core role appearance, semantic states, scientific palette and low-radius backdrop material.",
   "pluginType": "theme",
   "requiresCore": [
     "ui.theme"
@@ -18,8 +18,8 @@
     "ui.theme"
   ],
   "compatibility": {
-    "app": ">=3.62.0 <4.0.0",
+    "app": ">=3.63.0 <4.0.0",
     "pluginApi": "^1.18.0",
-    "themeContract": "^3.6.0"
+    "themeContract": "^3.7.0"
   }
 }

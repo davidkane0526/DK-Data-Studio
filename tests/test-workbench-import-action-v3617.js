@@ -16,7 +16,7 @@ const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('tests/check-plugin-boundaries.js');
 
 
-assert(contract.pluginApiVersion==='1.18.0'&&contract.minimumAppVersion==='3.62.0','Current complete SDK contract must require app 3.61.32 while preserving older installed plugin-package compatibility.');
+assert(contract.pluginApiVersion==='1.18.0'&&contract.minimumAppVersion==='3.63.0','Current complete SDK contract must require app 3.63.0 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');

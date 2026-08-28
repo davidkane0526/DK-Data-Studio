@@ -2,7 +2,7 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const C=require('../sdk/theme-coverage-contract');const Theme=require('../sdk/theme-contract');
-assert.equal(C.version,'1.0.0');assert.equal(Theme.version,'3.6.0');assert(Theme.supports('contract.theme.coverage'));assert(Theme.supports('contract.theme.style-audit'));assert(Theme.materialRoles().includes('floating'));
+assert.equal(C.version,'1.0.0');assert.equal(Theme.version,'3.7.0');assert(Theme.supports('contract.theme.coverage'));assert(Theme.supports('contract.theme.style-audit'));assert(Theme.materialRoles().includes('floating'));
 assert.equal(C.auditCss('.x{background:var(--dkui-surface);color:var(--dkui-text);border-color:var(--dkui-divider)}',{pluginId:'x'}).length,0);
 let rows=C.auditCss('.x{background:#fff;color:rgb(0,0,0);box-shadow:0 1px 4px rgba(0,0,0,.2)}',{pluginId:'x',source:'plugin.css'});assert(rows.length>=3);assert(rows.every(x=>x.kind==='unmanaged-visual'));
 rows=C.auditCss('.x{backdrop-filter:blur(30px)}',{pluginId:'x'});assert.equal(rows.length,1);assert.equal(rows[0].property,'backdrop-filter');

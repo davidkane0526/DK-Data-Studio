@@ -11,10 +11,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.18.0');
-assert.equal(Theme.version,'3.6.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.19.0');
+assert.equal(Theme.version,'3.7.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('contract.material.roles.chrome')&&Theme.supports('contract.platform.logical-units'));assert(!Theme.supports('materialBlur')&&!Theme.supports('material.roles.chrome')&&!Theme.supports('platform.logical-units'));
-assert(Theme.supports('contract:3.6.0'),'Theme 3.6 must expose only its explicit contract namespace/version.');
+assert(Theme.supports('contract:3.7.0'),'Theme 3.7 must expose only its explicit contract namespace/version.');
 for(const role of ['chrome','sidebar','surface','elevated','popover','control','floating'])assert(Theme.materialRoles().includes(role));
 
 // Strict token and value validation.
@@ -43,7 +43,7 @@ const nativeMaterial=Theme.projectMaterial(dark.material,'native');assert.equal(
 const props=new Map();const rootStyle={setProperty:(k,v)=>props.set(k,String(v)),removeProperty:k=>props.delete(k),colorScheme:''};
 const sandbox={console,Map,Set,Object,String,Promise,CustomEvent:function(){},localStorage:{getItem:()=>'',setItem:()=>{}},document:{documentElement:{style:rootStyle,dataset:{}}},getComputedStyle:()=>({getPropertyValue:k=>props.get(k)||''}),matchMedia:()=>({matches:false}),addEventListener:()=>{},dispatchEvent:()=>{},window:null,globalThis:null};
 sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox);vm.runInContext(read('src/core/theme/runtime.js'),sandbox);
-assert.equal(sandbox.DKDSTheme.contractVersion,'3.6.0');
+assert.equal(sandbox.DKDSTheme.contractVersion,'3.7.0');
 assert.equal(sandbox.DKDSTheme.supports('contract.materialBlur'),true);assert.equal(sandbox.DKDSTheme.supports('materialBlur'),false);
 assert.equal(sandbox.DKDSTheme.supports('contract.material.roles.popover'),true);assert.equal(sandbox.DKDSTheme.supports('material.roles.popover'),false);
 assert.throws(()=>sandbox.DKDSTheme.registerProfile('bad-token',{material:{materialBlurr:12},modes:{light:{},dark:{}}}),/materialBlurr/);
@@ -56,8 +56,8 @@ sandbox.DKDSTheme.set('dark');assert.equal(props.get('--dkui-material-tint-opaci
 
 // Official template must pin app + theme contract compatibility.
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.62.0 <4.0.0');
-assert.equal(template.compatibility.themeContract,'^3.6.0');
+assert.equal(template.compatibility.app,'>=3.63.0 <4.0.0');
+assert.equal(template.compatibility.themeContract,'^3.7.0');
 const schema=json('sdk/plugin-manifest.schema.json');assert(schema.properties.compatibility.properties.themeContract);
 
 // Standalone SDK validator must execute/register the profile and reject malformed data/ranges.
@@ -75,7 +75,7 @@ assert(roleCss.includes('base surface -> accent tint')||roleCss.includes('base s
 const gallery=read('src/core/theme/test-gallery.js');const manager=read('src/core/plugins/manager-ui.js');
 assert(gallery.includes("data-gallery-mode=\"${mode}\"")&&gallery.includes('ScientificPlot')&&gallery.includes('Popover')&&gallery.includes('Floating'));
 assert(manager.includes('plugin-theme-gallery-btn')&&manager.includes('DKDSThemeGallery'));
-const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Material composition order')&&docs.includes('Web/Electron: one logical material unit maps to one CSS px')&&docs.includes('Theme Test Gallery'));
+const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Ownership model')&&docs.includes('Role-specific appearance')&&docs.includes('Scientific series palette'));
 const kernel=read('src/generated/runtime/plugin-kernel.js');assert(kernel.includes('contractVersion: window.DKDSTheme')&&kernel.includes('supports: feature => window.DKDSTheme'));
 const mobileHost=read('src/core/host/mobile-host-runtime.js');assert(mobileHost.includes('themeContractVersion:window.DKDSTheme')&&mobileHost.includes("themeMaterial:window.DKDSTheme?.materials?.('native')"),'Native shell bridge must receive Theme Contract version and normalized material roles.');
-console.log('Theme Contract 3.6 strict validation + material roles + gallery checks passed.');
+console.log('Theme Contract 3.7 strict validation + material roles + gallery checks passed.');

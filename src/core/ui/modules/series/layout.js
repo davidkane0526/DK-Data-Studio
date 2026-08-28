@@ -1,14 +1,14 @@
 'use strict';
 const {resolveElement}=require('../foundation/shortcuts');
-const {SERIES_PALETTE, compactSeriesLabel}=require('./primitives');
+const {seriesColor, compactSeriesLabel}=require('./primitives');
 
   class SeriesRegistry {
     constructor(owner='core'){this.owner=String(owner||'core');this.rows=new Map();this.order=[];}
     stableId(spec={},index=0){const raw=spec?.seriesId??spec?.id??spec?.key??spec?.entityId??spec?.uid??spec?.name??spec?.label??`series-${index+1}`;return String(raw||`series-${index+1}`);}
-    register(spec={},index=0){if(typeof spec==='string')spec={id:spec};const id=this.stableId(spec,index);let row=this.rows.get(id);const explicitColor=String(spec?.color||spec?.line?.color||spec?.marker?.color||'');const label=compactSeriesLabel(spec?.label??spec?.legendLabel??spec?.name??spec?.title??id)||id;if(!row){row={id,index:this.order.length,label,color:explicitColor||SERIES_PALETTE[this.order.length%SERIES_PALETTE.length],group:String(spec?.legendGroup??spec?.legendgroup??spec?.group??''),visible:spec?.visible!==false,metadata:{...(spec?.metadata||{})}};this.rows.set(id,row);this.order.push(id);}else{row={...row,label:label||row.label,color:explicitColor||row.color,group:String(spec?.legendGroup??spec?.legendgroup??spec?.group??row.group??''),visible:spec?.visible!==false,metadata:{...(row.metadata||{}),...(spec?.metadata||{})}};this.rows.set(id,row);}return Object.freeze({...row});}
+    register(spec={},index=0){if(typeof spec==='string')spec={id:spec};const id=this.stableId(spec,index);let row=this.rows.get(id);const explicitColor=String(spec?.color||spec?.line?.color||spec?.marker?.color||'');const label=compactSeriesLabel(spec?.label??spec?.legendLabel??spec?.name??spec?.title??id)||id;if(!row){row={id,index:this.order.length,label,color:explicitColor||seriesColor(this.order.length),explicitColor:!!explicitColor,group:String(spec?.legendGroup??spec?.legendgroup??spec?.group??''),visible:spec?.visible!==false,metadata:{...(spec?.metadata||{})}};this.rows.set(id,row);this.order.push(id);}else{row={...row,label:label||row.label,color:explicitColor||(!row.explicitColor?seriesColor(row.index):row.color),explicitColor:!!explicitColor||row.explicitColor,group:String(spec?.legendGroup??spec?.legendgroup??spec?.group??row.group??''),visible:spec?.visible!==false,metadata:{...(row.metadata||{}),...(spec?.metadata||{})}};this.rows.set(id,row);}return this.get(id);}
     normalize(series=[]){return (Array.isArray(series)?series:[]).map((spec,index)=>this.register(spec,index));}
-    get(id){const row=this.rows.get(String(id||''));return row?Object.freeze({...row}):null;}
-    color(id,fallback=''){return this.get(id)?.color||fallback||SERIES_PALETTE[0];}
+    get(id){const row=this.rows.get(String(id||''));if(!row)return null;const {explicitColor,...publicRow}=row;return Object.freeze({...publicRow,color:explicitColor?row.color:seriesColor(row.index)});}
+    color(id,fallback=''){return this.get(id)?.color||fallback||seriesColor(0);}
     label(id,fallback=''){return this.get(id)?.label||compactSeriesLabel(fallback)||String(id||'');}
     setVisible(id,visible=true){const key=String(id||''),row=this.rows.get(key);if(!row)return false;row.visible=visible!==false;this.rows.set(key,row);return row.visible;}
     list(query={}){const rows=this.order.map(id=>this.get(id)).filter(Boolean);if(!query||typeof query!=='object')return rows;return rows.filter(row=>(!query.group||row.group===query.group)&&(query.visible===undefined||row.visible===query.visible));}

@@ -11,7 +11,7 @@ same profile can be projected into the Android native shell. Web-only CSS expres
 ignored by native chrome and fall back to the built-in palette.
 
 
-## Theme Contract 3.6
+## Theme Contract 3.7
 
 Theme plugins use `pluginType: "theme"` and declare `requiresCore: ["ui.theme"]`. They register semantic profiles through `ctx.ui.theme.register(...)`; they do not repaint Core DOM directly.
 
@@ -20,9 +20,29 @@ A profile may provide light/dark appearance tokens, a shared `material` block, a
 The Plugin Manager lists Theme plugins in their own category and lets users activate any registered profile owned by that plugin.
 
 
+
+### Theme 3.7 semantic appearance
+
+Use `appearance.roles` when a semantic Material Role needs a distinct palette without changing Core DOM ownership:
+
+```js
+appearance: {
+  roles: {
+    chrome: { surface:'#F3F1FC', border:'#DED9F4', text:'#1C2740' },
+    sidebar: { surface:'#EEF7F5' },
+    elevated: { surface:'#FFF5F8' }
+  }
+},
+scientific: {
+  seriesPalette: ['#705CE8','#17A7A0','#D96A91']
+}
+```
+
+The role fields are limited to `surface / border / text`. Use semantic state tokens (`selection*`, `active*`, `disabled*`, `success*`, `warning*`, `danger*`, `info*`) instead of component-specific CSS. `scientific.seriesPalette` is only the automatic fallback; an explicit scientific series color is never replaced by the Theme.
+
 ### Material contract
 
-Theme Contract 3.6 adds bounded material parameters. Core still owns the selectors and recipes; a Theme plugin only supplies values:
+Theme Contract 3.7 keeps bounded material parameters and adds constrained role-specific appearance. Core still owns the selectors and recipes; a Theme plugin only supplies values:
 
 - `materialBlur`, `materialBlurStrong`: CSS blur lengths such as `12px` / `18px`.
 - `materialSaturation`: CSS `saturate()` factor or percentage, e.g. `1.08` or `108%`.
@@ -33,7 +53,7 @@ Theme Contract 3.6 adds bounded material parameters. Core still owns the selecto
 These values do not grant arbitrary CSS access. A Theme plugin cannot choose DOM targets, pseudo-elements, layout, or animation keyframes. Light/dark mode maps may override any material token when a mode-specific material response is required.
 
 
-Theme Contract 3.6 adds profile-owned `recipes` and declarative `settings`. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
+Theme Contract 3.7 retains profile-owned `recipes` and declarative `settings`, and adds semantic state colors, `accentAlt`, role appearance, and an optional scientific series palette. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
 
 
 ### Readable glass defaults

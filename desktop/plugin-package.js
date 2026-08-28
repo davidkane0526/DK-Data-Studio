@@ -1,7 +1,7 @@
 const path = require('path');
 const SemverCompat = require('./semver-compat');
 const {inspectWorkspaceStyles}=require('../sdk/layout-contract');
-const {inspectPluginSource}=require('../sdk/source-contract');
+const {inspectPluginSource,usesThemeRegister}=require('../sdk/source-contract');
 
 const PLUGIN_PACKAGE_SCHEMA = 1;
 const MAX_FILES = 64;
@@ -149,6 +149,8 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if(styles.length)throw new Error('Theme plugins must not ship arbitrary stylesheets.');
     if(sourceManifest.workspace||windowSpec)throw new Error('Theme plugins must not own workspace or window contracts.');
     if(algorithmProvider)throw new Error('Theme plugins cannot be Algorithm Providers.');
+    const themeSource=scripts.map(fileName=>files[fileName]||'').join('\n');
+    if(!usesThemeRegister(themeSource))throw new Error('Theme plugins must register at least one profile through ctx.ui.theme.register(...) or a stable ctx.ui.theme alias.');
   }
 
   if(pluginType==='tool'){

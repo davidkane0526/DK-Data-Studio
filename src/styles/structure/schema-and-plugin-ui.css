@@ -631,7 +631,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-height:30px
   .plugin-manager-stat{min-height:62px;padding:9px 10px}
 }
 
-/* Theme Contract 3.6 · Plugin Manager profile control */
+/* Theme Contract 3.7 · Plugin Manager profile control */
 .plugin-theme-profile-block{margin-top:9px;padding:8px 9px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .plugin-theme-profile-block>div:first-child{display:grid;gap:2px;min-width:0}
 .plugin-theme-profile-block strong{font-size:10px}

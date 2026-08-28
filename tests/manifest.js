@@ -745,6 +745,10 @@ module.exports = {
     {
       "file": "tests/test-v3626-sdk-public-api-source-contract.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3630-theme-contract-37.js",
+      "args": []
     }
   ],
   "check": [
@@ -1524,6 +1528,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3626-sdk-public-api-source-contract.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3630-theme-contract-37.js",
       "args": []
     }
   ],

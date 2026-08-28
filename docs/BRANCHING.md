@@ -3,7 +3,7 @@
 ## Current local repository
 
 - Application checkpoint: **v3.62.0**.
-- Public contracts: **Plugin API 1.18.0**, **SDK 1.18.0**, **Theme Contract 3.6.0**, **Project Schema v3**.
+- Public contracts: **Plugin API 1.18.0**, **SDK 1.19.0**, **Theme Contract 3.7.0**, **Project Schema v3**.
 - v3.62 is the architectural cut that removes runtime legacy bridges. Historical project files are accepted only at the Project Compatibility Gateway and are converted one-way into canonical Schema v3 state before normal runtime code sees them.
 - Existing remote refs may be historical baselines; changing or publishing remote refs is a separate explicit operation.
 

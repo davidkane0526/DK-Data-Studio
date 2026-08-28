@@ -1,11 +1,16 @@
 (() => {
   'use strict';
-  const VERSION='3.6.0';
+  const VERSION='3.7.0';
   const STRONG_ROLES=new Set(['elevated','popover','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
   const ROLE_BASE_TOKENS=Object.freeze({
-    chrome:['surfaceElevated','--dkui-surface-elevated'],sidebar:['surfaceSidebar','--dkui-surface-sidebar'],surface:['surface','--dkui-surface'],
-    elevated:['surfaceElevated','--dkui-surface-elevated'],popover:['surfaceElevated','--dkui-surface-elevated'],floating:['surfaceElevated','--dkui-surface-elevated'],control:['controlBg','--dkui-control-bg']
+    chrome:{token:'appearance.roles.chrome.surface',cssVar:'--dkui-role-chrome-surface',fallbackToken:'surfaceElevated',fallbackVar:'--dkui-surface-elevated'},
+    sidebar:{token:'appearance.roles.sidebar.surface',cssVar:'--dkui-role-sidebar-surface',fallbackToken:'surfaceSidebar',fallbackVar:'--dkui-surface-sidebar'},
+    surface:{token:'appearance.roles.surface.surface',cssVar:'--dkui-role-surface-surface',fallbackToken:'surface',fallbackVar:'--dkui-surface'},
+    elevated:{token:'appearance.roles.elevated.surface',cssVar:'--dkui-role-elevated-surface',fallbackToken:'surfaceElevated',fallbackVar:'--dkui-surface-elevated'},
+    popover:{token:'appearance.roles.popover.surface',cssVar:'--dkui-role-popover-surface',fallbackToken:'surfaceElevated',fallbackVar:'--dkui-surface-elevated'},
+    floating:{token:'appearance.roles.floating.surface',cssVar:'--dkui-role-floating-surface',fallbackToken:'surfaceElevated',fallbackVar:'--dkui-surface-elevated'},
+    control:{token:'appearance.roles.control.surface',cssVar:'--dkui-role-control-surface',fallbackToken:'controlBg',fallbackVar:'--dkui-control-bg'}
   });
   const recipePolicy=()=>Object.freeze({...(globalThis.DKDSTheme?.recipePolicy?.()||{})});
   const LIQUID_ROLES=new Set(['popover','floating']);
@@ -176,7 +181,7 @@
     const probe=document.createElement('div');probe.className='dkds-material-role-popover';probe.setAttribute('aria-hidden','true');probe.style.cssText='position:fixed;left:-10000px;top:-10000px;width:8px;height:8px;pointer-events:none';document.body.appendChild(probe);
     let base0=null;try{base0=parseRgb(getComputedStyle(probe).backgroundColor);}finally{probe.remove();}
     base0=base0||resolveCssColor('var(--dkui-surface-elevated)','backgroundColor')||canvas;const base=mix(base0,canvas);
-    const semantic=resolveCssColor('var(--dkui-text)','color');
+    const semantic=resolveCssColor('var(--dkui-role-popover-text,var(--dkui-text))','color');
     const dark={r:17,g:24,b:39,a:1},light={r:248,g:250,b:252,a:1};
     const semanticRatio=semantic?contrast(semantic,base):0,darkRatio=contrast(dark,base),lightRatio=contrast(light,base);
     const chosen=semanticRatio>=4.5?semantic:(darkRatio>=lightRatio?dark:light),ratio=contrast(chosen,base);
@@ -245,7 +250,7 @@
     const style=getComputedStyle(el),role=roleOf(el),recipe=recipeOf(el),engine=engineCapabilities(),backdropFilter=backdropOf(style);
     const expectedBlur=prop(style,'--dkds-material-blur'),expectedBlurStrong=prop(style,'--dkds-material-blur-strong'),expectedSaturation=prop(style,'--dkds-material-saturation');
     const backgroundColor=String(style.backgroundColor||'').trim(),backgroundAlpha=alphaOf(backgroundColor),foregroundColor=String(style.color||'').trim();
-    const baseTokenRow=ROLE_BASE_TOKENS[role]||null,baseToken=baseTokenRow?`${baseTokenRow[0]} / ${baseTokenRow[1]}`:'',baseColor=baseTokenRow?prop(style,baseTokenRow[1]):'';
+    const baseTokenRow=ROLE_BASE_TOKENS[role]||null,authoredBase=baseTokenRow?prop(style,baseTokenRow.cssVar):'',baseToken=baseTokenRow?(authoredBase?`${baseTokenRow.token} / ${baseTokenRow.cssVar}`:`${baseTokenRow.fallbackToken} / ${baseTokenRow.fallbackVar}`):'',baseColor=baseTokenRow?(authoredBase||prop(style,baseTokenRow.fallbackVar)):'';
     const occludingChild=['sidebar','surface','elevated'].includes(role)?occludingChildOf(el):null;
     let contrastRatio=null;
     if(role==='popover'){

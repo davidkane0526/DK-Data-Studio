@@ -1,8 +1,9 @@
-# Thin Glass 1.8.1
+# Thin Glass 1.9.0
 
-Plugin API 1.18 / Theme Contract 3.6 theme profile.
+Plugin API 1.18 / Theme Contract 3.7 theme profile.
 
-- Theme plugin owns semantic tokens, role recipes and material parameters.
-- Core owns the generic `thin-glass` material renderer and DOM composition.
-- Scientific/data content and ordinary controls stay `clear`; chrome, sidebars and transient/elevated surfaces use Thin Glass.
-- Thin Glass uses one optical layer only: low-radius backdrop blur plus restrained edge/inner/specular cues. It does not use Liquid Glass refraction, noise or multi-layer optical pseudo-elements.
+- Theme owns semantic tokens, role appearance, role recipes, material parameters, state colors and the optional default scientific series palette.
+- Core owns Material Role assignment, generic `thin-glass` rendering and DOM composition.
+- Scientific/data content and ordinary controls stay clear; chrome, sidebars and transient/elevated surfaces use restrained Thin Glass.
+- Explicit scientific series colors always override the Theme fallback palette.
+- Thin Glass uses one optical layer only: low-radius backdrop blur plus restrained edge/inner/specular cues.

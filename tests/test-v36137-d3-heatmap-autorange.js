@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 
 
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.18.0');
+assert.equal(contract.sdkVersion,'1.19.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.62.0');
+assert.equal(contract.minimumAppVersion,'3.63.0');
 
 const scientific=read('src/core/scientific/plot-runtime.js');
 const renderer=read('src/core/scientific/d3-chart-renderer.js');

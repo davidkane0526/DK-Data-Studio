@@ -37,6 +37,8 @@ export type RendererShellState = {
   themeTokens?: Record<string, string>;
   themeContractVersion?: string;
   themeMaterial?: { base?: Record<string,string|number>; roles?: Record<string,Record<string,string|number>> };
+  themeAppearance?: { roles?: Record<string,{surface?:string;border?:string;text?:string}> };
+  themeScientific?: { seriesPalette?: string[] };
   activities: ShellActivity[];
   canGoBack: boolean;
   projects?: { id: string; title: string; active?: boolean; dirty?: boolean }[];

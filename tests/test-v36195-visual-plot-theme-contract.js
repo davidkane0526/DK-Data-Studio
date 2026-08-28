@@ -46,7 +46,7 @@ assert(/\.statusbar-command-cluster\{[\s\S]*?gap:8px;/.test(status)&&/\.statusba
 // Thin Glass inputs/selects share one Core geometry and one role-owned paint family.
 assert(workbench.includes('min-height:var(--plugin-control-height);')&&workbench.includes('height:var(--plugin-control-height);'),
   'Workbench input/select geometry must share the Core control height.');
-assert(materialCss.includes('[data-dkds-material-role="control"],.dkds-material-role-control')&&materialCss.includes('background:var(--dkui-control-bg);'),
+assert(materialCss.includes('[data-dkds-material-role="control"],.dkds-material-role-control')&&materialCss.includes('background:var(--dkds-material-base,var(--dkui-control-bg));'),
   'Material control owners must receive the same Core field paint even when Thin Glass maps controls to clear.');
 
 // Theme coverage must understand deliberate semantic/chrome ownership instead of calling it unmanaged.

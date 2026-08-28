@@ -8,14 +8,14 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.18.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.19.0');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');
 const materialCss=read('src/styles/theme/material-renderer.css');
 const modernRoot=read('src/styles/presentation/shell.css');
 const keys=['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity'];
-assert(theme.includes("version:'3.6.0'"),'Theme Runtime must expose the strict 3.6 contract.');
+assert(theme.includes("version:'3.7.0'"),'Theme Runtime must expose the strict 3.6 contract.');
 assert(theme.includes('const MATERIAL_KEYS='),'Theme Runtime must keep bounded material keys separate from motion.');
 assert(theme.includes('ThemeContract.resolveProfile'),'Theme Runtime must resolve shared material profile values through the strict Theme Contract.');
 for(const key of keys){assert(theme.includes(key),`Theme Runtime missing ${key}`);assert(types.includes(key),`SDK types missing ${key}`);assert(template.includes(key),`Theme template missing ${key}`);}
@@ -40,4 +40,4 @@ sandbox.DKDSTheme.set('dark');
 assert.equal(props.get('--dkui-material-blur'),'15px','dark mode map must be able to override shared material values.');
 handle.dispose();
 
-console.log('Theme Contract 3.6 canonical material checks passed.');
+console.log('Theme Contract 3.7 canonical material checks passed.');

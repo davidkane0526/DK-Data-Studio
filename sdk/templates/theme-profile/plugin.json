@@ -8,10 +8,10 @@
   "requiresCore": [
     "ui.theme"
   ],
-  "description": "Theme Contract 3.6 Thin Glass validated semantic color, material-role and motion profile example",
+  "description": "Theme Contract 3.7 semantic role appearance, state color, scientific palette and material profile example",
   "compatibility": {
-    "app": ">=3.62.0 <4.0.0",
+    "app": ">=3.63.0 <4.0.0",
     "pluginApi": "^1.18.0",
-    "themeContract": "^3.6.0"
+    "themeContract": "^3.7.0"
   }
 }

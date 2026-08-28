@@ -150,6 +150,31 @@ function lineColumn(source,index){
   const lines=text.split('\n');return {line:lines.length,column:(lines[lines.length-1]||'').length+1};
 }
 
+
+function escapeRegex(value){return String(value||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+
+function usesThemeRegister(source){
+  const code=codeOnly(source);
+  const direct=/\bctx\s*\.\s*ui\s*\.\s*theme\s*(?:\?\s*\.)?\s*\.\s*register\s*\(/;
+  if(direct.test(code))return true;
+  const alias=/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*ctx\s*\.\s*ui\s*\.\s*theme\b/g;
+  let match;
+  while((match=alias.exec(code))){
+    const name=escapeRegex(match[1]);
+    if(new RegExp(`\\b${name}\\s*(?:\\?\\s*\\.)?\\s*\\.\\s*register\\s*\\(`).test(code.slice(match.index)))return true;
+  }
+  const destructure=/\b(?:const|let|var)\s*\{([^{}]{1,240})\}\s*=\s*ctx\s*\.\s*ui\s*\.\s*theme\b/g;
+  while((match=destructure.exec(code))){
+    for(const part of String(match[1]||'').split(',')){
+      const row=part.trim().match(/^register(?:\s*:\s*([A-Za-z_$][\w$]*))?(?:\s*=.*)?$/);
+      if(!row)continue;
+      const local=escapeRegex(row[1]||'register');
+      if(new RegExp(`\\b${local}\\s*\\(`).test(code.slice(match.index+match[0].length)))return true;
+    }
+  }
+  return false;
+}
+
 function inspectPluginSource(source,{apiVersion='1.18.0',requiresCore=[]}={}){
   const declared=new Set(Array.isArray(requiresCore)?requiresCore.map(String):[]),issues=[],usages=uiFacadeUsages(source);
   for(const usage of usages){
@@ -174,4 +199,4 @@ function inspectPluginSource(source,{apiVersion='1.18.0',requiresCore=[]}={}){
   return {ok:issues.length===0,apiVersion:String(apiVersion||''),issues,usages};
 }
 
-module.exports={PUBLIC_UI_FACADES,UI_FACADE_SUGGESTIONS,codeOnly,uiFacadeUsages,inspectPluginSource};
+module.exports={PUBLIC_UI_FACADES,UI_FACADE_SUGGESTIONS,codeOnly,uiFacadeUsages,usesThemeRegister,inspectPluginSource};

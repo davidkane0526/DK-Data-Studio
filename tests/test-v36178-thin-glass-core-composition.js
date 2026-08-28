@@ -10,7 +10,7 @@ const runtime=read('src/core/theme/runtime.js');
 const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
 assert(thinTheme.includes("elevated:'thin-glass'"),'Large elevated windows such as LAN Web and AI/MCP must use Thin Glass when the Thin Glass Theme is active.');
 for(const token of ["id:'com.dkds.theme.liquid-glass'","canvas:","surface:","surfaceElevated:","surfaceSidebar:","controlBorder:","popover:{materialBlur:10","floating:{materialBlur:8"])
-  assert(thinTheme.includes(token),`Thin Glass Theme 3.6 profile missing ${token}`);
+  assert(thinTheme.includes(token),`Thin Glass Theme 3.7 profile missing ${token}`);
 assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtime must not own the Thin Glass product profile.');
 
 const material=read('src/core/theme/material-renderer.js');

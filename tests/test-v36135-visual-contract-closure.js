@@ -8,11 +8,11 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const release=json('package.json').version;
-assert.match(release,/^3\.62\.\d+$/,'visual contract closure must run on the 3.62 release line');
+assert.match(release,/^3\.63\.\d+$/,'visual contract closure must run on the 3.63 release line');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.18.0');
+assert.equal(contract.sdkVersion,'1.19.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.62.0');
+assert.equal(contract.minimumAppVersion,'3.63.0');
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');

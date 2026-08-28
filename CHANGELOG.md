@@ -1,3 +1,17 @@
+# v3.63.0 — Theme Contract 3.7 / SDK 1.19 Semantic Appearance
+
+- Advance the standalone SDK to **1.19.0** and Theme Contract to **3.7.0** while keeping Plugin API **1.18.0**. This release expands theme authoring semantics without adding a second plugin runtime facade or opening arbitrary CSS/DOM access.
+- Add constrained role-specific appearance for the seven Core Material Roles (`chrome / sidebar / surface / elevated / popover / control / floating`). Themes may optionally override only `surface / border / text`; omitted values inherit the existing base appearance tokens. Core remains the sole owner of component-to-role assignment and DOM/selectors.
+- Add semantic appearance tokens for `accentAlt`, `success / warning / danger / info` and soft variants, plus distinct `selection`, `active`, and `disabled` surfaces/text/borders so Core controls no longer reconstruct every state from the primary accent.
+- Add optional Theme-owned `scientific.seriesPalette` as a **fallback only**. Explicit user/plugin scientific colors always win; Theme palette is used only for automatic SeriesRegistry assignment before the Core default palette.
+- Make Control and Popover rendering consume their resolved role appearance, project active role/scientific snapshots to the mobile host bridge, and remove remaining dark-mode presentation paint that bypassed semantic active/disabled tokens.
+- Upgrade the first-party Thin Glass Theme to **1.9.0** / Theme Contract **^3.7.0** and update the official Theme SDK template to demonstrate role appearance, semantic states, alternate accent, and scientific palette without theme-identity special cases.
+- Add a Theme 3.7 regression profile with Aurora-like semantic separation but no Aurora identity in Core, proving independent Chrome/Sidebar/Elevated/Popover/Floating appearance and explicit scientific-color precedence.
+- Update Automation Center Theme smoke to require the actual **3.7.0** runtime/renderer contract so real Electron validation cannot falsely reject the new release after source tests pass.
+- Keep Theme settings single-target in 3.7. Multi-token derived presets remain intentionally deferred until appearance precedence is fully stabilized. Arbitrary Theme CSS, selectors and DOM mutation remain forbidden.
+- Unify Theme registration-source validation between the standalone SDK CLI and in-app package ingestion. Direct `ctx.ui.theme.register(...)`, stable `ctx.ui.theme` aliases and register destructuring are recognized consistently; Thin Glass 1.9.0 and the official Theme template both pass the same SDK 1.19 validator.
+- Release-source validation: `npm test` **187/187 PASS**, `npm run check` **195/195 PASS**, bundled plugin package parity **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, Core/Plugin ownership **PASS**, App/Plugin Kernel SCC **0**, authored CSS **0 `!important`**, standalone Thin Glass/Theme-template SDK validation **PASS**.
+
 # v3.62.6 — SDK Public Facade & Override Activation Safety
 
 - Fix the external/managed-plugin activation crash reproduced by `com.dkds.tools.pulse-sampler@1.9.0`: the package targeted Plugin API 1.18 correctly but called the non-public `ctx.ui.pluginWorkspace.create(...)`; Plugin API 1.18 exposes the single canonical runtime facade `ctx.ui.workspaceSurface.create(...)`.
