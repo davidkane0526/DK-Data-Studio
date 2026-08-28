@@ -55,7 +55,7 @@ for(const [name,folder] of Object.entries(migrated)){
   assert(entry.split(/\r?\n/).length<40,`${name} plugin.js must remain a thin composition entry`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${name} controller must use the typed core Selection/Interaction Runtime`);
   assert(views.includes('ctx.ui.workspaceSurface.create'),`${name} shared views must use the canonical workspaceSurface`);
-  assert(views.includes('wb.compose'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
+  assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${name} must compose its semantic PRIMARY through the Analysis Workbench`);
   assert(feature.includes('ctx.ui.actions')&&(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts')),`${name} feature runtime must use dynamic actions and Core PlotView/Chart infrastructure`);
   assert(feature.includes('workbench')&&feature.includes('portable'),`${name} feature runtime must place portable views through its Workbench-local layout`);
   assert(adapter.split(/\r?\n/).length<30,`${name} SUPER adapter must remain host-only`);

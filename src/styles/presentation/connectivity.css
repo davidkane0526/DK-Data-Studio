@@ -17,8 +17,6 @@ body.dkds-modern-ui .lan-web-panel button:not(.primary):not(.panel-close):not(#l
 }
 body.dkds-modern-ui .lan-web-panel button:not(.primary):not(.panel-close):not(#lanWebMinimizeBtn):hover:not(:disabled) {background:var(--dkui-control-hover);border-color:var(--dkui-control-border);color:var(--dkui-text);transform:none
 }
-body.dkds-modern-ui .lan-web-panel button.primary {background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;box-shadow:none
-}
 body.dkds-modern-ui .lan-web-body {background:var(--dkui-canvas)
 }
 body.dkds-modern-ui :is(.lan-web-status-card,.lan-web-settings-card,.lan-web-address-card,.lan-web-share-section) {background:var(--dkui-surface);border-color:transparent;color:var(--dkui-text)

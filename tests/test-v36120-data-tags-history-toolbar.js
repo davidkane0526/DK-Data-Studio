@@ -10,7 +10,7 @@ function assert(value,message){if(!value)throw new Error(message);}
 (async()=>{
   const pkg=json('package.json'),manifest=json('src/plugins/data-center/plugin.json'),sdk=json('sdk/contract.json');
 
-  assert(manifest.version==='1.13.6','Data Center version must advance to 1.13.6.');
+  assert(manifest.version.localeCompare('1.13.6',undefined,{numeric:true,sensitivity:'base'})>=0,'Data Center version must remain at 1.13.6 or newer.');
   assert(sdk.pluginApiVersion==='1.18.0','Core history/tag/toolbar work must not require a Plugin API bump.');
 
   const dataContext={window:{},console,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.window=dataContext;

@@ -158,6 +158,9 @@
   .pulse-results-grid{grid-template-columns:1fr}
   .pulse-result-card{min-height:500px}
   .pulse-result-plot{height:440px}
+  .pulse-results-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
+  .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
+  .pulse-results-splitter{display:none}
 }
 @media(max-height:780px){
   .pulse-raw-plot{height:440px;min-height:420px}
@@ -359,9 +362,32 @@
 
 
 
+
+/* Pulse keeps its domain-specific batch composition inside a full-width PRIMARY.
+   PluginWorkspace supplies lifecycle/containment; it does not turn the file list
+   into a mandatory application sidebar. */
+.pulse-primary-surface{
+  width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:14px;
+}
+.pulse-results-split{
+  --pulse-results-visual-height:620px;
+  height:min(940px,calc(100vh - 110px));
+  min-height:720px;
+  display:grid;
+  grid-template-rows:var(--pulse-results-visual-height) 8px minmax(210px,1fr);
+  min-width:0;
+}
+.pulse-results-visual-pane{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:14px;overflow:hidden}
+.pulse-results-split .pulse-results-grid{min-width:0;min-height:0;height:100%}
+.pulse-results-split .pulse-result-card{min-height:0;height:100%}
+.pulse-results-split .pulse-result-plot{height:100%;min-height:260px}
+.pulse-results-split .pulse-results-table-card{min-height:0;display:flex;flex-direction:column}
+.pulse-results-split .pulse-table-wrap{min-height:0;max-height:none;flex:1 1 auto;overflow:auto}
+.pulse-results-splitter{align-self:stretch}
+
 /* Domain header composition; Theme only paints the semantic surface. */
-.pulse-card-heading{min-height:0;height:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:12px;row-gap:3px;padding:10px 12px;}
-.pulse-card-heading>.pulse-plot-actions,.pulse-card-heading>.pulse-table-actions,.pulse-card-heading>.pulse-current-file-actions{min-width:max-content;align-self:start;}
+.pulse-card-heading{min-height:0;height:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:3px;padding:10px 12px;}
+.pulse-card-heading>.pulse-plot-actions,.pulse-card-heading>.pulse-table-actions,.pulse-card-heading>.pulse-current-file-actions{min-width:max-content;align-self:center;}
 
 /* Mobile domain geometry for Pulse; Core mobile CSS remains plugin-neutral. */
 /* Pulse cards were authored for a wide desktop canvas. Keep their DOM order,
@@ -371,6 +397,9 @@ html.react-native-client #pulseAnalysisPage .pulse-primary-surface{
   display:flex;flex-direction:column;gap:8px;
   width:100%;min-width:0;height:auto;padding:8px;box-sizing:border-box
 }
+html.react-native-client #pulseAnalysisPage .pulse-results-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
+html.react-native-client #pulseAnalysisPage .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
+html.react-native-client #pulseAnalysisPage .pulse-results-splitter{display:none}
 html.react-native-client #pulseAnalysisPage .pulse-card{
   position:relative;inset:auto;display:block;
   width:100%;min-width:0;max-width:none;height:auto;min-height:0;

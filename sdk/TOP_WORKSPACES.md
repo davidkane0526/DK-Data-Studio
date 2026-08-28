@@ -103,6 +103,8 @@ workspace.mountPrimary({
 
 Do not set `height:100%`/`100vh` on the plugin root to take ownership of the host viewport, and do not use `overflow:hidden/clip` on semantic workspace/card/content containers. `primaryScroll: "safe"` gives the plugin a bounded Core-owned Primary viewport with one Core scrollbar. Plugin content may be taller than that viewport, but must not enlarge the host. Use flexible plugin roots (`min-height:0`) and `align-content:start` for compact auto-row form/card grids; use `auto` only when document-flow growth is intentional, and `contained` only for intentionally bounded full-viewport layouts. Core can still recover a missed inner overflow at runtime.
 
+The SDK does **not** prescribe a universal left-sidebar layout. `mountPrimary({mainNode})` is a complete and preferred form for many tools. Use `leftNode` only for a true persistent rail. A plugin may freely compose its own batch/file/plot/table grid inside `mainNode`. Where two adjacent panes compete for width or height, use the Core persisted splitter (`ctx.ui.layout.split`) so resize behavior and persistence remain shared infrastructure rather than plugin-local mechanics.
+
 Avoid this pattern for a fill-height/responsive plot:
 
 ```css

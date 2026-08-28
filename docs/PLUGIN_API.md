@@ -347,10 +347,12 @@ SUPER and dedicated TOP are hosting modes of the same plugin UI. The semantic mo
 
 ```js
 const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'my-analysis'});
-wb.mountPrimary({ id:'main', label:'主界面', mount:({left,main})=>{/* domain content */} });
+wb.mountPrimary({ id:'main', label:'主界面', mainNode });
 wb.registerPrime({ id:'inspector', label:'检查', defaultPlacement:'right', placements:['inline','right','bottom','float'] });
 wb.registerSub({ id:'physics', label:'物理分析', mount:({container})=>{/* domain content */} });
 ```
+
+`PRIMARY` does not imply a sidebar. `leftNode` is an optional composition slot, not a template requirement. Keep domain-specific file lists, batch controls, plots and result tables in a plugin-owned `mainNode` layout when that better matches the workflow. If adjacent panes need user-controlled space allocation, use `ctx.ui.layout.split(...)` rather than implementing a plugin-local resizer.
 
 Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Portable/PlotView APIs.
 

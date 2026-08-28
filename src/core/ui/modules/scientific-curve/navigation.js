@@ -85,10 +85,18 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
       this.restoreNavigationToolsPosition();this.scheduleNavigationCollisionCheck();
     }
     zoomBy(factor,meta={}){
-      const last=this.lastRender;if(!last)return false;const xd=last.x.domain(),yd=last.y.domain(),cx=(xd[0]+xd[1])/2,cy=(yd[0]+yd[1])/2;
-      this.setView({xDomain:this.scaleDomainAround(xd,cx,Number(factor)||1),yDomain:this.scaleDomainAround(yd,cy,Number(factor)||1)},{reason:'toolbar-zoom',...meta});this.requestRender('toolbar-zoom');return true;
+      const last=this.lastRender;if(!last)return false;const xd=last.x.domain(),yd=last.y.domain(),cx=(xd[0]+xd[1])/2,logY=this.displayYAxisType==='log',cy=logY?Math.sqrt(Number(yd[0])*Number(yd[1])):(yd[0]+yd[1])/2;
+      this.setView({xDomain:this.scaleDomainAround(xd,cx,Number(factor)||1),yDomain:this.scaleDomainAround(yd,cy,Number(factor)||1,logY?1e-6:1e-12,logY?'log':'linear')},{reason:'toolbar-zoom',...meta});this.requestRender('toolbar-zoom');return true;
     }
-    scaleDomainAround(domain,center,factor,minSpan=1e-12){const lo=center+(domain[0]-center)*factor,hi=center+(domain[1]-center)*factor;return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:domain.slice();}
+    scaleDomainAround(domain,center,factor,minSpan=1e-12,mode='linear'){
+      const values=Array.isArray(domain)?domain.map(Number):[];const c=Number(center),f=Number(factor);if(values.length!==2||!values.every(Number.isFinite)||!Number.isFinite(c)||!Number.isFinite(f)||f<=0)return Array.isArray(domain)?domain.slice():domain;
+      if(mode==='log'){
+        if(values.some(value=>value<=0)||c<=0)return values.slice();
+        const logs=values.map(value=>Math.log10(value)),lc=Math.log10(c),lo=lc+(logs[0]-lc)*f,hi=lc+(logs[1]-lc)*f;
+        return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=Math.max(1e-9,Number(minSpan)||0)?[Math.pow(10,lo),Math.pow(10,hi)]:values.slice();
+      }
+      const lo=c+(values[0]-c)*f,hi=c+(values[1]-c)*f;return Number.isFinite(lo)&&Number.isFinite(hi)&&Math.abs(hi-lo)>=minSpan?[lo,hi]:values.slice();
+    }
     symbolType(shape,d3){return ({circle:d3.symbolCircle,diamond:d3.symbolDiamond,triangle:d3.symbolTriangle,square:d3.symbolSquare,cross:d3.symbolCross,star:d3.symbolStar})[String(shape||'circle')]||d3.symbolCircle;}
     requestRender(reason='request'){if(this.disposed||this.renderQueued)return;this.renderQueued=true;requestAnimationFrame(()=>{this.renderQueued=false;if(!this.disposed)this.render(reason);});}
     fitToData(meta={}){this.setView({xDomain:null,yDomain:null},{reason:'fit-data',...meta});this.spec.onFit?.(meta);this.requestRender('fit-data');return true;}
@@ -97,6 +105,7 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
       const last=this.lastRender;if(!last||!marker||!point)return false;const id=String(marker.id),xv=Number(point.x??point.v),yv=Number(point.y??point.i);if(!Number.isFinite(xv)||!Number.isFinite(yv))return false;
       marker.x=xv;marker.y=yv;const {dataLayer,x,y}=last;if(!dataLayer||!x||!y)return false;
       const nodes=last.markerNodes?.get?.(id),visible=this.yDisplayable(yv);
+      if(nodes?.halo){nodes.halo.style.display=visible?'':'none';if(visible)nodes.halo.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}
       if(nodes?.mark){nodes.mark.style.display=visible?'':'none';if(visible)nodes.mark.setAttribute('transform',`translate(${x(xv)},${y(this.yDisplayValue(yv))})`);}else dataLayer.selectAll('path.dkds-scientific-marker').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('transform',visible?`translate(${x(xv)},${y(this.yDisplayValue(yv))})`:null);
       if(nodes?.hit){nodes.hit.style.display=visible?'':'none';if(visible){nodes.hit.setAttribute('cx',String(x(xv)));nodes.hit.setAttribute('cy',String(y(this.yDisplayValue(yv))));}}else dataLayer.selectAll('circle.dkds-scientific-marker-hit').filter(d=>String(d?.id)===id).style('display',visible?null:'none').attr('cx',visible?x(xv):null).attr('cy',visible?y(yv):null);
       return true;

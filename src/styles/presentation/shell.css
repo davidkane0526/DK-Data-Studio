@@ -10,6 +10,10 @@ body{ font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
 }
 body.dkds-modern-ui button{ border:1px solid var(--border-subtle);
 }
+/* Reusable Core splitter affordance. Idle splitters stay visually quiet. */
+body.dkds-modern-ui .dkds-split-handle{background:transparent;}
+body.dkds-modern-ui .dkds-split-handle::after{border-radius:999px;background:var(--dkui-divider-hover);opacity:0;transition:opacity var(--motion-fast) var(--ease-standard);}
+body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.72;}
 .brand{ font-weight:750; letter-spacing:.1px;
 }
 .version{font-size:11px;font-weight:550;
@@ -88,6 +92,8 @@ body.dkds-modern-ui button{ border:1px solid var(--border-subtle);
   --dkui-accent-soft:#eaf2ff;
   --dkui-selection-bg:var(--dkui-accent-soft);
   --dkui-selection-border:color-mix(in srgb,var(--dkui-accent) 36%,var(--dkui-control-border));
+  --dkui-marker-selected-stroke:#172033;
+  --dkui-marker-selected-halo:rgba(23,32,51,.34);
   --dkui-focus:0 0 0 3px rgba(9,107,250,.14);
   --dkui-shadow-1:0 1px 0 rgba(255,255,255,.96) inset,0 -1px 0 rgba(180,202,230,.20) inset,0 3px 8px rgba(91,119,159,.055),0 9px 20px rgba(91,119,159,.065);
   --dkui-shadow-2:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.24) inset,0 5px 12px rgba(91,119,159,.075),0 15px 32px rgba(91,119,159,.11);
@@ -319,6 +325,8 @@ html[data-dkds-theme="dark"]{
     --dkui-accent-soft:#202d55;
     --dkui-selection-bg:rgba(255,255,255,.075);
     --dkui-selection-border:rgba(255,255,255,.10);
+    --dkui-marker-selected-stroke:#f8fafc;
+    --dkui-marker-selected-halo:rgba(248,250,252,.42);
     --dkui-shadow-1:0 1px 2px rgba(0,0,0,.24),0 1px 0 rgba(255,255,255,.025) inset;
     --dkui-shadow-2:0 6px 18px rgba(0,0,0,.27),0 1px 0 rgba(255,255,255,.03) inset;
     --dkui-shadow-float:0 20px 52px rgba(0,0,0,.40),0 1px 0 rgba(255,255,255,.035) inset;

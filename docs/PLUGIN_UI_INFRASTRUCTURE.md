@@ -28,11 +28,13 @@ Complex analysis plugins must mount their content through `ctx.ui.workspaceSurfa
 ```js
 const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'example'});
 wb.compose({
-  primary:{id:'main',label:'主分析',leftNode:controls,mainNode:main},
+  primary:{id:'main',label:'主分析',mainNode:main},
   primes:[{id:'inspector',label:'检查器',defaultPlacement:'right',mount:mountInspector}],
-  subs:[{id:'physics',label:'物理分析',keepLeft:true,mount:mountPhysics}]
+  subs:[{id:'physics',label:'物理分析',mount:mountPhysics}]
 });
 ```
+
+`leftNode` is optional. It is appropriate only when the plugin genuinely has a persistent control/data rail whose semantics are independent of the main task. A file list, batch queue, plot/table stack, or other domain workflow may instead live inside `mainNode` using the plugin's own grid/flex composition. **Do not force every plugin into a left-sidebar template.** Core owns the outer workbench mechanics; the plugin owns its domain layout.
 
 `PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/sticky/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
 
@@ -53,7 +55,7 @@ ctx.ui.layout.split({
 });
 ```
 
-Double-click resets the divider. Resize and persistence behavior are core-owned.
+Double-click resets the divider. Resize and persistence behavior are core-owned. When a plot and a table/inspector share one axis and users may reasonably need to trade space between them, prefer this persisted splitter instead of fixing both pane sizes. On narrow/mobile layouts the plugin may collapse the panes into normal document flow and hide the splitter.
 
 ## Portable scientific views
 

@@ -243,6 +243,13 @@ button.plugin-status-item{cursor:pointer;}
 .dkds-action-button{height:30px;min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
 .dkds-action-icon{font-size:12px;line-height:1;}.dkds-action-caret{font-size:9px;}.dkds-action-separator{width:1px;height:20px;margin:0 2px;}
 .dkds-ui-workspace{min-width:0;min-height:0;position:relative;}.dkds-ui-region{min-width:0;min-height:0;}
+/* Core layout splitter geometry. Presentation is owned by the visual layer. */
+.dkds-split-handle{position:relative;flex:0 0 auto;touch-action:none;user-select:none;}
+.dkds-split-handle[data-axis="y"]{height:8px;cursor:row-resize;}
+.dkds-split-handle[data-axis="x"]{width:8px;cursor:col-resize;}
+.dkds-split-handle::after{content:"";position:absolute;}
+.dkds-split-handle[data-axis="y"]::after{left:50%;top:3px;width:44px;height:2px;transform:translateX(-50%);}
+.dkds-split-handle[data-axis="x"]::after{left:3px;top:50%;width:2px;height:44px;transform:translateY(-50%);}
 .dkds-portable-view{min-width:260px;min-height:100px;overflow:hidden;display:flex;flex-direction:column;z-index:20;}
 .dkds-portable-header{height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;cursor:default;user-select:none;}
 .dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.dkds-portable-controls{display:flex;align-items:center;gap:3px;}.dkds-portable-controls button{width:25px;height:24px;padding:0;}

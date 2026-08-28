@@ -171,12 +171,17 @@ function readInstalledExternalPlugins() {
   const dir = ensureExternalPluginDirectory();
   const packages = [];
   const errors = [];
+  const packagedIds=builtinPluginIds();
   for (const name of fs.readdirSync(dir).filter(n => n.toLowerCase().endsWith('.dkplugin')).sort()) {
     const filePath = path.join(dir, name);
     try {
-      const raw = fs.readFileSync(filePath, 'utf8');
-      const pkg = normalizePluginPackage(JSON.parse(raw), { allowBuiltinId:false });
-      if (builtinPluginIds().has(pkg.manifest.id)) throw new Error(`Plugin id conflicts with built-in plugin: ${pkg.manifest.id}`);
+      const parsed=JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const packageId=String(parsed?.manifest?.id||'').trim();
+      // Shipped first-party plugins are authoritative. A stale user-installed
+      // copy of the same stable id is not an external candidate and must be
+      // filtered before Plugin API normalization/compatibility diagnostics.
+      if(packageId&&packagedIds.has(packageId))continue;
+      const pkg = normalizePluginPackage(parsed, { allowBuiltinId:false });
       packages.push({ ...pkg, installedPath:filePath });
     } catch (err) {
       errors.push({ file:name, error:err?.message || String(err) });

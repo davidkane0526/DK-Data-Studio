@@ -146,7 +146,9 @@
           <div id="pulseRawPlot" class="pulse-raw-plot pulse-plot-surface" data-scientific-plot></div>
         </section>
 
-        <section class="pulse-card pulse-compare-toolbar-card dkds-surface">
+        <div class="pulse-results-split">
+          <div class="pulse-results-visual-pane">
+            <section class="pulse-card pulse-compare-toolbar-card dkds-surface">
           <div class="pulse-compare-toolbar dkds-toolbar">
             <div><strong>结果比较</strong><span>有脉冲电压时使用电压横轴；未记录/未指定时自动改用脉冲序号。</span></div>
             <label>显示范围
@@ -154,9 +156,9 @@
             </label>
             <div id="pulseComparedSummary" class="pulse-compared-summary dkds-chip">0 个已分析文件</div>
           </div>
-        </section>
+            </section>
 
-        <div class="pulse-results-grid" data-dkds-mobile-stack>
+            <div class="pulse-results-grid" data-dkds-mobile-stack>
           <section class="pulse-card pulse-result-card dkds-surface">
             <div class="pulse-card-heading dkds-surface-header pulse-plot-heading">
               <div><h3>脉冲条件 → 读取电流</h3><p>优先按脉冲电压比较；电压未知时按脉冲序号显示，不虚构电压。</p></div>
@@ -172,30 +174,30 @@
             </div>
             <div id="pulsePulsePlot" class="pulse-result-plot pulse-plot-surface" data-scientific-plot></div>
           </section>
-        </div>
+            </div>
+          </div>
+          <div class="dkds-split-handle pulse-results-splitter" data-axis="y" role="separator" aria-orientation="horizontal" title="拖动调整结果图与数据表高度；双击复位"></div>
 
-        <section class="pulse-card pulse-results-table-card dkds-surface">
+          <section class="pulse-card pulse-results-table-card dkds-surface">
           <div class="pulse-card-heading dkds-surface-header pulse-table-heading">
             <div><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
             <div class="pulse-table-actions dkds-toolbar"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
           </div>
-          <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="pulse-result-table dkds-table"></table></div>
-        </section>
+            <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="pulse-result-table dkds-table"></table></div>
+          </section>
+        </div>
       </div>`;
 
   function attach(ctx,page){
-    const body=page?.querySelector('.pulse-analysis-body');
-    const batch=page?.querySelector('.pulse-batch-workspace');
-    const left=page?.querySelector('.pulse-file-manager-card');
-    const config=page?.querySelector('.pulse-config-card');
-    if(!body||!left||!config)return null;
-    const extras=[...body.children].filter(node=>node!==batch);
-    left.remove();config.remove();batch?.remove();extras.forEach(node=>node.remove());
+    const body=page?.querySelector('.pulse-analysis-body');if(!body)return null;
+    const content=[...body.children];content.forEach(node=>node.remove());
     body.classList.add('dkds-unified-workbench-body');
     const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse',primaryScroll:'auto'});
-    const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(config,...extras);
-    wb.compose({primary:{id:'main',label:'脉冲分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
+    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse',primaryScroll:'auto',resizableLeft:false,resizableRight:false,resizableBottom:false});
+    const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(...content);
+    wb.mountPrimary({id:'main',label:'脉冲分析',scroll:'auto',mainNode:primaryMain});
+    const split=primaryMain.querySelector('.pulse-results-split'),handle=primaryMain.querySelector('.pulse-results-splitter'),visual=primaryMain.querySelector('.pulse-results-visual-pane');
+    if(split&&handle&&visual)ctx.ui.layout.split({id:'pulse-results-height',container:split,handle,target:visual,axis:'y',cssVar:'--pulse-results-visual-height',defaultSize:620,min:420,reserve:220});
     return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}

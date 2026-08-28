@@ -40,6 +40,23 @@ for(const [rel,id] of [
   assert(manifest.apiVersion==='1.18.0',`${id} must be migrated to Plugin API 1.18 instead of relying on a host compatibility bridge.`);
 }
 
+
+const os=require('os');
+const runtimeFactory=require(path.join(root,'desktop','main-modules','plugin-package-runtime')).createPluginPackageRuntime;
+const tempRoot=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-external-shadow-'));
+try{
+  const userData=path.join(tempRoot,'user-data'),pluginsDir=path.join(userData,'plugins');
+  fs.mkdirSync(pluginsDir,{recursive:true});
+  fs.writeFileSync(path.join(pluginsDir,'stale-thin-glass.dkplugin'),JSON.stringify({schema:1,manifest:{id:'com.dkds.theme.liquid-glass',name:'Old Thin Glass',version:'1.7.0',apiVersion:'1.17.0'},files:{'plugin.js':''}}));
+  fs.writeFileSync(path.join(pluginsDir,'old-third-party.dkplugin'),JSON.stringify({schema:1,manifest:{id:'third.party.old',name:'Old Third Party',version:'1.0.0',apiVersion:'1.17.0'},files:{'plugin.js':''}}));
+  const fakeApp={getPath:key=>key==='userData'?userData:tempRoot,getAppPath:()=>root,getVersion:()=>pkg.version};
+  const runtime=runtimeFactory({app:fakeApp,BrowserWindow:{getAllWindows:()=>[]}});
+  const scanned=runtime.readInstalledExternalPlugins();
+  assert(!scanned.packages.some(row=>row.manifest.id==='com.dkds.theme.liquid-glass'),'A stale installed copy of a shipped first-party id must never enter the external package set.');
+  assert(!scanned.errors.some(row=>row.file==='stale-thin-glass.dkplugin'),'A stale same-id first-party copy must be shadowed before old Plugin API validation, so it cannot create a load warning.');
+  assert(scanned.errors.some(row=>row.file==='old-third-party.dkplugin'&&String(row.error).includes('Unsupported Plugin API: 1.17.0')),'Genuinely external old-API packages must remain incompatible; do not restore a 1.17 compatibility bridge.');
+}finally{fs.rmSync(tempRoot,{recursive:true,force:true});}
+
 const main=fs.readFileSync(path.join(root,'desktop/main.js'),'utf8');
 const packages=fs.readFileSync(path.join(root,'desktop/main-modules/plugin-package-runtime.js'),'utf8');
 assert(packages.includes('PluginOverridePolicy.classify')&&packages.includes('classifyInstalledPluginOverrides().active'),'Plugin package runtime must pass only effective overrides to plugin/window/catalog resolution.');

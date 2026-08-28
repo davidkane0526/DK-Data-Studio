@@ -46,7 +46,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
   assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical Core workspaceSurface without compatibility fallbacks.`);
-  assert(views.includes('wb.compose'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
+  assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);

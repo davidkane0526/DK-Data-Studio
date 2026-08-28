@@ -1,3 +1,17 @@
+# v3.62.2 — Scientific View & Plugin Layout Closure
+
+- Make ScientificPlot selection legible without restoring the removed double-rim treatment: selected markers receive a Core-owned halo and unselected markers are gently de-emphasized only while a marker selection exists.
+- Correct ScientificPlot logarithmic Y viewport behavior. Log autorange now reserves adaptive decade-space headroom, linear/log switching invalidates stale Y viewport bounds, and toolbar/wheel zoom calculations operate in log space so Y zoom remains effective instead of pinning to the original range.
+- Re-center Resonance GroupPlot title/action chrome with one fixed-height grid row so title text and portable controls share the same geometric center.
+- Consolidate primary action paint into the Theme Contract. Dialog and connectivity surfaces no longer repaint primary buttons independently; split-primary controls consume the same semantic border, fill, focus and depth treatment in light and dark modes. Thin Glass dark accent changes to `#2F63DB`, raising white-text contrast from the Windows report's 4.1:1 to about 5.35:1.
+- Reaffirm PluginWorkspace as a lifecycle/composition contract rather than a Resonance-shaped template. `leftNode` is explicitly optional in the SDK/docs/tests; main-only PRIMARY and plugin-owned domain grids are first-class layouts.
+- Restore Pulse Analysis to its domain-specific batch/file/configuration composition instead of forcing its file list into a framework sidebar. Add a persisted Core vertical splitter between result plots and the result table, with narrow/mobile layouts returning to normal document flow.
+- Restore Data Center to a plugin-owned data-rail/main-content composition while keeping PRIMARY lifecycle in Core. Its data rail uses the shared persisted Core horizontal splitter rather than private drag logic.
+- Add generic persisted split-handle structure/presentation ownership for plugin layouts that genuinely need user-adjustable plot/table, plot/inspector or data/main space allocation.
+- Fix stale same-id first-party `.dkplugin` scanning at the main-process package boundary. Shipped first-party IDs are filtered before Plugin API normalization, so old installed Thin Glass, Pulse Sampler or Vth copies no longer create false 1.17/1.15 load warnings; genuinely external old-API packages remain rejected and no compatibility bridge is reintroduced.
+- Keep App **3.62.2**, Plugin API/SDK **1.18.0** and Theme Contract **3.6.0** as separate release boundaries. Domain plugin versions advance only where their own code/visual contract changed: Data Center **1.13.7**, Pulse Analysis **2.10.2**, Resonance Workbench **3.61.8**, Thin Glass **1.8.1**.
+- Release-source validation: `npm test` **182/182 PASS**, `npm run check` **190/190 PASS**, plugin manifests **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, Plugin Boundary **0**, App/Plugin Kernel SCC **0**, authored CSS **0 `!important`**.
+
 # v3.62.1 — Runtime & Visual Ownership Closure
 
 - Restore reliable renderer startup on the v3.62 architecture by removing the stale Application-module export and binding plugin workspaces to the canonical `ui.workspaceSurface` contract.

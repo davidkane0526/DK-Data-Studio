@@ -13,6 +13,8 @@ Core owns the workbench import action. Declare `data.accepts`, include the `work
 
 For scientific charts, use `ctx.ui.workspaceSurface.create(..., { primaryScroll: "safe" })`. In `safe` mode Core owns a bounded Primary viewport and its scrollbar; keep plugin roots flexible (`width:100%; min-width:0; min-height:0`) instead of chaining percentage heights. Use `minmax(0, 1fr)` only inside a genuinely bounded grid, and add `align-content:start` to form/card grids whose `auto` rows must stay compact. Use `primaryScroll:"auto"` only for intentionally document-flow pages. Do not take ownership of the host viewport with `100vh`/root `height:100%`, and do not clip semantic UI with `overflow:hidden/clip`; SDK validation flags these patterns and Core provides a runtime containment fallback.
 
+This template intentionally uses a **main-only PRIMARY**. A TOP plugin is not required to have a left sidebar. Add `leftNode` only when the domain truly has a persistent rail; otherwise keep file managers, batch controls, plots, result tables, and other workflow-specific composition inside `mainNode`. Use `ctx.ui.layout.split(...)` for user-adjustable pane boundaries instead of implementing private drag-resize logic.
+
 Validate/package:
 
 ```bash

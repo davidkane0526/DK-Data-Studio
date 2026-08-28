@@ -21,12 +21,16 @@
         </div>`;
 
   function attach(ctx,page){
-    const body=page?.querySelector('.data-center-body');const left=page?.querySelector('.dc-artifact-pane');const main=page?.querySelector('.dc-main');
+    const body=page?.querySelector('.data-center-body'),left=page?.querySelector('.dc-artifact-pane'),main=page?.querySelector('.dc-main');
     if(!body||!left||!main)return null;
     left.remove();main.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');
     const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'data-center',primaryScroll:'auto'});
-    wb.compose({primary:{id:'main',label:'数据中心',scroll:'auto',leftNode:left,mainNode:main}});
+    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'data-center',primaryScroll:'auto',resizableLeft:false,resizableRight:false,resizableBottom:false});
+    const layout=ctx.ui.dom.create('div');layout.className='dc-native-layout';
+    const divider=ctx.ui.dom.create('div');divider.className='dkds-split-handle dc-data-divider';divider.dataset.axis='x';divider.setAttribute('role','separator');divider.setAttribute('aria-orientation','vertical');divider.title='拖动调整数据列表宽度；双击复位';
+    layout.append(left,divider,main);
+    wb.mountPrimary({id:'main',label:'数据中心',scroll:'auto',mainNode:layout});
+    ctx.ui.layout.split({id:'data-center-data-width',container:layout,handle:divider,target:left,axis:'x',cssVar:'--dc-artifact-width',defaultSize:300,min:235,reserve:640});
     return wb;
   }
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}

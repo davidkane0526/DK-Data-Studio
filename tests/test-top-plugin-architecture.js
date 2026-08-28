@@ -61,7 +61,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${folder}: controller must own typed shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
   assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical workspaceSurface.`);
-  assert(views.includes('wb.compose'),`${folder}: shared views must compose a PRIMARY surface.`);
+  assert(views.includes('wb.compose')||views.includes('wb.mountPrimary'),`${folder}: shared views must compose a PRIMARY surface.`);
   assert(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume Core PlotView/Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);
   assert(superAdapter.split(/\r?\n/).length<30,`${folder}: SUPER adapter must contain host mapping only.`);

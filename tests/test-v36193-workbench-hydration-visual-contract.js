@@ -43,9 +43,9 @@ assert(!/\.dkds-analysis-main\s*\{[^}]*grid-column\s*:/s.test(superCss),
 assert(!/\.dkds-analysis-frame\s*\{[^}]*grid-template-columns\s*:\s*auto\s+minmax\(0,1fr\)\s+auto/s.test(superCss),
   'Legacy three-column AnalysisWorkbench grid must not return.');
 
-assert(dataCenter.includes("wb.compose({primary:{id:'main',label:'数据中心',scroll:'auto',leftNode:left,mainNode:main}})"),
-  'Data Center must compose both its data rail and primary content into PluginWorkspace.');
+assert(dataCenter.includes("wb.mountPrimary({id:'main',label:'数据中心',scroll:'auto',mainNode:layout})")&&dataCenter.includes("className='dc-native-layout'")&&dataCenter.includes("ctx.ui.layout.split({"),
+  'Data Center must keep its domain data rail inside a main-only PluginWorkspace and use the Core splitter for width allocation.');
 assert(resonance.includes("primary:{id:'main',label:'共振分析',scroll:'contained',leftNode:leftPanel,mainNode:mainArea}"),
   'Resonance must compose both its control rail and primary scientific plot area into PluginWorkspace.');
 
-console.log('v3.61.93 Workbench hydration + visual contract PASS: canonical five-column geometry is single-owned and primary content is composed for Data Center/Resonance.');
+console.log('v3.61.93 Workbench hydration + visual contract PASS: canonical Core geometry remains single-owned while plugins retain domain-specific PRIMARY composition.');

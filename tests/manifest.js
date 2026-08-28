@@ -726,6 +726,10 @@ module.exports = {
       "file": "tests/test-v361111-topbar-selection-cleanup.js",
       "args": []
     }
+    ,{
+      "file": "tests/test-v3622-ui-layout-log-theme.js",
+      "args": []
+    }
   ],
   "check": [
     {
@@ -1484,6 +1488,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v361111-topbar-selection-cleanup.js",
+      "args": []
+    }
+    ,{
+      "file": "tests/test-v3622-ui-layout-log-theme.js",
       "args": []
     }
   ],

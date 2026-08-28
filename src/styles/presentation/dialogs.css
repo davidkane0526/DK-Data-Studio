@@ -11,7 +11,6 @@ body.dkds-modern-ui .dkds-dialog{
 }
 body.dkds-modern-ui .dkds-dialog-header{background:var(--surface-primary);border-color:var(--border-subtle)}
 body.dkds-modern-ui .dkds-dialog-action.secondary{background:var(--surface-primary);border-color:var(--border-strong);color:var(--text-secondary);box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 88%,white) inset,0 2px 5px rgba(42,61,91,.04)}
-body.dkds-modern-ui .dkds-dialog-action.primary{background:var(--accent-primary);border:0;color:var(--accent-contrast);box-shadow:none}
 body.dkds-modern-ui .dkds-dialog-action.danger{border:0;box-shadow:none}
 body.dkds-modern-ui .dkds-dialog-action:not(.primary):not(.danger){
   border:0;
@@ -103,8 +102,6 @@ body.dkds-modern-ui .dkds-settings-field select{
 }
 .dkds-settings-dialog>footer{border-top:1px solid var(--divider-subtle,transparent);background:transparent;
 }
-.dkds-settings-dialog>footer button.primary{background:#315efb;border-color:#315efb;color:#fff;
-}
 .dkds-dialog-overlay{background:color-mix(in srgb,#0f172a 24%,transparent);backdrop-filter:blur(5px);
 }
 .dkds-dialog{border:1px solid transparent;border-radius:14px;background:transparent;color:var(--text-primary,#1c2a43);box-shadow:none;
@@ -142,8 +139,6 @@ body.dkds-modern-ui .dkds-settings-field select{
 .dkds-dialog-footer{border-top:1px solid var(--border-subtle,#e8edf3);background:transparent;
 }
 .dkds-dialog-action{border:1px solid var(--border-strong,#c6d8ee);border-radius:8px;background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43);
-}
-.dkds-dialog-action.primary{background:var(--accent-primary,#096bfa);border-color:var(--accent-primary,#096bfa);color:var(--accent-contrast,#fff);
 }
 .dkds-dialog-action.danger{background:var(--danger,#d92d3a);border-color:var(--danger,#d92d3a);color:#fff;
 }
