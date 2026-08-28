@@ -23,6 +23,34 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
     dispose(){document.documentElement?.classList?.remove('dkds-split-drag-active');this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
+  class MovableSurface {
+    constructor(scope,spec={}){
+      this.scope=scope;this.spec={persist:true,resetOnDoubleClick:true,...spec};
+      this.target=resolveElement(spec.target||spec.surface);this.handle=resolveElement(spec.handle,this.target||document);this.boundsElement=resolveElement(spec.bounds||spec.container)||null;this.drag=null;this.cleanups=[];
+      if(!this.target||!this.handle)throw new Error('MovableSurface target/handle not found.');
+      this.key=`${hostState.storagePrefix}.${scope.owner}.move.${String(spec.id||'default')}`;
+      this.position={x:0,y:0};
+      if(this.spec.persist!==false){const saved=readJson(this.key,{});this.position.x=Number(saved.x)||0;this.position.y=Number(saved.y)||0;}
+      this.target.classList.add('dkds-movable-surface');this.handle.classList.add('dkds-movable-handle');
+      this.apply(this.position,{persist:false,clamp:false});this.bind();requestAnimationFrame(()=>this.clamp({persist:false}));
+    }
+    bounds(){const rect=this.boundsElement?.getBoundingClientRect?.();return rect||{left:0,top:0,right:window.innerWidth,bottom:window.innerHeight,width:window.innerWidth,height:window.innerHeight};}
+    apply(value,{persist=true,clamp=true}={}){this.position={x:Number(value?.x)||0,y:Number(value?.y)||0};this.target.style.translate=`${Math.round(this.position.x)}px ${Math.round(this.position.y)}px`;if(clamp)this.clamp({persist:false});if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
+    clamp({persist=false}={}){const r=this.target.getBoundingClientRect(),b=this.bounds();let x=this.position.x,y=this.position.y;if(r.left<b.left)x+=b.left-r.left;if(r.right>b.right)x-=r.right-b.right;if(r.top<b.top)y+=b.top-r.top;if(r.bottom>b.bottom)y-=r.bottom-b.bottom;if(x!==this.position.x||y!==this.position.y){this.position={x,y};this.target.style.translate=`${Math.round(x)}px ${Math.round(y)}px`;}if(persist&&this.spec.persist!==false)writeJson(this.key,this.position);return {...this.position};}
+    reset({persist=true}={}){return this.apply({x:0,y:0},{persist});}
+    bind(){
+      const previousTouch=this.handle.style.touchAction;this.handle.style.touchAction='none';
+      const down=e=>{if(e.button!==undefined&&e.button!==0)return;if(e.target.closest('button,input,select,textarea,a,[role="button"]'))return;const r=this.target.getBoundingClientRect();this.drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,baseX:this.position.x,baseY:this.position.y,rect:r,bounds:this.bounds()};this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
+      const move=e=>{const d=this.drag;if(!d||e.pointerId!==d.id)return;const rawX=e.clientX-d.startX,rawY=e.clientY-d.startY;const dx=Math.max(d.bounds.left-d.rect.left,Math.min(d.bounds.right-d.rect.right,rawX));const dy=Math.max(d.bounds.top-d.rect.top,Math.min(d.bounds.bottom-d.rect.bottom,rawY));this.apply({x:d.baseX+dx,y:d.baseY+dy},{persist:false,clamp:false});if(e.cancelable)e.preventDefault();};
+      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.id))return;this.handle.releasePointerCapture?.(this.drag.id);this.drag=null;if(this.spec.persist!==false)writeJson(this.key,this.position);};
+      const reset=e=>{if(this.spec.resetOnDoubleClick===false||e.target.closest('button,input,select,textarea,a,[role="button"]'))return;e.preventDefault();this.reset();};
+      const resize=()=>this.clamp({persist:false});
+      this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);window.addEventListener('resize',resize);
+      this.cleanups.push(()=>{this.handle.style.touchAction=previousTouch;this.handle.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);this.handle.removeEventListener('dblclick',reset);window.removeEventListener('resize',resize);});
+    }
+    dispose(){this.cleanups.splice(0).forEach(cleanupCall);this.target?.classList?.remove('dkds-movable-surface');this.handle?.classList?.remove('dkds-movable-handle');}
+  }
+
   class WorkspaceLayout {
     constructor(scope,root,spec={}){
       this.scope=scope;this.root=resolveElement(root);this.spec=spec;this.regions=new Map();this.created=[];
@@ -45,4 +73,4 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
     dispose(){for(const el of this.created)el.remove();this.root?.classList.remove('dkds-ui-workspace');this.regions.clear();}
   }
 
-module.exports=Object.freeze({SplitController, WorkspaceLayout});
+module.exports=Object.freeze({SplitController, MovableSurface, WorkspaceLayout});

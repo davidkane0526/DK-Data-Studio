@@ -54,6 +54,8 @@ ctx.ui.layout.split({
   axis:'x', min:220, defaultSize:340, reserve:420
 });
 ```
+For movable dialogs or domain surfaces, use `ctx.ui.layout.move({id,target,handle,bounds})`. Core owns pointer capture, viewport bounds, persistence and double-click reset; plugins must not implement private drag loops.
+
 
 Double-click resets the divider. Resize and persistence behavior are core-owned. When a plot and a table/inspector share one axis and users may reasonably need to trade space between them, prefer this persisted splitter instead of fixing both pane sizes. On narrow/mobile layouts the plugin may collapse the panes into normal document flow and hide the splitter.
 

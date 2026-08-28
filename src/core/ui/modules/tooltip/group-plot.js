@@ -8,9 +8,26 @@ const {ActiveLayoutSolver}=require('../series/layout');
     constructor(scope=null){this.scope=scope;this.node=null;this.owner=scope?.owner||'core';}
     ensure(){if(this.node?.isConnected)return this.node;const node=document.createElement('div');node.className='dkds-tooltip dkds-core-tooltip hidden';node.dataset.dkdsCoreSurface='tooltip';node.setAttribute('role','tooltip');(hostState.zones.get('overlay')||document.body).appendChild(node);this.node=node;return node;}
     show(spec={}){const node=this.ensure(),anchor=resolveElement(spec.anchor),point=spec.point||null;node.replaceChildren();if(spec.title){const strong=document.createElement('strong');strong.textContent=String(spec.title);node.appendChild(strong);}const rows=Array.isArray(spec.rows)?spec.rows:[];for(const row of rows){const line=document.createElement('div');line.className='dkds-tooltip-row';const key=document.createElement('span');key.className='dkds-tooltip-key';key.textContent=String(row?.label??row?.key??'');const value=document.createElement('span');value.className='dkds-tooltip-value';value.textContent=String(row?.value??'');line.append(key,value);node.appendChild(line);}if(spec.text&&!rows.length){const line=document.createElement('div');line.textContent=String(spec.text);node.appendChild(line);}node.classList.remove('hidden');const rect=anchor?.getBoundingClientRect?.(),x=Number(point?.x??point?.clientX??(rect?rect.right+8:12)),y=Number(point?.y??point?.clientY??(rect?rect.top:12));node.style.left=`${Math.max(8,x+10)}px`;node.style.top=`${Math.max(8,y+10)}px`;return node;}
+    move(point={}){if(this.node&&!this.node.classList.contains('hidden')){this.node.style.left=`${Math.max(8,Number(point.clientX??point.x??0)+10)}px`;this.node.style.top=`${Math.max(8,Number(point.clientY??point.y??0)+10)}px`;}return this.node;}
     hide(){this.node?.classList.add('hidden');}
-    bind(target,spec={}){const el=resolveElement(target);if(!el)return()=>{};const enter=event=>this.show(typeof spec==='function'?spec(event):{...spec,point:event});const move=event=>{if(this.node&&!this.node.classList.contains('hidden')){this.node.style.left=`${event.clientX+10}px`;this.node.style.top=`${event.clientY+10}px`;}};const leave=()=>this.hide();el.addEventListener('mouseenter',enter);el.addEventListener('mousemove',move);el.addEventListener('mouseleave',leave);return()=>{el.removeEventListener('mouseenter',enter);el.removeEventListener('mousemove',move);el.removeEventListener('mouseleave',leave);};}
+    bind(target,spec={}){const el=resolveElement(target);if(!el)return()=>{};const enter=event=>this.show(typeof spec==='function'?spec(event):{...spec,point:event});const move=event=>this.move(event);const leave=()=>this.hide();el.addEventListener('mouseenter',enter);el.addEventListener('mousemove',move);el.addEventListener('mouseleave',leave);return()=>{el.removeEventListener('mouseenter',enter);el.removeEventListener('mousemove',move);el.removeEventListener('mouseleave',leave);};}
     dispose(){this.node?.remove?.();this.node=null;}
+  }
+
+  class DeclarativeTooltipRuntime {
+    constructor(){this.service=new TooltipService(null);this.active=null;this.bound=false;this.bind();}
+    target(event){return event?.target?.closest?.('[data-dkds-tooltip]')||null;}
+    text(target){return String(target?.dataset?.dkdsTooltip||'').trim();}
+    show(target,event=null){const text=this.text(target);if(!text)return;this.active=target;this.service.show(event?{text,point:event}:{text,anchor:target});}
+    bind(){if(this.bound)return;if(typeof document==='undefined'||typeof document.addEventListener!=='function')return;this.bound=true;
+      this.onOver=event=>{const target=this.target(event);if(!target||target.contains?.(event.relatedTarget))return;this.show(target,event);};
+      this.onMove=event=>{if(this.active&&this.active.contains?.(event.target))this.service.move(event);};
+      this.onOut=event=>{if(!this.active)return;const target=this.target(event);if(target!==this.active||this.active.contains?.(event.relatedTarget))return;this.active=null;this.service.hide();};
+      this.onFocus=event=>{const target=this.target(event);if(target)this.show(target);};
+      this.onBlur=event=>{if(this.active&&this.active===this.target(event)){this.active=null;this.service.hide();}};
+      document.addEventListener('mouseover',this.onOver);document.addEventListener('mousemove',this.onMove);document.addEventListener('mouseout',this.onOut);document.addEventListener('focusin',this.onFocus);document.addEventListener('focusout',this.onBlur);
+    }
+    dispose(){if(!this.bound){this.service.dispose();this.active=null;return;}this.bound=false;if(typeof document!=='undefined'&&typeof document.removeEventListener==='function'){document.removeEventListener('mouseover',this.onOver);document.removeEventListener('mousemove',this.onMove);document.removeEventListener('mouseout',this.onOut);document.removeEventListener('focusin',this.onFocus);document.removeEventListener('focusout',this.onBlur);}this.service.dispose();this.active=null;}
   }
 
   class GroupPlot {
@@ -39,4 +56,4 @@ const {ActiveLayoutSolver}=require('../series/layout');
     Object.freeze({id:'core.plot.wheel-zoom',gesture:'wheel',target:'plot',intent:'zoom-wheel'})
   ]);
 
-module.exports=Object.freeze({TooltipService, GroupPlot, DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS});
+module.exports=Object.freeze({TooltipService, DeclarativeTooltipRuntime, GroupPlot, DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS});

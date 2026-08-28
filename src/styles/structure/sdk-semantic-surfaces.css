@@ -281,3 +281,7 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 /* Shared compact summary rows used by scientific workbenches. */
 .dkds-summary-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;}
 .dkds-summary-chip{padding:5px 8px;}
+
+/* Core-owned drag affordance for dialogs/floating domain surfaces. */
+.dkds-movable-handle{cursor:move;touch-action:none;user-select:none}
+.dkds-movable-handle :where(button,input,select,textarea,a,[role="button"]){cursor:default}

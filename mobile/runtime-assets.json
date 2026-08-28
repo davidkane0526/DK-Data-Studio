@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "apkAssets": [
+    "assets/dkds/mobile.css",
+    "assets/dkds/web-bridge.js",
+    "assets/dkds/core/host/mobile-host-runtime.js",
+    "assets/dkds/core/host/mobile-plugin-package.js"
+  ]
+}

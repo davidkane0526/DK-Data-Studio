@@ -5,7 +5,7 @@ const {SeriesRegistry, LegendGroup, ActiveLayoutSolver, ResizeScheduler}=require
 const {ContextMenu, ActionGroup, InteractionBinding}=require('../interaction/context-actions');
 const {INPUT_GESTURES, CORE_INTERACTION_INTENTS, InteractionBehaviorProfile}=require('../interaction/behavior');
 const {PortableView}=require('../layout/portable-view');
-const {SplitController, WorkspaceLayout}=require('../layout/workspace');
+const {SplitController, MovableSurface, WorkspaceLayout}=require('../layout/workspace');
 const {ChartSurface, PlotViewRegistry}=require('../plot-view/chart');
 const {ViewHost}=require('../workbench/view-host');
 const {GridController}=require('../grid/controller');
@@ -45,7 +45,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
       this.interactionRuntime={create:(id,spec={})=>{const key=String(id||'interaction');if(!this.interactionRuntimes.has(key))this.interactionRuntimes.set(key,this.trackObject(new InteractionRuntime(this,key,spec)));return this.interactionRuntimes.get(key);},get:id=>this.interactionRuntimes.get(String(id||''))||null};
       this.interactionBehaviors={create:(id,spec={})=>{const key=String(id||`behavior-${this.interactionBehaviorProfiles.size+1}`);const existing=this.interactionBehaviorProfiles.get(key);if(existing){existing.spec={...spec};existing.setBindings(spec.bindings||[]);return existing;}const profile=this.trackObject(new InteractionBehaviorProfile(this,key,spec));this.interactionBehaviorProfiles.set(key,profile);return profile;},compile:(spec={})=>this.trackObject(new InteractionBehaviorProfile(this,`surface-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,spec)),get:id=>this.interactionBehaviorProfiles.get(String(id||''))||null,gestures:INPUT_GESTURES,intents:CORE_INTERACTION_INTENTS};
       this.resizeScheduler=new ResizeScheduler(this);
-      this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec)),solve:spec=>this.layoutSolver.solve(spec)};
+      this.layout={create:(root,spec)=>{const obj=new WorkspaceLayout(this,root,spec);this.layouts.push(obj);return this.trackObject(obj);},split:spec=>this.trackObject(new SplitController(this,spec)),move:spec=>this.trackObject(new MovableSurface(this,spec)),solve:spec=>this.layoutSolver.solve(spec)};
       this.panels={create:(id,node,spec={})=>{const obj=new PortableView(this,id,node,spec);this.portables.set(String(id),obj);return this.trackObject(obj);},get:id=>this.portables.get(String(id))||null};
       this.chartsApi={mount:(container,spec)=>{const obj=new ChartSurface(this,container,spec);this.charts.push(obj);return this.trackObject(obj);}};
       this.plotViewRegistry=new PlotViewRegistry(this);this.cleanups.push(()=>this.plotViewRegistry.dispose());

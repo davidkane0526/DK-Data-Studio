@@ -1492,12 +1492,11 @@ function Test-AndroidApkArtifact([string]$Path) {
   $resolved=[IO.Path]::GetFullPath($Path)
   if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) { throw "Android APK was not generated: $resolved" }
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  $required=@(
-    'assets/dkds/mobile.css',
-    'assets/dkds/web-bridge.js',
-    'assets/dkds/core/mobile-host-runtime.js',
-    'assets/dkds/core/mobile-plugin-package.js'
-  )
+  $assetManifestPath=Join-Path $Root 'mobile\runtime-assets.json'
+  if (-not (Test-Path -LiteralPath $assetManifestPath -PathType Leaf)) { throw "Android runtime asset manifest is missing: $assetManifestPath" }
+  $assetManifest=Get-Content -LiteralPath $assetManifestPath -Raw | ConvertFrom-Json
+  $required=@($assetManifest.apkAssets | ForEach-Object { [string]$_ })
+  if (-not $required.Count) { throw "Android runtime asset manifest is empty: $assetManifestPath" }
   $archive=[IO.Compression.ZipFile]::OpenRead($resolved)
   try {
     $entries=@{};foreach ($entry in $archive.Entries) { $entries[$entry.FullName]=$true }

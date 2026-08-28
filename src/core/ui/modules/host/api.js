@@ -6,18 +6,20 @@ const {SeriesRegistry, LegendGroup, ActiveLayoutSolver, ResizeScheduler}=require
 const {ContextMenu, ActionGroup, InteractionBinding}=require('../interaction/context-actions');
 const {InteractionBehaviorProfile}=require('../interaction/behavior');
 const {PortableView}=require('../layout/portable-view');
-const {SplitController, WorkspaceLayout}=require('../layout/workspace');
+const {SplitController, MovableSurface, WorkspaceLayout}=require('../layout/workspace');
 const {ChartSurface, PlotView, PlotViewRegistry}=require('../plot-view/chart');
 const {ViewHost}=require('../workbench/view-host');
 const {GridController}=require('../grid/controller');
 const {DialogService, dialogService, SettingsSurface, SettingsRegistry}=require('../dialog/settings');
 const {TableSurface, TableSurfaceRegistry, TableView, TableViewRegistry, globalTableSurfaceRegistry}=require('../table/surfaces');
-const {TooltipService, GroupPlot}=require('../tooltip/group-plot');
+const {TooltipService, DeclarativeTooltipRuntime, GroupPlot}=require('../tooltip/group-plot');
 const {ScientificCurveSurface}=require('../scientific-curve/surface');
 const {AnalysisWorkbench}=require('../workbench/analysis');
 const {PluginWorkspace}=require('../workbench/plugin');
 const {PluginScope}=require('../scope/plugin-scope');
 
+
+  let declarativeTooltipRuntime=null;
 
   function configureHost(options={}){
     if(options.root!==undefined)hostState.root=resolveElement(options.root)||hostState.root;
@@ -28,6 +30,7 @@ const {PluginScope}=require('../scope/plugin-scope');
       for(const [name,target] of Object.entries(options.zones)){const el=resolveElement(target);if(el)hostState.zones.set(name,el);}
     }
     if(!hostState.zones.has('overlay')&&hostState.root)hostState.zones.set('overlay',hostState.root);
+    if(!declarativeTooltipRuntime)declarativeTooltipRuntime=new DeclarativeTooltipRuntime();
     return api.host.snapshot();
   }
 
@@ -93,7 +96,7 @@ const {PluginScope}=require('../scope/plugin-scope');
     lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificRenderer?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
     diagnostics(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,series:scope.series?.snapshot?.()||null,legendGroups:[...scope.legendGroups.values()].map(x=>x.snapshot()),pluginWorkspaces:(scope.pluginWorkspaces||[]).map(x=>x.layoutDiagnostics?.()).filter(Boolean),tables:[...new Set(globalTableSurfaceRegistry.rows.values())].filter(x=>x.owner===scope.owner).length,plots:scope.scientificRenderer?.lifecycleState?.()||null});return Object.freeze({version:VERSION,scopes:rows.length,rows:Object.freeze(rows)});},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
-    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,SeriesRegistry,LegendGroup,ActiveLayoutSolver,TooltipService,GroupPlot,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,SeriesRegistry,LegendGroup,ActiveLayoutSolver,TooltipService,DeclarativeTooltipRuntime,GroupPlot,ResizeScheduler,ContextMenu,SplitController,MovableSurface,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

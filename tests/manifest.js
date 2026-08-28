@@ -749,6 +749,10 @@ module.exports = {
     {
       "file": "tests/test-v3630-theme-contract-37.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
+      "args": []
     }
   ],
   "check": [
@@ -1532,6 +1536,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3630-theme-contract-37.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
       "args": []
     }
   ],

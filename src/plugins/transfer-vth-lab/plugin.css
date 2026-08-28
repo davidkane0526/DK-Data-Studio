@@ -8,12 +8,14 @@
 .dkds-vth-check{display:flex;align-items:center;gap:7px;margin-top:8px}.dkds-vth-check input{width:auto}
 .dkds-vth-hint{margin:8px 0 0;line-height:1.45}
 .dkds-vth-source-badge{display:inline-flex;align-items:center;min-height:22px;padding:0 7px}
-.dkds-vth-main{width:100%;min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-content:start;gap:8px}
+.dkds-vth-main{width:100%;min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);align-content:start;gap:10px}
 .dkds-vth-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .dkds-vth-metric{padding:8px 10px;min-width:0}
 .dkds-vth-metric span{display:block;margin-bottom:3px}.dkds-vth-metric strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.dkds-vth-content-split{--dkds-vth-plot-height:520px;min-width:0;min-height:0;height:100%;display:grid;grid-template-rows:var(--dkds-vth-plot-height) 8px minmax(0,1fr)}
 .dkds-vth-plot-card{min-width:0;min-height:220px;height:100%;overflow:auto;display:grid;grid-template-rows:auto minmax(0,1fr)}
 .dkds-vth-plot-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px}
 .dkds-vth-plot-target{width:100%;min-width:0;min-height:220px}
-.dkds-vth-results-host{min-width:0;min-height:120px;max-height:190px}
-@media(max-width:920px){.dkds-vth-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dkds-vth-results-host{min-width:0;min-height:140px;overflow:auto}
+.dkds-vth-results-splitter{align-self:stretch}
+@media(max-width:920px){.dkds-vth-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.dkds-vth-content-split{height:auto;min-height:0;display:flex;flex-direction:column;gap:8px}.dkds-vth-plot-card{height:460px}.dkds-vth-results-splitter{display:none}.dkds-vth-results-host{min-height:220px}}

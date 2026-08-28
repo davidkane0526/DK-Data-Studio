@@ -91,7 +91,8 @@ assert(/New-AndroidBuildWorkspace/.test(backend) && /DKDS_ANDROID_WORK_ROOT/.tes
 assert(/D:\\PyDroidTemp\\builds\\dk-data-studio/.test(backend), 'Android staging and APK output should prefer the shared D:\\PyDroidTemp build area.');
 assert(/DKDS_ANDROID_CLEAN/.test(backend) && /Invoke-AndroidPrebuild/.test(backend), 'Android tooling must default to an incremental external prebuild and expose an explicit clean-build switch.');
 assert(/Invoke-AndroidSourceChecks[\s\S]*?mobile:test[\s\S]*?typecheck/.test(backend), 'Android packaging must run mobile architecture and TypeScript checks before compilation.');
-assert(/Test-AndroidApkArtifact/.test(backend) && /mobile-plugin-package\.js/.test(backend) && /SHA-256/.test(backend), 'Android packaging must verify required offline runtime assets and report the APK checksum.');
+const mobileRuntimeAssets=JSON.parse(read('mobile/runtime-assets.json'));
+assert(/Test-AndroidApkArtifact/.test(backend) && /runtime-assets\.json/.test(backend) && /SHA-256/.test(backend) && mobileRuntimeAssets.apkAssets.includes('assets/dkds/core/host/mobile-plugin-package.js'), 'Android packaging must verify the shared modular offline runtime asset manifest and report the APK checksum.');
 assert(/DK_TOOL_ROOT/.test(backend) && /SharedToolRoot/.test(backend), 'Tooling must support a cross-project DK_TOOL_ROOT.');
 assert(/BuildCache/.test(backend) && /ELECTRON_CACHE/.test(backend) && /ELECTRON_BUILDER_CACHE/.test(backend) && /GRADLE_USER_HOME/.test(backend), 'npm/Electron/electron-builder/Gradle caches must be shared outside projects.');
 assert(/developer-toolbox\.json/.test(backend) && /developer-toolbox\.json/.test(gui),

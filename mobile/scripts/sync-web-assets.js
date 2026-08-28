@@ -8,6 +8,13 @@ const repoRoot = process.env.DKDS_REPO_ROOT
   : path.resolve(mobileRoot, '..');
 const source = path.join(repoRoot, 'src');
 const out = path.join(mobileRoot, 'assets', 'web');
+const runtimeAssetManifest = JSON.parse(fs.readFileSync(path.join(mobileRoot, 'runtime-assets.json'), 'utf8'));
+const runtimeBundleFiles = (runtimeAssetManifest.apkAssets || []).map(value => {
+  const prefix = 'assets/dkds/';
+  const file = String(value || '').replaceAll('\\','/');
+  if (!file.startsWith(prefix)) throw new Error(`Invalid Android runtime asset path: ${file}`);
+  return file.slice(prefix.length);
+});
 
 // Keep desktop, web favicon and Android launcher assets on the same generated
 // abstract mark before Expo prebuild copies Android resources.
@@ -60,5 +67,8 @@ const marker = {
   purpose: 'React Native Android WebView offline bundle'
 };
 fs.writeFileSync(path.join(out, 'mobile-bundle.json'), JSON.stringify(marker, null, 2) + '\n', 'utf8');
+
+const missingRuntimeFiles = runtimeBundleFiles.filter(file => !fs.existsSync(path.join(out, file)));
+if (missingRuntimeFiles.length) throw new Error(`Mobile bundle is missing required runtime assets: ${missingRuntimeFiles.join(', ')}`);
 
 console.log(`Prepared mobile web bundle: ${out}`);

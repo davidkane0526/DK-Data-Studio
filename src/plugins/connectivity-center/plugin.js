@@ -1,7 +1,7 @@
 (() => {
-  const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar'];
+  const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.2',apiVersion:'1.18.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.3',apiVersion:'1.18.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {
@@ -53,6 +53,8 @@
     dom.append(dom.query('body'),chat);
 
     const $=sel=>dom.query(sel);
+    const smbMove=ctx.ui.layout.move({id:'smb-browser-dialog',target:$('.dksmb-window'),handle:$('.dksmb-window .dksvc-head'),bounds:smbOverlay});
+    const settingsMove=ctx.ui.layout.move({id:'agent-settings-dialog',target:$('.dkai-window'),handle:$('.dkai-window .dksvc-head'),bounds:settingsOverlay});
     const setText=(sel,value)=>{const el=$(sel);if(el)el.textContent=String(value??'');};
     const hide=el=>el?.classList.add('hidden');
     const show=el=>el?.classList.remove('hidden');
@@ -89,7 +91,7 @@
       const c=connection();if(!c.server||!c.share)throw new Error('请先选择服务器和共享。');persistSmb();smbBusy=true;renderSmbFiles();try{smbEntries=await connectivity.smb.list(c,smbPath)||[];selectedPaths=new Set([...selectedPaths].filter(path=>smbEntries.some(row=>row.path===path)));}finally{smbBusy=false;renderSmbFiles();}
     }
     async function discover(){const found=await connectivity.smb.discover()||[];servers=(Array.isArray(found)?found:[]).map(row=>typeof row==='string'?{name:row,address:row}:{name:String(row.name||row.address||''),address:String(row.address||row.name||'')}).filter(row=>row.address);renderSmbNav();ctx.status.set(`SMB：扫描到 ${servers.length} 台设备。`);}
-    function openSmb(mode='data'){smbMode=mode==='project'?'project':mode==='auto'?'auto':'data';selectedPaths.clear();show(smbOverlay);renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
+    function openSmb(mode='data'){smbMode=mode==='project'?'project':mode==='auto'?'auto':'data';selectedPaths.clear();show(smbOverlay);dom.frame(()=>smbMove.clamp({persist:false}));renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
     function closeSmb(){hide(smbOverlay);}
     dom.on($('#dksmbClose'),'click',closeSmb);dom.on($('#dksmbCancel'),'click',closeSmb);dom.on(smbOverlay,'click',event=>{if(event.target===smbOverlay)closeSmb();});
     dom.on($('#dksmbDiscover'),'click',()=>{ctx.status.set('SMB：正在扫描局域网设备…');return setBusy('#dksmbDiscover',discover,'扫描中').catch(err=>ctx.status.set(`SMB 扫描失败：${err.message}`));});
@@ -139,7 +141,7 @@
       const settings=connectivity.agent.loadSettings();let hasKey=false;try{hasKey=!!(await connectivity.agent.getSecret(settings.presetId||'default'));}catch{}await refreshMcp();
       const configured=!!(settings.endpoint&&settings.model&&hasKey);const state=aiBusy?'busy':aiHealth==='error'?'error':lastMcp.running?'mcp':configured?'ready':'';const label=aiBusy?'AI…':lastMcp.running?'AI · MCP':'AI';const title=aiBusy?'AI Agent 正在执行':aiHealth==='error'?'AI Agent 最近连接失败':configured?(lastMcp.running?'AI Agent 已配置 · MCP 已开启':'AI Agent 已配置'):'AI Agent 尚未配置';aiStatus.update({label,title,state,icon:'✦'});$('#dkaiChatDot')?.classList.remove('ready','busy','error');if(state==='busy')$('#dkaiChatDot')?.classList.add('busy');else if(state==='error')$('#dkaiChatDot')?.classList.add('error');else if(configured)$('#dkaiChatDot')?.classList.add('ready');return {configured,state};
     }
-    function openSettings(){show(settingsOverlay);void loadAiSettings().catch(err=>ctx.status.set(`AI 设置读取失败：${err.message}`));}
+    function openSettings(){show(settingsOverlay);dom.frame(()=>settingsMove.clamp({persist:false}));void loadAiSettings().catch(err=>ctx.status.set(`AI 设置读取失败：${err.message}`));}
     function closeSettings(){hide(settingsOverlay);}
     dom.on($('#dkaiSettingsClose'),'click',closeSettings);dom.on(settingsOverlay,'click',event=>{if(event.target===settingsOverlay)closeSettings();});
     dom.on($('#dkaiPreset'),'change',()=>fillPreset($('#dkaiPreset').value));

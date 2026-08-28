@@ -532,7 +532,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.63.0',
+      appVersion:'3.63.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,
@@ -617,12 +617,19 @@
       }else await loadScript(pluginUrl(file));
     },startupProfile.scripts,{kind});
     const loadedProviderScripts=new Set();
-    const loadProviderScript=async(provider,file)=>measure(`${provider.pluginId}:${file}`,async()=>{
+    const loadProviderScript=async(provider,file,kind='algorithm-provider')=>measure(`${provider.pluginId}:${file}`,async()=>{
       const token=`${provider.pluginId}::${file}`;if(loadedProviderScripts.has(token))return;
       if(provider.source==='external'||provider.source==='override')await loadInlineScript(externalPackageFile(provider,file),`${provider.pluginId}/${file}`);
       else await loadScript(pluginUrl(file,provider.pluginFolder));
       loadedProviderScripts.add(token);
-    },startupProfile.scripts,{kind:'algorithm-provider',providerId:provider.pluginId});
+    },startupProfile.scripts,{kind,providerId:provider.pluginId});
+    const loadProviderStyles=provider=>{
+      if(provider.source==='external'||provider.source==='override'){
+        for(const file of (provider.styles||[]))loadInlineStyle(externalPackageFile(provider,file),`${provider.pluginId}/${file}`);
+      }else{
+        for(const row of (provider.styles||[]))loadInlineStyle(row.css,`${provider.pluginId}/${row.file}`);
+      }
+    };
     for(const file of (spec.scripts||[]))await loadTargetScript(file,'support');
 
     if (spec.runtime) await loadTargetScript(spec.runtime,'window-runtime');
@@ -647,6 +654,16 @@
 
     window.DKDSPlugins.configure(host);
     installHostDevToolsStatusItem();
+    // Dedicated TOP renderers must see the same Theme Profile catalog as the
+    // main shell. Appearance mode (light/dark) is host state, while Theme
+    // Profiles are plugin definitions; without loading the providers here a
+    // dedicated window silently falls back to builtin.default and only SUPER
+    // appears themed.
+    for(const provider of (spec.themeProviders||[])){
+      loadProviderStyles(provider);
+      for(const file of (provider.scripts||[]))await loadProviderScript(provider,file,'theme-provider');
+      if(provider.source==='external'||provider.source==='override')window.DKDSPlugins?.packageRuntime?.applyManifest?.(provider.pluginId,provider.packageManifest||{},provider.source);
+    }
     for(const provider of (spec.algorithmProviders||[])){
       for(const file of (provider.scripts||[]))await loadProviderScript(provider,file);
     }
@@ -659,6 +676,11 @@
       // same external Tool and could leave a visible Tools entry with no page.
       window.DKDSPlugins?.packageRuntime?.applyManifest?.(spec.pluginId,spec.packageManifest||{},spec.source||'external');
     }else{
+      // Built-in TOPs use exactly the same plugin-style ownership as packaged
+      // plugins. The previous dedicated-window path skipped manifest.styles,
+      // which made Pulse/Vth/TER render with raw Core geometry while the same
+      // plugins looked correct in the main shell.
+      for(const row of (spec.styleSources||[]))loadInlineStyle(row.css,`${spec.pluginId}/${row.file}`);
       await loadTargetScript(spec.entry,'entry');
     }
 
@@ -703,6 +725,7 @@
     startupProfile.activityId=String(bootstrap.activityId||'');
     startupProfile.dependencyCount=startupProfile.dependencies.length;
     startupProfile.scriptCount=startupProfile.scripts.length;
+    startupProfile.themeProviders=(spec.themeProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,source:provider.source}));
     startupProfile.algorithmProviders=(spec.algorithmProviders||[]).map(provider=>({pluginId:provider.pluginId,version:provider.version,categories:[...(provider.algorithmCategories||[])],source:provider.source}));
     if(spec.selfAlgorithmProvider){
       const self=spec.selfAlgorithmProvider;

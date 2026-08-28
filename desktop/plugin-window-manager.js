@@ -67,6 +67,17 @@ function normalizePluginScripts(pluginDir, value) {
   return Object.freeze(out);
 }
 
+function normalizeBuiltinPluginStyles(pluginDir, value) {
+  const rows = Array.isArray(value) ? value : [];
+  const out = [];
+  for (const raw of rows) {
+    const file = safeRelativeFile(pluginDir, raw, 'plugin stylesheet');
+    if (out.some(row => row.file === file)) continue;
+    out.push(Object.freeze({ file, css:fs.readFileSync(path.join(pluginDir,file),'utf8') }));
+  }
+  return Object.freeze(out);
+}
+
 function finiteDimension(value, fallback) {
   const n = Math.round(Number(value));
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -157,6 +168,68 @@ function resolveAlgorithmProviders(appPath,externalPackages=[],overridePackages=
   return [...byId.values()];
 }
 
+function normalizeBuiltinThemeProvider(appPath, pluginFolder, manifest) {
+  if(String(manifest?.pluginType||'').trim().toLowerCase()!=='theme')return null;
+  const pluginDir=path.join(appPath,'src','plugins',pluginFolder);
+  const entry=safeRelativeFile(pluginDir,manifest.entry||'plugin.js','theme provider entry');
+  const scripts=[];
+  for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
+    const file=safeRelativeFile(pluginDir,raw,'theme provider script');
+    if(!scripts.includes(file))scripts.push(file);
+  }
+  if(!scripts.includes(entry))scripts.push(entry);
+  return Object.freeze({
+    source:'builtin',pluginId:String(manifest.id||''),version:String(manifest.version||''),pluginFolder,entry,
+    scripts:Object.freeze(scripts),styles:normalizeBuiltinPluginStyles(pluginDir,manifest.styles),
+    packageManifest:Object.freeze({...manifest})
+  });
+}
+
+function readBuiltinThemeProviders(appPath) {
+  const out=[];const pluginsDir=path.join(appPath,'src','plugins');
+  try{
+    for(const pluginFolder of fs.readdirSync(pluginsDir).sort()){
+      if(pluginFolder.startsWith('_')||!/^[A-Za-z0-9._-]+$/.test(pluginFolder))continue;
+      const manifestPath=path.join(pluginsDir,pluginFolder,'plugin.json');if(!fs.existsSync(manifestPath))continue;
+      try{const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));const row=normalizeBuiltinThemeProvider(appPath,pluginFolder,manifest);if(row)out.push(row);}catch(err){console.warn(`[DKDS theme provider] ${pluginFolder}: ${err.message}`);}
+    }
+  }catch(err){console.warn('[DKDS theme provider] manifest scan failed:',err.message);}
+  return out;
+}
+
+function normalizePackagedThemeProvider(pkg,source='external') {
+  const manifest=pkg?.manifest||{};
+  if(String(manifest.pluginType||'').trim().toLowerCase()!=='theme')return null;
+  const entry=packageFile(pkg,manifest.entry||'plugin.js','packaged theme provider entry');
+  const scripts=[];
+  for(const raw of (Array.isArray(manifest.scripts)&&manifest.scripts.length?manifest.scripts:[entry])){
+    const file=packageFile(pkg,raw,'packaged theme provider script');if(!scripts.includes(file))scripts.push(file);
+  }
+  if(!scripts.includes(entry))scripts.push(entry);
+  const styles=[];
+  for(const raw of (Array.isArray(manifest.styles)?manifest.styles:[])){
+    const file=packageFile(pkg,raw,'packaged theme provider style');if(!styles.includes(file))styles.push(file);
+  }
+  return Object.freeze({source,pluginId:String(manifest.id||''),version:String(manifest.version||''),entry,scripts:Object.freeze(scripts),styles:Object.freeze(styles),packageFiles:Object.freeze({...pkg.files}),packageManifest:Object.freeze({...manifest})});
+}
+
+function resolveThemeProviders(appPath,externalPackages=[],overridePackages=[]) {
+  const byId=new Map(readBuiltinThemeProviders(appPath).map(row=>[row.pluginId,row]));
+  for(const pkg of (Array.isArray(overridePackages)?overridePackages:[])){
+    const id=String(pkg?.manifest?.id||'');if(!id)continue;
+    if(byId.has(id))byId.delete(id);
+    try{const row=normalizePackagedThemeProvider(pkg,'override');if(row)byId.set(id,row);}catch(err){console.warn(`[DKDS theme provider override] ${id}: ${err.message}`);}
+  }
+  for(const pkg of (Array.isArray(externalPackages)?externalPackages:[])){
+    try{const row=normalizePackagedThemeProvider(pkg,'external');if(row&&!byId.has(row.pluginId))byId.set(row.pluginId,row);}catch(err){console.warn(`[DKDS external theme provider] ${pkg?.manifest?.id||'unknown'}: ${err.message}`);}
+  }
+  return [...byId.values()];
+}
+
+function attachThemeProviders(spec,providers=[]) {
+  return Object.freeze({...spec,themeProviders:Object.freeze((providers||[]).filter(row=>row&&row.pluginId!==spec?.pluginId))});
+}
+
 function attachAlgorithmProviders(spec,providers=[]) {
   const categories=normalizeAlgorithmCategories(spec?.algorithmCategories);
   if(!categories.length)return Object.freeze({...spec,algorithmCategories:categories,algorithmProviders:Object.freeze([]),selfAlgorithmProvider:null});
@@ -218,6 +291,7 @@ function readBuiltinPluginWindows(appPath) {
           activity,
           dependencies:normalizeDependencies(windowSpec.dependencies,manifest.requiresCore),
           scripts:normalizePluginScripts(pluginDir, windowSpec.scripts),
+          styleSources:normalizeBuiltinPluginStyles(pluginDir,manifest.styles),
           algorithmProvider:manifest.algorithmProvider===true,
           algorithmCategories:normalizeAlgorithmCategories(manifest.algorithmCategories),
           title:String(windowSpec.title || manifest.name || activity),
@@ -353,13 +427,15 @@ function readPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
     combined.set(activity,spec);
   }
   const providers=resolveAlgorithmProviders(appPath,externalPackages,overridePackages);
-  for(const [activity,spec] of [...combined])combined.set(activity,attachAlgorithmProviders(spec,providers));
+  const themes=resolveThemeProviders(appPath,externalPackages,overridePackages);
+  for(const [activity,spec] of [...combined])combined.set(activity,attachThemeProviders(attachAlgorithmProviders(spec,providers),themes));
   return combined;
 }
 
 function listBuiltinPluginWindows(appPath) {
   const providers=resolveAlgorithmProviders(appPath,[],[]);
-  return [...readBuiltinPluginWindows(appPath).values()].map(spec=>attachAlgorithmProviders(spec,providers));
+  const themes=resolveThemeProviders(appPath,[],[]);
+  return [...readBuiltinPluginWindows(appPath).values()].map(spec=>attachThemeProviders(attachAlgorithmProviders(spec,providers),themes));
 }
 
 function listPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
@@ -368,7 +444,7 @@ function listPluginWindows(appPath, externalPackages=[], overridePackages=[]) {
 
 function resolveBuiltinPluginWindow(appPath, activityId) {
   const spec=readBuiltinPluginWindows(appPath).get(String(activityId || '').trim()) || null;
-  return spec?attachAlgorithmProviders(spec,resolveAlgorithmProviders(appPath,[],[])):null;
+  return spec?attachThemeProviders(attachAlgorithmProviders(spec,resolveAlgorithmProviders(appPath,[],[])),resolveThemeProviders(appPath,[],[])):null;
 }
 
 function resolvePluginWindow(appPath, activityId, externalPackages=[], overridePackages=[]) {
@@ -382,6 +458,8 @@ module.exports = {
   normalizeAlgorithmCategories,
   resolveAlgorithmProviders,
   attachAlgorithmProviders,
+  resolveThemeProviders,
+  attachThemeProviders,
   normalizeDependencies,
   normalizePersistence,
   normalizeArtifactHydration,
