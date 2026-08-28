@@ -65,7 +65,7 @@ assert(dc.includes("id:'data-center-data-width'")&&dc.includes("axis:'x'"),'Data
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 assert(!resonanceCss.includes('.reswin-group-head{')&&!resonanceCss.includes('.reswin-group-card-actions{')&&!resonanceCss.includes('.reswin-group-title{'),'Resonance must not re-own Core PlotView header geometry.');
-assert(resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title'),'Resonance GroupPlot must consume the canonical Core PlotView header DOM contract.');
+assert(resonanceGroup.includes('reswin-group-head dkds-plot-view-head')&&!resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title'),'Resonance GroupPlot must consume the canonical Core PlotView header DOM contract without generic SurfaceHeader geometry.');
 
 const infra=read('docs/PLUGIN_UI_INFRASTRUCTURE.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');

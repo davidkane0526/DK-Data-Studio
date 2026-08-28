@@ -733,6 +733,10 @@ module.exports = {
     {
       "file": "tests/test-v3623-scientific-focus-header-ownership.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3624-plot-header-runtime-composition.js",
+      "args": []
     }
   ],
   "check": [
@@ -1500,6 +1504,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3623-scientific-focus-header-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3624-plot-header-runtime-composition.js",
       "args": []
     }
   ],

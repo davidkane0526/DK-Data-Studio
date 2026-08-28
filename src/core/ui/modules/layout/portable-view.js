@@ -28,7 +28,9 @@ const {normalizePlacement, refreshDockZoneState}=require('./docking');
       let header=useTarget?resolveElement(this.spec.handle||'.analysis-chart-title',wrapper):null;
       if(!header){header=document.createElement('header');header.className='dkds-portable-header drag-handle';if(useTarget)wrapper.prepend(header);}
       else header.classList.add('dkds-portable-inline-header','drag-handle');
-      header.classList.add('dkds-surface-header');
+      const specializedHeader=header.classList.contains('dkds-plot-view-head')||header.classList.contains('dkds-group-plot-head');
+      if(specializedHeader)header.classList.remove('dkds-surface-header');
+      else header.classList.add('dkds-surface-header');
       const headingStack=header.querySelector?.(':scope > div:first-child');
       if(headingStack&&(headingStack.querySelector?.('h1,h2,h3,h4,strong')||headingStack.querySelector?.('p,.analysis-subtitle,[class$="-description"]')))headingStack.classList.add('dkds-surface-heading-stack');
       let title=header.querySelector?.('.dkds-portable-title');

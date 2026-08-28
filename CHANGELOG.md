@@ -1,3 +1,11 @@
+# v3.62.4 — Plot Header Runtime Composition
+
+- Fix the remaining PlotView title/action vertical-offset regression at the actual runtime composition boundary. `PortableView` previously added the generic `dkds-surface-header` class to an already-specialized `dkds-plot-view-head`; the generic header contributes 7 px vertical padding and therefore re-entered the compact 28 px plot-header geometry after PlotView had already centered its content.
+- Make `PlotView` normalize any pre-existing generic SurfaceHeader class away, and make `PortableView` preserve specialized PlotView/GroupPlot header contracts instead of re-applying generic panel-header geometry.
+- Remove the redundant `dkds-surface-header` class from Resonance group cards. Plot headers remain Theme Material chrome through their dedicated Core selectors, so this does not reduce theme coverage.
+- Update the v3.62.2/v3.62.3 ownership gates and add a v3.62.4 runtime-composition regression so historical tests cannot reintroduce the conflicting class combination.
+- Keep Plugin API/SDK **1.18.0** and Theme Contract **3.6.0** unchanged; this is an App/Core bug fix, not a plugin-contract change.
+
 # v3.62.3 — Scientific Focus & Plot Header Ownership
 
 - Remove the remaining dual ownership of ScientificPlot focus styling. ScientificCurve renderer now exclusively owns selected/unselected curve and marker opacity/width; presentation CSS no longer overrides `.is-focused` / `.is-dimmed` renderer state in dark mode.

@@ -45,6 +45,7 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
       this.header=resolveScopedElement(this.spec.header||'[data-dkds-plot-header],.analysis-chart-title,.dkds-chart-head',this.card);
       if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
       this.header.classList.add('dkds-plot-view-head');
+      this.header.classList.remove('dkds-surface-header');
       this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.resize('observer');});this.ro.observe(this.card);}
     }

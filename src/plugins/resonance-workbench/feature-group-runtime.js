@@ -35,7 +35,7 @@
       let row=groupCards.get(String(key));if(row?.card?.isConnected)return row;
       const hostEl=$('#reswinGroupGrid');if(!hostEl)return null;
       const card=dom.create('div');card.className='reswin-group-card dkds-surface';card.dataset.groupMetric=String(key);
-      card.innerHTML=`<div class="reswin-group-head dkds-surface-header dkds-plot-view-head"><span class="reswin-group-title dkds-plot-view-title">${esc(title)}</span><span class="reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group"></span></div><div class="reswin-group-plot"></div>`;
+      card.innerHTML=`<div class="reswin-group-head dkds-plot-view-head"><span class="reswin-group-title dkds-plot-view-title">${esc(title)}</span><span class="reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group"></span></div><div class="reswin-group-plot"></div>`;
       hostEl.appendChild(card);
       const plot=card.querySelector('.reswin-group-plot');
       row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
