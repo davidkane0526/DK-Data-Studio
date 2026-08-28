@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.64.0",
+  "version": "3.64.1",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -18,6 +18,7 @@
     "postinstall": "npm run brand:assets",
     "plugin:index": "node scripts/generate-plugin-index.js",
     "plugin:validate": "node scripts/validate-plugins.js",
+    "version:patch": "node scripts/set-version.js",
     "start": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
     "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
     "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",

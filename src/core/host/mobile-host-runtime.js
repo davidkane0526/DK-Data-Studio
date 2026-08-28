@@ -303,7 +303,7 @@
       const panel=document.querySelector('.dkds-analysis-left');
       if(!panel)return false;
       if(panel.querySelector('.dkds-mobile-panel-edge'))return true;
-      const handle=document.createElement('div');handle.className='dkds-mobile-panel-edge';handle.setAttribute('role','separator');handle.setAttribute('aria-label','拖动调整数据与参数面板宽度');panel.appendChild(handle);
+      const handle=document.createElement('div');handle.className='dkds-mobile-panel-edge';handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize';handle.setAttribute('role','separator');handle.setAttribute('aria-label','拖动调整数据与参数面板宽度');panel.appendChild(handle);
       let drag=null;
       handle.addEventListener('pointerdown',event=>{drag={pointerId:event.pointerId};handle.setPointerCapture?.(event.pointerId);event.preventDefault();});
       handle.addEventListener('pointermove',event=>{if(!drag||drag.pointerId!==event.pointerId)return;const width=Math.max(240,Math.min(window.innerWidth*.92,event.clientX));document.documentElement.style.setProperty('--dkds-mobile-left-width',`${Math.round(width)}px`);event.preventDefault();});
@@ -323,7 +323,7 @@
 
   function bindHeldSwipeKeys(){
     let gesture=null;
-    const down=event=>{if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;if(event.target?.closest?.('.dkds-portable-header,.drag-handle,.dkds-portable-resize-handle,[role=scrollbar],.dkds-table-column-resizer'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false};};
+    const down=event=>{if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;if(event.target?.closest?.('input,textarea,select,button,a,[contenteditable="true"],[data-dkds-touch-gesture-owner],.dkds-portable-header,.drag-handle,.dkds-portable-resize-handle,.dkds-movable-handle,[role=scrollbar],.dkds-table-column-resizer'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),target:event.target,fired:false};};
     const move=event=>{
       if(!gesture||gesture.id!==event.pointerId||gesture.fired||performance.now()-gesture.at<320)return;
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;

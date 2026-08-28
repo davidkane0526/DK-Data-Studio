@@ -108,22 +108,28 @@ function toggleGroupMinimize(){
 
 function setupDockResizer(){
   const handle=$('#groupDockResizer');
-  let active=false,startY=0,startH=0;
-  handle.addEventListener('mousedown',e=>{
-    if(state.groupPanelMode!=='docked'||state.groupPanelCollapsed)return;
-    active=true;startY=e.clientY;startH=$('#groupPanel').getBoundingClientRect().height;e.preventDefault();e.stopPropagation();
+  if(!handle)return;
+  let drag=null;
+  handle.style.touchAction='none';
+  handle.dataset.dkdsTouchGestureOwner='group-dock-resize';
+  handle.addEventListener('pointerdown',e=>{
+    if((e.button!==undefined&&e.button!==0)||state.groupPanelMode!=='docked'||state.groupPanelCollapsed)return;
+    drag={id:e.pointerId,startY:e.clientY,startH:$('#groupPanel').getBoundingClientRect().height};
+    handle.setPointerCapture?.(e.pointerId);e.preventDefault();e.stopPropagation();
   });
-  window.addEventListener('mousemove',e=>{
-    if(!active)return;
+  window.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
     const area=$('.main-area');
     const maxH=Math.max(220,Math.floor(area.getBoundingClientRect().height*0.72));
     // Dragging the top edge upward increases panel height.
-    state.groupPanelDockHeight=Math.max(180,Math.min(maxH,startH+(startY-e.clientY)));
+    state.groupPanelDockHeight=Math.max(180,Math.min(maxH,drag.startH+(drag.startY-e.clientY)));
     $('#groupPanel').style.height=`${state.groupPanelDockHeight}px`;
     scheduleMainPlotRelayout();
     updateTrendLayout(true);
-  });
-  window.addEventListener('mouseup',()=>{active=false;});
+    if(e.cancelable)e.preventDefault();
+  },{passive:false});
+  const finish=e=>{if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;handle.releasePointerCapture?.(drag.id);drag=null;};
+  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
 }
 
 function captureInspectorFloatRect(){
@@ -193,38 +199,42 @@ function toggleInspectorDock(){
 function setupInspectorDockResizer(){
   const handle=$('#inspectorDockResizer');
   if(!handle)return;
-  let active=false,startX=0,startW=0;
-  handle.addEventListener('mousedown',e=>{
-    if(state.inspectorPanelMode!=='right')return;
-    active=true;
-    startX=e.clientX;
-    startW=$('#inspectorDockSlot').getBoundingClientRect().width;
-    e.preventDefault();e.stopPropagation();
+  let drag=null;
+  handle.style.touchAction='none';
+  handle.dataset.dkdsTouchGestureOwner='inspector-dock-resize';
+  handle.addEventListener('pointerdown',e=>{
+    if((e.button!==undefined&&e.button!==0)||state.inspectorPanelMode!=='right')return;
+    drag={id:e.pointerId,startX:e.clientX,startW:$('#inspectorDockSlot').getBoundingClientRect().width};
+    handle.setPointerCapture?.(e.pointerId);e.preventDefault();e.stopPropagation();
   });
-  window.addEventListener('mousemove',e=>{
-    if(!active)return;
+  window.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
     const workspace=$('#mainWorkspace');
     const maxW=Math.max(340,Math.floor(workspace.getBoundingClientRect().width*.62));
-    state.inspectorDockWidth=Math.max(300,Math.min(maxW,startW+(startX-e.clientX)));
+    state.inspectorDockWidth=Math.max(300,Math.min(maxW,drag.startW+(drag.startX-e.clientX)));
     $('#inspectorDockSlot').style.width=`${state.inspectorDockWidth}px`;
     scheduleMainPlotRelayout();
-  });
-  window.addEventListener('mouseup',()=>{active=false;});
+    if(e.cancelable)e.preventDefault();
+  },{passive:false});
+  const finish=e=>{if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;handle.releasePointerCapture?.(drag.id);drag=null;};
+  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
 }
 
 function makeFloating(panel){
-  const head=panel.querySelector('.drag-handle');if(!head)return;let dragging=false,dx=0,dy=0;
-  head.addEventListener('mousedown',e=>{if(e.target.closest('button')||panel.classList.contains('docked')||panel.classList.contains('docked-right'))return;const r=panel.getBoundingClientRect();panel.style.transform='none';panel.style.left=`${r.left}px`;panel.style.top=`${r.top}px`;panel.style.right='auto';panel.style.bottom='auto';dragging=true;dx=e.clientX-r.left;dy=e.clientY-r.top;e.preventDefault();});
-  window.addEventListener('mousemove',e=>{if(!dragging)return;const bounds=floatingSafeBounds(panel),r=panel.getBoundingClientRect(),maxLeft=Math.max(bounds.left,bounds.right-r.width),maxTop=Math.max(bounds.top,bounds.bottom-r.height);panel.style.left=`${Math.min(maxLeft,Math.max(bounds.left,e.clientX-dx))}px`;panel.style.top=`${Math.min(maxTop,Math.max(bounds.top,e.clientY-dy))}px`;});
-  window.addEventListener('mouseup',()=>{
-    if(dragging){
-      panel.dataset.dkdsUserMoved='1';
-      ensureFloatingPanelVisible(panel);
-      if(panel.id==='inspectorPanel')captureInspectorFloatRect();
-      if(panel.id==='groupPanel')captureGroupFloatRect();
-    }
-    dragging=false;
-  });
+  const head=panel.querySelector('.drag-handle');if(!head)return;let drag=null;
+  head.style.touchAction='none';head.dataset.dkdsTouchGestureOwner='floating-panel-drag';
+  head.addEventListener('pointerdown',e=>{if((e.button!==undefined&&e.button!==0)||e.target.closest('button')||panel.classList.contains('docked')||panel.classList.contains('docked-right'))return;const r=panel.getBoundingClientRect();panel.style.transform='none';panel.style.left=`${r.left}px`;panel.style.top=`${r.top}px`;panel.style.right='auto';panel.style.bottom='auto';drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};head.setPointerCapture?.(e.pointerId);e.preventDefault();});
+  window.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const bounds=floatingSafeBounds(panel),r=panel.getBoundingClientRect(),maxLeft=Math.max(bounds.left,bounds.right-r.width),maxTop=Math.max(bounds.top,bounds.bottom-r.height);panel.style.left=`${Math.min(maxLeft,Math.max(bounds.left,e.clientX-drag.dx))}px`;panel.style.top=`${Math.min(maxTop,Math.max(bounds.top,e.clientY-drag.dy))}px`;if(e.cancelable)e.preventDefault();},{passive:false});
+  const finish=e=>{
+    if(!drag||(e?.pointerId!==undefined&&e.pointerId!==drag.id))return;
+    head.releasePointerCapture?.(drag.id);
+    panel.dataset.dkdsUserMoved='1';
+    ensureFloatingPanelVisible(panel);
+    if(panel.id==='inspectorPanel')captureInspectorFloatRect();
+    if(panel.id==='groupPanel')captureGroupFloatRect();
+    drag=null;
+  };
+  window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);
 }
 document.querySelectorAll('.floating-panel').forEach(makeFloating);
 setupDockResizer();

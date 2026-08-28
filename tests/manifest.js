@@ -761,6 +761,10 @@ module.exports = {
     ,{
       "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3641-mobile-gesture-restoration.js",
+      "args": []
     }
 
   ],
@@ -1558,6 +1562,10 @@ module.exports = {
     ,{
       "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3641-mobile-gesture-restoration.js",
+      "args": []
     }
 
   ],
@@ -1572,6 +1580,10 @@ module.exports = {
     },
     {
       "file": "tests/test-mobile-plugin-package.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3641-mobile-gesture-restoration.js",
       "args": []
     }
   ]

@@ -6,6 +6,7 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
     constructor(scope,spec={}){
       this.scope=scope;this.spec={axis:'x',min:180,max:null,defaultSize:320,...spec};this.container=resolveElement(spec.container);this.handle=resolveElement(spec.handle,this.container||document);this.target=resolveElement(spec.target,this.container||document)||this.container;this.axis=this.spec.axis==='y'?'y':'x';this.cleanups=[];this.drag=null;
       if(!this.container||!this.handle||!this.target)throw new Error('SplitController container/handle/target not found.');
+      this.handle.dataset.dkdsTouchGestureOwner='split-resize';
       this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}`;
       const saved=readJson(this.key,{});this.apply(Number(saved.size)||Number(this.spec.defaultSize)||320,{persist:false});this.bind();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.apply(this.size,{persist:false,emit:false});});this.ro.observe(this.container);}
@@ -28,6 +29,7 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
       this.scope=scope;this.spec={persist:true,resetOnDoubleClick:true,...spec};
       this.target=resolveElement(spec.target||spec.surface);this.handle=resolveElement(spec.handle,this.target||document);this.boundsElement=resolveElement(spec.bounds||spec.container)||null;this.drag=null;this.cleanups=[];
       if(!this.target||!this.handle)throw new Error('MovableSurface target/handle not found.');
+      this.handle.dataset.dkdsTouchGestureOwner='movable-surface';
       this.key=`${hostState.storagePrefix}.${scope.owner}.move.${String(spec.id||'default')}`;
       this.position={x:0,y:0};
       if(this.spec.persist!==false){const saved=readJson(this.key,{});this.position.x=Number(saved.x)||0;this.position.y=Number(saved.y)||0;}

@@ -13,6 +13,8 @@ const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot')
         this.target=document.createElementNS('http://www.w3.org/2000/svg','svg');this.target.classList.add('dkds-scientific-curve-canvas');this.target.setAttribute('role','img');resolvedTarget.appendChild(this.target);this.ownsTarget=true;
       }
       this.entities=scope.entities||window.DKDSEntities?.createScope?.(this.owner)||null;
+      this.previousTouchGestureOwner=this.target.getAttribute('data-dkds-touch-gesture-owner');
+      this.target.setAttribute('data-dkds-touch-gesture-owner','scientific-plot');
       this.target.classList.add('dkds-scientific-curve-surface');
       this.container=resolveElement(spec.container)||(this.ownsTarget?resolvedTarget:this.target.parentElement)||this.target;
       this.container.classList.add('dkds-scientific-surface-host');globalThis.DKDSMaterialSurface?.apply?.(this.container,'surface');

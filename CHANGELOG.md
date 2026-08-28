@@ -1,3 +1,14 @@
+# v3.64.1 — Mobile Layout & Gesture Contract Restoration
+
+- Restore the React Native shell rule accidentally broken by the v3.62 modular cleanup. `topbar`, project tabs, the desktop `#mainWorkspace`, and `#superWorkspaceDivider` are again hidden as one complete native-client rule; the dangling selector that exposed desktop chrome on Android is removed.
+- Add explicit Core touch-gesture ownership through `data-dkds-touch-gesture-owner`. ScientificPlot, mobile drawer resizing, portable floating resize, SplitController and MovableSurface now reserve their pointer sequences so the global held-swipe keyboard gesture cannot steal direct manipulation.
+- Preserve scientific mobile box selection and box zoom on the existing Core Pointer Events path with pointer capture. The scientific surface remains `touch-action:none`, and the default `select-region` / Ctrl `zoom-box` behavior stays renderer-owned rather than moving into plugins.
+- Preserve mobile panel sizing semantics: the data/parameter drawer keeps edge-drag width resizing, docked PRIME surfaces keep title-hold resize, and floating PRIME/global surfaces keep their dedicated touch resize handle. Mobile-aware split limits remain owned by Core.
+- Convert the remaining app-owned group-dock, inspector-dock and legacy floating-panel drag paths from mouse-only events to Pointer Events with pointer capture, so mouse, touch and pen share the same implementation instead of relying on synthetic mouse events.
+- Make application release versioning automatic by default: `node scripts/set-version.js` or `npm run version:patch` now advances the current patch version when no explicit version is supplied. This release advances the App from **3.64.0** to **3.64.1** and the React Native package from **0.8.11** to **0.8.12** with Android `versionCode` **23**.
+- Add a dedicated v3.64.1 mobile regression gate covering the native-shell CSS rule, gesture arbitration, drawer/PRIME/split/movable resizing, scientific box selection, Pointer Events migration and automatic version bump behavior.
+- Release-source validation: `npm test` **191/191 PASS**, `npm run check` **199/199 PASS**, mobile source tests **4/4 PASS**, plugin manifests/packages **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, authored CSS **0 `!important`**.
+
 # v3.64.0 — Theme Contract 3.8 / SDK 1.20 Component Appearance
 
 - Advance the standalone SDK to **1.20.0** and Theme Contract to **3.8.0** while keeping Plugin API **1.18.0**. Theme 3.8 adds bounded Component Appearance semantics without allowing arbitrary CSS, selectors, DOM mutation, component layout, spacing, sizing, positioning or z-index control.

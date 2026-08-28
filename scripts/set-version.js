@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const input = String(process.argv[2] || '').trim();
+const input = String(process.argv[2] || 'patch').trim();
 
 const packagePath = path.join(root, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
@@ -23,6 +23,14 @@ function resolveVersion(value, currentVersion) {
   const exact = parseFull(value);
   if (exact) return value;
 
+  if (/^(?:patch|auto)$/i.test(value)) {
+    const cur = parseFull(currentVersion);
+    if (!cur) return null;
+    return cur.prerelease
+      ? `${cur.major}.${cur.minor}.${cur.patch}`
+      : `${cur.major}.${cur.minor}.${cur.patch + 1}`;
+  }
+
   const short = value.match(/^(\d+)\.(\d+)$/);
   if (!short) return null;
 
@@ -41,8 +49,9 @@ const version = resolveVersion(input, current);
 
 if (!version) {
   console.error('Invalid version.');
+  console.error('Use no argument (or patch/auto) to publish the next patch.');
   console.error('Use x.y.z for an exact version, e.g. 3.7.1.');
-  console.error('Or use x.y to publish the next patch, e.g. 3.7.');
+  console.error('Or use x.y to publish the next patch on that release line, e.g. 3.7.');
   process.exit(2);
 }
 
