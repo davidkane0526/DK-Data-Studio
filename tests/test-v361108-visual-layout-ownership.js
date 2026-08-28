@@ -24,8 +24,10 @@ const group=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 assert(group.includes('Math.max(190,Math.min(265,Math.round(cardWidth*.50)))'),'Resonance group charts must use the compact height envelope.');
 assert(groupCss.includes('minmax(190px,var(--reswin-group-height,205px))'),'Resonance group card default height must remain compact.');
-assert(group.includes('focusPolicy:{inactiveOpacity:.08,pointInactiveOpacity:.08,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must make main-selection linkage visually explicit through Core focus policy.');
+assert(group.includes('focusPolicy:{inactiveOpacity:.28,pointInactiveOpacity:.34,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must keep selection linkage explicit without erasing dark-mode context.');
 
 const theme=read('src/core/theme/runtime.js');
-for(const token of ["profiles.set('builtin.thin-glass'","surfaceSidebar:","surfaceElevated:","controlBorder:","glassEdge:","text:'#172033'"])assert(theme.includes(token),`Thin Glass hierarchy/shadow contract missing ${token}`);
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+assert(!theme.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtime must not own the Thin Glass profile.');
+for(const token of ["surfaceSidebar:","surfaceElevated:","controlBorder:","glassEdge:","text:'#172033'"])assert(thinTheme.includes(token),`Thin Glass Theme hierarchy contract missing ${token}`);
 console.log('v3.61.108 visual/layout ownership regression passed.');

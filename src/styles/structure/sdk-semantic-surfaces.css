@@ -147,7 +147,6 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
   height:28px;
   padding:0 8px;
   gap:6px;
-  line-height:28px;
 }
 .dkds-group-plot-head .dkds-plot-view-actions{height:24px;align-items:center}
 .dkds-group-plot-head button{min-height:22px;height:22px}

@@ -1,6 +1,10 @@
 # Contributing
 
-Development target: the current v3.61.x stabilization baseline. Use focused local `fix/*`, `feature/*`, or `chore/*` branches; remote publication is a separate explicit step.
+Development target: the current v3.62.x Legacy-Free stabilization baseline. Use focused local `fix/*`, `feature/*`, or `chore/*` branches; remote publication is a separate explicit step.
+
+## First rule
+
+Keep the code structure clean. Do not solve defects with override patches, compatibility aliases, specificity escalation, duplicate ownership, or silent fallbacks. Core owns generic infrastructure; plugins own domain behavior; CSS must have one semantic owner. Historical project compatibility belongs only to the Project Compatibility Gateway.
 
 Read:
 - `AGENTS.md`

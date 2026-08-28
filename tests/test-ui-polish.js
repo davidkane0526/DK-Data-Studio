@@ -28,7 +28,9 @@ assert(nav.includes('primaryButtons'),'navigation hierarchy must derive from reg
 assert(!nav.includes('data-nav-density'),'dead width-density navigation mode must not return');
 assert(css.includes('--ui-font-family:'));
 assert(css.includes('button:focus-visible'));
-assert(/\.lan-web-panel\s*\{[^}]*z-index\s*:\s*1100\s*/i.test(css), 'LAN panel must stay above SUPER workspace divider');
+assert(/\.floating-panel\s*\{[^}]*z-index\s*:\s*var\(--dkds-floating-z,100\)/i.test(css), 'Floating panels must consume the semantic stacking variable instead of owning fixed stacking values.');
+assert(/\.lan-web-panel\s*\{[^}]*--dkds-floating-z\s*:\s*1850/i.test(css), 'LAN panel must declare its semantic stacking level above shell chrome.');
+assert(!/\.floating-panel\.lan-web-panel\s*\{/i.test(css), 'LAN visibility must not be repaired with a higher-specificity selector patch.');
 assert(css.includes('.lan-web-panel .panel-header-actions>.panel-close'), 'LAN minimize/close controls must share one geometry contract');
 assert(/\.global-commandbar\s+\.compact-menu-anchor>#editMenuBtn\s*\{[^}]*min-width\s*:\s*72px/i.test(css), 'edit command must match file-command button width');
 assert(html.includes('class="lan-web-minimize-glyph"'), 'LAN minimize button must use a compact drawn glyph instead of a long text dash');

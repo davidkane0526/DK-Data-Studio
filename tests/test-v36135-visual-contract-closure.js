@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const release=json('package.json').version;
-assert.match(release,/^3\.62\.\d+$/,'visual contract closure must run on the 3.61 release line');
+assert.match(release,/^3\.62\.\d+$/,'visual contract closure must run on the 3.62 release line');
 const contract=json('sdk/contract.json');
 assert.equal(contract.sdkVersion,'1.18.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
@@ -44,7 +44,9 @@ for(const token of [
   'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
   'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
-assert(modern.includes('body.dkds-modern-ui .activity-tab.active')&&modern.includes('box-shadow:var(--dkui-selected-shadow)'),'Activity tabs must use the centered semantic selected shadow rather than an offset/inset legacy rim.');
+const themeContract=read('src/styles/theme/contract.css');
+assert(themeContract.includes('.activity-tab.active')&&themeContract.includes('box-shadow:var(--dkui-selected-shadow)'),'Theme Contract must be the single paint owner for the centered Activity selected halo.');
+assert(!read('src/styles/presentation/shell.css').match(/activity-tab[^\{]*\.active[^\{]*\{[^}]*box-shadow/i),'Shell presentation must not paint Activity selected chrome.');
 
 const readme=read('sdk/README.md');
 for(const token of ['scoped to its own surface host','at most two balanced rows','`legendgroup`','does not visibly twitch'])assert(readme.includes(token),`SDK visual contract docs missing ${token}`);

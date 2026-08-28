@@ -84,18 +84,16 @@ html = html.replace(
 );
 fs.writeFileSync(indexPath, html, 'utf8');
 
-// Keep every user-visible/runtime application version source synchronized.
-// Built-in Resonance intentionally follows the application release version;
-// other built-in plugins maintain their own semantic versions.
+// Keep application-owned runtime version sources synchronized. Built-in and
+// external plugins keep independent semantic versions and must never be bumped
+// as a side effect of an application patch release.
 for (const relative of [
   path.join('src','app.js'),
   path.join('src','app','modules','project-persistence.js'),
   path.join('src','app','modules','dedicated-plugin-windows.js'),
   path.join('src','plugin-window','runtime.js'),
   path.join('src','web-bridge.js'),
-  path.join('src','core','services','mcp-runtime.js'),
-  path.join('src','plugins','resonance-workbench','plugin.js'),
-  path.join('src','plugins','resonance-workbench','plugin.json')
+  path.join('src','core','services','mcp-runtime.js')
 ]) {
   const target = path.join(root, relative);
   if (!fs.existsSync(target)) continue;

@@ -15,6 +15,7 @@ assert(read('README_CN.md').includes(`SDK：**${sdk.sdkVersion}**`),'Main README
 
 const setVersion=read('scripts/set-version.js');
 assert(!setVersion.includes('readdirSync(testsDir)')&&!setVersion.includes("path.join(root, 'tests')"),'set-version.js must not rewrite historical regression tests on every patch release.');
+assert(!/path\.join\('src','plugins'/.test(setVersion),'set-version.js must not mutate plugin semantic versions during an application release bump.');
 assert(fs.existsSync(path.join(root,'tools','windows','package-source-release.ps1')),'Source Release packaging tool must exist.');
 
 const moduleLimit=48*1024;

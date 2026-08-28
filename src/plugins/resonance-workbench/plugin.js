@@ -3,7 +3,7 @@
     id:'builtin.resonance-workbench',pluginType:'workbench',
     name:'Resonance Workbench',
     version:'3.61.7',
-    apiVersion:'1.18.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.sources","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.interaction-behavior","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.pages","ui.edit","ui.scientific-plot","ui.settings"],
+    apiVersion:'1.18.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.sources","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.interaction-behavior","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.pages","ui.edit","ui.scientific-plot","ui.series","ui.settings"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
@@ -30,7 +30,7 @@
         scheduleSnapshot:()=>ctx.project.capture?.(),
         copyTextToClipboard:text=>ctx.io.clipboard.writeText(text),
         saveChartImage:(plotId,baseName,format)=>ctx.ui.scientificPlot.saveImage(plotId,baseName,format),
-        io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,reactive:ctx.data.reactive,
+        io:ctx.io,charts:ctx.ui.scientificPlot,dom:ctx.ui.dom,performance:ctx.performance,pipeline:ctx.data.pipeline,transforms:ctx.data.transforms,algorithms:ctx.analysis.algorithms,reactive:ctx.data.reactive,series:ctx.ui.series,
         adapter:{mode:'super',root:ctx.ui.dom.query('#app')}
       });
       service=runtime.service;

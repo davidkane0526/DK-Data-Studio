@@ -6,6 +6,7 @@
 }
 
 .lan-web-panel{
+  --dkds-floating-z:1850;
   width:min(920px,calc(100vw - 56px));
   height:min(690px,calc(100vh - 98px));
   min-width:640px;
@@ -373,7 +374,6 @@
 .lan-web-panel{top:104px;
   resize:both;
   left:clamp(28px,8vw,150px);
-  z-index:1100;
   max-height:calc(100vh - 76px - var(--dkds-statusbar-height,28px));
 }
 @media (max-width:520px){

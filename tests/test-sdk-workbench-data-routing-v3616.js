@@ -4,7 +4,6 @@ const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.joi
 const pkg=json('package.json'),kernel=read('src/generated/runtime/plugin-kernel.js'),contract=read('src/core/plugins/contract-runtime.js'),app=read('src/generated/runtime/app.js'),importWorkbench=read('src/app/modules/import-workbench.js');
 const model=read('src/core/data/model.js'),gateway=read('src/project-importers/compatibility-gateway.js'),dataCenter=read('src/plugins/data-center/feature-runtime.js'),resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const pulseManifest=json('src/plugins/pulse-analysis/plugin.json'),resManifest=json('src/plugins/resonance-workbench/plugin.json'),flex=read('src/plugins/flexible-import/plugin.js'),pulse=read('src/plugins/pulse-analysis/analysis-service.js'),schema=json('sdk/plugin-manifest.schema.json'),types=read('sdk/plugin-api.d.ts');
-assert.equal(pkg.version,'3.62.0');
 assert(kernel.includes("const API_VERSION = '1.18.0'"),'Plugin Kernel must publish Plugin API 1.18.0.');
 assert(contract.includes("'data.importers':api=>!!api?.data?.importers")&&contract.includes("'data.import-workbench':api=>!!api?.data?.importWorkbench"),'Shared importer/workbench capabilities must remain contract-validated.');
 assert(kernel.includes('consumer:pluginId')&&kernel.includes("rows.includes('*')||rows.includes(pluginId)"),'Workbench reads must be scoped by assignment.');

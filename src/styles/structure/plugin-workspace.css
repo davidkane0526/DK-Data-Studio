@@ -113,7 +113,7 @@
    position/export/copy/resize chrome from UI infrastructure. */
 .dkds-plot-view{min-width:0;min-height:0;}
 .dkds-plot-view-head{display:flex;align-items:center;justify-content:space-between;min-width:0;box-sizing:border-box;}
-.dkds-plot-view-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;}
+.dkds-plot-view-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;align-self:center;line-height:1.2;}
 .dkds-plot-view-actions{display:flex;align-items:center;gap:4px;white-space:nowrap;flex:0 0 auto;min-width:0;}
 .dkds-plot-view-actions>.dkds-portable-controls{display:flex;align-items:center;gap:2px;margin:0;padding:0;flex:0 0 auto;}
 .dkds-plot-view-action,.dkds-plot-view-actions .dkds-portable-placement-trigger{height:28px;min-height:28px;padding:3px 8px;font-size:11.5px;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}
@@ -160,7 +160,6 @@
   height:28px;
   padding:0 8px;
   gap:6px;
-  line-height:28px;
 }
 .dkds-plot-view-head .dkds-plot-view-actions{height:24px;align-items:center;}
 .dkds-plot-view-head button{min-height:22px;height:22px;}

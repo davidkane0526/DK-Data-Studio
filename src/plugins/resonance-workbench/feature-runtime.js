@@ -41,7 +41,7 @@
   }
 
 
-  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,historyChanged=detail=>window.DKDSPlugins?.edit?.changed?.(detail),copyTextToClipboard,saveChartImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
+  async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,historyChanged=detail=>window.DKDSPlugins?.edit?.changed?.(detail),copyTextToClipboard,saveChartImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,series=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
       const $$=selector=>dom?.all?.(selector)||[];
       let project=clone(initialProject||{});
@@ -79,7 +79,7 @@
         },
         services:{$,dom,charts,artifacts,performance,S,D,transforms,setStatus,copyTextToClipboard},
         actions:{
-          groupSeries,peakMetrics,selectedPeak,selectedSweep,visibleSweeps,visibleSweepIds,visibilityMap,isVisible,peakLabel,colorForPeakOrder,
+          groupSeries,peakMetrics,selectedPeak,selectedSweep,visibleSweeps,visibleSweepIds,visibilityMap,isVisible,peakLabel,colorForPeakOrder,colorForSeries,colorForPhysicsCode,
           scientificReact,peakPointEntity,peakById,publishPeakSelection,publishSweepSelection,publishRangeSelection,peaksInRange,resize,sweepById,category,
           datasetEntityId,renderControls,renderSummary,ensureMainSurface,renderInspection,renderTrend,renderLinkedSelection,
           updateGroupContext,isUiBound,normalizeCategories,invalidatePhysics,physicalAnalysis,render,scheduleSnapshot,commitPeakMetricEdit,
@@ -307,9 +307,19 @@
         return workspace.peakCategories.find(c=>Number(c.order)===n)||{order:n,label:`峰${n}`};
       }
       function peakLabel(p){return String(p?.peakLabel||category(p?.peakOrder||1).label||`峰${p?.peakOrder||1}`);}
-      const COOL=['#0057D9','#00A6A6','#6D28D9','#0EA5E9','#1E3A8A','#14B8A6','#7C3AED','#0369A1','#22D3EE','#4338CA','#0F766E','#60A5FA'];
-      const WARM=['#D7191C','#FF7A00','#C2185B','#F2B705','#8B1E3F','#F4511E','#E11D48','#CA8A04','#FF3D00','#A21CAF','#B91C1C','#FB923C'];
-      function colorForPeakOrder(order,direction){const n=Math.max(1,Math.round(Number(order)||1));const palette=direction>0?COOL:WARM;return palette[(n-1)%palette.length];}
+      function colorForSeries(id,label=id,group='resonance'){
+        const key=String(id||'').trim();if(!key)return '';
+        return series?.register?.({id:key,label:String(label||key),group:String(group||'resonance')})?.color||series?.color?.(key)||'';
+      }
+      function colorForPeakOrder(order,direction){
+        const n=Math.max(1,Math.round(Number(order)||1));
+        const branch=direction>0?'forward':'reverse';
+        return colorForSeries(`resonance.peak.${branch}.${n}`,`${category(n).label} · ${branch}`,`resonance.peak.${branch}`);
+      }
+      function colorForPhysicsCode(code){
+        const key=['R','H','D','X'].includes(String(code))?String(code):'Q';
+        return colorForSeries(`resonance.physics.${key}`,`物理标签 ${key}`,'resonance.physics');
+      }
       function assignPeakCategory(p,order){if(!p)return;const n=Math.max(1,Math.round(Number(order)||1));const c=category(n);p.peakOrder=n;p.peakLabel=c.label;p.manual=true;normalizeCategories();render();scheduleSnapshot();}
       function createPeakCategoryForPeak(p){if(!p)return null;normalizeCategories();const n=Math.max(0,...workspace.peakCategories.map(c=>Number(c.order)||0))+1;const c={order:n,label:`峰${n}`};workspace.peakCategories.push(c);p.peakOrder=n;p.peakLabel=c.label;p.manual=true;render();scheduleSnapshot();return c;}
       function renamePeakCategory(p,label){if(!p)return;selectionRuntime?.setSelectedPeakId(p.id);renameSelectedCategory(label);}
@@ -499,7 +509,7 @@
       const service={
         serialize:()=>clone(workspace),
         selectedSweep,selectedPeak,sweepById,peakById,visibleSweepIds,
-        directionName,peakLabel,colorForPeakOrder,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
+        directionName,peakLabel,colorForPeakOrder,colorForSeries,colorForPhysicsCode,assignPeakCategory,createPeakCategoryForPeak,renamePeakCategory,metrics:peakMetrics,
         restore(data){workspace=normalizeWorkspace(data,project);currentView=workspace.activeView||'main';rebuild();resetUndoHistory();if($('#reswinMainPlot'))render();},
         reset(){workspace=defaultWorkspace(project);workspace.groupColumns=runtimeDefaults.groupColumns||'auto';currentView='main';rebuild();render();scheduleSnapshot();},
         render,resize,bindUi,setView,refreshData,

@@ -2,13 +2,25 @@
 
 This repository uses a plugin-first architecture.
 
+## 第一工程准则 / Primary engineering principle
+
+**保持代码结构干净，禁止用补丁形式解决问题。Core 与插件边界必须清楚，样式必须保持单一 owner。**
+
+Every change must satisfy this rule before functional convenience:
+
+- fix the owning abstraction or contract instead of stacking an override, compatibility alias, higher-specificity selector, duplicate event path, temporary bridge, or silent fallback;
+- Core owns generic runtime/platform/data/UI infrastructure, while plugins own domain workflow/state/content; neither side may reach into the other side's private implementation;
+- CSS Structure owns geometry only, Presentation/Theme own paint, and one semantic selector/property must have one owner; no `!important`, no catch-all override layer, no specificity race;
+- historical project compatibility is isolated to `src/project-importers/compatibility-gateway.js`; legacy runtime/API compatibility must not leak back into Core or SDK;
+- if a requested fix cannot be implemented cleanly under these boundaries, stop and refactor the owner first rather than shipping a patch.
+
 ## Branch and stabilization rule
 
-- Current delivered architecture is the v3.61.x Core-first plugin line. The checked-out branch may be a focused `fix/*` or `chore/*` branch; do not infer that an old `main`/`dev` ref is the active runtime baseline.
+- Current delivered architecture is the v3.62.x Legacy-Free Core/plugin line. The checked-out branch may be a focused `fix/*` or `chore/*` branch; do not infer that an old `main`/`dev` ref is the active runtime baseline.
 - Remote branch publication is explicit. Do not create, move, merge or push a GitHub branch unless the user requests it.
-- v3.61.x is architecture-frozen: prefer demonstrated P0/P1 fixes over new host/runtime abstraction layers.
+- v3.62.x is architecture-frozen: prefer demonstrated P0/P1 fixes over new host/runtime abstraction layers, and do not reintroduce compatibility bridges removed by the Legacy-Free Cut.
 - New domain feature work should normally be implemented as a plugin or versioned Algorithm Provider; generic behavior shared by all plugins belongs in Core.
-- `src/analysis.js` is a compatibility facade. New/reworked reusable scientific calculations belong in `src/science/*` or a versioned Algorithm Provider; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms or domain recovery rules into `app.js`.
+- Reusable scientific calculations belong in `src/science/*` or a versioned Algorithm Provider; feature workflow/UI belongs in a plugin. Do not put new scientific algorithms or domain recovery rules into `app.js`.
 
 ## Before changing code
 
@@ -78,7 +90,7 @@ Run `npm run plugin:index` after adding/removing plugin folders. Normal `npm sta
 
 ## Shared science and algorithm-provider rule (v3.52+)
 
-Stable runtime-independent mathematical primitives may live in `src/science/`. Legacy project/data conversion belongs only in `src/migrations/`. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
+Stable runtime-independent mathematical primitives may live in `src/science/`. Historical project/data conversion belongs only in `src/project-importers/compatibility-gateway.js` and must terminate at canonical Schema v3 Artifacts before runtime state is created. Scientific algorithms that can be upgraded, replaced or versioned independently must live in an Algorithm Plugin support module and register through `ctx.analysis.algorithms`.
 
 Examples already moved there:
 - import/parser primitives;

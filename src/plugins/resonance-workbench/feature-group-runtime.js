@@ -88,7 +88,7 @@
         activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;
         const traces=series.map(sr=>({x:sr.rows.map(r=>r.p.vg),y:sr.rows.map(r=>r.value),mode:'lines+markers',name:sr.name,line:{color:sr.color,dash:sr.direction<0?'dash':'solid'},marker:{color:sr.color,size:7,line:{width:1}},customdata:sr.rows.map(r=>[r.p.id,r.p.sweepId]),hovertemplate:`Vg=%{x}<br>${title}=%{y}<extra>%{fullData.name}</extra>`}));
         const layout={margin:{l:62,r:14,t:16,b:52},xaxis:{title:'Vg (V)'},yaxis:{title:unit},autosize:true};
-        scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false},{focusPolicy:{inactiveOpacity:.08,pointInactiveOpacity:.08,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8},pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
+        scientificReact(row.plot,traces,layout,{responsive:true,displayModeBar:false},{focusPolicy:{inactiveOpacity:.28,pointInactiveOpacity:.34,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8},pointEntity:peakPointEntity,onEntitySelect:({entity,event})=>{const p=peakById(entity?.id);if(p)publishPeakSelection(p,'resonance-group',{openInspector:true,additive:!!(event?.event?.ctrlKey||event?.event?.metaKey)});}}).catch(()=>{});
       }
       const terKey='ter';
       if(terSeries.length){

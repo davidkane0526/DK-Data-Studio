@@ -39,6 +39,7 @@
     "ui.pages",
     "ui.edit",
     "ui.scientific-plot",
+    "ui.series",
     "ui.settings"
   ],
   "entry": "plugin.js",

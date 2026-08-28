@@ -11,6 +11,7 @@ const rendererCss=read('src/styles/theme/material-renderer.css');
 const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
 const baseCss=read('src/styles/presentation/dialogs.css');
 const runtimeSource=read('src/core/theme/runtime.js');
+const thinThemeSource=read('src/plugins/thin-glass-theme/plugin.js');
 
 assert(chromeCss.includes('Chrome owns its actions.'),'chrome-owned command integration invariant missing');
 assert(chromeCss.includes('[data-dkds-material-role="chrome"]')&&chromeCss.includes('.statusbar-command-cluster'),'status-bar/header integration must be semantic-role-owned');
@@ -20,7 +21,7 @@ assert(baseCss.includes('background:var(--dkui-surface-soft')&&baseCss.includes(
 assert(!/\.plugin-export-context\s*\{[^}]*background\s*:\s*#f8fafc/s.test(baseCss),'export-menu context must not hard-code a light background');
 assert(runtimeSource.includes('preferredProfile')&&runtimeSource.includes('suspended:key'),'theme runtime must distinguish preferred profile from temporarily active fallback');
 assert(runtimeSource.includes("if(bootTheme){if(next!==current)void native.appearanceSetTheme?.(current);}"),'explicit saved appearance must win the startup native handshake');
-assert((runtimeSource.match(/surfaceElevated:/g)||[]).length>=2,'built-in Thin Glass must keep readable elevated-surface separation in both modes');
+assert((thinThemeSource.match(/surfaceElevated:/g)||[]).length>=2,'Thin Glass Theme plugin must keep readable elevated-surface separation in both modes');
 
 // Execute ThemeRuntime against a minimal host to prove that a temporary theme-plugin
 // deactivate/reactivate cycle cannot overwrite the user's selected profile.

@@ -1,3 +1,19 @@
+# v3.62.1 — Runtime & Visual Ownership Closure
+
+- Restore reliable renderer startup on the v3.62 architecture by removing the stale Application-module export and binding plugin workspaces to the canonical `ui.workspaceSurface` contract.
+- Restore **Pulse Sampler Tool 1.4.0** as a first-party Plugin API 1.18 Tool (`com.dkds.tools.pulse-sampler`) with Vd/Vs/Vg waveform generation, segment composition, ScientificPlot preview and steady-state sampling workflows.
+- Make packaged first-party plugins authoritative over stale user-installed packages with the same ID **before** API compatibility evaluation. Old Pulse Sampler, Thin/Liquid Glass and Vth packages therefore cannot report false external-package incompatibilities against the current host; Plugin API 1.17 compatibility is not reintroduced.
+- Move Thin Glass completely out of the Core built-in profile and into the first-party Theme plugin `com.dkds.theme.liquid-glass` (**1.8.0**, Theme Contract **3.6.0**). Core retains generic Material rendering while the Theme plugin owns the profile and optical recipe policy.
+- Correct Automation Center project round-trip validation to canonical **Schema v3** instead of the removed Schema v2 expectation.
+- Move Resonance series/physics colors onto the Core Series Registry and semantic swatch primitives. Resonance no longer owns application palette chrome or hard-coded visual colors.
+- Re-center PlotView/GroupPlot header title/action geometry, restore semantic primary/danger/neutral hierarchy in range-selection actions, and make Theme Contract the single owner of the active-selection paint. The active top-level state now uses one restrained centered halo with no extra hard 1 px rim.
+- Improve dark ScientificPlot context visibility by preventing dimmed/non-focus curves from collapsing to near-invisible opacity, while keeping focus/selection semantics generic and Core-owned.
+- Fix LAN Web panel stacking through the shared FloatingPanel contract: `.floating-panel` consumes `--dkds-floating-z`, while the LAN panel declares only its semantic stacking level. No higher-specificity LAN override is used.
+- Refine Thin Glass optical hierarchy across popover/elevated/floating roles with restrained edge, inner-highlight and specular layers while keeping scientific content surfaces clear and avoiding heavy glow/shadow treatment.
+- Separate application and plugin release ownership in `scripts/set-version.js`: an App patch release updates only App-owned version sources and never mutates Resonance, Pulse, Thin Glass, Vth or other plugin semantic versions. Add a repository-hygiene regression to prevent plugin paths from returning to the App version script.
+- Establish the project-wide first engineering rule in `AGENTS.md` and `CONTRIBUTING.md`: fix the correct owner/contract, keep Core and plugin boundaries explicit, preserve single CSS ownership, and reject override layers, specificity races, compatibility bridges and silent fallbacks as fixes.
+- Source/architecture validation for the release tree: `npm test` **181/181 PASS**, `npm run check` **189/189 PASS**, plugin manifests **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, App/Plugin Kernel SCC **0**, Plugin Boundary **0**, authored CSS **0 `!important`**.
+
 # v3.62.0 — Legacy-Free Cut
 
 - Rebuild from the clean **v3.61.111** development baseline and move current project persistence to **Schema v3**: `dataModel + plugins + host` is the only canonical runtime/persistence shape.

@@ -104,6 +104,13 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       for(const row of result?.errors||[])externalLoadErrors.push(row);
       const loaded=[];
       for(const pkg of result?.packages||[]){
+        const packageId=String(pkg?.manifest?.id||'').trim();
+        const packagedBuiltin=packageId?definitionById(packageId):null;
+        if(packagedBuiltin?.manifest?.source==='builtin'){
+          // The shipped built-in is the authoritative implementation for this id.
+          // Ignore stale user-installed copies before API compatibility evaluation.
+          continue;
+        }
         try{if(pkg?.compatibilityStatus?.compatible===false)throw new Error(`插件与当前环境不兼容：${(pkg.compatibilityStatus.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ')}`);const def=await loadExternalPackage(pkg);loaded.push(def.manifest.id);}
         catch(err){externalLoadErrors.push({file:pkg?.manifest?.id||'<package>',error:err.message});console.error('[DKDS external plugin]',err);}
       }

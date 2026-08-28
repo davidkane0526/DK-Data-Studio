@@ -28,12 +28,15 @@ assert(thin,'independent thin-glass CSS recipe missing');
 assert(/backdrop-filter:blur\(/.test(thin),'thin-glass must use backdrop-filter blur');
 assert(/saturate\(/.test(thin),'thin-glass must use backdrop saturation');
 assert(/filter:none/.test(thin),'thin-glass must explicitly avoid filter: blur on UI content');
-assert(!/noise|specular|inner-highlight|optical|displacement|refraction|chromatic/i.test(thin.replace(/\/\*[\s\S]*?\*\//g,'')),'thin-glass recipe must not contain Liquid optical effects');
+assert(/background-image:linear-gradient/.test(thin)&&/inset 0 1px 0/.test(thin),'thin-glass must provide a restrained single-layer edge/inner optical cue in addition to backdrop blur.');
+assert(!/radial-gradient|noise|mask-image|scale\(|displacement|refraction|chromatic/i.test(thin.replace(/\/\*[\s\S]*?\*\//g,'')),'thin-glass must not use Liquid Glass refraction/noise/multi-layer optical effects');
 assert(!/\[data-dkds-material-recipe="thin-glass"\]::(?:before|after)/.test(css),'thin-glass must not use Liquid optical pseudo layers');
 
 const runtime=read('src/core/theme/runtime.js');
-assert(runtime.includes("profiles.set('builtin.thin-glass'"),'built-in Thin Glass profile missing');
-for(const row of ["chrome:'thin-glass'","sidebar:'thin-glass'","surface:'clear'","elevated:'thin-glass'","popover:'thin-glass'","control:'clear'","floating:'thin-glass'"]) assert(runtime.includes(row),`Thin Glass policy missing ${row}`);
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core must not own a product Theme profile; it only owns the generic thin-glass renderer.');
+assert(thinTheme.includes("id:'com.dkds.theme.liquid-glass'")&&thinTheme.includes("apiVersion:'1.18.0'"),'Thin Glass must be a first-party Plugin API 1.18 Theme plugin.');
+for(const row of ["chrome:'thin-glass'","sidebar:'thin-glass'","surface:'clear'","elevated:'thin-glass'","popover:'thin-glass'","control:'clear'","floating:'thin-glass'"]) assert(thinTheme.includes(row),`Thin Glass plugin policy missing ${row}`);
 assert(!runtime.includes("metadata.family==='glass'"),'recipe policy must not infer glass from theme identity/metadata');
 assert(!runtime.includes("const fallback={chrome:'clear'"),'Theme Runtime must not silently synthesize clear recipes for missing roles.');
 assert(!runtime.includes("recipePolicy(profile.id,mode)[t.role]||'clear'"),'Theme setting reads must expose missing recipe rather than silently returning clear.');

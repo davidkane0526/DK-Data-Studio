@@ -34,9 +34,11 @@ assert(chromeCss.includes('#dkdsThemePanel .dkds-theme-mode-switch>button[data-d
 assert(css.includes('.plugin-export-context{')&&css.includes('background:transparent'),'export context metadata must not create an opaque light strip inside dark popovers');
 
 const runtime=read('src/core/theme/runtime.js');
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
 assert(runtime.includes('channel?.postMessage?.({theme:next,preferredProfile,activeProfile})'),'appearance broadcast must preserve preferred profile instead of temporary fallback profile');
 assert(runtime.includes("profile=String(event?.data?.preferredProfile||event?.data?.profile||'')"),'broadcast listener must prefer the persistent profile field');
-assert(runtime.includes("radius:10,radiusLg:13"),'built-in Thin Glass must use the SDK-reference compact glass geometry');
-assert((runtime.match(/shadowFloat:'0 0 0 1px /g)||[]).length>=2,'Thin Glass hierarchy must retain centered rim separation and readable floating depth in both modes.');
+assert(thinTheme.includes("radius:10,radiusLg:13"),'Thin Glass Theme must use the compact glass geometry.');
+assert((thinTheme.match(/shadowFloat:'0 8px /g)||[]).length>=2,'Thin Glass hierarchy must use restrained floating depth in both modes.');
+assert(!/shadowFloat:'0 0 0 1px /.test(thinTheme),'Thin Glass must not layer an extra centered halo rim on floating surfaces.');
 
 console.log('v3.61.82 chrome/glass Core ownership checks passed.');

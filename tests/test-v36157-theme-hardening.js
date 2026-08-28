@@ -31,6 +31,11 @@ const pluginFiles=[];
 for(const dirent of fs.readdirSync(path.join(root,'src/plugins'),{withFileTypes:true})){
   if(!dirent.isDirectory()||dirent.name.startsWith('_')) continue;
   const folder=path.join(root,'src/plugins',dirent.name);
+  const manifestPath=path.join(folder,'plugin.json');
+  let manifest={};try{manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));}catch{}
+  // Theme plugins are the legitimate authors of semantic color/material tokens.
+  // The hard-coded structural-paint ban applies to ordinary feature plugins.
+  if(manifest.pluginType==='theme')continue;
   for(const name of fs.readdirSync(folder)) if(name.endsWith('.js')) pluginFiles.push(path.join(folder,name));
 }
 const forbidden=/(?:border(?:-[a-z]+)?\s*:[^;\n]*(?:#d[0-9a-f]{2,5}|#e[0-9a-f]{2,5}|#f[0-9a-f]{2,5}|white)|background(?:-color)?\s*:\s*(?:#fff(?:fff)?|white))/ig;

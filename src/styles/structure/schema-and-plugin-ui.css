@@ -28,7 +28,7 @@ button.wide{ width:100%;
 }
 .statusbar{white-space:nowrap;overflow:hidden;
 }
-.floating-panel{position:absolute;z-index:100;resize:both;overflow:hidden;min-width:320px;min-height:220px;
+.floating-panel{position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
 }
 .floating-header{display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none;
 }

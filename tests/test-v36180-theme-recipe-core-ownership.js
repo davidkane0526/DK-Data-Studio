@@ -43,9 +43,11 @@ assert(integrated.includes('background:var(--dkds-material-base,var(--dkui-contr
 assert(!integrated.includes('var(--dkui-accent) var(--dkds-material-tint'),'Material fill opacity must never be reused as an accent tint percentage.');
 
 const runtime=read('src/core/theme/runtime.js');
-assert(runtime.includes("profiles.set('builtin.thin-glass'")&&runtime.includes('canvas:'),'Thin Glass light canvas hierarchy token missing.');
-assert(runtime.includes('surface:')&&runtime.includes('surfaceSidebar:')&&runtime.includes('surfaceElevated:'),'Thin Glass light surfaces must retain distinct semantic hierarchy instead of collapsing toward one paint value.');
-assert(runtime.includes("elevated:'thin-glass'")&&runtime.includes("popover:'thin-glass'"),'Large windows and popovers must retain Thin Glass.');
+const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
+assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtime must not own the Thin Glass profile.');
+assert(thinTheme.includes('canvas:'),'Thin Glass light canvas hierarchy token missing.');
+assert(thinTheme.includes('surface:')&&thinTheme.includes('surfaceSidebar:')&&thinTheme.includes('surfaceElevated:'),'Thin Glass light surfaces must retain distinct semantic hierarchy instead of collapsing toward one paint value.');
+assert(thinTheme.includes("elevated:'thin-glass'")&&thinTheme.includes("popover:'thin-glass'"),'Large windows and popovers must retain Thin Glass.');
 
 const template=read('sdk/templates/theme-profile/plugin.js');
 for(const bad of ['materialTintOpacity:.03','materialTintOpacity:.045','materialTintOpacity:.055','materialTintOpacity:.02','materialTintOpacity:.05','materialTintOpacity:.015','materialTintOpacity:.07'])

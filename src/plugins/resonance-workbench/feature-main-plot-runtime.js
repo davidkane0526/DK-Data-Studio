@@ -43,7 +43,7 @@
         const candidates=live.sweeps.filter(sw=>sw.datasetPath===ds.path&&actions.isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
         const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip dkds-legend-item';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=actions.datasetEntityId(ds.path);chip.dataset.selectionKey=actions.datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
         const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
-        chip.innerHTML=`<i class="respar-legend-line dkds-series-swatch-line${dash}" style="color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;host.appendChild(chip);
+        chip.innerHTML=`<i class="respar-legend-line dkds-series-swatch-line${dash}" style="--dkds-series-color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;host.appendChild(chip);
       }
     }
     function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}
@@ -100,7 +100,7 @@
         onClearSelection:()=>{actions.clearSelectionIds({keepRange:true});live.interactionSelection?.clear?.({source:'resonance-main'});render();},
         onReset:()=>{live.workspace.mainView={xDomain:null,yDomain:null};clearRangeMenu();actions.scheduleSnapshot();setStatus('主图已恢复全部当前可见数据。');},
         onEmpty:({svg,width,height})=>{$('#resparMainLegend').innerHTML='';svg.append('text').attr('x',width/2).attr('y',height/2).attr('text-anchor','middle').attr('class','dkds-svg-empty-text').text('请勾选要显示的正扫/反扫数据');},
-        afterRender:({dataLayer,x,y,markers:rows})=>{if(live.workspace.physicsShowLabels===false||live.workspace.peakDisplay?.showPoints===false)return;try{const ph=actions.physicalAnalysis(),colors={R:'#167d4a',H:'#7c3aed',D:'#d97706',X:'#b91c1c',Q:'#64748b'},hasSelection=!!live.selectedSweepId;dataLayer.append('g').selectAll('text.respar-physics-label').data(rows.filter(m=>m.accepted!==false),m=>m.id).join('text').attr('class','respar-physics-label').attr('x',m=>x(Number(m.x))+8).attr('y',m=>y(Number(m.y))-8).attr('opacity',m=>hasSelection?(String(m.curveId)===String(live.selectedSweepId||'')?1:.08):.92).attr('fill',m=>colors[ph?.peakMap?.get?.(m.id)?.code||'Q']).text(m=>{const code=ph?.peakMap?.get?.(m.id)?.code||'Q';return code==='Q'?'?':code;});}catch{}}
+        afterRender:({dataLayer,x,y,markers:rows})=>{if(live.workspace.physicsShowLabels===false||live.workspace.peakDisplay?.showPoints===false)return;try{const ph=actions.physicalAnalysis(),hasSelection=!!live.selectedSweepId;dataLayer.append('g').selectAll('text.respar-physics-label').data(rows.filter(m=>m.accepted!==false),m=>m.id).join('text').attr('class','respar-physics-label').attr('x',m=>x(Number(m.x))+8).attr('y',m=>y(Number(m.y))-8).attr('opacity',m=>hasSelection?(String(m.curveId)===String(live.selectedSweepId||'')?1:.28):.92).attr('fill',m=>actions.colorForPhysicsCode(ph?.peakMap?.get?.(m.id)?.code||'Q')).text(m=>{const code=ph?.peakMap?.get?.(m.id)?.code||'Q';return code==='Q'?'?':code;});}catch{}}
       });
       return mainSurface;
     }
