@@ -2,20 +2,17 @@
 const {state, active}=require('./context');
 const {API_VERSION, isDefinitionEnabled, definitionById, defaultPluginIcon, workspaceMeta}=require('./bootstrap');
 const {registerTopWorkspace, registerPrimeContribution, primePlacementFor, placePrimeContribution, registerSubContribution}=require('./workspace/top');
-const {getRegistry, eventOn, eventEmitNow, eventEmit, addCleanup, invokeEditAction, notifyEditHistory}=require('./events/history');
+const {getRegistry,addCleanup}=require('./registry');
+const {eventOn,eventEmitNow,eventEmit,invokeEditAction,notifyEditHistory}=require('./events/history');
 const {setActiveActivity}=require('./activity/shell');
 const {registerActivity, addSidebarSection, addMainOverlay, addMainTool, addMenuItem}=require('./contributions/ui');
 const {createToolbarButton, registerCommand, runCommand, registerContribution}=require('./commands/toolbar');
 const {registerTypedContribution, listContributions, registerProviderCapability, listProvidersWithCapabilities}=require('./contributions/typed');
 const {addStatusBarItem, registerProjectSlice}=require('./project/status');
 const {addStyle, addPage, addPanel, addPanelToggle}=require('./pages/panels');
-const deactivate=(...args)=>require('./lifecycle').deactivate(...args);
+const {deactivate, setPluginEnabled, reloadPlugin}=require('./lifecycle');
+const {replaceExternalPluginPackage, rollbackExternalPlugin}=require('./package-runtime');
 const {requirePluginType}=require('./manifest');
-const setPluginEnabled=(...args)=>require('./lifecycle').setPluginEnabled(...args);
-const reloadPlugin=(...args)=>require('./lifecycle').reloadPlugin(...args);
-const replaceExternalPluginPackage=(...args)=>require('./package-runtime').replaceExternalPluginPackage(...args);
-const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExternalPlugin(...args);
-
   function createApi(definition) {
     const pluginId = definition.manifest.id;
     const pluginType=requirePluginType(definition.manifest);
@@ -147,7 +144,6 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
       apiVersion: API_VERSION,
       contract: Object.freeze({version:window.DKDSPluginContract?.VERSION||'',requirements:window.DKDSPluginContract?.requirements||[]}),
       manifest: Object.freeze({ ...definition.manifest }),
-      host:state.host,
       platform: window.DKDSPlatform,
       runtime: Object.freeze({
         appVersion:String(state.host?.appVersion||''),
@@ -186,7 +182,7 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
         },
         get:id=>window.DKDSCapabilities?.get?.(id)||null,
         require:(id,options)=>window.DKDSCapabilities?.require?.(id,options),
-        proxy:id=>String(id)==='core.data-sources'?sourceCapability():(window.DKDSCapabilities?.proxy?.(id)||null),
+        proxy:id=>window.DKDSCapabilities?.proxy?.(id)||null,
         list:query=>window.DKDSCapabilities?.list?.(query)||[],
         invoke:(id,method,...args)=>window.DKDSCapabilities?.invoke?.(id,method,...args),
         watch:(fn,options={})=>{
@@ -395,7 +391,6 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
           recover:recoverAlgorithmPackage,
           snapshot:()=>window.DKDSScientificAlgorithms?.snapshot?.()||{version:'',count:0,algorithms:[]}
         }) : null,
-
       },
       parameters: {
         render: (container, schema, options) => window.DKDSParameters.render(container, schema, options),
@@ -426,22 +421,10 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
         contextMenus: infrastructureScope?.menus || null,
         selection: infrastructureScope?.selection || null,
         views: infrastructureScope?.views || null,
-        workbench: infrastructureScope?.workbench || null,
-        pluginWorkspace: infrastructureScope?.pluginWorkspace || infrastructureScope?.analysisWorkbench || null,
-        analysisWorkbench: infrastructureScope?.pluginWorkspace || infrastructureScope?.analysisWorkbench || null,
-        workspaceSurface: (infrastructureScope?.pluginWorkspace||infrastructureScope?.analysisWorkbench) ? Object.freeze({
-          create:(root,spec)=> (infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec),
+        workspaceSurface: infrastructureScope?.pluginWorkspace ? Object.freeze({
+          create:(root,spec)=>infrastructureScope.pluginWorkspace.create(root,spec),
           compose:(root,spec={})=>{
-            const wb=(infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec);
-            wb.compose?.(spec);
-            return wb;
-          },
-          roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})
-        }) : null,
-        analysisSurface: (infrastructureScope?.pluginWorkspace||infrastructureScope?.analysisWorkbench) ? Object.freeze({
-          create:(root,spec)=> (infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec),
-          compose:(root,spec={})=>{
-            const wb=(infrastructureScope.pluginWorkspace||infrastructureScope.analysisWorkbench).create(root,spec);
+            const wb=infrastructureScope.pluginWorkspace.create(root,spec);
             wb.compose?.(spec);
             return wb;
           },
@@ -458,7 +441,7 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
           const roles=Object.freeze({surface:'surfacePrimary',panel:'surfaceSecondary',floating:'surfaceElevated',text:'textPrimary',muted:'textSecondary',border:'borderSubtle',accent:'accentPrimary'});
           const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true,semanticVisualPrimitives:true,themePluginReady:true});
           const classes=Object.freeze({surface:'dkds-surface',surfaceMuted:'dkds-surface-muted',surfaceElevated:'dkds-surface-elevated',surfaceHeader:'dkds-surface-header',surfaceTitle:'dkds-surface-title',toolbar:'dkds-toolbar',actionRow:'dkds-action-row',field:'dkds-field',check:'dkds-check',chip:'dkds-chip',list:'dkds-list',listItem:'dkds-list-item',metric:'dkds-metric',tableWrap:'dkds-table-wrap',table:'dkds-table',note:'dkds-note',status:'dkds-status',overlay:'dkds-overlay',dialog:'dkds-dialog-shell',iconButton:'dkds-icon-button',message:'dkds-message',messageMeta:'dkds-message-meta',floating:'dkds-floating-surface',meta:'dkds-meta'});
-          return Object.freeze({name:'DK Data Studio Design System',version:'1.17',tokens,roles,classes,capabilities,className:(...names)=>names.flatMap(name=>String(classes[String(name)]||name||'').split(/\s+/)).filter(Boolean).join(' '),token:name=>tokens[String(name)]||'',cssVar:(name,fallback='')=>{const token=tokens[String(name)]||String(name||'');return token?`var(${token}${fallback?`, ${fallback}`:''})`:String(fallback||'');}});
+          return Object.freeze({name:'DK Data Studio Design System',version:'1.18',tokens,roles,classes,capabilities,className:(...names)=>names.flatMap(name=>String(classes[String(name)]||name||'').split(/\s+/)).filter(Boolean).join(' '),token:name=>tokens[String(name)]||'',cssVar:(name,fallback='')=>{const token=tokens[String(name)]||String(name||'');return token?`var(${token}${fallback?`, ${fallback}`:''})`:String(fallback||'');}});
         })(),
         grid: infrastructureScope?.grid || null,
         activities: {
@@ -564,5 +547,4 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
     apiRef=api;
     return api;
   }
-
 module.exports=Object.freeze({createApi});

@@ -1,17 +1,6 @@
 'use strict';
-const {state, registries, cleanupByPlugin, eventListeners}=require('../context');
-const listContributions=(...args)=>require('../contributions/typed').listContributions(...args);
-
-  function assertId(id, what='id') {
-    if (!/^[a-z0-9][a-z0-9._-]*$/i.test(String(id || ''))) {
-      throw new Error(`Invalid plugin ${what}: ${id}`);
-    }
-  }
-
-  function getRegistry(kind) {
-    if (!registries.has(kind)) registries.set(kind, new Map());
-    return registries.get(kind);
-  }
+const {state,eventListeners}=require('../context');
+const {assertId,getRegistry,addCleanup,listContributions}=require('../registry');
 
   function eventOn(name, fn, owner) {
     if (!eventListeners.has(name)) eventListeners.set(name, new Set());
@@ -52,13 +41,6 @@ const listContributions=(...args)=>require('../contributions/typed').listContrib
       eventEmitNow('layout:resize', next);
     });
     return true;
-  }
-
-  function addCleanup(pluginId, fn) {
-    if (typeof fn !== 'function') return fn;
-    if (!cleanupByPlugin.has(pluginId)) cleanupByPlugin.set(pluginId, []);
-    cleanupByPlugin.get(pluginId).push(fn);
-    return fn;
   }
 
   function activityRows() {

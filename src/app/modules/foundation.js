@@ -1,8 +1,10 @@
 'use strict';
 const {$, state, status}=require('./context');
-const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
-const dataConsumerTargets=(...args)=>require('./import-workbench').dataConsumerTargets(...args);
-const ensureImportTargets=(...args)=>require('./import-workbench').ensureImportTargets(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const dataConsumerTargets=(...args)=>deps.imports.dataConsumerTargets(...args);
+const ensureImportTargets=(...args)=>deps.imports.ensureImportTargets(...args);
 
 function importActiveItem(){
   return state.importDraft.files.find(f=>f.path===state.importDraft.activePath)||null;
@@ -447,4 +449,4 @@ function projectBaseName(path){
   return raw.replace(/\.dkds\.json$/i,'').replace(/\.json$/i,'')||'项目';
 }
 
-module.exports=Object.freeze({importActiveItem, importProviders, importScope, importAcceptedTypes, availableImportProviders, importProvider, flexibleImportProvider, fileExtension, chooseImportProvider, providerForImportItem, setStatus, pushArtifactDeltaToActivityWindows, snapshotArtifactRows, diffArtifactRows, formatBytes, formatUpdateTime, renderUpdateStatus, loadUpdateSettingsIntoPanel, initializeUpdateUi, normalizeLanWebBaseUrl, lanWebShareUrl, chooseDefaultLanWebUrl, renderLanWebQr, renderLanWebStatus, loadLanWebSettings, initializeLanWebUi, floatingSafeBounds, ensureFloatingPanelVisible, showLanWebPanel, hideLanWebPanel, escapeHtml, csvCell, safeName, copyTextToClipboard, projectBaseName, lanWebQrRenderToken});
+module.exports=Object.freeze({configure, importActiveItem, importProviders, importScope, importAcceptedTypes, availableImportProviders, importProvider, flexibleImportProvider, fileExtension, chooseImportProvider, providerForImportItem, setStatus, pushArtifactDeltaToActivityWindows, snapshotArtifactRows, diffArtifactRows, formatBytes, formatUpdateTime, renderUpdateStatus, loadUpdateSettingsIntoPanel, initializeUpdateUi, normalizeLanWebBaseUrl, lanWebShareUrl, chooseDefaultLanWebUrl, renderLanWebQr, renderLanWebStatus, loadLanWebSettings, initializeLanWebUi, floatingSafeBounds, ensureFloatingPanelVisible, showLanWebPanel, hideLanWebPanel, escapeHtml, csvCell, safeName, copyTextToClipboard, projectBaseName, lanWebQrRenderToken});

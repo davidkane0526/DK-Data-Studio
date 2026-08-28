@@ -4,7 +4,7 @@
     algorithmCategories:['transport-transform','transport-scalar-field','ter-analysis'],
     pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
     description:'TER Controller + Shared Views + Feature Runtime built on DKDS workbench infrastructure.',source:'builtin',order:120,
-    capabilities:["ui.activity", "ui.page", "analysis.ter", "chart.heatmap", "chart.transformed-heatmap", "chart.resistance-voltage", "ui.linked-selection", "ui.sticky-inspector", "ui.chart-layout", "ui.keyboard-adjustment", "chart.export", "ui.top-workspace", "ui.infrastructure", "ui.portable", "ui.dynamic-actions", "ui.shortcuts", "ui.workbench", "ui.selection", "ui.context-menu", "ui.split", "ui.chart-surface",'ui.analysis-workbench','ui.primary','ui.prime','ui.sub','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','data.types','data.artifacts','data.pipeline','ui.plugin-workspace','ui.scientific-plot'],
+    capabilities:["ui.activity", "ui.page", "analysis.ter", "chart.heatmap", "chart.transformed-heatmap", "chart.resistance-voltage", "ui.linked-selection", "ui.sticky-inspector", "ui.chart-layout", "ui.keyboard-adjustment", "chart.export", "ui.top-workspace",  "ui.portable",  "ui.shortcuts",  "ui.selection", "ui.context-menu",  'ui.prime','ui.sub','ui.interaction','data.types','data.artifacts','data.pipeline','ui.plugin-workspace','ui.scientific-plot'],
     workspace:{role:'top',activity:'ter',icon:'▧',title:'TER分析'}
   },async ctx=>{
     const C=ctx.modules.require('controller'),V=ctx.modules.require('shared-views'),analysisService=ctx.modules.require('analysis-service');

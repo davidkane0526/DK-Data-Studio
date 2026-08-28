@@ -3,8 +3,7 @@
    selectors for concrete UI components must not independently assign roles.
    Material composition maps each role base surface -> role-specific fill/blur.
    Theme opacity is authored input; Core applies a role-specific legibility floor only
-   when the active recipe is translucent. The legacy --dkds-material-tint alias is
-   retained internally but is not a control/accent tint. */
+   when the active recipe is translucent. */
 
 body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome){
   --dkds-material-role:chrome;
@@ -15,7 +14,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-rol
   --dkds-material-authored-opacity:var(--dkui-material-chrome-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:58%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-chrome-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-chrome-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-chrome-glass-edge,var(--dkui-glass-edge));
@@ -31,7 +29,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="sidebar"],.dkds-material-ro
   --dkds-material-authored-opacity:var(--dkui-material-sidebar-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:62%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-sidebar-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-sidebar-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-sidebar-glass-edge,var(--dkui-glass-edge));
@@ -47,7 +44,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="surface"],.dkds-material-ro
   --dkds-material-authored-opacity:var(--dkui-material-surface-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:100%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-surface-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-surface-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-surface-glass-edge,var(--dkui-glass-edge));
@@ -63,7 +59,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="elevated"],.dkds-material-r
   --dkds-material-authored-opacity:var(--dkui-material-elevated-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:62%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-elevated-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-elevated-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-elevated-glass-edge,var(--dkui-glass-edge));
@@ -79,7 +74,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="popover"],.dkds-material-ro
   --dkds-material-authored-opacity:var(--dkui-material-popover-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:78%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-popover-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-popover-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-popover-glass-edge,var(--dkui-glass-edge));
@@ -95,7 +89,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-ro
   --dkds-material-authored-opacity:var(--dkui-material-control-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:100%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-control-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-control-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-control-glass-edge,var(--dkui-glass-edge));
@@ -111,7 +104,6 @@ body.dkds-modern-ui :where([data-dkds-material-role="floating"],.dkds-material-r
   --dkds-material-authored-opacity:var(--dkui-material-floating-tint-opacity,var(--dkui-material-tint-opacity));
   --dkds-material-fill-floor:58%;
   --dkds-material-fill-opacity:max(var(--dkds-material-authored-opacity),var(--dkds-material-fill-floor));
-  --dkds-material-tint:var(--dkds-material-authored-opacity);
   --dkds-material-specular:var(--dkui-material-floating-specular-highlight,var(--dkui-specular-highlight));
   --dkds-material-inner:var(--dkui-material-floating-inner-highlight,var(--dkui-inner-highlight));
   --dkds-material-edge:var(--dkui-material-floating-glass-edge,var(--dkui-glass-edge));

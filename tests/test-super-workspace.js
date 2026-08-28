@@ -52,7 +52,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     if(complete){
       ctx.ui.topWorkspace.register({
         id:activity,activity,label:activity,
-        layout:{root:{selector:'#root'},left:{role:'data-display',selector:'#left'},main:{role:'primary-data',selector:'#main'}}
+        layout:{mode:'native',root:{selector:'#root'},primary:{role:'primary-data'}}
       });
     }
     if(prime)ctx.ui.prime.register('inspector',{activity,placements:['float','right','bottom']});
@@ -80,8 +80,8 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     });
     await P.activateAll();
 
-    assert(P.workspace.super().pluginId==='builtin.resonance-workbench','first migration must select resonance only when no SUPER preference exists.');
-    assert(P.workspace.super().available===true,'migrated SUPER must be available.');
+    assert(P.workspace.super().pluginId==='builtin.resonance-workbench','first-run initialization must select the declared default TOP when no SUPER preference exists.');
+    assert(P.workspace.super().available===true,'initialized SUPER must be available.');
     assert(store.get(P.manager.superStorageKey)==='builtin.resonance-workbench','SUPER selection must persist locally.');
     assert(P.activities.active()==='resonance','current SUPER activity must be embedded as active workspace.');
     assert(placed.includes('builtin.resonance-workbench:inspector:float'),'SUPER activation must apply PRIME default placement through the generic host adapter.');
@@ -162,11 +162,10 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
 
   assert(app.includes("activity?.openMode==='window'&&activity?.isSuper!==true"),'prewarming must exclude the currently embedded SUPER.');
   assert(app.includes("page?.classList.contains('super-workspace-root-page')"),'only the actual SUPER root page must be non-dismissible; plugin-owned SUB pages must remain closable.');
-  assert(app.includes('superWorkspaceDivider'),'main renderer must own the adjustable SUPER left/main divider.');
-  assert(css.includes('--dkds-super-left-width'),'SUPER layout must use a shared adjustable left-region width token.');
-  assert(css.includes('.dkds-super-composed-root')&&css.includes('.dkds-super-slot-left')&&css.includes('.dkds-super-slot-main'),'core SUPER layout must be driven by semantic TOP slots.');
+  assert(!app.includes('superWorkspaceDivider')&&!css.includes('--dkds-super-left-width'),'SUPER must not retain the retired split-layout divider or width token.');
+  assert(!css.includes('.dkds-super-composed-root')&&!css.includes('.dkds-super-slot-left')&&!css.includes('.dkds-super-slot-main'),'SUPER must not retain split-composition compatibility slots.');
   assert(!css.includes('#pulseAnalysisPage.super-workspace-page')&&!css.includes('#terMaxPage.super-workspace-page')&&!css.includes('#builtin-data-center-data-center-page.super-workspace-page'),'core SUPER CSS must not hard-code built-in TOP plugin names.');
-  assert(app.includes('applySuperWorkspaceComposition')&&app.includes('querySuperContractSelectors'),'main renderer must compose TOP contracts generically at runtime.');
+  assert(app.includes('function superWorkspaceRootPageId(contract={})')&&app.includes('contract?.layout?.root?.selector'),'main renderer must consume the canonical native TOP root contract directly.');
   assert(css.includes('box-shadow:none'),'selected top-level buttons must not retain the blue bottom underline.');
   assert(css.includes('height:34px'),'top command buttons must share a single height.');
   assert(managerUi.includes('plugin-super-selector')&&managerUi.includes('setSuper'),'plugin manager must expose an explicit SUPER selector for TOP plugins.');

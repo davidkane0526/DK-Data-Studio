@@ -41,7 +41,7 @@ function applyScientificCurveNavigation(ScientificCurveSurface){
     }
     installNavigationObstacleObserver(){
       if(!window.MutationObserver||this.navObstacleObserver)return false;
-      const root=this.container?.closest?.('[data-dkds-plot-scope],.dkds-workbench,.dkds-surface,.card')||this.container?.parentElement||this.container;if(!root)return false;
+      const root=this.container?.closest?.('[data-dkds-plot-scope],.dkds-surface,.card')||this.container?.parentElement||this.container;if(!root)return false;
       this.navObstacleObserver=new MutationObserver(records=>{for(const record of records){if(this.isNavigationLegendNode(record.target)||[...(record.addedNodes||[])].some(node=>this.isNavigationLegendNode(node))||[...(record.removedNodes||[])].some(node=>this.isNavigationLegendNode(node))){this.scheduleNavigationCollisionCheck();break;}}});
       this.navObstacleObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});return true;
     }

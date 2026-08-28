@@ -1,51 +1,29 @@
 'use strict';
 const {state, definitions, active}=require('../context');
 const {isDefinitionEnabled, definitionById, workspaceMeta, isTopDefinition, isSuperEligibleDefinition, readSuperPreference, writeSuperPreference, readPrimePlacements, writePrimePlacements, primePlacementKey, topWorkspaceForPlugin, topActivityIdForPlugin, superState}=require('../bootstrap');
-const eventEmit=(...args)=>require('../events/history').eventEmit(...args);
-const renderActivityBar=(...args)=>require('../activity/shell').renderActivityBar(...args);
-const refreshActivityVisibility=(...args)=>require('../activity/shell').refreshActivityVisibility(...args);
-const setActiveActivity=(...args)=>require('../activity/shell').setActiveActivity(...args);
-const registerTypedContribution=(...args)=>require('../contributions/typed').registerTypedContribution(...args);
-const listContributions=(...args)=>require('../contributions/typed').listContributions(...args);
-const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...args);
-
-
+const {eventEmit}=require('../events/history');
+const {renderActivityBar, refreshActivityVisibility, setActiveActivity}=require('../activity/shell');
+const {registerTypedContribution, listContributions}=require('../contributions/typed');
+const {listPluginStates}=require('../lifecycle');
   function validateTopWorkspaceSpec(pluginId,spec={}) {
     const definition=definitionById(pluginId);
     if(!definition||!isTopDefinition(definition))throw new Error(`Plugin ${pluginId} must declare workspace.role=top before registering a TOP workspace.`);
     const activity=String(spec.activity||workspaceMeta(definition.manifest).activity||'').trim();
     if(!activity)throw new Error(`TOP workspace ${pluginId} must declare an activity.`);
     const layout=spec.layout&&typeof spec.layout==='object'?spec.layout:{};
-    const mode=String(layout.mode||'split').trim().toLowerCase();
-    if(!['split','native'].includes(mode))throw new Error(`TOP workspace ${pluginId} has unsupported layout mode: ${mode}`);
-    if(mode==='split'&&(!layout.left||!layout.main))throw new Error(`TOP workspace ${pluginId} split layout must declare both layout.left and layout.main regions.`);
-    const normalizeRegion=(region,name)=>{
-      const raw=region&&typeof region==='object'?region:{};
-      const selectors=[];
-      for(const value of [raw.selector,raw.mount,...(Array.isArray(raw.selectors)?raw.selectors:[])]){
-        const selector=String(value||'').trim();
-        if(selector&&!selectors.includes(selector))selectors.push(selector);
-      }
-      if(!selectors.length)throw new Error(`TOP workspace ${pluginId} layout.${name} must declare selector/mount/selectors.`);
-      return Object.freeze({...raw,selectors:Object.freeze(selectors)});
-    };
+    const mode=String(layout.mode||'').trim().toLowerCase();
+    if(mode!=='native')throw new Error(`TOP workspace ${pluginId} must use the native PluginWorkspace layout contract.`);
     const root=layout.root&&typeof layout.root==='object'?layout.root:{};
-    const rootSelector=String(root.selector||layout.rootSelector||'').trim();
-    if(mode==='native'&&!rootSelector)throw new Error(`TOP workspace ${pluginId} native layout must declare layout.root.selector.`);
-    const left=layout.left?normalizeRegion(layout.left,'left'):null;
-    const main=layout.main?normalizeRegion(layout.main,'main'):null;
-    const flatten=Object.freeze((Array.isArray(layout.flatten)?layout.flatten:[]).map(String).map(x=>x.trim()).filter(Boolean));
+    const rootSelector=String(root.selector||'').trim();
+    if(!rootSelector)throw new Error(`TOP workspace ${pluginId} must declare layout.root.selector.`);
     return Object.freeze({
       id:String(spec.id||activity),
       activity,
       label:String(spec.label||definition.manifest.name||activity),
       icon:String(spec.icon||workspaceMeta(definition.manifest).icon||''),
       layout:Object.freeze({
-        mode,
+        mode:'native',
         root:Object.freeze({...root,selector:rootSelector}),
-        left,
-        main,
-        flatten,
         primary:Object.freeze(layout.primary&&typeof layout.primary==='object'?{...layout.primary}:{}),
         prime:Object.freeze(Array.isArray(layout.prime)?layout.prime.map(row=>Object.freeze({...row})):[]),
         sub:Object.freeze(Array.isArray(layout.sub)?layout.sub.map(row=>Object.freeze({...row})):[])
@@ -53,14 +31,12 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
       pluginId
     });
   }
-
   function registerTopWorkspace(pluginId,spec={}) {
     if(topWorkspaceForPlugin(pluginId))throw new Error(`Plugin ${pluginId} already registered a TOP workspace.`);
     const value=validateTopWorkspaceSpec(pluginId,spec);
     registerTypedContribution(pluginId,'ui.topWorkspaces',value.id,value);
     return value;
   }
-
   function registerPrimeContribution(pluginId,id,spec={}) {
     const activity=String(spec.activity||topActivityIdForPlugin(pluginId)||'').trim();
     const placements=(Array.isArray(spec.placements)&&spec.placements.length?spec.placements:['float','right','bottom']).map(x=>String(x).trim().toLowerCase());
@@ -80,15 +56,12 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
     registerTypedContribution(pluginId,'ui.prime',id,value);
     return value;
   }
-
   function primeContribution(pluginId,id) {
     return listContributions('ui.prime').find(row=>row.pluginId===pluginId&&row.id===id)?.value||null;
   }
-
   function primeRowsForPlugin(pluginId) {
     return listContributions('ui.prime').filter(row=>row.pluginId===pluginId);
   }
-
   function primePlacementFor(pluginId,id) {
     const value=primeContribution(pluginId,id);
     if(!value)return '';
@@ -102,7 +75,6 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
     }
     return value.defaultPlacement||value.placements[0]||'float';
   }
-
   async function placePrimeContribution(pluginId,id,placement,{persist=true,reason='user'}={}) {
     const value=primeContribution(pluginId,id);
     if(!value)throw new Error(`PRIME contribution not found: ${pluginId}/${id}`);
@@ -123,7 +95,6 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
     eventEmit('prime:placement-changed',{pluginId,id,placement:next,reason});
     return next;
   }
-
   async function applySuperPrimePlacements() {
     if(!state.superPluginId)return;
     for(const row of primeRowsForPlugin(state.superPluginId)){
@@ -133,17 +104,14 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
       catch(err){ console.warn(`[DKDS PRIME apply:${row.pluginId}/${row.id}]`,err); }
     }
   }
-
   function registerSubContribution(pluginId,id,spec={}) {
     const activity=String(spec.activity||topActivityIdForPlugin(pluginId)||'').trim();
     return registerTypedContribution(pluginId,'ui.sub',id,Object.freeze({id,activity,...spec,pluginId}));
   }
-
   function topDefinitionReady(pluginId) {
     const definition=definitionById(pluginId);
     return !!(definition&&isDefinitionEnabled(definition)&&active.has(pluginId)&&topWorkspaceForPlugin(pluginId)&&topActivityIdForPlugin(pluginId));
   }
-
   async function activateSuperWorkspace({invoke=true}={}) {
     const current=superState();
     if(!current.available){
@@ -162,7 +130,6 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
     }
     return ok;
   }
-
   async function setSuperPlugin(pluginId,{persist=true,invoke=true}={}) {
     const id=String(pluginId||'').trim();
     if(!id)throw new Error('必须选择一个 TOP 插件作为主界面。');
@@ -175,12 +142,10 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
     const previous=state.superPluginId;
     if(previous===id)return superState();
     const activityId=topActivityIdForPlugin(id);
-
     // Host-role changes are transactional. Before a TOP becomes embedded as
     // SUPER, the state.host must flush and retire any dedicated renderer of that
     // same plugin so two live instances can never own the same project state.
     await state.host?.prepareSuperTransition?.({previous,pluginId:id,activityId});
-
     state.superPluginId=id;
     try{
       const activated=await activateSuperWorkspace({invoke});
@@ -203,7 +168,6 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
       throw err;
     }
   }
-
   async function initializeSuperSelection() {
     if(state.host?.isAuxiliaryWindow)return false;
     const saved=readSuperPreference();
@@ -211,22 +175,19 @@ const listPluginStates=(...args)=>require('../lifecycle').listPluginStates(...ar
       state.superPluginId=saved&&topDefinitionReady(saved)?saved:null;
       return activateSuperWorkspace({invoke:true});
     }
-    // One-time migration from pre-SUPER builds. Core never names a domain
-    // plugin here: TOP plugins may request the initial SUPER role through
-    // manifest.workspace.defaultSuper, otherwise the first ready TOP by
-    // manifest order is used. After a user selects a SUPER we never silently
-    // fall back to another plugin.
+    // First-run initialization is domain-neutral: a TOP may request the initial
+    // SUPER role through manifest.workspace.defaultSuper; otherwise manifest
+    // order decides the initial workspace. Persisted user selection always wins.
     const candidates=[...definitions.values()]
       .filter(definition=>isSuperEligibleDefinition(definition)&&topDefinitionReady(definition.manifest.id))
       .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)
         ||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100)
         ||String(a.manifest.id).localeCompare(String(b.manifest.id)));
-    const migration=candidates[0]?.manifest?.id||null;
-    if(migration){
-      state.superPluginId=migration;
-      writeSuperPreference(migration);
+    const initial=candidates[0]?.manifest?.id||null;
+    if(initial){
+      state.superPluginId=initial;
+      writeSuperPreference(initial);
     }else state.superPluginId=null;
     return activateSuperWorkspace({invoke:true});
   }
-
 module.exports=Object.freeze({validateTopWorkspaceSpec, registerTopWorkspace, registerPrimeContribution, primeContribution, primeRowsForPlugin, primePlacementFor, placePrimeContribution, applySuperPrimePlacements, registerSubContribution, topDefinitionReady, activateSuperWorkspace, setSuperPlugin, initializeSuperSelection});

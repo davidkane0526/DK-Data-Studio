@@ -92,7 +92,7 @@
     const targets=safeArray(options.targets).map(Number).filter(Number.isFinite),groups=safeArray(options.vgs||options.groups).map(Number).filter(Number.isFinite);
     const params={...clone(options),type:row.transformKey,transformId:row.id,vgs:groups,targets,transformAlgorithmRef:row.algorithmRef};delete params.groups;
     const provider=executeAlgorithmSync(row.fieldAlgorithmRef,sweeps,{...options,category:row.fieldAlgorithmRef?.category||'',parameters:params,targets,groups,transform:{id:row.id,transformKey:row.transformKey,outputType:row.outputType,fieldType:row.fieldType,algorithmRef:row.algorithmRef}});
-    const result=provider?.value??(row.field?row.field(sweeps,params,{transform:row}):science?.computeSweepScalarField?.(sweeps,targets,groups,params)||science?.computeSweepTransformMatrix?.(sweeps,targets,groups,params));
+    const result=provider?.value??(row.field?row.field(sweeps,params,{transform:row}):science?.computeSweepScalarField?.(sweeps,targets,groups,params));
     if(!result)throw new Error(`${row.id}: scalar-field transform returned no result.`);
     return {...result,type:row.id,transformId:row.id,semanticType:row.fieldType||'science.scalar-field',label:result.label||row.label,unit:result.unit||row.unit,quantity:row.quantity,diverging:row.diverging,algorithm:provider?.algorithm||result.algorithm||null,transformAlgorithmRef:row.algorithmRef||result.transformAlgorithmRef||null};
   }

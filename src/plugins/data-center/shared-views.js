@@ -25,7 +25,7 @@
     if(!body||!left||!main)return null;
     left.remove();main.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');
     const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-    const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'data-center',primaryScroll:'auto'});
+    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'data-center',primaryScroll:'auto'});
     wb.compose({primary:{id:'main',label:'数据中心',scroll:'auto',leftNode:left,mainNode:main}});
     return wb;
   }

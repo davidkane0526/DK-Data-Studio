@@ -1,7 +1,7 @@
 'use strict';
 const {state}=require('../context');
 const {definitionById, defaultPluginIcon, workspaceMeta, isTopDefinition}=require('../bootstrap');
-const {addCleanup}=require('../events/history');
+const {addCleanup}=require('../registry');
 const {refreshActivityVisibility}=require('../activity/shell');
 const {registerActivity}=require('../contributions/ui');
 const {createToolbarButton, registerCommand, runCommand, registerContribution}=require('../commands/toolbar');

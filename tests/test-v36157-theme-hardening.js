@@ -15,10 +15,10 @@ assert(modern.includes('.left-panel section')&&modern.includes('.dkds-analysis-n
 assert(modern.includes('button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret)'),'First-party button surface normalization is missing.');
 assert(modern.includes('border-color:var(--control-border)'),'Interactive fields must use controlBorder rather than structural divider.');
 assert(modern.includes('.left-panel section')&&modern.includes('border:0'),'Sidebar sections must not use structural outline separators.');
-assert(!/dkds-analysis-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Analysis splitters must not paint a legacy light divider while idle.');
-assert(!/dkds-plugin-canvas-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Plugin canvas splitters must not paint a legacy light divider while idle.');
+assert(!/dkds-analysis-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Analysis splitters must not paint a hard-coded light divider while idle.');
+assert(!/dkds-plugin-canvas-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Plugin canvas splitters must not paint a hard-coded light divider while idle.');
 assert(style.includes('--plugin-workspace-panel-border:var(--divider-subtle,transparent)'),'PluginWorkspace panel border must come from Theme Contract.');
-assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);background:transparent'),'PluginWorkspace layout wrapper must remain transparent so explicit MaterialSurface roles can sample the real backdrop.');
+assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);')&&style.includes('.dkds-plugin-workspace {background:transparent'),'PluginWorkspace geometry and transparent presentation must remain separately owned so MaterialSurface roles can sample the real backdrop.');
 assert(style.includes('.dkds-plugin-canvas-center{')&&modern.includes('.dkds-plugin-canvas-center')&&modern.includes('background-color:transparent'),'PluginWorkspace material-bearing canvas must be Core-role managed without an opaque wrapper blocking backdrop sampling.');
 assert(/\.pulse-card\{/.test(pulseStyle)&&!/\.pulse-card\{[^}]*border\s*:/.test(pulseStyle),'Pulse plugin must own its card geometry without private structural border paint.');
 assert(/\.pulse-card-heading\{/.test(pulseStyle)&&!/\.pulse-card-heading\{[^}]*border-bottom\s*:/.test(pulseStyle),'Pulse plugin heading must rely on the Core surface-header contract instead of private divider paint.');

@@ -28,7 +28,7 @@ const fakePeaks=[
   {id:'p2u',sweepId:'u',accepted:true,peakLabel:'峰2',vg:10,direction:1,v:1,i:5},
   {id:'p2d',sweepId:'d',accepted:true,peakLabel:'峰2',vg:10,direction:-1,v:1,i:4}
 ];
-const ter=A.computeTerForLabel(fakePeaks,fakeSweeps,'峰1');
+const ter=A.computeResonantTerForLabel(fakePeaks,fakeSweeps,'峰1');
 assert.strictEqual(ter.length,1,'TER label pairing changed');
 assert(Math.abs(ter[0].ter-100)<1e-9,'TER 2/1 compatibility result changed');
 

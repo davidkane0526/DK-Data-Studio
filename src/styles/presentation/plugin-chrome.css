@@ -1,378 +1,534 @@
 /* Plugin pages/windows are Core chrome. Keep their header, standard controls and
    navigation visually consistent even when the plugin itself is external. */
-body.dkds-modern-ui .analysis-page-header,
-body.dkds-modern-ui.plugin-window-host .analysis-page-header{
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  color:var(--text-primary);
-  box-shadow:0 1px 0 rgba(255,255,255,.50) inset,0 2px 8px rgba(56,81,116,.045);
-}
-body.dkds-modern-ui .analysis-page-header h2{color:var(--text-primary)}
-body.dkds-modern-ui .analysis-subtitle{color:var(--text-secondary)}
-body.dkds-modern-ui .analysis-page-header button,
-body.dkds-modern-ui .dkds-plugin-header-actions button,
-body.dkds-modern-ui .dkds-plugin-workspace button{
-  border-color:var(--border-subtle);
-  background:var(--surface-primary);
-  color:var(--text-primary);
-  box-shadow:var(--surface-shadow);
-}
-body.dkds-modern-ui .analysis-page-header button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-plugin-header-actions button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-plugin-workspace button:hover:not(:disabled){
-  background:var(--surface-hover);
-  border-color:var(--border-strong);
-}
 
 /* Page-header actions are peers, not one segmented capsule. Keeping each
    command on its own Core control surface prevents adjacent labels/icons from
    visually collapsing into one another (especially Pulse and TER headers). */
-body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group{
+
+/* Material surfaces are painted only by the Core Material Renderer. */
+
+/* Selection is visual emphasis, not a heavy card treatment. */
+
+/* Stationary menu motion contract.
+   Menus/popovers resolve their anchor geometry before becoming visible and never
+   translate, scale or lift during open/hover/press. Interaction feedback is paint-only. */
+
+/* Explicit page/header chrome so dark mode and plugin-manager cards never inherit a light strip. */
+
+/* Plugin type is a first-class visual tag; tool plugins remain visible after installation. */
+/* Tool menus are content-sized. Generic command menus reserve room for shortcut
+   hints, but a tools list is icon + label only and should not stretch them apart. */
+
+/* Status details float above the app without changing the footer layout. */
+
+/* Explicit dark mode: flat material with restrained depth, no balloon-like highlights. */
+
+/* Disabled plugin/workspace actions stay on the active semantic surface. */
+/* Semantic owner consolidation from earlier presentation modules. */
+body.dkds-modern-ui .plugin-switch-track{box-shadow:0 1px 2px rgba(25,39,66,.11) inset}
+body.dkds-modern-ui .plugin-switch-thumb{box-shadow:0 2px 5px rgba(25,39,66,.18)}
+body.dkds-modern-ui .plugin-capability-chip{
+  background:var(--dkui-control-bg);
+  border-color:var(--dkui-control-border);
+  color:var(--dkui-text-soft);
+}
+body.dkds-modern-ui.plugin-window-host .analysis-page-header {
+  background:var(--surface-primary);
+  border-color:var(--border-subtle);
+  color:var(--text-primary);
+  box-shadow:0 1px 0 rgba(255,255,255,.50) inset,0 2px 8px rgba(56,81,116,.045)
+}
+body.dkds-modern-ui .analysis-page-header h2 {color:var(--text-primary)
+}
+body.dkds-modern-ui .analysis-page-header button,
+body.dkds-modern-ui .dkds-plugin-header-actions button,
+body.dkds-modern-ui .dkds-plugin-workspace button {
+  border-color:var(--border-subtle);
+  background:var(--surface-primary);
+  color:var(--text-primary);
+  box-shadow:var(--surface-shadow)
+}
+body.dkds-modern-ui .analysis-page-header button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-plugin-header-actions button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-plugin-workspace button:hover:not(:disabled) {
+  background:var(--surface-hover);
+  border-color:var(--border-strong)
+}
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group {
   padding:0;
   border:0;
   border-radius:0;
   background:transparent;
   box-shadow:none;
   -webkit-backdrop-filter:none;
-  backdrop-filter:none;
+  backdrop-filter:none
 }
-body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button{
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button {
   min-height:32px;
   height:32px;
   padding:0 11px;
   border:1px solid var(--dkui-control-border,var(--border-subtle));
   border-radius:9px;
   background:var(--dkui-control-bg,var(--surface-primary));
-  box-shadow:var(--dkui-shadow-1,var(--surface-shadow));
+  box-shadow:var(--dkui-shadow-1,var(--surface-shadow))
 }
-body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button:hover:not(:disabled){
+body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button:hover:not(:disabled) {
   border-color:var(--dkui-control-border-hover,var(--border-strong));
-  background:var(--dkui-control-hover,var(--surface-hover));
+  background:var(--dkui-control-hover,var(--surface-hover))
 }
 body.dkds-modern-ui .dkds-plugin-workspace input:not([type="checkbox"]):not([type="radio"]),
 body.dkds-modern-ui .dkds-plugin-workspace select,
-body.dkds-modern-ui .dkds-plugin-workspace textarea{
+body.dkds-modern-ui .dkds-plugin-workspace textarea {
   background:var(--input-bg);
   border-color:var(--border-subtle);
-  color:var(--text-primary);
+  color:var(--text-primary)
 }
 body.dkds-modern-ui .dkds-plugin-workspace input:focus-visible,
 body.dkds-modern-ui .dkds-plugin-workspace select:focus-visible,
-body.dkds-modern-ui .dkds-plugin-workspace textarea:focus-visible{outline:none;border-color:var(--accent-primary);box-shadow:var(--focus-ring)}
-
-/* Scientific workbenches: style application card chrome only, never renderer internals. */
-body.dkds-modern-ui .main-legend-bar{background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)}
-body.dkds-modern-ui .main-legend-chip{
-  border-color:var(--border-subtle);
-  background:var(--surface-secondary);
-  color:var(--text-primary);
+body.dkds-modern-ui .dkds-plugin-workspace textarea:focus-visible {outline:none;border-color:var(--accent-primary);box-shadow:var(--focus-ring)
 }
-
-/* Material surfaces are painted only by the Core Material Renderer. */
-body.dkds-modern-ui .command-menu,
-body.dkds-modern-ui .dkds-settings-dialog,
-body.dkds-modern-ui .dkds-tooltip,
-body.dkds-modern-ui .hover-tip{background:transparent;border-color:transparent;box-shadow:none}
-body.dkds-modern-ui .dkds-settings-dialog>header,
-body.dkds-modern-ui .dkds-settings-dialog>footer{background:transparent;border-color:var(--border-subtle)}
-body.dkds-modern-ui .dkds-settings-overlay{background:rgba(27,38,58,.22)}
-
-/* Keep Core scientific navigation compact. This explicitly neutralizes generic card/button depth. */
-body.dkds-modern-ui .dkds-scientific-nav-tools{
-  background:transparent;
-  border-color:transparent;
-  box-shadow:0 3px 10px rgba(25,39,66,.065);
-}
-body.dkds-modern-ui .dkds-scientific-nav-tools button{
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  transform:none;
-}
-body.dkds-modern-ui .dkds-scientific-nav-tools button:hover{background:var(--dkui-control-hover)}
-
-/* Selection is visual emphasis, not a heavy card treatment. */
-body.dkds-modern-ui .dataset-item.selected,
-body.dkds-modern-ui .dkds-selection-item.dkds-selection-focused{
-  background:var(--dkui-selection-bg,var(--dkui-accent-soft));
-  border-color:var(--dkui-selection-border,color-mix(in srgb,var(--dkui-accent) 36%,var(--dkui-control-border)));
-  color:var(--dkui-text);
-  box-shadow:none;
-}
-
-/* Stationary menu motion contract.
-   Menus/popovers resolve their anchor geometry before becoming visible and never
-   translate, scale or lift during open/hover/press. Interaction feedback is paint-only. */
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu){
-  animation:none;
-  transform:none;
-  transition-property:opacity,background-color,border-color,color,box-shadow;
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item){
-  transform:none;
-  transition-property:background-color,border-color,color,box-shadow;
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):is(:hover,:active,:focus-visible){transform:none}
-@media (prefers-reduced-motion:reduce){
-  body.dkds-modern-ui *,body.dkds-modern-ui *::before,body.dkds-modern-ui *::after{animation-duration:.001ms;animation-iteration-count:1;transition-duration:.001ms}
-}
-
-/* Dark mode keeps the same depth logic rather than inverting the light surfaces mechanically. */
-html[data-dkds-theme="dark"]{
-    --dkui-canvas:#151922;
-    --dkui-surface:#1d232e;
-    --dkui-surface-soft:#202733;
-    --dkui-surface-hover:#29313d;
-    --dkui-surface-elevated:#222a36;
-    --dkui-surface-sidebar:#191f29;
-    --dkui-control-bg:#232b37;
-    --dkui-control-hover:#2a3442;
-    --dkui-divider:rgba(166,181,202,.024);
-    --dkui-divider-hover:rgba(133,160,236,.48);
-    --dkui-control-border:rgba(166,181,202,.16);
-    --dkui-control-border-hover:rgba(166,181,202,.28);
-    --dkui-scrollbar:rgba(166,181,202,.22);
-    --dkui-scrollbar-hover:rgba(166,181,202,.36);
-    --dkui-border:var(--dkui-divider);
-    --dkui-border-strong:var(--dkui-control-border);
-    --dkui-text:#e4e9f2;
-    --dkui-text-soft:#b5c0d0;
-    --dkui-muted:#8995a8;
-    --dkui-accent-soft:#202d55;
-    --dkui-selection-bg:rgba(255,255,255,.075);
-    --dkui-selection-border:rgba(255,255,255,.10);
-    --dkui-shadow-1:0 1px 2px rgba(0,0,0,.24),0 1px 0 rgba(255,255,255,.025) inset;
-    --dkui-shadow-2:0 6px 18px rgba(0,0,0,.27),0 1px 0 rgba(255,255,255,.03) inset;
-    --dkui-shadow-float:0 20px 52px rgba(0,0,0,.40),0 1px 0 rgba(255,255,255,.035) inset;
-    --dkui-specular-highlight:transparent;
-    --dkui-inner-highlight:transparent;
-    --dkui-glass-edge:var(--dkui-divider);
-  }
-html[data-dkds-theme="dark"] body.dkds-modern-ui{background:#151922;background-image:radial-gradient(900px 360px at 62% -240px,rgba(75,105,215,.08),transparent 72%)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar{color:var(--dkui-text)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .brand{color:#eef2f8}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .brand-mark{background:#222936;border-color:var(--dkui-border);box-shadow:0 2px 7px rgba(0,0,0,.22)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-group,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-cluster,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group{background:#202631;border-color:var(--dkui-border);box-shadow:0 1px 2px rgba(0,0,0,.20)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab:hover,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn:hover{background:#29313e;border-color:var(--dkui-border);color:#edf2f8}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab.active,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab.active{background:#29313d;border-color:transparent;color:var(--dkui-selected-fg);box-shadow:var(--dkui-selected-shadow)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tabs-bar{background:#181e27;border-bottom-color:var(--dkui-border)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab{background:#202631;border-color:var(--dkui-border);color:#9ca9bb}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab:hover{background:#252d39;color:#d4dbe6}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab.active{background:#1d232e;border-color:var(--dkui-border);border-bottom-color:#1d232e;color:#edf2f8}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .left-panel,html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar{color:var(--dkui-text-soft)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .import-section,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-settings-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-address-card,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-share-section{background:#1d232e;border-color:var(--dkui-border)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-head{background:#202631;border-color:var(--dkui-border);color:#dce3ed}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dataset-vg-edit input,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .peak-class-grid input,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field input,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field select,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field textarea{background:#202733;border-color:var(--dkui-border);color:#e0e6ef}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .command-menu,html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-settings-dialog{color:var(--dkui-text)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{background:#1d232e;border-color:var(--dkui-border)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools{color:var(--dkui-text)}
-
-/* Explicit page/header chrome so dark mode and plugin-manager cards never inherit a light strip. */
 body.dkds-modern-ui .analysis-page-header,
-body.dkds-modern-ui .dkds-analysis-header,
-body.dkds-modern-ui .plugin-manager-header{
+body.dkds-modern-ui .plugin-manager-header {
   background:var(--surface-primary);
   border-color:var(--border-subtle);
   color:var(--text-primary);
-  box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 90%,white) inset;
+  box-shadow:0 1px 0 color-mix(in srgb,var(--surface-primary) 90%,white) inset
 }
 body.dkds-modern-ui .plugin-card-footer,
-body.dkds-modern-ui .plugin-card-details{
+body.dkds-modern-ui .plugin-card-details {
   background:var(--surface-secondary);
   border-color:var(--border-subtle);
-  color:var(--text-secondary);
+  color:var(--text-secondary)
 }
-body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent;box-shadow:none}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-header,
-  html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-header{color:var(--dkui-text)}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header h2{color:#e6ebf3}
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-subtitle{color:#8f9bad}
-
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar{color:#aeb8c7}
-
-
-/* Shell order contract: analysis pages can never cover the command shell. */
-body.dkds-modern-ui .topbar{position:relative;z-index:1400;isolation:isolate}
-body.dkds-modern-ui .project-tabs-bar{position:relative;z-index:1300}
-body.dkds-modern-ui .analysis-page{z-index:500}
-body.dkds-modern-ui .command-menu{z-index:1650}
-body.dkds-modern-ui .topbar .menu-anchor,
-body.dkds-modern-ui .topbar .context-overflow-anchor,
-body.dkds-modern-ui .topbar .activity-more-anchor{position:relative;z-index:2}
-
-/* Reference-inspired light material: mostly flat, with a narrow rim and broad ambient shadow. */
-html[data-dkds-theme="light"] body.dkds-modern-ui .toolbar-group,
-html[data-dkds-theme="light"] body.dkds-modern-ui .primary-activity-cluster,
-html[data-dkds-theme="light"] body.dkds-modern-ui .system-core-tools-group{
-  background:rgba(251,252,254,.90);border-color:#d8e5f4;
-  box-shadow:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.16) inset,0 4px 12px rgba(91,119,159,.055);
+body.dkds-modern-ui .plugin-manager-search-wrap input {background:transparent;box-shadow:none
 }
-html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
-html[data-dkds-theme="light"] body.dkds-modern-ui .analysis-chart-card{
-  background:#fbfcfe;border-color:#d8e5f4;border-radius:11px;
-  box-shadow:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.18) inset,0 4px 10px rgba(91,119,159,.055),0 13px 28px rgba(91,119,159,.075);
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-header {color:var(--dkui-text)
 }
-
-/* Host-owned selection contract. Text color is paired with the selected surface. */
-body.dkds-modern-ui .trend-layout-controls button.active,
-body.dkds-modern-ui .main-plot-tools button.active,
-body.dkds-modern-ui .scan-global-buttons button.active,
-body.dkds-modern-ui .preset-row button.active,
-body.dkds-modern-ui .action-grid button.active,
-body.dkds-modern-ui .panel-header-actions button.active,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header h2 {color:#e6ebf3
+}
 body.dkds-modern-ui .plugin-manager-page button.active,
-body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"],
-body.dkds-modern-ui .dkds-toolbar button.active,
-body.dkds-modern-ui .dkds-toolbar button[aria-pressed="true"],
-body.dkds-modern-ui .dkds-action-row button.active,
-body.dkds-modern-ui .dkds-action-row button[aria-pressed="true"],
-body.dkds-modern-ui .dkds-surface-header button.active,
-body.dkds-modern-ui .dkds-surface-header button[aria-pressed="true"],
-body.dkds-modern-ui .dkds-analysis-workbench button.active,
-body.dkds-modern-ui .dkds-analysis-workbench button[aria-pressed="true"]{
+body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"] {
   background:var(--dkui-accent-soft);
   border-color:color-mix(in srgb,var(--dkui-accent) 34%,var(--dkui-control-border));
   color:var(--dkui-accent);
   -webkit-text-fill-color:var(--dkui-accent);
   text-shadow:none;
-  box-shadow:var(--dkui-selected-shadow);
+  box-shadow:var(--dkui-selected-shadow)
 }
-body.dkds-modern-ui .toolbar-btn.strong,
-body.dkds-modern-ui button.primary,
-body.dkds-modern-ui .toolbar-btn.strong:active,
-body.dkds-modern-ui button.primary:active{color:#fff;-webkit-text-fill-color:#fff;text-shadow:none}
-
-/* Plugin type is a first-class visual tag; tool plugins remain visible after installation. */
-body.dkds-modern-ui .plugin-type-badge{
+body.dkds-modern-ui .plugin-type-badge {
   display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid #d7e4f5;border-radius:999px;
-  background:#f2f6fc;color:#60718b;font-size:10px;font-weight:700;line-height:1;white-space:nowrap;
+  background:#f2f6fc;color:#60718b;font-size:10px;font-weight:700;line-height:1;white-space:nowrap
 }
-body.dkds-modern-ui .plugin-type-badge.type-tool{background:#eaf7f0;border-color:#c8ead8;color:#148253}
-body.dkds-modern-ui .tool-workspace-menu-item .activity-icon{color:var(--dkui-accent)}
-/* Tool menus are content-sized. Generic command menus reserve room for shortcut
-   hints, but a tools list is icon + label only and should not stretch them apart. */
-body.dkds-modern-ui #pluginToolsMenu{
-  width:max-content;
-  min-width:0;
-  max-width:min(360px,calc(100vw - 16px));
+body.dkds-modern-ui .plugin-type-badge.type-tool {background:#eaf7f0;border-color:#c8ead8;color:#148253
 }
-body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item{
+body.dkds-modern-ui .tool-workspace-menu-item .activity-icon {color:var(--dkui-accent)
+}
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item {
   width:100%;
   min-width:0;
   justify-content:flex-start;
-  gap:7px;
+  gap:7px
 }
-body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item>.activity-icon{
+body.dkds-modern-ui #pluginToolsMenu>.tool-workspace-menu-item>.activity-icon {
   flex:0 0 auto;
   min-width:14px;
-  text-align:center;
+  text-align:center
 }
-
-/* Status details float above the app without changing the footer layout. */
-body.dkds-modern-ui .dkds-memory-panel{
+body.dkds-modern-ui .dkds-memory-panel {
   position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + 8px);width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));
   display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dkui-border);border-radius:13px;background:transparent;color:var(--dkui-text);
-  box-shadow:none;
+  box-shadow:none
 }
-body.dkds-modern-ui .dkds-memory-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px 8px;border-bottom:1px solid var(--dkui-border)}
-body.dkds-modern-ui .dkds-memory-panel-title{display:flex;align-items:baseline;gap:8px;min-width:0}
-body.dkds-modern-ui .dkds-memory-panel-head strong{font-size:13px;color:var(--dkui-text)}
-body.dkds-modern-ui .dkds-memory-panel-head span{font-size:11px;color:var(--dkui-muted)}
-body.dkds-modern-ui .dkds-memory-panel-head button{width:26px;height:26px;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--dkui-muted);box-shadow:none}
-body.dkds-modern-ui .dkds-memory-panel-head button:hover{border-color:var(--dkui-border);background:var(--dkui-surface-hover);color:var(--dkui-text);transform:none}
-body.dkds-modern-ui .dkds-memory-panel-note{padding:8px 12px 4px;color:var(--dkui-muted);font-size:10px}
-body.dkds-modern-ui .dkds-memory-component-list{min-height:0;overflow:auto;padding:4px 8px 9px}
-body.dkds-modern-ui .dkds-memory-component-row{padding:8px 6px;border-radius:8px}
-body.dkds-modern-ui .dkds-memory-component-row:hover{background:var(--dkui-surface-hover)}
-body.dkds-modern-ui .dkds-memory-component-main{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px}
-body.dkds-modern-ui .dkds-memory-component-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dkui-text-soft)}
-body.dkds-modern-ui .dkds-memory-component-main strong{flex:0 0 auto;color:var(--dkui-text);font-size:11px}
-body.dkds-modern-ui .dkds-memory-component-meta{margin-top:2px;color:var(--dkui-muted);font-size:9px}
-body.dkds-modern-ui .dkds-memory-meter{height:3px;margin-top:6px;overflow:hidden;border-radius:99px;background:#e5edf7}
-body.dkds-modern-ui .dkds-memory-meter>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5c9cff,#096bfa)}
-body.dkds-modern-ui .dkds-memory-empty{padding:18px 10px;text-align:center;color:var(--dkui-muted);font-size:11px}
-body.dkds-modern-ui .appearance-status-item .plugin-status-icon{font-size:12px}
-
-/* Explicit dark mode: flat material with restrained depth, no balloon-like highlights. */
-
-html[data-dkds-theme="dark"] body.dkds-modern-ui{background:#101a28;background-image:radial-gradient(ellipse at 55% -12%,rgba(74,112,165,.12),transparent 64%)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel{color:var(--dkui-text)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel-head{border-bottom-color:var(--dkui-border)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-meter{background:#26384d}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge{background:#202e40;border-color:#344b66;color:#a8b6c9}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge.type-tool{background:#17382d;border-color:#275543;color:#77d5aa}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-layout-controls button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-plot-tools button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .scan-global-buttons button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .preset-row button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .action-grid button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .panel-header-actions button.active,
+body.dkds-modern-ui .dkds-memory-panel-head {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px 8px;border-bottom:1px solid var(--dkui-border)
+}
+body.dkds-modern-ui .dkds-memory-panel-title {display:flex;align-items:baseline;gap:8px;min-width:0
+}
+body.dkds-modern-ui .dkds-memory-panel-head strong {font-size:13px;color:var(--dkui-text)
+}
+body.dkds-modern-ui .dkds-memory-panel-head span {font-size:11px;color:var(--dkui-muted)
+}
+body.dkds-modern-ui .dkds-memory-panel-head button {width:26px;height:26px;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--dkui-muted);box-shadow:none
+}
+body.dkds-modern-ui .dkds-memory-panel-head button:hover {border-color:var(--dkui-border);background:var(--dkui-surface-hover);color:var(--dkui-text);transform:none
+}
+body.dkds-modern-ui .dkds-memory-panel-note {padding:8px 12px 4px;color:var(--dkui-muted);font-size:10px
+}
+body.dkds-modern-ui .dkds-memory-component-list {min-height:0;overflow:auto;padding:4px 8px 9px
+}
+body.dkds-modern-ui .dkds-memory-component-row {padding:8px 6px;border-radius:8px
+}
+body.dkds-modern-ui .dkds-memory-component-row:hover {background:var(--dkui-surface-hover)
+}
+body.dkds-modern-ui .dkds-memory-component-main {display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px
+}
+body.dkds-modern-ui .dkds-memory-component-name {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .dkds-memory-component-main strong {flex:0 0 auto;color:var(--dkui-text);font-size:11px
+}
+body.dkds-modern-ui .dkds-memory-component-meta {margin-top:2px;color:var(--dkui-muted);font-size:9px
+}
+body.dkds-modern-ui .dkds-memory-meter {height:3px;margin-top:6px;overflow:hidden;border-radius:99px;background:#e5edf7
+}
+body.dkds-modern-ui .dkds-memory-meter>span {display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5c9cff,#096bfa)
+}
+body.dkds-modern-ui .dkds-memory-empty {padding:18px 10px;text-align:center;color:var(--dkui-muted);font-size:11px
+}
+body.dkds-modern-ui .appearance-status-item .plugin-status-icon {font-size:12px
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel {color:var(--dkui-text)
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-panel-head {border-bottom-color:var(--dkui-border)
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-meter {background:#26384d
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge {background:#202e40;border-color:#344b66;color:#a8b6c9
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge.type-tool {background:#17382d;border-color:#275543;color:#77d5aa
+}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"],
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-toolbar button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-toolbar button[aria-pressed="true"],
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-action-row button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-action-row button[aria-pressed="true"],
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-surface-header button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-surface-header button[aria-pressed="true"],
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button[aria-pressed="true"]{
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"] {
   background:color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft));
   border-color:color-mix(in srgb,var(--dkui-accent) 42%,var(--dkui-control-border));
   color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
   -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  box-shadow:var(--dkui-selected-shadow);
+  box-shadow:var(--dkui-selected-shadow)
 }
-/* Semantic command colors always win over generic app-owned button surfaces. */
-body.dkds-modern-ui .toolbar-btn.strong,
-body.dkds-modern-ui button.primary{
-  background:var(--dkui-accent);
-  border-color:var(--dkui-accent);
-  color:#fff;
-  -webkit-text-fill-color:#fff;
-  text-shadow:none;
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--dkui-accent) 24%,transparent),0 0 10px color-mix(in srgb,var(--dkui-accent) 16%,transparent),0 1px 0 rgba(255,255,255,.22) inset;
+body.dkds-modern-ui .tool-workspace-menu-item {
+  white-space:nowrap
 }
-body.dkds-modern-ui .toolbar-btn.strong:hover:not(:disabled),
-body.dkds-modern-ui button.primary:hover:not(:disabled){
-  background:var(--dkui-accent-hover);border-color:var(--dkui-accent-hover);color:#fff;-webkit-text-fill-color:#fff;
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-header-actions button:disabled,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace button:disabled {
+  background:var(--surface-secondary);
+  border-color:var(--border-subtle);
+  color:var(--text-tertiary);
+  -webkit-text-fill-color:var(--text-tertiary);
+  box-shadow:none;
+  opacity:.72
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:not(.strong),
-html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .system-commandbar .toolbar-btn:not(.strong){
-  color:#c7d2e3;-webkit-text-fill-color:#c7d2e3;
+html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header {background:var(--surface-primary);border-color:transparent;color:var(--text-primary);box-shadow:none
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .toolbar-btn:disabled,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .activity-tab:disabled,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-toolbar-btn:disabled{color:#637188;-webkit-text-fill-color:#637188;opacity:.66}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .statusbar,
-
-/* Keep command labels atomic. Narrow windows are handled by the existing toolbar overflow/reflow logic. */
-body.dkds-modern-ui .toolbar-btn,
-body.dkds-modern-ui .activity-tab,
-body.dkds-modern-ui .plugin-toolbar-btn,
-body.dkds-modern-ui .plugin-main-tool-btn,
-body.dkds-modern-ui .tool-workspace-menu-item{
-  white-space:nowrap;
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace header {border-color:var(--dkui-border)
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-card {--plugin-workspace-panel-border:var(--dkui-border)
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-right,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom {
+  border-color:var(--dkui-border)
+}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer::before {
+  background:var(--dkui-border)
+}
+body.dkds-modern-ui :is(
+  .dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-analysis-bottom-resizer,
+  .dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer
+)::before {background:transparent;box-shadow:none
+}
+body.dkds-modern-ui :is(.dkds-analysis-left-resizer,.dkds-analysis-right-resizer,.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer):is(:hover,:focus-visible,.is-dragging)::before {
+  background:var(--dkui-divider-hover,var(--divider-active))
+}
+body.dkds-modern-ui :is(.dkds-analysis-bottom-resizer,.dkds-plugin-canvas-bottom-resizer):is(:hover,:focus-visible,.is-dragging)::before {
+  background:var(--dkui-divider-hover,var(--divider-active))
+}
+body.dkds-modern-ui .dkds-portable-inline-header {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px
+}
+body.dkds-modern-ui .dkds-portable-inline-header>.dkds-portable-controls {grid-column:2;margin-left:0;justify-self:end
+}
+body.dkds-modern-ui .dkds-plugin-workspace {
+  background:var(--app-bg);
+  color:var(--text-primary)
+}
+body.dkds-modern-ui .plugin-manager-card,
+body.dkds-modern-ui .plugin-manager-stat,
+body.dkds-modern-ui .plugin-manager-toolbar-card {
+  background:var(--dkui-surface);
+  border-color:var(--dkui-border);
+  box-shadow:var(--dkui-shadow-1)
+}
+body.dkds-modern-ui .plugin-manager-card {transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease
+}
+body.dkds-modern-ui .plugin-manager-card:hover {
+  border-color:var(--dkui-control-border-hover);
+  box-shadow:var(--dkui-shadow-2);
+  transform:translateY(-1px)
+}
+body.dkds-modern-ui .plugin-manager-page button,
+body.dkds-modern-ui .plugin-manager-toolbar-card button,
+body.dkds-modern-ui .plugin-card-actions button {
+  border-color:var(--dkui-control-border);
+  background:var(--dkui-control-bg);
+  color:var(--dkui-text);
+  box-shadow:var(--dkui-shadow-1);
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease
+}
+body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled) {
+  background:var(--dkui-control-hover);
+  border-color:var(--dkui-control-border-hover);
+  color:var(--dkui-text);
+  box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
+  transform:none
+}
+body.dkds-modern-ui .plugin-manager-search-wrap,
+body.dkds-modern-ui .plugin-manager-toolbar-card select {
+  background:var(--dkui-control-bg);
+  border-color:var(--dkui-control-border);
+  color:var(--dkui-text);
+  box-shadow:0 1px 2px rgba(26,39,64,.025) inset;
+  transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease
+}
+body.dkds-modern-ui .plugin-manager-search-wrap:focus-within,
+body.dkds-modern-ui .plugin-manager-toolbar-card select:focus-visible {
+  outline:none;
+  border-color:#7995e8;
+  box-shadow:var(--dkui-focus)
+}
+body.dkds-modern-ui .plugin-manager-body {background:transparent
+}
+body.dkds-modern-ui .plugin-manager-stat strong {color:var(--dkui-text)
+}
+body.dkds-modern-ui .plugin-manager-visible-count,
+body.dkds-modern-ui .plugin-manager-section-count {
+  background:var(--dkui-control-bg);
+  border-color:var(--dkui-control-border);
+  color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .plugin-card-icon {
+  background:var(--dkui-accent-soft);
+  border:1px solid color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-control-border));
+  box-shadow:0 2px 5px rgba(49,94,251,.07)
+}
+body.dkds-modern-ui .plugin-manager-note {background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .dkds-plugin-canvas-left,
+body.dkds-modern-ui .dkds-plugin-canvas-right {
+  background:var(--dkui-surface-sidebar,var(--surface-sidebar))
+}
+body.dkds-modern-ui .dkds-portable-view {
+  border:0;
+  box-shadow:none
+}
+body.dkds-modern-ui .dkds-portable-header {
+  border-color:transparent;
+  box-shadow:none;
+  background:var(--surface-secondary)
+}
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer::before {
+  background:transparent
+}
+body.dkds-modern-ui .dkds-plugin-canvas-left-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-right-resizer:hover::before,
+body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
+  background:var(--divider-active)
+}
+.dkds-plugin-workspace {background:transparent
+}
+.dkds-plugin-canvas-frame {
+  background:var(--plugin-surface-bg,var(--surface-primary,#fff))
+}
+.dkds-plugin-canvas-left-resizer,
+.dkds-plugin-canvas-right-resizer,
+.dkds-plugin-canvas-bottom-resizer {background:transparent
+}
+.dkds-plugin-canvas-left-resizer::before,
+.dkds-plugin-canvas-right-resizer::before {background:transparent
+}
+.dkds-portable-view.is-global-floating {box-shadow:0 18px 48px rgba(20,30,60,.20)
+}
+.dkds-portable-icon-action {border:0;background:transparent;border-radius:6px;color:#40506a
+}
+.dkds-portable-icon-action:hover {background:#eef3fb;color:#1f3f7a
+}
+.dkds-plugin-canvas-bottom {background:transparent
+}
+.dkds-plugin-canvas-bottom-resizer::before {background:transparent
+}
+.dkds-plugin-canvas-bottom-resizer:is(:hover,:focus-visible,.is-dragging)::before {background:var(--divider-active,var(--dkui-divider-hover))
+}
+.plugin-sidebar-section {border-bottom:1px solid #edf0f6
+}
+.plugin-manager-stat {
+  border:1px solid var(--dkui-control-border);
+  border-radius:10px;
+  background:var(--dkui-surface);
+  box-shadow:var(--dkui-shadow-1)
+}
+.plugin-manager-stat span {color:var(--dkui-muted)
+}
+.plugin-manager-stat strong {color:var(--dkui-text)
+}
+.plugin-manager-stat.has-error {border-color:color-mix(in srgb,var(--danger) 32%,var(--dkui-control-border));background:color-mix(in srgb,var(--danger) 7%,var(--dkui-surface))
+}
+.plugin-manager-stat.has-error strong {color:var(--danger)
+}
+.plugin-manager-toolbar-card {
+  border:1px solid var(--dkui-control-border);
+  border-radius:10px;
+  background:var(--dkui-surface)
+}
+.plugin-manager-search-wrap {
+  border:1px solid var(--border-strong,#c6d8ee);
+  border-radius:7px;
+  background:var(--dkui-control-bg);
+  color:var(--dkui-muted)
+}
+.plugin-manager-search-wrap:focus-within {border-color:var(--dkui-accent);box-shadow:var(--dkui-focus)
+}
+.plugin-manager-search-wrap input {
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--dkui-text)
+}
+.plugin-manager-toolbar-card>label {
+  color:var(--text-secondary,#60708c)
+}
+.plugin-manager-toolbar-card select {
+  border:1px solid var(--border-strong,#c6d8ee);
+  border-radius:7px;
+  background:var(--dkui-control-bg);
+  color:var(--dkui-text)
+}
+.plugin-manager-visible-count {
+  border:1px solid var(--dkui-control-border);
+  border-radius:999px;
+  background:var(--dkui-control-bg);
+  color:var(--text-secondary,#60708c)
+}
+.plugin-manager-note {
+  border-left:3px solid var(--dkui-control-border);
+  border-radius:5px;
+  background:var(--dkui-surface-soft);
+  color:var(--text-secondary,#60708c)
+}
+.plugin-manager-section-head strong {color:var(--dkui-text)
+}
+.plugin-manager-section-head span {color:var(--dkui-muted)
+}
+.plugin-manager-section-count {border:1px solid var(--dkui-control-border);border-radius:999px;background:var(--dkui-control-bg);color:var(--dkui-text-soft)
+}
+.plugin-manager-empty {
+  border:1px dashed var(--dkui-control-border);
+  border-radius:10px;
+  background:var(--surface-secondary,#f6f9fd);
+  color:var(--text-tertiary,#7f8ba8)
+}
+.plugin-manager-card {
+  border:1px solid var(--dkui-control-border);
+  border-radius:11px;
+  background:var(--dkui-surface);
+  box-shadow:var(--dkui-shadow-1)
+}
+.plugin-manager-card.status-active {border-color:color-mix(in srgb,var(--dkui-accent) 22%,var(--dkui-control-border))
+}
+.plugin-manager-card.status-error {border-color:color-mix(in srgb,var(--danger) 34%,var(--dkui-control-border))
+}
+.plugin-manager-card.status-disabled {background:var(--dkui-surface-soft)
+}
+.plugin-card-icon {
+  border-radius:9px;
+  background:var(--dkui-accent-soft);
+  color:var(--dkui-accent)
+}
+.status-disabled .plugin-card-icon {background:var(--dkui-surface-soft);color:var(--dkui-muted)
+}
+.status-error .plugin-card-icon {background:color-mix(in srgb,var(--danger) 10%,var(--dkui-surface));color:var(--danger)
+}
+.plugin-card-title-line h3 {
+  color:var(--dkui-text)
+}
+.plugin-card-id {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.plugin-switch-track {
+  border-radius:999px;
+  background:var(--dkui-control-border)
+}
+.plugin-switch-thumb {
+  border-radius:50%;
+  background:var(--dkui-surface-elevated);
+  box-shadow:var(--dkui-shadow-1)
+}
+.plugin-enable-switch input:checked + .plugin-switch-track {background:var(--dkui-accent)
+}
+.plugin-enable-switch input:disabled + .plugin-switch-track {opacity:.45
+}
+.plugin-switch-label {color:var(--text-secondary,#60708c)
+}
+.plugin-card-description {
+  color:var(--text-secondary,#60708c)
+}
+.plugin-capability-chip {
+  border:1px solid var(--dkui-control-border);
+  border-radius:999px;
+  background:var(--dkui-control-bg);
+  color:var(--dkui-text-soft)
+}
+.plugin-capability-chip.muted {color:var(--dkui-muted)
+}
+.plugin-card-footer {
+  border-top:1px solid var(--dkui-divider);
+  background:var(--dkui-surface-soft)
+}
+.plugin-card-meta {color:var(--text-tertiary,#7f8ba8)
+}
+.plugin-card-details {
+  border-top:1px solid var(--dkui-divider);
+  background:var(--dkui-surface-soft);
+  color:var(--dkui-text-soft)
+}
+.dkds-portable-history-action {border:0;border-radius:6px;
+  background:transparent;color:var(--text-secondary,#667085)
+}
+.dkds-portable-history-action:hover {background:var(--surface-hover,#f1f5f9);color:var(--text-primary,#1f2937)
+}
+.dkds-portable-resize-handle::before,
+.dkds-portable-resize-handle::after {background:var(--text-tertiary,#98a2b3)
+}
+.analysis-page.super-workspace-page .analysis-page-header {background:transparent
+}
+.plugin-card-icon.plugin-super-selector {border:1px solid transparent;box-shadow:none
+}
+.plugin-card-icon.plugin-super-selector:hover:not(:disabled) {border-color:#b9c8ef;background:#f4f7ff;color:#244fc9
+}
+.plugin-card-icon.plugin-super-selector.selected {border-color:#91a8eb;background:#eaf0ff;color:#2148ba;box-shadow:none
+}
+.plugin-card-icon.plugin-super-selector:disabled {opacity:.62
+}
+.plugin-card-icon.plugin-super-selector.selected:disabled {opacity:1
+}
+.dkds-portable-view {background:var(--surface-primary,#fff);border:0;border-radius:10px;box-shadow:none
+}
+.dkds-portable-header {background:var(--surface-secondary,var(--surface-primary,#fff));border-bottom:0
+}
+.dkds-portable-controls button {border:0;border-radius:6px;background:transparent;color:var(--text-secondary,#64748b)
+}
+.dkds-portable-controls button:hover {background:var(--surface-hover,var(--surface-secondary));color:var(--text-primary)
+}
+.dkds-portable-view.is-floating {box-shadow:0 16px 42px rgba(26,39,67,.18)
+}
+.dkds-portable-view.is-docked {border-radius:8px
+}
+.dkds-portable-placement-trigger {border:0;border-radius:6px;
+  background:transparent;color:#627086;
+  box-shadow:none
+}
+.dkds-portable-placement-trigger:hover {border-color:#bdcae6;background:#f0f4fa;color:#315efb
+}
+.dkds-portable-caret {opacity:.62
+}
+body.dkds-modern-ui .dkds-plugin-workspace {
+  --plugin-surface-bg:var(--surface-primary);
+  --plugin-workspace-panel-border:var(--border-subtle);
+  --plugin-workspace-surface:var(--surface-primary,#fff);
+  --plugin-workspace-muted-surface:var(--surface-secondary,#f7f8fb);
+  --plugin-workspace-grid:color-mix(in srgb,var(--text-tertiary,#7f8ba8) 14%,transparent);
+  --plugin-workspace-shadow:0 14px 40px rgba(20,30,60,.16)
+}
+body.dkds-modern-ui .plugin-sidebar-section {border:0;border-radius:9px;background:var(--surface-secondary);padding:10px;margin:0 0 8px
 }

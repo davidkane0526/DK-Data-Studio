@@ -37,7 +37,7 @@ function inspectWorkspaceStyles({apiVersion,pluginType,workspace,ui={},styles=[]
       }
       const targets=targetFragments(selector),semanticTarget=targets.some(target=>riskyName.test(target)&&!visualName.test(target));
       const overflowHidden=/(?:^|;)\s*overflow(?:-[xy])?\s*:\s*(hidden|clip)\b/i.test(body);
-      if(layoutRelevant&&overflowHidden&&semanticTarget)errors.push(`${name}: "${selector}" clips semantic UI with overflow:hidden/clip. Plugin API 1.16 requires visible overflow or scrolling; Core provides the final safety net.`);
+      if(layoutRelevant&&overflowHidden&&semanticTarget)errors.push(`${name}: "${selector}" clips semantic UI with overflow:hidden/clip. Plugin API 1.18 requires visible overflow or scrolling; Core provides the final safety net.`);
       const explicitVisible=/(?:^|;)\s*overflow(?:-[xy])?\s*:\s*visible\b/i.test(body);
       const largeMinimum=/(?:^|;)\s*min-height\s*:\s*(?:[2-9]\d{2}|1\d{3,})px\b/i.test(body);
       if(layoutRelevant&&semanticTarget&&explicitVisible&&largeMinimum)warnings.push(`${name}: "${selector}" combines overflow:visible with a large minimum height. Core will contain real overflow at runtime, but prefer flexible minmax(0,1fr)/auto rows so containment recovery is unnecessary.`);

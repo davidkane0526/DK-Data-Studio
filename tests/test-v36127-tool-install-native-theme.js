@@ -71,15 +71,19 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
 
   const shell=read('src/core/recipes/shell-navigation.js');
   const shellCss=read('src/styles/structure/shell-navigation.css');
-  assert(!shell.includes('ctx.ui.styles.add'),'Shell navigation recipe must own behavior only; static Core CSS belongs to the structure layer.');
-  assert(!shellCss.includes('background:#fff'),'Shell navigation CSS must not force light-only toolbar surfaces.');
-  assert(shellCss.includes('var(--surface-hover)')&&shellCss.includes('var(--text-primary)'),'Shell navigation CSS must consume the Core theme contract.');
+  const shellPaint=read('src/styles/presentation/shell.css');
+  assert(!shell.includes('ctx.ui.styles.add'),'Shell navigation recipe must own behavior only; static Core CSS belongs to authored style owners.');
+  assert(!/(?:background|color|border|box-shadow)\s*:/.test(shellCss),'Shell navigation structure must remain paint-free.');
+  assert(shellPaint.includes('var(--surface-hover)')&&shellPaint.includes('var(--text-primary)'),'Shell presentation must consume the Core theme contract.');
   const safeguards=read('src/core/recipes/workspace-safeguards.js');
   const safeguardCss=read('src/styles/structure/workspace-safeguards.css');
-  assert(!safeguards.includes('ctx.ui.styles.add'),'Workspace safeguards recipe must own behavior only; static Core CSS belongs to the structure layer.');
-  assert(safeguardCss.includes('.import-file-actions{flex:0 0 auto;position:relative;z-index:6;background:var(--surface-primary)}'),'Import action toolbar must inherit the active theme.');
-  assert(safeguardCss.includes('background:var(--warning-soft)')&&safeguardCss.includes('background:var(--danger-soft)'),'Import warning states must use semantic warning/danger surfaces in both themes.');
-  assert(!safeguardCss.includes('#fff8e8')&&!safeguardCss.includes('#fffaf0'),'Import safeguards must not reintroduce light-only warning surfaces.');
+  const importGeometry=read('src/styles/structure/import-workbench.css');
+  const importPaint=read('src/styles/presentation/import-workbench.css');
+  assert(!safeguards.includes('ctx.ui.styles.add'),'Workspace safeguards recipe must own behavior only; static Core CSS belongs to authored style owners.');
+  assert(importGeometry.includes('.import-file-actions')&&!/(?:background|color|border|box-shadow)\s*:/.test(importGeometry)&&!/(?:background|color|border|box-shadow)\s*:/.test(safeguardCss),'Import workbench/safeguard structure must remain paint-free.');
+  assert(importPaint.includes('.import-file-actions{background:var(--surface-primary)'),'Import action toolbar presentation must inherit the active theme.');
+  assert(importPaint.includes('background:var(--warning-soft)')&&importPaint.includes('background:var(--danger-soft)'),'Import warning states must use semantic warning/danger surfaces in both themes.');
+  assert(!importPaint.includes('#fff8e8')&&!importPaint.includes('#fffaf0'),'Import presentation must not reintroduce light-only warning surfaces.');
 
   console.log('v3.61.27 Tool install synchronous sources + native title-bar/theme completeness checks passed.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

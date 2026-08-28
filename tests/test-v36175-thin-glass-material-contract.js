@@ -10,7 +10,7 @@ assert.equal(json('sdk/contract.json').sdkVersion,'1.18.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.6.0');
 assert.equal(Theme.version,'3.6.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');
-assert.throws(()=>Theme.validateProfile({label:'bad',recipes:{popover:'custom-random-effect'},light:{},dark:{}},'bad-theme'),/recipe|custom-random-effect/i,'unknown recipe must be rejected');
+assert.throws(()=>Theme.validateProfile({label:'bad',recipes:{popover:'custom-random-effect'},modes:{light:{},dark:{}}},'bad-theme'),/recipe|custom-random-effect/i,'unknown recipe must be rejected');
 
 const dts=read('sdk/plugin-api.d.ts');
 assert(dts.includes("'clear'|'thin-glass'|'soft-glass'|'liquid-glass'"),'SDK recipe union must contain thin-glass.');
@@ -82,4 +82,4 @@ for(const dirent of fs.readdirSync(path.join(root,'src/plugins'),{withFileTypes:
   }
 }
 
-console.log('v3.61.75 Thin Glass MaterialSurface, role coverage, renderer and SDK contracts passed.');
+console.log('Thin Glass MaterialSurface, role coverage, renderer and SDK contracts passed.');

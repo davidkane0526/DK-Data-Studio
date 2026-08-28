@@ -76,7 +76,7 @@
         return out;
       }
       function transformMatrix(){
-        if(!result||typeof A?.computeSweepTransformMatrix!=='function')return null;
+        if(!result||typeof A?.computeSweepScalarField!=='function')return null;
         const parameters={type:transform.type,direction:transform.direction,tolerance:result.used?.tolerance,targets:result.targets||[],vgs:result.vgs||[],sourceFileByVg:sourceFileByVg()};
         if(pipeline?.runSync&&transforms?.fieldStageId){
           const stageId=transforms.fieldStageId(transform.type);
@@ -84,7 +84,7 @@
           return executed?.value||null;
         }
         const parameterKey=[transform.type,transform.direction,result.used?.tolerance??'',JSON.stringify(result.targets||[]),JSON.stringify(result.vgs||[]),JSON.stringify(sourceFileByVg())].join('::');
-        const compute=()=>transforms?.runScalarField?.(transform.type,allSweeps(),parameters)||A.computeSweepScalarField?.(allSweeps(),result.targets||[],result.vgs||[],parameters)||A.computeSweepTransformMatrix(allSweeps(),result.targets||[],result.vgs||[],parameters);
+        const compute=()=>transforms?.runScalarField?.(transform.type,allSweeps(),parameters)||A.computeSweepScalarField(allSweeps(),result.targets||[],result.vgs||[],parameters);
         return performance?.stage?.('transform-matrix',inputCacheKey(),parameterKey,compute,{limit:6})||compute();
       }
       function transformCsv(){
@@ -103,7 +103,7 @@
             const matrix=D.createMatrix({id:'ter.matrix:main',name:'TER(Vd,Vg)',x:result.targets,y:result.vgs,z:result.matrix,xName:'Vd',yName:'Vg',valueName:'TER',xUnit:'V',yUnit:'V',valueUnit:'%',parameters:{...(result.used||{})},lineage:{parents,role:'analysis',producer:'builtin.ter-analysis',operation:'computeTerMatrix',parameters:{...(result.used||{})}}});
             (api.publish?.(matrix)||api.upsert?.(matrix));
           }
-          const tm=transformMatrix();if(tm&&!pipeline?.runSync){const transformed=D.createMatrix({id:`ter.transform:${tm.type}:${tm.direction}`,name:`${tm.label||tm.type} · ${Number(tm.direction)<0?'反扫':'正扫'}`,x:tm.targets,y:tm.vgs,z:tm.matrix,xName:'Vd',yName:'Vg',valueName:tm.label||tm.type,xUnit:'V',yUnit:'V',valueUnit:tm.unit||'',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance},lineage:{parents,role:'transform',producer:'builtin.ter-analysis',operation:'computeSweepTransformMatrix',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance}}});(api.publish?.(transformed)||api.upsert?.(transformed));}
+          const tm=transformMatrix();if(tm&&!pipeline?.runSync){const transformed=D.createMatrix({id:`ter.transform:${tm.type}:${tm.direction}`,name:`${tm.label||tm.type} · ${Number(tm.direction)<0?'反扫':'正扫'}`,x:tm.targets,y:tm.vgs,z:tm.matrix,xName:'Vd',yName:'Vg',valueName:tm.label||tm.type,xUnit:'V',yUnit:'V',valueUnit:tm.unit||'',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance},lineage:{parents,role:'transform',producer:'builtin.ter-analysis',operation:'computeSweepScalarField',parameters:{type:tm.type,direction:tm.direction,tolerance:result.used?.tolerance}}});(api.publish?.(transformed)||api.upsert?.(transformed));}
           const maxima=D.createAnalysisResult({id:'ter.analysis:maxima',name:'TER Maxima',summary:{vgCount:result.vgs?.length||0,vdCount:result.targets?.length||0,missing:result.missing||0},payload:{terMaxByVg:result.terMaxByVg||result.terMax||[],terMaxByVd:result.terMaxByVd||[]},lineage:{parents:['ter.matrix:main'],role:'analysis',producer:'builtin.ter-analysis',operation:'reduceTerMax',parameters:{axes:['Vg','Vd']}}});(api.publish?.(maxima)||api.upsert?.(maxima));
         };
         if(artifacts.batch)artifacts.batch(publish);else publish(artifacts);return true;

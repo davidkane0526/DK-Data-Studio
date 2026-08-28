@@ -18,8 +18,8 @@ for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends Ana
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.18.0'"),'Plugin API must be v1.17.0.');
-assert(kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace')&&kernel.includes('workspaceSurface:'),'Kernel must expose the host-invariant PluginWorkspace as the preferred scientific workspace surface.');
+assert(kernel.includes("const API_VERSION = '1.18.0'"),'Plugin API must be v1.18.0.');
+assert(kernel.includes('workspaceSurface: infrastructureScope?.pluginWorkspace')&& !kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace'),'Kernel must expose only the canonical workspaceSurface facade; the old public pluginWorkspace alias must be absent.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
 assert(kernel.includes('layoutResizeDispatching')&&kernel.includes("name !== 'layout:resize'")&&kernel.includes('infrastructureScope.emitResize'),'Plugin kernel must globally coalesce layout:resize and route plugin layout requests through the scoped scheduler.');
@@ -43,14 +43,13 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   const views=read(`src/plugins/${folder}/shared-views.js`);
   const feature=read(`src/plugins/${folder}/feature-runtime.js`);
   const manifest=JSON.parse(read(`src/plugins/${folder}/plugin.json`));
-  assert(views.includes('workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must prefer the Core PluginWorkspace while retaining compatibility fallback.`);
+  assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical Core workspaceSurface without compatibility fallbacks.`);
   assert(views.includes('wb.compose'),`${folder}: shared views must compose a semantic PRIMARY surface.`);
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
   assert.equal(manifest.apiVersion,'1.18.0',`${folder}: manifest must target current Plugin API 1.18.`);
-  assert((manifest.capabilities||[]).includes('ui.analysis-workbench'),`${folder}: manifest must declare unified workbench capability.`);
-  assert((manifest.capabilities||[]).includes('runtime.capabilities'),`${folder}: manifest must declare Capability Runtime use.`);
+  assert((manifest.capabilities||[]).includes('ui.plugin-workspace'),`${folder}: manifest must declare the canonical PluginWorkspace capability.`);
 }
 
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');

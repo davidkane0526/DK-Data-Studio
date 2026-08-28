@@ -1,15 +1,14 @@
 'use strict';
 const {state, disabled, projectSlices}=require('../context');
-const {assertId, eventEmit, addCleanup}=require('../events/history');
+const {assertId,addCleanup}=require('../registry');
+const {eventEmit}=require('../events/history');
 const {sortContributions}=require('../activity/shell');
 const {registerContribution}=require('../commands/toolbar');
-const restorePluginProjectState=(...args)=>require('../lifecycle').restorePluginProjectState(...args);
-
+const {restorePluginProjectState}=require('../lifecycle');
   function statusBarZone(side='right') {
     const normalized=String(side||'right').toLowerCase()==='left'?'left':'right';
     return document.querySelector(normalized==='left'?'#statusBarPluginLeft':'#statusBarPluginRight');
   }
-
   function addStatusBarItem(pluginId,spec={}) {
     const id=String(spec.id||'').trim();
     assertId(id,'status item id');
@@ -26,7 +25,6 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
     label.className='plugin-status-label';
     button.append(icon,label);
     let clickHandler=typeof current.onClick==='function'?current.onClick:null;
-
     const moveToZone=()=>{
       const zone=statusBarZone(current.side);
       if(!zone)return false;
@@ -68,7 +66,6 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
     apply(current);
     return controller;
   }
-
   function registerProjectSlice(pluginId, key, hooks) {
     assertId(key, 'project slice key');
     if (!projectSlices.has(pluginId)) projectSlices.set(pluginId, new Map());
@@ -76,7 +73,6 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
     map.set(key, hooks || {});
     return addCleanup(pluginId, () => map.delete(key));
   }
-
   function serializeProject(base={}) {
     let out = {};
     try { out = JSON.parse(JSON.stringify(base || {})); } catch { out = {}; }
@@ -91,7 +87,6 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
     }
     return out;
   }
-
   function restoreProject(data={}) {
     // Project-format migration resolves historical root fields before the plugin
     // kernel sees a project. Runtime restoration therefore consumes namespaced
@@ -99,7 +94,6 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
     for (const pluginId of projectSlices.keys()) restorePluginProjectState(pluginId, data);
     eventEmit('project:restored', { data });
   }
-
   function resetProjectSlices() {
     for (const [pluginId, slices] of projectSlices) {
       for (const [key, hooks] of slices) {
@@ -109,5 +103,4 @@ const restorePluginProjectState=(...args)=>require('../lifecycle').restorePlugin
       }
     }
   }
-
 module.exports=Object.freeze({statusBarZone, addStatusBarItem, registerProjectSlice, serializeProject, restoreProject, resetProjectSlices});

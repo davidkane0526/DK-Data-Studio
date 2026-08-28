@@ -1,11 +1,13 @@
 'use strict';
 const {$, mainSvg, primePortableState, state}=require('./context');
 const {escapeHtml}=require('./foundation');
-const renderProjectTabs=(...args)=>require('./project-tabs-history').renderProjectTabs(...args);
-const renderDatasetList=(...args)=>require('./import-workbench').renderDatasetList(...args);
-const pluginUiContext=(...args)=>require('./data-artifact-host').pluginUiContext(...args);
-const renderTrendPanel=(...args)=>require('./scientific-panels-export').renderTrendPanel(...args);
-const makeFloating=(...args)=>require('./floating-docks').makeFloating(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const renderProjectTabs=(...args)=>deps.projectTabs.renderProjectTabs(...args);
+const renderDatasetList=(...args)=>deps.imports.renderDatasetList(...args);
+const pluginUiContext=(...args)=>deps.artifacts.pluginUiContext(...args);
+const renderTrendPanel=(...args)=>deps.scientific.renderTrendPanel(...args);
+const makeFloating=(...args)=>deps.docks.makeFloating(...args);
 
 
 function activeMainViewProvider(){
@@ -172,131 +174,6 @@ function bindAnalysisShellViewportObserver(){
 }
 queueMicrotask(bindAnalysisShellViewportObserver);
 
-const SUPER_LEFT_STORAGE_KEY='dkds.workspace.super.left-fraction.v1';
-let superLeftFraction=0.20;
-let superDividerBound=false;
-
-function currentSuperLayoutBounds(){
-  const left=window.DKDSPlugins?.workspace?.super?.()?.contract?.layout?.left||{};
-  const min=Number(left.minFraction);
-  const max=Number(left.maxFraction);
-  const preferred=Number(left.defaultFraction);
-  return {
-    min:Number.isFinite(min)?Math.max(.10,Math.min(.35,min)):.14,
-    max:Number.isFinite(max)?Math.max(.25,Math.min(.50,max)):.42,
-    preferred:Number.isFinite(preferred)?preferred:.20
-  };
-}
-
-function readSuperLeftFraction(){
-  let value=NaN;
-  try{value=Number(localStorage.getItem(SUPER_LEFT_STORAGE_KEY));}catch{}
-  const bounds=currentSuperLayoutBounds();
-  if(!Number.isFinite(value))value=bounds.preferred;
-  return Math.max(bounds.min,Math.min(bounds.max,value));
-}
-
-function applySuperLeftFraction(value,{persist=false}={}){
-  const bounds=currentSuperLayoutBounds();
-  superLeftFraction=Math.max(bounds.min,Math.min(bounds.max,Number(value)||bounds.preferred));
-  document.documentElement.style.setProperty('--dkds-super-left-width',`${(superLeftFraction*100).toFixed(3)}vw`);
-  if(persist){try{localStorage.setItem(SUPER_LEFT_STORAGE_KEY,String(superLeftFraction));}catch{}}
-  syncSuperWorkspaceDivider();
-  window.DKDSPlugins?.events?.emit?.('layout:resize',{reason:'super-divider',fraction:superLeftFraction});
-  scheduleMainPlotRelayout();
-}
-
-function visibleAnalysisPage(){
-  return [...document.querySelectorAll('.analysis-page')].find(el=>!el.classList.contains('hidden'))||null;
-}
-
-function syncSuperWorkspaceDivider(){
-  const divider=$('#superWorkspaceDivider');
-  if(!divider)return;
-  const state=window.DKDSPlugins?.workspace?.super?.()||{};
-  const page=visibleAnalysisPage();
-  const superPage=page&&page.classList.contains('super-workspace-root-page');
-  const blocked=page&&!superPage;
-  divider.classList.toggle('hidden',!state.available||blocked);
-  if(!state.available||blocked)return;
-  const tabs=document.querySelector('.project-tabs-bar');
-  const header=superPage?page.querySelector('.analysis-page-header'):null;
-  const top=Math.ceil((header?.getBoundingClientRect?.().bottom)||(tabs?.getBoundingClientRect?.().bottom)||92);
-  divider.style.setProperty('--dkds-super-divider-top',`${top}px`);
-}
-
-function clearSuperWorkspaceComposition(){
-  document.querySelectorAll('.dkds-super-composed-root').forEach(el=>el.classList.remove('dkds-super-composed-root'));
-  document.querySelectorAll('.dkds-super-slot-left,.dkds-super-slot-main,.dkds-super-slot-sticky,.dkds-super-slot-span,.dkds-super-slot-stack').forEach(el=>{
-    el.classList.remove('dkds-super-slot-left','dkds-super-slot-main','dkds-super-slot-sticky','dkds-super-slot-span','dkds-super-slot-stack');
-    delete el.dataset.dkdsSuperSlot;
-  });
-  document.querySelectorAll('.dkds-super-flatten').forEach(el=>el.classList.remove('dkds-super-flatten'));
-}
-
-function superContractScope(region={}){
-  const pageId=String(region?.pageId||'').trim();
-  return (pageId&&document.getElementById(pageId))||document;
-}
-
-function querySuperContractSelectors(region={}){
-  const selectors=Array.isArray(region?.selectors)?region.selectors:[region?.selector,region?.mount];
-  const scope=superContractScope(region);
-  const out=[];
-  for(const raw of selectors){
-    const selector=String(raw||'').trim();
-    if(!selector)continue;
-    try{
-      for(const element of scope.querySelectorAll(selector))if(!out.includes(element))out.push(element);
-    }catch(err){console.warn(`[DKDS SUPER] invalid selector ${selector}`,err);}
-  }
-  return out;
-}
-
-function querySuperRoot(contract={}){
-  const layout=contract?.layout||{};
-  const selector=String(layout?.root?.selector||'').trim();
-  if(!selector)return null;
-  const scope=superContractScope(layout.left||layout.main||{});
-  try{return scope.querySelector(selector)||document.querySelector(selector);}catch{return null;}
-}
-
-function applySuperWorkspaceComposition(contract={}){
-  clearSuperWorkspaceComposition();
-  const layout=contract?.layout||{};
-  const mode=String(layout.mode||'split');
-  document.body.dataset.superLayoutMode=mode;
-  if(mode==='native')return true;
-
-  const left=querySuperContractSelectors(layout.left||{});
-  const main=querySuperContractSelectors(layout.main||{});
-  const root=querySuperRoot(contract);
-  if(!root||!left.length||!main.length){
-    console.warn('[DKDS SUPER] incomplete runtime composition target',contract?.pluginId||'',{root:!!root,left:left.length,main:main.length});
-    return false;
-  }
-  root.classList.add('dkds-super-composed-root');
-  const mark=(elements,slot,region)=>{
-    for(const element of elements){
-      if(!root.contains(element))continue;
-      element.classList.add(slot==='left'?'dkds-super-slot-left':'dkds-super-slot-main');
-      element.dataset.dkdsSuperSlot=slot;
-      if(region?.sticky)element.classList.add('dkds-super-slot-sticky');
-      if(region?.spanRows)element.classList.add('dkds-super-slot-span');
-      if(region?.stack)element.classList.add('dkds-super-slot-stack');
-    }
-  };
-  mark(left,'left',layout.left||{});
-  mark(main,'main',layout.main||{});
-  const scope=superContractScope(layout.left||layout.main||{});
-  for(const raw of (Array.isArray(layout.flatten)?layout.flatten:[])){
-    const selector=String(raw||'').trim();
-    if(!selector)continue;
-    try{for(const element of scope.querySelectorAll(selector))if(root.contains(element))element.classList.add('dkds-super-flatten');}catch{}
-  }
-  return true;
-}
-
 function primePortableKey(contribution={}){
   return `${String(contribution.pluginId||'')}:${String(contribution.id||'')}`;
 }
@@ -390,30 +267,15 @@ function placePrimeContribution(contribution={},placement){
 }
 
 function superWorkspaceRootPageId(contract={}){
-  const layout=contract?.layout||{};
-  const explicit=String(layout.rootPageId||layout.pageId||'').trim();
-  if(explicit)return explicit;
-  const left=String(layout.left?.pageId||'').trim();
-  const main=String(layout.main?.pageId||'').trim();
-  if(left&&main&&left!==main){
-    console.warn('[DKDS SUPER] left/main pageId mismatch; using main page as root',{left,main,pluginId:contract?.pluginId||''});
-    return main;
-  }
-  if(main||left)return main||left;
-  // Native PluginWorkspace contracts identify their root by selector instead
-  // of the legacy split-layout pageId. Resolve that selector back to its
-  // owning analysis page so system navigation (Plugin Manager -> SUB/PRIME)
-  // can restore the active SUPER before invoking the plugin command.
-  const rootSelector=String(layout.root?.selector||layout.rootSelector||'').trim();
-  if(rootSelector){
-    try{
-      const root=document.querySelector(rootSelector);
-      const page=root?.closest?.('.analysis-page');
-      if(page?.id)return page.id;
-    }catch(err){console.warn('[DKDS SUPER] invalid native root selector',rootSelector,err);}
-    const match=rootSelector.match(/^#([A-Za-z_][\w:.-]*)/);
-    if(match?.[1]&&document.getElementById(match[1])?.classList?.contains('analysis-page'))return match[1];
-  }
+  const rootSelector=String(contract?.layout?.root?.selector||'').trim();
+  if(!rootSelector)return '';
+  try{
+    const root=document.querySelector(rootSelector);
+    const page=root?.closest?.('.analysis-page');
+    if(page?.id)return page.id;
+  }catch(err){console.warn('[DKDS SUPER] invalid native root selector',rootSelector,err);}
+  const match=rootSelector.match(/^#([A-Za-z_][\w:.-]*)/);
+  if(match?.[1]&&document.getElementById(match[1])?.classList?.contains('analysis-page'))return match[1];
   return '';
 }
 
@@ -431,52 +293,16 @@ function applySuperWorkspace(superState){
     page.classList.toggle('super-workspace-page',belongsToSuper);
     page.classList.toggle('super-workspace-root-page',isRoot);
   });
-  applySuperWorkspaceComposition(state.contract||{});
-  applySuperLeftFraction(readSuperLeftFraction());
-  requestAnimationFrame(syncSuperWorkspaceDivider);
 }
 
 function showNoSuperWorkspace(){
   restorePortablePrimesExcept('');
-  clearSuperWorkspaceComposition();
   document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!=='superWorkspaceEmpty'));
   document.body.classList.add('super-unconfigured');
   syncAnalysisPageViewport();
-  syncSuperWorkspaceDivider();
 }
 
-function bindSuperWorkspaceDivider(){
-  if(superDividerBound)return;
-  superDividerBound=true;
-  const divider=$('#superWorkspaceDivider');
-  if(!divider)return;
-  const setFromClientX=(clientX,persist=false)=>{
-    const width=Math.max(1,window.innerWidth||document.documentElement.clientWidth||1);
-    applySuperLeftFraction(clientX/width,{persist});
-  };
-  divider.addEventListener('pointerdown',event=>{
-    if(event.button!==0)return;
-    divider.setPointerCapture?.(event.pointerId);
-    document.body.classList.add('super-divider-dragging');
-    const move=e=>setFromClientX(e.clientX,false);
-    const up=e=>{
-      divider.releasePointerCapture?.(event.pointerId);
-      document.removeEventListener('pointermove',move,true);
-      document.removeEventListener('pointerup',up,true);
-      document.body.classList.remove('super-divider-dragging');
-      setFromClientX(e.clientX,true);
-    };
-    document.addEventListener('pointermove',move,true);
-    document.addEventListener('pointerup',up,true);
-    event.preventDefault();
-  });
-  divider.addEventListener('keydown',event=>{
-    if(!['ArrowLeft','ArrowRight','Home'].includes(event.key))return;
-    const bounds=currentSuperLayoutBounds();
-    if(event.key==='Home')applySuperLeftFraction(bounds.preferred,{persist:true});
-    else applySuperLeftFraction(superLeftFraction+(event.key==='ArrowRight'?.01:-.01),{persist:true});
-    event.preventDefault();
-  });
+function bindSuperWorkspaceControls(){
   $('#superEmptyOpenManagerBtn')?.addEventListener('click',()=>{
     openAnalysisPage('pluginManagerPage');
     window.DKDSPluginManagerUI?.render?.();
@@ -493,7 +319,6 @@ function openAnalysisPage(id){
   document.querySelectorAll('.analysis-page').forEach(page=>page.classList.toggle('hidden',page.id!==id));
   window.DKDSPlugins?.events?.emit?.('analysis:opened',{id});
   syncAnalysisPageViewport();
-  syncSuperWorkspaceDivider();
   scheduleMainPlotRelayout();
 }
 
@@ -519,7 +344,6 @@ function closeAnalysisPage(id){
   if(superState?.available){
     queueMicrotask(()=>window.DKDSPlugins?.activities?.set?.(superState.activityId));
   }
-  syncSuperWorkspaceDivider();
   scheduleMainPlotRelayout();
   return true;
 }
@@ -528,7 +352,6 @@ function showMainWorkspace(){
   document.querySelectorAll('.analysis-page').forEach(page=>page.classList.add('hidden'));
   scheduleMainPlotRelayout();
   renderAll();
-  syncSuperWorkspaceDivider();
 }
 
-module.exports=Object.freeze({activeMainViewProvider, measureMainPlot, renderEmptyMainView, renderMainPlot, scheduleMainPlotRelayout, clearMainView, resetMainView, updateMainModeButtons, renderAll, activeInspectorProvider, renderInspector, getAnalysisViewportHeight, measureAnalysisPageTop, applyAnalysisPageViewport, syncAnalysisPageViewport, bindAnalysisShellViewportObserver, currentSuperLayoutBounds, readSuperLeftFraction, applySuperLeftFraction, visibleAnalysisPage, syncSuperWorkspaceDivider, clearSuperWorkspaceComposition, superContractScope, querySuperContractSelectors, querySuperRoot, applySuperWorkspaceComposition, primePortableKey, resolvePrimePortableTarget, refreshPrimeDockSlots, rememberPortablePrime, resetPortablePrimeClasses, restorePortablePrime, restorePortablePrimesExcept, placePrimeContribution, superWorkspaceRootPageId, applySuperWorkspace, showNoSuperWorkspace, bindSuperWorkspaceDivider, refreshOpenAnalysisPage, openAnalysisPage, ensurePluginWorkspaceVisible, closeAnalysisPage, showMainWorkspace, analysisViewportFrame, analysisViewportFollowupFrame, analysisShellResizeObserver, SUPER_LEFT_STORAGE_KEY, superLeftFraction, superDividerBound});
+module.exports=Object.freeze({configure, activeMainViewProvider, measureMainPlot, renderEmptyMainView, renderMainPlot, scheduleMainPlotRelayout, clearMainView, resetMainView, updateMainModeButtons, renderAll, activeInspectorProvider, renderInspector, getAnalysisViewportHeight, measureAnalysisPageTop, applyAnalysisPageViewport, syncAnalysisPageViewport, bindAnalysisShellViewportObserver, visibleAnalysisPage, primePortableKey, resolvePrimePortableTarget, refreshPrimeDockSlots, rememberPortablePrime, resetPortablePrimeClasses, restorePortablePrime, restorePortablePrimesExcept, placePrimeContribution, superWorkspaceRootPageId, applySuperWorkspace, showNoSuperWorkspace, bindSuperWorkspaceControls, refreshOpenAnalysisPage, openAnalysisPage, ensurePluginWorkspaceVisible, closeAnalysisPage, showMainWorkspace, analysisViewportFrame, analysisViewportFollowupFrame, analysisShellResizeObserver});

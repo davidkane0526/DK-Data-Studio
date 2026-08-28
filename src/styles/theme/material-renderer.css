@@ -128,7 +128,7 @@ body.dkds-modern-ui :where(
 
 /* Core control recipe owns field paint even when the field itself is the
    material owner (Thin Glass intentionally maps controls to the clear recipe).
-   Parent-glass rules below remain as a compatibility fallback for legacy DOM. */
+   Descendant fields in glass surfaces use the same Core control paint contract. */
 body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){
   box-sizing:border-box;
   background:var(--dkui-control-bg);
@@ -145,7 +145,7 @@ body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-ro
 body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):focus-visible{border-color:var(--dkui-accent);box-shadow:var(--dkui-focus);outline:none;}
 
 /* Glass form controls are one flat Core-owned family. Geometry may be supplied
-   by components, but legacy inset/elevated paint cannot leak through. */
+   by components; paint remains Core-owned and flat. */
 body.dkds-modern-ui :where(
   [data-dkds-material-recipe="thin-glass"],
   [data-dkds-material-recipe="soft-glass"],
@@ -188,13 +188,6 @@ body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-toolt
 
 /* Selected modes are semantic state, not elevation. Use a centered accent halo
    so every Theme Profile may recolor the state without shifting the control. */
-body.dkds-modern-ui :where(
-  .activity-tab,.dkds-analysis-nav-btn,.dkds-workbench-tab,.dkds-choice-button,
-  .scan-global-buttons button,.preset-row button,.action-grid button,.main-plot-tools button,
-  .dkds-toolbar button,.dkds-action-row button,.dkds-surface-header button
-):is(.active,.selected,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"]){
-  box-shadow:var(--dkui-selected-shadow);
-}
 body.dkds-modern-ui :where(.command-menu,.dkds-material-role-popover) .plugin-export-context{background:transparent;color:var(--dkui-text-soft);border-bottom-color:color-mix(in srgb,var(--dkui-divider) 78%,transparent);box-shadow:none}
 
 @media(prefers-reduced-motion:reduce){

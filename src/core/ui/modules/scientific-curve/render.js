@@ -45,43 +45,14 @@ function applyScientificCurveRender(ScientificCurveSurface){
           .on('dblclick',event=>{event.preventDefault();event.stopPropagation();const payload={curve,event,surface:this,source:'curve-hit'};const decision=this.routeInteraction('double-click','curve',event,payload,{targetId:curve?.id});if(decision.handled)return;if(decision.intent==='activate'){if(this.spec.onCurveDoubleClick)this.spec.onCurveDoubleClick(payload);else this.selectEntity(curve?.entityId||curve?.id,{source:this.spec.source||'scientific-curve-double',value:curve?.source||curve});}});
       }
       const markers=this.markers();for(const marker of markers)this.ensureEntity(marker?.entityId||marker?.id,marker?.curveId||'');const selectedMarkerIds=this.selectedMarkerIds(),selectedMarker=markers.find(m=>selectedMarkerIds.has(String(m.id))),markerNodes=new Map(),curveById=new Map(curves.map(curve=>[String(curve.id),curve]));
-      const declaredManipulators=this.manipulators(),manipulators=declaredManipulators.slice();
-      // v1.10 compatibility is intentionally implemented as an adapter into the
-      // generic manipulation model. New plugins should never need marker/FWHM-
-      // named drag contracts: a marker move is a point manipulator and an
-      // analysis window is simply an axis range manipulator.
-      if(!this.spec.getManipulators){
-        if(this.spec.onMarkerDragStart||this.spec.onMarkerDragPreview||this.spec.onMarkerDragCommit||this.spec.onMarkerDrag||this.spec.onMarkerDragEnd){
-          for(const marker of markers)manipulators.push({id:`compat:marker:${marker.id}`,kind:'point',targetId:String(marker.id),geometry:{x:Number(marker.x),y:Number(marker.y)},snap:{kind:'curve',curveId:String(marker.curveId)},locked:!!marker.locked,source:{compat:'marker',marker}});
-        }
-        if(selectedMarker&&this.spec.showWidth?.()!==false){
-          const widthSpec=this.spec.getMarkerWidth?.(selectedMarker)||selectedMarker.width;
-          const wl=Number(widthSpec?.windowLeft),wr=Number(widthSpec?.windowRight);
-          if(Number.isFinite(wl)&&Number.isFinite(wr)&&wr>wl&&(this.spec.onWidthDragStart||this.spec.onWidthDragPreview||this.spec.onWidthWindowCommit||this.spec.onWidthDrag||this.spec.onWidthDragEnd||this.spec.onWidthReset)){
-            manipulators.push({id:`compat:width:${selectedMarker.id}`,kind:'range',axis:'x',geometry:{start:wl,end:wr},snap:{kind:'curve',curveId:String(selectedMarker.curveId)},constraints:{contains:Number(selectedMarker.x)},presentation:{color:selectedMarker.color||'#2563eb',band:true,handlePosition:widthSpec?.handlePosition||'top'},locked:!!selectedMarker.locked,source:{compat:'width',marker:selectedMarker,widthSpec}});
-          }
-        }
-      }
+      const manipulators=this.manipulators();
       const manipulatorByTarget=new Map(manipulators.filter(row=>row.kind==='point'&&row.targetId).map(row=>[String(row.targetId),row]));
       const emitManipulation=(phase,payload)=>{
         const fn=phase==='start'?this.spec.onManipulationStart:phase==='preview'?this.spec.onManipulationPreview:phase==='commit'?this.spec.onManipulationCommit:null;
         fn?.(payload);
-        const compat=payload?.manipulator?.source?.compat;
-        if(compat==='marker'){
-          const legacy={marker:payload.manipulator.source.marker,curve:payload.curve||null,index:payload.index??-1,point:payload.point??null,event:payload.event,surface:this};
-          if(phase==='start')this.spec.onMarkerDragStart?.(legacy);
-          else if(phase==='preview'){this.spec.onMarkerDragPreview?.(legacy);this.spec.onMarkerDrag?.(legacy);}
-          else if(phase==='commit'){this.spec.onMarkerDragCommit?.(legacy);this.spec.onMarkerDragEnd?.(legacy);}
-        }else if(compat==='width'){
-          const g=payload.geometry||{},ig=payload.initialGeometry||{},legacy={marker:payload.manipulator.source.marker,curve:payload.curve||null,side:payload.handle==='start'?'left':'right',index:payload.index??-1,point:payload.point??null,windowLeft:Number(g.start),windowRight:Number(g.end),initialWindowLeft:Number(ig.start),initialWindowRight:Number(ig.end),event:payload.event,surface:this};
-          if(phase==='start')this.spec.onWidthDragStart?.(legacy);
-          else if(phase==='preview'){this.spec.onWidthDragPreview?.(legacy);this.spec.onWidthDrag?.(legacy);}
-          else if(phase==='commit'){this.spec.onWidthWindowCommit?.(legacy);this.spec.onWidthDragEnd?.(legacy);}
-        }
       };
       const resetManipulator=(manipulator,event,handle='')=>{
-        const payload={manipulator,handle,event,surface:this};this.spec.onManipulationReset?.(payload);
-        if(manipulator?.source?.compat==='width')this.spec.onWidthReset?.({marker:manipulator.source.marker,side:handle==='start'?'left':'right',event,surface:this});
+        this.spec.onManipulationReset?.({manipulator,handle,event,surface:this});
         this.requestRender('manipulation-reset');
       };
       const snapToCurve=(manipulator,event)=>{

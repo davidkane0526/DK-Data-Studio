@@ -1,8 +1,8 @@
 'use strict';
 const {state, active}=require('../context');
-const {assertId, getRegistry, addCleanup}=require('../events/history');
+const {assertId,getRegistry,addCleanup,registerContribution}=require('../registry');
 const {refreshActivityVisibility}=require('../activity/shell');
-const {reflowContextToolbar}=require('../contributions/ui');
+const {reflowContextToolbar}=require('../shell/context-toolbar');
 
 
   function toolbarHost(group) {
@@ -65,14 +65,5 @@ const {reflowContextToolbar}=require('../contributions/ui');
     return await cmd.handler(args);
   }
 
-  function registerContribution(pluginId, kind, id, value) {
-    assertId(kind, 'registry kind');
-    assertId(id, 'contribution id');
-    const reg = getRegistry(kind);
-    const key = `${pluginId}:${id}`;
-    if (reg.has(key)) throw new Error(`Contribution already registered: ${kind}/${pluginId}:${id}`);
-    reg.set(key, { pluginId, id, value });
-    return addCleanup(pluginId, () => reg.delete(key));
-  }
 
 module.exports=Object.freeze({toolbarHost, createToolbarButton, registerCommand, runCommand, registerContribution});

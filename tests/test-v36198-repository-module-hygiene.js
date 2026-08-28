@@ -40,8 +40,49 @@ for(const base of ['src','desktop'])for(const file of walk(path.join(root,base))
 }
 assert(!large.length,`Authored JS module(s) exceed the 48 KiB boundary: ${large.map(([rel,size])=>`${rel}=${size}`).join(', ')}`);
 
+
+function requireGraph(relDir){
+  const base=path.join(root,relDir);
+  const nodes=walk(base).filter(file=>file.endsWith('.js'));
+  const nodeSet=new Set(nodes.map(file=>path.resolve(file)));
+  const graph=new Map(nodes.map(file=>[path.resolve(file),new Set()]));
+  for(const file of nodes){
+    const source=fs.readFileSync(file,'utf8');
+    assert(!/=>\s*require\s*\(/.test(source),`${path.relative(root,file)} must not hide module ownership behind lazy require wrappers.`);
+    for(const match of source.matchAll(/require\(\s*['"]([^'"]+)['"]\s*\)/g)){
+      const spec=match[1];if(!spec.startsWith('.'))continue;
+      const raw=path.resolve(path.dirname(file),spec);
+      const candidates=[raw,`${raw}.js`,path.join(raw,'index.js')];
+      const target=candidates.find(candidate=>nodeSet.has(path.resolve(candidate)));
+      if(target)graph.get(path.resolve(file)).add(path.resolve(target));
+    }
+  }
+  return graph;
+}
+function stronglyConnected(graph){
+  let index=0;const stack=[],onStack=new Set(),indices=new Map(),low=new Map(),out=[];
+  function visit(v){
+    indices.set(v,index);low.set(v,index);index++;stack.push(v);onStack.add(v);
+    for(const w of graph.get(v)||[]){
+      if(!indices.has(w)){visit(w);low.set(v,Math.min(low.get(v),low.get(w)));}
+      else if(onStack.has(w))low.set(v,Math.min(low.get(v),indices.get(w)));
+    }
+    if(low.get(v)===indices.get(v)){
+      const component=[];let w;
+      do{w=stack.pop();onStack.delete(w);component.push(w);}while(w!==v);
+      if(component.length>1||(graph.get(v)||new Set()).has(v))out.push(component);
+    }
+  }
+  for(const v of graph.keys())if(!indices.has(v))visit(v);
+  return out;
+}
+for(const relDir of ['src/app/modules','src/core/plugins/kernel/modules']){
+  const cycles=stronglyConnected(requireGraph(relDir));
+  assert(!cycles.length,`${relDir} must remain acyclic; SCC(s): ${cycles.map(rows=>rows.map(file=>path.relative(root,file).replace(/\\/g,'/')).join(' -> ')).join(' | ')}`);
+}
+
 const audit=read('docs/CODE_QUALITY_AUDIT.md');
 assert(audit.includes('Resonance feature context'),'Code-quality audit must document the Resonance feature-context modularization history and remaining interaction work.');
 assert(audit.includes('Dev Repo')&&audit.includes('Source Release'),'Repository audit must document the two handoff package forms.');
 
-console.log(`v3.61.98 repository/module hygiene PASS: desktop entry=${bytes('desktop/main.js')} B, TER feature=${bytes('src/plugins/ter-analysis/feature-runtime.js')} B, large exceptions=0.`);
+console.log(`v3.62 repository/module hygiene PASS: desktop entry=${bytes('desktop/main.js')} B, TER feature=${bytes('src/plugins/ter-analysis/feature-runtime.js')} B, large exceptions=0, App/Kernel SCC=0.`);

@@ -35,13 +35,13 @@ const A=global.DKDSScience;
   {id:'matrix-b-up',datasetName:'b.csv',vg:0,direction:1,step:.2,points:steep},
   {id:'matrix-a-down',datasetName:'a.csv',vg:0,direction:-1,step:.2,points:linear.map(p=>({v:p.v,i:3*p.v}))}
  ];
- const didv=A.computeSweepTransformMatrix(sweeps,[-.4,0,.4],[0],{type:'didv',direction:1,tolerance:.011,sourceFileByVg:{'0':'a.csv'}});
+ const didv=A.computeSweepScalarField(sweeps,[-.4,0,.4],[0],{type:'didv',direction:1,tolerance:.011,sourceFileByVg:{'0':'a.csv'}});
  assert.equal(didv.label,'dI/dV');assert.equal(didv.unit,'A/V');
  assert.deepEqual(didv.matrix.map(r=>r.length),[3]);
  assert(didv.matrix[0].every(v=>Math.abs(v-2)<1e-9),'dI/dV matrix must match the shared derivative transform');
- const preferred=A.computeSweepTransformMatrix(sweeps,[.4],[0],{type:'raw',direction:1,tolerance:.011,sourceFileByVg:{'0':'b.csv'}});
+ const preferred=A.computeSweepScalarField(sweeps,[.4],[0],{type:'raw',direction:1,tolerance:.011,sourceFileByVg:{'0':'b.csv'}});
  assert(Math.abs(preferred.matrix[0][0]-2)<1e-12&&preferred.sources[0]==='b.csv','duplicate Vg rows must follow the TER-selected source file');
- const reverse=A.computeSweepTransformMatrix(sweeps,[.4],[0],{type:'raw',direction:-1,tolerance:.011});
+ const reverse=A.computeSweepScalarField(sweeps,[.4],[0],{type:'raw',direction:-1,tolerance:.011});
  assert(Math.abs(reverse.matrix[0][0]-1.2)<1e-12,'forward and reverse transformed heatmaps must remain separate');
 }
 console.log('Baseline-corrected FWHM + shared Vg-Vd transform-matrix checks passed.');

@@ -1,17 +1,19 @@
 'use strict';
 const {$, state}=require('./context');
 const {diffArtifactRows, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
-const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
-const captureActiveProjectTab=(...args)=>require('./project-tabs-history').captureActiveProjectTab(...args);
-const projectHistorySnapshot=(...args)=>require('./project-tabs-history').projectHistorySnapshot(...args);
-const recordProjectHistory=(...args)=>require('./project-tabs-history').recordProjectHistory(...args);
-const dataConsumerTargets=(...args)=>require('./import-workbench').dataConsumerTargets(...args);
-const openImportWorkbench=(...args)=>require('./import-workbench').openImportWorkbench(...args);
-const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
-const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
-const systemRedo=(...args)=>require('./floating-docks').systemRedo(...args);
-const systemUndo=(...args)=>require('./floating-docks').systemUndo(...args);
-const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows').publishCapabilitySnapshot(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const captureActiveProjectTab=(...args)=>deps.projectTabs.captureActiveProjectTab(...args);
+const projectHistorySnapshot=(...args)=>deps.projectTabs.projectHistorySnapshot(...args);
+const recordProjectHistory=(...args)=>deps.projectTabs.recordProjectHistory(...args);
+const dataConsumerTargets=(...args)=>deps.imports.dataConsumerTargets(...args);
+const openImportWorkbench=(...args)=>deps.imports.openImportWorkbench(...args);
+const refreshOpenAnalysisPage=(...args)=>deps.workspace.refreshOpenAnalysisPage(...args);
+const renderAll=(...args)=>deps.workspace.renderAll(...args);
+const systemRedo=(...args)=>deps.docks.systemRedo(...args);
+const systemUndo=(...args)=>deps.docks.systemUndo(...args);
+const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapshot(...args);
 
 async function importFiles(){
   openImportWorkbench();
@@ -83,4 +85,4 @@ function pluginUiContext(){
   };
 }
 
-module.exports=Object.freeze({importFiles, artifactHostApi, commitOwnerArtifactMutation, applyArtifactHistoryPatch, snapshotProjectDataState, restoreProjectDataState, projectHistoryHostApi, dataSourceHostApi, pluginUiContext});
+module.exports=Object.freeze({configure, importFiles, artifactHostApi, commitOwnerArtifactMutation, applyArtifactHistoryPatch, snapshotProjectDataState, restoreProjectDataState, projectHistoryHostApi, dataSourceHostApi, pluginUiContext});

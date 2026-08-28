@@ -125,14 +125,7 @@ app.whenReady().then(() => {
   enforcePackagedExpiry();
   const persistedAppearance=readPersistedAppearanceTheme();
   if(persistedAppearance)applyNativeAppearance(persistedAppearance,{persist:false,broadcast:false});
-  else{
-    // v3.61.26 and earlier stored the user's choice in renderer localStorage
-    // only. Keep the native frame on the OS theme until ThemeRuntime performs
-    // its first handshake, so that saved renderer choice can migrate into the
-    // new main-process appearance file instead of being overwritten.
-    appearanceRuntime.setInitialAppearance('');
-    try{nativeTheme.themeSource='system';}catch{}
-  }
+  else try{nativeTheme.themeSource='system';}catch{}
   Menu.setApplicationMenu(null);
 
   ipcMain.handle('windows:openActivity', async (event, payload) => {

@@ -92,12 +92,20 @@ assert.deepEqual(
 );
 
 const importWorkbench=fs.realpathSync(path.join(root,'src/app/modules/import-workbench.js'));
+// Application modules are composed by runtime.js. Peer modules consume the injected
+// deps.imports facade instead of requiring Import Workbench directly, which keeps the
+// application graph acyclic while preserving an explicit symbol contract.
 const importConsumers=new Set(requirements.filter(row=>row.target===importWorkbench).map(row=>row.name));
-assert(importConsumers.size>=20,'Import Workbench cross-module contract unexpectedly collapsed.');
-for(const name of importConsumers){
-  assert(exportedNames(importWorkbench).has(name),`Import Workbench must export ${name}.`);
+for(const file of moduleFiles){
+  for(const match of source(file).matchAll(/deps\.imports\.([A-Za-z_$][\w$]*)/g))importConsumers.add(match[1]);
 }
+assert(importConsumers.size>=20,'Import Workbench injected contract unexpectedly collapsed.');
+for(const name of importConsumers){
+  assert(exportedNames(importWorkbench).has(name),`Import Workbench must export injected dependency ${name}.`);
+}
+const runtime=source(path.join(root,'src/app/modules/runtime.js'));
+assert(runtime.includes('moduleApi.configure?.(deps)'),'Application composition root must inject peer dependencies explicitly.');
 
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 
-console.log(`v3.61.91 Application module export-contract PASS (${requirements.length} cross-module symbol uses checked; ${importConsumers.size} Import Workbench exports consumed).`);
+console.log(`Application module export-contract PASS (${requirements.length} static symbol uses checked; ${importConsumers.size} injected Import Workbench exports consumed).`);

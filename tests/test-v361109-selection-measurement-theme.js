@@ -12,9 +12,9 @@ const curve=read('src/core/ui/modules/scientific-curve/render.js');
 assert(curve.includes("attr('class','dkds-scientific-width-band')"),'Core ScientificCurve must render the FWHM/measurement width band.');
 assert(curve.includes("active?'is-focused':'is-dimmed'"),'Core ScientificCurve must expose focused/dimmed curve presentation state.');
 const scientific=read('src/styles/presentation/scientific.css');
-assert(scientific.includes('.dkds-group-plot-card :where(.dkds-plot-legend,.dkds-plot-legend-item,.dkds-plot-legend-swatch){box-shadow:none;}'),'GroupPlot legend chrome must remain shadow-free in every theme.');
-assert(scientific.includes('.dkds-scientific-width-band{opacity:.065'),'FWHM width-band paint must be owned by scientific presentation.');
-assert(scientific.includes('.dkds-scientific-curve.is-dimmed{opacity:.045'),'Dark scientific focus must strongly dim inactive curves.');
+assert(/\.dkds-group-plot-card\s+:where\(\.dkds-plot-legend,\.dkds-plot-legend-item,\.dkds-plot-legend-swatch\)\s*\{[^}]*box-shadow:none/.test(scientific),'GroupPlot legend chrome must remain shadow-free in every theme.');
+assert(/\.dkds-scientific-width-band\s*\{[^}]*opacity:\s*\.065/.test(scientific),'FWHM width-band paint must be owned by scientific presentation.');
+assert(/\.dkds-scientific-curve\.is-dimmed\s*\{[^}]*opacity:\s*\.045/.test(scientific),'Dark scientific focus must strongly dim inactive curves.');
 const structure=read('src/styles/structure/plugin-workspace.css');
 assert(!/\.dkds-scientific-width-band\{[^}]*opacity:/.test(structure),'Structure CSS must not own width-band paint.');
 

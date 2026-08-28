@@ -67,9 +67,8 @@
   }
   function assignSemanticRole(el){
     if(!el?.classList)return '';
-    // Chrome owns integrated command hit regions. Legacy markup may still carry
-    // dkds-material-role-control from before this ownership rule; remove that
-    // invalid nested material unless a caller explicitly opts into its own surface.
+    // Chrome owns integrated command hit regions. Remove invalid nested control
+    // material unless a caller explicitly opts into an independent surface.
     if(chromeOwnedIntegrated(el)&&el.dataset.dkdsMaterialOwnSurface!=='true'&&el.classList.contains('dkds-material-role-control')){
       el.classList.remove('dkds-material-role-control');
       if(el.dataset.dkdsMaterialRoleClassOwner==='core-runtime')delete el.dataset.dkdsMaterialRoleClassOwner;

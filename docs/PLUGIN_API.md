@@ -1,13 +1,12 @@
-# DK Data Studio Plugin API v1.14
+# DK Data Studio Plugin API v1.18
 
-Plugin API v1.14 extends the Core-first contract with a **Core-owned workbench import action**. Workbench plugins declare accepted semantic data types through `manifest.data.accepts`; Core renders the standard “导入数据” action, opens the centralized Import Workbench in scoped mode, locks assignment to the current workbench, and filters Importer Providers by compatible `outputTypes`. A plugin may only mark the desired action location with an empty `data-dkds-slot="workbench-import"` slot. New workbench plugins must not implement a duplicate import button or file picker.
+Plugin API 1.18 is the **Core-first, Legacy-Free contract** for DK Data Studio v3.62.0. A plugin owns domain definitions, scientific algorithms, domain state and view content; Core owns application infrastructure such as file access, canonical Artifacts, scientific-plot lifecycle, DOM/component primitives, workspace geometry, selection/interaction, persistence, services and dedicated-window lifecycle.
 
+Analysis workbenches declare accepted semantic data through `manifest.data.accepts`. Core owns the standard import action and centralized Import Workbench. Plugins may provide an empty `data-dkds-slot="workbench-import"` placement slot, but must not implement a second file picker or importer UI.
 
-Plugin API v1.14 continues the **Core-first contract**: a plugin owns domain definitions, scientific algorithms, domain state and view content, but it does not own application infrastructure. File access, import/export routing, canonical Artifacts, the Entity graph, scientific-plot lifecycle, performance/cache lifecycle, DOM lifecycle, component primitives, workspace geometry, selection, interaction, project persistence, services, capabilities and dedicated-window lifecycle are supplied by Core.
+Plugin API 1.18 is a deliberate breaking boundary. The host accepts API `1.18.0`; earlier runtime/API compatibility adapters are not part of the current contract. Historical **project files** remain supported separately through the Project Compatibility Gateway before plugin runtime starts.
 
-The current DK Data Studio v3.61.7 public contract is API `1.14.0`. Earlier 1.x additions, including `ctx.data.reactive`, remain part of the compatible Core contract: the shared scientific transaction/dependency runtime for revision propagation, batched view updates and stale asynchronous-result rejection. TableSurface and SettingsSurface remain the API 1.9 UI foundation. Existing compatible 1.x packages remain loadable when their declared Core requirements are available; new plugins should target 1.14 and declare only the Core capabilities they consume.
-
-For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains this public contract as TypeScript declarations, the manifest schema, templates and a zero-dependency validator/packager. A plugin author does not need the DK Data Studio source tree to create, validate or package a new API 1.14 plugin. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
+For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains TypeScript declarations, the manifest schema, templates and the standalone validator/packager. New packages must target API `1.18.0` and declare only the Core capabilities they actually consume. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
 
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
@@ -20,7 +19,7 @@ DKDSPlugins.define(manifest, async ctx => {
 
 ## 1. Manifest and machine contract
 
-`plugin.json` for a new plugin must target API `1.14.0` and declare every Core surface it consumes in `requiresCore`.
+`plugin.json` for a new plugin must target API `1.18.0` and declare every Core surface it consumes in `requiresCore`.
 
 ```json
 {
@@ -28,7 +27,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "name": "Spectroscopy",
   "version": "1.0.0",
   "pluginType": "workbench",
-  "apiVersion": "1.14.0",
+  "apiVersion": "1.18.0",
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
   "requiresCore": [
@@ -91,7 +90,7 @@ window.DKDSMyPluginSomething = ...
 DKDSHostRecipes.*
 ```
 
-Use the typed Core APIs below. `ctx.host` remains only as a compatibility bridge for old external packages and is deliberately excluded from the v1.14 development contract.
+Use the typed Core APIs below. `ctx.host` is not part of Plugin API 1.18; host-private state must never be accessed by plugins.
 
 ## 4. Core requirement catalog
 
@@ -306,7 +305,7 @@ await ctx.ui.scientificPlot.scalarField(plot, {
 
 When a trace/point Entity is focused, ScientificPlot automatically emphasizes the related trace/point and dims unrelated visible data. A click automatically enters the shared `InteractionRuntime`. Existing Core-managed scientific graphs may be adopted with `attach()`.
 
-For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Core also owns curve snapping, marker drag geometry, post-drag click suppression, zoom/range gestures and FWHM/window handle geometry. Plugins should commit scientific state only from `onMarkerDragCommit` and `onWidthWindowCommit`; the latter always supplies a complete atomic `[windowLeft, windowRight]` pair even when the user drags only one handle. Pointer-rate preview callbacks are optional and must not mutate project/scientific state. Domain callbacks remain optional for commands such as “open inspector” or “create manual peak”.
+For Core `ScientificCurveSurface` (D3/SVG), declare `interaction` and stable `entityId` values on curves/markers. The surface derives the focused parent curve through the Entity graph and owns the same focus styling. Core also owns snapping, direct-manipulation geometry, post-drag click suppression, zoom/range gestures and range/window handles. Describe editable geometry through `getManipulators()`. Use `onManipulationPreview` only for pointer-rate visual feedback and persist domain/project state from the one-shot `onManipulationCommit` payload. A `range` manipulator always commits the complete `{start,end}` geometry even when only one handle moved. Domain callbacks remain optional for commands such as “open inspector” or “create manual peak”.
 
 Use `ctx.ui.plotViews.bind(...)` for generic chart chrome, placement and CSV/image export:
 
@@ -316,7 +315,7 @@ ctx.ui.plotViews.bind('fit:main', card, {
 });
 ```
 
-A reusable chart **provider** is still registered with `ctx.charts.register(...)`; a plugin must not create its own renderer registry. `ctx.ui.charts` is retained only as a compatibility path and must not be used by new first-party code.
+A reusable chart **provider** is registered with `ctx.charts.register(...)`; plugins must not create renderer registries or bypass `ctx.ui.scientificPlot` for scientific presentation.
 
 ## 11. DOM, components and scheduling
 
@@ -347,7 +346,7 @@ SUPER and dedicated TOP are hosting modes of the same plugin UI. The semantic mo
 - **SUB**: full derived analysis that temporarily replaces PRIMARY and can return.
 
 ```js
-const wb=ctx.ui.analysisWorkbench.create(root,{header:false,activity:'my-analysis'});
+const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'my-analysis'});
 wb.mountPrimary({ id:'main', label:'主界面', mount:({left,main})=>{/* domain content */} });
 wb.registerPrime({ id:'inspector', label:'检查', defaultPlacement:'right', placements:['inline','right','bottom','float'] });
 wb.registerSub({ id:'physics', label:'物理分析', mount:({container})=>{/* domain content */} });
@@ -462,7 +461,7 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
   ],
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.14.0"
+    "pluginApi": "^1.18.0"
   },
   "pluginDependencies": [
     {"id":"other.provider","range":"^2.0.0","optional":false}
@@ -559,11 +558,11 @@ const ok = await ctx.ui.dialogs.confirm({
 
 ### Theme profiles (`ctx.ui.theme`)
 
-Theme Contract 3.1 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
+Theme Contract 3.6 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
 
 外观 token 包括 `canvas`, `surface`, `surfaceSoft`, `surfaceElevated`, `surfaceSidebar`, `surfaceHover`, `controlBg`, `controlHover`, `divider`, `dividerHover`, `controlBorder`, `controlBorderHover`, `scrollbar`, `scrollbarHover`, `text`, `textSoft`, `muted`, `accent`, `accentHover`, `accentSoft`, `focus`, `shadow1`, `shadow2`, `shadowFloat`, `radius`, `radiusLg`。Motion token 包括 `motionFast`, `motionNormal`, `motionSlow`, `easeStandard`, `easeEmphasized`, `hoverLift`, `pressScale`。
 
 主题只拥有语义视觉和受控动效，不拥有 Core/其他插件的布局或 DOM。`prefers-reduced-motion: reduce` 始终优先于主题 motion。结构分区应依靠 surface 色差和间距，`divider` 只用于必要结构线，输入框/按钮使用独立 `controlBorder`。
 
 
-Theme Contract 3.1 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.
+Theme Contract 3.6 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.

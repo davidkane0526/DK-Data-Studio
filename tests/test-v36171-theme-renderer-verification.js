@@ -11,4 +11,4 @@ for(const html of [read('src/index.html'),read('src/plugin-window/index.html')])
 const aux=read('src/plugin-window/runtime.js');assert(aux.includes('themeRenderer:')&&aux.includes('themeMaterialProbe:'));
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
 const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.18.0');assert.equal(contract.themeContractVersion,'3.6.0');
-console.log('v3.61.71 Theme Contract 3.3 renderer verification checks passed.');
+console.log('v3.61.71 Theme Contract 3.6 renderer verification checks passed.');

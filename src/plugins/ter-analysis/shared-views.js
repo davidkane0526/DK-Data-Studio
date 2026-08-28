@@ -3,15 +3,15 @@
   function create(controller){return Object.freeze({controller,pageHtml:()=>PAGE_HTML,attach});}
     function attach(ctx,page){
       const body=page?.querySelector('.analysis-page-body');
-      const legacyShell=page?.querySelector('.ter-workspace-shell');
+      const sourceShell=page?.querySelector('.ter-workspace-shell');
       const left=page?.querySelector('.ter-workspace-left');
       const main=page?.querySelector('.ter-workspace-main');
       if(!body||!left||!main)return null;
-      const extras=[...body.children].filter(node=>node!==legacyShell);
-      left.remove();main.remove();legacyShell?.remove();extras.forEach(node=>node.remove());
+      const extras=[...body.children].filter(node=>node!==sourceShell);
+      left.remove();main.remove();sourceShell?.remove();extras.forEach(node=>node.remove());
       body.classList.add('dkds-unified-workbench-body');
       const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-      const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'ter',primaryScroll:'auto'});
+      const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'ter',primaryScroll:'auto'});
       const primaryMain=ctx.ui.dom.create('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
       wb.compose({primary:{id:'main',label:'TER 分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
       return wb;

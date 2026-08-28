@@ -2,7 +2,8 @@
 const {state, definitions, active, disabled, registries, externalPackages, overridePackages, overrideLoadErrors, externalLoadErrors}=require('./context');
 const {preferenceStorageKey, prewarmPreferenceStorageKey, superPreferenceStorageKey, primePlacementStorageKey, API_VERSION, readPreferences, preferenceFor, isDefinitionEnabled, setPreference, clearPreference, clearPrewarmPreference, definitionById, topWorkspaceRows, superState}=require('./bootstrap');
 const {primePlacementFor, placePrimeContribution, setSuperPlugin, initializeSuperSelection}=require('./workspace/top');
-const {assertId, eventOn, eventEmit, activityRows, activePluginId, invokeEditAction, supportsEditAction, editActionAvailable, editHistoryState, notifyEditHistory}=require('./events/history');
+const {assertId}=require('./registry');
+const {eventOn,eventEmit,activityRows,activePluginId,invokeEditAction,supportsEditAction,editActionAvailable,editHistoryState,notifyEditHistory}=require('./events/history');
 const {renderActivityBar, refreshActivityVisibility, setActiveActivity, chooseFallbackActivity}=require('./activity/shell');
 const {bindShellOnce}=require('./shortcuts/menu');
 const {runCommand}=require('./commands/toolbar');

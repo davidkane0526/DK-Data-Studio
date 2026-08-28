@@ -59,10 +59,10 @@ const usage=[
   ['services',/ctx\.services\b/],['modules',/ctx\.modules\b/],['capabilities',/ctx\.capabilities\b/],['state',/ctx\.state\b/],['project',/ctx\.project\b/],['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],
   ['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],['data.artifacts',/ctx\.data\.artifacts\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
   ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['charts.providers',/ctx\.charts\b/],
-  ['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],['ui.workspace',/ctx\.ui\.(?:analysisWorkbench|pluginWorkspace|workspaceSurface|analysisSurface|layout|grid)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.dialogs',/ctx\.ui\.dialogs\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],['ui.status-bar',/ctx\.ui\.statusBar\b/],['ui.shortcuts',/ctx\.ui\.shortcuts\b/],['ui.pages',/ctx\.ui\.pages\b/],['ui.styles',/ctx\.ui\.styles\b/],['ui.theme',/ctx\.ui\.theme\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
+  ['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],['ui.workspace',/ctx\.ui\.(?:workspaceSurface|layout|grid)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.dialogs',/ctx\.ui\.dialogs\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],['ui.status-bar',/ctx\.ui\.statusBar\b/],['ui.shortcuts',/ctx\.ui\.shortcuts\b/],['ui.pages',/ctx\.ui\.pages\b/],['ui.styles',/ctx\.ui\.styles\b/],['ui.theme',/ctx\.ui\.theme\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
 ];
 const forbidden=[
-  [/\bctx\.host\b/,'ctx.host compatibility bridge'],[/window\.electronAPI|\belectronAPI\./,'Electron bridge'],[/window\.Plotly|\bPlotly\./,'raw Plotly'],
+  [/\bctx\.host\b/,'private host bypass'],[/window\.electronAPI|\belectronAPI\./,'Electron bridge'],[/window\.Plotly|\bPlotly\./,'raw Plotly'],
   [/\bdocument\.(?:getElementById|querySelector|querySelectorAll|createElement|createElementNS)/,'raw document DOM'],[/new\s+(?:ResizeObserver|MutationObserver)\s*\(/,'private observer lifecycle'],
   [/\b(?:requestAnimationFrame|cancelAnimationFrame|setInterval|clearInterval|setTimeout|clearTimeout|queueMicrotask)\s*\(/,'raw scheduler lifecycle'],[/\bwindow\.(?:alert|confirm|prompt)\s*\(/,'native browser dialog (use ctx.ui.dialogs)'],[/ctx\.registry\.add\s*\(/,'generic registry bypass'],[/\bDKDSHostRecipes\./,'host recipe global']
 ];
@@ -131,8 +131,8 @@ async function validate(folder){
   }
   if(m.pluginType==='workbench'||(m.pluginType==='tool'&&topWorkspace)){
     const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
-    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.16 workbenches must declare data.accepts so Core can route the standard import action.');
-    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.16; do not invoke ctx.data.importWorkbench from plugin UI.');
+    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.18 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.18; do not invoke ctx.data.importWorkbench from plugin UI.');
     if(/<input[^>]+type=["']?file/i.test(source))errors.push('Workspace plugins must not create file inputs; use the Core-owned import action.');
 
     const workspaceActivity=String(m?.workspace?.activity||'').trim();
@@ -152,7 +152,7 @@ async function validate(folder){
       if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push(`${label} must register its workspace through ctx.ui.topWorkspace.register(...).`);
       if(!/openMode\s*:\s*["']window["']/.test(source))errors.push(`${label} activity must use openMode: "window".`);
     }else if(m.window&&typeof m.window==='object'){
-      errors.push('A Plugin API 1.16 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
+      errors.push('A Plugin API 1.18 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
     }
   }
   const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);

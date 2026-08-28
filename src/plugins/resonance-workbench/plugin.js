@@ -9,7 +9,7 @@
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',
     source:'builtin',
     order:100,
-    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.infrastructure','ui.views','ui.analysis-workbench','ui.primary','runtime.capabilities','ui.analysis-surface','runtime.capabilities.v2','ui.interaction','ui.interaction-behavior','data.types','data.artifacts','data.sources','data.pipeline','ui.plugin-workspace','ui.scientific-plot','ui.settings'],
+    capabilities:['ui.activity','ui.sidebar','ui.inspector','ui.group-charts','ui.main-tools','analysis.resonance','chart.trend','ui.top-workspace','ui.prime','ui.sub','ui.views','ui.interaction','ui.interaction-behavior','data.types','data.artifacts','data.sources','data.pipeline','ui.plugin-workspace','ui.scientific-plot','ui.settings'],
     workspace:{role:'top',activity:'resonance',icon:'∿',title:'共振分析'},data:{accepts:['science.transport.iv']}
   }, async ctx => {
     const shared=ctx.modules.require('workbench-shared');

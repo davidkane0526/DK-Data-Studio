@@ -44,7 +44,7 @@ Schema version 1:
 }
 ```
 
-Limits and Plugin API 1.16 layout safety are enforced before installation:
+Limits and Plugin API 1.18 layout safety are enforced before installation:
 
 - package id must be valid and cannot start with `builtin.`;
 - all paths must be relative and cannot traverse outside the package;
@@ -54,7 +54,7 @@ Limits and Plugin API 1.16 layout safety are enforced before installation:
 - file count and total package size are bounded;
 - the declared Plugin API must be compatible with the v1 API family;
 - API 1.16 workspace CSS cannot own Core shell selectors/viewport geometry or silently clip semantic UI; the same rules are checked by the standalone SDK and again by the application installer.
-- new SDK packages target `1.16.0`; existing `1.10.0`–`1.15.0` packages remain accepted for compatibility.
+- SDK packages target Plugin API `1.18.0`; packages declaring any other Plugin API version are rejected before activation.
 
 ## Build a package
 
@@ -243,7 +243,7 @@ When a project locks an unavailable algorithm version, Workbench code must not s
 
 Package recovery never rewrites the scientific project lock. After a recovery action, Core resolves the original exact algorithm reference again and reports failure if that exact version is still unavailable.
 
-### Standalone workbench defaults and data ownership (Plugin API 1.13)
+### Standalone workbench defaults and data ownership (Plugin API 1.18)
 
 A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...)` and does not declare a `workspace.role` is a standalone primary activity by default. It appears in the main activity strip according to `order`; it is not inserted into another workbench's contextual toolbar. Set `presentation: "toolbar"` only when a page is intentionally a contextual sub-tool.
 
@@ -251,8 +251,8 @@ A package declared as `pluginType: "workbench"` that calls `ctx.ui.pages.add(...
 
 Imported project data is stored once and assigned to zero, one, or multiple analysis workbenches. New plugins should require `data.sources` and read sources through `ctx.data.sources.list()`. A workbench receives its own scoped view automatically. Source assignment is centralized in Import/Data Center rather than implemented by each plugin.
 
-### True TOP workbench contract (Plugin API 1.16)
+### True TOP workbench contract (Plugin API 1.18)
 
-A workbench does not become TOP merely because it uses `AnalysisWorkbench`/`PluginWorkspace`. A true TOP must declare `workspace.role: "top"`, a matching dedicated `window.activity`, register an Activity with `openMode: "window"`, and register one `ctx.ui.topWorkspace` layout. Core uses that same implementation in a dedicated window or, when promoted, as SUPER in the main shell. The standalone SDK validator rejects incomplete/mismatched TOP packages.
+A workbench does not become TOP merely because it uses `ctx.ui.workspaceSurface` / PluginWorkspace. A true TOP must declare `workspace.role: "top"`, a matching dedicated `window.activity`, register an Activity with `openMode: "window"`, and register one `ctx.ui.topWorkspace` layout. Core uses that same implementation in a dedicated window or, when promoted, as SUPER in the main shell. The standalone SDK validator rejects incomplete/mismatched TOP packages.
 
 Viewport-owned scientific plots in TOP workbenches should use `PluginWorkspace(primaryScroll: "contained")` and a bounded CSS height chain (`height:100%; min-height:0`, with chart rows such as `minmax(0,1fr)`). Do not use an intrinsic-height parent plus a positive-minimum `1fr` responsive chart; that can create a ResizeObserver feedback loop.

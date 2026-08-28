@@ -9,7 +9,7 @@ const json=rel=>JSON.parse(read(rel));
 
 assert(/^3\.62\./.test(json('package.json').version),'v3.62 must retain the historical v3.61 contract baseline.');
 const contract=json('sdk/contract.json');
-assert(Number(contract.sdkVersion.split('.').at(-1))>=0,'SDK must remain on the 1.17 line');
+assert.equal(contract.sdkVersion,'1.18.0','SDK must be the 1.18 Legacy-Free contract.');
 assert.equal(contract.pluginApiVersion,'1.18.0');
 assert.equal(contract.minimumAppVersion,'3.62.0','SDK minimum host must be the v3.62 cutover baseline.');
 
@@ -26,7 +26,7 @@ assert(chart.includes('Math.ceil(metrics.reserve)+40'),'bottom scientific legend
 
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 assert(kernel.includes("const API_VERSION = '1.18.0'"));
-for(const token of ['history: Object.freeze','series: infrastructureScope?.series','legends: infrastructureScope?.legends','groupPlots: infrastructureScope?.groupPlots','tooltips: infrastructureScope?.tooltips',"name:'DK Data Studio Design System'","version:'1.17'"])assert(kernel.includes(token),`Plugin API missing ${token}`);
+for(const token of ['history: Object.freeze','series: infrastructureScope?.series','legends: infrastructureScope?.legends','groupPlots: infrastructureScope?.groupPlots','tooltips: infrastructureScope?.tooltips',"name:'DK Data Studio Design System'","version:'1.18'"])assert(kernel.includes(token),`Plugin API missing ${token}`);
 
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
@@ -43,4 +43,4 @@ const types=read('sdk/plugin-api.d.ts');
 for(const token of ["readonly apiVersion:'1.18.0'",'DKDSSeriesRegistry','DKDSLegendGroup','DKDSActiveLayoutSolver','DKDSGroupPlot','DKDSTooltipRuntime','DKDSProjectHistoryRuntime','DKDSDesignSystem'])assert(types.includes(token),`SDK types missing ${token}`);
 const schema=json('sdk/plugin-manifest.schema.json');
 for(const req of ['history','ui.series','ui.legend-groups','ui.group-plots','ui.tooltips','ui.design-system'])assert(schema.properties.requiresCore.items.enum.includes(req),`Manifest schema missing ${req}`);
-console.log('SDK 1.17 Core UI Contract Completion retained');
+console.log('SDK 1.18 Core UI Contract Completion retained');

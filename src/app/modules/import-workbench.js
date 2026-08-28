@@ -1,16 +1,18 @@
 'use strict';
 const {$, state}=require('./context');
 const {availableImportProviders, chooseImportProvider, diffArtifactRows, escapeHtml, flexibleImportProvider, importActiveItem, importProvider, importScope, providerForImportItem, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
-const captureActiveProjectTab=(...args)=>require('./project-tabs-history').captureActiveProjectTab(...args);
-const pluginUiContext=(...args)=>require('./data-artifact-host').pluginUiContext(...args);
-const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
-const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
-const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
-const makeProject=(...args)=>require('./project-persistence').makeProject(...args);
-const openProjectBase64=(...args)=>require('./project-persistence').openProjectBase64(...args);
-const openProjectPayload=(...args)=>require('./project-persistence').openProjectPayload(...args);
-const capabilitySnapshotForWindows=(...args)=>require('./dedicated-plugin-windows').capabilitySnapshotForWindows(...args);
-const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows').publishCapabilitySnapshot(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const captureActiveProjectTab=(...args)=>deps.projectTabs.captureActiveProjectTab(...args);
+const pluginUiContext=(...args)=>deps.artifacts.pluginUiContext(...args);
+const clearMainView=(...args)=>deps.workspace.clearMainView(...args);
+const refreshOpenAnalysisPage=(...args)=>deps.workspace.refreshOpenAnalysisPage(...args);
+const renderAll=(...args)=>deps.workspace.renderAll(...args);
+const makeProject=(...args)=>deps.projects.makeProject(...args);
+const openProjectBase64=(...args)=>deps.projects.openProjectBase64(...args);
+const openProjectPayload=(...args)=>deps.projects.openProjectPayload(...args);
+const capabilitySnapshotForWindows=(...args)=>deps.windows.capabilitySnapshotForWindows(...args);
+const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapshot(...args);
 
   function renderDatasetList(){
     window.DKDSPlugins?.events?.emit?.('sidebar:data-render',{context:pluginUiContext()});
@@ -804,7 +806,7 @@ const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows')
     }catch(err){console.error(err);setStatus(`导入失败：${err?.message||String(err)}`);}finally{state.importDraft.loading=false;$('#importCommitBtn').disabled=false;}
   }
 
-module.exports=Object.freeze({
+module.exports=Object.freeze({configure,
   addImportFiles,
   applyCurrentImportSettingsToAll,
   applyImportColumnFieldFilter,

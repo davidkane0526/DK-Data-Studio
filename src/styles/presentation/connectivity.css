@@ -1,0 +1,258 @@
+/* Connectivity panel presentation. Network/service geometry remains in structure. */
+html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-settings-card,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-address-card,
+html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-share-section {background:#1d232e;border-color:var(--dkui-border)
+}
+body.dkds-modern-ui .lan-web-panel .panel-header-actions>button {background:transparent;border-color:transparent;box-shadow:none;color:var(--dkui-muted)
+}
+body.dkds-modern-ui .lan-web-panel .panel-header-actions>button:hover {background:var(--dkui-control-hover);border-color:transparent;color:var(--dkui-text);box-shadow:none;transform:none
+}
+body.dkds-modern-ui .lan-web-panel .panel-header-actions>.panel-close:hover {background:var(--dkui-danger-soft);color:var(--dkui-danger)
+}
+body.dkds-modern-ui .lan-web-panel input[type="checkbox"] {accent-color:var(--dkui-accent)
+}
+body.dkds-modern-ui .lan-web-panel input:not([type="checkbox"]):not([type="radio"]) {background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text);box-shadow:none
+}
+body.dkds-modern-ui .lan-web-panel button:not(.primary):not(.panel-close):not(#lanWebMinimizeBtn) {background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text);box-shadow:none
+}
+body.dkds-modern-ui .lan-web-panel button:not(.primary):not(.panel-close):not(#lanWebMinimizeBtn):hover:not(:disabled) {background:var(--dkui-control-hover);border-color:var(--dkui-control-border);color:var(--dkui-text);transform:none
+}
+body.dkds-modern-ui .lan-web-panel button.primary {background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;box-shadow:none
+}
+body.dkds-modern-ui .lan-web-body {background:var(--dkui-canvas)
+}
+body.dkds-modern-ui :is(.lan-web-status-card,.lan-web-settings-card,.lan-web-address-card,.lan-web-share-section) {background:var(--dkui-surface);border-color:transparent;color:var(--dkui-text)
+}
+body.dkds-modern-ui :is(.lan-web-switch-row,.lan-web-port-row) {border-color:transparent
+}
+body.dkds-modern-ui :is(.lan-web-switch-row strong,.lan-web-port-row strong,.lan-web-key-card span,.lan-web-section-title) {color:var(--dkui-text)
+}
+body.dkds-modern-ui :is(.lan-web-status-text,.lan-web-switch-row small,.lan-web-port-row small,.lan-web-key-card small,.lan-web-share-heading small,.lan-web-section-title-row small) {color:var(--dkui-muted)
+}
+body.dkds-modern-ui .lan-web-session-count,
+body.dkds-modern-ui .lan-web-key-card strong,
+body.dkds-modern-ui .lan-web-mode-badge,
+body.dkds-modern-ui .lan-web-share-url-card,
+body.dkds-modern-ui .lan-web-share-note,
+body.dkds-modern-ui .lan-web-capabilities span {background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .lan-web-qr-frame {background:var(--dkui-surface-soft);border-color:transparent
+}
+body.dkds-modern-ui .lan-web-qr-placeholder>span {border-color:var(--dkui-control-border);color:var(--dkui-muted)
+}
+body.dkds-modern-ui .lan-web-qr-image {background:#fff;border-color:#fff
+}
+body.dkds-modern-ui .lan-web-url-chip {background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text-soft)
+}
+body.dkds-modern-ui .lan-web-url-chip.selected {background:var(--dkui-accent-soft);border-color:color-mix(in srgb,var(--dkui-accent) 48%,var(--dkui-control-border));color:var(--dkui-accent)
+}
+body.dkds-modern-ui .lan-web-settings-card,
+body.dkds-modern-ui .lan-web-address-card,
+body.dkds-modern-ui .lan-web-share-section {
+  background:var(--dkui-surface);
+  border-color:var(--dkui-border);
+  box-shadow:var(--dkui-shadow-1)
+}
+.lan-web-panel-title small {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-body {
+  background:var(--app-bg,var(--surface-secondary,#f7f9fc))
+}
+.lan-web-section-title {
+  color:var(--text-primary,#1c2a43)
+}
+.lan-web-section-title-row small,
+.lan-web-share-heading small {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-status-card {
+  border:1px solid var(--border-subtle,#dce3ee);
+  border-radius:10px;
+  background:var(--surface-primary,#fff)
+}
+.lan-web-status-row strong {
+  color:var(--text-primary,#1c2a43)
+}
+.lan-web-dot {
+  border-radius:50%;
+  background:var(--text-tertiary,#98a2b3)
+}
+.lan-web-dot.running {
+  background:#16a34a;
+  box-shadow:0 0 0 3px rgba(22,163,74,.12)
+}
+.lan-web-dot.stopped {background:var(--text-tertiary,#98a2b3)
+}
+.lan-web-status-text {
+  color:var(--text-secondary,#60708c)
+}
+.lan-web-session-count {
+  border:1px solid var(--border-subtle,#e1e6ef);
+  border-radius:999px;
+  background:var(--app-bg,var(--surface-secondary,#f7f9fc));
+  color:var(--text-secondary,#60708c)
+}
+.lan-web-session-count strong {
+  color:var(--text-primary,#1c2a43)
+}
+.lan-web-settings-card,
+.lan-web-address-card,
+.lan-web-share-section {
+  border:1px solid var(--border-subtle,#dce3ee)
+}
+.lan-web-switch-row,
+.lan-web-port-row {
+  border-bottom:1px solid var(--border-subtle,#edf0f5)
+}
+.lan-web-switch-row strong,
+.lan-web-port-row strong {
+  color:var(--text-secondary,#475467)
+}
+.lan-web-switch-row small,
+.lan-web-port-row small {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-port-row input {
+  border:1px solid var(--border-strong,#c6d8ee);
+  border-radius:6px;
+  background:var(--surface-primary,#fff);
+  color:var(--text-primary,#1c2a43)
+}
+.lan-web-key-card {
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--text-secondary,#60708c)
+}
+.lan-web-key-card span {
+  color:var(--text-secondary,#475467)
+}
+.lan-web-key-card small {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-key-card strong {
+  border:1px solid var(--border-subtle,#dde3ed);
+  border-radius:7px;
+  background:var(--app-bg,var(--surface-secondary,#f7f9fc));
+  color:var(--text-primary,#172033)
+}
+.lan-web-url-chip {
+  border:1px solid var(--control-border,var(--border-subtle,#e0e5ee));
+  border-radius:7px;
+  background:var(--control-bg,var(--surface-secondary,#fbfcfe));
+  color:var(--text-secondary,#536176)
+}
+.lan-web-url-chip::before {
+  border:2px solid var(--text-tertiary,#aab4c4);
+  border-radius:50%
+}
+.lan-web-url-chip::after {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-url-chip.selected {
+  border-color:color-mix(in srgb,var(--accent-primary) 48%,var(--control-border,var(--border-subtle,#6f8ff2)));
+  background:var(--accent-soft,#eef3ff);
+  color:var(--accent-primary,#315efb)
+}
+.lan-web-url-chip.selected::before {
+  border-color:var(--accent-primary,#315efb);
+  background:var(--accent-primary,#315efb);
+  box-shadow:inset 0 0 0 2px #fff
+}
+.lan-web-url-chip.selected::after {
+  color:var(--accent-primary,#315efb)
+}
+.lan-web-empty-address {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-mode-badge {
+  border:1px solid var(--border-subtle,#e1e6ef);
+  border-radius:999px;
+  background:var(--app-bg,var(--surface-secondary,#f7f9fc));
+  color:var(--text-secondary,#60708c)
+}
+.lan-web-mode-badge.ready {
+  border-color:#b7dfc6;
+  background:var(--success-soft,#eaf8ef);
+  color:var(--success,#18834b)
+}
+.lan-web-mode-badge.key {
+  border-color:color-mix(in srgb,var(--accent-primary) 30%,var(--border-subtle,#c8d3f4));
+  background:var(--accent-soft,#eef3ff);
+  color:var(--accent-primary,#315efb)
+}
+.lan-web-qr-frame {
+  border:1px solid var(--border-subtle,#e0e5ee);
+  border-radius:11px;
+  background:var(--surface-secondary,#f7f9fc)
+}
+.lan-web-qr-image {
+  border:10px solid #fff;
+  border-radius:8px;
+  box-shadow:0 5px 20px rgba(15,23,42,.09);
+  background:#fff
+}
+.lan-web-qr-placeholder {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-qr-placeholder>span {
+  border:2px dashed var(--control-border,var(--border-strong,#cbd3df));
+  border-radius:12px;
+  color:var(--text-tertiary,#a5afbd)
+}
+.lan-web-share-url-card {
+  border:1px solid var(--border-subtle,#e0e5ee);
+  border-radius:8px;
+  background:var(--surface-secondary,#f8faff)
+}
+.lan-web-share-url-label {
+  color:var(--text-tertiary,#7f8ba8)
+}
+.lan-web-share-url-card code {
+  color:var(--text-primary,#1c2a43)
+}
+.lan-web-share-note {
+  border-left:3px solid var(--border-strong,#8091b8);
+  border-radius:0 6px 6px 0;
+  background:var(--app-bg,var(--surface-secondary,#f7f9fc))
+}
+.lan-web-share-note strong {
+  color:var(--text-secondary,#536176)
+}
+.lan-web-share-note span {
+  color:var(--text-tertiary,#7b8495)
+}
+.lan-web-capabilities span {
+  border:1px solid var(--border-subtle,#e4e8ef);
+  border-radius:999px;
+  background:var(--surface-secondary,#f6f9fd);
+  color:var(--text-tertiary,#7b8495)
+}
+.lan-web-settings-card,
+.lan-web-address-card,
+.lan-web-share-section {
+  border-color:#dfe5ed;border-radius:var(--ui-panel-radius);box-shadow:0 1px 2px rgba(15,23,42,.025);background:#fff
+}
+.lan-web-panel .panel-header-actions>.panel-close {
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent
+}
+.lan-web-panel .panel-header-actions>.panel-close:hover {
+  color:#b42318;
+  border-color:#f1c5c0;
+  background:#fff5f4
+}
+#lanWebMinimizeBtn .lan-web-minimize-glyph {
+  border-radius:999px;
+  background:currentColor
+}
+.floating-panel:not(.lan-web-panel) .panel-header-actions>button,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close {
+  border:0;border-radius:6px;background:transparent;
+  box-shadow:none;color:var(--text-secondary,#60708c)
+}
+.floating-panel:not(.lan-web-panel) .panel-header-actions>button:hover,
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close:hover {background:var(--control-hover,var(--surface-hover));color:var(--text-primary)
+}

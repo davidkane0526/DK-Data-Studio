@@ -1,4 +1,4 @@
-# TOP Workspaces — Plugin API 1.16
+# TOP Workspaces — Plugin API 1.18
 
 This document defines the public contract for third-party analysis plugins that must behave like built-in TOP workspaces.
 
@@ -72,7 +72,7 @@ Use `window.artifactHydration: "live"` only when the dedicated renderer must rec
 A plot that fills the TOP viewport must have a bounded height chain. The reference pattern is:
 
 ```js
-const workspace = ctx.ui.pluginWorkspace.create(host, {
+const workspace = ctx.ui.workspaceSurface.create(host, {
   activity: 'my-analysis',
   primaryScroll: 'safe'
 });
@@ -112,7 +112,7 @@ Avoid this pattern for a fill-height/responsive plot:
 .my-main { grid-template-rows: auto minmax(380px, 1fr) auto; }
 ```
 
-Plugin API 1.16 validates the bounded layout before packaging. Core also owns a runtime Layout Guard: semantic containers that actually clip content are converted to scrolling, and ScientificCurveSurface treats `minWidth/minHeight` as preferred geometry rather than a silent-render gate.
+Plugin API 1.18 validates the bounded layout before packaging. Core also owns a runtime Layout Guard: semantic containers that actually clip content are converted to scrolling, and ScientificCurveSurface treats `minWidth/minHeight` as preferred geometry rather than a silent-render gate.
 
 
 ### ScientificPlot runtime dependencies
@@ -139,7 +139,7 @@ The Core log view displays `|Y|` without mutating source Artifacts. A plugin sho
 
 ## 5. Validation
 
-The Plugin API 1.16 SDK validator rejects:
+The Plugin API 1.18 SDK validator rejects:
 
 - a TOP workbench without `manifest.window`;
 - mismatched `workspace.activity` / `window.activity`;
@@ -151,12 +151,12 @@ The Plugin API 1.16 SDK validator rejects:
 
 Start from `sdk/templates/top-workspace-plugin/` rather than adapting the standalone workbench template by guesswork.
 
-### Plugin API 1.16 layout safety
+### Plugin API 1.18 layout safety
 
 For new workspaces, `safe` is the default Primary scroll policy. The standalone validator and the application installer both reject plugin CSS that targets Core-owned workspace DOM, clips semantic UI with `overflow:hidden/clip`, owns `100vh` viewport geometry, or uses positive-pixel `minmax(...,1fr)` rows in scientific/workspace-critical regions. Ordinary internal grids receive a warning instead of a hard failure. This is intentional: a plugin should describe its domain layout while Core guarantees that content remains reachable.
 
 
-## SDK 1.16.1 layout/legend/table guarantees
+## SDK 1.18.0 layout/legend/table guarantees
 
 - `PluginWorkspace` owns viewport safety and records overflow/containment risks before recovering unsafe regions with scrolling.
 - Multi-series `ScientificPlot` legends are Core-owned by default; Core reserves their measured/estimated footprint and exposes legend metrics. Do not add a second plugin legend unless domain semantics genuinely require one.

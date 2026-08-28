@@ -9,5 +9,5 @@ assert(!fs.existsSync(path.join(root,'src/styles/modern/99-theme-material-render
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));for(const x of ['Material Renderer 3.6','REAL_LIQUID_MATERIAL',"probeRecipe?.('liquid-glass','popover')","probeRecipe?.('thin-glass','popover')"])assert(automation.includes(x),`automation does not verify ${x}`);
 const coverage=read('src/core/theme/coverage-runtime.js');assert(coverage.includes('BROKEN_OPTICAL_RENDERER'));
 const dts=read('sdk/plugin-api.d.ts');for(const x of ['DKDSMaterialRecipe','nonUniformBlur','edgeRefraction','dynamicSpecular','liquidGlass','BROKEN_OPTICAL_RENDERER'])assert(dts.includes(x));
-const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Optical Material Renderer 3.4')&&docs.includes('Theme Contract 3.5'));
+const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Theme Contract 3.6')&&docs.includes('liquid-glass')&&docs.includes('Renderer truth'));
 console.log('v3.61.73 optical material renderer policy and verification contracts passed.');

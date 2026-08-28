@@ -15,7 +15,7 @@ const pkg=JSON.parse(read('package.json'));
 assert(/^\d+\.\d+\.\d+$/.test(pkg.version),'Application package version must remain a stable semantic version.');
 assert(css.includes('--dkds-analysis-page-top'),'analysis pages must use a measured shell-top CSS variable.');
 assert(app.includes("root.style.setProperty('--dkds-viewport-height'"),'viewport measurement may expose the current visual viewport height for components that need it.');
-assert(css.includes('100dvh'),'analysis pages need a dynamic-viewport fallback.');
+assert(css.includes('.analysis-page{')&&css.includes('top:var(--dkds-analysis-page-top')&&css.includes('bottom:var(--dkds-statusbar-height,28px)'),'analysis pages must use live top/bottom viewport constraints instead of a separate viewport-height patch.');
 assert(css.includes('flex:1 1 0%')&&css.includes('height:0'),'analysis page scroll body must be a zero-basis flex scroll region.');
 assert(css.includes('overscroll-behavior:contain'),'analysis page scrolling must stay contained.');
 assert(pluginWindowCss.includes('body.plugin-window-host .analysis-page')&&pluginWindowCss.includes('top:0')&&pluginWindowCss.includes('bottom:28px'),'dedicated plugin windows must fill between their own top edge and status bar without depending on the removed full-host auxiliary renderer.');

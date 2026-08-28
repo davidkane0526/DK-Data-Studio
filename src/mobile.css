@@ -10,7 +10,6 @@ html.react-native-client body{padding:0;overscroll-behavior:none;-webkit-tap-hig
 html.react-native-client .topbar,
 html.react-native-client .project-tabs-bar,
 html.react-native-client #mainWorkspace,
-html.react-native-client #superWorkspaceDivider{display:none}
 
 html.react-native-client{--dkds-mobile-left-width:min(88vw,390px)}
 html.react-native-client #statusBar.statusbar{display:none}

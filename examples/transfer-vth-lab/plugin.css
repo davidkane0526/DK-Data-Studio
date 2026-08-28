@@ -1,5 +1,5 @@
-.dkds-vth-page-body{padding:0!important;min-width:0;min-height:0}
-.dkds-vth-workbench{width:100%;min-width:0;min-height:100%}
+.dkds-vth-page-body{padding:0;min-width:0;min-height:0}
+.dkds-vth-workbench{width:100%;min-width:0;min-height:0}
 .dkds-vth-sidebar{display:flex;flex-direction:column;gap:10px;min-width:0}
 .dkds-vth-card{padding:10px;box-sizing:border-box}
 .dkds-vth-card h3{margin:0 0 9px}
@@ -8,7 +8,7 @@
 .dkds-vth-check{display:flex;align-items:center;gap:7px;margin-top:8px}.dkds-vth-check input{width:auto}
 .dkds-vth-hint{margin:8px 0 0;line-height:1.45}
 .dkds-vth-source-badge{display:inline-flex;align-items:center;min-height:22px;padding:0 7px}
-.dkds-vth-main{width:100%;min-width:0;min-height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px}
+.dkds-vth-main{width:100%;min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-content:start;gap:8px}
 .dkds-vth-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .dkds-vth-metric{padding:8px 10px;min-width:0}
 .dkds-vth-metric span{display:block;margin-bottom:3px}.dkds-vth-metric strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}

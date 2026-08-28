@@ -2,7 +2,7 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');
 const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const C=require('../sdk/theme-coverage-contract');const Theme=require('../sdk/theme-contract');
-assert.equal(C.version,'1.0.0');assert.equal(Theme.version,'3.6.0');assert(Theme.supports('theme.coverage'));assert(Theme.supports('theme.legacy-style-audit'));assert(Theme.materialRoles().includes('floating'));
+assert.equal(C.version,'1.0.0');assert.equal(Theme.version,'3.6.0');assert(Theme.supports('contract.theme.coverage'));assert(Theme.supports('contract.theme.style-audit'));assert(Theme.materialRoles().includes('floating'));
 assert.equal(C.auditCss('.x{background:var(--dkui-surface);color:var(--dkui-text);border-color:var(--dkui-divider)}',{pluginId:'x'}).length,0);
 let rows=C.auditCss('.x{background:#fff;color:rgb(0,0,0);box-shadow:0 1px 4px rgba(0,0,0,.2)}',{pluginId:'x',source:'plugin.css'});assert(rows.length>=3);assert(rows.every(x=>x.kind==='unmanaged-visual'));
 rows=C.auditCss('.x{backdrop-filter:blur(30px)}',{pluginId:'x'});assert.equal(rows.length,1);assert.equal(rows[0].property,'backdrop-filter');
@@ -17,11 +17,11 @@ assert(!/(?:\.pulse-|\.ter-|\.respar-|\.reswin-|\.dc-|\.dkds-vth-|\.dksmb-|\.dka
 const infra=read('src/generated/runtime/ui-infrastructure.js');for(const cls of ['dkds-analysis-left dkds-material-role-sidebar','dkds-analysis-right dkds-material-role-sidebar','dkds-analysis-main dkds-material-role-surface','dkds-plugin-canvas-left dkds-material-role-sidebar','dkds-plugin-canvas-center dkds-material-role-surface'])assert(infra.includes(cls),`Core PluginWorkspace must assign material role: ${cls}`);
 const resonance=read('src/plugins/resonance-workbench/view-components.js'),ter=read('src/plugins/ter-analysis/shared-views.js');assert(!resonance.includes('respar-left-panel dkds-surface-muted dkds-material-role-sidebar'),'Plugins must not assign Core material roles directly.');assert(!ter.includes('ter-workspace-left dkds-material-role-sidebar'),'Plugins must not assign Core material roles directly.');
 const validator=read('sdk/tools/dkds-plugin.js');assert(validator.includes('ThemeCoverageContract.auditCss')&&validator.includes('DKDS SDK THEME COVERAGE WARNING')&&validator.includes('staticInjectedStyleRows(source)'),'SDK validator must audit both stylesheet files and statically-declared ctx.ui.styles.add CSS.');
-const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Coverage ${cov.managed||0}/${cov.areas||0}')&&gallery.includes('Legacy / unmanaged plugin visuals')&&gallery.includes('dkds-theme-gallery-floating'));
+const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Coverage ${cov.managed||0}/${cov.areas||0}')&&gallery.includes('Unmanaged plugin visuals')&&gallery.includes('dkds-theme-gallery-floating'));
 const manager=read('src/core/plugins/manager-ui.js');assert(manager.includes('coverage=window.DKDSTheme?.coverage?.()?.summary')&&manager.includes('Coverage ${coverage.managed}/${coverage.areas}'));
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-coverage'")&&automation.includes('Core Theme coverage incomplete'));
 const index=read('src/index.html'),aux=read('src/plugin-window/index.html');for(const html of [index,aux]){assert(html.includes('theme-coverage-contract.js'));assert(html.includes('core/theme/coverage-runtime.js'));}
 const mobile=read('mobile/scripts/sync-web-assets.js');assert(mobile.includes("'theme-coverage-contract.js'")&&mobile.includes("replaceAll('../sdk/', 'sdk/')"));
 const authoring=read('scripts/generate-sdk-authoring-reference.js');assert(authoring.includes("'sdk/theme-coverage-contract.js'")&&authoring.includes("'sdk/THEME_CONTRACT.md'"));
 const template=read('sdk/templates/theme-profile/plugin.js');assert(template.includes("floating:'thin-glass'")&&template.includes("popover:'thin-glass'"));
-console.log('v3.61.69 Theme Coverage Contract + exhaustive material-role coverage checks passed.');
+console.log('Theme Coverage Contract + exhaustive material-role coverage checks passed.');

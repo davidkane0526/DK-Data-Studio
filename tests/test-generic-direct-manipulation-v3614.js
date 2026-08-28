@@ -16,7 +16,8 @@ for(const hook of ['getManipulators','onManipulationStart','onManipulationPrevie
   assert(ui.includes(hook),`Core generic manipulation lifecycle missing ${hook}`);
 assert(ui.includes("snap?.kind!=='curve'")&&ui.includes('this.nearestIndex(points,x.invert(event.x))'),'Generic manipulators must reuse Core curve snapping rather than feature-owned nearest-point loops.');
 assert(ui.includes("emitManipulation('preview'")&&ui.includes("emitManipulation('commit'"),'Core must separate pointer-rate preview from one semantic commit.');
-assert(ui.includes("compat==='width'")&&ui.includes("compat==='marker'"),'Legacy feature-named drag APIs may survive only as adapters into the generic manipulation model.');
+for(const legacyHook of ['onMarkerDragStart','onMarkerDragPreview','onMarkerDragCommit','onMarkerDragEnd','onWidthDragStart','onWidthDragPreview','onWidthWindowCommit','onWidthDragEnd'])
+  assert(!ui.includes(legacyHook),`Legacy feature-named manipulation hook must be absent from Core runtime: ${legacyHook}`);
 
 for(const token of ['DKDSPlotManipulator','kind:\'point\'','kind:\'axis\'','kind:\'range\'','getManipulators?:()=>DKDSPlotManipulator[]','onManipulationCommit?'])
   assert(sdk.includes(token),`Standalone SDK generic manipulation declaration missing ${token}`);
@@ -29,4 +30,4 @@ assert(resonance.includes('onManipulationCommit:')&&resonance.includes('onManipu
 for(const forbidden of ['onMarkerDragCommit:','onMarkerDragPreview:','onWidthWindowCommit:','onWidthDragPreview:'])
   assert(!resonance.includes(forbidden),`Reference Resonance main-plot owner must not depend on deprecated feature-named interaction hook ${forbidden}`);
 
-console.log('v3.61.4 generic direct-manipulation Core/SDK contract checks passed.');
+console.log('Generic direct-manipulation Core/SDK contract checks passed.');

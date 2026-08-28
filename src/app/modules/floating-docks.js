@@ -1,39 +1,36 @@
 'use strict';
 const {$, state, status}=require('./context');
 const {copyTextToClipboard, ensureFloatingPanelVisible, floatingSafeBounds, hideLanWebPanel, importActiveItem, importProvider, lanWebShareUrl, loadLanWebSettings, loadUpdateSettingsIntoPanel, normalizeLanWebBaseUrl, renderLanWebQr, renderLanWebStatus, renderUpdateStatus, safeName, setStatus, showLanWebPanel}=require('./foundation');
-const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
-const createProjectTab=(...args)=>require('./project-tabs-history').createProjectTab(...args);
-const projectHistorySnapshot=(...args)=>require('./project-tabs-history').projectHistorySnapshot(...args);
-const redoProjectHistory=(...args)=>require('./project-tabs-history').redoProjectHistory(...args);
-const undoProjectHistory=(...args)=>require('./project-tabs-history').undoProjectHistory(...args);
-const addImportFiles=(...args)=>require('./import-workbench').addImportFiles(...args);
-const applyCurrentImportSettingsToAll=(...args)=>require('./import-workbench').applyCurrentImportSettingsToAll(...args);
-const applyImportColumnFieldFilter=(...args)=>require('./import-workbench').applyImportColumnFieldFilter(...args);
-const closeImportWorkbench=(...args)=>require('./import-workbench').closeImportWorkbench(...args);
-const commitImportWorkbench=(...args)=>require('./import-workbench').commitImportWorkbench(...args);
-const handleImportListShortcut=(...args)=>require('./import-workbench').handleImportListShortcut(...args);
-const invertImportChecked=(...args)=>require('./import-workbench').invertImportChecked(...args);
-const readImportItemText=(...args)=>require('./import-workbench').readImportItemText(...args);
-const recomputeImportItem=(...args)=>require('./import-workbench').recomputeImportItem(...args);
-const renderImportWorkbench=(...args)=>require('./import-workbench').renderImportWorkbench(...args);
-const resetCurrentImportAuto=(...args)=>require('./import-workbench').resetCurrentImportAuto(...args);
-const updateImportSetting=(...args)=>require('./import-workbench').updateImportSetting(...args);
-const importFiles=(...args)=>require('./data-artifact-host').importFiles(...args);
-const closeAnalysisPage=(...args)=>require('./workspace-super-shell').closeAnalysisPage(...args);
-const resetMainView=(...args)=>require('./workspace-super-shell').resetMainView(...args);
-const scheduleMainPlotRelayout=(...args)=>require('./workspace-super-shell').scheduleMainPlotRelayout(...args);
-const syncAnalysisPageViewport=(...args)=>require('./workspace-super-shell').syncAnalysisPageViewport(...args);
-const syncSuperWorkspaceDivider=(...args)=>require('./workspace-super-shell').syncSuperWorkspaceDivider(...args);
-const currentMainViewCsvText=(...args)=>require('./scientific-panels-export').currentMainViewCsvText(...args);
-const exportCurrentMainCsv=(...args)=>require('./scientific-panels-export').exportCurrentMainCsv(...args);
-const exportCurrentMainPng=(...args)=>require('./scientific-panels-export').exportCurrentMainPng(...args);
-const exportCurrentMainSvg=(...args)=>require('./scientific-panels-export').exportCurrentMainSvg(...args);
-const setTrendColumns=(...args)=>require('./scientific-panels-export').setTrendColumns(...args);
-const updateTrendLayout=(...args)=>require('./scientific-panels-export').updateTrendLayout(...args);
-const zoomCsvText=(...args)=>require('./scientific-panels-export').zoomCsvText(...args);
-const openProject=(...args)=>require('./project-persistence').openProject(...args);
-const saveProject=(...args)=>require('./project-persistence').saveProject(...args);
-const openPluginActivityWindow=(...args)=>require('./dedicated-plugin-windows').openPluginActivityWindow(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const createProjectTab=(...args)=>deps.projectTabs.createProjectTab(...args);
+const projectHistorySnapshot=(...args)=>deps.projectTabs.projectHistorySnapshot(...args);
+const redoProjectHistory=(...args)=>deps.projectTabs.redoProjectHistory(...args);
+const undoProjectHistory=(...args)=>deps.projectTabs.undoProjectHistory(...args);
+const addImportFiles=(...args)=>deps.imports.addImportFiles(...args);
+const applyCurrentImportSettingsToAll=(...args)=>deps.imports.applyCurrentImportSettingsToAll(...args);
+const applyImportColumnFieldFilter=(...args)=>deps.imports.applyImportColumnFieldFilter(...args);
+const closeImportWorkbench=(...args)=>deps.imports.closeImportWorkbench(...args);
+const commitImportWorkbench=(...args)=>deps.imports.commitImportWorkbench(...args);
+const handleImportListShortcut=(...args)=>deps.imports.handleImportListShortcut(...args);
+const invertImportChecked=(...args)=>deps.imports.invertImportChecked(...args);
+const readImportItemText=(...args)=>deps.imports.readImportItemText(...args);
+const recomputeImportItem=(...args)=>deps.imports.recomputeImportItem(...args);
+const renderImportWorkbench=(...args)=>deps.imports.renderImportWorkbench(...args);
+const resetCurrentImportAuto=(...args)=>deps.imports.resetCurrentImportAuto(...args);
+const updateImportSetting=(...args)=>deps.imports.updateImportSetting(...args);
+const importFiles=(...args)=>deps.artifacts.importFiles(...args);
+const closeAnalysisPage=(...args)=>deps.workspace.closeAnalysisPage(...args);
+const resetMainView=(...args)=>deps.workspace.resetMainView(...args);
+const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
+const syncAnalysisPageViewport=(...args)=>deps.workspace.syncAnalysisPageViewport(...args);
+const setTrendColumns=(...args)=>deps.scientific.setTrendColumns(...args);
+const updateTrendLayout=(...args)=>deps.scientific.updateTrendLayout(...args);
+const zoomCsvText=(...args)=>deps.scientific.zoomCsvText(...args);
+const openProject=(...args)=>deps.projects.openProject(...args);
+const saveProject=(...args)=>deps.projects.saveProject(...args);
+const openPluginActivityWindow=(...args)=>deps.windows.openPluginActivityWindow(...args);
 
 function captureGroupFloatRect(){
   const panel=$('#groupPanel');
@@ -484,10 +481,6 @@ document.querySelectorAll('[data-trend-cols]').forEach(b=>{
 
 
 
-$('#exportMainCsvBtn').onclick=exportCurrentMainCsv;
-$('#copyMainCsvBtn').onclick=()=>{const text=currentMainViewCsvText();if(text)copyTextToClipboard(text,'当前主图数据');else setStatus('当前主图插件没有提供可复制的数据。');};
-$('#exportMainSvgBtn').onclick=exportCurrentMainSvg;
-$('#exportMainPngBtn').onclick=exportCurrentMainPng;
 $('#zoomExportCsv').onclick=()=>{
   if(!state.zoomChart)return;
   window.electronAPI.saveText({defaultName:`${safeName(state.zoomChart.title)}.csv`,content:zoomCsvText(),filters:[{name:'CSV',extensions:['csv']}]});
@@ -515,7 +508,6 @@ window.addEventListener('keydown',e=>{
 
 window.addEventListener('resize',()=>{
   syncAnalysisPageViewport();
-  syncSuperWorkspaceDivider();
   scheduleMainPlotRelayout();
   updateTrendLayout(true);
   try{if(!$('#zoomPanel').classList.contains('hidden'))window.DKDSCharts?.resize?.($('#zoomPlot'));}catch{}
@@ -545,4 +537,4 @@ if(window.ResizeObserver){
   panelObserver.observe($('#zoomPanel'));
 }
 
-module.exports=Object.freeze({captureGroupFloatRect, applyGroupPanelLayout, toggleGroupDock, toggleGroupMinimize, setupDockResizer, captureInspectorFloatRect, applyInspectorPanelLayout, toggleInspectorDock, setupInspectorDockResizer, makeFloating, dataCenterSystemBtn, historyRowTime, normalizeEditHistory, activeEditHistorySnapshot, activeEditHistorySnapshotSync, historyCandidate, systemHistorySnapshotSync, runSystemHistory, systemUndo, systemRedo, systemDeselect, showProjectHistory});
+module.exports=Object.freeze({configure, captureGroupFloatRect, applyGroupPanelLayout, toggleGroupDock, toggleGroupMinimize, setupDockResizer, captureInspectorFloatRect, applyInspectorPanelLayout, toggleInspectorDock, setupInspectorDockResizer, makeFloating, dataCenterSystemBtn, historyRowTime, normalizeEditHistory, activeEditHistorySnapshot, activeEditHistorySnapshotSync, historyCandidate, systemHistorySnapshotSync, runSystemHistory, systemUndo, systemRedo, systemDeselect, showProjectHistory});

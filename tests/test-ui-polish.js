@@ -38,7 +38,7 @@ assert(/#pluginManagerList\s*,\s*\.plugin-manager-card\s*\{[^}]*overflow-anchor\
 assert(pluginManager.includes('captureManagerScroll')&&pluginManager.includes('restoreManagerScroll'), 'plugin manager must explicitly preserve its scroll position across enable/disable rerenders');
 assert(pluginManager.includes("renderList({scroll:'top'})"), 'opening or filtering plugin manager should deliberately reset to the top instead of inheriting a stale scroll position');
 assert(/\.system-commandbar>\.menu-anchor>#manageMenuBtn\s*\{[^}]*height\s*:\s*42px\s*[^}]*min-height\s*:\s*42px\s*/i.test(css), 'standalone shell menus must override the shared toolbar rule and match the file-command group outer height');
-assert(/input\[type="checkbox"\]\s*,\s*input\[type="radio"\]\s*\{[^}]*accent-color\s*:\s*var\(--accent\)/i.test(css), 'Core must provide the default blue native checkbox/radio selected state.');
+assert(/body\.dkds-modern-ui\s+input\[type="checkbox"\]\s*,\s*body\.dkds-modern-ui\s+input\[type="radio"\]\s*\{[^}]*accent-color\s*:\s*var\(--accent-primary\)/i.test(css), 'Core must provide the default blue native checkbox/radio selected state.');
 assert(/\.dkds-scroll-x-compact\s*\{[^}]*scrollbar-width\s*:\s*none/i.test(css)&&/\.dkds-scroll-x-compact::\-webkit-scrollbar\s*\{[^}]*display\s*:\s*none[^}]*width\s*:\s*0[^}]*height\s*:\s*0/i.test(css), 'Core horizontal strips must hide scrollbar chrome.');
 assert(/\.dkds-horizontal-wheel-scroll\s*\{[^}]*overscroll-behavior-inline\s*:\s*contain/i.test(css)&&/\.dkds-selection-item\.dkds-selection-focused\s*\{/i.test(css), 'Core must own wheel-to-horizontal scrolling and linked-selection focus presentation.');
 

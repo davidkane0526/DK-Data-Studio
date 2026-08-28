@@ -1,6 +1,5 @@
 'use strict';
-const {getRegistry, addCleanup}=require('../events/history');
-const {registerContribution}=require('../commands/toolbar');
+const {getRegistry,addCleanup,registerContribution,listContributions}=require('../registry');
 
 
   const globallyUniqueRegistryKinds = new Set([
@@ -27,10 +26,6 @@ const {registerContribution}=require('../commands/toolbar');
       }
     }
     return registerContribution(pluginId, kind, id, value);
-  }
-
-  function listContributions(kind) {
-    return [...getRegistry(kind).values()];
   }
 
   function providerCapabilityKind(kind){

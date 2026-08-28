@@ -16,8 +16,8 @@ DKDSPlugins.define({
       {id:'popoverRecipe',label:'Popover material',target:{scope:'recipe',role:'popover'},type:'select',options:['clear','thin-glass','soft-glass','liquid-glass']}
     ],
     material:{
-      // Canonical 3.2 values are platform-neutral numbers: logical length units,
-      // opacity 0..1, and saturation multipliers. px/% strings remain 3.1-compatible.
+      // Theme 3.6 uses platform-neutral numbers: logical length units,
+      // opacity 0..1, and saturation multipliers.
       materialBlur:12, materialBlurStrong:18, materialSaturation:1.055,
       // Historical token name: materialTintOpacity is the semantic base-material
       // fill opacity used by Core glass recipes, not an accent-color tint amount.

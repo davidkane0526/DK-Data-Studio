@@ -286,7 +286,7 @@
     const body=page.querySelector('.resonance-dedicated-body'),parity=page.querySelector('.resonance-parity-root');
     if(!body||!parity)throw new Error('Resonance parity DOM is incomplete.');
     parity.remove();body.replaceChildren();body.classList.add('dkds-unified-workbench-body');const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root resonance-parity-host';body.appendChild(host);
-    const workspaceFactory=ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench;
+    const workspaceFactory=ctx.ui.workspaceSurface;
     if(!workspaceFactory?.create)throw new Error('PluginWorkspace Core capability is unavailable.');
     const settingsSurface=ctx.ui.settings?.get?.('defaults')||null;
     const pluginDefaults=settingsSurface?.get?.()||{};

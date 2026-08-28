@@ -31,9 +31,9 @@ try{
   const js=read('examples/transfer-vth-lab/plugin.js');
   assert(js.includes("yScaleType:(state.get().parameters.logY")&&!js.includes('Math.log10(Math.max(Math.abs(raw)'),'Vth logarithmic display must use Core ScientificPlot scale rather than pre-transforming plotted current.');
   assert(js.includes("workspace:{role:'top',activity:'transfer-vth-lab'")&&js.includes("openMode:'window'")&&js.includes("artifactHydration:'live'")&&js.includes('ctx.ui.topWorkspace.register('),'Vth runtime must implement the complete TOP contract.');
-  assert(js.includes("primaryScroll:'safe'")&&js.includes("scroll:'safe'"),'Vth must use Plugin API 1.16 safe scrolling so Host can recover clipped content.');
-  assert(/\.dkds-vth-workbench\{[^}]*min-height:100%/s.test(css)&&!/\.dkds-vth-workbench\{[^}]*overflow:hidden/s.test(css),'Vth workbench root must remain host-scroll-safe and must not clip content.');
-  assert(/\.dkds-vth-main\{[^}]*min-height:100%[^}]*grid-template-rows:auto minmax\(0,1fr\)/s.test(css)&&!/\.dkds-vth-main\{[^}]*overflow:hidden/s.test(css),'Vth main chart layout must use flexible minmax(0,1fr) without clipping the host viewport.');
+  assert(js.includes("primaryScroll:'safe'")&&js.includes("scroll:'safe'"),'Vth must use Plugin API 1.18 safe scrolling so Host can recover clipped content.');
+  assert(/\.dkds-vth-workbench\{[^}]*min-height:0/s.test(css)&&!/\.dkds-vth-workbench\{[^}]*overflow:hidden/s.test(css),'Vth workbench root must defer height ownership to the Core safe viewport and must not clip content.');
+  assert(/\.dkds-vth-main\{[^}]*min-height:0[^}]*grid-template-rows:auto minmax\(0,1fr\)[^}]*align-content:start/s.test(css)&&!/\.dkds-vth-main\{[^}]*overflow:hidden/s.test(css),'Vth main chart layout must use the Core-safe zero minimum, flexible minmax(0,1fr), and compact row alignment without clipping the host viewport.');
   assert(!/minmax\(\s*\d+(?:\.\d+)?px\s*,\s*1fr\s*\)/i.test(css),'Vth must not restore the intrinsic-height positive-minimum 1fr pattern that caused self-growing charts.');
 
   const invalidDir=path.join(tmp,'invalid-top');
@@ -60,4 +60,4 @@ assert(types.includes('list(options?:{consumer?:string;pluginId?:string}):DKDSDa
 const sdkReadme=read('sdk/README.md');
 assert(sdkReadme.includes('A **true TOP workbench** must keep four contracts aligned')&&sdkReadme.includes('minmax(0, 1fr)'),'SDK guide must document true TOP and bounded scientific layout contracts.');
 assert(read('sdk/TOP_WORKSPACES.md').includes('Workbench is not TOP')&&read('sdk/TOP_WORKSPACES.md').includes('bounded height chain'),'SDK must ship a dedicated TOP workspace authoring guide.');
-console.log('v3.61.29 external TOP workspace + host-safe scientific layout + SDK 1.16 authoring contract checks passed.');
+console.log('v3.61.29 external TOP workspace + host-safe scientific layout + SDK 1.18 authoring contract checks passed.');

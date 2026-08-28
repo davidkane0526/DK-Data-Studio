@@ -2,7 +2,7 @@
   const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.interaction-behavior','ui.pages'];
   DKDSPlugins.define({
     id:'example.plugin',pluginType:'developer',name:'Example Plugin',version:'0.4.0',apiVersion:'1.18.0',requiresCore,order:900,
-    capabilities:['ui.page','ui.analysis-workbench','ui.primary','ui.prime','runtime.capabilities','ui.dynamic-actions','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor']
+    capabilities:['ui.page','ui.prime','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor','ui.plugin-workspace']
   }, async ctx => {
     const dom=ctx.ui.dom;
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});
@@ -37,7 +37,7 @@
       html:'<div class="analysis-page-header"><div><h2>示例插件</h2><div class="analysis-subtitle">领域逻辑由插件声明，布局、交互、组件与生命周期由 Core 管理。</div></div></div><div class="analysis-page-body"><div class="example-workbench-root"></div></div>'
     });
     const root=dom.query('.example-workbench-root',page);
-    const wb=ctx.ui.analysisWorkbench.create(root,{header:false,activity:'example'});
+    const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'example'});
     wb.mountPrimary({id:'main',label:'主界面',mount:({main})=>ctx.ui.components.mount(main,{type:'stack',children:[{type:'text',text:'PRIMARY · Plugin domain content'}]})});
     wb.registerPrime({id:'details',label:'详情',title:'示例 PRIME',defaultPlacement:'right',placements:['inline','right','bottom','float'],mount:({container})=>ctx.ui.components.mount(container,{type:'stack',children:[{type:'text',text:'PRIME · Domain details'}]})});
     const actions=dom.create('div',{className:'dkds-plugin-header-actions'});

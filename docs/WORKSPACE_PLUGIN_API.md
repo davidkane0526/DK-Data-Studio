@@ -475,11 +475,11 @@ This makes toolbar growth scale with plugins without returning to a single long 
 Peak detectors and other algorithm providers must be discovered from registries rather than hard-coded ids. Desktop `.dkplugin` packages can add stronger algorithms at runtime. See `PLUGIN_PACKAGES.md`. The surrounding workbench owns workflow/UI semantics, while the detector plugin owns its algorithm, parameter UI/schema, presets and evidence metadata.
 
 
-## AnalysisWorkbench v5 / Typed Interaction / Capability Runtime v2
+## Current PluginWorkspace / Typed Interaction / Capability Runtime
 
-Plugin API 1.9 standardizes complex analysis plugins on `ctx.ui.analysisSurface.create(...)` + `compose({primary, primes, subs})`. SUPER and TOP must compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
+Plugin API 1.18 standardizes complex analysis plugins on `ctx.ui.workspaceSurface.create(...)` / `compose({primary, primes, subs})`. SUPER and TOP compose the same Controller/Shared Views/Feature Runtime tree; host adapters only map lifecycle and window boundaries.
 
-Capabilities may be discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, proxied/invoked across dedicated TOP renderers, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, split geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and view content.
+Capabilities are discovered with `ctx.capabilities.list(query)`, required by id/method contract with `ctx.capabilities.require(...)`, invoked through the typed capability runtime, and observed with `ctx.capabilities.watch(...)`. Core owns docking, sticky/floating placement, workspace geometry, typed interaction selection, frame-coalesced chart resize, shortcuts and context menus; plugins own scientific state, calculations and domain view content.
 
 ## v3.35 host-invariant PluginWorkspace
 

@@ -11,6 +11,10 @@
       "path": "src/core/plugins/kernel/modules/manifest.js"
     },
     {
+      "id": "kernel/registry",
+      "path": "src/core/plugins/kernel/modules/registry.js"
+    },
+    {
       "id": "kernel/bootstrap",
       "path": "src/core/plugins/kernel/modules/bootstrap.js"
     },
@@ -21,6 +25,10 @@
     {
       "id": "kernel/events/history",
       "path": "src/core/plugins/kernel/modules/events/history.js"
+    },
+    {
+      "id": "kernel/shell/context-toolbar",
+      "path": "src/core/plugins/kernel/modules/shell/context-toolbar.js"
     },
     {
       "id": "kernel/activity/shell",

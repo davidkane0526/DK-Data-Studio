@@ -166,7 +166,7 @@ Not allowed to change on SUPER/TOP transition:
 Preferred workspace API:
 
 ```js
-const wb = ctx.ui.pluginWorkspace.create(root, {
+const wb = ctx.ui.workspaceSurface.create(root, {
   header: false,
   activity: 'my-analysis',
 });
@@ -178,7 +178,7 @@ wb.compose({
 });
 ```
 
-`ctx.ui.workspaceSurface` is the semantic composition facade. `ctx.ui.analysisWorkbench` and `ctx.ui.analysisSurface` remain compatibility aliases.
+`ctx.ui.workspaceSurface` is the sole public PluginWorkspace composition facade in Plugin API 1.18.
 
 Preferred direct scientific curve API:
 
@@ -195,14 +195,15 @@ const plot = ctx.ui.scientificPlot.create(svg, {
   setView: next => state.view = next,
   onCurveSelect({curve}) { ... },
   onCurveModifiedClick({curve, x}) { ... },
-  onMarkerDragCommit({marker, curve, index, point}) { /* commit once */ ... },
-  onWidthWindowCommit({marker, windowLeft, windowRight}) { /* atomic pair */ ... },
+  getManipulators: () => manipulators,
+  onManipulationPreview({manipulator, geometry}) { /* visual feedback only */ ... },
+  onManipulationCommit({manipulator, geometry, curve, index, point}) { /* commit once */ ... },
   onRangeSelect(range) { ... },
   onWheelZoomStart() { ... }
 });
 ```
 
-Core supplies geometry, stable color-domain handling, pointer interaction, drag-vs-click suppression, curve snapping, two-ended width/FWHM editing and zoom lifecycle. Pointer movement remains a Core visual fast path; a plugin maps the one-shot commit callbacks to scientific operations.
+Core supplies geometry, stable color-domain handling, pointer interaction, drag-vs-click suppression, curve snapping, generic point/axis/range manipulation and zoom lifecycle. Pointer movement remains a Core visual fast path; a plugin maps the one-shot generic manipulation commit to scientific operations.
 
 ## Visual tokens
 

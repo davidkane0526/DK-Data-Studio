@@ -9,7 +9,7 @@ const pkg=JSON.parse(read('package.json'));
 
 const rendererCss=read('src/styles/theme/material-renderer.css');
 const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
-const baseCss=read('src/styles/structure/analysis-shell.css');
+const baseCss=read('src/styles/presentation/dialogs.css');
 const runtimeSource=read('src/core/theme/runtime.js');
 
 assert(chromeCss.includes('Chrome owns its actions.'),'chrome-owned command integration invariant missing');

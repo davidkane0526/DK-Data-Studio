@@ -26,8 +26,8 @@ assert(preload.includes('appearanceGetTheme')&&preload.includes('appearanceSetTh
 assert(theme.includes("STORAGE_KEY='dkds.appearance.v1'")&&theme.includes('dkds:theme-changed')&&theme.includes("addEventListener?.('storage'"),'appearance selection must persist and synchronize across windows');
 assert(charts.includes('window.DKDSTheme?.current?.()')&&charts.includes('refreshRenderedTheme'),'Chart Runtime must follow the application-selected theme and refresh live D3 scientific canvases');
 
-assert(css.includes('body.dkds-modern-ui .topbar{position:relative;z-index:1400')&&css.includes('body.dkds-modern-ui .analysis-page{z-index:500}'),'top command shell must stay above fixed analysis workbenches');
-assert(css.includes('body.dkds-modern-ui .command-menu{z-index:1650}'),'top dropdown menus must stay above workbench content');
+assert(css.includes('body.dkds-modern-ui .topbar{position:relative;z-index:1400')&&/\.analysis-page\s*\{[^}]*z-index\s*:\s*500/.test(css),'top command shell must stay above fixed analysis workbenches');
+assert(/\.command-menu\s*\{[^}]*z-index\s*:\s*1650/.test(css),'top dropdown menus must stay above workbench content');
 assert(!css.includes('.js-plotly-plot .plotly .modebar'),'visual system must not style Plotly-generated modebar internals');
 assert(css.includes('--dkui-canvas:#eef4fb')&&css.includes('--dkui-border:#d8e5f4')&&css.includes('rgba(91,119,159,.065)'),'light material must follow the supplied cool soft-depth reference without heavy skeuomorphism');
 assert(css.includes('button[aria-pressed="true"]')&&css.includes('-webkit-text-fill-color:var(--dkui-accent)')&&css.includes('var(--dkui-accent-soft)'),'host-owned selected controls must derive both selected surface and readable foreground from the shared theme contract');
@@ -45,4 +45,4 @@ assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:
 assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
 assert(kernel.includes("!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
 assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("state.host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
-console.log('ordered modern shell, appearance, memory and Tool runtime checks passed under v3.61.29.');
+console.log('ordered modern shell, appearance, memory and Tool runtime checks passed.');

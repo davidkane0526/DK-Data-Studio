@@ -47,8 +47,8 @@
       "path": "src/core/ui/modules/plot-view/chart.js"
     },
     {
-      "id": "ui/workbench/base",
-      "path": "src/core/ui/modules/workbench/base.js"
+      "id": "ui/workbench/view-host",
+      "path": "src/core/ui/modules/workbench/view-host.js"
     },
     {
       "id": "ui/grid/controller",

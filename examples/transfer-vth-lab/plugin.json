@@ -39,12 +39,12 @@
   "capabilities": [
     "analysis.threshold-voltage",
     "ui.page",
-    "ui.analysis-workbench",
     "ui.interaction-behavior",
     "ui.scientific-plot",
     "ui.batch-results",
     "data.scoped-sources",
-    "ui.top-workspace"
+    "ui.top-workspace",
+    "ui.plugin-workspace"
   ],
   "workspace": {
     "role": "top",

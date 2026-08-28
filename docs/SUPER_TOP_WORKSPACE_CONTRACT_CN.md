@@ -176,13 +176,7 @@ SUB 自己拥有界面生命周期。打开 SUB 时只是暂时覆盖/显示工�
 - 关闭默认隐藏并复用 renderer/DOM/内存状态
 - restart-safe 结果使用 `ctx.project.registerSlice(...)` 和 artifact store
 
-若插件必须依赖完整主 Renderer，可声明：
-
-```json
-"mode": "compatibility"
-```
-
-否则使用默认 `dedicated`。两种模式共享同一套 manifest 驱动的预热/隐藏复用生命周期，不允许再为插件名称写白名单。
+Plugin API 1.18 的 TOP 只使用 `dedicated` 插件 Renderer。插件不能请求完整主 Renderer，也不存在 compatibility / embedded 窗口模式。预热、隐藏复用、工程同步和生命周期全部由 manifest 驱动，禁止按插件名称写白名单。
 
 ## 8. 插件管理器
 

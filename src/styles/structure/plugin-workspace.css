@@ -1,39 +1,25 @@
 /* Plugin Workspace Design System for shared scientific workbench structure.
    These are Core scientific-workspace primitives. Domain plugins provide data and
    semantics; Core owns typography, layout chrome and direct plot interaction. */
-:root{
-  --plugin-workspace-sidebar-width:260px;
-  --plugin-workspace-panel-radius:8px;
-  --plugin-workspace-panel-border:var(--divider-subtle,transparent);
-  --plugin-workspace-surface:var(--surface-primary,#fff);
-  --plugin-workspace-muted-surface:var(--surface-secondary,#f7f8fb);
-  --plugin-workspace-grid:color-mix(in srgb,var(--text-tertiary,#7f8ba8) 14%,transparent);
-  --plugin-workspace-shadow:0 14px 40px rgba(20,30,60,.16);
-  --plugin-workspace-tool-gap:4px;
-  --plugin-workspace-panel-gap:8px;
-}
-.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);background:transparent;}
 .dkds-plugin-workspace[data-host-mode="super"],.dkds-plugin-workspace[data-host-mode="top"]{width:100%;height:100%;min-width:0;min-height:0;}
 .dkds-scientific-curve-surface{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;touch-action:none;user-select:none;}
-.dkds-scientific-plot-bg{fill:var(--plugin-workspace-surface);stroke:var(--plugin-workspace-grid);}
-.dkds-scientific-axis path,.dkds-scientific-axis line{stroke:var(--text-tertiary,#aeb6c8);}
-.dkds-scientific-axis text{fill:var(--text-secondary,#576176);font-size:11px;}
-.dkds-scientific-axis-title{font-size:12px;fill:var(--text-primary,#374151);font-weight:520;}
-.dkds-scientific-curve{fill:none;vector-effect:non-scaling-stroke;}
-.dkds-scientific-curve-hit{fill:none;stroke:transparent;stroke-width:14px;pointer-events:stroke;cursor:pointer;}
-.dkds-scientific-marker{pointer-events:none;}.dkds-scientific-marker.is-dimmed{opacity:.12;}
-.dkds-scientific-marker-hit{fill:transparent;stroke:none;pointer-events:all;cursor:pointer;}.dkds-scientific-marker-hit.is-manipulable:not(.is-locked){cursor:grab;}
-.dkds-scientific-width-band{pointer-events:none;}.dkds-scientific-width-line{stroke-width:1.6;pointer-events:none;}.dkds-scientific-baseline-line{stroke-width:1.15;stroke-dasharray:5 4;opacity:.72;pointer-events:none;}.dkds-scientific-width-crossing{pointer-events:none;}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all;}
-.dkds-direct-manipulation{pointer-events:none;}.dkds-direct-range-band{opacity:.065;pointer-events:none;}.dkds-direct-axis-line{stroke-width:1.15;stroke-dasharray:5 4;opacity:.72;pointer-events:none;}.dkds-direct-handle{pointer-events:all;}.dkds-direct-point-handle,.dkds-direct-axis-handle,.dkds-direct-range-handle{filter:drop-shadow(0 1px 1px rgba(15,23,42,.12));}
-.dkds-scientific-direct-box{pointer-events:none;stroke-width:1.4;}.dkds-scientific-direct-box.is-range{fill:rgba(58,96,246,.08);stroke:#3a60f6;stroke-dasharray:5 3;}.dkds-scientific-direct-box.is-zoom{fill:rgba(124,58,237,.07);stroke:#7c3aed;stroke-dasharray:3 3;}
-.dkds-scientific-persisted-range{fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4;pointer-events:none;}
+.dkds-scientific-axis text{font-size:11px;}
+.dkds-scientific-axis-title{font-size:12px;font-weight:520;}
+.dkds-scientific-curve{vector-effect:non-scaling-stroke;}
+.dkds-scientific-curve-hit{pointer-events:stroke;cursor:pointer;}
+.dkds-scientific-marker{pointer-events:none;}
+.dkds-scientific-marker-hit{pointer-events:all;cursor:pointer;}.dkds-scientific-marker-hit.is-manipulable:not(.is-locked){cursor:grab;}
+.dkds-scientific-width-band{pointer-events:none;}.dkds-scientific-width-line{pointer-events:none;}.dkds-scientific-baseline-line{pointer-events:none;}.dkds-scientific-width-crossing{pointer-events:none;}.dkds-scientific-width-handle{cursor:ew-resize;pointer-events:all;}
+.dkds-direct-manipulation{pointer-events:none;}.dkds-direct-range-band{pointer-events:none;}.dkds-direct-axis-line{pointer-events:none;}.dkds-direct-handle{pointer-events:all;}
+.dkds-scientific-direct-box{pointer-events:none;}
+.dkds-scientific-persisted-range{pointer-events:none;}
 
 /* ============================================================
    PluginWorkspace canvas docking
    Fixed PRIME/plot placements live inside the scientific canvas, while a
    resizable control rail remains visually distinct. No fixed width ratio is implied.
    ============================================================ */
-.dkds-plugin-workspace .dkds-analysis-main{overflow:hidden;padding:0;}
+.dkds-plugin-workspace .dkds-analysis-main{overflow:hidden;}
 .dkds-plugin-canvas-frame{
   --dkds-plugin-canvas-left-width:320px;
   --dkds-plugin-canvas-right-width:390px;
@@ -43,7 +29,6 @@
   grid-template-columns:0 0 minmax(0,1fr) 0 0;
   grid-template-rows:minmax(0,1fr) 0 0;
   grid-template-areas:"cleft clsplit center crsplit cright" "cbsplit cbsplit cbsplit cbsplit cbsplit" "cbottom cbottom cbottom cbottom cbottom";
-  background:var(--plugin-surface-bg,var(--surface-primary,#fff));
 }
 .dkds-plugin-canvas-frame.has-canvas-left{grid-template-columns:var(--dkds-plugin-canvas-left-width) 7px minmax(0,1fr) 0 0;}
 .dkds-plugin-canvas-frame.has-canvas-right{grid-template-columns:0 0 minmax(0,1fr) 7px var(--dkds-plugin-canvas-right-width);}
@@ -53,18 +38,17 @@
 .dkds-plugin-canvas-right{grid-area:cright;display:none;min-width:0;min-height:0;overflow:auto;padding-left:4px;}
 .dkds-plugin-canvas-bottom{grid-area:cbottom;display:none;min-width:0;min-height:0;overflow:auto;align-items:stretch;}
 .dkds-plugin-canvas-frame.has-canvas-left>.dkds-plugin-canvas-left,.dkds-plugin-canvas-frame.has-canvas-right>.dkds-plugin-canvas-right{display:flex;flex-direction:column;gap:8px;}
-.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{flex-wrap:wrap;}
 .dkds-plugin-canvas-center{grid-area:center;min-width:0;min-height:0;position:relative;overflow:auto;display:flex;flex-direction:column;}
 .dkds-plugin-canvas-center>.dkds-analysis-primary-host,.dkds-plugin-canvas-center>.dkds-analysis-sub-host{flex:1 1 auto;min-height:0;}
 .dkds-plugin-canvas-center>.dkds-analysis-primary-host{height:100%;overflow:hidden;}.dkds-plugin-canvas-center>.dkds-analysis-primary-host>*{flex:1 1 auto;min-height:0;min-width:0;}
 .dkds-plugin-canvas-overlay{grid-column:1/-1;grid-row:1/-1;position:relative;z-index:120;min-width:0;min-height:0;pointer-events:none;}
 .dkds-plugin-canvas-overlay>.dkds-portable-view,.dkds-plugin-canvas-overlay>.dkds-analysis-prime-panel{pointer-events:auto;}
-.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer{display:none;position:relative;z-index:40;background:transparent;touch-action:none;}
+.dkds-plugin-canvas-left-resizer,.dkds-plugin-canvas-right-resizer,.dkds-plugin-canvas-bottom-resizer{display:none;position:relative;z-index:40;touch-action:none;}
 .dkds-plugin-canvas-left-resizer.active{display:block;grid-area:clsplit;cursor:col-resize;}
 .dkds-plugin-canvas-right-resizer.active{display:block;grid-area:crsplit;cursor:col-resize;}
-.dkds-plugin-canvas-bottom-resizer.active{display:block;grid-area:cbsplit;cursor:row-resize;}
-.dkds-plugin-canvas-left-resizer::before,.dkds-plugin-canvas-right-resizer::before{content:"";position:absolute;top:0;bottom:0;left:3px;width:1px;background:transparent;}
-.dkds-plugin-canvas-bottom-resizer::before{content:"";position:absolute;left:0;right:0;}
+.dkds-plugin-canvas-bottom-resizer.active{display:block;}
+.dkds-plugin-canvas-left-resizer::before,.dkds-plugin-canvas-right-resizer::before{content:"";position:absolute;top:0;bottom:0;left:3px;width:1px;}
+.dkds-plugin-canvas-bottom-resizer::before{position:absolute;}
 .dkds-plugin-canvas-left>.dkds-portable-view,.dkds-plugin-canvas-right>.dkds-portable-view{width:100%;min-width:0;}
 
 .dkds-analysis-nav.host-presented{display:none;}
@@ -84,10 +68,9 @@
    its scientific canvas is contained or scrollable; SUB pages are full
    workspace pages outside the scientific-canvas docking boundary.
    ============================================================ */
-.dkds-plugin-workspace .dkds-analysis-main{display:flex;flex-direction:column;min-width:0;min-height:0;}
+.dkds-plugin-workspace .dkds-analysis-main{padding:0;display:flex;flex-direction:column;min-width:0;min-height:0;}
 .dkds-plugin-workspace .dkds-plugin-canvas-frame{flex:1 1 auto;min-width:0;min-height:0;}
 .dkds-plugin-workspace .dkds-plugin-sub-page-host{flex:1 1 0%;height:0;max-height:100%;width:100%;min-width:0;min-height:0;overflow:auto;padding:0;}
-
 
 /* PRIMARY scroll policy is owned by Core and has exactly three meanings.
    contained: fixed viewport, no host scrolling (canvas-style workspaces).
@@ -115,7 +98,7 @@
 .dkds-plugin-canvas-left>.dkds-analysis-prime-panel,.dkds-plugin-canvas-right>.dkds-analysis-prime-panel{
   position:relative;inset:auto;flex:0 0 auto;height:auto;max-height:none;min-height:180px;overflow:hidden
 ;}
-.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{
+.dkds-plugin-canvas-frame.has-canvas-bottom>.dkds-plugin-canvas-bottom{flex-wrap:wrap;
   display:flex;flex-flow:column nowrap;align-items:stretch;overflow:auto;gap:8px
 ;}
 .dkds-plugin-canvas-bottom>.dkds-portable-view,.dkds-plugin-canvas-bottom>.dkds-analysis-prime-panel{
@@ -124,20 +107,18 @@
 /* Whole-workspace floating is deliberately different from scientific-canvas
    floating: it uses the outer analysis overlay, never edge-snaps into canvas
    docks, and therefore can cross the control-rail / plot boundary. */
-.dkds-analysis-overlay>.dkds-portable-view.is-global-floating{pointer-events:auto;z-index:260;}
-.dkds-portable-view.is-global-floating{box-shadow:0 18px 48px rgba(20,30,60,.20);}
 .dkds-portable-view.is-collapsed .dkds-analysis-prime-body{display:none;}
 
 /* Core PlotView — every scientific data figure receives the same
    position/export/copy/resize chrome from UI infrastructure. */
 .dkds-plot-view{min-width:0;min-height:0;}
-.dkds-plot-view-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;box-sizing:border-box;}
+.dkds-plot-view-head{display:flex;align-items:center;justify-content:space-between;min-width:0;box-sizing:border-box;}
 .dkds-plot-view-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;}
 .dkds-plot-view-actions{display:flex;align-items:center;gap:4px;white-space:nowrap;flex:0 0 auto;min-width:0;}
 .dkds-plot-view-actions>.dkds-portable-controls{display:flex;align-items:center;gap:2px;margin:0;padding:0;flex:0 0 auto;}
 .dkds-plot-view-action,.dkds-plot-view-actions .dkds-portable-placement-trigger{height:28px;min-height:28px;padding:3px 8px;font-size:11.5px;line-height:1;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}
 .dkds-plot-view-menu-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1;}
-.dkds-plot-view-file-svg{display:block;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.dkds-plot-view-file-svg{display:block;width:12px;height:12px;vector-effect:non-scaling-stroke;}
 
 /* Scientific forms are single-line first. Labels are semantic units and must
    not collapse into letter-by-letter stacks when horizontal room exists. */
@@ -165,3 +146,21 @@
 .dkds-plugin-workbench-root .dkds-inline-form-row sub,
 .dkds-plugin-workbench-root .dkds-inline-form-row sup{display:inline;line-height:0;}
 @media(max-width:1250px){.dkds-plugin-workbench-root .dkds-inline-form-row{flex-wrap:wrap}}
+/* Consolidated geometry from former secondary owners. */
+.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);
+  --dkds-layer-canvas-float:1400;
+  --dkds-layer-global-float:2400;
+  --dkds-layer-context-menu:3900;
+}
+.dkds-plugin-canvas-bottom{padding-top:0;gap:0;}
+.dkds-plugin-canvas-bottom-resizer.active{cursor:row-resize;grid-area:cbsplit;min-height:1px;height:1px;overflow:visible;}
+.dkds-plugin-canvas-bottom-resizer::before{right:0;left:0;content:"";top:-3px;height:7px;}
+.dkds-plot-view-head{
+  min-height:28px;
+  height:28px;
+  padding:0 8px;
+  gap:6px;
+  line-height:28px;
+}
+.dkds-plot-view-head .dkds-plot-view-actions{height:24px;align-items:center;}
+.dkds-plot-view-head button{min-height:22px;height:22px;}

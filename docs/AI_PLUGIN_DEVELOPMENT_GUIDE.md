@@ -121,7 +121,7 @@ Use `bindView()` for focus/selected/dimmed UI and automatic reveal; `entityLinke
 Core owns the page/workbench, placement, resize, charts, generic controls and lifecycle. Plugins provide domain content.
 
 - page: `ctx.ui.pages.add`;
-- workspace: `ctx.ui.analysisWorkbench` / `workspaceSurface`;
+- workspace: `ctx.ui.workspaceSurface`;
 - PRIMARY/PRIME/SUB: Workbench registration;
 - generic controls: `ctx.ui.components.mount` and `ctx.parameters.render`;
 - persistent DOM listeners/observers/timers: `ctx.ui.dom`;

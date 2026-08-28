@@ -21,7 +21,7 @@
   const RADIUS_KEYS=new Set(['radius','radiusLg']);
   const MATERIAL_BLUR_KEYS=new Set(['materialBlur','materialBlurStrong']);
   const OPACITY_KEYS=new Set(['materialTintOpacity','materialNoiseOpacity']);
-  const ROOT_KEYS=new Set(['label','owner','metadata','light','dark','modes','motion','material','recipes','settings']);
+  const ROOT_KEYS=new Set(['label','owner','metadata','modes','motion','material','recipes','settings']);
 
   function fail(message,path='theme'){const error=new Error(`${path}: ${message}`);error.code='THEME_CONTRACT_VALIDATION';throw error;}
   function finiteNumber(value,path){const n=Number(value);if(!Number.isFinite(n))fail('must be a finite number',path);return n;}
@@ -47,29 +47,10 @@
     if(m){finiteNumber(m[1],path);clampRange(finiteNumber(m[2],path),0,100,path,'saturation');clampRange(finiteNumber(m[3],path),0,100,path,'lightness');if(m[4]!==undefined){const a=m[4].trim();a.endsWith('%')?clampRange(finiteNumber(a.slice(0,-1),path),0,100,path,'alpha percentage'):clampRange(finiteNumber(a,path),0,1,path,'alpha');}return s;}
     fail('must be hex, rgb()/rgba(), hsl()/hsla(), or transparent',path);
   }
-  function parseLength(value,path,{min=0,max=128}={}){
-    if(typeof value==='number')return `${fmt(clampRange(finiteNumber(value,path),min,max,path,'length'))}px`;
-    const s=String(value??'').trim();
-    const m=s.match(/^(-?(?:\d+(?:\.\d+)?|\.\d+))(px|dp)$/i);if(!m)fail('must be a number or px/dp length',path);
-    const n=clampRange(Number(m[1]),min,max,path,'length');return `${fmt(n)}px`;
-  }
-  function parseDuration(value,path){
-    if(typeof value==='number')return `${fmt(clampRange(finiteNumber(value,path),0,5000,path,'duration'))}ms`;
-    const s=String(value??'').trim();const m=s.match(/^(\d+(?:\.\d+)?|\.\d+)(ms|s)$/i);if(!m)fail('must be milliseconds (number/ms) or seconds (s)',path);
-    const ms=Number(m[1])*(m[2].toLowerCase()==='s'?1000:1);clampRange(ms,0,5000,path,'duration');return `${fmt(ms)}ms`;
-  }
-  function parseOpacity(value,path){
-    if(typeof value==='number')return `${fmt(clampRange(finiteNumber(value,path),0,1,path,'opacity')*100)}%`;
-    const s=String(value??'').trim();
-    if(s.endsWith('%'))return `${fmt(clampRange(finiteNumber(s.slice(0,-1),path),0,100,path,'opacity percentage'))}%`;
-    return `${fmt(clampRange(finiteNumber(s,path),0,1,path,'opacity')*100)}%`;
-  }
-  function parseSaturation(value,path){
-    if(typeof value==='number')return fmt(clampRange(finiteNumber(value,path),0,3,path,'saturation'));
-    const s=String(value??'').trim();
-    if(s.endsWith('%'))return fmt(clampRange(finiteNumber(s.slice(0,-1),path),0,300,path,'saturation percentage')/100);
-    return fmt(clampRange(finiteNumber(s,path),0,3,path,'saturation'));
-  }
+  function parseLength(value,path,{min=0,max=128}={}){return `${fmt(clampRange(finiteNumber(value,path),min,max,path,'length'))}px`;}
+  function parseDuration(value,path){return `${fmt(clampRange(finiteNumber(value,path),0,5000,path,'duration'))}ms`;}
+  function parseOpacity(value,path){return `${fmt(clampRange(finiteNumber(value,path),0,1,path,'opacity')*100)}%`;}
+  function parseSaturation(value,path){return fmt(clampRange(finiteNumber(value,path),0,3,path,'saturation'));}
   function parseScale(value,path){return fmt(clampRange(finiteNumber(value,path),0.8,1.2,path,'scale'));}
   function parseEasing(value,path){
     const s=String(value??'').trim();if(['linear','ease','ease-in','ease-out','ease-in-out'].includes(s))return s;
@@ -106,18 +87,8 @@
   function normalizeMotion(value,path){return Object.freeze(normalizeTokenObject(value,MOTION_KEYS,path));}
   function normalizeMode(value,path){
     if(value===undefined)return Object.freeze({tokens:Object.freeze({}),motion:Object.freeze({}),material:Object.freeze({base:Object.freeze({}),roles:Object.freeze({})})});
-    const obj=object(value,path),structural=new Set(['tokens','motion','material']);
-    const flat={};for(const [key,row] of Object.entries(obj)){
-      if(structural.has(key))continue;
-      if(!TOKEN_KEYS.includes(key))fail(`unknown Theme token "${key}"`,`${path}.${key}`);
-      flat[key]=parseToken(key,row,`${path}.${key}`);
-    }
-    const nestedTokens=normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`);
-    const nestedMotion=normalizeMotion(obj.motion,`${path}.motion`);
-    const nestedMaterial=normalizeMaterial(obj.material,`${path}.material`);
-    const flatTokens={},flatMotion={},flatMaterial={};
-    for(const [key,row] of Object.entries(flat)){if(APPEARANCE_KEYS.includes(key))flatTokens[key]=row;else if(MOTION_KEYS.includes(key))flatMotion[key]=row;else if(MATERIAL_KEYS.includes(key))flatMaterial[key]=row;}
-    return Object.freeze({tokens:Object.freeze({...flatTokens,...nestedTokens}),motion:Object.freeze({...flatMotion,...nestedMotion}),material:Object.freeze({base:Object.freeze({...flatMaterial,...nestedMaterial.base}),roles:nestedMaterial.roles})});
+    const obj=object(value,path);rejectUnknown(obj,new Set(['tokens','motion','material']),path);
+    return Object.freeze({tokens:Object.freeze(normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`)),motion:normalizeMotion(obj.motion,`${path}.motion`),material:normalizeMaterial(obj.material,`${path}.material`)});
   }
   function mergeRoles(base={},override={}){const out={};for(const role of MATERIAL_ROLES){const merged={...(base[role]||{}),...(override[role]||{})};if(Object.keys(merged).length)out[role]=Object.freeze(merged);}return Object.freeze(out);}
 
@@ -170,11 +141,9 @@
     if(obj.owner!==undefined&&typeof obj.owner!=='string')fail('owner must be a string',`${path}.owner`);
     if(obj.metadata!==undefined)object(obj.metadata,`${path}.metadata`);
     const sharedMotion=normalizeMotion(obj.motion,`${path}.motion`),sharedMaterial=normalizeMaterial(obj.material,`${path}.material`),recipes=normalizeRecipes(obj.recipes,`${path}.recipes`),settings=normalizeSettings(obj.settings,`${path}.settings`);
-    const modesObj=obj.modes===undefined?{}:object(obj.modes,`${path}.modes`);rejectUnknown(modesObj,new Set(['light','dark']),`${path}.modes`);
-    const legacyLight=normalizeMode(obj.light,`${path}.light`),legacyDark=normalizeMode(obj.dark,`${path}.dark`);
-    const canonicalLight=normalizeMode(modesObj.light,`${path}.modes.light`),canonicalDark=normalizeMode(modesObj.dark,`${path}.modes.dark`);
-    function mergedMode(legacy,canonical){return Object.freeze({tokens:Object.freeze({...legacy.tokens,...canonical.tokens}),motion:Object.freeze({...legacy.motion,...canonical.motion}),material:Object.freeze({base:Object.freeze({...legacy.material.base,...canonical.material.base}),roles:mergeRoles(legacy.material.roles,canonical.material.roles)})});}
-    return Object.freeze({label:obj.label,owner:obj.owner,metadata:Object.freeze({...obj.metadata}),motion:sharedMotion,material:sharedMaterial,recipes,settings,modes:Object.freeze({light:mergedMode(legacyLight,canonicalLight),dark:mergedMode(legacyDark,canonicalDark)})});
+    const modesObj=object(obj.modes,`${path}.modes`);rejectUnknown(modesObj,new Set(['light','dark']),`${path}.modes`);
+    if(modesObj.light===undefined||modesObj.dark===undefined)fail('must declare both light and dark modes',`${path}.modes`);
+    return Object.freeze({label:obj.label,owner:obj.owner,metadata:Object.freeze({...obj.metadata}),motion:sharedMotion,material:sharedMaterial,recipes,settings,modes:Object.freeze({light:normalizeMode(modesObj.light,`${path}.modes.light`),dark:normalizeMode(modesObj.dark,`${path}.modes.dark`)})});
   }
   function resolveProfile(profile,mode){
     const branch=profile?.modes?.[mode]||{tokens:{},motion:{},material:{base:{},roles:{}}};
@@ -183,17 +152,11 @@
   function supports(name){
     const key=String(name||'').trim();if(!key)return false;
     if(key===`contract:${VERSION}`)return true;
-    const scoped=key.startsWith('contract.')?key.slice('contract.'.length):'';
-    if(scoped){
-      if(TOKEN_KEYS.includes(scoped))return true;
-      if(scoped==='theme'||scoped==='theme.profile'||scoped==='theme.settings'||scoped==='material.recipes'||scoped==='motion'||scoped==='material'||scoped==='material.roles'||scoped==='modes.tokens'||scoped==='modes.motion'||scoped==='modes.material'||scoped==='platform.logical-units'||scoped==='platform.native-projection'||scoped==='theme.coverage'||scoped==='theme.render-coverage'||scoped==='theme.legacy-style-audit')return true;
-      if(scoped.startsWith('material.roles.'))return MATERIAL_ROLES.includes(scoped.slice('material.roles.'.length));
-      return false;
-    }
-    // Compatibility aliases from Theme 3.2 remain contract-only. Bare token names
-    // are intentionally NOT capabilities because they previously implied renderer support.
-    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.legacy-style-audit'].includes(key))return true;
-    if(key.startsWith('material.roles.'))return MATERIAL_ROLES.includes(key.slice('material.roles.'.length));
+    if(!key.startsWith('contract.'))return false;
+    const scoped=key.slice('contract.'.length);
+    if(TOKEN_KEYS.includes(scoped))return true;
+    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.style-audit'].includes(scoped))return true;
+    if(scoped.startsWith('material.roles.'))return MATERIAL_ROLES.includes(scoped.slice('material.roles.'.length));
     return false;
   }
   function projectMaterialValue(key,value,platform='web'){
@@ -209,5 +172,5 @@
     for(const [role,values] of Object.entries(material.roles||{})){roles[role]={};for(const [key,value] of Object.entries(values||{}))roles[role][key]=projectMaterialValue(key,value,platform);}
     return Object.freeze({base:Object.freeze(base),roles:Object.freeze(Object.fromEntries(Object.entries(roles).map(([k,v])=>[k,Object.freeze(v)])))});
   }
-  return Object.freeze({version:VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical; percent strings accepted for 3.1 compatibility',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
+  return Object.freeze({version:VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
 });

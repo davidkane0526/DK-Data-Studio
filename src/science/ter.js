@@ -366,14 +366,5 @@
     return {type,direction,label,unit,targets:requestedTargets,vgs:requestedVgs,matrix,sources,missing};
   }
 
-  // Backward-compatible name retained for TER projects/plugins. The implementation
-  // is transport-generic and is also consumed by Core Scientific Transform Runtime.
-  function computeSweepTransformMatrix(sweeps,targets,vgs,options={}){
-    return computeSweepScalarField(sweeps,targets,vgs,options);
-  }
-
-  function computeTerForLabel(peaks,sweeps,label,visibleSweepIds=null){
-    return computeResonantTerForLabel(peaks,sweeps,label,visibleSweepIds);
-  }
-  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeSweepScalarField,computeSweepTransformMatrix,computeTerForLabel};
+  return {detectTerVoltageParameters,sweepDirectionsRaw,terVoltageGrid,calculateTerHighLow,processDatasetTer,computeTerMatrix,interpolateSweepAtV,computeTerAtSameV,computeResonantTerForLabel,computeSweepScalarField};
 });

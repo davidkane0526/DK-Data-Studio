@@ -11,7 +11,7 @@ if(!window.DKDSUI){
   require('./layout/portable-view');
   require('./layout/workspace');
   require('./plot-view/chart');
-  require('./workbench/base');
+  require('./workbench/view-host');
   require('./grid/controller');
   require('./dialog/settings');
   require('./table/surfaces');

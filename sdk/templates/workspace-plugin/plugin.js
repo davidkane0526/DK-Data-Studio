@@ -3,7 +3,7 @@
   DKDSPlugins.define({
     id:'com.example.workspace',pluginType:'workbench',name:'SDK Workspace Example',version:'1.0.0',apiVersion:'1.18.0',entry:'plugin.js',scripts:['plugin.js'],enabled:true,order:900,
     description:'Standalone SDK workbench example using scoped data, Core scientific plotting, Command and Interaction Behavior APIs.',requiresCore,
-    capabilities:['ui.page','ui.analysis-workbench','ui.interaction-behavior','ui.scientific-plot','state.store','data.types','data.sources'],
+    capabilities:['ui.page','ui.interaction-behavior','ui.scientific-plot','state.store','data.types','data.sources','ui.plugin-workspace'],
     data:{accepts:['science.transport.iv']},
     compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'}
   }, async ctx => {
@@ -17,7 +17,7 @@
       html:'<div class="analysis-page-header"><div><h2>SDK Workspace Example</h2></div><div data-dkds-slot="workbench-import"></div><div class="dkds-plugin-header-actions"></div></div><div class="analysis-page-body"><div class="sdk-example-root"></div></div>'
     });
     const root=ctx.ui.dom.query('.sdk-example-root',page);
-    const wb=ctx.ui.analysisWorkbench.create(root,{header:false,activity:'sdk-example'});
+    const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'sdk-example'});
     wb.mountPrimary({id:'main',label:'主界面',mount:({main})=>{const wrap=ctx.ui.dom.create('div',{className:'sdk-example-main'}),summary=ctx.ui.dom.create('div',{className:'sdk-example-summary'}),plot=ctx.ui.dom.create('div',{className:'sdk-example-plot'});ctx.ui.dom.append(wrap,summary,plot);ctx.ui.dom.append(main,wrap);const sources=ctx.data.sources.list();summary.textContent=`当前工作台可见数据：${sources.length} 组`;const surface=ctx.ui.scientificPlot.create(plot,{xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});surface.requestRender('sdk-example');return()=>surface.dispose?.();}});
     const actions=ctx.ui.dom.query('.dkds-plugin-header-actions',page);
     ctx.ui.actions.mount(actions,{actions:[{id:'run',label:'运行',onInvoke:()=>ctx.commands.run('com.example.workspace.run')} ]});

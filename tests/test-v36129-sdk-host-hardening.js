@@ -10,7 +10,7 @@ const json=rel=>JSON.parse(read(rel));
 
 assert(/^3\.62\./.test(json('package.json').version),'v3.62 must retain the historical v3.61 contract baseline.');
 const contract=json('sdk/contract.json');
-assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.16 host guarantees');
+assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Current SDK must preserve Plugin API 1.18 host guarantees');
 assert.equal(contract.minimumAppVersion,'3.62.0','Current SDK minimum app must be the v3.62 cutover baseline.');
 
 const components=read('src/core/ui/component-runtime.js');

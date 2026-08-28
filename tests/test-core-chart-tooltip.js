@@ -19,7 +19,11 @@ vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.
   assert.equal(captured.layout.hoverlabel.font.size,12,'Core must normalize tooltip typography');
   assert.equal(captured.layout.hoverlabel.namelength,-1,'non-visual hoverlabel behavior may remain chart-specific');
   const css=readCoreCss(root);
-  assert(css.includes('.dkds-tooltip,.hover-tip')&&css.includes('background:transparent;box-shadow:none'),'custom tooltip geometry must not paint its own material');
+  const structureCss=fs.readFileSync(path.join(root,'src/styles/structure/workbench-components.css'),'utf8');
+  const dialogCss=fs.readFileSync(path.join(root,'src/styles/presentation/dialogs.css'),'utf8');
+  assert(/\.dkds-tooltip\{[^}]*position:absolute[^}]*\}/.test(structureCss)&&/\.hover-tip\{[^}]*position:absolute[^}]*\}/.test(structureCss),'custom tooltip geometry must be owned by the structure layer');
+  assert(!/\.(?:dkds-tooltip|hover-tip)\{[^}]*(?:background|border(?:-color)?|box-shadow|color)\s*:/.test(structureCss),'custom tooltip structure must remain paint-free');
+  assert(/\.dkds-tooltip\{[^}]*background:transparent[^}]*box-shadow:none[^}]*\}/.test(dialogCss)&&/\.hover-tip\{[^}]*background:transparent[^}]*box-shadow:none[^}]*\}/.test(dialogCss),'custom tooltip paint must have one semantic presentation owner');
   assert(css.includes('.dkds-d3-chart-tooltip')&&css.includes('border:1px solid transparent;background:transparent;color:inherit;box-shadow:none'),'D3 tooltip host must leave visual material to Core Material Renderer');
   const material=fs.readFileSync(path.join(root,'src/core/theme/material-renderer.js'),'utf8');
   assert(material.includes('.dkds-d3-chart-tooltip')&&material.includes(`['popover'`),'D3 tooltip must be assigned the Core popover Material Role');

@@ -1,23 +1,10 @@
 /* Core-owned recipe geometry. Runtime recipe JS owns behavior only. */
       /* The import file list is the scroll region. The action row must never be
          pushed below the visible workbench when many files are selected. */
-      .import-workbench-header,.import-workbench-footer{flex:0 0 auto}
-      .import-workbench-body{min-height:0;overflow:hidden}
-      .import-file-pane{min-height:0;overflow:hidden}
-      .import-file-list{min-height:0;overflow:auto;overscroll-behavior:contain}
-      .import-file-actions{flex:0 0 auto;position:relative;z-index:6;background:var(--surface-primary)}
-      .import-main-pane{min-height:0}
 
       .import-duplicate-warning{
-        flex:0 0 auto;margin:0;padding:7px 9px;border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));
-        background:var(--warning-soft);color:var(--warning);font-size:var(--plugin-font-meta,11px);line-height:1.45;
+        flex:0 0 auto;margin:0;padding:7px 9px;font-size:var(--plugin-font-meta,11px);line-height:1.45;
       }
-      .import-file-item.import-name-warning{border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));background:var(--warning-soft)}
-      .import-file-item.import-replace-warning{border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));background:var(--danger-soft)}
       .import-duplicate-badge{
-        flex:0 0 auto;margin-left:auto;padding:2px 5px;border-radius:999px;
-        background:var(--warning-soft);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));color:var(--warning);font-size:var(--plugin-font-meta,11px);font-weight:700;
-      }
-      .import-file-item.import-replace-warning .import-duplicate-badge{
-        background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger);
+        flex:0 0 auto;margin-left:auto;padding:2px 5px;font-size:var(--plugin-font-meta,11px);font-weight:700;
       }

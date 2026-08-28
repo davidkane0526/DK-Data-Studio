@@ -23,10 +23,10 @@ Plugins should not reimplement those mechanisms.
 
 ## Unified AnalysisWorkbench v5
 
-Complex analysis plugins must mount their content through `ctx.ui.analysisSurface.create(...)` and call `compose({primary, primes, subs})`. Core owns the outer frame and does **not** rewrite the plugin's internal DOM layout.
+Complex analysis plugins must mount their content through `ctx.ui.workspaceSurface.create(...)` and call `compose({primary, primes, subs})`. Core owns the outer frame and does **not** rewrite the plugin's internal DOM layout.
 
 ```js
-const wb=ctx.ui.analysisSurface.create(host,{header:false,activity:'example'});
+const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'example'});
 wb.compose({
   primary:{id:'main',label:'主分析',leftNode:controls,mainNode:main},
   primes:[{id:'inspector',label:'检查器',defaultPlacement:'right',mount:mountInspector}],
@@ -92,7 +92,7 @@ Buttons and keyboard shortcuts use one command description instead of separate U
 
 ## Interaction Behavior
 
-Plugin API 1.12+ uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
+Plugin API 1.18 uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
 
 ```js
 ctx.ui.interactionBehaviors.create('my-analysis-input', {
@@ -105,7 +105,7 @@ ctx.ui.interactionBehaviors.create('my-analysis-input', {
 });
 ```
 
-`ctx.ui.interactions.bind(...)` remains a low-level compatibility primitive for older plugins. New plugins should not use it to implement domain interaction policy, and should never install permanent global mouse or keyboard listeners.
+`ctx.ui.interactions.bind(...)` is a low-level Core interaction primitive for infrastructure-level bindings. Domain interaction policy belongs in `ctx.ui.interactionBehaviors`; plugins must never install permanent global mouse or keyboard listeners.
 
 ## Plugin-registered data types and typed interaction
 
@@ -296,7 +296,7 @@ Architecture guards in `scripts/test-plot-view-foundation.js` treat plugin-priva
 
 ### DOM delegation is also Interaction Behavior
 
-Plugin API 1.13 adds `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
+Plugin API 1.18 provides `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
 
 ### Scientific plot container contract
 

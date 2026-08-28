@@ -2,7 +2,7 @@
 const {state, active, disabled}=require('../context');
 const {definitionById, isTopDefinition, topActivityIdForPlugin, superState}=require('../bootstrap');
 const {eventEmit, activityRows, activeActivity}=require('../events/history');
-const reflowContextToolbar=(...args)=>require('../contributions/ui').reflowContextToolbar(...args);
+const {reflowContextToolbar}=require('../shell/context-toolbar');
 const {pluginTypeOf}=require('../manifest');
 
 
@@ -136,7 +136,6 @@ const {pluginTypeOf}=require('../manifest');
     const pluginMenu=document.querySelector('#pluginExportMenu');
     const visiblePluginItems=[...(pluginMenu?.querySelectorAll('.plugin-menu-item')||[])].filter(el=>!el.classList.contains('plugin-activity-hidden')&&!el.classList.contains('hidden'));
     const hasPluginExport=visiblePluginItems.length>0;
-    document.querySelectorAll('[data-legacy-plot-export]').forEach(el=>el.classList.toggle('hidden',hasPluginExport));
     const active=activeActivity();
     let context=pluginMenu?.querySelector?.('[data-plugin-export-context]')||null;
     if(hasPluginExport&&pluginMenu){
@@ -144,7 +143,7 @@ const {pluginTypeOf}=require('../manifest');
       context.textContent=`当前：${active?.contextLabel||active?.label||'当前插件'}`;
       context.classList.remove('hidden');
     }else context?.classList?.add('hidden');
-    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.title=hasPluginExport?`导出 ${active?.contextLabel||active?.label||'当前插件'} 的数据或图形`:'导出当前数据或图形';}
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!hasPluginExport;trigger.title=hasPluginExport?`导出 ${active?.contextLabel||active?.label||'当前插件'} 的数据或图形`:'当前工作区没有可用导出项';}
   }
 
 

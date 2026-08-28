@@ -82,7 +82,7 @@ SUPER and TOP are hosting modes, not different plugin implementations.
 
 A TOP plugin registers one `ui.topWorkspace` contract. The contract includes semantic `primary`, `prime`, and `sub` metadata. If that plugin is selected as SUPER, the main shell embeds its registered workbench. Otherwise, activating it opens its dedicated window.
 
-Dedicated windows load the same plugin Controller / Shared Views / Feature Runtime layers declared by the plugin manifest. The adapter only provides the host boundary. Resonance now uses the same plugin-owned runtime service in SUPER and TOP; TER/Pulse/Data Center use the same shared Workbench composition and controllers, while legacy host APIs remain compatibility/migration shims rather than layout owners.
+Dedicated windows load the same plugin Controller / Shared Views / Feature Runtime layers declared by the plugin manifest. The adapter provides only the lifecycle/window boundary. Resonance, TER, Pulse and Data Center use the same plugin-owned runtime and PluginWorkspace composition in SUPER and TOP; there is no alternate host-layout API.
 
 ## 4. Typed data and Interaction Runtime
 
@@ -123,18 +123,15 @@ Capability registry changes are republished automatically.
 
 ## 6. Shared infrastructure exposed to plugins
 
-Plugin API 1.12 exposes, among other APIs:
+Plugin API 1.18 exposes, among other APIs:
 
-- `ctx.ui.analysisWorkbench` / `ctx.ui.analysisSurface`;
-- `ctx.ui.grid`;
-- `ctx.ui.portable`;
-- `ctx.ui.actions`;
+- `ctx.ui.workspaceSurface` as the sole public PluginWorkspace composition facade;
+- `ctx.ui.grid`, `ctx.ui.portable`, and `ctx.ui.actions`;
 - `ctx.ui.interactionBehaviors` for normalized gesture → intent / command arbitration;
-- `ctx.ui.contextMenus`;
-- legacy low-level `ctx.ui.shortcuts` / `ctx.ui.interactions` remain compatibility primitives, but new plugins should not bypass Interaction Behavior with them;
-- `ctx.ui.selection` and `ctx.ui.interaction`;
+- `ctx.ui.contextMenus`, `ctx.ui.selection`, and `ctx.ui.interaction`;
+- `ctx.ui.shortcuts` / `ctx.ui.interactions` only for low-level infrastructure bindings that do not belong in domain Interaction Behavior policy;
 - `ctx.data.types` for plugin-owned raw/derived/result type registration;
-- `ctx.ui.charts`;
+- `ctx.ui.scientificPlot` for scientific presentation;
 - `ctx.state.create()`;
 - `ctx.capabilities` (`list/query`, `require`, `proxy`, `invoke`, `watch`);
 - `ctx.analysis.algorithms` (`category: peak-detector` for detector implementations);
@@ -182,15 +179,15 @@ The UI layout store is intentionally separate from scientific project data. Dock
 Automated checks reject regressions such as:
 
 - feature logic inside SUPER/TOP host adapters;
-- migrated plugins using the transitional existing-DOM Workbench as layout owner;
+- reintroduction of the removed generic Workbench / existing-DOM split adapter;
 - Core mutating a plugin's internal Grid/Flex structure;
 - SUPER and TOP composing different PRIMARY/PRIME/SUB view trees;
 - TOP workspaces falling back to separate split compositions;
 - loss of PRIMARY / PRIME / SUB declarations;
 - TER chart layout bypassing Core GridController;
 - dedicated TOP windows lacking Capability Runtime bridging.
-## Mature existing DOM surfaces and Core-owned PRIME placement
+## Existing-node PRIME surfaces and Core-owned placement
 
-A plugin may provide an existing DOM node as a PRIME (`existingNode`) when a mature domain composition must be preserved during migration. This does **not** transfer window management back to the plugin. `AnalysisWorkbench` / `PortableView` still owns mounting, floating coordinates, right/bottom docking, drag handles, resize dispatch and placement persistence. Dock controls inside that surface should only call `setPrimePlacement`; they must not implement another draggable/docking system or private visual chrome.
+A plugin may provide an existing DOM node as a PRIME (`existingNode`) when domain content already has a stable node identity. This does **not** transfer window management back to the plugin. `AnalysisWorkbench` / `PortableView` still owns mounting, floating coordinates, right/bottom docking, drag handles, resize dispatch and placement persistence. Dock controls inside that surface should only call `setPrimePlacement`; they must not implement another draggable/docking system or private visual chrome.
 
 Resonance uses this pattern for its Curve Inspector and Group Analysis panels. SUPER and independent TOP compose the same domain root, while host adapters only map lifecycle/container/resize concerns. The root no longer opts out of the shared visual contract; Core semantic classes and the active theme own its application chrome.

@@ -41,7 +41,7 @@ assert(shell.includes('.analysis-page-header>.analysis-page-close{flex:0 0 auto;
 // and Close, rather than one shared outer capsule with touching hit regions.
 assert(chrome.includes('.analysis-page-header>.dkds-separated-action-group')&&chrome.includes('background:transparent;'),
   'Separated header action group container must be paintless.');
-assert(/\.analysis-page-header>\.dkds-separated-action-group>\.dkds-action-button\{[\s\S]*?height:32px;[\s\S]*?padding:0 11px;[\s\S]*?border:1px solid[\s\S]*?border-radius:9px;/.test(chrome),
+assert(/(?:body\.dkds-modern-ui\s+)?\.analysis-page-header>\.dkds-separated-action-group>\.dkds-action-button\s*\{[\s\S]*?height:32px;[\s\S]*?padding:0 11px;[\s\S]*?border:1px solid[\s\S]*?border-radius:9px;/.test(chrome),
   'Each separated header action must own a full standalone control geometry.');
 
 // Both user-reported TOP headers use the same Core host, so the fix must stay

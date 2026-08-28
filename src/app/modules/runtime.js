@@ -1,11 +1,15 @@
 'use strict';
-require('./foundation');
-require('./project-tabs-history');
-require('./import-workbench');
-require('./data-artifact-host');
-require('./workspace-super-shell');
-require('./scientific-panels-export');
-require('./project-persistence');
-require('./floating-docks');
-require('./dedicated-plugin-windows');
+const foundation=require('./foundation');
+const projectTabs=require('./project-tabs-history');
+const imports=require('./import-workbench');
+const artifacts=require('./data-artifact-host');
+const workspace=require('./workspace-super-shell');
+const scientific=require('./scientific-panels-export');
+const projects=require('./project-persistence');
+const docks=require('./floating-docks');
+const windows=require('./dedicated-plugin-windows');
+
+const deps=Object.freeze({foundation,projectTabs,imports,artifacts,workspace,scientific,projects,docks,windows});
+for(const moduleApi of Object.values(deps))moduleApi.configure?.(deps);
+
 module.exports=require('./startup');

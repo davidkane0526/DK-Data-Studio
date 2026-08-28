@@ -1,16 +1,18 @@
 'use strict';
 const {$, loadTrendColumnsPreference, state}=require('./context');
 const {escapeHtml, projectBaseName, setStatus}=require('./foundation');
-const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
-const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
-const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
-const scheduleMainPlotRelayout=(...args)=>require('./workspace-super-shell').scheduleMainPlotRelayout(...args);
-const makeProject=(...args)=>require('./project-persistence').makeProject(...args);
-const saveProject=(...args)=>require('./project-persistence').saveProject(...args);
-const applyGroupPanelLayout=(...args)=>require('./floating-docks').applyGroupPanelLayout(...args);
-const applyInspectorPanelLayout=(...args)=>require('./floating-docks').applyInspectorPanelLayout(...args);
-const captureInspectorFloatRect=(...args)=>require('./floating-docks').captureInspectorFloatRect(...args);
-const prewarmDedicatedPluginWindows=(...args)=>require('./dedicated-plugin-windows').prewarmDedicatedPluginWindows(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const clearMainView=(...args)=>deps.workspace.clearMainView(...args);
+const refreshOpenAnalysisPage=(...args)=>deps.workspace.refreshOpenAnalysisPage(...args);
+const renderAll=(...args)=>deps.workspace.renderAll(...args);
+const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
+const makeProject=(...args)=>deps.projects.makeProject(...args);
+const saveProject=(...args)=>deps.projects.saveProject(...args);
+const applyGroupPanelLayout=(...args)=>deps.docks.applyGroupPanelLayout(...args);
+const applyInspectorPanelLayout=(...args)=>deps.docks.applyInspectorPanelLayout(...args);
+const captureInspectorFloatRect=(...args)=>deps.docks.captureInspectorFloatRect(...args);
+const prewarmDedicatedPluginWindows=(...args)=>deps.windows.prewarmDedicatedPluginWindows(...args);
 
 function blankProjectTab(title=null){
   const n=++state.projectTabSeq;
@@ -218,4 +220,4 @@ function renderProjectTabs(){
   window.dispatchEvent(new CustomEvent('dkds:project-changed',{detail:{id:active?.id||'',title:active?.title||''}}));
 }
 
-module.exports=Object.freeze({blankProjectTab, activeProjectTab, activeProjectHistory, projectHistorySnapshot, projectFingerprint, markProjectClean, flushProjectAutosave, scheduleProjectAutosave, notifySystemHistory, recordProjectHistory, undoProjectHistory, redoProjectHistory, captureActiveProjectTab, mountProjectTab, createProjectTab, switchProjectTab, closeProjectTab, renderProjectTabs, projectAutosaveTimers});
+module.exports=Object.freeze({configure, blankProjectTab, activeProjectTab, activeProjectHistory, projectHistorySnapshot, projectFingerprint, markProjectClean, flushProjectAutosave, scheduleProjectAutosave, notifySystemHistory, recordProjectHistory, undoProjectHistory, redoProjectHistory, captureActiveProjectTab, mountProjectTab, createProjectTab, switchProjectTab, closeProjectTab, renderProjectTabs, projectAutosaveTimers});

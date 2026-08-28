@@ -7,7 +7,7 @@ const {INPUT_GESTURES, CORE_INTERACTION_INTENTS, InteractionBehaviorProfile}=req
 const {PortableView}=require('../layout/portable-view');
 const {SplitController, WorkspaceLayout}=require('../layout/workspace');
 const {ChartSurface, PlotViewRegistry}=require('../plot-view/chart');
-const {ViewHost, Workbench}=require('../workbench/base');
+const {ViewHost}=require('../workbench/view-host');
 const {GridController}=require('../grid/controller');
 const {SettingsRegistry}=require('../dialog/settings');
 const {globalTableSurfaceRegistry}=require('../table/surfaces');
@@ -17,7 +17,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
 
   class PluginScope {
     constructor(owner,options={}){
-      this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.workbenches=[];
+      this.owner=String(owner||'anonymous');this.options=options;this.cleanups=[];this.portables=new Map();this.layouts=[];this.charts=[];this.pluginWorkspaces=[];
       this.shortcuts={
         register:(id,spec)=>this.track(shortcutHub.register(this.owner,id,spec)),
         add:spec=>this.track(shortcutHub.register(this.owner,spec?.id||`shortcut-${this.cleanups.length}`,spec||{})),
@@ -60,10 +60,8 @@ const {PluginWorkspace}=require('../workbench/plugin');
       this.settingsRegistry=new SettingsRegistry(this);this.cleanups.push(()=>this.settingsRegistry.dispose());
       this.settings={define:(id,spec={})=>this.settingsRegistry.define(id,spec),get:(id='defaults')=>this.settingsRegistry.get(id)};
       this.views={mount:(container,spec)=>this.trackObject(new ViewHost(this,container,spec))};
-      this.workbench={create:(root,spec)=>{const obj=new Workbench(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);}};
-      const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.workbenches.push(obj);return this.trackObject(obj);};
+      const createPluginWorkspace=(root,spec)=>{const obj=new PluginWorkspace(this,root,spec);this.pluginWorkspaces.push(obj);return this.trackObject(obj);};
       this.pluginWorkspace={create:createPluginWorkspace};
-      this.analysisWorkbench={create:createPluginWorkspace};
       this.scientificRenderer=window.DKDSScientificPlot?.createScope?.(this.owner)||null;if(this.scientificRenderer)this.cleanups.push(()=>this.scientificRenderer.dispose?.());
       this.scientificPlot={
         create:(target,spec={})=>this.trackObject(new ScientificCurveSurface(this,target,spec)),
@@ -103,7 +101,7 @@ const {PluginWorkspace}=require('../workbench/plugin');
       if(value==='visible'||value==='active'||value==='resumed'){const plots=await this.scientificRenderer?.lifecycle?.('visible',{resize:false,...options});this.resizeScheduler?.resume?.();this.requestChartResize({reason:options.reason||'lifecycle-resume'});return {owner:this.owner,state:'visible',resize:this.resizeScheduler?.state?.()||null,plots:plots||[]};}
       return {owner:this.owner,state:value||'active',resize:this.resizeScheduler?.state?.()||null,plots:this.scientificRenderer?.lifecycleState?.()||null};
     }
-    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.legendGroups.clear();this.series.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.workbenches=[];}
+    dispose(){this.resizeScheduler?.dispose?.();const rows=this.cleanups.splice(0).reverse();rows.forEach(cleanupCall);shortcutHub.removeOwner(this.owner);dataTypeRegistry.unregisterOwner(this.owner);this.portables.clear();this.legendGroups.clear();this.series.clear();this.selectionChannels.clear();this.selectionModels.clear();this.interactionRuntimes.clear();this.interactionBehaviorProfiles.clear();this.layouts=[];this.charts=[];this.pluginWorkspaces=[];}
   }
 
 module.exports=Object.freeze({PluginScope});

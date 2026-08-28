@@ -1,10 +1,11 @@
 'use strict';
 const {state, definitions, active, disabled, registries, projectSlices, cleanupByPlugin}=require('./context');
 const {writePreferences, preferenceFor, isSystemLockedDefinition, isDefinitionEnabled, setPreference, writePrewarmPreferences, prewarmPreferenceFor, defaultPrewarmFor, isPrewarmEnabled, setPrewarmPreference, definitionById, defaultPluginIcon, workspaceMeta, topWorkspaceForPlugin}=require('./bootstrap');
-const {activateSuperWorkspace}=require('./workspace/top');
-const {getRegistry, eventEmit}=require('./events/history');
-const {createApi}=require('./plugin-api');
+const {getRegistry}=require('./registry');
+const {eventEmit}=require('./events/history');
 const {requirePluginType}=require('./manifest');
+let deps=null;
+function configure(next){deps=next;return module.exports;}
 
   function restorePluginProjectState(pluginId, data={}) {
     const slices = projectSlices.get(pluginId);
@@ -34,7 +35,7 @@ const {requirePluginType}=require('./manifest');
       return null;
     }
     disabled.delete(manifest.id);
-    const api = createApi(definition);
+    const api = deps.pluginApi.createApi(definition);
     try {
       window.DKDSPluginContract?.assertApi?.(api,manifest);
       // Project the already-loaded project data into the Core Entity graph before
@@ -176,7 +177,7 @@ const {requirePluginType}=require('./manifest');
     await deactivate(id, { captureProject:true });
     const result = await activateDefinition(definition, { restoreCurrentProject:true });
     if (!active.has(id)) throw new Error(disabled.get(id) || `Plugin ${id} failed to reload.`);
-    if(id===state.superPluginId)await activateSuperWorkspace({invoke:true});
+    if(id===state.superPluginId)await deps.top.activateSuperWorkspace({invoke:true});
     state.host?.setStatus?.(`插件 ${definition.manifest.name || id} 已重新加载。`);
     eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
     return result;
@@ -203,4 +204,4 @@ const {requirePluginType}=require('./manifest');
     return listPluginStates();
   }
 
-module.exports=Object.freeze({restorePluginProjectState, activateDefinition, deactivate, pluginTypeForManifest, pluginStateRow, listPluginStates, setPluginEnabled, setPluginPrewarm, reloadPlugin, resetPluginPreferences});
+module.exports=Object.freeze({configure, restorePluginProjectState, activateDefinition, deactivate, pluginTypeForManifest, pluginStateRow, listPluginStates, setPluginEnabled, setPluginPrewarm, reloadPlugin, resetPluginPreferences});

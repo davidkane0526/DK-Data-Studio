@@ -8,7 +8,7 @@ const {InteractionBehaviorProfile}=require('../interaction/behavior');
 const {PortableView}=require('../layout/portable-view');
 const {SplitController, WorkspaceLayout}=require('../layout/workspace');
 const {ChartSurface, PlotView, PlotViewRegistry}=require('../plot-view/chart');
-const {ViewHost, Workbench}=require('../workbench/base');
+const {ViewHost}=require('../workbench/view-host');
 const {GridController}=require('../grid/controller');
 const {DialogService, dialogService, SettingsSurface, SettingsRegistry}=require('../dialog/settings');
 const {TableSurface, TableSurfaceRegistry, TableView, TableViewRegistry, globalTableSurfaceRegistry}=require('../table/surfaces');
@@ -52,7 +52,7 @@ const {PluginScope}=require('../scope/plugin-scope');
     workspaces:{
       actions(activity=''){
         const target=String(activity||'');const rows=[];
-        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.workbenches||[])){
+        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.pluginWorkspaces||[])){
           if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
           for(const action of workbench.navigationActions?.()||[])rows.push({id:String(action.id||''),label:String(action.label||action.id||''),active:!!action.active?.()});
         }
@@ -60,7 +60,7 @@ const {PluginScope}=require('../scope/plugin-scope');
       },
       invoke(activity,id){
         const target=String(activity||''),actionId=String(id||'');
-        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.workbenches||[])){
+        for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.pluginWorkspaces||[])){
           if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
           const action=(workbench.navigationActions?.()||[]).find(row=>String(row.id)===actionId);
           if(action){action.onInvoke?.();workbench.resize?.('mobile-navigation');return true;}
@@ -91,9 +91,9 @@ const {PluginScope}=require('../scope/plugin-scope');
     dataTypes:{register:(owner,id,spec)=>dataTypeRegistry.register(owner,id,spec),unregister:id=>dataTypeRegistry.unregister(id),resolveId:id=>dataTypeRegistry.resolveId(id),get:id=>dataTypeRegistry.get(id),list:q=>dataTypeRegistry.list(q),lineage:id=>dataTypeRegistry.lineage(id),isA:(id,parent)=>dataTypeRegistry.isA(id,parent),accepts:(id,accepted)=>dataTypeRegistry.accepts(id,accepted),compatible:(a,b)=>dataTypeRegistry.compatible(a,b),infer:(value,q)=>dataTypeRegistry.infer(value,q),describe:(id,value)=>dataTypeRegistry.describe(id,value),normalize:(id,value,ctx)=>dataTypeRegistry.normalize(id,value,ctx),projectSelection:(id,value,ctx)=>dataTypeRegistry.projectSelection(id,value,ctx),resolve:(id,item,ctx)=>dataTypeRegistry.resolve(id,item,ctx),validate:()=>dataTypeRegistry.validate()},
     async lifecycle(state,options={}){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push(await scope.lifecycle?.(state,options));return {state:String(state||''),scopes:rows.length,rows};},
     lifecycleSnapshot(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,resize:scope.resizeScheduler?.state?.()||null,plots:scope.scientificRenderer?.lifecycleState?.()||null});return {scopes:rows.length,rows};},
-    diagnostics(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,series:scope.series?.snapshot?.()||null,legendGroups:[...scope.legendGroups.values()].map(x=>x.snapshot()),workbenches:(scope.workbenches||[]).map(x=>x.layoutDiagnostics?.()).filter(Boolean),tables:[...new Set(globalTableSurfaceRegistry.rows.values())].filter(x=>x.owner===scope.owner).length,plots:scope.scientificRenderer?.lifecycleState?.()||null});return Object.freeze({version:VERSION,scopes:rows.length,rows:Object.freeze(rows)});},
+    diagnostics(){const rows=[];for(const group of scopes.values())for(const scope of group)rows.push({owner:scope.owner,series:scope.series?.snapshot?.()||null,legendGroups:[...scope.legendGroups.values()].map(x=>x.snapshot()),pluginWorkspaces:(scope.pluginWorkspaces||[]).map(x=>x.layoutDiagnostics?.()).filter(Boolean),tables:[...new Set(globalTableSurfaceRegistry.rows.values())].filter(x=>x.owner===scope.owner).length,plots:scope.scientificRenderer?.lifecycleState?.()||null});return Object.freeze({version:VERSION,scopes:rows.length,rows:Object.freeze(rows)});},
     disposeOwner(owner){for(const scope of [...(scopes.get(String(owner))||[])])scope.dispose();shortcutHub.removeOwner(String(owner));window.DKDSEntities?.registry?.removeOwner?.(String(owner));window.DKDSScientificPlot?.disposeOwner?.(String(owner));},
-    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,SeriesRegistry,LegendGroup,ActiveLayoutSolver,TooltipService,GroupPlot,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,Workbench,GridController,AnalysisWorkbench,PluginWorkspace,
+    ActionGroup,InteractionBinding,InteractionBehaviorProfile,SelectionChannel,SelectionModel,InteractionRuntime,SelectionViewBinding,HorizontalWheelScroller,DataTypeRegistry,SeriesRegistry,LegendGroup,ActiveLayoutSolver,TooltipService,GroupPlot,ResizeScheduler,ContextMenu,SplitController,WorkspaceLayout,PortableView,ChartSurface,PlotView,PlotViewRegistry,DialogService,SettingsSurface,SettingsRegistry,TableSurface,TableSurfaceRegistry,TableView,TableViewRegistry,ScientificCurveSurface,ViewHost,GridController,AnalysisWorkbench,PluginWorkspace,
     util:{resolveElement,isTypingTarget,esc}
   };
   window.DKDSUI=Object.freeze(api);

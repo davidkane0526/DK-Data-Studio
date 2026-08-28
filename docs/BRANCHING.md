@@ -1,29 +1,28 @@
-# Branching Model — v3.61.x Stabilization
+# Branching Model — v3.62 Legacy-Free Freeze
 
 ## Current local repository
 
-- Application checkpoint: **v3.61.29**; the current branch hardens Plugin API 1.16 layout validation, PluginWorkspace overflow recovery and ScientificPlot geometry fallback without changing scientific algorithms/data semantics.
-- Current checkout: `feat/v3.61.29-sdk-host-hardening` (SDK / Plugin Host stabilization; scientific algorithms/data semantics stay unchanged).
-- Previous runtime-fix branch: `fix/v3.61.22-legacy-resonance-runtime`.
-- Existing `main` / `dev` refs are historical baselines and are not the current delivered application state.
-- This cleanup does **not** create, move, push or publish the future GitHub `plugin` branch; branch publication is a separate explicit step.
+- Application checkpoint: **v3.62.0**.
+- Public contracts: **Plugin API 1.18.0**, **SDK 1.18.0**, **Theme Contract 3.6.0**, **Project Schema v3**.
+- v3.62 is the architectural cut that removes runtime legacy bridges. Historical project files are accepted only at the Project Compatibility Gateway and are converted one-way into canonical Schema v3 state before normal runtime code sees them.
+- Existing remote refs may be historical baselines; changing or publishing remote refs is a separate explicit operation.
 
-The repository history from v3.30 through v3.61 documents the migration from a monolithic analysis UI to the current Core-first plugin architecture. Those older branch names are historical context, not current development targets.
+Repository history before v3.62 documents how the current Core-first plugin architecture evolved. Historical branch names and retired APIs are context only; they are not valid implementation targets for current code.
 
-## Stabilization policy
+## Freeze policy
 
-v3.61.x is architecture-frozen. Prefer changes in this order:
+v3.62 is architecture-frozen. Prefer changes in this order:
 
 1. P0: incorrect/lost data, corrupt projects, crashes.
 2. P1: unusable real workflow, broken cross-view state, Undo/Redo failures, severe performance or window/data synchronization defects.
 3. P2: clear UI/interaction defects.
 4. P3: new features or abstractions only when there is a demonstrated need.
 
-Do not restructure Artifact, Data Sources, Plugin Kernel, TOP/SUPER, ScientificPlot, Capability Runtime, Scientific Pipeline or Algorithm Provider layers merely for code aesthetics.
+Do not reintroduce parallel project/runtime schemas, retired Plugin API adapters, Theme aliases, split TOP/SUPER contracts, plugin-specific Core styling, or compatibility branches inside the normal runtime. If an old project format must be accepted, implement that conversion at the Project Compatibility Gateway and emit current canonical state.
 
 ## Recommended local feature flow
 
-Until the publishing branch is explicitly selected, continue from the latest delivered checkpoint:
+Continue from the latest verified local checkpoint:
 
 ```bash
 git switch <latest-stable-local-ref>
@@ -31,7 +30,6 @@ git switch -c fix/<issue>
 # implement
 npm run check
 npm test
-npm run performance:test
 git diff --check
 git commit
 ```
@@ -44,10 +42,16 @@ Do not push or move remote refs implicitly. When publication is requested, choos
 
 ## Current architectural checkpoint
 
-The current host boundary is:
-
 ```text
-Platform → Generic Core → Scientific infrastructure → Algorithm Providers → Domain plugins
+Platform
+  ↓
+Generic Core
+  ↓
+Scientific infrastructure
+  ↓
+Algorithm Providers
+  ↓
+Domain plugins
 ```
 
-TOP and Tool workspaces share the same dedicated-window lifecycle; the current user-facing distinction is their host entry category. SUPER is a host promotion of the same plugin workspace, not a separate plugin implementation. Project compatibility is handled by one-way migration into canonical state rather than permanent forward-compatibility branches inside the host.
+TOP and SUPER use the same native PluginWorkspace implementation; SUPER is host promotion, not a second plugin implementation. Plugins depend only on public Plugin API/SDK contracts. Core never imports plugin identities or domain-specific plugin styles. Historical project compatibility terminates at the Compatibility Gateway.

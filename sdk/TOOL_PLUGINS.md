@@ -1,4 +1,4 @@
-# Tool Workspaces — Plugin API 1.16
+# Tool Workspaces — Plugin API 1.18
 
 工具（`pluginType: "tool"`）现在是与 TOP 工作台并列的正式 UI 分类。
 
@@ -77,7 +77,7 @@ const artifact = ctx.data.artifacts.get(rows[0]?.artifactId);
 Tool Workspace 与 TOP 使用相同的 bounded-layout 规则。填充窗口的图形推荐：
 
 ```js
-const workspace = ctx.ui.pluginWorkspace.create(host, {
+const workspace = ctx.ui.workspaceSurface.create(host, {
   primaryScroll: 'safe'
 });
 ```
@@ -119,7 +119,7 @@ ctx.ui.menus.add({ id:'run', label:'运行工具', command:'com.example.tool.run
 默认模板见 `sdk/templates/tool-plugin/`。
 
 
-## SDK 1.16.1 layout/legend/table guarantees
+## SDK 1.18.0 layout/legend/table guarantees
 
 - `PluginWorkspace` owns viewport safety and records overflow/containment risks before recovering unsafe regions with scrolling.
 - Multi-series `ScientificPlot` legends are Core-owned by default; Core reserves their measured/estimated footprint and exposes legend metrics. Do not add a second plugin legend unless domain semantics genuinely require one.

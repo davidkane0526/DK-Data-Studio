@@ -1,9 +1,11 @@
 'use strict';
 const {$, saveTrendColumnsPreference, state}=require('./context');
 const {copyTextToClipboard, csvCell, escapeHtml, safeName, setStatus}=require('./foundation');
-const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
-const pluginUiContext=(...args)=>require('./data-artifact-host').pluginUiContext(...args);
-const activeMainViewProvider=(...args)=>require('./workspace-super-shell').activeMainViewProvider(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const pluginUiContext=(...args)=>deps.artifacts.pluginUiContext(...args);
+const activeMainViewProvider=(...args)=>deps.workspace.activeMainViewProvider(...args);
 
 async function saveChartImage(plotId,defaultName,format){
   const data=await window.DKDSCharts.toImage(plotId,{format,width:1500,height:950,scale:format==='png'?2:1});
@@ -206,36 +208,4 @@ function zoomCsvText(){
   return rows.join('\n');
 }
 
-function currentMainViewCsvText(){
-  const provider=activeMainViewProvider();
-  if(provider?.csvText){
-    try{return String(provider.csvText({state,context:pluginUiContext()})||'');}
-    catch(err){setStatus(`主图数据导出失败：${err.message}`);return '';}
-  }
-  return '';
-}
-
-async function exportCurrentMainCsv(){
-  const provider=activeMainViewProvider();
-  if(provider?.exportCsv)return provider.exportCsv({state,context:pluginUiContext()});
-  const text=currentMainViewCsvText();
-  if(!text){setStatus('当前主图插件没有提供数据导出。');return false;}
-  const name=provider?.exportBaseName||'main_view_data';
-  return window.electronAPI.saveText({defaultName:`${safeName(name)}.csv`,content:text,filters:[{name:'CSV',extensions:['csv']}]});
-}
-
-async function exportCurrentMainSvg(){
-  const provider=activeMainViewProvider();
-  if(provider?.exportSvg)return provider.exportSvg({state,context:pluginUiContext()});
-  setStatus('当前主图插件没有提供 SVG 导出。');
-  return false;
-}
-
-async function exportCurrentMainPng(){
-  const provider=activeMainViewProvider();
-  if(provider?.exportPng)return provider.exportPng({state,context:pluginUiContext()});
-  setStatus('当前主图插件没有提供 PNG 导出。');
-  return false;
-}
-
-module.exports=Object.freeze({saveChartImage, activeGroupChartProviders, activeGroupViewProvider, traceColor, renderSubplotLegend, resolvedTrendColumns, updateTrendLayout, setTrendColumns, bindPluginGroupPointClick, renderTrendPanel, openZoomChart, zoomCsvText, currentMainViewCsvText, exportCurrentMainCsv, exportCurrentMainSvg, exportCurrentMainPng});
+module.exports=Object.freeze({configure, saveChartImage, activeGroupChartProviders, activeGroupViewProvider, traceColor, renderSubplotLegend, resolvedTrendColumns, updateTrendLayout, setTrendColumns, bindPluginGroupPointClick, renderTrendPanel, openZoomChart, zoomCsvText});

@@ -26,12 +26,12 @@
   ],
   "capabilities": [
     "ui.page",
-    "ui.analysis-workbench",
     "ui.interaction-behavior",
     "ui.scientific-plot",
     "state.store",
     "data.types",
-    "data.sources"
+    "data.sources",
+    "ui.plugin-workspace"
   ],
   "compatibility": {
     "app": ">=3.62.0 <4.0.0",

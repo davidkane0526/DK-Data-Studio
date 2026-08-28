@@ -1,19 +1,21 @@
 'use strict';
 const {$, loadTrendColumnsPreference, state}=require('./context');
 const {diffArtifactRows, projectBaseName, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
-const activeProjectHistory=(...args)=>require('./project-tabs-history').activeProjectHistory(...args);
-const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
-const blankProjectTab=(...args)=>require('./project-tabs-history').blankProjectTab(...args);
-const captureActiveProjectTab=(...args)=>require('./project-tabs-history').captureActiveProjectTab(...args);
-const markProjectClean=(...args)=>require('./project-tabs-history').markProjectClean(...args);
-const mountProjectTab=(...args)=>require('./project-tabs-history').mountProjectTab(...args);
-const renderProjectTabs=(...args)=>require('./project-tabs-history').renderProjectTabs(...args);
-const base64ImportBytes=(...args)=>require('./import-workbench').base64ImportBytes(...args);
-const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
-const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
-const scheduleMainPlotRelayout=(...args)=>require('./workspace-super-shell').scheduleMainPlotRelayout(...args);
-const applyGroupPanelLayout=(...args)=>require('./floating-docks').applyGroupPanelLayout(...args);
-const applyInspectorPanelLayout=(...args)=>require('./floating-docks').applyInspectorPanelLayout(...args);
+let deps=null;
+function configure(next){deps=next;return module.exports;}
+const activeProjectHistory=(...args)=>deps.projectTabs.activeProjectHistory(...args);
+const activeProjectTab=(...args)=>deps.projectTabs.activeProjectTab(...args);
+const blankProjectTab=(...args)=>deps.projectTabs.blankProjectTab(...args);
+const captureActiveProjectTab=(...args)=>deps.projectTabs.captureActiveProjectTab(...args);
+const markProjectClean=(...args)=>deps.projectTabs.markProjectClean(...args);
+const mountProjectTab=(...args)=>deps.projectTabs.mountProjectTab(...args);
+const renderProjectTabs=(...args)=>deps.projectTabs.renderProjectTabs(...args);
+const base64ImportBytes=(...args)=>deps.imports.base64ImportBytes(...args);
+const clearMainView=(...args)=>deps.workspace.clearMainView(...args);
+const renderAll=(...args)=>deps.workspace.renderAll(...args);
+const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
+const applyGroupPanelLayout=(...args)=>deps.docks.applyGroupPanelLayout(...args);
+const applyInspectorPanelLayout=(...args)=>deps.docks.applyInspectorPanelLayout(...args);
 
 function makeProject(){
   return {
@@ -170,4 +172,4 @@ async function openProject(){
   return openProjectPayload(r);
 }
 
-module.exports=Object.freeze({makeProject, chooseProjectSaveMode, saveProject, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});
+module.exports=Object.freeze({configure, makeProject, chooseProjectSaveMode, saveProject, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});

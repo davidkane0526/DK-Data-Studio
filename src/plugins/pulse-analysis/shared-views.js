@@ -179,7 +179,7 @@
             <div><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
             <div class="pulse-table-actions dkds-toolbar"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
           </div>
-          <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="physics-table pulse-result-table dkds-table"></table></div>
+          <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="pulse-result-table dkds-table"></table></div>
         </section>
       </div>`;
 
@@ -193,7 +193,7 @@
     left.remove();config.remove();batch?.remove();extras.forEach(node=>node.remove());
     body.classList.add('dkds-unified-workbench-body');
     const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
-    const wb=(ctx.ui.workspaceSurface||ctx.ui.pluginWorkspace||ctx.ui.analysisSurface||ctx.ui.analysisWorkbench).create(host,{header:false,activity:'pulse',primaryScroll:'auto'});
+    const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'pulse',primaryScroll:'auto'});
     const primaryMain=ctx.ui.dom.create('div');primaryMain.className='pulse-primary-surface';primaryMain.append(config,...extras);
     wb.compose({primary:{id:'main',label:'脉冲分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
     return wb;

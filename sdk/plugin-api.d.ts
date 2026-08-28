@@ -53,10 +53,6 @@ export type DKDSPlotManipulator =
   | { id:string; kind:'axis'; axis:'x'|'y'; geometry:{value:number}; snap?:DKDSPlotManipulatorSnap; constraints?:DKDSPlotManipulatorConstraints; presentation?:DKDSPlotManipulatorPresentation; locked?:boolean; source?:any }
   | { id:string; kind:'range'; axis:'x'|'y'; geometry:{start:number;end:number}; snap?:DKDSPlotManipulatorSnap; constraints?:DKDSPlotManipulatorConstraints; presentation?:DKDSPlotManipulatorPresentation; locked?:boolean; source?:any };
 export interface DKDSPlotManipulationPayload { manipulator:DKDSPlotManipulator; handle:'point'|'value'|'start'|'end'|string; geometry:any; initialGeometry:any; curve?:DKDSScientificCurve|null; index?:number; point?:any; event:any; surface:DKDSScientificCurveSurface }
-/** @deprecated v1.11 compatibility only. Use DKDSPlotManipulationPayload. */
-export interface DKDSScientificMarkerDragPayload { marker:DKDSScientificMarker; curve:DKDSScientificCurve|null; index:number; point:any; event:any; surface:DKDSScientificCurveSurface }
-/** @deprecated v1.11 compatibility only. Use DKDSPlotManipulationPayload. */
-export interface DKDSScientificWidthWindowPayload { marker:DKDSScientificMarker; side:'left'|'right'; windowLeft:number; windowRight:number; initialWindowLeft:number; initialWindowRight:number; event:any; surface:DKDSScientificCurveSurface }
 export type DKDSInteractionGesture='click'|'double-click'|'context'|'drag'|'box'|'wheel'|'key';
 export type DKDSInteractionIntent='select'|'activate'|'clear-selection'|'manipulate'|'select-region'|'zoom-box'|'zoom-wheel'|'pan'|'context-menu'|'command'|'reset-view'|string;
 export interface DKDSInteractionBehaviorBinding { id?:string; gesture:DKDSInteractionGesture; target?:string|string[]; targetId?:string; button?:'primary'|'middle'|'secondary'; modifiers?:Array<'ctrl'|'shift'|'alt'>|string; chord?:string; activity?:string; priority?:number; intent?:DKDSInteractionIntent; selectionMode?:'replace'|'additive'; command?:string; contextActions?:any[]|((context:any)=>any[]); when?:(context:any)=>boolean; onInvoke?:(context:any)=>boolean|void }
@@ -94,7 +90,7 @@ export interface DKDSPluginWorkspace {
 export interface DKDSPluginWorkspaceRuntime { create(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace }
 export interface DKDSTopWorkspaceSpec {
   id:string; activity:string; label?:string; icon?:string;
-  layout:{mode?:'native'|string;root:{selector:string};primary:{id:string;role?:string};prime?:Array<{id:string;role?:string}>;sub?:Array<{id:string;role?:string}>};
+  layout:{mode:'native';root:{selector:string};primary:{id:string;role?:string};prime?:Array<{id:string;role?:string}>;sub?:Array<{id:string;role?:string}>};
 }
 export interface DKDSTopWorkspaceRuntime { register(spec:DKDSTopWorkspaceSpec):any; isSuper():boolean }
 
@@ -112,16 +108,6 @@ export interface DKDSScientificCurveSurfaceSpec {
   onManipulationCommit?:(payload:DKDSPlotManipulationPayload)=>void;
   onManipulationReset?:(payload:DKDSPlotManipulationPayload)=>void;
   onRangeStart?:(payload:any)=>void; onWheelZoomStart?:(payload:any)=>void; onRangeSelect?:(payload:any)=>void; onClearSelection?:(payload:any)=>void; onReset?:(payload?:any)=>void; onEmpty?:(payload:any)=>void; afterRender?:(payload:any)=>void;
-  /** @deprecated v1.11 compatibility hook; declare a point manipulator and use onManipulationPreview. */ onMarkerDragPreview?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.11 compatibility hook; declare a point manipulator and use onManipulationCommit. */ onMarkerDragCommit?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.11 compatibility hook. */ onWidthDragStart?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** @deprecated v1.11 compatibility hook; declare a range manipulator. */ onWidthDragPreview?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** @deprecated v1.11 compatibility hook; declare a range manipulator and use onManipulationCommit. */ onWidthWindowCommit?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** @deprecated v1.11 compatibility hook; use onManipulationReset. */ onWidthReset?:(payload:any)=>void;
-  /** @deprecated v1.10 compatibility hook. */ onMarkerDrag?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.10 compatibility hook. */ onMarkerDragEnd?:(payload:DKDSScientificMarkerDragPayload)=>void;
-  /** @deprecated v1.10 compatibility hook. */ onWidthDrag?:(payload:DKDSScientificWidthWindowPayload)=>void;
-  /** @deprecated v1.10 compatibility hook. */ onWidthDragEnd?:(payload:DKDSScientificWidthWindowPayload)=>void;
 }
 export interface DKDSScientificLegendMetrics { enabled:boolean; placement:'none'|'auto'|'top'|'bottom'|'right'|'left'|'explicit'|string; count:number; rows:number; width:number; height:number; reserve:number; reason?:string; soloId?:string }
 export interface DKDSScientificCurveSurface { readonly target:any; layoutDiagnostics():Readonly<{status:'initial'|'ready'|'compact'|'waiting'|string;width:number;height:number;preferredMinWidth:number;preferredMinHeight:number;hardMinWidth:number;hardMinHeight:number;fallbackApplied:boolean;compact:boolean;reason:string;legend:Readonly<DKDSScientificLegendMetrics>}>; legendLayout():Readonly<DKDSScientificLegendMetrics>; render(reason?:string):boolean; requestRender(reason?:string):void; fitToData(meta?:any):boolean; resetView(meta?:any):boolean; dispose():void }
@@ -173,18 +159,18 @@ export interface DKDSEditHistoryState { canUndo:boolean; canRedo:boolean; undoLa
 export interface DKDSEditContribution { id:string; order?:number; canUndo?:()=>boolean; canRedo?:()=>boolean; historyState?:()=>DKDSEditHistoryState|Promise<DKDSEditHistoryState>; undo?:()=>boolean|Promise<boolean>; redo?:()=>boolean|Promise<boolean>; deselect?:()=>boolean|Promise<boolean>; actions?:Record<string,(payload?:any)=>any> }
 export interface DKDSEditRuntime { register(spec:DKDSEditContribution):any; changed(detail?:{reason?:string;[key:string]:any}):boolean }
 export interface DKDSProjectHistoryRuntime { state():any; undo():Promise<any>|any; redo():Promise<any>|any; commitArtifactMutation(payload:{label?:string;before:{upserts?:any[];removedIds?:string[]};after:{upserts?:any[];removedIds?:string[]}}):Promise<any>|any }
-export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.17'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
+export interface DKDSDesignSystem { readonly name:'DK Data Studio Design System'; readonly version:'1.18'; readonly tokens:Readonly<Record<string,string>>; readonly roles:Readonly<Record<string,string>>; readonly capabilities:Readonly<Record<string,boolean>>; token(name:string):string; cssVar(name:string,fallback?:string):string }
 
 export type DKDSThemeAppearanceTokenKey = 'canvas'|'surface'|'surfaceSoft'|'surfaceHover'|'surfaceElevated'|'surfaceSidebar'|'controlBg'|'controlHover'|'divider'|'dividerHover'|'controlBorder'|'controlBorderHover'|'scrollbar'|'scrollbarHover'|'text'|'textSoft'|'muted'|'accent'|'accentHover'|'accentSoft'|'focus'|'shadow1'|'shadow2'|'shadowFloat'|'radius'|'radiusLg';
 export type DKDSThemeMotionTokenKey = 'motionFast'|'motionNormal'|'motionSlow'|'easeStandard'|'easeEmphasized'|'hoverLift'|'pressScale';
 export type DKDSThemeMaterialTokenKey = 'materialBlur'|'materialBlurStrong'|'materialSaturation'|'materialTintOpacity'|'specularHighlight'|'innerHighlight'|'glassEdge'|'materialNoiseOpacity';
 export type DKDSThemeTokenKey = DKDSThemeAppearanceTokenKey|DKDSThemeMotionTokenKey|DKDSThemeMaterialTokenKey;
 export type DKDSThemeMaterialRole = 'chrome'|'sidebar'|'surface'|'elevated'|'popover'|'control'|'floating';
-export type DKDSThemeLogicalLength = number|`${number}px`|`${number}dp`;
-export type DKDSThemeDuration = number|`${number}ms`|`${number}s`;
-export type DKDSThemeOpacity = number|`${number}%`;
-export type DKDSThemeSaturation = number|`${number}%`;
-export type DKDSThemeScale = number|`${number}`;
+export type DKDSThemeLogicalLength = number;
+export type DKDSThemeDuration = number;
+export type DKDSThemeOpacity = number;
+export type DKDSThemeSaturation = number;
+export type DKDSThemeScale = number;
 export type DKDSThemeColor = string;
 export type DKDSThemeAppearanceTokenMap = Partial<Record<DKDSThemeAppearanceTokenKey,string|number>>;
 export type DKDSThemeTokenMap = Partial<Record<DKDSThemeTokenKey,string|number>>;
@@ -196,11 +182,7 @@ export interface DKDSThemeSettingTarget { scope:'token'|'motion'|'material'|'rec
 export interface DKDSThemeSettingSpec { id:string; label?:string; description?:string; target:DKDSThemeSettingTarget; type?:'range'|'number'|'select'; min?:number; max?:number; step?:number; options?:Array<string|{value:string;label?:string}> }
 export interface DKDSThemeProfileSpec {
   label?:string;
-  /** 3.1 compatibility aliases; prefer modes.light/modes.dark in new themes. */
-  light?:DKDSThemeTokenMap;
-  dark?:DKDSThemeTokenMap;
-  /** Merge order: shared material/motion -> legacy flat mode values -> mode.tokens/mode.motion/mode.material. */
-  modes?:{light?:(DKDSThemeModeSpec&DKDSThemeTokenMap);dark?:(DKDSThemeModeSpec&DKDSThemeTokenMap)};
+  modes:{light:DKDSThemeModeSpec;dark:DKDSThemeModeSpec};
   motion?:DKDSThemeMotionSpec;
   material?:DKDSThemeMaterialSpec;
   /** Theme-owned optical policy. builtin.default is fully clear; glass themes opt into soft/liquid recipes explicitly. */
@@ -271,7 +253,7 @@ export interface DKDSPluginContext {
   readonly ui:{
     dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
     scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
-    analysisWorkbench:DKDSPluginWorkspaceRuntime; pluginWorkspace:DKDSPluginWorkspaceRuntime; workspaceSurface:any; analysisSurface:any; grid:any; portable:any; layout:{solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
+    workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'>};}; grid:any; portable:any; layout:{solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
     topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
     pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:DKDSEditRuntime; designSystem:DKDSDesignSystem

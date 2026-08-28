@@ -26,7 +26,7 @@
       html:'<div class="analysis-page-header"><div><h2>SDK TOP Workspace Example</h2><div class="sdk-top-subtitle">Dedicated TOP · scoped data · bounded plot</div></div><div data-dkds-slot="workbench-import"></div></div><div class="analysis-page-body"><div class="sdk-top-workbench"></div></div>'
     });
     const host=ctx.ui.dom.query('.sdk-top-workbench',page);
-    workbench=ctx.ui.pluginWorkspace.create(host,{header:false,activity:'sdk-top-example',primaryScroll:'safe'});
+    workbench=ctx.ui.workspaceSurface.create(host,{header:false,activity:'sdk-top-example',primaryScroll:'safe'});
     workbench.mountPrimary({
       id:'main',label:'主界面',scroll:'safe',mount:({main})=>{
         const shell=ctx.ui.dom.create('div',{className:'sdk-top-main'});

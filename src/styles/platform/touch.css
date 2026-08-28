@@ -89,7 +89,7 @@
 .dkds-size-compact .left-panel{
   min-height:0;
   border-right:0;
-  border-bottom:1px solid var(--border);
+  border-bottom:1px solid var(--border-subtle);
   padding:8px;
 }
 .dkds-size-compact .left-panel section{
@@ -127,9 +127,9 @@
   width:min(92vw,420px);
   max-width:none;
   height:auto;
-  border:1px solid var(--border);
+  border:1px solid var(--border-subtle);
   border-radius:10px 0 0 10px;
-  box-shadow:var(--shadow);
+  box-shadow:var(--surface-shadow);
 }
 .dkds-size-compact .main-workspace{
   position:relative;
@@ -173,7 +173,7 @@
   grid-template-rows:1fr;
 }
 .dkds-size-compact.dkds-orientation-landscape .left-panel{
-  border-right:1px solid var(--border);
+  border-right:1px solid var(--border-subtle);
   border-bottom:0;
 }
 .dkds-size-compact.dkds-orientation-landscape .dataset-list{
@@ -238,7 +238,7 @@
 .react-native-client .left-panel{
   padding:7px;
   border-right:0;
-  border-bottom:1px solid var(--border-subtle,var(--border));
+  border-bottom:1px solid var(--border-subtle);
   overflow:auto;
   overscroll-behavior:contain;
 }
@@ -392,7 +392,7 @@
   grid-template-rows:1fr;
 }
 .react-native-client.dkds-orientation-landscape .left-panel{
-  border-right:1px solid var(--border-subtle,var(--border));
+  border-right:1px solid var(--border-subtle);
   border-bottom:0;
 }
 .react-native-client.dkds-orientation-landscape .analysis-page-header{

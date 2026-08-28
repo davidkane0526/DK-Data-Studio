@@ -6,19 +6,16 @@
   "entry": "plugin.js",
   "enabled": true,
   "order": 900,
-  "description": "Core-first Plugin API 1.12 template. Domain logic is declared by the plugin; interaction behavior and infrastructure are consumed through Core contracts.",
+  "description": "Core-first Plugin API 1.18 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
   "capabilities": [
     "ui.page",
-    "ui.analysis-workbench",
-    "ui.primary",
     "ui.prime",
-    "runtime.capabilities",
-    "ui.dynamic-actions",
     "ui.interaction",
     "ui.interaction-behavior",
     "data.types",
     "state.store",
-    "workflow.processor"
+    "workflow.processor",
+    "ui.plugin-workspace"
   ],
   "requiresCore": [
     "status",

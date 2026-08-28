@@ -1,7 +1,6 @@
 'use strict';
-const {state, definitions, active}=require('./context');
-const activityRows=(...args)=>require('./events/history').activityRows(...args);
-const listContributions=(...args)=>require('./contributions/typed').listContributions(...args);
+const {state,definitions,active}=require('./context');
+const {listContributions}=require('./registry');
 const {pluginTypeOf}=require('./manifest');
 
   const preferenceStorageKey = 'dkds.plugin.state.preferences.v1';
@@ -155,7 +154,7 @@ const {pluginTypeOf}=require('./manifest');
     const definition=definitionById(pluginId);
     const fromManifest=workspaceMeta(definition?.manifest).activity;
     if(fromManifest)return fromManifest;
-    return activityRows().find(row=>row.pluginId===pluginId&&row.value?.role==='top')?.value?.id||'';
+    return listContributions('ui.activities').find(row=>row.pluginId===pluginId&&row.value?.role==='top')?.value?.id||'';
   }
 
   function superState() {

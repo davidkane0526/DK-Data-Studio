@@ -40,7 +40,7 @@ assert(!views.includes("['Ctrl+Z','builtin.resonance.undo']"),'System Undo must 
 assert(feature.includes("commandRuntime.run('builtin.resonance.undo')")&&views.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]")&&views.includes("['builtin.resonance.redo',()=>R.redoLastAction?.()]"),'Local Undo/Redo commands must remain available to the System Edit Contract.');
 assert(views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("redo:()=>ctx.commands.run('builtin.resonance.redo')")&&views.includes('historyState:()=>R.historyState?.()||null')&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'System Edit Contract must expose reversible state and adapt into the same semantic commands.');
 
-assert(sdkContract.pluginApiVersion==='1.18.0','Standalone SDK must target Plugin API 1.16.0 while preserving older package compatibility.');
+assert(sdkContract.pluginApiVersion==='1.18.0','Standalone SDK must target the Plugin API 1.18 Legacy-Free contract.');
 assert(sdk.includes('DKDSInteractionBehaviorBinding')&&sdk.includes('DKDSInteractionBehaviorRuntime'),'Standalone SDK must publish Interaction Behavior types.');
 assert(sdk.includes('interactionBehavior?:DKDSInteractionBehaviorProfile'),'Scientific surface SDK must accept an Interaction Behavior profile/spec.');
 

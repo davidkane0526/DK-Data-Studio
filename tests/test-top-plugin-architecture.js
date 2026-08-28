@@ -10,6 +10,7 @@ const css=readCoreCss(root);
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 const manager=read('src/core/plugins/manager-ui.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
+const analysisWorkbench=read('src/core/ui/modules/workbench/analysis.js');
 
 const plugins={
   resonance:{folder:'resonance-workbench',root:'resonance'},
@@ -34,8 +35,8 @@ assert(css.includes('.import-panel-overlay')&&css.includes('z-index:1500'),'glob
 assert(!kernel.includes("const migration='builtin.resonance-workbench'"),'core SUPER initialization must not hard-code resonance or any other domain plugin.');
 assert(JSON.parse(read('src/plugins/resonance-workbench/plugin.json')).workspace?.defaultSuper===true,'the preferred initial SUPER must be declared by the plugin manifest, not by core.');
 assert(kernel.includes("const opened=await state.host?.openActivityWindow?.(spec.id)"),'non-SUPER TOP navigation must use the generic independent-window host.');
-assert(kernel.includes("if(mode==='split'&&(!layout.left||!layout.main))"),'split TOP workspaces must require left/main regions.');
-assert(kernel.includes("if(mode==='native'&&!rootSelector)"),'native TOP workspaces must validate a root selector without requiring split regions.');
+assert(kernel.includes("if(mode!=='native')throw new Error")&&kernel.includes('must use the native PluginWorkspace layout contract'),'TOP workspaces must reject every non-native compatibility layout.');
+assert(kernel.includes('if(!rootSelector)throw new Error')&&kernel.includes('must declare layout.root.selector'),'native TOP workspaces must require one canonical root selector.');
 const pluginWindowRuntime=read('src/plugin-window/runtime.js');
 assert(pluginWindowRuntime.includes("DKDSPluginModules?.get?.(String(spec.pluginId||''),'window-runtime')"),'dedicated host must resolve TOP runtimes through the Core Module Registry.');
 const pulseDedicated=read('src/plugins/pulse-analysis/analysis-service.js');
@@ -46,7 +47,7 @@ assert(kernel.includes('打开失败'),'window-open failures must be surfaced in
 assert(manager.includes('resetManagerScrollChain')&&manager.includes('settleManagerAtTop(frames=12)'),'plugin manager must repair late Chromium scroll anchoring after lifecycle changes.');
 assert(ui.includes('dkds-portable-placement-trigger')&&ui.includes('new ContextMenu(this.owner)'),'portable charts must expose compact breadcrumb placement through core context menus.');
 assert(ui.includes("placementIcons={home:'◫',sticky:'⌖',left:'←'")&&ui.includes("right:'→',bottom:'↓',float:'↗',global:'⤢'"),'portable chart trigger/menu must distinguish canvas float from whole-interface free float.');
-assert(ui.includes('createPortableZones()')&&ui.includes('portable(id,node,spec={})'),'core Workbench must own dedicated local portable zones and a portable() API.');
+assert(analysisWorkbench.includes('portableSlot(name,row=null)')&&analysisWorkbench.includes('portable(id,node,spec={})'),'Core AnalysisWorkbench must own portable placement slots and the portable() API used by PluginWorkspace.');
 
 // TER/Pulse/Data Center are no longer monolithic plugins. Their feature logic is
 // shared between SUPER and TOP hosts through a controller/view/runtime stack.
@@ -59,7 +60,7 @@ for(const folder of ['ter-analysis','pulse-analysis','data-center']){
   assert(entry.split(/\r?\n/).length<40,`${folder}: plugin.js must be a thin composition entry.`);
   assert(controller.includes('selection.model')||controller.includes('interaction?.create'),`${folder}: controller must own typed shared selection state.`);
   assert(folder==='data-center'?controller.includes('ctx.state.create'):controller.includes('command(name,...args)'),`${folder}: Controller must own domain state/command boundaries instead of acting as a selection-only shell.`);
-  assert(views.includes('analysisSurface||ctx.ui.analysisWorkbench'),`${folder}: shared views must mount through unified AnalysisWorkbench.`);
+  assert(views.includes('ctx.ui.workspaceSurface.create'),`${folder}: shared views must mount through the canonical workspaceSurface.`);
   assert(views.includes('wb.compose'),`${folder}: shared views must compose a PRIMARY surface.`);
   assert(feature.includes('ctx.ui.plotViews')||feature.includes('ctx.ui.charts'),`${folder}: feature runtime must consume Core PlotView/Chart Surface.`);
   assert(feature.includes('ctx.ui.actions'),`${folder}: feature runtime must consume core Dynamic Action Group.`);

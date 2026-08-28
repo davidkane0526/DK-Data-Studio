@@ -32,9 +32,8 @@ function createAppearanceRuntime({app,BrowserWindow,nativeTheme}){
     }
     return next;
   }
-  function setInitialAppearance(value){appearanceTheme=String(value||'').toLowerCase();return appearanceTheme;}
   function currentAppearance(){return appearanceTheme;}
-  return Object.freeze({appearanceSettingsPath,readPersistedAppearanceTheme,nativeWindowBackground,applyNativeAppearance,setInitialAppearance,currentAppearance});
+  return Object.freeze({appearanceSettingsPath,readPersistedAppearanceTheme,nativeWindowBackground,applyNativeAppearance,currentAppearance});
 }
 
 module.exports={createAppearanceRuntime};

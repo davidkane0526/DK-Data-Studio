@@ -13,7 +13,7 @@ const ui=readCoreCss(root);
 for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover:','--border-subtle:','--text-primary:','--text-secondary:','--accent-primary:','--accent-contrast:','--app-bg:']){
   assert(ui.includes(token),`Core modern UI must publish semantic plugin token ${token}`);
 }
-assert(ui.includes('--panel:var(--surface-primary)')&&ui.includes('--bg:var(--app-bg)'),'Legacy plugin variables must bridge to the same Core theme token source.');
+for(const alias of ['--bg','--panel','--border','--text','--muted','--accent','--shadow','--line']) assert(!new RegExp(`${alias}(?![-\w])`).test(ui),`Legacy short theme token ${alias} must not return.`);
 assert(ui.includes('.dkds-plugin-workspace')&&ui.includes('.analysis-page-header'),'Core must own PluginWorkspace and plugin-window chrome rather than leaving every plugin to restyle shared controls.');
 assert(ui.includes('background:var(--surface-primary);\n  border-color:var(--border-subtle);\n  color:var(--text-primary);'),'Core-owned scientific/plugin panels must resolve their surfaces from semantic theme tokens.');
 assert(!ui.includes('body.dkds-modern-ui #resonanceDedicatedPage .respar-left-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-inspector-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-floating-panel{\n  background:#fff'),'Modern UI must not force resonance/plugin panels back to a light-only surface.');
