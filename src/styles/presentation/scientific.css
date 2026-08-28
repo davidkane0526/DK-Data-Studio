@@ -166,12 +166,6 @@ body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065;pointer-events:non
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band {opacity:.10
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-curve.is-dimmed {opacity:.42;stroke-width:.9px
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-curve.is-focused {opacity:1;stroke-width:3.4px
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-marker.is-dimmed {opacity:.44
-}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-chip {
   border-color:var(--dkui-border)
 }
@@ -288,8 +282,6 @@ body.dkds-modern-ui .main-plot-tools button:hover:not(:disabled) {
 .dkds-scientific-curve {fill:none
 }
 .dkds-scientific-curve-hit {fill:none;stroke:transparent;stroke-width:14px
-}
-.dkds-scientific-marker.is-dimmed {opacity:.30
 }
 .dkds-scientific-marker-hit {fill:transparent;stroke:none
 }

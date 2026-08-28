@@ -729,6 +729,10 @@ module.exports = {
     ,{
       "file": "tests/test-v3622-ui-layout-log-theme.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3623-scientific-focus-header-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1492,6 +1496,10 @@ module.exports = {
     }
     ,{
       "file": "tests/test-v3622-ui-layout-log-theme.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3623-scientific-focus-header-ownership.js",
       "args": []
     }
   ],

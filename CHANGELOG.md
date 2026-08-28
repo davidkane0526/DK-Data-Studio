@@ -1,3 +1,13 @@
+# v3.62.3 — Scientific Focus & Plot Header Ownership
+
+- Remove the remaining dual ownership of ScientificPlot focus styling. ScientificCurve renderer now exclusively owns selected/unselected curve and marker opacity/width; presentation CSS no longer overrides `.is-focused` / `.is-dimmed` renderer state in dark mode.
+- Increase dark-mode selection separation without changing domain semantics: the active curve/peak remains fully visible while inactive curves are reduced to about **5.5%** opacity and markers on other curves to about **4.5%**. Resonance only supplies the generic selected sweep/peak IDs; Core owns the paint.
+- Remove the remaining Resonance-specific GroupPlot header geometry. Resonance group cards now consume the canonical Core `dkds-plot-view-head/title/actions` contract directly, so title text and portable actions share one Core-owned vertical/horizontal alignment model.
+- Correct the regression tests that had been preserving both old problems: v3.61.109 no longer requires the obsolete dark `.is-dimmed { opacity: .42 }` override, and v3.62.2 no longer requires Resonance to own `.reswin-group-head` geometry.
+- Add a dedicated v3.62.3 ownership gate covering ScientificCurve focus opacity, Resonance selection-ID mapping, canonical PlotView/GroupPlot header DOM, and absence of plugin-specific header geometry overrides.
+- Keep App **3.62.3**, Plugin API/SDK **1.18.0** and Theme Contract **3.6.0** as separate release boundaries; no plugin semantic version is coupled to this App patch.
+- Release-source validation: `npm test` **183/183 PASS**, `npm run check` **191/191 PASS**, plugin manifests **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, authored CSS **0 `!important`**.
+
 # v3.62.2 — Scientific View & Plugin Layout Closure
 
 - Make ScientificPlot selection legible without restoring the removed double-rim treatment: selected markers receive a Core-owned halo and unselected markers are gently de-emphasized only while a marker selection exists.

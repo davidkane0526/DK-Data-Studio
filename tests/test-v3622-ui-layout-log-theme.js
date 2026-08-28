@@ -63,7 +63,9 @@ assert(dc.includes("wb.mountPrimary({id:'main',label:'数据中心',scroll:'auto
 assert(dc.includes("id:'data-center-data-width'")&&dc.includes("axis:'x'"),'Data Center domain rail must use Core persisted split mechanics.');
 
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
-assert(resonanceCss.includes('.reswin-group-head{height:34px;min-height:34px;padding:0 8px')&&resonanceCss.includes('grid-template-columns:minmax(0,1fr) auto;align-items:center'),'GroupPlot title/actions must share one centered header row.');
+const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
+assert(!resonanceCss.includes('.reswin-group-head{')&&!resonanceCss.includes('.reswin-group-card-actions{')&&!resonanceCss.includes('.reswin-group-title{'),'Resonance must not re-own Core PlotView header geometry.');
+assert(resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title'),'Resonance GroupPlot must consume the canonical Core PlotView header DOM contract.');
 
 const infra=read('docs/PLUGIN_UI_INFRASTRUCTURE.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');

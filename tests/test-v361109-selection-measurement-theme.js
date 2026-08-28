@@ -14,7 +14,9 @@ assert(curve.includes("active?'is-focused':'is-dimmed'"),'Core ScientificCurve m
 const scientific=read('src/styles/presentation/scientific.css');
 assert(/\.dkds-group-plot-card\s+:where\(\.dkds-plot-legend,\.dkds-plot-legend-item,\.dkds-plot-legend-swatch\)\s*\{[^}]*box-shadow:none/.test(scientific),'GroupPlot legend chrome must remain shadow-free in every theme.');
 assert(/\.dkds-scientific-width-band\s*\{[^}]*opacity:\s*\.065/.test(scientific),'FWHM width-band paint must be owned by scientific presentation.');
-assert(/\.dkds-scientific-curve\.is-dimmed\s*\{[^}]*opacity:\s*\.42/.test(scientific),'Dark scientific focus must retain readable inactive-curve context.');
+const curveModel=read('src/core/ui/modules/scientific-curve/model.js');
+assert(curveModel.includes('curveInactiveOpacity:dark?.055:.10'),'Dark scientific focus must keep inactive context deliberately faint in the renderer-owned selection contract.');
+assert(!/\.dkds-scientific-curve\.is-dimmed\s*\{[^}]*opacity:/.test(scientific),'Scientific presentation CSS must not override renderer-owned focus opacity.');
 const structure=read('src/styles/structure/plugin-workspace.css');
 assert(!/\.dkds-scientific-width-band\{[^}]*opacity:/.test(structure),'Structure CSS must not own width-band paint.');
 

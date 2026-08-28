@@ -85,6 +85,7 @@
           ]}
         ]},
         getCurves:()=>actions.visibleSweeps().map(sw=>({id:String(sw.id),entityId:String(sw.id),points:sw.points||[],colorValue:finite(sw.vg)?Number(sw.vg):0,direction:Number(sw.direction),source:sw})),
+        getSelectedCurveId:()=>String(live.selectedSweepId||''),getSelectedMarkerIds:()=>live.selectedPeakId?[String(live.selectedPeakId)]:[],
         getColorDomainValues:()=>live.datasets.map(ds=>finite(ds?.vg)?Number(ds.vg):null).filter(Number.isFinite),getMarkers:()=>markers(),getManipulators:()=>manipulators(),
         getView:()=>live.workspace.mainView||{xDomain:null,yDomain:null},setView:(next,meta)=>{live.workspace.mainView={xDomain:Array.isArray(next?.xDomain)?next.xDomain.slice():null,yDomain:Array.isArray(next?.yDomain)?next.yDomain.slice():null};if(meta?.reason==='box-zoom'){actions.scheduleSnapshot();setStatus('Ctrl+框选缩放完成；滚轮可继续围绕鼠标缩放，双击或 R 恢复。');}},
         getRangeSelection:()=>{const range=live.selectedRange;return range?{xMin:range.min,xMax:range.max,yMin:range.iMin,yMax:range.iMax}:null},showMarkers:()=>live.workspace.peakDisplay?.showPoints!==false,showWidth:()=>live.workspace.peakDisplay?.showWidth!==false,getMarkerWidth:marker=>markerWidthSpec(marker),onColorScale:scale=>renderLegend(scale),

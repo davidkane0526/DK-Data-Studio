@@ -100,6 +100,16 @@ const {DEFAULT_SCIENTIFIC_INTERACTION_BINDINGS}=require('../tooltip/group-plot')
     interactionIntent(gesture,target,event,payload={},extra={}){return String(this.routeInteraction(gesture,target,event,payload,extra)?.intent||'');}
     canManipulate(manipulator,event){const input={gesture:'drag',target:'manipulator',event,payload:{manipulator,surface:this},targetId:String(manipulator?.id||'')};const decision=this.behavior?.resolve?.(input);return !decision?.binding||decision.intent==='manipulate';}
     focusEntityId(){return String(this.selectionSnapshot?.focus?.id||this.selectionSnapshot?.items?.at?.(-1)?.id||'');}
+    selectionVisuals(){
+      const theme=String(globalThis.DKDSTheme?.current?.()||globalThis.document?.documentElement?.dataset?.dkdsTheme||'').toLowerCase();
+      const dark=theme==='dark'||(!theme&&globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches);
+      const authored=this.spec.selectionVisuals&&typeof this.spec.selectionVisuals==='object'?this.spec.selectionVisuals:{};
+      return {
+        curveActiveOpacity:1,curveInactiveOpacity:dark?.055:.10,curveActiveWidth:dark?3.4:3,curveInactiveWidth:dark?.72:1.0,
+        markerActiveOpacity:.98,markerInactiveOpacity:dark?.30:.50,markerOtherCurveOpacity:dark?.045:.08,
+        ...authored
+      };
+    }
     ensureEntity(id,parentId=''){const key=String(id||'');if(!key)return null;try{return this.entities?.ensure?.({id:key,parents:parentId?[String(parentId)]:[]})||{id:key};}catch{return {id:key};}}
     selectedCurveId(){const explicit=String(this.spec.getSelectedCurveId?.()||'');if(explicit)return explicit;const focus=this.focusEntityId();if(!focus)return '';const ids=this.curves().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean),set=new Set(ids);if(set.has(focus))return focus;return String(this.entities?.closestInSet?.(focus,set)||'');}
     selectedMarkerIds(){const explicit=(this.spec.getSelectedMarkerIds?.()||[]).map(String).filter(Boolean);if(explicit.length)return new Set(explicit);const markerIds=new Set(this.markers().map(row=>String(row?.entityId||row?.id||'')).filter(Boolean)),selected=new Set((this.selectionSnapshot?.items||[]).map(item=>String(item?.id||'')).filter(id=>markerIds.has(id)));const focus=this.focusEntityId();if(markerIds.has(focus))selected.add(focus);return selected;}
