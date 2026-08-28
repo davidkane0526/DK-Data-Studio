@@ -3,7 +3,6 @@ const {$, state}=require('./context');
 const {availableImportProviders, chooseImportProvider, diffArtifactRows, escapeHtml, flexibleImportProvider, importActiveItem, importProvider, importScope, providerForImportItem, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
 const captureActiveProjectTab=(...args)=>require('./project-tabs-history').captureActiveProjectTab(...args);
 const pluginUiContext=(...args)=>require('./data-artifact-host').pluginUiContext(...args);
-const syncDatasetArtifacts=(...args)=>require('./data-artifact-host').syncDatasetArtifacts(...args);
 const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
 const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
 const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
@@ -717,7 +716,7 @@ const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows')
       artifactSnapshot,
       capabilitySnapshot:capabilitySnapshotForWindows(),
       summary:{
-        datasetCount:Array.isArray(project.datasets)?project.datasets.length:0,
+        datasetCount:tables.filter(row=>String(row?.semanticType||'')==='science.transport.iv').length,
         artifactCount:artifactSnapshot.length,
         dataTableCount:tables.length,
         transientArtifactCount:artifactSnapshot.filter(row=>row?.transient===true).length,
@@ -775,119 +774,34 @@ const publishCapabilitySnapshot=(...args)=>require('./dedicated-plugin-windows')
   }
 
   async function commitImportWorkbench(){
-    const selected=state.importDraft.files.filter(f=>f.checked);
-    if(!selected.length)return;
-
-    $('#importCommitBtn').disabled=true;
-    state.importDraft.loading=true;
+    const selected=state.importDraft.files.filter(f=>f.checked);if(!selected.length)return;
+    $('#importCommitBtn').disabled=true;state.importDraft.loading=true;
     try{
-      const beforeArtifactRows=snapshotArtifactRows();
-      const legacyRows=[];
-      const artifactRows=[];
-      const reports=[];
+      const beforeArtifactRows=snapshotArtifactRows(),artifactRows=[],reports=[];
       const requestedAssignments=Array.isArray(state.importDraft.targets)?state.importDraft.targets.map(String).filter(Boolean):[];
-      const assignmentUnion=(previous=[])=>{
-        const prior=(Array.isArray(previous)?previous:[]).map(String).filter(Boolean);
-        return prior.includes('*')?['*']:[...new Set([...prior,...requestedAssignments])];
-      };
-      const priorLegacyBySource=new Map();
-      for(const dataset of state.datasets){
-        const sourcePath=String(dataset?.sourcePath||dataset?.path||'');if(!sourcePath)continue;
-        const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')?(Array.isArray(dataset.assignments)?dataset.assignments:['*']):['*'];
-        const set=priorLegacyBySource.get(sourcePath)||new Set();for(const id of rows)set.add(String(id));priorLegacyBySource.set(sourcePath,set);
-      }
+      const assignmentUnion=(previous=[])=>{const prior=(Array.isArray(previous)?previous:[]).map(String).filter(Boolean);return prior.includes('*')?['*']:[...new Set([...prior,...requestedAssignments])];};
       const priorArtifacts=state.artifactStore?.list?.({includeTransient:true})||[];
-      const priorArtifactAssignments=(sourcePath,importerId)=>{
-        const rows=priorArtifacts.filter(a=>a?.metadata?.importedSource===true&&String(a?.source?.path||'')===String(sourcePath)&&String(a?.metadata?.importerId||'')===String(importerId));
-        const out=new Set();for(const a of rows)for(const id of (Array.isArray(a?.metadata?.dataAssignments)?a.metadata.dataAssignments:[]))out.add(String(id));return [...out];
-      };
-
+      const priorArtifactAssignments=(sourcePath,importerId,seriesPath='')=>{const rows=priorArtifacts.filter(a=>a?.metadata?.importedSource===true&&String(a?.source?.path||'')===String(sourcePath)&&String(a?.metadata?.importerId||'')===String(importerId)&&(seriesPath?String(a?.metadata?.seriesPath||a.id)===String(seriesPath):true));const out=new Set();for(const a of rows)for(const id of (Array.isArray(a?.metadata?.dataAssignments)?a.metadata.dataAssignments:[]))out.add(String(id));return [...out];};
       for(const item of selected){
-        await readImportItemText(item);
-        if(item.error)continue;
-        const provider=providerForImportItem(item);
-        if(!provider)continue;
-        const file={name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding};
-        if(provider.storage==='legacy-datasets'){
-          const result=provider.parse?.(file,item.settings)||{datasets:[]};
-          const rows=Array.isArray(result?.datasets)?result.datasets:[];
-          for(const dataset of rows){
-            const sourcePath=String(dataset?.sourcePath||item.path||dataset?.path||'');
-            const previous=[...(priorLegacyBySource.get(sourcePath)||[])];
-            dataset.importedAt=dataset.importedAt||new Date().toISOString();
-            dataset.dataProvenance=Array.isArray(dataset.dataProvenance)?dataset.dataProvenance:[];
-            dataset.assignments=assignmentUnion(previous);
-            legacyRows.push({dataset,sourcePath,providerId:provider.id});
-          }
-          if(rows.length)reports.push(`${item.name}: ${rows.length} 个 ${provider.name||provider.id} 数据对象`);
-          continue;
-        }
-        const result=provider.parseArtifacts?.(file,item.settings);
-        const rows=Array.isArray(result?.artifacts)?result.artifacts:[];
-        const previous=priorArtifactAssignments(item.path,provider.id);
+        await readImportItemText(item);if(item.error)continue;const provider=providerForImportItem(item);if(!provider)continue;
+        if(typeof provider.parseArtifacts!=='function')throw new Error(`导入器 ${provider.name||provider.id} 未实现 canonical parseArtifacts 契约。`);
+        const file={name:item.name,path:item.path,text:item.text,encoding:item.detectedEncoding},result=provider.parseArtifacts(file,item.settings),rows=Array.isArray(result?.artifacts)?result.artifacts:[];
         for(const raw of rows){
-          if(!window.DKDSData?.isArtifact?.(raw))continue;
-          const artifact=window.DKDSData.deepClone(raw);
-          artifact.metadata={...(artifact.metadata||{}),importedSource:true,importerId:provider.id,dataAssignments:assignmentUnion(previous)};
-          artifact.source={...(artifact.source||{}),path:String(artifact?.source?.path||item.path),name:String(artifact?.source?.name||item.name),encoding:String(artifact?.source?.encoding||item.detectedEncoding||'auto')};
-          artifactRows.push({artifact,sourcePath:item.path,providerId:provider.id});
+          if(!window.DKDSData?.isArtifact?.(raw))continue;const artifact=window.DKDSData.deepClone(raw),seriesPath=String(artifact?.metadata?.seriesPath||artifact.id),specific=priorArtifactAssignments(item.path,provider.id,seriesPath),previous=specific.length?specific:priorArtifactAssignments(item.path,provider.id);
+          artifact.transient=false;artifact.metadata={...(artifact.metadata||{}),importedSource:true,importerId:provider.id,dataAssignments:assignmentUnion(previous)};
+          artifact.source={...(artifact.source||{}),path:String(artifact?.source?.path||item.path),name:String(artifact?.source?.name||item.name),encoding:String(artifact?.source?.encoding||item.detectedEncoding||'auto')};artifactRows.push({artifact,sourcePath:item.path,providerId:provider.id});
         }
         if(rows.length)reports.push(`${item.name}: ${rows.length} 个 ${provider.name||provider.id} 数据对象`);
       }
-
-      if(!legacyRows.length&&!artifactRows.length){
-        setStatus('没有生成可导入的数据。请检查解析器、跳行、编码或分隔符设置。');
-        return;
-      }
-
-      const legacySourcePaths=new Set(legacyRows.map(row=>row.sourcePath));
-      if(legacySourcePaths.size){
-        state.datasets=state.datasets.filter(dataset=>!legacySourcePaths.has(String(dataset?.sourcePath||dataset?.path||'')));
-        state.datasets.push(...legacyRows.map(row=>row.dataset));
-      }
-      syncDatasetArtifacts({emit:false});
-
-      if(artifactRows.length){
-        const nextKeys=new Set(artifactRows.map(row=>String(row.artifact.id)));
-        const importedPairs=new Set(artifactRows.map(row=>`${row.providerId}
-${row.sourcePath}`));
-        const stale=(state.artifactStore?.list?.({includeTransient:true})||[]).filter(a=>a?.metadata?.importedSource===true&&importedPairs.has(`${String(a?.metadata?.importerId||'')}
-${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id)));
-        const removeIds=new Set();
-        for(const root of stale){
-          for(const child of (state.artifactStore?.lineage?.(root.id)?.descendants||[]))if(child?.id)removeIds.add(String(child.id));
-          if(root?.id)removeIds.add(String(root.id));
-        }
-        state.artifactStore?.batch?.(api=>{
-          for(const id of [...removeIds].reverse())api.remove?.(id);
-          for(const row of artifactRows)api.upsert?.(row.artifact);
-        });
-      }
-
-      const importDelta=diffArtifactRows(beforeArtifactRows);
-      window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifactDelta:importDelta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});
-      pushArtifactDeltaToActivityWindows(importDelta,'import');
-      void publishCapabilitySnapshot();
-      if(legacyRows.length)clearMainView(false);
-      renderAll();
-      refreshOpenAnalysisPage();
-      captureActiveProjectTab();
-
-      state.importDraft.files=[];
-      state.importDraft.activePath=null;
-      state.importDraft.targets=null;
-      state.importDraft.scope=null;
-      state.importDraft.selectionAnchorPath=null;
-      state.importDraft.columnFieldFilter='';
-      closeImportWorkbench();
-      setStatus(`导入完成：${reports.join('；')}。`);
-    }catch(err){
-      console.error(err);
-      setStatus(`导入失败：${err?.message||String(err)}`);
-    }finally{
-      state.importDraft.loading=false;
-      $('#importCommitBtn').disabled=false;
-    }
+      if(!artifactRows.length){setStatus('没有生成可导入的数据。请检查解析器、跳行、编码或分隔符设置。');return;}
+      const nextKeys=new Set(artifactRows.map(row=>String(row.artifact.id))),importedPairs=new Set(artifactRows.map(row=>`${row.providerId}\n${row.sourcePath}`));
+      const stale=(state.artifactStore?.list?.({includeTransient:true})||[]).filter(a=>a?.metadata?.importedSource===true&&importedPairs.has(`${String(a?.metadata?.importerId||'')}\n${String(a?.source?.path||'')}`)&&!nextKeys.has(String(a.id))),removeIds=new Set();
+      for(const root of stale){for(const child of (state.artifactStore?.lineage?.(root.id)?.descendants||[]))if(child?.id)removeIds.add(String(child.id));if(root?.id)removeIds.add(String(root.id));}
+      state.artifactStore?.batch?.(api=>{for(const id of [...removeIds].reverse())api.remove?.(id);for(const row of artifactRows)api.upsert?.(row.artifact);});
+      const importDelta=diffArtifactRows(beforeArtifactRows);window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'import',artifactDelta:importDelta,artifacts:state.artifactStore?.list?.({includeTransient:true})||[]});pushArtifactDeltaToActivityWindows(importDelta,'import');void publishCapabilitySnapshot();
+      if(artifactRows.some(row=>String(row.artifact?.semanticType||'')==='science.transport.iv'))clearMainView(false);renderAll();refreshOpenAnalysisPage();captureActiveProjectTab();
+      state.importDraft.files=[];state.importDraft.activePath=null;state.importDraft.targets=null;state.importDraft.scope=null;state.importDraft.selectionAnchorPath=null;state.importDraft.columnFieldFilter='';closeImportWorkbench();setStatus(`导入完成：${reports.join('；')}。`);
+    }catch(err){console.error(err);setStatus(`导入失败：${err?.message||String(err)}`);}finally{state.importDraft.loading=false;$('#importCommitBtn').disabled=false;}
   }
 
 module.exports=Object.freeze({

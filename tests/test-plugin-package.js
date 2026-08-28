@@ -8,7 +8,7 @@ function assert(c,m){if(!c)throw new Error(m);}
 
 const good=normalizePluginPackage({
   schema:1,
-  manifest:{id:'com.example.strong-detector',name:'Strong Detector',version:'1.0.0',apiVersion:'1.2.0',entry:'plugin.js',styles:['style.css']},
+  manifest:{id:'com.example.strong-detector',name:'Strong Detector',version:'1.0.0',apiVersion:'1.18.0',entry:'plugin.js',styles:['style.css']},
   files:{
     'plugin.js':"DKDSPlugins.define({id:'com.example.strong-detector',name:'Strong Detector',version:'1.0.0'},async()=>({}));",
     'style.css':'.strong-detector{}'
@@ -27,7 +27,7 @@ assert(rejected,'package paths must reject traversal');
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-plugin-package-'));
 const dir=path.join(tmp,'plugin');fs.mkdirSync(dir);
-fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify({id:'com.example.test-package',name:'Test package',version:'0.1.0',apiVersion:'1.2.0',entry:'plugin.js'}));
+fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify({id:'com.example.test-package',name:'Test package',version:'0.1.0',apiVersion:'1.18.0',entry:'plugin.js'}));
 fs.writeFileSync(path.join(dir,'plugin.js'),"DKDSPlugins.define({id:'com.example.test-package',name:'Test package',version:'0.1.0'},async()=>({}));");
 const out=path.join(tmp,'test.dkplugin');
 execFileSync(process.execPath,[path.join(__dirname,'..','scripts','package-plugin.js'),dir,out],{stdio:'pipe'});

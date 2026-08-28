@@ -61,7 +61,7 @@ vm.runInContext(read('src/generated/runtime/plugin-kernel.js'),sandbox,{filename
 let observed=null;
 sandbox.window.DKDSPlugins.define({
   id:'test.data-sources-contract',pluginType:'extension',name:'Data Sources Contract',version:'1.0.0',enabled:true,
-  apiVersion:'1.15.0',pluginType:'data',source:'builtin'
+  apiVersion:'1.18.0',pluginType:'data',source:'builtin'
 },async ctx=>{
   observed={
     rows:ctx.data.sources.list(),

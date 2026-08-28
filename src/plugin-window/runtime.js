@@ -23,7 +23,6 @@
     'science-pulse':'../science/pulse.js',
     'science-ter':'../science/ter.js',
     'data-model':'../core/data/model.js',
-    'legacy-dataset-migration':'../migrations/legacy-dataset-adapter.js',
     'entity-runtime':'../core/data/entity-runtime.js',
     'formula-engine':'../core/data/formula-engine.js',
     'parameter-schema':'../core/data/parameter-schema.js',
@@ -199,7 +198,6 @@
       if (!DEPENDENCY_SCRIPTS[key]) throw new Error(`插件窗口依赖未受支持：${key || '(empty)'}`);
       if (!ordered.includes(key) && key !== 'plugin-kernel') ordered.push(key);
     }
-    if (ordered.includes('data-model') && !ordered.includes('legacy-dataset-migration')) ordered.splice(ordered.indexOf('data-model')+1,0,'legacy-dataset-migration');
     if (!ordered.includes('platform')) ordered.push('platform');
     if (!ordered.includes('state-store')) ordered.push('state-store');
     // Stable host infrastructure remains available to every dedicated TOP, but
@@ -247,9 +245,9 @@
 
   function ensureProjectShape(next) {
     const p = clone(next || {});
-    if (!p || typeof p !== 'object') return { plugins:{}, dataModel:{schema:1,artifacts:[]} };
+    if (!p || typeof p !== 'object') return { format:'dk-data-studio-project',schemaVersion:3,plugins:{},dataModel:{schema:2,artifacts:[]} };
     if (!p.plugins || typeof p.plugins !== 'object') p.plugins = {};
-    if (!p.dataModel || typeof p.dataModel !== 'object') p.dataModel = { schema:1, artifacts:[] };
+    if (!p.dataModel || typeof p.dataModel !== 'object') p.dataModel = { schema:2, artifacts:[] };
     return p;
   }
 
@@ -258,17 +256,7 @@
     artifactStore = window.DKDSData?.restoreStore
       ? window.DKDSData.restoreStore(liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}:(project.dataModel || { schema:1, artifacts:[] }))
       : null;
-    // Live snapshots and legacy project datasets are complementary inputs.
-    // The live snapshot is authoritative for canonical/persisted Artifacts,
-    // while project.datasets is still the self-contained source for transient
-    // legacy DataTable adapters. Never treat an empty (or incomplete) live
-    // snapshot as a reason to skip that compatibility bridge: doing so leaves
-    // Data Center empty even though the same project still renders in the main
-    // Resonance workbench. Stable legacy artifact ids make this merge idempotent.
-    if (artifactStore && window.DKDSData?.syncLegacyDatasetArtifacts && Array.isArray(project.datasets)) {
-      try { window.DKDSData.syncLegacyDatasetArtifacts(artifactStore,project.datasets); }
-      catch (err) { console.warn('[DKDS plugin window legacy artifact bridge]', err); }
-    }
+    // Schema v3 projects are canonical before they enter this renderer.
     artifactUpserts = new Map();
     artifactRemovals = new Set();
     return artifactStore;
@@ -309,7 +297,7 @@
       projectHydrated:!!projectHydrated,
       activityOpened:!!activityOpened,
       prewarm:bootstrap?.prewarm===true,
-      projectDatasetCount:Array.isArray(project?.datasets)?project.datasets.length:0,
+      projectDatasetCount:tables.filter(row=>String(row?.semanticType||'')==='science.transport.iv').length,
       projectDataModelCount:Array.isArray(project?.dataModel?.artifacts)?project.dataModel.artifacts.length:0,
       artifactCount:rows.length,
       dataTableCount:tables.length,
@@ -443,12 +431,7 @@
       artifactStore?.clear?.();
       emitArtifactsChanged({type:'clear',ids});
     },
-    syncLegacy() {
-      // Dedicated plugin windows consume the canonical project snapshot. They
-      // never rebuild data objects by launching a second full workspace.
-      emitArtifactsChanged({type:'refresh'});
-      return artifactStore;
-    }
+
   };
 
   function openAnalysisPage(id) {
@@ -549,7 +532,7 @@
 
   function baseHost() {
     return {
-      appVersion:'3.61.111',
+      appVersion:'3.62.0',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,

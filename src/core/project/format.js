@@ -4,118 +4,22 @@
   if(root)root.DKDSProjectFormat=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   const FORMAT='dk-data-studio-project';
-  const SCHEMA_VERSION=2;
-  const migrations=new Map();
-  function registerMigration(id,fn){const key=String(id||'').trim();if(!key||typeof fn!=='function')throw new Error('Project migration id/function required.');migrations.set(key,fn);return ()=>migrations.delete(key);}
-  function applyMigrations(project){
-    let out=clone(validateProject(project));
-    const context={FORMAT,SCHEMA_VERSION,clone,validateProject};
-    for(const migrate of migrations.values())out=validateProject(migrate(out,context)||out);
-    out={...out,format:FORMAT,schemaVersion:SCHEMA_VERSION,plugins:{...(out.plugins||{})},host:{...(out.host||{})}};
-    return validateProject(out);
-  }
-  function stripBom(text){
-    const s=String(text??'');
-    return s.charCodeAt(0)===0xFEFF?s.slice(1):s;
-  }
-
-  function asUint8(bytes){
-    if(bytes instanceof Uint8Array)return bytes;
-    if(bytes?.buffer instanceof ArrayBuffer)return new Uint8Array(bytes.buffer,bytes.byteOffset||0,bytes.byteLength);
-    if(bytes instanceof ArrayBuffer)return new Uint8Array(bytes);
-    return new Uint8Array(bytes||[]);
-  }
-
-  function decodeProjectBytes(input){
-    const bytes=asUint8(input);
-    if(!bytes.length)return {text:'',encoding:'empty'};
-    let offset=0;
-    let encoding='utf-8';
-    if(bytes.length>=3&&bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF){
-      offset=3;encoding='utf-8';
-    }else if(bytes.length>=2&&bytes[0]===0xFF&&bytes[1]===0xFE){
-      offset=2;encoding='utf-16le';
-    }else if(bytes.length>=2&&bytes[0]===0xFE&&bytes[1]===0xFF){
-      offset=2;encoding='utf-16be';
-    }else if(bytes.length>=4){
-      let evenNull=0,oddNull=0,samples=0;
-      const limit=Math.min(bytes.length,256);
-      for(let i=0;i+1<limit;i+=2){
-        if(bytes[i]===0)evenNull++;
-        if(bytes[i+1]===0)oddNull++;
-        samples++;
-      }
-      if(samples&&oddNull/samples>0.55)encoding='utf-16le';
-      else if(samples&&evenNull/samples>0.55)encoding='utf-16be';
-    }
-    try{
-      const text=new TextDecoder(encoding,{fatal:true}).decode(bytes.subarray(offset));
-      return {text:stripBom(text),encoding};
-    }catch(err){
-      if(encoding!=='utf-8')throw new Error(`工程文件编码无法解析（检测为 ${encoding}）`);
-      const text=new TextDecoder('utf-8',{fatal:false}).decode(bytes.subarray(offset));
-      return {text:stripBom(text),encoding:'utf-8'};
-    }
-  }
-
-  function clone(value){
-    if(value===undefined)return undefined;
-    try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}
-  }
-
-  function isProjectLike(project){
-    if(!project||typeof project!=='object'||Array.isArray(project))return false;
-    if(String(project.format||'')===FORMAT)return true;
-    const hasDatasets=Array.isArray(project.datasets);
-    const hasProjectEnvelope=project.plugins!==undefined||project.host!==undefined||project.schemaVersion!==undefined;
-    const hasRecognizedFormat=typeof project.format==='string'&&project.format.trim().length>0;
-    return hasDatasets&&(hasProjectEnvelope||hasRecognizedFormat);
-  }
-
-  function validateProject(project){
-    if(!project||typeof project!=='object'||Array.isArray(project))throw new Error('文件内容不是 DK Data Studio 工程对象');
-    if(project.datasets!==undefined&&!Array.isArray(project.datasets))throw new Error('工程字段 datasets 损坏：应为数组');
-    if(project.plugins!==undefined&&(project.plugins===null||typeof project.plugins!=='object'||Array.isArray(project.plugins))){
-      throw new Error('工程字段 plugins 损坏：应为对象');
-    }
-    if(project.host!==undefined&&(project.host===null||typeof project.host!=='object'||Array.isArray(project.host))){
-      throw new Error('工程字段 host 损坏：应为对象');
-    }
-    return project;
-  }
-
-
-  function parseProjectText(text){
-    const clean=stripBom(text).trim();
-    if(!clean)throw new Error('工程文件为空');
-    let project;
-    try{project=JSON.parse(clean);}
-    catch(err){
-      const detail=String(err?.message||err).replace(/^JSON\.parse:\s*/i,'');
-      throw new Error(`工程 JSON 不完整或格式错误：${detail}`);
-    }
-    return applyMigrations(project);
-  }
-
-  function parseProjectBytes(bytes){
-    const decoded=decodeProjectBytes(bytes);
-    return {project:parseProjectText(decoded.text),encoding:decoded.encoding};
-  }
-
-  function canonicalizeProject(project){
-    return applyMigrations(project);
-  }
-
-  function serializeProject(project,space=2){
-    const canonical=canonicalizeProject(project);
-    let text;
-    try{text=JSON.stringify(canonical,null,space);}
-    catch(err){throw new Error(`工程无法序列化：${err?.message||err}`);}
-    // Parse the exact payload we are about to write so desktop and web use the
-    // same canonical project contract.
-    parseProjectText(text);
-    return text;
-  }
-
-  return {FORMAT,SCHEMA_VERSION,stripBom,decodeProjectBytes,isProjectLike,validateProject,registerMigration,canonicalizeProject,parseProjectText,parseProjectBytes,serializeProject};
+  const SCHEMA_VERSION=3;
+  const compatibilityImporters=new Map();
+  function registerCompatibilityImporter(id,importer={}){const key=String(id||'').trim();if(!key||typeof importer?.recognize!=='function'||typeof importer?.convert!=='function')throw new Error('Project compatibility importer requires id, recognize(), and convert().');compatibilityImporters.set(key,importer);return ()=>compatibilityImporters.delete(key);}
+  function stripBom(text){const s=String(text??'');return s.charCodeAt(0)===0xFEFF?s.slice(1):s;}
+  function asUint8(bytes){if(bytes instanceof Uint8Array)return bytes;if(bytes?.buffer instanceof ArrayBuffer)return new Uint8Array(bytes.buffer,bytes.byteOffset||0,bytes.byteLength);if(bytes instanceof ArrayBuffer)return new Uint8Array(bytes);return new Uint8Array(bytes||[]);}
+  function decodeProjectBytes(input){const bytes=asUint8(input);if(!bytes.length)return {text:'',encoding:'empty'};let offset=0,encoding='utf-8';if(bytes.length>=3&&bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF){offset=3;}else if(bytes.length>=2&&bytes[0]===0xFF&&bytes[1]===0xFE){offset=2;encoding='utf-16le';}else if(bytes.length>=2&&bytes[0]===0xFE&&bytes[1]===0xFF){offset=2;encoding='utf-16be';}else if(bytes.length>=4){let evenNull=0,oddNull=0,samples=0;const limit=Math.min(bytes.length,256);for(let i=0;i+1<limit;i+=2){if(bytes[i]===0)evenNull++;if(bytes[i+1]===0)oddNull++;samples++;}if(samples&&oddNull/samples>0.55)encoding='utf-16le';else if(samples&&evenNull/samples>0.55)encoding='utf-16be';}try{return {text:stripBom(new TextDecoder(encoding,{fatal:true}).decode(bytes.subarray(offset))),encoding};}catch(err){if(encoding!=='utf-8')throw new Error(`工程文件编码无法解析（检测为 ${encoding}）`);return {text:stripBom(new TextDecoder('utf-8',{fatal:false}).decode(bytes.subarray(offset))),encoding:'utf-8'};}}
+  function clone(value){if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}}
+  function validateEnvelope(project){if(!project||typeof project!=='object'||Array.isArray(project))throw new Error('文件内容不是 DK Data Studio 工程对象');return project;}
+  function validateCurrentProject(project){validateEnvelope(project);if(String(project.format||'')!==FORMAT)throw new Error('工程格式标识不正确');if(Number(project.schemaVersion)!==SCHEMA_VERSION)throw new Error(`工程 schemaVersion 不受当前运行时支持：${project.schemaVersion??'missing'}`);if(project.datasets!==undefined)throw new Error('当前工程不能包含 datasets；旧工程必须先经过 Compatibility Gateway。');if(project.dataModel!==undefined&&(project.dataModel===null||typeof project.dataModel!=='object'||Array.isArray(project.dataModel)))throw new Error('工程字段 dataModel 损坏：应为对象');if(project.plugins!==undefined&&(project.plugins===null||typeof project.plugins!=='object'||Array.isArray(project.plugins)))throw new Error('工程字段 plugins 损坏：应为对象');if(project.host!==undefined&&(project.host===null||typeof project.host!=='object'||Array.isArray(project.host)))throw new Error('工程字段 host 损坏：应为对象');return project;}
+  function isCurrent(project){return !!project&&typeof project==='object'&&!Array.isArray(project)&&String(project.format||'')===FORMAT&&Number(project.schemaVersion)===SCHEMA_VERSION;}
+  function matchingCompatibilityImporter(project){for(const importer of compatibilityImporters.values())try{if(importer.recognize(project))return importer;}catch{}return null;}
+  function importHistorical(project,matched=null){const importer=matched||matchingCompatibilityImporter(project);if(importer){const converted=importer.convert(clone(project),{FORMAT,SCHEMA_VERSION,clone});return validateCurrentProject({...converted,format:FORMAT,schemaVersion:SCHEMA_VERSION,dataModel:converted?.dataModel??{schema:2,artifacts:[]},plugins:{...(converted?.plugins||{})},host:{...(converted?.host||{})}});}throw new Error('工程格式过旧或无法识别；未找到可用 Compatibility Gateway。');}
+  function canonicalizeProject(project){validateEnvelope(project);const importer=matchingCompatibilityImporter(project);if(importer)return importHistorical(project,importer);if(isCurrent(project)){const out=clone(project);if(out.dataModel===undefined)out.dataModel={schema:2,artifacts:[]};if(out.plugins===undefined)out.plugins={};if(out.host===undefined)out.host={};return validateCurrentProject(out);}return importHistorical(project);}
+  function isProjectLike(project){if(!project||typeof project!=='object'||Array.isArray(project))return false;if(isCurrent(project))return true;for(const importer of compatibilityImporters.values())try{if(importer.recognize(project))return true;}catch{}return false;}
+  function parseProjectText(text){const clean=stripBom(text).trim();if(!clean)throw new Error('工程文件为空');let project;try{project=JSON.parse(clean);}catch(err){const detail=String(err?.message||err).replace(/^JSON\.parse:\s*/i,'');throw new Error(`工程 JSON 不完整或格式错误：${detail}`);}return canonicalizeProject(project);}
+  function parseProjectBytes(bytes){const decoded=decodeProjectBytes(bytes);return {project:parseProjectText(decoded.text),encoding:decoded.encoding};}
+  function serializeProject(project,space=2){const canonical=canonicalizeProject(project);let text;try{text=JSON.stringify(canonical,null,space);}catch(err){throw new Error(`工程无法序列化：${err?.message||err}`);}JSON.parse(text);return text;}
+  return Object.freeze({FORMAT,SCHEMA_VERSION,stripBom,decodeProjectBytes,isProjectLike,validateProject:validateCurrentProject,registerCompatibilityImporter,canonicalizeProject,parseProjectText,parseProjectBytes,serializeProject});
 });

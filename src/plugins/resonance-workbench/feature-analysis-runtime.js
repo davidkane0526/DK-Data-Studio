@@ -158,7 +158,7 @@
       const compute=()=>{const Arows=gateSeriesRows(s.seriesA),Brows=gateSeriesRows(s.seriesB);let terResult=null;try{terResult=computeGateTer(terSettings);}catch{}const rows=S.pairGateSeries?.(Arows,Brows,terResult?.terMaxByVg||[],s)||[];const hysteresis=gateHysteresisRows(s.hysteresisLabel);const summary=S.summarizeGateRows?.(rows,hysteresis)||{fits:{},correlations:{}};const featureField=gateFeatureField(s);return {settings:{...s},seriesA:gateOption(s.seriesA),seriesB:gateOption(s.seriesB),Arows,Brows,rows,hysteresis,terResult,featureField,fits:summary.fits||{},correlations:summary.correlations||{}};};
       gateComputeKey=key;
       if(live.pipelineRuntime?.runSync){
-        const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>a?.metadata?.adapter==='legacy-dataset');
+        const source=(artifacts?.list?.({kind:'data.table',includeTransient:true})||[]).filter(a=>String(a?.semanticType||'')==='science.transport.iv');
         const executed=live.pipelineRuntime.runSync('gate-analysis',source,{parameters:{settings:{...s},terSettings:{...terSettings},terAlgorithmRef,peakKey,metricRevision:live.peakMetricRevision},publish:true,revision:dataRevision});
         gateResult=executed?.value||null;
       }else gateResult=performance?.stage?.('gate-compute',dataRevision,key,compute,{limit:6})||compute();

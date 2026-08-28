@@ -1,5 +1,5 @@
 const assert=require('assert');const fs=require('fs');const path=require('path');const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');const Theme=require('../sdk/theme-contract');
-assert.equal(Theme.version,'3.5.0');assert(Theme.supports('contract.materialBlur'));assert(!Theme.supports('materialBlur'));assert(Theme.supports('contract.material.roles.floating'));
+assert.equal(Theme.version,'3.6.0');assert(Theme.supports('contract.materialBlur'));assert(!Theme.supports('materialBlur'));assert(Theme.supports('contract.material.roles.floating'));
 const runtime=read('src/core/theme/material-renderer.js');for(const x of ['renderer.backdropBlur','BROKEN_MATERIAL_RENDERER','OPAQUE_PARENT_OCCLUSION','--dkds-material-renderer-version'])assert(runtime.includes(x));
 const coverage=read('src/core/theme/coverage-runtime.js');for(const x of ['renderStatus','brokenMaterial','rendererCapabilities','OPAQUE_PARENT_OCCLUSION'])assert(coverage.includes(x));
 const themeRuntime=read('src/core/theme/runtime.js');assert(themeRuntime.includes('rendererCapabilities')&&themeRuntime.includes("key.startsWith('renderer.')"));
@@ -10,5 +10,5 @@ const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Li
 for(const html of [read('src/index.html'),read('src/plugin-window/index.html')])assert(html.includes('core/theme/material-renderer.js')&&html.indexOf('core/theme/material-renderer.js')<html.indexOf('core/theme/runtime.js'));
 const aux=read('src/plugin-window/runtime.js');assert(aux.includes('themeRenderer:')&&aux.includes('themeMaterialProbe:'));
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
-const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.17.16');assert.equal(contract.themeContractVersion,'3.5.0');
+const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.18.0');assert.equal(contract.themeContractVersion,'3.6.0');
 console.log('v3.61.71 Theme Contract 3.3 renderer verification checks passed.');

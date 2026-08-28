@@ -4,7 +4,7 @@
   if(root)root.DKDSThemeContract=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='3.5.0';
+  const VERSION='3.6.0';
   const MATERIAL_ROLES=Object.freeze(['chrome','sidebar','surface','elevated','popover','control','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
   const APPEARANCE_KEYS=Object.freeze([

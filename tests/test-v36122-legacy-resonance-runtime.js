@@ -32,12 +32,12 @@ const stalePeaks=idSweeps.map((sw,index)=>({
   datasetPath:idPath,vg:5,direction:sw.direction,v:sw.points[2].v,i:sw.points[2].i,
   accepted:true,manual:true,locked:false,peakOrder:1,peakLabel:'峰1'
 }));
-const project={datasets:[idDataset,igDataset],plugins:{'builtin.resonance-workbench':{workspace:{schema:1,scanVisibility:[[idPath,{forward:true,reverse:true}]],peaks:stalePeaks,peakCategories:[{order:1,label:'峰1'}]}}}};
+const project={format:'dk-data-studio-project',schemaVersion:3,dataModel:{schema:2,artifacts:[]},plugins:{'builtin.resonance-workbench':{workspace:{schema:1,scanVisibility:[[idPath,{forward:true,reverse:true}]],peaks:stalePeaks,peakCategories:[{order:1,label:'峰1'}]}}}};
 const context={
   console,structuredClone,setTimeout,clearTimeout,requestAnimationFrame:fn=>fn(),
   document:{querySelector:()=>null,querySelectorAll:()=>[]},
   DKDSPluginModules:moduleRuntime,DKDSScience:S,
-  DKDSData:{legacyDatasetsFromArtifacts:rows=>rows.map(row=>structuredClone(row.dataset)).filter(Boolean)}
+  DKDSData:{transportDatasetsFromArtifacts:(rows,{consumer=''}={})=>rows.map(row=>structuredClone(row.dataset)).filter(Boolean).filter(ds=>!consumer||(ds.assignments||[]).includes('*')||(ds.assignments||[]).includes(consumer))}
 };
 context.window=context;
 vm.createContext(context);
@@ -67,7 +67,7 @@ const feature=moduleRuntime.require('builtin.resonance-workbench','feature-runti
   const runtimeSource=read('src/plugins/resonance-workbench/feature-runtime.js');
   const windowRuntime=read('src/plugin-window/runtime.js');
   const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));
-  assert(runtimeSource.includes('canonical.filter(assignedToResonance)'),'Artifact-backed Resonance datasets must preserve the scoped assignment boundary.');
+  assert(runtimeSource.includes('transportDatasetsFromArtifacts'),'Canonical Artifact-backed Resonance datasets must preserve the scoped assignment boundary.');
   assert(runtimeSource.includes('reconcileSavedPeakSweeps')&&runtimeSource.includes('getGroupDiagnostics'),'Resonance runtime must reconcile old peak identities and expose live diagnostics.');
   assert(windowRuntime.includes('resonanceGroupDiagnostics'),'Dedicated renderer diagnostics must report the live Resonance runtime rather than an external reconstructed model.');
   {const v=(automation.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/)||[]).slice(1).map(Number);assert(v.length===3&&(v[0]>1||(v[0]===1&&v[1]>=26))&&automation.includes("'project.resonance-live'"),'Windows automation must execute current-project Resonance restoration on runner v1.26+.');}

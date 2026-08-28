@@ -22,7 +22,7 @@ const templateJs=read('sdk/templates/theme-profile/plugin.js');
 const schema=json('sdk/plugin-manifest.schema.json');
 const index=read('src/index.html');
 
-assert(theme.includes("version:'3.5.0'"),'Theme Runtime must expose Theme Contract 3.1 compatibility.');
+assert(theme.includes("version:'3.6.0'"),'Theme Runtime must expose Theme Contract 3.1 compatibility.');
 for(const key of ['motionFast','motionNormal','motionSlow','easeStandard','easeEmphasized','hoverLift','pressScale'])assert(theme.includes(key),`Theme Runtime motion token missing ${key}`);
 for(const cssVar of ['--dkui-motion-fast','--dkui-motion-normal','--dkui-motion-slow','--dkui-ease-standard','--dkui-ease-emphasized','--dkui-hover-lift','--dkui-press-scale'])assert(modern.includes(cssVar),`Core motion CSS token missing ${cssVar}`);
 assert(modern.includes('@media(prefers-reduced-motion:reduce)'),'Core Theme motion must respect reduced-motion.');

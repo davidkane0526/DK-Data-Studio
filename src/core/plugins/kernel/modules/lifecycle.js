@@ -28,7 +28,7 @@ const {requirePluginType}=require('./manifest');
   async function activateDefinition(definition, { restoreCurrentProject=true }={}) {
     const { manifest } = definition;
     if (active.has(manifest.id)) return active.get(manifest.id)?.instance || null;
-    if (manifest.apiVersion && !String(manifest.apiVersion).startsWith('1.')) {
+    if (String(manifest.apiVersion||'') !== '1.18.0') {
       disabled.set(manifest.id, `Unsupported plugin API ${manifest.apiVersion}`);
       eventEmit('plugin:state-changed', { id:manifest.id, reason:'api-version' });
       return null;

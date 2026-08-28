@@ -36,26 +36,25 @@ function assert(v,m){if(!v)throw new Error(m);}
   assert(JSON.stringify(heatZ)===JSON.stringify([[-100,-10,0],[1,10,100],[1000,10000,100000]]),'Heatmap source Z matrix must not be mutated.');
 
   const projectFormat=require('../src/core/project/format.js');
-require('../src/migrations/project-v1-domain.js').register(projectFormat);
-  const legacy=projectFormat.canonicalizeProject({
+  require('../src/project-importers/compatibility-gateway.js').register(projectFormat);
+  const historical=projectFormat.canonicalizeProject({
     format:'graphene-resonance-studio-project',schemaVersion:1,version:'3.17.0',
-    datasets:[{name:'VG=0',path:'legacy://VG=0',text:'V,I\n0,1e-9\n1,2e-9',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}]
+    datasets:[{name:'VG=0',path:'historical://VG=0',text:'V,I\n0,1e-9\n1,2e-9',vg:0,points:[{v:0,i:1e-9,index:0},{v:1,i:2e-9,index:1}]}]
   });
-  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),dataContext,{filename:'legacy-dataset-adapter.js'});
-  const D=dataContext.window.DKDSData,ownerStore=D.restoreStore(legacy.dataModel||{schema:1,artifacts:[]});
-  D.syncLegacyDatasetArtifacts(ownerStore,legacy.datasets);
-  const liveSnapshot=ownerStore.list({includeTransient:true});
-  assert(liveSnapshot.length===1&&liveSnapshot[0].kind==='data.table','A schema-v1 GRS project dataset must rebuild into the owner live Artifact Store.');
-  const dataCenterStore=D.restoreStore({schema:2,artifacts:liveSnapshot});
-  assert(dataCenterStore.list({includeTransient:true}).length===1,'Data Center live hydration must restore transient legacy adapters instead of showing an empty store.');
+  assert(historical.schemaVersion===3&&!Object.prototype.hasOwnProperty.call(historical,'datasets'),'Historical project must cross the Compatibility Gateway into Schema v3 only once.');
+  assert(historical.dataModel?.artifacts?.length===1&&historical.dataModel.artifacts[0].kind==='data.table','Historical source data must be materialized as a canonical DataTable.');
+  const dataContext={window:{},console,Date,Math,JSON,Map,Set,WeakMap,structuredClone:global.structuredClone,crypto:global.crypto};dataContext.globalThis=dataContext;dataContext.window.window=dataContext.window;vm.createContext(dataContext);vm.runInContext(read('src/core/data/model.js'),dataContext,{filename:'data-model.js'});
+  const D=dataContext.window.DKDSData,ownerStore=D.restoreStore(historical.dataModel),liveSnapshot=ownerStore.list({includeTransient:true});
+  assert(liveSnapshot.length===1&&liveSnapshot[0].kind==='data.table'&&liveSnapshot[0].transient===false,'Owner live store must restore the canonical persisted source directly.');
+  const dataCenterStore=D.restoreStore({schema:2,artifacts:liveSnapshot});assert(dataCenterStore.list({includeTransient:true}).length===1,'Data Center live hydration must restore the owner snapshot without a second dataset reconciliation path.');
 
   const ui=read('src/generated/runtime/ui-infrastructure.js');
   assert(ui.includes('logDecadeTicks(domain)')&&ui.includes('yAxisGenerator.tickValues(this.logDecadeTicks(y.domain()))'),'D3 ScientificCurveSurface must label only powers of ten in log Y mode.');
-
-  const app=read('src/generated/runtime/app.js'),main=read('desktop/main.js'),mainAux=read('desktop/main-modules/auxiliary-window-runtime.js'),aux=read('src/plugin-window/runtime.js');
-  assert(app.includes("artifactHydration||''")&&app.includes("==='live'?snapshotArtifactRows():null"),'Activities that declare live Artifact hydration must receive the owner snapshot without adding the payload to every heavy TOP window.');
-  const dc=read('src/plugins/data-center/feature-runtime.js');assert(dc.includes("artifactHydration:'live'"),'Data Center must explicitly request live Artifact hydration as a generic activity contract.');
-  assert(mainAux.includes('artifactSnapshot')&&mainAux.includes('artifactDigest')&&mainAux.includes('cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest'),'Auxiliary-window runtime must track live Artifact snapshot changes when reusing TOP windows.');
-  assert(aux.includes('const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null')&&aux.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}')&&aux.includes('syncLegacyDatasetArtifacts(artifactStore,project.datasets)'),'Dedicated live hydration must restore the owner snapshot and reconcile self-contained legacy transient adapters instead of treating the two sources as mutually exclusive.');
-  console.log('v3.61.12 corrected log display + reconciled legacy Data Center bootstrap checks passed.');
+  const app=read('src/generated/runtime/app.js'),mainAux=read('desktop/main-modules/auxiliary-window-runtime.js'),aux=read('src/plugin-window/runtime.js');
+  assert(app.includes("artifactHydration||''")&&app.includes("==='live'?snapshotArtifactRows():null"),'Activities that declare live Artifact hydration must receive the owner snapshot.');
+  const dc=read('src/plugins/data-center/feature-runtime.js');assert(dc.includes("artifactHydration:'live'"),'Data Center must explicitly request live Artifact hydration.');
+  assert(mainAux.includes('artifactSnapshot')&&mainAux.includes('artifactDigest')&&mainAux.includes('cachedBootstrap.artifactDigest !== nextBootstrap.artifactDigest'),'Auxiliary-window reuse must track Artifact snapshot changes.');
+  assert(aux.includes('const liveSnapshot=Array.isArray(bootstrap?.artifactSnapshot)?bootstrap.artifactSnapshot:null')&&aux.includes('liveSnapshot!==null?{schema:2,artifacts:liveSnapshot}'),'Dedicated live hydration must restore exactly the owner Artifact snapshot.');
+  assert(!aux.includes('syncLegacyDatasetArtifacts')&&!aux.includes('project.datasets'),'Dedicated windows must not reconcile a legacy dataset side channel.');
+  console.log('v3.62 log display + canonical Data Center bootstrap checks passed.');
 })().catch(err=>{console.error(err);process.exit(2);});

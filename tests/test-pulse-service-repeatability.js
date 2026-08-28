@@ -28,17 +28,19 @@ vm.runInContext(fs.readFileSync(path.join(root,'src/plugins/pulse-analysis/analy
 (async()=>{
   const statuses=[];
   const pulseAnalysis=context.window.DKDSPluginModules.require('builtin.pulse-analysis','analysis-service');
+  const artifact={id:'pulse-test',kind:'data.table',semanticType:'science.pulse.trace',name:'periodic',rowCount:1200,metadata:{importedSource:true,sourceFormat:'pulse-text',dataAssignments:['builtin.pulse-analysis']},source:{path:'periodic.csv',name:'periodic.csv',encoding:'utf-8',text:periodicCsv()},columns:[]};
+  const artifacts={list:()=>[artifact],get:id=>String(id)===artifact.id?artifact:null};
   const runtime=await pulseAnalysis.create({
-    setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,saveChartImage:()=>true,scheduleSnapshot:()=>{}
+    setStatus:s=>statuses.push(String(s)),copyTextToClipboard:()=>true,saveChartImage:()=>true,scheduleSnapshot:()=>{},artifacts
   });
   const file={
-    id:'pulse-test',path:'periodic.csv',name:'periodic.csv',size:0,label:'periodic',checked:true,
-    text:periodicCsv(),encoding:'utf-8',analyzed:true,analyzedAt:null,result:null,
+    id:'pulse-test',artifactId:'pulse-test',path:'periodic.csv',name:'periodic.csv',size:0,label:'periodic',checked:true,
+    analyzed:true,analyzedAt:null,result:null,
     settings:{segmentationMode:'auto',timeCol:0,currentCol:1,voltageCol:2,cycleSamples:0,cycleOffsetSamples:0,windowStartFraction:.25,windowEndFraction:.75,phaseOrder:'write-read',readPairMode:'after'}
   };
   runtime.service.restore({activeId:'pulse-test',resultScope:'checked',files:[file]});
   let item=runtime.service.getState().files[0];
-  assert(item.result,'Legacy saved item with analyzed=true must be re-analyzed during restore.');
+  assert(item.result,'Canonical saved Pulse Artifact with analyzed=true must be re-analyzed during restore.');
   assert.strictEqual(item.result.points.length,4,'Automatic periodic cycle estimate must recover four cycles.');
   assert.strictEqual(item.error,'');
 

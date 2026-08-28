@@ -103,4 +103,4 @@ assert.strictEqual(legacy.segmentationMode,undefined);
 assert.strictEqual(legacy.blockSamples,20);
 assert.ok(legacy.points.length>=3);
 
-console.log('Pulse analysis supports periodic point-count cycles, unequal write/read widths, current-only files, filename protocol inference, and legacy data.');
+console.log('Pulse analysis supports periodic point-count cycles, unequal write/read widths, current-only files, filename protocol inference, and historical pulse-text layouts.');

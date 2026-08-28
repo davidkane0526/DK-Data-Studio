@@ -1,7 +1,7 @@
 (() => {
   if(window.DKDSPluginContract)return;
   const VERSION='1.0.0';
-  const API_VERSION='1.17.0';
+  const API_VERSION='1.18.0';
   const REQUIREMENTS=Object.freeze({
     'runtime':api=>!!api?.runtime,
     'events':api=>!!api?.events,
@@ -76,7 +76,7 @@
     const requested=normalize(manifest.requiresCore);
     for(const id of requested)if(!REQUIREMENTS[id])errors.push(`Unknown Core requirement: ${id}`);
     const api=String(manifest.apiVersion||API_VERSION);
-    if(!/^1\.(?:[0-9]+)(?:\.\d+)?$/.test(api))errors.push(`Unsupported Plugin API: ${api}`);
+    if(api!==API_VERSION)errors.push(`Unsupported Plugin API: ${api}; host requires ${API_VERSION}`);
     const categories=normalize(manifest.algorithmCategories);
     if(manifest.algorithmCategories!==undefined&&!Array.isArray(manifest.algorithmCategories))errors.push('algorithmCategories must be an array.');
     for(const category of categories)if(!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(category))errors.push(`Invalid algorithm category: ${category}`);

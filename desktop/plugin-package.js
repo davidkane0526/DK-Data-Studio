@@ -78,7 +78,7 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
   }
   if (!name) throw new Error('Plugin manifest.name is required.');
   if (!version) throw new Error('Plugin manifest.version is required.');
-  if (!apiVersion.startsWith('1.')) throw new Error(`Unsupported Plugin API: ${apiVersion}`);
+  if (apiVersion !== '1.18.0') throw new Error(`Unsupported Plugin API: ${apiVersion}; this host requires 1.18.0`);
 
   const rawFiles = pkg.files;
   if (!rawFiles || typeof rawFiles !== 'object' || Array.isArray(rawFiles)) throw new Error('Plugin package files are missing.');

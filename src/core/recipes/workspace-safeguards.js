@@ -23,9 +23,10 @@
     function existingImportRows(){
       const seen=new Map();
       const project=ctx.project.create?.()||{};
-      for(const ds of (Array.isArray(project.datasets)?project.datasets:[])){
-        const path=String(ds?.sourcePath||ds?.path||'').trim();
-        const name=String(ds?.sourceName||helpers.basename(path)||ds?.name||'').trim();
+      for(const artifact of (Array.isArray(project?.dataModel?.artifacts)?project.dataModel.artifacts:[])){
+        if(artifact?.metadata?.importedSource!==true)continue;
+        const path=String(artifact?.source?.path||'').trim();
+        const name=String(artifact?.source?.name||helpers.basename(path)||artifact?.name||'').trim();
         const key=`${path}\n${name}`;
         if(name&&!seen.has(key))seen.set(key,{path,name});
       }

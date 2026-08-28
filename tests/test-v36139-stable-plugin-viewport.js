@@ -18,9 +18,9 @@ const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
 
 
-assert.equal(contract.sdkVersion,'1.17.16');
-assert.equal(contract.pluginApiVersion,'1.17.0');
-assert.equal(contract.minimumAppVersion,'3.61.39');
+assert.equal(contract.sdkVersion,'1.18.0');
+assert.equal(contract.pluginApiVersion,'1.18.0');
+assert.equal(contract.minimumAppVersion,'3.62.0');
 
 const safeHost='[data-primary-scroll="safe"] .dkds-analysis-primary-host';
 assert(/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow\s*:\s*hidden[^}]*min-height\s*:\s*0[^}]*align-items\s*:\s*stretch/i.test(css),'safe mode must keep the outer canvas geometry bounded instead of making it the scroll owner.');
@@ -43,9 +43,9 @@ const pulseLikeCss=`
 .ps-wave{display:grid;grid-template-rows:auto minmax(0,1fr) minmax(0,.58fr);min-height:560px}
 `;
 const report=inspectWorkspaceStyles({
-  apiVersion:'1.17.0',pluginType:'tool',workspace:{role:'top'},styles:[{name:'plugin.css',content:pulseLikeCss}]
+  apiVersion:'1.18.0',pluginType:'tool',workspace:{role:'top'},styles:[{name:'plugin.css',content:pulseLikeCss}]
 });
-assert.equal(report.errors.length,0,'Legacy-safe plugin layout warnings must not become a breaking Plugin API 1.17 install error.');
+assert.equal(report.errors.length,0,'Legacy-safe plugin layout warnings must not become a breaking Plugin API 1.18 install error.');
 assert(report.warnings.some(x=>x.includes('min-height:100%')),'SDK validator must flag percentage min-height chains that can feed intrinsic content height back into Tool layout.');
 assert(report.warnings.some(x=>x.includes('auto Grid rows')&&x.includes('align-content:start')),'SDK validator must flag compact auto-row grids that stretch into large blank gaps when a sibling is taller.');
 

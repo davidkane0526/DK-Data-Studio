@@ -2,7 +2,7 @@
   "id": "builtin.standard-transport-algorithms",
   "name": "Standard Transport Algorithms",
   "version": "1.1.0",
-  "apiVersion": "1.9.0",
+  "apiVersion": "1.18.0",
   "requiresCore": [
     "analysis.algorithms",
     "data.transforms",
@@ -85,8 +85,8 @@
     }
   ],
   "compatibility": {
-    "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.8.0"
+    "app": ">=3.62.0 <4.0.0",
+    "pluginApi": "^1.18.0"
   },
   "pluginType": "algorithm",
   "pluginDependencies": [

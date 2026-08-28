@@ -8,14 +8,14 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.18.0');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');
 const materialCss=read('src/styles/theme/material-renderer.css');
 const modernRoot=read('src/styles/presentation/shell.css');
 const keys=['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity'];
-assert(theme.includes("version:'3.5.0'"),'Theme Runtime must expose 3.1.0.');
+assert(theme.includes("version:'3.6.0'"),'Theme Runtime must expose 3.1.0.');
 assert(theme.includes('const MATERIAL_KEYS='),'Theme Runtime must keep bounded material keys separate from motion.');
 assert(theme.includes('ThemeContract.resolveProfile'),'Theme Runtime must resolve shared material profile values through the strict Theme Contract.');
 for(const key of keys){assert(theme.includes(key),`Theme Runtime missing ${key}`);assert(types.includes(key),`SDK types missing ${key}`);assert(template.includes(key),`Theme template missing ${key}`);}

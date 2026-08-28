@@ -1,54 +1,12 @@
-const assert=require('assert');
-const fs=require('fs');
-const path=require('path');
-const vm=require('vm');
-const root=path.resolve(__dirname,'..');
-const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-
-const dataModel=read('src/core/data/model.js');
-const app=read('src/generated/runtime/app.js');
-const dcFeature=read('src/plugins/data-center/feature-runtime.js');
-const dcViews=read('src/plugins/data-center/shared-views.js');
-const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
-const resonanceControls=read('src/plugins/resonance-workbench/feature-controls-runtime.js');
-const resonanceViews=read('src/plugins/resonance-workbench/view-components.js');
-const resonanceEntry=read('src/plugins/resonance-workbench/plugin.js');
-
-const context={window:{},console,structuredClone,crypto:{randomUUID:()=>`uuid-${Math.random()}`}};
-context.window.window=context.window;
-vm.createContext(context);
-vm.runInContext(dataModel,context,{filename:'data-model.js'});
-vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
-const D=context.window.DKDSData;
-assert(D&&typeof D.removeLegacyDatasets==='function','Core Data Model must expose the generic imported-source removal primitive.');
-
-const datasets=[
-  {path:'a.csv',name:'a.csv',vg:1,points:[{v:0,i:1},{v:1,i:2}]},
-  {path:'b.csv',name:'b.csv',vg:2,points:[{v:0,i:3},{v:1,i:4}]}
-];
-const store=D.createStore();
-D.syncLegacyDatasetArtifacts(store,datasets);
-const sourceA=store.list({includeTransient:true}).find(a=>a.metadata?.legacyDatasetPath==='a.csv');
-const sourceB=store.list({includeTransient:true}).find(a=>a.metadata?.legacyDatasetPath==='b.csv');
-assert(sourceA&&sourceB,'Both imported sources must be projected into the Artifact Store.');
-const derived=D.derive(sourceA,{id:'derived-a',kind:'data.transform',name:'derived-a',x:[0,1],y:[2,3],metadata:{}});
-store.upsert(derived);
-assert(store.lineage(sourceA.id).descendants.some(row=>row.id==='derived-a'),'Test fixture must include a lineage descendant.');
-
-const result=D.removeLegacyDatasets(store,datasets,[{path:'a.csv'}]);
-assert.deepStrictEqual(Array.from(result.datasets,row=>row.path),['b.csv'],'Removing one source must leave unrelated imported sources intact.');
-assert.deepStrictEqual(Array.from(result.removed,row=>row.path),['a.csv'],'Removal result must identify the canonical project source removed.');
-assert(!store.get(sourceA.id)&&!store.get('derived-a'),'Removing an imported source must remove its projected source artifact and derived lineage descendants.');
-assert(store.get(sourceB.id),'Removing one imported source must not remove another source artifact.');
-
-assert(app.includes("'core.data-sources'")&&app.includes('methods:dataSourceHostApi()'),'Host must expose source lifecycle through one generic Core capability.');
-assert(dcFeature.includes('const sourceCapability=ctx.data.sources')&&dcFeature.includes('sourceCapability.remove([ref])'),'Data Center must consume the public scoped data.sources lifecycle API rather than mutate host state directly.');
-assert(dcViews.includes('id="dcDataActionsBtn"')&&dcViews.includes('编辑'),'Data Center must expose source lifecycle through the aligned data-actions menu.');
-assert(dcFeature.includes('openDataActions')&&dcFeature.includes('修改标签')&&dcFeature.includes('排除')&&dcFeature.includes('删除'),'Data Center data objects must expose the shared rename/exclude/delete action set.');
-assert(dcFeature.includes('artifactContextBehavior?.bind?.')&&!dcFeature.includes('artifactList.oncontextmenu'),'Data Center data objects must route row context actions through Interaction Behavior.');
-assert(resonanceControls.includes('datasetActionItems(path)')&&resonanceControls.includes('datasetContextBehavior.bind(list')&&!resonanceControls.includes("addEventListener('contextmenu'")&&resonanceControls.includes('修改标签')&&resonanceControls.includes('排除')&&resonanceControls.includes('删除'),'Resonance control-rail owner must expose source-data lifecycle actions through Interaction Behavior.');
-assert(resonance.includes('setDataSourceRuntime(runtime)')&&resonanceViews.includes('R.setDataSourceRuntime?.(ctx.data.sources)')&&!resonanceEntry.includes("ctx.capabilities.proxy('core.data-sources')"),'Resonance shared View/runtime wiring must consume the public scoped data.sources API without bloating the thin plugin entry.');
-assert(!resonance.includes('state.datasets.splice')&&!resonanceControls.includes('state.datasets.splice'),'Resonance must not duplicate source deletion inside plugin state.');
-assert(!dcFeature.includes('state.datasets.splice')&&!dcFeature.includes('legacyDatasetPath)=null'),'Data Center must not duplicate imported-source ownership inside plugin state.');
-
-console.log('v3.58.2 data-source lifecycle checks passed.');
+'use strict';
+const assert=require('assert');const fs=require('fs');const path=require('path');const vm=require('vm');
+const root=path.resolve(__dirname,'..');const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const dataModel=read('src/core/data/model.js'),host=read('src/app/modules/data-artifact-host.js'),dc=read('src/plugins/data-center/feature-runtime.js'),dcViews=read('src/plugins/data-center/shared-views.js'),res=read('src/plugins/resonance-workbench/feature-runtime.js'),controls=read('src/plugins/resonance-workbench/feature-controls-runtime.js'),views=read('src/plugins/resonance-workbench/view-components.js'),entry=read('src/plugins/resonance-workbench/plugin.js');
+const context={window:{},console,structuredClone,crypto:{randomUUID:()=>`uuid-${Math.random()}`}};context.window.window=context.window;vm.createContext(context);vm.runInContext(dataModel,context,{filename:'data-model.js'});const D=context.window.DKDSData;
+assert(typeof D.transportDatasetFromTable==='function'&&typeof D.transportDatasetsFromArtifacts==='function','Core must expose canonical scientific projections.');assert(!dataModel.includes('removeLegacyDatasets')&&!dataModel.includes('syncLegacyDatasetArtifacts'),'Core must not own a legacy source lifecycle.');
+const source=D.createTable({id:'source:a',name:'a.csv',semanticType:'science.transport.iv',metadata:{importedSource:true,dataAssignments:['*'],vg:1},source:{path:'a.csv'},columns:[{key:'Vd',role:'x',values:[0,1]},{key:'Id',role:'y',values:[1,2]}]});const store=D.createStore([source]);const derived=D.derive(source,{id:'derived-a',kind:'data.transform',name:'derived-a',x:[0,1],y:[2,3],metadata:{}});store.upsert(derived);assert(store.lineage(source.id).descendants.some(row=>row.id==='derived-a'));
+assert(host.includes('const sourceArtifacts=()=>')&&host.includes('metadata?.importedSource===true'),'Host source lifecycle must be derived from canonical imported Artifacts.');assert(host.includes('removeIds=new Set()')&&host.includes('lineage?.(root.id)?.descendants'),'Deleting a canonical source must collect descendants through Core lineage.');assert(host.includes("type:'source-remove'")&&host.includes('removedArtifactIds'),'Source deletion must publish one Artifact delta.');assert(!host.includes('state.datasets')&&!host.includes('removeLegacyDatasets'),'Host source lifecycle must not synchronize a second dataset array.');
+assert(dc.includes('const sourceCapability=ctx.data.sources')&&dc.includes('sourceCapability.remove([ref])'));assert(dcViews.includes('id="dcDataActionsBtn"')&&dcViews.includes('编辑'));
+assert(controls.includes('datasetActionItems(path)')&&controls.includes('datasetContextBehavior.bind(list')&&!controls.includes("addEventListener('contextmenu'"));assert(res.includes('setDataSourceRuntime(runtime)')&&views.includes('R.setDataSourceRuntime?.(ctx.data.sources)')&&!entry.includes("ctx.capabilities.proxy('core.data-sources')"));
+assert(!res.includes('state.datasets.splice')&&!dc.includes('state.datasets.splice'));
+console.log('v3.62 data-source lifecycle PASS: canonical source ownership, lineage deletion and scoped workbench actions.');

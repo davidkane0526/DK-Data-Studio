@@ -1,4 +1,4 @@
-# Standard Data Model and Provenance — v3.18
+# Standard Data Model and Provenance — v3.62
 
 ## Purpose
 
@@ -106,39 +106,37 @@ ctx.data.artifacts.get(id)
 ctx.data.artifacts.add(artifact)
 ctx.data.artifacts.upsert(artifact)
 ctx.data.artifacts.remove(id)
-ctx.data.artifacts.syncLegacy()
+ctx.data.artifacts.lineage(id)
 ```
 
 The Artifact Store is project-scoped, not application-global.
 
-### Legacy resonance data
+### Canonical scientific source data
 
-The mature resonance workspace still uses historical `datasets / sweeps / peaks` state.
+Studio 3.62 does not maintain a second `datasets` store. Imported transport data is persisted as `data.table` Artifacts, normally with `semanticType: "science.transport.iv"`, source metadata and `metadata.dataAssignments`.
 
-For migration, every legacy dataset is mirrored into a deterministic transient DataTable:
+Scientific algorithms that still operate most naturally on `{path, vg, points}` transport series receive an **ephemeral projection** from the canonical table rather than a mirrored persistent object:
 
 ```text
-legacy dataset
+canonical data.table Artifact
     ↓
-DKDSData.fromLegacyDataset()
+DKDSData.transportDatasetFromTable()
     ↓
-data.table
+ephemeral scientific transport view
 ```
 
-These source mirrors use stable ids derived from the legacy dataset path.
+`DKDSData.transportDatasetsFromArtifacts()` applies assignment scoping and produces these views for consumers such as Resonance and TER. The projection is never saved as a second project data source.
 
-They are `transient:true`, which means they are reconstructed from the existing project dataset when a project opens and are **not duplicated in saved project JSON**.
-
-Derived artifacts are persistent.
+Historical project files are handled before runtime restore by `src/project-importers/compatibility-gateway.js`. That gateway materializes historical dataset arrays once into persistent canonical DataTable Artifacts and then removes the old fields.
 
 ## Project JSON
 
-New generic artifacts are stored under:
+Schema v3 projects persist generic artifacts under `dataModel` and plugin/host state in separate namespaces:
 
 ```json
 {
   "dataModel": {
-    "schema": 1,
+    "schema": 2,
     "artifacts": []
   }
 }

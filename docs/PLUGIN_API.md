@@ -130,7 +130,7 @@ ctx.data.analyzers.register('fit', { run:({value,settings}) => fit(value, settin
 ctx.data.exporters.register('fit.csv', { run:({value}) => toCsv(value) });
 ```
 
-`ctx.data.artifacts` is the canonical live project data source. `project.datasets` is compatibility data, not a new plugin-local store.
+`ctx.data.artifacts` is the canonical live project data source. Plugin API 1.18 does not expose or consume `project.datasets`; historical dataset arrays are converted to canonical DataTable Artifacts by the Project Compatibility Gateway before plugin runtime starts.
 
 Derived results should be published with lineage rather than copied into plugin-private caches:
 

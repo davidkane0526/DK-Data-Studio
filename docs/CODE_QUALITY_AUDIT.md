@@ -1,8 +1,8 @@
-# Code quality audit — v3.61.110
+# Code quality audit — v3.62.0
 
 ## Release decision
 
-v3.61.110 retains the manifest-validation and UI ownership boundaries while closing the control-readability gap: selected-mode state is published by the owning workbench, Plugin Manager paint is fully semantic and Theme-owned, actual computed control foreground/background contrast is audited in both light and dark modes, and docked PortableViews are no longer double-classified as floating surfaces.
+v3.62.0 retains the v3.61.111 visual/ownership baseline while completing the Legacy-Free Cut: Schema v3 is the only current project shape, the live data model is Artifact-only, and historical-project interpretation is isolated in one external Project Compatibility Gateway.
 
 ## Completed
 
@@ -26,7 +26,7 @@ v3.61.110 retains the manifest-validation and UI ownership boundaries while clos
 - Automation diagnostics is now split by responsibility: `automation-smoke-cases.js` owns executable smoke-case implementations, while `automation-test-runtime.js` owns runner lifecycle, report assembly/persistence and UI binding. Both are below **48 KiB**, so the previous 80 KiB exception is removed and there are now **zero oversized authored JavaScript modules** under `src/` and `desktop/`.
 - Shell navigation now has one structural/behavioral owner. `shell-navigation.css` exclusively owns the command-bar/activity geometry, while `shell-navigation.js` owns secondary-activity overflow/reflow. `workspace-safeguards` is again limited to import safeguards, and plugin-manager typography has moved back to `schema-and-plugin-ui.css`. Structure-layer duplicated selectors fell from **89 to 73**, with cross-file ownership edges reduced from **100 to 78**. `validate-styles.js` now rejects shell-navigation geometry outside its owner.
 - Runtime failure ownership is now explicit. Strict `pluginType` validation remains mandatory for real plugin manifests, while Core/ownerless Activity and menu contributions are guarded before plugin classification. Theme popovers override enclosing Chrome ownership. Automation reports separate Core Theme, Plugin Runtime, External Packages, Scientific Data Contracts foundation, Algorithm Provider, Resonance Workbench and TER Workbench responsibilities.
-- Integration diagnostics live under `src/diagnostics/`, and legacy project/data adapters live under `src/migrations/`; neither is a Core responsibility.
+- Integration diagnostics live under `src/diagnostics/`. Historical project/data conversion lives only in `src/project-importers/compatibility-gateway.js`; `src/migrations/` is removed and current runtime code is forbidden from depending on it.
 - Presentation state ownership is now narrower. `control-status.css` exclusively owns AnalysisWorkbench navigation and status-bar/plugin-status state; `shell.css` owns generic shell hover/motion; `scientific.css` no longer carries global shell-control hover rules; and `workspace-theme-boundary.css` no longer acts as a late nav/status/shell-control patch layer. The card/surface pass now gives `scientific.css` sole presentation ownership of `trend-card`, `analysis-chart-card` and GroupPlot card/header/legend paint, while `shell.css` solely owns `floating-panel` / `floating-header` paint. Exact duplicate selectors across the five main presentation modules have fallen from **91 to 42**, with cross-file ownership edges reduced to **42**. `validate-styles.js` enforces these owners and treats 42/42 as monotonic debt ceilings.
 
 ## Measured debt

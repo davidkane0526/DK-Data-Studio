@@ -335,7 +335,6 @@ const rollbackExternalPlugin=(...args)=>require('./package-runtime').rollbackExt
           children: id => state.host?.artifacts?.children?.(id) || [],
           parents: id => state.host?.artifacts?.parents?.(id) || [],
           remove: id => state.host?.artifacts?.remove?.(id),
-          syncLegacy: () => {const store=state.host?.artifacts?.syncLegacy?.();const rows=state.host?.artifacts?.list?.({includeTransient:true})||[];infrastructureScope?.entities?.projectArtifacts?.(rows);return store;}
         },
         entities: infrastructureScope?.entities || Object.freeze({
           upsert: entity => window.DKDSEntities?.registry?.upsert?.(entity,{owner:pluginId}),

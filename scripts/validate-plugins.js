@@ -53,7 +53,7 @@ for (const name of fs.readdirSync(pluginsDir).sort()) {
 
   const entry = path.join(dir, m.entry || 'plugin.js');
   if (!fs.existsSync(entry)) fail(`${name}: entry not found ${m.entry}`);
-  if (!['1.9.0','1.10.0','1.11.0','1.12.0','1.13.0','1.14.0','1.15.0','1.16.0','1.17.0'].includes(String(m.apiVersion||''))) fail(`${name}: built-in plugins must target apiVersion 1.9.0, 1.10.0, 1.11.0, 1.12.0, 1.13.0, 1.14.0, 1.15.0, 1.16.0 or 1.17.0`);
+  if (String(m.apiVersion||'') !== '1.18.0') fail(`${name}: built-in plugins must target apiVersion 1.18.0`);
   const pluginTypes=new Set(['foundation','data','algorithm','workbench','task','tool','theme','extension','developer']);
   if(!pluginTypes.has(String(m.pluginType||'')))fail(`${name}: built-in plugins must declare a valid pluginType`);
   if(m.pluginType==='theme'){if(!(m.requiresCore||[]).includes('ui.theme'))fail(`${name}: theme plugins must declare ui.theme`);if((m.requiresCore||[]).includes('ui.styles'))fail(`${name}: theme plugins must use Theme Contract tokens instead of ui.styles`);if(Array.isArray(m.styles)&&m.styles.length)fail(`${name}: theme plugins must not ship arbitrary stylesheets`);if(m.workspace||m.window)fail(`${name}: theme plugins must not own workspace/window contracts`);if(m.algorithmProvider===true)fail(`${name}: theme plugins cannot be Algorithm Providers`);}

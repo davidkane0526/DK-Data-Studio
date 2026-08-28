@@ -1,4 +1,4 @@
-# Project structure policy — v3.61.110
+# Project structure policy — v3.62.0
 
 ## Authored source
 
@@ -12,7 +12,8 @@
 - `src/core/theme/`: Theme runtime, Material renderer, coverage/debug utilities.
 - `src/core/host/`, `services/`, `performance/`, `workflow/`, `recipes/`: cross-plugin Core responsibilities.
 - `src/diagnostics/`: integration diagnostics across Core and plugins; diagnostics may know domain plugins, so they are explicitly outside Core.
-- `src/migrations/`: isolated one-way compatibility adapters for old project/data formats; migration code must not flow back into the current Core model.
+- `src/project-importers/`: the single one-way Project Compatibility Gateway for historical project formats. It converts old payloads to Schema v3 before runtime restore and must never become a second live data model.
+- `src/migrations/`: **must not exist** in v3.62 runtime source; compatibility is an import-boundary concern, not a runtime migration layer.
 - `src/styles/foundation/`: reset/foundation rules.
 - `src/styles/structure/`: geometry and structural contracts.
 - `src/styles/presentation/`: shared visual component presentation.

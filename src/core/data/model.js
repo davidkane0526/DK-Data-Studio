@@ -269,9 +269,22 @@
     const tags=new Set();
     const add=value=>{for(const tag of dataTagsFromText(value))tags.add(tag);};
     for(const tag of safeArray(artifact.tags)){const normalized=normalizeDataTag(tag);if(normalized)tags.add(normalized);add(tag);}
-    for(const value of [artifact.name,artifact.semanticType,artifact?.source?.name,artifact?.source?.path,artifact?.metadata?.sourceName,artifact?.metadata?.legacyDatasetPath,artifact?.metadata?.label])add(value);
+    for(const value of [artifact.name,artifact.semanticType,artifact?.source?.name,artifact?.source?.path,artifact?.metadata?.sourceName,artifact?.metadata?.seriesPath,artifact?.metadata?.label])add(value);
     for(const column of safeArray(artifact.columns))for(const tag of columnDataTags(column))tags.add(tag);
     return [...tags];
+  }
+
+  function transportDatasetFromTable(artifact){
+    const table=rehydrateArtifact(artifact);if(!table||table.kind!=='data.table')return null;
+    const semantic=String(table.semanticType||table.metadata?.dataType||'');if(semantic&&semantic!=='science.transport.iv')return null;
+    const x=column(table,'Vd')||table.columns?.find(c=>c.role==='x')||table.columns?.[0],y=column(table,'Id')||table.columns?.find(c=>c.role==='y')||table.columns?.[1];if(!x||!y)return null;
+    const vgColumn=column(table,'Vg')||table.columns?.find(c=>c.role==='group'),sourceLineColumn=column(table,'sourceLine')||table.columns?.find(c=>c.role==='index');
+    const length=Math.min(safeArray(x.values).length,safeArray(y.values).length),metaVg=table.metadata?.vg,vgValue=metaVg!==null&&metaVg!==undefined&&String(metaVg).trim()!==''&&Number.isFinite(Number(metaVg))?Number(metaVg):safeArray(vgColumn?.values).map(Number).find(Number.isFinite),points=[];
+    for(let index=0;index<length;index++){const v=Number(x.values[index]),i=Number(y.values[index]);if(!Number.isFinite(v)||!Number.isFinite(i))continue;const sourceLine=Number(sourceLineColumn?.values?.[index]);points.push({v,i,index,sourceLine:Number.isFinite(sourceLine)?sourceLine:index+1});}
+    return {path:String(table.metadata?.seriesPath||table.id),name:String(table.name||table.source?.name||'I-V data'),sourcePath:String(table.source?.path||''),sourceName:String(table.source?.name||table.name||''),encoding:String(table.source?.encoding||''),vg:Number.isFinite(vgValue)?vgValue:null,points,importSpec:deepClone(table.metadata?.importSpec||null),assignments:safeArray(table.metadata?.dataAssignments).map(String).filter(Boolean),excluded:table.metadata?.excluded===true,artifactId:String(table.id)};
+  }
+  function transportDatasetsFromArtifacts(artifacts,{consumer=''}={}){
+    const id=String(consumer||'').trim();return safeArray(artifacts).map(transportDatasetFromTable).filter(Boolean).filter(dataset=>{if(!id)return true;const assignments=safeArray(dataset.assignments);return assignments.includes('*')||assignments.includes(id);});
   }
 
   function summarize(a){
@@ -342,6 +355,6 @@
     provenanceStep,normalizeLineage,fingerprintArtifact,createTable,createSeries,createSweep,createTransform,createMatrix,createEventSeries,createPeakSet,
     createFitResult,createAnalysisResult,createAnnotation,createImageData,isArtifact,validateArtifact,
     column,columnValues,rows,withProvenance,derive,summarize,
-    rehydrateArtifact,createStore,serializeStore,restoreStore,normalizeDataTag,dataTagLabel,dataTagsFromText,columnDataTags,artifactDataTags
+    rehydrateArtifact,createStore,serializeStore,restoreStore,transportDatasetFromTable,transportDatasetsFromArtifacts,normalizeDataTag,dataTagLabel,dataTagsFromText,columnDataTags,artifactDataTags
   };
 })();

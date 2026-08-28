@@ -1,10 +1,10 @@
-# AI Plugin Development Guide — Plugin API v1.10
+# AI Plugin Development Guide — Plugin API v1.18
 
 This guide is intended to let another AI implement a complex DK Data Studio plugin without inventing host-specific infrastructure.
 
 ## 1. Non-negotiable architecture rule
 
-**If a capability is generic enough to be reused by another plugin, it belongs to Core.** A plugin may define domain algorithms, domain data types, domain state and domain view content, but it consumes application mechanisms only through Plugin API v1.10.
+**If a capability is generic enough to be reused by another plugin, it belongs to Core.** A plugin may define domain algorithms, domain data types, domain state and domain view content, but it consumes application mechanisms only through Plugin API v1.18.
 
 Before writing code, search `docs/PLUGIN_API.md`, `src/plugins/_template`, the manifest schema and existing Core registries. If the needed generic mechanism is missing, add it to Core first, document it, add a machine check, then consume it from the plugin.
 

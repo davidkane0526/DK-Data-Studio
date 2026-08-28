@@ -3,15 +3,14 @@ export type DKDSPluginInstance = { deactivate?(): void | Promise<void> };
 export type DKDSAlgorithmRef = { category: string; id: string; version?: string };
 export type DKDSSelectionSnapshot = { schema:number; revision:number; items:any[]; focus:any; ranges:any[]; context:Record<string,unknown>; source:any };
 export interface DKDSDataModelRuntime {
-  isArtifact(value:any):boolean; column(table:any,ref:any):any; columnValues(table:any,ref:any):any[]; rows(table:any,options?:{start?:number;limit?:number}):Record<string,any>[];
-  fromLegacyDataset?(dataset:any):any; toLegacyDataset?(artifact:any):any; summarize?(artifact:any):any; deepClone?<T=any>(value:T):T;
+  isArtifact(value:any):boolean; column(table:any,ref:any):any; columnValues(table:any,ref:any):any[]; rows(table:any,options?:{start?:number;limit?:number}):Record<string,any>[]; summarize?(artifact:any):any; deepClone?<T=any>(value:T):T;
 }
 export interface DKDSDataSourceDescriptor { path:string; name:string; sourcePath:string; sourceName:string; vg:number|null; points:number; excluded?:boolean; assignments?:string[]; artifactId:string; kind?:string; semanticType?:string; importerId?:string }
 export interface DKDSDataSourceTarget { id:string; label:string; icon:string; order:number }
 export interface DKDSDataSourceRef { path?:string; sourcePath?:string; artifactId?:string }
 export interface DKDSDataSourcesCapability { list(options?:{consumer?:string;pluginId?:string}):DKDSDataSourceDescriptor[]; targets?():DKDSDataSourceTarget[]; detach?(ref:DKDSDataSourceRef|string):Promise<any>|any; setAssignments?(ref:DKDSDataSourceRef|string,pluginIds:string[]):Promise<any>|any; rename(ref:DKDSDataSourceRef|string,label:string):Promise<any>|any; setExcluded(ref:DKDSDataSourceRef|string,value?:boolean):Promise<any>|any; remove(refs:DKDSDataSourceRef[]|DKDSDataSourceRef):Promise<{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]}>|{removed:Array<{path:string;name:string;sourcePath:string}>;removedArtifactIds:string[];sources:DKDSDataSourceDescriptor[]} }
 export interface DKDSManifest {
-  id:string; name:string; version:string; apiVersion:'1.10.0'|'1.11.0'|'1.12.0'|'1.13.0'|'1.14.0'|'1.15.0'|'1.16.0'|'1.17.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
+  id:string; name:string; version:string; apiVersion:'1.18.0'; entry?:string; enabled?:boolean; order?:number; description?:string; icon?:string;
   /** `tool` may use the same workspace.role='top' lifecycle as a TOP; Core groups its opener under the Tools menu. */
   pluginType?:'foundation'|'data'|'algorithm'|'workbench'|'task'|'tool'|'theme'|'extension'|'developer';
   ui?:{tableAppearance?:{cssOverrides?:Array<'row-striping'|'row-state'>}};
@@ -148,7 +147,7 @@ export interface DKDSDataImporterContext { targets?:string[] }
 export interface DKDSDataImporterResult { artifacts:any[]; inspection?:any }
 export interface DKDSDataImporterSpec {
   id?:string; name?:string; description?:string; extensions?:string[]; preferredConsumers?:string[]; outputKinds?:string[]; outputTypes?:string[];
-  editor?:'flexible-iv'|'generic-table'|string; storage?:'legacy-datasets'|'artifacts'; priority?:number;
+  editor?:'flexible-iv'|'generic-table'|string; priority?:number;
   defaultOptions?:()=>any; normalizeOptions?:(value:any)=>any; inspect?:(file:any,options?:any)=>any;
   score?:(file:any,context?:DKDSDataImporterContext)=>number; estimateArtifacts?:(file:any,options?:any,inspection?:any)=>number;
   parse?:(file:any,options?:any)=>any; parseArtifacts?:(file:any,options?:any)=>DKDSDataImporterResult;
@@ -219,7 +218,7 @@ export interface DKDSThemeRendererCapabilities { version:string; recipeInstalled
 export interface DKDSThemeControlContrastIssue { tag:string; id:string; className:string; text:string; foreground:string; background:string; effectiveBackground:{r:number;g:number;b:number;a:number}; ratio:number; minimum:number; disabled:boolean }
 export interface DKDSThemeCoverageReport { version:string; contractVersion:string; profile:string; mode:'light'|'dark'; rendererCapabilities:DKDSThemeRendererCapabilities|null; core:ReadonlyArray<DKDSThemeCoverageArea & {renderStatus:string;realMaterial:number;occludedMaterial:number;brokenMaterial:number;render:ReadonlyArray<{status:DKDSThemeMaterialRenderStatus;role:string;expectedRole:string;recipe:DKDSMaterialRecipe|string;expectedBlur:string;expectedBlurStrong?:string;expectedSaturation:string;backdropFilter:string;backgroundColor:string;opaqueParent?:any}>}>; contrast:{checked:number;issues:ReadonlyArray<DKDSThemeControlContrastIssue>;ok:boolean}; plugins:{issues:ReadonlyArray<DKDSThemeCoverageIssue>;summary:{total:number;warnings:number;plugins:string[]}}; summary:{areas:number;managed:number;partial:number;unmanaged:number;realMaterial:number;brokenMaterial:number;occludedMaterial:number;lowContrastControls:number;pluginIssues:number;rendererOk:boolean;ok:boolean} }
 export interface DKDSThemeCapability {
-  readonly contractVersion:'3.5.0';
+  readonly contractVersion:'3.6.0';
   supports(feature:string):boolean;
   rendererCapabilities():DKDSThemeRendererCapabilities;
   register(id:string,spec:DKDSThemeProfileSpec):{id:string;dispose?:()=>void};
@@ -238,7 +237,7 @@ export interface DKDSThemeCapability {
 }
 
 export interface DKDSPluginContext {
-  readonly apiVersion:'1.17.0'; readonly manifest:Readonly<DKDSManifest>;
+  readonly apiVersion:'1.18.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
   readonly status:{set(text:string):void};
   readonly events:{on(name:string,fn:(payload:any)=>void):()=>void;emit(name:string,payload?:any):boolean};

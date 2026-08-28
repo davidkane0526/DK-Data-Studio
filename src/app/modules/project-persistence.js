@@ -1,6 +1,6 @@
 'use strict';
 const {$, loadTrendColumnsPreference, state}=require('./context');
-const {diffArtifactRows, flexibleImportProvider, projectBaseName, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
+const {diffArtifactRows, projectBaseName, pushArtifactDeltaToActivityWindows, setStatus, snapshotArtifactRows}=require('./foundation');
 const activeProjectHistory=(...args)=>require('./project-tabs-history').activeProjectHistory(...args);
 const activeProjectTab=(...args)=>require('./project-tabs-history').activeProjectTab(...args);
 const blankProjectTab=(...args)=>require('./project-tabs-history').blankProjectTab(...args);
@@ -9,7 +9,6 @@ const markProjectClean=(...args)=>require('./project-tabs-history').markProjectC
 const mountProjectTab=(...args)=>require('./project-tabs-history').mountProjectTab(...args);
 const renderProjectTabs=(...args)=>require('./project-tabs-history').renderProjectTabs(...args);
 const base64ImportBytes=(...args)=>require('./import-workbench').base64ImportBytes(...args);
-const syncDatasetArtifacts=(...args)=>require('./data-artifact-host').syncDatasetArtifacts(...args);
 const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
 const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
 const scheduleMainPlotRelayout=(...args)=>require('./workspace-super-shell').scheduleMainPlotRelayout(...args);
@@ -19,21 +18,8 @@ const applyInspectorPanelLayout=(...args)=>require('./floating-docks').applyInsp
 function makeProject(){
   return {
     format:'dk-data-studio-project',
-    schemaVersion:2,
-    version:'3.61.111',
-    datasets:state.datasets.map(d=>({
-      name:d.name,path:d.path,text:d.text,vg:d.vg,
-      sourcePath:d.sourcePath||d.path,
-      sourceName:d.sourceName||d.name,
-      encoding:d.encoding||'',
-      importedAt:d.importedAt||null,
-      dataProvenance:d.dataProvenance||[],
-      importSpec:d.importSpec||null,
-      assignments:Object.prototype.hasOwnProperty.call(d,'assignments')?(Array.isArray(d.assignments)?d.assignments:[]):['*'],
-      points:(d.points||[]).map(p=>({
-        v:p.v,i:p.i,index:p.index,sourceLine:p.sourceLine,sourceColumns:p.sourceColumns
-      }))
-    })),
+    schemaVersion:3,
+    version:'3.62.0',
     dataModel:window.DKDSData.serializeStore(state.artifactStore,{includeTransient:false}),
     plugins:window.DKDSPlugins?.project?.serialize?.(activeProjectTab()?.pluginState||{})||activeProjectTab()?.pluginState||{},
     host:{
@@ -50,6 +36,7 @@ function makeProject(){
     }
   };
 }
+
 let projectSaveChoicePromise=null;
 function chooseProjectSaveMode(){
   if(projectSaveChoicePromise)return projectSaveChoicePromise;
@@ -116,54 +103,15 @@ async function saveProject(options={}){
   }
   return null;
 }
-function canonicalProjectDatasets(project){
-  const out=[];
-  for(const source of (Array.isArray(project?.datasets)?project.datasets:[])){
-    if(Array.isArray(source?.points)&&source.points.length){
-      out.push({...source,assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name,points:source.points.map((point,index)=>({...point,index}))});
-      continue;
-    }
-    if(!source?.text)continue;
-    try{
-      const provider=flexibleImportProvider();
-      // A self-contained project may keep the original multi-column text even
-      // when only one signal column was adopted. Reparse with the SAVED import
-      // mapping; reparsing with provider defaults can silently resurrect Ig or
-      // another auxiliary channel that the user explicitly did not select.
-      const savedSpec=source.importSpec&&typeof source.importSpec==='object'?source.importSpec:{};
-      const options={...(provider.defaultOptions?.()||{}),...savedSpec};
-      const parsed=provider.parse({name:source.sourceName||source.name,path:source.sourcePath||source.path,text:source.text,encoding:source.encoding||'auto'},options);
-      const restored=parsed?.datasets||[];
-      for(const dataset of restored){
-        const single=restored.length===1;
-        out.push({...dataset,
-          name:single&&source.name?source.name:dataset.name,
-          path:single&&source.path?source.path:dataset.path,
-          importSpec:{...(dataset.importSpec||{}),...savedSpec},
-          assignments:Object.prototype.hasOwnProperty.call(source,'assignments')?(Array.isArray(source.assignments)?source.assignments.map(String).filter(Boolean):[]):['*'],
-          sourcePath:source.sourcePath||source.path,sourceName:source.sourceName||source.name
-        });
-      }
-    }catch(err){console.warn('[DKDS project dataset restore]',err);}
-  }
-  return out;
-}
-
 function loadProjectIntoActive(pr,path){
   activeProjectHistory()?.clear?.('project-load');
   const previousArtifacts=snapshotArtifactRows();
-  state.datasets=canonicalProjectDatasets(pr);
   state.projectPath=path||null;
-  state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:1,artifacts:[]});
+  state.artifactStore=window.DKDSData.restoreStore(pr.dataModel||{schema:2,artifacts:[]});
   const artifactTab=activeProjectTab();
   if(artifactTab)artifactTab.artifactStore=state.artifactStore;
-  syncDatasetArtifacts({emit:false});
-  // Project restore is an Artifact transaction too. Legacy projects rebuild
-  // their transient DataTable adapters from `project.datasets`; previously
-  // that happened silently in the main renderer, leaving an already-open
-  // Data Center/TOP renderer on the old empty snapshot. Broadcast the full
-  // diff once, rather than asking each system window to special-case legacy
-  // project formats or forcing a full window reload.
+  // Project Compatibility Gateway guarantees a canonical Schema v3 payload
+  // before runtime restore, so every renderer receives the same Artifact diff.
   const projectRestoreDelta=diffArtifactRows(previousArtifacts,snapshotArtifactRows());
   if(projectRestoreDelta.upserts.length||projectRestoreDelta.removedIds.length){
     window.DKDSPlugins?.events?.emit?.('data:artifacts-changed',{type:'project-restore',artifactDelta:projectRestoreDelta,artifacts:snapshotArtifactRows()});
@@ -222,4 +170,4 @@ async function openProject(){
   return openProjectPayload(r);
 }
 
-module.exports=Object.freeze({makeProject, chooseProjectSaveMode, saveProject, canonicalProjectDatasets, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});
+module.exports=Object.freeze({makeProject, chooseProjectSaveMode, saveProject, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});

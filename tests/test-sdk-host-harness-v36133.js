@@ -9,8 +9,8 @@ const {normalizeExternalPluginWindow}=require('../desktop/plugin-window-manager'
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const contract=JSON.parse(read('sdk/contract.json'));
-assert.equal(contract.sdkVersion,'1.17.16');
-assert.equal(contract.pluginApiVersion,'1.17.0');
+assert.equal(contract.sdkVersion,'1.18.0');
+assert.equal(contract.pluginApiVersion,'1.18.0');
 
 const kernel=read('src/generated/runtime/plugin-kernel.js'),infra=read('src/generated/runtime/ui-infrastructure.js'),chart=read('src/core/scientific/chart-runtime.js');
 const requiredHostTokens=[
@@ -30,7 +30,7 @@ try{
     cp.execFileSync(process.execPath,[cli,'validate',dir],{stdio:'pipe'});
     cp.execFileSync(process.execPath,[cli,'package',dir,out],{stdio:'pipe'});
     const raw=JSON.parse(fs.readFileSync(out,'utf8'));
-    assert.equal(raw.manifest.apiVersion,'1.17.0',`${name} must target SDK 1.17`);
+    assert.equal(raw.manifest.apiVersion,'1.18.0',`${name} must target Plugin API 1.18`);
     if(name==='tool-plugin'){
       const pkg=normalizePluginPackage(raw,{allowBuiltinId:false});
       const windowSpec=normalizeExternalPluginWindow(pkg);

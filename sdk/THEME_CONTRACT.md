@@ -1,13 +1,13 @@
-# DK Data Studio Theme Contract 3.5
+# DK Data Studio Theme Contract 3.6
 
-Theme Contract 3.5 is the first release where theme profiles are validated as executable data contracts rather than accepted as arbitrary token bags.
+Theme Contract 3.6 is the current Studio 3.62 theme contract. It retains validated executable theme profiles and makes 3.6 the sole current authoring target alongside Plugin API 1.18.0.
 
 ## Capability discovery
 
-Theme plugins target Plugin API 1.17.0 but negotiate the theme contract independently:
+Theme plugins target Plugin API 1.18.0 and negotiate Theme Contract 3.6 independently:
 
 ```js
-ctx.ui.theme.contractVersion;              // "3.5.0"
+ctx.ui.theme.contractVersion;              // "3.6.0"
 ctx.ui.theme.supports('contract.materialBlur');      // true
 ctx.ui.theme.supports('contract.material.roles.chrome'); // true
 ```
@@ -16,9 +16,9 @@ A Theme plugin should declare:
 
 ```json
 "compatibility": {
-  "app": ">=3.61.71 <4.0.0",
-  "pluginApi": "^1.17.0",
-  "themeContract": "^3.5.0"
+  "app": ">=3.62.0 <4.0.0",
+  "pluginApi": "^1.18.0",
+  "themeContract": "^3.6.0"
 }
 ```
 
@@ -279,7 +279,7 @@ ctx.ui.theme.supports('renderer.thinGlass');
 ```
 
 
-### Studio 3.61.81 / SDK 1.17.16 stability notes
+### Studio 3.62.0 / SDK 1.18.0 Legacy-Free baseline
 
 - Material recipe selection remains profile-independent: profiles choosing the same recipe receive the same Core rendering/composition behavior.
 - A Core surface with material role `chrome` owns its integrated header/status command hit regions. Theme plugins should not paint those child actions as independent cards.

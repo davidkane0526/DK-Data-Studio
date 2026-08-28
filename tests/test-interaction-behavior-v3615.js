@@ -27,7 +27,7 @@ assert(!ui.includes('rangeDrag.zoom='),'ScientificCurveSurface must not retain t
 assert(kernel.includes('interactionBehaviors: infrastructureScope?.interactionBehaviors || null'),'Plugin Kernel must expose Interaction Behavior through ctx.ui.');
 assert(contract.includes("'ui.interaction-behavior':api=>!!api?.ui?.interactionBehaviors"),'Plugin contract runtime must validate the Interaction Behavior requirement.');
 
-assert(manifest.apiVersion==='1.13.0','Resonance reference plugin must target Plugin API 1.13.0.');
+assert(manifest.apiVersion==='1.18.0','Resonance reference plugin must target Plugin API 1.18.0.');
 assert(manifest.requiresCore.includes('ui.interaction-behavior'),'Resonance must explicitly declare the Interaction Behavior Core dependency.');
 assert(mainPlot.includes("gesture:'click',target:'curve',modifiers:['shift'],command:'builtin.resonance.add-point'"),'Shift+click add-point must be a declared interaction binding in the main-plot owner.');
 assert(mainPlot.includes("gesture:'context',target:'marker',button:'secondary'"),'Right-click marker behavior must be declared through Interaction Behavior in the main-plot owner.');
@@ -40,7 +40,7 @@ assert(!views.includes("['Ctrl+Z','builtin.resonance.undo']"),'System Undo must 
 assert(feature.includes("commandRuntime.run('builtin.resonance.undo')")&&views.includes("['builtin.resonance.undo',()=>R.undoLastAction?.()]")&&views.includes("['builtin.resonance.redo',()=>R.redoLastAction?.()]"),'Local Undo/Redo commands must remain available to the System Edit Contract.');
 assert(views.includes("undo:()=>ctx.commands.run('builtin.resonance.undo')")&&views.includes("redo:()=>ctx.commands.run('builtin.resonance.redo')")&&views.includes('historyState:()=>R.historyState?.()||null')&&views.includes("deselect:()=>ctx.commands.run('builtin.resonance.deselect')"),'System Edit Contract must expose reversible state and adapt into the same semantic commands.');
 
-assert(sdkContract.pluginApiVersion==='1.17.0','Standalone SDK must target Plugin API 1.16.0 while preserving older package compatibility.');
+assert(sdkContract.pluginApiVersion==='1.18.0','Standalone SDK must target Plugin API 1.16.0 while preserving older package compatibility.');
 assert(sdk.includes('DKDSInteractionBehaviorBinding')&&sdk.includes('DKDSInteractionBehaviorRuntime'),'Standalone SDK must publish Interaction Behavior types.');
 assert(sdk.includes('interactionBehavior?:DKDSInteractionBehaviorProfile'),'Scientific surface SDK must accept an Interaction Behavior profile/spec.');
 

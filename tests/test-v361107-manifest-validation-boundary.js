@@ -26,9 +26,9 @@ sandbox.window.dispatchEvent=()=>{};
 vm.runInNewContext(read('src/generated/runtime/plugin-kernel.js'),sandbox,{filename:'plugin-kernel.js'});
 const P=sandbox.DKDSPlugins;
 let missing='';
-try{P.define({id:'test.missing-type',name:'Missing Type',version:'1.0.0',apiVersion:'1.17.0'},async()=>({}));}catch(err){missing=String(err.message||err);}
+try{P.define({id:'test.missing-type',name:'Missing Type',version:'1.0.0',apiVersion:'1.18.0'},async()=>({}));}catch(err){missing=String(err.message||err);}
 assert(missing.includes('test.missing-type')&&missing.includes('must declare pluginType'),'Missing pluginType must fail immediately with the real plugin id, never as Plugin (unknown).');
-P.define({id:'test.valid-workbench',pluginType:'workbench',name:'Valid Workbench',version:'1.0.0',apiVersion:'1.17.0',enabled:true,workspace:{role:'top',activity:'test-workbench',icon:'T',title:'Valid Workbench'},data:{accepts:['data.table']}},async ctx=>{ctx.ui.pages.add({id:'main',pageId:'testWorkbenchPage',activity:'test-workbench',toolbar:false});ctx.ui.activities.add({id:'test-workbench',label:'Valid Workbench',openMode:'window'});ctx.ui.topWorkspace.register({id:'test-workbench',activity:'test-workbench',layout:{root:{selector:'#root'},left:{selector:'#left'},main:{selector:'#main'}}});return {};});
+P.define({id:'test.valid-workbench',pluginType:'workbench',name:'Valid Workbench',version:'1.0.0',apiVersion:'1.18.0',enabled:true,workspace:{role:'top',activity:'test-workbench',icon:'T',title:'Valid Workbench'},data:{accepts:['data.table']}},async ctx=>{ctx.ui.pages.add({id:'main',pageId:'testWorkbenchPage',activity:'test-workbench',toolbar:false});ctx.ui.activities.add({id:'test-workbench',label:'Valid Workbench',openMode:'window'});ctx.ui.topWorkspace.register({id:'test-workbench',activity:'test-workbench',layout:{root:{selector:'#root'},left:{selector:'#left'},main:{selector:'#main'}}});return {};});
 P.configure({setStatus:()=>{}});
 (async()=>{
   await P.activateAll();

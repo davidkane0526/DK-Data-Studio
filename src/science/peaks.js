@@ -624,12 +624,12 @@
       if(left<center&&right>center)return {left,right,source:'saved'};
     }
 
-    // Legacy projects stored the draggable FWHM endpoints as widthLeft/widthRight.
+    // Saved peak records may provide draggable FWHM endpoints as widthLeft/widthRight.
     // They are preserved as a seed only; the new analysis window is expanded so
     // baseline fitting uses shoulder/background data outside the half-height region.
-    const legacyLeft=finiteNumber(peak?.widthLeft),legacyRight=finiteNumber(peak?.widthRight);
-    let seedLeft=Number.isFinite(legacyLeft)?Math.min(legacyLeft,center):center-3*step;
-    let seedRight=Number.isFinite(legacyRight)?Math.max(legacyRight,center):center+3*step;
+    const savedLeft=finiteNumber(peak?.widthLeft),savedRight=finiteNumber(peak?.widthRight);
+    let seedLeft=Number.isFinite(savedLeft)?Math.min(savedLeft,center):center-3*step;
+    let seedRight=Number.isFinite(savedRight)?Math.max(savedRight,center):center+3*step;
     let leftHalf=Math.max(center-seedLeft,3*step);
     let rightHalf=Math.max(seedRight-center,3*step);
     const seedSpan=Math.max(seedRight-seedLeft,6*step);
@@ -637,7 +637,7 @@
     rightHalf=Math.max(rightHalf*3.5,seedSpan*1.6,10*step);
     left=clamp(center-leftHalf,dataLo,dataHi);
     right=clamp(center+rightHalf,dataLo,dataHi);
-    return {left,right,source:'legacy-auto'};
+    return {left,right,source:'saved-auto'};
   }
 
   function leastSquaresLine(samples){

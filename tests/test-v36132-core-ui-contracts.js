@@ -9,7 +9,7 @@ const pkg=require(path.join(root,'package.json'));
 const contract=require(path.join(root,'sdk/contract.json'));
 const {inspectWorkspaceStyles}=require(path.join(root,'sdk/layout-contract.js'));
 
-assert(Number(pkg.version.split('.').at(-1))>=32,'Core UI contract regression requires v3.61.32+');
+assert(/^3\.62\./.test(pkg.version),'v3.62 must retain the historical v3.61 contract baseline.');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Plugin API must preserve the 1.16 Core UI contract');
 
 const ui=read('src/generated/runtime/ui-infrastructure.js');
@@ -40,9 +40,9 @@ const pulse=style.slice(pulseStart,pulseEnd);
 assert(!/\.pulse-file-toolbar\{[\s\S]{0,260}background\s*:\s*#fff/i.test(pulse),'Pulse file toolbar must not force a light background');
 assert(!/\.pulse-file-list\{[\s\S]{0,260}background\s*:\s*#fbfcfe/i.test(pulse),'Pulse file list must not force a light background');
 
-const bad=inspectWorkspaceStyles({apiVersion:'1.16.0',pluginType:'tool',workspace:{role:'top'},styles:[{name:'plugin.css',content:'.plugin-shell table { font-size:10px }'}]});
+const bad=inspectWorkspaceStyles({apiVersion:'1.18.0',pluginType:'tool',workspace:{role:'top'},styles:[{name:'plugin.css',content:'.plugin-shell table { font-size:10px }'}]});
 assert(bad.errors.some(x=>x.includes('TableSurface internals')),'SDK must reject undeclared CSS penetration into Core tables');
-const stripe=inspectWorkspaceStyles({apiVersion:'1.16.0',pluginType:'tool',workspace:{role:'top'},ui:{tableAppearance:{cssOverrides:['row-striping']}},styles:[{name:'plugin.css',content:'.plugin-shell .dkds-managed-table tbody tr:nth-child(even)>td { background:#eef; }'}]});
+const stripe=inspectWorkspaceStyles({apiVersion:'1.18.0',pluginType:'tool',workspace:{role:'top'},ui:{tableAppearance:{cssOverrides:['row-striping']}},styles:[{name:'plugin.css',content:'.plugin-shell .dkds-managed-table tbody tr:nth-child(even)>td { background:#eef; }'}]});
 assert.equal(stripe.errors.length,0,'Explicit row-striping exception must remain available');
 assert(stripe.warnings.length>0,'Direct row CSS exceptions must remain visible in validation output');
 

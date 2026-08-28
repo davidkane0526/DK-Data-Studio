@@ -16,7 +16,7 @@ const pulseService=read('src/plugins/pulse-analysis/analysis-service.js');
 const boundary=read('tests/check-plugin-boundaries.js');
 
 
-assert(contract.pluginApiVersion==='1.17.0'&&contract.minimumAppVersion==='3.61.39','Current complete SDK contract must require app 3.61.32 while preserving older installed plugin-package compatibility.');
+assert(contract.pluginApiVersion==='1.18.0'&&contract.minimumAppVersion==='3.62.0','Current complete SDK contract must require app 3.61.32 while preserving older installed plugin-package compatibility.');
 assert(kernel.includes('function mountWorkbenchImportAction('),'Core must own the workbench import action.');
 assert(kernel.includes('[data-dkds-slot="workbench-import"]'),'Core must honor the standard workbench import slot marker.');
 assert(kernel.includes("mode:'scoped',consumerId:pluginId")&&kernel.includes("source:'workbench-action'"),'Core import action must lock scoped import to the current workbench.');
@@ -26,7 +26,7 @@ assert(app.includes("scope&&scope.mode==='scoped'")&&app.includes("bar.classList
 assert(app.includes('availableImportProviders()')&&app.includes('outputs.some(type=>accepted.includes(type))'),'Scoped Import Workbench must filter Importer Providers by accepted semantic types.');
 assert(app.includes("state.importDraft.targets=consumerId?[consumerId]:[]"),'Scoped imports must assign only to the current workbench.');
 assert(index.includes('id="importTargetOptions"'),'Global Import Workbench target routing must remain available.');
-assert(sdkManifest.apiVersion==='1.17.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
+assert(sdkManifest.apiVersion==='1.18.0'&&Array.isArray(sdkManifest.data?.accepts)&&sdkManifest.data.accepts.length,'New workbench template must declare accepted data types.');
 assert(sdk.includes('data-dkds-slot="workbench-import"'),'SDK template must mark the Core-owned import-action position.');
 assert(!sdk.includes('ctx.data.importWorkbench.open'),'SDK workbench template must not create or invoke a private import button.');
 assert(!pulseFeature.includes("label:'添加文件'")&&!pulseFeature.includes('P.addFiles()'),'Pulse must use the Core-owned import action instead of a plugin button.');

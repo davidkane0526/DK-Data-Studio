@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const bytes=rel=>fs.statSync(path.join(root,rel)).size;
 
-assert(Number(json('package.json').version.split('.').at(-1))>=99,'Host must retain the v3.61.99 Resonance feature-context baseline.');
+assert(/^3\.62\./.test(json('package.json').version),'Host must retain the v3.61.99 Resonance feature-context baseline in v3.62.');
 
 const manifest=json('src/plugins/resonance-workbench/plugin.json');
 const expected=['feature-context.js','feature-group-runtime.js','feature-analysis-runtime.js','feature-runtime.js'];

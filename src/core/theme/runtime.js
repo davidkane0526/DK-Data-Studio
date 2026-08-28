@@ -17,7 +17,7 @@
   const MOTION_KEYS=Object.freeze(['motionFast','motionNormal','motionSlow','easeStandard','easeEmphasized','hoverLift','pressScale']);
   const MATERIAL_KEYS=Object.freeze(['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity']);
   const ThemeContract=globalThis.DKDSThemeContract;
-  if(!ThemeContract||ThemeContract.version!=='3.5.0')throw new Error('Theme Contract 3.5 runtime is unavailable.');
+  if(!ThemeContract||ThemeContract.version!=='3.6.0')throw new Error('Theme Contract 3.6 runtime is unavailable.');
   const MATERIAL_ROLES=Object.freeze(ThemeContract.materialRoles());
   const MATERIAL_SUFFIX=Object.freeze({materialBlur:'blur',materialBlurStrong:'blur-strong',materialSaturation:'saturation',materialTintOpacity:'tint-opacity',specularHighlight:'specular-highlight',innerHighlight:'inner-highlight',glassEdge:'glass-edge',materialNoiseOpacity:'noise-opacity'});
   const roleCssVar=(role,key)=>`--dkui-material-${role}-${MATERIAL_SUFFIX[key]}`;
@@ -142,6 +142,6 @@
   function rendererCapabilities(){return globalThis.DKDSThemeMaterialRenderer?.capabilities?.()||Object.freeze({version:'0.0.0',recipeInstalled:false,engine:{},renderer:{backdropBlur:false,saturation:false,noise:false,glassEdge:false,innerHighlight:false,specularHighlight:false,webMaterial:false,nativeBlur:false,thinGlass:false,nonUniformBlur:false,edgeRefraction:false,dynamicSpecular:false,liquidGlass:false},recipes:{clear:false,'thin-glass':false,'soft-glass':false,'liquid-glass':false},roles:{}});}
   function supports(feature){const key=String(feature||'').trim();if(!key)return false;if(key.startsWith('renderer.'))return globalThis.DKDSThemeMaterialRenderer?.supports?.(key)===true;return ThemeContract.supports(key);}
 
-  window.DKDSTheme=Object.freeze({version:'3.5.0',contractVersion:'3.5.0',supports,rendererCapabilities,current:()=>current,system:systemTheme,set,toggle,isDark:()=>current==='dark',profile:()=>activeProfile,preferredProfile:()=>preferredProfile,setProfile,registerProfile,unregisterProfile,listProfiles,settings,setSetting,resetSettings,recipePolicy,tokens:snapshotTokens,tokenNames:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materials:materialSnapshot,platformUnits:()=>ThemeContract.platformUnits,preview:previewProfile,coverage:()=>globalThis.DKDSThemeCoverage?.scan?.()||Object.freeze({version:'0.0.0',summary:{ok:false,reason:'Theme Coverage Runtime unavailable'}})});
+  window.DKDSTheme=Object.freeze({version:'3.6.0',contractVersion:'3.6.0',supports,rendererCapabilities,current:()=>current,system:systemTheme,set,toggle,isDark:()=>current==='dark',profile:()=>activeProfile,preferredProfile:()=>preferredProfile,setProfile,registerProfile,unregisterProfile,listProfiles,settings,setSetting,resetSettings,recipePolicy,tokens:snapshotTokens,tokenNames:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materials:materialSnapshot,platformUnits:()=>ThemeContract.platformUnits,preview:previewProfile,coverage:()=>globalThis.DKDSThemeCoverage?.scan?.()||Object.freeze({version:'0.0.0',summary:{ok:false,reason:'Theme Coverage Runtime unavailable'}})});
   globalThis.addEventListener?.('beforeunload',()=>{try{nativeOff?.();channel?.close?.();}catch{}},{once:true});
 })();

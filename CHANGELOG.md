@@ -1,3 +1,12 @@
+# v3.62.0 — Legacy-Free Cut
+
+- Rebuild from the clean **v3.61.111** development baseline and move current project persistence to **Schema v3**: `dataModel + plugins + host` is the only canonical runtime/persistence shape.
+- Replace the runtime `src/migrations/` chain with one external **Project Compatibility Gateway** under `src/project-importers/`. Historical projects are converted once at open time; Core Project Format remains domain-neutral and rejects uncanonicalized `datasets` payloads.
+- Remove the persistent `state.datasets` / `project.datasets` dual path and the `syncLegacy*`, legacy-dataset adapter and legacy source lifecycle bridges. Data Center, Resonance, TER, TOP windows and Import Workbench now consume canonical Artifacts; scientific algorithms receive ephemeral transport projections from DataTable Artifacts when needed.
+- Preserve the established equal-count Pulse analysis method under the explicit `equal-count` name. Historical `segmentationMode: "legacy"` values are translated only by the Compatibility Gateway. Pulse runtime source restoration is Artifact-reference-only.
+- Cut Plugin API and standalone SDK to **1.18.0** and Theme Contract to **3.6.0**. First-party plugins/templates/manifests target the new contract; older plugin packages must be upgraded rather than reintroducing host compatibility branches.
+- Keep the complete v3.61.111 regression inventory and migrate old fixtures to canonical semantics instead of deleting coverage. Validation: `npm test` **181/181 PASS**, `npm run check` **189/189 PASS**, SDK Harness **PASS**, TER Python parity **PASS**, scientific parity **PASS**, plugin manifests **14/14 PASS**, authored CSS **0 `!important`**.
+
 # v3.61.111 — Topbar Selection Cleanup
 
 - Remove the historical plugin-toolbar underline pseudo-element from `platform/touch.css`; PRIME/SUB context actions such as 检查、组图、物理机制、峰间距、栅压分析与设置 no longer receive decorative bottom rules.

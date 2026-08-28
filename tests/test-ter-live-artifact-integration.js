@@ -13,7 +13,6 @@ const context={
 context.window=context;context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(read('src/core/data/model.js'),context,{filename:'data-model.js'});
-vm.runInContext(read('src/migrations/legacy-dataset-adapter.js'),context,{filename:'legacy-dataset-adapter.js'});
 vm.runInContext(read('src/core/performance/runtime.js'),context,{filename:'performance-runtime.js'});
 vm.runInContext(read('src/core/scientific/pipeline-runtime.js'),context,{filename:'scientific-pipeline-runtime.js'});
 vm.runInContext(read('src/core/plugins/module-runtime.js'),context,{filename:'plugin-module-runtime.js'});
@@ -40,7 +39,8 @@ function sweepDataset(){
 
 (async()=>{
   const D=context.DKDSData,store=D.createStore(),dataset=sweepDataset();
-  D.syncLegacyDatasetArtifacts(store,[dataset]);
+  const table=D.createTable({id:'source:ter-live',name:dataset.name,semanticType:'science.transport.iv',metadata:{importedSource:true,seriesPath:dataset.path,vg:dataset.vg,dataAssignments:['*']},source:{path:dataset.sourcePath,name:dataset.sourceName},columns:[{key:'Vd',role:'x',values:dataset.points.map(p=>p.v)},{key:'Id',role:'y',values:dataset.points.map(p=>p.i)},{key:'Vg',role:'group',values:dataset.points.map(()=>dataset.vg)},{key:'sourceLine',role:'index',values:dataset.points.map(p=>p.sourceLine)}]});
+  store.upsert(table);
   const statuses=[];
   const perf=context.DKDSPerformance,scope=context.DKDSScientificPipeline.createScope('builtin.ter-analysis');
   const dataTypes={get:id=>({id}),infer:value=>value?.semanticType?{id:value.semanticType}:(value?.kind?{id:value.kind}:null),accepts:(actual,accepted)=>accepted.includes(actual)};
@@ -50,7 +50,7 @@ function sweepDataset(){
   const runtime=await terAnalysis.create({
     artifacts:store,pipeline,performance,
     getVisibility:()=>new Map([[dataset.path,{forward:true,reverse:true}]]),
-    project:{datasets:[]},setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){}
+    setStatus:value=>statuses.push(String(value)),copyTextToClipboard(){},saveChartImage(){},scheduleSnapshot(){}
   });
   assert(runtime.service.autoParameters(),'TER auto detection must work from the live Artifact Store');
   const result=runtime.service.calculate();
@@ -62,5 +62,5 @@ function sweepDataset(){
   assert.strictEqual(store.get('ter.matrix:main')?.semanticType,'science.ter.matrix','TER pipeline must publish a canonical typed matrix Artifact.');
   assert(store.get('ter.matrix:main')?.lineage?.parents?.length===1,'TER pipeline matrix must retain source Artifact lineage.');
   assert(pipeline.snapshot().stages.some(row=>row.id==='ter-matrix'&&row.runs>=1),'TER live calculation must execute through Scientific Pipeline.');
-  console.log(`TER live Artifact integration passed: ${result.vgs.length} Vg x ${result.targets.length} Vd.`);
+  console.log(`v3.62 TER canonical Artifact integration PASS: ${result.vgs.length} Vg x ${result.targets.length} Vd.`);
 })().catch(err=>{console.error(err);process.exit(1);});

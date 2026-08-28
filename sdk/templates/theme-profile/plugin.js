@@ -2,12 +2,12 @@ DKDSPlugins.define({
   id:'example.theme-profile',
   name:'Example Theme Profile',
   version:'1.0.0',
-  apiVersion:'1.17.0',
+  apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.61.81 <4.0.0',pluginApi:'^1.17.0',themeContract:'^3.5.0'}
+  compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.6.0'}
 }, async ctx => {
-  if(!ctx.ui.theme.supports('contract.material.recipes')||!ctx.ui.theme.supports('contract.theme.settings'))throw new Error(`Theme Contract 3.5 Thin Glass recipes/settings required; host provides ${ctx.ui.theme.contractVersion}`);
+  if(!ctx.ui.theme.supports('contract.material.recipes')||!ctx.ui.theme.supports('contract.theme.settings'))throw new Error(`Theme Contract 3.6 Thin Glass recipes/settings required; host provides ${ctx.ui.theme.contractVersion}`);
   const profile=ctx.ui.theme.register('default',{
     label:'Example Theme',
     recipes:{chrome:'thin-glass',sidebar:'thin-glass',surface:'clear',elevated:'thin-glass',popover:'thin-glass',control:'clear',floating:'thin-glass'},

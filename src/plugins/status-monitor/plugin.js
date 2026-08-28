@@ -3,7 +3,7 @@
     id:'builtin.status-monitor',pluginType:'foundation',
     name:'Status Monitor',
     version:'1.3.0',
-    apiVersion:'1.9.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar","ui.theme"],
+    apiVersion:'1.18.0',requiresCore:["runtime","events","status","services","ui.dom","ui.status-bar","ui.theme"],
     order:7,
     description:'Unified bottom status bar for theme selection, memory, DevTools and LAN state.',
     capabilities:['ui.status-bar','system.runtime-status','lan.web-status','ui.theme']

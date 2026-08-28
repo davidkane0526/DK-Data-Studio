@@ -78,7 +78,7 @@
     });
     await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
       const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.6.0'&&caps?.renderer?.backdropBlur===true,'Material Renderer 3.6 backdrop capability unavailable.');
-      assert(window.DKDSTheme?.contractVersion==='3.5.0','Theme Contract 3.5 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
+      assert(window.DKDSTheme?.contractVersion==='3.6.0','Theme Contract 3.6 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
       const thin=window.DKDSThemeMaterialRenderer?.probeRecipe?.('thin-glass','popover');assert(thin?.status==='REAL_MATERIAL'&&thin?.recipe==='thin-glass',`Thin Glass probe ${thin?.status||'none'} / ${thin?.recipe||'none'}`);assert(/blur\(/.test(thin.backdropFilter||''),`Thin Glass did not compute backdrop blur: ${thin.backdropFilter||'none'}`);assert(!thin.edgeBackdropFilter&&!thin.specularBackground,'Thin Glass must not use Liquid optical layers.');
       const liquid=window.DKDSThemeMaterialRenderer?.probeRecipe?.('liquid-glass','popover');assert(liquid?.opticalStatus==='REAL_LIQUID_MATERIAL','Liquid Glass renderer regression.');
       state.coverage.themeMaterialRenderer={caps,thin,liquid};return state.coverage.themeMaterialRenderer;
@@ -96,7 +96,7 @@
       }finally{
         if(Theme?.current?.()!==originalMode){Theme?.set?.(originalMode);await settle();}
       }
-      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.5.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
+      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.6.0','Theme Coverage Runtime / Contract 3.5 unavailable.');
       const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
       if(partial||unmanaged||broken||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
       return {...report,contrastModes};
@@ -139,12 +139,11 @@
     const resonancePeaks=Array.isArray(resonanceWorkspace?.peaks)?resonanceWorkspace.peaks:[];
     if(resonancePeaks.length&&window.DKDSScience?.buildSweeps){
       await runCase('project.resonance-groups','Current project → Resonance group-data integrity','Project / Science',async()=>{
-        const datasets=Array.isArray(currentProjectPayload?.project?.datasets)?currentProjectPayload.project.datasets:[];
+        const datasets=window.DKDSData?.transportDatasetsFromArtifacts?.(currentProjectPayload?.project?.dataModel?.artifacts||[],{consumer:'builtin.resonance-workbench'})||[];
         const sweeps=[];for(const dataset of datasets){try{sweeps.push(...(window.DKDSScience.buildSweeps(dataset)||[]));}catch{}}
         const byId=new Map(sweeps.map(row=>[String(row.id),row]));
         const visibility=new Map((resonanceWorkspace.scanVisibility||[]).map(([path,value])=>[String(path),{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
-        const legacyPaths=new Set((resonanceWorkspace.legacyVisibilityDatasetPaths||[]).map(String));
-        const visibleSweeps=sweeps.filter(sw=>{const row=visibility.get(String(sw.datasetPath));if(row)return Number(sw.direction)>0?row.forward!==false:row.reverse!==false;return !(resonanceWorkspace.legacyVisibilityExplicit===true&&legacyPaths.has(String(sw.datasetPath)));});
+        const visibleSweeps=sweeps.filter(sw=>{const row=visibility.get(String(sw.datasetPath));return row?(Number(sw.direction)>0?row.forward!==false:row.reverse!==false):true;});
         const visibleIds=new Set(visibleSweeps.map(row=>String(row.id)));
         const accepted=resonancePeaks.filter(row=>row?.accepted!==false);
         const unresolved=accepted.filter(row=>!byId.has(String(row?.sweepId||'')));
@@ -167,10 +166,10 @@
         return {datasets:datasets.length,sweeps:sweeps.length,peaks:accepted.length,unresolvedSavedPeaks:unresolved.length,visiblePeaks:visibleAccepted.length,groupSeries:visibleAccepted.length?null:0,groupPoints:visibleAccepted.length?null:0};
       });
     }else{
-      await runCase('project.resonance-groups','Current project → Resonance group-data integrity','Project / Science',async()=>{}, {skip:true,skipReason:'当前工程没有已保存共振峰，无需执行旧工程组图完整性检查。'});
+      await runCase('project.resonance-groups','Current project → Resonance group-data integrity','Project / Science',async()=>{}, {skip:true,skipReason:'当前工程没有已保存共振峰，无需执行组图完整性检查。'});
     }
     if(window.electronAPI?.diagnosticsRunActivitySmoke&&resonancePeaks.length&&currentProjectPayload?.project){
-      await runCase('project.resonance-live','Current project → live Resonance legacy restore','Project / Electron',async()=>{
+      await runCase('project.resonance-live','Current project → live Resonance restore','Project / Electron',async()=>{
         const capabilitySnapshot=currentProjectPayload.capabilitySnapshot||window.DKDSCapabilities?.snapshot?.({remoteOnly:true})||null;
         const out=await window.electronAPI.diagnosticsRunActivitySmoke({
           activityId:'resonance',project:currentProjectPayload.project,artifactSnapshot:currentProjectPayload.artifactSnapshot,
@@ -185,7 +184,7 @@
         return {renderer:clone(actual),durationMs:Number(out.durationMs)||0};
       });
     }else{
-      await runCase('project.resonance-live','Current project → live Resonance legacy restore','Project / Electron',async()=>{}, {skip:true,skipReason:'当前工程没有已保存共振峰或当前环境无法启动独立 Resonance renderer。'});
+      await runCase('project.resonance-live','Current project → live Resonance restore','Project / Electron',async()=>{}, {skip:true,skipReason:'当前工程没有已保存共振峰或当前环境无法启动独立 Resonance renderer。'});
     }
     if(window.electronAPI?.diagnosticsRunActivitySmoke&&currentProjectSummary&&Number(currentProjectSummary.artifactCount)>0){
       await runCase('project.data-center-live','Current project → Data Center live hydration','Project / Electron',async()=>{

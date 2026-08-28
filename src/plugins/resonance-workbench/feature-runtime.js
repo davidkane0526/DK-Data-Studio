@@ -35,42 +35,11 @@
   const defaultWorkspace=(project={})=>Shared.defaultWorkspace(project,S);
   const normalizeWorkspace=(raw,project={})=>Shared.normalizeWorkspace(raw,project,S);
 
-  function normalizeLegacyDatasets(rows=[]){
-    return rows.flatMap(d=>{
-      if(Array.isArray(d?.points)&&d.points.length){
-        return [{...clone(d),points:d.points.map((p,index)=>({...p,index:Number.isFinite(Number(p.index))?Number(p.index):index}))}];
-      }
-      if(typeof d?.text==='string'&&d.text.trim()&&typeof S.parseCsv==='function'){
-        try{return [{...S.parseCsv({name:d.name,path:d.path,text:d.text}),...clone(d)}];}catch{}
-      }
-      return [];
-    });
-  }
-
-  function assignedToResonance(dataset){
-    const rows=Object.prototype.hasOwnProperty.call(dataset||{},'assignments')
-      ? (Array.isArray(dataset.assignments)?dataset.assignments.map(String):[])
-      : ['*'];
-    return rows.includes('*')||rows.includes('builtin.resonance-workbench');
-  }
-
   function parseDatasets(project={},artifacts=null){
-    if(artifacts?.list){
-      const rows=artifacts.list({includeTransient:true})||[];
-      const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-      // Artifact projection is still a scoped-data boundary.  v3.61.21
-      // correctly migrated legacy unadopted channels to assignments:[], but
-      // this canonical path accidentally bypassed that contract and fed every
-      // legacy table back into Resonance.  Keep the same consumer filter for
-      // both Artifact and project-array paths.
-      if(canonical.length)return normalizeLegacyDatasets(canonical.filter(assignedToResonance));
-      // Compatibility for a project restore before the host has projected its
-      // legacy dataset array into Artifacts. The fallback is still consumer-
-      // scoped, so Vth/Pulse-only datasets can never leak into Resonance.
-      return normalizeLegacyDatasets((project.datasets||[]).filter(assignedToResonance));
-    }
-    return normalizeLegacyDatasets((project.datasets||[]).filter(assignedToResonance));
+    if(!artifacts?.list||!D?.transportDatasetsFromArtifacts)return [];
+    return D.transportDatasetsFromArtifacts(artifacts.list({includeTransient:true})||[],{consumer:'builtin.resonance-workbench'});
   }
+
 
   async function createTop({project:initialProject,artifacts,setStatus,scheduleSnapshot:persistSnapshot,historyChanged=detail=>window.DKDSPlugins?.edit?.changed?.(detail),copyTextToClipboard,saveChartImage,io=window.DKDSIO,charts=window.DKDSCharts,dom=window.DKDSComponents?.createScope?.('builtin.resonance-workbench')||null,performance=null,pipeline=null,transforms=null,algorithms=null,reactive=null,adapter={}}){
       const $=selector=>dom?.query?.(selector)||null;
@@ -200,7 +169,7 @@
         for(const id of [...registeredEntityIds])if(!live.has(id))entities.remove?.(id);registeredEntityIds.clear();for(const id of live)registeredEntityIds.add(id);return true;
       }
       function syncDerivedArtifacts(){
-        if(!artifacts?.publish||!D?.createSweep||!D?.createPeakSet)return false;const sourceRows=artifacts.list?.({includeTransient:true})||[];const rawByPath=new Map(sourceRows.filter(a=>a?.metadata?.adapter==='legacy-dataset').map(a=>[String(a.metadata.legacyDatasetPath||''),a.id]));
+        if(!artifacts?.publish||!D?.createSweep||!D?.createPeakSet)return false;const sourceRows=artifacts.list?.({includeTransient:true})||[];const rawByPath=new Map(sourceRows.filter(a=>a?.kind==='data.table'&&String(a?.semanticType||'')==='science.transport.iv').map(a=>[String(a?.metadata?.seriesPath||a.id),a.id]));
         const publishAll=api=>{for(const sw of sweeps){const parentId=rawByPath.get(String(sw.datasetPath||''))||'';api.publish(D.createSweep({id:String(sw.id),name:`${sw.datasetName||'Sweep'} · ${directionName(sw.direction)}`,x:(sw.points||[]).map(p=>p.v),y:(sw.points||[]).map(p=>p.i),xName:'Vd',yName:'Id',xUnit:'V',yUnit:'A',direction:sw.direction,scanAxis:'Vd',transient:true,metadata:{datasetPath:sw.datasetPath,vg:sw.vg},lineage:{parents:parentId?[parentId]:[],role:'sweep',producer:'builtin.resonance-workbench',operation:'split-sweep'}}));const peaks=(workspace.peaks||[]).filter(p=>String(p.sweepId)===String(sw.id));api.publish(D.createPeakSet({id:`resonance.peaks:${sw.id}`,name:`${sw.datasetName||'Sweep'} · 峰`,peaks,transient:true,metadata:{sweepId:sw.id,datasetPath:sw.datasetPath,vg:sw.vg,direction:sw.direction,algorithmRef:workspace.activeDetector||'',metricAlgorithmRef:workspace.activeMetricAlgorithm||''},lineage:{parents:[String(sw.id)],role:'analysis',producer:'builtin.resonance-workbench',operation:'peak-detection',parameters:{algorithmRef:workspace.activeDetector||'',settings:workspace.detectorSettings?.[workspace.activeDetector]||workspace.algorithms||{},metricAlgorithmRef:workspace.activeMetricAlgorithm||''}}}));}};
         if(artifacts.batch)artifacts.batch(publishAll);else publishAll(artifacts);return true;
       }
@@ -237,7 +206,7 @@
         }
       }
 
-      function normalizedLegacyPath(value){return String(value||'').replace(/\\/g,'/').toLowerCase();}
+      function normalizedDatasetPath(value){return String(value||'').replace(/\\/g,'/').toLowerCase();}
       function savedSweepDatasetPath(peak){
         const direct=String(peak?.datasetPath||'');if(direct)return direct;
         return String(peak?.sweepId||'').replace(/::(?:up|down)::\d+$/i,'');
@@ -257,7 +226,7 @@
         const byId=new Map(sweeps.map(sw=>[String(sw.id),sw]));
         const byPathDirection=new Map();
         for(const sw of sweeps){
-          const key=`${normalizedLegacyPath(sw.datasetPath)}::${Number(sw.direction)>0?1:-1}`;
+          const key=`${normalizedDatasetPath(sw.datasetPath)}::${Number(sw.direction)>0?1:-1}`;
           const rows=byPathDirection.get(key)||[];rows.push(sw);byPathDirection.set(key,rows);
         }
         let repaired=0,unresolved=0;
@@ -269,7 +238,7 @@
             continue;
           }
           const datasetPath=savedSweepDatasetPath(peak),direction=Number(peak?.direction)>0?1:-1;
-          const candidates=byPathDirection.get(`${normalizedLegacyPath(datasetPath)}::${direction}`)||[];
+          const candidates=byPathDirection.get(`${normalizedDatasetPath(datasetPath)}::${direction}`)||[];
           if(!candidates.length){unresolved+=1;continue;}
           const chosen=candidates.length===1?candidates[0]:candidates.slice().sort((a,b)=>sweepMatchScore(peak,a)-sweepMatchScore(peak,b)||String(a.id).localeCompare(String(b.id)))[0];
           if(!chosen){unresolved+=1;continue;}
@@ -289,7 +258,7 @@
           try{sweeps.push(...(S.buildSweeps?.(dataset)||[]));}catch(err){console.warn('[resonance window buildSweeps]',dataset?.name,err);}
         }
         const peakIdentity=reconcileSavedPeakSweeps();
-        if(peakIdentity.repaired)console.info('[resonance legacy peak identity]',peakIdentity);
+        if(peakIdentity.repaired)console.info('[resonance peak identity repair]',peakIdentity);
         selectionRuntime?.reconcileAfterRebuild();
         syncEntities();syncDerivedArtifacts();
       }
@@ -302,17 +271,7 @@
 
       function visibilityMap(){
         const map=new Map((workspace.scanVisibility||[]).map(([path,value])=>[String(path),{forward:value?.forward!==false,reverse:value?.reverse!==false}]));
-        const legacyPaths=new Set((workspace.legacyVisibilityDatasetPaths||[]).map(String));
-        for(const d of datasets){
-          const path=String(d.path);
-          if(map.has(path))continue;
-          // Old projects could retain auxiliary channels (for example Ig) in
-          // the self-contained payload while scanVisibility listed only the
-          // channels actually adopted by Resonance. Keep those legacy-only
-          // auxiliaries hidden, without hiding data imported after migration.
-          const hiddenLegacy=workspace.legacyVisibilityExplicit===true&&legacyPaths.has(path);
-          map.set(path,{forward:!hiddenLegacy,reverse:!hiddenLegacy});
-        }
+        for(const d of datasets){const path=String(d.path);if(!map.has(path))map.set(path,{forward:true,reverse:true});}
         return map;
       }
       function isVisible(sw){

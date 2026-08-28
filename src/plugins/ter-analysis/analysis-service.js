@@ -48,19 +48,14 @@
         return `${projectEpoch}|table:${tableRevision}|complete:${settings.onlyFullyVisible?1:0}`;
       }
       function datasets(){
-        // Imported source data is canonical through the shared Artifact Store.
-        // `project.datasets` remains a compatibility fallback for old project
-        // files and bootstrap phases before the data-model bridge is available.
         const revision=inputCacheKey();
         const compute=()=>{
           const rows=artifacts?.list?.({includeTransient:true})||[];
-          const canonical=D?.legacyDatasetsFromArtifacts?.(rows)||[];
-          const source=canonical.length?canonical:(Array.isArray(project.datasets)?project.datasets:[]);
-          let next=source.filter(dataset=>dataset?.excluded!==true);
+          let next=(D?.transportDatasetsFromArtifacts?.(rows,{consumer:'builtin.ter-analysis'})||[]).filter(dataset=>dataset?.excluded!==true);
           if(settings.onlyFullyVisible)next=next.filter(ds=>{const sweeps=A.buildSweeps?.(ds)||[];return sweeps.some(sw=>Number(sw.direction)>0)&&sweeps.some(sw=>Number(sw.direction)<0);});
           return next;
         };
-        return performance?.stage?.('datasets',revision,'legacy-adapter',compute,{limit:4})||compute();
+        return performance?.stage?.('datasets',revision,'artifact-transport-view',compute,{limit:4})||compute();
       }
 
       function allSweeps(){
@@ -70,7 +65,7 @@
         return performance?.stage?.('sweeps',revision,'buildSweeps',compute,{limit:4})||compute();
       }
       function sourceArtifacts(){
-        return (artifacts?.list?.({includeTransient:true})||[]).filter(artifact=>artifact?.kind==='data.table'&&artifact?.metadata?.adapter==='legacy-dataset');
+        return (artifacts?.list?.({includeTransient:true})||[]).filter(artifact=>artifact?.kind==='data.table'&&String(artifact?.semanticType||'')==='science.transport.iv');
       }
       function sourceFileByVg(){
         const out={};if(!result)return out;
@@ -99,7 +94,7 @@
         return rows.join('\n');
       }
       function sourceArtifactIds(){
-        const ids=[];for(const artifact of (artifacts?.list?.({includeTransient:true})||[])){if(artifact?.metadata?.adapter==='legacy-dataset')ids.push(String(artifact.id));}return ids;
+        const ids=[];for(const artifact of sourceArtifacts())if(artifact?.id)ids.push(String(artifact.id));return ids;
       }
       function publishDerivedArtifacts(){
         if(!result||!D||!artifacts)return false;
@@ -267,7 +262,7 @@
         pipeline.register('ter-matrix',{
           title:'TER matrix',kind:'analysis',inputTypes:['science.transport.iv','data.table'],outputTypes:['science.ter.matrix'],allowEmptyInput:true,cacheLimit:4,
           run:(input,{parameters})=>{
-            const canonical=D?.legacyDatasetsFromArtifacts?.(Array.isArray(input)?input:[])||[];
+            const canonical=D?.transportDatasetsFromArtifacts?.(Array.isArray(input)?input:[],{consumer:'builtin.ter-analysis'})||[];
             const source=canonical.length?canonical:datasets();
             const algorithmRef=normalizeAlgorithmRef(parameters?.algorithmRef||terAlgorithmRef);
             const computed=runTerAlgorithm(source,algorithmRef,parameters?.settings||settings);

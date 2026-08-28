@@ -176,7 +176,7 @@
     return ins;
   }
 
-  function legacyAnalyzePulseReadData(file,options,ins){
+  function equalCountAnalyzePulseReadData(file,options,ins){
     const headers=ins.headers;
     let timeCol=Number.isFinite(Number(options.timeCol))?Number(options.timeCol):pulseHeaderIndex(headers,'time');
     let currentCol=Number.isFinite(Number(options.currentCol))?Number(options.currentCol):pulseHeaderIndex(headers,'current');
@@ -195,7 +195,7 @@
 
     let blockSamples=Math.round(Number(options.blockSamples)||0);
     if(blockSamples<=1)blockSamples=estimatePulseBlockSamples(voltage);
-    if(!Number.isFinite(blockSamples)||blockSamples<2)throw new Error('无法自动识别单个平台点数，请切换“按时间协议”并填写写入/读取宽度，或手动指定旧版平台点数。');
+    if(!Number.isFinite(blockSamples)||blockSamples<2)throw new Error('无法自动识别单个平台点数，请切换“按时间协议”并填写写入/读取宽度，或手动指定每个平台点数。');
 
     let offset=Number.isFinite(Number(options.offsetSamples))
       ? Math.max(0,Math.round(Number(options.offsetSamples)))
@@ -709,7 +709,7 @@
   function analyzePulseReadData(file,options={}){
     const ins=inspectPulseFile(file,options);
     const mode=String(options.segmentationMode||'auto').trim().toLowerCase();
-    if(!['auto','cycle','legacy','timing','waveform'].includes(mode))throw new Error(`未知分段模式：${mode}`);
+    if(!['auto','cycle','equal-count','timing','waveform'].includes(mode))throw new Error(`未知分段模式：${mode}`);
     const inferred=inferPulseProtocolFromName(file.name||'');
     const voltageCol=resolveColumn(ins.headers,options,'voltageCol','voltage',{required:false,fallback:pulseHeaderIndex(ins.headers,'voltage')});
     const hasTiming=(finiteOrNull(options.writeDuration)>0&&finiteOrNull(options.readDuration)>0)
@@ -718,17 +718,17 @@
     const inferredCycle=explicitCycle?Math.round(Number(options.cycleSamples)):null;
 
     if(mode==='cycle')return pointCycleAnalyzePulseReadData(file,{...options,cycleSamples:explicitCycle?options.cycleSamples:inferredCycle},ins);
-    if(mode==='legacy')return legacyAnalyzePulseReadData(file,options,ins);
+    if(mode==='equal-count')return equalCountAnalyzePulseReadData(file,options,ins);
     if(mode==='timing')return timingAnalyzePulseReadData(file,options,ins);
     if(mode==='waveform')return waveformAnalyzePulseReadData(file,options,ins);
 
     // Auto mode trusts an explicit cycle point count first. The UI estimates
     // that value from periodic transitions when a file is loaded, while direct
-    // API callers without cycleSamples retain the mature legacy behavior.
+    // API callers without cycleSamples retain the equal-count behavior.
     if(inferredCycle>1)return pointCycleAnalyzePulseReadData(file,{...options,cycleSamples:inferredCycle},ins);
     if(hasTiming)return timingAnalyzePulseReadData(file,options,ins);
     if(voltageCol<0)return timingAnalyzePulseReadData(file,options,ins);
-    return legacyAnalyzePulseReadData(file,options,ins);
+    return equalCountAnalyzePulseReadData(file,options,ins);
   }
 
   return {analyzePulseReadData,inferPulseProtocolFromName,estimatePulseCycleSamples};

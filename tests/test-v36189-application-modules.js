@@ -21,7 +21,7 @@ for(const row of manifest.importableModules){
 }
 
 const context=read('src/app/modules/context.js');
-for(const token of ['datasets:[]','projectTabs:[]','importDraft:','lanWebStatusState:','lanWebSelectedBaseUrl:']){
+for(const token of ['artifactStore:window.DKDSData.createStore()','projectTabs:[]','importDraft:','lanWebStatusState:','lanWebSelectedBaseUrl:']){
   assert(context.includes(token),`Application context must explicitly own mutable state: ${token}`);
 }
 const runtime=read('src/app/modules/runtime.js');

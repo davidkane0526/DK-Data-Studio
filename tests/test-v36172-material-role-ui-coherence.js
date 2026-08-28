@@ -1,8 +1,8 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.17.16');
-assert.equal(json('sdk/contract.json').themeContractVersion,'3.5.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.18.0');
+assert.equal(json('sdk/contract.json').themeContractVersion,'3.6.0');
 const renderer=read('src/core/theme/material-renderer.js');
 for(const token of ['#pluginManagerPage','#automationTestPage','dkds-settings-dialog','dkds-plugin-canvas-left','dkds-plugin-canvas-right','dkds-portable-view.is-floating','assignSemanticRoles','refreshDerivedContrast','--dkds-on-popover','LOW_CONTRAST_MATERIAL'])assert(renderer.includes(token),`missing material role/contrast coverage token: ${token}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Core material role assignment must not know plugin identity selectors.');

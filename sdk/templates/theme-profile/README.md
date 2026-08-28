@@ -11,7 +11,7 @@ same profile can be projected into the Android native shell. Web-only CSS expres
 ignored by native chrome and fall back to the built-in palette.
 
 
-## Theme Contract 3.5
+## Theme Contract 3.6
 
 Theme plugins use `pluginType: "theme"` and declare `requiresCore: ["ui.theme"]`. They register semantic profiles through `ctx.ui.theme.register(...)`; they do not repaint Core DOM directly.
 
@@ -22,7 +22,7 @@ The Plugin Manager lists Theme plugins in their own category and lets users acti
 
 ### Material contract
 
-Theme Contract 3.5 adds bounded material parameters. Core still owns the selectors and recipes; a Theme plugin only supplies values:
+Theme Contract 3.6 adds bounded material parameters. Core still owns the selectors and recipes; a Theme plugin only supplies values:
 
 - `materialBlur`, `materialBlurStrong`: CSS blur lengths such as `12px` / `18px`.
 - `materialSaturation`: CSS `saturate()` factor or percentage, e.g. `1.08` or `108%`.
@@ -33,7 +33,7 @@ Theme Contract 3.5 adds bounded material parameters. Core still owns the selecto
 These values do not grant arbitrary CSS access. A Theme plugin cannot choose DOM targets, pseudo-elements, layout, or animation keyframes. Light/dark mode maps may override any material token when a mode-specific material response is required.
 
 
-Theme Contract 3.5 adds profile-owned `recipes` and declarative `settings`. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
+Theme Contract 3.6 adds profile-owned `recipes` and declarative `settings`. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
 
 
 ### Readable glass defaults

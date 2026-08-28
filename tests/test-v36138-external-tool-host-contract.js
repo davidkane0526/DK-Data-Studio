@@ -10,18 +10,18 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=normalizePluginPackage({
   schema:1,
   manifest:{
-    id:'com.dkds.test.external-tool',name:'External Tool Smoke',version:'1.0.0',apiVersion:'1.17.0',
+    id:'com.dkds.test.external-tool',name:'External Tool Smoke',version:'1.0.0',apiVersion:'1.18.0',
     entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,pluginType:'tool',
     requiresCore:['events','status','project','workspace','data.sources','data.artifacts','data.model','ui.dom','ui.workspace','ui.scientific-plot','ui.series','ui.table','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table'],
     workspace:{role:'top',activity:'external-tool-smoke',title:'External Tool Smoke'},
     window:{activity:'external-tool-smoke',title:'External Tool Smoke',dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    compatibility:{app:'>=3.61.38 <4.0.0',pluginApi:'^1.17.0'}
+    compatibility:{app:'>=3.61.38 <4.0.0',pluginApi:'^1.18.0'}
   },
   files:{
     // Deliberately stale compact runtime metadata. The package manifest above is
     // canonical and must replace it before dedicated-window contract validation.
-    'plugin.js':"DKDSPlugins.define({id:'com.dkds.test.external-tool',name:'stale',version:'0.9.0',apiVersion:'1.16.0',pluginType:'extension',entry:'plugin.js'}, async ctx=>({deactivate(){}}));",
+    'plugin.js':"DKDSPlugins.define({id:'com.dkds.test.external-tool',name:'stale',version:'0.9.0',apiVersion:'1.18.0',pluginType:'extension',entry:'plugin.js'}, async ctx=>({deactivate(){}}));",
     'plugin.css':''
   }
 },{allowBuiltinId:false});
@@ -30,7 +30,7 @@ assert(spec,'External Tool must normalize to a dedicated window.');
 assert.equal(spec.pluginId,'com.dkds.test.external-tool');
 assert.equal(spec.activity,'external-tool-smoke');
 assert(spec.dependencies.includes('scientific-renderer'),'External Tool must keep the renderer-neutral scientific-renderer contract.');
-assert.equal(spec.packageManifest?.apiVersion,'1.17.0','Dedicated window must carry the canonical package manifest.');
+assert.equal(spec.packageManifest?.apiVersion,'1.18.0','Dedicated window must carry the canonical package manifest.');
 assert.equal(spec.packageManifest?.pluginType,'tool','Dedicated window must not trust stale plugin.js metadata for plugin type.');
 assert.equal(spec.packageManifest?.workspace?.role,'top','Dedicated window must carry canonical TOP workspace metadata.');
 

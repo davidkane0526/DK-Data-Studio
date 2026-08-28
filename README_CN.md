@@ -1,6 +1,6 @@
 # DK Data Studio
 
-当前版本：**v3.61.111**  ·  Plugin API：**1.17.0**  ·  SDK：**1.17.16**  ·  Theme Contract：**3.5.0**
+当前版本：**v3.62.0**  ·  Plugin API：**1.18.0**  ·  SDK：**1.18.0**  ·  Theme Contract：**3.6.0**
 
 DK Data Studio 是面向科学数据分析的插件化桌面工作台。Electron、LAN Web 与移动端共享数据、算法与插件契约；Core 负责宿主无关的数据生命周期、科学绘图基础设施、Material/Theme 语义和插件运行时，具体领域分析由插件提供。
 
@@ -40,7 +40,7 @@ DK-Data-Studio/
 │  ├─ plugins/                 第一方插件及 manifest-owned plugin.css
 │  ├─ science/                 与 UI 无关的科学基础代码
 │  ├─ diagnostics/             跨层集成诊断，不属于 Core
-│  ├─ migrations/              旧项目/旧数据到当前模型的隔离迁移层
+│  ├─ project-importers/       旧工程 → Schema v3 的单一兼容入口，不参与当前运行时
 │  └─ generated/               可重建运行时产物/索引
 ├─ sdk/                        外部插件 SDK、契约与模板
 ├─ tests/                      回归、契约、边界与性能测试

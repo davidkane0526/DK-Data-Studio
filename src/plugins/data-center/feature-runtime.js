@@ -106,7 +106,7 @@
     ctx.ui.actions?.mount?.(dcHeaderActionsHost,{
       activity:'data-center',
       actions:[
-        {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>{ctx.data.artifacts.syncLegacy();renderAllUi();}},
+        {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>renderAllUi()},
         {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>runWorkflow()}
       ]
     });
@@ -147,10 +147,10 @@
     function assignmentTargets(){try{return sourceCapability?.targets?.()||[];}catch{return [];}}
     function artifactAssignments(a){return Array.isArray(a?.metadata?.dataAssignments)?a.metadata.dataAssignments.map(String):null;}
     function assignmentMatches(a,filter=assignmentFilter){if(filter==='all')return true;const rows=artifactAssignments(a);if(filter==='unassigned')return Array.isArray(rows)&&rows.length===0;if(!Array.isArray(rows))return false;return rows.includes('*')||rows.includes(filter);}
-    function assignmentSummary(a){const rows=artifactAssignments(a);if(!Array.isArray(rows))return '';if(rows.includes('*'))return '全部分析（旧工程）';if(!rows.length)return '仅数据中心';const map=new Map(assignmentTargets().map(row=>[String(row.id),String(row.label||row.name||row.id)]));return rows.map(id=>map.get(id)||id).join('、');}
+    function assignmentSummary(a){const rows=artifactAssignments(a);if(!Array.isArray(rows))return '';if(rows.includes('*'))return '全部分析';if(!rows.length)return '仅数据中心';const map=new Map(assignmentTargets().map(row=>[String(row.id),String(row.label||row.name||row.id)]));return rows.map(id=>map.get(id)||id).join('、');}
     function artifactOrigin(a){
       const parents=Array.isArray(a?.lineage?.parents)?a.lineage.parents.filter(Boolean):[];
-      const imported=a?.metadata?.adapter==='legacy-dataset'||a?.metadata?.importedSource===true||(a?.provenance||[]).some(step=>String(step?.type||'').toLowerCase()==='import');
+      const imported=a?.metadata?.importedSource===true||(a?.provenance||[]).some(step=>String(step?.type||'').toLowerCase()==='import');
       return imported&&!parents.length?'raw':(parents.length||!imported?'derived':'raw');
     }
     function lineageMatches(a){return lineageFilter==='all'||artifactOrigin(a)===lineageFilter;}
@@ -193,9 +193,9 @@
       {id:'assignment:none',label:'仅数据中心',icon:expanded.length?'○':'✓',onInvoke:()=>void setArtifactAssignments(a,[])}
     ];}
     function activeArtifact(){const rows=artifacts();let a=rows.find(x=>x.id===state.activeArtifactId)||rows.find(x=>x.kind==='data.table')||rows[0]||null;if(a&&a.id!==state.activeArtifactId)state.activeArtifactId=a.id;return a;}
-    function isImportedSource(a){return !!a&&a.kind==='data.table'&&(a.metadata?.adapter==='legacy-dataset'||a.metadata?.importedSource===true)&&!!String(a.metadata?.legacyDatasetPath||a?.source?.path||a.id||'');}
-    function sourceRef(a){return a?.metadata?.adapter==='legacy-dataset'?{path:String(a.metadata?.legacyDatasetPath||''),sourcePath:String(a?.source?.path||'')}:{artifactId:String(a?.id||''),sourcePath:String(a?.source?.path||'')};}
-    function isExcluded(a){return !!a&&(a.metadata?.sourceExcluded===true||a.metadata?.excluded===true);}
+    function isImportedSource(a){return !!a&&a.kind==='data.table'&&a.metadata?.importedSource===true&&!!String(a?.metadata?.seriesPath||a?.source?.path||a.id||'');}
+    function sourceRef(a){return {artifactId:String(a?.id||''),path:String(a?.metadata?.seriesPath||a?.id||''),sourcePath:String(a?.source?.path||'')};}
+    function isExcluded(a){return !!a&&a.metadata?.excluded===true;}
     function renderDataAction(a=activeArtifact()){const button=$('#dcDataActionsBtn');if(!button)return;button.disabled=!a;button.title=a?'编辑标签、用途、排除状态或删除当前数据对象':'请选择数据对象';}
     async function removeActiveSource(target=activeArtifact()){
       const a=target;
@@ -298,7 +298,7 @@ $('#dcApplyFormula').onclick=applyFormula;const dataActionsBtn=$('#dcDataActions
       if(page&&!page.classList.contains('hidden')&&(meta?.reason==='project-restore'||meta?.reason==='project-reset'||meta?.reason==='reset'))renderAllUi();
     });
 
-    ctx.events.on('analysis:opened',({id})=>{if(id===page.id){ctx.data.artifacts.syncLegacy();renderAllUi();}});
+    ctx.events.on('analysis:opened',({id})=>{if(id===page.id)renderAllUi();});
     return {deactivate(){platformOff?.();artifactSelectionView?.dispose?.();quickPanel?.destroy?.();chartPanel?.destroy?.();stepPanels.forEach(h=>h?.destroy?.());ctx.ui.scientificPlot.get?.($('#dcChart'))?.dispose?.();}};
   }
   window.DKDSPluginModules.define('builtin.data-center','feature-runtime',Object.freeze({mount}));

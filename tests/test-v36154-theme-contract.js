@@ -21,7 +21,7 @@ const mobileApp=read('mobile/App.tsx');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
 
-for(const token of ["version:'3.5.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
+for(const token of ["version:'3.6.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
   assert(theme.includes(token),`Theme Runtime compatibility contract missing ${token}`);
 }
 assert(materialRenderer.includes("const VERSION='3.6.0'")&&materialRenderer.includes("'thin-glass'"),'current material renderer must own Theme 3.5 recipes through Renderer 3.6 rather than Theme Runtime.');

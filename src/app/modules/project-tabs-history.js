@@ -1,7 +1,6 @@
 'use strict';
 const {$, loadTrendColumnsPreference, state}=require('./context');
 const {escapeHtml, projectBaseName, setStatus}=require('./foundation');
-const syncDatasetArtifacts=(...args)=>require('./data-artifact-host').syncDatasetArtifacts(...args);
 const clearMainView=(...args)=>require('./workspace-super-shell').clearMainView(...args);
 const refreshOpenAnalysisPage=(...args)=>require('./workspace-super-shell').refreshOpenAnalysisPage(...args);
 const renderAll=(...args)=>require('./workspace-super-shell').renderAll(...args);
@@ -18,7 +17,6 @@ function blankProjectTab(title=null){
   return {
     id:`project-tab-${Date.now()}-${n}-${Math.random().toString(36).slice(2,7)}`,
     title:title||`项目 ${n}`,
-    datasets:[],
     artifactStore:window.DKDSData.createStore(),
     importDraft:{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,selectionAnchorPath:null,columnFieldFilter:''},
     pluginState:{},
@@ -84,7 +82,6 @@ function captureActiveProjectTab(){
   const t=activeProjectTab();
   if(!t)return;
   if(state.inspectorPanelMode==='floating')captureInspectorFloatRect();
-  t.datasets=state.datasets;
   t.artifactStore=state.artifactStore;
   t.importDraft=state.importDraft;
   t.projectPath=state.projectPath;
@@ -106,10 +103,8 @@ function captureActiveProjectTab(){
 
 function mountProjectTab(t){
   if(!t.history)t.history=window.DKDSProjectHistory?.create?.({limit:80})||null;
-  state.datasets=t.datasets||[];
   state.artifactStore=t.artifactStore||window.DKDSData.createStore();
   t.artifactStore=state.artifactStore;
-  syncDatasetArtifacts({emit:false});
   state.importDraft=t.importDraft||{files:[],activePath:null,loading:false,fileDialogOpen:false,targets:null,scope:null,selectionAnchorPath:null,columnFieldFilter:''};
   if(!Object.prototype.hasOwnProperty.call(state.importDraft,'targets'))state.importDraft.targets=null;
   if(!Object.prototype.hasOwnProperty.call(state.importDraft,'selectionAnchorPath'))state.importDraft.selectionAnchorPath=null;
@@ -174,7 +169,7 @@ async function closeProjectTab(id){
   let t=state.projectTabs.find(q=>q.id===id);if(!t)return false;
   if(t.id===state.activeProjectTabId){captureActiveProjectTab();const project=makeProject(),fp=projectFingerprint(project);if(t.lastSavedFingerprint!==null&&fp!==t.lastSavedFingerprint)t.dirty=true;}
   const pendingBeforePrompt=projectAutosaveTimers.get(t.id);if(pendingBeforePrompt){clearTimeout(pendingBeforePrompt);projectAutosaveTimers.delete(t.id);}
-  const hasContent=!!(t.datasets?.length||t.dirty||t.projectPath);
+  const hasContent=!!((t.artifactStore?.size?.()||0)||t.dirty||t.projectPath);
   let action='delete';
   if(window.DKDSUI?.dialogs?.show){
     const actions=t.dirty

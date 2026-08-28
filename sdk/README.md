@@ -1,16 +1,16 @@
-# DK Data Studio Plugin SDK 1.17.16
+# DK Data Studio Plugin SDK 1.18.0
 
 
-## Theme Contract 3.5
+## Theme Contract 3.6
 
-Theme plugins are independently versioned from Plugin API 1.17.0. Theme Contract 3.5 includes computed-style **Render Coverage** (`ctx.ui.theme.coverage()`) and seven semantic material roles, including `floating`. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme 3.3 validates token names, value types/ranges and semver compatibility; it also adds canonical nested mode blocks, semantic material roles and a Core Theme Test Gallery. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
+Theme plugins are independently versioned from Plugin API 1.18.0. Theme Contract 3.6 includes computed-style **Render Coverage** (`ctx.ui.theme.coverage()`) and seven semantic material roles, including `floating`. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme 3.3 validates token names, value types/ranges and semver compatibility; it also adds canonical nested mode blocks, semantic material roles and a Core Theme Test Gallery. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.61.39 or newer for the base Plugin API 1.17.0 host guarantees; Theme Contract 3.5 authoring requires DK Data Studio 3.61.75 or newer. Plugin API 1.10–1.16 packages remain load-compatible where their declared requirements are available.
+- DK Data Studio 3.62.0 or newer. Plugin API 1.18.0 is a breaking canonical-Artifact-only contract; older Plugin API packages must be upgraded before loading. Theme Contract 3.6 authoring also requires Studio 3.62.0 or newer.
 
 ## Create a plugin
 
@@ -25,7 +25,7 @@ sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent life
 
 For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.17.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.18.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ## Algorithm plugins
 
@@ -183,7 +183,7 @@ ctx.ui.activities.add({
 });
 ```
 
-`artifactHydration: 'live'` is intentionally opt-in because it transfers the canonical live Artifact snapshot, including transient legacy adapters, into that activity renderer. Core reconciles that snapshot with self-contained legacy `project.datasets`, so an empty or incomplete live snapshot cannot erase recoverable legacy source data. Reused live-hydration windows also refresh when only the Artifact digest changes, without remounting the plugin. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot. Plugins must not parse legacy project roots inside the activity window.
+`artifactHydration: 'live'` is intentionally opt-in because it transfers the exact canonical live Artifact snapshot into that activity renderer. Historical projects have already passed through the Project Compatibility Gateway before this point, so activity renderers never reconcile or parse a second `project.datasets` source. Reused live-hydration windows refresh when only the Artifact digest changes, without remounting the plugin. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot.
 
 ## Core-owned workbench import action (Plugin API 1.14)
 
@@ -284,9 +284,9 @@ settings.open();
 ### Scientific renderer dependency
 Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.
 
-## Theme Contract 3.5 (`ui.theme`)
+## Theme Contract 3.6 (`ui.theme`)
 
-Studio 3.61.75 exposes Theme Contract 3.5 independently from Plugin API 1.17.0. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
+Studio 3.62.0 exposes Theme Contract 3.6 independently from Plugin API 1.18.0. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
 
 Theme 3.3 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.1 flat mode values remain load-compatible.
 
@@ -296,6 +296,6 @@ Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light a
 
 
 
-### Theme Contract 3.5 Thin Glass
+### Theme Contract 3.6 Thin Glass
 
-SDK 1.17.16 keeps Plugin API 1.17.0 / Theme Contract 3.5.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+SDK 1.18.0 uses Plugin API 1.18.0 / Theme Contract 3.6.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.

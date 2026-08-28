@@ -158,20 +158,17 @@
 
   async function dataSourceLifecycleSmoke(){
     const D=window.DKDSData,cap=window.DKDSCapabilities?.get?.('core.data-sources');
-    assert(D?.createStore&&D?.removeLegacyDatasets,'Data source lifecycle primitive unavailable.');
+    assert(D?.createStore&&D?.createTable,'Data source lifecycle primitive unavailable.');
     assert(cap&&['list','rename','setExcluded','remove'].every(method=>cap.methods?.includes?.(method)),'core.data-sources lifecycle capability is incomplete.');
-    const sources=await window.DKDSCapabilities.invoke('core.data-sources','list');
-    assert(Array.isArray(sources),'core.data-sources.list() did not return a source list.');
-    const datasets=[{path:'automation-a.csv',name:'automation-a.csv',points:[{v:0,i:1},{v:1,i:2}]},{path:'automation-b.csv',name:'automation-b.csv',points:[{v:0,i:3},{v:1,i:4}]}];
-    const store=D.createStore();D.syncLegacyDatasetArtifacts(store,datasets);
-    const rootA=store.list({includeTransient:true}).find(row=>row.metadata?.legacyDatasetPath==='automation-a.csv');
-    const rootB=store.list({includeTransient:true}).find(row=>row.metadata?.legacyDatasetPath==='automation-b.csv');
+    const sources=await window.DKDSCapabilities.invoke('core.data-sources','list');assert(Array.isArray(sources),'core.data-sources.list() did not return a source list.');
+    const source=(id,name,values)=>D.createTable({id,name,semanticType:'science.transport.iv',metadata:{importedSource:true,importerId:'automation',seriesPath:name,dataAssignments:['*']},source:{path:name,name},columns:[{key:'Vd',role:'x',values:[0,1]},{key:'Id',role:'y',values}]});
+    const rootA=source('automation:source-a','automation-a.csv',[1,2]),rootB=source('automation:source-b','automation-b.csv',[3,4]),store=D.createStore([rootA,rootB]);
     const derived=D.derive(rootA,{id:'automation:derived-a',kind:'data.transform',name:'derived-a',x:[0,1],y:[1,2],metadata:{}});store.upsert(derived);
-    const result=D.removeLegacyDatasets(store,datasets,[{path:'automation-a.csv'}]);
-    assert(result.datasets.length===1&&result.datasets[0].path==='automation-b.csv','Source removal changed the wrong canonical dataset.');
-    assert(!store.get(rootA.id)&&!store.get(derived.id)&&!!store.get(rootB.id),'Source removal did not preserve lineage/source isolation.');
-    return {registered:true,projectSourceCount:sources.length,syntheticRemoved:result.removed.length,syntheticRemaining:result.datasets.length,derivedRemoved:result.removedArtifactIds.includes('automation:derived-a')};
+    const removeIds=new Set([rootA.id,...(store.lineage(rootA.id)?.descendants||[]).map(row=>row.id)]);store.batch(api=>{for(const id of removeIds)api.remove(id);});
+    assert(!store.get(rootA.id)&&!store.get(derived.id)&&!!store.get(rootB.id),'Canonical source removal did not preserve lineage/source isolation.');
+    return {registered:true,projectSourceCount:sources.length,syntheticRemoved:1,syntheticRemaining:1,derivedRemoved:removeIds.has('automation:derived-a')};
   }
+
 
   function artifactRoundTripSmoke(){
     const D=window.DKDSData;assert(D?.createStore&&D?.createSweep,'Data Model runtime unavailable.');

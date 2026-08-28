@@ -3,7 +3,7 @@
       <div class="analysis-page-header pulse-page-header">
         <div>
           <h2>脉冲 / 读取电流分析</h2>
-          <div class="analysis-subtitle">支持读写脉宽不同、仅记录电流、记录电压波形和旧版等点数数据；每个文件独立保存协议参数。</div>
+          <div class="analysis-subtitle">支持读写脉宽不同、仅记录电流、记录电压波形和等点数分段数据；每个文件独立保存协议参数。</div>
         </div>
         <button class="analysis-page-close" data-analysis-target="pulseAnalysisPage">关闭窗口</button>
       </div>
@@ -30,7 +30,7 @@
             <div class="pulse-card-heading dkds-surface-header">
               <div>
                 <h3>当前文件与提取设置</h3>
-                <p>“自动”会优先使用明确的时间协议；无协议但有电压时保持旧版兼容。仅电流数据请填写写入/读取宽度。</p>
+                <p>“自动”会优先使用明确的时间协议；无协议但有电压时使用等点数分段。仅电流数据请填写写入/读取宽度。</p>
               </div>
               <div class="pulse-current-file-actions dkds-toolbar">
               </div>
@@ -56,7 +56,7 @@
                     <option value="cycle">按周期点数</option>
                     <option value="timing">按时间协议</option>
                     <option value="waveform">按记录电压平台</option>
-                    <option value="legacy">旧版等点数平台</option>
+                    <option value="equal-count">等点数分段</option>
                   </select>
                 </label>
                 <label>时间列
@@ -104,10 +104,10 @@
                 <label>写入电压 (V，可选)
                   <input id="pulsePulseVoltageFallback" type="number" step="any" placeholder="未知时留空，横轴用序号">
                 </label>
-                <label>旧版每个平台点数
-                  <input id="pulseBlockSamples" type="number" min="0" step="1" value="0" title="仅旧版等点数模式使用；0 = 自动识别">
+                <label>每个平台点数
+                  <input id="pulseBlockSamples" type="number" min="0" step="1" value="0" title="仅等点数分段模式使用；0 = 自动识别">
                 </label>
-                <label>旧版读取平台配对
+                <label>读取平台配对
                   <select id="pulseReadPairMode">
                     <option value="after">脉冲后的读取平台</option>
                     <option value="before">脉冲前的读取平台</option>

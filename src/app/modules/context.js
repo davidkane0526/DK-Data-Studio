@@ -19,7 +19,6 @@ function saveTrendColumnsPreference(value){
 }
 
 const state={
-  datasets:[],
   artifactStore:window.DKDSData.createStore(),
   projectPath:null,
   trendColumns:loadTrendColumnsPreference(),

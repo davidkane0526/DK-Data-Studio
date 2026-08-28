@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.17.json",
+  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.18.json",
   "title": "DK Data Studio Plugin Manifest",
   "type": "object",
   "additionalProperties": true,
@@ -26,16 +26,7 @@
       "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
     },
     "apiVersion": {
-      "enum": [
-        "1.10.0",
-        "1.11.0",
-        "1.12.0",
-        "1.13.0",
-        "1.14.0",
-        "1.15.0",
-        "1.16.0",
-        "1.17.0"
-      ]
+      "const": "1.18.0"
     },
     "entry": {
       "type": "string",
@@ -201,6 +192,12 @@
             "none"
           ]
         },
+        "artifactHydration": {
+          "enum": [
+            "project",
+            "live"
+          ]
+        },
         "width": {
           "type": "number",
           "exclusiveMinimum": 0
@@ -338,6 +335,28 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "tableAppearance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cssOverrides": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "row-striping",
+                  "row-state"
+                ]
+              }
+            }
           }
         }
       }

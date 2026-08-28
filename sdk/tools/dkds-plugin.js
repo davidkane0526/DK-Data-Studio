@@ -120,8 +120,8 @@ async function validate(folder){
     if(m.workspace||m.window)errors.push('Theme plugins must not own workspace or window contracts.');
     if(m.algorithmProvider===true)errors.push('Theme plugins cannot be Algorithm Providers.');
     if(!/ctx\.ui\.theme\.register\s*\(/.test(source))errors.push('Theme plugins must register at least one profile through ctx.ui.theme.register(...).');
-    if(!m.compatibility?.app)errors.push('Theme Contract 3.3 plugins must declare compatibility.app.');
-    if(!m.compatibility?.themeContract)errors.push('Theme Contract 3.3 plugins must declare compatibility.themeContract.');
+    if(!m.compatibility?.app)errors.push('Theme plugins must declare compatibility.app.');
+    if(!m.compatibility?.themeContract)errors.push('Theme plugins must declare compatibility.themeContract.');
     else if(SemverCompat.validateRange(m.compatibility.themeContract)&&!SemverCompat.satisfies(ThemeContract.version,m.compatibility.themeContract))errors.push(`Theme plugin requires Theme Contract ${m.compatibility.themeContract}, but this SDK provides ${ThemeContract.version}.`);
   }
   const topWorkspace=m?.workspace?.role==='top';
@@ -158,7 +158,7 @@ async function validate(folder){
   const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);
   const usesScientificRenderer=/ctx\.ui\.scientificPlot\.(?:create|react|createRenderer|scalarField)\s*\(/.test(source);
   if(usesScientificRenderer&&m?.window&&topWorkspace&&!windowDependencies.has('scientific-renderer'))errors.push('Dedicated workspace using ScientificPlot must declare "scientific-renderer" in window.dependencies. Renderer vendors are Core implementation details.');
-  if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.17+ workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
+  if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.18 workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
 
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){

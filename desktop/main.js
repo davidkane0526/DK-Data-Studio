@@ -19,7 +19,7 @@ const { createAgentRuntime } = require('./main-modules/agent-runtime');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
-require('../src/migrations/project-v1-domain').register(DKDSProjectFormat);
+require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
 const APP_NAME = 'DK Data Studio';
 const APP_ID = 'com.dk.datastudio';
 
