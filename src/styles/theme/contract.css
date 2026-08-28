@@ -36,12 +36,6 @@ body.dkds-modern-ui{
 }
 body.dkds-modern-ui .brand{color:var(--dkui-text)}
 body.dkds-modern-ui .brand-mark{background:var(--dkui-surface-elevated);border-color:var(--dkui-control-border);box-shadow:var(--dkui-shadow-1)}
-body.dkds-modern-ui :where(.toolbar-group,.system-core-tools-group){background:var(--dkui-surface-soft);border-color:var(--dkui-divider);box-shadow:var(--dkui-shadow-1)}
-body.dkds-modern-ui :where(.toolbar-btn:hover:not(.strong):not(:disabled),.activity-tab:hover,.plugin-toolbar-btn:hover){background:var(--dkui-surface-hover);border-color:var(--dkui-control-border);color:var(--dkui-text)}
-body.dkds-modern-ui :where(.activity-tab.active,.primary-activity-bar .activity-tab.top-level-activity-tab.active){background:var(--dkui-surface-hover);border-color:transparent;color:var(--dkui-selected-fg);box-shadow:var(--dkui-selected-shadow)}
-body.dkds-modern-ui .project-tab{background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft);box-shadow:none}
-body.dkds-modern-ui .project-tab:hover{background:var(--dkui-surface-hover);color:var(--dkui-text)}
-body.dkds-modern-ui .project-tab.active{background:var(--dkui-surface);border-color:var(--dkui-divider);border-bottom-color:var(--dkui-surface);color:var(--dkui-text)}
 body.dkds-modern-ui :where(.dkds-mode-group button.active,.dkds-mode-group button[aria-pressed="true"],.plugin-super-selector.selected){background:var(--dkui-accent-soft);border-color:color-mix(in srgb,var(--dkui-accent) 34%,var(--dkui-control-border));color:var(--dkui-selected-fg);-webkit-text-fill-color:var(--dkui-selected-fg);box-shadow:var(--dkui-selected-shadow)}
 body.dkds-modern-ui :where(button.primary,.toolbar-btn.strong){background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;text-shadow:none;box-shadow:var(--dkui-primary-shadow)}
 body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong){border-radius:8px;box-shadow:var(--dkui-primary-shadow)}
@@ -50,14 +44,13 @@ body.dkds-modern-ui :where(button.primary,.toolbar-btn.strong):hover:not(:disabl
 body.dkds-modern-ui button.primary:focus-visible,body.dkds-modern-ui .toolbar-btn.strong:focus-visible{outline:none;border-color:var(--dkui-accent);box-shadow:var(--dkui-primary-shadow),0 0 0 2px color-mix(in srgb,var(--dkui-accent) 20%,transparent)}
 body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong):has(>.toolbar-btn.strong:focus-visible){box-shadow:var(--dkui-primary-shadow),0 0 0 2px color-mix(in srgb,var(--dkui-accent) 20%,transparent)}
 body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong)>.toolbar-btn.strong:focus-visible{outline:none;box-shadow:none}
-body.dkds-modern-ui :where(.plugin-manager-search-wrap,.plugin-manager-toolbar-card select,.dataset-vg-edit input,.peak-class-grid input,.schema-param-field input,.schema-param-field select,.schema-param-field textarea,.plugin-theme-profile-select){background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text)}
+body.dkds-modern-ui .plugin-manager-search-wrap{background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-page-header h2,.plugin-manager-section-head strong,.plugin-card-title-line h3,.plugin-manager-stat strong){color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-subtitle,.plugin-manager-section-head span,.plugin-card-description,.plugin-card-meta){color:var(--dkui-muted)}
 body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent;color:var(--dkui-text)}
 body.dkds-modern-ui :where(.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card){background:var(--dkui-surface);border-color:var(--dkui-control-border);color:var(--dkui-text);box-shadow:var(--dkui-shadow-1)}
 body.dkds-modern-ui :where(.plugin-card-footer,.plugin-card-details){background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft)}
 body.dkds-modern-ui :where(.plugin-manager-empty){background:var(--dkui-surface-soft);border-color:var(--dkui-control-border);color:var(--dkui-muted)}
-body.dkds-modern-ui :where(.plugin-manager-visible-count,.plugin-manager-section-count,.plugin-status-badge,.plugin-capability-chip,.plugin-type-badge){background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text-soft)}
 body.dkds-modern-ui .plugin-manager-note{background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)}
 body.dkds-modern-ui :where(.trend-card-legend,.main-legend-bar){background:var(--dkui-surface);border-color:var(--dkui-divider);color:var(--dkui-text-soft)}
 body.dkds-modern-ui .dkds-scientific-nav-tools button{color:var(--dkui-text-soft)}

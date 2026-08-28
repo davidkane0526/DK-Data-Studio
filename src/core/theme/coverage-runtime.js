@@ -50,12 +50,23 @@
   function effectiveBackground(el){let out={r:0,g:0,b:0,a:0},node=el,depth=0;while(node&&depth<12){const bg=parseColor(getComputedStyle(node).backgroundColor);if(bg&&bg.a>0)out=composite(out,bg);if(out.a>=.985)break;node=node.parentElement;depth++;}if(out.a<.985){const fallback=parseColor(getComputedStyle(document.body).backgroundColor)||((window.DKDSTheme?.current?.()||'light')==='dark'?{r:10,g:16,b:32,a:1}:{r:238,g:244,b:251,a:1});out=composite(out,fallback);}return out;}
   function controlContrast(){const rows=[];for(const el of document.querySelectorAll(CONTRAST_SELECTOR)){const style=getComputedStyle(el);if(style.display==='none'||style.visibility==='hidden')continue;const fg=parseColor(style.color),bg=effectiveBackground(el);if(!fg||!bg)continue;const resolvedFg=fg.a<.999?composite(fg,bg):fg,ratio=contrastRatio(resolvedFg,bg),disabled=el.matches?.(':disabled,[aria-disabled="true"]'),minimum=disabled?3:4.5;if(ratio+1e-6<minimum)rows.push(Object.freeze({tag:String(el.tagName||'').toLowerCase(),id:String(el.id||''),className:String(el.className||''),text:String(el.textContent||el.getAttribute?.('aria-label')||'').trim().slice(0,80),foreground:String(style.color||''),background:String(style.backgroundColor||''),effectiveBackground:bg,ratio:Number(ratio.toFixed(2)),minimum,disabled:!!disabled}));}return Object.freeze({checked:document.querySelectorAll(CONTRAST_SELECTOR).length,issues:Object.freeze(rows),ok:rows.length===0});}
 
+  function appearanceCoverage(){
+    const runtime=window.DKDSThemeComponentAppearance;
+    const report=runtime?.scan?.()||{version:'0.0.0',rows:[],authored:[],summary:{components:0,present:0,managed:0,authoredUnused:0,ok:false}};
+    const consumption=runtime?.consumption?.()||{components:{},semantic:{},scientific:{mode:'fallback-only',precedence:[]}};
+    return Object.freeze({
+      ...report,
+      consumption,
+      semantic:Object.freeze(Object.entries(consumption.semantic||{}).map(([name,token])=>Object.freeze({name,token,status:token?'CONSUMED':'UNMANAGED'}))),
+      interaction:Object.freeze(['idle','hover','active','selected','disabled'].map(state=>Object.freeze({state,status:'CONSUMED_BY_COMPONENT_CONTRACT'})))
+    });
+  }
   function scan(){
-    const core=areaCoverage(),issues=pluginStyleIssues(),controlReadability=controlContrast(),present=core.filter(x=>x.status!=='not-present');
+    const core=areaCoverage(),issues=pluginStyleIssues(),controlReadability=controlContrast(),appearance=appearanceCoverage(),present=core.filter(x=>x.status!=='not-present');
     const managed=present.filter(x=>x.status==='managed').length,partial=present.filter(x=>x.status==='partial').length,unmanaged=present.filter(x=>x.status==='unmanaged').length;
     const brokenMaterial=present.reduce((n,x)=>n+x.brokenMaterial,0),occludedMaterial=present.reduce((n,x)=>n+x.occludedMaterial,0),realMaterial=present.reduce((n,x)=>n+x.realMaterial,0);
-    const rendererCapabilities=window.DKDSTheme?.rendererCapabilities?.()||null;
-    return Object.freeze({version:'2.4.0',contractVersion:window.DKDSTheme?.contractVersion||'0.0.0',profile:window.DKDSTheme?.profile?.()||'builtin.default',mode:window.DKDSTheme?.current?.()||'light',rendererCapabilities,core:Object.freeze(core),contrast:controlReadability,plugins:Object.freeze({issues:Object.freeze(issues),summary:Contract.summarize(issues)}),summary:Object.freeze({areas:present.length,managed,partial,unmanaged,realMaterial,brokenMaterial,occludedMaterial,lowContrastControls:controlReadability.issues.length,pluginIssues:issues.length,rendererOk:brokenMaterial===0&&occludedMaterial===0,ok:partial===0&&unmanaged===0&&brokenMaterial===0&&occludedMaterial===0&&controlReadability.issues.length===0&&issues.length===0})});
+    const rendererCapabilities=window.DKDSTheme?.rendererCapabilities?.()||null,appearanceOk=appearance.summary?.ok===true,authoredUnused=Number(appearance.summary?.authoredUnused||0);
+    return Object.freeze({version:'3.0.0',contractVersion:window.DKDSTheme?.contractVersion||'0.0.0',profile:window.DKDSTheme?.profile?.()||'builtin.default',mode:window.DKDSTheme?.current?.()||'light',rendererCapabilities,core:Object.freeze(core),appearance,contrast:controlReadability,plugins:Object.freeze({issues:Object.freeze(issues),summary:Contract.summarize(issues)}),summary:Object.freeze({areas:present.length,managed,partial,unmanaged,realMaterial,brokenMaterial,occludedMaterial,componentTypes:Number(appearance.summary?.components||0),presentComponentTypes:Number(appearance.summary?.present||0),managedComponents:Number(appearance.summary?.managed||0),authoredUnused,appearanceOk,lowContrastControls:controlReadability.issues.length,pluginIssues:issues.length,rendererOk:brokenMaterial===0&&occludedMaterial===0,ok:partial===0&&unmanaged===0&&brokenMaterial===0&&occludedMaterial===0&&appearanceOk&&authoredUnused===0&&controlReadability.issues.length===0&&issues.length===0})});
   }
-  window.DKDSThemeCoverage=Object.freeze({version:'2.4.0',areas:()=>ROLE_AREAS.map(x=>({...x})),scan,contrast:controlContrast,auditPluginStyles:pluginStyleIssues});
+  window.DKDSThemeCoverage=Object.freeze({version:'3.0.0',areas:()=>ROLE_AREAS.map(x=>({...x})),scan,contrast:controlContrast,appearance:appearanceCoverage,auditPluginStyles:pluginStyleIssues});
 })();

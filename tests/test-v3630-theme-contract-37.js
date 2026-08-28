@@ -7,11 +7,11 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.19.0');
+assert.equal(sdk.sdkVersion,'1.20.0');
 assert.equal(sdk.pluginApiVersion,'1.18.0');
-assert.equal(sdk.themeContractVersion,'3.7.0');
-assert.equal(sdk.minimumAppVersion,'3.63.0');
-assert.equal(Theme.version,'3.7.0');
+assert.equal(sdk.themeContractVersion,'3.8.0');
+assert.equal(sdk.minimumAppVersion,'3.64.0');
+assert.equal(Theme.version,'3.8.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));
 const SourceContract=require('../sdk/source-contract');
@@ -55,11 +55,11 @@ const rendererCss=read('src/styles/theme/material-renderer.css');
 assert(rendererCss.includes('var(--dkds-material-base,var(--dkui-control-bg))'),'Control role appearance must reach actual field paint.');
 assert(rendererCss.includes('--dkui-role-popover-text'),'Popover role text override must reach Core renderer.');
 const shellCss=read('src/styles/presentation/shell.css');
-assert(!shellCss.includes('#637188'),'Dark disabled controls must not bypass Theme 3.7 disabledText with a hard-coded presentation color.');
+assert(!shellCss.includes('#637188'),'Dark disabled controls must not bypass Theme 3.8 disabledText with a hard-coded presentation color.');
 assert(!shellCss.includes('color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft))'),'Dark active controls must not reconstruct active paint from accent after semantic active tokens are resolved.');
 for(const token of ['--dkui-selection-surface','--dkui-selection-text','--dkui-selection-border','--dkui-active-surface','--dkui-active-text','--dkui-disabled-surface','--dkui-disabled-text']) assert(shellCss.includes(token),`Shell must consume semantic interaction token ${token}`);
-assert(/\.project-tab\.active\{[^}]*var\(--dkui-active-surface\)[^}]*var\(--dkui-active-text\)/s.test(shellCss),'Active project tabs must consume Theme 3.7 active semantics instead of mode-specific hard-coded paint.');
-assert(/\.dataset-item\.selected\{[^}]*var\(--dkui-selection-surface\)[^}]*var\(--dkui-selection-text\)/s.test(shellCss),'Selected dataset rows must consume Theme 3.7 selection semantics.');
+assert(/\.project-tab\.active\{[^}]*var\(--dkui-active-surface\)[^}]*var\(--dkui-active-text\)/s.test(shellCss),'Active project tabs must consume Theme 3.8 active semantics instead of mode-specific hard-coded paint.');
+assert(/\.dataset-item\.selected\{[^}]*var\(--dkui-selection-surface\)[^}]*var\(--dkui-selection-text\)/s.test(shellCss),'Selected dataset rows must consume Theme 3.8 selection semantics.');
 
 global.window={addEventListener(){},removeEventListener(){}};
 const {SeriesRegistry}=require('../src/core/ui/modules/series/layout');
@@ -78,10 +78,10 @@ assert(mobile.includes('themeAppearance:window.DKDSTheme?.appearanceRoles?.()'))
 assert(mobile.includes('themeScientific:window.DKDSTheme?.scientific?.()'));
 
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.themeContract,'^3.7.0');
+assert.equal(template.compatibility.themeContract,'^3.8.0');
 const thin=json('src/plugins/thin-glass-theme/plugin.json');
-assert.equal(thin.version,'1.9.0');
-assert.equal(thin.compatibility.themeContract,'^3.7.0');
+assert.equal(thin.version,'1.10.0');
+assert.equal(thin.compatibility.themeContract,'^3.8.0');
 
 const sdkTool=read('sdk/tools/dkds-plugin.js'),packageRuntime=read('desktop/plugin-package.js');
 assert(sdkTool.includes('usesThemeRegister(rawSource)'),'Standalone SDK must share Theme registration-source recognition.');
@@ -91,4 +91,4 @@ assert(thinJs.includes("'contract.appearance.roles'")&&thinJs.includes("'contrac
 
 const coreFiles=['src/core/theme/runtime.js','src/core/theme/material-renderer.js','src/styles/theme/material-roles.css','src/styles/theme/material-renderer.css'];
 for(const file of coreFiles){const text=read(file).toLowerCase();assert(!text.includes('aurora-pop')&&!text.includes('aurora pop'),'Core must not contain Aurora theme identity special cases.');}
-console.log('v3.63.0 Theme Contract 3.7 / SDK 1.19 semantic appearance and scientific palette PASS');
+console.log('v3.64.0 Theme Contract 3.8 / SDK 1.20 semantic appearance and scientific palette PASS');

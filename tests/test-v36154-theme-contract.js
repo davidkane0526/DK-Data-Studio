@@ -21,7 +21,7 @@ const mobileApp=read('mobile/App.tsx');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
 
-for(const token of ["version:'3.7.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
+for(const token of ["version:'3.8.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
   assert(theme.includes(token),`Theme Runtime 3.6 contract missing ${token}`);
 }
 assert(materialRenderer.includes("const VERSION='3.7.0'")&&materialRenderer.includes("'thin-glass'"),'current material renderer must own Theme 3.5 recipes through Renderer 3.6 rather than Theme Runtime.');
@@ -46,4 +46,4 @@ assert(apiTypes.includes('DKDSThemeCapability')&&apiTypes.includes('theme:DKDSTh
 assert(themeTemplate.includes("ctx.ui.theme.register('default'")&&themeTemplate.includes("pluginType:'theme'"),'SDK must ship a first-class semantic theme-plugin template.');
 const pluginFiles=[];const walk=dir=>{for(const ent of fs.readdirSync(path.join(root,dir),{withFileTypes:true})){const rel=path.join(dir,ent.name);if(ent.isDirectory())walk(rel);else if(/\.(?:js|css)$/.test(ent.name))pluginFiles.push(rel);}};walk('src/plugins');
 for(const rel of pluginFiles){const source=read(rel);assert(!/background(?:-color)?\s*:\s*(?:#fff(?:fff)?\b|rgba\(255\s*,\s*255\s*,\s*255)/i.test(source),`first-party plugin theme surface must be semantic, found light-only background in ${rel}`);}
-console.log('Theme Contract 3.7 semantic ownership checks passed.');
+console.log('Theme Contract 3.8 semantic ownership checks passed.');

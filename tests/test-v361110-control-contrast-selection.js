@@ -21,7 +21,7 @@ assert(!chrome.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .plugi
 assert(!schema.includes('.plugin-manager-stat{\n  min-height:74px;\n  display:flex;\n  flex-direction:column;\n  justify-content:center;\n  gap:4px;\n  padding:12px 14px;\n  border:1px solid #dfe5ef'),'Plugin Manager structure must not retain the old light-only stat paint');
 assert(view.includes('respar-scan-global dkds-mode-group'),'Resonance visibility controls must consume the generic mode-group selection contract');
 assert(controls.includes('function visibilityMode()')&&controls.includes("button.setAttribute('aria-pressed',String(active))"),'Resonance visibility mode must expose active/aria state');
-assert(coverage.includes("version:'2.4.0'")&&coverage.includes('lowContrastControls')&&coverage.includes('controlContrast'),'Theme coverage must inspect computed control contrast');
+assert(coverage.includes("version:'3.0.0'")&&coverage.includes('lowContrastControls')&&coverage.includes('controlContrast')&&coverage.includes('appearanceCoverage'),'Theme coverage must inspect computed control contrast together with component appearance coverage');
 assert(coverage.includes('.dkds-floating-surface:not(.dkds-portable-view)'),'Docked PortableView must not be double-classified as floating');
 assert(automation.includes("for(const mode of ['light','dark'])")&&automation.includes('contrastModes')&&automation.includes('lowContrastControls=${lowContrast}'),'Automation must test computed control contrast in both light and dark and fail visibly on low contrast');
 console.log('v3.61.110 control contrast + selected-state contract: PASS');

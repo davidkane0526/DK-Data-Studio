@@ -754,6 +754,11 @@ module.exports = {
       "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
       "args": []
     }
+    ,{
+      "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
+      "args": []
+    }
+
   ],
   "check": [
     {
@@ -1542,6 +1547,11 @@ module.exports = {
       "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
       "args": []
     }
+    ,{
+      "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
+      "args": []
+    }
+
   ],
   "mobile": [
     {

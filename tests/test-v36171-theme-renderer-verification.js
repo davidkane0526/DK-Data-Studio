@@ -1,14 +1,14 @@
 const assert=require('assert');const fs=require('fs');const path=require('path');const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');const Theme=require('../sdk/theme-contract');
-assert.equal(Theme.version,'3.7.0');assert(Theme.supports('contract.materialBlur'));assert(!Theme.supports('materialBlur'));assert(Theme.supports('contract.material.roles.floating'));
+assert.equal(Theme.version,'3.8.0');assert(Theme.supports('contract.materialBlur'));assert(!Theme.supports('materialBlur'));assert(Theme.supports('contract.material.roles.floating'));
 const runtime=read('src/core/theme/material-renderer.js');for(const x of ['renderer.backdropBlur','BROKEN_MATERIAL_RENDERER','OPAQUE_PARENT_OCCLUSION','--dkds-material-renderer-version'])assert(runtime.includes(x));
 const coverage=read('src/core/theme/coverage-runtime.js');for(const x of ['renderStatus','brokenMaterial','rendererCapabilities','OPAQUE_PARENT_OCCLUSION'])assert(coverage.includes(x));
 const themeRuntime=read('src/core/theme/runtime.js');assert(themeRuntime.includes('rendererCapabilities')&&themeRuntime.includes("key.startsWith('renderer.')"));
 const css=read('src/styles/theme/material-renderer.css');assert(css.includes('backdrop-filter:blur(')&&css.includes('--dkds-material-renderer-version:"3.7.0"'));assert(!fs.existsSync(path.join(root,'src/styles/modern/99-theme-material-renderer-33.css')));
 assert(!fs.existsSync(path.join(root,'src/styles/modern/95-theme-material-contract-31.css')),'legacy Theme Contract compatibility stylesheet must stay removed.');
 assert(!read('src/styles/theme/material-roles.css').includes('backdrop-filter'));
-const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Liquid Glass Optical Probe')&&gallery.includes('DKDSThemeMaterialRenderer?.inspect'));
+const gallery=read('src/core/theme/test-gallery.js');assert(gallery.includes('Theme Component Gallery')&&gallery.includes('Tooltip / Popover')&&gallery.includes('dkds-material-role-popover')&&gallery.includes('data-gallery-meta'));
 for(const html of [read('src/index.html'),read('src/plugin-window/index.html')])assert(html.includes('core/theme/material-renderer.js')&&html.indexOf('core/theme/material-renderer.js')<html.indexOf('core/theme/runtime.js'));
 const aux=read('src/plugin-window/runtime.js');assert(aux.includes('themeRenderer:')&&aux.includes('themeMaterialProbe:'));
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));assert(automation.includes("'ui.theme-material-renderer'")&&automation.includes("probeRecipe?.('thin-glass','popover')"));
-const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.19.0');assert.equal(contract.themeContractVersion,'3.7.0');
-console.log('v3.61.71 Theme Contract 3.7 renderer verification checks passed.');
+const contract=JSON.parse(read('sdk/contract.json'));assert.equal(contract.sdkVersion,'1.20.0');assert.equal(contract.themeContractVersion,'3.8.0');
+console.log('v3.61.71 Theme Contract 3.8 renderer verification checks passed.');

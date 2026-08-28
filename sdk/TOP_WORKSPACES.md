@@ -161,7 +161,7 @@ Start from `sdk/templates/top-workspace-plugin/` rather than adapting the standa
 For new workspaces, `safe` is the default Primary scroll policy. The standalone validator and the application installer both reject plugin CSS that targets Core-owned workspace DOM, clips semantic UI with `overflow:hidden/clip`, owns `100vh` viewport geometry, or uses positive-pixel `minmax(...,1fr)` rows in scientific/workspace-critical regions. Ordinary internal grids receive a warning instead of a hard failure. This is intentional: a plugin should describe its domain layout while Core guarantees that content remains reachable.
 
 
-## SDK 1.19.0 layout/legend/table guarantees
+## SDK 1.19+ layout/legend/table guarantees
 
 - `PluginWorkspace` owns viewport safety and records overflow/containment risks before recovering unsafe regions with scrolling.
 - Multi-series `ScientificPlot` legends are Core-owned by default; Core reserves their measured/estimated footprint and exposes legend metrics. Do not add a second plugin legend unless domain semantics genuinely require one.

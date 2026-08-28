@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('sdk/contract.json').sdkVersion,'1.19.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.7.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.20.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.8.0');
 const runtime=read('src/core/theme/material-renderer.js');
 for(const x of ["const VERSION='3.7.0'","clear','thin-glass','soft-glass','liquid-glass","globalThis.DKDSTheme?.recipePolicy?.()","renderer.liquidGlass","renderer.edgeRefraction","renderer.dynamicSpecular","renderer.profilePolicy","BROKEN_OPTICAL_RENDERER","prefers-reduced-motion","--dkds-optical-shift-x"])assert(runtime.includes(x),`missing optical renderer token: ${x}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(runtime.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Optical material policy must not know plugin identity selectors.');
@@ -9,5 +9,5 @@ assert(!fs.existsSync(path.join(root,'src/styles/modern/99-theme-material-render
 const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));for(const x of ['Material Renderer 3.7','REAL_LIQUID_MATERIAL',"probeRecipe?.('liquid-glass','popover')","probeRecipe?.('thin-glass','popover')"])assert(automation.includes(x),`automation does not verify ${x}`);
 const coverage=read('src/core/theme/coverage-runtime.js');assert(coverage.includes('BROKEN_OPTICAL_RENDERER'));
 const dts=read('sdk/plugin-api.d.ts');for(const x of ['DKDSMaterialRecipe','nonUniformBlur','edgeRefraction','dynamicSpecular','liquidGlass','BROKEN_OPTICAL_RENDERER'])assert(dts.includes(x));
-const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Theme Contract 3.7')&&docs.includes('liquid-glass')&&docs.includes('Role-specific appearance'));
+const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Theme Contract 3.8')&&docs.includes('liquid-glass')&&docs.includes('Role-specific appearance'));
 console.log('v3.61.73 optical material renderer policy and verification contracts passed.');

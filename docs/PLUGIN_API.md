@@ -574,13 +574,13 @@ const ok = await ctx.ui.dialogs.confirm({
 
 ### Theme profiles (`ctx.ui.theme`)
 
-Theme Contract 3.7 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
+Theme Contract 3.8 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
 
-外观 token 保留 `canvas / surface / surfaceSoft / surfaceElevated / surfaceSidebar / control* / text* / accent* / shadow* / radius*` 等基础语义，并在 Theme 3.7 新增 `accentAlt*`、`success / warning / danger / info` 与 `*Soft`、`selectionSurface / selectionText / selectionBorder`、`activeSurface / activeText`、`disabledSurface / disabledText`。Motion token 包括 `motionFast`, `motionNormal`, `motionSlow`, `easeStandard`, `easeEmphasized`, `hoverLift`, `pressScale`。
+外观 token 保留 `canvas / surface / surfaceSoft / surfaceElevated / surfaceSidebar / control* / text* / accent* / shadow* / radius*` 等基础语义，并在 Theme 3.8 新增 `accentAlt*`、`success / warning / danger / info` 与 `*Soft`、`selectionSurface / selectionText / selectionBorder`、`activeSurface / activeText`、`disabledSurface / disabledText`。Motion token 包括 `motionFast`, `motionNormal`, `motionSlow`, `easeStandard`, `easeEmphasized`, `hoverLift`, `pressScale`。
 
-Theme 3.7 还允许 `appearance.roles.chrome|sidebar|surface|elevated|popover|control|floating` 对各 Material Role 仅覆盖 `surface / border / text`，以及可选 `scientific.seriesPalette` 作为自动科学序列配色的 fallback。显式用户/插件科学颜色始终优先于 Theme palette。
+Theme 3.8 还允许 `appearance.roles.chrome|sidebar|surface|elevated|popover|control|floating` 对各 Material Role 仅覆盖 `surface / border / text`，以及可选 `scientific.seriesPalette` 作为自动科学序列配色的 fallback。显式用户/插件科学颜色始终优先于 Theme palette。
 
 主题只拥有语义视觉和受控动效，不拥有 Core/其他插件的布局或 DOM。`prefers-reduced-motion: reduce` 始终优先于主题 motion。结构分区应依靠 surface 色差和间距，`divider` 只用于必要结构线，输入框/按钮使用独立 `controlBorder`。
 
 
-Theme Contract 3.7 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.
+Theme Contract 3.8 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.

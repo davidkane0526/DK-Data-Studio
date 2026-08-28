@@ -8,11 +8,11 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const release=json('package.json').version;
-assert.match(release,/^3\.63\.\d+$/,'visual contract closure must run on the 3.63 release line');
+assert.match(release,/^3\.64\.\d+$/,'visual contract closure must run on the 3.64 release line');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.19.0');
+assert.equal(contract.sdkVersion,'1.20.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.63.0');
+assert.equal(contract.minimumAppVersion,'3.64.0');
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
@@ -44,8 +44,8 @@ for(const token of [
   'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
   'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
-const themeContract=read('src/styles/theme/contract.css');
-assert(themeContract.includes('.activity-tab.active')&&themeContract.includes('box-shadow:var(--dkui-selected-shadow)'),'Theme Contract must be the single paint owner for the centered Activity selected halo.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('.activity-tab')&&componentAppearance.includes('--dkui-component-tab-surface-active')&&componentAppearance.includes('--dkui-component-tab-indicator'),'Theme Component Appearance must be the single semantic paint owner for Activity selected/active chrome.');
 assert(!read('src/styles/presentation/shell.css').match(/activity-tab[^\{]*\.active[^\{]*\{[^}]*box-shadow/i),'Shell presentation must not paint Activity selected chrome.');
 
 const readme=read('sdk/README.md');

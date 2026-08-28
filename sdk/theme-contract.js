@@ -4,7 +4,8 @@
   if(root)root.DKDSThemeContract=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='3.7.0';
+  const VERSION='3.8.0';
+  const MIN_COMPATIBLE_CONTRACT_VERSION='3.6.0';
   const MATERIAL_ROLES=Object.freeze(['chrome','sidebar','surface','elevated','popover','control','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
   const APPEARANCE_KEYS=Object.freeze([
@@ -18,7 +19,9 @@
   const MOTION_KEYS=Object.freeze(['motionFast','motionNormal','motionSlow','easeStandard','easeEmphasized','hoverLift','pressScale']);
   const MATERIAL_KEYS=Object.freeze(['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity']);
   const ROLE_APPEARANCE_KEYS=Object.freeze(['surface','border','text']);
-  const SCIENTIFIC_KEYS=Object.freeze(['seriesPalette']);
+  const COMPONENT_APPEARANCE_COMPONENTS=Object.freeze(['tab','toolbarAction','toolbarGroup','panelHeader','inspectorHeader','menuItem','chip','statusBar','floatingChrome','field']);
+  const COMPONENT_APPEARANCE_KEYS=Object.freeze(['surface','surfaceHover','surfaceActive','surfaceSelected','text','textSoft','textActive','textSelected','border','borderHover','borderActive','indicator']);
+  const SCIENTIFIC_KEYS=Object.freeze(['seriesPalette','mode']);
   const TOKEN_KEYS=Object.freeze([...APPEARANCE_KEYS,...MOTION_KEYS,...MATERIAL_KEYS]);
   const COLOR_KEYS=new Set(['canvas','surface','surfaceSoft','surfaceHover','surfaceElevated','surfaceSidebar','controlBg','controlHover','divider','dividerHover','controlBorder','controlBorderHover','scrollbar','scrollbarHover','text','textSoft','muted','accent','accentHover','accentSoft','accentAlt','accentAltHover','accentAltSoft','focus','success','successSoft','warning','warningSoft','danger','dangerSoft','info','infoSoft','selectionSurface','selectionText','selectionBorder','activeSurface','activeText','disabledSurface','disabledText','specularHighlight','innerHighlight','glassEdge']);
   const SHADOW_KEYS=new Set(['shadow1','shadow2','shadowFloat']);
@@ -91,9 +94,9 @@
   }
   function normalizeMotion(value,path){return Object.freeze(normalizeTokenObject(value,MOTION_KEYS,path));}
 
-  function normalizeRoleAppearance(value,path){
-    if(value===undefined)return Object.freeze({roles:Object.freeze({})});
-    const obj=object(value,path);rejectUnknown(obj,new Set(['roles']),path);
+  function normalizeAppearance(value,path){
+    if(value===undefined)return Object.freeze({roles:Object.freeze({}),components:Object.freeze({})});
+    const obj=object(value,path);rejectUnknown(obj,new Set(['roles','components']),path);
     const roles={};
     if(obj.roles!==undefined){
       const roleObj=object(obj.roles,`${path}.roles`);rejectUnknown(roleObj,new Set(MATERIAL_ROLES),`${path}.roles`);
@@ -104,10 +107,20 @@
         roles[role]=Object.freeze(out);
       }
     }
-    return Object.freeze({roles:Object.freeze(roles)});
+    const components={};
+    if(obj.components!==undefined){
+      const componentObj=object(obj.components,`${path}.components`);rejectUnknown(componentObj,new Set(COMPONENT_APPEARANCE_COMPONENTS),`${path}.components`);
+      for(const component of COMPONENT_APPEARANCE_COMPONENTS){
+        if(componentObj[component]===undefined)continue;
+        const row=object(componentObj[component],`${path}.components.${component}`);rejectUnknown(row,new Set(COMPONENT_APPEARANCE_KEYS),`${path}.components.${component}`);
+        const out={};for(const key of COMPONENT_APPEARANCE_KEYS)if(row[key]!==undefined)out[key]=parseColor(row[key],`${path}.components.${component}.${key}`);
+        components[component]=Object.freeze(out);
+      }
+    }
+    return Object.freeze({roles:Object.freeze(roles),components:Object.freeze(components)});
   }
   function normalizeScientific(value,path){
-    if(value===undefined)return Object.freeze({seriesPalette:Object.freeze([])});
+    if(value===undefined)return Object.freeze({seriesPalette:Object.freeze([]),mode:''});
     const obj=object(value,path);rejectUnknown(obj,new Set(SCIENTIFIC_KEYS),path);
     let palette=[];
     if(obj.seriesPalette!==undefined){
@@ -115,13 +128,16 @@
       if(obj.seriesPalette.length<2||obj.seriesPalette.length>32)fail('seriesPalette must contain 2..32 colors',`${path}.seriesPalette`);
       palette=obj.seriesPalette.map((value,index)=>parseColor(value,`${path}.seriesPalette[${index}]`));
     }
-    return Object.freeze({seriesPalette:Object.freeze(palette)});
+    const mode=obj.mode===undefined?'':String(obj.mode||'').trim();
+    if(mode&&mode!=='fallback-only')fail('scientific.mode must be "fallback-only"',`${path}.mode`);
+    return Object.freeze({seriesPalette:Object.freeze(palette),mode});
   }
   function mergeAppearanceRoles(base={},override={}){const out={};for(const role of MATERIAL_ROLES){const merged={...(base[role]||{}),...(override[role]||{})};if(Object.keys(merged).length)out[role]=Object.freeze(merged);}return Object.freeze(out);}
+  function mergeAppearanceComponents(base={},override={}){const out={};for(const component of COMPONENT_APPEARANCE_COMPONENTS){const merged={...(base[component]||{}),...(override[component]||{})};if(Object.keys(merged).length)out[component]=Object.freeze(merged);}return Object.freeze(out);}
   function normalizeMode(value,path){
-    if(value===undefined)return Object.freeze({tokens:Object.freeze({}),motion:Object.freeze({}),material:Object.freeze({base:Object.freeze({}),roles:Object.freeze({})}),appearance:Object.freeze({roles:Object.freeze({})}),scientific:Object.freeze({seriesPalette:Object.freeze([])})});
+    if(value===undefined)return Object.freeze({tokens:Object.freeze({}),motion:Object.freeze({}),material:Object.freeze({base:Object.freeze({}),roles:Object.freeze({})}),appearance:Object.freeze({roles:Object.freeze({}),components:Object.freeze({})}),scientific:Object.freeze({seriesPalette:Object.freeze([]),mode:''})});
     const obj=object(value,path);rejectUnknown(obj,new Set(['tokens','motion','material','appearance','scientific']),path);
-    return Object.freeze({tokens:Object.freeze(normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`)),motion:normalizeMotion(obj.motion,`${path}.motion`),material:normalizeMaterial(obj.material,`${path}.material`),appearance:normalizeRoleAppearance(obj.appearance,`${path}.appearance`),scientific:normalizeScientific(obj.scientific,`${path}.scientific`)});
+    return Object.freeze({tokens:Object.freeze(normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`)),motion:normalizeMotion(obj.motion,`${path}.motion`),material:normalizeMaterial(obj.material,`${path}.material`),appearance:normalizeAppearance(obj.appearance,`${path}.appearance`),scientific:normalizeScientific(obj.scientific,`${path}.scientific`)});
   }
   function mergeRoles(base={},override={}){const out={};for(const role of MATERIAL_ROLES){const merged={...(base[role]||{}),...(override[role]||{})};if(Object.keys(merged).length)out[role]=Object.freeze(merged);}return Object.freeze(out);}
 
@@ -173,25 +189,34 @@
     if(obj.label!==undefined&&typeof obj.label!=='string')fail('label must be a string',`${path}.label`);
     if(obj.owner!==undefined&&typeof obj.owner!=='string')fail('owner must be a string',`${path}.owner`);
     if(obj.metadata!==undefined)object(obj.metadata,`${path}.metadata`);
-    const sharedMotion=normalizeMotion(obj.motion,`${path}.motion`),sharedMaterial=normalizeMaterial(obj.material,`${path}.material`),sharedAppearance=normalizeRoleAppearance(obj.appearance,`${path}.appearance`),sharedScientific=normalizeScientific(obj.scientific,`${path}.scientific`),recipes=normalizeRecipes(obj.recipes,`${path}.recipes`),settings=normalizeSettings(obj.settings,`${path}.settings`);
+    const sharedMotion=normalizeMotion(obj.motion,`${path}.motion`),sharedMaterial=normalizeMaterial(obj.material,`${path}.material`),sharedAppearance=normalizeAppearance(obj.appearance,`${path}.appearance`),sharedScientific=normalizeScientific(obj.scientific,`${path}.scientific`),recipes=normalizeRecipes(obj.recipes,`${path}.recipes`),settings=normalizeSettings(obj.settings,`${path}.settings`);
     const modesObj=object(obj.modes,`${path}.modes`);rejectUnknown(modesObj,new Set(['light','dark']),`${path}.modes`);
     if(modesObj.light===undefined||modesObj.dark===undefined)fail('must declare both light and dark modes',`${path}.modes`);
     return Object.freeze({label:obj.label,owner:obj.owner,metadata:Object.freeze({...obj.metadata}),motion:sharedMotion,material:sharedMaterial,appearance:sharedAppearance,scientific:sharedScientific,recipes,settings,modes:Object.freeze({light:normalizeMode(modesObj.light,`${path}.modes.light`),dark:normalizeMode(modesObj.dark,`${path}.modes.dark`)})});
   }
   function resolveProfile(profile,mode){
-    const branch=profile?.modes?.[mode]||{tokens:{},motion:{},material:{base:{},roles:{}},appearance:{roles:{}},scientific:{seriesPalette:[]}};
+    const branch=profile?.modes?.[mode]||{tokens:{},motion:{},material:{base:{},roles:{}},appearance:{roles:{},components:{}},scientific:{seriesPalette:[],mode:''}};
     const branchPalette=branch.scientific?.seriesPalette||[];
-    return Object.freeze({tokens:Object.freeze({...branch.tokens}),motion:Object.freeze({...profile.motion,...branch.motion}),material:Object.freeze({base:Object.freeze({...profile.material.base,...branch.material.base}),roles:mergeRoles(profile.material.roles,branch.material.roles)}),appearance:Object.freeze({roles:mergeAppearanceRoles(profile.appearance?.roles,branch.appearance?.roles)}),scientific:Object.freeze({seriesPalette:Object.freeze(branchPalette.length?branchPalette:[...(profile.scientific?.seriesPalette||[])])}),recipes:Object.freeze({...profile.recipes}),settings:profile.settings||Object.freeze([])});
+    const scientificMode=branch.scientific?.mode||profile.scientific?.mode||'fallback-only';
+    return Object.freeze({tokens:Object.freeze({...branch.tokens}),motion:Object.freeze({...profile.motion,...branch.motion}),material:Object.freeze({base:Object.freeze({...profile.material.base,...branch.material.base}),roles:mergeRoles(profile.material.roles,branch.material.roles)}),appearance:Object.freeze({roles:mergeAppearanceRoles(profile.appearance?.roles,branch.appearance?.roles),components:mergeAppearanceComponents(profile.appearance?.components,branch.appearance?.components)}),scientific:Object.freeze({seriesPalette:Object.freeze(branchPalette.length?branchPalette:[...(profile.scientific?.seriesPalette||[])]),mode:scientificMode}),recipes:Object.freeze({...profile.recipes}),settings:profile.settings||Object.freeze([])});
+  }
+  function contractVersionSupported(value){
+    const parse=v=>{const m=String(v||'').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);return m?m.slice(1).map(Number):null;};
+    const requested=parse(value),minimum=parse(MIN_COMPATIBLE_CONTRACT_VERSION),current=parse(VERSION);
+    if(!requested||!minimum||!current||requested[0]!==current[0])return false;
+    const cmp=(a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2];
+    return cmp(requested,minimum)>=0&&cmp(requested,current)<=0;
   }
   function supports(name){
     const key=String(name||'').trim();if(!key)return false;
-    if(key===`contract:${VERSION}`)return true;
+    if(key.startsWith('contract:'))return contractVersionSupported(key.slice('contract:'.length));
     if(!key.startsWith('contract.'))return false;
     const scoped=key.slice('contract.'.length);
     if(TOKEN_KEYS.includes(scoped))return true;
-    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.style-audit','appearance.roles','scientific','scientific.seriesPalette'].includes(scoped))return true;
+    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.style-audit','appearance.roles','appearance.components','scientific','scientific.seriesPalette','scientific.precedence'].includes(scoped))return true;
     if(scoped.startsWith('material.roles.'))return MATERIAL_ROLES.includes(scoped.slice('material.roles.'.length));
     if(scoped.startsWith('appearance.roles.'))return MATERIAL_ROLES.includes(scoped.slice('appearance.roles.'.length));
+    if(scoped.startsWith('appearance.components.'))return COMPONENT_APPEARANCE_COMPONENTS.includes(scoped.slice('appearance.components.'.length));
     return false;
   }
   function projectMaterialValue(key,value,platform='web'){
@@ -207,5 +232,5 @@
     for(const [role,values] of Object.entries(material.roles||{})){roles[role]={};for(const [key,value] of Object.entries(values||{}))roles[role][key]=projectMaterialValue(key,value,platform);}
     return Object.freeze({base:Object.freeze(base),roles:Object.freeze(Object.fromEntries(Object.entries(roles).map(([k,v])=>[k,Object.freeze(v)])))});
   }
-  return Object.freeze({version:VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
+  return Object.freeze({version:VERSION,minimumCompatibleContractVersion:MIN_COMPATIBLE_CONTRACT_VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),componentAppearanceKeys:()=>COMPONENT_APPEARANCE_KEYS.slice(),componentAppearanceComponents:()=>COMPONENT_APPEARANCE_COMPONENTS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
 });

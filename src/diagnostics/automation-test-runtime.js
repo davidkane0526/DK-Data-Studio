@@ -78,7 +78,7 @@
     });
     await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
       const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.7.0'&&caps?.renderer?.backdropBlur===true,'Material Renderer 3.7 backdrop capability unavailable.');
-      assert(window.DKDSTheme?.contractVersion==='3.7.0','Theme Contract 3.7 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
+      assert(window.DKDSTheme?.contractVersion==='3.8.0','Theme Contract 3.8 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
       const thin=window.DKDSThemeMaterialRenderer?.probeRecipe?.('thin-glass','popover');assert(thin?.status==='REAL_MATERIAL'&&thin?.recipe==='thin-glass',`Thin Glass probe ${thin?.status||'none'} / ${thin?.recipe||'none'}`);assert(/blur\(/.test(thin.backdropFilter||''),`Thin Glass did not compute backdrop blur: ${thin.backdropFilter||'none'}`);assert(!thin.edgeBackdropFilter&&!thin.specularBackground,'Thin Glass must not use Liquid optical layers.');
       const liquid=window.DKDSThemeMaterialRenderer?.probeRecipe?.('liquid-glass','popover');assert(liquid?.opticalStatus==='REAL_LIQUID_MATERIAL','Liquid Glass renderer regression.');
       state.coverage.themeMaterialRenderer={caps,thin,liquid};return state.coverage.themeMaterialRenderer;
@@ -96,9 +96,9 @@
       }finally{
         if(Theme?.current?.()!==originalMode){Theme?.set?.(originalMode);await settle();}
       }
-      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.7.0','Theme Coverage Runtime / Contract 3.7 unavailable.');
-      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
-      if(partial||unmanaged||broken||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
+      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.8.0','Theme Coverage Runtime / Contract 3.8 unavailable.');
+      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,authoredUnused=report.summary?.authoredUnused||0,appearanceOk=report.summary?.appearanceOk===true,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
+      if(partial||unmanaged||broken||authoredUnused||!appearanceOk||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} authoredUnused=${authoredUnused} appearanceOk=${appearanceOk} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
       return {...report,contrastModes};
     });
     await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{

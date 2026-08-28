@@ -26,6 +26,7 @@
 @import url("./styles/theme/integrated-command-chrome.css") layer(dkds.theme);
 @import url("./styles/theme/material-renderer.css") layer(dkds.theme);
 @import url("./styles/theme/material-roles.css") layer(dkds.theme);
+@import url("./styles/theme/component-appearance.css") layer(dkds.theme);
 @import url("./styles/theme/settings-ui.css") layer(dkds.theme);
 @import url("./styles/theme/test-gallery.css") layer(dkds.theme);
 @import url("./styles/platform/touch.css") layer(dkds.platform);

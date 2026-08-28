@@ -1,57 +1,38 @@
-# DK Data Studio Theme Contract 3.7
+# DK Data Studio Theme Contract 3.8
 
-Theme Contract 3.7 is a semantic appearance contract. A theme supplies validated values; Core owns DOM structure, selectors, Material Role assignment, component geometry, contrast enforcement, and rendering. Theme plugins must not ship arbitrary CSS or inspect/rewrite application DOM.
+Theme Contract 3.8 is a constrained Design System contract. Theme plugins provide semantic values; Core owns DOM, selectors, layout, component identity, interaction state detection and Material rendering.
 
 ```js
-ctx.ui.theme.contractVersion; // "3.7.0"
-ctx.ui.theme.supports('contract.appearance.roles');
-ctx.ui.theme.supports('contract.scientific.seriesPalette');
+ctx.ui.theme.contractVersion; // "3.8.0"
 ```
 
-A theme manifest targets the contract independently of Plugin API:
+A Theme plugin declares:
 
 ```json
 {
-  "apiVersion": "1.18.0",
   "pluginType": "theme",
   "requiresCore": ["ui.theme"],
   "compatibility": {
-    "app": ">=3.63.0 <4.0.0",
+    "app": ">=3.64.0 <4.0.0",
     "pluginApi": "^1.18.0",
-    "themeContract": "^3.7.0"
+    "themeContract": "^3.8.0"
   }
 }
 ```
 
+Theme plugins may not ship arbitrary CSS, choose DOM selectors, modify layout, inject pseudo-elements/keyframes, or own component structure.
+
 ## Ownership model
 
-The visual resolution order is intentionally one-way:
+Theme supplies semantic values. Core assigns DOM/component/material roles and owns rendering. Theme cannot select or mutate application DOM.
 
-```text
-base appearance tokens
-        ↓
-optional role appearance override
-        ↓
-Core component → Material Role assignment
-        ↓
-Core material recipe / renderer
-```
+## 1. Base appearance tokens
 
-A Theme chooses semantic appearance. Core decides which UI is `chrome`, `sidebar`, `surface`, `elevated`, `popover`, `control`, or `floating`. A plugin can declare/use Core semantic surfaces, but cannot make Theme-dependent selectors or repaint Core chrome.
+Light and dark modes can provide the existing bounded appearance tokens (`canvas`, `surface*`, `control*`, `text*`, `accent*`, semantic state colors, selection/active/disabled colors, shadows and radii). These remain the fallback layer.
 
-## Base appearance
+## 2. Role-specific appearance
 
-Each light/dark mode may provide validated `tokens`. Existing surface/text/control tokens remain the fallback layer. Theme 3.7 adds:
-
-- alternate accent: `accentAlt`, `accentAltHover`, `accentAltSoft`;
-- semantic status: `success`, `warning`, `danger`, `info` and `*Soft` variants;
-- interaction state: `selectionSurface`, `selectionText`, `selectionBorder`, `activeSurface`, `activeText`, `disabledSurface`, `disabledText`.
-
-`selected`, `active`, `focus`, and `hover` are intentionally distinct semantics. Themes should not collapse them into one color unless that is a deliberate design choice.
-
-## Role-specific appearance
-
-Theme 3.7 adds a constrained `appearance.roles` layer. Every field is optional:
+Theme 3.7 introduced role appearance; 3.8 keeps it intentionally small:
 
 ```js
 appearance: {
@@ -59,87 +40,175 @@ appearance: {
     chrome:   { surface:'#F3F1FC', border:'#DED9F4', text:'#1C2740' },
     sidebar:  { surface:'#EEF7F5' },
     elevated: { surface:'#FFF5F8' },
-    popover:  { surface:'#F0F3FF' },
+    popover:  { surface:'#F4F1FF' },
     floating: { surface:'#EEF8FA' }
   }
 }
 ```
 
-Allowed roles are the seven Core Material Roles. Allowed appearance keys are only:
+Roles are spatial semantics only. Allowed fields are `surface / border / text`.
+
+## 3. Component Appearance Contract
+
+Theme 3.8 adds bounded Design System component slots. Core decides which DOM belongs to each component; Theme only supplies colors.
+
+Supported components:
+
+```text
+tab
+toolbarAction
+toolbarGroup
+panelHeader
+inspectorHeader
+menuItem
+chip
+statusBar
+floatingChrome
+field
+```
+
+Supported fields:
 
 ```text
 surface
-border
+surfaceHover
+surfaceActive
+surfaceSelected
 text
+textSoft
+textActive
+textSelected
+border
+borderHover
+borderActive
+indicator
 ```
 
-Unknown roles or fields are validation errors. Omitting a value preserves the base-token fallback. This provides color separation without turning Theme into a component CSS API.
-
-A mode may override the shared role appearance:
+Example:
 
 ```js
-modes: {
-  light: { appearance:{ roles:{ sidebar:{surface:'#EEF7F5'} } } },
-  dark:  { appearance:{ roles:{ sidebar:{surface:'#14262B'} } } }
+appearance: {
+  components: {
+    tab: {
+      surface:'transparent',
+      surfaceHover:'#F3F1FC',
+      surfaceActive:'#EEE9FF',
+      text:'#59677F',
+      textActive:'#352A79',
+      indicator:'#705CE8'
+    },
+    toolbarAction: {
+      surfaceHover:'#F3F1FC',
+      surfaceActive:'#E9F8F6',
+      textActive:'#0D615D'
+    },
+    panelHeader: { surface:'#F7F5FD' },
+    inspectorHeader: { surface:'#EFF8F7', indicator:'#17A7A0' },
+    field: { surface:'#FFFFFF', border:'#D8DEEA', borderActive:'#705CE8' }
+  }
 }
 ```
 
-## Material recipes
+Unknown component names or fields are validator errors. No CSS property passthrough exists.
 
-Recipes remain Core-owned: `clear`, `thin-glass`, `soft-glass`, `liquid-glass`. Themes choose a recipe for each semantic Material Role and provide validated material values. They do not implement blur/refraction/optical pseudo-elements themselves.
+## 4. Theme Consumption Contract
+
+`ctx.ui.theme.consumption()` exposes Core's semantic mapping rather than forcing Theme authors to infer it from screenshots:
 
 ```js
-recipes: {
-  chrome:'thin-glass', sidebar:'thin-glass', surface:'clear',
-  elevated:'thin-glass', popover:'thin-glass', control:'clear', floating:'thin-glass'
-}
+const map = ctx.ui.theme.consumption();
+map.components.tab.slots.surfaceActive;
+// { path: 'appearance.components.tab.surfaceActive', fallback: 'activeSurface' }
 ```
 
-Role appearance and material are orthogonal: role appearance supplies semantic surface/border/text; the Core recipe decides how that surface is composited.
+`ctx.ui.theme.appearanceComponents()` returns the active authored component overrides. Theme Debug reports the hovered element's component, state, resolved slot, contract path, CSS variable, value and source (`theme` or `core-fallback`).
 
-`materialTintOpacity` is the historical token name for semantic **base-material fill** opacity, not an accent tint. Core keeps readability floors for glass recipes; the current minimum semantic fill is `chrome` 58%, `sidebar` 62%, `elevated` 64%, `floating` 64%, and `popover` 78%. A profile may request a lower value, but the runtime will clamp the effective fill rather than render unreadable transparent chrome.
+The mapping is read-only. Theme plugins cannot change Core component identity or consumption rules.
 
-## Scientific series palette
+## 5. Theme Coverage
 
-A theme may optionally supply a default automatic scientific palette:
+`ctx.ui.theme.coverage()` includes:
+
+- Material Role coverage
+- Component Appearance coverage
+- interaction-state contract coverage
+- semantic color consumption
+- `AUTHORED_BUT_UNUSED` diagnostics
+- contrast and plugin visual ownership checks
+
+A component slot authored by a Theme but not wired to any Core consumption path is a contract failure instead of silently doing nothing.
+
+## 6. Component Gallery
+
+Software Management → Theme Test renders both light and dark previews for:
+
+- Material surfaces
+- tabs and toolbar actions/groups
+- panel/inspector headers
+- fields
+- menu/context-menu items
+- chips and semantic info/success/warning/danger states
+- status bar and floating chrome
+- Tooltip/Popover
+- ScientificPlot, legend and table
+
+Each demo shows its component appearance path and resolved variable so Theme development does not depend on hunting through application pages.
+
+## 7. Scientific series palette precedence
+
+Theme 3.8 formalizes scientific palette behavior:
 
 ```js
 scientific: {
-  seriesPalette: ['#2563EB','#14B8A6','#8B5CF6','#EF4444','#F59E0B']
+  mode: 'fallback-only',
+  seriesPalette: ['#705CE8','#17A7A0','#D96A91']
 }
 ```
 
-The palette contains 2–32 validated colors. It is a fallback only:
+`mode` only accepts `fallback-only`.
+
+Machine-readable precedence is:
 
 ```text
-explicit user/plugin series color
-        ↓ wins
-Theme scientific.seriesPalette
-        ↓
-Core default scientific palette
+user explicit color
+> plugin/domain explicit color
+> project-saved color
+> Theme scientific fallback
+> Core default palette
 ```
 
-A Theme must never overwrite an explicit scientific-data color. `ctx.ui.theme.scientific()` exposes the active resolved fallback palette to Core/host projections.
+`ctx.ui.theme.scientific()` returns the active palette, mode, and precedence list. A Theme never replaces an explicit scientific color.
 
-## Runtime inspection
+## 8. Material and settings
 
-`ctx.ui.theme.appearanceRoles()` returns the active authored role overrides. `ctx.ui.theme.materials(...)` returns normalized material values. Theme Debug / Material inspection resolves the actual fallback and reports the semantic role, recipe, base token/base color, and occluding child when applicable.
+The existing bounded Material parameters, Core-owned recipes, and declarative single-target Theme settings remain available. Material roles and Component Appearance are independent: Material controls optical composition; Component Appearance controls semantic color slots.
 
-## Theme settings
+Core-owned Material recipes remain explicit and finite:
 
-Theme 3.7 retains validated single-target settings for token/material/recipe values. Multi-token derived presets such as `Soft / Balanced / Vivid` are intentionally deferred; 3.7 first stabilizes appearance inheritance and role/state semantics.
+```text
+clear
+thin-glass
+soft-glass
+liquid-glass
+```
+
+Role-specific appearance never replaces these recipes: role appearance chooses semantic surface/border/text values, while Core-owned recipes determine optical composition. Theme plugins cannot add arbitrary Material recipe CSS.
+
+`materialTintOpacity` controls the semantic **base-material fill**, not an accent-color tint amount. The resolved role/base appearance remains the color source; the recipe controls how much of that semantic base participates in the optical material. Core enforces readability floors for translucent recipes, including `chrome` 58%, `sidebar` 62%, and `popover` 78%. Theme authoring may request a stronger fill, but values below the Core floor are clamped by the renderer rather than becoming a second appearance owner.
+
+Multi-token presets (`Soft / Balanced / Vivid`) remain deferred. They require a separate, explicit precedence model and are not implemented by arbitrary Theme JavaScript.
 
 ## Compatibility
 
-Theme 3.7 is additive to canonical Theme profiles. A 3.6-style profile that does not use the new fields still normalizes under 3.7 when its declared semver range permits it. No compatibility CSS or DOM bridge is introduced.
+Theme Contract 3.8 is additive. A Theme using only 3.6/3.7 fields remains structurally valid when its declared semver range includes 3.8. Runtime capability checks preserve `contract:3.6.0` and `contract:3.7.0` alongside `contract:3.8.0`; this is semantic contract compatibility, not a CSS/DOM compatibility bridge. Future or different-major contract IDs are not advertised.
 
 ## Validation
 
-Validate/package with SDK 1.19:
+Use SDK 1.20:
 
 ```bash
 node sdk/tools/dkds-plugin.js validate path/to/theme
 node sdk/tools/dkds-plugin.js package path/to/theme theme.dkplugin
 ```
 
-The validator checks profile schema, value ranges, Theme Contract compatibility, package/source ownership, and forbidden UI infrastructure bypasses.
+The same Theme profile/source contract is used by SDK validation and the application package installer.

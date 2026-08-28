@@ -122,7 +122,7 @@ ctx.ui.menus.add({ id:'run', label:'运行工具', command:'com.example.tool.run
 默认模板见 `sdk/templates/tool-plugin/`。
 
 
-## SDK 1.19.0 layout/legend/table guarantees
+## SDK 1.19+ layout/legend/table guarantees
 
 - `PluginWorkspace` owns viewport safety and records overflow/containment risks before recovering unsafe regions with scrolling.
 - Multi-series `ScientificPlot` legends are Core-owned by default; Core reserves their measured/estimated footprint and exposes legend metrics. Do not add a second plugin legend unless domain semantics genuinely require one.

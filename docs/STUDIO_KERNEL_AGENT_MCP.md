@@ -57,7 +57,7 @@ Complex plugin generation follows this loop:
 7. Call `plugin.package.install` only after validation succeeds.
 8. Verify activation through `plugin.list`, `core.capabilities.list`, activities/surfaces, or plugin diagnostics.
 
-The machine-readable authoring corpus includes SDK 1.19.0 / Plugin API 1.18.0 / Theme Contract 3.7.0 contract JSON, manifest schema, TypeScript API definitions, UI/workspace/data-model guides and official plugin templates.
+The machine-readable authoring corpus includes SDK 1.20.0 / Plugin API 1.18.0 / Theme Contract 3.8.0 contract JSON, manifest schema, TypeScript API definitions, UI/workspace/data-model guides and official plugin templates.
 
 ## 5. MCP resources
 

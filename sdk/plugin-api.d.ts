@@ -180,9 +180,11 @@ export interface DKDSThemeMotionSpec { motionFast?:DKDSThemeDuration; motionNorm
 export interface DKDSThemeMaterialValues { materialBlur?:DKDSThemeLogicalLength; materialBlurStrong?:DKDSThemeLogicalLength; materialSaturation?:DKDSThemeSaturation; materialTintOpacity?:DKDSThemeOpacity; specularHighlight?:DKDSThemeColor; innerHighlight?:DKDSThemeColor; glassEdge?:DKDSThemeColor; materialNoiseOpacity?:DKDSThemeOpacity }
 export interface DKDSThemeMaterialSpec extends DKDSThemeMaterialValues { roles?:Partial<Record<DKDSThemeMaterialRole,DKDSThemeMaterialValues>> }
 export interface DKDSThemeRoleAppearanceValues { surface?:DKDSThemeColor; border?:DKDSThemeColor; text?:DKDSThemeColor }
-export interface DKDSThemeRoleAppearanceSpec { roles?:Partial<Record<DKDSThemeMaterialRole,DKDSThemeRoleAppearanceValues>> }
-export interface DKDSThemeScientificSpec { seriesPalette?:DKDSThemeColor[] }
-export interface DKDSThemeModeSpec { tokens?:DKDSThemeAppearanceTokenMap; motion?:DKDSThemeMotionSpec; material?:DKDSThemeMaterialSpec; appearance?:DKDSThemeRoleAppearanceSpec; scientific?:DKDSThemeScientificSpec }
+export type DKDSThemeAppearanceComponent = 'tab'|'toolbarAction'|'toolbarGroup'|'panelHeader'|'inspectorHeader'|'menuItem'|'chip'|'statusBar'|'floatingChrome'|'field';
+export interface DKDSThemeComponentAppearanceValues { surface?:DKDSThemeColor; surfaceHover?:DKDSThemeColor; surfaceActive?:DKDSThemeColor; surfaceSelected?:DKDSThemeColor; text?:DKDSThemeColor; textSoft?:DKDSThemeColor; textActive?:DKDSThemeColor; textSelected?:DKDSThemeColor; border?:DKDSThemeColor; borderHover?:DKDSThemeColor; borderActive?:DKDSThemeColor; indicator?:DKDSThemeColor }
+export interface DKDSThemeAppearanceSpec { roles?:Partial<Record<DKDSThemeMaterialRole,DKDSThemeRoleAppearanceValues>>; components?:Partial<Record<DKDSThemeAppearanceComponent,DKDSThemeComponentAppearanceValues>> }
+export interface DKDSThemeScientificSpec { seriesPalette?:DKDSThemeColor[]; mode?:'fallback-only' }
+export interface DKDSThemeModeSpec { tokens?:DKDSThemeAppearanceTokenMap; motion?:DKDSThemeMotionSpec; material?:DKDSThemeMaterialSpec; appearance?:DKDSThemeAppearanceSpec; scientific?:DKDSThemeScientificSpec }
 export interface DKDSThemeSettingTarget { scope:'token'|'motion'|'material'|'recipe'; key?:DKDSThemeAppearanceTokenKey|DKDSThemeMotionTokenKey|DKDSThemeMaterialTokenKey; role?:DKDSThemeMaterialRole; mode?:'all'|'light'|'dark' }
 export interface DKDSThemeSettingSpec { id:string; label?:string; description?:string; target:DKDSThemeSettingTarget; type?:'range'|'number'|'select'; min?:number; max?:number; step?:number; options?:Array<string|{value:string;label?:string}> }
 export interface DKDSThemeProfileSpec {
@@ -191,7 +193,7 @@ export interface DKDSThemeProfileSpec {
   motion?:DKDSThemeMotionSpec;
   material?:DKDSThemeMaterialSpec;
   /** Optional semantic appearance overrides per Core-owned Material Role. Theme never selects DOM; Core selects the role. */
-  appearance?:DKDSThemeRoleAppearanceSpec;
+  appearance?:DKDSThemeAppearanceSpec;
   /** Optional defaults for scientific presentation. Explicit plugin/user series colors always win. */
   scientific?:DKDSThemeScientificSpec;
   /** Theme-owned optical policy. builtin.default is fully clear; glass themes opt into soft/liquid recipes explicitly. */
@@ -207,9 +209,11 @@ export type DKDSThemeMaterialRenderStatus='REAL_MATERIAL'|'MATERIAL_DISABLED'|'M
 export type DKDSMaterialRecipe='clear'|'thin-glass'|'soft-glass'|'liquid-glass';
 export interface DKDSThemeRendererCapabilities { version:string; recipeInstalled:boolean; engine:{backdropFilter:boolean;webkitBackdropFilter:boolean;colorMix:boolean;radialGradient:boolean;maskImage:boolean;pointerEvents:boolean}; policy:{roleToRecipe:Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>;recipes:readonly DKDSMaterialRecipe[]}; renderer:{backdropBlur:boolean;saturation:boolean;noise:boolean;glassEdge:boolean;innerHighlight:boolean;specularHighlight:boolean;webMaterial:boolean;nativeBlur:boolean;thinGlass:boolean;nonUniformBlur:boolean;edgeRefraction:boolean;dynamicSpecular:boolean;liquidGlass:boolean}; recipes:Record<DKDSMaterialRecipe,boolean>; roles:Record<DKDSThemeMaterialRole,boolean> }
 export interface DKDSThemeControlContrastIssue { tag:string; id:string; className:string; text:string; foreground:string; background:string; effectiveBackground:{r:number;g:number;b:number;a:number}; ratio:number; minimum:number; disabled:boolean }
-export interface DKDSThemeCoverageReport { version:string; contractVersion:string; profile:string; mode:'light'|'dark'; rendererCapabilities:DKDSThemeRendererCapabilities|null; core:ReadonlyArray<DKDSThemeCoverageArea & {renderStatus:string;realMaterial:number;occludedMaterial:number;brokenMaterial:number;render:ReadonlyArray<{status:DKDSThemeMaterialRenderStatus;role:string;expectedRole:string;recipe:DKDSMaterialRecipe|string;expectedBlur:string;expectedBlurStrong?:string;expectedSaturation:string;backdropFilter:string;backgroundColor:string;opaqueParent?:any}>}>; contrast:{checked:number;issues:ReadonlyArray<DKDSThemeControlContrastIssue>;ok:boolean}; plugins:{issues:ReadonlyArray<DKDSThemeCoverageIssue>;summary:{total:number;warnings:number;plugins:string[]}}; summary:{areas:number;managed:number;partial:number;unmanaged:number;realMaterial:number;brokenMaterial:number;occludedMaterial:number;lowContrastControls:number;pluginIssues:number;rendererOk:boolean;ok:boolean} }
+export interface DKDSThemeConsumptionSlot { path:string; fallback:string }
+export interface DKDSThemeConsumptionReport { version:string; contractVersion:string; components:Partial<Record<DKDSThemeAppearanceComponent,{label:string;selector:string;slots:Record<string,DKDSThemeConsumptionSlot>}>>; semantic:Record<string,string>; scientific:{mode:'fallback-only';precedence:readonly string[]} }
+export interface DKDSThemeCoverageReport { version:string; contractVersion:string; profile:string; mode:'light'|'dark'; rendererCapabilities:DKDSThemeRendererCapabilities|null; core:ReadonlyArray<DKDSThemeCoverageArea & {renderStatus:string;realMaterial:number;occludedMaterial:number;brokenMaterial:number;render:ReadonlyArray<{status:DKDSThemeMaterialRenderStatus;role:string;expectedRole:string;recipe:DKDSMaterialRecipe|string;expectedBlur:string;expectedBlurStrong?:string;expectedSaturation:string;backdropFilter:string;backgroundColor:string;opaqueParent?:any}>}>; appearance:{version:string;rows:ReadonlyArray<{component:DKDSThemeAppearanceComponent;label:string;count:number;managed:number;authoredSlots:string[];status:string}>;authored:ReadonlyArray<{component:string;slot:string;path:string;status:'CONSUMED'|'AUTHORED_BUT_UNUSED'}>;consumption:DKDSThemeConsumptionReport;summary:{components:number;present:number;managed:number;authoredUnused:number;ok:boolean}}; contrast:{checked:number;issues:ReadonlyArray<DKDSThemeControlContrastIssue>;ok:boolean}; plugins:{issues:ReadonlyArray<DKDSThemeCoverageIssue>;summary:{total:number;warnings:number;plugins:string[]}}; summary:{areas:number;managed:number;partial:number;unmanaged:number;realMaterial:number;brokenMaterial:number;occludedMaterial:number;componentTypes:number;presentComponentTypes:number;managedComponents:number;authoredUnused:number;appearanceOk:boolean;lowContrastControls:number;pluginIssues:number;rendererOk:boolean;ok:boolean} }
 export interface DKDSThemeCapability {
-  readonly contractVersion:'3.7.0';
+  readonly contractVersion:'3.8.0';
   supports(feature:string):boolean;
   rendererCapabilities():DKDSThemeRendererCapabilities;
   register(id:string,spec:DKDSThemeProfileSpec):{id:string;dispose?:()=>void};
@@ -219,8 +223,10 @@ export interface DKDSThemeCapability {
   tokens():Readonly<Record<DKDSThemeTokenKey,string>>|Record<string,string>;
   materialRoles():DKDSThemeMaterialRole[];
   materials(platform?:'web'|'native'):{base:Readonly<Record<string,string|number>>;roles:Partial<Record<DKDSThemeMaterialRole,Readonly<Record<string,string|number>>>>};
-  appearanceRoles():{roles:Partial<Record<DKDSThemeMaterialRole,Readonly<DKDSThemeRoleAppearanceValues>>>};
-  scientific():{seriesPalette:readonly string[]};
+  appearanceRoles():{roles:Partial<Record<DKDSThemeMaterialRole,Readonly<DKDSThemeRoleAppearanceValues>>>;components:Partial<Record<DKDSThemeAppearanceComponent,Readonly<DKDSThemeComponentAppearanceValues>>>};
+  appearanceComponents():Partial<Record<DKDSThemeAppearanceComponent,Readonly<DKDSThemeComponentAppearanceValues>>>;
+  consumption():DKDSThemeConsumptionReport;
+  scientific():{seriesPalette:readonly string[];mode:'fallback-only';precedence:readonly string[]};
   recipePolicy(id?:string):Partial<Record<DKDSThemeMaterialRole,DKDSMaterialRecipe>>;
   settings(id?:string):Array<DKDSThemeSettingSpec & {value:any}>;
   setSetting(id:string,key:string,value:any):any;

@@ -1,12 +1,12 @@
 {
-  "sdkVersion": "1.19.0",
+  "sdkVersion": "1.20.0",
   "pluginApiVersion": "1.18.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.63.0",
+  "minimumAppVersion": "3.64.0",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "SDK 1.19.0 targets Plugin API 1.18.0 and Theme Contract 3.7.0. Theme 3.7 adds role-specific appearance, semantic state colors, optional alternate accent, and an optional scientific series palette while keeping Core ownership of DOM/selectors and Material Roles.",
+    "SDK 1.20.0 targets Plugin API 1.18.0 and Theme Contract 3.8.0. Theme 3.8 adds bounded Component Appearance, read-only Theme Consumption diagnostics, expanded appearance/state coverage, a full Theme Component Gallery, and a machine-readable fallback-only scientific palette precedence contract while Core retains DOM/selectors/layout ownership.",
     "Older project files remain loadable through the Project Compatibility Gateway; older Plugin API packages are not runtime-compatible and must be upgraded.",
     "Multi-series ScientificPlot surfaces provide a Core-owned interactive legend scoped to the individual plot host; semantic legendgroup members isolate together even when only one member owns the visible legend item.",
     "PluginWorkspace safe mode keeps semantic Primary content reachable inside a bounded Core-owned Primary viewport and scrollbar; auto mode is reserved for intentional document-flow growth and contained mode for bounded no-scroll surfaces.",
@@ -14,5 +14,5 @@
     "The SDK is standalone and does not require DK Data Studio source code.",
     "Manifest requirement `ui.workspace` and capability label `ui.plugin-workspace` map to the single executable runtime facade `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not part of Plugin API 1.18.0."
   ],
-  "themeContractVersion": "3.7.0"
+  "themeContractVersion": "3.8.0"
 }

@@ -7,11 +7,11 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-assert(/^3\.63\./.test(json('package.json').version),'v3.63 must retain the historical v3.61 contract baseline.');
+assert(/^3\.64\./.test(json('package.json').version),'v3.64 must retain the historical v3.61 contract baseline.');
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.19.0','SDK 1.19.0+ cutover is required');
+assert.equal(contract.sdkVersion,'1.20.0','SDK 1.20.0+ cutover is required');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.63.0','SDK minimum host must be the v3.63 Theme/SDK cutover baseline.');
+assert.equal(contract.minimumAppVersion,'3.64.0','SDK minimum host must be the v3.64 Theme/SDK component-appearance baseline.');
 
 const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');

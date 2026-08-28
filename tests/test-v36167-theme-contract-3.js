@@ -22,7 +22,7 @@ const templateJs=read('sdk/templates/theme-profile/plugin.js');
 const schema=json('sdk/plugin-manifest.schema.json');
 const index=read('src/index.html');
 
-assert(theme.includes("version:'3.7.0'"),'Theme Runtime must expose the strict Theme Contract 3.7 runtime.');
+assert(theme.includes("version:'3.8.0'"),'Theme Runtime must expose the strict Theme Contract 3.8 runtime.');
 for(const key of ['motionFast','motionNormal','motionSlow','easeStandard','easeEmphasized','hoverLift','pressScale'])assert(theme.includes(key),`Theme Runtime motion token missing ${key}`);
 for(const cssVar of ['--dkui-motion-fast','--dkui-motion-normal','--dkui-motion-slow','--dkui-ease-standard','--dkui-ease-emphasized','--dkui-hover-lift','--dkui-press-scale'])assert(modern.includes(cssVar),`Core motion CSS token missing ${cssVar}`);
 assert(modern.includes('@media(prefers-reduced-motion:reduce)'),'Core Theme motion must respect reduced-motion.');
@@ -46,4 +46,4 @@ assert(desktopPackage.includes("pluginType==='theme'")&&desktopPackage.includes(
 assert(validator.includes('Theme plugins must not ship arbitrary stylesheets'),'SDK validator must reject arbitrary Theme CSS.');
 assert(desktopPackage.includes('Theme plugins must not ship arbitrary stylesheets'),'Desktop package validation must reject arbitrary Theme CSS.');
 
-console.log('Theme Contract 3.7 plugin/runtime semantics checks passed.');
+console.log('Theme Contract 3.8 plugin/runtime semantics checks passed.');

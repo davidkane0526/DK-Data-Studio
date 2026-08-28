@@ -9,7 +9,7 @@ const pkg=require(path.join(root,'package.json'));
 const contract=require(path.join(root,'sdk/contract.json'));
 const {inspectWorkspaceStyles}=require(path.join(root,'sdk/layout-contract.js'));
 
-assert(/^3\.63\./.test(pkg.version),'v3.63 must retain the historical v3.61 contract baseline.');
+assert(/^3\.64\./.test(pkg.version),'v3.64 must retain the historical v3.61 contract baseline.');
 assert(Number(contract.pluginApiVersion.split('.')[1])>=16,'Plugin API must preserve the 1.16 Core UI contract');
 
 const ui=read('src/generated/runtime/ui-infrastructure.js');

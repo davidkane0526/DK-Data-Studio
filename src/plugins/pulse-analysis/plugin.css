@@ -24,12 +24,12 @@
   gap:18px;
   padding:13px 15px 12px;
 }
-.pulse-card-heading>div:first-child{min-width:0}
-.pulse-card-heading h3{
+.pulse-card-heading:not(.dkds-plot-view-head)>div:first-child{min-width:0}
+.pulse-card-heading:not(.dkds-plot-view-head) h3{
   margin:0;
   line-height:1.35;
 }
-.pulse-card-heading p{
+.pulse-card-heading:not(.dkds-plot-view-head) p{
   margin:4px 0 0;
   line-height:1.55;
 }
@@ -79,18 +79,7 @@
   gap:10px;
   padding:7px 9px;
 }
-.pulse-plot-heading{align-items:center}
-.pulse-plot-actions{
-  flex:0 0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:5px;
-  flex-wrap:wrap;
-}
-.pulse-plot-actions button{
-  white-space:nowrap;
-}
+.pulse-plot-heading{min-width:0}
 .pulse-plot-surface{
   width:100%;
   min-width:0;
@@ -137,8 +126,7 @@
 }
 @media(max-width:1220px){
   .pulse-control-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}
-  .pulse-card-heading{flex-wrap:wrap}
-    .pulse-plot-actions{flex:1 1 100%;justify-content:flex-start}
+  .pulse-card-heading:not(.dkds-plot-view-head){flex-wrap:wrap}
 }
 @media(max-width:980px){
   .pulse-results-grid{grid-template-columns:1fr}
@@ -372,8 +360,8 @@
 .pulse-results-splitter{align-self:stretch}
 
 /* Domain header composition; Theme only paints the semantic surface. */
-.pulse-card-heading{min-height:0;height:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:3px;padding:10px 12px;}
-.pulse-card-heading>.pulse-plot-actions,.pulse-card-heading>.pulse-table-actions,.pulse-card-heading>.pulse-current-file-actions{min-width:max-content;align-self:center;}
+.pulse-card-heading:not(.dkds-plot-view-head){min-height:0;height:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:3px;padding:10px 12px;}
+.pulse-card-heading:not(.dkds-plot-view-head)>.pulse-table-actions,.pulse-card-heading:not(.dkds-plot-view-head)>.pulse-current-file-actions{min-width:max-content;align-self:center;}
 
 /* Narrow viewport domain geometry. Core platform CSS remains plugin-neutral. */
 @media(max-width:980px){
@@ -382,9 +370,9 @@
   .pulse-results-visual-pane{display:flex;flex-direction:column;gap:8px;overflow:visible}
   .pulse-results-splitter{display:none}
   .pulse-card{position:relative;inset:auto;display:block;width:100%;min-width:0;max-width:none;height:auto;min-height:0;margin:0;box-sizing:border-box}
-  .pulse-card-heading{position:relative;display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;padding:9px 10px;min-width:0}
-  .pulse-card-heading>div:first-child{flex:1 1 210px;min-width:0}
-  .pulse-file-actions,.pulse-plot-actions,.pulse-table-actions{position:static;inset:auto;display:flex;flex:1 1 100%;width:100%;min-width:0;max-width:100%;flex-flow:row wrap;justify-content:flex-start;overflow:visible}
+  .pulse-card-heading:not(.dkds-plot-view-head){position:relative;display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;padding:9px 10px;min-width:0}
+  .pulse-card-heading:not(.dkds-plot-view-head)>div:first-child{flex:1 1 210px;min-width:0}
+  .pulse-file-actions,.pulse-table-actions{position:static;inset:auto;display:flex;flex:1 1 100%;width:100%;min-width:0;max-width:100%;flex-flow:row wrap;justify-content:flex-start;overflow:visible}
   .pulse-control-grid{grid-template-columns:minmax(0,1fr);padding:10px}
   .pulse-results-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
   .pulse-inline-range{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}

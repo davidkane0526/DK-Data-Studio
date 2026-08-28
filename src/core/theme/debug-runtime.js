@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION='1.0.0';
+  const VERSION='1.1.0';
   let enabled=false,overlay=null,last=null,moveHandler=null;
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   const componentName=el=>{
@@ -15,8 +15,8 @@
   function inspect(el){
     const Renderer=globalThis.DKDSThemeMaterialRenderer,target=materialTarget(el);
     if(!target||!Renderer?.inspect)return Object.freeze({component:componentName(el),role:'',recipe:'',status:'ROLE_MISSING'});
-    const row=Renderer.inspect(target);
-    return Object.freeze({component:componentName(target),element:target,role:row.role||'',recipe:row.recipe||'',baseToken:row.baseToken||'',baseColor:row.baseColor||'',blur:row.expectedBlur||'',saturation:row.expectedSaturation||'',background:row.backgroundColor||'',backdropFilter:row.backdropFilter||'',renderer:row.status||'',opaqueParent:row.opaqueParent||null,occludingChild:row.occludingChild||null});
+    const row=Renderer.inspect(target),appearance=globalThis.DKDSThemeComponentAppearance?.inspect?.(el)||{};
+    return Object.freeze({component:componentName(target),element:target,role:row.role||'',recipe:row.recipe||'',baseToken:row.baseToken||'',baseColor:row.baseColor||'',blur:row.expectedBlur||'',saturation:row.expectedSaturation||'',background:row.backgroundColor||'',backdropFilter:row.backdropFilter||'',renderer:row.status||'',opaqueParent:row.opaqueParent||null,occludingChild:row.occludingChild||null,appearanceComponent:appearance.component||'',appearanceState:appearance.state||'',appearanceResolved:appearance.resolved||null,appearanceIndicator:appearance.indicator||null,appearanceStatus:appearance.status||''});
   }
   function ensureOverlay(){
     if(overlay?.isConnected)return overlay;
@@ -37,6 +37,11 @@
       `<div>background: ${esc(row.background||'')}</div>`+
       `<div>computed backdrop-filter: ${esc(row.backdropFilter||'none')}</div>`+
       `<div>renderer: ${esc(row.renderer||'')}</div>`+
+      `<div>appearance component: ${esc(row.appearanceComponent||'none')}</div>`+
+      `<div>appearance state: ${esc(row.appearanceState||'none')}</div>`+
+      (row.appearanceResolved?.surface?`<div>appearance slot: ${esc(row.appearanceResolved.surface.path)} → ${esc(row.appearanceResolved.surface.value||row.appearanceResolved.surface.fallback||'')} · ${esc(row.appearanceResolved.surface.source||'')}</div>`:'')+
+      (row.appearanceResolved?.text?`<div>text slot: ${esc(row.appearanceResolved.text.path)} → ${esc(row.appearanceResolved.text.value||row.appearanceResolved.text.fallback||'')} · ${esc(row.appearanceResolved.text.source||'')}</div>`:'')+
+      (row.appearanceResolved?.border?`<div>border slot: ${esc(row.appearanceResolved.border.path)} → ${esc(row.appearanceResolved.border.value||row.appearanceResolved.border.fallback||'')} · ${esc(row.appearanceResolved.border.source||'')}</div>`:'')+
       (opaque?`<div>opaque parent: ${esc(opaque.id?`#${opaque.id}`:opaque.className||opaque.tag)} · ${esc(opaque.backgroundColor)}</div>`:'')+
       (occluding?`<div>occluding child: ${esc(occluding.id?`#${occluding.id}`:occluding.className||occluding.tag)} · ${esc(occluding.backgroundColor)} · ${(Number(occluding.coverage||0)*100).toFixed(0)}%</div>`:'');
   }

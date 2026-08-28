@@ -1,20 +1,20 @@
 (() => {
   const manifest={
-    id:'com.dkds.theme.liquid-glass',name:'Thin Glass',version:'1.9.0',apiVersion:'1.18.0',pluginType:'theme',
-    requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.63.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.7.0'}
+    id:'com.dkds.theme.liquid-glass',name:'Thin Glass',version:'1.10.0',apiVersion:'1.18.0',pluginType:'theme',
+    requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.64.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.8.0'}
   };
   DKDSPlugins.define(manifest,async ctx=>{
     const theme=ctx.ui.theme;
-    const required=['contract:3.7.0','contract.appearance.roles','contract.scientific.seriesPalette','contract.material.recipes','renderer.recipes.thin-glass','renderer.thinGlass'];
+    const required=['contract:3.8.0','contract.appearance.roles','contract.appearance.components','contract.scientific.seriesPalette','contract.scientific.precedence','contract.material.recipes','renderer.recipes.thin-glass','renderer.thinGlass'];
     const missing=required.filter(feature=>!theme.supports(feature));
-    if(missing.length)throw new Error(`Thin Glass 1.9.0 requires Theme Contract 3.7 semantic appearance and thin-glass support: ${missing.join(', ')}`);
+    if(missing.length)throw new Error(`Thin Glass 1.10.0 requires Theme Contract 3.8 semantic appearance/consumption and thin-glass support: ${missing.join(', ')}`);
     const renderer=theme.rendererCapabilities?.();
     if(renderer?.version!=='sdk-validator'&&(renderer?.recipes?.['thin-glass']!==true||renderer?.renderer?.thinGlass!==true||renderer?.renderer?.backdropBlur!==true))throw new Error('Thin Glass requires the Core thin-glass backdrop renderer.');
     const handle=theme.register('liquid-glass',{
       label:'Thin Glass',
-      metadata:{family:'thin-glass',contract:'theme-3.7',renderer:'core-thin-glass',opticalModel:'single-layer-low-radius-backdrop'},
+      metadata:{family:'thin-glass',contract:'theme-3.8',renderer:'core-thin-glass',opticalModel:'single-layer-low-radius-backdrop'},
       recipes:{chrome:'thin-glass',sidebar:'thin-glass',surface:'clear',elevated:'thin-glass',popover:'thin-glass',control:'clear',floating:'thin-glass'},
-      scientific:{seriesPalette:['#2563EB','#14B8A6','#8B5CF6','#E25555','#D98E22','#0E8FA5','#7C6BD6','#2B8A66']},
+      scientific:{mode:'fallback-only',seriesPalette:['#2563EB','#14B8A6','#8B5CF6','#E25555','#D98E22','#0E8FA5','#7C6BD6','#2B8A66']},
       settings:[
         {id:'chromeBlur',label:'顶部栏模糊',target:{scope:'material',role:'chrome',key:'materialBlur'},type:'range',min:3,max:8,step:1},
         {id:'sidebarBlur',label:'侧栏模糊',target:{scope:'material',role:'sidebar',key:'materialBlur'},type:'range',min:3,max:8,step:1},

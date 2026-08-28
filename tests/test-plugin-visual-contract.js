@@ -28,10 +28,11 @@ for(const token of ['--plugin-font-body:12.5px','--plugin-font-label:12px','--pl
   assert(css.includes(token),`Shared plugin visual token missing: ${token}`);
 }
 assert(css.includes('.dkds-analysis-workbench')&&!css.includes('.dkds-analysis-workbench:not(:has(.resonance-parity-root))'),'All AnalysisWorkbench plugins, including resonance, must inherit the same shared visual contract.');
-for(const [pluginCss,classes] of [[dataCenterCss,['.dc-tabs','.dc-inline-actions','.dc-chart-toolbar']],[pulseCss,['.pulse-file-toolbar','.pulse-plot-actions','.pulse-table-actions']],[terCss,['.ter-chart-actions']]]){
+for(const [pluginCss,classes] of [[dataCenterCss,['.dc-tabs','.dc-inline-actions','.dc-chart-toolbar']],[pulseCss,['.pulse-file-toolbar','.pulse-table-actions']],[terCss,['.ter-chart-actions']]]){
   for(const cls of classes) assert(pluginCss.includes(cls),`Plugin-owned layout contract missing ${cls}.`);
 }
 assert(css.includes('.dkds-toolbar')&&css.includes('flex-flow:row nowrap'),'Core semantic toolbar must consume available horizontal room before wrapping without owning domain selectors.');
+assert(!pulseCss.includes('.pulse-plot-actions{'),'Pulse PlotView actions must use Core header/action geometry instead of a plugin-owned layout contract.');
 assert(!css.includes('.dc-tabs')&&!css.includes('.pulse-file-toolbar')&&!css.includes('.ter-chart-actions'),'Core CSS must not own plugin toolbar selectors.');
 assert(dataCenterRuntime.includes('dc-artifact-meta dkds-meta')&&dataCenterRuntime.includes('dc-prov-time dkds-meta')&&parameterSchema.includes('schema-param-help dkds-meta'),'Data Center/schema metadata must consume the Core meta-text primitive instead of plugin-specific typography.');
 assert(!shell.includes('ctx.ui.styles.add')&&schemaCss.includes('var(--plugin-font-body')&&schemaCss.includes('var(--plugin-font-meta')&&schemaCss.includes('var(--plugin-control-height'),'Plugin manager must consume shared Core text/control tokens from its schema/plugin UI structure owner rather than shell navigation or runtime-injected CSS.');
