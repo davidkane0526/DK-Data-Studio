@@ -76,6 +76,9 @@ const artifact = ctx.data.artifacts.get(rows[0]?.artifactId);
 
 Tool Workspace 与 TOP 使用相同的 bounded-layout 规则。填充窗口的图形推荐：
 
+
+> **Runtime facade:** `ui.workspace` is the manifest requirement and `ui.plugin-workspace` is a capability label. Plugin code must call `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not a Plugin API 1.18 runtime property and is rejected during SDK/package validation.
+
 ```js
 const workspace = ctx.ui.workspaceSurface.create(host, {
   primaryScroll: 'safe'

@@ -346,7 +346,7 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       openFolder:()=>window.electronAPI?.pluginOpenFolder?.(),
       export:id=>window.electronAPI?.pluginExportPackage?.(id),
       installed:()=>[...externalPackages.keys()],
-      errors:()=>externalLoadErrors.slice()
+      errors:()=>[...overrideLoadErrors.map(row=>({...row,source:'override'})),...externalLoadErrors.map(row=>({...row,source:'external'}))]
     },
     manager: {
       list:listPluginStates,

@@ -741,6 +741,10 @@ module.exports = {
     {
       "file": "tests/test-v3625-semantic-surface-plugin-overrides.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3626-sdk-public-api-source-contract.js",
+      "args": []
     }
   ],
   "check": [
@@ -1516,6 +1520,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3625-semantic-surface-plugin-overrides.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3626-sdk-public-api-source-contract.js",
       "args": []
     }
   ],

@@ -27,6 +27,10 @@ For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORK
 
 The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.18.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
 
+### Workspace naming: manifest vs runtime
+
+The names intentionally describe different layers: `requiresCore: ["ui.workspace"]` declares the Core dependency, `ui.plugin-workspace` is the capability label, and **`ctx.ui.workspaceSurface` is the only public executable workspace facade**. Do not infer `ctx.ui.pluginWorkspace` from the capability label; that runtime property does not exist. SDK validation and the in-app `.dkplugin` installer use the same source-contract audit and reject unknown static `ctx.ui.*` facades before activation.
+
 ## Algorithm plugins
 
 Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`, declare `algorithmProvider: true`, `algorithmCategories`, and machine-readable `algorithmProvides`, then register implementations through `ctx.analysis.algorithms.register(...)`. Algorithms should not own workbench UI; compatible workbench/task plugins resolve and invoke them through the versioned Algorithm Registry. See `sdk/templates/algorithm-provider/`.

@@ -373,8 +373,11 @@
 
   function externalPluginPackageSmoke(){
     const diag=window.DKDSPlugins?.diagnostics?.();assert(diag,'Plugin diagnostics unavailable.');
-    const errors=Array.isArray(diag.external?.errors)?diag.external.errors:[];
-    if(errors.length){const err=new Error(`External plugin package errors: ${errors.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:errors.map(row=>({file:row?.file||'',pluginId:row?.pluginId||'',error:row?.error||String(row||'')}))};throw err;}
+    const errors=[
+      ...(Array.isArray(diag.external?.errors)?diag.external.errors.map(row=>({...row,source:row?.source||'external'})):[]),
+      ...(Array.isArray(diag.overrides?.errors)?diag.overrides.errors.map(row=>({...row,source:row?.source||'override'})):[])
+    ];
+    if(errors.length){const err=new Error(`External plugin package errors: ${errors.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:errors.map(row=>({file:row?.file||'',pluginId:row?.pluginId||'',source:row?.source||'',error:row?.error||String(row||'')}))};throw err;}
     return {responsibility:'external-plugin-package',errors:0};
   }
 

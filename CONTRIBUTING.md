@@ -41,3 +41,5 @@ Replaceable scientific algorithms are versioned providers. New-analysis defaults
 First-party plugins are not exempt from the standalone package contract. `npm run plugin:validate` packages/normalizes every bundled manifest through Plugin API 1.18. If a bundled plugin fails because of semantic clipping, host-owned selectors or layout ownership, fix the plugin/Core ownership; do not weaken the external SDK validator.
 
 When publishing a same-ID update to a bundled plugin, increment that plugin's own semantic version. The Desktop Plugin Manager installs a strictly newer compatible package as a managed override and activates it after restart; the bundled version remains the rollback baseline. App patch versions and plugin versions remain independent.
+
+Plugin API naming is layer-specific. In particular, `requiresCore: ["ui.workspace"]` and the capability label `ui.plugin-workspace` map to the single runtime facade `ctx.ui.workspaceSurface`. Do not infer `ctx.ui.pluginWorkspace` or add aliases for guessed names. The standalone SDK and Desktop installer must share the same source-contract validation.

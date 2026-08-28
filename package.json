@@ -1,6 +1,6 @@
 {
   "name": "dk-data-studio",
-  "version": "3.62.5",
+  "version": "3.62.6",
   "description": "Plugin-oriented interactive scientific data analysis studio",
   "main": "desktop/main.js",
   "author": {
@@ -84,6 +84,7 @@
       "sdk/theme-contract.js",
       "sdk/contract.json",
       "sdk/layout-contract.js",
+      "sdk/source-contract.js",
       "package.json",
       "build-info.json",
       "config/update-config.default.json"

@@ -12,6 +12,7 @@ Every change must satisfy this rule before functional convenience:
 - Core owns generic runtime/platform/data/UI infrastructure, while plugins own domain workflow/state/content; neither side may reach into the other side's private implementation;
 - CSS Structure owns geometry only, Presentation/Theme own paint, and one semantic selector/property must have one owner; no `!important`, no catch-all override layer, no specificity race;
 - historical project compatibility is isolated to `src/project-importers/compatibility-gateway.js`; legacy runtime/API compatibility must not leak back into Core or SDK;
+- public Plugin API runtime facades are canonical and singular: capability/manifest labels must never be guessed into JavaScript property names; SDK validation and Desktop package ingestion share the same source-contract audit, and unsupported paths are rejected instead of receiving compatibility aliases;
 - if a requested fix cannot be implemented cleanly under these boundaries, stop and refactor the owner first rather than shipping a patch.
 
 ## Branch and stabilization rule

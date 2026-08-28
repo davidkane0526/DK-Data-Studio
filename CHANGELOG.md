@@ -1,3 +1,15 @@
+# v3.62.6 — SDK Public Facade & Override Activation Safety
+
+- Fix the external/managed-plugin activation crash reproduced by `com.dkds.tools.pulse-sampler@1.9.0`: the package targeted Plugin API 1.18 correctly but called the non-public `ctx.ui.pluginWorkspace.create(...)`; Plugin API 1.18 exposes the single canonical runtime facade `ctx.ui.workspaceSurface.create(...)`.
+- Add one shared `sdk/source-contract.js` source audit and use it from both the standalone SDK validator/packager and Desktop `.dkplugin` normalization. Unknown static `ctx.ui.*` facades are rejected before persistence/activation, while known facades also enforce their corresponding `requiresCore` declaration.
+- Keep the runtime contract singular. Do **not** add a `ctx.ui.pluginWorkspace` compatibility alias: `ui.workspace` is the manifest Core requirement, `ui.plugin-workspace` is a capability label, and `ctx.ui.workspaceSurface` is the executable facade. Document this distinction in the machine-readable SDK contract, type declarations, README, TOP and Tool guides.
+- Give source-contract failures the explicit `PLUGIN_SOURCE_CONTRACT` install error and suppress unrelated App/Plugin-API compatibility rows in that dialog, so a bad runtime call is not misreported as an API-version mismatch.
+- Make already-installed invalid managed overrides fail closed at package ingestion. They are excluded from effective override resolution, recorded as actionable local-package errors, and the immutable bundled plugin baseline loads instead of allowing a dedicated TOP window to crash during activation. Plugin Manager local-package warnings now include override-load errors.
+- Extend Automation package diagnostics to include invalid managed overrides separately from plugin activation failures.
+- Add a v3.62.6 regression that reproduces the exact `ctx.ui.pluginWorkspace.create` failure, proves `ctx.ui.workspaceSurface.create` passes, verifies both SDK CLI and in-app normalization reject the bad facade, and verifies an invalid on-disk Pulse Sampler override falls back to the bundled baseline.
+- Keep Plugin API/SDK **1.18.0** and Theme Contract **3.6.0** unchanged; this release completes validation of the existing public contract rather than introducing a second runtime API.
+- Release-source validation: `npm test` **186/186 PASS**, `npm run check` **194/194 PASS**, bundled plugin package parity **16/16 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, TER Python parity **PASS**, Core/Plugin ownership **PASS**, App/Plugin Kernel SCC **0**, authored CSS **0 `!important`**.
+
 # v3.62.5 — Semantic Surface & Managed Plugin Override Closure
 
 - Close the remaining Theme semantic-surface ownership gap. Core workbench Sidebar slots now own the `sidebar` Material Role and therefore consume `surfaceSidebar`; direct plugin composition roots are transparent by default instead of repainting the slot with `surfaceSoft`. Plugins may request an independent MaterialSurface only explicitly.

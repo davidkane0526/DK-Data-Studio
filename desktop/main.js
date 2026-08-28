@@ -417,7 +417,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('plugins:listExternal', async () => {const result=readInstalledExternalPlugins();return {...result,packages:(result.packages||[]).map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest) }))};});
   ipcMain.handle('plugins:listOverrides', async () => {const result=readInstalledPluginOverrides(),classified=classifyInstalledPluginOverrides(result);return {...result,packages:classified.active.map(pkg=>({...pkg,effective:true,compatibilityStatus:packageCompatibility(pkg.manifest)})),shadowed:classified.shadowed.map(pkg=>({...pkg,compatibilityStatus:packageCompatibility(pkg.manifest)}))};});
-  const installPlanError=(err,manifest=null,compatibility=null,fallbackCode='PLUGIN_PACKAGE_INVALID',fallbackTitle='无法读取插件包')=>{const code=String(err?.code||fallbackCode),showCompatibility=!['PLUGIN_VERSION_NOT_NEWER','PLUGIN_HISTORY_SHADOWED_BY_BUNDLED'].includes(code);return pluginInstallErrorPayload(err,{code,title:String(err?.title||fallbackTitle),manifest,compatibility:showCompatibility?compatibility:null});};
+  const installPlanError=(err,manifest=null,compatibility=null,fallbackCode='PLUGIN_PACKAGE_INVALID',fallbackTitle='无法读取插件包')=>{const code=String(err?.code||fallbackCode),showCompatibility=!['PLUGIN_VERSION_NOT_NEWER','PLUGIN_HISTORY_SHADOWED_BY_BUNDLED','PLUGIN_SOURCE_CONTRACT'].includes(code);return pluginInstallErrorPayload(err,{code,title:String(err?.title||fallbackTitle),manifest,compatibility:showCompatibility?compatibility:null});};
   ipcMain.handle('plugins:selectPackage', async () => {
     sweepPendingPluginInstalls();let manifest=null;
     try{

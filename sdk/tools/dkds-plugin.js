@@ -7,6 +7,7 @@ const {inspectWorkspaceStyles}=require('../layout-contract');
 const ThemeContract=require('../theme-contract');
 const ThemeCoverageContract=require('../theme-coverage-contract');
 const SemverCompat=require('../semver-compat');
+const {inspectPluginSource}=require('../source-contract');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
@@ -58,8 +59,7 @@ const usage=[
   ['runtime',/ctx\.runtime\b/],['events',/ctx\.events\b/],['status',/ctx\.status\b/],['io',/ctx\.io\b/],['science',/ctx\.science\b/],['performance',/ctx\.performance\b/],
   ['services',/ctx\.services\b/],['modules',/ctx\.modules\b/],['capabilities',/ctx\.capabilities\b/],['state',/ctx\.state\b/],['project',/ctx\.project\b/],['workspace',/ctx\.workspace\b/],['parameters',/ctx\.parameters\b/],
   ['data.flow',/ctx\.data\.(?:flow|importers|exporters|transformers|analyzers)\b/],['data.pipeline',/ctx\.data\.pipeline\b/],['data.transforms',/ctx\.data\.transforms\b/],['data.artifacts',/ctx\.data\.artifacts\b/],['data.entities',/ctx\.data\.entities\b/],['data.types',/ctx\.data\.types\b/],['data.model',/ctx\.data\.model\b/],['data.formula',/ctx\.data\.formula\b/],
-  ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['charts.providers',/ctx\.charts\b/],
-  ['ui.dom',/ctx\.ui\.dom\b/],['ui.components',/ctx\.ui\.components\b/],['ui.workspace',/ctx\.ui\.(?:workspaceSurface|layout|grid)\b/],['ui.scientific-plot',/ctx\.ui\.scientificPlot\b/],['ui.plot-views',/ctx\.ui\.plotViews\b/],['ui.table',/ctx\.ui\.tables\b/],['ui.settings',/ctx\.ui\.settings\b/],['ui.dialogs',/ctx\.ui\.dialogs\b/],['ui.actions',/ctx\.ui\.actions\b/],['ui.selection',/ctx\.ui\.selection\b/],['ui.interaction',/ctx\.ui\.(?:interaction|interactions)\b/],['ui.interaction-behavior',/ctx\.ui\.interactionBehaviors\b/],['ui.context-menus',/ctx\.ui\.contextMenus\b/],['ui.activities',/ctx\.ui\.activities\b/],['ui.top-workspace',/ctx\.ui\.topWorkspace\b/],['ui.toolbar',/ctx\.ui\.toolbar\b/],['ui.status-bar',/ctx\.ui\.statusBar\b/],['ui.shortcuts',/ctx\.ui\.shortcuts\b/],['ui.pages',/ctx\.ui\.pages\b/],['ui.styles',/ctx\.ui\.styles\b/],['ui.theme',/ctx\.ui\.theme\b/],['ui.portable',/ctx\.ui\.portable\b/],['ui.edit',/ctx\.ui\.edit\b/]
+  ['workflow',/ctx\.workflow\b/],['analysis.providers',/ctx\.analysis\.providers\b/],['analysis.algorithms',/ctx\.analysis\.algorithms\b/],['charts.providers',/ctx\.charts\b/]
 ];
 const forbidden=[
   [/\bctx\.host\b/,'private host bypass'],[/window\.electronAPI|\belectronAPI\./,'Electron bridge'],[/window\.Plotly|\bPlotly\./,'raw Plotly'],
@@ -100,8 +100,10 @@ async function validate(folder){
   if(Array.isArray(m.pluginDependencies))for(const dep of m.pluginDependencies){if(!dep||typeof dep!=='object'||!pluginId(dep.id)||!SemverCompat.validateRange(dep.range))errors.push(`invalid plugin dependency range: ${dep?.id||'(missing)'}@${dep?.range||'(missing)'}`);}
   let files=[];try{files=referencedFiles(m,folder);}catch(e){errors.push(e.message);}
   for(const rel of files){const file=path.join(folder,rel);if(!fs.existsSync(file)||!fs.statSync(file).isFile())errors.push(`referenced file not found: ${rel}`);}
-  const declared=new Set(m.requiresCore||[]);const source=stripComments(files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n'));
+  const declared=new Set(m.requiresCore||[]);const rawSource=files.filter(f=>f.endsWith('.js')&&fs.existsSync(path.join(folder,f))).map(f=>fs.readFileSync(path.join(folder,f),'utf8')).join('\n');const source=stripComments(rawSource);
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
+  const sourceAudit=inspectPluginSource(rawSource,{apiVersion:m.apiVersion,requiresCore:m.requiresCore});
+  for(const issue of sourceAudit.issues)errors.push(`${issue.message} (${issue.line}:${issue.column})`);
   for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API ${API} development contract`);
   const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
   const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,ui:m.ui||{},styles:styleRows});

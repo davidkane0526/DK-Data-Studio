@@ -1,6 +1,7 @@
 const path = require('path');
 const SemverCompat = require('./semver-compat');
 const {inspectWorkspaceStyles}=require('../sdk/layout-contract');
+const {inspectPluginSource}=require('../sdk/source-contract');
 
 const PLUGIN_PACKAGE_SCHEMA = 1;
 const MAX_FILES = 64;
@@ -107,6 +108,13 @@ function normalizePluginPackage(input, { allowBuiltinId = false } = {}) {
     if (!Object.prototype.hasOwnProperty.call(files, fileName)) throw new Error(`Plugin script not found: ${fileName}`);
     if (!fileName.toLowerCase().endsWith('.js')) throw new Error(`Plugin script must be JavaScript: ${fileName}`);
   }
+  const sourceContractErrors=[];
+  for(const [fileName,source] of Object.entries(files)){
+    if(!fileName.toLowerCase().endsWith('.js'))continue;
+    const audit=inspectPluginSource(source,{apiVersion,requiresCore:sourceManifest.requiresCore});
+    for(const issue of audit.issues)sourceContractErrors.push(`${fileName}:${issue.line}:${issue.column} ${issue.message}`);
+  }
+  if(sourceContractErrors.length){const error=new Error(`Plugin source contract failed: ${sourceContractErrors.join(' ')}`);error.code='PLUGIN_SOURCE_CONTRACT';error.title='插件 API 调用无效';throw error;}
 
   const styles = Array.isArray(sourceManifest.styles) ? sourceManifest.styles.map(normalizeRelativeFile) : [];
   for (const fileName of styles) {

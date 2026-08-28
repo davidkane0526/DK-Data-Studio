@@ -71,6 +71,9 @@ Use `window.artifactHydration: "live"` only when the dedicated renderer must rec
 
 A plot that fills the TOP viewport must have a bounded height chain. The reference pattern is:
 
+
+> **Runtime facade:** `ui.workspace` is the manifest requirement and `ui.plugin-workspace` is a capability label. Plugin code must call `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not a Plugin API 1.18 runtime property and is rejected during SDK/package validation.
+
 ```js
 const workspace = ctx.ui.workspaceSurface.create(host, {
   activity: 'my-analysis',
