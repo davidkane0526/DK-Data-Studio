@@ -50,7 +50,7 @@ const {pluginTypeOf}=require('../manifest');
       if(pluginActions)header.insertBefore(slot,pluginActions);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
     }
     slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
-    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.title=`导入到 ${meta.label}`;button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
+    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
     return button;
   }
 

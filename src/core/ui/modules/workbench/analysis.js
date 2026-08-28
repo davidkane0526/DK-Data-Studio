@@ -27,13 +27,13 @@ const {GridController}=require('../grid/controller');
         </nav>
         <div class="dkds-analysis-frame">
           <aside class="dkds-analysis-left dkds-material-role-sidebar" data-analysis-slot="left"></aside>
-          <div class="dkds-analysis-left-resizer" role="separator" aria-orientation="vertical" title="拖动调整左侧宽度；双击复位"></div>
+          <div class="dkds-analysis-left-resizer" role="separator" aria-orientation="vertical" data-dkds-tooltip="拖动调整左侧宽度；双击复位"></div>
           <main class="dkds-analysis-main dkds-material-role-surface" data-analysis-slot="main">
             <div class="dkds-analysis-primary-host"></div><div class="dkds-analysis-sub-host hidden"></div>
           </main>
-          <div class="dkds-analysis-right-resizer" role="separator" aria-orientation="vertical" title="拖动调整右侧宽度；双击复位"></div>
+          <div class="dkds-analysis-right-resizer" role="separator" aria-orientation="vertical" data-dkds-tooltip="拖动调整右侧宽度；双击复位"></div>
           <aside class="dkds-analysis-right dkds-material-role-sidebar" data-analysis-slot="right"></aside>
-          <div class="dkds-analysis-bottom-resizer" role="separator" aria-orientation="horizontal" title="拖动调整底部高度；双击复位"></div>
+          <div class="dkds-analysis-bottom-resizer" role="separator" aria-orientation="horizontal" data-dkds-tooltip="拖动调整底部高度；双击复位"></div>
           <section class="dkds-analysis-bottom dkds-material-role-surface" data-analysis-slot="bottom"></section>
           <div class="dkds-analysis-overlay" data-analysis-slot="overlay"></div>
         </div>
@@ -147,7 +147,7 @@ const {GridController}=require('../grid/controller');
       const primaryHost=this.shell.querySelector('.dkds-analysis-nav-primary'),primeHost=this.shell.querySelector('.dkds-analysis-nav-prime'),subHost=this.shell.querySelector('.dkds-analysis-nav-sub');
       primaryHost?.replaceChildren();primeHost?.replaceChildren();subHost?.replaceChildren();
       if(this.primary&&primaryHost){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn';b.classList.toggle('active',!this.activeSub);b.textContent=this.primary.label||'主界面';b.onclick=()=>this.showPrimary();primaryHost.appendChild(b);}
-      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.title='PRIME：可嵌入、固定或悬浮';b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
+      for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-prime-btn';b.classList.toggle('active',row.mounted);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.togglePrime(row.id);primeHost?.appendChild(b);}
       for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100))){const b=document.createElement('button');b.type='button';b.className='dkds-analysis-nav-btn dkds-analysis-sub-btn';b.classList.toggle('active',this.activeSub===row.id);b.textContent=row.label||row.title||row.id;b.onclick=()=>this.openSub(row.id);subHost?.appendChild(b);}
       const nav=this.shell.querySelector('.dkds-analysis-nav');
       if(nav){

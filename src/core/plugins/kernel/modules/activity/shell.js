@@ -56,7 +56,7 @@ const {pluginTypeOf}=require('../manifest');
       const toolButton=document.createElement('button');
       toolButton.type='button';toolButton.className='plugin-menu-item tool-workspace-menu-item';
       toolButton.dataset.toolWorkspaceEntry='1';toolButton.dataset.pluginId=row.pluginId;toolButton.dataset.activityId=spec.id;toolButton.dataset.pluginOrder=String(Number(spec.order)||100);
-      toolButton.title=spec.title||spec.description||spec.label||spec.id;
+      toolButton.setAttribute('aria-label',String(spec.label||spec.title||spec.id));
       toolButton.innerHTML=`${spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:''}<span>${spec.label||spec.id}</span>`;
       toolButton.onclick=async()=>{
         try{
@@ -95,9 +95,7 @@ const {pluginTypeOf}=require('../manifest');
       button.dataset.activityRole=spec.role||'';
       button.classList.toggle('top-workspace-tab',spec.role==='top');
       button.classList.toggle('super-workspace-tab',row.pluginId===state.superPluginId);
-      const tooltip=(row.pluginId===state.superPluginId?'主界面 · ':'')+(spec.title||spec.description||spec.label||spec.id);
-      button.dataset.dkdsTooltip=tooltip;
-      button.setAttribute('aria-label',`${spec.label||spec.id} · ${tooltip}`);
+      button.setAttribute('aria-label',String(spec.label||spec.id));
       const icon=spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:'';
       button.innerHTML=`${icon}<span class="activity-label">${spec.label||spec.id}</span>`;
       button.classList.toggle('active',spec.id===state.activeActivityId);
@@ -145,7 +143,7 @@ const {pluginTypeOf}=require('../manifest');
       context.textContent=`当前：${active?.contextLabel||active?.label||'当前插件'}`;
       context.classList.remove('hidden');
     }else context?.classList?.add('hidden');
-    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!hasPluginExport;trigger.title=hasPluginExport?`导出 ${active?.contextLabel||active?.label||'当前插件'} 的数据或图形`:'当前工作区没有可用导出项';}
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!hasPluginExport;trigger.removeAttribute('title');trigger.setAttribute('aria-label','导出数据');}
   }
 
 
@@ -155,7 +153,7 @@ const {pluginTypeOf}=require('../manifest');
     if(!menu||!trigger)return;
     const items=[...menu.querySelectorAll('.plugin-menu-item')].filter(el=>!el.classList.contains('hidden'));
     trigger.disabled=items.length===0;
-    trigger.title=items.length?`打开工具（${items.length}）`:'当前没有已启用的工具插件';
+    trigger.removeAttribute('title');trigger.setAttribute('aria-label','工具');
     let empty=menu.querySelector('[data-tools-empty]');
     if(!items.length){if(!empty){empty=document.createElement('div');empty.dataset.toolsEmpty='1';empty.className='command-menu-empty';empty.textContent='当前没有已启用的工具';menu.appendChild(empty);}empty.classList.remove('hidden');}
     else empty?.classList?.add('hidden');

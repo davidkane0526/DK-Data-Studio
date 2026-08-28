@@ -3,6 +3,9 @@
 const {spawnSync}=require('child_process');
 const path=require('path');
 const manifest=require('./manifest');
+const {validate:validateHardVisualInvariants}=require('../tools/quality/visual-invariants');
+
+try{validateHardVisualInvariants();console.log('[DKDS tests] hard visual invariants PASS');}catch(err){console.error(err.message||err);process.exit(1);}
 
 const suiteName=String(process.argv[2]||'test');
 const filter=String(process.argv[3]||'').trim().toLowerCase();

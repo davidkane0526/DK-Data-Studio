@@ -8,7 +8,7 @@ function markToolbarSections(hostEl){
   for(const button of buttons){
     const section=button.dataset.pluginSection||'',isStart=!!section&&section!==lastSection;
     button.classList.toggle('plugin-section-start',isStart);
-    if(section)button.title=button.title||section;
+    // Section names organize the toolbar; visible buttons do not need duplicate tooltips.
     lastSection=section||lastSection;
   }
 }

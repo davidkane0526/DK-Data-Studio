@@ -43,7 +43,7 @@
         const candidates=live.sweeps.filter(sw=>sw.datasetPath===ds.path&&actions.isVisible(sw)),preferred=current?.datasetPath===ds.path?current:(candidates.find(sw=>sw.direction>0)||candidates[0]);
         const chip=dom.create('button');chip.type='button';chip.className='respar-legend-chip dkds-legend-item';chip.dataset.datasetPath=String(ds.path||'');chip.dataset.entityId=actions.datasetEntityId(ds.path);chip.dataset.selectionKey=actions.datasetEntityId(ds.path);chip.dataset.sweepId=String(preferred?.id||'');
         const c=curveColor(Number.isFinite(Number(ds.vg))?Number(ds.vg):0),dash=preferred?.direction<0?' reverse':'';
-        chip.innerHTML=`<i class="respar-legend-line dkds-series-swatch-line${dash}" style="--dkds-series-color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.title=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;host.appendChild(chip);
+        chip.innerHTML=`<i class="respar-legend-line dkds-series-swatch-line${dash}" style="--dkds-series-color:${esc(c)}"></i><span>${compactLegendNumber(ds.vg)} V</span>`;chip.dataset.dkdsTooltip=`${ds.name||ds.path}${preferred?` · ${directionName(preferred.direction)}`:''}`;host.appendChild(chip);
       }
     }
     function peakMarkerShape(p){return ({raw:'circle',snr:'diamond',diff:'triangle',detrend:'square',curvature:'cross',matched:'circle',manual:'star'})[p?.primaryAlgorithm]||'circle';}

@@ -103,7 +103,7 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
         const icon=this.value(action.icon,ctx);
         const active=!!this.value(action.active,ctx);const enabled=this.value(action.enabled,ctx)!==false;
         button.classList.toggle('active',active);button.disabled=!enabled;
-        button.title=String(this.value(action.title,ctx)||'');
+        const accessible=String(this.value(action.title,ctx)||label||action.id||'').trim();if(accessible)button.setAttribute('aria-label',accessible);
         button.innerHTML=`${icon?`<span class="dkds-action-icon">${esc(icon)}</span>`:''}<span class="dkds-action-label">${esc(label)}</span>${action.menu?'<span class="dkds-action-caret">▾</span>':''}`;
         button.addEventListener('click',event=>{
           if(button.disabled)return;

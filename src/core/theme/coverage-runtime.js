@@ -4,7 +4,7 @@
   if(!Contract)throw new Error('DKDSThemeCoverageContract is required before ThemeCoverageRuntime.');
   const ROLE_AREAS=Object.freeze([
     {id:'app-chrome',label:'App Shell / Chrome',role:'chrome',selector:'.topbar,.project-tabs-bar,#statusBar.statusbar'},
-    {id:'page-chrome',label:'Page / Workspace Headers',role:'chrome',selector:'.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head'},
+    {id:'page-chrome',label:'Page / Workspace Headers',role:'chrome',selector:'.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head'},
     {id:'sidebar',label:'Sidebar / Inspector Rail',role:'sidebar',selector:'.left-panel,.plugin-sidebar-sections,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-analysis-left,.dkds-analysis-right,.dkds-material-role-sidebar'},
     {id:'workspace',label:'Workspace / Plugin Workspace',role:'surface',selector:'.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-plugin-canvas-center,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-material-role-surface'},
     {id:'core-content',label:'Core Scientific/Data Content',role:'surface',selector:'.analysis-page:not(#pluginManagerPage):not(#automationTestPage),.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host'},

@@ -38,7 +38,9 @@ try{
   // with builtin.; the bundled copy is an immutable baseline, not a special API.
   const pulse=runtime.readBuiltinPluginPackage('com.dkds.tools.pulse-sampler');
   const bundledVersion=pulse.manifest.version;
-  pulse.manifest.version='1.9.0';
+  const versionParts=bundledVersion.split('.').map(Number);
+  const overrideVersion=`${versionParts[0]}.${versionParts[1]}.${versionParts[2]+1}`;
+  pulse.manifest.version=overrideVersion;
   pulse.manifest.compatibility={...(pulse.manifest.compatibility||{}),app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'};
   const plan=runtime.pluginInstallPlan(pulse);
   assert.strictEqual(plan.installationKind,'override');
@@ -47,18 +49,18 @@ try{
   assert.strictEqual(plan.previousVersion,bundledVersion);
   assert(plan.target.includes(`${path.sep}plugin-overrides${path.sep}`),'Bundled updates must be written to plugin-overrides, never the application tree or external plugin store.');
   const installed=runtime.commitPluginInstall(plan,{archiveReason:'test-override'});
-  assert.strictEqual(installed.manifest.version,'1.9.0');
-  assert(runtime.readInstalledPluginOverrides().packages.some(row=>row.manifest.id==='com.dkds.tools.pulse-sampler'&&row.manifest.version==='1.9.0'),'Non-builtin-prefix first-party override must be readable.');
+  assert.strictEqual(installed.manifest.version,overrideVersion);
+  assert(runtime.readInstalledPluginOverrides().packages.some(row=>row.manifest.id==='com.dkds.tools.pulse-sampler'&&row.manifest.version===overrideVersion),'Non-builtin-prefix first-party override must be readable.');
   assert(runtime.installedPluginOverridePackages().some(row=>row.manifest.id==='com.dkds.tools.pulse-sampler'),'Strictly newer first-party override must become effective.');
-  assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,'1.9.0','Current package resolution must prefer the active override.');
+  assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,overrideVersion,'Current package resolution must prefer the active override.');
   assert.throws(()=>runtime.pluginInstallPlan(pulse),err=>err?.code==='PLUGIN_VERSION_NOT_NEWER','Reinstalling the same bundled override version must be rejected as a non-update.');
   const restore=runtime.restoreInstalledPackage('com.dkds.tools.pulse-sampler',null);
   assert.strictEqual(restore.requiresRestart,true);
   assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,bundledVersion,'Removing the override must reveal the bundled baseline again.');
 
-  const nonPrefix=policy.classify([{manifest:{id:'com.dkds.tools.pulse-sampler',version:'1.9.0'}}],[{manifest:{id:'com.dkds.tools.pulse-sampler',version:bundledVersion}}]);
+  const nonPrefix=policy.classify([{manifest:{id:'com.dkds.tools.pulse-sampler',version:overrideVersion}}],[{manifest:{id:'com.dkds.tools.pulse-sampler',version:bundledVersion}}]);
   assert.strictEqual(nonPrefix.active.length,1,'Override precedence must be based on bundled membership/version, not the builtin.* prefix.');
-  assert(policy.isNewerVersion('1.9.0',bundledVersion),'Generic version comparison must support managed bundled updates.');
+  assert(policy.isNewerVersion(overrideVersion,bundledVersion),'Generic version comparison must support managed bundled updates.');
 }catch(err){throw err;}finally{fs.rmSync(tempRoot,{recursive:true,force:true});}
 
 const main=read('desktop/main.js'),packageRuntime=read('desktop/main-modules/plugin-package-runtime.js'),kernel=read('src/core/plugins/kernel/modules/package-runtime.js'),manager=read('src/core/plugins/manager-ui.js'),validator=read('scripts/validate-plugins.js');

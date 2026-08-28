@@ -37,10 +37,12 @@ try{
   assert(bundled,'Pulse Sampler bundled package is required for exact override regression coverage.');
   assert.match(bundled.files['plugin.js'],/ctx\.ui\.workspaceSurface\.create/,'Bundled Pulse Sampler must teach the canonical workspaceSurface facade.');
 
+  const versionParts=bundled.manifest.version.split('.').map(Number);
+  const overrideVersion=`${versionParts[0]}.${versionParts[1]}.${versionParts[2]+1}`;
   const badPackage=JSON.parse(JSON.stringify(bundled));
-  badPackage.manifest.version='1.9.0';
+  badPackage.manifest.version=overrideVersion;
   badPackage.files['plugin.js']=badPackage.files['plugin.js'].replace('ctx.ui.workspaceSurface.create','ctx.ui.pluginWorkspace.create');
-  assert.match(badPackage.files['plugin.js'],/ctx\.ui\.pluginWorkspace\.create/,'Regression fixture must reproduce the user-reported 1.9.0 activation bug.');
+  assert.match(badPackage.files['plugin.js'],/ctx\.ui\.pluginWorkspace\.create/,'Regression fixture must reproduce the non-public workspace facade activation bug.');
   assert.throws(
     ()=>normalizePluginPackage(badPackage,{allowBuiltinId:true}),
     err=>/Plugin source contract failed/.test(String(err?.message||''))&&/ctx\.ui\.pluginWorkspace/.test(String(err?.message||''))&&/ctx\.ui\.workspaceSurface/.test(String(err?.message||'')),
@@ -60,7 +62,7 @@ try{
   assert.match(overrideRead.errors[0].error,/ctx\.ui\.workspaceSurface/);
   assert.strictEqual(runtime.currentPluginPackage('com.dkds.tools.pulse-sampler').manifest.version,bundled.manifest.version,'Invalid override must fall back to the bundled baseline.');
   const correctedPackage=JSON.parse(JSON.stringify(bundled));
-  correctedPackage.manifest.version='1.9.0';
+  correctedPackage.manifest.version=overrideVersion;
   const correctedPlan=runtime.pluginInstallPlan(correctedPackage);
   assert.strictEqual(correctedPlan.installationKind,'override','A corrected package may reuse the same nominal version as an invalid quarantined override because only valid effective versions participate in precedence.');
   assert.strictEqual(correctedPlan.previousVersion,bundled.manifest.version);

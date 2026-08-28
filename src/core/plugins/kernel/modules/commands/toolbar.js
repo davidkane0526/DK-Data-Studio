@@ -21,7 +21,7 @@ const {reflowContextToolbar}=require('../shell/context-toolbar');
     button.id = spec.id || `${pluginId}__${spec.command || spec.label}`;
     button.className = `toolbar-btn plugin-toolbar-btn ${spec.className || ''}`.trim();
     button.textContent = spec.label || spec.id || pluginId;
-    button.title = spec.title || '';
+    button.setAttribute('aria-label',String(spec.label||spec.title||spec.id||pluginId));
     button.dataset.pluginId = pluginId;
     button.dataset.pluginOrder = String(Number(spec.order) || 100);
     button.dataset.pluginPriority = String(Number(spec.priority) || 0);

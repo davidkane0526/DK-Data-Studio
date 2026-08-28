@@ -309,7 +309,7 @@
     const all=window.DKDSPlugins?.manager?.list?.()||[];
     renderSummary(all);
     const installSupported=!!window.DKDSPlugins?.external?.available?.();
-    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.title=installSupported?'安装 .dkplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
+    const installBtn=$('#pluginManagerInstallBtn');if(installBtn){installBtn.disabled=!installSupported;installBtn.dataset.dkdsTooltip=installSupported?'安装 .dkplugin 本地插件包':'当前运行环境不允许安装可执行插件包';}
     const folderBtn=$('#pluginManagerOpenFolderBtn');if(folderBtn)folderBtn.disabled=!installSupported;
     const externalErrors=window.DKDSPlugins?.external?.errors?.()||[];
     const note=$('#pluginManagerNote');
@@ -351,7 +351,7 @@
       card.innerHTML=`
         <div class="plugin-card-head">
           ${plugin.workspaceRole==='top'&&!plugin.systemLocked
-            ? `<button class="plugin-card-icon plugin-super-selector ${plugin.isSuper?'selected':''}" type="button" aria-pressed="${plugin.isSuper?'true':'false'}" title="${plugin.isSuper?'当前主界面（SUPER）':'设为主界面（SUPER）'}" ${(!plugin.active||busy||!plugin.topContractReady)?'disabled':''}>${escapeHtml(plugin.workspaceIcon||'⌂')}<span class="plugin-super-home-mark">⌂</span></button>`
+            ? `<button class="plugin-card-icon plugin-super-selector ${plugin.isSuper?'selected':''}" type="button" aria-pressed="${plugin.isSuper?'true':'false'}" data-dkds-tooltip="${plugin.isSuper?'当前主界面（SUPER）':'设为主界面（SUPER）'}" ${(!plugin.active||busy||!plugin.topContractReady)?'disabled':''}>${escapeHtml(plugin.workspaceIcon||'⌂')}<span class="plugin-super-home-mark">⌂</span></button>`
             : `<div class="plugin-card-icon" aria-hidden="true">${escapeHtml(plugin.icon||plugin.workspaceIcon||'⬡')}</div>`}
           <div class="plugin-card-title-wrap">
             <div class="plugin-card-title-line">
@@ -364,12 +364,12 @@
             <div class="plugin-card-id">${escapeHtml(plugin.id)} · v${escapeHtml(plugin.version||'?')}</div>
           </div>
           <div class="plugin-card-switches">
-            <label class="plugin-enable-switch" title="${plugin.systemLocked?'系统功能由基座管理，不能停用':plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
+            <label class="plugin-enable-switch" data-dkds-tooltip="${plugin.systemLocked?'系统功能由基座管理，不能停用':plugin.isSuper?'当前 SUPER 不能直接停用，请先选择另一个 TOP 作为主界面':'启用或停用此插件'}">
               <input class="plugin-enable-input" type="checkbox" ${plugin.enabled?'checked':''} ${(busy||plugin.isSuper||plugin.systemLocked)?'disabled':''}>
               <span class="plugin-switch-track"><span class="plugin-switch-thumb"></span></span>
               <span class="plugin-switch-label">${plugin.enabled?'启用':'停用'}</span>
             </label>
-            ${plugin.hasWindow?`<label class="plugin-prewarm-switch" title="预热会在后台提前创建该插件窗口，打开更快，但会增加内存占用。">
+            ${plugin.hasWindow?`<label class="plugin-prewarm-switch" data-dkds-tooltip="预热会在后台提前创建该插件窗口，打开更快，但会增加内存占用。">
               <input class="plugin-prewarm-input" type="checkbox" ${plugin.prewarmEnabled?'checked':''} ${busy?'disabled':''}>
               <span class="plugin-prewarm-box" aria-hidden="true"></span>
               <span>预热</span>

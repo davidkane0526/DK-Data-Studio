@@ -38,9 +38,9 @@ assert.throws(()=>Theme.validateProfile({modes:{light:{scientific:{mode:'decorat
 const runtime=read('src/core/theme/runtime.js');
 for(const token of ["contractVersion:'3.8.0'",'--dkui-component-','appearanceComponents','consumption','fallback-only','user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']) assert(runtime.includes(token),`Theme runtime missing ${token}`);
 const components=read('src/core/theme/component-appearance.js');
-for(const token of ['toolbarAction','panelHeader','inspectorHeader','floatingChrome','AUTHORED_BUT_UNUSED','UNMANAGED_COMPONENT_APPEARANCE','appearance.components.']) assert(components.includes(token),`Component Appearance runtime missing ${token}`);
+for(const token of ['toolbarAction','panelHeader','inspectorHeader','floatingChrome','top-level-activity-tab','AUTHORED_BUT_UNUSED','UNMANAGED_COMPONENT_APPEARANCE','appearance.components.']) assert(components.includes(token),`Component Appearance runtime missing ${token}`);
 const componentCss=read('src/styles/theme/component-appearance.css');
-for(const token of ['--dkui-component-tab-surface-active','--dkui-component-toolbar-action-surface-hover','--dkui-component-panel-header-surface','--dkui-component-field-border-active','data-dkds-action-tone="secondary"']) assert(componentCss.includes(token),`Component Appearance CSS missing ${token}`);
+for(const token of ['--dkui-component-tab-surface-active','--dkui-component-toolbar-action-surface-hover','--dkui-component-toolbar-group-surface','--dkui-component-panel-header-surface','--dkui-component-field-border-active','data-dkds-action-tone="secondary"']) assert(componentCss.includes(token),`Component Appearance CSS missing ${token}`);
 const legacyThemeCss=read('src/styles/theme/contract.css');
 for(const forbidden of ['.project-tab{background:var(--dkui-surface-soft)', '.activity-tab.active,.primary-activity-bar', '.toolbar-group,.system-core-tools-group){background:var(--dkui-surface-soft)']) assert(!legacyThemeCss.includes(forbidden),`Old component paint owner remains: ${forbidden}`);
 

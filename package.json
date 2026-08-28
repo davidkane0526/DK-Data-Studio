@@ -8,6 +8,12 @@
   },
   "license": "MIT",
   "scripts": {
+    "visual:gate": "node tools/quality/visual-invariants.js",
+    "prestart": "npm run visual:gate",
+    "pretest": "npm run visual:gate",
+    "precheck": "npm run visual:gate",
+    "predist": "npm run visual:gate",
+    "prestyles:build": "npm run visual:gate",
     "brand:assets": "node scripts/generate-brand-assets.js",
     "postinstall": "npm run brand:assets",
     "plugin:index": "node scripts/generate-plugin-index.js",

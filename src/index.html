@@ -22,12 +22,12 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand" title="DK Data Studio"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.64.0</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.64.0</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
-          <div class="toolbar-group file-command-group" title="工程与数据">
+          <div class="toolbar-group file-command-group">
             <div class="menu-anchor split-command-anchor">
-              <button id="openBtn" class="toolbar-btn strong split-command-main" title="打开数据导入工作台">导入数据</button>
+              <button id="openBtn" class="toolbar-btn strong split-command-main">导入数据</button>
               <button id="openImportSourceBtn" class="toolbar-btn strong menu-trigger split-command-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择数据导入来源" aria-haspopup="true" aria-expanded="false">⌄</button>
               <div id="importSourceMenu" class="command-menu hidden">
                 <button id="openLocalImportMenuBtn" type="button">本地 / 系统文件…</button>
@@ -36,7 +36,7 @@
               </div>
             </div>
             <div class="menu-anchor split-command-anchor">
-              <button id="openProjectBtn" class="toolbar-btn split-command-main" title="读取项目 · Ctrl+O">读取项目</button>
+              <button id="openProjectBtn" class="toolbar-btn split-command-main">读取项目</button>
               <button id="openProjectSourceBtn" class="toolbar-btn menu-trigger split-command-caret" type="button" data-menu-target="projectSourceMenu" aria-label="选择项目读取来源" aria-haspopup="true" aria-expanded="false">⌄</button>
               <div id="projectSourceMenu" class="command-menu hidden">
                 <button id="openLocalProjectMenuBtn" type="button">本地 / 系统文件…</button>
@@ -44,7 +44,7 @@
                 <div data-plugin-menu="open-project"></div>
               </div>
             </div>
-            <button id="saveProjectBtn" class="toolbar-btn" title="保存项目 · Ctrl+S">保存项目</button>
+            <button id="saveProjectBtn" class="toolbar-btn">保存项目</button>
           </div>
           <div class="menu-anchor compact-menu-anchor">
             <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
@@ -80,7 +80,7 @@
 
         <div class="system-commandbar">
           <div class="system-core-tools-group" role="group" aria-label="系统数据与工具">
-            <button id="dataCenterSystemBtn" class="toolbar-btn" type="button" title="打开系统数据管理中心">数据管理</button>
+            <button id="dataCenterSystemBtn" class="toolbar-btn" type="button">数据管理</button>
             <div class="menu-anchor">
               <button id="toolsMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="pluginToolsMenu" aria-haspopup="true" aria-expanded="false" disabled>工具 ▾</button>
               <div id="pluginToolsMenu" class="command-menu hidden" data-plugin-menu="tools"></div>
@@ -108,7 +108,7 @@
     </header>
     <div class="project-tabs-bar">
       <div id="projectTabs" class="project-tabs"></div>
-      <button id="newProjectTabBtn" class="new-project-tab" title="新建独立项目标签页 (Ctrl+N)">＋</button>
+      <button id="newProjectTabBtn" class="new-project-tab" data-dkds-tooltip="新建独立项目标签页 · Ctrl+N" aria-label="新建项目">＋</button>
     </div>
 
 
@@ -124,7 +124,7 @@
           <div class="main-plot-tools" id="mainPlotTools">
             <div id="pluginMainPlotTools" class="plugin-main-tools" data-plugin-main-tools></div>
           </div>
-          <div id="mainLegendBar" class="main-legend-bar dkds-scroll-x-compact" data-dkds-legend title="当前工作区图例；内容和交互由主图插件提供"></div>
+          <div id="mainLegendBar" class="main-legend-bar dkds-scroll-x-compact" data-dkds-legend></div>
           </div>
           <svg id="mainPlot"></svg>
           <div id="selectionActionMenu" class="range-action-menu hidden" aria-live="polite"></div>
@@ -302,7 +302,7 @@
                   <input id="importSkipRows" type="number" min="0" step="1" value="0">
                 </label>
                 <label>结束行
-                  <input id="importEndRow" type="number" min="0" step="1" value="0" title="0 = 读到文件末尾">
+                  <input id="importEndRow" type="number" min="0" step="1" value="0" data-dkds-tooltip="0 = 读到文件末尾">
                 </label>
                 <label>分隔符
                   <select id="importDelimiter">
@@ -391,7 +391,7 @@
 
                 <div id="importColumnFieldFilter" class="import-column-field-filter hidden">
                   <div class="import-column-field-copy"><strong>信号列</strong><span>按实际列标题选择要导入的 Y / 信号列；X 列始终保留。</span></div>
-                  <select id="importColumnFieldSelect" title="按实际列标题筛选信号列">
+                  <select id="importColumnFieldSelect">
                     <option value="">全部 / 自动</option>
                   </select>
                 </div>
@@ -464,8 +464,8 @@
           <small>手机 / 平板 / 其他电脑扫码或输入地址即可访问</small>
         </div>
         <div class="panel-header-actions dkds-integrated-action-group">
-          <button id="lanWebMinimizeBtn" type="button" title="隐藏到状态栏" aria-label="隐藏到状态栏"><span class="lan-web-minimize-glyph" aria-hidden="true"></span></button>
-          <button class="panel-close" data-target="lanWebPanel" title="隐藏面板，网页版服务继续运行">×</button>
+          <button id="lanWebMinimizeBtn" type="button" data-dkds-tooltip="隐藏到状态栏" aria-label="隐藏到状态栏"><span class="lan-web-minimize-glyph" aria-hidden="true"></span></button>
+          <button class="panel-close" data-target="lanWebPanel" aria-label="隐藏面板，网页版服务继续运行">×</button>
         </div>
       </div>
 
@@ -651,11 +651,11 @@
     </div>
 
     <div id="inspectorPanel" class="floating-panel inspector-panel" data-generic-panel="inspector">
-      <div id="inspectorDockResizer" class="inspector-dock-resizer" title="拖动调整右侧检查器宽度"></div>
+      <div id="inspectorDockResizer" class="inspector-dock-resizer" data-dkds-tooltip="拖动调整右侧检查器宽度"></div>
       <div class="floating-header drag-handle">
         <span id="inspectorPanelHeaderTitle">检查器</span>
         <div class="panel-header-actions dkds-integrated-action-group">
-          <button id="inspectorDockBtn" type="button" title="在悬浮与主图右侧停靠之间切换">停靠右侧</button>
+          <button id="inspectorDockBtn" type="button">停靠右侧</button>
           <button class="panel-close" data-target="inspectorPanel">×</button>
         </div>
       </div>
@@ -665,12 +665,12 @@
     </div>
 
     <div id="groupPanel" class="floating-panel group-panel" data-generic-panel="group">
-      <div id="groupDockResizer" class="dock-resizer" title="拖动调整底部组图高度"></div>
+      <div id="groupDockResizer" class="dock-resizer" data-dkds-tooltip="拖动调整底部组图高度"></div>
       <div class="floating-header drag-handle">
         <span id="groupPanelHeaderTitle">组图</span>
         <div class="panel-header-actions dkds-integrated-action-group">
-          <button id="groupDockBtn" type="button" title="将组图停靠到主图下方">停靠底部</button>
-          <button id="groupMinimizeBtn" type="button" title="缩小/展开组图">缩小</button>
+          <button id="groupDockBtn" type="button">停靠底部</button>
+          <button id="groupMinimizeBtn" type="button">缩小</button>
           <button class="panel-close" data-target="groupPanel">×</button>
         </div>
       </div>
@@ -680,7 +680,7 @@
             <span id="groupPanelTitle">未选择</span>
             <span class="group-panel-hint">双击任意小图放大</span>
           </div>
-          <div class="trend-layout-controls" title="设置每行子图数量；自动模式会优先使用整齐排布">
+          <div class="trend-layout-controls">
             <span>每行</span>
             <button type="button" data-trend-cols="auto">自动</button>
             <button type="button" data-trend-cols="1">1</button>

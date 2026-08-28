@@ -27,7 +27,7 @@ assert(material.includes('.dkds-context-menu:not([data-dkds-menu-behavior="rich"
 assert(material.includes('.dkds-d3-chart-tooltip'),'D3 hover tooltips must remain a Core popover material surface');
 
 const shell=read('src/core/plugins/kernel/modules/activity/shell.js');
-assert(shell.includes('button.dataset.dkdsTooltip=tooltip'),'activity tabs must use Core declarative tooltips');
+assert(!shell.includes('button.dataset.dkdsTooltip=tooltip'),'visible activity tabs must not request redundant tooltips');
 assert(!shell.includes('button.title=(row.pluginId===state.superPluginId'),'activity tabs must not use browser-native title tooltips');
 const tooltip=read('src/core/ui/modules/tooltip/group-plot.js');
 assert(tooltip.includes('class DeclarativeTooltipRuntime'),'Core must own declarative application tooltips');

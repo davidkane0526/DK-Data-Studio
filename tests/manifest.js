@@ -1,6 +1,10 @@
 module.exports = {
   "test": [
     {
+      "file": "tests/test-hard-visual-invariants.js",
+      "args": []
+    },
+    {
       "file": "tests/test-core-plugin-contract-v18.js",
       "args": []
     },
@@ -761,6 +765,10 @@ module.exports = {
 
   ],
   "check": [
+    {
+      "file": "tests/test-hard-visual-invariants.js",
+      "args": []
+    },
     {
       "file": "tests/test-core-plugin-contract-v18.js",
       "args": []

@@ -53,7 +53,7 @@ function applyGroupPanelLayout(){
     panel.style.width='';
     panel.style.height=state.groupPanelCollapsed?'38px':`${state.groupPanelDockHeight}px`;
     $('#groupDockBtn').textContent='恢复悬浮';
-    $('#groupDockBtn').title='将组图恢复为可拖动悬浮窗口';
+    $('#groupDockBtn')?.setAttribute('aria-label','将组图恢复为可拖动悬浮窗口');
   }else{
     slot.classList.remove('active');
     if(panel.parentElement!==appRoot)appRoot.appendChild(panel);
@@ -68,12 +68,12 @@ function applyGroupPanelLayout(){
       panel.style.left='auto';panel.style.top='auto';panel.style.right='24px';panel.style.bottom='36px';panel.style.width='880px';panel.style.height=state.groupPanelCollapsed?'38px':'620px';
     }
     $('#groupDockBtn').textContent='停靠底部';
-    $('#groupDockBtn').title='将组图停靠到主图下方，使主图自动上移';
+    $('#groupDockBtn')?.setAttribute('aria-label','将组图停靠到主图下方，使主图自动上移');
   }
 
   panel.classList.toggle('collapsed',state.groupPanelCollapsed);
   $('#groupMinimizeBtn').textContent=state.groupPanelCollapsed?'展开':'缩小';
-  $('#groupMinimizeBtn').title=state.groupPanelCollapsed?'展开组图面板':'将组图缩小为标题栏';
+  $('#groupMinimizeBtn')?.setAttribute('aria-label',state.groupPanelCollapsed?'展开组图面板':'将组图缩小为标题栏');
 
   requestAnimationFrame(()=>{
     scheduleMainPlotRelayout();
@@ -151,7 +151,7 @@ function applyInspectorPanelLayout(){
     panel.style.left='';panel.style.right='';panel.style.top='';panel.style.bottom='';
     panel.style.transform='';panel.style.width='';panel.style.height='';
     $('#inspectorDockBtn').textContent='恢复悬浮';
-    $('#inspectorDockBtn').title='将曲线检查器恢复为可拖动悬浮窗口';
+    $('#inspectorDockBtn')?.setAttribute('aria-label','将曲线检查器恢复为可拖动悬浮窗口');
   }else{
     slot.classList.remove('active');
     slot.style.width='0px';
@@ -170,7 +170,7 @@ function applyInspectorPanelLayout(){
       panel.style.width='390px';panel.style.height='520px';
     }
     $('#inspectorDockBtn').textContent='停靠右侧';
-    $('#inspectorDockBtn').title='将曲线检查器嵌入主图右侧';
+    $('#inspectorDockBtn')?.setAttribute('aria-label','将曲线检查器嵌入主图右侧');
   }
 
   requestAnimationFrame(()=>scheduleMainPlotRelayout());

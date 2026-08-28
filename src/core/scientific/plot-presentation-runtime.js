@@ -164,7 +164,7 @@
       const solo=this.state.soloKey,selected=this.state.selectedKey;
       for(const [key,button] of this.buttonMap){
         const entry=byKey.get(key);if(!entry)continue;const active=!solo||solo===key;
-        button.classList.toggle('is-muted',!active);button.classList.toggle('is-selected',selected===key||solo===key);button.classList.toggle('is-solo',solo===key);button.setAttribute('aria-pressed',String(solo?solo===key:selected===key));button.title=solo===key?'再次点击恢复全部曲线':`只显示 ${entry.label}`;
+        button.classList.toggle('is-muted',!active);button.classList.toggle('is-selected',selected===key||solo===key);button.classList.toggle('is-solo',solo===key);button.setAttribute('aria-pressed',String(solo?solo===key:selected===key));button.dataset.dkdsTooltip=solo===key?'再次点击恢复全部曲线':`只显示 ${entry.label}`;
         const swatch=button.querySelector('.dkds-plot-legend-swatch');if(swatch)swatch.style.background=entry.color||'currentColor';const label=button.querySelector('.dkds-plot-legend-label');if(label&&label.textContent!==entry.label)label.textContent=entry.label;
       }
       if(activeKey&&this.buttonMap.has(activeKey)&&document.activeElement!==this.buttonMap.get(activeKey))queueMicrotask(()=>this.buttonMap.get(activeKey)?.focus?.({preventScroll:true}));

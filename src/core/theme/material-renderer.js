@@ -25,7 +25,7 @@
     ['floating','.dkds-floating-surface,.floating-panel,.dkds-prime-floating,.dkds-memory-panel,.dkds-scientific-nav-tools,.zoom-panel,.dkds-portable-view.is-floating,.dkds-portable-view.is-global-floating'],
     ['popover',POPOVER_SEMANTIC_SELECTOR],
     ['elevated','#pluginManagerPage,#automationTestPage,.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog'],
-    ['chrome','.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head'],
+    ['chrome','.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head'],
     ['sidebar','.left-panel,.plugin-sidebar-sections,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-analysis-left,.dkds-analysis-right'],
     ['surface','.analysis-page:not(#pluginManagerPage):not(#automationTestPage),.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-plugin-canvas-center,.dkds-plugin-canvas-bottom,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-surface,.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host,.dkds-portable-view:not(.is-floating):not(.is-global-floating)'],
     ['control','button,input,select,textarea,.dkds-field-control,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn,.project-tab-close,.dkds-choice-button,.dkds-dialog-action']
@@ -34,7 +34,7 @@
   function explicitRole(el){const owner=String(el?.dataset?.dkdsMaterialRoleClassOwner||'');return ROLE_CLASSES.find(cls=>el?.classList?.contains(cls)&&owner!=='core-runtime')||'';}
   const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
   const INTEGRATED_CHILD_SELECTOR='.dkds-integrated-action-group button,.panel-header-actions button,.trend-header-actions button,.dkds-plot-view-actions button,.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button,[data-dkds-material-integrated="true"] button,.dkds-scientific-nav-tools button';
-  const CHROME_SEMANTIC_SELECTOR='[data-dkds-material-role="chrome"],.dkds-material-role-chrome,.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.dkds-plot-view-head,.dkds-group-plot-head';
+  const CHROME_SEMANTIC_SELECTOR='[data-dkds-material-role="chrome"],.dkds-material-role-chrome,.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head';
   const SEMANTIC_CONTROL_PAINT_SELECTOR='.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
   const semanticControlOwnsPaint=el=>!!el?.matches?.(SEMANTIC_CONTROL_PAINT_SELECTOR);
   function chromeOwnedIntegrated(el){
@@ -52,7 +52,7 @@
     return '';
   }
   function nestedParentOwnsBackdrop(el){
-    if(!el?.matches?.('.dkds-surface-header,.floating-header'))return false;
+    if(!el?.matches?.('.dkds-surface-header,.floating-header,.analysis-chart-title'))return false;
     const role=parentMaterialRole(el);
     return !!role&&TRANSLUCENT_RECIPES.has(String(recipePolicy()[role]||''));
   }

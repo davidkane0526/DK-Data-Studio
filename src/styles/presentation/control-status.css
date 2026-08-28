@@ -1,12 +1,9 @@
-/* ============================================================
-   Control unification / status-bar composition
-   Analysis navigation and dialog actions consume the same semantic
-   control surfaces as the shell.  Active state is expressed by fill
-   and text contrast, not by bright outlined rectangles.
-   ============================================================ */
-/* Canonical presentation migrated from the former Foundation baseline. */
-.statusbar{border-top:1px solid transparent;
-}
+/* Control/status presentation geometry.
+   Theme Component Appearance and Material Renderer own all state paint.
+   This layer only defines layout, sizing and semantic status accents. */
+
+.statusbar{font-size:12px}
+
 body.dkds-modern-ui .dkds-analysis-nav{
   gap:8px;
   padding:5px 10px;
@@ -19,49 +16,14 @@ body.dkds-modern-ui .dkds-analysis-nav-sub:not(:empty){
 }
 body.dkds-modern-ui .dkds-analysis-nav-btn{
   min-height:30px;
-  border:0;
   border-radius:8px;
-  background:transparent;
-  color:var(--text-secondary);
 }
-body.dkds-modern-ui .dkds-analysis-nav-btn:hover:not(:disabled){
-  border:0;
-  border-color:var(--border-subtle);
-  background:var(--surface-hover);
-  color:var(--text-primary);
-}
-body.dkds-modern-ui .dkds-analysis-nav-btn.active,
-body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
-  border:0;
-  border-color:color-mix(in srgb,var(--accent-primary) 34%,var(--border-subtle));
-  background:var(--accent-soft);
-  color:var(--accent-primary);
-  -webkit-text-fill-color:var(--accent-primary);
-  box-shadow:var(--dkui-selected-shadow);
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav-btn[aria-pressed="true"]{
-  background:#24354a;
-  border-color:#405a78;
-  color:#bed7f5;
-  -webkit-text-fill-color:#bed7f5;
-}
-/* Status-bar chrome ownership ------------------------------------------------
-   The bar is the only material surface. Command clusters and their controls are
-   layout/hit regions, so idle state never reads as nested buttons or capsules. */
+
+/* The status bar is one Core chrome surface. Its command cluster and plugin
+   zones are layout/hit regions only; they never own a nested capsule. */
 body.dkds-modern-ui #statusBar.statusbar{
   gap:8px;
   padding:2px 14px 2px 9px;
-  border-top:0;
-  background:color-mix(in srgb,var(--dkui-canvas) 58%,var(--dkui-surface));
-  box-shadow:none;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui #statusBar.statusbar,
-html[data-dkds-theme="dark"] body.dkds-modern-ui.plugin-window-host #statusBar.statusbar{
-  background:#171d26;
-  border-top-color:#2b3442;
-  color:var(--text-tertiary);
-  box-shadow:none;
 }
 body.dkds-modern-ui .statusbar-command-cluster{
   flex:0 0 auto;
@@ -71,19 +33,11 @@ body.dkds-modern-ui .statusbar-command-cluster{
   align-items:center;
   gap:8px;
   padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
 }
 body.dkds-modern-ui .statusbar-plugin-zone{
   height:20px;
   gap:8px;
   padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
 }
 body.dkds-modern-ui .statusbar-plugin-left,
 body.dkds-modern-ui .statusbar-plugin-right{margin-left:0}
@@ -92,97 +46,19 @@ body.dkds-modern-ui .plugin-status-item{
   position:relative;
   height:20px;
   padding:0 7px;
-  border:0;
   border-radius:6px;
-  background:transparent;
-  box-shadow:none;
+  --status-accent:var(--dkui-text-soft);
 }
 body.dkds-modern-ui .plugin-status-item::before{display:none}
-body.dkds-modern-ui button.plugin-status-item:hover{
-  background:var(--dkui-control-hover,var(--surface-hover));
-  color:var(--dkui-text,var(--text-primary));
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item{
-  color:#93a2b7;
-  -webkit-text-fill-color:#93a2b7;
-}
-body.dkds-modern-ui .plugin-status-item.active,
-body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
-  background:var(--accent-soft);
-  color:var(--accent-primary);
-  -webkit-text-fill-color:var(--accent-primary);
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-status-item[aria-pressed="true"]{
-  background:#22324a;
-  color:#b9d2f2;
-  -webkit-text-fill-color:#b9d2f2;
-}
-
-/* ============================================================
-   First-party semantic surface closure
-   Structure is expressed by surface contrast. Dividers are reserved for
-   interactive resize affordances and tabular/scientific semantics, not for
-   boxing every workspace section. First-party buttons are surface controls,
-   not outlined secondary widgets.
-   ============================================================ */
-/* Splitters keep their hit area but no idle paint. */
-
-/* Project tab close is an icon action, not a regular control button.
-   Keep the active tab as one continuous surface and use a circular hover target. */
-body.dkds-modern-ui .statusbar{
-  background:#fbfcfe;
-  border-top-color:#e3e8f0;
-  color:#7c899b;
-  box-shadow:0 1px 0 #fff inset;
-}
-body.dkds-modern-ui .dkds-analysis-nav{
-  border-color:transparent;
-  box-shadow:none;
-  background:var(--surface-secondary);
-}
-body.dkds-modern-ui .dkds-analysis-nav-btn{
-  border-color:transparent;
-  box-shadow:none;
-}
-.statusbar{font-size:12px;border-top-color:transparent;background:transparent;color:var(--text-secondary,#7a8495);
-}
 .plugin-status-item[data-state="ready"] .plugin-status-icon,
-.plugin-status-item[data-state="mcp"] .plugin-status-icon{color:var(--success);
-}
-.plugin-status-item[data-state="busy"] .plugin-status-icon{color:var(--accent-primary);
-}
-.plugin-status-item[data-state="error"] .plugin-status-icon{color:var(--danger);
-}
-#statusBar.statusbar{
-  border-top:1px solid var(--border-subtle,#d8e0eb);
-  background:color-mix(in srgb,var(--surface-primary,#fff) 96%,transparent);
-  color:var(--text-tertiary,#7f8ba8);
-}
-.plugin-status-item{
-  border:0;
-  border-radius:0;
-  background:transparent;
-  color:var(--text-secondary,#60708c);
-}
-button.plugin-status-item:hover{background:var(--surface-hover,#f0f5fc);color:var(--text-primary,#1c2a43);
-}
-.plugin-status-item{
-  border-left:1px solid var(--border-subtle,#d8e0eb);
-  --status-accent:#98a2b3;
-}
-.plugin-status-item[data-state="ok"]{--status-accent:#16a34a;
-}
-.plugin-status-item[data-state="warn"]{--status-accent:#d97706;
-}
-.plugin-status-item[data-state="error"]{--status-accent:#dc2626;
-}
-.plugin-status-item[data-state="info"]{--status-accent:#315efb;
-}
-body.dkds-modern-ui .plugin-window-status{border-color:var(--dkui-border);
-}
-/* Semantic owner consolidation from later presentation modules. */
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-nav{
-  border-color:transparent;
-  box-shadow:none;background:var(--dkui-surface-soft);
-}
+.plugin-status-item[data-state="mcp"] .plugin-status-icon,
+.plugin-status-item[data-state="ok"] .plugin-status-icon{color:var(--success)}
+.plugin-status-item[data-state="busy"] .plugin-status-icon,
+.plugin-status-item[data-state="info"] .plugin-status-icon{color:var(--accent-primary)}
+.plugin-status-item[data-state="warn"] .plugin-status-icon{color:var(--warning)}
+.plugin-status-item[data-state="error"] .plugin-status-icon{color:var(--danger)}
+.plugin-status-item[data-state="ok"]{--status-accent:var(--success)}
+.plugin-status-item[data-state="warn"]{--status-accent:var(--warning)}
+.plugin-status-item[data-state="error"]{--status-accent:var(--danger)}
+.plugin-status-item[data-state="info"],
+.plugin-status-item[data-state="busy"]{--status-accent:var(--accent-primary)}

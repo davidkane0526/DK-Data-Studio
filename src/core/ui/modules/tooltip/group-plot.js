@@ -15,19 +15,49 @@ const {ActiveLayoutSolver}=require('../series/layout');
   }
 
   class DeclarativeTooltipRuntime {
-    constructor(){this.service=new TooltipService(null);this.active=null;this.bound=false;this.bind();}
+    constructor(){this.service=new TooltipService(null);this.active=null;this.bound=false;this.observer=null;this.bind();}
     target(event){return event?.target?.closest?.('[data-dkds-tooltip]')||null;}
     text(target){return String(target?.dataset?.dkdsTooltip||'').trim();}
-    show(target,event=null){const text=this.text(target);if(!text)return;this.active=target;this.service.show(event?{text,point:event}:{text,anchor:target});}
-    bind(){if(this.bound)return;if(typeof document==='undefined'||typeof document.addEventListener!=='function')return;this.bound=true;
+    policy(target){return String(target?.dataset?.dkdsTooltipPolicy||'always').trim().toLowerCase();}
+    shouldShow(target){
+      if(!target||!this.text(target))return false;
+      const policy=this.policy(target);if(policy==='none')return false;
+      if(policy==='overflow')return Number(target.scrollWidth)>Number(target.clientWidth)+1||Number(target.scrollHeight)>Number(target.clientHeight)+1;
+      return true;
+    }
+    normalizeTarget(target){
+      if(!target?.hasAttribute?.('title'))return false;
+      const title=String(target.getAttribute('title')||'').trim();
+      // `title` is never a DKDS visual contract.  Core removes it so Chromium
+      // cannot paint a second, platform-native tooltip.  A tooltip is shown
+      // only when the author explicitly declares data-dkds-tooltip.  This
+      // keeps visible text buttons, status-bar commands and integrated chart
+      // chrome quiet by default instead of turning every title into UI.
+      const fromTitle=String(target.dataset?.dkdsTooltipFromTitle||'').toLowerCase()==='true';
+      if(fromTitle&&title&&!this.text(target))target.dataset.dkdsTooltip=title;
+      if(title&&!target.getAttribute?.('aria-label')&&target.matches?.('button,[role="button"]')&&!String(target.textContent||'').trim())target.setAttribute('aria-label',title);
+      target.removeAttribute('title');
+      delete target.dataset.dkdsTooltipFromTitle;
+      return true;
+    }
+    normalize(root=null){
+      if(typeof document==='undefined')return 0;
+      const scope=root||document;let count=0;
+      if(scope?.nodeType===1&&this.normalizeTarget(scope))count++;
+      for(const target of scope?.querySelectorAll?.('[title]')||[])if(this.normalizeTarget(target))count++;
+      return count;
+    }
+    show(target,event=null){if(!this.shouldShow(target))return;const text=this.text(target);this.active=target;this.service.show(event?{text,point:event}:{text,anchor:target});}
+    bind(){if(this.bound)return;if(typeof document==='undefined'||typeof document.addEventListener!=='function')return;this.bound=true;this.normalize(document);
       this.onOver=event=>{const target=this.target(event);if(!target||target.contains?.(event.relatedTarget))return;this.show(target,event);};
       this.onMove=event=>{if(this.active&&this.active.contains?.(event.target))this.service.move(event);};
       this.onOut=event=>{if(!this.active)return;const target=this.target(event);if(target!==this.active||this.active.contains?.(event.relatedTarget))return;this.active=null;this.service.hide();};
       this.onFocus=event=>{const target=this.target(event);if(target)this.show(target);};
       this.onBlur=event=>{if(this.active&&this.active===this.target(event)){this.active=null;this.service.hide();}};
       document.addEventListener('mouseover',this.onOver);document.addEventListener('mousemove',this.onMove);document.addEventListener('mouseout',this.onOut);document.addEventListener('focusin',this.onFocus);document.addEventListener('focusout',this.onBlur);
+      if(typeof MutationObserver==='function'){this.observer=new MutationObserver(rows=>{for(const row of rows){if(row.type==='attributes'){this.normalizeTarget(row.target);continue;}for(const node of row.addedNodes||[])if(node?.nodeType===1)this.normalize(node);}});this.observer.observe(document.documentElement||document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['title']});}
     }
-    dispose(){if(!this.bound){this.service.dispose();this.active=null;return;}this.bound=false;if(typeof document!=='undefined'&&typeof document.removeEventListener==='function'){document.removeEventListener('mouseover',this.onOver);document.removeEventListener('mousemove',this.onMove);document.removeEventListener('mouseout',this.onOut);document.removeEventListener('focusin',this.onFocus);document.removeEventListener('focusout',this.onBlur);}this.service.dispose();this.active=null;}
+    dispose(){this.observer?.disconnect?.();this.observer=null;if(!this.bound){this.service.dispose();this.active=null;return;}this.bound=false;if(typeof document!=='undefined'&&typeof document.removeEventListener==='function'){document.removeEventListener('mouseover',this.onOver);document.removeEventListener('mousemove',this.onMove);document.removeEventListener('mouseout',this.onOut);document.removeEventListener('focusin',this.onFocus);document.removeEventListener('focusout',this.onBlur);}this.service.dispose();this.active=null;}
   }
 
   class GroupPlot {

@@ -74,10 +74,10 @@ const {ContextMenu}=require('../interaction/context-actions');
       }finally{this.refreshing=false;}
     }
     installHeader(th,index){
-      if(!th)return;th.classList.add('dkds-table-column');if(this.spec.sortable!==false&&th.dataset.dkdsSortable!=='false'){th.classList.add('dkds-table-sortable');th.title=th.title||'单击排序；右键打开列操作';}
+      if(!th)return;th.classList.add('dkds-table-column');if(this.spec.sortable!==false&&th.dataset.dkdsSortable!=='false'){th.classList.add('dkds-table-sortable');if(!th.dataset.dkdsTooltip)th.dataset.dkdsTooltip='单击排序；右键打开列操作';}
       let handle=[...th.children].find(node=>node.classList?.contains('dkds-table-column-resizer'));
       if(handle)return;
-      handle=document.createElement('span');handle.className='dkds-table-column-resizer';handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.title='拖动调整列宽；双击自动列宽';th.appendChild(handle);
+      handle=document.createElement('span');handle.className='dkds-table-column-resizer';handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.dataset.dkdsTooltip='拖动调整列宽；双击自动列宽';th.appendChild(handle);
       let drag=null;
       const move=event=>{if(!drag)return;const width=this.clampWidth(drag.width+(event.clientX-drag.x));this.setColumnWidth(index,width,{persist:false});event.preventDefault();};
       const end=()=>{if(!drag)return;drag=null;document.removeEventListener('pointermove',move,true);document.removeEventListener('pointerup',end,true);document.body.classList.remove('dkds-table-resizing');this.persistState();};

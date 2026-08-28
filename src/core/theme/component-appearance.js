@@ -4,10 +4,10 @@
   const ThemeContract=globalThis.DKDSThemeContract;
   const COMPONENTS=Object.freeze({
     inspectorHeader:Object.freeze({selector:'[data-dkds-inspector-header],.inspector-panel .floating-header,[data-generic-panel="inspector"] .floating-header',label:'Inspector Header'}),
-    panelHeader:Object.freeze({selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.floating-header,.trend-card-header',label:'Panel Header'}),
-    tab:Object.freeze({selector:'.activity-tab,.project-tab,[role="tab"],.dkds-analysis-nav-btn',label:'Tab'}),
-    toolbarAction:Object.freeze({selector:'.toolbar-btn,.plugin-toolbar-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button',label:'Toolbar Action'}),
-    toolbarGroup:Object.freeze({selector:'.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row,.dkds-integrated-action-group,.statusbar-command-cluster',label:'Toolbar Group'}),
+    panelHeader:Object.freeze({selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.analysis-chart-title,.floating-header,.trend-card-header',label:'Panel Header'}),
+    tab:Object.freeze({selector:'.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]',label:'Tab'}),
+    toolbarAction:Object.freeze({selector:'.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button',label:'Toolbar Action'}),
+    toolbarGroup:Object.freeze({selector:'.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row',label:'Toolbar Group'}),
     menuItem:Object.freeze({selector:'.plugin-menu-item,[role="menuitem"],.menu-item,.command-menu>button',label:'Menu Item'}),
     chip:Object.freeze({selector:'.dkds-chip,.plugin-capability-chip,.plugin-status-badge,.plugin-type-badge,.dkds-summary-chip',label:'Chip / Tag'}),
     statusBar:Object.freeze({selector:'#statusBar.statusbar,.statusbar',label:'Status Bar'}),

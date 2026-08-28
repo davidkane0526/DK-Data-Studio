@@ -154,7 +154,8 @@
     if(!project||typeof project!=='object'||Array.isArray(project))return false;
     const hasDomainRoots=DOMAIN_ROOT_FIELDS.some(key=>Object.prototype.hasOwnProperty.call(project,key)),hasDatasets=Object.prototype.hasOwnProperty.call(project,'datasets'),pulseLegacy=JSON.stringify(project).includes('\"segmentationMode\":\"legacy\"'),legacyArtifacts=safeArray(project.dataModel?.artifacts).some(a=>a?.metadata?.adapter==='legacy-dataset'||a?.metadata?.legacyDatasetPath!==undefined),terLegacy=project.plugins?.['builtin.ter-analysis']?.workspace?.result?.terMax!==undefined;
     if(String(project.format||'')===FORMAT){return Number(project.schemaVersion)!==SCHEMA_VERSION||hasDatasets||hasDomainRoots||pulseLegacy||legacyArtifacts||terLegacy;}
-    return Array.isArray(project.datasets)&&(project.schemaVersion!==undefined||project.plugins!==undefined||project.host!==undefined||typeof project.format==='string');
+    const legacyVersion=typeof project.version==='string'&&/^\d+\.\d+(?:\.\d+)?(?:[-+][A-Za-z0-9.-]+)?$/.test(project.version.trim());
+    return Array.isArray(project.datasets)&&(legacyVersion||hasDomainRoots||project.schemaVersion!==undefined||project.plugins!==undefined||project.host!==undefined||typeof project.format==='string');
   }
   function register(format){if(format?.registerCompatibilityImporter)format.registerCompatibilityImporter('project-v1-v2',{recognize:isHistorical,convert:canonicalize});return format;}
   return Object.freeze({FORMAT,SCHEMA_VERSION,STORE_SCHEMA,DOMAIN_ROOT_FIELDS,isHistorical,validateRaw,validateCanonical,canonicalize,stableId,register});

@@ -166,10 +166,22 @@ function openProjectBase64({base64,path,name}={}){
   return openProjectPayload({project:parsed.project,path:String(path||name||'remote://dk-data-project.dkds.json')});
 }
 
+async function showProjectOpenFailure(err){
+  const message=String(err?.message||err||'未知错误');
+  console.error('Project open failed',err);
+  setStatus(`打开工程失败：${message}`);
+  await window.DKDSUI?.dialogs?.alert?.({tone:'error',title:'无法打开项目',message,detail:String(err?.stack||''),detailLabel:'技术详情'});
+}
+
 async function openProject(){
-  const r=await window.electronAPI.openProject();
-  if(!r)return;
-  return openProjectPayload(r);
+  try{
+    const r=await window.electronAPI.openProject();
+    if(!r)return false;
+    return openProjectPayload(r);
+  }catch(err){
+    await showProjectOpenFailure(err);
+    return false;
+  }
 }
 
 module.exports=Object.freeze({configure, makeProject, chooseProjectSaveMode, saveProject, loadProjectIntoActive, openProjectPayload, openProjectBase64, openProject, projectSaveChoicePromise});

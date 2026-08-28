@@ -75,7 +75,7 @@ const {pluginTypeOf}=require('../manifest');
     button.id=spec.id||`${pluginId}__${spec.command||spec.label}`;
     button.className=className;
     button.textContent=spec.label||spec.id||pluginId;
-    button.title=spec.title||'';
+    button.setAttribute('aria-label',String(spec.label||spec.title||spec.id||pluginId));
     button.dataset.pluginId=pluginId;
     button.dataset.pluginOrder=String(Number(spec.order)||100);
     button.dataset.pluginActivity=spec.activity||'';

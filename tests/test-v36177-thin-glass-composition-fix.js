@@ -21,5 +21,6 @@ const commands=read('src/styles/theme/integrated-command-chrome.css');
 assert(commands.includes('[data-dkds-material-role=\"chrome\"]')&&commands.includes('[data-dkds-material-own-surface=\"true\"]'),'Chrome ownership selector contract missing.');
 assert(commands.includes('background:transparent')&&commands.includes('box-shadow:none')&&commands.includes('overflow:visible'),'Header action groups must fuse with parent chrome.');
 const status=read('src/styles/presentation/control-status.css');
-assert(status.includes('.statusbar-command-cluster')&&status.includes('background:transparent')&&status.includes('box-shadow:none'),'Status-bar chrome ownership rule missing.');
+assert(status.includes('.statusbar-command-cluster')&&!/\.statusbar-command-cluster\s*\{[^}]*background:/s.test(status),'Presentation may size the status command cluster but must not repaint it.');
+assert(commands.includes('.statusbar-command-cluster')&&commands.includes('background:transparent')&&commands.includes('box-shadow:none'),'Theme integrated-command chrome must flatten status commands into the parent status bar.');
 console.log('v3.61.77 Thin Glass composition/core renderer corrections passed.');

@@ -32,7 +32,7 @@
     const normalized=ThemeContract.validateProfile(spec,`theme.profile.${key}`);
     return Object.freeze({id:key,label:String(normalized.label||key),owner:String(normalized.owner||'core'),modes:normalized.modes,motion:normalized.motion,material:normalized.material,appearance:normalized.appearance,scientific:normalized.scientific,recipes:normalized.recipes||Object.freeze({}),settings:normalized.settings||Object.freeze([]),metadata:normalized.metadata});
   };
-  profiles.set('builtin.default',normalizeProfile('builtin.default',{label:'DK Data Studio',owner:'core',recipes:{chrome:'clear',sidebar:'clear',surface:'clear',elevated:'clear',popover:'clear',control:'clear',floating:'clear'},modes:{light:{},dark:{}}}));
+  profiles.set('builtin.default',normalizeProfile('builtin.default',{label:'DK Data Studio',owner:'core',recipes:{chrome:'clear',sidebar:'clear',surface:'clear',elevated:'clear',popover:'clear',control:'clear',floating:'clear'},modes:{light:{appearance:{components:{toolbarGroup:{surface:'#f6f9fd',border:'rgba(102,132,168,.085)',text:'#1c2a43'},toolbarAction:{surface:'transparent',surfaceHover:'#f0f5fc',surfaceActive:'#eaf2ff',text:'#1c2a43',textActive:'#174ea6',border:'transparent',borderHover:'rgba(102,132,168,.22)',borderActive:'rgba(71,116,197,.34)'}}}},dark:{appearance:{components:{toolbarGroup:{surface:'#202733',border:'rgba(166,181,202,.08)',text:'#e4e9f2'},toolbarAction:{surface:'transparent',surfaceHover:'#29313d',surfaceActive:'#202d55',text:'#e4e9f2',textActive:'#e7efff',border:'transparent',borderHover:'rgba(166,181,202,.16)',borderActive:'rgba(255,255,255,.12)'}}}}}}));
 
 
 

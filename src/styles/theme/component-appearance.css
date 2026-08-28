@@ -3,49 +3,79 @@
    --dkui-component-* semantic variables exposed by the contract. */
 
 /* Tabs ---------------------------------------------------------------- */
-body.dkds-modern-ui :where(.activity-tab,.project-tab,[role="tab"],.dkds-analysis-nav-btn){
+body.dkds-modern-ui :where(.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]){
   background:var(--dkui-component-tab-surface,transparent);
   color:var(--dkui-component-tab-text,var(--dkui-text-soft));
   border-color:var(--dkui-component-tab-border,transparent);
 }
-body.dkds-modern-ui :where(.activity-tab,.project-tab,[role="tab"],.dkds-analysis-nav-btn):hover{
+body.dkds-modern-ui :where(.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]):hover{
   background:var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover));
   border-color:var(--dkui-component-tab-border-hover,var(--dkui-control-border));
 }
-body.dkds-modern-ui :where(.activity-tab,.project-tab,[role="tab"],.dkds-analysis-nav-btn):is(.active,[aria-pressed="true"]){
+body.dkds-modern-ui :where(.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]):is(.active,[aria-pressed="true"]){
   background:var(--dkui-component-tab-surface-active,var(--dkui-active-surface));
   color:var(--dkui-component-tab-text-active,var(--dkui-active-text));
   border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));
   box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
 }
-body.dkds-modern-ui :where(.activity-tab,.project-tab,[role="tab"],.dkds-analysis-nav-btn):is(.selected,[aria-selected="true"]){
+body.dkds-modern-ui :where(.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]):is(.selected,[aria-selected="true"]){
   background:var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface));
   color:var(--dkui-component-tab-text-selected,var(--dkui-selection-text));
   border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));
   box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
 }
 
-/* Toolbar groups/actions ------------------------------------------------ */
-body.dkds-modern-ui :where(.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row,.dkds-integrated-action-group,.statusbar-command-cluster){
+/* Toolbar groups/actions ------------------------------------------------
+   Only standalone groups own paint. Integrated header/status groups are layout-only
+   hit regions whose parent chrome owns the material. */
+body.dkds-modern-ui :where(.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row){
   --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));
   --dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));
+  background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));
+  border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));
+  border-radius:var(--dkui-radius);
   color:var(--dkui-component-toolbar-group-text,var(--dkui-text));
+  box-shadow:var(--dkui-shadow-1);
 }
-body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):not(.primary):not(.strong):not(.danger-soft){
+body.dkds-modern-ui .system-core-tools-group>.menu-anchor:before{
+  background:var(--dkui-component-toolbar-group-border,var(--dkui-divider));
+}
+
+/* Top-level workspaces are integrated toolbar selectors, not document tabs.
+   They deliberately use the toolbar-action contract so Theme profiles own
+   their paint without the tab underline indicator. */
+body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab{
+  background:var(--dkui-component-toolbar-action-surface,transparent);
+  color:var(--dkui-component-toolbar-action-text,var(--dkui-text-soft));
+  border-color:var(--dkui-component-toolbar-action-border,transparent);
+  box-shadow:none;
+}
+body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab:hover{
+  background:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));
+  color:var(--dkui-component-toolbar-action-text,var(--dkui-text));
+  border-color:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
+}
+body.dkds-modern-ui .primary-activity-bar .activity-tab.top-level-activity-tab:is(.active,[aria-pressed="true"]){
+  background:var(--dkui-component-toolbar-action-surface-active,var(--dkui-selection-surface));
+  color:var(--dkui-component-toolbar-action-text-active,var(--dkui-selection-text));
+  border-color:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
+  box-shadow:var(--dkui-selected-shadow);
+}
+body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):not(.primary):not(.strong):not(.danger-soft){
   background:var(--dkui-component-toolbar-action-surface,transparent);
   color:var(--dkui-component-toolbar-action-text,var(--dkui-text));
   border-color:var(--dkui-component-toolbar-action-border,transparent);
 }
-body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):not(.primary):not(.strong):not(.danger-soft):hover:not(:disabled){
+body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):not(.primary):not(.strong):not(.danger-soft):hover:not(:disabled){
   background:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));
   border-color:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
 }
-body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):is(.active,[aria-pressed="true"]):not(.primary):not(.strong){
+body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):is(.active,[aria-pressed="true"]):not(.primary):not(.strong){
   background:var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface));
   color:var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text));
   border-color:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
 }
-body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):is(.selected,[aria-selected="true"]):not(.primary):not(.strong){
+body.dkds-modern-ui :where(.toolbar-btn,.plugin-toolbar-btn,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.panel-header-actions>button,.trend-header-actions>button,.statusbar-command-cluster button):is(.selected,[aria-selected="true"]):not(.primary):not(.strong){
   background:var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface));
   color:var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text));
   border-color:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
