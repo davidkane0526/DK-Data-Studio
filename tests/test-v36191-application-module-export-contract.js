@@ -44,12 +44,24 @@ function exportedNames(file,stack=new Set()){
   assert(matches.length,`${path.relative(root,real)} must expose an explicit Object.freeze({...}) CommonJS contract or a direct re-export.`);
   const body=matches[matches.length-1][1];
   const names=new Set();
+  const declared=new Set();
+  for(const match of text.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g))declared.add(match[1]);
+  for(const match of text.matchAll(/class\s+([A-Za-z_$][\w$]*)/g))declared.add(match[1]);
+  for(const match of text.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?==|;|,)/g))declared.add(match[1]);
+  for(const match of text.matchAll(/(?:const|let|var)\s*\{([\s\S]*?)\}\s*=\s*require\(/g)){
+    for(const rawName of match[1].split(',')){
+      const parts=rawName.trim().split(':').map(value=>value.trim()).filter(Boolean);
+      if(parts.length)declared.add(parts[1]||parts[0]);
+    }
+  }
   for(const raw of body.split(',')){
     const token=raw.trim();
     if(!token)continue;
     const match=token.match(/^([A-Za-z_$][\w$]*)(?:\s*:|$)/);
     assert(match,`Unsupported export syntax in ${path.relative(root,real)}: ${token}`);
-    names.add(match[1]);
+    const name=match[1];
+    if(!token.includes(':'))assert(declared.has(name),`${path.relative(root,real)} exports undeclared local symbol ${name}; generated renderer would fail during module evaluation.`);
+    names.add(name);
   }
   exportCache.set(real,names);
   return names;

@@ -9,6 +9,7 @@
 - Harden CSS ownership into enforceable layers: Foundation is reset-only, Structure contains **0 paint properties / 0 literal colors**, Structure and Presentation have **0 cross-file semantic selector ownership conflicts**, and late same-selector/same-property cascade rewrites are rejected by CI. The catch-all `workspace-theme-boundary.css` compatibility layer is removed.
 - Keep Core and first-party plugins visually independent: Core owns shared semantic surfaces and Theme tokens, plugins own domain layout/content, Core CSS contains no plugin-identity selectors, and first-party plugin CSS contains no application paint literals or `!important`. The Vth SDK reference plugin validates with **0 layout warnings**.
 - Keep the complete v3.61.111 regression inventory and migrate old fixtures to canonical semantics instead of deleting coverage. Validation: `npm test` **181/181 PASS**, `npm run check` **189/189 PASS**, SDK Harness **PASS**, TER Python parity **PASS**, scientific parity **PASS**, plugin manifests **14/14 PASS**, authored CSS **0 `!important`**.
+- Fix the final renderer-startup regression found during real browser validation: remove a stale `visibleAnalysisPage` CommonJS export left behind by SUPER cleanup and bind the `ui.workspace` requirement to the canonical `ctx.ui.workspaceSurface`. Add regression guards for undeclared module exports and the canonical workspace requirement so a fully rendered-but-noninteractive shell cannot pass source tests again.
 
 # v3.61.111 — Topbar Selection Cleanup
 

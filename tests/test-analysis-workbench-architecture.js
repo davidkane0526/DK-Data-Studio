@@ -12,6 +12,7 @@ const main=read('desktop/main.js');
 const preload=read('desktop/preload.js');
 const app=read('src/generated/runtime/app.js');
 const winRuntime=read('src/plugin-window/runtime.js');
+const pluginContract=read('src/core/plugins/contract-runtime.js');
 
 assert(/const VERSION\s*=\s*'[7-9][0-9]*\.[0-9]+\.[0-9]+'/.test(ui)||/const VERSION\s*=\s*'6\.[0-9]+\.[0-9]+'/.test(ui),'UI infrastructure must ship the v6+ PluginWorkspace/scientific interaction runtime.');
 for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends AnalysisWorkbench','class ScientificCurveSurface','mountPrimary(spec={})','registerSurface(spec={})','compose(spec={})','registerPrime(spec={})','registerSub(spec={})','openPrime(id,placement)','openSub(id)','class GridController']){
@@ -20,6 +21,7 @@ for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends Ana
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
 assert(kernel.includes("const API_VERSION = '1.18.0'"),'Plugin API must be v1.18.0.');
 assert(kernel.includes('workspaceSurface: infrastructureScope?.pluginWorkspace')&& !kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace'),'Kernel must expose only the canonical workspaceSurface facade; the old public pluginWorkspace alias must be absent.');
+assert(pluginContract.includes("'ui.workspace':api=>!!api?.ui?.workspaceSurface")&&!pluginContract.includes("'ui.workspace':api=>!!api?.ui?.pluginWorkspace"),'Plugin requirement ui.workspace must validate the canonical workspaceSurface facade, not the removed pluginWorkspace alias.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
 assert(kernel.includes('interaction: infrastructureScope?.interactionRuntime'),'Kernel must expose the typed Interaction Runtime.');
 assert(kernel.includes('layoutResizeDispatching')&&kernel.includes("name !== 'layout:resize'")&&kernel.includes('infrastructureScope.emitResize'),'Plugin kernel must globally coalesce layout:resize and route plugin layout requests through the scoped scheduler.');

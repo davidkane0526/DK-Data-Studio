@@ -37,7 +37,7 @@
     'charts.providers':api=>!!api?.charts,
     'ui.dom':api=>!!api?.ui?.dom,
     'ui.components':api=>!!api?.ui?.components,
-    'ui.workspace':api=>!!api?.ui?.pluginWorkspace,
+    'ui.workspace':api=>!!api?.ui?.workspaceSurface,
     'ui.scientific-plot':api=>!!api?.ui?.scientificPlot,
     'ui.series':api=>!!api?.ui?.series,
     'ui.legend-groups':api=>!!api?.ui?.legends,
