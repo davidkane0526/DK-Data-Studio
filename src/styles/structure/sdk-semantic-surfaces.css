@@ -230,7 +230,7 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-section-header-main{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto}
 .dkds-section-title{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dkds-section-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0;flex:0 1 auto;margin-left:auto}
-.dkds-header-command-strip{align-self:stretch;margin-block:calc(-1 * var(--dkds-header-pad-y,0px));margin-right:calc(-1 * var(--dkds-header-pad-x,0px));gap:0}
+.dkds-header-command-strip{align-self:center;margin-left:auto;gap:3px}
 .dkds-section-header-actions>select{width:auto;max-width:min(220px,38vw)}
 .dkds-segmented-control{display:inline-flex;align-items:center;gap:2px;min-width:0;padding:2px}
 .dkds-segmented-control>button{min-width:0;white-space:nowrap}

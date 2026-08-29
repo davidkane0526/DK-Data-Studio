@@ -1,3 +1,10 @@
+## 3.65.7
+
+- Recovered Core header-command geometry after the v3.65.6 edge-flattening regression: header backgrounds remain shared, while actions keep compact 26 px hit regions, spacing, rounded corners and non-wrapping labels.
+- Removed negative header-padding consumption and `display: contents` command flattening so Data Center/PlotView controls no longer collapse into raw text or full-height color slabs.
+- Restored restrained Aurora Pop selected-state surfaces while retaining high-contrast white-label active/primary actions; Aurora Pop is now 2.1.1.
+- Preserved project-tab `selected` semantics separately from active analysis/workspace actions and added a dedicated v3.65.7 regression gate.
+
 # v3.65.6 — Header Command Strip & Selected Tab Semantics
 
 - Fix the v3.65.5 Data Center regression where right-side header controls still appeared as nested capsules instead of belonging to the title bar. Core now exposes an explicit `dkds-header-command-strip` that consumes the section header edge padding, stretches through the header height, and flattens nested ActionGroup / SegmentedControl shells into layout-only subgroups.

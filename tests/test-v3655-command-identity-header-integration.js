@@ -16,13 +16,12 @@ assert(views.includes('id="dcChartDomainActions"')&&!views.includes('id="dcChart
 assert(views.includes('id="dcFormulaActions"')&&views.includes('id="dcWorkflowHeaderActions"')&&views.includes('id="dcProvenanceHeaderActions"'),'Data Center section-header commands must mount through Core ActionGroup hosts');
 assert(feature.includes("visible:()=>chartProviders().length>1")&&feature.includes("items:()=>chartProviders().map(provider=>({"),'Chart Provider choice must only appear when it has real alternatives and must use the Core menu action contract');
 assert(feature.includes("selected:provider.id===state.chart.provider")&&feature.includes('selectChartProvider(provider.id)'),'Provider menu must preserve current selection and route changes through one domain function');
-assert(chrome.includes('Header command strips are part of the header MaterialSurface')&&chrome.includes('align-self:stretch')&&chrome.includes('border-left:1px solid color-mix(in srgb,currentColor 12%,transparent)'),'Core must own edge-to-edge header command strip geometry');
-assert(chrome.includes(':where(button.primary,.dkds-action-button.primary)')&&chrome.includes('color:#fff'),'Integrated primary header commands must keep high-contrast white text without becoming floating pills');
+assert(chrome.includes(':where(button.primary,.dkds-action-button.primary)')&&chrome.includes('variant-primary-text'),'Integrated primary header commands must consume the Theme primary variant with high-contrast text');
 assert(workbench.includes("b.classList.toggle('selected',row.mounted)")&&workbench.includes("b.setAttribute('aria-pressed',row.mounted?'true':'false')"),'Mounted PRIME surfaces must use selected semantics instead of pretending to be the active primary workspace');
 for(const rel of pluginFiles)assert(!read(rel).includes("buttonClass:'accent-soft'"),`${rel} must not use the legacy accent-soft button presentation`);
-assert(aurora.includes("version:'2.1.0'")&&aurora.includes("surfaceActive:'#00818D',surfaceSelected:'#6F50FF'")&&aurora.includes("surfaceActive:'#087A84',surfaceSelected:'#5D3BEF'"),'Aurora 2.1 must provide filled white-text active/selected control semantics in light and dark modes');
-assert(contrast('#00818D','#FFFFFF')>=4.5&&contrast('#6F50FF','#FFFFFF')>=4.5&&contrast('#087A84','#FFFFFF')>=4.5&&contrast('#5D3BEF','#FFFFFF')>=4.5,'Aurora filled active/selected controls must preserve AA contrast with white labels');
+assert(aurora.includes("version:'2.1.1'")&&aurora.includes("active:{surface:'#00818D',text:'#FFFFFF'")&&aurora.includes("active:{surface:'#087A84',text:'#FFFFFF'"),'Aurora 2.1.x must preserve filled white-text active actions while allowing selected tabs to remain restrained');
+assert(contrast('#00818D','#FFFFFF')>=4.5&&contrast('#087A84','#FFFFFF')>=4.5,'Aurora filled active controls must preserve AA contrast with white labels');
 assert(/^1\.14\.(?:[1-9]|\d{2,})$/.test(JSON.parse(read('src/plugins/data-center/plugin.json')).version),'Data Center must stay on the 1.14.1+ Core UI-contract line');
 assert.equal(JSON.parse(read('src/plugins/pulse-analysis/plugin.json')).version,'2.10.5');
-assert.equal(JSON.parse(read('src/plugins/aurora-pop-theme/plugin.json')).version,'2.1.0');
+assert.equal(JSON.parse(read('src/plugins/aurora-pop-theme/plugin.json')).version,'2.1.1');
 console.log('v3.65.5 command identity, Provider choice and integrated header-action contracts passed.');
