@@ -19,8 +19,8 @@ assert(modern.includes('body.dkds-modern-ui .dkds-selection-item.dkds-selection-
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button.active'),'Dark mode must cover class-based active buttons, not only aria-pressed buttons.');
 assert(/body\.dkds-modern-ui \.floating-panel\s*\{[^}]*outline\s*:\s*0[^}]*border-color\s*:\s*transparent/.test(modern),'Floating utility panels must not expose a bright perimeter border.');
 assert(modern.includes('.lan-web-panel button:not(.primary):not(.panel-close)'),'LAN utility controls must consume host control surfaces.');
-assert(dcViews.includes('data-dc-tab="formula" class="active" aria-pressed="true"'),'Data Center initial tab state must expose aria-pressed.');
-assert(dc.includes("b.setAttribute('aria-pressed',active?'true':'false')"),'Data Center tab changes must synchronize aria-pressed.');
+assert(dcViews.includes('data-dc-tab="formula" role="tab" class="active" aria-selected="true"'),'Data Center initial tab state must expose tab semantics and aria-selected.');
+assert(dc.includes("b.setAttribute('aria-selected',active?'true':'false')"),'Data Center tab changes must synchronize aria-selected.');
 assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&&resonance.includes('claimKeyboardFocus()'),'Resonance main plot must explicitly own keyboard focus after plot/peak selection.');
 assert(resonanceViews.includes("['ArrowLeft','builtin.resonance.peak-left']")&&resonanceViews.includes("['ArrowRight','builtin.resonance.peak-right']"),'Resonance arrow bindings must remain declared.');
 assert(ui.includes('if(existing){existing.spec={...spec};existing.setBindings(spec.bindings||[]);return existing;}'),'Re-created interaction behavior profiles must refresh stale bindings.');

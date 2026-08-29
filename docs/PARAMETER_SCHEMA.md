@@ -74,6 +74,8 @@ context.table.columns
 
 which is why a workflow provider can remain independent from a specific page.
 
+`multiselect` and `columns` render as a compact Core dropdown trigger. The selected values remain a normal array in the parameter contract; Core owns the themed multi-select popover, keyboard navigation and touch behavior. Plugins must not replace these fields with a permanently expanded native `<select multiple>` or a private popup.
+
 ## Validation
 
 Fields support:

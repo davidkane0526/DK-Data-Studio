@@ -29,7 +29,7 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
         b.dataset.value=String(item.id??'');
         if(item.selected===true)b.setAttribute('aria-selected','true');
         b.innerHTML=`${item.icon?`<span>${esc(item.icon)}</span>`:''}<span>${esc(typeof item.label==='function'?item.label(context):item.label||item.id||'')}</span>${item.shortcut?`<kbd>${esc(item.shortcut)}</kbd>`:''}`;
-        b.onclick=e=>{e.stopPropagation();if(b.disabled)return;this.close();item.onInvoke?.({...context,event:e,item});};el.appendChild(b);
+        b.onclick=e=>{e.stopPropagation();if(b.disabled)return;const keepOpen=item.closeOnInvoke===false||this.spec.closeOnInvoke===false;item.onInvoke?.({...context,event:e,item,button:b});if(!keepOpen)this.close();};el.appendChild(b);
       }
       if(!el.children.length)return null;
       el.addEventListener('keydown',event=>{

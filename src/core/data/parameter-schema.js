@@ -30,6 +30,19 @@
     if(field.type==='multiselect'||field.type==='columns')return Array.isArray(value)?value:[value].filter(Boolean);
     return value;
   }
+  function multiSelectSummary(select,placeholder='请选择'){
+    const rows=[...select.selectedOptions].map(option=>String(option.label||option.textContent||option.value));
+    if(!rows.length)return placeholder;
+    if(rows.length<=2)return rows.join('、');
+    return `${rows[0]}、${rows[1]} +${rows.length-2}`;
+  }
+  function multiSelectTrigger(select,field){
+    select.classList.add('dkds-multiselect-source');select.tabIndex=-1;select.setAttribute('aria-hidden','true');
+    const trigger=$create('button','dkds-field-control dkds-multiselect-trigger');trigger.type='button';trigger.dataset.dkdsSelectProxy=select.id;trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
+    const label=$create('span','dkds-multiselect-label'),caret=$create('span','dkds-multiselect-caret');caret.textContent='⌄';caret.setAttribute('aria-hidden','true');trigger.append(label,caret);
+    const refresh=()=>{label.textContent=multiSelectSummary(select,field.placeholder||'请选择');trigger.title=[...select.selectedOptions].map(option=>String(option.label||option.textContent||option.value)).join('、')||String(field.placeholder||'请选择');};
+    refresh();return {trigger,refresh};
+  }
   function validate(schema,values,context={}){
     const errors={};
     for(const f of fieldsOf(schema)){
@@ -49,7 +62,7 @@
     let values=defaultValues(schema,value);const controls=new Map();container.innerHTML='';container.classList.add('schema-parameter-panel');if(compact)container.classList.add('compact');
 
     function inputFor(field){
-      const options=resolveOptions(field,context,values);let input;
+      const options=resolveOptions(field,context,values);let input,control,refresh=null;
       if(field.type==='boolean'){input=$create('input');input.type='checkbox';input.checked=!!getPath(values,fieldPath(field));}
       else if(['select','column','multiselect','columns'].includes(field.type)){
         input=$create('select');if(field.type==='multiselect'||field.type==='columns')input.multiple=true;
@@ -58,7 +71,9 @@
         if(input.multiple){const set=new Set(getPath(values,fieldPath(field))||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=getPath(values,fieldPath(field))??'';
       }else if(field.type==='textarea'||field.type==='formula'){input=$create('textarea');input.rows=field.rows||3;input.value=getPath(values,fieldPath(field))??'';input.placeholder=field.placeholder||'';}
       else{input=$create('input');input.type=field.type==='number'||field.type==='integer'?'number':field.type==='color'?'color':'text';input.value=getPath(values,fieldPath(field))??'';if(field.placeholder)input.placeholder=field.placeholder;if(field.min!==undefined)input.min=field.min;if(field.max!==undefined)input.max=field.max;if(field.step!==undefined)input.step=field.step;}
-      input.id=`schema-param-${String(field.id).replace(/[^a-z0-9_-]/gi,'-')}`;input.dataset.paramId=field.id;return input;
+      input.id=`schema-param-${String(field.id).replace(/[^a-z0-9_-]/gi,'-')}`;input.dataset.paramId=field.id;
+      if(input.multiple){const popup=multiSelectTrigger(input,field);control=popup.trigger;refresh=popup.refresh;}else control=input;
+      return {input,control,refresh};
     }
 
     function readInput(field,input){
@@ -73,14 +88,14 @@
       const groupName=field.group||'';let group=groups.get(groupName);
       if(!group){group=$create('div','schema-param-group');if(groupName){const title=$create('div','schema-param-group-title dkds-meta');title.textContent=groupName;group.appendChild(title);}container.appendChild(group);groups.set(groupName,group);}
       const wrap=$create('label',`schema-param-field dkds-field type-${String(field.type||'text').replace(/[^a-z0-9_-]/gi,'-')}`);wrap.dataset.paramId=field.id;const head=$create('div','schema-param-label dkds-field-label');head.textContent=field.label||field.id;if(field.required){const req=$create('span','required');req.textContent=' *';head.appendChild(req);}wrap.appendChild(head);
-      const input=inputFor(field);if(field.type!=='boolean')input.classList.add('dkds-field-control');wrap.appendChild(input);if(field.description){const help=$create('div','schema-param-help dkds-meta');help.textContent=field.description;wrap.appendChild(help);}const error=$create('div','schema-param-error dkds-meta dkds-danger-text');wrap.appendChild(error);group.appendChild(wrap);controls.set(field.id,{field,input,wrap,error});
-      input.addEventListener('input',()=>{setPath(values,fieldPath(field),readInput(field,input));rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
-      input.addEventListener('change',()=>{setPath(values,fieldPath(field),readInput(field,input));rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);});
+      const mounted=inputFor(field),input=mounted.input,control=mounted.control;if(field.type!=='boolean'&&!input.multiple)input.classList.add('dkds-field-control');wrap.appendChild(input);if(control!==input)wrap.appendChild(control);if(field.description){const help=$create('div','schema-param-help dkds-meta');help.textContent=field.description;wrap.appendChild(help);}const error=$create('div','schema-param-error dkds-meta dkds-danger-text');wrap.appendChild(error);group.appendChild(wrap);controls.set(field.id,{field,input,control,refresh:mounted.refresh,wrap,error});
+      const changed=()=>{mounted.refresh?.();setPath(values,fieldPath(field),readInput(field,input));rerenderVisibility();const result=validate(schema,values,context);updateErrors(result);onChange?.(clone(values),result);};
+      input.addEventListener('input',changed);input.addEventListener('change',changed);
     }
     rerenderVisibility();updateErrors(validate(schema,values,context));
     return {
       getValue(){for(const {field,input} of controls.values())setPath(values,fieldPath(field),readInput(field,input));return clone(values);},
-      setValue(next){values=defaultValues(schema,next||{});for(const {field,input} of controls.values()){const v=getPath(values,fieldPath(field));if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
+      setValue(next){values=defaultValues(schema,next||{});for(const {field,input,refresh} of controls.values()){const v=getPath(values,fieldPath(field));if(field.type==='boolean')input.checked=!!v;else if(input.multiple){const set=new Set(v||[]);for(const o of input.options)o.selected=set.has(o.value);refresh?.();}else input.value=v??'';}rerenderVisibility();updateErrors(validate(schema,values,context));},
       validate(){const result=validate(schema,this.getValue(),context);updateErrors(result);return result;},
       destroy(){container.innerHTML='';controls.clear();},
       schema,context

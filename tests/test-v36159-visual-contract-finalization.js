@@ -87,7 +87,7 @@ assert(!/\.category-pair-swatch i\{[^}]*?(?:border|box-shadow|background|color)\
 
 for(const [file,required] of [
   ['src/plugins/pulse-analysis/shared-views.js',['dkds-surface','dkds-toolbar','dkds-table']],
-  ['src/plugins/data-center/shared-views.js',['dkds-surface','dkds-toolbar','dkds-status']],
+  ['src/plugins/data-center/shared-views.js',['dkds-surface','dkds-section-header','dkds-status']],
   ['src/plugins/ter-analysis/shared-views.js',['dkds-surface','dkds-toolbar','dkds-table']],
   ['src/plugins/transfer-vth-lab/plugin.js',['dkds-surface','dkds-field','dkds-metric']],
   ['src/plugins/connectivity-center/plugin.js',['dkds-dialog-shell','dkds-toolbar','dkds-message']],

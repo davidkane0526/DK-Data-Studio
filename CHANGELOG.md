@@ -1,3 +1,14 @@
+# v3.65.4 — Data Center Core UI Contracts
+
+- Replace the remaining Data Center-local header/action composition with reusable Core `dkds-section-header` geometry. Section titles stay single-line, explanatory copy moves to the existing Core tooltip contract, and right-edge actions use the integrated header action host instead of forming a second toolbar.
+- Add Core filter/segmented/mini-action geometry primitives (`dkds-filter-stack`, `dkds-filter-row`, `dkds-bulk-action-row`, `dkds-segmented-control`, `dkds-mini-action`) and make their Theme component identity explicit. Data Center consumes these contracts rather than owning generic control chrome.
+- Upgrade ParameterSchema `multiselect` / `columns` from permanently expanded native listboxes to a compact Core dropdown trigger backed by the themed ContextMenu/SelectPopup infrastructure. Multi-selection remains array-valued, supports persistent selection without closing after every choice, and keeps standard `input` / `change` events for plugin logic.
+- Refine Data Center data/filter composition: increase the default data pane width, separate filtering from bulk selection actions, use standard `role=tab` / `aria-selected` semantics, and remove the persistent Shift/Ctrl instruction from the layout in favor of the Core tooltip. Data Center advances to **1.14.0**.
+- Correct the generic chart preview header: keep only `通用图形预览` as the visible one-line title, move provider explanation to tooltip, and integrate Provider / draw controls at the far right of the title bar.
+- Replace the project-tab Unicode plus glyph with a centered SVG mini-action and reduce the desktop outline footprint; React Native retains its larger touch-target override.
+- Update historical visual-contract tests to validate the new canonical Core ownership instead of requiring the former `dkds-toolbar`, expanded multi-select, or `aria-pressed` implementation details. Add a dedicated v3.65.4 regression gate and include it in both `test` and `check`.
+- Release-source validation: `npm test` **198/198 PASS**, `npm run check` **206/206 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.65.3 — Developer Overlay Ownership
 
 - Fix the Theme Inspector / Plugin DevTools interaction regression introduced when the real-page Theme Inspector moved into DevTool. Theme Inspector no longer uses a maximum integer z-index; Plugin DevTools owns the higher developer-overlay layer.

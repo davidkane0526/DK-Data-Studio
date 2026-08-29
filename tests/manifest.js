@@ -787,6 +787,10 @@ module.exports = {
     {
       "file": "tests/test-v3653-dev-overlay-ownership.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3654-data-center-ui-contracts.js",
+      "args": []
     }
   ],
   "check": [
@@ -1608,6 +1612,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3653-dev-overlay-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3654-data-center-ui-contracts.js",
       "args": []
     }
   ],

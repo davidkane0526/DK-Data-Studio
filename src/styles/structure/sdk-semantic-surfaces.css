@@ -226,6 +226,18 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-toolbar,.dkds-action-row{display:flex;align-items:center;gap:var(--plugin-action-gap,6px);min-width:0}
 .dkds-toolbar{flex-flow:row nowrap}
 .dkds-action-row{flex-wrap:wrap}
+.dkds-section-header{display:flex;align-items:center;gap:10px;min-width:0;min-height:36px;padding:6px 10px}
+.dkds-section-header-main{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto}
+.dkds-section-title{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dkds-section-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0;flex:0 1 auto;margin-left:auto}
+.dkds-section-header-actions>select{width:auto;max-width:min(220px,38vw)}
+.dkds-segmented-control{display:inline-flex;align-items:center;gap:2px;min-width:0;padding:2px}
+.dkds-segmented-control>button{min-width:0;white-space:nowrap}
+.dkds-filter-stack{display:grid;gap:8px;min-width:0;padding:8px}
+.dkds-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0}
+.dkds-bulk-action-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+.dkds-mini-action{display:inline-grid;place-items:center;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;line-height:1}
+.dkds-mini-action>svg{display:block;width:13px;height:13px}
 .dkds-field{display:grid;gap:4px;min-width:0;font-size:var(--plugin-font-label,12px)}
 .dkds-field>label,.dkds-field-label{font-size:var(--plugin-font-label,12px)}
 .dkds-field-control{box-sizing:border-box;width:100%;min-width:0;min-height:var(--plugin-control-height,32px);padding:5px 8px}
