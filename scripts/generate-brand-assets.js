@@ -3,6 +3,9 @@ const path = require('path');
 const zlib = require('zlib');
 
 const root = path.resolve(__dirname, '..');
+const mobileAssetRoot = process.env.DKDS_MOBILE_ASSET_ROOT
+  ? path.resolve(process.env.DKDS_MOBILE_ASSET_ROOT)
+  : path.join(root, 'mobile');
 
 const COLORS = {
   bg: [247, 250, 255, 255],
@@ -216,8 +219,8 @@ const ico = encodeIco(icoEntries);
 const outputs = [
   [path.join(root, 'assets', 'dkds-icon.png'), sourceIcon],
   [path.join(root, 'assets', 'dkds-icon.ico'), ico],
-  [path.join(root, 'mobile', 'assets', 'icon.png'), sourceIcon],
-  [path.join(root, 'mobile', 'assets', 'adaptive-icon.png'), sourceIcon]
+  [path.join(mobileAssetRoot, 'assets', 'icon.png'), sourceIcon],
+  [path.join(mobileAssetRoot, 'assets', 'adaptive-icon.png'), sourceIcon]
 ];
 
 let changed = 0;

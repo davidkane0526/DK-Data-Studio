@@ -765,6 +765,10 @@ module.exports = {
     {
       "file": "tests/test-v3641-mobile-gesture-restoration.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3642-android-brand-assets.js",
+      "args": []
     }
 
   ],
@@ -1566,6 +1570,10 @@ module.exports = {
     {
       "file": "tests/test-v3641-mobile-gesture-restoration.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3642-android-brand-assets.js",
+      "args": []
     }
 
   ],
@@ -1584,6 +1592,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3641-mobile-gesture-restoration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3642-android-brand-assets.js",
       "args": []
     }
   ]
