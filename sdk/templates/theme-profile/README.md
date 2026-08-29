@@ -11,7 +11,7 @@ same profile can be projected into the Android native shell. Web-only CSS expres
 ignored by native chrome and fall back to the built-in palette.
 
 
-## Theme Contract 3.8
+## Theme Contract 3.9
 
 Theme plugins use `pluginType: "theme"` and declare `requiresCore: ["ui.theme"]`. They register semantic profiles through `ctx.ui.theme.register(...)`; they do not repaint Core DOM directly.
 
@@ -21,7 +21,7 @@ The Plugin Manager lists Theme plugins in their own category and lets users acti
 
 
 
-### Theme 3.8 semantic appearance
+### Theme 3.9 semantic appearance
 
 Use `appearance.roles` when a semantic Material Role needs a distinct palette without changing Core DOM ownership:
 
@@ -38,11 +38,13 @@ scientific: {
 }
 ```
 
-The role fields remain limited to `surface / border / text`. Theme 3.8 also provides bounded `appearance.components` slots for `tab`, `toolbarAction`, `toolbarGroup`, `panelHeader`, `inspectorHeader`, `menuItem`, `chip`, `statusBar`, `floatingChrome`, and `field`. Use `ctx.ui.theme.consumption()` and Theme Test Gallery to inspect which Core component consumes each slot. `scientific.mode` must be `fallback-only`; explicit user/plugin/project scientific colors always precede the Theme palette.
+The role fields remain limited to `surface / border / text`. Theme 3.9 provides bounded `appearance.components` slots for `tab`, `toolbarAction`, `toolbarGroup`, `panelHeader`, `inspectorHeader`, `menuItem`, `chip`, `statusBar`, `floatingChrome`, and `field`. Use `ctx.ui.theme.consumption()` and Theme Test Gallery to inspect which Core component consumes each slot. `scientific.mode` must be `fallback-only`; explicit user/plugin/project scientific colors always precede the Theme palette.
+
+Theme 3.9 also supports a Core-owned fixed component-variant vocabulary (`primary`, `secondary`, `selected`, `active`, `quiet`, `destructive`, `info`, `success`, `warning`, `danger`) and bounded `effects` (`headerGradientStart/End`, `accentGlow`, `edgeGlow`, `ambientTint`, `glowIntensity`, `glowRadius`, `gradientDirection`). These values are interpreted by Core; Theme packages still cannot pass selectors, CSS gradient strings, box-shadow/filter strings, pseudo-elements, or keyframes.
 
 ### Material contract
 
-Theme Contract 3.8 keeps bounded material parameters and adds constrained role-specific appearance. Core still owns the selectors and recipes; a Theme plugin only supplies values:
+Theme Contract 3.9 keeps bounded material parameters and adds constrained role-specific appearance. Core still owns the selectors and recipes; a Theme plugin only supplies values:
 
 - `materialBlur`, `materialBlurStrong`: CSS blur lengths such as `12px` / `18px`.
 - `materialSaturation`: CSS `saturate()` factor or percentage, e.g. `1.08` or `108%`.
@@ -53,7 +55,7 @@ Theme Contract 3.8 keeps bounded material parameters and adds constrained role-s
 These values do not grant arbitrary CSS access. A Theme plugin cannot choose DOM targets, pseudo-elements, layout, or animation keyframes. Light/dark mode maps may override any material token when a mode-specific material response is required.
 
 
-Theme Contract 3.8 retains profile-owned `recipes` and declarative `settings`, and adds semantic state colors, `accentAlt`, role appearance, and an optional scientific series palette. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
+Theme Contract 3.9 retains profile-owned `recipes` and declarative `settings`, and adds semantic state colors, `accentAlt`, role appearance, and an optional scientific series palette. Use `settings` to expose bounded Core-rendered controls; do not build a custom theme settings DOM.
 
 
 ### Readable glass defaults

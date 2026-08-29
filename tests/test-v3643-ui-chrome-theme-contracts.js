@@ -14,6 +14,7 @@ const uiRuntime=read('src/core/ui/modules/runtime.js');
 const selectPopup=read('src/core/ui/modules/controls/select-popup.js');
 const contextActions=read('src/core/ui/modules/interaction/context-actions.js');
 const material=read('src/core/theme/material-renderer.js');
+const semantic=read('src/core/theme/semantic-registry.js');
 const index=read('src/index.html');
 const connectivityStructure=read('src/styles/structure/connectivity-panels.css');
 const connectivityPresentation=read('src/styles/presentation/connectivity.css');
@@ -22,7 +23,7 @@ const updateStructure=read('src/styles/structure/analysis-shell.css');
 const settings=read('src/core/ui/modules/dialog/settings.js');
 const dialogs=read('src/styles/presentation/dialogs.css');
 
-assert(/^3\.64\.(?:[3-9]|[1-9]\d+)$/.test(pkg.version),'UI contract restoration must remain on or beyond App v3.64.3');
+{const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major===3&&(minor>64||(minor===64&&patch>=3)),'UI contract restoration must remain on or beyond App v3.64.3');}
 assert(resonance.includes('--respar-main-chrome-height:36px')&&/\.respar-main-tools\{[^}]*height:var\(--respar-main-chrome-height\)/.test(resonance)&&/\.respar-main-legend\{[^}]*height:var\(--respar-main-chrome-height\)/.test(resonance),'resonance floating tools and legend must consume one shared vertical chrome height');
 
 assert(/#statusBar\.statusbar \.plugin-status-icon\{\s*color:var\(--dkui-role-chrome-text/.test(statusCss),'all status icons must consume one Theme chrome text color');
@@ -37,7 +38,7 @@ assert(contextActions.includes("item.selected===true")&&contextActions.includes(
 
 assert(index.includes('class="lan-web-port-control"')&&index.includes('id="lanWebPortUp" class="dkds-control-hit-region"')&&index.includes('id="lanWebPortDown" class="dkds-control-hit-region"'),'LAN port must use a Core-owned compact stepper rather than the Chromium number spinner');
 assert(connectivityStructure.includes('::-webkit-inner-spin-button')&&connectivityStructure.includes('-webkit-appearance:none'),'native number spinners must remain suppressed for the LAN port control');
-assert(connectivityPresentation.includes('.lan-web-port-stepper button span')&&material.includes('.dkds-control-hit-region'),'custom stepper arrows must use Theme text paint without acquiring an independent material surface');
+assert(connectivityPresentation.includes('.lan-web-port-stepper button span')&&semantic.includes('.dkds-control-hit-region'),'custom stepper arrows must use Theme semantic text paint without acquiring an independent material surface');
 assert(floating.includes("$('#lanWebPortUp').onclick=()=>stepLanWebPort(1)")&&floating.includes("$('#lanWebPortDown').onclick=()=>stepLanWebPort(-1)"),'custom LAN port arrows must remain functional');
 
 assert(/\.update-panel\{--dkds-floating-z:1850;/.test(updateStructure),'software update panel must live on the floating system-panel layer instead of the obsolete z-index 190');

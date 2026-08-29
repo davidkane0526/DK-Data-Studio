@@ -1,16 +1,16 @@
-# DK Data Studio Plugin SDK 1.20.0
+# DK Data Studio Plugin SDK 1.21.0
 
 
-## Theme Contract 3.8
+## Theme Contract 3.9
 
-Theme plugins are independently versioned from Plugin API 1.18.0. Theme Contract 3.8 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds constrained role-specific appearance, semantic state colors, an optional alternate accent, and an optional scientific series palette. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.8 validates token names, role appearance, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
+Theme plugins are independently versioned from Plugin API 1.18.0. Theme Contract 3.9 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds constrained role-specific appearance, semantic state colors, an optional alternate accent, and an optional scientific series palette. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.9 validates token names, role appearance, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.64.0 or newer for SDK 1.20 / Theme Contract 3.8 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
+- DK Data Studio 3.65.0 or newer for SDK 1.21 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
 
 ## Create a plugin
 
@@ -290,11 +290,11 @@ settings.open();
 ### Scientific renderer dependency
 Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the single Core scientific renderer; renderer vendors are not part of the Plugin API contract.
 
-## Theme Contract 3.8 (`ui.theme`)
+## Theme Contract 3.9 (`ui.theme`)
 
-Studio 3.64.0 exposes Theme Contract 3.8 independently from Plugin API 1.18.0 through SDK 1.20.0. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
+Studio 3.65.0 exposes Theme Contract 3.9 independently from Plugin API 1.18.0 through SDK 1.21.0. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
 
-Theme Contract 3.8 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.8 keeps structured `modes.light` / `modes.dark` blocks and adds constrained role appearance, semantic state colors, an alternate accent, and an optional scientific fallback palette.
+Theme Contract 3.9 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.9 keeps structured `modes.light` / `modes.dark` blocks, makes Gallery and real UI consume one Core semantic resolver, and adds fixed component variants plus bounded Core-rendered gradients/glows without arbitrary CSS.
 
 Theme 3.8 adds `appearance.roles.<role>.surface|border|text`, `accentAlt`, semantic `success / warning / danger / info` colors, distinct `selection / active / disabled` states, and optional `scientific.seriesPalette`. Role overrides are sparse: omitted fields inherit the base appearance tokens. Scientific palette values are fallback colors only; explicit user/plugin series colors always take precedence.
 
@@ -304,6 +304,6 @@ Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light a
 
 
 
-### Theme Contract 3.8 Thin Glass
+### Theme Contract 3.9 Thin Glass
 
-SDK 1.20.0 uses Plugin API 1.18.0 / Theme Contract 3.8.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+SDK 1.21.0 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.

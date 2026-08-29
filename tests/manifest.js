@@ -631,8 +631,7 @@ module.exports = {
     {
       "file": "tests/test-v36187-composition-boundaries.js",
       "args": []
-    }
-,
+    },
     {
       "file": "tests/test-v36188-importable-core-runtime.js",
       "args": []
@@ -648,8 +647,7 @@ module.exports = {
     {
       "file": "tests/test-v36191-application-module-export-contract.js",
       "args": []
-    }
-,
+    },
     {
       "file": "tests/test-v36192-renderer-interactivity-gate.js",
       "args": []
@@ -729,8 +727,8 @@ module.exports = {
     {
       "file": "tests/test-v361111-topbar-selection-cleanup.js",
       "args": []
-    }
-    ,{
+    },
+    {
       "file": "tests/test-v3622-ui-layout-log-theme.js",
       "args": []
     },
@@ -757,8 +755,8 @@ module.exports = {
     {
       "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
       "args": []
-    }
-    ,{
+    },
+    {
       "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
       "args": []
     },
@@ -773,8 +771,11 @@ module.exports = {
     {
       "file": "tests/test-v3643-ui-chrome-theme-contracts.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3650-theme-semantic-core.js",
+      "args": []
     }
-
   ],
   "check": [
     {
@@ -1440,8 +1441,7 @@ module.exports = {
     {
       "file": "tests/test-v36187-composition-boundaries.js",
       "args": []
-    }
-,
+    },
     {
       "file": "tests/test-v36188-importable-core-runtime.js",
       "args": []
@@ -1457,8 +1457,7 @@ module.exports = {
     {
       "file": "tests/test-v36191-application-module-export-contract.js",
       "args": []
-    }
-,
+    },
     {
       "file": "tests/test-v36192-renderer-interactivity-gate.js",
       "args": []
@@ -1538,8 +1537,8 @@ module.exports = {
     {
       "file": "tests/test-v361111-topbar-selection-cleanup.js",
       "args": []
-    }
-    ,{
+    },
+    {
       "file": "tests/test-v3622-ui-layout-log-theme.js",
       "args": []
     },
@@ -1566,8 +1565,8 @@ module.exports = {
     {
       "file": "tests/test-v3631-dedicated-theme-build-ui-parity.js",
       "args": []
-    }
-    ,{
+    },
+    {
       "file": "tests/test-v3640-theme-contract-38-component-appearance.js",
       "args": []
     },
@@ -1582,8 +1581,11 @@ module.exports = {
     {
       "file": "tests/test-v3643-ui-chrome-theme-contracts.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3650-theme-semantic-core.js",
+      "args": []
     }
-
   ],
   "mobile": [
     {

@@ -1,8 +1,8 @@
-/* Material Renderer 3.7.
+/* Material Renderer 3.9.
    Material role describes UI semantics. Material recipe describes optical
    rendering. Core owns selectors/composition; Theme profiles only provide
    semantic tokens and role-to-recipe policy. */
-:root{--dkds-material-renderer-version:"3.7.0"}
+:root{--dkds-material-renderer-version:"3.9.0"}
 
 /* Recipes --------------------------------------------------------------- */
 body.dkds-modern-ui [data-dkds-material-recipe="clear"]{

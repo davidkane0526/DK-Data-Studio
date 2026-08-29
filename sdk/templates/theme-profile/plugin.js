@@ -5,11 +5,11 @@ DKDSPlugins.define({
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.64.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.8.0'}
+  compatibility:{app:'>=3.65.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.9.0'}
 }, async ctx => {
-  const required=['contract.appearance.roles','contract.appearance.components','contract.scientific.seriesPalette','contract.scientific.precedence','contract.material.recipes','contract.theme.settings'];
+  const required=['contract.appearance.roles','contract.appearance.components','contract.appearance.variants','contract.effects.controlled','contract.scientific.seriesPalette','contract.scientific.precedence','contract.material.recipes','contract.theme.settings'];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
-  if(missing.length)throw new Error(`Theme Contract 3.8 features required: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
+  if(missing.length)throw new Error(`Theme Contract 3.9 features required: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   const profile=ctx.ui.theme.register('default',{
     label:'Example Theme',
     recipes:{chrome:'thin-glass',sidebar:'thin-glass',surface:'clear',elevated:'thin-glass',popover:'thin-glass',control:'clear',floating:'thin-glass'},
@@ -17,11 +17,12 @@ DKDSPlugins.define({
       roles:{chrome:{surface:'#F3F1FC'},sidebar:{surface:'#EEF7F5'},elevated:{surface:'#FFF5F8'},popover:{surface:'#F0F3FF'},floating:{surface:'#EEF8FA'}},
       components:{
         tab:{surfaceHover:'#F3F1FC',surfaceActive:'#EEE9FF',textActive:'#352A79',indicator:'#705CE8'},
-        toolbarAction:{surfaceHover:'#F3F1FC',surfaceActive:'#E9F8F6',textActive:'#0D615D'},
+        toolbarAction:{surfaceHover:'#F3F1FC',surfaceActive:'#E9F8F6',textActive:'#0D615D',variants:{primary:{surface:'#705CE8',text:'#FFFFFF'},secondary:{surface:'#E9F8F6',text:'#0D615D'},destructive:{surface:'#FFF0F2',text:'#C2414B'}}},
         panelHeader:{surface:'#F7F5FD'},inspectorHeader:{surface:'#EFF8F7',indicator:'#17A7A0'},
-        menuItem:{surfaceHover:'#F3F1FC'},chip:{surface:'#F5F1FF'},field:{surface:'#FFFFFF',border:'#D8DEEA',borderActive:'#705CE8'}
+        menuItem:{surfaceHover:'#F3F1FC'},chip:{surface:'#F5F1FF',variants:{info:{surface:'#EDF4FF',text:'#2563EB'},success:{surface:'#EAF8EF',text:'#15803D'}}},field:{surface:'#FFFFFF',border:'#D8DEEA',borderActive:'#705CE8'}
       }
     },
+    effects:{headerGradientStart:'transparent',headerGradientEnd:'transparent',accentGlow:'#705CE8',edgeGlow:'#17A7A0',ambientTint:'transparent',glowIntensity:.08,glowRadius:12,gradientDirection:'horizontal'},
     scientific:{mode:'fallback-only',seriesPalette:['#2563EB','#14B8A6','#8B5CF6','#EF4444','#F59E0B','#0891B2']},
     settings:[
       {id:'popoverBlur',label:'Popover blur',target:{scope:'material',role:'popover',key:'materialBlurStrong'},type:'range',min:0,max:64,step:1},

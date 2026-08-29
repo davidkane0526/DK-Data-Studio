@@ -12,6 +12,7 @@ const actions=read('src/core/ui/modules/interaction/context-actions.js');
 const shell=read('src/styles/structure/analysis-shell.css');
 const chrome=read('src/styles/presentation/plugin-chrome.css');
 const material=read('src/core/theme/material-renderer.js');
+const semanticTheme=read('src/core/theme/semantic-registry.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
 const pulse=read('src/plugins/pulse-analysis/feature-runtime.js');
 const ter=read('src/plugins/ter-analysis/feature-runtime.js');
@@ -52,9 +53,10 @@ assert(ter.includes("terHeaderActionsHost.className='dkds-plugin-header-actions'
   'TER header must continue to consume the generic Core header action contract.');
 
 // Theme Coverage must not count one surface in two incompatible semantic areas.
-assert(coverage.includes('.floating-panel:not(.lan-web-panel)')&&!coverage.includes('.dkds-dialog-shell,.update-panel,.lan-web-panel'),
-  'Floating/elevated coverage selectors must not double-own LAN/update panels.');
-assert(material.includes('.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-plugin-canvas-center'),
+assert(semanticTheme.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)')&&semanticTheme.includes('.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench'),
+  'Canonical semantic areas must keep generic floating surfaces separate from elevated LAN/update panels.');
+assert(semanticTheme.includes('.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-plugin-canvas-center'),
   'SUPER/main workspace nodes must receive the same surface role that coverage expects.');
+assert(material.includes('Semantic.materialAreas()')&&coverage.includes('Semantic.materialAreas()'),'Renderer and coverage must share the same semantic area authority.');
 
 console.log('v3.61.96 header action spacing + theme coverage contract PASS: separated peer controls, atomic labels, overflow safety and non-overlapping material areas.');

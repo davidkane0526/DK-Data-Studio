@@ -8,11 +8,11 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 const release=json('package.json').version;
-assert.match(release,/^3\.64\.\d+$/,'visual contract closure must run on the 3.64 release line');
+{const [major,minor]=release.split('.').map(Number);assert(major===3&&minor>=64,'visual contract closure must remain on or beyond the 3.64 release baseline');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.20.0');
+assert.equal(contract.sdkVersion,'1.21.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.64.0');
+assert.equal(contract.minimumAppVersion,'3.65.0');
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
@@ -44,8 +44,8 @@ for(const token of [
   'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
   'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
-const componentAppearance=read('src/styles/theme/component-appearance.css');
-assert(componentAppearance.includes('.activity-tab')&&componentAppearance.includes('--dkui-component-tab-surface-active')&&componentAppearance.includes('--dkui-component-tab-indicator'),'Theme Component Appearance must be the single semantic paint owner for Activity selected/active chrome.');
+const componentAppearance=read('src/styles/theme/component-appearance.css'),semanticRegistry=read('src/core/theme/semantic-registry.js');
+assert(semanticRegistry.includes('.activity-tab')&&componentAppearance.includes('[data-dkds-component-identity=\"tab\"]')&&componentAppearance.includes('--dkui-component-tab-surface-active')&&componentAppearance.includes('--dkui-component-tab-indicator'),'Semantic Registry must classify Activity tabs while Theme Component Appearance remains the single semantic paint owner for selected/active chrome.');
 assert(!read('src/styles/presentation/shell.css').match(/activity-tab[^\{]*\.active[^\{]*\{[^}]*box-shadow/i),'Shell presentation must not paint Activity selected chrome.');
 
 const readme=read('sdk/README.md');

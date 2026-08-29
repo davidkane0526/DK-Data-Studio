@@ -302,8 +302,8 @@
     wb.compose({
       primary:{id:'main',label:'共振分析',scroll:'contained',leftNode:leftPanel,mainNode:mainArea},
       primes:[
-        {id:'curve-inspector',label:'检查',existingNode:inspector,defaultPlacement:inspectDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
-        {id:'group-analysis',label:'组图',existingNode:group,defaultPlacement:groupDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
+        {id:'curve-inspector',label:'检查',semanticKind:'inspector',existingNode:inspector,defaultPlacement:inspectDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
+        {id:'group-analysis',label:'组图',semanticKind:'panel',existingNode:group,defaultPlacement:groupDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v2',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
           id:'group-columns',menu:true,order:10,
           label:()=>{const value=String(R.getGroupColumns?.()||'auto');return `每行：${value==='auto'?'自动':value}`;},
           title:'设置每行子图数量',

@@ -8,10 +8,10 @@
   "requiresCore": [
     "ui.theme"
   ],
-  "description": "Theme Contract 3.8 component appearance, consumption diagnostics, semantic states, scientific fallback palette and material profile example",
+  "description": "Theme Contract 3.9 component appearance, consumption diagnostics, semantic states, scientific fallback palette and material profile example",
   "compatibility": {
-    "app": ">=3.64.0 <4.0.0",
+    "app": ">=3.65.0 <4.0.0",
     "pluginApi": "^1.18.0",
-    "themeContract": "^3.8.0"
+    "themeContract": "^3.9.0"
   }
 }

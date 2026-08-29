@@ -12,7 +12,7 @@ const mobileApp=JSON.parse(read('mobile/app.json')).expo;
 const generator=read('scripts/generate-brand-assets.js');
 const sync=read('mobile/scripts/sync-web-assets.js');
 
-assert(/^3\.64\.(?:[2-9]|[1-9]\d+)$/.test(pkg.version),'Android brand-asset staging fix must remain on or beyond App v3.64.2');
+{const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major===3&&(minor>64||(minor===64&&patch>=2)),'Android brand-asset staging fix must remain on or beyond App v3.64.2');}
 assert(/^0\.8\.(?:1[3-9]|[2-9]\d+)$/.test(mobilePkg.version),'Android build-pipeline changes must remain on or beyond mobile v0.8.13');
 assert.strictEqual(mobileApp.version,mobilePkg.version,'Expo and mobile package versions must stay aligned');
 assert(Number(mobileApp.android.versionCode)>=24,'Android build-pipeline release must remain at or beyond versionCode 24');

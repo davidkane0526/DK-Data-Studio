@@ -21,10 +21,10 @@ const mobileApp=read('mobile/App.tsx');
 const apiTypes=read('sdk/plugin-api.d.ts');
 const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
 
-for(const token of ["version:'3.8.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
+for(const token of ["version:'3.9.0'",'pendingProfile','registerProfile','unregisterProfile','setProfile','listProfiles','PUBLIC_TOKEN_MAP','dividerHover','controlBorder','scrollbarHover']){
   assert(theme.includes(token),`Theme Runtime 3.6 contract missing ${token}`);
 }
-assert(materialRenderer.includes("const VERSION='3.7.0'")&&materialRenderer.includes("'thin-glass'"),'current material renderer must own Theme 3.5 recipes through Renderer 3.6 rather than Theme Runtime.');
+assert(materialRenderer.includes("const VERSION='3.9.0'")&&materialRenderer.includes("'thin-glass'"),'current material renderer must own Theme 3.5 recipes through Renderer 3.6 rather than Theme Runtime.');
 for(const token of ['--dkui-divider:','--dkui-control-border:','--dkui-scrollbar:','--surface-sidebar:','--control-border:']){
   assert(css.includes(token),`semantic visual token missing ${token}`);
 }

@@ -19,7 +19,7 @@ const floating=read('src/app/modules/floating-docks.js');
 const versionScript=read('scripts/set-version.js');
 const workspaceCss=read('src/styles/structure/plugin-workspace.css');
 
-assert(/^3\.64\.(?:[1-9]\d*)$/.test(pkg.version),'mobile restoration must remain on or beyond the v3.64.1 App release line');
+{const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major===3&&(minor>64||(minor===64&&patch>=1)),'mobile restoration must remain on or beyond App v3.64.1');}
 assert(/^0\.8\.(?:1[2-9]|[2-9]\d+)$/.test(mobilePkg.version),'mobile behavior changes must remain on or beyond React Native package v0.8.12');
 assert.strictEqual(mobileApp.version,mobilePkg.version,'Expo and mobile package versions must stay aligned');
 assert(Number(mobileApp.android.versionCode)>=23,'Android versionCode must advance for the mobile restoration build');

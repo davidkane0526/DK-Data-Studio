@@ -11,6 +11,7 @@ const resonance=read('src/plugins/resonance-workbench/feature-group-runtime.js')
 const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
 const plotCss=read('src/styles/structure/plugin-workspace.css');
 const material=read('src/core/theme/material-renderer.js');
+const semantic=read('src/core/theme/semantic-registry.js');
 
 // Generic SurfaceHeader carries ordinary panel padding. PlotView is a more
 // specialized 28 px chrome contract and must never compose that geometry.
@@ -19,6 +20,7 @@ assert(plotCss.includes('.dkds-plot-view-head{')&&plotCss.includes('height:28px;
 assert(plotView.includes("this.header.classList.remove('dkds-surface-header')"),'PlotView must normalize pre-existing plugin headers away from generic SurfaceHeader geometry.');
 assert(portable.includes("const specializedHeader=header.classList.contains('dkds-plot-view-head')||header.classList.contains('dkds-group-plot-head')")&&portable.includes("if(specializedHeader)header.classList.remove('dkds-surface-header')"),'PortableView must preserve specialized plot-header geometry instead of re-applying SurfaceHeader padding.');
 assert(resonance.includes('reswin-group-head dkds-plot-view-head')&&!resonance.includes('reswin-group-head dkds-surface-header dkds-plot-view-head'),'Resonance must not pre-compose SurfaceHeader and PlotView header classes.');
-assert(material.includes('.dkds-plot-view-head,.dkds-group-plot-head'),'Plot headers remain first-class Theme Material chrome without the generic SurfaceHeader class.');
+assert(semantic.includes('.dkds-plot-view-head,.dkds-group-plot-head'),'Plot headers remain first-class Theme Material chrome through the canonical semantic registry without the generic SurfaceHeader class.');
+assert(material.includes('Semantic.resolveMaterialRole(el)'),'Material Renderer must consume the semantic owner for plot-header chrome.');
 
 console.log('v3.62.4 plot-header runtime composition PASS');

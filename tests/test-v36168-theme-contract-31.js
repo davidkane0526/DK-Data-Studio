@@ -8,14 +8,14 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.20.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.21.0');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');
 const materialCss=read('src/styles/theme/material-renderer.css');
 const modernRoot=read('src/styles/presentation/shell.css');
 const keys=['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity'];
-assert(theme.includes("version:'3.8.0'"),'Theme Runtime must expose the strict 3.6 contract.');
+assert(theme.includes("version:'3.9.0'"),'Theme Runtime must expose the strict 3.6 contract.');
 assert(theme.includes('const MATERIAL_KEYS='),'Theme Runtime must keep bounded material keys separate from motion.');
 assert(theme.includes('ThemeContract.resolveProfile'),'Theme Runtime must resolve shared material profile values through the strict Theme Contract.');
 for(const key of keys){assert(theme.includes(key),`Theme Runtime missing ${key}`);assert(types.includes(key),`SDK types missing ${key}`);assert(template.includes(key),`Theme template missing ${key}`);}
@@ -23,7 +23,7 @@ assert(types.includes('DKDSThemeMaterialSpec')&&types.includes('material?:DKDSTh
 for(const cssVar of ['--dkui-material-blur','--dkui-material-blur-strong','--dkui-material-saturation','--dkui-material-tint-opacity','--dkui-specular-highlight','--dkui-inner-highlight','--dkui-glass-edge','--dkui-material-noise-opacity'])assert(modernRoot.includes(cssVar)||materialCss.includes(cssVar),`Core CSS missing ${cssVar}`);
 assert(materialCss.includes('data-dkds-material-recipe=\"soft-glass\"')&&materialCss.includes('data-dkds-material-recipe=\"liquid-glass\"')&&materialCss.includes('background-image:radial-gradient'),'Core must own reusable material recipes including noise composition.');
 assert(materialCss.includes('var(--dkui-material-blur)')&&materialCss.includes('var(--dkui-material-saturation)'),'Core material recipes must consume Theme material values.');
-const roleCss=read('src/styles/theme/material-roles.css');const roleRuntime=read('src/core/theme/material-renderer.js');assert(roleCss.includes('[data-dkds-material-role="chrome"]')&&!roleCss.includes('.topbar'),'Material-role CSS must consume runtime semantics rather than remap concrete components.');assert(roleRuntime.includes('.topbar')&&roleRuntime.includes('.dkds-memory-panel'),'Core runtime must assign semantic roles before recipe rendering.');
+const roleCss=read('src/styles/theme/material-roles.css');const roleRuntime=read('src/core/theme/material-renderer.js');const semantic=read('src/core/theme/semantic-registry.js');assert(roleCss.includes('[data-dkds-material-role="chrome"]')&&!roleCss.includes('.topbar'),'Material-role CSS must consume runtime semantics rather than remap concrete components.');assert(semantic.includes('.topbar')&&semantic.includes('.dkds-memory-panel')&&roleRuntime.includes('Semantic.resolveMaterialRole(el)'),'Core semantic registry must assign roles before recipe rendering.');
 
 // Execute the runtime with a minimal DOM to prove shared material values and
 // mode-specific overrides are actually projected to public CSS variables.

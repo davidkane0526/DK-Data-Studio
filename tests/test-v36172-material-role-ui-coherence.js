@@ -1,13 +1,16 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.20.0');
-assert.equal(json('sdk/contract.json').themeContractVersion,'3.8.0');
-const renderer=read('src/core/theme/material-renderer.js');
-for(const token of ['#pluginManagerPage','#automationTestPage','dkds-settings-dialog','dkds-plugin-canvas-left','dkds-plugin-canvas-right','dkds-portable-view.is-floating','assignSemanticRoles','refreshDerivedContrast','--dkds-on-popover','LOW_CONTRAST_MATERIAL'])assert(renderer.includes(token),`missing material role/contrast coverage token: ${token}`);
-assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Core material role assignment must not know plugin identity selectors.');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.21.0');
+assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
+const renderer=read('src/core/theme/material-renderer.js');const semanticRuntime=read('src/core/theme/semantic-registry.js');const index=read('src/index.html');
+for(const token of ['.analysis-page','dkds-settings-dialog','dkds-plugin-canvas-left','dkds-plugin-canvas-right','dkds-portable-view.is-floating'])assert(semanticRuntime.includes(token),`missing canonical material role selector: ${token}`);
+for(const token of ['assignSemanticRoles','refreshDerivedContrast','--dkds-on-popover','LOW_CONTRAST_MATERIAL'])assert(renderer.includes(token),`missing material render/contrast token: ${token}`);
+assert(index.includes('id="pluginManagerPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface"')&&index.includes('id="automationTestPage" class="analysis-page hidden core-analysis-page dkds-material-role-surface"'),'persistent system pages must be surface-owned');
+assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(semanticRuntime),'Core material role assignment must not know plugin identity selectors.');
 const coverage=read('src/core/theme/coverage-runtime.js');
-for(const token of ['Core Scientific/Data Content','Settings / Plugin Manager / Automation / Dedicated Panels','Docked Tool / Portable Panels','Floating Surfaces / Tool Panels','LOW_CONTRAST_MATERIAL'])assert(coverage.includes(token),`missing coverage area/status: ${token}`);
+for(const token of ['areaCoverage','appearanceCoverage','ROLE_MISMATCH','RECIPE_MISSING','LOW_CONTRAST_MATERIAL'])assert(coverage.includes(token),`missing coverage capability/status: ${token}`);
+for(const label of ['Scientific / Data Content','Workspace / Persistent Pages','Docked Tool / Portable Panel','Temporary Floating Surfaces'])assert(semanticRuntime.includes(label),`missing semantic coverage area: ${label}`);
 const modernRenderer=read('src/styles/theme/material-renderer.css');
 assert(modernRenderer.includes('Integrated actions inside translucent surfaces remain ordinary hit regions'),'Material renderer must flatten nested command buttons after control rendering.');
 assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Material renderer must exempt legends from control pill rendering.');

@@ -9,12 +9,12 @@ const json=rel=>JSON.parse(read(rel));
 
 
 
-const material=read('src/core/theme/material-renderer.js');
+const material=read('src/core/theme/material-renderer.js');const semantic=read('src/core/theme/semantic-registry.js');
 assert(material.includes(".statusbar-command-cluster button"),'status-bar command buttons must participate in integrated-child ownership');
-assert(material.includes("function chromeOwnedIntegrated(el)"),'semantic chrome ownership helper missing');
-assert(material.includes("if(chromeOwnedIntegrated(el))return ''"),'chrome-owned command hit regions must not receive their own Material Role');
+assert(semantic.includes("function chromeOwnedIntegrated(el)"),'canonical semantic chrome ownership helper missing');
+assert(semantic.includes("if(chromeOwnedIntegrated(el))return ''"),'chrome-owned command hit regions must not receive their own Material Role');
 assert(material.includes("el.classList.remove('dkds-material-role-control')"),'renderer must remove legacy nested control-role paint under chrome');
-assert(material.includes('root.querySelectorAll(INTEGRATED_CONTAINER_SELECTOR)'),'initial role scan must include integrated containers instead of waiting for a mutation');
+assert(material.includes('Semantic.materialAreas()')&&semantic.includes('INTEGRATED_CONTAINER_SELECTOR'),'initial role scan and integrated ownership must come from the canonical semantic registry');
 
 for(const [label,source] of [
   ['src/index.html',read('src/index.html')],

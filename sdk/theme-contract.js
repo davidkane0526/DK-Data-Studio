@@ -4,7 +4,7 @@
   if(root)root.DKDSThemeContract=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='3.8.0';
+  const VERSION='3.9.0';
   const MIN_COMPATIBLE_CONTRACT_VERSION='3.6.0';
   const MATERIAL_ROLES=Object.freeze(['chrome','sidebar','surface','elevated','popover','control','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
@@ -21,6 +21,20 @@
   const ROLE_APPEARANCE_KEYS=Object.freeze(['surface','border','text']);
   const COMPONENT_APPEARANCE_COMPONENTS=Object.freeze(['tab','toolbarAction','toolbarGroup','panelHeader','inspectorHeader','menuItem','chip','statusBar','floatingChrome','field']);
   const COMPONENT_APPEARANCE_KEYS=Object.freeze(['surface','surfaceHover','surfaceActive','surfaceSelected','text','textSoft','textActive','textSelected','border','borderHover','borderActive','indicator']);
+  const COMPONENT_VARIANTS=Object.freeze(['primary','secondary','selected','active','quiet','destructive','info','success','warning','danger']);
+  const COMPONENT_VARIANT_MAP=Object.freeze({
+    tab:Object.freeze(['selected','active','quiet']),
+    toolbarAction:Object.freeze(['primary','secondary','selected','active','quiet','destructive']),
+    toolbarGroup:Object.freeze(['quiet']),
+    panelHeader:Object.freeze(['active','quiet']),
+    inspectorHeader:Object.freeze(['active','quiet']),
+    menuItem:Object.freeze(['selected','active','quiet','destructive']),
+    chip:Object.freeze(['selected','active','info','success','warning','danger']),
+    statusBar:Object.freeze(['quiet']),
+    floatingChrome:Object.freeze(['active','quiet']),
+    field:Object.freeze(['active','quiet'])
+  });
+  const EFFECT_KEYS=Object.freeze(['headerGradientStart','headerGradientEnd','accentGlow','edgeGlow','ambientTint','glowIntensity','glowRadius','gradientDirection']);
   const SCIENTIFIC_KEYS=Object.freeze(['seriesPalette','mode']);
   const TOKEN_KEYS=Object.freeze([...APPEARANCE_KEYS,...MOTION_KEYS,...MATERIAL_KEYS]);
   const COLOR_KEYS=new Set(['canvas','surface','surfaceSoft','surfaceHover','surfaceElevated','surfaceSidebar','controlBg','controlHover','divider','dividerHover','controlBorder','controlBorderHover','scrollbar','scrollbarHover','text','textSoft','muted','accent','accentHover','accentSoft','accentAlt','accentAltHover','accentAltSoft','focus','success','successSoft','warning','warningSoft','danger','dangerSoft','info','infoSoft','selectionSurface','selectionText','selectionBorder','activeSurface','activeText','disabledSurface','disabledText','specularHighlight','innerHighlight','glassEdge']);
@@ -29,7 +43,7 @@
   const RADIUS_KEYS=new Set(['radius','radiusLg']);
   const MATERIAL_BLUR_KEYS=new Set(['materialBlur','materialBlurStrong']);
   const OPACITY_KEYS=new Set(['materialTintOpacity','materialNoiseOpacity']);
-  const ROOT_KEYS=new Set(['label','owner','metadata','modes','motion','material','appearance','scientific','recipes','settings']);
+  const ROOT_KEYS=new Set(['label','owner','metadata','modes','motion','material','appearance','effects','scientific','recipes','settings']);
 
   function fail(message,path='theme'){const error=new Error(`${path}: ${message}`);error.code='THEME_CONTRACT_VALIDATION';throw error;}
   function finiteNumber(value,path){const n=Number(value);if(!Number.isFinite(n))fail('must be a finite number',path);return n;}
@@ -93,6 +107,15 @@
     return Object.freeze({base:Object.freeze(base),roles:Object.freeze(roles)});
   }
   function normalizeMotion(value,path){return Object.freeze(normalizeTokenObject(value,MOTION_KEYS,path));}
+  function normalizeEffects(value,path){
+    if(value===undefined)return Object.freeze({});
+    const obj=object(value,path);rejectUnknown(obj,new Set(EFFECT_KEYS),path);const out={};
+    for(const key of ['headerGradientStart','headerGradientEnd','accentGlow','edgeGlow','ambientTint'])if(obj[key]!==undefined)out[key]=parseColor(obj[key],`${path}.${key}`);
+    if(obj.glowIntensity!==undefined)out.glowIntensity=parseOpacity(obj.glowIntensity,`${path}.glowIntensity`);
+    if(obj.glowRadius!==undefined)out.glowRadius=parseLength(obj.glowRadius,`${path}.glowRadius`,{min:0,max:48});
+    if(obj.gradientDirection!==undefined){const direction=String(obj.gradientDirection||'').trim();if(!['horizontal','vertical','diagonal-down','diagonal-up'].includes(direction))fail('gradientDirection must be horizontal, vertical, diagonal-down, or diagonal-up',`${path}.gradientDirection`);out.gradientDirection=direction;}
+    return Object.freeze(out);
+  }
 
   function normalizeAppearance(value,path){
     if(value===undefined)return Object.freeze({roles:Object.freeze({}),components:Object.freeze({})});
@@ -112,9 +135,10 @@
       const componentObj=object(obj.components,`${path}.components`);rejectUnknown(componentObj,new Set(COMPONENT_APPEARANCE_COMPONENTS),`${path}.components`);
       for(const component of COMPONENT_APPEARANCE_COMPONENTS){
         if(componentObj[component]===undefined)continue;
-        const row=object(componentObj[component],`${path}.components.${component}`);rejectUnknown(row,new Set(COMPONENT_APPEARANCE_KEYS),`${path}.components.${component}`);
+        const row=object(componentObj[component],`${path}.components.${component}`);rejectUnknown(row,new Set([...COMPONENT_APPEARANCE_KEYS,'variants']),`${path}.components.${component}`);
         const out={};for(const key of COMPONENT_APPEARANCE_KEYS)if(row[key]!==undefined)out[key]=parseColor(row[key],`${path}.components.${component}.${key}`);
-        components[component]=Object.freeze(out);
+        const variants={};if(row.variants!==undefined){const variantObj=object(row.variants,`${path}.components.${component}.variants`),allowedVariants=new Set(COMPONENT_VARIANT_MAP[component]||[]);rejectUnknown(variantObj,allowedVariants,`${path}.components.${component}.variants`);for(const variant of allowedVariants){if(variantObj[variant]===undefined)continue;const variantRow=object(variantObj[variant],`${path}.components.${component}.variants.${variant}`);rejectUnknown(variantRow,new Set(COMPONENT_APPEARANCE_KEYS),`${path}.components.${component}.variants.${variant}`);const variantOut={};for(const key of COMPONENT_APPEARANCE_KEYS)if(variantRow[key]!==undefined)variantOut[key]=parseColor(variantRow[key],`${path}.components.${component}.variants.${variant}.${key}`);variants[variant]=Object.freeze(variantOut);}}
+        if(Object.keys(variants).length)out.variants=Object.freeze(variants);components[component]=Object.freeze(out);
       }
     }
     return Object.freeze({roles:Object.freeze(roles),components:Object.freeze(components)});
@@ -133,11 +157,11 @@
     return Object.freeze({seriesPalette:Object.freeze(palette),mode});
   }
   function mergeAppearanceRoles(base={},override={}){const out={};for(const role of MATERIAL_ROLES){const merged={...(base[role]||{}),...(override[role]||{})};if(Object.keys(merged).length)out[role]=Object.freeze(merged);}return Object.freeze(out);}
-  function mergeAppearanceComponents(base={},override={}){const out={};for(const component of COMPONENT_APPEARANCE_COMPONENTS){const merged={...(base[component]||{}),...(override[component]||{})};if(Object.keys(merged).length)out[component]=Object.freeze(merged);}return Object.freeze(out);}
+  function mergeAppearanceComponents(base={},override={}){const out={};for(const component of COMPONENT_APPEARANCE_COMPONENTS){const baseRow=base[component]||{},overrideRow=override[component]||{},variants={...(baseRow.variants||{})};for(const [variant,row] of Object.entries(overrideRow.variants||{}))variants[variant]=Object.freeze({...(variants[variant]||{}),...row});const merged={...baseRow,...overrideRow};if(Object.keys(variants).length)merged.variants=Object.freeze(variants);else delete merged.variants;if(Object.keys(merged).length)out[component]=Object.freeze(merged);}return Object.freeze(out);}
   function normalizeMode(value,path){
-    if(value===undefined)return Object.freeze({tokens:Object.freeze({}),motion:Object.freeze({}),material:Object.freeze({base:Object.freeze({}),roles:Object.freeze({})}),appearance:Object.freeze({roles:Object.freeze({}),components:Object.freeze({})}),scientific:Object.freeze({seriesPalette:Object.freeze([]),mode:''})});
-    const obj=object(value,path);rejectUnknown(obj,new Set(['tokens','motion','material','appearance','scientific']),path);
-    return Object.freeze({tokens:Object.freeze(normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`)),motion:normalizeMotion(obj.motion,`${path}.motion`),material:normalizeMaterial(obj.material,`${path}.material`),appearance:normalizeAppearance(obj.appearance,`${path}.appearance`),scientific:normalizeScientific(obj.scientific,`${path}.scientific`)});
+    if(value===undefined)return Object.freeze({tokens:Object.freeze({}),motion:Object.freeze({}),material:Object.freeze({base:Object.freeze({}),roles:Object.freeze({})}),appearance:Object.freeze({roles:Object.freeze({}),components:Object.freeze({})}),effects:Object.freeze({}),scientific:Object.freeze({seriesPalette:Object.freeze([]),mode:''})});
+    const obj=object(value,path);rejectUnknown(obj,new Set(['tokens','motion','material','appearance','effects','scientific']),path);
+    return Object.freeze({tokens:Object.freeze(normalizeTokenObject(obj.tokens,APPEARANCE_KEYS,`${path}.tokens`)),motion:normalizeMotion(obj.motion,`${path}.motion`),material:normalizeMaterial(obj.material,`${path}.material`),appearance:normalizeAppearance(obj.appearance,`${path}.appearance`),effects:normalizeEffects(obj.effects,`${path}.effects`),scientific:normalizeScientific(obj.scientific,`${path}.scientific`)});
   }
   function mergeRoles(base={},override={}){const out={};for(const role of MATERIAL_ROLES){const merged={...(base[role]||{}),...(override[role]||{})};if(Object.keys(merged).length)out[role]=Object.freeze(merged);}return Object.freeze(out);}
 
@@ -189,16 +213,16 @@
     if(obj.label!==undefined&&typeof obj.label!=='string')fail('label must be a string',`${path}.label`);
     if(obj.owner!==undefined&&typeof obj.owner!=='string')fail('owner must be a string',`${path}.owner`);
     if(obj.metadata!==undefined)object(obj.metadata,`${path}.metadata`);
-    const sharedMotion=normalizeMotion(obj.motion,`${path}.motion`),sharedMaterial=normalizeMaterial(obj.material,`${path}.material`),sharedAppearance=normalizeAppearance(obj.appearance,`${path}.appearance`),sharedScientific=normalizeScientific(obj.scientific,`${path}.scientific`),recipes=normalizeRecipes(obj.recipes,`${path}.recipes`),settings=normalizeSettings(obj.settings,`${path}.settings`);
+    const sharedMotion=normalizeMotion(obj.motion,`${path}.motion`),sharedMaterial=normalizeMaterial(obj.material,`${path}.material`),sharedAppearance=normalizeAppearance(obj.appearance,`${path}.appearance`),sharedEffects=normalizeEffects(obj.effects,`${path}.effects`),sharedScientific=normalizeScientific(obj.scientific,`${path}.scientific`),recipes=normalizeRecipes(obj.recipes,`${path}.recipes`),settings=normalizeSettings(obj.settings,`${path}.settings`);
     const modesObj=object(obj.modes,`${path}.modes`);rejectUnknown(modesObj,new Set(['light','dark']),`${path}.modes`);
     if(modesObj.light===undefined||modesObj.dark===undefined)fail('must declare both light and dark modes',`${path}.modes`);
-    return Object.freeze({label:obj.label,owner:obj.owner,metadata:Object.freeze({...obj.metadata}),motion:sharedMotion,material:sharedMaterial,appearance:sharedAppearance,scientific:sharedScientific,recipes,settings,modes:Object.freeze({light:normalizeMode(modesObj.light,`${path}.modes.light`),dark:normalizeMode(modesObj.dark,`${path}.modes.dark`)})});
+    return Object.freeze({label:obj.label,owner:obj.owner,metadata:Object.freeze({...obj.metadata}),motion:sharedMotion,material:sharedMaterial,appearance:sharedAppearance,effects:sharedEffects,scientific:sharedScientific,recipes,settings,modes:Object.freeze({light:normalizeMode(modesObj.light,`${path}.modes.light`),dark:normalizeMode(modesObj.dark,`${path}.modes.dark`)})});
   }
   function resolveProfile(profile,mode){
-    const branch=profile?.modes?.[mode]||{tokens:{},motion:{},material:{base:{},roles:{}},appearance:{roles:{},components:{}},scientific:{seriesPalette:[],mode:''}};
+    const branch=profile?.modes?.[mode]||{tokens:{},motion:{},material:{base:{},roles:{}},appearance:{roles:{},components:{}},effects:{},scientific:{seriesPalette:[],mode:''}};
     const branchPalette=branch.scientific?.seriesPalette||[];
     const scientificMode=branch.scientific?.mode||profile.scientific?.mode||'fallback-only';
-    return Object.freeze({tokens:Object.freeze({...branch.tokens}),motion:Object.freeze({...profile.motion,...branch.motion}),material:Object.freeze({base:Object.freeze({...profile.material.base,...branch.material.base}),roles:mergeRoles(profile.material.roles,branch.material.roles)}),appearance:Object.freeze({roles:mergeAppearanceRoles(profile.appearance?.roles,branch.appearance?.roles),components:mergeAppearanceComponents(profile.appearance?.components,branch.appearance?.components)}),scientific:Object.freeze({seriesPalette:Object.freeze(branchPalette.length?branchPalette:[...(profile.scientific?.seriesPalette||[])]),mode:scientificMode}),recipes:Object.freeze({...profile.recipes}),settings:profile.settings||Object.freeze([])});
+    return Object.freeze({tokens:Object.freeze({...branch.tokens}),motion:Object.freeze({...profile.motion,...branch.motion}),material:Object.freeze({base:Object.freeze({...profile.material.base,...branch.material.base}),roles:mergeRoles(profile.material.roles,branch.material.roles)}),appearance:Object.freeze({roles:mergeAppearanceRoles(profile.appearance?.roles,branch.appearance?.roles),components:mergeAppearanceComponents(profile.appearance?.components,branch.appearance?.components)}),effects:Object.freeze({...profile.effects,...branch.effects}),scientific:Object.freeze({seriesPalette:Object.freeze(branchPalette.length?branchPalette:[...(profile.scientific?.seriesPalette||[])]),mode:scientificMode}),recipes:Object.freeze({...profile.recipes}),settings:profile.settings||Object.freeze([])});
   }
   function contractVersionSupported(value){
     const parse=v=>{const m=String(v||'').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);return m?m.slice(1).map(Number):null;};
@@ -213,10 +237,12 @@
     if(!key.startsWith('contract.'))return false;
     const scoped=key.slice('contract.'.length);
     if(TOKEN_KEYS.includes(scoped))return true;
-    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.style-audit','appearance.roles','appearance.components','scientific','scientific.seriesPalette','scientific.precedence'].includes(scoped))return true;
+    if(['theme','theme.profile','theme.settings','material.recipes','motion','material','material.roles','modes.tokens','modes.motion','modes.material','platform.logical-units','platform.native-projection','theme.coverage','theme.render-coverage','theme.style-audit','appearance.roles','appearance.components','appearance.variants','effects','effects.controlled','scientific','scientific.seriesPalette','scientific.precedence'].includes(scoped))return true;
     if(scoped.startsWith('material.roles.'))return MATERIAL_ROLES.includes(scoped.slice('material.roles.'.length));
     if(scoped.startsWith('appearance.roles.'))return MATERIAL_ROLES.includes(scoped.slice('appearance.roles.'.length));
-    if(scoped.startsWith('appearance.components.'))return COMPONENT_APPEARANCE_COMPONENTS.includes(scoped.slice('appearance.components.'.length));
+    if(scoped.startsWith('appearance.components.'))return COMPONENT_APPEARANCE_COMPONENTS.includes(scoped.slice('appearance.components.'.length).split('.')[0]);
+    if(scoped.startsWith('appearance.variants.'))return COMPONENT_VARIANTS.includes(scoped.slice('appearance.variants.'.length));
+    if(scoped.startsWith('effects.'))return EFFECT_KEYS.includes(scoped.slice('effects.'.length));
     return false;
   }
   function projectMaterialValue(key,value,platform='web'){
@@ -232,5 +258,5 @@
     for(const [role,values] of Object.entries(material.roles||{})){roles[role]={};for(const [key,value] of Object.entries(values||{}))roles[role][key]=projectMaterialValue(key,value,platform);}
     return Object.freeze({base:Object.freeze(base),roles:Object.freeze(Object.fromEntries(Object.entries(roles).map(([k,v])=>[k,Object.freeze(v)])))});
   }
-  return Object.freeze({version:VERSION,minimumCompatibleContractVersion:MIN_COMPATIBLE_CONTRACT_VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),componentAppearanceKeys:()=>COMPONENT_APPEARANCE_KEYS.slice(),componentAppearanceComponents:()=>COMPONENT_APPEARANCE_COMPONENTS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
+  return Object.freeze({version:VERSION,minimumCompatibleContractVersion:MIN_COMPATIBLE_CONTRACT_VERSION,appearanceKeys:()=>APPEARANCE_KEYS.slice(),roleAppearanceKeys:()=>ROLE_APPEARANCE_KEYS.slice(),componentAppearanceKeys:()=>COMPONENT_APPEARANCE_KEYS.slice(),componentAppearanceComponents:()=>COMPONENT_APPEARANCE_COMPONENTS.slice(),componentVariants:()=>COMPONENT_VARIANTS.slice(),componentVariantMap:()=>Object.freeze(Object.fromEntries(Object.entries(COMPONENT_VARIANT_MAP).map(([k,v])=>[k,v.slice()]))),effectKeys:()=>EFFECT_KEYS.slice(),scientificKeys:()=>SCIENTIFIC_KEYS.slice(),motionKeys:()=>MOTION_KEYS.slice(),materialKeys:()=>MATERIAL_KEYS.slice(),tokenKeys:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialRecipes:()=>MATERIAL_RECIPES.slice(),parseToken,validateProfile,resolveProfile,projectMaterial,supports,platformUnits:Object.freeze({length:'logical-unit: web 1 unit = 1 CSS px; Android 1 unit = 1 dp before native blur/material projection',duration:'milliseconds',opacity:'0..1 canonical',saturation:'multiplier 0..3',scale:'unitless 0.8..1.2'})});
 });

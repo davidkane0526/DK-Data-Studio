@@ -28,6 +28,6 @@ assert(material.includes('box-shadow:var(--dkui-selected-shadow);'),'Theme mater
 const thin=read('src/plugins/thin-glass-theme/plugin.js');
 for(const token of ["divider:'rgba(104,121,144,.14)'","controlBorder:'rgba(104,121,144,.22)'","glassEdge:'rgba(183,196,214,.50)'","divider:'rgba(100,116,139,.15)'","controlBorder:'rgba(100,116,139,.24)'"])assert(thin.includes(token),`Thin Glass low-line material hierarchy missing ${token}`);
 
-const materialRuntime=read('src/core/theme/material-renderer.js');
-assert(materialRuntime.includes("if(el?.matches?.('.dkds-portable-view'))return el.matches('.is-floating,.is-global-floating')?'floating':'surface'"),'Portable placement must take precedence over stale floating-panel semantic classes.');
+const semanticRuntime=read('src/core/theme/semantic-registry.js');
+assert(semanticRuntime.includes("if(!matches(el,'.dkds-portable-view'))return ''")&&semanticRuntime.includes("if(matches(el,'.is-floating,.is-global-floating'))return 'floating'")&&semanticRuntime.includes("return 'surface'"),'Portable placement must take precedence over stale floating-panel semantic classes.');
 console.log('v3.61.109 selection/measurement/theme regression passed.');

@@ -563,9 +563,6 @@ body.dkds-modern-ui .project-tab-close:active:not(:disabled){
   background:color-mix(in srgb,var(--dkui-text,var(--text-primary,#1c2a43)) 12%,transparent);
   transform:none;
 }
-.analysis-page{
-  background:#f5f7fb;
-}
 .smart-detection-note{
   color:#64748b;
   background:#f5f8ff;

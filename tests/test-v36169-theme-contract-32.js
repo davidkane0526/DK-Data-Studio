@@ -11,8 +11,8 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.20.0');
-assert.equal(Theme.version,'3.8.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.21.0');
+assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('contract.material.roles.chrome')&&Theme.supports('contract.platform.logical-units'));assert(!Theme.supports('materialBlur')&&!Theme.supports('material.roles.chrome')&&!Theme.supports('platform.logical-units'));
 assert(Theme.supports('contract:3.8.0'),'Theme 3.8 must expose only its explicit contract namespace/version.');
 for(const role of ['chrome','sidebar','surface','elevated','popover','control','floating'])assert(Theme.materialRoles().includes(role));
@@ -43,7 +43,7 @@ const nativeMaterial=Theme.projectMaterial(dark.material,'native');assert.equal(
 const props=new Map();const rootStyle={setProperty:(k,v)=>props.set(k,String(v)),removeProperty:k=>props.delete(k),colorScheme:''};
 const sandbox={console,Map,Set,Object,String,Promise,CustomEvent:function(){},localStorage:{getItem:()=>'',setItem:()=>{}},document:{documentElement:{style:rootStyle,dataset:{}}},getComputedStyle:()=>({getPropertyValue:k=>props.get(k)||''}),matchMedia:()=>({matches:false}),addEventListener:()=>{},dispatchEvent:()=>{},window:null,globalThis:null};
 sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(read('sdk/theme-contract.js'),sandbox);vm.runInContext(read('src/core/theme/runtime.js'),sandbox);
-assert.equal(sandbox.DKDSTheme.contractVersion,'3.8.0');
+assert.equal(sandbox.DKDSTheme.contractVersion,'3.9.0');
 assert.equal(sandbox.DKDSTheme.supports('contract.materialBlur'),true);assert.equal(sandbox.DKDSTheme.supports('materialBlur'),false);
 assert.equal(sandbox.DKDSTheme.supports('contract.material.roles.popover'),true);assert.equal(sandbox.DKDSTheme.supports('material.roles.popover'),false);
 assert.throws(()=>sandbox.DKDSTheme.registerProfile('bad-token',{material:{materialBlurr:12},modes:{light:{},dark:{}}}),/materialBlurr/);
@@ -56,8 +56,8 @@ sandbox.DKDSTheme.set('dark');assert.equal(props.get('--dkui-material-tint-opaci
 
 // Official template must pin app + theme contract compatibility.
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.64.0 <4.0.0');
-assert.equal(template.compatibility.themeContract,'^3.8.0');
+assert.equal(template.compatibility.app,'>=3.65.0 <4.0.0');
+assert.equal(template.compatibility.themeContract,'^3.9.0');
 const schema=json('sdk/plugin-manifest.schema.json');assert(schema.properties.compatibility.properties.themeContract);
 
 // Standalone SDK validator must execute/register the profile and reject malformed data/ranges.

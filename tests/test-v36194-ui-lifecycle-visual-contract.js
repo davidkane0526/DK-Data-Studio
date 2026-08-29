@@ -12,6 +12,7 @@ const coreCss=read('src/core.css');
 const utility=read('src/styles/utility/visibility.css');
 const foundation=read('src/styles/foundation/foundation.css');
 const materialJs=read('src/core/theme/material-renderer.js');
+const semanticTheme=read('src/core/theme/semantic-registry.js');
 const materialCss=read('src/styles/theme/material-renderer.css');
 const statusCss=read('src/styles/presentation/control-status.css');
 const shellCss=read('src/styles/presentation/shell.css');
@@ -50,15 +51,15 @@ assert(pluginWindowHtml.includes('id="pluginWindowError" class="plugin-window-er
   'Dedicated plugin error surface must start hidden and rely on final visibility state.');
 
 for(const token of ['.toolbar-group','.primary-activity-cluster','.system-core-tools-group']){
-  assert(materialJs.includes(token),`Top chrome control ownership must include ${token}.`);
+  assert(semanticTheme.includes(token),`Top chrome control ownership must include ${token}.`);
 }
-assert(materialJs.includes('.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary'),
+assert(semanticTheme.includes('.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary'),
   'Toolbar/activity controls must remain shell-owned instead of receiving generic Material control paint.');
 for(const token of ['.primary','.strong','.danger-soft','.accent-soft','[aria-pressed="true"]','[aria-selected="true"]']){
-  assert(materialJs.includes(token),`Semantic control paint must be protected from generic material assignment: ${token}`);
+  assert(semanticTheme.includes(token),`Semantic control paint must be protected from generic material assignment: ${token}`);
 }
-assert(materialJs.includes("role==='control'&&semanticControlOwnsPaint(el)"),
-  'Material role inference must leave semantic control paint to the semantic owner.');
+assert(semanticTheme.includes("return semanticControlOwnsPaint(el)?'':'control'")&&materialJs.includes("expected==='control'&&semanticControlOwnsPaint(el)"),
+  'Semantic role inference and renderer ownership must leave semantic control paint to the semantic owner.');
 assert(shellCss.includes('button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn)'),
   'Generic button palette must not repaint toolbar/activity controls as standalone controls.');
 assert(materialCss.includes('.command-menu:not([data-dkds-menu-behavior="rich"])'),

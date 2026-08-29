@@ -82,7 +82,7 @@
       let cols=live.workspace.groupColumns==='auto'?Math.max(1,Math.min(6,Math.floor((hostEl.clientWidth||1000)/330))):Number(live.workspace.groupColumns)||2;
       cols=Math.min(Math.max(1,cols),Math.max(1,count));
       hostEl.style.setProperty('--reswin-group-cols',String(cols));
-      const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(190,Math.min(265,Math.round(cardWidth*.50)))}px`);
+      const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(168,Math.min(228,Math.round(cardWidth*.43)))}px`);
       const activeKeys=new Set();
       for(const [metric,title,unit] of defs){
         activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;

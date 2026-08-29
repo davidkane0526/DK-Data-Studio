@@ -12,7 +12,7 @@ const material=read('src/core/theme/material-renderer.js');
 assert(material.includes("sidebar:{token:'appearance.roles.sidebar.surface',cssVar:'--dkui-role-sidebar-surface',fallbackToken:'surfaceSidebar',fallbackVar:'--dkui-surface-sidebar'}"),'Sidebar material role must resolve role-specific appearance first and preserve surfaceSidebar as the Core fallback token.');
 assert(material.includes('baseToken')&&material.includes('occludingChild'),'Theme Material inspect/debug must expose base-token and occluding-child diagnostics.');
 const debug=read('src/core/theme/debug-runtime.js');
-assert(debug.includes('base token:')&&debug.includes('occluding child:'),'Theme Debug must show semantic base-token and occluding-child ownership.');
+assert(debug.includes('materialBaseToken')&&debug.includes('occludingChild')&&debug.includes('Base token:')&&debug.includes('Occluding child:'),'Theme Debug must show semantic base-token and occluding-child ownership.');
 const analysis=read('src/core/ui/modules/workbench/analysis.js');
 assert(analysis.includes('normalizeSidebarCompositionNode')&&analysis.includes("dkdsMaterialSurface==='core'"),'AnalysisWorkbench must normalize direct sidebar composition children unless Core has explicitly promoted them to an independent MaterialSurface.');
 assert(analysis.includes("'dkds-surface-muted'")&&analysis.includes("delete node.dataset.dkdsMaterialRole"),'Sidebar normalization must remove legacy direct-child surface paint and stale material assignment.');

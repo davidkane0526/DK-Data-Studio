@@ -13,8 +13,8 @@ for(const token of ["id:'com.dkds.theme.liquid-glass'","canvas:","surface:","sur
   assert(thinTheme.includes(token),`Thin Glass Theme 3.8 profile missing ${token}`);
 assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtime must not own the Thin Glass product profile.');
 
-const material=read('src/core/theme/material-renderer.js');
-assert(material.includes("['elevated','#pluginManagerPage,#automationTestPage,.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel"),'LAN Web / dialog surfaces must remain elevated Material roles.');
+const material=read('src/core/theme/material-renderer.js');const semantic=read('src/core/theme/semantic-registry.js');
+assert(semantic.includes(".dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel")&&semantic.includes("return 'elevated'"),'LAN Web / dialog surfaces must remain elevated Material roles while persistent pages stay surface-owned.');
 assert(material.includes("const TRANSLUCENT_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass'])"),'Nested composition must be recipe-owned.');
 assert(material.includes('nestedParentOwnsBackdrop')&&!material.includes('thinGlassActive'),'Nested header suppression must be recipe-owned rather than built-in-profile-owned.');
 

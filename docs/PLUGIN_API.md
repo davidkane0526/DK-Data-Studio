@@ -362,11 +362,13 @@ SUPER and dedicated TOP are hosting modes of the same plugin UI. The semantic mo
 ```js
 const wb=ctx.ui.workspaceSurface.create(root,{header:false,activity:'my-analysis'});
 wb.mountPrimary({ id:'main', label:'主界面', mainNode });
-wb.registerPrime({ id:'inspector', label:'检查', defaultPlacement:'right', placements:['inline','right','bottom','float'] });
+wb.registerPrime({ id:'inspector', label:'检查', semanticKind:'inspector', defaultPlacement:'right', placements:['inline','right','bottom','float'] });
 wb.registerSub({ id:'physics', label:'物理分析', mount:({container})=>{/* domain content */} });
 ```
 
 `PRIMARY` does not imply a sidebar. `leftNode` is an optional composition slot, not a template requirement. Keep domain-specific file lists, batch controls, plots and result tables in a plugin-owned `mainNode` layout when that better matches the workflow. If adjacent panes need user-controlled space allocation, use `ctx.ui.layout.split(...)` rather than implementing a plugin-local resizer.
+
+`semanticKind` is a bounded Core semantic declaration for persistent PRIME/Portable surfaces. Use `inspector` only for a true persistent inspector; ordinary auxiliary panels use the default `panel`. Core converts this declaration into Component Identity and Material Role ownership. Plugins and themes cannot invent additional semantic kinds, selectors, or Material roles.
 
 Do not implement plugin-local drag/dock/floating/z-index logic. Use Workbench/Portable/PlotView APIs.
 
@@ -574,7 +576,7 @@ const ok = await ctx.ui.dialogs.confirm({
 
 ### Theme profiles (`ctx.ui.theme`)
 
-Theme Contract 3.8 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
+Theme Contract 3.9 将主题作为第一类 `pluginType: "theme"`。主题插件必须声明 `requiresCore: ["ui.theme"]`，通过 `ctx.ui.theme.register(id,{modes:{light:{...},dark:{...}},material:{...},motion:{...}})` 注册 profile，并可由插件中心或 `ctx.ui.theme.activate(id)` 激活。
 
 外观 token 保留 `canvas / surface / surfaceSoft / surfaceElevated / surfaceSidebar / control* / text* / accent* / shadow* / radius*` 等基础语义，并在 Theme 3.8 新增 `accentAlt*`、`success / warning / danger / info` 与 `*Soft`、`selectionSurface / selectionText / selectionBorder`、`activeSurface / activeText`、`disabledSurface / disabledText`。Motion token 包括 `motionFast`, `motionNormal`, `motionSlow`, `easeStandard`, `easeEmphasized`, `hoverLift`, `pressScale`。
 
@@ -583,4 +585,4 @@ Theme 3.8 还允许 `appearance.roles.chrome|sidebar|surface|elevated|popover|co
 主题只拥有语义视觉和受控动效，不拥有 Core/其他插件的布局或 DOM。`prefers-reduced-motion: reduce` 始终优先于主题 motion。结构分区应依靠 surface 色差和间距，`divider` 只用于必要结构线，输入框/按钮使用独立 `controlBorder`。
 
 
-Theme Contract 3.8 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.
+Theme Contract 3.9 material tokens: `materialBlur`, `materialBlurStrong`, `materialSaturation`, `materialTintOpacity`, `specularHighlight`, `innerHighlight`, `glassEdge`, `materialNoiseOpacity`. Core owns material selectors/recipes; Theme plugins only provide token values. `materialTintOpacity` is a historical name: for translucent recipes it is the semantic base-surface fill opacity (0..1), not an accent-color tint percentage. Core applies recipe-level readability floors and identical composition rules to built-in and SDK Theme profiles.

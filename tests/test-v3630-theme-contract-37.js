@@ -7,11 +7,11 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.20.0');
+assert.equal(sdk.sdkVersion,'1.21.0');
 assert.equal(sdk.pluginApiVersion,'1.18.0');
-assert.equal(sdk.themeContractVersion,'3.8.0');
-assert.equal(sdk.minimumAppVersion,'3.64.0');
-assert.equal(Theme.version,'3.8.0');
+assert.equal(sdk.themeContractVersion,'3.9.0');
+assert.equal(sdk.minimumAppVersion,'3.65.0');
+assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));
 const SourceContract=require('../sdk/source-contract');
@@ -78,7 +78,7 @@ assert(mobile.includes('themeAppearance:window.DKDSTheme?.appearanceRoles?.()'))
 assert(mobile.includes('themeScientific:window.DKDSTheme?.scientific?.()'));
 
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.themeContract,'^3.8.0');
+assert.equal(template.compatibility.themeContract,'^3.9.0');
 const thin=json('src/plugins/thin-glass-theme/plugin.json');
 assert.equal(thin.version,'1.10.0');
 assert.equal(thin.compatibility.themeContract,'^3.8.0');

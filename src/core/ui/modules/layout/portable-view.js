@@ -3,6 +3,8 @@ const {hostState, esc, resolveElement, resolveScopedElement, cleanupCall, readJs
 const {ContextMenu}=require('../interaction/context-actions');
 const {normalizePlacement, refreshDockZoneState}=require('./docking');
 
+const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
+
   class PortableView {
     constructor(scope,id,node,spec={}){
       this.scope=scope;this.owner=scope.owner;this.id=String(id);this.node=resolveElement(node);this.spec={...spec};this.allowed=[...new Set((spec.placements||['home','float','right','bottom']).map(normalizePlacement))];
@@ -25,6 +27,9 @@ const {normalizePlacement, refreshDockZoneState}=require('./docking');
       const useTarget=this.spec.useTargetAsWrapper===true;
       const wrapper=useTarget?this.node:document.createElement('section');
       wrapper.classList.add('dkds-portable-view');wrapper.dataset.portableId=this.id;
+      const semanticKind=String(this.spec.semanticKind||'panel').trim().toLowerCase();
+      if(!PORTABLE_SEMANTIC_KINDS.has(semanticKind))throw new Error(`Unknown PortableView semanticKind: ${semanticKind}`);
+      wrapper.dataset.dkdsSurfaceKind=semanticKind;wrapper.dataset.dkdsSurfaceKindOwner='portable-view';
       let header=useTarget?resolveElement(this.spec.handle||'.analysis-chart-title',wrapper):null;
       if(!header){header=document.createElement('header');header.className='dkds-portable-header drag-handle';if(useTarget)wrapper.prepend(header);}
       else header.classList.add('dkds-portable-inline-header','drag-handle');
@@ -190,7 +195,7 @@ const {normalizePlacement, refreshDockZoneState}=require('./docking');
       head.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
       return ()=>{head.removeEventListener('pointerdown',down);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);};
     }
-    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=0;this.restoreHome();this.controls?.remove?.();this.resizeHandle?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main','is-collapsed','collapsed');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}this.original?.anchor?.remove?.();if(this.scope?.portables?.get?.(this.id)===this)this.scope.portables.delete(this.id);refreshDockZoneState();}
+    dispose(){cleanupCall(this.dragCleanup);this.contextMenu?.dispose?.();this.contextMenu=null;this.chromeCleanups.splice(0).forEach(cleanupCall);this.resizeObserver?.disconnect?.();if(this.resizeFrame)cancelAnimationFrame(this.resizeFrame);this.resizeFrame=0;this.restoreHome();this.controls?.remove?.();this.resizeHandle?.remove?.();if(this.useTargetAsWrapper){this.wrapper?.classList?.remove('dkds-portable-view','is-floating','is-global-floating','is-sticky','is-docked','dock-left','dock-right','dock-bottom','dock-main','is-collapsed','collapsed');delete this.wrapper?.dataset?.portableId;delete this.wrapper?.dataset?.placement;if(this.wrapper?.dataset?.dkdsSurfaceKindOwner==='portable-view'){delete this.wrapper.dataset.dkdsSurfaceKind;delete this.wrapper.dataset.dkdsSurfaceKindOwner;}}else if(this.wrapper?.parentNode){this.wrapper.parentNode.insertBefore(this.node,this.wrapper);this.wrapper.remove();}this.original?.anchor?.remove?.();if(this.scope?.portables?.get?.(this.id)===this)this.scope.portables.delete(this.id);refreshDockZoneState();}
   }
 
 module.exports=Object.freeze({PortableView});

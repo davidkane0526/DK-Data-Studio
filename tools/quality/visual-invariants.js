@@ -13,6 +13,7 @@ const forbidRegex=(text,re,message)=>{if(re.test(text))failures.push(message);};
 function validate(){
   failures.length=0;
   const componentRuntime=read('src/core/theme/component-appearance.js');
+  const semanticRegistry=read('src/core/theme/semantic-registry.js');
   const componentCss=read('src/styles/theme/component-appearance.css');
   const integratedCss=read('src/styles/theme/integrated-command-chrome.css');
   const controlStatus=read('src/styles/presentation/control-status.css');
@@ -31,18 +32,18 @@ function validate(){
   const connectivity=read('src/plugins/connectivity-center/plugin.js');
 
   // HARD-01: analysis/workbench navigation is a toolbar action, never a tab.
-  requireRegex(componentRuntime,/tab:Object\.freeze\(\{selector:'[^']*activity-tab:not\(\.top-level-activity-tab\)[^']*'/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
-  forbidRegex(componentRuntime,/tab:Object\.freeze\(\{selector:'[^']*dkds-analysis-nav-btn/,'HARD-01: .dkds-analysis-nav-btn must never be classified as a Tab.');
-  requireRegex(componentRuntime,/toolbarAction:Object\.freeze\(\{selector:'[^']*dkds-analysis-nav-btn/,'HARD-01: .dkds-analysis-nav-btn must be a Theme toolbarAction.');
+  requireRegex(semanticRegistry,/id:'tab'[^\n]+activity-tab:not\(\.top-level-activity-tab\)/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
+  forbidRegex(semanticRegistry,/id:'tab'[^\n]+dkds-analysis-nav-btn/,'HARD-01: .dkds-analysis-nav-btn must never be classified as a Tab.');
+  requireRegex(semanticRegistry,/id:'toolbarAction'[^\n]+dkds-analysis-nav-btn/,'HARD-01: .dkds-analysis-nav-btn must be a Theme toolbarAction.');
   forbidRegex(componentCss,/:where\([^)]*dkds-analysis-nav-btn[^)]*\):is\([^)]*active[^}]*inset\s+0\s+-2px/s,'HARD-01: analysis navigation must never receive a tab underline indicator.');
   forbidRegex(controlStatus,/\.dkds-analysis-nav-btn\.(?:active|selected)|\.dkds-analysis-nav-btn\[aria-pressed/s,'HARD-01: Presentation must not repaint analysis-navigation states; Theme owns them.');
 
   // HARD-02: chart-title and bottom-status actions are hit regions of parent chrome.
-  requireText(componentRuntime,'.analysis-chart-title','HARD-02: analysis-chart-title must be a Core panelHeader semantic component.');
-  requireText(materialRenderer,'.analysis-chart-title','HARD-02: analysis-chart-title must be assigned the chrome Material role.');
-  requireText(coverage,'.analysis-chart-title','HARD-02: Theme coverage must inspect analysis-chart-title.');
+  requireText(semanticRegistry,'.analysis-chart-title','HARD-02: analysis-chart-title must be a Core panelHeader semantic component.');
+  requireText(materialRenderer,'Semantic.resolveMaterialRole(el)','HARD-02: Material Renderer must obtain chart-title ownership from the canonical semantic registry.');
+  requireText(coverage,'Semantic.materialAreas()','HARD-02: Theme coverage must consume the canonical material-area registry that includes analysis-chart-title.');
   requireRegex(integratedCss,/:where\([^)]*analysis-chart-title[^)]*\)\s*>\s*:where\([^)]*dkds-integrated-action-group/s,'HARD-02: chart-title direct action groups must be flattened into the title chrome.');
-  forbidRegex(componentRuntime,/toolbarGroup:Object\.freeze\(\{selector:'[^']*(?:dkds-integrated-action-group|statusbar-command-cluster)/,'HARD-02: integrated/status command clusters must never be painted as toolbarGroup components.');
+  forbidRegex(semanticRegistry,/id:'toolbarGroup'[^\n]*(?:dkds-integrated-action-group|statusbar-command-cluster)/,'HARD-02: integrated/status command clusters must never be painted as toolbarGroup components.');
   forbidRegex(componentCss,/:where\([^)]*(?:dkds-integrated-action-group|statusbar-command-cluster)[^)]*\)\s*\{[^}]*--dkds-material-base/s,'HARD-02: Theme Component Appearance must not create a second material shell around integrated/status groups.');
   requireRegex(integratedCss,/#statusBar\.statusbar[\s\S]*?\.plugin-status-item::before\{display:none\}/,'HARD-02: status-bar command chrome must remain one parent-owned surface.');
 
