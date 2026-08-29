@@ -789,21 +789,9 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v3654-data-center-ui-contracts.js",
+      "file": "tests/test-v3658-data-center-style-baseline.js",
       "args": []
     },
-    {
-      "file": "tests/test-v3655-command-identity-header-integration.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v3656-header-command-tab-state.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v3657-header-hit-region-recovery.js",
-      "args": []
-    }
   ],
   "check": [
     {
@@ -1627,21 +1615,9 @@ module.exports = {
       "args": []
     },
     {
-      "file": "tests/test-v3654-data-center-ui-contracts.js",
+      "file": "tests/test-v3658-data-center-style-baseline.js",
       "args": []
     },
-    {
-      "file": "tests/test-v3655-command-identity-header-integration.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v3656-header-command-tab-state.js",
-      "args": []
-    },
-    {
-      "file": "tests/test-v3657-header-hit-region-recovery.js",
-      "args": []
-    }
   ],
   "mobile": [
     {

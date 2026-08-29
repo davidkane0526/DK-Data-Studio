@@ -20,7 +20,7 @@ const status=read('src/plugins/status-monitor/plugin.js');
 const statusManifest=json('src/plugins/status-monitor/plugin.json');
 
 assert(actionCore.includes("classList.add('dkds-action-group','dkds-integrated-action-group','dkds-material-role-control')"),'Core ActionGroup keeps its default-theme control role.');
-assert(portable.includes("classList.add('dkds-plot-view-actions','dkds-header-command-strip','dkds-integrated-action-group')")&&!portable.includes("classList.add('dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control')"),'PlotView header actions are chrome-owned hit regions, not nested Material controls.');
+assert(portable.includes("classList.add('dkds-plot-view-actions','dkds-integrated-action-group')")&&!portable.includes("classList.add('dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control')"),'PlotView header actions are chrome-owned hit regions, not nested Material controls.');
 assert(portable.includes('dkds-integrated-action-subgroup'),'portable position controls must merge into their parent action cluster instead of painting their own box.');
 assert(curves.includes("dkds-scientific-nav-tools dkds-integrated-action-group dkds-material-role-floating"),'ScientificPlot floating navigation must be one integrated floating control.');
 assert(appPanels.includes('trend-header-actions dkds-integrated-action-group')&&!appPanels.includes('trend-header-actions dkds-integrated-action-group dkds-material-role-control'),'Core trend/FWHM header actions are owned by their chrome header.');

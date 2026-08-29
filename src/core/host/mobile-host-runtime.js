@@ -99,8 +99,8 @@
     const page=activePage();
     const current=routeStack.at(-1)||{kind:'workspace',activityId,pageId:text(page?.id)};
     return {
-      protocol:VERSION,revision:++revision,ready:!!document.querySelector('.project-tab[aria-selected="true"]'),
-      projectTitle:document.querySelector('.project-tab[aria-selected="true"] .project-tab-title')?.textContent?.trim()||'DK Data Studio',
+      protocol:VERSION,revision:++revision,ready:!!document.querySelector('.project-tab.active'),
+      projectTitle:document.querySelector('.project-tab.active .project-tab-title')?.textContent?.trim()||'DK Data Studio',
       projects:projectRows(),
       activityId,activityLabel:activity?.label||document.querySelector('#activityContextTitle')?.textContent?.trim()||'',
       status:currentStatus(),

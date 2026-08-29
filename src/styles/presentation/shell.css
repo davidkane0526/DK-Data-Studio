@@ -240,11 +240,11 @@ body.dkds-modern-ui .project-tab{
   box-shadow:none;
 }
 body.dkds-modern-ui .project-tab:hover{background:#f4f6f9;color:#37465b}
-body.dkds-modern-ui .project-tab:is(.selected,[aria-selected="true"]){
-  background:var(--dkui-selection-surface);
+body.dkds-modern-ui .project-tab.active{
+  background:var(--dkui-active-surface);
   border-color:var(--dkui-selection-border);
-  border-bottom-color:var(--dkui-selection-surface);
-  color:var(--dkui-selection-text);
+  border-bottom-color:var(--dkui-active-surface);
+  color:var(--dkui-active-text);
   box-shadow:var(--dkui-selected-shadow);
 }
 
@@ -362,7 +362,7 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab{background:#202631
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab:hover{background:#252d39;color:#d4dbe6;
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab:is(.selected,[aria-selected="true"]){background:var(--dkui-selection-surface);border-color:var(--dkui-selection-border);border-bottom-color:var(--dkui-selection-surface);color:var(--dkui-selection-text);
+html[data-dkds-theme="dark"] body.dkds-modern-ui .project-tab.active{background:var(--dkui-active-surface);border-color:var(--dkui-selection-border);border-bottom-color:var(--dkui-active-surface);color:var(--dkui-active-text);
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dataset-vg-edit input,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .schema-param-field input,
@@ -857,8 +857,8 @@ body.dkds-modern-ui textarea:focus-visible{
 }
 .project-tab:hover{background:#f1f4f9;color:#344054;
 }
-.project-tab:is(.selected,[aria-selected="true"]){
-  font-weight:650;background:var(--dkui-selection-surface,#fff);color:var(--dkui-selection-text,#202b3c);border-color:var(--dkui-selection-border,#d6dce6);border-bottom-color:var(--dkui-selection-surface,#fff);box-shadow:var(--dkui-selected-shadow,0 -1px 0 rgba(255,255,255,.9));
+.project-tab.active{
+  font-weight:650;background:#fff;color:#202b3c;border-color:#d6dce6;border-bottom-color:#fff;box-shadow:0 -1px 0 rgba(255,255,255,.9);
 }
 .left-panel{border-right-color:transparent;
 }

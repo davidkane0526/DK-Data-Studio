@@ -120,7 +120,7 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
     ensureActions(){
       this.actions=resolveScopedElement(this.spec.actionsHost||'[data-dkds-plot-actions],.dkds-plot-view-actions,.dkds-chart-actions',this.header);
       if(!this.actions){this.actions=document.createElement('span');this.actions.className='dkds-plot-view-actions';this.header.appendChild(this.actions);}
-      this.actions.classList.add('dkds-plot-view-actions','dkds-header-command-strip','dkds-integrated-action-group');
+      this.actions.classList.add('dkds-plot-view-actions','dkds-integrated-action-group');
     }
     invokeAction(handler,event){return Promise.resolve(handler?.(event)).catch(err=>{console.error('[DKDS PlotView]',err);hostState.status?.(`图表操作失败：${err.message}`);});}
     button(label,title,handler){const b=document.createElement('button');b.type='button';b.textContent=label;b.className='dkds-plot-view-action';b.setAttribute('aria-label',String(title||label));const fn=e=>{e.preventDefault();e.stopPropagation();this.invokeAction(handler,e);};b.addEventListener('click',fn);this.cleanups.push(()=>b.removeEventListener('click',fn));this.actions.appendChild(b);return b;}

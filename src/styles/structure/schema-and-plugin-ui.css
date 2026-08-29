@@ -58,13 +58,9 @@ button.wide{ width:100%;
   padding:0 7px 0 10px;
 }
 .new-project-tab{
-  width:30px;
-  min-width:30px;
-  padding:0;
-  display:inline-grid;
-  place-items:center;
+  min-width:34px;
+  padding:0 9px;
 }
-.new-project-tab>svg{display:block;width:13px;height:13px}
 .schema-parameter-panel{
   display:grid;
   grid-template-columns:repeat(2,minmax(160px,1fr));
@@ -80,6 +76,7 @@ button.wide{ width:100%;
   width:100%;box-sizing:border-box;
   padding:5px 8px;font-size:var(--plugin-font-label,12px);min-height:var(--plugin-control-height,32px);
 }
+.schema-param-field select[multiple]{min-height:88px;}
 .schema-param-field select.dkds-multiselect-source{display:none}
 .dkds-multiselect-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
 .dkds-multiselect-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -308,7 +305,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 .project-tab{
   user-select:none;
   cursor:pointer;height:34px;min-height:34px;min-width:126px;padding-left:10px;font-size:12px;}
-.new-project-tab{height:30px;min-height:30px;margin-bottom:2px;}
+.new-project-tab{height:33px;min-height:33px;margin-bottom:1px;}
 .main-plot-tools::-webkit-scrollbar{display:none;}
 .plugin-main-tools{gap:4px;overflow:visible;}
 .plugin-main-tool-btn{

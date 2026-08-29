@@ -1,12 +1,12 @@
 {
-  "sdkVersion": "1.21.1",
+  "sdkVersion": "1.21.2",
   "pluginApiVersion": "1.18.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.65.1",
+  "minimumAppVersion": "3.65.8",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
-    "SDK 1.21.1 adds Core PlotView responsive content-aspect geometry and Theme-owned status-bar icon color policy with opt-in semantic runtime states; Theme Contract remains 3.9.0 and Plugin API remains 1.18.0.",
+    "SDK 1.21.2 adds Core surface-header composition classes and makes ParameterSchema multiselect/columns use the shared themed popup by default; Theme Contract remains 3.9.0 and Plugin API remains 1.18.0.",
     "SDK 1.21.0 targets Plugin API 1.18.0 and Theme Contract 3.9.0. Theme 3.9 makes Core semantic component identity and Material role resolution canonical across Gallery and real UI, adds controlled component variants/effects, real-page Theme Inspector diagnostics, expanded coverage statuses, and GroupPlot density control while preserving fallback-only scientific palette precedence.",
     "Older project files remain loadable through the Project Compatibility Gateway; older Plugin API packages are not runtime-compatible and must be upgraded.",
     "Multi-series ScientificPlot surfaces provide a Core-owned interactive legend scoped to the individual plot host; semantic legendgroup members isolate together even when only one member owns the visible legend item.",

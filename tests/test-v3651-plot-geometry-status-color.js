@@ -14,9 +14,9 @@ const aiPlugin=read('src/plugins/connectivity-center/plugin.js');
 const groupRuntime=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
-assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.1 status/geometry regression requires app 3.65.1 or newer');
-assert.equal(sdk.sdkVersion,'1.21.1');
-assert.equal(sdk.minimumAppVersion,'3.65.1');
+assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.8 status/geometry regression requires app 3.65.8 or newer');
+assert.equal(sdk.sdkVersion,'1.21.2');
+assert.equal(sdk.minimumAppVersion,'3.65.8');
 assert.equal(sdk.themeContractVersion,'3.9.0');
 for(const token of ['applyContentGeometry()','contentAspectRatio','contentMinHeight','contentMaxHeight','width/ratio','is-floating'])assert(plotView.includes(token),`PlotView responsive geometry missing ${token}`);
 assert(dts.includes('export interface DKDSPlotViewSpec')&&dts.includes('contentAspectRatio?:number')&&dts.includes('plotViews:DKDSPlotViewRuntime'),'SDK must expose responsive PlotView geometry');
@@ -32,4 +32,4 @@ assert(statusPlugin.includes("id:'lan-web',side:'right',order:30,icon:'●',colo
 for(const token of ["aiPhase='starting'","aiPhase='waiting'","aiPhase='done'","colorPolicy:'semantic'","aiPhase='idle'","3500"])assert(aiPlugin.includes(token),`AI status lifecycle missing ${token}`);
 assert(aiPlugin.includes("const label=lastMcp.running&&!['starting','waiting','done','error'].includes(state)?'AI · MCP':'AI'"),'AI semantic state must change icon color without widening the status button label');
 assert(statusPlugin.includes("id:'theme',side:'right',order:10,icon:'◐',label:'主题',state:''")&&statusPlugin.includes("id:'memory',side:'right',order:20,icon:'▤',label:'内存 —',state:''"),'ordinary status icons must stay uniform under Theme statusBar appearance');
-console.log('v3.65.1 Core PlotView landscape geometry and Theme-semantic status icon contracts passed.');
+console.log('v3.65.8 Core PlotView landscape geometry and Theme-semantic status icon contracts passed.');

@@ -9,7 +9,7 @@ const {normalizeExternalPluginWindow}=require('../desktop/plugin-window-manager'
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const contract=JSON.parse(read('sdk/contract.json'));
-assert.equal(contract.sdkVersion,'1.21.1');
+assert.equal(contract.sdkVersion,'1.21.2');
 assert.equal(contract.pluginApiVersion,'1.18.0');
 
 const kernel=read('src/generated/runtime/plugin-kernel.js'),infra=read('src/generated/runtime/ui-infrastructure.js'),chart=read('src/core/scientific/chart-runtime.js');

@@ -1,4 +1,4 @@
-# Aurora Pop 2.1
+# Aurora Pop 2.0
 
 Aurora Pop is a bundled Theme Contract 3.9 profile. It owns appearance tokens only; Core owns Component Identity, Material Role, rendering, layout and scientific color precedence.
 

@@ -60,7 +60,6 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
       this.owner=owner;this.container=resolveElement(container);this.spec={...spec};this.actions=[];this.state={};this.cleanups=[];this.menu=null;
       if(!this.container)throw new Error('ActionGroup container not found.');
       this.container.classList.add('dkds-action-group','dkds-integrated-action-group','dkds-material-role-control');
-      if(this.container.parentElement?.classList?.contains('dkds-header-command-strip'))this.container.classList.add('dkds-integrated-action-subgroup');
       const separatedHeader=this.container.classList.contains('dkds-plugin-header-actions')||spec.integrated===false;
       if(separatedHeader){
         this.container.classList.add('dkds-separated-action-group');

@@ -18,9 +18,9 @@ const topDocs=read('sdk/TOP_WORKSPACES.md');
 const toolDocs=read('sdk/TOOL_PLUGINS.md');
 
 
-assert.equal(contract.sdkVersion,'1.21.1');
+assert.equal(contract.sdkVersion,'1.21.2');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.65.1');
+assert.equal(contract.minimumAppVersion,'3.65.8');
 
 const safeHost='[data-primary-scroll="safe"] .dkds-analysis-primary-host';
 assert(/\.dkds-plugin-canvas-frame\[data-primary-scroll="safe"\] \.dkds-plugin-canvas-center\s*\{[^}]*overflow\s*:\s*hidden[^}]*min-height\s*:\s*0[^}]*align-items\s*:\s*stretch/i.test(css),'safe mode must keep the outer canvas geometry bounded instead of making it the scroll owner.');

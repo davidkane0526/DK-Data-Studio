@@ -5,7 +5,6 @@
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions,
@@ -27,7 +26,6 @@ body.dkds-modern-ui :where(
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions
@@ -37,12 +35,11 @@ body.dkds-modern-ui :where(
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions,
   .dkds-scientific-nav-tools
-) :where(button,select,.dkds-select-proxy,.dkds-scientific-nav-drag){
+) :where(button,.dkds-scientific-nav-drag){
   margin:0;
   min-height:26px;
   height:26px;
@@ -58,12 +55,11 @@ body.dkds-modern-ui :where(
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions,
   .dkds-scientific-nav-tools
-) :where(button,select,.dkds-select-proxy,.dkds-scientific-nav-drag):is(:hover,:focus-visible):not(:disabled){
+) :where(button,.dkds-scientific-nav-drag):is(:hover,:focus-visible):not(:disabled){
   color:var(--dkui-text);
   background:transparent;
   box-shadow:none;
@@ -72,7 +68,6 @@ body.dkds-modern-ui :where(
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions
@@ -83,7 +78,6 @@ body.dkds-modern-ui :where(
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
-  .dkds-header-command-strip,
   .panel-header-actions,
   .dkds-plot-view-actions
 ) button:is(.panel-close,.dkds-portable-close-action):hover:not(:disabled){
@@ -138,16 +132,10 @@ body.dkds-modern-ui .dkds-scientific-nav-tools :where(button,.dkds-scientific-na
 body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
 
-/* Header command strip ownership.
-   The header owns the background/material. Actions remain explicit hit regions
-   with stable geometry, spacing and labels. There is no nested toolbar capsule,
-   but controls are never flattened into raw text or full-height color slabs. */
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
   flex:0 0 auto;
-  align-self:center;
   margin-left:auto;
   padding:0;
-  gap:3px;
   border:0;
   border-radius:0;
   background:transparent;
@@ -157,60 +145,13 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
   backdrop-filter:none;
   overflow:visible;
 }
-body.dkds-modern-ui .dkds-header-command-strip > :where(.dkds-action-group,.dkds-integrated-action-subgroup,.dkds-segmented-control){
-  display:inline-flex;
-  align-items:center;
-  gap:2px;
-  min-width:0;
-  padding:0;
-  border:0;
-  background:transparent;
-  box-shadow:none;
-}
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,select,.dkds-select-proxy,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:auto;
-  min-width:26px;
-  min-height:26px;
-  height:26px;
-  margin:0;
-  padding:0 8px;
-  border:1px solid transparent;
-  border-radius:7px;
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
+  border-color:transparent;
   background:transparent;
   background-image:none;
   box-shadow:none;
-  color:var(--dkui-component-toolbar-action-text,var(--dkui-text-soft));
-  -webkit-text-fill-color:currentColor;
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
-  white-space:nowrap;
-}
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(.dkds-portable-placement-trigger,.dkds-plot-view-action,.dkds-icon-button){
-  width:26px;
-  padding:0;
-}
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,select,.dkds-select-proxy):is(:hover,:focus-visible):not(:disabled){
-  background:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));
-  border-color:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
-  color:var(--dkui-component-toolbar-action-text,var(--dkui-text));
-  box-shadow:none;
-  transform:none;
-}
-/* Emphasized commands remain compact controls inside the shared header surface.
-   They do not expand to the header edge or erase neighboring labels. */
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button.primary,.dkds-action-button.primary){
-  background:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));
-  border-color:var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent));
-  color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
-  -webkit-text-fill-color:currentColor;
-}
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-header-command-strip,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button.primary,.dkds-action-button.primary):hover:not(:disabled){
-  background:var(--dkui-component-toolbar-action-variant-primary-surface-hover,var(--dkui-accent-hover));
-  color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
-  -webkit-text-fill-color:currentColor;
 }
 
 /* Status commands are hit regions of one status-bar surface. The status bar

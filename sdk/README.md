@@ -1,4 +1,4 @@
-# DK Data Studio Plugin SDK 1.21.1
+# DK Data Studio Plugin SDK 1.21.2
 
 
 ## Theme Contract 3.9
@@ -10,7 +10,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.65.1 or newer for SDK 1.21.1 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
+- DK Data Studio 3.65.8 or newer for SDK 1.21.2 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
 
 ## Create a plugin
 
@@ -292,7 +292,7 @@ Dedicated scientific workspaces declare `"scientific-renderer"`. D3 is the singl
 
 ## Theme Contract 3.9 (`ui.theme`)
 
-Studio 3.65.0 exposes Theme Contract 3.9 independently from Plugin API 1.18.0 through SDK 1.21.1. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
+Studio 3.65.0 exposes Theme Contract 3.9 independently from Plugin API 1.18.0 through SDK 1.21.2. Theme packages declare `pluginType: "theme"`, `requiresCore: ["ui.theme"]`, and explicit `compatibility.app` / `compatibility.themeContract` ranges. Runtime capability discovery is available through `ctx.ui.theme.contractVersion` and `ctx.ui.theme.supports(feature)`.
 
 Theme Contract 3.9 validates executable `ctx.ui.theme.register()` profiles: unknown tokens, malformed colors, invalid blur/opacity/saturation/duration/scale values and invalid compatibility ranges are hard validation errors. New themes use structured `modes.light|dark.tokens`, `.motion`, and `.material` blocks. Shared values are applied first; mode-specific values override them. Theme 3.9 keeps structured `modes.light` / `modes.dark` blocks, makes Gallery and real UI consume one Core semantic resolver, and adds fixed component variants plus bounded Core-rendered gradients/glows without arbitrary CSS.
 
@@ -306,7 +306,12 @@ Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light a
 
 ### Theme Contract 3.9 Thin Glass
 
-SDK 1.21.1 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+SDK 1.21.2 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+
+
+### Shared surface-header composition (SDK 1.21.2)
+
+`ctx.ui.designSystem.classes` now exposes `surfaceHeading`, `surfaceActions`, and `surfaceTabs`. These are Core-owned structure classes for a single-line header title plus right-aligned controls; Theme Component Appearance continues to own paint. `ParameterSchema` `multiselect` / `columns` fields now use the shared themed popup by default; use field-level `presentation: "listbox"` only when a permanently expanded list is genuinely required.
 
 ### PlotView responsive scientific geometry (SDK 1.21.1)
 
