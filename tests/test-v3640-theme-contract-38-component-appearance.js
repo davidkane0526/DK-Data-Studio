@@ -7,10 +7,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.21.0');
+assert.equal(sdk.sdkVersion,'1.21.1');
 assert.equal(sdk.pluginApiVersion,'1.18.0');
 assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(sdk.minimumAppVersion,'3.65.0');
+assert.equal(sdk.minimumAppVersion,'3.65.1');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract:3.6.0')&&Theme.supports('contract:3.7.0')&&Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must preserve additive 3.x contract capability IDs from the supported baseline.');
 assert(!Theme.supports('contract:4.0.0')&&!Theme.supports('contract:2.9.0'),'Theme runtime must not advertise future-major or different-major contract capabilities.');

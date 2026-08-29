@@ -775,6 +775,10 @@ module.exports = {
     {
       "file": "tests/test-v3650-theme-semantic-core.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3651-plot-geometry-status-color.js",
+      "args": []
     }
   ],
   "check": [
@@ -1584,6 +1588,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3650-theme-semantic-core.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3651-plot-geometry-status-color.js",
       "args": []
     }
   ],

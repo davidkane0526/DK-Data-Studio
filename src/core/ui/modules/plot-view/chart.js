@@ -38,7 +38,7 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
 
   class PlotView {
     constructor(scope,id,card,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;
+      this.scope=scope;this.owner=scope.owner;this.id=String(id||'plot');this.card=resolveElement(card);this.spec={copy:true,images:true,csv:true,portable:true,...spec};this.cleanups=[];this.portable=null;this.disposed=false;this.contentGeometryOriginal=null;
       if(!this.card)throw new Error(`PlotView card not found: ${this.id}`);
       this.card.classList.add('dkds-plot-view');
       this.plot=resolveScopedElement(this.spec.plot||'.analysis-chart,.dkds-chart-plot,.dkds-scientific-chart-host',this.card)||this.card.querySelector('.analysis-chart')||this.card;
@@ -46,16 +46,61 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
       if(!this.header){this.header=document.createElement('div');this.header.className='dkds-plot-view-head';this.card.prepend(this.header);}
       this.header.classList.add('dkds-plot-view-head');
       this.header.classList.remove('dkds-surface-header');
-      this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();
+      this.ensureTitle();this.ensureActions();this.bindStandardActions();this.bindPortable();this.applyContentGeometry();
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.resize('observer');});this.ro.observe(this.card);}
     }
     configure(spec={}){
       this.spec={...this.spec,...spec};
-      if(spec.plot!==undefined){const next=resolveScopedElement(spec.plot,this.card)||resolveElement(spec.plot);if(next)this.plot=next;}
+      if(spec.plot!==undefined){const next=resolveScopedElement(spec.plot,this.card)||resolveElement(spec.plot);if(next&&next!==this.plot){this.releaseContentGeometry();this.plot=next;}}
       if(spec.fileStem!==undefined||spec.csv!==undefined||spec.copyText!==undefined||spec.exportImage!==undefined||spec.actions!==undefined){
         this.exportMenu?.dispose?.();this.exportMenu=null;
         this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());
         this.bindStandardActions();
+      }
+      this.applyContentGeometry();
+      return this;
+    }
+    captureContentGeometry(){
+      if(this.contentGeometryOriginal||!this.plot?.style)return;
+      this.contentGeometryOriginal={height:this.plot.style.height||'',minHeight:this.plot.style.minHeight||''};
+    }
+    restoreContentGeometry(){
+      if(!this.contentGeometryOriginal||!this.plot?.style)return;
+      this.plot.style.height=this.contentGeometryOriginal.height;
+      this.plot.style.minHeight=this.contentGeometryOriginal.minHeight;
+    }
+    releaseContentGeometry(){
+      if(this.contentGeometryOriginal)this.restoreContentGeometry();
+      this.contentGeometryOriginal=null;
+      delete this.card.dataset.dkdsPlotAspectRatio;
+      delete this.card.dataset.dkdsPlotGeometryOwner;
+      this.card.style.removeProperty('--dkds-plot-content-ratio');
+      return this;
+    }
+    applyContentGeometry(){
+      const ratio=Number(this.spec.contentAspectRatio);
+      if(!(ratio>0)){
+        if(this.contentGeometryOriginal)this.releaseContentGeometry();
+        return this;
+      }
+      const minHeight=Math.max(80,Number(this.spec.contentMinHeight)||120);
+      const maxHeight=Math.max(minHeight,Number(this.spec.contentMaxHeight)||360);
+      this.captureContentGeometry();
+      this.card.dataset.dkdsPlotGeometryOwner='core';
+      this.card.dataset.dkdsPlotAspectRatio=String(ratio);
+      this.card.style.setProperty('--dkds-plot-content-ratio',String(ratio));
+      // Floating views are explicitly user-resizable, so Core restores the
+      // authored geometry while floating and never fights the user's bounds.
+      // Home/sticky/docked views receive the responsive scientific shape.
+      if(this.card.classList.contains('is-floating')){
+        this.restoreContentGeometry();
+        return this;
+      }
+      const width=Number(this.plot?.clientWidth)||Number(this.card.clientWidth)||0;
+      if(width>0&&this.plot?.style){
+        const height=Math.max(minHeight,Math.min(maxHeight,Math.round(width/ratio)));
+        if(this.plot.style.height!==`${height}px`)this.plot.style.height=`${height}px`;
+        this.plot.style.minHeight='0px';
       }
       return this;
     }
@@ -136,8 +181,8 @@ const {ContextMenu, ActionGroup}=require('../interaction/context-actions');
       const factory=this.spec.portableFactory;
       this.portable=typeof factory==='function'?factory(this.id,this.card,portableSpec):this.scope.panels.create(this.id,this.card,portableSpec);
     }
-    resize(reason='resize'){this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
-    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
+    resize(reason='resize'){this.applyContentGeometry();this.scope.requestChartResize?.({id:this.id,reason:`plot-view-${reason}`});const plot=this.plotNode();if(plot){try{window.DKDSCharts?.resize?.(plot);}catch{}}return this;}
+    dispose(){if(this.disposed)return;this.disposed=true;this.ro?.disconnect?.();this.releaseContentGeometry();this.exportMenu?.dispose?.();this.exportMenu=null;this.cleanups.splice(0).forEach(cleanupCall);this.portable?.dispose?.();this.portable=null;this.actions?.querySelectorAll?.('.dkds-plot-view-action')?.forEach(el=>el.remove());this.card?.classList?.remove('dkds-plot-view');this.header?.classList?.remove('dkds-plot-view-head');}
   }
 
   class PlotViewRegistry {

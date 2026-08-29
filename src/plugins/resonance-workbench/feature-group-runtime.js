@@ -41,7 +41,9 @@
       row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
       const plotView=live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
         plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
-        placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,portableFactory:(id,node,spec)=>live.workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
+        placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,
+        contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226,
+        portableFactory:(id,node,spec)=>live.workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
       })||null;
       if(plotView){row.plotView=plotView;row.portable=plotView.portable||null;groupPlotViews.set(String(key),plotView);if(row.portable)groupPortables.set(String(key),row.portable);}
       return row;
@@ -82,7 +84,6 @@
       let cols=live.workspace.groupColumns==='auto'?Math.max(1,Math.min(6,Math.floor((hostEl.clientWidth||1000)/330))):Number(live.workspace.groupColumns)||2;
       cols=Math.min(Math.max(1,cols),Math.max(1,count));
       hostEl.style.setProperty('--reswin-group-cols',String(cols));
-      const cardWidth=Math.max(220,((hostEl.clientWidth||1000)-12*(cols-1))/cols);hostEl.style.setProperty('--reswin-group-height',`${Math.max(168,Math.min(228,Math.round(cardWidth*.43)))}px`);
       const activeKeys=new Set();
       for(const [metric,title,unit] of defs){
         activeKeys.add(metric);const series=groupMetricRows(metric),row=ensureGroupCard(metric,title);if(!row)continue;row.card.classList.remove('hidden');row.title=title;row.series=series;row.card.querySelector('.reswin-group-title').textContent=title;

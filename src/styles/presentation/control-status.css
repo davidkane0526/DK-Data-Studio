@@ -47,11 +47,24 @@ body.dkds-modern-ui .plugin-status-item{
   height:20px;
   padding:0 7px;
   border-radius:6px;
-  --status-accent:var(--dkui-text-soft);
+  --status-accent:currentColor;
 }
 body.dkds-modern-ui .plugin-status-item::before{display:none}
-/* Status meaning belongs to labels/state; icon paint is one Theme-owned chrome
-   color so every status icon follows light/dark and profile changes together. */
-body.dkds-modern-ui #statusBar.statusbar .plugin-status-icon{
-  color:var(--dkui-role-chrome-text,var(--dkui-text-soft));
-}
+/* Status icons inherit the Theme-owned Status Bar text by default. A status
+   contribution may opt into semantic state color through the Core status-bar
+   contract; labels stay visually uniform so the bar remains one command row. */
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-icon{color:var(--status-accent,currentColor)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="running"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="done"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="ok"]{--status-accent:var(--dkui-success)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="ready"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="mcp"]{--status-accent:var(--dkui-accent-alt,var(--dkui-info))}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="checking"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="starting"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="info"]{--status-accent:var(--dkui-info)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="waiting"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="busy"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="warn"]{--status-accent:var(--dkui-warning)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="error"],
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="danger"]{--status-accent:var(--dkui-danger)}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item[data-color-policy="semantic"][data-state="stopped"]{--status-accent:var(--dkui-muted,var(--dkui-text-soft))}

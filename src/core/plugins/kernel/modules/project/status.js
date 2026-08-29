@@ -12,7 +12,7 @@ const {restorePluginProjectState}=require('../lifecycle');
   function addStatusBarItem(pluginId,spec={}) {
     const id=String(spec.id||'').trim();
     assertId(id,'status item id');
-    let current={order:100,side:'right',icon:'',label:'',title:'',state:'',hidden:false,disabled:false,className:'',...spec,id};
+    let current={order:100,side:'right',icon:'',label:'',title:'',state:'',colorPolicy:'theme',hidden:false,disabled:false,className:'',...spec,id};
     const button=document.createElement('button');
     button.type='button';
     button.className='plugin-status-item';
@@ -37,6 +37,7 @@ const {restorePluginProjectState}=require('../lifecycle');
       clickHandler=typeof current.onClick==='function'?current.onClick:null;
       button.dataset.pluginOrder=String(Number(current.order)||100);
       button.dataset.state=String(current.state||'');
+      button.dataset.colorPolicy=String(current.colorPolicy||'theme').toLowerCase()==='semantic'?'semantic':'theme';
       button.className=`plugin-status-item ${current.className||''} ${clickHandler?'':'passive'}`.trim();
       button.classList.toggle('hidden',!!current.hidden);
       button.disabled=!!current.disabled;

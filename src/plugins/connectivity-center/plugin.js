@@ -127,7 +127,7 @@
     }).catch(err=>ctx.status.set(`SMB 读取失败：${err.message}`)));
 
     // ---- AI Agent / MCP settings ----------------------------------------
-    let aiHealth='idle',aiBusy=false,lastMcp={running:false};
+    let aiHealth='idle',aiBusy=false,aiPhase='idle',lastMcp={running:false};
     const presets=connectivity.agent.presets();
     $('#dkaiPreset').innerHTML=presets.map(row=>`<option value="${esc(row.id)}">${esc(row.label)}</option>`).join('');
     function presetById(id){return presets.find(row=>row.id===id)||presets[0];}
@@ -135,11 +135,15 @@
     async function loadAiSettings(){
       const settings=connectivity.agent.loadSettings(),mcpSettings=connectivity.mcp.loadSettings?.()||{};$('#dkaiPreset').value=settings.presetId||'openai';$('#dkaiEndpoint').value=settings.endpoint||'';$('#dkaiModel').value=settings.model||'';$('#dkaiAccess').value=settings.accessMode||'full';$('#dkaiKey').value=await connectivity.agent.getSecret(settings.presetId||'default')||'';$('#dkaiMcpToken').value=mcpSettings.token||'';setText('#dkaiChatModel',settings.model||settings.presetId||'');await refreshMcp();
     }
-    async function saveAiSettings(){const preset=presetById($('#dkaiPreset').value),settings=connectivity.agent.saveSettings({presetId:preset.id,provider:preset.provider,endpoint:$('#dkaiEndpoint').value.trim(),model:$('#dkaiModel').value.trim(),accessMode:$('#dkaiAccess').value});await connectivity.agent.setSecret(settings.presetId,$('#dkaiKey').value);setText('#dkaiChatModel',settings.model);aiHealth='idle';await refreshAiStatus();return settings;}
+    async function saveAiSettings(){const preset=presetById($('#dkaiPreset').value),settings=connectivity.agent.saveSettings({presetId:preset.id,provider:preset.provider,endpoint:$('#dkaiEndpoint').value.trim(),model:$('#dkaiModel').value.trim(),accessMode:$('#dkaiAccess').value});await connectivity.agent.setSecret(settings.presetId,$('#dkaiKey').value);setText('#dkaiChatModel',settings.model);aiHealth='idle';aiPhase='idle';await refreshAiStatus();return settings;}
     async function refreshMcp(){try{lastMcp=await connectivity.mcp.status()||{running:false};const line=lastMcp.running?`运行中\n${lastMcp.url||lastMcp.lanUrl||lastMcp.localUrl||''}\nHeader: ${lastMcp.tokenHeader||'x-dkds-token'}`:`未启动${lastMcp.error?`\n${lastMcp.error}`:''}`;setText('#dkaiMcpState',line);}catch(err){lastMcp={running:false,error:err.message};setText('#dkaiMcpState',`状态不可用：${err.message}`);}return lastMcp;}
     async function refreshAiStatus(){
       const settings=connectivity.agent.loadSettings();let hasKey=false;try{hasKey=!!(await connectivity.agent.getSecret(settings.presetId||'default'));}catch{}await refreshMcp();
-      const configured=!!(settings.endpoint&&settings.model&&hasKey);const state=aiBusy?'busy':aiHealth==='error'?'error':lastMcp.running?'mcp':configured?'ready':'';const label=aiBusy?'AI…':lastMcp.running?'AI · MCP':'AI';const title=aiBusy?'AI Agent 正在执行':aiHealth==='error'?'AI Agent 最近连接失败':configured?(lastMcp.running?'AI Agent 已配置 · MCP 已开启':'AI Agent 已配置'):'AI Agent 尚未配置';aiStatus.update({label,title,state,icon:'✦'});$('#dkaiChatDot')?.classList.remove('ready','busy','error');if(state==='busy')$('#dkaiChatDot')?.classList.add('busy');else if(state==='error')$('#dkaiChatDot')?.classList.add('error');else if(configured)$('#dkaiChatDot')?.classList.add('ready');return {configured,state};
+      const configured=!!(settings.endpoint&&settings.model&&hasKey);
+      const state=aiPhase==='starting'?'starting':aiPhase==='waiting'?'waiting':aiPhase==='done'?'done':aiHealth==='error'||aiPhase==='error'?'error':lastMcp.running?'mcp':configured?'ready':'';
+      const label=lastMcp.running&&!['starting','waiting','done','error'].includes(state)?'AI · MCP':'AI';
+      const title=state==='starting'?'AI Agent 正在准备上下文':state==='waiting'?'AI Agent 已提交请求，等待响应':state==='done'?'AI Agent 已完成最近一次任务':state==='error'?'AI Agent 最近连接或执行失败':configured?(lastMcp.running?'AI Agent 已配置 · MCP 已开启':'AI Agent 已配置'):'AI Agent 尚未配置';
+      aiStatus.update({label,title,state,icon:'✦'});$('#dkaiChatDot')?.classList.remove('ready','busy','error');if(state==='starting'||state==='waiting')$('#dkaiChatDot')?.classList.add('busy');else if(state==='error')$('#dkaiChatDot')?.classList.add('error');else if(configured||state==='done')$('#dkaiChatDot')?.classList.add('ready');return {configured,state};
     }
     function openSettings(){show(settingsOverlay);dom.frame(()=>settingsMove.clamp({persist:false}));void loadAiSettings().catch(err=>ctx.status.set(`AI 设置读取失败：${err.message}`));}
     function closeSettings(){hide(settingsOverlay);}
@@ -152,7 +156,7 @@
     dom.on($('#dkaiMcpCopy'),'click',()=>{const url=lastMcp?.url||lastMcp?.lanUrl||lastMcp?.localUrl;if(url)void ctx.io.clipboard.writeText(url);});
 
     // ---- Bottom status AI chat ------------------------------------------
-    const aiStatus=ctx.ui.statusBar.add({id:'ai-agent',side:'right',order:32,icon:'✦',label:'AI',title:'AI Agent',className:'dkai-status',onClick:()=>toggleChat()});
+    const aiStatus=ctx.ui.statusBar.add({id:'ai-agent',side:'right',order:32,icon:'✦',label:'AI',title:'AI Agent',state:'',colorPolicy:'semantic',className:'dkai-status',onClick:()=>toggleChat()});
     let conversation=[],selectedRefs=[],mentionRows=[],mentionAt=-1;
     const typeLabel=type=>type==='plot'?'数据图':type==='result'?'插件结果':'数据';
     function renderRefs(){$('#dkaiRefs').innerHTML=selectedRefs.map((row,i)=>`<button class="dkai-ref dkds-chip" data-ref-remove="${i}" aria-label="移除引用 ${esc(row.label)}">@${esc(row.label)} ×</button>`).join('');}
@@ -162,11 +166,11 @@
     async function updateMentionMenu(){const input=$('#dkaiInput'),pos=input.selectionStart??input.value.length,before=input.value.slice(0,pos),at=before.lastIndexOf('@');if(at<0||/\s/.test(before.slice(at+1))){hide($('#dkaiMentions'));mentionAt=-1;return;}mentionAt=at;if(!mentionRows.length)mentionRows=await mentionCatalog();renderMentions(before.slice(at+1));}
     function chooseMention(row){if(!row)return;if(!selectedRefs.some(ref=>ref.type===row.type&&ref.id===row.id))selectedRefs.push(row);const input=$('#dkaiInput'),pos=input.selectionStart??input.value.length,start=mentionAt>=0?mentionAt:pos;input.value=input.value.slice(0,start)+`@${row.label} `+input.value.slice(pos);input.focus();input.selectionStart=input.selectionEnd=start+row.label.length+2;hide($('#dkaiMentions'));mentionAt=-1;renderRefs();}
     async function sendChat(){
-      const input=$('#dkaiInput'),text=input.value.trim();if(!text||aiBusy)return;const refs=selectedRefs.map(row=>({...row}));let resolved=[];if(refs.length)resolved=await ctx.capabilities.invoke('core.ai-context','resolve',refs);let contextText='';if(resolved.length){let raw=JSON.stringify(resolved);if(raw.length>600000)raw=raw.slice(0,600000)+'…';contextText=`<studio-context>\n用户通过 @ 明确引用以下 Studio 对象。引用 ID 是真实内核 ID；如需更多数据请继续调用 Kernel 工具。\n${raw}\n</studio-context>\n`;}
+      const input=$('#dkaiInput'),text=input.value.trim();if(!text||aiBusy)return;aiPhase='starting';const refs=selectedRefs.map(row=>({...row}));let resolved=[];if(refs.length)resolved=await ctx.capabilities.invoke('core.ai-context','resolve',refs);let contextText='';if(resolved.length){let raw=JSON.stringify(resolved);if(raw.length>600000)raw=raw.slice(0,600000)+'…';contextText=`<studio-context>\n用户通过 @ 明确引用以下 Studio 对象。引用 ID 是真实内核 ID；如需更多数据请继续调用 Kernel 工具。\n${raw}\n</studio-context>\n`;}
       const modelContent=`${contextText}用户消息：\n${text}`;conversation.push({role:'user',content:modelContent,display:text,refs});conversation=conversation.slice(-20);input.value='';selectedRefs=[];renderRefs();renderMessages();aiBusy=true;await refreshAiStatus();$('#dkaiSend').disabled=true;
-      try{const result=await connectivity.agent.chat(conversation.map(row=>({role:row.role,content:row.content})));conversation.push({role:'assistant',content:String(result?.text||'AI 已完成操作，但没有返回文字摘要。')});aiHealth='ok';}
-      catch(err){conversation.push({role:'assistant',content:`${err.message||err}`,error:true});aiHealth='error';}
-      finally{aiBusy=false;$('#dkaiSend').disabled=false;conversation=conversation.slice(-20);renderMessages();await refreshAiStatus();}
+      try{aiPhase='waiting';await refreshAiStatus();const result=await connectivity.agent.chat(conversation.map(row=>({role:row.role,content:row.content})));conversation.push({role:'assistant',content:String(result?.text||'AI 已完成操作，但没有返回文字摘要。')});aiHealth='ok';aiPhase='done';}
+      catch(err){conversation.push({role:'assistant',content:`${err.message||err}`,error:true});aiHealth='error';aiPhase='error';}
+      finally{aiBusy=false;$('#dkaiSend').disabled=false;conversation=conversation.slice(-20);renderMessages();await refreshAiStatus();if(aiPhase==='done')dom.timeout(()=>{if(aiPhase!=='done')return;aiPhase='idle';void refreshAiStatus();},3500);}
     }
     function toggleChat(force){const open=force===undefined?chat.classList.contains('hidden'):!!force;chat.classList.toggle('hidden',!open);if(open){void refreshAiStatus();dom.timeout(()=>$('#dkaiInput')?.focus(),0);}}
     dom.on($('#dkaiChatClose'),'click',()=>toggleChat(false));dom.on($('#dkaiChatSettings'),'click',openSettings);dom.on($('#dkaiSend'),'click',()=>void sendChat());

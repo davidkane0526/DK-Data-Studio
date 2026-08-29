@@ -23,8 +23,8 @@ const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 
-assert.equal(pkg.version,'3.65.0');
-assert.equal(sdk.sdkVersion,'1.21.0');
+assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'Theme semantic-core regression requires app 3.65.0 or newer');
+assert.equal(sdk.sdkVersion,'1.21.1');
 assert.equal(sdk.pluginApiVersion,'1.18.0');
 assert.equal(sdk.themeContractVersion,'3.9.0');
 assert.equal(Theme.version,'3.9.0');
@@ -68,8 +68,7 @@ assert(dts.includes("export type DKDSThemeComponentVariant")&&dts.includes('DKDS
 assert(group.includes("comfortable:Object.freeze({minItemHeight:220")&&group.includes("compact:Object.freeze({minItemHeight:168")&&group.includes('setDensity(value=\'comfortable\')'),'Core GroupPlot must expose a bounded compact/comfortable density policy');
 assert(dts.includes("export type DKDSGroupPlotDensity = 'comfortable'|'compact'")&&dts.includes('setDensity(value:DKDSGroupPlotDensity)'),'SDK must expose GroupPlot density');
 assert(dts.includes("export type DKDSSemanticSurfaceKind='panel'|'inspector'")&&dts.includes('semanticKind?:DKDSSemanticSurfaceKind'),'SDK must expose bounded Core-owned portable semantic kinds');
-assert(resonanceGroup.includes('Math.max(168,Math.min(228,Math.round(cardWidth*.43)))'),'Resonance Group Plot cards must use the compact vertical geometry requested by the UI');
-assert(resonanceCss.includes('minmax(168px,var(--reswin-group-height,184px))'),'Resonance Group Plot structure must match the compact runtime height');
+assert(group.includes("comfortable:Object.freeze({minItemHeight:220")&&group.includes("compact:Object.freeze({minItemHeight:168"),'Core GroupPlot compact density baseline must remain available');
 
 const scientific=appearance.includes("['user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']");
 assert(scientific,'scientific color precedence must remain user > plugin > project > Theme fallback > Core');

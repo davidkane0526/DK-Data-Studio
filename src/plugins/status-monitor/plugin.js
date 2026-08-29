@@ -32,7 +32,7 @@
     const themeLabel=()=>themeProfiles().find(row=>String(row?.id||'')===themeProfile())?.label||themeProfile();
 
     const themeItem=ctx.ui.statusBar.add({
-      id:'theme',side:'right',order:10,icon:'◐',label:'主题',state:'info',className:'compact theme-status-item',
+      id:'theme',side:'right',order:10,icon:'◐',label:'主题',state:'',className:'compact theme-status-item',
       title:'选择主题',onClick:()=>toggleThemePanel()
     });
 
@@ -123,19 +123,19 @@
     const showMemoryPanel=()=>{renderMemoryPanel();panel.classList.remove('hidden');scheduleMemoryHide();};
 
     const memoryItem=ctx.ui.statusBar.add({
-      id:'memory',side:'right',order:20,icon:'▤',label:'内存 —',state:'info',className:'compact memory-status-item',title:'实时内存占用；点击查看组件明细',
+      id:'memory',side:'right',order:20,icon:'▤',label:'内存 —',state:'',className:'compact memory-status-item',title:'实时内存占用；点击查看组件明细',
       onClick:()=>{if(panel.classList.contains('hidden'))showMemoryPanel();else hideMemoryPanel();}
     });
 
     const devToolsItem=ctx.ui.statusBar.add({
-      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'info',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||ctx.runtime.isNativeClient||typeof runtimeService.toggleDevTools!=='function',
+      id:'devtools',side:'right',order:25,icon:'⌘',label:'DevTool',state:'',className:'compact devtools-status-item',hidden:ctx.runtime.isWebClient||ctx.runtime.isNativeClient||typeof runtimeService.toggleDevTools!=='function',
       title:'打开当前窗口 DevTools',
       onClick:async()=>{try{if(window.DKDSPluginDevTools?.toggle){window.DKDSPluginDevTools.toggle();devToolsItem.update({state:'ok',title:'打开 Plugin DevTools；Chromium 可从面板内进入'});return;}const state=await runtimeService.toggleDevTools?.();devToolsItem.update({state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'});}catch(err){ctx.status.set(`DevTool：${err?.message||err}`);}}
     });
 
     const lanItem=ctx.ui.statusBar.add({
-      id:'lan-web',side:'right',order:30,icon:'●',
-      label:ctx.runtime.isWebClient?'网页版 已连接':'网页版 检查中',state:ctx.runtime.isWebClient?'ok':'info',
+      id:'lan-web',side:'right',order:30,icon:'●',colorPolicy:'semantic',
+      label:ctx.runtime.isWebClient?'网页版 已连接':'网页版 检查中',state:ctx.runtime.isWebClient?'running':'checking',
       title:'局域网网页版状态；点击打开/恢复面板',
       onClick:()=>{
         if(ctx.runtime.isWebClient){ctx.status.set(`当前就是局域网网页版：${location.origin}`);return;}
@@ -151,27 +151,27 @@
       const used=Number(m.workingSetBytes||m.jsHeapUsedBytes)||0;
       const limit=Number(m.jsHeapLimitBytes)||0;
       const ratio=limit>0?used/limit:0;
-      memoryItem.update({label:`内存 ${formatBytes(used)}`,state:ratio>.9?'error':ratio>.78?'warn':'info',title:`实时内存占用 ${formatBytes(used)}；点击查看 ${Number(status.processCount)||0} 个组件 / 进程明细`});
+      memoryItem.update({label:`内存 ${formatBytes(used)}`,state:'',title:`实时内存占用 ${formatBytes(used)}；点击查看 ${Number(status.processCount)||0} 个组件 / 进程明细`});
       if(!panel.classList.contains('hidden'))renderMemoryPanel();
-      if(!ctx.runtime.isWebClient&&typeof runtimeService.getDevToolsState==='function')void Promise.resolve(runtimeService.getDevToolsState()).then(state=>devToolsItem.update({hidden:state?.available===false,state:state?.open?'ok':'info',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'})).catch(()=>{});
+      if(!ctx.runtime.isWebClient&&typeof runtimeService.getDevToolsState==='function')void Promise.resolve(runtimeService.getDevToolsState()).then(state=>devToolsItem.update({hidden:state?.available===false,state:'',title:state?.open?'关闭当前窗口 DevTools':'打开当前窗口 DevTools'})).catch(()=>{});
     }
     function applyLan(status){
       if(stopped)return;
-      if(ctx.runtime.isWebClient){lanStatus={running:true,webClient:true,pairedClients:1,urls:[location.origin]};lanItem.update({label:'网页版 已连接',state:'ok',title:`当前网页版：${location.origin}`});return;}
+      if(ctx.runtime.isWebClient){lanStatus={running:true,webClient:true,pairedClients:1,urls:[location.origin]};lanItem.update({label:'网页版 已连接',state:'running',title:`当前网页版：${location.origin}`});return;}
       if(!status)return;
       lanStatus=status;
       const running=!!status.running,clients=Number(status.pairedClients)||0;
       const label=status.error?'网页版 异常':running?`网页版 已开启${clients?` · ${clients}`:''}`:'网页版 已关闭';
-      lanItem.update({label,state:status.error?'error':running?'ok':'warn',title:status.error?`局域网网页版启动失败：${status.error}`:running?`局域网网页版正在运行${clients?`，已配对 ${clients} 个会话`:''}；点击打开面板`:'局域网网页版未运行；点击打开面板'});
+      lanItem.update({label,state:status.error?'error':running?'running':'stopped',title:status.error?`局域网网页版启动失败：${status.error}`:running?`局域网网页版正在运行${clients?`，已配对 ${clients} 个会话`:''}；点击打开面板`:'局域网网页版未运行；点击打开面板'});
     }
     async function refreshRuntime(){
       try{const status=await runtimeService.getStatus?.();if(status)applyRuntime(status);}
-      catch(err){memoryItem.update({label:'内存 —',state:'warn',title:`无法读取内存状态：${err?.message||err}`});}
+      catch(err){memoryItem.update({label:'内存 —',state:'',title:`无法读取内存状态：${err?.message||err}`});}
     }
     async function refreshLan(){
       if(ctx.runtime.isWebClient){applyLan();return;}
       try{const status=await lanService.getStatus?.();if(status)applyLan(status);}
-      catch(err){lanItem.update({label:'网页版 状态未知',state:'warn',title:`无法读取局域网网页版状态：${err?.message||err}`});}
+      catch(err){lanItem.update({label:'网页版 状态未知',state:'checking',title:`无法读取局域网网页版状态：${err?.message||err}`});}
     }
 
     const onThemeChanged=()=>applyTheme();

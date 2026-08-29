@@ -22,8 +22,9 @@ assert(portable.includes('DKDSThemeMaterialRenderer?.assignSemanticRoles?.(this.
 
 const group=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
-assert(group.includes('Math.max(168,Math.min(228,Math.round(cardWidth*.43)))'),'Resonance group charts must use the revised compact height envelope.');
-assert(groupCss.includes('minmax(168px,var(--reswin-group-height,184px))'),'Resonance group card default height must remain compact.');
+assert(plotView.includes('applyContentGeometry()')&&plotView.includes('contentAspectRatio'),'Core PlotView must own responsive scientific content geometry.');
+assert(group.includes('contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226'),'Resonance group charts must consume the Core landscape geometry contract.');
+assert(!group.includes('--reswin-group-height')&&!groupCss.includes('--reswin-group-height'),'Resonance group layout must not restore a plugin-local height solver.');
 assert(group.includes('focusPolicy:{inactiveOpacity:.28,pointInactiveOpacity:.34,pointSizeBoost:5,pointMinSize:12,activeLineWidth:2.8}'),'Resonance group plots must keep selection linkage explicit without erasing dark-mode context.');
 
 const theme=read('src/core/theme/runtime.js');

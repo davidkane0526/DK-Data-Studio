@@ -69,7 +69,7 @@ export interface DKDSDomRuntime {
   on(target:EventTarget,event:string,handler:(event:any)=>void,options?:any):()=>void; delegate(target:any,event:string,selector:string,handler:(event:any,hit:HTMLElement)=>void,options?:any):()=>void;
   observe(target:any,callback:(entries:any)=>void,options?:{resize?:boolean;mutation?:boolean|MutationObserverInit}):()=>void; frame(fn:()=>void):()=>void; timeout(fn:()=>void,delay?:number):()=>void; interval(fn:()=>void,delay?:number):()=>void; microtask(fn:()=>void):void; dispose():void;
 }
-export interface DKDSStatusBarItemSpec { id:string; side?:'left'|'right'; order?:number; icon?:string; label?:string; title?:string; state?:'info'|'ok'|'warn'|'error'|string; hidden?:boolean; disabled?:boolean; className?:string; onClick?:(payload:{event:Event;element:HTMLButtonElement;pluginId:string;id:string;host:any})=>void }
+export interface DKDSStatusBarItemSpec { id:string; side?:'left'|'right'; order?:number; icon?:string; label?:string; title?:string; state?:'info'|'ok'|'warn'|'error'|'running'|'stopped'|'checking'|'starting'|'waiting'|'done'|'ready'|'mcp'|string; colorPolicy?:'theme'|'semantic'; hidden?:boolean; disabled?:boolean; className?:string; onClick?:(payload:{event:Event;element:HTMLButtonElement;pluginId:string;id:string;host:any})=>void }
 export interface DKDSStatusBarItem { readonly id:string; readonly pluginId:string; readonly element:HTMLButtonElement; update(patch:Partial<DKDSStatusBarItemSpec>):DKDSStatusBarItem; remove():void; readonly value:DKDSStatusBarItemSpec }
 export interface DKDSStatusBarRuntime { add(spec:DKDSStatusBarItemSpec):DKDSStatusBarItem; own():DKDSStatusBarItem[] }
 
@@ -164,6 +164,18 @@ export interface DKDSActiveLayoutSolver { solve(spec:{container?:Element|string;
 export interface DKDSMovableSurfaceSpec { id?:string; target:Element|string; handle:Element|string; bounds?:Element|string; persist?:boolean; resetOnDoubleClick?:boolean }
 export interface DKDSMovableSurface { readonly target:Element; readonly handle:Element; apply(position:{x:number;y:number},options?:{persist?:boolean;clamp?:boolean}):{x:number;y:number}; clamp(options?:{persist?:boolean}):{x:number;y:number}; reset(options?:{persist?:boolean}):{x:number;y:number}; dispose():void }
 export type DKDSGroupPlotDensity = 'comfortable'|'compact';
+
+export interface DKDSPlotViewSpec {
+  plot?:Element|string; header?:Element|string; actionsHost?:Element|string;
+  title?:string; titleHtml?:string; fileStem?:string|((view:DKDSPlotView)=>string);
+  csv?:boolean|((view:DKDSPlotView)=>string); copy?:boolean; images?:boolean; portable?:boolean;
+  placements?:Array<'home'|'sticky'|'float'|'global'|'left'|'right'|'bottom'>; defaultPlacement?:string; stateVersion?:string; snap?:boolean;
+  contentAspectRatio?:number; contentMinHeight?:number; contentMaxHeight?:number;
+  [key:string]:any;
+}
+export interface DKDSPlotView { readonly id:string; readonly card:Element; readonly plot:Element; configure(spec?:DKDSPlotViewSpec):DKDSPlotView; resize(reason?:string):DKDSPlotView; dispose():void; }
+export interface DKDSPlotViewRuntime { bind(id:string,card:Element|string,spec?:DKDSPlotViewSpec):DKDSPlotView; hydrate(root:Element|string,spec?:DKDSPlotViewSpec):DKDSPlotView[]; observe(root:Element|string,spec?:DKDSPlotViewSpec):()=>void; get(id:string):DKDSPlotView|null; }
+
 export interface DKDSGroupPlot { setItems(items:any[]):DKDSGroupPlot; layout():any; setColumns(value:number|'auto'):any; setDensity(value:DKDSGroupPlotDensity):any; diagnostics():any; dispose():void }
 export interface DKDSTooltipRuntime { show(spec:{anchor?:Element|string;point?:{x?:number;y?:number;clientX?:number;clientY?:number};title?:string;text?:string;rows?:Array<{label?:string;key?:string;value:any}>}):HTMLElement; hide():void; bind(target:Element|string,spec:any):()=>void }
 
@@ -285,7 +297,7 @@ export interface DKDSPluginContext {
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
     dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
-    scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:any; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
+    scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:DKDSPlotViewRuntime; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     /** Canonical runtime facade for manifest requirement `ui.workspace` / capability label `ui.plugin-workspace`. There is intentionally no `ctx.ui.pluginWorkspace`. */
     workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'>};}; grid:any; portable:any; layout:{split(spec:any):any;move(spec:DKDSMovableSurfaceSpec):DKDSMovableSurface;solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};

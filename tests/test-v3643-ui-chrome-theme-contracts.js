@@ -26,8 +26,8 @@ const dialogs=read('src/styles/presentation/dialogs.css');
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major===3&&(minor>64||(minor===64&&patch>=3)),'UI contract restoration must remain on or beyond App v3.64.3');}
 assert(resonance.includes('--respar-main-chrome-height:36px')&&/\.respar-main-tools\{[^}]*height:var\(--respar-main-chrome-height\)/.test(resonance)&&/\.respar-main-legend\{[^}]*height:var\(--respar-main-chrome-height\)/.test(resonance),'resonance floating tools and legend must consume one shared vertical chrome height');
 
-assert(/#statusBar\.statusbar \.plugin-status-icon\{\s*color:var\(--dkui-role-chrome-text/.test(statusCss),'all status icons must consume one Theme chrome text color');
-assert(!/\[data-state="(?:ready|mcp|ok|busy|info|warn|error)"\] \.plugin-status-icon\{color:/.test(statusCss),'status state must not repaint individual bottom-bar icon colors');
+assert(/#statusBar\.statusbar \.plugin-status-icon\{color:var\(--status-accent,currentColor\)\}/.test(statusCss),'status icons must inherit the Theme-owned Status Bar text through the shared accent variable');
+assert(statusCss.includes('[data-color-policy="semantic"]')&&statusCss.includes('--status-accent:var(--dkui-success)')&&statusCss.includes('--status-accent:var(--dkui-warning)')&&statusCss.includes('--status-accent:var(--dkui-danger)'),'only opt-in semantic status items may repaint their icon using Theme semantic colors');
 assert(!shellCss.includes('.plugin-status-icon{color:')&&!integratedCss.includes('.theme-status-item .plugin-status-icon{color:'),'legacy secondary status icon color owners must stay removed');
 
 assert(/\.dkds-plot-view-file-svg \{[^}]*stroke-width:1\.1/.test(scientific),'shared desktop/mobile PlotView export icon must use the compact position-control stroke weight');
