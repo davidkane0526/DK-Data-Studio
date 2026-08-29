@@ -4,7 +4,8 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json'),sdk=json('sdk/contract.json');
-assert.strictEqual(pkg.version,'3.66.1');
+const appVersion=pkg.version.split('.').map(Number);
+assert(appVersion[0]>3||(appVersion[0]===3&&(appVersion[1]>66||(appVersion[1]===66&&appVersion[2]>=1))),'context-aware export contract requires app 3.66.1+');
 assert.strictEqual(sdk.sdkVersion,'1.22.1');
 assert.strictEqual(sdk.minimumAppVersion,'3.66.1');
 assert.strictEqual(sdk.pluginApiVersion,'1.18.0');
@@ -44,4 +45,4 @@ assert(ter.includes('hasTerExport')&&ter.includes("result?.records"),'TER export
 const pulse=read(files[3]);
 assert(pulse.includes('activeResultAvailable')&&pulse.includes('visibleResultsAvailable'),'Pulse exports must distinguish current-file and visible-result availability.');
 
-console.log('v3.66.1 context-aware export menu availability contract passed.');
+console.log('v3.66.1+ context-aware export menu availability contract passed.');

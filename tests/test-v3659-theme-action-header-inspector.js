@@ -14,10 +14,12 @@ const semantic=read('src/core/theme/semantic-registry.js');
 const parts=pkg.version.split('.').map(Number);
 assert(parts[0]>3||(parts[0]===3&&(parts[1]>65||(parts[1]===65&&parts[2]>=9))),'v3.65.9 gate requires 3.65.9+');
 
-// Dark-mode filled/active command labels are one Core readability policy.
+// Filled/active command labels use canonical component state paint; dark mode also has a Core readability fallback.
 assert(components.includes('Dark-theme action contrast policy'),'Core must define the dark action-contrast policy.');
 assert(components.includes('[data-dkds-component-identity="toolbarAction"]:is(')&&components.includes('color:#fff;-webkit-text-fill-color:#fff'),'Dark toolbar actions must render high-contrast white labels.');
 assert(components.includes('[data-dkds-component-identity="tab"]:is('),'Dark active/selected tabs must use the same high-contrast label policy.');
+assert(components.includes('[data-dkds-component-identity="tab"][data-dkds-component-variant="selected"]')&&components.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="active"]'),'Core must render Theme-authored selected/active component variants.');
+assert(!components.includes('.dkds-surface-header .dkds-surface-tabs [data-dkds-component-identity="tab"]:is(.selected,.active')||!components.includes('background:transparent;\n  border-color:transparent;\n  box-shadow:inset 0 -2px'),'Surface-header tabs must not be flattened into text-only underline state.');
 
 // Surface/Plot header commands share the title-bar Material; nested wrappers may not draw a capsule.
 assert(surfaces.includes('.dkds-surface-actions'),'Core Surface Header composition must remain generic.');

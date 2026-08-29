@@ -1,3 +1,10 @@
+# v3.66.2 — Aurora Action-State Regression Fix
+
+- Fix the regression introduced when v3.66.0 froze the older v3.65.3 visual baseline: Core once again consumes Theme-authored `active` / `selected` variants for canonical `toolbarAction` and `tab` components instead of exposing variant tokens that the CSS renderer does not actually use.
+- Restore Aurora Pop light-mode filled interaction states to high-contrast white labels: active/secondary commands use teal, selected commands/tabs use violet, and primary actions remain violet. Aurora Pop advances to **2.2.0** without adding plugin CSS or page-specific selectors.
+- Keep Surface Header tab groups geometrically integrated with the parent title bar, but stop flattening their selected state into bare text plus an underline. The selected tab now uses the same Core-rendered Theme component paint as every other canonical tab.
+- Replace the historical regression assertion that explicitly locked Aurora to dark text on light cyan states with tests that protect real variant consumption and the white-label interaction contract. No Plugin API, SDK, or Theme Contract version change is required.
+
 # v3.66.1 — Context-aware Export Availability
 
 - Add a Core-owned synchronous availability contract to `ctx.ui.menus.add(...)`; menu actions are re-evaluated against current activity/project/artifact state when the menu opens and on shared context changes.

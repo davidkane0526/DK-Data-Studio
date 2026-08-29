@@ -9,6 +9,8 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"]{
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover{background:var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover));border-color:var(--dkui-component-tab-border-hover,var(--dkui-control-border))}
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkui-component-tab-surface-active,var(--dkui-active-surface));color:var(--dkui-component-tab-text-active,var(--dkui-active-text));border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent))}
 body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface));color:var(--dkui-component-tab-text-selected,var(--dkui-selection-text));border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent))}
+body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="active"]{background:var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface)));color:var(--dkui-component-tab-variant-active-text,var(--dkui-component-tab-text-active,var(--dkui-active-text)));border-color:var(--dkui-component-tab-variant-active-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-variant-active-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))}
+body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="selected"]{background:var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface)));color:var(--dkui-component-tab-variant-selected-text,var(--dkui-component-tab-text-selected,var(--dkui-selection-text)));border-color:var(--dkui-component-tab-variant-selected-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-variant-selected-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))}
 
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]{
   --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));border-radius:var(--dkui-radius);color:var(--dkui-component-toolbar-group-text,var(--dkui-text));box-shadow:var(--dkui-shadow-1)
@@ -28,6 +30,8 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="secondary"]{
   background:var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft));color:var(--dkui-component-toolbar-action-variant-secondary-text,var(--dkui-accent-alt));border-color:var(--dkui-component-toolbar-action-variant-secondary-border,color-mix(in srgb,var(--dkui-accent-alt) 32%,var(--dkui-control-border)))
 }
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="active"]{background:var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface)));color:var(--dkui-component-toolbar-action-variant-active-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text)));border-color:var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));box-shadow:var(--dkui-selected-shadow)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="selected"]{background:var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface)));color:var(--dkui-component-toolbar-action-variant-selected-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text)));border-color:var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));box-shadow:var(--dkui-selected-shadow)}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]{background:var(--dkui-component-toolbar-action-variant-quiet-surface,transparent);box-shadow:none}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="destructive"]{background:var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft));color:var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger));border-color:var(--dkui-component-toolbar-action-variant-destructive-border,color-mix(in srgb,var(--dkui-danger) 32%,var(--dkui-control-border)))}
 
@@ -81,11 +85,10 @@ body.dkds-modern-ui .dkds-surface-header .dkds-plot-view-actions [data-dkds-comp
   border-color:transparent;
   box-shadow:none;
 }
-body.dkds-modern-ui .dkds-surface-header .dkds-surface-tabs [data-dkds-component-identity="tab"]:is(.selected,.active,[aria-selected="true"],[aria-pressed="true"]){
-  background:transparent;
-  border-color:transparent;
-  box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
-}
+/* Surface-header tab groups remain geometrically integrated with the title bar,
+   but the selected/active tab keeps the canonical Theme component paint. The
+   group itself has no nested Material capsule, so state is visible without
+   reintroducing a second toolbar surface. */
 
 /* Dark-theme action contrast policy. Filled/active application commands use a
    single high-contrast label color across every Theme profile. Themes still
