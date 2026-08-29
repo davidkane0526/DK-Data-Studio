@@ -16,7 +16,7 @@ const automation=read('src/diagnostics/automation-test-runtime.js');
 const auroraManifest=json('src/plugins/aurora-pop-theme/plugin.json');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
 
-assert.equal(pkg.version,'3.65.2');
+assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.2 dedicated-theme regression requires app 3.65.2 or newer');
 const contractPos=topHtml.indexOf('../../sdk/theme-contract.js');
 const semanticPos=topHtml.indexOf('../core/theme/semantic-registry.js');
 const rendererPos=topHtml.indexOf('../core/theme/material-renderer.js');

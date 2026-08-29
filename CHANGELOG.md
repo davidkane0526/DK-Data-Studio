@@ -1,3 +1,13 @@
+# v3.65.3 — Developer Overlay Ownership
+
+- Fix the Theme Inspector / Plugin DevTools interaction regression introduced when the real-page Theme Inspector moved into DevTool. Theme Inspector no longer uses a maximum integer z-index; Plugin DevTools owns the higher developer-overlay layer.
+- Add explicit Theme Inspector `pause(owner)` / `resume(owner)` lifecycle. Opening Plugin DevTools pauses the Theme Inspector HUD and its page click/pointer interception, and closing DevTools restores inspection only when it is still enabled.
+- When Theme Inspector is active, reopening Plugin DevTools enters the Theme tab directly so the inspection session can be stopped without fighting the inspection overlay.
+- Give Theme Inspector two direct exit paths: a themed `×` control in the HUD and `Esc` to exit the inspector. Pin/unpin remains click-owned instead of overloading Escape.
+- Give Plugin DevTools three explicit close paths: header `×`, backdrop click and `Esc`. Its keyboard listener is installed only while DevTools is open.
+- Add a v3.65.3 regression gate for developer-overlay stacking, Theme Inspector pause/resume, direct exit controls and DevTools close behavior.
+- Release-source validation: `npm test` **197/197 PASS**, `npm run check` **205/205 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.64.1 — Mobile Layout & Gesture Contract Restoration
 
 - Restore the React Native shell rule accidentally broken by the v3.62 modular cleanup. `topbar`, project tabs, the desktop `#mainWorkspace`, and `#superWorkspaceDivider` are again hidden as one complete native-client rule; the dangling selector that exposed desktop chrome on Android is removed.

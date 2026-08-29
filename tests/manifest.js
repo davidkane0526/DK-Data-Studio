@@ -783,6 +783,10 @@ module.exports = {
     {
       "file": "tests/test-v3652-dedicated-theme-devtool-aurora.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3653-dev-overlay-ownership.js",
+      "args": []
     }
   ],
   "check": [
@@ -1600,6 +1604,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3652-dedicated-theme-devtool-aurora.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3653-dev-overlay-ownership.js",
       "args": []
     }
   ],

@@ -1,11 +1,11 @@
 /* App-native Plugin DevTools presentation. */
-.dkds-plugin-devtools{position:fixed;inset:0;z-index:11000;display:flex;align-items:stretch;justify-content:flex-end;background:rgba(14,20,31,.18);backdrop-filter:blur(2px)}
+.dkds-plugin-devtools{position:fixed;inset:0;z-index:12000;display:flex;align-items:stretch;justify-content:flex-end;background:rgba(14,20,31,.18);backdrop-filter:blur(2px)}
 .dkds-plugin-devtools-window{width:min(720px,92vw);height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:var(--dkui-surface,var(--surface-primary,#fff));border-left:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));box-shadow:-18px 0 44px rgba(15,23,42,.18);color:var(--dkui-text,var(--text-primary,#1c2a43))}
 .dkds-plugin-devtools-window>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));background:var(--dkui-surface-elevated,var(--surface-elevated,#fff))}
-.dkds-plugin-devtools-window>header>div:first-child{display:grid;gap:2px}
+.dkds-plugin-devtools-window>header>div:first-child{display:grid;gap:2px;min-width:0}
 .dkds-plugin-devtools-window>header strong{font-size:14px}
 .dkds-plugin-devtools-window>header span{font-size:10px;color:var(--dkui-muted,var(--text-secondary,#60708c))}
-.dkds-plugin-devtools-actions{display:flex;gap:6px}
+.dkds-plugin-devtools-actions{display:flex;flex:0 0 auto;gap:6px;position:relative;z-index:1}
 .dkds-plugin-devtools-actions button{min-height:28px;padding:3px 9px}
 .dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));overflow:auto;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd))}
 .dkds-plugin-devtools-window>nav button{border:0;background:transparent;box-shadow:none;padding:6px 9px}
@@ -38,3 +38,12 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{bord
 
 .dkds-devtools-actions-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
 .dkds-devtools-actions-row button{min-height:30px;padding:4px 10px}
+
+
+/* Theme Inspector stays below Plugin DevTools and exposes a direct exit path. */
+.dkds-theme-debug-overlay{position:fixed;z-index:11900;right:10px;top:10px;width:min(430px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;padding:10px 12px;border-radius:9px;color:var(--dkui-text);font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;pointer-events:none;white-space:normal;word-break:break-word}
+.dkds-theme-debug-overlay[hidden]{display:none}
+.dkds-theme-debug-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+.dkds-theme-debug-exit{pointer-events:auto;display:inline-grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:1px solid var(--dkui-border);border-radius:7px;background:var(--dkui-control-surface,var(--dkui-surface-secondary));color:var(--dkui-text);box-shadow:none;font:600 15px/1 system-ui,sans-serif}
+.dkds-theme-debug-exit:hover,.dkds-theme-debug-exit:focus-visible{background:var(--dkui-control-hover,var(--dkui-accent-soft));border-color:var(--dkui-accent);box-shadow:none}
+.dkds-theme-debug-hint{margin-top:2px;opacity:.72}
