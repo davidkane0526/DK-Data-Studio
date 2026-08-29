@@ -1,7 +1,7 @@
 DKDSPlugins.define({
   id:'com.dkds.theme.aurora-pop',
   name:'Aurora Pop',
-  version:'2.0.0',
+  version:'2.1.0',
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
@@ -19,13 +19,13 @@ DKDSPlugins.define({
   ];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
   if(missing.length){
-    throw new Error(`Aurora Pop 2.0.0 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
+    throw new Error(`Aurora Pop 2.1.0 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   }
 
   const profile=ctx.ui.theme.register('default',{
     label:'Aurora Pop',
     metadata:{
-      style:'aurora-spectrum-v8',
+      style:'aurora-spectrum-v9',
       hierarchy:'cool neutral scientific content + stronger violet/cyan interaction rhythm + restrained warm emphasis + visible controlled aurora shell effects',
       visualIntent:'bright harmonious violet-cyan primary axis, cool indigo structure, sky-blue floating tools, coral only for active emphasis, and semantic green/amber/red accents without large candy-color surfaces',
       contract:'component-appearance-3.9'
@@ -135,24 +135,24 @@ DKDSPlugins.define({
           },
           components:{
             tab:{
-              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:'#D2C6FF',surfaceSelected:'#D2C6FF',
-              text:'#596176',textSoft:'#858CA0',textActive:'#4026A8',textSelected:'#4026A8',
+              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:'#00818D',surfaceSelected:'#6F50FF',
+              text:'#596176',textSoft:'#858CA0',textActive:'#FFFFFF',textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(117,84,255,.46)',borderActive:'rgba(111,80,255,.90)',indicator:'#6F50FF',
               variants:{
-                selected:{surface:'#D2C6FF',text:'#3D239F',border:'#8466FF',indicator:'#6F50FF'},
-                active:{surface:'#C8F7F3',text:'#006A73',border:'#54D7D4',indicator:'#00B9C8'},
+                selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8466FF',indicator:'#D8D0FF'},
+                active:{surface:'#00818D',text:'#FFFFFF',border:'#54D7D4',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',text:'#737B90',border:'transparent',indicator:'transparent'}
               }
             },
             toolbarAction:{
-              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:'#C8F7F3',surfaceSelected:'#D8CDFF',
-              text:'#4F586D',textActive:'#006D75',textSelected:'#4026A8',
+              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:'#00818D',surfaceSelected:'#6F50FF',
+              text:'#4F586D',textActive:'#FFFFFF',textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:'rgba(0,185,200,.84)',indicator:'#00B9C8',
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
-                secondary:{surface:'#CFF8F5',surfaceHover:'#BCF2EE',text:'#006A73',textActive:'#00545B',border:'#73DDD7',borderActive:'#00B9C8',indicator:'#00B9C8'},
-                selected:{surface:'#D8CDFF',text:'#3D239F',border:'#8C70FF',indicator:'#6F50FF'},
-                active:{surface:'#C8F7F3',text:'#006A73',border:'#52D4D0',indicator:'#00B9C8'},
+                secondary:{surface:'#00818D',surfaceHover:'#007985',text:'#FFFFFF',textActive:'#FFFFFF',border:'#54D7D4',borderActive:'#00B9C8',indicator:'#B8FAFF'},
+                selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8C70FF',indicator:'#D8D0FF'},
+                active:{surface:'#00818D',text:'#FFFFFF',border:'#52D4D0',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',surfaceHover:'#EEF1FF',text:'#667085',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',surfaceHover:'#FFDCE5',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
               }
@@ -306,24 +306,24 @@ DKDSPlugins.define({
           },
           components:{
             tab:{
-              surface:'transparent',surfaceHover:'#281E4D',surfaceActive:'#493083',surfaceSelected:'#493083',
+              surface:'transparent',surfaceHover:'#281E4D',surfaceActive:'#087A84',surfaceSelected:'#5D3BEF',
               text:'#C0C7D6',textSoft:'#858FA1',textActive:'#FBF8FF',textSelected:'#FBF8FF',
               border:'transparent',borderHover:'rgba(169,131,255,.50)',borderActive:'rgba(169,131,255,.90)',indicator:'#B99EFF',
               variants:{
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
-                active:{surface:'#07515B',text:'#ECFFFF',border:'#27BEC5',indicator:'#24D3D9'},
+                selected:{surface:'#5D3BEF',text:'#FFFFFF',border:'#A07CFF',indicator:'#D9CEFF'},
+                active:{surface:'#087A84',text:'#FFFFFF',border:'#27BEC5',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',text:'#8F99AA',border:'transparent',indicator:'transparent'}
               }
             },
             toolbarAction:{
-              surface:'transparent',surfaceHover:'#143054',surfaceActive:'#07515B',surfaceSelected:'#3B276C',
+              surface:'transparent',surfaceHover:'#143054',surfaceActive:'#087A84',surfaceSelected:'#5D3BEF',
               text:'#C5CCDA',textActive:'#E7FEFF',textSelected:'#FBF8FF',
               border:'transparent',borderHover:'rgba(186,198,228,.17)',borderActive:'rgba(41,214,216,.82)',indicator:'#24D3D9',
               variants:{
                 primary:{surface:'#7650E8',surfaceHover:'#7E5AE8',text:'#FFFFFF',textActive:'#FFFFFF',border:'#A07CFF',borderActive:'#B99EFF',indicator:'#D9CEFF'},
-                secondary:{surface:'#064750',surfaceHover:'#08535D',text:'#E8FFFF',textActive:'#F4FFFF',border:'#25808A',borderActive:'#24D3D9',indicator:'#24D3D9'},
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
-                active:{surface:'#07515B',text:'#E7FEFF',border:'#27BEC5',indicator:'#24D3D9'},
+                secondary:{surface:'#087A84',surfaceHover:'#096E77',text:'#FFFFFF',textActive:'#FFFFFF',border:'#29AEB6',borderActive:'#24D3D9',indicator:'#B8FAFF'},
+                selected:{surface:'#5D3BEF',text:'#FFFFFF',border:'#A07CFF',indicator:'#D9CEFF'},
+                active:{surface:'#087A84',text:'#FFFFFF',border:'#27BEC5',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',surfaceHover:'#151F3A',text:'#9AA5B8',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#3A1B28',surfaceHover:'#492032',text:'#FFC0CC',border:'#8E4055',indicator:'#FF6B83'}
               }

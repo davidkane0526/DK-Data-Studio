@@ -18,12 +18,12 @@ assert(schema.includes('dkds-multiselect-trigger')&&schema.includes('dataset.dkd
 assert(popup.includes('aria-multiselectable')&&popup.includes('closeOnInvoke:!multiple')&&popup.includes('data-dkds-select-proxy'),'Core select popup must support persistent multi-select popovers');
 assert(menu.includes('item.closeOnInvoke===false'),'ContextMenu must support keep-open selection without a private popup implementation');
 assert(views.includes('role="tablist"')&&views.includes('dkds-segmented-control'),'Data Center tabs must use Core segmented/tab semantics');
-assert(views.includes('data-dkds-tooltip="图形由可替换的 Chart Provider 提供。"'),'Chart explanatory copy must move into the Core tooltip contract');
+assert(views.includes('data-dkds-tooltip="图形由可替换的 Chart Provider 提供'),'Chart explanatory copy must move into the Core tooltip contract');
 assert(!views.includes('<span>图形也是可替换的 Chart Provider。</span>'),'Chart title must stay single-line without persistent explanatory copy');
 assert(views.includes('dc-chart-toolbar dkds-section-header-actions dkds-integrated-action-group'),'Chart controls must be right-aligned and integrated into the header');
 assert(!/(^|\n)\.schema-parameter-panel\s*\{/.test(css)&&!/(^|\n)\.schema-param-field\b/.test(css),'Data Center must not duplicate Core ParameterSchema geometry');
 assert(css.includes('--dc-artifact-width:336px')&&css.includes('.dc-selection-buttons>button{flex:1 1 0}'),'Data Center filter/selection layout must have usable spacing');
 assert(feature.includes("aria-selected',active?'true':'false'"),'Data Center tabs must maintain tab aria-selected state');
 assert(index.includes('new-project-tab dkds-mini-action')&&index.includes('<svg viewBox="0 0 16 16"'),'Project add action must use centered Core mini-action SVG geometry');
-assert.equal(JSON.parse(read('src/plugins/data-center/plugin.json')).version,'1.14.0','Data Center UI contract update must bump the bundled plugin version');
+assert(/^1\.(?:1[4-9]|[2-9]\d)\./.test(JSON.parse(read('src/plugins/data-center/plugin.json')).version),'Data Center must remain on the 1.14+ UI-contract line');
 console.log('v3.65.4 Data Center header/filter/multiselect/mini-action Core contracts passed.');

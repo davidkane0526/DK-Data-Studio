@@ -791,6 +791,10 @@ module.exports = {
     {
       "file": "tests/test-v3654-data-center-ui-contracts.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3655-command-identity-header-integration.js",
+      "args": []
     }
   ],
   "check": [
@@ -1616,6 +1620,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3654-data-center-ui-contracts.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3655-command-identity-header-integration.js",
       "args": []
     }
   ],

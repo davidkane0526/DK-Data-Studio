@@ -39,7 +39,7 @@ body.dkds-modern-ui :where(
   .trend-header-actions,
   .dkds-plot-view-actions,
   .dkds-scientific-nav-tools
-) :where(button,.dkds-scientific-nav-drag){
+) :where(button,select,.dkds-select-proxy,.dkds-scientific-nav-drag){
   margin:0;
   min-height:26px;
   height:26px;
@@ -59,7 +59,7 @@ body.dkds-modern-ui :where(
   .trend-header-actions,
   .dkds-plot-view-actions,
   .dkds-scientific-nav-tools
-) :where(button,.dkds-scientific-nav-drag):is(:hover,:focus-visible):not(:disabled){
+) :where(button,select,.dkds-select-proxy,.dkds-scientific-nav-drag):is(:hover,:focus-visible):not(:disabled){
   color:var(--dkui-text);
   background:transparent;
   box-shadow:none;
@@ -132,10 +132,16 @@ body.dkds-modern-ui .dkds-scientific-nav-tools :where(button,.dkds-scientific-na
 body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
 
+/* Header command strips are part of the header MaterialSurface, not a nested
+   capsule. Every child control becomes one aligned segment; provider choices,
+   placement menus and plot actions therefore share one geometry and one paint
+   owner. */
 body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
   flex:0 0 auto;
+  align-self:stretch;
   margin-left:auto;
   padding:0;
+  gap:0;
   border:0;
   border-radius:0;
   background:transparent;
@@ -145,13 +151,44 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
   backdrop-filter:none;
   overflow:visible;
 }
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
-  border-color:transparent;
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,select,.dkds-select-proxy,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
+  align-self:stretch;
+  width:auto;
+  min-width:28px;
+  min-height:100%;
+  height:auto;
+  margin:0;
+  padding:0 9px;
+  border:0;
+  border-left:1px solid color-mix(in srgb,currentColor 12%,transparent);
+  border-radius:0;
   background:transparent;
   background-image:none;
   box-shadow:none;
+  color:inherit;
+  -webkit-text-fill-color:currentColor;
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
+}
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(.dkds-portable-placement-trigger,.dkds-plot-view-action,.dkds-icon-button){padding-inline:7px}
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,select,.dkds-select-proxy):is(:hover,:focus-visible):not(:disabled){
+  background:color-mix(in srgb,currentColor 8%,transparent);
+  color:inherit;
+  box-shadow:none;
+  transform:none;
+}
+/* A primary command in a header is an edge-to-edge emphasis segment rather
+   than a floating pill. It stays high-contrast without looking pasted on. */
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button.primary,.dkds-action-button.primary){
+  background:color-mix(in srgb,var(--dkui-accent) 82%,transparent);
+  color:#fff;
+  -webkit-text-fill-color:#fff;
+  box-shadow:none;
+}
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button.primary,.dkds-action-button.primary):hover:not(:disabled){
+  background:color-mix(in srgb,var(--dkui-accent-hover) 88%,transparent);
+  color:#fff;
+  -webkit-text-fill-color:#fff;
 }
 
 /* Status commands are hit regions of one status-bar surface. The status bar

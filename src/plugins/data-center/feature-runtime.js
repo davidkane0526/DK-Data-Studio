@@ -9,7 +9,7 @@
     const historyCapability=ctx.capabilities?.proxy?.('core.project-history')||null;
     let state=controller.getState();
     let assignmentFilter='all',lineageFilter='all',fieldFilter='';
-    let page=null,lastExecution=null,quickPanel=null,chartPanel=null,stepPanels=[];
+    let page=null,lastExecution=null,quickPanel=null,chartPanel=null,chartHeaderActions=null,stepPanels=[];
     const $=(sel,root=page)=>root?.querySelector(sel)||null;
     const $$=(sel,root=page)=>[...(root?.querySelectorAll(sel)||[])];
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -94,7 +94,7 @@
     });
 
     page=ctx.ui.pages.add({
-      id:'data-center',activity:'data-center',label:'数据中心',title:'可定制数据处理中心',order:15,buttonClass:'accent-soft',toolbar:false,
+      id:'data-center',activity:'data-center',label:'数据中心',title:'可定制数据处理中心',order:15,toolbar:false,
       html:sharedViews?.pageHtml?.()||''
     });
 
@@ -109,6 +109,32 @@
         {id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>renderAllUi()},
         {id:'workflow',icon:'▶',label:'运行工作流',className:'primary',order:30,shortcut:'Ctrl+Enter',onInvoke:()=>runWorkflow()}
       ]
+    });
+
+    ctx.ui.actions?.mount?.($('#dcFormulaActions'),{
+      activity:'data-center',
+      actions:[{id:'formula-apply',label:'生成派生列',className:'primary',order:10,onInvoke:()=>applyFormula()}]
+    });
+    ctx.ui.actions?.mount?.($('#dcWorkflowHeaderActions'),{
+      activity:'data-center',
+      actions:[{id:'recipe-save',label:'保存 Recipe',order:10,onInvoke:()=>saveRecipe()}]
+    });
+    ctx.ui.actions?.mount?.($('#dcProvenanceHeaderActions'),{
+      activity:'data-center',
+      actions:[{id:'provenance-copy',label:'复制 JSON',order:10,onInvoke:()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2))}]
+    });
+    chartHeaderActions=ctx.ui.actions?.mount?.($('#dcChartDomainActions'),{
+      activity:'data-center',
+      actions:[{
+        id:'chart-provider',menu:true,order:10,
+        label:()=>chartProviderById(state.chart.provider)?.name||'选择图形',
+        title:'图形类型 / Chart Provider',
+        visible:()=>chartProviders().length>1,
+        items:()=>chartProviders().map(provider=>({
+          id:provider.id,label:provider.name||provider.id,selected:provider.id===state.chart.provider,
+          onInvoke:()=>selectChartProvider(provider.id)
+        }))
+      }]
     });
 
     ctx.ui.topWorkspace.register({
@@ -263,7 +289,10 @@
     function loadRecipe(){const raw=$('#dcSavedRecipe').value;if(!raw)return;const pluginRecipe=raw.startsWith('plugin:');const id=raw.replace(/^(plugin:|saved:)/,'');const r=pluginRecipe?ctx.workflow.recipes.list().find(x=>x.id===id):state.savedRecipes.find(x=>x.id===id);if(!r)return;state.recipeName=r.name||r.id;state.steps=(r.nodes||[]).map(n=>({id:n.id,type:n.type,provider:n.provider,parameters:D.deepClone(n.parameters||{})}));$('#dcRecipeName').value=state.recipeName;renderSteps();ctx.status.set(`${pluginRecipe?'已载入插件 Recipe':'已载入工程 Recipe'}：${state.recipeName}`);}
 
     function renderProvenance(){const a=activeArtifact();const host=$('#dcProvenanceList');if(!host)return;if(!a?.provenance?.length){host.innerHTML='<div class="empty-state">暂无 provenance。</div>';return;}host.innerHTML=a.provenance.slice().reverse().map(p=>`<div class="dc-prov-item"><div class="dc-prov-time dkds-meta">${esc(p.timestamp||'—')}</div><div class="dc-prov-main"><strong>${esc(p.label||p.type)}</strong><div>${esc([p.pluginId,p.providerId,p.version].filter(Boolean).join(' · '))}</div><div>${esc(JSON.stringify(p.parameters||{}))}</div>${p.note?`<div>${esc(p.note)}</div>`:''}</div></div>`).join('');}
-    function renderChartControls(){const a=currentOutputArtifact();const providers=ctx.charts.list().filter(p=>!p.inputKinds?.length||!a||p.inputKinds.includes(a.kind));const select=$('#dcChartProvider');if(!select)return;select.innerHTML=providers.map(p=>`<option value="${esc(p.id)}">${esc(p.name||p.id)}</option>`).join('');if(providers.some(p=>p.id===state.chart.provider))select.value=state.chart.provider;else state.chart.provider=select.value||'';renderChartParams();}
+    function chartProviders(){const a=currentOutputArtifact();return ctx.charts.list().filter(p=>!p.inputKinds?.length||!a||p.inputKinds.includes(a.kind));}
+    function chartProviderById(id){return ctx.charts.list().find(row=>row.id===String(id||''))||null;}
+    function selectChartProvider(id){const provider=chartProviders().find(row=>row.id===String(id||''));if(!provider)return false;state.chart.provider=provider.id;chartHeaderActions?.update?.({provider:provider.id});renderChartParams();scheduleChartPreview('provider-change');return true;}
+    function renderChartControls(){const providers=chartProviders();if(!providers.some(p=>p.id===state.chart.provider))state.chart.provider=providers[0]?.id||'';chartHeaderActions?.update?.({provider:state.chart.provider,providerCount:providers.length});renderChartParams();}
     let chartRenderRevision=0;
     function clearChartPreview(message='选择 DataTable 后可配置图形。'){
       chartRenderRevision+=1;const host=$('#dcChart');if(!host)return false;
@@ -271,8 +300,8 @@
       try{ctx.ui.scientificPlot.get?.(host)?.dispose?.();}catch{}
       host.replaceChildren();if(message)host.innerHTML=`<div class="empty-state">${esc(message)}</div>`;return true;
     }
-    function renderChartParams(){const a=currentOutputArtifact();chartPanel?.destroy?.();const p=ctx.charts.list().find(x=>x.id===$('#dcChartProvider')?.value);if(!p||!a||a.kind!=='data.table'){const host=$('#dcChartParams');if(host)host.innerHTML='<div class="empty-state">选择 DataTable 后可配置图形。</div>';clearChartPreview();return;}state.chart.provider=p.id;const defaults={...ctx.parameters.defaults(p.parameterSchema||{fields:[]},state.chart.parameters||{})};const validKeys=new Set((a.columns||[]).map(c=>String(c.key)));if(!validKeys.has(String(defaults.x||'')))defaults.x=a.columns.find(c=>c.role==='x')?.key||a.columns[0]?.key||'';defaults.ys=(Array.isArray(defaults.ys)?defaults.ys:[]).filter(key=>validKeys.has(String(key)));if(!defaults.ys.length)defaults.ys=[a.columns.find(c=>c.role==='y'&&c.key!==defaults.x)?.key||a.columns.find(c=>c.key!==defaults.x)?.key].filter(Boolean);chartPanel=ctx.parameters.render($('#dcChartParams'),p.parameterSchema||{fields:[]},{value:defaults,context:{table:a},onChange:value=>{state.chart.parameters=value;scheduleChartPreview('parameter-change');}});state.chart.parameters=chartPanel.getValue();}
-    async function renderChart({silent=false}={}){const a=currentOutputArtifact();const select=$('#dcChartProvider');const p=ctx.charts.list().find(x=>x.id===select?.value);if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}const valid=chartPanel?.validate?.();if(valid&&!valid.ok){if(!silent)ctx.status.set('图形参数存在错误。');return false;}state.chart.parameters=chartPanel?.getValue?.()||state.chart.parameters||{};const revision=++chartRenderRevision;try{await Promise.resolve(p.render({container:$('#dcChart'),artifact:a,parameters:state.chart.parameters,context:{page}}));if(revision!==chartRenderRevision)return false;dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});return true;}catch(err){if(revision!==chartRenderRevision)return false;const host=$('#dcChart');if(host&&!host.querySelector?.('.dkds-scientific-chart-host'))host.innerHTML=`<div class="empty-state">图形预览失败：${esc(err?.message||err)}</div>`;ctx.status.set(`绘图失败：${err?.message||err}`);return false;}}
+    function renderChartParams(){const a=currentOutputArtifact();chartPanel?.destroy?.();const p=chartProviderById(state.chart.provider);if(!p||!a||a.kind!=='data.table'){const host=$('#dcChartParams');if(host)host.innerHTML='<div class="empty-state">选择 DataTable 后可配置图形。</div>';clearChartPreview();return;}state.chart.provider=p.id;const defaults={...ctx.parameters.defaults(p.parameterSchema||{fields:[]},state.chart.parameters||{})};const validKeys=new Set((a.columns||[]).map(c=>String(c.key)));if(!validKeys.has(String(defaults.x||'')))defaults.x=a.columns.find(c=>c.role==='x')?.key||a.columns[0]?.key||'';defaults.ys=(Array.isArray(defaults.ys)?defaults.ys:[]).filter(key=>validKeys.has(String(key)));if(!defaults.ys.length)defaults.ys=[a.columns.find(c=>c.role==='y'&&c.key!==defaults.x)?.key||a.columns.find(c=>c.key!==defaults.x)?.key].filter(Boolean);chartPanel=ctx.parameters.render($('#dcChartParams'),p.parameterSchema||{fields:[]},{value:defaults,context:{table:a},onChange:value=>{state.chart.parameters=value;scheduleChartPreview('parameter-change');}});state.chart.parameters=chartPanel.getValue();}
+    async function renderChart({silent=false}={}){const a=currentOutputArtifact();const p=chartProviderById(state.chart.provider);if(!a||!p||a.kind!=='data.table'){clearChartPreview();return false;}const valid=chartPanel?.validate?.();if(valid&&!valid.ok){if(!silent)ctx.status.set('图形参数存在错误。');return false;}state.chart.parameters=chartPanel?.getValue?.()||state.chart.parameters||{};const revision=++chartRenderRevision;try{await Promise.resolve(p.render({container:$('#dcChart'),artifact:a,parameters:state.chart.parameters,context:{page}}));if(revision!==chartRenderRevision)return false;dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});return true;}catch(err){if(revision!==chartRenderRevision)return false;const host=$('#dcChart');if(host&&!host.querySelector?.('.dkds-scientific-chart-host'))host.innerHTML=`<div class="empty-state">图形预览失败：${esc(err?.message||err)}</div>`;ctx.status.set(`绘图失败：${err?.message||err}`);return false;}}
     function scheduleChartPreview(reason='auto'){const revision=++chartRenderRevision;dom.frame(()=>{if(revision!==chartRenderRevision)return;void renderChart({silent:reason!=='manual'});});}
     function switchTab(tab){for(const name of ['formula','workflow','provenance']){$(`#dc${name[0].toUpperCase()+name.slice(1)}Pane`)?.classList.toggle('hidden',name!==tab);}$$('[data-dc-tab]').forEach(b=>{const active=b.dataset.dcTab===tab;b.classList.toggle('active',active);b.setAttribute('aria-selected',active?'true':'false');});if(tab==='provenance')renderProvenance();}
     function renderAllUi(){renderArtifacts();renderPreview();renderFormula();refreshProviderSelect();renderSteps();renderSavedRecipes();renderProvenance();renderChartControls();scheduleChartPreview('auto');}
@@ -289,7 +318,7 @@
 
 const artifactListEl=$('#dcArtifactList');artifactListEl?.addEventListener?.('keydown',event=>{if(event.target?.closest?.('input,select,textarea,[contenteditable="true"]'))return;const mod=event.ctrlKey||event.metaKey;if(mod&&String(event.key).toLowerCase()==='a'){event.preventDefault();selectAllVisibleArtifacts();return;}if(mod&&String(event.key).toLowerCase()==='i'){event.preventDefault();invertVisibleArtifactSelection();return;}if(event.key==='Escape'){event.preventDefault();clearVisibleArtifactSelection();}});
     const dcSelectAllBtn=$('#dcSelectAllBtn');if(dcSelectAllBtn)dcSelectAllBtn.onclick=()=>selectAllVisibleArtifacts();const dcInvertSelectionBtn=$('#dcInvertSelectionBtn');if(dcInvertSelectionBtn)dcInvertSelectionBtn.onclick=()=>invertVisibleArtifactSelection();const dcClearSelectionBtn=$('#dcClearSelectionBtn');if(dcClearSelectionBtn)dcClearSelectionBtn.onclick=()=>clearVisibleArtifactSelection();
-$('#dcApplyFormula').onclick=applyFormula;const dataActionsBtn=$('#dcDataActionsBtn');if(dataActionsBtn)dataActionsBtn.onclick=event=>{const rect=dataActionsBtn.getBoundingClientRect();openDataActions({clientX:rect.left,clientY:rect.bottom+4},activeArtifact());event.stopPropagation();};const assignmentFilterEl=$('#dcAssignmentFilter');if(assignmentFilterEl)assignmentFilterEl.onchange=()=>{assignmentFilter=assignmentFilterEl.value||'all';renderAllUi();};const lineageFilterEl=$('#dcLineageFilter');if(lineageFilterEl)lineageFilterEl.onchange=()=>{lineageFilter=lineageFilterEl.value||'all';fieldFilter='';renderAllUi();};const fieldFilterEl=$('#dcFieldFilter');if(fieldFilterEl)fieldFilterEl.onchange=()=>{fieldFilter=fieldFilterEl.value||'';renderAllUi();};$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcSaveRecipe').onclick=saveRecipe;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;$('#dcChartProvider').onchange=()=>{renderChartParams();scheduleChartPreview('provider-change');};$('#dcRenderChart').onclick=()=>scheduleChartPreview('manual');$('#dcCopyProvenance').onclick=()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2));
+const dataActionsBtn=$('#dcDataActionsBtn');if(dataActionsBtn)dataActionsBtn.onclick=event=>{const rect=dataActionsBtn.getBoundingClientRect();openDataActions({clientX:rect.left,clientY:rect.bottom+4},activeArtifact());event.stopPropagation();};const assignmentFilterEl=$('#dcAssignmentFilter');if(assignmentFilterEl)assignmentFilterEl.onchange=()=>{assignmentFilter=assignmentFilterEl.value||'all';renderAllUi();};const lineageFilterEl=$('#dcLineageFilter');if(lineageFilterEl)lineageFilterEl.onchange=()=>{lineageFilter=lineageFilterEl.value||'all';fieldFilter='';renderAllUi();};const fieldFilterEl=$('#dcFieldFilter');if(fieldFilterEl)fieldFilterEl.onchange=()=>{fieldFilter=fieldFilterEl.value||'';renderAllUi();};$$('[data-dc-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.dcTab));$('#dcStepType').onchange=refreshProviderSelect;$('#dcAddStep').onclick=addStep;$('#dcLoadRecipe').onclick=loadRecipe;$('#dcSavedRecipe').onchange=loadRecipe;
     ctx.events.on('data:artifacts-changed',()=>{if(!page.classList.contains('hidden'))renderAllUi();});ctx.events.on('layout:resize',()=>{if(!page.classList.contains('hidden'))dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});});const platformOff=ctx.platform.onChange(()=>{if(!page.classList.contains('hidden'))dom.frame(()=>{try{ctx.ui.scientificPlot.resize($('#dcChart'));}catch{}});});
 
     stateStore.subscribe((next,meta)=>{

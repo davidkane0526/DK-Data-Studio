@@ -14,7 +14,7 @@
 
     const page=ctx.ui.pages.add({
       id:'pulse-analysis',pageId:'pulseAnalysisPage',activity:'pulse',toolbar:false,
-      label:'脉冲分析',buttonClass:'accent-soft',order:60,html:pageHtml,onOpen:()=>P.render()
+      label:'脉冲分析',buttonClass:'primary',order:60,html:pageHtml,onOpen:()=>P.render()
     });
 
     workbench=sharedViews?.attach?.(ctx,page)||null;

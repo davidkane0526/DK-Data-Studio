@@ -1,3 +1,14 @@
+# v3.65.5 — Command Identity & Header Integration
+
+- Remove the redundant Data Center Chart Provider selector when only one compatible provider exists. When multiple providers are registered, the choice is exposed through the shared Core ActionGroup menu in the chart header instead of a native field that visually conflicts with neighboring placement/plot commands. Automatic preview remains the render path, so the redundant manual “绘制” command is removed.
+- Separate AnalysisWorkbench command semantics: the current PRIMARY/SUB workspace uses `active`, while mounted PRIME tools use `selected` + `aria-pressed`. Theme component resolution can therefore distinguish “currently active workspace” from “mounted auxiliary surface” instead of painting both as the same state.
+- Replace the remaining first-party `accent-soft` page-button usage with registered Theme variants. Data Center no longer declares a private page button class, Pulse Analysis advances to **2.10.5**, and reusable colored active/selected/primary controls keep Theme-owned white foregrounds rather than plugin-authored text colors.
+- Upgrade bundled Aurora Pop to **2.1.0**. Active controls use filled teal, selected/primary controls use filled violet, and both light/dark profiles use white labels with AA contrast for the canonical active/selected fills. No plugin CSS or page selector is added.
+- Move Data Center Formula, Workflow and Provenance header commands onto Core ActionGroup hosts. Header command strips are edge-to-edge segments of the parent MaterialSurface rather than nested capsules, so `生成派生列`, Provider/placement and PlotView actions visually fuse with the title bar. Data Center advances to **1.14.1**.
+- Keep semantically different controls structurally different: selected tabs remain tabs and primary actions remain actions, but their color/foreground/state ownership now comes from the same Theme component system.
+- Add a v3.65.5 regression gate for Provider visibility, ActionGroup header ownership, AnalysisWorkbench active/selected identity, removal of first-party `accent-soft`, Aurora white-label contrast, and bundled plugin version parity.
+- Release-source validation: `npm test` **199/199 PASS**, `npm run check` **207/207 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.65.4 — Data Center Core UI Contracts
 
 - Replace the remaining Data Center-local header/action composition with reusable Core `dkds-section-header` geometry. Section titles stay single-line, explanatory copy moves to the existing Core tooltip contract, and right-edge actions use the integrated header action host instead of forming a second toolbar.
