@@ -779,6 +779,10 @@ module.exports = {
     {
       "file": "tests/test-v3651-plot-geometry-status-color.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3652-dedicated-theme-devtool-aurora.js",
+      "args": []
     }
   ],
   "check": [
@@ -1592,6 +1596,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3651-plot-geometry-status-color.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3652-dedicated-theme-devtool-aurora.js",
       "args": []
     }
   ],

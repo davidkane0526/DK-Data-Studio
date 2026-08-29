@@ -370,6 +370,14 @@
 - Correct regression tests that protected historical selector placement or exact CSS punctuation rather than the semantic contract. Add a CSS-ownership gate preventing domain selectors and runtime static CSS from returning to Core.
 - Reduce Core authored `!important` debt from 1597 to 1492, and modern-layer debt from 663 to 651, with both new values enforced as non-regression ceilings.
 
+## 3.65.2
+
+- Restored the full Theme 3.9 bootstrap in dedicated TOP windows by loading the canonical Semantic Registry before Material Renderer, so Data Center, TER, Pulse, Vth and other TOP workspaces consume the same Theme/Material system as the main shell.
+- Moved the real-UI Theme Inspector into Plugin DevTools and removed the hidden Ctrl+Alt+T entry path.
+- Reclassified status-bar commands as integrated Status Bar hit regions instead of Toolbar Actions; hover no longer creates a separate capsule/shadow.
+- Fixed automation diagnostics for the semantic resolver object contract and actionable-control contrast coverage.
+- Added Aurora Pop 2.0 as a bundled Theme 3.9 baseline with contrast-safe violet primary actions and no theme CSS injection.
+
 ## v3.61.84 — Repository consolidation and ownership cleanup
 
 - Reorganize Electron host files under `desktop/`, all executable regression tests under `tests/`, Theme runtime under `src/core/theme/`, and generated app/Core/CSS bundles under authored composition directories. Root host shims and test scripts in `scripts/` are removed.

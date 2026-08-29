@@ -30,17 +30,15 @@
     `<div>Material role: ${esc(row.materialRole||'none')} ${row.expectedMaterialRole?`(expected ${esc(row.expectedMaterialRole)})`:''}</div><div>Material recipe: ${esc(row.materialRecipe||'none')} ${row.expectedMaterialRecipe?`(policy ${esc(row.expectedMaterialRecipe)})`:''}</div><div>Base token: ${esc(row.materialBaseToken||'none')}</div><div>Occluding child: ${esc(row.occludingChild||'none')}</div>`+
     `<div>Appearance slot: ${esc(row.appearanceSlot||'none')}</div><div>Resolved token: ${esc(row.resolvedTokenName||'none')} → ${esc(row.resolvedTokenValue||'')}</div><div>Token source: ${esc(row.resolvedTokenSource||'none')} · Theme: ${esc(row.sourceTheme||'')}</div>`+
     `<div>Computed background: ${esc(row.computedBackground||'')}</div><div>Computed text: ${esc(row.computedTextColor||'')}</div><div>Computed border: ${esc(row.computedBorder||'')}</div><div>Computed backdrop: ${esc(row.computedBackdropFilter||'none')}</div>`+
-    `<div>Renderer: ${esc(row.rendererStatus||'')}</div><div>Status: <b>${esc(row.statuses.join(', '))}</b></div><div style="opacity:.72">Ctrl+Alt+T toggle · click pin/unpin · Esc unpin</div>`;}
+    `<div>Renderer: ${esc(row.rendererStatus||'')}</div><div>Status: <b>${esc(row.statuses.join(', '))}</b></div><div style="opacity:.72">DevTool → Theme 控制 · click pin/unpin · Esc unpin</div>`;}
   function enable(){
     if(enabled)return true;enabled=true;pinned=false;ensureOverlay();
     moveHandler=event=>{if(pinned)return;const row=inspect(event.target);if(row.element===last)return;last=row.element||event.target;render(row);};
-    clickHandler=event=>{if(event.target===overlay)return;pinned=!pinned;const row=inspect(event.target);last=row.element||event.target;render(row);event.preventDefault();event.stopPropagation();};
+    clickHandler=event=>{if(event.target===overlay||event.target?.closest?.('.dkds-plugin-devtools,#statusBar .devtools-status-item'))return;pinned=!pinned;const row=inspect(event.target);last=row.element||event.target;render(row);event.preventDefault();event.stopPropagation();};
     keyHandler=event=>{if(event.key==='Escape'&&pinned){pinned=false;last=null;render(inspect(document.body));event.preventDefault();}};
     document.addEventListener('pointermove',moveHandler,{passive:true,capture:true});document.addEventListener('click',clickHandler,true);globalThis.addEventListener('keydown',keyHandler,true);render(inspect(document.body));return true;
   }
   function disable(){if(!enabled)return true;enabled=false;pinned=false;if(moveHandler)document.removeEventListener('pointermove',moveHandler,{capture:true});if(clickHandler)document.removeEventListener('click',clickHandler,true);if(keyHandler)globalThis.removeEventListener('keydown',keyHandler,true);moveHandler=clickHandler=keyHandler=null;last=null;overlay?.remove?.();overlay=null;return true;}
   function toggle(){return enabled?disable():enable();}
-  async function bindDevShortcut(){let dev=true;try{const env=await globalThis.electronAPI?.diagnosticsGetEnvironment?.();if(env&&env.isPackaged===true)dev=false;}catch{}if(!dev)return;globalThis.addEventListener?.('keydown',event=>{if(event.ctrlKey&&event.altKey&&!event.shiftKey&&String(event.key||'').toLowerCase()==='t'){event.preventDefault();toggle();}});}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindDevShortcut,{once:true});else void bindDevShortcut();
   window.DKDSThemeDebug=Object.freeze({version:VERSION,enable,disable,toggle,inspect,isEnabled:()=>enabled,isPinned:()=>pinned});
 })();

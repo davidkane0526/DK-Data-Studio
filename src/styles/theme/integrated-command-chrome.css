@@ -154,8 +154,15 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
   backdrop-filter:none;
 }
 
-/* Status commands are hit regions of one status-bar surface. */
+/* Status commands are hit regions of one status-bar surface. The status bar
+   itself owns hover paint; individual commands never grow a hover capsule. */
 body.dkds-modern-ui #statusBar.statusbar .plugin-status-item::before{display:none}
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-item:is(:hover,:focus-visible):not(:disabled){
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  transform:none;
+}
 
 /* Theme picker ---------------------------------------------------------- */
 body.dkds-modern-ui .dkds-theme-panel{

@@ -14,7 +14,7 @@ const aiPlugin=read('src/plugins/connectivity-center/plugin.js');
 const groupRuntime=read('src/plugins/resonance-workbench/feature-group-runtime.js');
 const groupCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
-assert.equal(pkg.version,'3.65.1');
+assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.1 status/geometry regression requires app 3.65.1 or newer');
 assert.equal(sdk.sdkVersion,'1.21.1');
 assert.equal(sdk.minimumAppVersion,'3.65.1');
 assert.equal(sdk.themeContractVersion,'3.9.0');

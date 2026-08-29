@@ -1,0 +1,25 @@
+{
+  "id": "com.dkds.theme.aurora-pop",
+  "name": "Aurora Pop",
+  "version": "2.0.0",
+  "apiVersion": "1.18.0",
+  "entry": "plugin.js",
+  "pluginType": "theme",
+  "requiresCore": [
+    "ui.theme"
+  ],
+  "description": "Built-in Aurora Pop 2.0 theme for Theme Contract 3.9. Violet/cyan component semantics, controlled Core-rendered optical effects, contrast-safe primary actions, and neutral scientific content.",
+  "compatibility": {
+    "app": ">=3.65.0 <4.0.0",
+    "pluginApi": "^1.18.0",
+    "themeContract": "^3.9.0"
+  },
+  "scripts": [
+    "plugin.js"
+  ],
+  "enabled": true,
+  "order": 31,
+  "capabilities": [
+    "ui.theme"
+  ]
+}

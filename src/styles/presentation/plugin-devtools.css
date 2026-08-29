@@ -23,9 +23,9 @@
 .dkds-devtools-kv span{color:var(--dkui-muted,var(--text-secondary,#60708c))}
 .dkds-devtools-chiprow{display:flex;flex-wrap:wrap;gap:6px}
 .dkds-devtools-badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd));font-size:9px}
-.dkds-devtools-badge[data-tone="success"]{color:#16815a}
-.dkds-devtools-badge[data-tone="warning"]{color:#aa6a08}
-.dkds-devtools-badge[data-tone="danger"]{color:#c13d3d}
+.dkds-devtools-badge[data-tone="success"]{color:var(--dkui-success)}
+.dkds-devtools-badge[data-tone="warning"]{color:var(--dkui-warning)}
+.dkds-devtools-badge[data-tone="danger"]{color:var(--dkui-danger)}
 .dkds-devtools-badge[data-tone="info"]{color:var(--dkui-accent,var(--accent-primary,#315efb))}
 .dkds-devtools-table{width:100%;border-collapse:collapse;font-size:10px}
 .dkds-devtools-table th,.dkds-devtools-table td{padding:6px 7px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));text-align:left}
@@ -35,3 +35,6 @@
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-table th,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-table td,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{border-bottom-color:var(--dkui-border)}
+
+.dkds-devtools-actions-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.dkds-devtools-actions-row button{min-height:30px;padding:4px 10px}

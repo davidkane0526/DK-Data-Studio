@@ -31,7 +31,8 @@ try{
   const fakeApp={getPath:key=>key==='userData'?userData:tempRoot,getAppPath:()=>root,getVersion:()=>pkgJson.version};
   const runtime=createPluginPackageRuntime({app:fakeApp,BrowserWindow:{getAllWindows:()=>[]}});
   const manifests=runtime.readBuiltinPluginManifests();
-  assert.strictEqual(manifests.length,16,'Expected all first-party manifests in bundled package audit.');
+  const expectedBundled=fs.readdirSync(path.join(root,'src','plugins'),{withFileTypes:true}).filter(row=>row.isDirectory()&&row.name!=='_template'&&fs.existsSync(path.join(root,'src','plugins',row.name,'plugin.json'))).length;
+  assert.strictEqual(manifests.length,expectedBundled,'Expected all first-party manifests in bundled package audit.');
   for(const row of manifests)assert(runtime.readBuiltinPluginPackage(row.manifest.id),`Bundled plugin must export/package cleanly under Plugin API 1.18: ${row.manifest.id}`);
 
   // Stable-id built-ins are updatable regardless of whether their id starts

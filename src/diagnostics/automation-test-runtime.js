@@ -78,8 +78,8 @@
       for(const label of datasetLabels)assert(String(label.dataset.dkdsTooltip||'').trim(),`Dataset label is missing its full-path Core tooltip: ${String(label.textContent||'').trim()}`);
       const navButtons=[...document.querySelectorAll('.dkds-analysis-nav-btn')];
       for(const button of navButtons){
-        const component=window.DKDSThemeComponentAppearance?.componentOf?.(button)||'';
-        assert(component==='toolbarAction',`Analysis navigation escaped toolbarAction Theme ownership: ${component||'unmanaged'}`);
+        const component=window.DKDSThemeComponentAppearance?.componentOf?.(button)||null,componentId=String(component?.id||component?.componentIdentity||component||'');
+        assert(componentId==='toolbarAction',`Analysis navigation escaped toolbarAction Theme ownership: ${componentId||'unmanaged'}`);
         const shadow=getComputedStyle(button).boxShadow||'';
         assert(!/inset/i.test(shadow),`Analysis navigation regained a tab underline/inset shadow: ${shadow}`);
       }
