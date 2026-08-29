@@ -1,3 +1,14 @@
+# v3.66.0 — Visual Contract Finalization 2
+
+- Freeze the accepted v3.65.3 global visual result (plus the later dark emphasized-action white-label readability rule) as the visual baseline while finalizing ownership instead of patching individual pages.
+- Upgrade Core ComponentRuntime to 2.0 and make `action`, `actionGroup`, `tabs`, `surfaceHeader`, `field` and `hydrate` the canonical standard UI factories. The same factories are exposed through `ctx.ui.components`; SDK advances to **1.22.0** while Plugin API remains **1.18.0** and Theme Contract remains **3.9.0**.
+- Add one reusable SDK/Core visual ownership audit. First-party style builds and external plugin package validation now reject plugin-owned application paint and redefinition of standard Core control/header geometry. This turns button/header consistency into a build contract rather than a screenshot-by-screenshot review task.
+- Strengthen the visual audit with source-aware alias tracking: if a plugin-specific class is attached to a Core `SurfaceHeader`, action, or field, that alias is also forbidden from re-owning Core geometry. Dynamic plugin DOM is auto-hydrated by ComponentRuntime through a batched MutationObserver so identity cannot depend on page-specific manual calls.
+- Move shared SurfaceHeader heading-stack geometry into Core Structure. Pulse Analysis migrates its header heading/action composition onto Core `dkds-surface-heading-stack` / `dkds-surface-actions` and advances to **2.10.6**; its plugin stylesheet no longer owns standard SurfaceHeader padding, height or title line-height.
+- Remove remaining alias-level header geometry from Connectivity Center, Data Center and Resonance portable panels. Connectivity Center advances to **1.2.4**, Data Center to **1.15.1**, Resonance Workbench to **3.61.10**; Resonance portable headers now consume the Core portable/header geometry directly.
+- Add Hard Visual invariant 06 and a v3.66.0 release gate: all first-party plugin styles must report zero visual-ownership violations and the public SDK validator must enforce the same rule.
+- Release-source validation: `npm test` **200/200 PASS**, `npm run check` **208/208 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.65.9 — Theme Action Contrast, Header Integration & Movable Inspector
 
 - Keep the accepted v3.65.3 global visual baseline while fixing the remaining Core ownership gaps exposed by Data Center. No Data Center-specific Theme selector or private visual mode is introduced.

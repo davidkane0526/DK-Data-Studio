@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 const release=json('package.json').version;
 {const [major,minor]=release.split('.').map(Number);assert(major===3&&minor>=64,'visual contract closure must remain on or beyond the 3.64 release baseline');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.21.2');
+assert.equal(contract.sdkVersion,'1.22.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.65.8');
+assert.equal(contract.minimumAppVersion,'3.66.0');
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');

@@ -11,8 +11,8 @@
       <div class="analysis-page-body pulse-analysis-body">
         <div class="pulse-batch-workspace">
           <aside class="pulse-card pulse-file-manager-card dkds-surface">
-            <div class="pulse-card-heading dkds-surface-header pulse-file-manager-heading">
-              <div>
+            <div class="pulse-card-heading dkds-surface-header dkds-surface-header-stacked pulse-file-manager-heading">
+              <div class="dkds-surface-heading-stack">
                 <h3>脉冲数据文件</h3>
                 <p>勾选决定是否参与批量分析和叠加比较；点击文件切换当前编辑对象。</p>
               </div>
@@ -27,12 +27,12 @@
           </aside>
 
           <section class="pulse-card pulse-config-card dkds-surface">
-            <div class="pulse-card-heading dkds-surface-header">
-              <div>
+            <div class="pulse-card-heading dkds-surface-header dkds-surface-header-stacked">
+              <div class="dkds-surface-heading-stack">
                 <h3>当前文件与提取设置</h3>
                 <p>“自动”会优先使用明确的时间协议；无协议但有电压时使用等点数分段。仅电流数据请填写写入/读取宽度。</p>
               </div>
-              <div class="pulse-current-file-actions dkds-toolbar">
+              <div class="pulse-current-file-actions dkds-surface-actions">
               </div>
             </div>
 
@@ -176,9 +176,9 @@
           <div class="dkds-split-handle pulse-results-splitter" data-axis="y" role="separator" aria-orientation="horizontal" title="拖动调整结果图与数据表高度；双击复位"></div>
 
           <section class="pulse-card pulse-results-table-card dkds-surface">
-          <div class="pulse-card-heading dkds-surface-header pulse-table-heading">
-            <div><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
-            <div class="pulse-table-actions dkds-toolbar"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
+          <div class="pulse-card-heading dkds-surface-header dkds-surface-header-stacked pulse-table-heading">
+            <div class="dkds-surface-heading-stack"><h3>批量提取结果</h3><p id="pulseResultMeta">未知电压保持为空；CSV 不会用 0 或其他数值替代未记录电压。</p></div>
+            <div class="pulse-table-actions dkds-surface-actions"><button id="pulseCopyCsvBtn" class="copy-btn">复制可见结果</button><button id="pulseExportCsvBtn">导出可见 CSV</button></div>
           </div>
             <div class="pulse-table-wrap dkds-table-wrap"><table id="pulseResultTable" class="pulse-result-table dkds-table"></table></div>
           </section>

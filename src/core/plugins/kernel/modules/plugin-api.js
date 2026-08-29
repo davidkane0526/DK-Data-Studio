@@ -409,7 +409,13 @@ const {requirePluginType}=require('./manifest');
         dom: componentScope,
         components: Object.freeze({
           mount:(container,spec,context)=>window.DKDSComponents?.mount?.(container,spec,context),
-          escape:value=>window.DKDSComponents?.escape?.(value)??String(value??'')
+          escape:value=>window.DKDSComponents?.escape?.(value)??String(value??''),
+          action:spec=>window.DKDSComponents?.action?.(spec)||null,
+          actionGroup:spec=>window.DKDSComponents?.actionGroup?.(spec)||null,
+          tabs:spec=>window.DKDSComponents?.tabs?.(spec)||null,
+          surfaceHeader:spec=>window.DKDSComponents?.surfaceHeader?.(spec)||null,
+          field:spec=>window.DKDSComponents?.field?.(spec)||null,
+          hydrate:root=>window.DKDSComponents?.hydrate?.(root)||null
         }),
         plotViews: infrastructureScope?.plotViews || null,
         tables: infrastructureScope?.tables || null,
@@ -439,7 +445,7 @@ const {requirePluginType}=require('./manifest');
         designSystem: (()=>{
           const tokens=Object.freeze({surfacePrimary:'--surface-primary',surfaceSecondary:'--surface-secondary',surfaceElevated:'--surface-elevated',surfaceHover:'--surface-hover',borderSubtle:'--border-subtle',borderStrong:'--border-strong',textPrimary:'--text-primary',textSecondary:'--text-secondary',textTertiary:'--text-tertiary',accentPrimary:'--accent-primary',accentSoft:'--accent-soft',success:'--status-success',warning:'--status-warning',danger:'--status-danger'});
           const roles=Object.freeze({surface:'surfacePrimary',panel:'surfaceSecondary',floating:'surfaceElevated',text:'textPrimary',muted:'textSecondary',border:'borderSubtle',accent:'accentPrimary'});
-          const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true,semanticVisualPrimitives:true,themePluginReady:true});
+          const capabilities=Object.freeze({hostInvariant:true,canvasDocking:true,contextualExports:true,stableHomeSlots:true,standardPlotViews:true,strongViewContract:true,layeredFloating:true,autoPlotHydration:true,coreIO:true,coreCharts:true,scopedDOM:true,declarativeComponents:true,dataFlowRuntime:true,linkedSelectionViews:true,horizontalWheelStrips:true,entityRuntime:true,scientificPlotRuntime:true,tableViewRuntime:true,artifactLineage:true,stableSeriesRegistry:true,legendGroups:true,groupPlots:true,activeLayoutSolver:true,semanticTables:true,coreTooltips:true,projectHistory:true,semanticVisualPrimitives:true,canonicalComponentFactories:true,firstPartyVisualGate:true,themePluginReady:true});
           const classes=Object.freeze({surface:'dkds-surface',surfaceMuted:'dkds-surface-muted',surfaceElevated:'dkds-surface-elevated',surfaceHeader:'dkds-surface-header',surfaceHeading:'dkds-surface-heading',surfaceActions:'dkds-surface-actions',surfaceTabs:'dkds-surface-tabs',surfaceTitle:'dkds-surface-title',toolbar:'dkds-toolbar',actionRow:'dkds-action-row',field:'dkds-field',check:'dkds-check',chip:'dkds-chip',list:'dkds-list',listItem:'dkds-list-item',metric:'dkds-metric',tableWrap:'dkds-table-wrap',table:'dkds-table',note:'dkds-note',status:'dkds-status',overlay:'dkds-overlay',dialog:'dkds-dialog-shell',iconButton:'dkds-icon-button',message:'dkds-message',messageMeta:'dkds-message-meta',floating:'dkds-floating-surface',meta:'dkds-meta'});
           return Object.freeze({name:'DK Data Studio Design System',version:'1.18',tokens,roles,classes,capabilities,className:(...names)=>names.flatMap(name=>String(classes[String(name)]||name||'').split(/\s+/)).filter(Boolean).join(' '),token:name=>tokens[String(name)]||'',cssVar:(name,fallback='')=>{const token=tokens[String(name)]||String(name||'');return token?`var(${token}${fallback?`, ${fallback}`:''})`:String(fallback||'');}});
         })(),

@@ -55,7 +55,7 @@
 .dc-recipe-bar input,.dc-recipe-bar select,.dc-add-step select{min-width:150px}
 .dc-workflow-steps{padding:10px 12px}
 .dc-step-card{margin-bottom:8px}
-.dc-step-head{display:flex;align-items:center;justify-content:space-between;padding:7px 9px}
+.dc-step-head{display:flex;align-items:center;justify-content:space-between}
 .dc-step-actions{display:flex;gap:4px}
 .dc-step-params{padding:7px}
 .dc-workflow-status{margin:0 12px;padding:8px}

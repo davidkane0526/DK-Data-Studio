@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {inspectPluginCss,collectCoreAliases}=require('../sdk/visual-contract');
 const root=path.resolve(__dirname,'..');
 const authored=[];
 function collect(dir){if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())collect(p);else if(e.isFile()&&e.name.endsWith('.css'))authored.push(p);}}
@@ -245,11 +246,17 @@ for(const target of scientificSurfaceTargets){
   const names=presentationOwners.get(target)||new Set();
   if(!names.has('scientific.css'))violations.push(`presentation ownership: scientific.css must own ${target}.`);
 }
-// First-party plugin styles may own domain geometry/state but not application chrome colors.
+// First-party plugins own domain layout/content. Core owns application paint and
+// standard control/header geometry. The same audit is shipped in the public SDK.
 if(fs.existsSync(plugins))for(const e of fs.readdirSync(plugins,{withFileTypes:true})){
-  if(!e.isDirectory())continue;const p=path.join(plugins,e.name,'plugin.css');if(!fs.existsSync(p))continue;
-  const css=fs.readFileSync(p,'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  if(!e.isDirectory())continue;const folder=path.join(plugins,e.name),p=path.join(folder,'plugin.css');if(!fs.existsSync(p))continue;
+  const cssRaw=fs.readFileSync(p,'utf8');
+  const css=cssRaw.replace(/\/\*[\s\S]*?\*\//g,'');
   if(literalColor.test(css))violations.push(`src/plugins/${e.name}/plugin.css: literal application color is forbidden; use Core semantic/theme surfaces.`);
+  const sourceFiles=[];const walk=d=>{for(const row of fs.readdirSync(d,{withFileTypes:true})){const sourcePath=path.join(d,row.name);if(row.isDirectory())walk(sourcePath);else if(row.isFile()&&/\.(?:js|html)$/.test(row.name))sourceFiles.push(sourcePath);}};walk(folder);
+  const aliases=collectCoreAliases(sourceFiles.map(sourcePath=>fs.readFileSync(sourcePath,'utf8')).join('\n'));
+  const audit=inspectPluginCss(cssRaw,{path:`src/plugins/${e.name}/plugin.css`,aliases});
+  for(const issue of audit.issues)violations.push(`${issue.code}: ${issue.message}`);
 }
 if(violations.length){console.error(violations.join('\n'));process.exit(1);}
 console.log(`Style architecture OK: ${authored.length} authored CSS files, 0 !important, layered ownership active.`);

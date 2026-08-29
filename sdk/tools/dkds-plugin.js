@@ -8,6 +8,7 @@ const ThemeContract=require('../theme-contract');
 const ThemeCoverageContract=require('../theme-coverage-contract');
 const SemverCompat=require('../semver-compat');
 const {inspectPluginSource,usesThemeRegister}=require('../source-contract');
+const {inspectPluginCss,collectCoreAliases}=require('../visual-contract');
 
 const sdkRoot=path.resolve(__dirname,'..');
 const contract=JSON.parse(fs.readFileSync(path.join(sdkRoot,'contract.json'),'utf8'));
@@ -110,7 +111,10 @@ async function validate(folder){
   errors.push(...layoutAudit.errors);for(const warning of layoutAudit.warnings)console.warn(`DKDS SDK WARNING: ${warning}`);
   if(m.pluginType!=='theme'){
     const visualStyleRows=[...styleRows,...staticInjectedStyleRows(source)];
+    const visualAliases=collectCoreAliases(rawSource);
     for(const row of visualStyleRows){
+      const ownership=inspectPluginCss(row.content,{path:row.name,aliases:visualAliases});
+      for(const issue of ownership.issues)errors.push(`${issue.code}: ${issue.message}`);
       const visualIssues=ThemeCoverageContract.auditCss(row.content,{pluginId:m.id,source:row.name});
       for(const issue of visualIssues)console.warn(`DKDS SDK THEME COVERAGE WARNING: ${row.name} ${issue.selector} ${issue.property}: ${issue.value} (${issue.reason})`);
     }

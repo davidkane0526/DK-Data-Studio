@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 
 
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.21.2');
+assert.equal(contract.sdkVersion,'1.22.0');
 assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.65.8');
+assert.equal(contract.minimumAppVersion,'3.66.0');
 
 const presentation=read('src/core/scientific/plot-presentation-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');

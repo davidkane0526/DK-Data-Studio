@@ -290,6 +290,16 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
    material/paint; actions keep stable hit geometry while Theme Component
    Appearance owns their visual states. Any plugin may use this structure. */
 .dkds-surface-heading{display:flex;align-items:baseline;gap:7px;min-width:0;flex:1 1 auto}
+.dkds-surface-heading-stack{min-width:0;display:grid;gap:3px;align-content:start;flex:1 1 auto}
+.dkds-surface-heading-stack :is(h1,h2,h3,h4,p){position:static;inset:auto;transform:none;max-width:100%;overflow-wrap:anywhere}
+.dkds-surface-heading-stack :is(h1,h2,h3,h4){margin:0;line-height:1.3}
+.dkds-surface-heading-stack p{margin:0;line-height:1.45}
+.dkds-surface-header.dkds-surface-header-stacked{min-height:0;height:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:3px;padding:10px 12px}
+@media(max-width:980px){
+  .dkds-surface-header.dkds-surface-header-stacked{display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;padding:9px 10px;min-width:0}
+  .dkds-surface-header.dkds-surface-header-stacked>.dkds-surface-heading-stack{flex:1 1 210px;min-width:0}
+  .dkds-surface-header.dkds-surface-header-stacked>.dkds-surface-actions{flex:1 1 100%;width:100%;min-width:0;max-width:100%;flex-flow:row wrap;justify-content:flex-start}
+}
 .dkds-surface-heading>:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dkds-surface-heading>.dkds-meta{flex:0 0 auto}
 .dkds-surface-header>.dkds-surface-actions{margin-left:auto}

@@ -8,7 +8,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.21.2');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.22.0');
 const theme=read('src/core/theme/runtime.js');
 const types=read('sdk/plugin-api.d.ts');
 const template=read('sdk/templates/theme-profile/plugin.js');

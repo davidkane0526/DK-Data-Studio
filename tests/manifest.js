@@ -796,6 +796,10 @@ module.exports = {
       "file": "tests/test-v3659-theme-action-header-inspector.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3660-visual-contract-finalization.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1624,6 +1628,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3659-theme-action-header-inspector.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3660-visual-contract-finalization.js",
       "args": []
     },
   ],

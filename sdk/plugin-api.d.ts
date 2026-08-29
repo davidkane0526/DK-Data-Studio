@@ -296,7 +296,7 @@ export interface DKDSPluginContext {
   };
   readonly parameters:{render(container:any,schema:any,options?:any):any;validate(schema:any,values:any,context?:any):any;defaults(schema:any,initial?:any):any};
   readonly ui:{
-    dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string};
+    dom:DKDSDomRuntime; components:{mount(container:any,spec:any,context?:any):any;escape(value:any):string;action(spec:any):HTMLButtonElement|null;actionGroup(spec:any):HTMLElement|null;tabs(spec:any):HTMLElement|null;surfaceHeader(spec:any):HTMLElement|null;field(spec:any):HTMLElement|null;hydrate(root?:any):any};
     scientificPlot:DKDSScientificPlotRuntime; series:DKDSSeriesRegistry; legends:{group(id?:string,spec?:any):DKDSLegendGroup;get(id:string):DKDSLegendGroup|null}; groupPlots:{create(container:Element|string,spec?:any):DKDSGroupPlot}; tooltips:DKDSTooltipRuntime; plotViews:DKDSPlotViewRuntime; tables:DKDSTableRuntime; settings:DKDSSettingsRuntime; dialogs:DKDSDialogRuntime; selection:any; interaction:any; interactions:any; interactionBehaviors:DKDSInteractionBehaviorRuntime; contextMenus:any;
     /** Canonical runtime facade for manifest requirement `ui.workspace` / capability label `ui.plugin-workspace`. There is intentionally no `ctx.ui.pluginWorkspace`. */
     workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'>};}; grid:any; portable:any; layout:{split(spec:any):any;move(spec:DKDSMovableSurfaceSpec):DKDSMovableSurface;solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;

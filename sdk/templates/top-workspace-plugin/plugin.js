@@ -23,14 +23,14 @@
 
     const page=ctx.ui.pages.add({
       id:'sdk-top-example-page',pageId:'sdkTopExamplePage',activity:'sdk-top-example',label:'SDK TOP',title:'SDK TOP Workspace Example',toolbar:false,
-      html:'<div class="analysis-page-header"><div><h2>SDK TOP Workspace Example</h2><div class="sdk-top-subtitle">Dedicated TOP · scoped data · bounded plot</div></div><div data-dkds-slot="workbench-import"></div></div><div class="analysis-page-body"><div class="sdk-top-workbench"></div></div>'
+      html:'<div class="analysis-page-header"><div><h2>SDK TOP Workspace Example</h2><div class="sdk-top-subtitle dkds-meta">Dedicated TOP · scoped data · bounded plot</div></div><div data-dkds-slot="workbench-import"></div></div><div class="analysis-page-body"><div class="sdk-top-workbench"></div></div>'
     });
     const host=ctx.ui.dom.query('.sdk-top-workbench',page);
     workbench=ctx.ui.workspaceSurface.create(host,{header:false,activity:'sdk-top-example',primaryScroll:'safe'});
     workbench.mountPrimary({
       id:'main',label:'主界面',scroll:'safe',mount:({main})=>{
         const shell=ctx.ui.dom.create('div',{className:'sdk-top-main'});
-        summary=ctx.ui.dom.create('div',{className:'sdk-top-summary'});
+        summary=ctx.ui.dom.create('div',{className:'sdk-top-summary dkds-meta'});
         const plot=ctx.ui.dom.create('div',{className:'sdk-top-plot'});
         ctx.ui.dom.append(shell,summary,plot);ctx.ui.dom.append(main,shell);
         surface=ctx.ui.scientificPlot.create(plot,{xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});

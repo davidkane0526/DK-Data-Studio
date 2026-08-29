@@ -2,6 +2,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
+const {inspectPluginCss,collectCoreAliases}=require('../../sdk/visual-contract');
 const root=path.resolve(__dirname,'..','..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const failures=[];
@@ -13,6 +14,7 @@ const forbidRegex=(text,re,message)=>{if(re.test(text))failures.push(message);};
 function validate(){
   failures.length=0;
   const componentRuntime=read('src/core/theme/component-appearance.js');
+  const uiComponentRuntime=read('src/core/ui/component-runtime.js');
   const semanticRegistry=read('src/core/theme/semantic-registry.js');
   const componentCss=read('src/styles/theme/component-appearance.css');
   const integratedCss=read('src/styles/theme/integrated-command-chrome.css');
@@ -70,12 +72,26 @@ function validate(){
   requireRegex(materialRoles,/role="elevated"[\s\S]*?--dkds-material-fill-floor:72%;/,'HARD-05: Core elevated surfaces must enforce the shared readability floor.');
   requireText(connectivity,'<section class="dksmb-browser dkds-surface">','HARD-05: SMB browser content must consume the same Core semantic surface layering as service panels.');
 
+
+  // HARD-06: one canonical component runtime; plugins cannot repaint Core chrome.
+  requireText(uiComponentRuntime,"const VERSION='2.0.0'",'HARD-06: Core component runtime 2.0 is required.');
+  for(const factory of ['action','actionGroup','tabs','surfaceHeader','field','hydrate'])requireRegex(uiComponentRuntime,new RegExp(`\\b${factory}\\(`),`HARD-06: Core component runtime must expose ${factory}().`);
+  const pluginRoot=path.join(root,'src','plugins');
+  if(fs.existsSync(pluginRoot))for(const entry of fs.readdirSync(pluginRoot,{withFileTypes:true})){
+    if(!entry.isDirectory())continue;
+    const folder=path.join(pluginRoot,entry.name),file=path.join(folder,'plugin.css');if(!fs.existsSync(file))continue;
+    const sourceFiles=[];const walk=d=>{for(const row of fs.readdirSync(d,{withFileTypes:true})){const sourcePath=path.join(d,row.name);if(row.isDirectory())walk(sourcePath);else if(row.isFile()&&/\.(?:js|html)$/.test(row.name))sourceFiles.push(sourcePath);}};walk(folder);
+    const aliases=collectCoreAliases(sourceFiles.map(sourcePath=>fs.readFileSync(sourcePath,'utf8')).join('\n'));
+    const audit=inspectPluginCss(fs.readFileSync(file,'utf8'),{path:path.relative(root,file).replace(/\\/g,'/'),aliases});
+    for(const issue of audit.issues)failures.push(`HARD-06: ${issue.code}: ${issue.message}`);
+  }
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:5});
+  return Object.freeze({ok:true,invariants:6});
 }
 
 if(require.main===module){

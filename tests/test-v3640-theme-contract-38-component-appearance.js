@@ -7,10 +7,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.21.2');
+assert.equal(sdk.sdkVersion,'1.22.0');
 assert.equal(sdk.pluginApiVersion,'1.18.0');
 assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(sdk.minimumAppVersion,'3.65.8');
+assert.equal(sdk.minimumAppVersion,'3.66.0');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract:3.6.0')&&Theme.supports('contract:3.7.0')&&Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must preserve additive 3.x contract capability IDs from the supported baseline.');
 assert(!Theme.supports('contract:4.0.0')&&!Theme.supports('contract:2.9.0'),'Theme runtime must not advertise future-major or different-major contract capabilities.');
@@ -71,7 +71,7 @@ assert.equal(plotHeaderBlocks.length,3,'Pulse Analysis must expose exactly three
 for(const block of plotHeaderBlocks){assert(!/<p\b/.test(block),'PlotView header must keep only the main title.');assert(/pulse-plot-actions/.test(block),'PlotView header must reserve a Core action host at the far edge.');assert(!/dkds-toolbar/.test(block),'Pulse must not create an independent toolbar inside PlotView header.');}
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
 assert(!pulseCss.includes('.pulse-plot-actions{')&&!pulseCss.includes('.pulse-plot-heading{padding:'),'Pulse plugin must not own PlotView action/header geometry.');
-assert(pulseCss.includes('.pulse-card-heading:not(.dkds-plot-view-head) h3'),'Non-plot card typography must be scoped away from Core PlotView titles.');
+assert(pulseViews.includes('dkds-surface-heading-stack')&&!pulseCss.includes('.pulse-card-heading:not(.dkds-plot-view-head) h3'),'Non-plot card heading typography must be Core-owned through the shared SurfaceHeader heading stack.');
 const plotCore=read('src/styles/structure/plugin-workspace.css');
 assert(/\.dkds-plot-view-head\{[^}]*grid-template-columns:minmax\(0,1fr\) auto/s.test(plotCore));
 assert(/\.dkds-plot-view-actions\{[^}]*height:100%[^}]*display:flex/s.test(plotCore));

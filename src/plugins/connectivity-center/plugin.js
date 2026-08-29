@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.3',apiVersion:'1.18.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.4',apiVersion:'1.18.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {

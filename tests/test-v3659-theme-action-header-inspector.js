@@ -11,7 +11,8 @@ const debug=read('src/core/theme/debug-runtime.js');
 const devCss=read('src/styles/presentation/plugin-devtools.css');
 const semantic=read('src/core/theme/semantic-registry.js');
 
-assert(/^3\.65\.(?:9|[1-9]\d|\d{3,})$/.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.9 gate requires 3.65.9+');
+const parts=pkg.version.split('.').map(Number);
+assert(parts[0]>3||(parts[0]===3&&(parts[1]>65||(parts[1]===65&&parts[2]>=9))),'v3.65.9 gate requires 3.65.9+');
 
 // Dark-mode filled/active command labels are one Core readability policy.
 assert(components.includes('Dark-theme action contrast policy'),'Core must define the dark action-contrast policy.');

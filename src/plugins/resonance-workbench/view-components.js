@@ -221,12 +221,12 @@
           </section>
 
           <div id="resparInspectorPanel" class="respar-floating-panel respar-inspector-panel dkds-floating-surface hidden">
-            <div class="respar-floating-header dkds-surface-header"><span>曲线检查器</span><div class="dkds-integrated-action-group"><button data-respar-close="inspect" class="respar-panel-close" aria-label="关闭">×</button></div></div>
+            <div class="respar-floating-header dkds-portable-header dkds-surface-header"><span>曲线检查器</span><div class="dkds-integrated-action-group"><button data-respar-close="inspect" class="respar-panel-close" aria-label="关闭">×</button></div></div>
             <div class="respar-floating-body"><div id="reswinInspectorBody" class="respar-inspector-body"></div></div>
           </div>
 
           <div id="resparGroupPanel" class="respar-floating-panel respar-group-panel dkds-floating-surface hidden">
-            <div class="respar-floating-header dkds-surface-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div class="dkds-integrated-action-group"><span data-respar-group-cols-menu-host></span><button data-respar-collapse="group" aria-label="缩小">−</button><button data-respar-close="group" class="respar-panel-close" aria-label="关闭">×</button></div></div>
+            <div class="respar-floating-header dkds-portable-header dkds-surface-header"><span>组图面板 <small id="reswinGroupContext" class="respar-group-context"></small></span><div class="dkds-integrated-action-group"><span data-respar-group-cols-menu-host></span><button data-respar-collapse="group" aria-label="缩小">−</button><button data-respar-close="group" class="respar-panel-close" aria-label="关闭">×</button></div></div>
             <div class="respar-floating-body">
               <div id="reswinGroupGrid" class="reswin-group-grid"></div>
             </div>

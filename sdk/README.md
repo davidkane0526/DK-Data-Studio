@@ -1,4 +1,4 @@
-# DK Data Studio Plugin SDK 1.21.2
+# DK Data Studio Plugin SDK 1.22.0
 
 
 ## Theme Contract 3.9
@@ -10,7 +10,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.65.8 or newer for SDK 1.21.2 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
+- DK Data Studio 3.66.0 or newer for SDK 1.22.0 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
 
 ## Create a plugin
 
@@ -306,8 +306,16 @@ Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light a
 
 ### Theme Contract 3.9 Thin Glass
 
-SDK 1.21.2 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+SDK 1.22.0 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
 
+
+
+### Canonical Core UI components and visual ownership (SDK 1.22.0)
+
+`ctx.ui.components` is the canonical construction path for standard application chrome. It exposes `action()`, `actionGroup()`, `tabs()`, `surfaceHeader()`, `field()` and `hydrate()` in addition to `mount()`. Plugins declare content, commands, semantic variants and domain layout; Core owns button/header/field geometry and Theme owns paint.
+
+Non-theme plugin stylesheets are validated by the SDK visual ownership gate. Plugin CSS may not repaint application chrome or redefine standard Core control/header geometry. Size the surrounding domain layout instead. Scientific series/mark styling and domain geometry remain plugin-owned where they carry scientific meaning.
+The validator is source-aware: a plugin-specific class attached to a Core header/action/field is treated as an alias of that Core component, so the alias cannot silently override the Core geometry. ComponentRuntime also auto-hydrates dynamically inserted DOM, keeping Component Identity consistent even for older plugins that still build markup through `innerHTML`.
 
 ### Shared surface-header composition (SDK 1.21.2)
 
