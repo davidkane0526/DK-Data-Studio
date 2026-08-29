@@ -246,7 +246,7 @@
   min-width:7px;
   height:7px;
 }
-.update-panel{left:270px;top:88px;width:540px;height:610px;z-index:190;}
+.update-panel{--dkds-floating-z:1850;left:270px;top:88px;width:540px;height:610px;}
 .update-panel-body{padding:12px;}
 .update-status-card{
   padding:12px;

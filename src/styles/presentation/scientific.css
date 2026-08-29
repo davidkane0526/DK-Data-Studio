@@ -297,7 +297,7 @@ body.dkds-modern-ui .main-plot-tools button:hover:not(:disabled) {
 }
 .dkds-scientific-persisted-range {fill:rgba(58,96,246,.04);stroke:#3a60f6;stroke-width:1;stroke-dasharray:5 4
 }
-.dkds-plot-view-file-svg {fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round
+.dkds-plot-view-file-svg {fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round
 }
 .dkds-scientific-auto-legend {color:var(--text-secondary,#60708c)
 }

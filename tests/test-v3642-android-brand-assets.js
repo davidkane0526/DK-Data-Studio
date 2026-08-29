@@ -12,10 +12,10 @@ const mobileApp=JSON.parse(read('mobile/app.json')).expo;
 const generator=read('scripts/generate-brand-assets.js');
 const sync=read('mobile/scripts/sync-web-assets.js');
 
-assert.strictEqual(pkg.version,'3.64.2','Android brand-asset staging fix must advance the App patch version');
-assert.strictEqual(mobilePkg.version,'0.8.13','Android build-pipeline changes must advance the mobile package version');
+assert(/^3\.64\.(?:[2-9]|[1-9]\d+)$/.test(pkg.version),'Android brand-asset staging fix must remain on or beyond App v3.64.2');
+assert(/^0\.8\.(?:1[3-9]|[2-9]\d+)$/.test(mobilePkg.version),'Android build-pipeline changes must remain on or beyond mobile v0.8.13');
 assert.strictEqual(mobileApp.version,mobilePkg.version,'Expo and mobile package versions must stay aligned');
-assert.strictEqual(mobileApp.android.versionCode,24,'Android build-pipeline release must advance versionCode');
+assert(Number(mobileApp.android.versionCode)>=24,'Android build-pipeline release must remain at or beyond versionCode 24');
 assert.strictEqual(mobileApp.icon,'./assets/icon.png','Expo launcher icon must remain a local mobile build asset');
 assert.strictEqual(mobileApp.android.adaptiveIcon.foregroundImage,'./assets/adaptive-icon.png','Expo adaptive icon must remain a local mobile build asset');
 assert(fs.existsSync(path.join(root,'assets','dkds-icon-source.png')),'authored brand source icon must remain in the clean repository');

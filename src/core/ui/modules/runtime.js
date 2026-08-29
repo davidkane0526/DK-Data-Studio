@@ -6,6 +6,7 @@ if(!window.DKDSUI){
   require('./series/primitives');
   require('./series/layout');
   require('./interaction/context-actions');
+  require('./controls/select-popup');
   require('./interaction/behavior');
   require('./layout/docking');
   require('./layout/portable-view');

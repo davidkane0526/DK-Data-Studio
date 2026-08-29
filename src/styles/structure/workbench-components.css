@@ -169,3 +169,4 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-managed-grid>.dkds-portable-view.is-sticky{position:sticky;top:var(--dkds-portable-sticky-top,8px);z-index:34;}
 /* Consolidated geometry from former secondary owners. */
 .dkds-context-menu{position:fixed;z-index:3900;min-width:180px;max-width:min(320px,calc(100vw - 12px));padding:5px;display:grid;gap:2px;}
+.dkds-context-menu.dkds-select-popup{max-width:min(460px,calc(100vw - 12px));overscroll-behavior:contain;}

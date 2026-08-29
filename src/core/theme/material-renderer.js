@@ -35,7 +35,7 @@
   const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
   const INTEGRATED_CHILD_SELECTOR='.dkds-integrated-action-group button,.panel-header-actions button,.trend-header-actions button,.dkds-plot-view-actions button,.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button,[data-dkds-material-integrated="true"] button,.dkds-scientific-nav-tools button';
   const CHROME_SEMANTIC_SELECTOR='[data-dkds-material-role="chrome"],.dkds-material-role-chrome,.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head';
-  const SEMANTIC_CONTROL_PAINT_SELECTOR='.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
+  const SEMANTIC_CONTROL_PAINT_SELECTOR='.dkds-control-hit-region,.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
   const semanticControlOwnsPaint=el=>!!el?.matches?.(SEMANTIC_CONTROL_PAINT_SELECTOR);
   function chromeOwnedIntegrated(el){
     if(el?.matches?.(POPOVER_SEMANTIC_SELECTOR))return false;

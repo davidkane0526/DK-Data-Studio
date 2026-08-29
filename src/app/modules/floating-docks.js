@@ -340,6 +340,14 @@ $('#lanWebApplyBtn').onclick=async()=>{
   await loadLanWebSettings();
 };
 $('#lanWebEnabled').onchange=()=>{};
+const stepLanWebPort=delta=>{
+  const input=$('#lanWebPort');if(!input)return;
+  const min=Number(input.min)||1024,max=Number(input.max)||65535,current=Number(input.value);
+  const next=Math.max(min,Math.min(max,(Number.isFinite(current)?current:45910)+Number(delta||0)));
+  input.value=String(next);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));input.focus();
+};
+$('#lanWebPortUp').onclick=()=>stepLanWebPort(1);
+$('#lanWebPortDown').onclick=()=>stepLanWebPort(-1);
 $('#lanWebNoKey').onchange=()=>{
   const pendingNoKey=$('#lanWebNoKey').checked;
   $('#lanWebNewKeyBtn').disabled=pendingNoKey||!state.lanWebStatusState?.running;
@@ -375,8 +383,11 @@ $('#updateBtn').onclick=async()=>{
   const panel=$('#updatePanel');
   panel.classList.toggle('hidden');
   if(!panel.classList.contains('hidden')){
+    globalThis.DKDSMaterialSurface?.apply?.(panel,'elevated');
+    ensureFloatingPanelVisible(panel);
     await loadUpdateSettingsIntoPanel();
     renderUpdateStatus(await window.electronAPI.updateGetStatus());
+    ensureFloatingPanelVisible(panel);
   }
 };
 $('#updateCheckNowBtn').onclick=async()=>{

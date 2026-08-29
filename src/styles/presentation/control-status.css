@@ -50,15 +50,8 @@ body.dkds-modern-ui .plugin-status-item{
   --status-accent:var(--dkui-text-soft);
 }
 body.dkds-modern-ui .plugin-status-item::before{display:none}
-.plugin-status-item[data-state="ready"] .plugin-status-icon,
-.plugin-status-item[data-state="mcp"] .plugin-status-icon,
-.plugin-status-item[data-state="ok"] .plugin-status-icon{color:var(--success)}
-.plugin-status-item[data-state="busy"] .plugin-status-icon,
-.plugin-status-item[data-state="info"] .plugin-status-icon{color:var(--accent-primary)}
-.plugin-status-item[data-state="warn"] .plugin-status-icon{color:var(--warning)}
-.plugin-status-item[data-state="error"] .plugin-status-icon{color:var(--danger)}
-.plugin-status-item[data-state="ok"]{--status-accent:var(--success)}
-.plugin-status-item[data-state="warn"]{--status-accent:var(--warning)}
-.plugin-status-item[data-state="error"]{--status-accent:var(--danger)}
-.plugin-status-item[data-state="info"],
-.plugin-status-item[data-state="busy"]{--status-accent:var(--accent-primary)}
+/* Status meaning belongs to labels/state; icon paint is one Theme-owned chrome
+   color so every status icon follows light/dark and profile changes together. */
+body.dkds-modern-ui #statusBar.statusbar .plugin-status-icon{
+  color:var(--dkui-role-chrome-text,var(--dkui-text-soft));
+}

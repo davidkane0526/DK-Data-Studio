@@ -769,6 +769,10 @@ module.exports = {
     {
       "file": "tests/test-v3642-android-brand-assets.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3643-ui-chrome-theme-contracts.js",
+      "args": []
     }
 
   ],
@@ -1573,6 +1577,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3642-android-brand-assets.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3643-ui-chrome-theme-contracts.js",
       "args": []
     }
 

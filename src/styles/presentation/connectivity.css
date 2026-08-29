@@ -111,12 +111,24 @@ body.dkds-modern-ui .lan-web-share-section {
 .lan-web-port-row small {
   color:var(--text-tertiary,#7f8ba8)
 }
-.lan-web-port-row input {
-  border:1px solid var(--border-strong,#c6d8ee);
-  border-radius:6px;
-  background:var(--surface-primary,#fff);
-  color:var(--text-primary,#1c2a43)
+.lan-web-port-control{border-radius:7px;}
+.lan-web-port-row input{
+  border:1px solid var(--dkui-control-border,var(--border-strong,#c6d8ee));
+  border-radius:7px;
+  color:var(--dkui-text,var(--text-primary,#1c2a43));
 }
+.lan-web-port-stepper{border-left:1px solid var(--dkui-divider,var(--border-subtle,#dce3ee));}
+.lan-web-port-stepper button span{display:block;background:currentColor;clip-path:polygon(50% 0,100% 100%,0 100%);}
+.lan-web-port-stepper #lanWebPortDown span{transform:rotate(180deg);}
+.lan-web-port-stepper button{
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--dkui-text-soft,var(--text-secondary,#60708c));
+  box-shadow:none;
+}
+.lan-web-port-stepper button+button{border-top:1px solid var(--dkui-divider,var(--border-subtle,#dce3ee));}
+.lan-web-port-stepper button:hover{background:var(--dkui-control-hover,var(--surface-hover,#eef3f8));color:var(--dkui-text,var(--text-primary,#1c2a43));}
 .lan-web-key-card {
   border:0;
   border-radius:0;

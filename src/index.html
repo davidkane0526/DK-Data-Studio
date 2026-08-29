@@ -22,7 +22,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.64.2</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.64.3</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -512,7 +512,13 @@
                   <strong>服务端口</strong>
                   <small>修改端口后会自动重启网页版服务</small>
                 </div>
-                <input id="lanWebPort" type="number" min="1024" max="65535" value="45910">
+                <div class="lan-web-port-control">
+                  <input id="lanWebPort" type="number" min="1024" max="65535" value="45910">
+                  <div class="lan-web-port-stepper" aria-label="调整服务端口">
+                    <button id="lanWebPortUp" class="dkds-control-hit-region" type="button" aria-label="增加服务端口"><span aria-hidden="true"></span></button>
+                    <button id="lanWebPortDown" class="dkds-control-hit-region" type="button" aria-label="减少服务端口"><span aria-hidden="true"></span></button>
+                  </div>
+                </div>
               </div>
 
               <div class="lan-web-key-card">
@@ -589,7 +595,7 @@
       </div>
     </div>
 
-    <div id="updatePanel" class="floating-panel update-panel hidden">
+    <div id="updatePanel" class="floating-panel update-panel dkds-material-role-elevated hidden">
       <div class="floating-header drag-handle">
         <span>局域网热更新</span>
         <div class="panel-header-actions dkds-integrated-action-group">

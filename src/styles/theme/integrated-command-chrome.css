@@ -156,7 +156,6 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
 
 /* Status commands are hit regions of one status-bar surface. */
 body.dkds-modern-ui #statusBar.statusbar .plugin-status-item::before{display:none}
-body.dkds-modern-ui .theme-status-item .plugin-status-icon{color:var(--dkui-text-soft)}
 
 /* Theme picker ---------------------------------------------------------- */
 body.dkds-modern-ui .dkds-theme-panel{

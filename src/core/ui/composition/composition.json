@@ -27,6 +27,10 @@
       "path": "src/core/ui/modules/interaction/context-actions.js"
     },
     {
+      "id": "ui/controls/select-popup",
+      "path": "src/core/ui/modules/controls/select-popup.js"
+    },
+    {
       "id": "ui/interaction/behavior",
       "path": "src/core/ui/modules/interaction/behavior.js"
     },

@@ -612,63 +612,63 @@ body.dkds-modern-ui .project-tab-close:active:not(:disabled){
 }
 .update-badge{
   border-radius:999px;
-  background:#ef4444;
-  box-shadow:0 0 0 2px rgba(239,68,68,.12);
+  background:var(--danger);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 14%,transparent);
 }
-.update-badge.ready{background:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.12);
+.update-badge.ready{background:var(--success);box-shadow:0 0 0 2px color-mix(in srgb,var(--success) 14%,transparent);
 }
-.update-badge.downloading{background:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12);
+.update-badge.downloading{background:var(--dkui-accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--dkui-accent) 14%,transparent);
 }
 .update-status-card{
-  border:1px solid #dce3ee;
+  border:1px solid var(--dkui-divider);
   border-radius:10px;
-  background:#f9fbff;
+  background:var(--dkui-surface-soft);
 }
-.update-phase-dot{border-radius:999px;background:#94a3b8;
+.update-phase-dot{border-radius:999px;background:var(--dkui-muted);
 }
 .update-phase-dot.connected,
-.update-phase-dot.up-to-date{background:#16a34a;
+.update-phase-dot.up-to-date{background:var(--success);
 }
 .update-phase-dot.verifying,
 .update-phase-dot.checking,
-.update-phase-dot.downloading{background:#2563eb;
+.update-phase-dot.downloading{background:var(--dkui-accent);
 }
 .update-phase-dot.available,
-.update-phase-dot.available-dev{background:#d97706;
+.update-phase-dot.available-dev{background:var(--warning);
 }
-.update-phase-dot.downloaded{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.12);
+.update-phase-dot.downloaded{background:var(--success);box-shadow:0 0 0 3px color-mix(in srgb,var(--success) 14%,transparent);
 }
 .update-phase-dot.error,
-.update-phase-dot.security-error{background:#dc2626;
+.update-phase-dot.security-error{background:var(--danger);
 }
-.update-phase-dot.discovering{background:#8b5cf6;
+.update-phase-dot.discovering{background:color-mix(in srgb,var(--dkui-accent) 58%,var(--dkui-text));
 }
-.update-status-message{color:#64748b;
+.update-status-message{color:var(--dkui-muted);
 }
-.update-progress-track{background:#e5eaf2;border-radius:999px;
+.update-progress-track{background:var(--dkui-surface-hover);border-radius:999px;
 }
-.update-progress-bar{background:#315efb;border-radius:999px;
+.update-progress-bar{background:var(--dkui-accent);border-radius:999px;
 }
-#updateProgressText{color:#64748b;
+#updateProgressText{color:var(--dkui-muted);
 }
-.update-info-grid>div:nth-child(odd){color:#778196;
+.update-info-grid>div:nth-child(odd){color:var(--dkui-muted);
 }
-.update-info-grid>div:nth-child(even){color:#273244;
+.update-info-grid>div:nth-child(even){color:var(--dkui-text);
 }
-body.dkds-modern-ui button.success{background:#198754;color:#fff;border-color:#198754;
+body.dkds-modern-ui button.success{background:var(--success);color:#fff;border-color:var(--success);
 }
-.update-settings-details{border:1px solid #e2e7ef;border-radius:8px;background:#fff;
+.update-settings-details{border:1px solid var(--dkui-divider);border-radius:8px;background:var(--dkui-surface-soft);
 }
-.update-settings-details summary{color:#536176;
+.update-settings-details summary{color:var(--dkui-text-soft);
 }
-.update-settings-body label{color:#586174;
+.update-settings-body label{color:var(--dkui-text-soft);
 }
-.update-settings-body input[type="text"]{border:1px solid #ccd5e4;border-radius:6px;
+.update-settings-body input[type="text"]{border:1px solid var(--dkui-control-border);border-radius:6px;background:var(--dkui-control-bg);color:var(--dkui-text);
 }
 .update-security-note{
-  border-left:3px solid #7c8db5;
-  background:#f7f9fc;
-  color:var(--text-secondary,#60708c);
+  border-left:3px solid var(--dkui-divider-hover);
+  background:var(--dkui-surface-soft);
+  color:var(--dkui-text-soft);
 }
 .direct-box-hint{
   border:1px solid #dfe5ef;
@@ -1133,8 +1133,6 @@ body.dkds-modern-ui textarea:hover{border-color:#bfc9d7;
 @media (max-width:900px){
   .prime-right-dock-slot.active{border-left:0;border-top:1px solid var(--border-subtle);
   }
-}
-.plugin-status-icon{color:var(--status-accent);
 }
 .project-save-choice-backdrop{
   background:rgba(15,23,42,.22);
