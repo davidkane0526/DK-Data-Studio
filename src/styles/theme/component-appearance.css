@@ -70,3 +70,31 @@ body.dkds-modern-ui [data-dkds-component-identity="field"]:hover:not(:disabled){
 body.dkds-modern-ui [data-dkds-component-identity="field"]:focus-visible{background:var(--dkui-component-field-surface-active,var(--dkui-control-bg));color:var(--dkui-component-field-text-active,var(--dkui-text));border-color:var(--dkui-component-field-border-active,var(--dkui-accent));outline-color:var(--dkui-component-field-indicator,var(--dkui-focus))}
 
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
+
+
+/* Header-context appearance: title-bar actions consume the header Material
+   directly. Non-primary commands keep semantic text/indicator state without
+   drawing a nested button capsule; primary actions retain their filled style. */
+body.dkds-modern-ui .dkds-surface-header .dkds-surface-actions [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong),
+body.dkds-modern-ui .dkds-surface-header .dkds-plot-view-actions [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong){
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+}
+body.dkds-modern-ui .dkds-surface-header .dkds-surface-tabs [data-dkds-component-identity="tab"]:is(.selected,.active,[aria-selected="true"],[aria-pressed="true"]){
+  background:transparent;
+  border-color:transparent;
+  box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
+}
+
+/* Dark-theme action contrast policy. Filled/active application commands use a
+   single high-contrast label color across every Theme profile. Themes still
+   own fill, border and indicator colors; Core owns legibility. */
+html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(
+  .primary,.strong,.active,.selected,[aria-pressed="true"],[aria-selected="true"],
+  [data-dkds-component-variant="primary"],[data-dkds-component-variant="secondary"],
+  [data-dkds-component-variant="active"],[data-dkds-component-variant="selected"]
+){color:#fff;-webkit-text-fill-color:#fff}
+html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(
+  .active,.selected,[aria-pressed="true"],[aria-selected="true"]
+){color:#fff;-webkit-text-fill-color:#fff}

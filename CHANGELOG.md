@@ -1,3 +1,13 @@
+# v3.65.9 — Theme Action Contrast, Header Integration & Movable Inspector
+
+- Keep the accepted v3.65.3 global visual baseline while fixing the remaining Core ownership gaps exposed by Data Center. No Data Center-specific Theme selector or private visual mode is introduced.
+- Add one Core dark-theme action readability policy: filled/active `toolbarAction` and active/selected `tab` labels render white across Theme profiles, while themes continue to own surface, border and indicator colors. This removes inconsistent dark-mode label colors between Resonance, Data Center and other first-party workbenches.
+- Make Surface Header command integration wrapper-depth independent. `dkds-surface-actions -> dkds-plot-view-actions` and equivalent nested Core command groups now consume the parent header Material directly instead of drawing a second rounded capsule. Primary header actions keep their filled appearance; non-primary PlotView/header actions remain compact hit regions.
+- Make selected/active tabs inside a Surface Header visually belong to the title bar: the state is expressed through the semantic indicator rather than a nested filled capsule.
+- Upgrade Theme Inspector runtime to 2.2.0 with Pointer Events drag movement from its header, viewport clamping, touch-safe pointer capture and session-scoped position persistence. DevTool pause/resume/close ownership from v3.65.3 is preserved.
+- Update hard visual invariants so title-bar action ownership remains valid through generic Core layout wrappers, and fix historical version gates that incorrectly rejected legitimate later patch versions.
+- Release-source validation: `npm test` **199/199 PASS**, `npm run check` **207/207 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 ## 3.65.7
 
 - Recovered Core header-command geometry after the v3.65.6 edge-flattening regression: header backgrounds remain shared, while actions keep compact 26 px hit regions, spacing, rounded corners and non-wrapping labels.

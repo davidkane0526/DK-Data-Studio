@@ -43,7 +43,9 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{bord
 /* Theme Inspector stays below Plugin DevTools and exposes a direct exit path. */
 .dkds-theme-debug-overlay{position:fixed;z-index:11900;right:10px;top:10px;width:min(430px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;padding:10px 12px;border-radius:9px;color:var(--dkui-text);font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;pointer-events:none;white-space:normal;word-break:break-word}
 .dkds-theme-debug-overlay[hidden]{display:none}
-.dkds-theme-debug-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
-.dkds-theme-debug-exit{pointer-events:auto;display:inline-grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:1px solid var(--dkui-border);border-radius:7px;background:var(--dkui-control-surface,var(--dkui-surface-secondary));color:var(--dkui-text);box-shadow:none;font:600 15px/1 system-ui,sans-serif}
+.dkds-theme-debug-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;pointer-events:auto;cursor:move;user-select:none;touch-action:none}
+.dkds-theme-debug-overlay.is-dragging{cursor:grabbing}
+.dkds-theme-debug-overlay.is-dragging .dkds-theme-debug-header{cursor:grabbing}
+.dkds-theme-debug-exit{pointer-events:auto;cursor:default;display:inline-grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:1px solid var(--dkui-border);border-radius:7px;background:var(--dkui-control-surface,var(--dkui-surface-secondary));color:var(--dkui-text);box-shadow:none;font:600 15px/1 system-ui,sans-serif}
 .dkds-theme-debug-exit:hover,.dkds-theme-debug-exit:focus-visible{background:var(--dkui-control-hover,var(--dkui-accent-soft));border-color:var(--dkui-accent);box-shadow:none}
 .dkds-theme-debug-hint{margin-top:2px;opacity:.72}

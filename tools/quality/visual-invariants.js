@@ -42,7 +42,7 @@ function validate(){
   requireText(semanticRegistry,'.analysis-chart-title','HARD-02: analysis-chart-title must be a Core panelHeader semantic component.');
   requireText(materialRenderer,'Semantic.resolveMaterialRole(el)','HARD-02: Material Renderer must obtain chart-title ownership from the canonical semantic registry.');
   requireText(coverage,'Semantic.materialAreas()','HARD-02: Theme coverage must consume the canonical material-area registry that includes analysis-chart-title.');
-  requireRegex(integratedCss,/:where\([^)]*analysis-chart-title[^)]*\)\s*>\s*:where\([^)]*dkds-integrated-action-group/s,'HARD-02: chart-title direct action groups must be flattened into the title chrome.');
+  requireRegex(integratedCss,/:where\([^)]*analysis-chart-title[^)]*\)[\s\S]*?:where\([^)]*(?:dkds-surface-actions|dkds-integrated-action-group)[^)]*\)/s,'HARD-02: chart-title action groups must share the title chrome even through Core layout wrappers.');
   forbidRegex(semanticRegistry,/id:'toolbarGroup'[^\n]*(?:dkds-integrated-action-group|statusbar-command-cluster)/,'HARD-02: integrated/status command clusters must never be painted as toolbarGroup components.');
   forbidRegex(componentCss,/:where\([^)]*(?:dkds-integrated-action-group|statusbar-command-cluster)[^)]*\)\s*\{[^}]*--dkds-material-base/s,'HARD-02: Theme Component Appearance must not create a second material shell around integrated/status groups.');
   requireRegex(integratedCss,/#statusBar\.statusbar[\s\S]*?\.plugin-status-item::before\{display:none\}/,'HARD-02: status-bar command chrome must remain one parent-owned surface.');

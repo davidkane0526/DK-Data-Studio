@@ -132,7 +132,12 @@ body.dkds-modern-ui .dkds-scientific-nav-tools :where(button,.dkds-scientific-na
 body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
 
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
+/* Header-owned command chrome. A header may contain one or more layout
+   wrappers before the actual command group (for example SurfaceActions ->
+   PlotViewActions). Every nested group shares the header Material instead of
+   drawing a second capsule, while each button keeps its own hit geometry. */
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
+  :where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions){
   flex:0 0 auto;
   margin-left:auto;
   padding:0;
@@ -145,13 +150,30 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
   backdrop-filter:none;
   overflow:visible;
 }
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head) > :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions) :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
+  :where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions)
+  :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
+  min-height:26px;
+  height:26px;
   border-color:transparent;
   background:transparent;
   background-image:none;
   box-shadow:none;
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
+}
+/* Primary actions remain visibly primary even when embedded in a header. */
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
+  :where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions)
+  :where(button,.dkds-action-button).primary{
+  background:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));
+  color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
+  -webkit-text-fill-color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
+}
+/* Selected/active header tabs are part of the title bar, not nested pills. */
+body.dkds-modern-ui .dkds-surface-header .dkds-surface-tabs > button:is(.selected,.active,[aria-selected="true"],[aria-pressed="true"]){
+  border-radius:5px;
+  box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
 }
 
 /* Status commands are hit regions of one status-bar surface. The status bar
@@ -236,4 +258,17 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mod
   background:var(--dkui-accent);
   color:#fff;
   -webkit-text-fill-color:#fff;
+}
+
+/* Nested command groups inside a Surface Header are layout-only regardless of
+   how many Core wrappers sit between the header and PlotView controls. */
+body.dkds-modern-ui .dkds-surface-header .dkds-surface-actions :where(.dkds-integrated-action-group,.dkds-plot-view-actions,.dkds-portable-controls),
+body.dkds-modern-ui .dkds-surface-header > :where(.dkds-integrated-action-group,.dkds-plot-view-actions){
+  border:0;
+  border-radius:0;
+  background:transparent;
+  background-image:none;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
 }

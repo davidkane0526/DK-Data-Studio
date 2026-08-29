@@ -24,7 +24,7 @@ const dcCss=read('src/plugins/data-center/plugin.css');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
 
-assert(/^3\.65\.(?:8|[9]\d|\d{3,})$/.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'v3.65.8 baseline gate requires 3.65.8+');
+assert(Number(pkg.version.split('.')[0])>3||(Number(pkg.version.split('.')[0])===3&&Number(pkg.version.split('.')[1])>65)||(Number(pkg.version.split('.')[0])===3&&Number(pkg.version.split('.')[1])===65&&Number(pkg.version.split('.')[2])>=8),'v3.65.8 baseline gate requires 3.65.8+');
 
 // Accepted global appearance stays on the v3.65.3 line.
 assert(projectTabs.includes("project-tab ${t.id===state.activeProjectTabId?'active':''}"),'Project tabs must retain the accepted v3.65.3 active-tab implementation.');

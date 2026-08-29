@@ -792,6 +792,10 @@ module.exports = {
       "file": "tests/test-v3658-data-center-style-baseline.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3659-theme-action-header-inspector.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1616,6 +1620,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3658-data-center-style-baseline.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3659-theme-action-header-inspector.js",
       "args": []
     },
   ],

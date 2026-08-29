@@ -1,7 +1,12 @@
 (() => {
   'use strict';
-  const VERSION='2.1.0';
+  const VERSION='2.2.0';
   let enabled=false,overlay=null,last=null,moveHandler=null,clickHandler=null,keyHandler=null,pinned=false;
+  let dragState=null,dragMoveHandler=null,dragEndHandler=null;
+  const POSITION_KEY='dkds.themeInspector.position';
+  function readPosition(){try{const row=JSON.parse(sessionStorage.getItem(POSITION_KEY)||'null');return Number.isFinite(row?.x)&&Number.isFinite(row?.y)?row:null;}catch{return null;}}
+  function writePosition(x,y){try{sessionStorage.setItem(POSITION_KEY,JSON.stringify({x,y}));}catch{}}
+  function placeOverlay(host=overlay,pos=readPosition()){if(!host||!pos)return;const maxX=Math.max(8,innerWidth-host.offsetWidth-8),maxY=Math.max(8,innerHeight-host.offsetHeight-8);const x=Math.min(maxX,Math.max(8,pos.x)),y=Math.min(maxY,Math.max(8,pos.y));host.style.left=`${x}px`;host.style.top=`${y}px`;host.style.right='auto';}
   const pauseOwners=new Set();
   const isPaused=()=>pauseOwners.size>0;
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
@@ -35,7 +40,20 @@
       const act=event.target?.closest?.('[data-theme-debug-act]')?.dataset.themeDebugAct;
       if(act==='exit'){event.preventDefault();event.stopPropagation();disable();}
     });
+    overlay.addEventListener('pointerdown',event=>{
+      const header=event.target?.closest?.('.dkds-theme-debug-header');
+      if(!header||event.target?.closest?.('button,input,select,textarea,a'))return;
+      const rect=overlay.getBoundingClientRect();
+      dragState={pointerId:event.pointerId,dx:event.clientX-rect.left,dy:event.clientY-rect.top};
+      overlay.setPointerCapture?.(event.pointerId);
+      overlay.classList.add('is-dragging');
+      event.preventDefault();event.stopPropagation();
+    });
+    dragMoveHandler=event=>{if(!dragState||event.pointerId!==dragState.pointerId||!overlay)return;const x=event.clientX-dragState.dx,y=event.clientY-dragState.dy;placeOverlay(overlay,{x,y});event.preventDefault();};
+    dragEndHandler=event=>{if(!dragState||event.pointerId!==dragState.pointerId)return;const rect=overlay?.getBoundingClientRect?.();if(rect)writePosition(rect.left,rect.top);overlay?.classList.remove('is-dragging');dragState=null;};
+    overlay.addEventListener('pointermove',dragMoveHandler);overlay.addEventListener('pointerup',dragEndHandler);overlay.addEventListener('pointercancel',dragEndHandler);
     document.body.appendChild(overlay);
+    requestAnimationFrame(()=>placeOverlay(overlay));
     globalThis.DKDSMaterialSurface?.apply?.(overlay,'popover');
     return overlay;
   }
@@ -52,7 +70,7 @@
     keyHandler=event=>{if(event.key!=='Escape'||isPaused())return;disable();event.preventDefault();event.stopPropagation();};
     document.addEventListener('pointermove',moveHandler,{passive:true,capture:true});document.addEventListener('click',clickHandler,true);globalThis.addEventListener('keydown',keyHandler,true);render(inspect(document.body));return true;
   }
-  function disable(){if(!enabled){pauseOwners.clear();overlay?.remove?.();overlay=null;return true;}enabled=false;pinned=false;pauseOwners.clear();if(moveHandler)document.removeEventListener('pointermove',moveHandler,{capture:true});if(clickHandler)document.removeEventListener('click',clickHandler,true);if(keyHandler)globalThis.removeEventListener('keydown',keyHandler,true);moveHandler=clickHandler=keyHandler=null;last=null;overlay?.remove?.();overlay=null;return true;}
+  function disable(){if(!enabled){pauseOwners.clear();dragState=null;overlay?.remove?.();overlay=null;return true;}enabled=false;pinned=false;dragState=null;pauseOwners.clear();if(moveHandler)document.removeEventListener('pointermove',moveHandler,{capture:true});if(clickHandler)document.removeEventListener('click',clickHandler,true);if(keyHandler)globalThis.removeEventListener('keydown',keyHandler,true);moveHandler=clickHandler=keyHandler=null;last=null;overlay?.remove?.();overlay=null;return true;}
   function pause(owner='external'){pauseOwners.add(String(owner||'external'));if(overlay)overlay.hidden=true;return true;}
   function resume(owner='external'){pauseOwners.delete(String(owner||'external'));if(enabled&&!isPaused()){ensureOverlay().hidden=false;render(last?inspect(last):inspect(document.body));}return true;}
   function toggle(){return enabled?disable():enable();}
