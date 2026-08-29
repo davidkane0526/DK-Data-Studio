@@ -17,7 +17,7 @@ for(const recipe of ['thin-glass','soft-glass','liquid-glass'])assert(rendererCs
 const actions=readComposition(root,'src/core/ui/composition');
 assert(actions.includes("'dkds-action-group','dkds-integrated-action-group','dkds-material-role-control'"),'ActionGroup semantic role contract must be preserved.');
 const portable=readComposition(root,'src/core/ui/composition');
-assert(portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group'")&&!portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control'"),'PlotView header actions must remain integrated but be owned by the chrome MaterialSurface.');
+assert(portable.includes("'dkds-plot-view-actions','dkds-header-command-strip','dkds-integrated-action-group'")&&!portable.includes("'dkds-plot-view-actions','dkds-integrated-action-group','dkds-material-role-control'"),'PlotView header actions must remain integrated but be owned by the chrome MaterialSurface.');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 assert(resonance.includes('id="resparRangeMenu" class="respar-range-menu command-menu hidden"'),'Resonance box-selection menu contract must remain present.');
 

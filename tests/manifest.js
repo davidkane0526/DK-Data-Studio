@@ -795,6 +795,10 @@ module.exports = {
     {
       "file": "tests/test-v3655-command-identity-header-integration.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3656-header-command-tab-state.js",
+      "args": []
     }
   ],
   "check": [
@@ -1624,6 +1628,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3655-command-identity-header-integration.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3656-header-command-tab-state.js",
       "args": []
     }
   ],

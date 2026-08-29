@@ -58,7 +58,7 @@ const shellCss=read('src/styles/presentation/shell.css');
 assert(!shellCss.includes('#637188'),'Dark disabled controls must not bypass Theme 3.8 disabledText with a hard-coded presentation color.');
 assert(!shellCss.includes('color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft))'),'Dark active controls must not reconstruct active paint from accent after semantic active tokens are resolved.');
 for(const token of ['--dkui-selection-surface','--dkui-selection-text','--dkui-selection-border','--dkui-active-surface','--dkui-active-text','--dkui-disabled-surface','--dkui-disabled-text']) assert(shellCss.includes(token),`Shell must consume semantic interaction token ${token}`);
-assert(/\.project-tab\.active\{[^}]*var\(--dkui-active-surface\)[^}]*var\(--dkui-active-text\)/s.test(shellCss),'Active project tabs must consume Theme 3.8 active semantics instead of mode-specific hard-coded paint.');
+assert(/\.project-tab:is\(\.selected,\[aria-selected=\"true\"\]\)\{[^}]*var\(--dkui-selection-surface\)[^}]*var\(--dkui-selection-text\)/s.test(shellCss),'Selected project tabs must consume Theme selection semantics instead of misusing the active state.');
 assert(/\.dataset-item\.selected\{[^}]*var\(--dkui-selection-surface\)[^}]*var\(--dkui-selection-text\)/s.test(shellCss),'Selected dataset rows must consume Theme 3.8 selection semantics.');
 
 global.window={addEventListener(){},removeEventListener(){}};

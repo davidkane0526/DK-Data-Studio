@@ -20,7 +20,7 @@ assert(menu.includes('item.closeOnInvoke===false'),'ContextMenu must support kee
 assert(views.includes('role="tablist"')&&views.includes('dkds-segmented-control'),'Data Center tabs must use Core segmented/tab semantics');
 assert(views.includes('data-dkds-tooltip="图形由可替换的 Chart Provider 提供'),'Chart explanatory copy must move into the Core tooltip contract');
 assert(!views.includes('<span>图形也是可替换的 Chart Provider。</span>'),'Chart title must stay single-line without persistent explanatory copy');
-assert(views.includes('dc-chart-toolbar dkds-section-header-actions dkds-integrated-action-group'),'Chart controls must be right-aligned and integrated into the header');
+assert(views.includes('dc-chart-toolbar dkds-section-header-actions dkds-header-command-strip dkds-integrated-action-group'),'Chart controls must use the Core edge-integrated header command strip');
 assert(!/(^|\n)\.schema-parameter-panel\s*\{/.test(css)&&!/(^|\n)\.schema-param-field\b/.test(css),'Data Center must not duplicate Core ParameterSchema geometry');
 assert(css.includes('--dc-artifact-width:336px')&&css.includes('.dc-selection-buttons>button{flex:1 1 0}'),'Data Center filter/selection layout must have usable spacing');
 assert(feature.includes("aria-selected',active?'true':'false'"),'Data Center tabs must maintain tab aria-selected state');

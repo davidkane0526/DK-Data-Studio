@@ -226,10 +226,11 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-toolbar,.dkds-action-row{display:flex;align-items:center;gap:var(--plugin-action-gap,6px);min-width:0}
 .dkds-toolbar{flex-flow:row nowrap}
 .dkds-action-row{flex-wrap:wrap}
-.dkds-section-header{display:flex;align-items:center;gap:10px;min-width:0;min-height:36px;padding:6px 10px}
+.dkds-section-header{--dkds-header-pad-y:6px;--dkds-header-pad-x:10px;display:flex;align-items:center;gap:10px;min-width:0;min-height:36px;padding:var(--dkds-header-pad-y) var(--dkds-header-pad-x)}
 .dkds-section-header-main{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto}
 .dkds-section-title{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dkds-section-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0;flex:0 1 auto;margin-left:auto}
+.dkds-header-command-strip{align-self:stretch;margin-block:calc(-1 * var(--dkds-header-pad-y,0px));margin-right:calc(-1 * var(--dkds-header-pad-x,0px));gap:0}
 .dkds-section-header-actions>select{width:auto;max-width:min(220px,38vw)}
 .dkds-segmented-control{display:inline-flex;align-items:center;gap:2px;min-width:0;padding:2px}
 .dkds-segmented-control>button{min-width:0;white-space:nowrap}

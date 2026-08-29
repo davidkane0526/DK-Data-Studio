@@ -22,7 +22,7 @@ assert(workbench.includes("b.classList.toggle('selected',row.mounted)")&&workben
 for(const rel of pluginFiles)assert(!read(rel).includes("buttonClass:'accent-soft'"),`${rel} must not use the legacy accent-soft button presentation`);
 assert(aurora.includes("version:'2.1.0'")&&aurora.includes("surfaceActive:'#00818D',surfaceSelected:'#6F50FF'")&&aurora.includes("surfaceActive:'#087A84',surfaceSelected:'#5D3BEF'"),'Aurora 2.1 must provide filled white-text active/selected control semantics in light and dark modes');
 assert(contrast('#00818D','#FFFFFF')>=4.5&&contrast('#6F50FF','#FFFFFF')>=4.5&&contrast('#087A84','#FFFFFF')>=4.5&&contrast('#5D3BEF','#FFFFFF')>=4.5,'Aurora filled active/selected controls must preserve AA contrast with white labels');
-assert.equal(JSON.parse(read('src/plugins/data-center/plugin.json')).version,'1.14.1');
+assert(/^1\.14\.(?:[1-9]|\d{2,})$/.test(JSON.parse(read('src/plugins/data-center/plugin.json')).version),'Data Center must stay on the 1.14.1+ Core UI-contract line');
 assert.equal(JSON.parse(read('src/plugins/pulse-analysis/plugin.json')).version,'2.10.5');
 assert.equal(JSON.parse(read('src/plugins/aurora-pop-theme/plugin.json')).version,'2.1.0');
 console.log('v3.65.5 command identity, Provider choice and integrated header-action contracts passed.');

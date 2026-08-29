@@ -202,8 +202,11 @@ function renderProjectTabs(){
   host.innerHTML='';
   for(const t of state.projectTabs){
     const el=document.createElement('div');
-    el.className=`project-tab ${t.id===state.activeProjectTabId?'active':''}`;
+    const selected=t.id===state.activeProjectTabId;
+    el.className=`project-tab${selected?' selected':''}`;
     el.dataset.tabId=t.id;
+    el.setAttribute('role','tab');
+    el.setAttribute('aria-selected',selected?'true':'false');
     el.title=t.projectPath||t.title;
     el.innerHTML=`<span class="project-tab-title">${escapeHtml(t.title)}</span><button class="project-tab-close" title="关闭项目">×</button>`;
     el.onclick=e=>{

@@ -1,3 +1,13 @@
+# v3.65.6 — Header Command Strip & Selected Tab Semantics
+
+- Fix the v3.65.5 Data Center regression where right-side header controls still appeared as nested capsules instead of belonging to the title bar. Core now exposes an explicit `dkds-header-command-strip` that consumes the section header edge padding, stretches through the header height, and flattens nested ActionGroup / SegmentedControl shells into layout-only subgroups.
+- Make PlotView actions consume the same Core Header Command Strip contract, so scientific/chart title-bar commands use one integrated edge chrome rather than a second rounded control floating inside the header.
+- Correct Data Center tab state ownership: the selected Formula / Workflow / Provenance tab now uses `selected` + `aria-selected` instead of overloading `active`. Data Center advances to **1.14.2**.
+- Correct project-tab state semantics across desktop and mobile host integration. The current project tab is now a standard `role=tab` + `aria-selected=true` + `selected` component, removing the v3.65.5 mixed cyan active surface + violet selected indicator regression.
+- Make Theme Component Appearance actually consume variant-specific `active` / `selected` surface, text, border and indicator tokens for `tab` and `toolbarAction`, so a theme-authored state is resolved as one coherent appearance instead of mixing generic and variant slots.
+- Update historical tests to validate the canonical selected-tab and Header Command Strip contracts instead of requiring legacy `.active` project tabs or nested ActionGroup class strings. Add a dedicated v3.65.6 regression gate to both `test` and `check`.
+- Release-source validation: `npm test` **200/200 PASS**, `npm run check` **208/208 PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.65.5 — Command Identity & Header Integration
 
 - Remove the redundant Data Center Chart Provider selector when only one compatible provider exists. When multiple providers are registered, the choice is exposed through the shared Core ActionGroup menu in the chart header instead of a native field that visually conflicts with neighboring placement/plot commands. Automatic preview remains the render path, so the redundant manual “绘制” command is removed.

@@ -37,8 +37,8 @@ const document={
   body,activeElement:null,
   addEventListener:(type,fn)=>add('document',type,fn),
   querySelector:selector=>{
-    if(selector==='.project-tab.active')return {classList:{contains:()=>false}};
-    if(selector==='.project-tab.active .project-tab-title')return {textContent:'移动验收项目'};
+    if(selector==='.project-tab[aria-selected="true"]')return {classList:{contains:()=>false}};
+    if(selector==='.project-tab[aria-selected="true"] .project-tab-title')return {textContent:'移动验收项目'};
     if(selector==='#statusBarMessage')return {textContent:'就绪'};
     if(selector==='#activityContextTitle')return {textContent:activities.find(row=>row.id===active)?.label};
     return null;
