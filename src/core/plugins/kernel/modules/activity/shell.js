@@ -150,7 +150,7 @@ const {pluginTypeOf}=require('../manifest');
       if(!empty){empty=document.createElement('div');empty.className='command-menu-empty';empty.dataset.pluginExportEmpty='1';empty.textContent='当前工作区没有可导出内容';pluginMenu.appendChild(empty);}
       empty.classList.remove('hidden');
     }else empty?.classList?.add('hidden');
-    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!registered;trigger.removeAttribute('title');trigger.setAttribute('aria-label','导出数据');}
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据';trigger.disabled=!registered;trigger.removeAttribute('title');trigger.setAttribute('aria-label','导出数据');}
   }
 
 

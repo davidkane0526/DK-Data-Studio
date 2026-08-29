@@ -54,6 +54,7 @@ function validate(){
   const pluginManager=read('src/core/plugins/manager-ui.js');
   const foundation=read('src/app/modules/foundation.js');
   const connectivityCss=read('src/styles/presentation/connectivity.css');
+  const devtoolsCss=read('src/styles/presentation/plugin-devtools.css');
 
   // HARD-01: analysis/workbench navigation is a toolbar action, never a tab.
   requireRegex(semanticRegistry,/id:'tab'[^\n]+activity-tab:not\(\.top-level-activity-tab\)/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
@@ -88,6 +89,7 @@ function validate(){
   forbidRegex(touch,/\.plugin-toolbar-btn\[data-plugin-id\]::after/,'HARD-04: platform/touch.css must never draw plugin-toolbar underlines.');
   forbidRegex(contractCss,/--dkui-selected-shadow:[^;]*0\s+0\s+0\s+1px/,'HARD-04: selected state must not combine a hard rim with its halo.');
   requireRegex(contractCss,/--dkui-selected-shadow:\s*0\s+0\s+4px/,'HARD-04: selected state must keep one centered semantic halo.');
+  forbidText(componentCss,'box-shadow:inset 0 -2px 0 var(--dkds-ca-tab-indicator)','HARD-04: canonical Tab selected/active paint must not stack an underline indicator on top of its filled state.');
 
   // HARD-05: large elevated Thin Glass surfaces use one stronger optical contract.
   requireRegex(thinGlass,/elevated:\{materialBlur:10,materialBlurStrong:11,materialSaturation:1\.04,materialTintOpacity:\.76\}/,'HARD-05: Thin Glass elevated surfaces must use the shared stronger dialog/panel optical recipe.');
@@ -121,6 +123,7 @@ function validate(){
   requireText(semanticRegistry,'.secondary,[data-tone="secondary"]','HARD-07: conventional secondary actions must resolve to the canonical secondary component variant.');
   requireText(devtools,'role="tablist"','HARD-07: Core DevTools navigation must declare tab semantics instead of relying on a private active paint rule.');
   requireText(devtools,'role="tab"','HARD-07: Core DevTools navigation buttons must resolve through canonical Tab appearance.');
+  forbidRegex(devtoolsCss,/\.dkds-plugin-devtools-window>nav button\{[^}]*?(?:background|border(?:-color)?|box-shadow)\s*:/s,'HARD-07: Plugin DevTools navigation may own geometry, but canonical Tab Component Appearance must own its paint.');
   requireText(projectTabs,"project-tab${selected?' selected':''}",'HARD-07: project tabs must use selected semantics rather than historical active-state drift.');
   requireText(projectTabs,"aria-selected',selected?'true':'false'",'HARD-07: project tabs must expose canonical aria-selected state.');
   requireText(pluginManager,"tone:'success'",'HARD-07: plugin enabled status must use the canonical Chip success tone rather than private active paint.');

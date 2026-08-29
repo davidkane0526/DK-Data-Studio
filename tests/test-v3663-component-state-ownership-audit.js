@@ -24,12 +24,12 @@ assert(atLeast(tuple(pkg.version),[3,66,3]),'Component State Ownership Audit req
 
 // Aurora light mode deliberately uses filled semantic states with white labels.
 for(const token of [
-  "surfaceActive:'#00818D',surfaceSelected:'#6F50FF'",
+  "surfaceActive:'#008B97',surfaceSelected:'#6F50FF'",
   "textActive:'#FFFFFF',textSelected:'#FFFFFF'",
   "primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF'",
-  "secondary:{surface:'#00818D',surfaceHover:'#007985',text:'#FFFFFF',textActive:'#FFFFFF'",
+  "secondary:{surface:'#008B97',surfaceHover:'#00818C',text:'#FFFFFF',textActive:'#FFFFFF'",
   "selected:{surface:'#6F50FF',text:'#FFFFFF'",
-  "active:{surface:'#00818D',text:'#FFFFFF'"
+  "active:{surface:'#008B97',text:'#FFFFFF'"
 ])assert(aurora.includes(token),`Aurora light semantic state is missing ${token}`);
 
 // The exact controls that previously diverged now enter the canonical semantic pipeline.

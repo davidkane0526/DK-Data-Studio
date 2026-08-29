@@ -36,10 +36,6 @@ body.dkds-modern-ui{
 }
 body.dkds-modern-ui .brand{color:var(--dkui-text)}
 body.dkds-modern-ui .brand-mark{background:var(--dkui-surface-elevated);border-color:var(--dkui-control-border);box-shadow:var(--dkui-shadow-1)}
-body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong){border-radius:8px;box-shadow:var(--dkui-primary-shadow)}
-body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong)>.toolbar-btn.strong{box-shadow:none}
-body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong):has(>.toolbar-btn.strong:focus-visible){box-shadow:var(--dkui-primary-shadow),0 0 0 2px color-mix(in srgb,var(--dkui-accent) 20%,transparent)}
-body.dkds-modern-ui .split-command-anchor:has(>.toolbar-btn.strong)>.toolbar-btn.strong:focus-visible{outline:none;box-shadow:none}
 body.dkds-modern-ui .plugin-manager-search-wrap{background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-page-header h2,.plugin-manager-section-head strong,.plugin-card-title-line h3,.plugin-manager-stat strong){color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-subtitle,.plugin-manager-section-head span,.plugin-card-description,.plugin-card-meta){color:var(--dkui-muted)}

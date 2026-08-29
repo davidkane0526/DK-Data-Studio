@@ -27,8 +27,8 @@ assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.inclu
 assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 
-assert(css.includes('.split-command-caret{width:18px')&&css.includes('display:inline-flex;align-items:center;justify-content:center'),'split-command caret must be compact and geometrically centered beside its label');
-assert(css.includes('.topbar .menu-trigger:not(.strong)')&&css.includes('.split-command-caret.strong'),'dark menu-trigger neutralization must not strip the primary split caret of its accent surface');
+assert(css.includes('.menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px'),'source-choice menus must use the generic left-aligned menu contract');
+assert(!css.includes('.split-command-caret')&&!css.includes('.split-command-main'),'obsolete split-command caret geometry must stay removed');
 assert(css.includes('--dkui-divider:rgba(166,181,202,.024)')&&css.includes('--dkui-control-border:rgba(166,181,202,.16)')&&css.includes('background:transparent;box-shadow:none')&&css.includes('--dkui-divider-hover'),'dark structural separators must use the semantic divider channel, remain invisible at idle, and stay distinct from control borders');
 assert(chartRuntime.includes('PLOT_THEME_DARK')&&chartRuntime.includes("matchMedia?.('(prefers-color-scheme: dark)')"),'Chart Runtime must own light/dark scientific plot theming instead of CSS targeting Plotly internals');
 console.log('v3.61.27 scoped modern UI and anti-overlay checks passed.');

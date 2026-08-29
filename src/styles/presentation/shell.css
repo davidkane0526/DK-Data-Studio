@@ -389,23 +389,6 @@ body.dkds-modern-ui .plugin-main-tool-btn{
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui hr{border-color:var(--dkui-border);opacity:.55;
 }
-body.dkds-modern-ui .split-command-anchor{display:inline-flex;align-items:stretch;gap:0;position:relative;
-}
-body.dkds-modern-ui .split-command-anchor>.split-command-caret{width:18px;min-width:18px;padding:0;border-top-left-radius:0;border-bottom-left-radius:0;margin-left:-1px;font-size:10px;line-height:1;display:inline-flex;align-items:center;justify-content:center;text-align:center;
-}
-body.dkds-modern-ui .split-command-anchor>.split-command-main{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0;padding-right:7px;
-}
-body.dkds-modern-ui .split-command-anchor>.split-command-caret.strong{
-  background:var(--dkui-accent);
-  border-color:var(--dkui-accent);
-  color:#fff;
-  -webkit-text-fill-color:#fff;
-  box-shadow:none;
-}
-body.dkds-modern-ui .split-command-anchor>.split-command-caret.strong:hover:not(:disabled){
-  background:var(--dkui-accent-hover);
-  border-color:var(--dkui-accent-hover);
-}
 body.dkds-modern-ui input:not([type="checkbox"]):not([type="radio"]){
   color:var(--dkui-text,var(--text-primary));
   box-shadow:none;

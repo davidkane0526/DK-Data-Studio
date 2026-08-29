@@ -808,6 +808,10 @@ module.exports = {
       "file": "tests/test-v3663-component-state-ownership-audit.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3664-ui-feedback-closure.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1648,6 +1652,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3663-component-state-ownership-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3664-ui-feedback-closure.js",
       "args": []
     },
   ],

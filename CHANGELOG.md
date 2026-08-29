@@ -1,3 +1,15 @@
+# v3.66.4 — UI Feedback Closure & I/O Source Choice
+
+- Fix Core PlotView title alignment generically by resetting native heading margins inside `dkds-plot-view-title`. Pulse Analysis and any future plugin may use `h3`/`strong`/`span` titles without shifting or clipping the shared 28 px title bar. No Pulse-only positional override is added.
+- Remove automatic Vth demo hydration. An empty project now opens the Vth workbench with no synthetic curve; the bundled demo remains available only through the explicit “示例” action. Source refresh and artifact changes always reflect the real assigned project data. Transfer Vth Lab advances to **3.0.5**.
+- Close the remaining canonical Tab double-state path: selected/active Tabs use one Theme-authored fill/border state and no additional inset underline. Data Center Formula/Workflow/Provenance and Plugin DevTools therefore share the same Core Tab paint. Plugin DevTools also stops privately clearing Tab background/border/shadow in Presentation. Hard Visual invariant 04/07 now reject those regressions.
+- Remove the LAN Web capability chips (`数据导入 / 寻峰 / TER / …`). They were non-interactive descriptive labels rather than commands and duplicated functionality already exposed by the application.
+- Replace the Theme Inspector text `×` with a centered vector close glyph so its optical position no longer depends on platform font metrics.
+- Lighten Aurora Pop light-mode active/secondary cyan from the reverted deep teal to **#008B97** while retaining white labels and Theme-only token ownership. Aurora Pop advances to **2.2.1**.
+- Remove the separate Import/Open Project caret buttons and the decorative export chevron. `导入数据`, `读取项目` and `导出数据` now use the same single-trigger popup pattern: invoking either command first opens the standard source menu, where local/system and plugin-contributed sources such as SMB are selected. The generic menu alignment contract replaces the obsolete split-command CSS.
+- Add a **SMB** item to the bottom status bar through the Connectivity plugin; clicking it opens the SMB browser directly. SMB remains plugin-owned and Core does not acquire SMB-specific logic. Connectivity Center advances to **1.2.5**.
+- Add the v3.66.4 feedback regression gate covering all eight reported cases. Release-source validation: `npm test` **203/203 PASS**, `npm run check` **211/211 PASS**, SDK Harness **PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**, `git diff --check` **PASS**.
+
 # v3.66.3 — Component State Ownership Audit
 
 - Complete a cross-workbench audit of stateful actions, tabs and selectable menu/list rows after the v3.66.2 Aurora regression fix. Data Center, Resonance scan modes, Theme mode controls, Plugin Manager actions and Core Plugin DevTools now enter the same Component Identity → Theme token → Component Appearance pipeline instead of relying on page/context paint.

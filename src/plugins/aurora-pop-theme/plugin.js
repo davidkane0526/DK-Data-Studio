@@ -1,7 +1,7 @@
 DKDSPlugins.define({
   id:'com.dkds.theme.aurora-pop',
   name:'Aurora Pop',
-  version:'2.2.0',
+  version:'2.2.1',
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
@@ -19,7 +19,7 @@ DKDSPlugins.define({
   ];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
   if(missing.length){
-    throw new Error(`Aurora Pop 2.2.0 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
+    throw new Error(`Aurora Pop 2.2.1 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   }
 
   const profile=ctx.ui.theme.register('default',{
@@ -135,24 +135,24 @@ DKDSPlugins.define({
           },
           components:{
             tab:{
-              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:'#00818D',surfaceSelected:'#6F50FF',
+              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:'#008B97',surfaceSelected:'#6F50FF',
               text:'#596176',textSoft:'#858CA0',textActive:'#FFFFFF',textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(117,84,255,.46)',borderActive:'rgba(111,80,255,.90)',indicator:'#6F50FF',
               variants:{
                 selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8466FF',indicator:'#D8D0FF'},
-                active:{surface:'#00818D',text:'#FFFFFF',border:'#54D7D4',indicator:'#B8FAFF'},
+                active:{surface:'#008B97',text:'#FFFFFF',border:'#54D7D4',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',text:'#737B90',border:'transparent',indicator:'transparent'}
               }
             },
             toolbarAction:{
-              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:'#00818D',surfaceSelected:'#6F50FF',
+              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:'#008B97',surfaceSelected:'#6F50FF',
               text:'#4F586D',textActive:'#FFFFFF',textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:'rgba(0,185,200,.84)',indicator:'#00B9C8',
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
-                secondary:{surface:'#00818D',surfaceHover:'#007985',text:'#FFFFFF',textActive:'#FFFFFF',border:'#54D7D4',borderActive:'#00B9C8',indicator:'#B8FAFF'},
+                secondary:{surface:'#008B97',surfaceHover:'#00818C',text:'#FFFFFF',textActive:'#FFFFFF',border:'#54D7D4',borderActive:'#00B9C8',indicator:'#B8FAFF'},
                 selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8C70FF',indicator:'#D8D0FF'},
-                active:{surface:'#00818D',text:'#FFFFFF',border:'#52D4D0',indicator:'#B8FAFF'},
+                active:{surface:'#008B97',text:'#FFFFFF',border:'#52D4D0',indicator:'#B8FAFF'},
                 quiet:{surface:'transparent',surfaceHover:'#EEF1FF',text:'#667085',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',surfaceHover:'#FFDCE5',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
               }

@@ -8,7 +8,7 @@
 .dkds-plugin-devtools-actions{display:flex;flex:0 0 auto;gap:6px;position:relative;z-index:1}
 .dkds-plugin-devtools-actions button{min-height:28px;padding:3px 9px}
 .dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));overflow:auto;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd))}
-.dkds-plugin-devtools-window>nav button{border:0;background:transparent;box-shadow:none;padding:6px 9px}
+.dkds-plugin-devtools-window>nav button{padding:6px 9px}
 .dkds-plugin-devtools-window>main{overflow:auto;padding:12px}
 .dkds-devtools-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
 .dkds-devtools-metric,.dkds-devtools-section{border:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));border-radius:9px;background:var(--dkui-surface-elevated,var(--surface-elevated,#fff))}
@@ -45,6 +45,8 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-devtools-history-row{bord
 .dkds-theme-debug-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px;pointer-events:auto;cursor:move;user-select:none;touch-action:none}
 .dkds-theme-debug-overlay.is-dragging{cursor:grabbing}
 .dkds-theme-debug-overlay.is-dragging .dkds-theme-debug-header{cursor:grabbing}
-.dkds-theme-debug-exit{pointer-events:auto;cursor:default;display:inline-grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:1px solid var(--dkui-border);border-radius:7px;background:var(--dkui-control-surface,var(--dkui-surface-secondary));color:var(--dkui-text);box-shadow:none;font:600 15px/1 system-ui,sans-serif}
+.dkds-theme-debug-exit{pointer-events:auto;cursor:default;display:grid;place-items:center;flex:0 0 auto;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:1px solid var(--dkui-border);border-radius:7px;background:var(--dkui-control-surface,var(--dkui-surface-secondary));color:var(--dkui-text);box-shadow:none}
+.dkds-theme-debug-exit>svg{display:block;width:12px;height:12px;overflow:visible}
+.dkds-theme-debug-exit>svg path{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .dkds-theme-debug-exit:hover,.dkds-theme-debug-exit:focus-visible{background:var(--dkui-control-hover,var(--dkui-accent-soft));border-color:var(--dkui-accent);box-shadow:none}
 .dkds-theme-debug-hint{margin-top:2px;opacity:.72}

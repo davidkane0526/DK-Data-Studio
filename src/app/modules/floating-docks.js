@@ -251,7 +251,7 @@ document.querySelectorAll('.panel-close').forEach(b=>b.onclick=()=>{
 });
 
 // Controls
-$('#openBtn').onclick=importFiles; $('#openLocalImportMenuBtn').onclick=importFiles; $('#openProjectBtn').onclick=openProject; $('#openLocalProjectMenuBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
+$('#openLocalImportMenuBtn').onclick=importFiles; $('#openLocalProjectMenuBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
 const dataCenterSystemBtn=$('#dataCenterSystemBtn');if(dataCenterSystemBtn)dataCenterSystemBtn.onclick=()=>openPluginActivityWindow('data-center');
 $('#inspectorDockBtn').onclick=toggleInspectorDock;
 $('#importChooseFilesBtn').onclick=addImportFiles;

@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.4',apiVersion:'1.18.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.5',apiVersion:'1.18.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {
@@ -156,6 +156,7 @@
     dom.on($('#dkaiMcpCopy'),'click',()=>{const url=lastMcp?.url||lastMcp?.lanUrl||lastMcp?.localUrl;if(url)void ctx.io.clipboard.writeText(url);});
 
     // ---- Bottom status AI chat ------------------------------------------
+    const smbStatus=ctx.ui.statusBar.add({id:'smb-browser',side:'right',order:31,icon:'▦',label:'SMB',title:'打开 SMB 网络文件面板',state:'',className:'compact dksmb-status',onClick:()=>openSmb('auto')});
     const aiStatus=ctx.ui.statusBar.add({id:'ai-agent',side:'right',order:32,icon:'✦',label:'AI',title:'AI Agent',state:'',colorPolicy:'semantic',className:'dkai-status',onClick:()=>toggleChat()});
     let conversation=[],selectedRefs=[],mentionRows=[],mentionAt=-1;
     const typeLabel=type=>type==='plot'?'数据图':type==='result'?'插件结果':'数据';

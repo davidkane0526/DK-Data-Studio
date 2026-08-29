@@ -31,8 +31,7 @@ body.dkds-modern-ui .lan-web-session-count,
 body.dkds-modern-ui .lan-web-key-card strong,
 body.dkds-modern-ui .lan-web-mode-badge,
 body.dkds-modern-ui .lan-web-share-url-card,
-body.dkds-modern-ui .lan-web-share-note,
-body.dkds-modern-ui .lan-web-capabilities span {background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft)
+body.dkds-modern-ui .lan-web-share-note {background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft)
 }
 body.dkds-modern-ui .lan-web-qr-frame {background:var(--dkui-surface-soft);border-color:transparent
 }
@@ -216,12 +215,6 @@ body.dkds-modern-ui .lan-web-share-section {
   color:var(--text-secondary,#536176)
 }
 .lan-web-share-note span {
-  color:var(--text-tertiary,#7b8495)
-}
-.lan-web-capabilities span {
-  border:1px solid var(--border-subtle,#e4e8ef);
-  border-radius:999px;
-  background:var(--surface-secondary,#f6f9fd);
   color:var(--text-tertiary,#7b8495)
 }
 .lan-web-settings-card,

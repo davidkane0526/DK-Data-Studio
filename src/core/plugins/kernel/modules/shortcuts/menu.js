@@ -57,7 +57,7 @@ const {listContributions}=require('../contributions/typed');
     const margin=8,gap=5,viewportWidth=Math.max(document.documentElement?.clientWidth||0,globalThis.innerWidth||0),viewportHeight=Math.max(document.documentElement?.clientHeight||0,globalThis.innerHeight||0);
     const menuRect=menu.getBoundingClientRect?.()||{width:0,height:0};
     const width=Math.max(178,menuRect.width||menu.offsetWidth||0),height=Math.max(0,menuRect.height||menu.offsetHeight||0);
-    const alignLeft=!!button.closest?.('.split-command-anchor');
+    const alignLeft=!!button.closest?.('[data-menu-align="left"]');
     let left=alignLeft?rect.left:rect.right-width;
     left=Math.max(margin,Math.min(left,Math.max(margin,viewportWidth-width-margin)));
     let top=rect.bottom+gap;
