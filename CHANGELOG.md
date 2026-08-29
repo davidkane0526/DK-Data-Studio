@@ -1,3 +1,10 @@
+# v3.66.1 — Context-aware Export Availability
+
+- Add a Core-owned synchronous availability contract to `ctx.ui.menus.add(...)`; menu actions are re-evaluated against current activity/project/artifact state when the menu opens and on shared context changes.
+- Export registration no longer means export availability. Empty workspaces keep their export capability registered but show `当前工作区没有可导出内容` instead of stale actions that would fail.
+- Migrate Data Center, Resonance, TER and Pulse export contributions to real data/result availability. No plugin-specific shell filtering is introduced.
+- Upgrade SDK to **1.22.1** and app to **3.66.1**; Plugin API remains **1.18.0** and Theme Contract remains **3.9.0**.
+
 # v3.66.0 — Visual Contract Finalization 2
 
 - Freeze the accepted v3.65.3 global visual result (plus the later dark emphasized-action white-label readability rule) as the visual baseline while finalizing ownership instead of patching individual pages.

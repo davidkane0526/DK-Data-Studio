@@ -125,6 +125,7 @@ const {listContributions}=require('../contributions/typed');
         closeOtherCommandMenus(menu);
         document.querySelectorAll('[aria-expanded="true"]').forEach(b=>{if(b!==button)b.setAttribute('aria-expanded','false');});
         if(willOpen){
+          menu.dispatchEvent(new CustomEvent('dkds:menu-will-open',{bubbles:false}));
           if(commandMenuPortalEnabled())portalCommandMenu(button,menu);
           else menu.classList.remove('hidden');
           button.setAttribute('aria-expanded','true');

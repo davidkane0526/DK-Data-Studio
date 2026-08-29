@@ -6,7 +6,7 @@ const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');

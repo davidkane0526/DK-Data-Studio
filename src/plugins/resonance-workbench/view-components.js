@@ -362,8 +362,10 @@
         ['res-settings','设置','SUB',110,()=>settingsSurface?.open?.()]
       ];
       for(const [id,label,section,order,onClick] of toolbarActions)ctx.ui.toolbar.add({id,label,activity:'resonance',section,order,priority:section==='PRIME'?20:10,onClick});
-      const menuRows=[['res-export-main-svg','共振 I–V 主图 · SVG',10,()=>R.exportMainSvg?.()],['res-export-main-png','共振 I–V 主图 · PNG',20,()=>R.exportMainPng?.()],['res-export-main-csv','共振 I–V 主图数据 · CSV',30,()=>R.exportMainCsv?.()],['res-export-main-copy','复制共振 I–V 主图数据',40,()=>R.copyMainCsv?.()],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.()],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.()]];
-      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'resonance',order,onClick});
+      const hasMainExport=()=>{const state=R.getState?.()||{};return Array.isArray(state.selectedSweep?.points)&&state.selectedSweep.points.length>0;};
+      const hasPeakExport=()=>{const state=R.getState?.()||{};return Array.isArray(state.workspace?.peaks)&&state.workspace.peaks.length>0;};
+      const menuRows=[['res-export-main-svg','共振 I–V 主图 · SVG',10,()=>R.exportMainSvg?.(),hasMainExport],['res-export-main-png','共振 I–V 主图 · PNG',20,()=>R.exportMainPng?.(),hasMainExport],['res-export-main-csv','共振 I–V 主图数据 · CSV',30,()=>R.exportMainCsv?.(),hasMainExport],['res-export-main-copy','复制共振 I–V 主图数据',40,()=>R.copyMainCsv?.(),hasMainExport],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.(),hasPeakExport],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.(),hasPeakExport]];
+      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'resonance',order,onClick,availability});
     }
     ctx.ui.topWorkspace.register({id:'resonance',activity:'resonance',label:'共振分析',icon:'∿',layout:{mode:'native',root:{selector:'#resonanceDedicatedPage .dkds-plugin-workbench-root'},primary:{id:'main'},prime:[{id:'curve-inspector'},{id:'group-analysis'}],sub:[{id:'physics'},{id:'spacing'},{id:'gate-analysis'}]}});
     ctx.project.registerSlice('workspace',{serialize:()=>controller.serialize(),restore:data=>controller.restore(data),reset:()=>controller.reset()});ctx.events.on('analysis:refresh',({id})=>{if(id==='resonanceDedicatedPage')controller.render();});ctx.events.on('data:artifacts-changed',()=>R.refreshData?.());ctx.events.on('layout:resize',()=>controller.resize());controller.render();adapter?.resize?.();return {controller,workbench:wb,mode};

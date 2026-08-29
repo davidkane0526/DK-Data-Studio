@@ -800,6 +800,10 @@ module.exports = {
       "file": "tests/test-v3660-visual-contract-finalization.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3661-context-aware-export-menu.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1632,6 +1636,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3660-visual-contract-finalization.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3661-context-aware-export-menu.js",
       "args": []
     },
   ],

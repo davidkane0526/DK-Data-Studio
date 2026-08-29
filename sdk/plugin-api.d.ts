@@ -263,6 +263,11 @@ export interface DKDSThemeCapability {
   coverage():DKDSThemeCoverageReport;
 }
 
+export interface DKDSMenuAvailability { visible?:boolean; enabled?:boolean; reason?:string }
+export interface DKDSMenuAvailabilityContext { host:any; activityId:string|null; pluginId:string; menu:string }
+export interface DKDSMenuItemSpec { id:string; menu?:string; label:string; order?:number; activity?:string; command?:string; onClick?:(event?:Event)=>any; availability?:boolean|DKDSMenuAvailability|((context:DKDSMenuAvailabilityContext)=>boolean|DKDSMenuAvailability) }
+export interface DKDSMenusRuntime { add(spec:DKDSMenuItemSpec):HTMLButtonElement }
+
 export interface DKDSPluginContext {
   readonly apiVersion:'1.18.0'; readonly manifest:Readonly<DKDSManifest>;
   readonly runtime:{appVersion:string;isAuxiliaryWindow:boolean;isWebClient:boolean};
@@ -301,7 +306,7 @@ export interface DKDSPluginContext {
     /** Canonical runtime facade for manifest requirement `ui.workspace` / capability label `ui.plugin-workspace`. There is intentionally no `ctx.ui.pluginWorkspace`. */
     workspaceSurface:DKDSPluginWorkspaceRuntime & {compose(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace;roles:Readonly<{PRIMARY:'primary';PRIME:'prime';SUB:'sub'>};}; grid:any; portable:any; layout:{split(spec:any):any;move(spec:DKDSMovableSurfaceSpec):DKDSMovableSurface;solve(spec:Parameters<DKDSActiveLayoutSolver['solve']>[0]):ReturnType<DKDSActiveLayoutSolver['solve']>;[key:string]:any}; actions:any;
     activities:{add(spec:DKDSActivitySpec):any;activate(id:string):any;active():string};
-    topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:any; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
+    topWorkspace:DKDSTopWorkspaceRuntime; prime:any; sub:any; toolbar:any; statusBar:DKDSStatusBarRuntime; mainTools:any; menus:DKDSMenusRuntime; sidebar:any; inspectors:any; groupCharts:any; groupViews:any; mainViews:any; selectionMenus:any; mainOverlays:any; shortcuts:any;
     pages:{add(spec:{id:string;pageId?:string;html?:string;label?:string;title?:string;description?:string;icon?:string;order?:number;primary?:boolean;presentation?:'activity'|'toolbar';toolbar?:boolean;className?:string;activity?:string;activityId?:string;onOpen?:(context:any)=>any}):HTMLElement}; panels:any; styles:any; theme:DKDSThemeCapability; edit:DKDSEditRuntime; designSystem:DKDSDesignSystem
   };
 }

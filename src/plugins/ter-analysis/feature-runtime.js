@@ -248,7 +248,8 @@
         ['ter-export-maxvd-svg','TER_Max–Vd · SVG',150,()=>exportChartImage('maxVd','svg')],
         ['ter-export-maxvd-png','TER_Max–Vd · PNG',160,()=>exportChartImage('maxVd','png')]
       ];
-      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'ter',order,onClick});
+      const hasTerExport=()=>Array.isArray(T.getState?.()?.result?.records)&&T.getState().result.records.length>0;
+      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'ter',order,onClick,availability:hasTerExport});
     }
 
     function groupedResistanceRecords(result){

@@ -1,4 +1,4 @@
-# DK Data Studio Plugin SDK 1.22.0
+# DK Data Studio Plugin SDK 1.22.1
 
 
 ## Theme Contract 3.9
@@ -10,7 +10,7 @@ This directory is a **standalone plugin-development kit**. A plugin developer do
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.66.0 or newer for SDK 1.22.0 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
+- DK Data Studio 3.66.1 or newer for SDK 1.22.1 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
 
 ## Create a plugin
 
@@ -306,11 +306,28 @@ Plugin Manager provides **主题测试 / Theme Test Gallery**, rendering light a
 
 ### Theme Contract 3.9 Thin Glass
 
-SDK 1.22.0 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
+SDK 1.22.1 uses Plugin API 1.18.0 / Theme Contract 3.9.0 and makes glass composition recipe-owned rather than profile-id-owned. Themes select recipes per semantic role; Core owns role assignment, Backdrop Root handling, readability floors, and rendering. Use `ctx.ui.theme.supports('renderer.recipes.thin-glass')` to verify runtime support. `materialTintOpacity` is the historical name for semantic base-material fill opacity, not accent tint; the official template therefore uses readable 60–80% glass fills rather than the obsolete 3–7% example.
 
 
 
-### Canonical Core UI components and visual ownership (SDK 1.22.0)
+
+### Dynamic menu availability (SDK 1.22.1)
+
+`ctx.ui.menus.add(...)` supports a synchronous `availability` contract. Use it for commands whose real executability depends on the current project, data, analysis result, or selection rather than merely on whether a plugin registered an export capability. Core re-evaluates availability when the menu opens and after project/artifact/activity changes.
+
+```js
+ctx.ui.menus.add({
+  id: 'export-current',
+  menu: 'export',
+  label: '当前数据 · CSV',
+  availability: () => currentRows.length > 0,
+  onClick: () => exportCurrentCsv()
+});
+```
+
+The callback may return `boolean` or `{ visible, enabled, reason }`. Unavailable items should normally be hidden (`false` or `{visible:false}`) instead of exposing actions that can only fail. Availability must be synchronous; Core reports an invalid availability contract instead of silently treating it as available.
+
+### Canonical Core UI components and visual ownership (SDK 1.22.1)
 
 `ctx.ui.components` is the canonical construction path for standard application chrome. It exposes `action()`, `actionGroup()`, `tabs()`, `surfaceHeader()`, `field()` and `hydrate()` in addition to `mount()`. Plugins declare content, commands, semantic variants and domain layout; Core owns button/header/field geometry and Theme owns paint.
 

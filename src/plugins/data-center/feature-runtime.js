@@ -120,12 +120,14 @@
     });
 
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const hasActiveTable=()=>{const table=currentOutputArtifact();return !!(table&&table.kind==='data.table'&&Array.isArray(table.columns)&&table.columns.length&&Number(table.rowCount||0)>0);};
+      const hasActiveArtifact=()=>!!activeArtifact();
       const menuRows=[
-        ['dc-export-table-csv','当前数据表 · CSV',10,()=>exportActiveTableCsv()],
-        ['dc-export-chart-png','数据中心图形预览 · PNG',30,()=>ctx.ui.scientificPlot.saveImage('dcChart','data_center_chart','png')],
-        ['dc-copy-provenance','当前数据对象 · 复制来源链 JSON',50,()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2))]
+        ['dc-export-table-csv','当前数据表 · CSV',10,()=>exportActiveTableCsv(),hasActiveTable],
+        ['dc-export-chart-png','数据中心图形预览 · PNG',30,()=>ctx.ui.scientificPlot.saveImage('dcChart','data_center_chart','png'),hasActiveTable],
+        ['dc-copy-provenance','当前数据对象 · 复制来源链 JSON',50,()=>ctx.io.clipboard.writeText(JSON.stringify(activeArtifact()?.provenance||[],null,2)),hasActiveArtifact]
       ];
-      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'data-center',order,onClick});
+      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'data-center',order,onClick,availability});
     }
 
     const chartPane=page.querySelector('.dc-chart-pane');

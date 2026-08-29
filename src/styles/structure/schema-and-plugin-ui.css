@@ -114,12 +114,13 @@ button.wide{ width:100%;
 
   max-width:min(360px,90vw);
 }
-.command-menu>button,.command-menu>div>.plugin-menu-item{
+.command-menu>button:not([hidden]),.command-menu>div>.plugin-menu-item:not(.plugin-activity-hidden):not([hidden]){
   width:100%;
 
   display:flex;
   align-items:center;
 }
+.command-menu>button[hidden],.command-menu>div>.plugin-menu-item.plugin-activity-hidden,.command-menu>div>.plugin-menu-item[hidden]{display:none;}
 
 .command-menu-separator{height:1px;margin:4px 2px;}
 

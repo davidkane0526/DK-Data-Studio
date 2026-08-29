@@ -6,7 +6,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const json=p=>JSON.parse(read(p));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');
 assert.equal(json('sdk/contract.json').pluginApiVersion,'1.18.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 
@@ -60,7 +60,7 @@ assert(themeDoc.includes('semantic **base-material fill**'),'Theme Contract must
 assert(themeDoc.includes('`popover` 78%'),'Theme Contract must document Core readability floors.');
 assert(!themeDoc.includes('Accent tint using `materialTintOpacity`'),'Theme Contract must not describe the token as accent tint.');
 const sdkReadme=read('sdk/README.md');
-assert(sdkReadme.includes('SDK 1.22.0'),'SDK README must describe the current Theme authoring baseline.');
+assert(sdkReadme.includes('SDK 1.22.1'),'SDK README must describe the current Theme authoring baseline.');
 
 const validator=read('sdk/tools/dkds-plugin.js');
 assert(validator.includes('GLASS_FILL_FLOORS'),'SDK validator must expose low-opacity glass authoring warnings.');

@@ -4,6 +4,7 @@ const {definitionById, defaultPluginIcon, workspaceMeta}=require('../bootstrap')
 const {addCleanup}=require('../registry');
 const {renderActivityBar, sortContributions, sortButtons, refreshExportMenuPresentation, refreshToolMenuPresentation, refreshActivityVisibility, chooseFallbackActivity}=require('../activity/shell');
 const {closeCommandMenu}=require('../shortcuts/menu');
+const {eventOn}=require('../events/history');
 const {runCommand, registerContribution}=require('../commands/toolbar');
 const {registerTypedContribution}=require('./typed');
 const {reflowContextToolbar}=require('../shell/context-toolbar');
@@ -97,15 +98,64 @@ const {pluginTypeOf}=require('../manifest');
   function addMainTool(pluginId,spec) {
     return createScopedButton(pluginId,spec,'[data-plugin-main-tools]','plugin-main-tool-btn');
   }
+  let menuAvailabilityEventsBound=false;
+  function normalizeMenuAvailability(value){
+    if(value===undefined||value===null)return {visible:true,enabled:true,reason:''};
+    if(typeof value==='boolean')return {visible:value,enabled:value,reason:''};
+    if(typeof value!=='object')throw new Error('Menu availability must return a boolean or { visible, enabled, reason }.');
+    return {visible:value.visible!==false,enabled:value.enabled!==false,reason:String(value.reason||'')};
+  }
+  function evaluateMenuAvailability(button,spec,pluginId,menu){
+    let value;
+    try{
+      value=typeof spec.availability==='function'
+        ?spec.availability({host:state.host,activityId:state.activeActivityId,pluginId,menu})
+        :spec.availability;
+      if(value&&typeof value.then==='function')throw new Error('Menu availability must be synchronous.');
+      const status=normalizeMenuAvailability(value);
+      button.hidden=!status.visible;
+      button.disabled=status.visible&&!status.enabled;
+      button.dataset.dkdsAvailability=status.visible?(status.enabled?'available':'disabled'):'unavailable';
+      delete button.dataset.dkdsAvailabilityError;
+      if(status.reason){button.title=status.reason;button.setAttribute('aria-description',status.reason);}
+      else{button.removeAttribute('title');button.removeAttribute('aria-description');}
+      return status;
+    }catch(err){
+      console.error(`[DKDS menu availability:${pluginId}/${spec.id||spec.label||menu}]`,err);
+      button.hidden=true;button.disabled=true;button.dataset.dkdsAvailability='error';button.dataset.dkdsAvailabilityError=String(err?.message||err);
+      return {visible:false,enabled:false,reason:String(err?.message||err),error:err};
+    }
+  }
+  function refreshMenuAvailability(menu=''){
+    const selector=menu?`[data-plugin-menu="${String(menu)}"] .plugin-menu-item`: '[data-plugin-menu] .plugin-menu-item';
+    for(const button of document.querySelectorAll(selector)){
+      const row=button.__dkdsMenuContribution;if(!row)continue;
+      evaluateMenuAvailability(button,row.spec,row.pluginId,row.menu);
+    }
+    refreshExportMenuPresentation();
+    refreshToolMenuPresentation();
+  }
+  function ensureMenuAvailabilityEvents(){
+    if(menuAvailabilityEventsBound)return;
+    menuAvailabilityEventsBound=true;
+    for(const name of ['data:artifacts-changed','project:restored','activity:changed'])eventOn(name,()=>refreshMenuAvailability(),'core.menu-availability');
+  }
   function addMenuItem(pluginId,spec={}) {
     const definition=definitionById(pluginId);const defaultMenu=definition&&pluginTypeOf(definition.manifest)==='tool'?'tools':'export';
     const menu=String(spec.menu||defaultMenu);
     const mount=document.querySelector(`[data-plugin-menu="${menu}"]`);
     if(!mount)throw new Error(`Plugin menu mount not found: ${menu}`);
     const button=createScopedButton(pluginId,{...spec,menu},`[data-plugin-menu="${menu}"]`,'plugin-menu-item');
+    button.__dkdsMenuContribution={spec,pluginId,menu};
+    const menuHost=mount.closest('.command-menu')||mount;
+    if(!menuHost.__dkdsAvailabilityBound){
+      menuHost.__dkdsAvailabilityBound=true;
+      menuHost.addEventListener('dkds:menu-will-open',()=>refreshMenuAvailability(menu));
+    }
+    ensureMenuAvailabilityEvents();
     button.addEventListener('click',()=>closeCommandMenu(button.closest('.command-menu')));
-    const refresh=()=>{refreshExportMenuPresentation();refreshToolMenuPresentation();};
-    queueMicrotask(refresh);addCleanup(pluginId,()=>queueMicrotask(refresh));
+    queueMicrotask(()=>refreshMenuAvailability(menu));
+    addCleanup(pluginId,()=>queueMicrotask(()=>{refreshExportMenuPresentation();refreshToolMenuPresentation();}));
     return button;
   }
-module.exports=Object.freeze({registerActivity, sidebarHost, addSidebarSection, addMainOverlay, createScopedButton, addMainTool, addMenuItem});
+module.exports=Object.freeze({registerActivity, sidebarHost, addSidebarSection, addMainOverlay, createScopedButton, addMainTool, normalizeMenuAvailability, evaluateMenuAvailability, refreshMenuAvailability, addMenuItem});

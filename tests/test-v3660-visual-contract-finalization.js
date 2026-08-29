@@ -17,8 +17,8 @@ const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
 
 const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
-assert(atLeast(tuple(pkg.version),[3,66,0]),'Visual Contract Finalization 2 requires DK Data Studio 3.66.0+.');
-assert(atLeast(tuple(sdk.sdkVersion),[1,22,0]),'Visual Contract Finalization 2 requires SDK 1.22.0+.');
+assert(atLeast(tuple(pkg.version),[3,66,0]),'Visual Contract Finalization 2 requires DK Data Studio 3.66.1+.');
+assert(atLeast(tuple(sdk.sdkVersion),[1,22,0]),'Visual Contract Finalization 2 requires SDK 1.22.1+.');
 assert.strictEqual(sdk.pluginApiVersion,'1.18.0','Plugin API remains 1.18.0; this is a stronger Core UI ownership contract, not a runtime facade break.');
 assert.strictEqual(sdk.themeContractVersion,'3.9.0','Theme Contract remains 3.9.0; component identity/material resolution stays canonical.');
 
@@ -57,4 +57,4 @@ assert(pulseViews.includes('dkds-surface-heading-stack'),'Pulse Analysis must ex
 assert(pulseViews.includes('pulse-current-file-actions dkds-surface-actions')&&pulseViews.includes('pulse-table-actions dkds-surface-actions'),'Pulse Analysis header actions must use Core SurfaceActions instead of a plugin-local toolbar geometry path.');
 assert(!/\.pulse-card-heading:not\(\.dkds-plot-view-head\)\{[^}]*padding/s.test(pulseCss),'Pulse Analysis must not redefine standard SurfaceHeader padding.');
 
-console.log('v3.66.0 Visual Contract Finalization 2: canonical Core components + plugin visual ownership gates passed.');
+console.log('v3.66.1 Visual Contract Finalization 2: canonical Core components + plugin visual ownership gates passed.');

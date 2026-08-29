@@ -93,19 +93,21 @@
     page.querySelector('#pulseExportCsvBtn').onclick=()=>P.exportResults();
 
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
+      const activeResultAvailable=()=>{const state=P.getState?.()||{},active=state.files?.find?.(row=>row.id===state.activeId);return !!active?.result;};
+      const visibleResultsAvailable=()=>{const state=P.getState?.()||{},files=Array.isArray(state.files)?state.files:[];if(state.resultScope==='active'){const active=files.find(row=>row.id===state.activeId);return !!active?.result;}return files.some(row=>row.checked&&row.result);};
       const menuRows=[
-        ['pulse-export-raw-csv','当前文件 · 原始波形数据 CSV',10,()=>P.exportRawCsv()],
-        ['pulse-export-raw-svg','当前文件 · 原始波形 SVG',20,()=>P.exportRawSvg()],
-        ['pulse-export-raw-png','当前文件 · 原始波形 PNG',30,()=>P.exportRawPng()],
-        ['pulse-export-read-csv','当前可见结果 · 读取电流 CSV',50,()=>P.exportReadCsv()],
-        ['pulse-export-read-svg','当前可见结果 · 读取电流图 SVG',60,()=>P.exportReadSvg()],
-        ['pulse-export-read-png','当前可见结果 · 读取电流图 PNG',70,()=>P.exportReadPng()],
-        ['pulse-export-pulse-csv','当前可见结果 · 脉冲电流 CSV',90,()=>P.exportPulseCsv()],
-        ['pulse-export-pulse-svg','当前可见结果 · 脉冲电流图 SVG',100,()=>P.exportPulseSvg()],
-        ['pulse-export-pulse-png','当前可见结果 · 脉冲电流图 PNG',110,()=>P.exportPulsePng()],
-        ['pulse-export-summary-csv','当前可见结果 · 分析汇总 CSV',130,()=>P.exportResults()]
+        ['pulse-export-raw-csv','当前文件 · 原始波形数据 CSV',10,()=>P.exportRawCsv(),activeResultAvailable],
+        ['pulse-export-raw-svg','当前文件 · 原始波形 SVG',20,()=>P.exportRawSvg(),activeResultAvailable],
+        ['pulse-export-raw-png','当前文件 · 原始波形 PNG',30,()=>P.exportRawPng(),activeResultAvailable],
+        ['pulse-export-read-csv','当前可见结果 · 读取电流 CSV',50,()=>P.exportReadCsv(),visibleResultsAvailable],
+        ['pulse-export-read-svg','当前可见结果 · 读取电流图 SVG',60,()=>P.exportReadSvg(),visibleResultsAvailable],
+        ['pulse-export-read-png','当前可见结果 · 读取电流图 PNG',70,()=>P.exportReadPng(),visibleResultsAvailable],
+        ['pulse-export-pulse-csv','当前可见结果 · 脉冲电流 CSV',90,()=>P.exportPulseCsv(),visibleResultsAvailable],
+        ['pulse-export-pulse-svg','当前可见结果 · 脉冲电流图 SVG',100,()=>P.exportPulseSvg(),visibleResultsAvailable],
+        ['pulse-export-pulse-png','当前可见结果 · 脉冲电流图 PNG',110,()=>P.exportPulsePng(),visibleResultsAvailable],
+        ['pulse-export-summary-csv','当前可见结果 · 分析汇总 CSV',130,()=>P.exportResults(),visibleResultsAvailable]
       ];
-      for(const [id,label,order,onClick] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'pulse',order,onClick});
+      for(const [id,label,order,onClick,availability] of menuRows)ctx.ui.menus.add({id,menu:'export',label,activity:'pulse',order,onClick,availability});
     }
 
     ctx.events.on('analysis:refresh',({id})=>{if(id==='pulseAnalysisPage')P.render();});

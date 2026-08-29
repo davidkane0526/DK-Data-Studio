@@ -134,16 +134,23 @@ const {pluginTypeOf}=require('../manifest');
 
   function refreshExportMenuPresentation(){
     const pluginMenu=document.querySelector('#pluginExportMenu');
-    const visiblePluginItems=[...(pluginMenu?.querySelectorAll('.plugin-menu-item')||[])].filter(el=>!el.classList.contains('plugin-activity-hidden')&&!el.classList.contains('hidden'));
-    const hasPluginExport=visiblePluginItems.length>0;
+    if(!pluginMenu)return;
+    const scopedItems=[...pluginMenu.querySelectorAll('.plugin-menu-item')].filter(el=>!el.classList.contains('plugin-activity-hidden'));
+    const availableItems=scopedItems.filter(el=>!el.hidden&&!el.classList.contains('hidden'));
+    const registered=scopedItems.length>0;
     const active=activeActivity();
-    let context=pluginMenu?.querySelector?.('[data-plugin-export-context]')||null;
-    if(hasPluginExport&&pluginMenu){
+    let context=pluginMenu.querySelector('[data-plugin-export-context]')||null;
+    if(registered){
       if(!context){context=document.createElement('div');context.className='plugin-export-context';context.dataset.pluginExportContext='1';pluginMenu.prepend(context);}
       context.textContent=`当前：${active?.contextLabel||active?.label||'当前插件'}`;
       context.classList.remove('hidden');
     }else context?.classList?.add('hidden');
-    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!hasPluginExport;trigger.removeAttribute('title');trigger.setAttribute('aria-label','导出数据');}
+    let empty=pluginMenu.querySelector('[data-plugin-export-empty]')||null;
+    if(registered&&!availableItems.length){
+      if(!empty){empty=document.createElement('div');empty.className='command-menu-empty';empty.dataset.pluginExportEmpty='1';empty.textContent='当前工作区没有可导出内容';pluginMenu.appendChild(empty);}
+      empty.classList.remove('hidden');
+    }else empty?.classList?.add('hidden');
+    const trigger=document.querySelector('#exportMenuBtn');if(trigger){trigger.textContent='导出数据 ▾';trigger.disabled=!registered;trigger.removeAttribute('title');trigger.setAttribute('aria-label','导出数据');}
   }
 
 

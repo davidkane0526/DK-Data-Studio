@@ -1,7 +1,7 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 const renderer=read('src/core/theme/material-renderer.js');const semanticRuntime=read('src/core/theme/semantic-registry.js');const index=read('src/index.html');
 for(const token of ['.analysis-page','dkds-settings-dialog','dkds-plugin-canvas-left','dkds-plugin-canvas-right','dkds-portable-view.is-floating'])assert(semanticRuntime.includes(token),`missing canonical material role selector: ${token}`);
