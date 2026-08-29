@@ -16,6 +16,7 @@ const appPanels=readComposition(root,'src/app');
 const index=read('src/index.html');
 const modern=read('src/styles/theme/integrated-command-chrome.css');
 const materialModern=read('src/styles/theme/material-renderer.css');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
 const status=read('src/plugins/status-monitor/plugin.js');
 const statusManifest=json('src/plugins/status-monitor/plugin.json');
 
@@ -38,6 +39,7 @@ assert(status.includes('id:\'dkdsThemePanel\'')&&status.includes('dkds-theme-pro
 assert(status.includes('window.DKDSTheme?.setProfile?.')&&status.includes('window.DKDSTheme?.set?.'),'Theme picker must switch both profile and appearance mode.');
 assert(!status.includes("id:'runtime-mode'")&&!status.includes('桌面端'),'desktop runtime identity must no longer occupy permanent status-bar UI.');
 assert(statusManifest.requiresCore.includes('ui.theme')&&statusManifest.capabilities.includes('ui.theme'),'status monitor must declare its Theme dependency/capability.');
-assert(modern.includes('.dkds-theme-panel')&&modern.includes('.dkds-theme-profile-option.active'),'Theme picker must be Core-themed and expose a selected profile state.');
+assert(modern.includes('.dkds-theme-panel')&&status.includes("button.classList.toggle('active',active)")&&status.includes("button.setAttribute('aria-pressed',active?'true':'false')"),'Theme picker must expose selected state semantically instead of repainting it locally.');
+assert(componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"])'),'Theme picker selected paint must come from canonical Component Appearance.');
 
 console.log('v3.61.71 integrated command chrome and bottom Theme picker contracts passed.');

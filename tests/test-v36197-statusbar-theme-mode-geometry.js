@@ -10,6 +10,8 @@ const json=rel=>JSON.parse(read(rel));
 
 const status=read('src/styles/presentation/control-status.css');
 const theme=read('src/styles/theme/integrated-command-chrome.css');
+const component=read('src/styles/theme/component-appearance.css');
+const semantic=read('src/core/theme/semantic-registry.js');
 
 assert(/#statusBar\.statusbar\{[\s\S]*?padding:2px 14px 2px 9px;/.test(status),
   'Status bar must reserve a 14px right safe area so the AI command does not sit on the window edge.');
@@ -22,7 +24,7 @@ assert(/#dkdsThemePanel \.dkds-theme-mode-switch\{[\s\S]*?padding:2px;[\s\S]*?bo
   'Appearance segmented control must keep a rounded 9px outer track with 2px inset.');
 assert(/#dkdsThemePanel \.dkds-theme-mode-switch>button\{[\s\S]*?border-radius:7px;/.test(theme),
   'Appearance selected segment must use the matching inset radius instead of a rectangular blue block.');
-assert(/data-dkds-theme-mode="light"\],[\s\S]*?data-dkds-theme-mode="dark"\]\{[\s\S]*?background:var\(--dkui-accent\);/.test(theme),
-  'Appearance active segment must remain driven by the Core accent token.');
+assert(semantic.includes('.dkds-integrated-action-group button')&&component.includes('[data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"])')&&!/data-dkds-theme-mode="(?:light|dark)"[^{}]*\{[^}]*background:/s.test(theme),
+  'Appearance active segment must consume the canonical Theme toolbarAction active state instead of a Theme-panel-specific accent repaint.');
 
 console.log('v3.61.97 statusbar/theme geometry contract PASS: safer right inset, wider command rhythm, rounded appearance selection.');

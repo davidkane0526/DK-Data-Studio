@@ -1,39 +1,164 @@
-/* Theme Contract 3.9 component appearance.
-   Real UI and Theme Gallery consume the same Core-assigned component identity.
-   Selectors in this layer never infer semantics from page-specific classes. */
-
 /* Canonical component slots ------------------------------------------- */
+/* Component identity + variant + state is the only action-paint path.
+   Context (header/statusbar/floating) may compose geometry, never repaint it. */
 body.dkds-modern-ui [data-dkds-component-identity="tab"]{
-  background:var(--dkui-component-tab-surface,transparent);color:var(--dkui-component-tab-text,var(--dkui-text-soft));border-color:var(--dkui-component-tab-border,transparent)
+  --dkds-ca-tab-surface:var(--dkui-component-tab-surface,transparent);
+  --dkds-ca-tab-surface-hover:var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover));
+  --dkds-ca-tab-surface-active:var(--dkui-component-tab-surface-active,var(--dkui-active-surface));
+  --dkds-ca-tab-surface-selected:var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface));
+  --dkds-ca-tab-text:var(--dkui-component-tab-text,var(--dkui-text-soft));
+  --dkds-ca-tab-text-active:var(--dkui-component-tab-text-active,var(--dkui-active-text));
+  --dkds-ca-tab-text-selected:var(--dkui-component-tab-text-selected,var(--dkui-selection-text));
+  --dkds-ca-tab-border:var(--dkui-component-tab-border,transparent);
+  --dkds-ca-tab-border-hover:var(--dkui-component-tab-border-hover,var(--dkui-control-border));
+  --dkds-ca-tab-border-active:var(--dkui-component-tab-border-active,var(--dkui-selection-border));
+  --dkds-ca-tab-indicator:var(--dkui-component-tab-indicator,var(--dkui-accent));
+  background:var(--dkds-ca-tab-surface);color:var(--dkds-ca-tab-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-tab-border);box-shadow:none
 }
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover{background:var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover));border-color:var(--dkui-component-tab-border-hover,var(--dkui-control-border))}
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkui-component-tab-surface-active,var(--dkui-active-surface));color:var(--dkui-component-tab-text-active,var(--dkui-active-text));border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent))}
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface));color:var(--dkui-component-tab-text-selected,var(--dkui-selection-text));border-color:var(--dkui-component-tab-border-active,var(--dkui-selection-border));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent))}
-body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="active"]{background:var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface)));color:var(--dkui-component-tab-variant-active-text,var(--dkui-component-tab-text-active,var(--dkui-active-text)));border-color:var(--dkui-component-tab-variant-active-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-variant-active-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))}
-body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="selected"]{background:var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface)));color:var(--dkui-component-tab-variant-selected-text,var(--dkui-component-tab-text-selected,var(--dkui-selection-text)));border-color:var(--dkui-component-tab-variant-selected-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));box-shadow:inset 0 -2px 0 var(--dkui-component-tab-variant-selected-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))}
+body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="active"]{
+  --dkds-ca-tab-surface:var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface)));
+  --dkds-ca-tab-surface-hover:var(--dkui-component-tab-variant-active-surface-hover,var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover))));
+  --dkds-ca-tab-surface-active:var(--dkui-component-tab-variant-active-surface-active,var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface))));
+  --dkds-ca-tab-surface-selected:var(--dkui-component-tab-variant-active-surface-selected,var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface))));
+  --dkds-ca-tab-text:var(--dkui-component-tab-variant-active-text,var(--dkui-component-tab-text-active,var(--dkui-active-text)));
+  --dkds-ca-tab-text-active:var(--dkui-component-tab-variant-active-text-active,var(--dkui-component-tab-variant-active-text,var(--dkui-component-tab-text-active,var(--dkui-active-text))));
+  --dkds-ca-tab-text-selected:var(--dkui-component-tab-variant-active-text-selected,var(--dkui-component-tab-variant-active-text,var(--dkui-component-tab-text-selected,var(--dkui-selection-text))));
+  --dkds-ca-tab-border:var(--dkui-component-tab-variant-active-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));
+  --dkds-ca-tab-border-hover:var(--dkui-component-tab-variant-active-border-hover,var(--dkui-component-tab-variant-active-border,var(--dkui-component-tab-border-hover,var(--dkui-control-border))));
+  --dkds-ca-tab-border-active:var(--dkui-component-tab-variant-active-border-active,var(--dkui-component-tab-variant-active-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border))));
+  --dkds-ca-tab-indicator:var(--dkui-component-tab-variant-active-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))
+}
+body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="selected"]{
+  --dkds-ca-tab-surface:var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface)));
+  --dkds-ca-tab-surface-hover:var(--dkui-component-tab-variant-selected-surface-hover,var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover))));
+  --dkds-ca-tab-surface-active:var(--dkui-component-tab-variant-selected-surface-active,var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface))));
+  --dkds-ca-tab-surface-selected:var(--dkui-component-tab-variant-selected-surface-selected,var(--dkui-component-tab-variant-selected-surface,var(--dkui-component-tab-surface-selected,var(--dkui-selection-surface))));
+  --dkds-ca-tab-text:var(--dkui-component-tab-variant-selected-text,var(--dkui-component-tab-text-selected,var(--dkui-selection-text)));
+  --dkds-ca-tab-text-active:var(--dkui-component-tab-variant-selected-text-active,var(--dkui-component-tab-variant-selected-text,var(--dkui-component-tab-text-active,var(--dkui-active-text))));
+  --dkds-ca-tab-text-selected:var(--dkui-component-tab-variant-selected-text-selected,var(--dkui-component-tab-variant-selected-text,var(--dkui-component-tab-text-selected,var(--dkui-selection-text))));
+  --dkds-ca-tab-border:var(--dkui-component-tab-variant-selected-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border)));
+  --dkds-ca-tab-border-hover:var(--dkui-component-tab-variant-selected-border-hover,var(--dkui-component-tab-variant-selected-border,var(--dkui-component-tab-border-hover,var(--dkui-control-border))));
+  --dkds-ca-tab-border-active:var(--dkui-component-tab-variant-selected-border-active,var(--dkui-component-tab-variant-selected-border,var(--dkui-component-tab-border-active,var(--dkui-selection-border))));
+  --dkds-ca-tab-indicator:var(--dkui-component-tab-variant-selected-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))
+}
+body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="quiet"]{
+  --dkds-ca-tab-surface:var(--dkui-component-tab-variant-quiet-surface,var(--dkui-component-tab-surface,transparent));
+  --dkds-ca-tab-surface-hover:var(--dkui-component-tab-variant-quiet-surface-hover,var(--dkui-component-tab-surface-hover,var(--dkui-surface-hover)));
+  --dkds-ca-tab-text:var(--dkui-component-tab-variant-quiet-text,var(--dkui-component-tab-text,var(--dkui-text-soft)));
+  --dkds-ca-tab-border:var(--dkui-component-tab-variant-quiet-border,var(--dkui-component-tab-border,transparent));
+  --dkds-ca-tab-border-hover:var(--dkui-component-tab-variant-quiet-border-hover,var(--dkui-component-tab-border-hover,var(--dkui-control-border)));
+  --dkds-ca-tab-indicator:var(--dkui-component-tab-variant-quiet-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))
+}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover:not(:disabled){background:var(--dkds-ca-tab-surface-hover);border-color:var(--dkds-ca-tab-border-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-tab-surface-active);color:var(--dkds-ca-tab-text-active);border-color:var(--dkds-ca-tab-border-active);box-shadow:inset 0 -2px 0 var(--dkds-ca-tab-indicator)}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-tab-surface-selected);color:var(--dkds-ca-tab-text-selected);border-color:var(--dkds-ca-tab-border-active);box-shadow:inset 0 -2px 0 var(--dkds-ca-tab-indicator)}
 
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]{
   --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));border-radius:var(--dkui-radius);color:var(--dkui-component-toolbar-group-text,var(--dkui-text));box-shadow:var(--dkui-shadow-1)
 }
 body.dkds-modern-ui .system-core-tools-group[data-dkds-component-identity="toolbarGroup"]>.menu-anchor:before{background:var(--dkui-component-toolbar-group-border,var(--dkui-divider))}
 
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong):not(.danger-soft){background:var(--dkui-component-toolbar-action-surface,transparent);color:var(--dkui-component-toolbar-action-text,var(--dkui-text));border-color:var(--dkui-component-toolbar-action-border,transparent)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong):not(.danger-soft):hover:not(:disabled){background:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));border-color:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border))}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"]):not(.primary):not(.strong){background:var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface));color:var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text));border-color:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));box-shadow:var(--dkui-selected-shadow)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.selected,[aria-selected="true"]):not(.primary):not(.strong){background:var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface));color:var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text));border-color:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));box-shadow:var(--dkui-selected-shadow)}
-
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]{
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-surface,transparent);
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-text,var(--dkui-text));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-border,transparent);
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
+  --dkds-ca-action-shadow:none;
+  --dkds-ca-action-state-shadow:var(--dkui-selected-shadow);
+  --dkds-ca-action-focus-shadow:0 0 0 2px var(--dkui-focus);
+  background:var(--dkds-ca-action-surface);color:var(--dkds-ca-action-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow)
+}
 /* Controlled Theme 3.9 component variants. Theme declares values; Core owns
-   the fixed variant vocabulary and the rendering recipe. */
+   the fixed variant vocabulary, including hover/pressed state consumption. */
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]{
-  background:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);border-color:var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent))
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-primary-surface-hover,var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent-hover)));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-primary-surface-active,var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent)));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-primary-surface-selected,var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent)));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-primary-text-active,var(--dkui-component-toolbar-action-variant-primary-text,#fff));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-primary-text-selected,var(--dkui-component-toolbar-action-variant-primary-text,#fff));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent));
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-primary-border-hover,var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent)));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-primary-border-active,var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent)));
+  --dkds-ca-action-shadow:var(--dkui-primary-shadow);
+  --dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),0 0 0 2px var(--dkui-focus)
 }
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="secondary"]{
-  background:var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft));color:var(--dkui-component-toolbar-action-variant-secondary-text,var(--dkui-accent-alt));border-color:var(--dkui-component-toolbar-action-variant-secondary-border,color-mix(in srgb,var(--dkui-accent-alt) 32%,var(--dkui-control-border)))
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-secondary-surface-hover,var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft)));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-secondary-surface-active,var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft)));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-secondary-surface-selected,var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft)));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-secondary-text,var(--dkui-accent-alt));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-secondary-text-active,var(--dkui-component-toolbar-action-variant-secondary-text,var(--dkui-accent-alt)));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-secondary-text-selected,var(--dkui-component-toolbar-action-variant-secondary-text,var(--dkui-accent-alt)));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-secondary-border,color-mix(in srgb,var(--dkui-accent-alt) 32%,var(--dkui-control-border)));
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-secondary-border-hover,var(--dkui-component-toolbar-action-variant-secondary-border,var(--dkui-control-border)));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-secondary-border-active,var(--dkui-component-toolbar-action-variant-secondary-border,var(--dkui-selection-border)))
 }
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="active"]{background:var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface)));color:var(--dkui-component-toolbar-action-variant-active-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text)));border-color:var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));box-shadow:var(--dkui-selected-shadow)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="selected"]{background:var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface)));color:var(--dkui-component-toolbar-action-variant-selected-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text)));border-color:var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));box-shadow:var(--dkui-selected-shadow)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]{background:var(--dkui-component-toolbar-action-variant-quiet-surface,transparent);box-shadow:none}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="destructive"]{background:var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft));color:var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger));border-color:var(--dkui-component-toolbar-action-variant-destructive-border,color-mix(in srgb,var(--dkui-danger) 32%,var(--dkui-control-border)))}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="active"]{
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface)));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-active-surface-hover,var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover))));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-active-surface-active,var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface))));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-active-surface-selected,var(--dkui-component-toolbar-action-variant-active-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface))));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-active-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text)));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-active-text-active,var(--dkui-component-toolbar-action-variant-active-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text))));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-active-text-selected,var(--dkui-component-toolbar-action-variant-active-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text))));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-active-border-hover,var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border))));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-active-border-active,var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border))));
+  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
+  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),0 0 0 2px var(--dkui-focus)
+}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="selected"]{
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface)));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-selected-surface-hover,var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover))));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-selected-surface-active,var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-active,var(--dkui-active-surface))));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-selected-surface-selected,var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface))));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-selected-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text)));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-selected-text-active,var(--dkui-component-toolbar-action-variant-selected-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text))));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-selected-text-selected,var(--dkui-component-toolbar-action-variant-selected-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text))));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-selected-border-hover,var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border))));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-selected-border-active,var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border))));
+  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
+  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),0 0 0 2px var(--dkui-focus)
+}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]{
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-quiet-surface,transparent);
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-quiet-surface-hover,var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover)));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-quiet-surface-active,var(--dkui-component-toolbar-action-variant-quiet-surface,transparent));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-quiet-surface-selected,var(--dkui-component-toolbar-action-variant-quiet-surface,transparent));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-quiet-text,var(--dkui-component-toolbar-action-text,var(--dkui-text)));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-quiet-text-active,var(--dkui-component-toolbar-action-variant-quiet-text,var(--dkui-component-toolbar-action-text-active,var(--dkui-active-text))));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-quiet-text-selected,var(--dkui-component-toolbar-action-variant-quiet-text,var(--dkui-component-toolbar-action-text-selected,var(--dkui-selection-text))));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-quiet-border,transparent);
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-quiet-border-hover,var(--dkui-component-toolbar-action-variant-quiet-border,transparent));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-quiet-border-active,var(--dkui-component-toolbar-action-variant-quiet-border,transparent));
+  --dkds-ca-action-shadow:none;--dkds-ca-action-state-shadow:none;--dkds-ca-action-focus-shadow:0 0 0 2px var(--dkui-focus)
+}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="destructive"]{
+  --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-destructive-surface-hover,var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft)));
+  --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-destructive-surface-active,var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft)));
+  --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-destructive-surface-selected,var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft)));
+  --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger));
+  --dkds-ca-action-text-active:var(--dkui-component-toolbar-action-variant-destructive-text-active,var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger)));
+  --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-destructive-text-selected,var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger)));
+  --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-destructive-border,color-mix(in srgb,var(--dkui-danger) 32%,var(--dkui-control-border)));
+  --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-destructive-border-hover,var(--dkui-component-toolbar-action-variant-destructive-border,var(--dkui-control-border)));
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-destructive-border-active,var(--dkui-component-toolbar-action-variant-destructive-border,var(--dkui-control-border)))
+}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:hover:not(:disabled){background:var(--dkds-ca-action-surface-hover);border-color:var(--dkds-ca-action-border-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-action-surface-active);color:var(--dkds-ca-action-text-active);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-state-shadow)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-action-surface-selected);color:var(--dkds-ca-action-text-selected);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-state-shadow)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible{outline:none;border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-focus-shadow)}
 
 /* Headers: identity, not visual location, determines the appearance slot. */
 body.dkds-modern-ui [data-dkds-component-identity="panelHeader"]{
@@ -50,11 +175,61 @@ body.dkds-modern-ui :is([data-dkds-component-identity="panelHeader"],[data-dkds-
   box-shadow:0 0 var(--dkui-effect-glow-radius,0px) color-mix(in srgb,var(--dkui-effect-accent-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent),inset 0 0 0 1px color-mix(in srgb,var(--dkui-effect-edge-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent)
 }
 
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:not(.primary):not(.strong):not(.danger-soft){background:var(--dkui-component-menu-item-surface,transparent);color:var(--dkui-component-menu-item-text,var(--dkui-text));border-color:var(--dkui-component-menu-item-border,transparent)}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:not(.primary):not(.strong):not(.danger-soft):hover{background:var(--dkui-component-menu-item-surface-hover,var(--dkui-control-hover));border-color:var(--dkui-component-menu-item-border-hover,transparent)}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.active,[aria-pressed="true"]):not(.primary):not(.strong){background:var(--dkui-component-menu-item-surface-active,var(--dkui-active-surface));color:var(--dkui-component-menu-item-text-active,var(--dkui-active-text));border-color:var(--dkui-component-menu-item-border-active,var(--dkui-selection-border))}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.selected,[aria-selected="true"],[aria-checked="true"]):not(.primary):not(.strong){background:var(--dkui-component-menu-item-surface-selected,var(--dkui-selection-surface));color:var(--dkui-component-menu-item-text-selected,var(--dkui-selection-text));border-color:var(--dkui-component-menu-item-border-active,var(--dkui-selection-border))}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="destructive"]{background:var(--dkui-component-menu-item-variant-destructive-surface,var(--dkui-danger-soft));color:var(--dkui-component-menu-item-variant-destructive-text,var(--dkui-danger))}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]{
+  --dkds-ca-menu-surface:var(--dkui-component-menu-item-surface,transparent);
+  --dkds-ca-menu-surface-hover:var(--dkui-component-menu-item-surface-hover,var(--dkui-control-hover));
+  --dkds-ca-menu-surface-active:var(--dkui-component-menu-item-surface-active,var(--dkui-active-surface));
+  --dkds-ca-menu-surface-selected:var(--dkui-component-menu-item-surface-selected,var(--dkui-selection-surface));
+  --dkds-ca-menu-text:var(--dkui-component-menu-item-text,var(--dkui-text));
+  --dkds-ca-menu-text-active:var(--dkui-component-menu-item-text-active,var(--dkui-active-text));
+  --dkds-ca-menu-text-selected:var(--dkui-component-menu-item-text-selected,var(--dkui-selection-text));
+  --dkds-ca-menu-border:var(--dkui-component-menu-item-border,transparent);
+  --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-border-hover,transparent);
+  --dkds-ca-menu-border-active:var(--dkui-component-menu-item-border-active,var(--dkui-selection-border));
+  background:var(--dkds-ca-menu-surface);color:var(--dkds-ca-menu-text);-webkit-text-fill-color:currentColor;border-color:var(--dkds-ca-menu-border)
+}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="active"]{
+  --dkds-ca-menu-surface:var(--dkui-component-menu-item-variant-active-surface,var(--dkui-component-menu-item-surface-active,var(--dkui-active-surface)));
+  --dkds-ca-menu-surface-hover:var(--dkui-component-menu-item-variant-active-surface-hover,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-surface-active:var(--dkui-component-menu-item-variant-active-surface-active,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-text:var(--dkui-component-menu-item-variant-active-text,var(--dkui-component-menu-item-text-active,var(--dkui-active-text)));
+  --dkds-ca-menu-text-active:var(--dkui-component-menu-item-variant-active-text-active,var(--dkds-ca-menu-text));
+  --dkds-ca-menu-border:var(--dkui-component-menu-item-variant-active-border,var(--dkui-component-menu-item-border-active,var(--dkui-selection-border)));
+  --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-variant-active-border-hover,var(--dkds-ca-menu-border));
+  --dkds-ca-menu-border-active:var(--dkui-component-menu-item-variant-active-border-active,var(--dkds-ca-menu-border))
+}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="selected"]{
+  --dkds-ca-menu-surface:var(--dkui-component-menu-item-variant-selected-surface,var(--dkui-component-menu-item-surface-selected,var(--dkui-selection-surface)));
+  --dkds-ca-menu-surface-hover:var(--dkui-component-menu-item-variant-selected-surface-hover,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-surface-selected:var(--dkui-component-menu-item-variant-selected-surface-selected,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-text:var(--dkui-component-menu-item-variant-selected-text,var(--dkui-component-menu-item-text-selected,var(--dkui-selection-text)));
+  --dkds-ca-menu-text-selected:var(--dkui-component-menu-item-variant-selected-text-selected,var(--dkds-ca-menu-text));
+  --dkds-ca-menu-border:var(--dkui-component-menu-item-variant-selected-border,var(--dkui-component-menu-item-border-active,var(--dkui-selection-border)));
+  --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-variant-selected-border-hover,var(--dkds-ca-menu-border));
+  --dkds-ca-menu-border-active:var(--dkui-component-menu-item-variant-selected-border-active,var(--dkds-ca-menu-border))
+}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="quiet"]{
+  --dkds-ca-menu-surface:var(--dkui-component-menu-item-variant-quiet-surface,transparent);
+  --dkds-ca-menu-surface-hover:var(--dkui-component-menu-item-variant-quiet-surface-hover,var(--dkui-component-menu-item-surface-hover,var(--dkui-control-hover)));
+  --dkds-ca-menu-text:var(--dkui-component-menu-item-variant-quiet-text,var(--dkui-component-menu-item-text,var(--dkui-text-soft)));
+  --dkds-ca-menu-border:var(--dkui-component-menu-item-variant-quiet-border,transparent);
+  --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-variant-quiet-border-hover,var(--dkds-ca-menu-border))
+}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="destructive"]{
+  --dkds-ca-menu-surface:var(--dkui-component-menu-item-variant-destructive-surface,var(--dkui-danger-soft));
+  --dkds-ca-menu-surface-hover:var(--dkui-component-menu-item-variant-destructive-surface-hover,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-surface-active:var(--dkui-component-menu-item-variant-destructive-surface-active,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-surface-selected:var(--dkui-component-menu-item-variant-destructive-surface-selected,var(--dkds-ca-menu-surface));
+  --dkds-ca-menu-text:var(--dkui-component-menu-item-variant-destructive-text,var(--dkui-danger));
+  --dkds-ca-menu-text-active:var(--dkui-component-menu-item-variant-destructive-text-active,var(--dkds-ca-menu-text));
+  --dkds-ca-menu-text-selected:var(--dkui-component-menu-item-variant-destructive-text-selected,var(--dkds-ca-menu-text));
+  --dkds-ca-menu-border:var(--dkui-component-menu-item-variant-destructive-border,color-mix(in srgb,var(--dkui-danger) 32%,transparent));
+  --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-variant-destructive-border-hover,var(--dkds-ca-menu-border));
+  --dkds-ca-menu-border-active:var(--dkui-component-menu-item-variant-destructive-border-active,var(--dkds-ca-menu-border))
+}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:hover:not(:disabled){background:var(--dkds-ca-menu-surface-hover);border-color:var(--dkds-ca-menu-border-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-menu-surface-active);color:var(--dkds-ca-menu-text-active);border-color:var(--dkds-ca-menu-border-active)}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.selected,[aria-selected="true"],[aria-checked="true"]){background:var(--dkds-ca-menu-surface-selected);color:var(--dkds-ca-menu-text-selected);border-color:var(--dkds-ca-menu-border-active)}
 
 body.dkds-modern-ui [data-dkds-component-identity="chip"]{background:var(--dkui-component-chip-surface,var(--dkui-surface-soft));color:var(--dkui-component-chip-text,var(--dkui-text-soft));border-color:var(--dkui-component-chip-border,transparent)}
 body.dkds-modern-ui [data-dkds-component-identity="chip"]:hover{background:var(--dkui-component-chip-surface-hover,var(--dkui-surface-hover));border-color:var(--dkui-component-chip-border-hover,var(--dkui-control-border))}
@@ -76,19 +251,8 @@ body.dkds-modern-ui [data-dkds-component-identity="field"]:focus-visible{backgro
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
 
 
-/* Header-context appearance: title-bar actions consume the header Material
-   directly. Non-primary commands keep semantic text/indicator state without
-   drawing a nested button capsule; primary actions retain their filled style. */
-body.dkds-modern-ui .dkds-surface-header .dkds-surface-actions [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong),
-body.dkds-modern-ui .dkds-surface-header .dkds-plot-view-actions [data-dkds-component-identity="toolbarAction"]:not(.primary):not(.strong){
-  background:transparent;
-  border-color:transparent;
-  box-shadow:none;
-}
-/* Surface-header tab groups remain geometrically integrated with the title bar,
-   but the selected/active tab keeps the canonical Theme component paint. The
-   group itself has no nested Material capsule, so state is visible without
-   reintroducing a second toolbar surface. */
+/* Header composition intentionally has no action-specific paint. Component
+   identity, variant and state remain authoritative inside every surface. */
 
 /* Dark-theme action contrast policy. Filled/active application commands use a
    single high-contrast label color across every Theme profile. Themes still

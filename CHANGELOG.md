@@ -1,3 +1,13 @@
+# v3.66.3 — Component State Ownership Audit
+
+- Complete a cross-workbench audit of stateful actions, tabs and selectable menu/list rows after the v3.66.2 Aurora regression fix. Data Center, Resonance scan modes, Theme mode controls, Plugin Manager actions and Core Plugin DevTools now enter the same Component Identity → Theme token → Component Appearance pipeline instead of relying on page/context paint.
+- Expand the Core Semantic Registry for shared mode groups, integrated action groups, selectable `role=option` / list / context rows, SUPER selectors and conventional `.secondary` actions. Explicit Core component identity/variant ownership is preserved through runtime hydration so generic inference cannot overwrite a declared semantic state.
+- Remove remaining active/selected paint from Presentation, Material Renderer and integrated-header composition. Context may still own geometry/material integration, but canonical `toolbarAction`, `tab` and `menuItem` state color, border, foreground and state shadow have one paint owner: `theme/component-appearance.css`.
+- Migrate Plugin DevTools navigation from a private `.active` visual rule to real `tablist` / `tab` / `aria-selected` semantics, closing a latent case where removal of duplicated CSS would otherwise remove its selected-state feedback.
+- Repair two additional semantic drifts found by the audit: project tabs return to `selected` / `aria-selected` Tab semantics instead of the later `active` shortcut, and Plugin Manager status badges use canonical Chip `success` / `warning` / `danger` tones instead of Presentation-owned status paint. LAN address selection rows now use the shared List/MenuItem selection path while retaining only their domain-specific radio marker geometry.
+- Add Hard Visual invariant 07. Release validation now rejects action/tab state paint outside Component Appearance in both Core styles and first-party plugin CSS, rejects location-specific repaint of canonical component identities, and requires the shared semantic routing used by the audited controls. No Data Center- or Aurora-page-specific CSS patch is introduced.
+- Release-source validation: `npm test` **202/202 PASS**, `npm run check` **210/210 PASS**, SDK Harness **PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**, `git diff --check` **PASS**.
+
 # v3.66.2 — Aurora Action-State Regression Fix
 
 - Fix the regression introduced when v3.66.0 froze the older v3.65.3 visual baseline: Core once again consumes Theme-authored `active` / `selected` variants for canonical `toolbarAction` and `tab` components instead of exposing variant tokens that the CSS renderer does not actually use.

@@ -19,7 +19,8 @@ assert(components.includes('Dark-theme action contrast policy'),'Core must defin
 assert(components.includes('[data-dkds-component-identity="toolbarAction"]:is(')&&components.includes('color:#fff;-webkit-text-fill-color:#fff'),'Dark toolbar actions must render high-contrast white labels.');
 assert(components.includes('[data-dkds-component-identity="tab"]:is('),'Dark active/selected tabs must use the same high-contrast label policy.');
 assert(components.includes('[data-dkds-component-identity="tab"][data-dkds-component-variant="selected"]')&&components.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="active"]'),'Core must render Theme-authored selected/active component variants.');
-assert(!components.includes('.dkds-surface-header .dkds-surface-tabs [data-dkds-component-identity="tab"]:is(.selected,.active')||!components.includes('background:transparent;\n  border-color:transparent;\n  box-shadow:inset 0 -2px'),'Surface-header tabs must not be flattened into text-only underline state.');
+assert(!/\.dkds-surface-header[^{}]*\[data-dkds-component-identity="(?:tab|toolbarAction)"\][^{]*\{/.test(components),'Surface/header context must never redefine canonical Tab or ToolbarAction paint.');
+assert(components.includes('--dkui-component-toolbar-action-variant-primary-surface-hover')&&components.includes('--dkui-component-toolbar-action-variant-secondary-surface-hover'),'Core must consume Theme-authored hover slots for action variants, not only their idle colors.');
 
 // Surface/Plot header commands share the title-bar Material; nested wrappers may not draw a capsule.
 assert(surfaces.includes('.dkds-surface-actions'),'Core Surface Header composition must remain generic.');

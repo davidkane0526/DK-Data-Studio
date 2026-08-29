@@ -27,8 +27,8 @@ const aurora=read('src/plugins/aurora-pop-theme/plugin.js');
 assert(Number(pkg.version.split('.')[0])>3||(Number(pkg.version.split('.')[0])===3&&Number(pkg.version.split('.')[1])>65)||(Number(pkg.version.split('.')[0])===3&&Number(pkg.version.split('.')[1])===65&&Number(pkg.version.split('.')[2])>=8),'v3.65.8 baseline gate requires 3.65.8+');
 
 // Accepted global appearance stays on the v3.65.3 line.
-assert(projectTabs.includes("project-tab ${t.id===state.activeProjectTabId?'active':''}"),'Project tabs must retain the accepted v3.65.3 active-tab implementation.');
-assert(/\.project-tab\.active\s*\{/.test(shell),'Project-tab paint must remain on the accepted v3.65.3 baseline.');
+assert(projectTabs.includes("project-tab${selected?' selected':''}")&&projectTabs.includes("aria-selected',selected?'true':'false'"),'Project tabs must use canonical selected-tab semantics rather than the historical active-state shortcut.');
+assert(!/\.project-tab\.active\s*\{[^}]*?(?:background|color|border-color|box-shadow)/s.test(shell),'Project-tab active paint must not return to Shell; canonical Tab Component Appearance owns it.');
 assert(workbench.includes("b.classList.toggle('active',row.mounted)"),'Analysis PRIME navigation must retain the accepted v3.65.3 visual state.');
 assert(!plotView.includes('dkds-header-command-strip'),'Generic PlotView chrome must not inherit the rejected v3.65.6 command-strip experiment.');
 assert(!chrome.includes('dkds-header-command-strip'),'Global integrated-command chrome must stay on the v3.65.3 geometry baseline.');

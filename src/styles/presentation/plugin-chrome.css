@@ -106,15 +106,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-header {color:v
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header h2 {color:#e6ebf3
 }
-body.dkds-modern-ui .plugin-manager-page button.active,
-body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"] {
-  background:var(--dkui-accent-soft);
-  border-color:color-mix(in srgb,var(--dkui-accent) 34%,var(--dkui-control-border));
-  color:var(--dkui-accent);
-  -webkit-text-fill-color:var(--dkui-accent);
-  text-shadow:none;
-  box-shadow:var(--dkui-selected-shadow)
-}
 body.dkds-modern-ui .plugin-type-badge {
   display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid #d7e4f5;border-radius:999px;
   background:#f2f6fc;color:#60718b;font-size:10px;font-weight:700;line-height:1;white-space:nowrap
@@ -184,14 +175,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-memory-meter {background:
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge {background:#202e40;border-color:#344b66;color:#a8b6c9
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge.type-tool {background:#17382d;border-color:#275543;color:#77d5aa
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-manager-page button[aria-pressed="true"] {
-  background:color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft));
-  border-color:color-mix(in srgb,var(--dkui-accent) 42%,var(--dkui-control-border));
-  color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  box-shadow:var(--dkui-selected-shadow)
 }
 body.dkds-modern-ui .tool-workspace-menu-item {
   white-space:nowrap
@@ -492,12 +475,9 @@ body.dkds-modern-ui .dkds-plugin-canvas-bottom-resizer:hover::before {
 }
 .plugin-card-icon.plugin-super-selector:hover:not(:disabled) {border-color:#b9c8ef;background:#f4f7ff;color:#244fc9
 }
-.plugin-card-icon.plugin-super-selector.selected {border-color:#91a8eb;background:#eaf0ff;color:#2148ba;box-shadow:none
-}
 .plugin-card-icon.plugin-super-selector:disabled {opacity:.62
 }
-.plugin-card-icon.plugin-super-selector.selected:disabled {opacity:1
-}
+.plugin-card-icon.plugin-super-selector.selected:disabled {opacity:1;}
 .dkds-portable-view {background:var(--surface-primary,#fff);border:0;border-radius:10px;box-shadow:none
 }
 .dkds-portable-header {background:var(--surface-secondary,var(--surface-primary,#fff));border-bottom:0

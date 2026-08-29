@@ -16,7 +16,7 @@ const dcViews=read('src/plugins/data-center/shared-views.js');
 assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--accent-soft'), 'Core linked selection must use semantic accent surface.');
 assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
 assert(modern.includes('body.dkds-modern-ui .dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-bg,var(--dkui-accent-soft))'),'Modern selected rows must be theme-token driven.');
-assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button.active'),'Dark mode must cover class-based active buttons, not only aria-pressed buttons.');
+assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is('),'Dark mode must cover every canonical active toolbarAction independent of page context.');
 assert(/body\.dkds-modern-ui \.floating-panel\s*\{[^}]*outline\s*:\s*0[^}]*border-color\s*:\s*transparent/.test(modern),'Floating utility panels must not expose a bright perimeter border.');
 assert(modern.includes('.lan-web-panel button:not(.primary):not(.panel-close)'),'LAN utility controls must consume host control surfaces.');
 assert(dcViews.includes('data-dc-tab="formula" role="tab" class="selected" aria-selected="true"'),'Data Center initial tab state must expose tab semantics and aria-selected.');

@@ -30,8 +30,8 @@ assert(css.includes('body.dkds-modern-ui .topbar{position:relative;z-index:1400'
 assert(/\.command-menu\s*\{[^}]*z-index\s*:\s*1650/.test(css),'top dropdown menus must stay above workbench content');
 assert(!css.includes('.js-plotly-plot .plotly .modebar'),'visual system must not style Plotly-generated modebar internals');
 assert(css.includes('--dkui-canvas:#eef4fb')&&css.includes('--dkui-border:#d8e5f4')&&css.includes('rgba(91,119,159,.065)'),'light material must follow the supplied cool soft-depth reference without heavy skeuomorphism');
-assert(css.includes('button[aria-pressed="true"]')&&css.includes('-webkit-text-fill-color:var(--dkui-accent)')&&css.includes('var(--dkui-accent-soft)'),'host-owned selected controls must derive both selected surface and readable foreground from the shared theme contract');
-assert(css.includes('.toolbar-btn.strong')&&css.includes('button.primary')&&css.includes('color:#fff'),'semantic primary commands must keep readable foreground colors over accent surfaces');
+assert(css.includes('[data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"])')&&css.includes('--dkds-ca-action-surface-active')&&css.includes('--dkds-ca-action-text-active'),'host-owned selected controls must derive state paint from canonical Component Appearance slots.');
+assert(css.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]')&&css.includes('--dkui-component-toolbar-action-variant-primary-text,#fff'),'semantic primary commands must keep readable foreground colors through the canonical primary variant.');
 assert(css.includes('.plugin-toolbar-btn')&&css.includes('white-space:nowrap'),'command labels must remain atomic and rely on existing overflow/reflow behavior instead of wrapping into collisions');
 
 assert(status.includes("id:'theme'")&&status.includes('dkdsThemePanel')&&status.includes('window.DKDSTheme?.setProfile?.')&&status.includes('window.DKDSTheme?.set?.'),'status bar must expose the integrated Theme picker instead of a standalone light/dark toggle');

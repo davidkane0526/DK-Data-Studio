@@ -13,10 +13,11 @@ const baseCss=read('src/styles/presentation/dialogs.css');
 const runtimeSource=read('src/core/theme/runtime.js');
 const thinThemeSource=read('src/plugins/thin-glass-theme/plugin.js');
 
-assert(chromeCss.includes('Chrome owns its actions.'),'chrome-owned command integration invariant missing');
+assert(chromeCss.includes('Chrome owns the group Material')&&chromeCss.includes('Child Component Appearance remains the sole action-paint owner'),'chrome group Material / child Component Appearance ownership invariant missing');
 assert(chromeCss.includes('[data-dkds-material-role="chrome"]')&&chromeCss.includes('.statusbar-command-cluster'),'status-bar/header integration must be semantic-role-owned');
 assert(chromeCss.includes('#statusBar.statusbar .plugin-status-item::before{display:none}'),'status-bar item separators must remain invisible');
-assert(chromeCss.includes('data-dkds-theme-mode="light"')&&chromeCss.includes('background:var(--dkui-accent)'),'theme mode active state must have an explicit readable fill');
+const componentCss=read('src/styles/theme/component-appearance.css');
+assert(!/data-dkds-theme-mode=\"(?:light|dark)\"[^{]*\{[^}]*background:/s.test(chromeCss)&&componentCss.includes('[data-dkds-component-identity="toolbarAction"]'),'theme mode active state paint must be owned by canonical Component Appearance rather than a Theme-panel context override');
 assert(baseCss.includes('background:var(--dkui-surface-soft')&&baseCss.includes('color:var(--dkui-text-soft'),'export-menu context row must use theme tokens');
 assert(!/\.plugin-export-context\s*\{[^}]*background\s*:\s*#f8fafc/s.test(baseCss),'export-menu context must not hard-code a light background');
 assert(runtimeSource.includes('preferredProfile')&&runtimeSource.includes('suspended:key'),'theme runtime must distinguish preferred profile from temporarily active fallback');

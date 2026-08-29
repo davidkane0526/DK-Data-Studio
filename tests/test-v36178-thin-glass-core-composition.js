@@ -22,7 +22,8 @@ const rendererCss=read('src/styles/theme/material-renderer.css');
 assert(!rendererCss.includes('data-dkds-theme-profile="builtin.thin-glass"'),'Renderer composition must never depend on the built-in Thin Glass profile id.');
 assert(rendererCss.includes('.command-menu.dkds-command-menu-portal'),'Command menus must support body-level popover portal rendering.');
 assert(rendererCss.includes('[data-dkds-material-content="true"]'),'Large glass windows must expose transparent content layers behind the owner surface.');
-assert(rendererCss.includes('.statusbar-command-cluster'),'Statusbar command buttons must be able to fuse into translucent statusbar material.');
+const integratedChrome=read('src/styles/theme/integrated-command-chrome.css');
+assert(integratedChrome.includes('.statusbar-command-cluster')&&integratedChrome.includes('[data-dkds-material-role="chrome"]'),'Integrated Command Chrome must fuse the statusbar command group with its parent material without taking over button state paint.');
 
 const kernel=readComposition(root,'src/core/plugins/kernel');
 for(const fn of ['portalCommandMenu','restoreCommandMenu','closeCommandMenu','positionCommandMenuPortal','repositionPortaledCommandMenus'])

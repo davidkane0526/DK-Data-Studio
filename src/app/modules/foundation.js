@@ -335,7 +335,10 @@ function renderLanWebStatus(status){
     for(const url of list){
       const b=document.createElement('button');
       b.type='button';
-      b.className=`lan-web-url-chip ${url===state.lanWebSelectedBaseUrl?'selected':''}`;
+      const selected=url===state.lanWebSelectedBaseUrl;
+      b.className=`lan-web-url-chip dkds-list-item${selected?' selected':''}`;
+      b.setAttribute('role','option');
+      b.setAttribute('aria-selected',selected?'true':'false');
       b.textContent=url;
       b.title='选择这个地址生成二维码';
       b.onclick=()=>{

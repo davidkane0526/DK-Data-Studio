@@ -75,8 +75,7 @@ body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
 }
 .trend-layout-controls button {font-size:11px
 }
-.trend-layout-controls button.active {background:var(--accent-soft,#e8efff);border-color:color-mix(in srgb,var(--accent-primary) 42%,var(--border-strong,#7c9cff));color:var(--accent-primary,#2147b7);font-weight:650
-}
+.trend-layout-controls button.active {font-weight:650;}
 .axis path {stroke:#aeb6c8
 }
 .axis line {stroke:#aeb6c8
@@ -93,8 +92,7 @@ body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
 }
 .main-plot-tools button {font-size:11px;background:var(--control-bg,var(--surface-primary,#fff));border:1px solid var(--control-border,var(--border-subtle,#d7dce7));border-radius:6px
 }
-.main-plot-tools button.active {background:var(--accent-soft,#e8efff);border-color:color-mix(in srgb,var(--accent-primary) 42%,var(--border-strong,#7c9cff));color:var(--accent-primary,#2147b7);font-weight:650
-}
+.main-plot-tools button.active {font-weight:650;}
 .trend-legend-line {border-top:3px solid currentColor
 }
 .trend-legend-line.reverse {border-top-style:dashed
@@ -179,10 +177,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar {background:va
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {background:rgba(29,35,46,.94);border-color:var(--border-strong);color:var(--text-primary)
 }
-body.dkds-modern-ui .trend-layout-controls button.active {background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 34%,var(--control-border));color:var(--accent-primary);-webkit-text-fill-color:var(--accent-primary);text-shadow:none;box-shadow:var(--dkui-selected-shadow)
-}
-body.dkds-modern-ui .main-plot-tools button.active {background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 34%,var(--control-border));color:var(--accent-primary);-webkit-text-fill-color:var(--accent-primary);text-shadow:none;box-shadow:var(--dkui-selected-shadow)
-}
 body.dkds-modern-ui .main-legend-bar {background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)
 }
 body.dkds-modern-ui .main-legend-chip {
@@ -202,14 +196,6 @@ html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
 html[data-dkds-theme="light"] body.dkds-modern-ui .analysis-chart-card {
   background:#fbfcfe;border-color:#d8e5f4;border-radius:11px;
   box-shadow:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.18) inset,0 4px 10px rgba(91,119,159,.055),0 13px 28px rgba(91,119,159,.075)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .trend-layout-controls button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-plot-tools button.active {
-  background:color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft));
-  border-color:color-mix(in srgb,var(--dkui-accent) 42%,var(--dkui-control-border));
-  color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  box-shadow:var(--dkui-selected-shadow)
 }
 body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
 body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis line {stroke:var(--text-tertiary)

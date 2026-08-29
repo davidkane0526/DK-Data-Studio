@@ -17,8 +17,9 @@ for(const token of ['.dkds-analysis-nav-btn','#statusBar.statusbar','.plugin-sta
 assert(!text['control-status.css'].includes('.plugin-status-item.active')&&!text['control-status.css'].includes('.dkds-analysis-nav-btn.active'),'Presentation must not own Theme-managed active paint for status or analysis navigation controls.');
 assert(!text['scientific.css'].includes('body.dkds-modern-ui button:hover:not(:disabled)'),'Scientific presentation must not own generic button hover geometry.');
 assert(text['shell.css'].includes('body.dkds-modern-ui button:hover:not(:disabled){transform:none}'),'Shell must own geometry-stable generic button hover.');
-assert(text['shell.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Shell must consume the semantic centered selected Activity shadow.');
-assert(text['plugin-chrome.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Plugin chrome must consume the same semantic selected Activity shadow in dark mode.');
+const component=fs.readFileSync(path.join(root,'src/styles/theme/component-appearance.css'),'utf8');
+assert(!text['shell.css'].includes('box-shadow:var(--dkui-selected-shadow)')&&!text['plugin-chrome.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Presentation modules must not own semantic selected-state shadow paint.');
+assert(component.includes('--dkds-ca-action-state-shadow:var(--dkui-selected-shadow)'),'Canonical Component Appearance must own the shared centered selected-state shadow.');
 const dup=duplicates(owners);
 assert.equal(dup.length,0,`Presentation selectors must have one file owner; duplicates: ${dup.map(([s,n])=>`${s}=>${[...n].join('|')}`).join(', ')}`);
 console.log(`v3.62 presentation ownership PASS: ${files.length} modules, duplicate selectors=0.`);

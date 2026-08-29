@@ -23,7 +23,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.2</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.3</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -108,7 +108,7 @@
       </div>
     </header>
     <div class="project-tabs-bar">
-      <div id="projectTabs" class="project-tabs"></div>
+      <div id="projectTabs" class="project-tabs" role="tablist" aria-label="项目"></div>
       <button id="newProjectTabBtn" class="new-project-tab dkds-mini-action" data-dkds-tooltip="新建独立项目标签页 · Ctrl+N" aria-label="新建项目"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.25v9.5M3.25 8h9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
     </div>
 
@@ -546,7 +546,7 @@
                 </div>
                 <button id="lanWebCopyBaseUrlBtn">复制地址</button>
               </div>
-              <div id="lanWebUrls" class="lan-web-urls">
+              <div id="lanWebUrls" class="lan-web-urls" role="listbox" aria-label="可用局域网地址">
                 <div class="lan-web-empty-address">服务启动后显示</div>
               </div>
             </div>

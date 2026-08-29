@@ -23,7 +23,9 @@ assert(runtime.includes('spec.themeProviders')&&runtime.includes("'theme-provide
 assert(runtime.includes('spec.styleSources')&&runtime.includes('loadInlineStyle(row.css'), 'dedicated built-in TOPs must load manifest.styles through the Core plugin style layer');
 
 const material=read('src/styles/theme/material-renderer.css');
-assert(material.includes('.dkds-context-menu:not([data-dkds-menu-behavior="rich"])'),'Core context menus must share the popover hit-region material contract');
+const semantic=read('src/core/theme/semantic-registry.js');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(semantic.includes('.dkds-context-item')&&componentAppearance.includes('[data-dkds-component-identity="menuItem"]'),'Core context-menu rows must use canonical MenuItem Component Appearance while the menu surface alone owns popover material.');
 assert(material.includes('.dkds-d3-chart-tooltip'),'D3 hover tooltips must remain a Core popover material surface');
 
 const shell=read('src/core/plugins/kernel/modules/activity/shell.js');

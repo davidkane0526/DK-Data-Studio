@@ -74,34 +74,8 @@ body.dkds-modern-ui :where(
   box-shadow:none;
 }
 
-/* Popover surfaces own the optical material. Menu rows are hit regions. */
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not(.danger-soft):not(.accent-soft):not(.selected):not(.active):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-checked="true"]):not([data-dkds-material-opaque="true"]){
-  background:transparent;
-  border-color:transparent;
-  box-shadow:none;
-  -webkit-backdrop-filter:none;
-  backdrop-filter:none;
-  filter:none;
-}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):not(.primary):not(.strong):not(.danger-soft):not(.accent-soft):not(.selected):not(.active):not([aria-pressed="true"]):not([aria-selected="true"]):not([aria-checked="true"]):not([data-dkds-material-opaque="true"]):hover{
-  background:var(--dkui-control-hover);
-}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
-  :where([aria-selected="true"],[aria-checked="true"],.selected){background:var(--dkui-selection-surface);color:var(--dkui-selection-text)}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
-  :where(.active,[aria-pressed="true"]){background:var(--dkui-active-surface);color:var(--dkui-active-text)}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu)
-  :where(.primary,.strong,[data-dkds-material-opaque="true"]){
-  background:var(--dkui-accent);border-color:var(--dkui-accent);color:#fff;-webkit-text-fill-color:#fff;
-}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu) :where(.danger-soft){
-  background:var(--dkui-danger-soft);border-color:color-mix(in srgb,var(--dkui-danger) 28%,var(--dkui-control-border));color:var(--dkui-danger);-webkit-text-fill-color:var(--dkui-danger);
-}
-body.dkds-modern-ui :where(.command-menu:not([data-dkds-menu-behavior="rich"]),.dkds-context-menu:not([data-dkds-menu-behavior="rich"]),[role="menu"]:not([data-dkds-menu-behavior="rich"]),.activity-more-menu,.context-overflow-menu) :where(.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"]){
-  background:var(--dkui-selection-surface);color:var(--dkui-selection-text);-webkit-text-fill-color:var(--dkui-selection-text);box-shadow:var(--dkui-selected-shadow);
-}
+/* Popover surfaces own the optical material. MenuItem Component Appearance
+   owns row paint in every popover context. */
 
 /* Layout-only descendants must not put an opaque sheet between a glass owner
    and its backdrop. */
@@ -109,24 +83,8 @@ body.dkds-modern-ui :where(.analysis-page-body,.plugin-manager-body,.automation-
   background-color:transparent;background-image:none;
 }
 
-/* Integrated actions inside translucent surfaces remain ordinary hit regions;
-   the semantic owner supplies the material. */
-body.dkds-modern-ui :where(
-  [data-dkds-material-recipe="thin-glass"],
-  [data-dkds-material-recipe="soft-glass"],
-  [data-dkds-material-recipe="liquid-glass"]
-) :where(.dkds-integrated-action-group,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
-  :where(button,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn,.project-tab-close,.dkds-dialog-action){
-  background-color:transparent;background-image:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
-}
-body.dkds-modern-ui :where(
-  [data-dkds-material-recipe="thin-glass"],
-  [data-dkds-material-recipe="soft-glass"],
-  [data-dkds-material-recipe="liquid-glass"]
-) :where(.dkds-integrated-action-group,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
-  :where(button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn):is(.active,[aria-pressed="true"],[aria-selected="true"]){
-  background:var(--dkui-active-surface);color:var(--dkui-active-text);-webkit-text-fill-color:var(--dkui-active-text);
-}
+/* Integrated actions inside translucent surfaces retain Core component paint;
+   only the enclosing MaterialSurface owns optical composition. */
 
 /* Core control recipe owns field paint even when the field itself is the
    material owner (Thin Glass intentionally maps controls to the clear recipe).

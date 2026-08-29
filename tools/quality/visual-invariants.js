@@ -11,6 +11,23 @@ const forbidText=(text,token,message)=>{if(text.includes(token))failures.push(me
 const requireRegex=(text,re,message)=>{if(!re.test(text))failures.push(message);};
 const forbidRegex=(text,re,message)=>{if(re.test(text))failures.push(message);};
 
+const actionStateSelector=selector=>{
+  const cleaned=String(selector||'').replace(/:not\([^)]*\)/g,'');
+  const action=/(?:\bbutton\b|toolbar-btn|project-tab|activity-tab|dkds-action-button|dkds-choice-button|plugin-main-tool-btn|dkds-analysis-nav-btn|plugin-toolbar-btn|theme-profile-option|plugin-super-selector|dkds-list-item|dkds-chip|plugin-status-badge|plugin-type-badge|plugin-capability-chip|dkds-summary-chip|plugin-menu-item|menu-item|dkds-context-item)/.test(cleaned);
+  const state=/(?:\.(?:active|selected|is-active|is-selected)\b|aria-pressed|aria-selected|aria-checked)/.test(cleaned);
+  return action&&state;
+};
+const actionStatePaintRules=css=>{
+  const clean=String(css||'').replace(/\/\*[\s\S]*?\*\//g,'');
+  const out=[];
+  for(const match of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+    const selector=match[1].replace(/\s+/g,' ').trim();
+    if(!selector||!actionStateSelector(selector))continue;
+    if(/(?:^|;)\s*(?:background(?:-color|-image)?|color|-webkit-text-fill-color|border(?:-(?:top|right|bottom|left)-color|-color)?|box-shadow|text-shadow)\s*:/m.test(match[2]))out.push(selector);
+  }
+  return out;
+};
+
 function validate(){
   failures.length=0;
   const componentRuntime=read('src/core/theme/component-appearance.js');
@@ -32,6 +49,11 @@ function validate(){
   const materialRoles=read('src/styles/theme/material-roles.css');
   const thinGlass=read('src/plugins/thin-glass-theme/plugin.js');
   const connectivity=read('src/plugins/connectivity-center/plugin.js');
+  const devtools=read('src/core/plugins/devtools.js');
+  const projectTabs=read('src/app/modules/project-tabs-history.js');
+  const pluginManager=read('src/core/plugins/manager-ui.js');
+  const foundation=read('src/app/modules/foundation.js');
+  const connectivityCss=read('src/styles/presentation/connectivity.css');
 
   // HARD-01: analysis/workbench navigation is a toolbar action, never a tab.
   requireRegex(semanticRegistry,/id:'tab'[^\n]+activity-tab:not\(\.top-level-activity-tab\)/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
@@ -86,12 +108,52 @@ function validate(){
     for(const issue of audit.issues)failures.push(`HARD-06: ${issue.code}: ${issue.message}`);
   }
 
+  // HARD-07: component identity/state is the single paint owner for actions.
+  requireText(uiComponentRuntime,"owner='core-component'",'HARD-07: Core factories must mark explicit component semantics separately from runtime inference.');
+  requireText(uiComponentRuntime,'dkdsComponentVariantOwner=owner','HARD-07: explicit Core component variants must retain their ownership across hydration.');
+  requireRegex(uiComponentRuntime,/variant:row\.variant\|\|''\}\);semantic\(button,'tab',row\.variant\|\|''\)/,'HARD-07: Tab factory must not mark every idle tab as selected.');
+  requireText(semanticRegistry,"dkdsComponentVariantOwner==='core-component'",'HARD-07: semantic assignment must preserve explicit component variants.');
+  requireText(semanticRegistry,'.dkds-mode-group>button','HARD-07: segmented/mode-group actions must be canonical toolbarAction components.');
+  requireText(semanticRegistry,'.dkds-integrated-action-group button','HARD-07: integrated command children must keep canonical toolbarAction identity while the parent owns material.');
+  requireText(semanticRegistry,'[role="option"]','HARD-07: selectable option rows must route through canonical menuItem appearance.');
+  requireText(semanticRegistry,'.dkds-list-item','HARD-07: shared list rows must route active/selected paint through canonical menuItem appearance.');
+  requireText(semanticRegistry,'.dkds-context-item','HARD-07: context-menu rows must route selected paint through canonical menuItem appearance.');
+  requireText(semanticRegistry,'.secondary,[data-tone="secondary"]','HARD-07: conventional secondary actions must resolve to the canonical secondary component variant.');
+  requireText(devtools,'role="tablist"','HARD-07: Core DevTools navigation must declare tab semantics instead of relying on a private active paint rule.');
+  requireText(devtools,'role="tab"','HARD-07: Core DevTools navigation buttons must resolve through canonical Tab appearance.');
+  requireText(projectTabs,"project-tab${selected?' selected':''}",'HARD-07: project tabs must use selected semantics rather than historical active-state drift.');
+  requireText(projectTabs,"aria-selected',selected?'true':'false'",'HARD-07: project tabs must expose canonical aria-selected state.');
+  requireText(pluginManager,"tone:'success'",'HARD-07: plugin enabled status must use the canonical Chip success tone rather than private active paint.');
+  requireText(pluginManager,'data-status=\"${status.tone}\"','HARD-07: plugin status badges must route semantic status through Chip data-status tokens.');
+  requireText(foundation,'lan-web-url-chip dkds-list-item','HARD-07: selectable LAN address rows must route through canonical List/MenuItem appearance.');
+  forbidRegex(connectivityCss,/\.lan-web-url-chip\.selected\s*\{[^}]*?(?:background|color|border-color|box-shadow)/s,'HARD-07: LAN address selection must not privately repaint its canonical row surface.');
+  requireText(componentCss,'--dkui-component-toolbar-action-variant-primary-surface-hover','HARD-07: Core renderer must consume Theme-authored primary hover slots.');
+  requireText(componentCss,'--dkui-component-toolbar-action-variant-secondary-surface-hover','HARD-07: Core renderer must consume Theme-authored secondary hover slots.');
+  forbidRegex(componentCss,/\.(?:dkds-surface-header|floating-header|analysis-page-header)[^{]*\[data-dkds-component-identity="(?:toolbarAction|tab)"\]/s,'HARD-07: component paint must never be redefined by visual location/context.');
+  for(const rel of ['src/styles/presentation','src/styles/theme']){
+    const dir=path.join(root,rel);if(!fs.existsSync(dir))continue;
+    for(const name of fs.readdirSync(dir).filter(name=>name.endsWith('.css'))){
+      if(rel.endsWith('/theme')&&name==='component-appearance.css')continue;
+      const rules=actionStatePaintRules(fs.readFileSync(path.join(dir,name),'utf8'));
+      for(const selector of rules)failures.push(`HARD-07: ${rel}/${name} repaints action state outside Component Appearance: ${selector}`);
+    }
+  }
+  if(fs.existsSync(pluginRoot))for(const entry of fs.readdirSync(pluginRoot,{withFileTypes:true})){
+    if(!entry.isDirectory())continue;
+    const folder=path.join(pluginRoot,entry.name);
+    for(const name of fs.readdirSync(folder).filter(name=>name.endsWith('.css'))){
+      const rel=path.relative(root,path.join(folder,name)).replace(/\\/g,'/');
+      const rules=actionStatePaintRules(fs.readFileSync(path.join(folder,name),'utf8'));
+      for(const selector of rules)failures.push(`HARD-07: ${rel} repaints action state outside Component Appearance: ${selector}`);
+    }
+  }
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:6});
+  return Object.freeze({ok:true,invariants:7});
 }
 
 if(require.main===module){

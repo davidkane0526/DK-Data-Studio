@@ -9,9 +9,9 @@
     Object.freeze({id:'inspectorHeader',label:'Inspector Header',expectedRole:'chrome',priority:100,selector:'[data-dkds-inspector-header],[data-dkds-surface-kind="inspector"] .dkds-surface-header,[data-dkds-surface-kind="inspector"] .dkds-portable-header,[data-generic-panel="inspector"] .floating-header,[data-generic-panel="inspector"] .dkds-portable-header,.inspector-panel .floating-header'}),
     Object.freeze({id:'panelHeader',label:'Panel Header',expectedRole:'chrome',priority:90,selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.analysis-chart-title,.trend-card-header,.floating-header,.dkds-portable-header'}),
     Object.freeze({id:'tab',label:'Tab',expectedRole:'',priority:80,selector:'.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]'}),
-    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.panel-header-actions>button,.trend-header-actions>button'}),
+    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.dkds-surface-header>button,.panel-header-actions>button,.trend-header-actions>button,.dkds-mode-group>button,.dkds-integrated-action-group button,.trend-layout-controls>button,.plugin-card-icon.plugin-super-selector'}),
     Object.freeze({id:'toolbarGroup',label:'Toolbar Group',expectedRole:'',priority:60,selector:'.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row'}),
-    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:50,selector:'.plugin-menu-item,[role="menuitem"],.menu-item,.command-menu>button'}),
+    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:50,selector:'.plugin-menu-item,[role="menuitem"],[role="option"],.menu-item,.command-menu>button,.dkds-context-item,.dkds-list-item'}),
     Object.freeze({id:'chip',label:'Chip / Tag',expectedRole:'',priority:40,selector:'.dkds-chip,.plugin-capability-chip,.plugin-status-badge,.plugin-type-badge,.dkds-summary-chip'}),
     Object.freeze({id:'statusBar',label:'Status Bar',expectedRole:'chrome',priority:100,selector:'#statusBar.statusbar,.statusbar'}),
     Object.freeze({id:'floatingChrome',label:'Floating Chrome',expectedRole:'floating',priority:30,selector:'.dkds-scientific-nav-tools,[data-dkds-floating-chrome]'}),
@@ -61,9 +61,9 @@
     const authoredVariant=el.dataset?.dkdsComponentVariantOwner==='core-runtime'?'':el.dataset?.dkdsComponentVariant;const explicit=String(authoredVariant||el.dataset?.dkdsActionTone||'').trim(),accepted=accept(explicit);if(accepted)return accepted;
     const state=stateOf(el);if(state==='selected'||state==='active'){const value=accept(state);if(value)return value;}
     if(matches(el,'.primary,.strong')){const value=accept('primary');if(value)return value;}
-    if(matches(el,'.danger,.danger-soft,[data-tone="danger"],[data-status="error"]')){const value=accept(component==='chip'?'danger':'destructive');if(value)return value;}
-    if(matches(el,'.quiet,[data-tone="quiet"]')){const value=accept('quiet');if(value)return value;}
-    if(matches(el,'[data-tone="secondary"]')){const value=accept('secondary');if(value)return value;}
+    if(matches(el,'.danger,.danger-soft,.error,.is-error,[data-tone="danger"],[data-status="error"]')){const value=accept(component==='chip'?'danger':'destructive');if(value)return value;}
+    if(matches(el,'.quiet,.is-excluded,.excluded,[data-tone="quiet"]')){const value=accept('quiet');if(value)return value;}
+    if(matches(el,'.secondary,[data-tone="secondary"]')){const value=accept('secondary');if(value)return value;}
     if(component==='chip'){
       for(const value of ['success','warning','danger','info'])if(matches(el,`.${value},[data-status="${value}"]`)){const acceptedValue=accept(value);if(acceptedValue)return acceptedValue;}
       if(matches(el,'[data-status="error"]'))return accept('danger');
@@ -104,14 +104,25 @@
     let changed=false;
     let match=null;
     for(const definition of COMPONENTS){if(matches(el,definition.selector)){match={id:definition.id,definition,target:el};break;}}
-    if(!match){if(el.dataset.dkdsComponentIdentityOwner==='core-runtime'){delete el.dataset.dkdsComponentIdentity;delete el.dataset.dkdsComponentIdentityOwner;delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;changed=true;}return changed;}
-    if(match){
-      if(el.dataset.dkdsComponentIdentity!==match.id){el.dataset.dkdsComponentIdentity=match.id;changed=true;}
-      const variant=variantOf(el,match.id);
-      if(variant){if(el.dataset.dkdsComponentVariant!==variant){el.dataset.dkdsComponentVariant=variant;changed=true;}}
-      else if(el.dataset.dkdsComponentVariant&&el.dataset.dkdsComponentVariantOwner==='core-runtime'){delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;changed=true;}
-      if(variant)el.dataset.dkdsComponentVariantOwner='core-runtime';
-      el.dataset.dkdsComponentIdentityOwner='core-runtime';
+    if(!match){
+      if(el.dataset.dkdsComponentIdentityOwner==='core-runtime'){delete el.dataset.dkdsComponentIdentity;delete el.dataset.dkdsComponentIdentityOwner;delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;changed=true;}
+      return changed;
+    }
+    const explicitIdentity=el.dataset.dkdsComponentIdentityOwner==='core-component'&&componentDefinition(el.dataset.dkdsComponentIdentity);
+    const componentId=explicitIdentity?el.dataset.dkdsComponentIdentity:match.id;
+    if(!explicitIdentity){
+      if(el.dataset.dkdsComponentIdentity!==componentId){el.dataset.dkdsComponentIdentity=componentId;changed=true;}
+      if(el.dataset.dkdsComponentIdentityOwner!=='core-runtime'){el.dataset.dkdsComponentIdentityOwner='core-runtime';changed=true;}
+    }
+    const explicitVariant=el.dataset.dkdsComponentVariantOwner==='core-component'&&String(el.dataset.dkdsComponentVariant||'').trim();
+    if(!explicitVariant){
+      const variant=variantOf(el,componentId);
+      if(variant){
+        if(el.dataset.dkdsComponentVariant!==variant){el.dataset.dkdsComponentVariant=variant;changed=true;}
+        if(el.dataset.dkdsComponentVariantOwner!=='core-runtime'){el.dataset.dkdsComponentVariantOwner='core-runtime';changed=true;}
+      }else if(el.dataset.dkdsComponentVariant&&el.dataset.dkdsComponentVariantOwner==='core-runtime'){
+        delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;changed=true;
+      }
     }
     return changed;
   }

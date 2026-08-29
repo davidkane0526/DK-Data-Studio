@@ -129,23 +129,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-head{backg
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-subtitle{color:#8f9bad;
 }
-body.dkds-modern-ui .dkds-analysis-workbench button.active,
-body.dkds-modern-ui .dkds-analysis-workbench button[aria-pressed="true"]{
-  background:var(--dkui-accent-soft);
-  border-color:color-mix(in srgb,var(--dkui-accent) 34%,var(--dkui-control-border));
-  color:var(--dkui-accent);
-  -webkit-text-fill-color:var(--dkui-accent);
-  text-shadow:none;
-  box-shadow:var(--dkui-selected-shadow);
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button.active,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench button[aria-pressed="true"]{
-  background:color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft));
-  border-color:color-mix(in srgb,var(--dkui-accent) 42%,var(--dkui-control-border));
-  color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  -webkit-text-fill-color:color-mix(in srgb,var(--dkui-accent) 58%,#fff);
-  box-shadow:var(--dkui-selected-shadow);
-}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench{--plugin-workspace-panel-border:var(--dkui-border);
 }
 body.dkds-modern-ui .dkds-analysis-workbench{

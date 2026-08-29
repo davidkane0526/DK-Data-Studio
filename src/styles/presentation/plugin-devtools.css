@@ -9,7 +9,6 @@
 .dkds-plugin-devtools-actions button{min-height:28px;padding:3px 9px}
 .dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));overflow:auto;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd))}
 .dkds-plugin-devtools-window>nav button{border:0;background:transparent;box-shadow:none;padding:6px 9px}
-.dkds-plugin-devtools-window>nav button.active{background:var(--dkui-accent-soft,var(--accent-soft,#eaf0ff));color:var(--dkui-accent,var(--accent-primary,#315efb))}
 .dkds-plugin-devtools-window>main{overflow:auto;padding:12px}
 .dkds-devtools-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
 .dkds-devtools-metric,.dkds-devtools-section{border:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));border-radius:9px;background:var(--dkui-surface-elevated,var(--surface-elevated,#fff))}

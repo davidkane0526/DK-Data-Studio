@@ -804,6 +804,10 @@ module.exports = {
       "file": "tests/test-v3661-context-aware-export-menu.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3663-component-state-ownership-audit.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1640,6 +1644,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3661-context-aware-export-menu.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3663-component-state-ownership-audit.js",
       "args": []
     },
   ],

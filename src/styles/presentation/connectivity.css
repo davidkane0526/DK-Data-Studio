@@ -40,10 +40,6 @@ body.dkds-modern-ui .lan-web-qr-placeholder>span {border-color:var(--dkui-contro
 }
 body.dkds-modern-ui .lan-web-qr-image {background:#fff;border-color:#fff
 }
-body.dkds-modern-ui .lan-web-url-chip {background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text-soft)
-}
-body.dkds-modern-ui .lan-web-url-chip.selected {background:var(--dkui-accent-soft);border-color:color-mix(in srgb,var(--dkui-accent) 48%,var(--dkui-control-border));color:var(--dkui-accent)
-}
 body.dkds-modern-ui .lan-web-settings-card,
 body.dkds-modern-ui .lan-web-address-card,
 body.dkds-modern-ui .lan-web-share-section {
@@ -147,12 +143,6 @@ body.dkds-modern-ui .lan-web-share-section {
   background:var(--app-bg,var(--surface-secondary,#f7f9fc));
   color:var(--text-primary,#172033)
 }
-.lan-web-url-chip {
-  border:1px solid var(--control-border,var(--border-subtle,#e0e5ee));
-  border-radius:7px;
-  background:var(--control-bg,var(--surface-secondary,#fbfcfe));
-  color:var(--text-secondary,#536176)
-}
 .lan-web-url-chip::before {
   border:2px solid var(--text-tertiary,#aab4c4);
   border-radius:50%
@@ -160,18 +150,13 @@ body.dkds-modern-ui .lan-web-share-section {
 .lan-web-url-chip::after {
   color:var(--text-tertiary,#7f8ba8)
 }
-.lan-web-url-chip.selected {
-  border-color:color-mix(in srgb,var(--accent-primary) 48%,var(--control-border,var(--border-subtle,#6f8ff2)));
-  background:var(--accent-soft,#eef3ff);
-  color:var(--accent-primary,#315efb)
-}
 .lan-web-url-chip.selected::before {
-  border-color:var(--accent-primary,#315efb);
-  background:var(--accent-primary,#315efb);
+  border-color:currentColor;
+  background:currentColor;
   box-shadow:inset 0 0 0 2px #fff
 }
 .lan-web-url-chip.selected::after {
-  color:var(--accent-primary,#315efb)
+  color:currentColor
 }
 .lan-web-empty-address {
   color:var(--text-tertiary,#7f8ba8)

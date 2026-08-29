@@ -62,8 +62,9 @@ assert(semanticTheme.includes("return semanticControlOwnsPaint(el)?'':'control'"
   'Semantic role inference and renderer ownership must leave semantic control paint to the semantic owner.');
 assert(shellCss.includes('button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn)'),
   'Generic button palette must not repaint toolbar/activity controls as standalone controls.');
-assert(materialCss.includes('.command-menu:not([data-dkds-menu-behavior="rich"])'),
-  'Menu-row flattening must exclude rich popovers with embedded controls.');
+const componentCss=read('src/styles/theme/component-appearance.css');
+assert(materialCss.includes('Popover surfaces own the optical material')&&componentCss.includes('[data-dkds-component-identity="menuItem"]'),
+  'Popover material must own only the surface while canonical MenuItem appearance owns row paint for both simple and rich popovers.');
 
 assert(!resonanceView.includes('respar-scan-global dkds-action-row'),
   'Resonance scan grid must not simultaneously claim the generic flex action-row contract.');

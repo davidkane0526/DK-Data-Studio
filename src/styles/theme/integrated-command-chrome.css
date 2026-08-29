@@ -1,7 +1,7 @@
 /* Integrated command chrome.
    Material ownership is semantic: a command group owns one compact control
    surface when it stands alone; inside a chrome MaterialSurface it becomes
-   layout-only and its children are stationary hit regions. */
+   layout-only. Child Component Appearance remains the sole action-paint owner. */
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
@@ -29,9 +29,7 @@ body.dkds-modern-ui :where(
   .panel-header-actions,
   .trend-header-actions,
   .dkds-plot-view-actions
-) > :where(.dkds-action-group,.dkds-portable-controls,.dkds-integrated-action-subgroup){
-  display:contents;
-}
+) > :where(.dkds-action-group,.dkds-portable-controls,.dkds-integrated-action-subgroup){display:contents}
 
 body.dkds-modern-ui :where(
   .dkds-integrated-action-group,
@@ -43,37 +41,8 @@ body.dkds-modern-ui :where(
   margin:0;
   min-height:26px;
   height:26px;
-  border:0;
   border-radius:0;
-  background:transparent;
-  background-image:none;
-  box-shadow:none;
   transform:none;
-  color:var(--dkui-text-soft);
-  transition:color var(--dkui-motion-fast) var(--dkui-ease-standard),background-color var(--dkui-motion-fast) var(--dkui-ease-standard);
-}
-
-body.dkds-modern-ui :where(
-  .dkds-integrated-action-group,
-  .panel-header-actions,
-  .trend-header-actions,
-  .dkds-plot-view-actions,
-  .dkds-scientific-nav-tools
-) :where(button,.dkds-scientific-nav-drag):is(:hover,:focus-visible):not(:disabled){
-  color:var(--dkui-text);
-  background:transparent;
-  box-shadow:none;
-  transform:none;
-}
-
-body.dkds-modern-ui :where(
-  .dkds-integrated-action-group,
-  .panel-header-actions,
-  .trend-header-actions,
-  .dkds-plot-view-actions
-) button:is(.active,[aria-pressed="true"],[aria-selected="true"]){
-  color:var(--dkui-text);
-  background:var(--dkui-selection-bg);
 }
 
 body.dkds-modern-ui :where(
@@ -85,8 +54,8 @@ body.dkds-modern-ui :where(
   background:transparent;
 }
 
-/* Chrome owns its actions. No nested capsule is allowed unless a component
-   explicitly requests its own surface with data-dkds-material-own-surface. */
+/* Chrome owns the group Material. No nested group capsule is allowed unless a
+   component explicitly requests its own surface. */
 body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome)
   :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
   :not([data-dkds-material-own-surface="true"]){
@@ -100,25 +69,12 @@ body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-rol
   backdrop-filter:none;
   overflow:visible;
 }
-
 body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome)
   :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
   :not([data-dkds-material-own-surface="true"]):is(:hover,:focus-within){
   border-color:transparent;
   background:transparent;
   box-shadow:none;
-}
-
-body.dkds-modern-ui :where([data-dkds-material-role="chrome"],.dkds-material-role-chrome)
-  :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,[data-dkds-material-integrated="true"])
-  :not([data-dkds-material-own-surface="true"])
-  :where(button,.plugin-status-item,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger,.dkds-scientific-nav-drag){
-  border-color:transparent;
-  background:transparent;
-  background-image:none;
-  box-shadow:none;
-  -webkit-backdrop-filter:none;
-  backdrop-filter:none;
 }
 
 /* Plot navigation is a compact standalone floating command surface. */
@@ -155,26 +111,9 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
   :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
   min-height:26px;
   height:26px;
-  border-color:transparent;
-  background:transparent;
-  background-image:none;
-  box-shadow:none;
-  -webkit-backdrop-filter:none;
-  backdrop-filter:none;
-}
-/* Primary actions remain visibly primary even when embedded in a header. */
-body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
-  :where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions)
-  :where(button,.dkds-action-button).primary{
-  background:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));
-  color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
-  -webkit-text-fill-color:var(--dkui-component-toolbar-action-variant-primary-text,#fff);
 }
 /* Selected/active header tabs are part of the title bar, not nested pills. */
-body.dkds-modern-ui .dkds-surface-header .dkds-surface-tabs > button:is(.selected,.active,[aria-selected="true"],[aria-pressed="true"]){
-  border-radius:5px;
-  box-shadow:inset 0 -2px 0 var(--dkui-component-tab-indicator,var(--dkui-accent));
-}
+body.dkds-modern-ui .dkds-surface-header .dkds-surface-tabs > button{border-radius:5px}
 
 /* Status commands are hit regions of one status-bar surface. The status bar
    itself owns hover paint; individual commands never grow a hover capsule. */
@@ -226,7 +165,6 @@ body.dkds-modern-ui .dkds-theme-profile-option{
   color:var(--dkui-text);box-shadow:none;transform:none;
 }
 body.dkds-modern-ui .dkds-theme-profile-option:hover{background:var(--dkui-control-hover);transform:none}
-body.dkds-modern-ui .dkds-theme-profile-option.active{background:var(--dkui-selection-bg)}
 body.dkds-modern-ui .dkds-theme-profile-check{display:inline-grid;place-items:center;color:var(--dkui-accent);font-weight:700}
 body.dkds-modern-ui .dkds-theme-profile-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
 body.dkds-modern-ui .dkds-theme-mode-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:7px;border-top:1px solid var(--dkui-divider);font-size:10px;color:var(--dkui-text-soft)}
@@ -249,15 +187,6 @@ body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch>button{
   min-width:52px;
   padding:0 9px;
   border-radius:7px;
-  background:transparent;
-  color:var(--dkui-text-soft);
-  -webkit-text-fill-color:var(--dkui-text-soft);
-}
-html[data-dkds-theme="light"] body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch>button[data-dkds-theme-mode="light"],
-html[data-dkds-theme="dark"] body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch>button[data-dkds-theme-mode="dark"]{
-  background:var(--dkui-accent);
-  color:#fff;
-  -webkit-text-fill-color:#fff;
 }
 
 /* Nested command groups inside a Surface Header are layout-only regardless of

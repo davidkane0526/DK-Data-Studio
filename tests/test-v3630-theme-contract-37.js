@@ -55,10 +55,11 @@ const rendererCss=read('src/styles/theme/material-renderer.css');
 assert(rendererCss.includes('var(--dkds-material-base,var(--dkui-control-bg))'),'Control role appearance must reach actual field paint.');
 assert(rendererCss.includes('--dkui-role-popover-text'),'Popover role text override must reach Core renderer.');
 const shellCss=read('src/styles/presentation/shell.css');
+const componentCss=read('src/styles/theme/component-appearance.css');
 assert(!shellCss.includes('#637188'),'Dark disabled controls must not bypass Theme 3.8 disabledText with a hard-coded presentation color.');
 assert(!shellCss.includes('color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft))'),'Dark active controls must not reconstruct active paint from accent after semantic active tokens are resolved.');
 for(const token of ['--dkui-selection-surface','--dkui-selection-text','--dkui-selection-border','--dkui-active-surface','--dkui-active-text','--dkui-disabled-surface','--dkui-disabled-text']) assert(shellCss.includes(token),`Shell must consume semantic interaction token ${token}`);
-assert(/\.project-tab\.active\{[^}]*var\(--dkui-active-surface\)[^}]*var\(--dkui-active-text\)/s.test(shellCss),'Active project tabs must consume Theme 3.8 active semantics instead of mode-specific hard-coded paint.');
+assert(componentCss.includes('var(--dkui-component-tab-surface-active,var(--dkui-active-surface))')&&componentCss.includes('var(--dkui-component-tab-text-active,var(--dkui-active-text))'),'Active project tabs must consume semantic active appearance through the canonical tab Component Appearance renderer.');
 assert(/\.dataset-item\.selected\{[^}]*var\(--dkui-selection-surface\)[^}]*var\(--dkui-selection-text\)/s.test(shellCss),'Selected dataset rows must consume Theme 3.8 selection semantics.');
 
 global.window={addEventListener(){},removeEventListener(){}};

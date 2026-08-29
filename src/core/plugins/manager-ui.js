@@ -86,10 +86,10 @@
   }
 
   function statusMeta(plugin) {
-    if (plugin.status === 'error') return {label:'加载错误', className:'error'};
-    if (plugin.active) return {label:'已启用', className:'active'};
-    if (!plugin.enabled) return {label:'已停用', className:'disabled'};
-    return {label:'待加载', className:'available'};
+    if (plugin.status === 'error') return {label:'加载错误', className:'error',tone:'danger'};
+    if (plugin.active) return {label:'已启用', className:'active',tone:'success'};
+    if (!plugin.enabled) return {label:'已停用', className:'disabled',tone:''};
+    return {label:'待加载', className:'available',tone:'warning'};
   }
 
   function capabilityLabel(capability) {
@@ -357,7 +357,7 @@
             <div class="plugin-card-title-line">
               <h3>${escapeHtml(display.name)}</h3>
               <span class="plugin-type-badge type-${escapeHtml(typeMeta.id)}">${escapeHtml(typeMeta.label)}</span>
-              <span class="plugin-status-badge ${status.className}">${status.label}</span>
+              <span class="plugin-status-badge"${status.tone?` data-status="${status.tone}"`:``}>${status.label}</span>
               ${plugin.systemLocked?`<span class="plugin-role-badge system">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top">TOP</span>`:'')}
               ${plugin.isSuper?`<span class="plugin-role-badge super">SUPER</span>`:''}
             </div>

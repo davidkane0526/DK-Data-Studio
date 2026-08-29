@@ -27,10 +27,11 @@ for(const [label,source] of [
 
 const css=read('src/styles/theme/material-renderer.css');
 const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
-assert(chromeCss.includes('Chrome owns its actions.'),'semantic chrome CSS invariant missing');
+assert(chromeCss.includes('Chrome owns the group Material')&&chromeCss.includes('Child Component Appearance remains the sole action-paint owner'),'semantic chrome group/component ownership invariant missing');
 assert(chromeCss.includes('.statusbar-command-cluster')&&chromeCss.includes('[data-dkds-material-role="chrome"]'),'statusbar fusion must be role-owned rather than widget-specific material paint');
 assert(css.includes('background-color:color-mix(in srgb,var(--dkui-role-control-surface,var(--dkui-surface)) 30%,transparent);'),'glass fields must use a flat translucent fill rather than an opaque recessed control surface');
-assert(chromeCss.includes('#dkdsThemePanel .dkds-theme-mode-switch>button[data-dkds-theme-mode="light"]'),'theme switch must have deterministic root-mode styling');
+const componentCss=read('src/styles/theme/component-appearance.css');
+assert(semantic.includes('.dkds-integrated-action-group button')&&componentCss.includes('[data-dkds-component-identity="toolbarAction"]')&&!/dkds-theme-mode-switch>button[^{}]*(?:\.active|aria-pressed)[^{]*\{[^}]*background:/s.test(chromeCss),'theme switch must use semantic toolbarAction state paint instead of Theme-panel-specific root-mode repainting');
 assert(css.includes('.plugin-export-context{')&&css.includes('background:transparent'),'export context metadata must not create an opaque light strip inside dark popovers');
 
 const runtime=read('src/core/theme/runtime.js');

@@ -16,7 +16,7 @@ assert(!/shadowFloat:'0 0 0 1px /.test(thinTheme),'Thin Glass must not reintrodu
 const roles=read('src/styles/theme/material-roles.css');
 assert(!roles.includes('.dkds-dialog-shell')&&!roles.includes('.dkds-settings-dialog'),'Material-role CSS stays semantic/runtime-owned; default-theme preservation is handled outside the role-variable layer.');
 const renderer=read('src/styles/theme/material-renderer.css');
-assert(renderer.includes(':not(.primary):not(.strong):not(.danger-soft):not(.accent-soft)')&&renderer.includes(':not([data-dkds-material-opaque="true"])'),'Glass descendant transparency must preserve semantic opaque actions.');
+assert(renderer.includes('Integrated actions inside translucent surfaces retain Core component paint')&&!/data-dkds-material-recipe=\"liquid-glass\"[^}]*:where\([^)]*button/s.test(renderer),'Glass Material Renderer must leave semantic action paint to Component Appearance instead of class-based transparency exceptions.');
 const commands=read('src/styles/theme/integrated-command-chrome.css');
 assert(commands.includes('[data-dkds-material-role=\"chrome\"]')&&commands.includes('[data-dkds-material-own-surface=\"true\"]'),'Chrome ownership selector contract missing.');
 assert(commands.includes('background:transparent')&&commands.includes('box-shadow:none')&&commands.includes('overflow:visible'),'Header action groups must fuse with parent chrome.');
