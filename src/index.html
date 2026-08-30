@@ -23,27 +23,26 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.5</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.6</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
-            <div class="menu-anchor" data-menu-align="left">
-              <button id="openBtn" class="toolbar-btn strong menu-trigger" type="button" data-menu-target="importSourceMenu" aria-label="导入数据" aria-haspopup="true" aria-expanded="false">导入数据</button>
+            <button id="openBtn" class="toolbar-btn strong" type="button" aria-label="导入">导入</button>
+            <div class="menu-anchor import-source-anchor" data-menu-align="left">
+              <button id="importSourceBtn" class="toolbar-btn menu-trigger import-source-trigger" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
               <div id="importSourceMenu" class="command-menu hidden">
                 <button id="openLocalImportMenuBtn" type="button">本地 / 系统文件…</button>
                 <div class="command-menu-separator"></div>
                 <div data-plugin-menu="import-data"></div>
               </div>
             </div>
+            <button id="saveProjectBtn" class="toolbar-btn" type="button" aria-label="保存">保存</button>
             <div class="menu-anchor" data-menu-align="left">
-              <button id="openProjectBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="projectSourceMenu" aria-label="读取项目" aria-haspopup="true" aria-expanded="false">读取项目</button>
-              <div id="projectSourceMenu" class="command-menu hidden">
-                <button id="openLocalProjectMenuBtn" type="button">本地 / 系统文件…</button>
-                <div class="command-menu-separator"></div>
-                <div data-plugin-menu="open-project"></div>
+              <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出</button>
+              <div id="exportMenu" class="command-menu hidden">
+                <div id="pluginExportMenu" data-plugin-menu="export"></div>
               </div>
             </div>
-            <button id="saveProjectBtn" class="toolbar-btn">保存项目</button>
           </div>
           <div class="menu-anchor compact-menu-anchor">
             <button id="editMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="editMenu" aria-haspopup="true" aria-expanded="false">编辑 ▾</button>
@@ -78,28 +77,22 @@
         </div>
 
         <div class="system-commandbar">
-          <div class="system-core-tools-group" role="group" aria-label="系统数据与工具">
+          <div class="system-core-tools-group" role="group" aria-label="系统数据、工具与软件管理">
             <button id="dataCenterSystemBtn" class="toolbar-btn" type="button">数据管理</button>
             <div class="menu-anchor">
               <button id="toolsMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="pluginToolsMenu" aria-haspopup="true" aria-expanded="false" disabled>工具 ▾</button>
               <div id="pluginToolsMenu" class="command-menu hidden" data-plugin-menu="tools"></div>
             </div>
-          </div>
-          <div class="menu-anchor">
-            <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出数据</button>
-            <div id="exportMenu" class="command-menu hidden">
-              <div id="pluginExportMenu" data-plugin-menu="export"></div>
-            </div>
-          </div>
-          <div class="menu-anchor">
-            <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
-            <div id="manageMenu" class="command-menu hidden">
-              <button id="projectHistoryBtn" type="button">操作历史</button>
-              <button id="pluginManagerBtn" type="button">插件管理</button>
-              <button id="automationTestBtn" type="button">自动化测试</button>
-              <button id="lanWebBtn" type="button">局域网网页版</button>
-              <div data-plugin-menu="manage"></div>
-              <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
+            <div class="menu-anchor">
+              <button id="manageMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="manageMenu" aria-haspopup="true" aria-expanded="false">软件管理 ▾</button>
+              <div id="manageMenu" class="command-menu hidden">
+                <button id="projectHistoryBtn" type="button">操作历史</button>
+                <button id="pluginManagerBtn" type="button">插件管理</button>
+                <button id="automationTestBtn" type="button">自动化测试</button>
+                <button id="lanWebBtn" type="button">局域网网页版</button>
+                <div data-plugin-menu="manage"></div>
+                <button id="updateBtn" class="update-menu-btn" type="button">软件更新 <span id="updateBadge" class="update-badge hidden"></span></button>
+              </div>
             </div>
           </div>
         </div>

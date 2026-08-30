@@ -225,7 +225,6 @@ body.dkds-modern-ui .plugin-toolbar-btn:active{transform:none}
 
 /* Modern shell owns the default control palette. Plugin/page selectors may tune geometry, not fall back to legacy white paint. */
 body.dkds-modern-ui button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn){background:var(--dkui-control-bg,var(--surface-primary,#fff));border-color:var(--dkui-border,var(--border-subtle,#d8e0eb));color:var(--dkui-text,var(--text-primary,#1c2a43))}
-body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);}
 html[data-dkds-theme="dark"] body.dkds-modern-ui button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn){background:var(--dkui-control-bg,#242b36);border-color:var(--dkui-border,#384354);color:var(--dkui-text,#dbe2ed);box-shadow:var(--dkui-shadow-1)}
 html[data-dkds-theme="dark"] body.dkds-modern-ui button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn):hover:not(:disabled){background:var(--dkui-surface-hover,#2b3442);border-color:var(--dkui-border-strong,#4b586b);color:var(--dkui-text,#edf2f8)}
 body.dkds-modern-ui .project-tabs-bar{
@@ -472,14 +471,6 @@ body.dkds-modern-ui .dkds-chart-head{
 }
 body.dkds-modern-ui .dkds-chart-head{
   background:var(--surface-secondary);
-}
-body.dkds-modern-ui button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret),
-body.dkds-modern-ui .dkds-action-button{
-  border-color:transparent;
-  box-shadow:none;
-}
-body.dkds-modern-ui button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret):hover:not(:disabled){
-  border-color:transparent;
 }
 body.dkds-modern-ui input:not([type="checkbox"]):not([type="radio"]):not([type="range"]){
   border-color:var(--control-border);
@@ -1074,9 +1065,7 @@ body.dkds-modern-ui textarea:hover{border-color:#bfc9d7;
 .global-commandbar .file-command-group{
   border-radius:10px;
 }
-.global-commandbar>.compact-menu-anchor>#editMenuBtn,
-.system-commandbar>.menu-anchor>#exportMenuBtn,
-.system-commandbar>.menu-anchor>#manageMenuBtn{
+.global-commandbar>.compact-menu-anchor>#editMenuBtn{
   border-radius:10px;
 }
 .plugin-prewarm-switch{color:var(--text-secondary,#60708c);
@@ -1090,12 +1079,6 @@ body.dkds-modern-ui textarea:hover{border-color:#bfc9d7;
 .plugin-prewarm-switch input:checked + .plugin-prewarm-box::after{color:#fff;
 }
 .plugin-prewarm-switch input:disabled + .plugin-prewarm-box{opacity:.45;
-}
-.dkds-action-button{border:0;border-radius:8px;background:var(--surface-secondary,var(--surface-primary,#fff));color:var(--text-primary,#263247);
-}
-.dkds-action-button:hover:not(:disabled){background:var(--surface-hover,var(--surface-secondary));
-}
-.dkds-action-button:disabled{opacity:.45;
 }
 .dkds-action-caret{color:var(--text-secondary,#7a8495);
 }

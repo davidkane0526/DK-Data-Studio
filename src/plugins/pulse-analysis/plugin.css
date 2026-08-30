@@ -147,7 +147,8 @@
 }
 .pulse-file-toolbar{
   display:flex;
-  gap:5px;
+  gap:7px;
+  margin-top:9px;
   padding:8px 10px;
 }
 .pulse-file-toolbar button{

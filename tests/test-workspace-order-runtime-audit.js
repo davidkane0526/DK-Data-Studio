@@ -87,12 +87,12 @@ assert(ui.includes('document.createComment(`dkds-portable-home:')&&ui.includes('
 // Resonance group layout selector is a real Core ContextMenu action, not dead chrome.
 assert(resonanceViews.includes('data-respar-group-cols-menu-host')&&resonanceViews.includes("id:'group-columns',menu:true")&&resonanceViews.includes("label:value==='auto'?'自动排列':`每行 ${value} 个子图`"),'Resonance group column control must use the Core ActionGroup menu and expose auto/1-6 columns.');
 
-// System export menu is contextual: each TOP-capable plugin contributes semantic
-// export targets, and the shell displays the currently active workspace context.
+// Export remains contextual after moving into the unified file-command group: each
+// TOP-capable plugin contributes semantic export targets and the shell keeps one trigger.
 const terFeature=read('src/plugins/ter-analysis/feature-runtime.js');
 const pulseFeature=read('src/plugins/pulse-analysis/feature-runtime.js');
 const dataCenterFeature=read('src/plugins/data-center/feature-runtime.js');
-assert(kernel.includes('data-plugin-export-context')&&kernel.includes('active?.contextLabel||active?.label')&&kernel.includes("trigger.textContent='导出数据'"),'System export menu must identify the current active plugin workspace and keep one consistent shell trigger.');
+assert(kernel.includes('data-plugin-export-context')&&kernel.includes('active?.contextLabel||active?.label')&&kernel.includes("trigger.textContent='导出'"),'Contextual export must identify the active plugin workspace while keeping the shortened unified file-command trigger.');
 assert(resonanceViews.includes('共振 I–V 主图 · SVG')&&!resonanceViews.includes("label:'主图 SVG'"),'Resonance exports must name the actual I–V plot rather than an ambiguous main plot.');
 assert(pulseFeature.includes('当前文件 · 原始波形数据 CSV')&&pulseFeature.includes('当前可见结果 · 读取电流图 SVG')&&pulseFeature.includes("activity:'pulse'"),'Pulse must dynamically register semantically named system export items.');
 assert(terFeature.includes('TER 全组合热图 · Long CSV')&&terFeature.includes('R–V 联动图 · SVG')&&terFeature.includes("activity:'ter'"),'TER must dynamically register semantically named system export items.');

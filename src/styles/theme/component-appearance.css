@@ -74,6 +74,18 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]{
   --dkds-ca-action-focus-shadow:0 0 0 2px var(--dkui-focus);
   background:var(--dkds-ca-action-surface);color:var(--dkds-ca-action-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow)
 }
+/* Standalone header actions own a neutral control surface. Integrated toolbar
+   actions remain transparent inside their shared group surface. The semantic
+   layout flag is assigned by Core action/page factories, so location-specific
+   Presentation CSS never needs to repaint command buttons. */
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-action-layout="standalone"]:not([data-dkds-component-variant]){
+  --dkds-ca-action-surface:var(--dkui-control-bg);
+  --dkds-ca-action-surface-hover:var(--dkui-control-hover);
+  --dkds-ca-action-text:var(--dkui-text);
+  --dkds-ca-action-border:var(--dkui-control-border);
+  --dkds-ca-action-border-hover:var(--dkui-control-border-hover);
+  --dkds-ca-action-shadow:var(--dkui-shadow-1)
+}
 /* Controlled Theme 3.9 component variants. Theme declares values; Core owns
    the fixed variant vocabulary, including hover/pressed state consumption. */
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]{
@@ -249,6 +261,7 @@ body.dkds-modern-ui [data-dkds-component-identity="field"]:hover:not(:disabled){
 body.dkds-modern-ui [data-dkds-component-identity="field"]:focus-visible{background:var(--dkui-component-field-surface-active,var(--dkui-control-bg));color:var(--dkui-component-field-text-active,var(--dkui-text));border-color:var(--dkui-component-field-border-active,var(--dkui-accent));outline-color:var(--dkui-component-field-indicator,var(--dkui-focus))}
 
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);border-color:var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow);opacity:.56}
 
 
 /* Header composition intentionally has no action-specific paint. Component

@@ -27,6 +27,11 @@ const {reflowContextToolbar}=require('../shell/context-toolbar');
     button.dataset.pluginPriority = String(Number(spec.priority) || 0);
     button.dataset.pluginSection = String(spec.section || '');
     button.dataset.pluginActivity = spec.activity || '';
+    button.dataset.dkdsComponentIdentity = 'toolbarAction';
+    button.dataset.dkdsComponentIdentityOwner = 'core-plugin-toolbar';
+    const declaredVariant=String(spec.variant||spec.tone||'').trim();
+    const classVariant=['primary','secondary','selected','active','quiet','destructive'].find(name=>String(spec.className||'').split(/\s+/).includes(name))||'';
+    const variant=declaredVariant||classVariant;if(variant){button.dataset.dkdsComponentVariant=variant;button.dataset.dkdsComponentVariantOwner='core-plugin-toolbar';}
 
     button.addEventListener('click', async event => {
       try {

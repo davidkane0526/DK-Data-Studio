@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.5',apiVersion:'1.18.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.6',apiVersion:'1.18.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {
@@ -20,13 +20,13 @@
         <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">
           <aside class="dksmb-nav dkds-surface-muted"><div class="dksmb-nav-title"><span>网络位置</span><button id="dksmbDiscover" class="dksmb-btn dkds-action-button">扫描</button></div><div id="dksmbNav"></div></aside>
-          <section class="dksmb-browser dkds-surface">
-            <div class="dksmb-toolbar dkds-toolbar"><button id="dksmbUp" class="dksmb-btn dkds-action-button">↑ 上级</button><div id="dksmbPath" class="dksmb-path">尚未连接 SMB 共享</div><button id="dksmbFavorite" class="dksmb-btn dkds-action-button" data-dkds-tooltip="收藏当前共享">☆</button><button id="dksmbRefresh" class="dksmb-btn dkds-action-button">刷新</button></div>
+          <section class="dksmb-browser">
+            <div class="dksmb-toolbar dkds-surface-muted"><button id="dksmbUp" class="dksmb-btn dkds-action-button">↑ 上级</button><div id="dksmbPath" class="dksmb-path">尚未连接 SMB 共享</div><button id="dksmbFavorite" class="dksmb-btn dkds-action-button" data-dkds-tooltip="收藏当前共享">☆</button><button id="dksmbRefresh" class="dksmb-btn dkds-action-button">刷新</button></div>
             <div class="dksmb-list-head"><span></span><span>名称</span><span>大小</span><span>修改时间</span></div><div id="dksmbList" class="dksmb-list dkds-list"><div class="dksmb-empty">输入服务器地址或点击左侧扫描网络设备。</div></div>
-            <div class="dksmb-connection dkds-action-row dkds-surface-muted"><input id="dksmbServer" placeholder="服务器 / IP"><input id="dksmbShare" placeholder="共享"><input id="dksmbDomain" placeholder="域（可选）"><input id="dksmbUser" placeholder="用户名"><input id="dksmbPassword" type="password" placeholder="密码"><label class="dksmb-guest dkds-check"><input id="dksmbGuest" type="checkbox">访客</label></div>
+            <div class="dksmb-connection dkds-surface-muted"><input id="dksmbServer" placeholder="服务器 / IP"><input id="dksmbShare" placeholder="共享"><input id="dksmbDomain" placeholder="域（可选）"><input id="dksmbUser" placeholder="用户名"><input id="dksmbPassword" type="password" placeholder="密码"><label class="dksmb-guest dkds-check"><input id="dksmbGuest" type="checkbox">访客</label></div>
           </section>
         </div>
-        <div class="dksmb-foot dkds-toolbar dkds-surface-muted"><button id="dksmbShares" class="dksmb-btn dkds-action-button">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button">取消</button><button id="dksmbCommit" class="dksmb-primary primary" disabled>导入所选文件</button></div>
+        <div class="dksmb-foot dkds-surface-muted"><button id="dksmbShares" class="dksmb-btn dkds-action-button">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button">取消</button><button id="dksmbCommit" class="dksmb-primary primary" disabled>导入所选文件</button></div>
       </div>`});
     dom.append(dom.query('body'),smbOverlay);
 
@@ -61,7 +61,7 @@
     const setBusy=async(sel,fn,label='处理中')=>{const button=$(sel),original=button?.textContent||'';if(button){button.disabled=true;button.dataset.busy='true';button.textContent=label;}try{return await fn();}finally{if(button){button.disabled=false;button.dataset.busy='false';button.textContent=original;}}};
 
     // ---- SMB file manager -------------------------------------------------
-    let smbMode='data',smbPath='',smbEntries=[],selectedPaths=new Set(),servers=[],shares=[],smbBusy=false;
+    let smbMode='auto',smbPath='',smbEntries=[],selectedPaths=new Set(),servers=[],shares=[],smbBusy=false;
     const pref=loadPrefs();
     $('#dksmbServer').value=pref.server||'';$('#dksmbShare').value=pref.share||'';$('#dksmbDomain').value=pref.domain||'';$('#dksmbUser').value=pref.username||'';$('#dksmbGuest').checked=!!pref.guest;
     const connection=()=>({server:$('#dksmbServer').value.trim(),share:$('#dksmbShare').value.trim(),domain:$('#dksmbGuest').checked?'':$('#dksmbDomain').value.trim(),username:$('#dksmbGuest').checked?'':$('#dksmbUser').value.trim(),password:$('#dksmbGuest').checked?'':$('#dksmbPassword').value});
@@ -80,9 +80,9 @@
       setText('#dksmbPath',c.server&&c.share?`\\\\${c.server}\\${c.share}${smbPath?`\\${smbPath.replaceAll('/','\\')}`:''}`:'尚未连接 SMB 共享');
       if(!smbEntries.length){host.innerHTML='<div class="dksmb-empty">当前目录没有可浏览的文件。</div>';}
       else host.innerHTML=smbEntries.map((row,i)=>`<div class="dksmb-row dkds-list-item ${selectedPaths.has(row.path)?'selected':''}" data-entry="${i}"><span>${row.directory?'▸':`<input type="checkbox" ${selectedPaths.has(row.path)?'checked':''}>`}</span><span class="dksmb-name">${row.directory?'📁':'·'} ${esc(row.name)}</span><span class="dksmb-meta">${row.directory?'文件夹':fmt(row.size)}</span><span class="dksmb-meta">${esc(row.modifiedAt?String(row.modifiedAt).replace('T',' ').slice(0,16):'')}</span></div>`).join('');
-      const commit=$('#dksmbCommit');commit.disabled=smbBusy||!selectedPaths.size;commit.textContent=smbMode==='project'?'读取所选项目':smbMode==='auto'?`打开所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`:`导入所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`;
+      const commit=$('#dksmbCommit');commit.disabled=smbBusy||!selectedPaths.size;commit.textContent=smbMode==='auto'?`打开所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`:`导入所选文件${selectedPaths.size?` (${selectedPaths.size})`:''}`;
       const fav=favorites().some(row=>favoriteKey(row.server,row.share)===favoriteKey(c.server,c.share));$('#dksmbFavorite').textContent=fav?'★':'☆';
-      setText('#dksmbModeLabel',smbMode==='project'?'读取项目':smbMode==='auto'?'自动识别':'导入数据');
+      setText('#dksmbModeLabel',smbMode==='auto'?'自动识别':'导入数据');
     }
     async function refreshShares(){
       const c=connection();if(!c.server)throw new Error('请输入 SMB 服务器地址。');persistSmb();shares=await connectivity.smb.listShares(c)||[];renderSmbNav();ctx.status.set(`SMB：发现 ${shares.length} 个共享。`);
@@ -91,7 +91,7 @@
       const c=connection();if(!c.server||!c.share)throw new Error('请先选择服务器和共享。');persistSmb();smbBusy=true;renderSmbFiles();try{smbEntries=await connectivity.smb.list(c,smbPath)||[];selectedPaths=new Set([...selectedPaths].filter(path=>smbEntries.some(row=>row.path===path)));}finally{smbBusy=false;renderSmbFiles();}
     }
     async function discover(){const found=await connectivity.smb.discover()||[];servers=(Array.isArray(found)?found:[]).map(row=>typeof row==='string'?{name:row,address:row}:{name:String(row.name||row.address||''),address:String(row.address||row.name||'')}).filter(row=>row.address);renderSmbNav();ctx.status.set(`SMB：扫描到 ${servers.length} 台设备。`);}
-    function openSmb(mode='data'){smbMode=mode==='project'?'project':mode==='auto'?'auto':'data';selectedPaths.clear();show(smbOverlay);dom.frame(()=>smbMove.clamp({persist:false}));renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
+    function openSmb(mode='auto'){smbMode=mode==='auto'?'auto':'data';selectedPaths.clear();show(smbOverlay);dom.frame(()=>smbMove.clamp({persist:false}));renderSmbNav();renderSmbFiles();if(connection().server&&connection().share)void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
     function closeSmb(){hide(smbOverlay);}
     dom.on($('#dksmbClose'),'click',closeSmb);dom.on($('#dksmbCancel'),'click',closeSmb);dom.on(smbOverlay,'click',event=>{if(event.target===smbOverlay)closeSmb();});
     dom.on($('#dksmbDiscover'),'click',()=>{ctx.status.set('SMB：正在扫描局域网设备…');return setBusy('#dksmbDiscover',discover,'扫描中').catch(err=>ctx.status.set(`SMB 扫描失败：${err.message}`));});
@@ -103,14 +103,10 @@
       const server=event.target?.closest?.('[data-server]');if(server){const row=servers[Number(server.dataset.server)];if(!row)return;$('#dksmbServer').value=row.address;$('#dksmbShare').value='';smbPath='';shares=[];renderSmbNav();void refreshShares().catch(err=>ctx.status.set(`SMB：${err.message}`));return;}
       const share=event.target?.closest?.('[data-share]');if(share){const name=shares[Number(share.dataset.share)];if(!name)return;$('#dksmbShare').value=name;smbPath='';selectedPaths.clear();void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}
     });
-    dom.on($('#dksmbList'),'click',event=>{const hit=event.target?.closest?.('[data-entry]');if(!hit)return;const row=smbEntries[Number(hit.dataset.entry)];if(!row)return;if(row.directory){if(event.detail>=2){smbPath=row.path;selectedPaths.clear();void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}return;}if(smbMode==='project')selectedPaths=new Set([row.path]);else{if(selectedPaths.has(row.path))selectedPaths.delete(row.path);else selectedPaths.add(row.path);}renderSmbFiles();});
+    dom.on($('#dksmbList'),'click',event=>{const hit=event.target?.closest?.('[data-entry]');if(!hit)return;const row=smbEntries[Number(hit.dataset.entry)];if(!row)return;if(row.directory){if(event.detail>=2){smbPath=row.path;selectedPaths.clear();void refreshSmb().catch(err=>ctx.status.set(`SMB：${err.message}`));}return;}if(selectedPaths.has(row.path))selectedPaths.delete(row.path);else selectedPaths.add(row.path);renderSmbFiles();});
     dom.on($('#dksmbFavorite'),'click',()=>{const c=connection();if(!c.server||!c.share)return;let rows=favorites(),key=favoriteKey(c.server,c.share);if(rows.some(row=>favoriteKey(row.server,row.share)===key))rows=rows.filter(row=>favoriteKey(row.server,row.share)!==key);else rows.push({server:c.server,share:c.share});savePrefs({favorites:rows});renderSmbNav();renderSmbFiles();});
     dom.on($('#dksmbCommit'),'click',()=>setBusy('#dksmbCommit',async()=>{
       const c=connection(),paths=[...selectedPaths];if(!paths.length)return;const rows=await connectivity.smb.read(c,paths);if(!rows?.length)throw new Error('SMB 未返回文件内容。');
-      if(smbMode==='project'){
-        const row=rows[0],path=`smb://${c.server}/${c.share}/${String(row.name||paths[0]).replace(/^\/+/, '')}`;
-        await ctx.capabilities.invoke('core.project-loader','openBase64',{base64:row.base64,path,name:basename(row.name||paths[0])});closeSmb();return;
-      }
       if(smbMode==='auto'){
         const files=[];let projects=0;
         for(let index=0;index<rows.length;index++){
@@ -180,13 +176,11 @@
     dom.on($('#dkaiRefs'),'click',event=>{const hit=event.target?.closest?.('[data-ref-remove]');if(!hit)return;selectedRefs.splice(Number(hit.dataset.refRemove),1);renderRefs();});
 
     ctx.commands.register('connectivity.smb.import',()=>openSmb('data'));
-    ctx.commands.register('connectivity.smb.project',()=>openSmb('project'));
     ctx.commands.register('connectivity.smb.open',()=>openSmb('auto'));
     ctx.commands.register('connectivity.ai.settings',()=>openSettings());
     ctx.commands.register('connectivity.ai.chat',()=>toggleChat(true));
     if(!ctx.runtime.isAuxiliaryWindow&&ctx.ui.menus?.add){
-      ctx.ui.menus.add({id:'smb-import',menu:'import-data',label:'SMB 网络文件…',order:20,onClick:()=>openSmb('data')});
-      ctx.ui.menus.add({id:'smb-project',menu:'open-project',label:'SMB 网络项目…',order:20,onClick:()=>openSmb('project')});
+      ctx.ui.menus.add({id:'smb-import',menu:'import-data',label:'SMB 网络文件…',order:20,onClick:()=>openSmb('auto')});
       ctx.ui.menus.add({id:'ai-mcp-settings',menu:'manage',label:'AI Agent / MCP…',order:35,onClick:openSettings});
     }
 

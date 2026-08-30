@@ -111,10 +111,15 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
         if(action.type==='separator'){const sep=document.createElement('span');sep.className='dkds-action-separator';this.container.appendChild(sep);continue;}
         const button=document.createElement('button');
         button.type='button';button.className=`dkds-action-button ${action.className||''}`.trim();button.dataset.actionId=String(action.id||'');
+        button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-action-group';
+        if(this.container.dataset.dkdsActionLayout==='separated')button.dataset.dkdsActionLayout='standalone';
+        const declaredVariant=String(action.variant||action.tone||'').trim();
+        const classVariant=['primary','secondary','selected','active','quiet','destructive'].find(name=>String(action.className||'').split(/\s+/).includes(name))||'';
+        const variant=declaredVariant||classVariant;if(variant){button.dataset.dkdsComponentVariant=variant;button.dataset.dkdsComponentVariantOwner='core-action-group';}
         const label=this.value(action.label,ctx)??action.id??'';
         const icon=this.value(action.icon,ctx);
         const active=!!this.value(action.active,ctx);const enabled=this.value(action.enabled,ctx)!==false;
-        button.classList.toggle('active',active);button.disabled=!enabled;
+        button.classList.toggle('active',active);if(active)button.setAttribute('aria-pressed','true');else button.removeAttribute('aria-pressed');button.disabled=!enabled;
         const accessible=String(this.value(action.title,ctx)||label||action.id||'').trim();if(accessible)button.setAttribute('aria-label',accessible);
         button.innerHTML=`${icon?`<span class="dkds-action-icon">${esc(icon)}</span>`:''}<span class="dkds-action-label">${esc(label)}</span>${action.menu?'<span class="dkds-action-caret">▾</span>':''}`;
         button.addEventListener('click',event=>{

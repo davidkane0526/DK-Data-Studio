@@ -20,7 +20,7 @@ const recomputeImportItem=(...args)=>deps.imports.recomputeImportItem(...args);
 const renderImportWorkbench=(...args)=>deps.imports.renderImportWorkbench(...args);
 const resetCurrentImportAuto=(...args)=>deps.imports.resetCurrentImportAuto(...args);
 const updateImportSetting=(...args)=>deps.imports.updateImportSetting(...args);
-const importFiles=(...args)=>deps.artifacts.importFiles(...args);
+const openFilesAuto=(...args)=>deps.imports.openFilesAuto(...args);
 const closeAnalysisPage=(...args)=>deps.workspace.closeAnalysisPage(...args);
 const resetMainView=(...args)=>deps.workspace.resetMainView(...args);
 const scheduleMainPlotRelayout=(...args)=>deps.workspace.scheduleMainPlotRelayout(...args);
@@ -28,7 +28,6 @@ const syncAnalysisPageViewport=(...args)=>deps.workspace.syncAnalysisPageViewpor
 const setTrendColumns=(...args)=>deps.scientific.setTrendColumns(...args);
 const updateTrendLayout=(...args)=>deps.scientific.updateTrendLayout(...args);
 const zoomCsvText=(...args)=>deps.scientific.zoomCsvText(...args);
-const openProject=(...args)=>deps.projects.openProject(...args);
 const saveProject=(...args)=>deps.projects.saveProject(...args);
 const openPluginActivityWindow=(...args)=>deps.windows.openPluginActivityWindow(...args);
 
@@ -251,7 +250,7 @@ document.querySelectorAll('.panel-close').forEach(b=>b.onclick=()=>{
 });
 
 // Controls
-$('#openLocalImportMenuBtn').onclick=importFiles; $('#openLocalProjectMenuBtn').onclick=openProject; $('#saveProjectBtn').onclick=saveProject;
+$('#openBtn').onclick=openFilesAuto; $('#openLocalImportMenuBtn').onclick=openFilesAuto; $('#saveProjectBtn').onclick=saveProject;
 const dataCenterSystemBtn=$('#dataCenterSystemBtn');if(dataCenterSystemBtn)dataCenterSystemBtn.onclick=()=>openPluginActivityWindow('data-center');
 $('#inspectorDockBtn').onclick=toggleInspectorDock;
 $('#importChooseFilesBtn').onclick=addImportFiles;
@@ -512,7 +511,7 @@ $('#zoomExportSvg').onclick=()=>{if(!state.zoomChart)return;window.DKDSCharts.to
 window.addEventListener('keydown',e=>{
   if(isTypingTarget(e.target))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject();return;}
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='o'){e.preventDefault();openProject();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='o'){e.preventDefault();openFilesAuto();return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='n'){e.preventDefault();createProjectTab(null,true);return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)void systemRedo();else void systemUndo();return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();void systemRedo();return;}

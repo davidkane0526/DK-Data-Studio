@@ -13,7 +13,7 @@ const pulseStyle=read('src/plugins/pulse-analysis/plugin.css');
 const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
 
 assert(modern.includes('.left-panel section')&&modern.includes('.dkds-analysis-nav-btn'),'semantic first-party surface closure is missing.');
-assert(modern.includes('button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret)'),'First-party button surface normalization is missing.');
+assert(modern.includes('[data-dkds-component-identity="toolbarAction"]')&&modern.includes('--dkds-ca-action-surface:'),'Canonical Component Appearance must own first-party toolbar action surfaces instead of a broad button normalization selector.');
 assert(modern.includes('border-color:var(--control-border)'),'Interactive fields must use controlBorder rather than structural divider.');
 assert(modern.includes('.left-panel section')&&modern.includes('border:0'),'Sidebar sections must not use structural outline separators.');
 assert(!/dkds-analysis-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Analysis splitters must not paint a hard-coded light divider while idle.');

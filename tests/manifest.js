@@ -816,6 +816,10 @@ module.exports = {
       "file": "tests/test-v3665-aurora-light-emerald.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3666-ui-integration-ownership.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1664,6 +1668,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3665-aurora-light-emerald.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3666-ui-integration-ownership.js",
       "args": []
     },
   ],

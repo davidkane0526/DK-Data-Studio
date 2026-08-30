@@ -94,7 +94,10 @@ function validate(){
   // HARD-05: large elevated Thin Glass surfaces use one stronger optical contract.
   requireRegex(thinGlass,/elevated:\{materialBlur:10,materialBlurStrong:11,materialSaturation:1\.04,materialTintOpacity:\.76\}/,'HARD-05: Thin Glass elevated surfaces must use the shared stronger dialog/panel optical recipe.');
   requireRegex(materialRoles,/role="elevated"[\s\S]*?--dkds-material-fill-floor:72%;/,'HARD-05: Core elevated surfaces must enforce the shared readability floor.');
-  requireText(connectivity,'<section class="dksmb-browser dkds-surface">','HARD-05: SMB browser content must consume the same Core semantic surface layering as service panels.');
+  requireText(connectivity,'<section class="dksmb-browser">','HARD-05: SMB browser content must remain part of the one outer dialog surface.');
+  forbidText(connectivity,'dksmb-browser dkds-surface','HARD-05: SMB browser must not create a rounded nested Core surface inside the dialog.');
+  forbidText(connectivity,'dksmb-toolbar dkds-toolbar','HARD-05: SMB path toolbar must not create a nested toolbarGroup card.');
+  forbidText(connectivity,'dksmb-connection dkds-action-row','HARD-05: SMB connection fields must not create a nested toolbarGroup card.');
 
 
   // HARD-06: one canonical component runtime; plugins cannot repaint Core chrome.

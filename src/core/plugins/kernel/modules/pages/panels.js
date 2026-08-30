@@ -50,7 +50,7 @@ const {pluginTypeOf}=require('../manifest');
       if(pluginActions)header.insertBefore(slot,pluginActions);else if(close)header.insertBefore(slot,close);else header.appendChild(slot);
     }
     slot.classList.add('dkds-core-workbench-import-slot');slot.replaceChildren();
-    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
+    const button=document.createElement('button');button.type='button';button.className='dkds-core-import-action';button.dataset.dkdsCoreAction='workbench-import';button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-workbench-import';button.dataset.dkdsActionLayout='standalone';button.setAttribute('aria-label',`导入到 ${meta.label}`);button.textContent='导入数据';button.onclick=()=>runCommand(commandId,{source:'workbench-import-action'});slot.appendChild(button);
     return button;
   }
 
@@ -73,6 +73,7 @@ const {pluginTypeOf}=require('../manifest');
     mountWorkbenchImportAction(pluginId,page,pageActivity,manifest,spec);
 
     for (const close of page.querySelectorAll('.analysis-page-close')) {
+      close.dataset.dkdsComponentIdentity='toolbarAction';close.dataset.dkdsComponentIdentityOwner='core-page-close';close.dataset.dkdsActionLayout='standalone';
       if (close.dataset.dkdsPluginCloseBound === '1') continue;
       close.dataset.dkdsPluginCloseBound = '1';
       close.addEventListener('click', () => {

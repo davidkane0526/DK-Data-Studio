@@ -40,20 +40,6 @@ body.dkds-modern-ui.plugin-window-host .analysis-page-header {
 }
 body.dkds-modern-ui .analysis-page-header h2 {color:var(--text-primary)
 }
-body.dkds-modern-ui .analysis-page-header button,
-body.dkds-modern-ui .dkds-plugin-header-actions button,
-body.dkds-modern-ui .dkds-plugin-workspace button {
-  border-color:var(--border-subtle);
-  background:var(--surface-primary);
-  color:var(--text-primary);
-  box-shadow:var(--surface-shadow)
-}
-body.dkds-modern-ui .analysis-page-header button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-plugin-header-actions button:hover:not(:disabled),
-body.dkds-modern-ui .dkds-plugin-workspace button:hover:not(:disabled) {
-  background:var(--surface-hover);
-  border-color:var(--border-strong)
-}
 body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group {
   padding:0;
   border:0;
@@ -62,19 +48,6 @@ body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group {
   box-shadow:none;
   -webkit-backdrop-filter:none;
   backdrop-filter:none
-}
-body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button {
-  min-height:32px;
-  height:32px;
-  padding:0 11px;
-  border:1px solid var(--dkui-control-border,var(--border-subtle));
-  border-radius:9px;
-  background:var(--dkui-control-bg,var(--surface-primary));
-  box-shadow:var(--dkui-shadow-1,var(--surface-shadow))
-}
-body.dkds-modern-ui .analysis-page-header>.dkds-separated-action-group>.dkds-action-button:hover:not(:disabled) {
-  border-color:var(--dkui-control-border-hover,var(--border-strong));
-  background:var(--dkui-control-hover,var(--surface-hover))
 }
 body.dkds-modern-ui .dkds-plugin-workspace input:not([type="checkbox"]):not([type="radio"]),
 body.dkds-modern-ui .dkds-plugin-workspace select,
@@ -178,16 +151,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .plugin-type-badge.type-tool {b
 }
 body.dkds-modern-ui .tool-workspace-menu-item {
   white-space:nowrap
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header button:disabled,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-header-actions button:disabled,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plugin-workspace button:disabled {
-  background:var(--surface-secondary);
-  border-color:var(--border-subtle);
-  color:var(--text-tertiary);
-  -webkit-text-fill-color:var(--text-tertiary);
-  box-shadow:none;
-  opacity:.72
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-page-header {background:var(--surface-primary);border-color:transparent;color:var(--text-primary);box-shadow:none
 }
