@@ -124,15 +124,21 @@ body.dkds-table-resizing *{cursor:col-resize;}
 
 /* System command grouping: Data Center and Tools form one visual system cluster. */
 .system-core-tools-group{display:flex;align-items:center;gap:0;padding:2px;flex:0 0 auto;}
-.system-core-tools-group>.toolbar-btn,.system-core-tools-group>.menu-anchor>.toolbar-btn{min-width:82px;}
+.system-core-tools-group>.toolbar-btn,.system-core-tools-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:8px;padding-right:8px;}
 .system-core-tools-group>.menu-anchor{display:flex;align-items:center;}
-.system-core-tools-group>.menu-anchor:before{content:"";width:1px;height:20px;margin:0 1px;}
+
+/* Core split action: one visual command with independently clickable primary
+   action and compact source caret. The popup anchor stays positioned while the
+   two hit regions share one outer silhouette. */
+.dkds-split-action-group{display:inline-flex;align-items:stretch;gap:0;position:relative;}
+.dkds-split-action-group>.menu-anchor{display:flex;align-items:stretch;margin-left:-1px;}
+.dkds-split-action-group>.menu-anchor>.dkds-split-action-caret{width:18px;min-width:18px;padding-left:0;padding-right:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1;}
 
 /* Compact exact-column filtering in the Core Import Workbench. */
 .import-column-field-filter{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);align-items:center;gap:10px;margin:8px 0 10px;padding:7px 9px;}
 
-.import-column-field-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}.import-column-field-copy strong{font-size:10.5px;}.import-column-field-copy span{font-size:8.5px;white-space:normal;}
-#importColumnFieldSelect{width:100%;height:28px;min-height:28px;padding:0 26px 0 7px;font-size:9px;}
+.import-column-field-copy{display:flex;flex-direction:column;gap:2px;min-width:0;}.import-column-field-copy strong{font-size:var(--ui-font-size);}.import-column-field-copy span{font-size:var(--ui-font-small);white-space:normal;line-height:1.45;}
+#importColumnFieldSelect{width:100%;height:30px;min-height:30px;padding:0 26px 0 7px;font-size:var(--ui-font-size);}
 @media(max-width:900px){.import-column-field-filter{grid-template-columns:1fr}}
 
 /* Plugin Host safety net. The scroll policy above is authoritative. The

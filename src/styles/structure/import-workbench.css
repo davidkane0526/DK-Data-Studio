@@ -12,18 +12,6 @@
   padding:15px 18px 13px;
 }
 .import-workbench-subtitle{margin-top:4px;}
-.import-data-command{
-  display:inline-flex;
-  align-items:stretch;
-  gap:3px;
-}
-.import-data-command>.menu-anchor{display:flex;align-items:stretch;}
-.import-data-command .import-source-trigger{
-  width:30px;
-  min-width:30px;
-  padding-left:0;
-  padding-right:0;
-}
 .import-file-actions{
   display:flex;gap:6px;align-items:center;
 }
@@ -63,7 +51,7 @@
 .import-workbench-subtitle,.import-diagnosis{
   font-size:var(--ui-font-small);line-height:1.55;
 }
-.import-preview-chip{font-size:var(--ui-font-tiny);}
+.import-preview-chip{font-size:var(--ui-font-small);}
 .import-preview-table{
   width:100%;font-size:var(--ui-font-small);}
 .import-workbench-header,.import-workbench-footer{flex:0 0 auto}

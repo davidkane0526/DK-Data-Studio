@@ -1,3 +1,11 @@
+# v3.66.8 — Import Typography & Compact Command Composition
+
+- Restore the Core typography scale inside the Import Workbench. Historical 8.5–10 px literals in target hints, file metadata, selection hints, column filtering and footer summaries are replaced by shared `--ui-font-size` / `--ui-font-small` tokens, so the large import surface no longer contains disproportionately tiny text.
+- Make ordinary Import Workbench actions explicitly consume the Core standalone `toolbarAction` appearance. Close, cancel and file-selection actions no longer fall through to the transparent integrated-action default.
+- Reintroduce the split-command interaction as a reusable Core component rather than a page patch: **导入数据** and its source caret form one primary surface, while the caret hit region is reduced to 18 px. SMB remains a provider inside the workbench.
+- Compact the Data Management / Tools / Software Management command group by removing the legacy 82 px minimum width and all internal divider pseudo-elements. The three actions remain one shared group surface and size naturally to their labels.
+- Add a v3.66.8 regression gate for import typography tokens, explicit action semantics, the one-piece split import command, and separator-free compact system commands.
+
 # v3.66.7 — Import Workbench Source Placement Correction
 
 - Correct the v3.66.6 file-command hierarchy: the top-level **导入** command now opens the shared Data Import Workbench instead of launching a file picker or exposing source providers beside the shell command. **保存 / 导出** remain the only peer file tasks in the top command group.

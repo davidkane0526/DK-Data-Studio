@@ -23,7 +23,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.7</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.8</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -233,16 +233,16 @@
             <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
           </div>
           <div class="import-header-actions">
-            <div class="import-data-command">
-              <button id="importChooseFilesBtn" class="dkds-action-button primary" type="button">导入数据</button>
+            <div class="import-data-command dkds-split-action-group" data-dkds-split-variant="primary">
+              <button id="importChooseFilesBtn" class="dkds-action-button primary dkds-split-action-main" type="button">导入数据</button>
               <div class="menu-anchor import-source-anchor" data-menu-align="right">
-                <button id="importSourceBtn" class="dkds-action-button menu-trigger import-source-trigger" data-dkds-action-layout="standalone" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
+                <button id="importSourceBtn" class="dkds-action-button primary menu-trigger import-source-trigger dkds-split-action-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
                 <div id="importSourceMenu" class="command-menu hidden">
                   <div data-plugin-menu="import-data"></div>
                 </div>
               </div>
             </div>
-            <button id="importCloseBtn">关闭</button>
+            <button id="importCloseBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">关闭</button>
           </div>
         </div>
 
@@ -261,10 +261,10 @@
             <div class="import-selection-hint">Shift 连选 · Ctrl/Cmd+A 全选 · Ctrl/Cmd+I 反选</div>
             <div id="importFileList" class="import-file-list" tabindex="0" aria-label="待导入文件列表"></div>
             <div class="import-file-actions">
-              <button id="importCheckAllBtn">全选</button>
-              <button id="importInvertBtn">反选</button>
-              <button id="importUncheckAllBtn">全不选</button>
-              <button id="importRemoveBtn">移除</button>
+              <button id="importCheckAllBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">全选</button>
+              <button id="importInvertBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">反选</button>
+              <button id="importUncheckAllBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">全不选</button>
+              <button id="importRemoveBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">移除</button>
             </div>
           </aside>
 
@@ -426,8 +426,8 @@
         <div class="import-workbench-footer">
           <div id="importGlobalSummary" class="import-global-summary">尚未选择文件</div>
           <div class="import-footer-actions">
-            <button id="importCancelBtn">取消</button>
-            <button id="importCommitBtn" class="primary">导入勾选文件</button>
+            <button id="importCancelBtn" class="dkds-action-button" data-dkds-action-layout="standalone" type="button">取消</button>
+            <button id="importCommitBtn" class="dkds-action-button primary" type="button">导入勾选文件</button>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
-const pkg=json('package.json'),html=read('src/index.html'),docks=read('src/app/modules/floating-docks.js'),imports=read('src/app/modules/import-workbench.js'),structure=read('src/styles/structure/schema-and-plugin-ui.css'),workbenchCss=read('src/styles/structure/import-workbench.css');
+const pkg=json('package.json'),html=read('src/index.html'),docks=read('src/app/modules/floating-docks.js'),imports=read('src/app/modules/import-workbench.js'),structure=read('src/styles/structure/schema-and-plugin-ui.css');
 const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 assert(atLeast(tuple(pkg.version),[3,66,7]),'Corrected import hierarchy requires DK Data Studio 3.66.7+.');
@@ -23,5 +23,5 @@ assert(imports.includes('return openFilesAuto({keepWorkbench:true});')&&imports.
 assert(imports.includes('const preserveRouting=panelAlreadyOpen&&!scoped&&!Array.isArray(options?.targets);')&&imports.includes('const routed=routeImportSeedFiles(options?.files);'),'Provider imports opened from the workbench must preserve the current scope/target routing instead of resetting post-import behavior.');
 assert(imports.includes('function routeImportSeedFiles(files=[])')&&imports.includes('[DKDS provider auto file classify]'),'Provider sources such as SMB must share Core project/data auto-classification.');
 assert(structure.includes('.file-command-group{gap:2px;padding:2px;}')&&structure.includes('.file-command-group .toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}'),'Two-character file commands must size to content rather than reserve legacy 72px widths.');
-assert(workbenchCss.includes('.import-data-command')&&workbenchCss.includes('width:30px;')&&workbenchCss.includes('min-width:30px;'),'Workbench source trigger must remain compact beside Import Data.');
+assert(header.includes('dkds-split-action-group')&&header.includes('dkds-split-action-caret'),'Workbench source trigger must remain a compact peer of Import Data through the shared Core split-action composition.');
 console.log('v3.66.7 import hierarchy PASS: topbar is compact and task-only; SMB/provider choice lives inside the Import Workbench beside Import Data.');

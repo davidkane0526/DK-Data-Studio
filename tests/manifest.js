@@ -824,6 +824,10 @@ module.exports = {
       "file": "tests/test-v3667-import-workbench-source-placement.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3668-import-typography-command-composition.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1680,6 +1684,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3667-import-workbench-source-placement.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3668-import-typography-command-composition.js",
       "args": []
     },
   ],

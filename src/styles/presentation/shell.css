@@ -273,7 +273,6 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger:not(.stro
   color:#edf2f8;
   -webkit-text-fill-color:#edf2f8;
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .system-core-tools-group>.menu-anchor:before{background:var(--dkui-border)}
 body.dkds-modern-ui .left-panel section{border:0}
 body.dkds-modern-ui .left-panel{border-right-color:var(--border-subtle);box-shadow:1px 0 0 rgba(255,255,255,.72) inset}
 html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar{color:var(--text-primary);border-color:transparent;box-shadow:none}

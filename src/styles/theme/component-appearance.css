@@ -56,7 +56,16 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-sele
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]{
   --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));border-radius:var(--dkui-radius);color:var(--dkui-component-toolbar-group-text,var(--dkui-text));box-shadow:var(--dkui-shadow-1)
 }
-body.dkds-modern-ui .system-core-tools-group[data-dkds-component-identity="toolbarGroup"]>.menu-anchor:before{background:var(--dkui-component-toolbar-group-border,var(--dkui-divider))}
+
+
+/* Split actions are one component surface with two hit regions. Children keep
+   canonical ToolbarAction state paint; the group owns the shared depth so the
+   primary action and compact caret do not look like two unrelated buttons. */
+body.dkds-modern-ui .dkds-split-action-group{border-radius:var(--ui-control-radius,var(--dkui-radius));}
+body.dkds-modern-ui .dkds-split-action-group>.dkds-split-action-main{border-top-right-radius:0;border-bottom-right-radius:0;}
+body.dkds-modern-ui .dkds-split-action-group>.menu-anchor>.dkds-split-action-caret{border-top-left-radius:0;border-bottom-left-radius:0;}
+body.dkds-modern-ui .dkds-split-action-group[data-dkds-split-variant="primary"]{box-shadow:var(--dkui-primary-shadow);}
+body.dkds-modern-ui .dkds-split-action-group[data-dkds-split-variant="primary"] :is(.dkds-split-action-main,.dkds-split-action-caret){box-shadow:none;}
 
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-surface,transparent);
