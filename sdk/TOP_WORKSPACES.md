@@ -61,7 +61,7 @@ Use `presentationRole` on `primary`, `prime`, and `sub` surface declarations whe
 - `inspector`: contextual inspection/editing of the current selection;
 - `scientific-secondary`: supporting scientific view that may become a route/sheet on constrained platforms.
 
-`priority` is a relative ordering/retention hint. `collapsible` tells a Presenter whether the surface may be represented in a compact form. These fields do **not** prescribe `left`, `right`, or `bottom`; platform geometry belongs to the Presenter. Live `workspaceSurface` state is merged with this registered contract, so a surface keeps its semantic role even after mounting.
+`priority` is a relative ordering/retention hint. `collapsible` tells a Presenter whether the surface may be represented in a compact form. These fields do **not** prescribe `left`, `right`, or `bottom`; platform geometry belongs to the Presenter. Live `workspaceSurface` state is merged with this registered contract, so a surface keeps its semantic role even after mounting. `placement`, `placements`, and `defaultPlacement` are therefore invalid inside `ctx.ui.topWorkspace.register(...)`. Put Desktop docking choices only on the live `PluginWorkspace.registerPrime/registerSub` surface that realizes the semantic contract.
 
 ```js
 ctx.ui.topWorkspace.register({

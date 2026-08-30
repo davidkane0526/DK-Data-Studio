@@ -47,8 +47,6 @@
     "ui.shortcuts",
     "ui.selection",
     "ui.context-menu",
-    "ui.prime",
-    "ui.sub",
     "ui.interaction",
     "data.types",
     "data.sources",

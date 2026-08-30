@@ -1,3 +1,11 @@
+# v3.67.6 — Platform Presentation Final Freeze Audit
+
+- Freeze Presentation ownership after the v3.67 migration. Core semantic surfaces now carry only identity, role, priority, collapsibility and active state; Desktop `placement / placements / defaultPlacement` no longer cross the Core Presentation Model or in-memory workspace action projection.
+- Centralize Presentation role values in one Core contract module consumed by both TOP validation and the Presentation Model, removing duplicated role allow-lists.
+- Make `ctx.ui.topWorkspace.register(...)` strictly semantic: SDK types no longer expose placement fields and Runtime rejects Desktop placement metadata in TOP Surface declarations. Actual docking remains on the live `PluginWorkspace` PRIME/SUB implementation.
+- Remove stale `ui.prime / ui.sub` capability claims from first-party plugins and the built-in template. The already-public low-level facades remain callable for Plugin API 1.19 compatibility, but they are not a second Workspace composition path and are no longer recommended for new TOP/SUPER UI.
+- Replace the stale pre-v1.19 SUPER/TOP document with the frozen `native + PRIMARY/PRIME/SUB + presentationRole` contract. No new Presentation capability, platform Plugin API branch, Mobile DOM inference or page-level CSS fallback is introduced.
+
 # v3.67.5 — Plugin API 1.19 Presentation Cutover
 
 - Make Plugin API **1.19.0** an exact compatibility boundary across Core activation, desktop/mobile package validation, SDK schemas and diagnostics. Plugin API 1.18 packages now fail explicitly and must be migrated instead of entering a hidden presentation fallback.

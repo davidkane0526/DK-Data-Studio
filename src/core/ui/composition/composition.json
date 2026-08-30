@@ -3,6 +3,10 @@
   "moduleRuntimeName": "DKDSUIRuntimeModules",
   "importableModules": [
     {
+      "id": "contracts/presentation",
+      "path": "src/core/contracts/presentation.js"
+    },
+    {
       "id": "ui/foundation/shortcuts",
       "path": "src/core/ui/modules/foundation/shortcuts.js"
     },

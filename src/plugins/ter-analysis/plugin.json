@@ -56,8 +56,6 @@
     "chart.export",
     "ui.portable",
     "ui.shortcuts",
-    "ui.prime",
-    "ui.sub",
     "ui.interaction",
     "data.types",
     "data.artifacts",

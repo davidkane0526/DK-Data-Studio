@@ -112,8 +112,7 @@ const {AnalysisWorkbench}=require('./analysis');
     navigationActions({includePrimary=true,includePrimes=true,includeSubs=true}={}){
       const describe=(row,kind,id,active,onInvoke)=>({
         id:`workspace-${kind}:${id}`,surfaceId:String(id),kind,semanticKind:String(row?.semanticKind||''),presentationRole:String(row?.presentationRole||row?.semanticRole||''),
-        priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,placement:String(row?.portable?.wrapper?.dataset?.placement||row?.defaultPlacement||(kind==='primary'?'main':'')),
-        placements:Array.isArray(row?.placements)?[...row.placements]:[],label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
+        priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
       });
       const rows=[];
       if(includePrimary&&this.primary)rows.push(describe(this.primary,'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));

@@ -859,6 +859,10 @@ module.exports = {
     {
       "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3676-platform-presentation-final-freeze.js",
+      "args": []
     }
   ],
   "check": [
@@ -1753,6 +1757,10 @@ module.exports = {
     {
       "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3676-platform-presentation-final-freeze.js",
+      "args": []
     }
   ],
   "mobile": [
@@ -1786,6 +1794,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3676-platform-presentation-final-freeze.js",
       "args": []
     },
     {

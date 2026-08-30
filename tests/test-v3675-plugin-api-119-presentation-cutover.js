@@ -27,7 +27,7 @@ const shell=read('mobile/src/Shell.tsx');
 const mobileCss=read('src/mobile.css');
 const sdkTool=read('sdk/tools/dkds-plugin.js');
 
-assert.strictEqual(pkg.version,'3.67.5','Plugin API 1.19 Presentation Cutover must ship as v3.67.5.');
+{const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=5))),'Plugin API 1.19 Presentation Cutover requires v3.67.5+.');}
 assert.strictEqual(sdk.sdkVersion,'1.23.0');
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
 assert.strictEqual(sdk.minimumAppVersion,'3.67.5');

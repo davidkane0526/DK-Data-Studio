@@ -1,22 +1,14 @@
 'use strict';
 
-const VERSION='1.1.0';
+const VERSION='1.2.0';
 const SCHEMA='dkds.presentation-model.v1';
-const ROLES=Object.freeze({
-  SCIENTIFIC_PRIMARY:'scientific-primary',
-  DATA_PRIMARY:'data-primary',
-  UTILITY_PRIMARY:'utility-primary',
-  DATA_CONTROL:'data-control',
-  INSPECTOR:'inspector',
-  SCIENTIFIC_SECONDARY:'scientific-secondary'
-});
-const ROLE_SET=new Set(Object.values(ROLES));
+const {ROLES,isPresentationRole}=require('../../../contracts/presentation');
 const text=value=>String(value??'');
 const number=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
 
 function normalizeRole(kind,row={}){
   const explicit=text(row.presentationRole||row.semanticRole||row.role||'').trim().toLowerCase();
-  if(ROLE_SET.has(explicit))return explicit;
+  if(isPresentationRole(explicit))return explicit;
   if(['analysis-primary','primary'].includes(explicit))return ROLES.SCIENTIFIC_PRIMARY;
   if(['data-main','data-workspace'].includes(explicit))return ROLES.DATA_PRIMARY;
   if(['utility-main','tool-primary'].includes(explicit))return ROLES.UTILITY_PRIMARY;
@@ -34,7 +26,7 @@ function surfaceDefaults(kind,row={}){
   const priority=number(row.priority,kind==='primary'?100:role===ROLES.INSPECTOR?80:kind==='prime'?70:50);
   return {role,priority,collapsible:row.collapsible!==undefined?!!row.collapsible:kind!=='primary'};
 }
-function hasDeclaredPresentationRole(row={}){return ROLE_SET.has(text(row.presentationRole||row.semanticRole).trim().toLowerCase());}
+function hasDeclaredPresentationRole(row={}){return isPresentationRole(row.presentationRole||row.semanticRole);}
 function contractSurface(row={},kind='prime'){
   const id=text(row.id).trim();if(!id)return null;
   const defaults=surfaceDefaults(kind,row);
@@ -42,8 +34,6 @@ function contractSurface(row={},kind='prime'){
     id:`workspace-${kind}:${id}`,surfaceId:id,kind,
     label:text(row.label||row.title||id),semanticKind:text(row.semanticKind),
     ...defaults,active:false,
-    placement:text(row.defaultPlacement||row.placement||(kind==='primary'?'main':'')),
-    placements:Object.freeze([...(Array.isArray(row.placements)?row.placements:[])]),
     presentationDeclared:hasDeclaredPresentationRole(row),source:'core-registry'
   });
 }
@@ -57,8 +47,6 @@ function runtimeSurface(row={},fallback=null){
     id,surfaceId:text(row.surfaceId||fallback?.surfaceId||id.split(':').slice(1).join(':')),kind,
     label:text(row.label||row.title||fallback?.label||row.surfaceId||id),semanticKind:text(row.semanticKind||fallback?.semanticKind),
     ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
-    placement:text(row.placement||row.defaultPlacement||fallback?.placement||(kind==='primary'?'main':'')),
-    placements:Object.freeze([...(Array.isArray(row.placements)&&row.placements.length?row.placements:(fallback?.placements||[]))]),
     presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,source:fallback?'core-runtime+contract':'core-runtime'
   });
 }

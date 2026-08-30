@@ -9,6 +9,7 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const composition=json('src/core/ui/composition/composition.json');
 const modelSource=read('src/core/ui/modules/presentation/model.js');
+const presentationContract=read('src/core/contracts/presentation.js');
 const presentersSource=read('src/core/ui/modules/presentation/presenters.js');
 const intentSource=read('src/core/ui/modules/interaction/intent.js');
 const adaptersSource=read('src/core/ui/modules/interaction/adapters.js');
@@ -24,7 +25,8 @@ const sdkTypes=read('sdk/plugin-api.d.ts');
 const ids=composition.importableModules.map(row=>row.id);
 for(const id of ['ui/interaction/intent','ui/interaction/adapters','ui/presentation/model','ui/presentation/presenters'])assert(ids.includes(id),`${id} must be a generated Core UI runtime module.`);
 
-for(const token of ['scientific-primary','data-control','inspector','scientific-secondary','priority','collapsible'])assert(modelSource.includes(token),`Core Presentation Model must own semantic surface field ${token}.`);
+for(const token of ['scientific-primary','data-control','inspector','scientific-secondary'])assert(presentationContract.includes(token),`Core Presentation contract must own semantic role ${token}.`);
+for(const token of ['priority','collapsible'])assert(modelSource.includes(token),`Core Presentation Model must own semantic surface field ${token}.`);
 for(const token of ['DKDSPlugins?.activities','DKDSPlugins?.workspace?.top','DKDSUI?.workspaces?.actions','DKDSUI?.actions','DKDSPlugins?.statusBar'])assert(modelSource.includes(token),`Core Presentation Model must read ${token} registry state.`);
 assert(!modelSource.includes('querySelector')&&!modelSource.includes('querySelectorAll')&&!modelSource.includes('getComputedStyle'),'Core Presentation Model must be DOM-blind.');
 

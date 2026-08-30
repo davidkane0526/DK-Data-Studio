@@ -3,6 +3,10 @@
   "moduleRuntimeName": "DKDSPluginKernelModules",
   "importableModules": [
     {
+      "id": "contracts/presentation",
+      "path": "src/core/contracts/presentation.js"
+    },
+    {
       "id": "kernel/context",
       "path": "src/core/plugins/kernel/modules/context.js"
     },

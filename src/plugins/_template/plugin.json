@@ -9,7 +9,6 @@
   "description": "Core-first Plugin API 1.19 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
   "capabilities": [
     "ui.page",
-    "ui.prime",
     "ui.interaction",
     "ui.interaction-behavior",
     "data.types",

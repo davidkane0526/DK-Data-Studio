@@ -56,8 +56,6 @@
     "ui.portable",
     "ui.shortcuts",
     "state.store",
-    "ui.prime",
-    "ui.sub",
     "ui.interaction",
     "data.types",
     "ui.plugin-workspace",

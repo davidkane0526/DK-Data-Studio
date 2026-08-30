@@ -9,6 +9,7 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const composition=json('src/core/ui/composition/composition.json');
 const modelSource=read('src/core/ui/modules/presentation/model.js');
+const presentationContract=read('src/core/contracts/presentation.js');
 const presentersSource=read('src/core/ui/modules/presentation/presenters.js');
 const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
 const activityShell=read('src/core/plugins/kernel/modules/activity/shell.js');
@@ -26,7 +27,8 @@ assert(packageRuntime.includes('pluginType:pluginTypeForManifest'),'Activity reg
 assert(appHost.includes('renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false})'),'main Desktop host must install the Presenter-backed navigation renderer.');
 assert(windowHost.includes('renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true})'),'dedicated Desktop host must reuse the same Presenter-backed navigation renderer.');
 
-for(const token of ['data-primary','utility-primary','core-runtime+contract','liveKeys','declared.filter'])assert(modelSource.includes(token),`Presentation Model Phase 2 merge/role contract missing ${token}.`);
+for(const token of ['data-primary','utility-primary'])assert(presentationContract.includes(token),`Presentation role contract missing ${token}.`);
+for(const token of ['core-runtime+contract','liveKeys','declared.filter'])assert(modelSource.includes(token),`Presentation Model Phase 2 merge contract missing ${token}.`);
 assert(sdkTypes.includes("DKDSPresentationSurfaceRole='scientific-primary'|'data-primary'|'utility-primary'|'data-control'|'inspector'|'scientific-secondary'"),'SDK must expose one bounded presentation role contract.');
 assert(sdkTypes.includes('presentationRole?:DKDSPresentationSurfaceRole')&&sdkTypes.includes('collapsible?:boolean'),'SDK TOP surface declarations must expose presentationRole/priority/collapsible without platform-specific APIs.');
 for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile'])assert(!sdkTypes.includes(forbidden),`${forbidden} must not exist.`);

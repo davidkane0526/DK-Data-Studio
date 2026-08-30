@@ -2,7 +2,7 @@
   const requiresCore=['status','capabilities','state','data.types','data.model','data.formula','workflow','ui.dom','ui.components','ui.workspace','ui.actions','ui.interaction','ui.interaction-behavior','ui.pages'];
   DKDSPlugins.define({
     id:'example.plugin',pluginType:'developer',name:'Example Plugin',version:'0.4.0',apiVersion:'1.19.0',requiresCore,order:900,
-    capabilities:['ui.page','ui.prime','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor','ui.plugin-workspace']
+    capabilities:['ui.page','ui.interaction','ui.interaction-behavior','data.types','state.store','workflow.processor','ui.plugin-workspace']
   }, async ctx => {
     const dom=ctx.ui.dom;
     const store=ctx.state.create({schema:1,lastRun:null},{projectSlice:'settings'});

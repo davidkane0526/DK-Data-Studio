@@ -57,7 +57,7 @@ const {PluginScope}=require('../scope/plugin-scope');
         const target=String(activity||'');const rows=[];
         for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.pluginWorkspaces||[])){
           if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
-          for(const action of workbench.navigationActions?.()||[])rows.push({id:String(action.id||''),surfaceId:String(action.surfaceId||''),kind:String(action.kind||''),semanticKind:String(action.semanticKind||''),presentationRole:String(action.presentationRole||''),priority:action.priority,collapsible:action.collapsible,placement:String(action.placement||''),placements:Array.isArray(action.placements)?[...action.placements]:[],label:String(action.label||action.id||''),active:!!action.active?.()});
+          for(const action of workbench.navigationActions?.()||[])rows.push({id:String(action.id||''),surfaceId:String(action.surfaceId||''),kind:String(action.kind||''),semanticKind:String(action.semanticKind||''),presentationRole:String(action.presentationRole||''),priority:action.priority,collapsible:action.collapsible,label:String(action.label||action.id||''),active:!!action.active?.()});
         }
         return rows;
       },
