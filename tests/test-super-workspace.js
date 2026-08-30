@@ -45,14 +45,14 @@ function makeSandbox(initial={}){
 
 function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,failActivate=false}={}){
   P.define({
-    id,pluginType:'workbench',name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.18.0',
+    id,pluginType:'workbench',name:id,version:'1.0.0',enabled:defaultEnabled,apiVersion:'1.19.0',
     workspace:{role:'top',activity,icon:'T',title:id}
   },async ctx=>{
     ctx.ui.activities.add({id:activity,label:activity,openMode:'window',onActivate:failActivate?async()=>{throw new Error(`activate failed: ${id}`);}:undefined});
     if(complete){
       ctx.ui.topWorkspace.register({
         id:activity,activity,label:activity,
-        layout:{mode:'native',root:{selector:'#root'},primary:{role:'primary-data'}}
+        layout:{mode:'native',root:{selector:'#root'},primary:{id:'main',presentationRole:'scientific-primary'}}
       });
     }
     if(prime)ctx.ui.prime.register('inspector',{activity,placements:['float','right','bottom']});
@@ -70,7 +70,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     defineTop(P,'test.top-b','top-b');
     defineTop(P,'test.incomplete','broken',{complete:false});
     defineTop(P,'test.fail-top','fail-top',{failActivate:true});
-    P.define({id:'test.support',pluginType:'extension',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.18.0'},async()=>({}));
+    P.define({id:'test.support',pluginType:'extension',name:'Support',version:'1.0.0',enabled:true,apiVersion:'1.19.0'},async()=>({}));
     P.configure({
       openActivityWindow:async id=>opened.push(id),
       prepareSuperTransition:async change=>{transitions.push({...change});return {snapshots:[],closed:0};},

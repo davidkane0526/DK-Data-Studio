@@ -10,7 +10,6 @@ const mobilePkg=JSON.parse(read('mobile/package.json'));
 const mobileApp=JSON.parse(read('mobile/app.json')).expo;
 const mobileCss=read('src/mobile.css');
 const nativeShellCss=read('src/styles/platform/native-client-shell.css');
-const legacyCss=read('src/styles/platform/native-legacy-workspace.css');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
 const inputAdapters=read('src/core/ui/modules/interaction/adapters.js');
 const scientificModel=read('src/core/ui/modules/scientific-curve/model.js');
@@ -31,7 +30,8 @@ assert(/html\.react-native-client \.topbar,\s*html\.react-native-client \.projec
 assert(!/#mainWorkspace,\s*\n\s*html\.react-native-client\{/.test(nativeShellCss),'native shell CSS must never retain the dangling selector introduced by the modular refactor');
 
 assert(inputAdapters.includes("[data-dkds-touch-gesture-owner]"),'Mobile Gesture Adapter held-swipe navigation must yield to Core-owned touch gestures');
-assert(inputAdapters.includes("dataset?.dkdsMobileWorkspaceMode!=='legacy'")&&inputAdapters.includes("handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize'")&&legacyCss.includes('.dkds-mobile-panel-edge'),'Mobile Gesture Adapter must retain drawer resizing only for the explicit legacy workspace fallback');
+assert(!inputAdapters.includes('dkdsMobileWorkspaceMode')&&!inputAdapters.includes('mobile-panel-resize')&&!inputAdapters.includes('dkds.mobile.left-panel-width'),'Plugin API 1.19 Mobile Gesture Adapter must not retain the retired PRIMARY-left drawer/resizer path');
+assert(!mobileCss.includes('native-legacy-workspace.css'),'Mobile CSS must not import the retired legacy workspace fallback.');
 assert(scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot'")||scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot"),'scientific plots must explicitly own their touch gesture sequence');
 assert(workspaceCss.includes('.dkds-scientific-curve-surface')&&workspaceCss.includes('touch-action:none'),'scientific plot surfaces must prevent browser pan arbitration during direct gestures');
 assert(scientificRender.includes("plotBg.on('pointerdown'")&&scientificRender.includes('setPointerCapture(event.pointerId)')&&scientificRender.includes("routeInteraction('box','background'")&&scientificRender.includes("decision.intent==='select-region'"),'scientific box selection must stay on Pointer Events with capture and select-region routing');

@@ -14,7 +14,7 @@ for(const activity of ['pulse','ter','transfer-vth-lab']){
   assert(spec.themeProviders?.some(row=>row.pluginId==='com.dkds.theme.liquid-glass'),`${activity} must receive bundled Theme Providers`);
 }
 
-const externalTheme={manifest:{id:'com.example.theme.runtime-parity',name:'Runtime parity theme',version:'1.0.0',apiVersion:'1.18.0',pluginType:'theme',entry:'plugin.js',scripts:['plugin.js'],requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.64.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.8.0'}},files:{'plugin.js':'DKDSPlugins.define({id:"com.example.theme.runtime-parity",pluginType:"theme",name:"Runtime parity theme",version:"1.0.0",requiresCore:["ui.theme"]},async()=>({}));'}};
+const externalTheme={manifest:{id:'com.example.theme.runtime-parity',name:'Runtime parity theme',version:'1.0.0',apiVersion:'1.19.0',pluginType:'theme',entry:'plugin.js',scripts:['plugin.js'],requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.64.0 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.8.0'}},files:{'plugin.js':'DKDSPlugins.define({id:"com.example.theme.runtime-parity",pluginType:"theme",name:"Runtime parity theme",version:"1.0.0",requiresCore:["ui.theme"]},async()=>({}));'}};
 const withExternal=manager.listPluginWindows(root,[externalTheme],[]);
 for(const spec of withExternal)assert(spec.themeProviders?.some(row=>row.pluginId==='com.example.theme.runtime-parity'&&row.source==='external'),`external Theme Provider must be attached to dedicated ${spec.activity}`);
 

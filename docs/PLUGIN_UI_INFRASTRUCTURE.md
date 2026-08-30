@@ -1,4 +1,4 @@
-# DK Data Studio Plugin UI Infrastructure — Plugin API v1.18 / UI Core v6.7
+# DK Data Studio Plugin UI Infrastructure — Plugin API v1.19 / UI Core v6.7
 
 ## Design boundary
 
@@ -34,7 +34,7 @@ wb.compose({
 });
 ```
 
-`leftNode` is optional. It is appropriate only when the plugin genuinely has a persistent control/data rail whose semantics are independent of the main task. A file list, batch queue, plot/table stack, or other domain workflow may instead live inside `mainNode` using the plugin's own grid/flex composition. **Do not force every plugin into a left-sidebar template.** Core owns the outer workbench mechanics; the plugin owns its domain layout.
+Plugin API 1.19 does not expose a PRIMARY left slot. A file list, batch queue, plot/table stack, or other domain workflow may live inside `mainNode` when it is one main task. A persistent control/data rail whose semantics are independent of the main task must be registered as its own PRIME surface with a platform-neutral `presentationRole`. Core owns the outer workbench mechanics; the plugin owns its domain layout.
 
 `PRIMARY` is the persistent main task. `PRIME` is a high-frequency auxiliary surface that can be inline/sticky/right/bottom/float. `SUB` is a full derived analysis that temporarily occupies the main area. The same view tree is used inside SUPER and dedicated TOP windows.
 
@@ -96,7 +96,7 @@ Buttons and keyboard shortcuts use one command description instead of separate U
 
 ## Interaction Behavior
 
-Plugin API 1.18 uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
+Plugin API 1.19 uses `ctx.ui.interactionBehaviors` as the public policy layer for mouse, keyboard, context and region gestures. Plugins declare **what a gesture means**; Core owns capture, arbitration, selection/manipulation precedence and command routing.
 
 ```js
 ctx.ui.interactionBehaviors.create('my-analysis-input', {
@@ -300,7 +300,7 @@ Architecture guards in `scripts/test-plot-view-foundation.js` treat plugin-priva
 
 ### DOM delegation is also Interaction Behavior
 
-Plugin API 1.18 provides `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
+Plugin API 1.19 provides `InteractionBehaviorProfile.bind(...)` for ordinary lists, trees and tables. A plugin declares a delegated target selector and gesture; Core owns `contextmenu`/click event capture and routes it through the same Context Action and Command arbitration used by scientific surfaces. First-party plugins must not install raw `contextmenu` listeners.
 
 ### Scientific plot container contract
 

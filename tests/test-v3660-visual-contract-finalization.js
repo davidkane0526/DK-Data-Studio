@@ -19,7 +19,7 @@ const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 assert(atLeast(tuple(pkg.version),[3,66,0]),'Visual Contract Finalization 2 requires DK Data Studio 3.66.1+.');
 assert(atLeast(tuple(sdk.sdkVersion),[1,22,0]),'Visual Contract Finalization 2 requires SDK 1.22.1+.');
-assert.strictEqual(sdk.pluginApiVersion,'1.18.0','Plugin API remains 1.18.0; this is a stronger Core UI ownership contract, not a runtime facade break.');
+assert.strictEqual(sdk.pluginApiVersion,'1.19.0','Plugin API remains 1.19.0; this is a stronger Core UI ownership contract, not a runtime facade break.');
 assert.strictEqual(sdk.themeContractVersion,'3.9.0','Theme Contract remains 3.9.0; component identity/material resolution stays canonical.');
 
 assert(uiRuntime.includes("const VERSION='2.0.0'"),'Core ComponentRuntime 2.0 must be the canonical component factory.');

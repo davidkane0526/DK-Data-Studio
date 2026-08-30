@@ -14,7 +14,7 @@ A new Theme package should declare:
   "requiresCore": ["ui.theme"],
   "compatibility": {
     "app": ">=3.65.0 <4.0.0",
-    "pluginApi": "^1.18.0",
+    "pluginApi": "^1.19.0",
     "themeContract": "^3.9.0"
   }
 }

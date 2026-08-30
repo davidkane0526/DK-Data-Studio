@@ -153,7 +153,7 @@ try{
 const externalPkg=normalizePluginPackage({
   schema:1,
   manifest:{
-    id:'example.external-window',pluginType:'workbench',name:'External Window',version:'1.0.0',apiVersion:'1.18.0',entry:'plugin.js',
+    id:'example.external-window',pluginType:'workbench',name:'External Window',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',
     scripts:['plugin.js'],styles:['style.css'],
     window:{activity:'external-window',runtime:'window-runtime.js',scripts:['engine.js'],dependencies:[],prewarm:true,reuse:true,persistence:'project'}
   },
@@ -175,7 +175,7 @@ assert(externalRow?.packageScripts?.includes('plugin.js')&&typeof externalRow?.p
 const overridePkg=normalizePluginPackage({
   schema:1,
   manifest:{
-    id:'builtin.ter-analysis',name:'TER Override',version:'2.0.1',apiVersion:'1.18.0',entry:'plugin.js',
+    id:'builtin.ter-analysis',name:'TER Override',version:'2.0.1',apiVersion:'1.19.0',entry:'plugin.js',
     window:{activity:'ter-override',runtime:'window-runtime.js',dependencies:[],prewarm:true,reuse:true,persistence:'project'}
   },
   files:{

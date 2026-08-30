@@ -27,7 +27,7 @@ assert(ui.includes("const rawItems=typeof action.items==='function'")&&ui.includ
 assert(ui.includes('onPlacementChanged')&&ui.includes("this.resize('portable-placement')"),'AnalysisWorkbench portable views must synchronously dispatch placement changes and resync regions.');
 assert(ui.includes('class SplitController')&&ui.includes('split:spec=>this.trackObject(new SplitController'),'core must provide persisted resizable split infrastructure');
 assert(ui.includes("this.allowed.includes('right')")&&ui.includes("this.allowed.includes('bottom')"),'floating views must support edge docking/snap');
-assert(kernel.includes("const API_VERSION = '1.18.0'"),'plugin API must be v1.16.0');
+assert(kernel.includes("const API_VERSION = '1.19.0'"),'plugin API must be v1.16.0');
 for(const api of ['layout: infrastructureScope?.layout','actions: infrastructureScope?.actions','portable: infrastructureScope?.panels','charts: Object.freeze({...(infrastructureScope?.chartsApi||{}),...(chartScope||{})})','plotViews: infrastructureScope?.plotViews','tables: infrastructureScope?.tables','interactions: infrastructureScope?.interactions','contextMenus: infrastructureScope?.menus','selection: infrastructureScope?.selection','interaction: infrastructureScope?.interactionRuntime','views: infrastructureScope?.views','workspaceSurface: infrastructureScope?.pluginWorkspace']){
   assert(kernel.includes(api),`kernel missing UI API: ${api}`);
 }

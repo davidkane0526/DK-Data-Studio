@@ -1,7 +1,7 @@
 (() => {
   const manifest={
-    id:'com.dkds.theme.liquid-glass',name:'Thin Glass',version:'1.10.0',apiVersion:'1.18.0',pluginType:'theme',
-    requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.64.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.8.0'}
+    id:'com.dkds.theme.liquid-glass',name:'Thin Glass',version:'1.10.0',apiVersion:'1.19.0',pluginType:'theme',
+    requiresCore:['ui.theme'],capabilities:['ui.theme'],compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.8.0'}
   };
   DKDSPlugins.define(manifest,async ctx=>{
     const theme=ctx.ui.theme;

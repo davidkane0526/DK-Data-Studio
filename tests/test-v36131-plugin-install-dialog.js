@@ -22,15 +22,15 @@ const manifestSchema=json('sdk/plugin-manifest.schema.json');
 const Catalog=require(path.join(root,'desktop/algorithm-package-catalog.js'));
 
 
-assert.equal(sdk.pluginApiVersion,'1.18.0','Plugin SDK contract must remain API 1.16.0.');
+assert.equal(sdk.pluginApiVersion,'1.19.0','Plugin SDK contract must remain API 1.16.0.');
 assert(pluginPackages.includes("const PluginSdkContract=require('../../sdk/contract.json');"),'Plugin package runtime must consume the published SDK contract.');
 assert(pluginPackages.includes("const PLUGIN_API_VERSION=String(PluginSdkContract.pluginApiVersion||'').trim();"),'Plugin package runtime must derive its current Plugin API from sdk/contract.json.');
 assert(!main.includes("PLUGIN_API_VERSION='1.15.0'"),'Stale installer Plugin API 1.15 constant must not return.');
 assert(pkg.build.files.includes('sdk/contract.json'),'Packaged application must include the SDK compatibility contract used by main.js.');
 
 const compatibility=Catalog.compatibility({
-  id:'com.dkds.tools.pulse-sampler',version:'1.0.4',apiVersion:'1.18.0',pluginType:'tool',
-  compatibility:{app:'>=3.61.29 <4.0.0',pluginApi:'^1.18.0'}
+  id:'com.dkds.tools.pulse-sampler',version:'1.0.4',apiVersion:'1.19.0',pluginType:'tool',
+  compatibility:{app:'>=3.61.29 <4.0.0',pluginApi:'^1.19.0'}
 },{appVersion:pkg.version,pluginApiVersion:sdk.pluginApiVersion,installedVersions:new Map()});
 assert.equal(compatibility.compatible,true,'A Plugin API ^1.16.0 package targeting app >=3.61.29 must install on v3.61.31.');
 

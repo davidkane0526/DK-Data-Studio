@@ -9,9 +9,9 @@ const json=rel=>JSON.parse(read(rel));
 
 {const [major,minor]=json('package.json').version.split('.').map(Number);assert(major===3&&minor>=64,'Current App must remain on or beyond the v3.64 historical contract baseline.');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.22.1','SDK must be the 1.18 Legacy-Free contract.');
-assert.equal(contract.pluginApiVersion,'1.18.0');
-assert.equal(contract.minimumAppVersion,'3.66.1','SDK minimum host must be the v3.65 Theme semantic-core baseline.');
+assert.equal(contract.sdkVersion,'1.23.0','SDK must be the current 1.23 / Plugin API 1.19 contract.');
+assert.equal(contract.pluginApiVersion,'1.19.0');
+assert.equal(contract.minimumAppVersion,'3.67.5','SDK minimum host must be the v3.65 Theme semantic-core baseline.');
 
 const infra=read('src/generated/runtime/ui-infrastructure.js');
 for(const token of ['class SeriesRegistry','class LegendGroup','class ActiveLayoutSolver','class GroupPlot','class TooltipService','series=new SeriesRegistry','groupPlots={create','layoutSolver.solve'])assert(infra.includes(token),`Core UI contract missing ${token}`);
@@ -25,8 +25,8 @@ for(const token of ['normalizedLegendData','compactLegendLabel','smartLegendLayo
 assert(chart.includes('Math.ceil(metrics.reserve)+40'),'bottom scientific legend must reserve x-axis-title clearance.');
 
 const kernel=read('src/generated/runtime/plugin-kernel.js');
-assert(kernel.includes("const API_VERSION = '1.18.0'"));
-for(const token of ['history: Object.freeze','series: infrastructureScope?.series','legends: infrastructureScope?.legends','groupPlots: infrastructureScope?.groupPlots','tooltips: infrastructureScope?.tooltips',"name:'DK Data Studio Design System'","version:'1.18'"])assert(kernel.includes(token),`Plugin API missing ${token}`);
+assert(kernel.includes("const API_VERSION = '1.19.0'"));
+for(const token of ['history: Object.freeze','series: infrastructureScope?.series','legends: infrastructureScope?.legends','groupPlots: infrastructureScope?.groupPlots','tooltips: infrastructureScope?.tooltips',"name:'DK Data Studio Design System'","version:'1.19'"])assert(kernel.includes(token),`Plugin API missing ${token}`);
 
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');
 const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');
@@ -40,7 +40,7 @@ assert(modern.includes('Modern shell owns the default control palette'),'Modern 
 assert(modern.includes('.dkds-plugin-devtools-window'),'App-native Plugin DevTools must be styled by the Design System');
 
 const types=read('sdk/plugin-api.d.ts');
-for(const token of ["readonly apiVersion:'1.18.0'",'DKDSSeriesRegistry','DKDSLegendGroup','DKDSActiveLayoutSolver','DKDSGroupPlot','DKDSTooltipRuntime','DKDSProjectHistoryRuntime','DKDSDesignSystem'])assert(types.includes(token),`SDK types missing ${token}`);
+for(const token of ["readonly apiVersion:'1.19.0'",'DKDSSeriesRegistry','DKDSLegendGroup','DKDSActiveLayoutSolver','DKDSGroupPlot','DKDSTooltipRuntime','DKDSProjectHistoryRuntime','DKDSDesignSystem'])assert(types.includes(token),`SDK types missing ${token}`);
 const schema=json('sdk/plugin-manifest.schema.json');
 for(const req of ['history','ui.series','ui.legend-groups','ui.group-plots','ui.tooltips','ui.design-system'])assert(schema.properties.requiresCore.items.enum.includes(req),`Manifest schema missing ${req}`);
-console.log('SDK 1.18 Core UI Contract Completion retained');
+console.log('SDK Core UI Contract Completion retained under Plugin API 1.19');

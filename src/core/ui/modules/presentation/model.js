@@ -44,7 +44,7 @@ function contractSurface(row={},kind='prime'){
     ...defaults,active:false,
     placement:text(row.defaultPlacement||row.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)?row.placements:[])]),
-    presentationDeclared:hasDeclaredPresentationRole(row),presentationLegacy:'',source:'core-registry'
+    presentationDeclared:hasDeclaredPresentationRole(row),source:'core-registry'
   });
 }
 function runtimeSurface(row={},fallback=null){
@@ -59,7 +59,7 @@ function runtimeSurface(row={},fallback=null){
     ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
     placement:text(row.placement||row.defaultPlacement||fallback?.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)&&row.placements.length?row.placements:(fallback?.placements||[]))]),
-    presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,presentationLegacy:text(row.presentationLegacy||fallback?.presentationLegacy),source:fallback?'core-runtime+contract':'core-runtime'
+    presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,source:fallback?'core-runtime+contract':'core-runtime'
   });
 }
 function statusRows(){
@@ -118,7 +118,6 @@ class PresentationModel {
         if(!surfaces.length)presentationIssues.push('missing-surfaces');
         for(const surface of surfaces){
           if(surface.presentationDeclared!==true)presentationIssues.push(`undeclared-role:${surface.kind}:${surface.surfaceId}`);
-          if(surface.presentationLegacy)presentationIssues.push(`legacy-composition:${surface.kind}:${surface.surfaceId}:${surface.presentationLegacy}`);
         }
       }
       const presentationComplete=!!contract&&surfaces.length>0&&presentationIssues.length===0;
@@ -136,7 +135,7 @@ class PresentationModel {
     const rows=this.workspaces().filter(row=>!row.system);
     const items=rows.map(row=>Object.freeze({activityId:row.activityId,pluginId:row.pluginId,label:row.label,complete:row.presentationComplete===true,issues:Object.freeze([...(row.presentationIssues||[])])}));
     const incomplete=items.filter(row=>!row.complete);
-    return Object.freeze({total:items.length,complete:items.length-incomplete.length,legacy:incomplete.length,items:Object.freeze(items),incomplete:Object.freeze(incomplete)});
+    return Object.freeze({total:items.length,complete:items.length-incomplete.length,incomplete:incomplete.length,items:Object.freeze(items),invalid:Object.freeze(incomplete)});
   }
   theme(){
     return Object.freeze({

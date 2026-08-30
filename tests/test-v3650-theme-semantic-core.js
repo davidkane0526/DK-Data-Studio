@@ -24,8 +24,8 @@ const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'Theme semantic-core regression requires app 3.65.0 or newer');
-assert.equal(sdk.sdkVersion,'1.22.1');
-assert.equal(sdk.pluginApiVersion,'1.18.0');
+assert.equal(sdk.sdkVersion,'1.23.0');
+assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.9.0');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must remain additive across the supported 3.x range');

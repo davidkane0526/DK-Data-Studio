@@ -16,6 +16,14 @@ const {listPluginStates}=require('../lifecycle');
     const root=layout.root&&typeof layout.root==='object'?layout.root:{};
     const rootSelector=String(root.selector||'').trim();
     if(!rootSelector)throw new Error(`TOP workspace ${pluginId} must declare layout.root.selector.`);
+    const allowedPresentationRoles=new Set(['scientific-primary','data-primary','utility-primary','data-control','inspector','scientific-secondary']);
+    const surfaceRows=[['primary',layout.primary],...(Array.isArray(layout.prime)?layout.prime.map(row=>['prime',row]):[]),...(Array.isArray(layout.sub)?layout.sub.map(row=>['sub',row]):[])];
+    for(const [kind,row] of surfaceRows){
+      if(!row||typeof row!=='object')throw new Error(`TOP workspace ${pluginId} must declare layout.${kind}.`);
+      const id=String(row.id||'').trim(),presentationRole=String(row.presentationRole||'').trim().toLowerCase();
+      if(!id)throw new Error(`TOP workspace ${pluginId} ${kind} surface must declare id.`);
+      if(!allowedPresentationRoles.has(presentationRole))throw new Error(`TOP workspace ${pluginId} ${kind}/${id} must declare a valid presentationRole for Plugin API 1.19.`);
+    }
     return Object.freeze({
       id:String(spec.id||activity),
       activity,

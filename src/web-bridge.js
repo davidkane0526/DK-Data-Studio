@@ -150,12 +150,16 @@
   const mobilePluginList=()=>mobilePluginStore('readonly',store=>store.getAll());
   const mobilePluginPut=pkg=>mobilePluginStore('readwrite',store=>store.put(pkg));
   const mobilePluginDelete=id=>mobilePluginStore('readwrite',store=>store.delete(String(id||'')));
-  const mobileCompatibility=pkg=>({
-    compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
-    issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.18.0'}],
+  const mobileCompatibility=pkg=>{
+    const required=String(pkg?.manifest?.apiVersion||'').trim();
+    const compatible=required==='1.19.0';
+    return {
+    compatible,
+    issues:compatible?[]:[{kind:'plugin-api',required:required||null,actual:'1.19.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.18.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.4'
-  });
+    pluginApiVersion:'1.19.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.5'
+    };
+  };
 
   async function decodeFile(file,encoding='auto') {
     const buf=await file.arrayBuffer();

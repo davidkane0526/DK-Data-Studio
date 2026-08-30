@@ -8,7 +8,7 @@ const {pluginTypeOf}=require('./manifest');
   const superPreferenceStorageKey = 'dkds.workspace.super.v1';
   const primePlacementStorageKey = 'dkds.workspace.prime-placement.v1';
 
-  const API_VERSION = '1.18.0';
+  const API_VERSION = '1.19.0';
 
   function readPreferences() {
     if (state.preferences) return state.preferences;

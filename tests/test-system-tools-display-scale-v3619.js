@@ -8,7 +8,7 @@ const json=rel=>JSON.parse(read(rel));
 function assert(value,message){if(!value)throw new Error(message);}
 
 
-assert(json('sdk/contract.json').pluginApiVersion==='1.18.0','Standalone SDK must publish Plugin API 1.18.');
+assert(json('sdk/contract.json').pluginApiVersion==='1.19.0','Standalone SDK must publish Plugin API 1.19.');
 assert(json('sdk/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'SDK manifest schema must expose the tool plugin category.');
 assert(json('docs/plugin-manifest.schema.json').properties.pluginType.enum.includes('tool'),'Application manifest schema must accept tool plugins.');
 

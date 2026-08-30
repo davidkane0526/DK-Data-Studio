@@ -341,7 +341,6 @@ export default function App() {
         await refreshWebService();
       }
       else if (action === 'theme-toggle') await hostRequest('command', { id: 'theme.toggle' });
-      else if (action === 'panel') await hostRequest('panel', { name: payload?.name || 'left' });
       else if (action === 'surface') await hostRequest('surface', { id: payload?.id, activityId: shell.activityId });
       else if (action === 'workspace-action') await hostRequest('action', { id: payload?.id, itemId: payload?.itemId, activityId: shell.activityId });
       else if (action === 'status-item') {

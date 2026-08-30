@@ -2,7 +2,7 @@
   "id": "example.theme-profile",
   "name": "Example Theme Profile",
   "version": "1.0.0",
-  "apiVersion": "1.18.0",
+  "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "pluginType": "theme",
   "requiresCore": [
@@ -10,8 +10,8 @@
   ],
   "description": "Theme Contract 3.9 component appearance, consumption diagnostics, semantic states, scientific fallback palette and material profile example",
   "compatibility": {
-    "app": ">=3.65.0 <4.0.0",
-    "pluginApi": "^1.18.0",
+    "app": ">=3.67.5 <4.0.0",
+    "pluginApi": "^1.19.0",
     "themeContract": "^3.9.0"
   }
 }

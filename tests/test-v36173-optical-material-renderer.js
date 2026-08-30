@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 const runtime=read('src/core/theme/material-renderer.js');
 for(const x of ["const VERSION='3.9.0'","clear','thin-glass','soft-glass','liquid-glass","globalThis.DKDSTheme?.recipePolicy?.()","renderer.liquidGlass","renderer.edgeRefraction","renderer.dynamicSpecular","renderer.profilePolicy","BROKEN_OPTICAL_RENDERER","prefers-reduced-motion","--dkds-optical-shift-x"])assert(runtime.includes(x),`missing optical renderer token: ${x}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(runtime.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Optical material policy must not know plugin identity selectors.');

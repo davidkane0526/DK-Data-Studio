@@ -1,6 +1,6 @@
 (() => {
   const manifest={
-    id:'com.dkds.transfer-vth-lab',name:'Transfer Curve Vth Lab',version:'3.0.5',apiVersion:'1.18.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:420,
+    id:'com.dkds.transfer-vth-lab',name:'Transfer Curve Vth Lab',version:'3.0.5',apiVersion:'1.19.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:420,
     description:'Built-in threshold-voltage extraction TOP workbench using scoped project sources, Core-owned import and bounded ScientificPlot layout.',pluginType:'workbench',
     requiresCore:['events','status','state','project','workspace','data.model','data.types','data.sources','data.artifacts','analysis.algorithms','ui.dom','ui.workspace','ui.scientific-plot','ui.table','ui.settings','ui.actions','ui.interaction-behavior','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['analysis.threshold-voltage','ui.page','ui.interaction-behavior','ui.scientific-plot','ui.batch-results','data.scoped-sources','ui.top-workspace','ui.plugin-workspace'],
@@ -8,7 +8,7 @@
     window:{activity:'transfer-vth-lab',title:'Vth 工作台',width:1420,height:900,minWidth:900,minHeight:620,dependencies:['scientific-renderer','data-model'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
     data:{accepts:['science.transport.iv','science.transport.transfer']},algorithmProvider:true,algorithmCategories:['transfer-curve'],
     algorithmProvides:[{category:'transfer-curve',id:'transfer.vth-constant-current',version:'2.0.0',title:'Threshold voltage by constant-current neighborhood'}],
-    pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'}
+    pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     const finite=v=>Number.isFinite(Number(v));

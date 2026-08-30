@@ -19,7 +19,7 @@ for(const token of ['class AnalysisWorkbench','class PluginWorkspace extends Ana
   assert(ui.includes(token),`Analysis Workbench missing ${token}`);
 }
 assert(ui.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})")||kernel.includes("roles:Object.freeze({PRIMARY:'primary',PRIME:'prime',SUB:'sub'})"),'Plugin API must expose PRIMARY/PRIME/SUB roles.');
-assert(kernel.includes("const API_VERSION = '1.18.0'"),'Plugin API must be v1.18.0.');
+assert(kernel.includes("const API_VERSION = '1.19.0'"),'Plugin API must be v1.19.0.');
 assert(kernel.includes('workspaceSurface: infrastructureScope?.pluginWorkspace')&& !kernel.includes('pluginWorkspace: infrastructureScope?.pluginWorkspace'),'Kernel must expose only the canonical workspaceSurface facade; the old public pluginWorkspace alias must be absent.');
 assert(pluginContract.includes("'ui.workspace':api=>!!api?.ui?.workspaceSurface")&&!pluginContract.includes("'ui.workspace':api=>!!api?.ui?.pluginWorkspace"),'Plugin requirement ui.workspace must validate the canonical workspaceSurface facade, not the removed pluginWorkspace alias.');
 assert(kernel.includes('scientificPlot: infrastructureScope?.scientificPlot'),'Kernel must expose Core ScientificCurveSurface to plugins.');
@@ -50,7 +50,7 @@ for(const [folder,{prime}] of Object.entries(migrated)){
   assert(!views.includes('ctx.ui.workbench.create'),`${folder}: transitional existing-DOM Workbench must no longer be the layout owner.`);
   assert(feature.includes(`id:'${prime}'`)&&feature.includes('registerPrime'),`${folder}: expected PRIME view ${prime}.`);
   assert(feature.includes("mode:'native'"),`${folder}: TOP/SUPER contract must be native to the unified workbench, not a second split composition.`);
-  assert.equal(manifest.apiVersion,'1.18.0',`${folder}: manifest must target current Plugin API 1.18.`);
+  assert.equal(manifest.apiVersion,'1.19.0',`${folder}: manifest must target current Plugin API 1.19.`);
   assert((manifest.capabilities||[]).includes('ui.plugin-workspace'),`${folder}: manifest must declare the canonical PluginWorkspace capability.`);
 }
 

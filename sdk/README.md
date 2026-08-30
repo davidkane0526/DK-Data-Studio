@@ -1,16 +1,23 @@
-# DK Data Studio Plugin SDK 1.22.1
+# DK Data Studio Plugin SDK 1.23.0
+
+
+## Plugin API 1.19 Presentation cutover
+
+Plugin API 1.19 is a breaking workspace-presentation boundary. `PRIMARY` represents exactly one semantic main surface. `leftNode` and `leftHtml` are removed from `DKDSPluginWorkspacePrimarySpec`, and PRIMARY mount callbacks expose only `main`, `root`, `workbench`, and `scope`. Independently placeable controls or inspectors must be registered as PRIME surfaces and declared in `ctx.ui.topWorkspace.register(...)` with a platform-neutral `presentationRole`. Every TOP PRIMARY/PRIME/SUB declaration must include a valid `presentationRole`.
+
+The Mobile legacy Desktop-geometry bridge is removed in DK Data Studio 3.67.5. Plugin API 1.18 packages fail explicitly on API-version compatibility instead of silently entering a legacy layout path.
 
 
 ## Theme Contract 3.9
 
-Theme plugins are independently versioned from Plugin API 1.18.0. Theme Contract 3.9 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds constrained role-specific appearance, semantic state colors, an optional alternate accent, and an optional scientific series palette. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.9 validates token names, role appearance, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
+Theme plugins are independently versioned from Plugin API 1.19.0. Theme Contract 3.9 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds constrained role-specific appearance, semantic state colors, an optional alternate accent, and an optional scientific series palette. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.9 validates token names, role appearance, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.66.1 or newer for SDK 1.22.1 / Theme Contract 3.9 authoring. Plugin API remains 1.18.0; older Plugin API packages must be upgraded before loading.
+- DK Data Studio 3.67.5 or newer for SDK 1.23.0 / Plugin API 1.19.0 / Theme Contract 3.9 authoring. Plugin API 1.18 packages must be upgraded before loading.
 
 ## Create a plugin
 
@@ -25,7 +32,7 @@ sdk/templates/tool-plugin/           Tool Workspace example (TOP-equivalent life
 
 For the complete dedicated-window contract, see [`TOP_WORKSPACES.md`](./TOP_WORKSPACES.md). Tool workspaces use the same lifecycle and are documented alongside it in [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md).
 
-The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.18.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
+The public runtime entry is `DKDSPlugins.define(manifest, activate)`. New plugins target `apiVersion: "1.19.0"`, declare every Core surface they use in `requiresCore`, and declare a `pluginType` (`foundation`, `data`, `algorithm`, `workbench`, `task`, `tool`, `theme`, `extension`, or `developer`) for Plugin Manager grouping.
 
 ### Workspace naming: manifest vs runtime
 
@@ -37,7 +44,7 @@ Yes. Algorithm plugins are a first-class SDK type. Use `pluginType: "algorithm"`
 
 详细规范与示例另见 [`TOOL_PLUGINS.md`](./TOOL_PLUGINS.md)。
 
-## Tool plugins (Plugin API 1.18)
+## Tool plugins (Plugin API 1.19)
 
 `pluginType: "tool"` is a host category parallel to TOP workbenches. A **Tool Workspace** uses the same `workspace.role: "top"` + dedicated `window` + `ctx.ui.activities` + `ctx.ui.topWorkspace` contract as TOP; Core simply places its opener under the global **工具** button instead of the TOP activity strip. No additional Tool-only semantics are imposed yet.
 
@@ -53,7 +60,7 @@ All Core-owned XY/scatter/curve plots support **double-click the Y axis or left 
 node sdk/tools/dkds-plugin.js validate path/to/my-plugin
 ```
 
-Validation checks the manifest, referenced files, runtime-manifest parity, declared Core requirements and forbidden infrastructure bypasses. For Plugin API 1.18 workspaces it also lints CSS/layout ownership: Core shell selectors, semantic `overflow:hidden/clip`, and viewport-height ownership are rejected before packaging. Positive-pixel `minmax(...,1fr)` rows are release-blocking in scientific/workspace-critical regions and reported as warnings in ordinary internal grids, so the validator stays strict where blank/clipped scientific UI can occur without over-constraining normal plugin layout.
+Validation checks the manifest, referenced files, runtime-manifest parity, declared Core requirements and forbidden infrastructure bypasses. For Plugin API 1.19 workspaces it also lints CSS/layout ownership: Core shell selectors, semantic `overflow:hidden/clip`, and viewport-height ownership are rejected before packaging. Positive-pixel `minmax(...,1fr)` rows are release-blocking in scientific/workspace-critical regions and reported as warnings in ordinary internal grids, so the validator stays strict where blank/clipped scientific UI can occur without over-constraining normal plugin layout.
 
 ## Package
 
@@ -114,7 +121,7 @@ A **true TOP workbench** must keep four contracts aligned:
 3. Runtime: `ctx.ui.activities.add({ id: <activity>, openMode: "window", ... })`.
 4. Runtime: `ctx.ui.topWorkspace.register({ activity: <activity>, ... })`.
 
-Core then gives the plugin the same host semantics as built-in TOPs: normally it opens in a reusable dedicated window; when promoted to SUPER, the same activity/layout is embedded in the main shell instead of creating a second implementation. Plugin API 1.18 validation rejects incomplete or mismatched TOP contracts. Start from `sdk/templates/top-workspace-plugin/`.
+Core then gives the plugin the same host semantics as built-in TOPs: normally it opens in a reusable dedicated window; when promoted to SUPER, the same activity/layout is embedded in the main shell instead of creating a second implementation. Plugin API 1.19 validation rejects incomplete or mismatched TOP contracts. Start from `sdk/templates/top-workspace-plugin/`.
 
 Use `ctx.data.sources` for imported project sources. Workbench plugins receive a scoped read view automatically, so `list()` and `targets()` are synchronous reads in every host, including dedicated TOP windows. Physical data remains canonical and is stored once; assignments are many-to-many. Import/Data Center own assignment changes, avoiding one importer per analysis plugin and avoiding unrelated workbench data pollution.
 
@@ -136,7 +143,7 @@ Default interaction is single-series isolation: click a legend item to focus tha
 
 Input policy is a separate Core contract from scientific geometry. Use `ctx.ui.interactionBehaviors` to declare how normalized gestures map to intents or Commands. Plugin code should not own raw keyboard listeners, private right-click menus, or feature-specific box-selection branches.
 
-The Plugin API 1.18 Interaction Behavior gesture vocabulary is `click`, `double-click`, `context`, `drag`, `box`, `wheel`, and `key`. Keyboard bindings use a complete normalized chord such as `Ctrl+Z`, `Ctrl+ArrowLeft`, or `Shift+ArrowLeft`. Context actions are rendered by Core, and a scientific surface resolves direct manipulation before selection/background gestures.
+The Plugin API 1.19 Interaction Behavior gesture vocabulary is `click`, `double-click`, `context`, `drag`, `box`, `wheel`, and `key`. Keyboard bindings use a complete normalized chord such as `Ctrl+Z`, `Ctrl+ArrowLeft`, or `Shift+ArrowLeft`. Context actions are rendered by Core, and a scientific surface resolves direct manipulation before selection/background gestures.
 
 ```js
 ctx.commands.register('sample.reset-range', () => {
@@ -191,7 +198,7 @@ ctx.ui.activities.add({
 
 `artifactHydration: 'live'` is intentionally opt-in because it transfers the exact canonical live Artifact snapshot into that activity renderer. Historical projects have already passed through the Project Compatibility Gateway before this point, so activity renderers never reconcile or parse a second `project.datasets` source. Reused live-hydration windows refresh when only the Artifact digest changes, without remounting the plugin. Ordinary analysis TOP windows should normally keep project hydration and rely on Artifact delta synchronization instead of requesting a full live snapshot.
 
-## Core-owned workbench import action (Plugin API 1.18)
+## Core-owned workbench import action (Plugin API 1.19)
 
 A `pluginType: "workbench"` plugin does **not** create its own “导入数据” button, `<input type="file">`, or file-picker flow. Core automatically contributes one standard import action for the workbench and opens the shared Import Workbench in scoped mode.
 
@@ -201,7 +208,7 @@ Declare the semantic data accepted by the workbench:
 "data": { "accepts": ["science.transport.iv"] }
 ```
 
-Scoped mode locks the assignment target to the current plugin, hides the global “数据用途” selector, and only lists Importer Providers whose `outputTypes` intersect `data.accepts`. Plugin API 1.18 workbenches declare `data.accepts`; Core uses it to scope importers and assignment targets.
+Scoped mode locks the assignment target to the current plugin, hides the global “数据用途” selector, and only lists Importer Providers whose `outputTypes` intersect `data.accepts`. Plugin API 1.19 workbenches declare `data.accepts`; Core uses it to scope importers and assignment targets.
 
 To choose the standard action position, the plugin may provide an **empty Core-owned slot** in its page header:
 
@@ -213,7 +220,7 @@ The plugin must not place custom content in that slot. If the slot is absent, Co
 
 `ctx.data.importWorkbench` is an infrastructure capability for import-oriented tools; analysis workbenches use the Core-owned import action derived from `data.accepts`.
 
-## Project source-data lifecycle (Plugin API 1.18)
+## Project source-data lifecycle (Plugin API 1.19)
 
 Imported file lifetime and physical storage are owned by the project host, not by an analysis workbench. A workbench reads its assigned source catalog through the scoped `ctx.data.sources` API; the visible import action itself is mounted and opened by Core:
 

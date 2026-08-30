@@ -1,3 +1,11 @@
+# v3.67.5 — Plugin API 1.19 Presentation Cutover
+
+- Make Plugin API **1.19.0** an exact compatibility boundary across Core activation, desktop/mobile package validation, SDK schemas and diagnostics. Plugin API 1.18 packages now fail explicitly and must be migrated instead of entering a hidden presentation fallback.
+- Remove PRIMARY-left composition from the public/runtime contract. `mountPrimary()` is main-only, rejects `leftNode` / `leftHtml`, and its PRIMARY mount callback exposes only `workbench / scope / main / root`.
+- Require every TOP PRIMARY/PRIME/SUB surface to declare an explicit semantic `presentationRole`. Secondary controls and inspectors must be real semantic surfaces rather than Desktop layout structure smuggled through PRIMARY.
+- Delete `native-legacy-workspace.css` and remove the old `workspace.panel.toggle` / Mobile `panel` request / fallback data-parameter drawer path. Mobile presentation now comes only from Presenter `main / sheet / rail / route` projection.
+- Keep a single Plugin API and shared scientific/domain implementation; no `ctx.ui.desktop` / `ctx.ui.mobile` facade is introduced.
+
 # v3.67.4 — Platform Presentation / Legacy Consumer Audit
 
 - Add `DKDSPresentation.audit()` and stable Presentation issue codes so incomplete TOP contracts are observable instead of inferred from screenshots or DOM. A PRIMARY that still hides a rail in `leftNode` / `leftHtml` is explicitly reported as `primary-left-composition` and cannot be misclassified as semantic-complete.

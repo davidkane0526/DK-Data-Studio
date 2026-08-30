@@ -15,7 +15,6 @@ class MobileWebSurfacePresenter {
       delete node.dataset.dkdsMobileRegion;delete node.dataset.dkdsMobileRole;delete node.dataset.dkdsMobileNavigation;delete node.dataset.dkdsMobileActive;
     }
     for(const root of document.querySelectorAll('[data-dkds-mobile-presentation]'))delete root.dataset.dkdsMobilePresentation;
-    delete document.documentElement?.dataset?.dkdsMobileWorkspaceMode;
     this.activeActivity='';
   }
   apply(snapshot={}){
@@ -27,9 +26,8 @@ class MobileWebSurfacePresenter {
     }
     const root=activityId?document.querySelector(`[data-dkds-workspace-activity="${esc(activityId)}"]`):null;
     const semantic=!!root&&workspace?.presentationComplete===true;
-    const mode=semantic?'semantic':'legacy';
+    const mode=semantic?'semantic':'invalid';
     if(root)root.dataset.dkdsMobilePresentation=mode;
-    if(document.documentElement)document.documentElement.dataset.dkdsMobileWorkspaceMode=mode;
     let projected=0;
     if(semantic){
       for(const surface of workspace.surfaces||[]){

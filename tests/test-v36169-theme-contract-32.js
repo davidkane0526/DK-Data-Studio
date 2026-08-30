@@ -11,7 +11,7 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract.materialBlur')&&Theme.supports('contract.material.roles.chrome')&&Theme.supports('contract.platform.logical-units'));assert(!Theme.supports('materialBlur')&&!Theme.supports('material.roles.chrome')&&!Theme.supports('platform.logical-units'));
 assert(Theme.supports('contract:3.8.0'),'Theme 3.8 must expose only its explicit contract namespace/version.');
@@ -56,7 +56,7 @@ sandbox.DKDSTheme.set('dark');assert.equal(props.get('--dkui-material-tint-opaci
 
 // Official template must pin app + theme contract compatibility.
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.65.0 <4.0.0');
+assert.equal(template.compatibility.app,'>=3.67.5 <4.0.0');
 assert.equal(template.compatibility.themeContract,'^3.9.0');
 const schema=json('sdk/plugin-manifest.schema.json');assert(schema.properties.compatibility.properties.themeContract);
 

@@ -101,30 +101,17 @@ const {GridController}=require('../grid/controller');
       return {left,right,bottom};
     }
     park(node){if(node&&this.slots.parking&&!this.slots.parking.contains(node))this.slots.parking.appendChild(node);return node;}
-    normalizeSidebarCompositionNode(node){
-      if(!node?.classList)return node;
-      node.classList.add('dkds-analysis-left-node');
-      node.dataset.dkdsCompositionRole='sidebar-content';
-      if(node.dataset.dkdsMaterialSurface==='core')return node;
-      for(const cls of ['dkds-surface','dkds-surface-muted','dkds-surface-elevated','dkds-material-role-surface','dkds-material-role-sidebar','dkds-material-role-elevated'])node.classList.remove(cls);
-      if(node.dataset.dkdsMaterialRoleClassOwner==='core-runtime'||node.dataset.dkdsMaterialRoleClassOwner==='material-surface')delete node.dataset.dkdsMaterialRoleClassOwner;
-      if(node.dataset.dkdsMaterialRecipeOwner==='core-runtime'){delete node.dataset.dkdsMaterialRecipe;delete node.dataset.dkdsMaterialRecipeOwner;}
-      delete node.dataset.dkdsMaterialAssigned;delete node.dataset.dkdsMaterialAssignedRole;delete node.dataset.dkdsMaterialRole;
-      return node;
-    }
     mountPrimary(spec={}){
+      if(spec.leftNode!==undefined||spec.leftHtml!==undefined)throw new Error('Plugin API 1.19 PRIMARY no longer accepts leftNode/leftHtml. Register a PRIME data-control/inspector surface instead.');
       cleanupCall(this.primary?.cleanup);
       this.primary={...spec,id:String(spec.id||'main')};
       this.markSurfaceNode(this.slots.primary,this.primary,'primary');
-      const left=this.slots.left,main=this.slots.primary;
-      left.replaceChildren();main.replaceChildren();
-      if(spec.leftNode){const node=resolveElement(spec.leftNode,this.root)||spec.leftNode;if(node)left.appendChild(node);}
-      else if(spec.leftHtml!==undefined)left.innerHTML=typeof spec.leftHtml==='function'?spec.leftHtml():String(spec.leftHtml||'');
+      const main=this.slots.primary;
+      this.slots.left.replaceChildren();main.replaceChildren();
       if(spec.mainNode){const node=resolveElement(spec.mainNode,this.root)||spec.mainNode;if(node)main.appendChild(node);}
       else if(spec.mainHtml!==undefined)main.innerHTML=typeof spec.mainHtml==='function'?spec.mainHtml():String(spec.mainHtml||'');
-      for(const node of [...left.children])this.normalizeSidebarCompositionNode(node);
       for(const node of [...main.children])node.classList?.add('dkds-analysis-primary-node');
-      const ctx={workbench:this,scope:this.scope,slots:this.slots,left,main,root:this.shell};
+      const ctx={workbench:this,scope:this.scope,main,root:this.shell};
       const cleanup=spec.mount?.(ctx);if(typeof cleanup==='function')this.primary.cleanup=cleanup;
       queueMicrotask(()=>this.scope.plotViews?.hydrate?.(this.slots.primary,{portableFactory:(id,node,pSpec)=>this.portable(id,node,pSpec)}));
       this.renderNav();this.syncRegions();this.resize('primary');return this;

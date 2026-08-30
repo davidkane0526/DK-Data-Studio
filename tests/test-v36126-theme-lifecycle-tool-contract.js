@@ -45,7 +45,7 @@ assert.equal(pulseImport.pluginType,'data','Pulse Text Import is intentionally a
 const validTool={
   schema:1,
   manifest:{
-    id:'com.example.tool-contract',name:'Tool Contract',version:'1.0.0',apiVersion:'1.18.0',pluginType:'tool',entry:'plugin.js',
+    id:'com.example.tool-contract',name:'Tool Contract',version:'1.0.0',apiVersion:'1.19.0',pluginType:'tool',entry:'plugin.js',
     workspace:{role:'top',activity:'tool-contract',title:'Tool Contract'},
     window:{activity:'tool-contract',runtime:'runtime.js',scripts:['runtime.js'],reuse:true,prewarm:false,persistence:'project'}
   },

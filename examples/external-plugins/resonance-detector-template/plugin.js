@@ -3,40 +3,46 @@
     id:'com.example.raw-prominence-detector',
     name:'Raw Prominence Detector Example',
     version:'1.0.0',
-    apiVersion:'1.18.0',
+    apiVersion:'1.19.0',
+    pluginType:'algorithm',
     source:'external',
     enabled:false,
     order:500,
     description:'SDK example: raw-sample local maxima with a prominence threshold.',
-    requiresCore:['analysis.algorithms','analysis.detectors'],
-    capabilities:['analysis.peak-detector'],
-    algorithmProvider:true,algorithmCategories:['peak-detector'],
+    requiresCore:['analysis.algorithms'],
+    capabilities:['analysis.algorithm','analysis.peak-detector'],
+    algorithmProvider:true,
+    algorithmCategories:['peak-detector'],
     algorithmProvides:[{category:'peak-detector',id:'example-raw-prominence-v1',version:'1.0.0',title:'Example · Raw Prominence'}],
-    compatibility:{app:'>=3.57.0 <4.0.0',pluginApi:'^1.8.0'}
+    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
   }, async ctx => {
-    ctx.analysis.detectors.register('example-raw-prominence-v1',{
-      name:'Example · Raw Prominence',
-      shortName:'Example',
+    const parameterSchema={
+      fields:[
+        {id:'minProminence',type:'number',label:'最小相对 prominence',default:0.08,min:0,max:1,step:0.01},
+        {id:'minSpacingV',type:'number',label:'最小峰间距 (V)',default:0.05,min:0,step:0.005}
+      ]
+    };
+    ctx.analysis.algorithms.register('example-raw-prominence-v1',{
+      category:'peak-detector',
+      version:'1.0.0',
+      title:'Example · Raw Prominence',
       description:'Developer example only. Detects local maxima in |I| and returns raw sampled coordinates.',
       default:false,
-      evidence:{
-        rawExample:{key:'rawExample',label:'Raw local prominence',glyph:'◇',symbol:'diamond-open'}
-      },
-      parameterSchema:{
-        fields:[
-          {id:'minProminence',type:'number',label:'最小相对 prominence',default:0.08,min:0,max:1,step:0.01},
-          {id:'minSpacingV',type:'number',label:'最小峰间距 (V)',default:0.05,min:0,step:0.005}
-        ]
+      inputTypes:['science.iv.raw'],
+      outputTypes:['science.resonance.peak-set'],
+      parameterSchema,
+      metadata:{
+        shortName:'Example',
+        evidence:{rawExample:{key:'rawExample',label:'Raw local prominence',glyph:'◇',symbol:'diamond-open'}}
       },
       defaultSettings(){return {minProminence:0.08,minSpacingV:0.05};},
-      detect(sweep,settings={},options={}){
+      run(sweep,{parameters={},range=null}={}){
         const pts=sweep?.points||[];
         if(pts.length<3)return [];
         const ys=pts.map(p=>Math.abs(Number(p.i)||0));
         const ymax=Math.max(...ys,1e-30);
-        const threshold=Math.max(0,Number(settings.minProminence)||0)*ymax;
-        const minSpacing=Math.max(0,Number(settings.minSpacingV)||0);
-        const range=options?.range||null;
+        const threshold=Math.max(0,Number(parameters.minProminence)||0)*ymax;
+        const minSpacing=Math.max(0,Number(parameters.minSpacingV)||0);
         const raw=[];
         for(let j=1;j<pts.length-1;j++){
           const p=pts[j];
@@ -58,7 +64,7 @@
           if(kept.some(k=>Math.abs(k.v-p.v)<minSpacing))continue;
           const left=Math.max(0,row.index-1),right=Math.min(pts.length-1,row.index+1);
           kept.push({
-            id:`${sweep.id}::external-example::${Date.now()}::${row.index}`,
+            id:`${sweep.id}::external-example::${row.index}`,
             sweepId:sweep.id,datasetPath:sweep.datasetPath,vg:sweep.vg,direction:sweep.direction,
             index:row.index,v:p.v,i:p.i,accepted:true,manual:false,locked:false,
             algorithms:['rawExample'],primaryAlgorithm:'rawExample',

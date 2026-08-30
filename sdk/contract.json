@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.22.1",
-  "pluginApiVersion": "1.18.0",
+  "sdkVersion": "1.23.0",
+  "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.66.1",
+  "minimumAppVersion": "3.67.5",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.23.0 targets Plugin API 1.19.0 and completes Platform Presentation cutover: TOP PRIMARY no longer accepts leftNode/leftHtml; every secondary semantic region must be registered as its own PRIME/SUB surface with a declared presentationRole. The legacy Mobile workspace bridge is removed.",
     "SDK 1.22.1 adds Core-owned menu availability for ctx.ui.menus.add(...): export/tool actions may declare synchronous availability returning boolean or { visible, enabled, reason }, and shell menus re-evaluate it when opened and when project/artifact/activity context changes.",
     "SDK 1.22.0 finalizes Core visual ownership: canonical Action/ActionGroup/Tabs/SurfaceHeader/Field factories and hydration are public through ctx.ui.components, and package validation rejects plugin-owned application paint or standard control/header geometry. Theme Contract remains 3.9.0 and Plugin API remains 1.18.0.",
     "SDK 1.21.0 targets Plugin API 1.18.0 and Theme Contract 3.9.0. Theme 3.9 makes Core semantic component identity and Material role resolution canonical across Gallery and real UI, adds controlled component variants/effects, real-page Theme Inspector diagnostics, expanded coverage statuses, and GroupPlot density control while preserving fallback-only scientific palette precedence.",
@@ -14,7 +15,7 @@
     "PluginWorkspace safe mode keeps semantic Primary content reachable inside a bounded Core-owned Primary viewport and scrollbar; auto mode is reserved for intentional document-flow growth and contained mode for bounded no-scroll surfaces.",
     "Tool/TOP workspaces use one reusable dedicated window contract with Core-owned import, theme, viewport, navigation and status-bar geometry.",
     "The SDK is standalone and does not require DK Data Studio source code.",
-    "Manifest requirement `ui.workspace` and capability label `ui.plugin-workspace` map to the single executable runtime facade `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not part of Plugin API 1.18.0."
+    "Manifest requirement `ui.workspace` and capability label `ui.plugin-workspace` map to the single executable runtime facade `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not part of Plugin API 1.19.0."
   ],
   "themeContractVersion": "3.9.0"
 }

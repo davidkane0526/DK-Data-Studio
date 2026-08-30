@@ -117,7 +117,7 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-settings-body{overflow:auto;padding:14px 16px;display:grid;gap:11px;}.dkds-settings-field{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(180px,1fr);gap:6px 12px;align-items:center;}.dkds-settings-field.is-check{grid-template-columns:auto minmax(0,1fr);justify-content:start;}.dkds-settings-label{font-size:11px;font-weight:650;}.dkds-settings-field select,.dkds-settings-field input[type="text"],.dkds-settings-field input[type="number"]{width:100%;height:32px;min-width:0;padding:4px 8px;}.dkds-settings-field small{grid-column:1/-1;font-size:var(--ui-font-tiny,10px);line-height:1.45;}
 .dkds-settings-dialog>footer{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;padding:11px 16px;}.dkds-settings-dialog>footer button{min-height:31px;}
 
-/* Core-owned per-workbench data import action (Plugin API 1.18). */
+/* Core-owned per-workbench data import action (Plugin API 1.19). */
 .dkds-core-workbench-import-slot{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0;}
 .dkds-core-workbench-import-slot+.dkds-plugin-header-actions{margin-left:6px;}
 .dkds-core-import-action{white-space:nowrap;}

@@ -1,12 +1,12 @@
-# DK Data Studio Plugin API v1.18
+# DK Data Studio Plugin API v1.19
 
-Plugin API 1.18 is the **Core-first, Legacy-Free contract** for DK Data Studio v3.62.0. A plugin owns domain definitions, scientific algorithms, domain state and view content; Core owns application infrastructure such as file access, canonical Artifacts, scientific-plot lifecycle, DOM/component primitives, workspace geometry, selection/interaction, persistence, services and dedicated-window lifecycle.
+Plugin API 1.19 is the **Core-first, Legacy-Free contract** for DK Data Studio v3.67.5+. A plugin owns domain definitions, scientific algorithms, domain state and view content; Core owns application infrastructure such as file access, canonical Artifacts, scientific-plot lifecycle, DOM/component primitives, workspace geometry, selection/interaction, persistence, services and dedicated-window lifecycle.
 
 Analysis workbenches declare accepted semantic data through `manifest.data.accepts`. Core owns the standard import action and centralized Import Workbench. Plugins may provide an empty `data-dkds-slot="workbench-import"` placement slot, but must not implement a second file picker or importer UI.
 
-Plugin API 1.18 is a deliberate breaking boundary. The host accepts API `1.18.0`; earlier runtime/API compatibility adapters are not part of the current contract. Historical **project files** remain supported separately through the Project Compatibility Gateway before plugin runtime starts.
+Plugin API 1.19 is a deliberate breaking boundary. The host accepts API `1.19.0`; earlier runtime/API compatibility adapters are not part of the current contract. Historical **project files** remain supported separately through the Project Compatibility Gateway before plugin runtime starts.
 
-For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains TypeScript declarations, the manifest schema, templates and the standalone validator/packager. New packages must target API `1.18.0` and declare only the Core capabilities they actually consume. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
+For external plugin development, the distributable `sdk/` directory is the supported development surface. It contains TypeScript declarations, the manifest schema, templates and the standalone validator/packager. New packages must target API `1.19.0` and declare only the Core capabilities they actually consume. Repository-local `npm run plugin:*` commands are maintainer conveniences, not SDK dependencies.
 
 The runtime entry point is `window.DKDSPlugins`. A plugin registers once:
 
@@ -19,7 +19,7 @@ DKDSPlugins.define(manifest, async ctx => {
 
 ## 1. Manifest and machine contract
 
-`plugin.json` for a new plugin must target API `1.18.0` and declare every Core surface it consumes in `requiresCore`.
+`plugin.json` for a new plugin must target API `1.19.0` and declare every Core surface it consumes in `requiresCore`.
 
 ```json
 {
@@ -27,7 +27,7 @@ DKDSPlugins.define(manifest, async ctx => {
   "name": "Spectroscopy",
   "version": "1.0.0",
   "pluginType": "workbench",
-  "apiVersion": "1.18.0",
+  "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "scripts": ["model.js", "analysis.js", "views.js", "plugin.js"],
   "requiresCore": [
@@ -56,7 +56,7 @@ Core installs such a package as a **managed override** in the user-data `plugin-
 
 If a later DK Data Studio release ships the same or a newer bundled version, that bundled baseline automatically wins over a stale override. This keeps exported/upgraded plugins useful without turning the application bundle into mutable state. Unknown IDs in the reserved `builtin.*` namespace are still rejected; stable first-party IDs outside that prefix are governed by actual bundled membership, not name heuristics.
 
-The bundled source and exported `.dkplugin` paths are intentionally held to the **same package contract**. Release validation packages and normalizes every bundled plugin through Plugin API 1.18, so first-party code cannot rely on CSS/layout patterns that an SDK package would fail.
+The bundled source and exported `.dkplugin` paths are intentionally held to the **same package contract**. Release validation packages and normalizes every bundled plugin through Plugin API 1.19, so first-party code cannot rely on CSS/layout patterns that an SDK package would fail.
 
 ## 2. Ownership boundary
 
@@ -104,7 +104,7 @@ window.DKDSMyPluginSomething = ...
 DKDSHostRecipes.*
 ```
 
-Use the typed Core APIs below. `ctx.host` is not part of Plugin API 1.18; host-private state must never be accessed by plugins.
+Use the typed Core APIs below. `ctx.host` is not part of Plugin API 1.19; host-private state must never be accessed by plugins.
 
 ## 4. Core requirement catalog
 
@@ -143,7 +143,7 @@ ctx.data.analyzers.register('fit', { run:({value,settings}) => fit(value, settin
 ctx.data.exporters.register('fit.csv', { run:({value}) => toCsv(value) });
 ```
 
-`ctx.data.artifacts` is the canonical live project data source. Plugin API 1.18 does not expose or consume `project.datasets`; historical dataset arrays are converted to canonical DataTable Artifacts by the Project Compatibility Gateway before plugin runtime starts.
+`ctx.data.artifacts` is the canonical live project data source. Plugin API 1.19 does not expose or consume `project.datasets`; historical dataset arrays are converted to canonical DataTable Artifacts by the Project Compatibility Gateway before plugin runtime starts.
 
 Derived results should be published with lineage rather than copied into plugin-private caches:
 
@@ -366,7 +366,7 @@ wb.registerPrime({ id:'inspector', label:'检查', semanticKind:'inspector', def
 wb.registerSub({ id:'physics', label:'物理分析', mount:({container})=>{/* domain content */} });
 ```
 
-`PRIMARY` does not imply a sidebar. `leftNode` is an optional composition slot, not a template requirement. Keep domain-specific file lists, batch controls, plots and result tables in a plugin-owned `mainNode` layout when that better matches the workflow. If adjacent panes need user-controlled space allocation, use `ctx.ui.layout.split(...)` rather than implementing a plugin-local resizer.
+In Plugin API 1.19, `PRIMARY` is exactly one semantic main surface. `leftNode` and `leftHtml` are not public API. Keep domain-specific file lists, batch controls, plots and result tables inside `mainNode` when they are part of one main task; register any independently placeable control rail or inspector as a PRIME surface with `presentationRole`. If adjacent panes inside plugin-owned content need user-controlled space allocation, use `ctx.ui.layout.split(...)` rather than implementing a plugin-local resizer.
 
 `semanticKind` is a bounded Core semantic declaration for persistent PRIME/Portable surfaces. Use `inspector` only for a true persistent inspector; ordinary auxiliary panels use the default `panel`. Core converts this declaration into Component Identity and Material Role ownership. Plugins and themes cannot invent additional semantic kinds, selectors, or Material roles.
 
@@ -479,7 +479,7 @@ Algorithm Provider packages should publish a metadata-only catalog in their mani
   ],
   "compatibility": {
     "app": ">=3.55.0 <4.0.0",
-    "pluginApi": "^1.18.0"
+    "pluginApi": "^1.19.0"
   },
   "pluginDependencies": [
     {"id":"other.provider","range":"^2.0.0","optional":false}
@@ -518,7 +518,7 @@ Parameter UI is schema-driven. A detector/provider should not ship its own setti
 
 A top-level plugin declares `workspace.role="top"` and a `window` contract in `plugin.json`. The dedicated renderer loads only Core dependencies and that plugin's declared support files. `window-runtime.js` is a thin lifecycle/service adapter; domain algorithms and domain rendering stay in shared modules used by SUPER and TOP alike.
 
-`ctx.ui.topWorkspace.register(...)` is also the platform-neutral Presentation contract for TOP surfaces. Declare `presentationRole` (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, or `scientific-secondary`) plus optional `priority` / `collapsible` metadata on `primary`, `prime`, and `sub` surfaces when Core needs their semantic role. Do not encode Desktop geometry into these fields and do not create platform branches such as `ctx.ui.desktop` or `ctx.ui.mobile`. Desktop and Mobile Presenters consume the same declaration and choose platform geometry downstream. For TOP workspaces, do not hide a second semantic region inside `mountPrimary({leftNode})`; register that rail as a PRIME `data-control` surface instead. `leftNode` is retained only as Plugin API 1.18 compatibility and is reported as an incomplete Presentation Contract by the Core audit.
+`ctx.ui.topWorkspace.register(...)` is also the platform-neutral Presentation contract for TOP surfaces. Declare `presentationRole` (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, or `scientific-secondary`) plus optional `priority` / `collapsible` metadata on `primary`, `prime`, and `sub` surfaces when Core needs their semantic role. Do not encode Desktop geometry into these fields and do not create platform branches such as `ctx.ui.desktop` or `ctx.ui.mobile`. Desktop and Mobile Presenters consume the same declaration and choose platform geometry downstream. For TOP workspaces, every independently placeable semantic region must be declared as its own PRIMARY/PRIME/SUB surface. `leftNode` / `leftHtml` no longer exist in Plugin API 1.19; use a PRIME `data-control` or `inspector` surface instead.
 
 Mounted `ctx.ui.workspaceSurface` state is runtime state, not a second contract. Core merges it with the registered TOP declaration by surface id so live placement/activation can change without losing semantic Presentation metadata.
 

@@ -32,5 +32,5 @@ const resonanceFeature=read('src/plugins/resonance-workbench/feature-runtime.js'
 assert(resonanceFeature.includes('series?.register?.')&&resonanceFeature.includes('colorForPhysicsCode'),'Resonance peak/physics colors must be resolved by the Core Series Registry.');
 
 const transport=read('src/plugins/standard-transport-algorithms/plugin.js');assert(transport.includes('ctx.data.transforms.register'),'Transport transforms must remain plugin-owned.');
-const contracts=JSON.parse(read('src/plugins/scientific-data-contracts/plugin.json'));assert.equal(contracts.pluginType,'foundation');assert.equal(contracts.apiVersion,'1.18.0');
+const contracts=JSON.parse(read('src/plugins/scientific-data-contracts/plugin.json'));assert.equal(contracts.pluginType,'foundation');assert.equal(contracts.apiVersion,'1.19.0');
 console.log('v3.62 Legacy-Free Core/plugin ownership checks passed.');

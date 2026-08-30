@@ -37,7 +37,7 @@ for(const [rel,id] of [
 ]){
   const manifest=JSON.parse(fs.readFileSync(path.join(root,rel),'utf8'));
   assert(manifest.id===id,`${rel} must keep the stable plugin id used to shadow stale installed copies.`);
-  assert(manifest.apiVersion==='1.18.0',`${id} must be migrated to Plugin API 1.18 instead of relying on a host compatibility bridge.`);
+  assert(manifest.apiVersion==='1.19.0',`${id} must be migrated to Plugin API 1.19 instead of relying on a host compatibility bridge.`);
 }
 
 

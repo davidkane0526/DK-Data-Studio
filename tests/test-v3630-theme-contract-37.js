@@ -7,10 +7,10 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.22.1');
-assert.equal(sdk.pluginApiVersion,'1.18.0');
+assert.equal(sdk.sdkVersion,'1.23.0');
+assert.equal(sdk.pluginApiVersion,'1.19.0');
 assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(sdk.minimumAppVersion,'3.66.1');
+assert.equal(sdk.minimumAppVersion,'3.67.5');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));

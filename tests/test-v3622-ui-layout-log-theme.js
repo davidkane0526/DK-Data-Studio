@@ -71,8 +71,8 @@ assert(resonanceGroup.includes('reswin-group-head dkds-plot-view-head')&&!resona
 const infra=read('docs/PLUGIN_UI_INFRASTRUCTURE.md');
 const topDocs=read('sdk/TOP_WORKSPACES.md');
 const templateDocs=read('sdk/templates/top-workspace-plugin/README.md');
-assert(infra.includes('`leftNode` is optional')&&infra.includes('Do not force every plugin into a left-sidebar template'),'Core UI docs must explicitly keep leftNode optional.');
-assert(topDocs.includes('does **not** prescribe a universal left-sidebar layout')&&templateDocs.includes('main-only PRIMARY'),'SDK authoring docs must present domain-specific main-only layout as a first-class pattern.');
-assert.equal(json('sdk/contract.json').pluginApiVersion,'1.18.0','This layout correction must not require a Plugin API bump beyond current 1.18.0.');
+assert(infra.includes('Plugin API 1.19 does not expose a PRIMARY left slot')&&infra.includes('platform-neutral `presentationRole`'),'Core UI docs must direct secondary semantic rails through explicit Presentation surfaces.');
+assert(topDocs.includes('Plugin API 1.19 makes PRIMARY exactly one semantic main surface')&&templateDocs.includes('main-only PRIMARY')&&templateDocs.includes('removes `leftNode` / `leftHtml`'),'SDK authoring docs must encode the Plugin API 1.19 PRIMARY cutover.');
+assert.equal(json('sdk/contract.json').pluginApiVersion,'1.19.0','This layout correction must not require a Plugin API bump beyond current 1.19.0.');
 
 console.log(`v3.62.2 UI/layout/log/theme feedback closure PASS; Thin Glass dark primary contrast=${ratio.toFixed(2)}:1.`);

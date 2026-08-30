@@ -1,6 +1,6 @@
 # 脉冲与采样处理 v1.9.2
 
-DK Data Studio Plugin API 1.18.0 Tool Workspace。它将旧版 PyQt `Pulse Generator + Data Pick` 的核心能力重新实现为一个不依赖应用私有源码的原生工具插件。
+DK Data Studio Plugin API 1.19.0 Tool Workspace。它将旧版 PyQt `Pulse Generator + Data Pick` 的核心能力重新实现为一个不依赖应用私有源码的原生工具插件。
 
 ## 作为 DK Data Studio 3.64 内置插件
 
@@ -35,7 +35,7 @@ DK Data Studio Plugin API 1.18.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 - Core ScientificPlot 显示三路合并波形和提取结果。
 - Core TableSurface 显示片段、合并时间表和结果表。
 - 结果 X 轴可选 Read/Pulse Voltage 或序号；Y 轴可选 Read/Pulse Current。
-- 结果图的线性/对数显示由 Plugin API 1.18.0 的 Core ScientificPlot 统一管理，插件不再自行变换 `|Current|` 数据。
+- 结果图的线性/对数显示由 Plugin API 1.19.0 的 Core ScientificPlot 统一管理，插件不再自行变换 `|Current|` 数据。
 - 支持复制结果表，以及导出合并波形 / 提取结果 CSV。
 
 ## 相比旧 Python 实现的修正
@@ -56,7 +56,7 @@ DK Data Studio Plugin API 1.18.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 
 ## 验证
 
-开发时已使用 SDK 自带 `dkds-plugin.js validate` 通过 Plugin API 1.18.0 静态契约、布局安全和 Theme Coverage 校验。
+开发时已使用 SDK 自带 `dkds-plugin.js validate` 通过 Plugin API 1.19.0 静态契约、布局安全和 Theme Coverage 校验。
 
 同时对 JS 脉冲生成实现与原始 `pulse.py` 做了数值对照，覆盖：
 
@@ -129,7 +129,7 @@ DK Data Studio Plugin API 1.18.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 
 ## SDK 1.18 migration
 
-- Targets Plugin API 1.18.0 / DK Data Studio 3.62.0+.
+- Targets Plugin API 1.19.0 / DK Data Studio 3.67.5+.
 - Keeps source access on the canonical Artifact-only path: `ctx.data.sources` → `ctx.data.artifacts` → `ctx.data.model`.
 - Uses Core-owned ScientificPlot legend/series and Core TableSurface.
 - Plugin styling now references semantic DKDS UI tokens and leaves ScientificPlot/TableSurface visual internals to Core.
@@ -137,7 +137,7 @@ DK Data Studio Plugin API 1.18.0 Tool Workspace。它将旧版 PyQt `Pulse Gener
 
 ## v1.9.2 / SDK 1.18.0 重新发布
 
-- 使用本次提供的 SDK 1.18.0 / Plugin API 1.18.0 / Theme Contract 3.6.0 重新校验和打包。
+- 使用当前 SDK 1.23.0 / Plugin API 1.19.0 / Theme Contract 3.9.0 重新校验和打包。
 - 本次 SDK 与 v1.9.0 所使用的 SDK 逐文件一致，因此不引入额外兼容层或无意义的实现改动。
 - 插件仍使用 canonical Artifact-only 数据路径、Core ScientificPlot legend/series、Core TableSurface 和 safe PluginWorkspace。
 - 脉冲生成、三通道合并、时间边界匹配、稳态平均、结果显示与 CSV 数据语义均保持不变。

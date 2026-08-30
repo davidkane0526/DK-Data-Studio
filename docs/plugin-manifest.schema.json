@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.18.json",
+  "$id": "https://dk-data-studio.local/schema/plugin-manifest-v1.19.json",
   "title": "DK Data Studio Plugin Manifest",
   "type": "object",
   "additionalProperties": true,
@@ -26,7 +26,7 @@
       "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$"
     },
     "apiVersion": {
-      "const": "1.18.0"
+      "const": "1.19.0"
     },
     "entry": {
       "type": "string",

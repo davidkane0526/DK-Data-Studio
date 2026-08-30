@@ -6,9 +6,9 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json'),sdk=json('sdk/contract.json');
 const appVersion=pkg.version.split('.').map(Number);
 assert(appVersion[0]>3||(appVersion[0]===3&&(appVersion[1]>66||(appVersion[1]===66&&appVersion[2]>=1))),'context-aware export contract requires app 3.66.1+');
-assert.strictEqual(sdk.sdkVersion,'1.22.1');
-assert.strictEqual(sdk.minimumAppVersion,'3.66.1');
-assert.strictEqual(sdk.pluginApiVersion,'1.18.0');
+assert.strictEqual(sdk.sdkVersion,'1.23.0');
+assert.strictEqual(sdk.minimumAppVersion,'3.67.5');
+assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
 assert.strictEqual(sdk.themeContractVersion,'3.9.0');
 
 const ui=read('src/core/plugins/kernel/modules/contributions/ui.js');

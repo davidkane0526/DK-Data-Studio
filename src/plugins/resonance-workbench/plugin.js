@@ -3,7 +3,7 @@
     id:'builtin.resonance-workbench',pluginType:'workbench',
     name:'Resonance Workbench',
     version:'3.61.13',
-    apiVersion:'1.18.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.sources","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.interaction-behavior","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.pages","ui.edit","ui.scientific-plot","ui.series","ui.settings"],
+    apiVersion:'1.19.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","capabilities","project","workspace","parameters","data.artifacts","data.sources","data.entities","data.types","data.reactive","data.pipeline","data.transforms","analysis.algorithms","charts","ui.dom","ui.workspace","ui.actions","ui.selection","ui.interaction","ui.interaction-behavior","ui.menus","ui.context-menus","ui.activities","ui.top-workspace","ui.toolbar","ui.pages","ui.edit","ui.scientific-plot","ui.series","ui.settings"],
     algorithmCategories:['peak-detector','peak-metrics','transport-transform','transport-scalar-field','ter-analysis'],
     pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
     description:'Reference PluginWorkspace implementation: GRS parity on Core ScientificCurveSurface with host-invariant SUPER/TOP composition.',

@@ -1,13 +1,13 @@
 (() => {
   const manifest={
-    id:'com.dkds.tools.pulse-sampler',name:'脉冲与采样处理',version:'1.9.2',apiVersion:'1.18.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:360,
+    id:'com.dkds.tools.pulse-sampler',name:'脉冲与采样处理',version:'1.9.2',apiVersion:'1.19.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:360,
     description:'三路 Vd/Vs/Vg 脉冲序列生成、拼接、预览，以及按脉冲时间轴对工程测量数据进行分段稳态平均和读写电流提取。',pluginType:'tool',
     requiresCore:['events','status','project','workspace','data.sources','data.artifacts','data.model','ui.dom','ui.workspace','ui.scientific-plot','ui.series','ui.table','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot','ui.table','data.scoped-sources'],
     workspace:{role:'top',activity:'pulse-sampler-tool',icon:'⌁',title:'脉冲与采样处理'},
     window:{activity:'pulse-sampler-tool',title:'脉冲与采样处理',width:1320,height:860,minWidth:960,minHeight:640,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
     data:{accepts:['data.table','science.transport.iv','science.transport.transfer']},
-    compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'}
+    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
   };
 
   const EPS=1e-10;

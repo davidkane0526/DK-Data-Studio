@@ -28,9 +28,7 @@ class MobileGestureAdapter {
   constructor({dispatch=null,publish=null}={}){
     this.dispatcher=typeof dispatch==='function'?dispatch:null;
     this.publisher=typeof publish==='function'?publish:null;
-    this.panel='';
     this.installed=false;
-    this.observer=null;
   }
   setDispatcher(dispatch){this.dispatcher=typeof dispatch==='function'?dispatch:null;return this;}
   setPublisher(publish){this.publisher=typeof publish==='function'?publish:null;return this;}
@@ -39,7 +37,6 @@ class MobileGestureAdapter {
     if(method==='navigate')return Intent.create(Intent.types.NAVIGATE,payload,meta);
     if(method==='back')return Intent.create(Intent.types.BACK,payload,meta);
     if(method==='command')return Intent.create(Intent.types.COMMAND,payload,meta);
-    if(method==='panel')return Intent.create(Intent.types.PANEL,payload,meta);
     if(method==='surface')return Intent.create(Intent.types.SURFACE,payload,meta);
     if(method==='action')return Intent.create(Intent.types.ACTION,payload,meta);
     if(method==='status')return Intent.create(Intent.types.STATUS,payload,meta);
@@ -53,25 +50,7 @@ class MobileGestureAdapter {
     if(!key)return null;
     return Intent.create(Intent.types.KEY,{key,target},{source:'mobile',modality:'gesture'});
   }
-  panelState(){return Object.freeze({open:!!this.panel,name:this.panel});}
-  togglePanel(name='left'){
-    const normalized=text(name||'left');
-    if(!['left','actions'].includes(normalized))throw new Error(`Unsupported mobile panel: ${normalized}`);
-    const willOpen=this.panel!==normalized;
-    this.panel=willOpen?normalized:'';
-    if(typeof document!=='undefined'&&document.body){
-      document.body.classList.toggle('dkds-mobile-panel-open',willOpen);
-      if(willOpen)document.body.dataset.mobilePanel=normalized;else delete document.body.dataset.mobilePanel;
-    }
-    this.publisher?.();
-    return {open:willOpen,name:normalized};
-  }
   closeTransient(){
-    if(this.panel){
-      this.panel='';
-      if(typeof document!=='undefined'&&document.body){document.body.classList.remove('dkds-mobile-panel-open');delete document.body.dataset.mobilePanel;}
-      return true;
-    }
     if(typeof document==='undefined')return false;
     const visible=node=>!!node&&!node.classList?.contains('hidden')&&(typeof getComputedStyle!=='function'||getComputedStyle(node).display!=='none');
     const overlay=[...document.querySelectorAll('.dkds-dialog-overlay,.dkds-settings-overlay,#importPanel')].find(visible);
@@ -84,7 +63,6 @@ class MobileGestureAdapter {
     return false;
   }
   canCloseTransient(){
-    if(this.panel)return true;
     if(typeof document==='undefined')return false;
     const visible=node=>!!node&&!node.classList?.contains('hidden')&&(typeof getComputedStyle!=='function'||getComputedStyle(node).display!=='none');
     return [...document.querySelectorAll('.command-menu,.dkds-dialog-overlay,.dkds-settings-overlay,#importPanel')].some(visible);
@@ -96,29 +74,6 @@ class MobileGestureAdapter {
   installDocumentBindings({dispatch=this.dispatcher,publish=this.publisher}={}){
     if(this.installed||typeof document==='undefined')return false;
     this.installed=true;this.setDispatcher(dispatch);this.setPublisher(publish);
-    const storageKey='dkds.mobile.left-panel-width.v1';
-    const restore=()=>{try{const saved=Number(localStorage.getItem(storageKey));if(Number.isFinite(saved)&&saved>=220)document.documentElement.style.setProperty('--dkds-mobile-left-width',`${saved}px`);}catch{}};
-    const ensureHandle=()=>{
-      if(document.documentElement?.dataset?.dkdsMobileWorkspaceMode!=='legacy')return false;
-      const panel=document.querySelector('.dkds-analysis-left');if(!panel)return false;
-      if(panel.querySelector('.dkds-mobile-panel-edge'))return true;
-      const handle=document.createElement('div');handle.className='dkds-mobile-panel-edge';handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize';handle.setAttribute('role','separator');handle.setAttribute('aria-label','拖动调整数据与参数面板宽度');panel.appendChild(handle);
-      let drag=null;
-      handle.addEventListener('pointerdown',event=>{drag={pointerId:event.pointerId};handle.setPointerCapture?.(event.pointerId);event.preventDefault();});
-      handle.addEventListener('pointermove',event=>{if(!drag||drag.pointerId!==event.pointerId)return;const width=Math.max(240,Math.min(window.innerWidth*.92,event.clientX));document.documentElement.style.setProperty('--dkds-mobile-left-width',`${Math.round(width)}px`);event.preventDefault();});
-      const finish=event=>{if(!drag||drag.pointerId!==event.pointerId)return;drag=null;const width=Math.round(panel.getBoundingClientRect().width);try{localStorage.setItem(storageKey,String(width));}catch{}window.dispatchEvent(new Event('resize'));};
-      handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);return true;
-    };
-    restore();
-    if(typeof MutationObserver!=='undefined'){
-      this.observer=new MutationObserver(()=>{if(ensureHandle())this.observer?.disconnect?.();});
-      if(!ensureHandle())this.observer.observe(document.body,{childList:true,subtree:true});
-    }else ensureHandle();
-    document.addEventListener('pointerdown',event=>{
-      if(!this.panel)return;
-      if(document.documentElement?.dataset?.dkdsMobileWorkspaceMode==='legacy'&&event.target?.closest?.('.dkds-analysis-left'))return;
-      this.closeTransient();this.publisher?.();
-    },true);
     let gesture=null;
     document.addEventListener('pointerdown',event=>{
       if(!['touch','pen'].includes(text(event.pointerType))||event.isPrimary===false)return;

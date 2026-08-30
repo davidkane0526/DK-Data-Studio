@@ -40,7 +40,7 @@ assert(Array.isArray(direct)&&direct.length===1,'Local capability proxy must pre
 vm.runInContext(read('src/generated/runtime/plugin-kernel.js'),sandbox,{filename:'plugin-kernel.js'});
 let observed=[];
 sandbox.window.DKDSPlugins.define({
-  id:'test.tool-install-sources',pluginType:'tool',name:'Tool Install Sources',version:'1.0.0',apiVersion:'1.18.0',enabled:true,
+  id:'test.tool-install-sources',pluginType:'tool',name:'Tool Install Sources',version:'1.0.0',apiVersion:'1.19.0',enabled:true,
   pluginType:'tool',source:'builtin',workspace:{role:'top',activity:'pulse-sampler-tool'}
 },async ctx=>{
   const rows=ctx.data.sources.list();

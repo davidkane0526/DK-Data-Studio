@@ -31,7 +31,7 @@ try{
   const js=read('examples/transfer-vth-lab/plugin.js');
   assert(js.includes("yScaleType:(state.get().parameters.logY")&&!js.includes('Math.log10(Math.max(Math.abs(raw)'),'Vth logarithmic display must use Core ScientificPlot scale rather than pre-transforming plotted current.');
   assert(js.includes("workspace:{role:'top',activity:'transfer-vth-lab'")&&js.includes("openMode:'window'")&&js.includes("artifactHydration:'live'")&&js.includes('ctx.ui.topWorkspace.register('),'Vth runtime must implement the complete TOP contract.');
-  assert(js.includes("primaryScroll:'safe'")&&js.includes("scroll:'safe'"),'Vth must use Plugin API 1.18 safe scrolling so Host can recover clipped content.');
+  assert(js.includes("primaryScroll:'safe'")&&js.includes("scroll:'safe'"),'Vth must use Plugin API 1.19 safe scrolling so Host can recover clipped content.');
   assert(/\.dkds-vth-workbench\{[^}]*min-height:0/s.test(css)&&!/\.dkds-vth-workbench\{[^}]*overflow:hidden/s.test(css),'Vth workbench root must defer height ownership to the Core safe viewport and must not clip content.');
   assert(/\.dkds-vth-main\{[^}]*min-height:0[^}]*grid-template-rows:auto minmax\(0,1fr\)[^}]*align-content:start/s.test(css)&&!/\.dkds-vth-main\{[^}]*overflow:hidden/s.test(css),'Vth main chart layout must use the Core-safe zero minimum, flexible minmax(0,1fr), and compact row alignment without clipping the host viewport.');
   assert(!/minmax\(\s*\d+(?:\.\d+)?px\s*,\s*1fr\s*\)/i.test(css),'Vth must not restore the intrinsic-height positive-minimum 1fr pattern that caused self-growing charts.');

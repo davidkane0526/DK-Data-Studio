@@ -100,12 +100,6 @@
     const value=await run(payload);publish();return value??true;
   }
 
-  async function panel(payload={}){
-    const result=mobileAdapter()?.togglePanel?.(text(payload.name||'left'));
-    if(!result)throw new Error('Mobile Gesture Adapter unavailable.');
-    publish();return result;
-  }
-
   async function surface(payload={}){
     const activityId=text(payload.activityId||currentActivityId()),id=text(payload.id);
     if(!activityId||!id)throw new Error('Missing mobile workspace surface.');
@@ -153,7 +147,6 @@
     if(intent?.type===types.NAVIGATE)return navigate(intent.payload);
     if(intent?.type===types.BACK)return back();
     if(intent?.type===types.COMMAND)return command(intent.payload);
-    if(intent?.type===types.PANEL)return panel(intent.payload);
     if(intent?.type===types.SURFACE)return surface(intent.payload);
     if(intent?.type===types.ACTION)return action(intent.payload);
     if(intent?.type===types.STATUS)return status(intent.payload);

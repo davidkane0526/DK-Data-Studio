@@ -3,7 +3,7 @@
     id:'builtin.flexible-import',pluginType:'data',
     name:'Flexible Text Import',
     version:'1.1.0',
-    apiVersion:'1.18.0',requiresCore:["science","data.importers","data.model"],
+    apiVersion:'1.19.0',requiresCore:["science","data.importers","data.model"],
     pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
     description:'Generic text/multicolumn import provider used by the import workbench.',
     source:'builtin',

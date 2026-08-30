@@ -175,7 +175,7 @@ function usesThemeRegister(source){
   return false;
 }
 
-function inspectPluginSource(source,{apiVersion='1.18.0',requiresCore=[]}={}){
+function inspectPluginSource(source,{apiVersion='1.19.0',requiresCore=[]}={}){
   const declared=new Set(Array.isArray(requiresCore)?requiresCore.map(String):[]),issues=[],usages=uiFacadeUsages(source);
   for(const usage of usages){
     const requirement=Object.prototype.hasOwnProperty.call(PUBLIC_UI_FACADES,usage.name)?PUBLIC_UI_FACADES[usage.name]:undefined;

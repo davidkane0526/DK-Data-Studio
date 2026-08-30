@@ -855,6 +855,10 @@ module.exports = {
     {
       "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
+      "args": []
     }
   ],
   "check": [
@@ -1745,6 +1749,10 @@ module.exports = {
     {
       "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
+      "args": []
     }
   ],
   "mobile": [
@@ -1774,6 +1782,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3675-plugin-api-119-presentation-cutover.js",
       "args": []
     },
     {

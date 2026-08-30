@@ -1,5 +1,4 @@
 /* Native-client entrypoint. Platform geometry is split by ownership:
-   shell chrome, Presenter-driven semantic surfaces, and explicit legacy fallback. */
+   shell chrome and Presenter-driven semantic workspace surfaces. */
 @import url("./styles/platform/native-client-shell.css") layer(dkds.platform);
 @import url("./styles/platform/native-workspace-presentation.css") layer(dkds.platform);
-@import url("./styles/platform/native-legacy-workspace.css") layer(dkds.platform);

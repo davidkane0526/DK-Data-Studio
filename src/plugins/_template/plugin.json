@@ -2,11 +2,11 @@
   "id": "example.plugin",
   "name": "Example Plugin",
   "version": "0.4.0",
-  "apiVersion": "1.18.0",
+  "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "enabled": true,
   "order": 900,
-  "description": "Core-first Plugin API 1.18 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
+  "description": "Core-first Plugin API 1.19 template. Domain logic is plugin-owned; workspace, interaction and visual infrastructure are consumed through current Core contracts.",
   "capabilities": [
     "ui.page",
     "ui.prime",

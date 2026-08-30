@@ -1,6 +1,6 @@
 # Transfer Curve Vth Lab 3.0.2
 
-A Plugin API 1.18 external TOP workbench reference implementation.
+A Plugin API 1.19 external TOP workbench reference implementation.
 
 - Declares `workspace.role = top` and a matching dedicated `window` contract.
 - Registers one `ctx.ui.topWorkspace` contract so TOP and SUPER share the same implementation.
@@ -14,7 +14,7 @@ A Plugin API 1.18 external TOP workbench reference implementation.
 
 ## 3.0.2
 
-- Uses the Plugin API 1.18 layout-safety contract: `primaryScroll: "safe"`, no workspace `overflow:hidden`, and no plugin-owned viewport clipping.
+- Uses the Plugin API 1.19 layout-safety contract: `primaryScroll: "safe"`, no workspace `overflow:hidden`, and no plugin-owned viewport clipping.
 - ScientificPlot sizing is Host-owned; the plugin no longer sets a private minimum that can conflict with its grid container.
 
 ## 3.0.1

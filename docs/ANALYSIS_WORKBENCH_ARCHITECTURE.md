@@ -123,7 +123,7 @@ Capability registry changes are republished automatically.
 
 ## 6. Shared infrastructure exposed to plugins
 
-Plugin API 1.18 exposes, among other APIs:
+Plugin API 1.19 exposes, among other APIs:
 
 - `ctx.ui.workspaceSurface` as the sole public PluginWorkspace composition facade;
 - `ctx.ui.grid`, `ctx.ui.portable`, and `ctx.ui.actions`;

@@ -32,7 +32,7 @@ assert(presentersSource.includes('class DesktopPresenter')&&presentersSource.inc
 assert(presentersSource.includes("region:'main'")&&presentersSource.includes("region:orientation==='landscape'?'rail':'sheet'")&&presentersSource.includes("region:'route'"),'Mobile Presenter must map semantic roles instead of inheriting desktop spatial placement.');
 assert(presentersSource.includes("present:(platform='desktop'")&&presentersSource.includes("platform==='mobile'?mobile.present(context):desktop.present(context)"),'one presentation facade must serve both platforms.');
 
-for(const type of ['navigation.activate','navigation.back','command.execute','workspace.panel.toggle','workspace.surface.activate','workspace.action.execute','status.action.execute','keyboard.key'])assert(intentSource.includes(type),`Unified Interaction Intent must define ${type}.`);
+for(const type of ['navigation.activate','navigation.back','command.execute','workspace.surface.activate','workspace.action.execute','status.action.execute','keyboard.key'])assert(intentSource.includes(type),`Unified Interaction Intent must define ${type}.`);
 assert(adaptersSource.includes('class DesktopMouseKeyboardAdapter')&&adaptersSource.includes('class MobileGestureAdapter'),'desktop mouse/keyboard and mobile gesture adapters must be explicit architecture modules.');
 assert(adaptersSource.includes('fromHostRequest')&&adaptersSource.includes('fromHeldSwipe'),'Mobile Gesture Adapter must translate native commands and gestures into Interaction Intents.');
 
@@ -45,7 +45,7 @@ assert(hostApi.includes('presentationRole:String(action.presentationRole')&&host
 assert(dedicated.includes('DKDSPresentation?.configure')&&dedicated.includes('projectSnapshot:()=>')&&dedicated.includes('state.projectTabs'),'app project state must feed the Presentation Model directly rather than through rendered project tabs.');
 assert(dedicated.includes("DKDSPresentation.present('mobile'"),'non-native connectivity fallback must reuse the Mobile Presenter instead of reconstructing a parallel shell snapshot.');
 
-assert(pluginApi.includes('Plugin API v1.18')||pluginApi.includes('Plugin API 1.18'),'Phase 1 must retain the single Plugin API 1.18 contract.');
+assert(pluginApi.includes('Plugin API v1.19')||pluginApi.includes('Plugin API 1.19'),'Phase 1 must retain the single Plugin API 1.19 contract.');
 for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile']){
   assert(!pluginApiRuntime.includes(forbidden),`${forbidden} must not exist in the executable Plugin API facade.`);
   assert(!sdkTypes.includes(forbidden),`${forbidden} must not exist in SDK authoring types.`);

@@ -6,7 +6,6 @@ const TYPES=Object.freeze({
   NAVIGATE:'navigation.activate',
   BACK:'navigation.back',
   COMMAND:'command.execute',
-  PANEL:'workspace.panel.toggle',
   SURFACE:'workspace.surface.activate',
   ACTION:'workspace.action.execute',
   STATUS:'status.action.execute',

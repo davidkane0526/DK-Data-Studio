@@ -25,7 +25,7 @@
     const apiVersion=String(raw.apiVersion||'1.0.0').trim(),pluginType=String(raw.pluginType||'extension').trim().toLowerCase();
     if(!validId(id)||id.startsWith('builtin.'))throw new Error(`Invalid or reserved plugin id: ${id}`);
     if(!name||!version)throw new Error('Plugin manifest.name and version are required.');
-    if(apiVersion!=='1.18.0')throw new Error(`Unsupported Plugin API: ${apiVersion}; this host requires 1.18.0`);
+    if(apiVersion!=='1.19.0')throw new Error(`Unsupported Plugin API: ${apiVersion}; this host requires 1.19.0`);
     if(!TYPES.has(pluginType))throw new Error(`Unsupported pluginType: ${pluginType}`);
     const entry=fileName(raw.entry||'plugin.js');
     const entries=Object.entries(pkg.files||{});

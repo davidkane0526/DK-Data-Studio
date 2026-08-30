@@ -30,8 +30,8 @@ for(const token of ['renderWorkspaceSurfaces','data-dkds-presentation-surface','
 assert(workbench.includes("new CustomEvent('dkds:workspace-presentation-changed'")&&workbench.includes("presentationChanged('prime-open')")&&workbench.includes("presentationChanged('sub-open')"),'PluginWorkspace must publish domain-neutral presentation changes when live surface state changes.');
 assert(hostApi.includes("String(row.id)===actionId||String(row.surfaceId)===actionId"),'Workspace surface invocation must accept stable semantic surfaceId in addition to the internal action id.');
 
-for(const token of ['surface.presentation?.navigation','surface.presentation?.region','contextRailSurfaces','hasSemanticDataControl','surfaceRequestId'])assert(mobileShell.includes(token),`Native Mobile shell must consume Presenter surface metadata: ${token}.`);
-assert(mobileShell.includes("surface.role === 'data-control'")&&mobileShell.includes("!hasSemanticDataControl(shell)"),'Native Mobile legacy panel control must be a fallback only when no semantic data-control surface exists.');
+for(const token of ['surface.presentation?.navigation','surface.presentation?.region','contextRailSurfaces','surfaceRequestId'])assert(mobileShell.includes(token),`Native Mobile shell must consume Presenter surface metadata: ${token}.`);
+assert(mobileShell.includes("surface.role === 'data-control'")&&!mobileShell.includes('hasSemanticDataControl'),'Plugin API 1.19 Native Mobile shell must use semantic data-control surfaces directly and must not retain the old panel fallback predicate.');
 assert(mobileHost.includes("after.kind==='prime'&&after.active===false")&&mobileHost.includes("dkds:workspace-presentation-changed")&&mobileHost.includes('region:text(after.presentation?.region)'),'Mobile Host must re-read Presenter state after surface intents and keep the route stack synchronized with PRIME close/open state.');
 for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile'])assert(!sdkTypes.includes(forbidden),`${forbidden} must not be introduced by Phase 3.`);
 

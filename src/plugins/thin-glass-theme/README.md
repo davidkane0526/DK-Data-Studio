@@ -1,6 +1,6 @@
 # Thin Glass 1.10.0
 
-Plugin API 1.18 / Theme Contract 3.8 theme profile.
+Plugin API 1.19 / Theme Contract 3.9 theme profile.
 
 - Theme owns semantic tokens, role appearance, role recipes, material parameters, state colors and the optional default scientific series palette.
 - Core owns Material Role assignment, generic `thin-glass` rendering and DOM composition.

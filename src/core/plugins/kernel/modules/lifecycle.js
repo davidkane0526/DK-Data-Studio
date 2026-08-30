@@ -29,7 +29,7 @@ function configure(next){deps=next;return module.exports;}
   async function activateDefinition(definition, { restoreCurrentProject=true }={}) {
     const { manifest } = definition;
     if (active.has(manifest.id)) return active.get(manifest.id)?.instance || null;
-    if (String(manifest.apiVersion||'') !== '1.18.0') {
+    if (String(manifest.apiVersion||'') !== '1.19.0') {
       disabled.set(manifest.id, `Unsupported plugin API ${manifest.apiVersion}`);
       eventEmit('plugin:state-changed', { id:manifest.id, reason:'api-version' });
       return null;

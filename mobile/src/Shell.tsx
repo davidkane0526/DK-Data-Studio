@@ -42,7 +42,6 @@ export type ShellSurface = {
 const surfaceRequestId = (surface: ShellSurface) => surface.surfaceId || surface.id;
 const navigableSurfaces = (shell: RendererShellState) => (shell.surfaces || []).filter(surface => surface.presentation?.navigation !== 'primary' && surface.presentation?.region !== 'main' && surface.kind !== 'primary').slice().sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0) || a.label.localeCompare(b.label));
 const contextRailSurfaces = (shell: RendererShellState) => navigableSurfaces(shell).filter(surface => surface.presentation?.region === 'rail');
-const hasSemanticDataControl = (shell: RendererShellState) => (shell.surfaces || []).some(surface => surface.role === 'data-control');
 const surfaceDetail = (surface: ShellSurface) => surface.presentation?.region === 'sheet' ? (surface.active ? '当前面板已打开' : '在当前工作区打开面板') : surface.presentation?.region === 'rail' ? (surface.active ? '当前侧栏已打开' : '在侧栏打开') : surface.presentation?.region === 'route' ? (surface.active ? '当前页面' : '打开工作区页面') : (surface.active ? '当前显示' : '在当前工作区打开');
 
 export type RendererShellState = {
@@ -231,14 +230,6 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
             style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder, opacity: shell.history?.canRedo ? 1 : .38 }]}>
             <HistoryGlyph direction="redo" color={palette.text} />
           </Pressable>
-          {!shell.activities.find(row => row.id === shell.activityId)?.system && !hasSemanticDataControl(shell) ? (
-            <Pressable
-              accessibilityRole="button" accessibilityLabel="打开数据与参数"
-              onPress={() => onAction('panel', { name: 'left' })}
-              style={[styles.headerPanelButton, { backgroundColor: palette.accentSoft }]}>
-              <Text style={[styles.headerPanelButtonText, { color: palette.accent }]}>数据 / 参数</Text>
-            </Pressable>
-          ) : null}
         </View>
       </View>
     </View>
@@ -354,16 +345,6 @@ export function NavigationRail({ shell, palette, onAction, onSheet }: Navigation
           <Text style={[styles.railLabel, { color: surface.active ? palette.accent : palette.textSoft }]} numberOfLines={1}>{surface.label}</Text>
         </Pressable>
       ))}
-      {!shell.activities.find(row => row.id === shell.activityId)?.system && !hasSemanticDataControl(shell) ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="打开数据与参数"
-          onPress={() => onAction('panel', { name: 'left' })}
-          style={({ pressed }) => [styles.railPanel, { backgroundColor: palette.accentSoft }, pressed && styles.pressed]}>
-          <Text style={[styles.railPanelGlyph, { color: palette.accent }]}>☷</Text>
-          <Text style={[styles.railLabel, { color: palette.accent }]}>参数</Text>
-        </Pressable>
-      ) : null}
       {(shell.actions || []).length ? (
         <Pressable
           accessibilityRole="button"

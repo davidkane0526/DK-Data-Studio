@@ -6,7 +6,7 @@ const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.22.1');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 assert.equal(Theme.version,'3.9.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');
@@ -35,7 +35,7 @@ assert(!/\[data-dkds-material-recipe="thin-glass"\]::(?:before|after)/.test(css)
 const runtime=read('src/core/theme/runtime.js');
 const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');
 assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core must not own a product Theme profile; it only owns the generic thin-glass renderer.');
-assert(thinTheme.includes("id:'com.dkds.theme.liquid-glass'")&&thinTheme.includes("apiVersion:'1.18.0'"),'Thin Glass must be a first-party Plugin API 1.18 Theme plugin.');
+assert(thinTheme.includes("id:'com.dkds.theme.liquid-glass'")&&thinTheme.includes("apiVersion:'1.19.0'"),'Thin Glass must be a first-party Plugin API 1.19 Theme plugin.');
 for(const row of ["chrome:'thin-glass'","sidebar:'thin-glass'","surface:'clear'","elevated:'thin-glass'","popover:'thin-glass'","control:'clear'","floating:'thin-glass'"]) assert(thinTheme.includes(row),`Thin Glass plugin policy missing ${row}`);
 assert(!runtime.includes("metadata.family==='glass'"),'recipe policy must not infer glass from theme identity/metadata');
 assert(!runtime.includes("const fallback={chrome:'clear'"),'Theme Runtime must not silently synthesize clear recipes for missing roles.');
@@ -58,7 +58,7 @@ const sdkTool=read('sdk/tools/dkds-plugin.js');
 assert(sdkTool.includes("renderer.recipes.thin-glass"),'SDK validator Theme API must advertise thin-glass recipe support.');
 assert(sdkTool.includes('must explicitly declare a Material Recipe for every Core role'),'SDK validator must reject incomplete Theme recipe policies instead of relying on renderer fallback.');
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.65.0 <4.0.0');
+assert.equal(template.compatibility.app,'>=3.67.5 <4.0.0');
 assert.equal(template.compatibility.themeContract,'^3.9.0');
 const templateJs=read('sdk/templates/theme-profile/plugin.js');
 assert(templateJs.includes("popover:'thin-glass'")&&templateJs.includes("surface:'clear'"),'official Theme template must demonstrate Thin Glass policy.');

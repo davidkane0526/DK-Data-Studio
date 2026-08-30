@@ -42,13 +42,13 @@ const document={
   body,activeElement:null,
   addEventListener:(type,fn)=>add('document',type,fn)
 };
-const INTENT_TYPES={NAVIGATE:'navigation.activate',BACK:'navigation.back',COMMAND:'command.execute',PANEL:'workspace.panel.toggle',SURFACE:'workspace.surface.activate',ACTION:'workspace.action.execute',STATUS:'status.action.execute',KEY:'keyboard.key'};
-const hostMethodTypes={navigate:INTENT_TYPES.NAVIGATE,back:INTENT_TYPES.BACK,command:INTENT_TYPES.COMMAND,panel:INTENT_TYPES.PANEL,surface:INTENT_TYPES.SURFACE,action:INTENT_TYPES.ACTION,status:INTENT_TYPES.STATUS};
+const INTENT_TYPES={NAVIGATE:'navigation.activate',BACK:'navigation.back',COMMAND:'command.execute',SURFACE:'workspace.surface.activate',ACTION:'workspace.action.execute',STATUS:'status.action.execute',KEY:'keyboard.key'};
+const hostMethodTypes={navigate:INTENT_TYPES.NAVIGATE,back:INTENT_TYPES.BACK,command:INTENT_TYPES.COMMAND,surface:INTENT_TYPES.SURFACE,action:INTENT_TYPES.ACTION,status:INTENT_TYPES.STATUS};
 const mobileAdapter={
   dispatcher:null,publisher:null,
   fromHostRequest:(method,payload)=>hostMethodTypes[method]?{type:hostMethodTypes[method],payload}:null,
   setDispatcher(fn){this.dispatcher=fn;return this;},setPublisher(fn){this.publisher=fn;return this;},installDocumentBindings(){return true;},
-  canCloseTransient:()=>false,closeTransient:()=>false,togglePanel:name=>({open:true,name})
+  canCloseTransient:()=>false,closeTransient:()=>false
 };
 const presentation={
   snapshot:({route}={})=>({workspaces:workspaces(),route:route||{kind:'workspace',activityId:active}}),

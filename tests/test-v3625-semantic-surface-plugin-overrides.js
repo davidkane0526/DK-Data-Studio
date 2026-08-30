@@ -14,8 +14,7 @@ assert(material.includes('baseToken')&&material.includes('occludingChild'),'Them
 const debug=read('src/core/theme/debug-runtime.js');
 assert(debug.includes('materialBaseToken')&&debug.includes('occludingChild')&&debug.includes('Base token:')&&debug.includes('Occluding child:'),'Theme Debug must show semantic base-token and occluding-child ownership.');
 const analysis=read('src/core/ui/modules/workbench/analysis.js');
-assert(analysis.includes('normalizeSidebarCompositionNode')&&analysis.includes("dkdsMaterialSurface==='core'"),'AnalysisWorkbench must normalize direct sidebar composition children unless Core has explicitly promoted them to an independent MaterialSurface.');
-assert(analysis.includes("'dkds-surface-muted'")&&analysis.includes("delete node.dataset.dkdsMaterialRole"),'Sidebar normalization must remove legacy direct-child surface paint and stale material assignment.');
+assert(!analysis.includes('normalizeSidebarCompositionNode')&&analysis.includes('PRIMARY no longer accepts leftNode/leftHtml'),'Plugin API 1.19 must remove PRIMARY-left sidebar normalization because secondary rails are explicit semantic surfaces.');
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 assert(!resonance.includes('respar-left-panel dkds-surface-muted'),'Resonance left content must not repaint Core sidebar material with surfaceSoft.');
 const shell=read('src/styles/presentation/shell.css'),chrome=read('src/styles/presentation/plugin-chrome.css');
@@ -33,7 +32,7 @@ try{
   const manifests=runtime.readBuiltinPluginManifests();
   const expectedBundled=fs.readdirSync(path.join(root,'src','plugins'),{withFileTypes:true}).filter(row=>row.isDirectory()&&row.name!=='_template'&&fs.existsSync(path.join(root,'src','plugins',row.name,'plugin.json'))).length;
   assert.strictEqual(manifests.length,expectedBundled,'Expected all first-party manifests in bundled package audit.');
-  for(const row of manifests)assert(runtime.readBuiltinPluginPackage(row.manifest.id),`Bundled plugin must export/package cleanly under Plugin API 1.18: ${row.manifest.id}`);
+  for(const row of manifests)assert(runtime.readBuiltinPluginPackage(row.manifest.id),`Bundled plugin must export/package cleanly under Plugin API 1.19: ${row.manifest.id}`);
 
   // Stable-id built-ins are updatable regardless of whether their id starts
   // with builtin.; the bundled copy is an immutable baseline, not a special API.
@@ -42,7 +41,7 @@ try{
   const versionParts=bundledVersion.split('.').map(Number);
   const overrideVersion=`${versionParts[0]}.${versionParts[1]}.${versionParts[2]+1}`;
   pulse.manifest.version=overrideVersion;
-  pulse.manifest.compatibility={...(pulse.manifest.compatibility||{}),app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'};
+  pulse.manifest.compatibility={...(pulse.manifest.compatibility||{}),app:'>=3.62.0 <4.0.0',pluginApi:'^1.19.0'};
   const plan=runtime.pluginInstallPlan(pulse);
   assert.strictEqual(plan.installationKind,'override');
   assert.strictEqual(plan.requiresRestart,true);

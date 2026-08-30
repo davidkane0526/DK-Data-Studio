@@ -178,9 +178,9 @@ wb.compose({
 });
 ```
 
-`ctx.ui.workspaceSurface` is the sole public PluginWorkspace composition facade in Plugin API 1.18.
+`ctx.ui.workspaceSurface` is the sole public PluginWorkspace composition facade in Plugin API 1.19.
 
-`PluginWorkspace` defines view roles and lifecycle, not a visual template. A PRIMARY can be main-only, can opt into `leftNode` for a genuine persistent rail, or can host a plugin-owned domain grid. The Resonance workbench is a reference consumer, **not** a mandatory layout blueprint for Pulse, Data Center, Vth, or third-party plugins. Shared resizable boundaries belong to `ctx.ui.layout.split`; domain pane arrangement belongs to the plugin.
+`PluginWorkspace` defines view roles and lifecycle, not a visual template. In Plugin API 1.19 a PRIMARY is one main semantic surface; independently placeable rails/inspectors are PRIME surfaces, while plugin-owned domain grids may stay inside `mainNode`. The Resonance workbench is a reference consumer, **not** a mandatory layout blueprint for Pulse, Data Center, Vth, or third-party plugins. Shared resizable boundaries belong to `ctx.ui.layout.split`; domain pane arrangement belongs to the plugin.
 
 Preferred direct scientific curve API:
 

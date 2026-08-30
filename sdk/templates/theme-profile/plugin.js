@@ -2,10 +2,10 @@ DKDSPlugins.define({
   id:'example.theme-profile',
   name:'Example Theme Profile',
   version:'1.0.0',
-  apiVersion:'1.18.0',
+  apiVersion:'1.19.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.65.0 <4.0.0',pluginApi:'^1.18.0',themeContract:'^3.9.0'}
+  compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.9.0'}
 }, async ctx => {
   const required=['contract.appearance.roles','contract.appearance.components','contract.appearance.variants','contract.effects.controlled','contract.scientific.seriesPalette','contract.scientific.precedence','contract.material.recipes','contract.theme.settings'];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));

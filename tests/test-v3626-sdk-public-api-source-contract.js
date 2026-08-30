@@ -11,22 +11,22 @@ const {createPluginPackageRuntime}=require(path.join(root,'desktop','main-module
 const pkgJson=require(path.join(root,'package.json'));
 
 const goodSource=`const wb=ctx.ui.workspaceSurface.create(root,{header:false}); ctx.ui.tables.mount('t',host,{columns:[],rows:[]});`;
-const goodAudit=inspectPluginSource(goodSource,{apiVersion:'1.18.0',requiresCore:['ui.workspace','ui.table']});
-assert.strictEqual(goodAudit.ok,true,'Canonical Plugin API 1.18 workspaceSurface/tables facades must pass the shared source contract.');
+const goodAudit=inspectPluginSource(goodSource,{apiVersion:'1.19.0',requiresCore:['ui.workspace','ui.table']});
+assert.strictEqual(goodAudit.ok,true,'Canonical Plugin API 1.19 workspaceSurface/tables facades must pass the shared source contract.');
 assert.deepStrictEqual(goodAudit.issues,[]);
 
 const badSource=`const wb=ctx.ui.pluginWorkspace.create(root,{header:false});`;
-const badAudit=inspectPluginSource(badSource,{apiVersion:'1.18.0',requiresCore:['ui.workspace']});
+const badAudit=inspectPluginSource(badSource,{apiVersion:'1.19.0',requiresCore:['ui.workspace']});
 assert.strictEqual(badAudit.ok,false,'Non-public ctx.ui.pluginWorkspace must be rejected before activation.');
 assert.strictEqual(badAudit.issues[0]?.code,'UNSUPPORTED_UI_FACADE');
 assert.strictEqual(badAudit.issues[0]?.suggestion,'workspaceSurface');
 assert.match(badAudit.issues[0]?.message||'',/ctx\.ui\.workspaceSurface/);
 assert.match(badAudit.issues[0]?.message||'',/ui\.workspace/);
 assert.match(badAudit.issues[0]?.message||'',/ui\.plugin-workspace/);
-assert.strictEqual(inspectPluginSource(`const note='ctx.ui.pluginWorkspace.create(root)';`,{apiVersion:'1.18.0'}).ok,true,'Source contract must not mistake a string literal for executable API usage.');
-assert.strictEqual(inspectPluginSource(`ctx.ui['pluginWorkspace'].create(root,{})`,{apiVersion:'1.18.0',requiresCore:['ui.workspace']}).issues[0]?.code,'UNSUPPORTED_UI_FACADE','Static bracket access must not bypass the public-facade contract.');
-assert.strictEqual(inspectPluginSource(`const {pluginWorkspace}=ctx.ui;`,{apiVersion:'1.18.0',requiresCore:['ui.workspace']}).issues[0]?.code,'UNSUPPORTED_UI_FACADE','Static ctx.ui destructuring must not bypass the public-facade contract.');
-assert.strictEqual(inspectPluginSource('ctx.ui.workspaceSurface.create(root,{})',{apiVersion:'1.18.0',requiresCore:[]}).issues[0]?.code,'MISSING_CORE_REQUIREMENT','Known public facades must still enforce their requiresCore declaration.');
+assert.strictEqual(inspectPluginSource(`const note='ctx.ui.pluginWorkspace.create(root)';`,{apiVersion:'1.19.0'}).ok,true,'Source contract must not mistake a string literal for executable API usage.');
+assert.strictEqual(inspectPluginSource(`ctx.ui['pluginWorkspace'].create(root,{})`,{apiVersion:'1.19.0',requiresCore:['ui.workspace']}).issues[0]?.code,'UNSUPPORTED_UI_FACADE','Static bracket access must not bypass the public-facade contract.');
+assert.strictEqual(inspectPluginSource(`const {pluginWorkspace}=ctx.ui;`,{apiVersion:'1.19.0',requiresCore:['ui.workspace']}).issues[0]?.code,'UNSUPPORTED_UI_FACADE','Static ctx.ui destructuring must not bypass the public-facade contract.');
+assert.strictEqual(inspectPluginSource('ctx.ui.workspaceSurface.create(root,{})',{apiVersion:'1.19.0',requiresCore:[]}).issues[0]?.code,'MISSING_CORE_REQUIREMENT','Known public facades must still enforce their requiresCore declaration.');
 
 const tempRoot=fs.mkdtempSync(path.join(os.tmpdir(),'dkds-v3626-'));
 try{

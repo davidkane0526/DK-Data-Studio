@@ -1,12 +1,12 @@
 (() => {
   const manifest={
-    id:'com.example.tool-workspace',name:'SDK Tool Workspace Example',version:'1.0.0',apiVersion:'1.18.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:920,
+    id:'com.example.tool-workspace',name:'SDK Tool Workspace Example',version:'1.0.0',apiVersion:'1.19.0',entry:'plugin.js',scripts:['plugin.js'],styles:['plugin.css'],enabled:true,order:920,
     description:'Tool Workspace using the same dedicated-window contract as TOP, grouped under the Core Tools button.',pluginType:'tool',
     requiresCore:['workspace','ui.dom','ui.workspace','ui.scientific-plot','ui.activities','ui.top-workspace','ui.pages'],
     capabilities:['ui.page','ui.top-workspace','ui.plugin-workspace','ui.scientific-plot'],
     workspace:{role:'top',activity:'sdk-tool-example',icon:'⌁',title:'SDK Tool Example'},
     window:{activity:'sdk-tool-example',title:'SDK Tool Example',width:1080,height:720,minWidth:760,minHeight:520,dependencies:['scientific-renderer'],prewarm:false,reuse:true,persistence:'project',artifactHydration:'live'},
-    compatibility:{app:'>=3.62.0 <4.0.0',pluginApi:'^1.18.0'}
+    compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0'}
   };
   DKDSPlugins.define(manifest, async ctx => {
     let workspace=null,surface=null;

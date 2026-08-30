@@ -105,6 +105,7 @@ async function validate(folder){
   for(const [r,re] of usage)if(re.test(source)&&!declared.has(r))errors.push(`uses ${r} but plugin.json does not declare it`);
   const sourceAudit=inspectPluginSource(rawSource,{apiVersion:m.apiVersion,requiresCore:m.requiresCore});
   for(const issue of sourceAudit.issues)errors.push(`${issue.message} (${issue.line}:${issue.column})`);
+  if(/\bmountPrimary\s*\(\s*\{[\s\S]{0,1600}?\b(?:leftNode|leftHtml)\s*:/.test(source)||/\bprimary\s*:\s*\{[\s\S]{0,1600}?\b(?:leftNode|leftHtml)\s*:/.test(source))errors.push('Plugin API 1.19 removed PRIMARY leftNode/leftHtml. Register that semantic region as a PRIME surface with presentationRole instead.');
   for(const [re,label] of forbidden)if(re.test(source))errors.push(`${label} is not part of the Plugin API ${API} development contract`);
   const styleRows=files.filter(f=>f.endsWith('.css')&&fs.existsSync(path.join(folder,f))).map(f=>({name:f,content:fs.readFileSync(path.join(folder,f),'utf8')}));
   const layoutAudit=inspectWorkspaceStyles({apiVersion:m.apiVersion,pluginType:m.pluginType,workspace:m.workspace,ui:m.ui||{},styles:styleRows});
@@ -137,8 +138,8 @@ async function validate(folder){
   }
   if(m.pluginType==='workbench'||(m.pluginType==='tool'&&topWorkspace)){
     const accepts=Array.isArray(m?.data?.accepts)?m.data.accepts.map(String).filter(Boolean):[];
-    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.18 workbenches must declare data.accepts so Core can route the standard import action.');
-    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.18; do not invoke ctx.data.importWorkbench from plugin UI.');
+    if(m.pluginType==='workbench'&&!accepts.length)errors.push('Plugin API 1.19 workbenches must declare data.accepts so Core can route the standard import action.');
+    if(/ctx\.data\.importWorkbench\b/.test(source))errors.push('Workspace import UI is Core-owned in Plugin API 1.19; do not invoke ctx.data.importWorkbench from plugin UI.');
     if(/<input[^>]+type=["']?file/i.test(source))errors.push('Workspace plugins must not create file inputs; use the Core-owned import action.');
 
     const workspaceActivity=String(m?.workspace?.activity||'').trim();
@@ -158,13 +159,13 @@ async function validate(folder){
       if(!/ctx\.ui\.topWorkspace\.register\s*\(/.test(source))errors.push(`${label} must register its workspace through ctx.ui.topWorkspace.register(...).`);
       if(!/openMode\s*:\s*["']window["']/.test(source))errors.push(`${label} activity must use openMode: "window".`);
     }else if(m.window&&typeof m.window==='object'){
-      errors.push('A Plugin API 1.18 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
+      errors.push('A Plugin API 1.19 workbench with a dedicated window must declare workspace.role="top"; standalone workbench activities do not own windows.');
     }
   }
   const windowDependencies=new Set(Array.isArray(m?.window?.dependencies)?m.window.dependencies.map(String):[]);
   const usesScientificRenderer=/ctx\.ui\.scientificPlot\.(?:create|react|createRenderer|scalarField)\s*\(/.test(source);
   if(usesScientificRenderer&&m?.window&&topWorkspace&&!windowDependencies.has('scientific-renderer'))errors.push('Dedicated workspace using ScientificPlot must declare "scientific-renderer" in window.dependencies. Renderer vendors are Core implementation details.');
-  if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.18 workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
+  if(windowDependencies.has('plotly')||windowDependencies.has('d3'))errors.push('Plugin API 1.19 workspaces must declare "scientific-renderer" instead of vendor dependencies "plotly"/"d3".');
 
   const entry=path.join(folder,m.entry||'plugin.js');
   if(fs.existsSync(entry)){
