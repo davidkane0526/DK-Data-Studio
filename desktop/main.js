@@ -108,6 +108,7 @@ function createWindow() {
     height: 1040,
     minWidth: 1200,
     minHeight: 760,
+    frame: false,
     backgroundColor: nativeWindowBackground(),
     title: APP_NAME,
     icon: path.join(APP_ROOT, 'assets', 'dkds-icon.png'),
@@ -116,6 +117,11 @@ function createWindow() {
   });
   win.setMenuBarVisibility(false);
   primaryWindow = win;
+  const publishMaximizedState=()=>{
+    if(!win.isDestroyed())win.webContents.send('windows:maximizedChanged',win.isMaximized());
+  };
+  win.on('maximize',publishMaximizedState);
+  win.on('unmaximize',publishMaximizedState);
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
   win.loadFile(path.join(APP_ROOT, 'src', 'index.html'));
   return win;
@@ -287,6 +293,23 @@ app.whenReady().then(() => {
     if (bootstrap?.pluginWindow?.reuse !== false) return hideDedicatedAuxiliaryWindow(win);
     win.close();
     return true;
+  });
+  ipcMain.handle('windows:minimizeCurrent', async event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    win.minimize();
+    return true;
+  });
+  ipcMain.handle('windows:toggleMaximizeCurrent', async event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return { maximized:false };
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+    return { maximized:win.isMaximized() };
+  });
+  ipcMain.handle('windows:getCurrentState', async event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return { maximized:!!(win && !win.isDestroyed() && win.isMaximized()) };
   });
   ipcMain.on('windows:requestProjectSave', (event, payload={}) => {
     const bootstrap = auxiliaryBootstrap.get(event.sender.id);
@@ -538,9 +561,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('files:openData', async () => {
     const result = await dialog.showOpenDialog({
-      title: '选择 I-V / 多列数据文件', properties: ['openFile', 'multiSelections'],
+      title: '选择数据 / 项目文件', properties: ['openFile', 'multiSelections'],
       filters: [
         { name: 'Data / Text', extensions: ['csv', 'txt', 'dat', 'tsv', 'asc', 'xy', 'iv', 'prn', 'out', 'log'] },
+        { name: '项目文件', extensions: ['json'] },
         { name: 'CSV', extensions: ['csv'] },
         { name: 'Text / DAT', extensions: ['txt', 'dat', 'tsv', 'asc', 'xy', 'iv'] },
         { name: 'All Files', extensions: ['*'] }

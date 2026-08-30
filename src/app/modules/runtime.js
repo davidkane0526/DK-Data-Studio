@@ -8,8 +8,9 @@ const scientific=require('./scientific-panels-export');
 const projects=require('./project-persistence');
 const docks=require('./floating-docks');
 const windows=require('./dedicated-plugin-windows');
+const windowChrome=require('./window-chrome');
 
-const deps=Object.freeze({foundation,projectTabs,imports,artifacts,workspace,scientific,projects,docks,windows});
+const deps=Object.freeze({foundation,projectTabs,imports,artifacts,workspace,scientific,projects,docks,windows,windowChrome});
 for(const moduleApi of Object.values(deps))moduleApi.configure?.(deps);
 
 module.exports=require('./startup');

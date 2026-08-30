@@ -1,7 +1,7 @@
 DKDSPlugins.define({
   id:'com.dkds.theme.aurora-pop',
   name:'Aurora Pop',
-  version:'2.2.2',
+  version:'2.2.3',
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
@@ -161,14 +161,14 @@ DKDSPlugins.define({
               }
             },
             toolbarAction:{
-              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:LIGHT_EMERALD.fill,surfaceSelected:'#6F50FF',
-              text:'#4F586D',textActive:'#FFFFFF',textSelected:'#FFFFFF',
+              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#6F50FF',
+              text:'#4F586D',textActive:LIGHT_EMERALD.text,textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
                 secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF',textActive:'#FFFFFF',border:LIGHT_EMERALD.border,borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.indicator},
                 selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8C70FF',indicator:'#D8D0FF'},
-                active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF',border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.indicator},
+                active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent},
                 quiet:{surface:'transparent',surfaceHover:'#EEF1FF',text:'#667085',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',surfaceHover:'#FFDCE5',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
               }

@@ -828,6 +828,10 @@ module.exports = {
       "file": "tests/test-v3668-import-typography-command-composition.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3669-import-smb-window-chrome.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1688,6 +1692,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3668-import-typography-command-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3669-import-smb-window-chrome.js",
       "args": []
     },
   ],

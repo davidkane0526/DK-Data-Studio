@@ -7,7 +7,9 @@ const {applySuperWorkspace, bindSuperWorkspaceControls, renderAll, syncAnalysisP
 const {saveProject}=require('./project-persistence');
 const {applyGroupPanelLayout, applyInspectorPanelLayout}=require('./floating-docks');
 const {applyActivityProjectSnapshot, initializePluginArchitecture, prewarmDedicatedPluginWindows}=require('./dedicated-plugin-windows');
+const {initializeWindowChrome}=require('./window-chrome');
 async function startApplication(){
+  void initializeWindowChrome();
   await initializePluginArchitecture();
   bindSuperWorkspaceControls();
   applySuperWorkspace(window.DKDSPlugins?.workspace?.super?.());

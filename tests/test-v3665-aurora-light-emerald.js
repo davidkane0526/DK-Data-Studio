@@ -10,8 +10,8 @@ const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 
 assert(atLeast(tuple(pkg.version),[3,66,5]),'Aurora light emerald refinement requires DK Data Studio 3.66.5+.');
-assert.equal(manifest.version,'2.2.2','Aurora Pop manifest must advance to 2.2.2.');
-assert(aurora.includes("version:'2.2.2'"),'Aurora runtime manifest must match plugin.json.');
+assert.equal(manifest.version,'2.2.3','Aurora Pop manifest must advance to 2.2.3.');
+assert(aurora.includes("version:'2.2.3'"),'Aurora runtime manifest must match plugin.json.');
 
 // One Theme-owned palette controls the entire light secondary/active interaction axis.
 for(const token of [
@@ -20,13 +20,13 @@ for(const token of [
   "fill:'#08A77A'",
   "fillHover:'#07996F'",
   "accentAlt:LIGHT_EMERALD.accent",
-  "surfaceActive:LIGHT_EMERALD.fill",
+  "surfaceActive:LIGHT_EMERALD.softSurface",
   "secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF'",
-  "active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'",
+  "active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text",
   "edgeGlow:LIGHT_EMERALD.accent"
 ])assert(aurora.includes(token),`Aurora light emerald contract missing ${token}`);
 
 assert(!aurora.includes("'#008B97'")&&!aurora.includes("'#00818C'"),'The reverted deep cyan-teal action fills must not return.');
 assert(aurora.includes("seriesPalette:['#6F5CFF','#00B8C8'"),'Scientific series palette must remain unchanged by the UI interaction-color refinement.');
 
-console.log('v3.66.5 Aurora light emerald PASS: light active/secondary UI uses one brighter emerald palette with white labels.');
+console.log('v3.66.5+ Aurora light emerald PASS: secondary stays filled, while light active toolbar actions use the accepted mint/teal state.');

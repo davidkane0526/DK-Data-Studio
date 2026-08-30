@@ -241,6 +241,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   min-height:52px;
   gap:9px;
   padding:6px 12px;
+  -webkit-app-region:drag;
 }
 .topbar-primary .brand{
   text-overflow:ellipsis;

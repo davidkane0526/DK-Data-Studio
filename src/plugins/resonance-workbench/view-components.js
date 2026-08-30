@@ -162,8 +162,8 @@
               <section>
                 <h3>数据列表</h3>
                 <div class="respar-scan-global dkds-mode-group" role="group" aria-label="扫描可见性模式">
-                  <button id="reswinShowAll">全部扫描</button><button id="reswinShowForward">仅正扫</button>
-                  <button id="reswinShowReverse">仅反扫</button><button id="reswinHideAll">全不选</button>
+                  <button id="reswinShowAll" class="dkds-action-button" data-dkds-action-layout="standalone">全部扫描</button><button id="reswinShowForward" class="dkds-action-button" data-dkds-action-layout="standalone">仅正扫</button>
+                  <button id="reswinShowReverse" class="dkds-action-button" data-dkds-action-layout="standalone">仅反扫</button><button id="reswinHideAll" class="dkds-action-button" data-dkds-action-layout="standalone">全不选</button>
                 </div>
                 <select id="reswinSweepSelect" class="hidden" aria-hidden="true" tabindex="-1"></select>
                 <div id="reswinDatasetList" class="respar-dataset-list dkds-list"></div>

@@ -743,6 +743,8 @@ body.dkds-modern-ui button.danger-soft{
 }
 .system-commandbar .menu-trigger{background:#f8faff;border-color:#e1e6ef;
 }
+.window-control-btn{background:transparent;border-color:transparent;border-radius:0;box-shadow:none}
+.window-control-close:hover:not(:disabled){background:var(--dkui-danger,#d93c4b);color:#fff;-webkit-text-fill-color:#fff;border-color:transparent}
 .sr-only{border:0;
 }
 .version{color:#8b96a8;

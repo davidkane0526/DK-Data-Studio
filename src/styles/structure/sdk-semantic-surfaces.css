@@ -246,6 +246,7 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-table th{font-weight:650}
 .dkds-table th,.dkds-table td{padding:7px 8px}
 .dkds-overlay{position:fixed;inset:0;z-index:920;display:flex;align-items:center;justify-content:center;padding:24px}
+.dkds-overlay[data-dkds-overlay-stack="foreground"]{z-index:1600}
 
 .dkds-dialog-shell{box-sizing:border-box;min-width:0;overflow:hidden}
 .dkds-dialog-shell>.dkds-surface-header{min-height:46px}

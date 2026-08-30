@@ -1,3 +1,14 @@
+# v3.66.9 — Import / SMB / Window Chrome Closure
+
+- Add the existing DK Data Studio JSON project format to the unified native import picker and rename the workbench action to **导入数据/项目** while retaining automatic project/data classification.
+- Add a Core-owned foreground overlay tier so SMB opened from the Import Workbench renders above its parent modal instead of behind it. Connectivity Center no longer owns overlay z-index.
+- Repaint SMB through Core Connectivity Presentation as one flat dialog with distinct header, sidebar, file-list, credential and footer regions. The file list returns to the primary surface instead of exposing the dim overlay as a large gray field.
+- Keep disabled primary actions on a softened primary surface with a white label, restoring the intended contrast for **导入勾选文件** and other canonical primary commands.
+- Restore the accepted light mint/teal active ToolbarAction treatment in Aurora Pop and advance the bundled Theme to **2.2.3**. Selected mode controls remain violet.
+- Restore Resonance scan-scope controls as canonical standalone actions and use selected-mode semantics for the 2×2 **全部扫描 / 仅正扫 / 仅反扫 / 全不选** group. Resonance Workbench advances to **3.61.13**.
+- Make the primary Electron window frameless and move minimize / maximize / close into the Core top bar. Window chrome is implemented as a dedicated App module plus narrow preload/main IPC, with Core-owned drag geometry.
+- Connectivity Center advances to **1.2.7** and adds a v3.66.9 regression gate covering project filters, modal stacking, SMB zoning, action contrast, Resonance mode controls, Aurora active color and custom window chrome.
+
 # v3.66.8 — Import Typography & Compact Command Composition
 
 - Restore the Core typography scale inside the Import Workbench. Historical 8.5–10 px literals in target hints, file metadata, selection hints, column filtering and footer summaries are replaced by shared `--ui-font-size` / `--ui-font-small` tokens, so the large import surface no longer contains disproportionately tiny text.

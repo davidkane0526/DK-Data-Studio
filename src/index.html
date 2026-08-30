@@ -23,7 +23,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.8</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.9</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -87,6 +87,11 @@
               </div>
             </div>
           </div>
+        </div>
+        <div id="windowCommandbar" class="window-commandbar hidden" aria-label="窗口控制">
+          <button id="windowMinimizeBtn" class="window-control-btn" type="button" aria-label="最小化窗口">−</button>
+          <button id="windowMaximizeBtn" class="window-control-btn" type="button" aria-label="最大化窗口">□</button>
+          <button id="windowCloseBtn" class="window-control-btn window-control-close" type="button" aria-label="关闭窗口">×</button>
         </div>
       </div>
     </header>
@@ -234,7 +239,7 @@
           </div>
           <div class="import-header-actions">
             <div class="import-data-command dkds-split-action-group" data-dkds-split-variant="primary">
-              <button id="importChooseFilesBtn" class="dkds-action-button primary dkds-split-action-main" type="button">导入数据</button>
+              <button id="importChooseFilesBtn" class="dkds-action-button primary dkds-split-action-main" type="button">导入数据/项目</button>
               <div class="menu-anchor import-source-anchor" data-menu-align="right">
                 <button id="importSourceBtn" class="dkds-action-button primary menu-trigger import-source-trigger dkds-split-action-caret" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
                 <div id="importSourceMenu" class="command-menu hidden">
@@ -270,7 +275,7 @@
 
           <main class="import-main-pane">
             <div id="importNoFile" class="import-empty">
-              点击“导入数据”选择本地数据，或使用旁边的来源按钮从 SMB 等来源导入。
+              点击“导入数据/项目”选择本地数据或项目文件，或使用旁边的来源按钮从 SMB 等来源导入。
             </div>
 
             <div id="importEditor" class="hidden">

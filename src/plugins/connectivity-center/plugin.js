@@ -1,7 +1,7 @@
 (() => {
   const requiresCore=['runtime','status','io','services','capabilities','data.import-workbench','ui.dom','ui.menus','ui.status-bar','ui.workspace'];
   DKDSPlugins.define({
-    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.6',apiVersion:'1.18.0',requiresCore:requiresCore,
+    id:'builtin.connectivity-center',pluginType:'foundation',name:'SMB & AI Services',version:'1.2.7',apiVersion:'1.18.0',requiresCore:requiresCore,
     order:34,description:'SMB file-browser import plus full-kernel AI Agent/MCP settings and chat.',
     capabilities:['network.smb','ai.agent.kernel','ai.chat.mentions','mcp.kernel-server','ui.status-bar']
   }, async ctx => {
@@ -15,7 +15,7 @@
     const loadPrefs=()=>{try{return {server:'',share:'',domain:'',username:'',guest:false,favorites:[],...JSON.parse(localStorage.getItem(prefsKey)||'{}'),password:''};}catch{return {server:'',share:'',domain:'',username:'',password:'',guest:false,favorites:[]};}};
     const savePrefs=value=>{const current=loadPrefs(),next={...current,...value,password:''};localStorage.setItem(prefsKey,JSON.stringify(next));return next;};
 
-    const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',html:`
+    const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground'},html:`
       <div class="dksvc-window dksmb-window dkds-dialog-shell" role="dialog" aria-modal="true">
         <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">
@@ -26,7 +26,7 @@
             <div class="dksmb-connection dkds-surface-muted"><input id="dksmbServer" placeholder="服务器 / IP"><input id="dksmbShare" placeholder="共享"><input id="dksmbDomain" placeholder="域（可选）"><input id="dksmbUser" placeholder="用户名"><input id="dksmbPassword" type="password" placeholder="密码"><label class="dksmb-guest dkds-check"><input id="dksmbGuest" type="checkbox">访客</label></div>
           </section>
         </div>
-        <div class="dksmb-foot dkds-surface-muted"><button id="dksmbShares" class="dksmb-btn dkds-action-button">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button">取消</button><button id="dksmbCommit" class="dksmb-primary primary" disabled>导入所选文件</button></div>
+        <div class="dksmb-foot dkds-surface-muted"><button id="dksmbShares" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">取消</button><button id="dksmbCommit" class="dksmb-primary primary dkds-action-button" data-dkds-action-layout="standalone" disabled>导入所选文件</button></div>
       </div>`});
     dom.append(dom.query('body'),smbOverlay);
 

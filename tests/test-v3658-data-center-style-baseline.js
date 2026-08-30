@@ -33,7 +33,7 @@ assert(workbench.includes("b.classList.toggle('active',row.mounted)"),'Analysis 
 assert(!plotView.includes('dkds-header-command-strip'),'Generic PlotView chrome must not inherit the rejected v3.65.6 command-strip experiment.');
 assert(!chrome.includes('dkds-header-command-strip'),'Global integrated-command chrome must stay on the v3.65.3 geometry baseline.');
 assert(components.includes('--dkui-component-tab-variant-active-indicator')&&components.includes('--dkui-component-toolbar-action-variant-active-surface'),'Core component paint must consume Theme-authored active/selected variants instead of reporting tokens that are not rendered.');
-assert(aurora.includes("version:'2.2.2'")&&aurora.includes("active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'")&&aurora.includes("selected:{surface:'#6F50FF',text:'#FFFFFF'")&&aurora.includes("active:{surface:'#07515B',text:'#E7FEFF'"),'Aurora filled interaction states must keep white labels in both light and dark profiles.');
+assert(aurora.includes("version:'2.2.3'")&&aurora.includes("active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text")&&aurora.includes("selected:{surface:'#6F50FF',text:'#FFFFFF'")&&aurora.includes("active:{surface:'#07515B',text:'#E7FEFF'"),'Aurora must keep the accepted bright mint/teal light active state, violet selected state and high-contrast dark active state.');
 
 // Generic Core fixes: no Data Center-only visual infrastructure.
 assert(semanticStructure.includes('.dkds-surface-heading')&&semanticStructure.includes('.dkds-surface-actions')&&semanticStructure.includes('.dkds-surface-tabs'),'Core must own reusable surface-header composition geometry.');

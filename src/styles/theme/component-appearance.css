@@ -271,6 +271,12 @@ body.dkds-modern-ui [data-dkds-component-identity="field"]:focus-visible{backgro
 
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);border-color:var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow);opacity:.56}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]:disabled{
+  background:color-mix(in srgb,var(--dkds-ca-action-surface) 58%,var(--dkui-surface));
+  color:#fff;-webkit-text-fill-color:#fff;
+  border-color:color-mix(in srgb,var(--dkds-ca-action-border) 72%,var(--dkui-surface));
+  opacity:1;
+}
 
 
 /* Header composition intentionally has no action-specific paint. Component

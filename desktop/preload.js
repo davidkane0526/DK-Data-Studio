@@ -52,6 +52,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   disposeProjectActivityWindows: projectTabId => ipcRenderer.invoke('windows:disposeProjectActivities', projectTabId),
   syncPluginActivityWindows: activityIds => ipcRenderer.invoke('windows:syncPluginActivities', activityIds),
   closeCurrentWindow: () => ipcRenderer.invoke('windows:closeCurrent'),
+  minimizeCurrentWindow: () => ipcRenderer.invoke('windows:minimizeCurrent'),
+  toggleMaximizeCurrentWindow: () => ipcRenderer.invoke('windows:toggleMaximizeCurrent'),
+  getCurrentWindowState: () => ipcRenderer.invoke('windows:getCurrentState'),
+  onCurrentWindowMaximizedChanged: callback => {
+    const handler = (_event, maximized) => callback(!!maximized);
+    ipcRenderer.on('windows:maximizedChanged', handler);
+    return () => ipcRenderer.removeListener('windows:maximizedChanged', handler);
+  },
   pushActivityProjectSnapshot: payload => ipcRenderer.send('windows:activityProjectSnapshot', payload),
   pushActivityArtifactDelta: payload => ipcRenderer.send('windows:ownerArtifactDelta', payload || {}),
   requestOwnerProjectSave: payload => ipcRenderer.send('windows:requestProjectSave', payload || {}),

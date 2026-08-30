@@ -1,7 +1,7 @@
 {
   "id": "builtin.connectivity-center",
   "name": "SMB & AI Services",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "apiVersion": "1.18.0",
   "requiresCore": [
     "runtime",

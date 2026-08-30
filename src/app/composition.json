@@ -43,6 +43,10 @@
       "path": "src/app/modules/dedicated-plugin-windows.js"
     },
     {
+      "id": "app/window-chrome",
+      "path": "src/app/modules/window-chrome.js"
+    },
+    {
       "id": "app/startup",
       "path": "src/app/modules/startup.js"
     },

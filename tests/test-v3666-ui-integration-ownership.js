@@ -53,12 +53,13 @@ assert(resonance.includes('respar-inspector-panel hidden')&&!resonance.includes(
 assert(resonance.includes('respar-group-panel hidden')&&!resonance.includes('respar-group-panel dkds-floating-surface'),'Group panel must follow the same single-surface ownership rule.');
 
 // File IA is Import / Save / Export. The top-level Import command opens the
-// Import Workbench; source choice belongs inside that workbench beside Import Data.
+// Import Workbench; source choice belongs inside that workbench beside the
+// unified Import Data/Project action.
 assert(html.includes('aria-label="导入">导入</button>')&&html.includes('aria-label="保存">保存</button>')&&html.includes('>导出</button>'),'Top file command labels must remain 导入 / 保存 / 导出.');
 const topbarStart=html.indexOf('<div class="toolbar-group file-command-group">'),topbarEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topbarStart),topbarFileGroup=html.slice(topbarStart,topbarEnd);
 assert(!topbarFileGroup.includes('importSourceBtn')&&!topbarFileGroup.includes('importSourceMenu'),'Import-source selection must not occupy the top file command group.');
 const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);
-assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('>导入数据</button>')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-plugin-menu="import-data"'),'SMB/other provider sources must live beside Import Data inside the Import Workbench.');
+assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('>导入数据/项目</button>')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-plugin-menu="import-data"'),'SMB/other provider sources must live beside Import Data/Project inside the Import Workbench.');
 assert(!html.includes('id="openProjectBtn"')&&!html.includes('projectSourceMenu'),'Separate Read Project command must stay removed.');
 assert(html.indexOf('id="openBtn"')<html.indexOf('id="saveProjectBtn"')&&html.indexOf('id="saveProjectBtn"')<html.indexOf('id="exportMenuBtn"'),'File commands must remain ordered Import / Save / Export.');
 assert(docks.includes("$('#openBtn').onclick=()=>openImportWorkbench()")&&docks.includes("$('#importChooseFilesBtn').onclick=addImportFiles"),'Top Import must open the workbench and local import must start from inside it.');
