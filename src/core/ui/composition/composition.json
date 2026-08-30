@@ -107,6 +107,10 @@
       "path": "src/core/ui/modules/presentation/desktop-shell.js"
     },
     {
+      "id": "ui/presentation/mobile-web-surface",
+      "path": "src/core/ui/modules/presentation/mobile-web-surface.js"
+    },
+    {
       "id": "ui/host/api",
       "path": "src/core/ui/modules/host/api.js"
     },

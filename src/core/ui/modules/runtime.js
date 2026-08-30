@@ -25,5 +25,6 @@ if(!window.DKDSUI){
 }
 require('./presentation/presenters');
 require('./presentation/desktop-shell');
+require('./presentation/mobile-web-surface');
 require('./interaction/adapters');
 module.exports=window.DKDSUI;

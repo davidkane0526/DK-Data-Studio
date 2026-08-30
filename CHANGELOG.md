@@ -1,3 +1,12 @@
+# v3.67.3 — Platform Presentation Architecture / Phase 4
+
+- Replace the monolithic `mobile.css` page override sheet with an import-only platform entrypoint. React Native/WebView shell rules, Presenter-driven workspace geometry, and the explicit legacy fallback now have separate ownership modules; shared `touch.css` no longer carries a second React Native page-layout implementation.
+- Add a downstream-only Mobile Web Surface Presenter. It consumes `MobilePresenter` output and projects stable workspace surface identity to `main / sheet / rail / route` DOM attributes without reading Desktop placement, dock classes, computed style, or page geometry.
+- Mark AnalysisWorkbench surface hosts with stable activity/surface identity and distinguish explicitly declared presentation roles from compatibility-inferred roles. Only workspaces with a complete semantic Presentation Contract opt into Presenter-driven mobile geometry.
+- Restrict mobile workspace CSS to geometry and visibility. Core Theme/Material Renderer remains the sole owner of surface background, border and shadow paint; a Phase 4 regression gate prevents platform CSS from repainting semantic or legacy Material Role surfaces.
+- Keep the old PRIMARY-left/canvas dock translation only behind explicit `data-dkds-mobile-workspace-mode="legacy"` for incomplete/non-migrated workspaces. Resonance and the already-migrated first-party TOP contracts use the semantic path and no longer infer mobile presentation from Desktop placement.
+- Preserve one Plugin API, one scientific renderer and one domain implementation. No `ctx.ui.desktop` / `ctx.ui.mobile`, no Resonance mobile fork, no opportunistic UI fixes. Release validation: `npm test` **213/213 PASS**, `npm run check` **221/221 PASS** (continued from the same manifest after the execution-time limit), Mobile **9/9 PASS**, SDK Harness **PASS**, Scientific parity **PASS**, Plugin Boundary **0**, authored CSS **44 files / 0 `!important`**.
+
 # v3.67.2 — Platform Presentation Architecture / Phase 3
 
 - Migrate Resonance Workbench as the first complete multi-surface reference consumer of the platform-neutral Presentation Contract. Promote its data/parameter rail to a real `data-control` surface and declare scientific primary, inspector and scientific-secondary roles once in the shared Resonance contract.

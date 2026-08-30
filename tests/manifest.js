@@ -847,6 +847,10 @@ module.exports = {
     {
       "file": "tests/test-v3672-platform-presentation-phase3.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3673-platform-presentation-phase4.js",
+      "args": []
     }
   ],
   "check": [
@@ -1729,6 +1733,10 @@ module.exports = {
     {
       "file": "tests/test-v3672-platform-presentation-phase3.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3673-platform-presentation-phase4.js",
+      "args": []
     }
   ],
   "mobile": [
@@ -1750,6 +1758,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3672-platform-presentation-phase3.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3673-platform-presentation-phase4.js",
       "args": []
     },
     {

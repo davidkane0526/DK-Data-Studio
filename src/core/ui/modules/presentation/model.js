@@ -34,6 +34,7 @@ function surfaceDefaults(kind,row={}){
   const priority=number(row.priority,kind==='primary'?100:role===ROLES.INSPECTOR?80:kind==='prime'?70:50);
   return {role,priority,collapsible:row.collapsible!==undefined?!!row.collapsible:kind!=='primary'};
 }
+function hasDeclaredPresentationRole(row={}){return ROLE_SET.has(text(row.presentationRole||row.semanticRole).trim().toLowerCase());}
 function contractSurface(row={},kind='prime'){
   const id=text(row.id).trim();if(!id)return null;
   const defaults=surfaceDefaults(kind,row);
@@ -43,7 +44,7 @@ function contractSurface(row={},kind='prime'){
     ...defaults,active:false,
     placement:text(row.defaultPlacement||row.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)?row.placements:[])]),
-    source:'core-registry'
+    presentationDeclared:hasDeclaredPresentationRole(row),source:'core-registry'
   });
 }
 function runtimeSurface(row={},fallback=null){
@@ -58,7 +59,7 @@ function runtimeSurface(row={},fallback=null){
     ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
     placement:text(row.placement||row.defaultPlacement||fallback?.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)&&row.placements.length?row.placements:(fallback?.placements||[]))]),
-    source:fallback?'core-runtime+contract':'core-runtime'
+    presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,source:fallback?'core-runtime+contract':'core-runtime'
   });
 }
 function statusRows(){
@@ -111,10 +112,11 @@ class PresentationModel {
       const contract=this.contractFor(row),system=text(row.navigation)==='system';
       const surfaces=this.surfaces(row,contract);
       const primary=surfaces.find(surface=>surface.kind==='primary')||contractSurface({id:'main',label:row.label||row.name||'系统工具'},'primary');
+      const presentationComplete=!!contract&&surfaces.length>0&&surfaces.every(surface=>surface.presentationDeclared===true);
       return Object.freeze({
         id:text(row.id),activityId:text(row.id),pluginId:text(row.pluginId),label:text(row.label||row.name||row.id),contextLabel:text(row.contextLabel||row.label||row.name||row.id),icon:text(row.icon||contract?.icon),description:text(row.description),
         order:number(row.order,100),primaryNavigation:row.primary===true,default:row.default===true,navigation:text(row.navigation),openMode:text(row.openMode),pluginType:text(row.pluginType),
-        role:contract?'top':'system',system,isSuper:!!row.isSuper,
+        role:contract?'top':'system',system,isSuper:!!row.isSuper,presentationComplete,
         primary,primes:Object.freeze(surfaces.filter(surface=>surface.kind==='prime')),subs:Object.freeze(surfaces.filter(surface=>surface.kind==='sub')),
         surfaces,actions:Object.freeze(actionRows(text(row.id)))
       });

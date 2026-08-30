@@ -1,0 +1,49 @@
+/* Semantic WebView projection. MobilePresenter decides main/sheet/rail/route;
+   CSS only realizes that geometry. Desktop left/right/bottom placement is not
+   consulted here. */
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-frame,
+html.react-native-client [data-dkds-mobile-presentation="semantic"].dkds-analysis-workbench.has-left .dkds-analysis-frame,
+html.react-native-client [data-dkds-mobile-presentation="semantic"].dkds-analysis-workbench.has-right .dkds-analysis-frame,
+html.react-native-client [data-dkds-mobile-presentation="semantic"].dkds-analysis-workbench.has-left.has-right .dkds-analysis-frame{
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"main";gap:0;padding:0;overflow:hidden
+}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-main{grid-area:main;width:100%;height:100%;min-width:0;min-height:0;overflow:auto;padding:0}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-left,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-right,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-bottom{display:contents}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-left-resizer,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-right-resizer,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-analysis-bottom-resizer,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-left-resizer,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-right-resizer,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-bottom-resizer{display:none}
+
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame.has-canvas-left,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame.has-canvas-right,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-frame.has-canvas-bottom{
+  grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"center";overflow:hidden
+}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-center{grid-area:center;width:100%;height:100%;overflow:auto}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-left,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-right,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] .dkds-plugin-canvas-bottom{display:contents}
+
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="main"]{width:100%;height:100%;min-width:0;min-height:0}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="sheet"][data-dkds-mobile-active="true"]{
+  display:flex;position:fixed;z-index:1800;left:6px;right:6px;top:auto;bottom:6px;width:auto;height:min(64vh,560px);min-width:0;min-height:190px;max-width:none;max-height:none;overflow:auto;border-radius:16px 16px 8px 8px
+}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="rail"][data-dkds-mobile-active="true"]{
+  display:flex;position:fixed;z-index:1800;top:6px;right:6px;bottom:6px;left:auto;width:min(44vw,420px);height:auto;min-width:240px;max-width:none;max-height:none;overflow:auto;border-radius:16px 8px 8px 16px
+}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="route"][data-dkds-workspace-surface-kind="prime"][data-dkds-mobile-active="true"]{
+  display:flex;position:fixed;z-index:1750;inset:6px;width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;overflow:auto;border-radius:12px
+}
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="sheet"][data-dkds-mobile-active="false"],
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="rail"][data-dkds-mobile-active="false"],
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="route"][data-dkds-workspace-surface-kind="prime"][data-dkds-mobile-active="false"]{display:none}
+
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="sheet"]>.dkds-portable-resize-handle,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="rail"]>.dkds-portable-resize-handle,
+html.react-native-client [data-dkds-mobile-presentation="semantic"] [data-dkds-mobile-region="route"]>.dkds-portable-resize-handle{display:none}

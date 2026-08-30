@@ -99,6 +99,7 @@ class MobileGestureAdapter {
     const storageKey='dkds.mobile.left-panel-width.v1';
     const restore=()=>{try{const saved=Number(localStorage.getItem(storageKey));if(Number.isFinite(saved)&&saved>=220)document.documentElement.style.setProperty('--dkds-mobile-left-width',`${saved}px`);}catch{}};
     const ensureHandle=()=>{
+      if(document.documentElement?.dataset?.dkdsMobileWorkspaceMode!=='legacy')return false;
       const panel=document.querySelector('.dkds-analysis-left');if(!panel)return false;
       if(panel.querySelector('.dkds-mobile-panel-edge'))return true;
       const handle=document.createElement('div');handle.className='dkds-mobile-panel-edge';handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize';handle.setAttribute('role','separator');handle.setAttribute('aria-label','拖动调整数据与参数面板宽度');panel.appendChild(handle);
@@ -115,7 +116,7 @@ class MobileGestureAdapter {
     }else ensureHandle();
     document.addEventListener('pointerdown',event=>{
       if(!this.panel)return;
-      if(event.target?.closest?.('.dkds-analysis-left'))return;
+      if(document.documentElement?.dataset?.dkdsMobileWorkspaceMode==='legacy'&&event.target?.closest?.('.dkds-analysis-left'))return;
       this.closeTransient();this.publisher?.();
     },true);
     let gesture=null;

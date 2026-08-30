@@ -9,6 +9,8 @@ const pkg=JSON.parse(read('package.json'));
 const mobilePkg=JSON.parse(read('mobile/package.json'));
 const mobileApp=JSON.parse(read('mobile/app.json')).expo;
 const mobileCss=read('src/mobile.css');
+const nativeShellCss=read('src/styles/platform/native-client-shell.css');
+const legacyCss=read('src/styles/platform/native-legacy-workspace.css');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
 const inputAdapters=read('src/core/ui/modules/interaction/adapters.js');
 const scientificModel=read('src/core/ui/modules/scientific-curve/model.js');
@@ -25,11 +27,11 @@ assert(/^0\.8\.(?:1[2-9]|[2-9]\d+)$/.test(mobilePkg.version),'mobile behavior ch
 assert.strictEqual(mobileApp.version,mobilePkg.version,'Expo and mobile package versions must stay aligned');
 assert(Number(mobileApp.android.versionCode)>=23,'Android versionCode must advance for the mobile restoration build');
 
-assert(/html\.react-native-client \.topbar,\s*html\.react-native-client \.project-tabs-bar,\s*html\.react-native-client #mainWorkspace,\s*html\.react-native-client #superWorkspaceDivider\{display:none\}/m.test(mobileCss),'native shell must hide the desktop topbar, project tabs, workspace and SUPER divider as one complete CSS rule');
-assert(!/#mainWorkspace,\s*\n\s*html\.react-native-client\{/.test(mobileCss),'native shell CSS must never retain the dangling selector introduced by the modular refactor');
+assert(/html\.react-native-client \.topbar,\s*html\.react-native-client \.project-tabs-bar,\s*html\.react-native-client #mainWorkspace,\s*html\.react-native-client #superWorkspaceDivider,\s*html\.react-native-client #statusBar\.statusbar\{display:none\}/m.test(nativeShellCss),'native shell must hide Desktop chrome in the native shell ownership stylesheet');
+assert(!/#mainWorkspace,\s*\n\s*html\.react-native-client\{/.test(nativeShellCss),'native shell CSS must never retain the dangling selector introduced by the modular refactor');
 
 assert(inputAdapters.includes("[data-dkds-touch-gesture-owner]"),'Mobile Gesture Adapter held-swipe navigation must yield to Core-owned touch gestures');
-assert(inputAdapters.includes("handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize'")&&inputAdapters.includes("handle.addEventListener('pointerdown'")&&inputAdapters.includes('setPointerCapture'),'Mobile Gesture Adapter must own pointer-captured data/parameter drawer resizing');
+assert(inputAdapters.includes("dataset?.dkdsMobileWorkspaceMode!=='legacy'")&&inputAdapters.includes("handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize'")&&legacyCss.includes('.dkds-mobile-panel-edge'),'Mobile Gesture Adapter must retain drawer resizing only for the explicit legacy workspace fallback');
 assert(scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot'")||scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot"),'scientific plots must explicitly own their touch gesture sequence');
 assert(workspaceCss.includes('.dkds-scientific-curve-surface')&&workspaceCss.includes('touch-action:none'),'scientific plot surfaces must prevent browser pan arbitration during direct gestures');
 assert(scientificRender.includes("plotBg.on('pointerdown'")&&scientificRender.includes('setPointerCapture(event.pointerId)')&&scientificRender.includes("routeInteraction('box','background'")&&scientificRender.includes("decision.intent==='select-region'"),'scientific box selection must stay on Pointer Events with capture and select-region routing');

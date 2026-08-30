@@ -44,6 +44,6 @@ The Mobile Host re-reads Presenter state after a surface intent. Closing a PRIME
 
 ## 5. Ownership and Phase 4 boundary
 
-Phase 3 does not remove `mobile.css`. Web-rendered portable/docking geometry is still present for compatibility while additional workspaces migrate. Phase 4 may delete obsolete mobile page/layout overrides only after their equivalent behavior is represented by semantic surfaces and Presenter mapping.
+Phase 3 intentionally retained `mobile.css` until Presenter ownership was proven. v3.67.3 Phase 4 now replaces the monolithic native page overrides with Presenter-driven semantic surface projection and isolates the remaining Desktop-geometry bridge behind an explicit legacy compatibility mode.
 
 No `ctx.ui.desktop` or `ctx.ui.mobile` API is introduced. Plugin API 1.18 remains singular.

@@ -12,6 +12,7 @@ const {GridController}=require('../grid/controller');
       this.resizeObserver=null;this.regionObserver=null;this.leftSplit=null;this.rightSplit=null;this.bottomSplit=null;
       if(!this.root)throw new Error('AnalysisWorkbench root not found.');
       this.root.classList.add('dkds-analysis-workbench-host');
+      this.activityId=String(spec.activity||spec.id||'');
       this.build();
     }
     build(){
@@ -40,6 +41,7 @@ const {GridController}=require('../grid/controller');
         <div class="dkds-analysis-parking" aria-hidden="true"></div>
       </section>`;
       this.shell=this.root.firstElementChild;
+      if(this.shell){this.shell.dataset.dkdsWorkspaceActivity=this.activityId;this.shell.dataset.dkdsWorkspaceSurfaceHost='1';}
       this.slots={
         left:this.shell.querySelector('[data-analysis-slot="left"]'),main:this.shell.querySelector('[data-analysis-slot="main"]'),
         right:this.shell.querySelector('[data-analysis-slot="right"]'),bottom:this.shell.querySelector('[data-analysis-slot="bottom"]'),
@@ -76,6 +78,14 @@ const {GridController}=require('../grid/controller');
       }
       if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>{this.syncRegions();if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.scope.emitResize?.({reason:'analysis-workbench-observer'});});this.resizeObserver.observe(this.shell);}
     }
+    markSurfaceNode(node,row={},kind='prime'){
+      if(!node?.dataset)return node;
+      const id=String(row.id||row.surfaceId||'').trim();if(!id)return node;
+      node.dataset.dkdsWorkspaceActivity=this.activityId;
+      node.dataset.dkdsWorkspaceSurfaceId=id;
+      node.dataset.dkdsWorkspaceSurfaceKind=String(kind||row.role||'');
+      return node;
+    }
     portableSlot(name,row=null){return this.slots[String(name)]||null;}
     layout(){return {slot:name=>this.portableSlot(name)};}
     setTitle(title,subtitle){const h=this.shell.querySelector('h2');if(h)h.textContent=String(title||'');const st=this.shell.querySelector('.dkds-analysis-subtitle');if(st&&subtitle!==undefined)st.textContent=String(subtitle||'');return this;}
@@ -105,6 +115,7 @@ const {GridController}=require('../grid/controller');
     mountPrimary(spec={}){
       cleanupCall(this.primary?.cleanup);
       this.primary={...spec,id:String(spec.id||'main')};
+      this.markSurfaceNode(this.slots.primary,this.primary,'primary');
       const left=this.slots.left,main=this.slots.primary;
       left.replaceChildren();main.replaceChildren();
       if(spec.leftNode){const node=resolveElement(spec.leftNode,this.root)||spec.leftNode;if(node)left.appendChild(node);}
@@ -190,6 +201,7 @@ const {GridController}=require('../grid/controller');
         placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,semanticKind:row.semanticKind||'panel',layout,onPlacementChanged,...lifecycle
       }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,semanticKind:row.semanticKind||'panel',layout,onPlacementChanged,...lifecycle};
       row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);
+      this.markSurfaceNode(row.portable?.wrapper||container,row,'prime');
       if(Array.isArray(row.actions)&&row.actions.length){
         const actionHost=resolveScopedElement(row.actionHost||row.actionsHost,container)||resolveScopedElement('[data-dkds-prime-actions]',container);
         if(actionHost){row.actionGroup?.dispose?.();row.actionGroup=new ActionGroup(this.owner,actionHost,{activity:this.spec.activity,actions:row.actions});}
@@ -216,7 +228,7 @@ const {GridController}=require('../grid/controller');
       if(row.container)return row.container;
       let container=row.existingNode||resolveElement(row.node,this.shell)||resolveElement(row.node,this.root);
       if(container){row.existingNode=container;}else{container=document.createElement('section');container.className='dkds-analysis-sub-view';container.dataset.subId=row.id;if(row.html!==undefined)container.innerHTML=typeof row.html==='function'?row.html():String(row.html||'');}
-      row.container=container;return container;
+      row.container=container;this.markSurfaceNode(container,row,'sub');return container;
     }
     openSub(id){
       const row=this.subs.get(String(id));if(!row)return false;

@@ -34,7 +34,7 @@
   }
   function publish(){
     clearTimeout(publishTimer);
-    publishTimer=setTimeout(()=>post({kind:'event',event:'state',payload:snapshot()}),0);
+    publishTimer=setTimeout(()=>{const state=snapshot();window.DKDSMobileWebPresentation?.apply?.(state);post({kind:'event',event:'state',payload:state});},0);
   }
   function closeLayer(){return !!mobileAdapter()?.closeTransient?.();}
 
@@ -162,7 +162,7 @@
   }
 
   async function invoke(method,payload={}){
-    if(method==='bootstrap'||method==='snapshot')return snapshot();
+    if(method==='bootstrap'||method==='snapshot'){const state=snapshot();window.DKDSMobileWebPresentation?.apply?.(state);return state;}
     const intent=mobileAdapter()?.fromHostRequest?.(method,payload);
     if(!intent)throw new Error(`Unsupported mobile host method: ${method}`);
     return dispatchIntent(intent);

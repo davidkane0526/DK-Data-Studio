@@ -1,0 +1,84 @@
+/* React Native owns system/application chrome. These rules shape only the
+   shared WebView renderer and generic Core surfaces; workspace geometry is
+   projected separately from MobilePresenter. */
+html.react-native-client,
+html.react-native-client body,
+html.react-native-client #app{width:100%;height:100%;min-width:0;overflow:hidden}
+html.react-native-client body{padding:0;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+html.react-native-client .topbar,
+html.react-native-client .project-tabs-bar,
+html.react-native-client #mainWorkspace,
+html.react-native-client #superWorkspaceDivider,
+html.react-native-client #statusBar.statusbar{display:none}
+
+html.react-native-client .analysis-page{position:fixed;inset:0;width:100%;height:auto;min-width:0;overflow:hidden;background:var(--app-bg)}
+html.react-native-client .analysis-page>.analysis-page-header{display:none}
+html.react-native-client .analysis-page>.analysis-page-body{width:100%;height:100%;min-width:0;min-height:0;padding:0;overflow:auto;box-sizing:border-box}
+html.react-native-client #pluginManagerPage>.analysis-page-header,
+html.react-native-client #automationTestPage>.analysis-page-header{display:flex;min-height:44px;padding:6px 8px}
+html.react-native-client #pluginManagerPage>.analysis-page-body,
+html.react-native-client #automationTestPage>.analysis-page-body{height:calc(100% - 44px);padding:8px}
+
+html.react-native-client .dkds-unified-workbench-body,
+html.react-native-client .dkds-plugin-workbench-root,
+html.react-native-client .dkds-plugin-workspace,
+html.react-native-client .dkds-analysis-workbench{width:100%;height:100%;min-width:0;min-height:0}
+html.react-native-client .dkds-analysis-header,
+html.react-native-client .dkds-analysis-nav{display:none}
+
+html.react-native-client button,
+html.react-native-client input,
+html.react-native-client select{touch-action:manipulation}
+html.react-native-client button{min-height:36px}
+html.react-native-client .command-menu{position:fixed;z-index:2400;left:6px;right:6px;top:auto;bottom:6px;width:auto;max-height:72vh;overflow:auto;border-radius:16px;padding:8px}
+html.react-native-client .command-menu button{width:100%;min-height:46px;text-align:left}
+
+html.react-native-client .scientific-plot,
+html.react-native-client [data-scientific-plot],
+html.react-native-client .analysis-chart{width:100%;min-width:0;min-height:280px;height:max(42vh,300px)}
+html.react-native-client [data-dkds-mobile-stack],
+html.react-native-client .plugin-manager-summary,
+html.react-native-client .plugin-manager-grid{grid-template-columns:minmax(0,1fr)}
+
+html.react-native-client .import-panel-overlay{padding:0;bottom:0}
+html.react-native-client .import-workbench{width:100%;height:100%;max-height:none;border:0;border-radius:0}
+html.react-native-client .import-workbench-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(120px,28vh) minmax(0,1fr)}
+html.react-native-client .import-file-pane{border-right:0;border-bottom:1px solid var(--border-subtle)}
+html.react-native-client .import-workbench button,
+html.react-native-client .import-bulk-actions button,
+html.react-native-client .import-workbench-footer button{min-width:108px;padding-left:16px;padding-right:16px;border-radius:10px}
+html.react-native-client .import-target-bar{display:flex;align-items:center;gap:8px;padding:7px 10px;overflow-x:auto;overflow-y:hidden}
+html.react-native-client .import-target-heading{flex:0 0 auto;min-width:78px}
+html.react-native-client .import-target-heading span,
+html.react-native-client .import-target-hint{display:none}
+html.react-native-client .import-target-options{display:flex;flex:0 0 auto;flex-wrap:nowrap;gap:7px}
+html.react-native-client .import-target-chip{display:inline-flex;flex:0 0 150px;width:150px;height:36px;min-height:36px;justify-content:flex-start;padding:0 13px;border-radius:11px;box-sizing:border-box}
+
+html.react-native-client .dkds-memory-panel,
+html.react-native-client .lan-web-panel{z-index:3200}
+html.react-native-client .dkds-memory-panel{bottom:6px;max-height:calc(100vh - 18px)}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-switch-row,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-port-row,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-key-card,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-address-card,
+html.react-native-client .lan-web-panel.native-local-only .lan-web-share-section{display:none}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-grid{grid-template-columns:minmax(0,1fr)}
+html.react-native-client .lan-web-panel.native-local-only .lan-web-settings-card{padding:8px}
+html.react-native-client [data-dkds-mobile-summary]{display:none}
+
+html.react-native-client .plugin-manager-body{gap:7px;padding:8px 10px 24px}
+html.react-native-client .plugin-manager-summary{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+html.react-native-client .plugin-manager-stat{min-height:48px;padding:6px 9px;border-radius:9px;gap:2px}
+html.react-native-client .plugin-manager-stat span{font-size:var(--ui-font-tiny,10px)}
+html.react-native-client .plugin-manager-stat strong{font-size:16px}
+html.react-native-client .plugin-manager-toolbar-card{padding:7px 8px;gap:6px;grid-template-columns:minmax(180px,1fr) repeat(5,auto)}
+html.react-native-client .plugin-manager-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+html.react-native-client .plugin-manager-card{padding:8px;border-radius:9px}
+html.react-native-client .plugin-manager-card h3{font-size:11px;margin:0 0 3px}
+html.react-native-client .plugin-manager-card p{font-size:var(--ui-font-tiny,10px);line-height:1.35}
+
+@media (orientation:landscape) and (max-height:600px){
+  html.react-native-client .scientific-plot,
+  html.react-native-client [data-scientific-plot],
+  html.react-native-client .analysis-chart{height:max(70vh,260px);min-height:240px}
+}
