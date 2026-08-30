@@ -154,7 +154,7 @@
     compatible:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.'),
     issues:String(pkg?.manifest?.apiVersion||'1.0.0').startsWith('1.')?[]:[{kind:'plugin-api',required:pkg?.manifest?.apiVersion,actual:'1.18.0'}],
     requiredPluginApi:pkg?.manifest?.compatibility?.pluginApi||pkg?.manifest?.apiVersion||'1.x',
-    pluginApiVersion:'1.18.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.3'
+    pluginApiVersion:'1.18.0',requiredApp:pkg?.manifest?.compatibility?.app||'*',appVersion:'3.67.4'
   });
 
   async function decodeFile(file,encoding='auto') {

@@ -851,6 +851,10 @@ module.exports = {
     {
       "file": "tests/test-v3673-platform-presentation-phase4.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
+      "args": []
     }
   ],
   "check": [
@@ -1737,6 +1741,10 @@ module.exports = {
     {
       "file": "tests/test-v3673-platform-presentation-phase4.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
+      "args": []
     }
   ],
   "mobile": [
@@ -1762,6 +1770,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3673-platform-presentation-phase4.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3674-platform-presentation-legacy-audit.js",
       "args": []
     },
     {

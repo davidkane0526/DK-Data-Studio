@@ -13,7 +13,7 @@
       const host=ctx.ui.dom.create('div');host.className='dkds-plugin-workbench-root';body.appendChild(host);
       const wb=ctx.ui.workspaceSurface.create(host,{header:false,activity:'ter',primaryScroll:'auto'});
       const primaryMain=ctx.ui.dom.create('div');primaryMain.className='ter-primary-surface';primaryMain.append(main,...extras);
-      wb.compose({primary:{id:'main',label:'TER 分析',scroll:'auto',leftNode:left,mainNode:primaryMain}});
+      wb.compose({primary:{id:'main',label:'TER 分析',scroll:'auto',mainNode:primaryMain},primes:[{id:'data-control',label:'参数',title:'TER 参数与显示',semanticKind:'panel',presentationRole:'data-control',priority:90,collapsible:true,existingNode:left,autoOpen:true,defaultPlacement:'left',placements:['left','global','right','bottom'],stateVersion:'presentation-v1',mount:({container})=>container.classList.remove('hidden')} ]});
       return wb;
     }
 

@@ -44,7 +44,7 @@ function contractSurface(row={},kind='prime'){
     ...defaults,active:false,
     placement:text(row.defaultPlacement||row.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)?row.placements:[])]),
-    presentationDeclared:hasDeclaredPresentationRole(row),source:'core-registry'
+    presentationDeclared:hasDeclaredPresentationRole(row),presentationLegacy:'',source:'core-registry'
   });
 }
 function runtimeSurface(row={},fallback=null){
@@ -59,7 +59,7 @@ function runtimeSurface(row={},fallback=null){
     ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
     placement:text(row.placement||row.defaultPlacement||fallback?.placement||(kind==='primary'?'main':'')),
     placements:Object.freeze([...(Array.isArray(row.placements)&&row.placements.length?row.placements:(fallback?.placements||[]))]),
-    presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,source:fallback?'core-runtime+contract':'core-runtime'
+    presentationDeclared:hasDeclaredPresentationRole(row)||!!fallback?.presentationDeclared,presentationLegacy:text(row.presentationLegacy||fallback?.presentationLegacy),source:fallback?'core-runtime+contract':'core-runtime'
   });
 }
 function statusRows(){
@@ -112,15 +112,31 @@ class PresentationModel {
       const contract=this.contractFor(row),system=text(row.navigation)==='system';
       const surfaces=this.surfaces(row,contract);
       const primary=surfaces.find(surface=>surface.kind==='primary')||contractSurface({id:'main',label:row.label||row.name||'系统工具'},'primary');
-      const presentationComplete=!!contract&&surfaces.length>0&&surfaces.every(surface=>surface.presentationDeclared===true);
+      const presentationIssues=[];
+      if(!system){
+        if(!contract)presentationIssues.push('missing-top-workspace-contract');
+        if(!surfaces.length)presentationIssues.push('missing-surfaces');
+        for(const surface of surfaces){
+          if(surface.presentationDeclared!==true)presentationIssues.push(`undeclared-role:${surface.kind}:${surface.surfaceId}`);
+          if(surface.presentationLegacy)presentationIssues.push(`legacy-composition:${surface.kind}:${surface.surfaceId}:${surface.presentationLegacy}`);
+        }
+      }
+      const presentationComplete=!!contract&&surfaces.length>0&&presentationIssues.length===0;
       return Object.freeze({
         id:text(row.id),activityId:text(row.id),pluginId:text(row.pluginId),label:text(row.label||row.name||row.id),contextLabel:text(row.contextLabel||row.label||row.name||row.id),icon:text(row.icon||contract?.icon),description:text(row.description),
         order:number(row.order,100),primaryNavigation:row.primary===true,default:row.default===true,navigation:text(row.navigation),openMode:text(row.openMode),pluginType:text(row.pluginType),
-        role:contract?'top':'system',system,isSuper:!!row.isSuper,presentationComplete,
+        role:contract?'top':'system',system,isSuper:!!row.isSuper,presentationComplete,presentationIssues:Object.freeze(presentationIssues),
         primary,primes:Object.freeze(surfaces.filter(surface=>surface.kind==='prime')),subs:Object.freeze(surfaces.filter(surface=>surface.kind==='sub')),
         surfaces,actions:Object.freeze(actionRows(text(row.id)))
       });
     }));
+  }
+
+  presentationAudit(){
+    const rows=this.workspaces().filter(row=>!row.system);
+    const items=rows.map(row=>Object.freeze({activityId:row.activityId,pluginId:row.pluginId,label:row.label,complete:row.presentationComplete===true,issues:Object.freeze([...(row.presentationIssues||[])])}));
+    const incomplete=items.filter(row=>!row.complete);
+    return Object.freeze({total:items.length,complete:items.length-incomplete.length,legacy:incomplete.length,items:Object.freeze(items),incomplete:Object.freeze(incomplete)});
   }
   theme(){
     return Object.freeze({

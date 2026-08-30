@@ -1,3 +1,11 @@
+# v3.67.4 — Platform Presentation / Legacy Consumer Audit
+
+- Add `DKDSPresentation.audit()` and stable Presentation issue codes so incomplete TOP contracts are observable instead of inferred from screenshots or DOM. A PRIMARY that still hides a rail in `leftNode` / `leftHtml` is explicitly reported as `primary-left-composition` and cannot be misclassified as semantic-complete.
+- Migrate the remaining first-party PRIMARY-left consumers: TER parameters and Transfer Vth Lab data/threshold controls are now explicit auto-open PRIME `data-control` surfaces. Their TopWorkspace contracts expose the same semantic surfaces; first-party TOP `leftNode` usage is now zero.
+- Keep the 44-line legacy mobile fallback deliberately isolated for Plugin API 1.18 external compatibility. The repository cannot prove installed third-party `.dkplugin` packages no longer use the historically supported `leftNode` form, so deleting that bridge would be a public compatibility break rather than an ownership cleanup.
+- Update Plugin API / SDK guidance: new cross-platform TOP rails must be semantic `data-control` surfaces; `leftNode` is compatibility-only for TOP presentation. No platform-specific Plugin API is introduced.
+- Release validation: `npm test` **214/214 PASS**; `npm run check` **222/222 PASS** (continued from the same manifest after the execution-time limit); Mobile **10/10 PASS**; SDK Harness **PASS**; Scientific parity **PASS**; Plugin Boundary **0**; authored CSS **44 files / 0 `!important`**.
+
 # v3.67.3 — Platform Presentation Architecture / Phase 4
 
 - Replace the monolithic `mobile.css` page override sheet with an import-only platform entrypoint. React Native/WebView shell rules, Presenter-driven workspace geometry, and the explicit legacy fallback now have separate ownership modules; shared `touch.css` no longer carries a second React Native page-layout implementation.

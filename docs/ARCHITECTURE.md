@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.67.1
+# DK Data Studio Architecture — v3.67.4
 
 ## 1. Runtime layers
 
@@ -135,4 +135,4 @@ Compatibility code is permitted only at explicit boundaries: project-format migr
 
 ## 10. Platform presentation boundary (v3.67)
 
-Core workspace state is projected through a platform-neutral Presentation Model. Plugins declare semantic surface roles (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, `scientific-secondary`) once; Desktop and Mobile Presenters map those roles to platform geometry and Interaction Adapters translate platform input into shared intents. Resonance is the v3.67.2 reference migration. v3.67.3 Phase 4 adds downstream Mobile Web surface projection and isolates Desktop-geometry compatibility behind an explicit legacy mode; `mobile.css` no longer owns monolithic page-level layout. Platform-specific Plugin API facades remain forbidden.
+Core workspace state is projected through a platform-neutral Presentation Model. Plugins declare semantic surface roles (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, `scientific-secondary`) once; Desktop and Mobile Presenters map those roles to platform geometry and Interaction Adapters translate platform input into shared intents. Resonance is the v3.67.2 reference migration. v3.67.3 Phase 4 adds downstream Mobile Web surface projection and isolates Desktop-geometry compatibility behind an explicit legacy mode; `mobile.css` no longer owns monolithic page-level layout. Platform-specific Plugin API facades remain forbidden. v3.67.4 adds an executable Presentation Audit, migrates the remaining first-party PRIMARY-left compositions (TER and Vth) into explicit `data-control` surfaces, and makes hidden `leftNode` composition an auditable legacy condition rather than a false-complete semantic contract.

@@ -113,10 +113,10 @@ const {AnalysisWorkbench}=require('./analysis');
       const describe=(row,kind,id,active,onInvoke)=>({
         id:`workspace-${kind}:${id}`,surfaceId:String(id),kind,semanticKind:String(row?.semanticKind||''),presentationRole:String(row?.presentationRole||row?.semanticRole||''),
         priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,placement:String(row?.portable?.wrapper?.dataset?.placement||row?.defaultPlacement||(kind==='primary'?'main':'')),
-        placements:Array.isArray(row?.placements)?[...row.placements]:[],label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
+        placements:Array.isArray(row?.placements)?[...row.placements]:[],presentationLegacy:String(row?.presentationLegacy||''),label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
       });
       const rows=[];
-      if(includePrimary&&this.primary)rows.push(describe(this.primary,'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));
+      if(includePrimary&&this.primary){const presentationLegacy=(this.primary.leftNode||this.primary.leftHtml!==undefined)?'primary-left-composition':'';rows.push(describe({...this.primary,presentationLegacy},'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));}
       if(includePrimes)for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'prime',row.id,()=>!!row.mounted,()=>this.togglePrime(row.id)));
       if(includeSubs)for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'sub',row.id,()=>this.activeSub===row.id,()=>this.openSub(row.id)));
       return rows;

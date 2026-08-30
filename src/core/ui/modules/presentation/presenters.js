@@ -80,10 +80,11 @@ class MobilePresenter {
 
 const desktop=new DesktopPresenter(),mobile=new MobilePresenter();
 const api=Object.freeze({
-  version:'1.2.0',roles,model,presenters:Object.freeze({desktop,mobile}),desktopNavigation,desktopWorkspaceSurfaces,
+  version:'1.3.0',roles,model,presenters:Object.freeze({desktop,mobile}),desktopNavigation,desktopWorkspaceSurfaces,
   configure:next=>{model.configure(next);return api;},
   setStatus:message=>model.setStatus(message),
   snapshot:context=>model.snapshot(context),
+  audit:()=>model.presentationAudit(),
   present:(platform='desktop',context={})=>platform==='mobile'?mobile.present(context):desktop.present(context)
 });
 if(typeof window!=='undefined'){
