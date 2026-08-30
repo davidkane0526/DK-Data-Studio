@@ -36,7 +36,7 @@
       title:'选择主题',onClick:()=>toggleThemePanel()
     });
 
-    const themePanel=ctx.ui.dom.create('aside',{className:'dkds-theme-panel dkds-fixed-popover dkds-material-role-popover hidden',attrs:{id:'dkdsThemePanel','aria-label':'主题选择','data-dkds-portable-chrome':'false'},html:`
+    const themePanel=ctx.ui.dom.create('aside',{className:'dkds-theme-panel dkds-fixed-popover dkds-material-role-popover hidden',attrs:{id:'dkdsThemePanel','aria-label':'主题选择','data-dkds-portable-chrome':'false','data-dkds-portable':'false'},html:`
       <div class="dkds-theme-panel-head dkds-surface-header">
         <div class="dkds-theme-panel-heading"><strong>主题</strong><span id="dkdsThemeCurrentLabel">—</span></div>
         <button id="dkdsThemePanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button>

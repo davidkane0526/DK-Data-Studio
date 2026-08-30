@@ -40,7 +40,7 @@
 }
 .main-plot-tools{z-index:35;display:flex;
 }
-.main-plot-tools button{padding:4px 8px;
+.main-plot-tools button{height:26px;min-height:26px;padding:3px 8px;
 }
 .trend-legend-chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
 }
@@ -57,10 +57,12 @@
 .main-plot-tools{
   gap:5px;
   padding:3px;
+  height:34px;
+  box-sizing:border-box;
   scrollbar-width:none;
 }
 .main-legend-bar{
-  min-height:40px;
+  min-height:34px;
 }
 @media (max-width:820px){
   .main-plot-header{left:12px;right:8px;top:8px}
@@ -107,17 +109,19 @@
 .main-legend-bar{
   min-width:0;
   flex:1 1 auto;
-  height:36px;
+  height:34px;
+  box-sizing:border-box;
   display:flex;
   align-items:center;
   gap:5px;
   overflow-x:auto;
   overflow-y:hidden;
   white-space:nowrap;
-  padding:3px 5px;
+  padding:3px;
   scrollbar-width:thin;
 }
 .main-legend-chip{
+  box-sizing:border-box;
   flex:0 0 auto;
   display:inline-flex;
   align-items:center;

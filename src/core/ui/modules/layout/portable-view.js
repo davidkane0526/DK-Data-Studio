@@ -7,8 +7,10 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
 
   class PortableView {
     constructor(scope,id,node,spec={}){
-      this.scope=scope;this.owner=scope.owner;this.id=String(id);this.node=resolveElement(node);this.spec={...spec};this.allowed=[...new Set((spec.placements||['home','float','right','bottom']).map(normalizePlacement))];
+      this.scope=scope;this.owner=scope.owner;this.id=String(id);this.node=resolveElement(node);this.spec={...spec};
       if(!this.node)throw new Error(`Portable view target not found: ${id}`);
+      this.portableDisabled=!!(this.node.matches?.('.dkds-fixed-popover,[data-dkds-portable-chrome="false"],[data-dkds-portable="false"]')||this.node.closest?.('.dkds-fixed-popover,[data-dkds-portable-chrome="false"],[data-dkds-portable="false"]'));
+      this.allowed=this.portableDisabled?['home']:[...new Set((spec.placements||['home','float','right','bottom']).map(normalizePlacement))];
       const homeParent=this.node.parentNode||null;
       const homeAnchor=homeParent?document.createComment(`dkds-portable-home:${this.owner}:${this.id}`):null;
       if(homeParent&&homeAnchor)homeParent.insertBefore(homeAnchor,this.node);
@@ -17,14 +19,15 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
       const initialRect=this.wrapper.getBoundingClientRect?.()||{width:0,height:0};
       this.initialBounds={width:Math.round(initialRect.width)||0,height:Math.round(initialRect.height)||0};
       const saved=this.readState();
-      const requested=saved.placement||spec.defaultPlacement||'home';
+      const requested=this.portableDisabled?'home':saved.placement||spec.defaultPlacement||'home';
       this.place(requested,{persist:false,bounds:saved.bounds});
     }
     storageKey(){const version=String(this.spec.stateVersion||'').trim().replace(/[^a-zA-Z0-9_.-]+/g,'-');return `${hostState.storagePrefix}.${this.owner}.${this.id}${version?`.${version}`:''}`;}
     readState(){return readJson(this.storageKey(),{});}
     writeState(extra={}){const prev=this.readState();writeJson(this.storageKey(),{...prev,...extra});}
     ensureWrapper(){
-      const useTarget=this.spec.useTargetAsWrapper===true,chrome=this.spec.chrome!==false&&this.node?.dataset?.dkdsPortableChrome!=='false';
+      const useTarget=this.spec.useTargetAsWrapper===true;
+      const chrome=this.spec.chrome!==false&&!this.portableDisabled;
       const wrapper=useTarget?this.node:document.createElement('section');
       wrapper.classList.add('dkds-portable-view');wrapper.dataset.portableId=this.id;
       const semanticKind=String(this.spec.semanticKind||'panel').trim().toLowerCase();
@@ -45,7 +48,7 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
         controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb dkds-integrated-action-subgroup';controls.dataset.dkdsPortableControls=this.id;
         const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗',global:'⤢'};
         const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'画布悬浮 / 边缘吸附',global:'全界面自由悬浮'};
-        const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';
+        const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';placementButton.dataset.dkdsComponentIdentity='toolbarAction';placementButton.dataset.dkdsComponentIdentityOwner='core-portable-view';placementButton.dataset.dkdsComponentVariant='quiet';placementButton.dataset.dkdsComponentVariantOwner='core-portable-view';
         const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location-icon">${esc(placementIcons[current]||'◫')}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
         const menuItems=()=>this.allowed.map(placement=>({id:placement,icon:placementIcons[placement]||'◫',label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}));
         const showPlacementMenu=(event)=>{event?.stopPropagation?.();event?.preventDefault?.();this.contextMenu?.dispose?.();const rect=placementButton.getBoundingClientRect();const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:rect.left;const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:rect.bottom+4;const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x,y,items:menuItems()});};
@@ -64,9 +67,9 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
         const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;this.bindFloatResize(resizeHandle);
         const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
         const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
-        if(closeButton){closeButton.classList.add('dkds-panel-close-button','dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
+        if(closeButton){closeButton.classList.add('dkds-panel-close-button','dkds-portable-icon-action','dkds-portable-close-action');closeButton.dataset.dkdsComponentIdentity='toolbarAction';closeButton.dataset.dkdsComponentIdentityOwner='core-portable-view';closeButton.dataset.dkdsComponentVariant='quiet';closeButton.dataset.dkdsComponentVariantOwner='core-portable-view';closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
         const collapseButton=bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
-        if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.textContent='−';collapseButton.removeAttribute('title');collapseButton.setAttribute('aria-label',String(this.spec.collapseTitle||'缩小'));}
+        if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.dataset.dkdsComponentIdentity='toolbarAction';collapseButton.dataset.dkdsComponentIdentityOwner='core-portable-view';collapseButton.dataset.dkdsComponentVariant='quiet';collapseButton.dataset.dkdsComponentVariantOwner='core-portable-view';collapseButton.textContent='−';collapseButton.removeAttribute('title');collapseButton.setAttribute('aria-label',String(this.spec.collapseTitle||'缩小'));}
       }
       const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
       wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));

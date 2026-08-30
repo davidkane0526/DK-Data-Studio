@@ -112,11 +112,13 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),0 0 0 2px var(--dkui-focus)
 }
 
-/* Desktop command rows use one centered optical depth so primary and selected
-   actions do not cast visibly different vertical halos. */
-body.dkds-modern-ui .topbar-primary [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]{
-  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
-  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),0 0 0 2px var(--dkui-focus)
+/* Desktop command rows use one centered 2 px optical halo. A 34 px action plus
+   this halo occupies the same 38 px visual envelope as grouped command chrome. */
+body.dkds-modern-ui .topbar-primary [data-dkds-component-identity="toolbarAction"]:is([data-dkds-component-variant="primary"],[data-dkds-component-variant="selected"],[data-dkds-component-variant="active"]){
+  --dkds-shell-action-halo:0 0 2px color-mix(in srgb,var(--dkui-selection-border) 54%,transparent);
+  --dkds-ca-action-shadow:var(--dkds-shell-action-halo);
+  --dkds-ca-action-state-shadow:var(--dkds-shell-action-halo);
+  --dkds-ca-action-focus-shadow:var(--dkds-shell-action-halo),0 0 0 2px var(--dkui-focus)
 }
 
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="secondary"]{
@@ -161,7 +163,7 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
 }
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-quiet-surface,transparent);
-  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-quiet-surface-hover,var(--dkui-component-toolbar-action-surface-hover,var(--dkui-control-hover)));
+  --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-quiet-surface-hover,color-mix(in srgb,var(--dkui-control-hover) 62%,transparent));
   --dkds-ca-action-surface-active:var(--dkui-component-toolbar-action-variant-quiet-surface-active,var(--dkui-component-toolbar-action-variant-quiet-surface,transparent));
   --dkds-ca-action-surface-selected:var(--dkui-component-toolbar-action-variant-quiet-surface-selected,var(--dkui-component-toolbar-action-variant-quiet-surface,transparent));
   --dkds-ca-action-text:var(--dkui-component-toolbar-action-variant-quiet-text,var(--dkui-component-toolbar-action-text,var(--dkui-text)));

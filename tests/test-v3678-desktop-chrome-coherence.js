@@ -12,15 +12,15 @@ const pkg=json('package.json');
 const status=read('src/plugins/status-monitor/plugin.js');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
-assert(status.includes("className:'dkds-theme-panel dkds-fixed-popover")&&status.includes("'data-dkds-portable-chrome':'false'"),'Theme picker must declare fixed-popover/no-portable-chrome semantics.');
-assert(portable.includes("this.node?.dataset?.dkdsPortableChrome!=='false'"),'PortableView must honor the explicit no-chrome contract.');
-assert(semanticCss.includes('.dkds-fixed-popover [data-dkds-portable-controls]'),'fixed popovers must never expose placement controls.');
+assert(status.includes("className:'dkds-theme-panel dkds-fixed-popover")&&status.includes("'data-dkds-portable-chrome':'false'")&&status.includes("'data-dkds-portable':'false'"),'Theme picker must declare fixed-popover/no-portable semantics.');
+assert(portable.includes('[data-dkds-portable-chrome="false"],[data-dkds-portable="false"]'),'PortableView must honor the explicit no-portable chrome contract.');
+assert(semanticCss.includes('[data-dkds-portable="false"] .dkds-portable-controls'),'fixed/non-portable popovers must never expose placement controls.');
 
 const grid=read('src/styles/structure/plugin-workspace.css');
-assert(grid.includes('"cbsplit cbsplit cbsplit cbsplit cbsplit"')&&grid.includes('"cbottom cbottom cbottom cbottom cbottom"'),'bottom scientific secondary surface must span the full canvas width below left/right rails.');
+assert(grid.includes('"cleft clsplit cbsplit cbsplit cbsplit"')&&grid.includes('"cleft clsplit cbottom cbottom cbottom"'),'bottom scientific secondary surface must start after the persistent left data rail and extend through center/right.');
 
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(integrated.includes('border-radius:6px;padding-left:7px;padding-right:7px'),'header action hover geometry must use rounded hit regions with real horizontal breathing room.');
+assert(integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'header action hover geometry must use soft rounded hit regions with real horizontal breathing room.');
 assert(integrated.includes('background:color-mix(in srgb,var(--dkui-danger) 8%,transparent)')&&integrated.includes('color:var(--dkui-danger)'),'all shared close buttons must use one restrained close hover treatment.');
 
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
@@ -37,10 +37,9 @@ assert(themeSettings.includes('class="dkds-icon-button dkds-panel-close-button" 
 const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const workbench=read('src/styles/structure/workbench-components.css');
 const superTop=read('src/styles/structure/super-top-contract.css');
-assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dkds-shell-group-height:40px'),'Desktop shell must define one canonical action/group vertical rhythm.');
-assert(workbench.includes('height:var(--dkds-shell-group-height,40px)'),'System command group must consume the canonical outer height.');
-assert(superTop.includes('.global-commandbar .file-command-group{')&&superTop.includes('height:var(--dkds-shell-group-height,40px)'),'File command outline must consume the canonical outer height contract.');
-assert(workbench.includes('height:var(--dkds-shell-group-height,40px)'),'System command outline must consume the same canonical outer height contract from its own structure owner.');
+assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dkds-shell-group-height:38px'),'Desktop shell must define one canonical 34/38 action-to-visual-envelope rhythm.');
+assert(workbench.includes('height:var(--dkds-shell-group-height,38px)'),'System command group must consume the canonical outer height.');
+assert(superTop.includes('.global-commandbar .file-command-group{')&&superTop.includes('height:var(--dkds-shell-group-height,38px)'),'File command outline must consume the canonical outer height contract.');
 assert(!superTop.includes('height:42px'),'the old 42 px file-only outline exception must not return.');
 
-console.log('v3.67.8 desktop chrome coherence PASS: fixed theme popover, full-width bottom group surface, rounded header hover, unified close controls, and one shell vertical rhythm.');
+console.log('v3.67.8 desktop chrome coherence PASS: fixed theme popover, persistent-left workspace geometry, softened header chrome, unified close controls, and one shell vertical rhythm.');

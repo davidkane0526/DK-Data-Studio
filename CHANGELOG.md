@@ -1,3 +1,14 @@
+# v3.67.9 — Desktop Visual Acceptance Closure
+
+- Correct the v3.67.8 workspace regression against the established Resonance layout: the left Data List rail persists through the bottom row, while Group Plot starts after that rail and spans the scientific center through the far-right inspector column. The v3.67.8 regression assertion that encoded a full-width-under-data-list bottom surface is replaced rather than patched around.
+- Put both scientific floating navigation implementations on one runtime contract. Generic ChartRuntime and ScientificCurve now share the same `dkds-integrated-action-group` / floating Material role and the same quiet `ToolbarAction` semantics, so one theme cannot render two different plot toolbars. Hover hit regions are softly rounded and borderless.
+- Make Portable/header chrome quiet by construction: injected placement, collapse and close controls plus header ActionGroup commands consume the same quiet component variant, 24 px hit height, 8 px radius and 9 px horizontal breathing room.
+- Fix the main plot command/legend geometry mathematically rather than optically: both outer shells are 34 px border-boxes with equal 3 px insets around 26 px controls. The stale 40 px legend minimum that overrode the intended height is removed.
+- Normalize Presenter surface commands (**参数 / 检查 / 组图**) to one 34 px centered control geometry and remove the narrower first-button padding exception.
+- Define a 38 px Desktop shell visual envelope around 34 px actions. Primary activity, file-command and system-command groups all consume that envelope, while selected/primary action halo is explicitly 2 px and centered, making the outer outline and action-shadow envelope equal by construction.
+- Strengthen fixed-popover semantics. The Theme picker declares both no-portable and no-portable-chrome; `PortableView` recognizes those semantics before creating chrome, pins such a surface to `home`, and CSS removes any stale portable control residue.
+- Add v3.67.9 visual-acceptance regression coverage for the nine screenshot findings. Final source validation: `npm test` 219/219 PASS, `npm run check` 227/227 PASS, Mobile 12/12 PASS, SDK Harness PASS, Scientific parity PASS, 43 authored CSS files / 0 `!important`.
+
 # v3.67.8 — Desktop Chrome Coherence
 
 - Keep the frozen v3.67 platform-neutral Presentation Architecture unchanged and correct the remaining Desktop-only chrome regressions below it.

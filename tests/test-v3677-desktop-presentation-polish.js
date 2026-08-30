@@ -33,8 +33,8 @@ const shell=read('src/styles/presentation/shell.css');
 const component=read('src/styles/theme/component-appearance.css');
 assert(/\.window-control-btn\{[^}]*width:30px[^}]*height:30px/s.test(nav),'desktop window controls must use compact 30 px hit chrome instead of full-titlebar slabs.');
 assert(/\.window-control-btn:hover:not\(:disabled\)\{[^}]*box-shadow:none/s.test(shell),'window control hover must not grow a tall shadow.');
-assert(/plugin-section-start\{[^}]*margin-left:10px[^}]*padding-left:9px/s.test(nav)&&/plugin-section-start::before\{[^}]*top:10px[^}]*bottom:10px/s.test(nav),'context section divider must be shorter and farther from command shadows.');
-assert(component.includes('.topbar-primary [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]')&&component.includes('--dkds-ca-action-shadow:var(--dkui-selected-shadow)'),'topbar primary/selected actions must share centered optical shadow depth.');
+assert(/plugin-section-start\{[^}]*margin-left:10px[^}]*padding-left:10px/s.test(nav)&&/plugin-section-start::before\{[^}]*top:10px[^}]*bottom:10px/s.test(nav),'context section divider must be shorter and farther from command shadows.');
+assert(component.includes('.topbar-primary [data-dkds-component-identity="toolbarAction"]:is([data-dkds-component-variant="primary"],[data-dkds-component-variant="selected"],[data-dkds-component-variant="active"])')&&component.includes('--dkds-ca-action-shadow:var(--dkds-shell-action-halo)'),'topbar primary/selected actions must share centered optical shadow depth.');
 
 const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
 const integrated=read('src/styles/theme/integrated-command-chrome.css');

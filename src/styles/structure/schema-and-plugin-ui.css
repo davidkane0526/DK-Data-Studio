@@ -238,7 +238,7 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
    ============================================================ */
 .topbar-primary{
   --dkds-shell-action-height:34px;
-  --dkds-shell-group-height:40px;
+  --dkds-shell-group-height:38px;
   height:52px;
   min-height:52px;
   gap:9px;

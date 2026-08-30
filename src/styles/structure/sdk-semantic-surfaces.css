@@ -252,7 +252,7 @@ body.dkds-modern-ui .dkds-plot-legend-item:hover{
 .dkds-dialog-shell>.dkds-surface-header{min-height:46px}
 .dkds-icon-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;min-height:30px;padding:0;cursor:pointer}
 .dkds-panel-close-button{display:inline-grid;place-items:center;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;line-height:1;cursor:pointer}
-.dkds-fixed-popover [data-dkds-portable-controls],.dkds-fixed-popover .dkds-portable-controls{display:none}
+.dkds-fixed-popover [data-dkds-portable-controls],.dkds-fixed-popover .dkds-portable-controls,[data-dkds-portable="false"] [data-dkds-portable-controls],[data-dkds-portable="false"] .dkds-portable-controls{display:none}
 .dkds-status{box-sizing:border-box;padding:7px 9px;font-size:var(--plugin-font-meta,11px);line-height:1.45}
 .dkds-message{max-width:90%;padding:8px 10px;font-size:var(--plugin-font-body,12.5px);line-height:1.55;white-space:pre-wrap;word-break:break-word}
 .dkds-message.user{align-self:flex-end}

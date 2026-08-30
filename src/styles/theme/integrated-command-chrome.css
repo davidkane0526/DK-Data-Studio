@@ -84,6 +84,11 @@ body.dkds-modern-ui .dkds-scientific-nav-tools :where(button,.dkds-scientific-na
   min-height:24px;
   height:24px;
   padding:0;
+  border-radius:6px;
+}
+body.dkds-modern-ui .dkds-scientific-nav-tools button:hover:not(:disabled){
+  border-color:transparent;
+  box-shadow:none;
 }
 body.dkds-modern-ui .dkds-scientific-nav-drag{display:inline-grid;place-items:center;cursor:grab}
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing}
@@ -121,10 +126,10 @@ body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-hea
 body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
   :where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions)
   :where(button,.dkds-icon-button,.dkds-action-button,.dkds-portable-placement-trigger){
-  min-height:24px;height:24px;border-radius:6px;padding-left:7px;padding-right:7px;
+  min-height:24px;height:24px;border-radius:8px;padding-left:9px;padding-right:9px;
 }
 body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
-  :where(.dkds-portable-placement-trigger){gap:3px;min-width:32px}
+  :where(.dkds-portable-placement-trigger){gap:4px;min-width:34px}
 body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head)
   :where(.dkds-panel-close-button){padding:0;min-width:26px;width:26px;height:26px;min-height:26px;border-radius:7px}
 /* Selected/active header tabs are part of the title bar, not nested pills. */

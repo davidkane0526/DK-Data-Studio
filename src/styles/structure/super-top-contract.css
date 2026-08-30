@@ -203,10 +203,10 @@ button.plugin-status-item{cursor:pointer;}
 }
 
 /* Shell toolbar groups share one vertical silhouette. Standalone commands keep
-   the 34 px action rhythm and remain optically centered inside the 40 px row. */
+   the 34 px action rhythm and remain optically centered inside the 38 px envelope. */
 .global-commandbar .file-command-group{
-  height:var(--dkds-shell-group-height,40px);
-  min-height:var(--dkds-shell-group-height,40px);
+  height:var(--dkds-shell-group-height,38px);
+  min-height:var(--dkds-shell-group-height,38px);
 }
 .global-commandbar>.compact-menu-anchor>#editMenuBtn{
   height:var(--dkds-shell-action-height,34px);

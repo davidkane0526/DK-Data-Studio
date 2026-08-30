@@ -115,7 +115,8 @@ const {esc, resolveElement, cleanupCall, shortcutHub}=require('../foundation/sho
         if(this.container.dataset.dkdsActionLayout==='separated')button.dataset.dkdsActionLayout='standalone';
         const declaredVariant=String(action.variant||action.tone||'').trim();
         const classVariant=['primary','secondary','selected','active','quiet','destructive'].find(name=>String(action.className||'').split(/\s+/).includes(name))||'';
-        const variant=declaredVariant||classVariant;if(variant){button.dataset.dkdsComponentVariant=variant;button.dataset.dkdsComponentVariantOwner='core-action-group';}
+        const headerIntegrated=this.container.dataset.dkdsActionLayout==='integrated'&&!!this.container.closest?.('.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head,.dkds-portable-header');
+        const variant=declaredVariant||classVariant||(headerIntegrated?'quiet':'');if(variant){button.dataset.dkdsComponentVariant=variant;button.dataset.dkdsComponentVariantOwner='core-action-group';}
         const label=this.value(action.label,ctx)??action.id??'';
         const icon=this.value(action.icon,ctx);
         const active=!!this.value(action.active,ctx);const enabled=this.value(action.enabled,ctx)!==false;
