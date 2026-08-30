@@ -1,3 +1,12 @@
+# v3.67.1 — Platform Presentation Architecture / Phase 2
+
+- Make the Desktop activity shell consume `DesktopPresenter.navigation` instead of recomputing primary/secondary/tool grouping inside Plugin Kernel. Registration, activation and dedicated-window lifecycle remain Kernel-owned; platform composition now belongs to the Desktop Presentation Shell.
+- Merge live `PluginWorkspace` surfaces with `ctx.ui.topWorkspace.register(...)` declarations by stable surface identity so mounted runtime state cannot erase semantic presentation roles, priority, collapsibility or not-yet-mounted contract surfaces.
+- Add platform-neutral `data-primary` and `utility-primary` roles alongside `scientific-primary`, `data-control`, `inspector` and `scientific-secondary`. Desktop and Mobile map these roles downstream without introducing `ctx.ui.desktop` / `ctx.ui.mobile`.
+- Add explicit Presentation metadata to Data Center, TER, Pulse Analysis, Pulse Sampler Tool and Transfer Vth Lab, plus SDK templates/types. Resonance is intentionally left unchanged for the Phase 3 reference migration.
+- Route Desktop navigation activation through the shared Interaction Intent and `DesktopMouseKeyboardAdapter`; main-shell and dedicated TOP windows reuse the same Presenter-backed renderer.
+- Add a v3.67.1 architecture gate that runs without DOM state and verifies contract/runtime merging, Desktop navigation slots, auxiliary-window behavior and Mobile surface projection.
+
 # v3.66.9 — Import / SMB / Window Chrome Closure
 
 - Add the existing DK Data Studio JSON project format to the unified native import picker and rename the workbench action to **导入数据/项目** while retaining automatic project/data classification.

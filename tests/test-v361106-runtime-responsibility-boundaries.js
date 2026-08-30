@@ -7,8 +7,11 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 
 const shell=read('src/core/plugins/kernel/modules/activity/shell.js');
 const uiContrib=read('src/core/plugins/kernel/modules/contributions/ui.js');
-assert(!shell.includes('pluginTypeForManifest('),'Core Activity/Tools rendering must not perform strict manifest validation during UI consumption.');
-assert(shell.includes("pluginTypeOf(definition.manifest)==='tool'"),'Activity and Tools navigation must consume the already-validated plugin type without re-validating transient owners.');
+const packageRuntime=read('src/core/plugins/kernel/modules/package-runtime.js');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
+assert(!shell.includes('pluginTypeForManifest(')&&!shell.includes('pluginTypeOf('),'Core Activity shell must not validate or classify plugin types during platform rendering.');
+assert(packageRuntime.includes('pluginType:pluginTypeForManifest'),'Activity Registry must expose already-validated plugin type metadata at the registry boundary.');
+assert(presenters.includes("workspace.pluginType==='tool'"),'Desktop Presenter must consume registry plugin type metadata without re-validating plugin manifests.');
 assert(!uiContrib.includes('pluginTypeForManifest('),'Core contribution routing must not perform strict manifest validation during UI consumption.');
 assert(uiContrib.includes("pluginTypeOf(definition.manifest)==='tool'"),'Tool/export contribution routing must consume the already-validated plugin type.');
 

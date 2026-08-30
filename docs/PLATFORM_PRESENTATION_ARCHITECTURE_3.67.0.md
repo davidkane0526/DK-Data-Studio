@@ -81,6 +81,6 @@ Phase 1 does not:
 
 Planned sequence:
 
-1. **Phase 2** — route more shell composition through Presenter outputs and close remaining host-state gaps.
+1. **Phase 2** — completed in v3.67.1: Desktop Activity/Tool composition consumes Presenter navigation and live surfaces merge with their registered semantic contract.
 2. **Phase 3** — migrate Resonance as the reference semantic workspace and validate Desktop/Mobile parity.
 3. **Phase 4** — remove page-level `mobile.css` overrides that became unnecessary after presenter migration.

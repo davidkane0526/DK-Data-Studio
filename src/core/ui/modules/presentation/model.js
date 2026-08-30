@@ -1,9 +1,11 @@
 'use strict';
 
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 const SCHEMA='dkds.presentation-model.v1';
 const ROLES=Object.freeze({
   SCIENTIFIC_PRIMARY:'scientific-primary',
+  DATA_PRIMARY:'data-primary',
+  UTILITY_PRIMARY:'utility-primary',
   DATA_CONTROL:'data-control',
   INSPECTOR:'inspector',
   SCIENTIFIC_SECONDARY:'scientific-secondary'
@@ -13,9 +15,11 @@ const text=value=>String(value??'');
 const number=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
 
 function normalizeRole(kind,row={}){
-  const explicit=text(row.presentationRole||row.semanticRole||'').trim().toLowerCase();
+  const explicit=text(row.presentationRole||row.semanticRole||row.role||'').trim().toLowerCase();
   if(ROLE_SET.has(explicit))return explicit;
   if(['analysis-primary','primary'].includes(explicit))return ROLES.SCIENTIFIC_PRIMARY;
+  if(['data-main','data-workspace'].includes(explicit))return ROLES.DATA_PRIMARY;
+  if(['utility-main','tool-primary'].includes(explicit))return ROLES.UTILITY_PRIMARY;
   if(['control','controls','panel'].includes(explicit))return ROLES.DATA_CONTROL;
   if(['secondary','analysis-secondary'].includes(explicit))return ROLES.SCIENTIFIC_SECONDARY;
   const semantic=text(row.semanticKind).trim().toLowerCase();
@@ -42,25 +46,27 @@ function contractSurface(row={},kind='prime'){
     source:'core-registry'
   });
 }
-function runtimeSurface(row={}){
-  const id=text(row.id).trim();if(!id)return null;
-  const kind=text(row.kind||row.surfaceKind||(id.includes('workspace-primary:')?'primary':id.includes('workspace-sub:')?'sub':'prime'));
-  const defaults=surfaceDefaults(kind,row);
+function runtimeSurface(row={},fallback=null){
+  const merged=fallback?{...fallback,...row}:{...row};
+  const id=text(row.id||fallback?.id).trim();if(!id)return null;
+  const kind=text(row.kind||row.surfaceKind||fallback?.kind||(id.includes('workspace-primary:')?'primary':id.includes('workspace-sub:')?'sub':'prime'));
+  const roleDeclared=text(row.presentationRole||row.semanticRole||row.role||row.semanticKind).trim();
+  const defaults=surfaceDefaults(kind,roleDeclared?row:(fallback||row));
   return Object.freeze({
-    id,surfaceId:text(row.surfaceId||id.split(':').slice(1).join(':')),kind,
-    label:text(row.label||row.title||row.surfaceId||id),semanticKind:text(row.semanticKind),
-    ...defaults,role:normalizeRole(kind,row),active:!!row.active,
-    placement:text(row.placement||row.defaultPlacement||(kind==='primary'?'main':'')),
-    placements:Object.freeze([...(Array.isArray(row.placements)?row.placements:[])]),
-    source:'core-runtime'
+    id,surfaceId:text(row.surfaceId||fallback?.surfaceId||id.split(':').slice(1).join(':')),kind,
+    label:text(row.label||row.title||fallback?.label||row.surfaceId||id),semanticKind:text(row.semanticKind||fallback?.semanticKind),
+    ...defaults,role:roleDeclared?normalizeRole(kind,row):text(fallback?.role||defaults.role),active:!!row.active,
+    placement:text(row.placement||row.defaultPlacement||fallback?.placement||(kind==='primary'?'main':'')),
+    placements:Object.freeze([...(Array.isArray(row.placements)&&row.placements.length?row.placements:(fallback?.placements||[]))]),
+    source:fallback?'core-runtime+contract':'core-runtime'
   });
 }
 function statusRows(){
   const rows=window.DKDSPlugins?.statusBar?.list?.()||[];
   return rows.filter(row=>!row?.value?.hidden).map(row=>{
     const value=row?.value||{};
-    return Object.freeze({pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',label:text(value.label),icon:text(value.icon),state:text(value.state),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title)});
-  }).filter(row=>row.pluginId&&row.id&&row.id!=='lan-web');
+    return Object.freeze({pluginId:text(row?.pluginId),id:text(row?.id),side:text(value.side)==='left'?'left':'right',order:number(value.order,100),label:text(value.label),icon:text(value.icon),state:text(value.state),className:text(value.className),colorPolicy:text(value.colorPolicy||'theme'),disabled:!!value.disabled,clickable:typeof value.onClick==='function',title:text(value.title)});
+  }).filter(row=>row.pluginId&&row.id&&row.id!=='lan-web').sort((a,b)=>a.side.localeCompare(b.side)||a.order-b.order||a.id.localeCompare(b.id));
 }
 function actionRows(activityId){
   return (window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>Object.freeze({
@@ -83,13 +89,22 @@ class PresentationModel {
   contracts(){return window.DKDSPlugins?.workspace?.top?.()||[];}
   contractFor(activity={}){return this.contracts().find(row=>text(row?.activity)===text(activity.id)||text(row?.pluginId)===text(activity.pluginId))||null;}
   surfaces(activity,contract){
-    const live=(window.DKDSUI?.workspaces?.actions?.(text(activity?.id))||[]).map(runtimeSurface).filter(Boolean);
-    if(live.length)return Object.freeze(live);
-    if(!contract)return Object.freeze([]);
-    const primary=contractSurface(contract.layout?.primary||{id:'main',label:'主界面'},'primary');
-    const primes=(contract.layout?.prime||[]).map(row=>contractSurface(row,'prime')).filter(Boolean);
-    const subs=(contract.layout?.sub||[]).map(row=>contractSurface(row,'sub')).filter(Boolean);
-    return Object.freeze([primary,...primes,...subs].filter(Boolean));
+    const declared=[];
+    if(contract){
+      const primary=contractSurface(contract.layout?.primary||{id:'main',label:'主界面'},'primary');
+      if(primary)declared.push(primary);
+      declared.push(...(contract.layout?.prime||[]).map(row=>contractSurface(row,'prime')).filter(Boolean));
+      declared.push(...(contract.layout?.sub||[]).map(row=>contractSurface(row,'sub')).filter(Boolean));
+    }
+    const byKey=new Map(declared.map(row=>[`${row.kind}:${row.surfaceId}`,row]));
+    const live=(window.DKDSUI?.workspaces?.actions?.(text(activity?.id))||[]).map(row=>{
+      const surfaceId=text(row.surfaceId||text(row.id).split(':').slice(1).join(':'));
+      const kind=text(row.kind||row.surfaceKind||(text(row.id).includes('workspace-primary:')?'primary':text(row.id).includes('workspace-sub:')?'sub':'prime'));
+      return runtimeSurface(row,byKey.get(`${kind}:${surfaceId}`)||null);
+    }).filter(Boolean);
+    if(!live.length)return Object.freeze(declared);
+    const liveKeys=new Set(live.map(row=>`${row.kind}:${row.surfaceId}`));
+    return Object.freeze([...live,...declared.filter(row=>!liveKeys.has(`${row.kind}:${row.surfaceId}`))]);
   }
   workspaces(){
     return Object.freeze((window.DKDSPlugins?.activities?.list?.()||[]).filter(row=>row?.id&&(this.contractFor(row)||text(row.navigation)==='system')).map(row=>{
@@ -97,7 +112,8 @@ class PresentationModel {
       const surfaces=this.surfaces(row,contract);
       const primary=surfaces.find(surface=>surface.kind==='primary')||contractSurface({id:'main',label:row.label||row.name||'系统工具'},'primary');
       return Object.freeze({
-        id:text(row.id),activityId:text(row.id),pluginId:text(row.pluginId),label:text(row.label||row.name||row.id),icon:text(row.icon||contract?.icon),
+        id:text(row.id),activityId:text(row.id),pluginId:text(row.pluginId),label:text(row.label||row.name||row.id),contextLabel:text(row.contextLabel||row.label||row.name||row.id),icon:text(row.icon||contract?.icon),description:text(row.description),
+        order:number(row.order,100),primaryNavigation:row.primary===true,default:row.default===true,navigation:text(row.navigation),openMode:text(row.openMode),pluginType:text(row.pluginType),
         role:contract?'top':'system',system,isSuper:!!row.isSuper,
         primary,primes:Object.freeze(surfaces.filter(surface=>surface.kind==='prime')),subs:Object.freeze(surfaces.filter(surface=>surface.kind==='sub')),
         surfaces,actions:Object.freeze(actionRows(text(row.id)))

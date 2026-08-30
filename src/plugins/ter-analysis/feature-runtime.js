@@ -748,7 +748,7 @@
       id:'ter',activity:'ter',label:'TER 分析',icon:'▧',
       layout:{
         mode:'native',root:{selector:'#terMaxPage .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary'},prime:[{id:'resistance-inspector'}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'resistance-inspector',presentationRole:'inspector',priority:80,collapsible:true}],sub:[]
       }
     });
 

@@ -532,11 +532,12 @@
 
   function baseHost() {
     return {
-      appVersion:'3.67.0',
+      appVersion:'3.67.1',
       platform:window.DKDSPlatform,
       isAuxiliaryWindow:true,
       isWebClient:false,
       isNativeClient:false,
+      renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:true}),
       closeCurrentWindow:closeAnalysisPage,
       openActivityWindow:()=>false,
       openImportWorkbench:options=>{

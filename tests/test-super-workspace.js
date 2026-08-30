@@ -188,7 +188,7 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
     assert(manifest.workspace?.role==='top',`${folder} must declare the generic TOP role.`);
     assert(combined.includes('ctx.ui.topWorkspace.register'),`${folder} must register a complete generic TOP contract before it can become SUPER.`);
   }
-  assert(source.includes('const opened=await state.host?.openActivityWindow?.(spec.id)'),'non-SUPER TOP navigation must await the generic window host and surface failures instead of silently doing nothing.');
+  assert(source.includes('const opened=await state.host?.openActivityWindow?.(id)')&&source.includes('opened===false')&&source.includes('未能打开'),'non-SUPER TOP navigation must await the generic window host and surface failures from the shared activity lifecycle instead of shell-specific button code.');
   assert(source.includes('await state.host?.prepareSuperTransition?.({previous,pluginId:id,activityId})'),'SUPER promotion must execute the host transition barrier before changing role ownership.');
   assert(source.includes('state.superPluginId=previous')&&source.includes('SUPER 工作区启动失败'),'SUPER switching must roll back the role when embedded activation fails.');
 

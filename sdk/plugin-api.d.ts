@@ -85,9 +85,10 @@ export interface DKDSPluginWorkspaceMountContext { workbench:DKDSPluginWorkspace
 export interface DKDSPluginWorkspacePrimarySpec { id:string; label?:string; /** Optional persistent rail only when the plugin domain genuinely needs one; not a required workspace template. */ leftNode?:any; /** Primary domain surface. It may own plugin-specific grids, batch panes, plot/table arrangements, etc. */ mainNode?:any; leftHtml?:string|(()=>string); mainHtml?:string|(()=>string); /** Same bounded/growing semantics as create().primaryScroll. */ scroll?:'safe'|'auto'|'contained'; scrollMode?:'safe'|'auto'|'contained'; mount?:(context:DKDSPluginWorkspaceMountContext)=>void|(()=>void) }
 /** Stable Core-owned semantic kinds for persistent PRIME/Portable surfaces. Themes never define new values. */
 export type DKDSSemanticSurfaceKind='panel'|'inspector';
+export type DKDSPresentationSurfaceRole='scientific-primary'|'data-primary'|'utility-primary'|'data-control'|'inspector'|'scientific-secondary';
 export interface DKDSPluginWorkspacePrimeSpec {
   id:string; label?:string; title?:string; order?:number; autoOpen?:boolean;
-  semanticKind?:DKDSSemanticSurfaceKind;
+  semanticKind?:DKDSSemanticSurfaceKind; presentationRole?:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean;
   placements?:Array<'inline'|'home'|'left'|'right'|'bottom'|'main'|'float'|'global'>; defaultPlacement?:'inline'|'home'|'left'|'right'|'bottom'|'main'|'float'|'global';
   existingNode?:any; node?:any; inlineHost?:any; useTargetAsWrapper?:boolean; handle?:any; controlsHost?:any; controlsPlacement?:'start'|'end'|string; stateVersion?:number|string;
   closeSelector?:string; collapseSelector?:string; actions?:any[]; actionHost?:any; actionsHost?:any;
@@ -98,9 +99,10 @@ export interface DKDSPluginWorkspace {
   mountPrimary(spec:DKDSPluginWorkspacePrimarySpec):DKDSPluginWorkspace; registerPrime(spec:DKDSPluginWorkspacePrimeSpec):any; registerSub(spec:any):any; showPrimary():any; openPrime(id:string,placement?:string):any; openSub(id:string):any; setPrimaryScrollMode(mode:'safe'|'auto'|'contained'):DKDSPluginWorkspace; setHostMode(mode:string):DKDSPluginWorkspace; layoutDiagnostics():Readonly<{owner:string;activity:string;primaryScroll:'safe'|'auto'|'contained';guarded:ReadonlyArray<{tag:string;id:string;className:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>;risks:ReadonlyArray<{element:string;tag:string;overflowX:string;overflowY:string;clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number;containmentX:number;containmentY:number;unsafeX:boolean;unsafeY:boolean;recovered:boolean}>;primary:Readonly<{clientWidth:number;clientHeight:number;scrollWidth:number;scrollHeight:number}>}>; capabilityState():any; dispose():void;
 }
 export interface DKDSPluginWorkspaceRuntime { create(root:any,spec?:DKDSPluginWorkspaceCreateSpec):DKDSPluginWorkspace }
+export interface DKDSTopWorkspaceSurfaceSpec { id:string; role?:string; semanticKind?:DKDSSemanticSurfaceKind; presentationRole?:DKDSPresentationSurfaceRole; priority?:number; collapsible?:boolean; placements?:string[]; defaultPlacement?:string }
 export interface DKDSTopWorkspaceSpec {
   id:string; activity:string; label?:string; icon?:string;
-  layout:{mode:'native';root:{selector:string};primary:{id:string;role?:string};prime?:Array<{id:string;role?:string}>;sub?:Array<{id:string;role?:string}>};
+  layout:{mode:'native';root:{selector:string};primary:DKDSTopWorkspaceSurfaceSpec;prime?:DKDSTopWorkspaceSurfaceSpec[];sub?:DKDSTopWorkspaceSurfaceSpec[]};
 }
 export interface DKDSTopWorkspaceRuntime { register(spec:DKDSTopWorkspaceSpec):any; isSuper():boolean }
 

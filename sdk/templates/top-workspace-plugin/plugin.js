@@ -41,7 +41,7 @@
 
     ctx.ui.topWorkspace.register({
       id:'sdk-top-example',activity:'sdk-top-example',label:'SDK TOP',icon:'◇',
-      layout:{mode:'native',root:{selector:'#sdkTopExamplePage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary'},prime:[],sub:[]}
+      layout:{mode:'native',root:{selector:'#sdkTopExamplePage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[],sub:[]}
     });
     const off=ctx.events?.on?.('data:artifacts-changed',refresh);
     return{deactivate(){off?.();surface?.dispose?.();workbench?.dispose?.();}};

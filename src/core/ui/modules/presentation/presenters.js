@@ -3,17 +3,41 @@ const {model,roles}=require('./model');
 
 const text=value=>String(value??'');
 
+function desktopNavigationItem(workspace,slot,activeId,context={}){
+  const auxiliary=!!context.isAuxiliaryWindow;
+  const opensWindow=!auxiliary&&!workspace.isSuper&&(workspace.role==='top'||workspace.openMode==='window');
+  return Object.freeze({
+    id:workspace.activityId,activityId:workspace.activityId,pluginId:workspace.pluginId,label:workspace.label,contextLabel:workspace.contextLabel,icon:workspace.icon,
+    description:workspace.description,order:workspace.order,slot,active:workspace.activityId===activeId,isSuper:workspace.isSuper,workspaceRole:workspace.role,pluginType:workspace.pluginType,
+    activation:opensWindow?'window':'embedded'
+  });
+}
+function desktopNavigation(workspaces,activeId,context={}){
+  const auxiliary=!!context.isAuxiliaryWindow,primary=[],secondary=[],tools=[],system=[];
+  for(const workspace of workspaces){
+    if(workspace.system||workspace.navigation==='system'){system.push(desktopNavigationItem(workspace,'system',activeId,context));continue;}
+    if(workspace.navigation==='hidden')continue;
+    const isTool=!auxiliary&&workspace.pluginType==='tool'&&workspace.role==='top'&&!workspace.isSuper;
+    if(isTool){tools.push(desktopNavigationItem(workspace,'tools',activeId,context));continue;}
+    const slot=workspace.primaryNavigation?'primary':'secondary';
+    (slot==='primary'?primary:secondary).push(desktopNavigationItem(workspace,slot,activeId,context));
+  }
+  const order=(a,b)=>a.order-b.order||a.label.localeCompare(b.label)||a.activityId.localeCompare(b.activityId);
+  primary.sort(order);secondary.sort(order);tools.sort(order);system.sort(order);
+  return Object.freeze({primary:Object.freeze(primary),secondary:Object.freeze(secondary),tools:Object.freeze(tools),system:Object.freeze(system)});
+}
+
 class DesktopPresenter {
   constructor(source=model){this.model=source;}
   present(context={}){
     const snapshot=this.model.snapshot(context);
-    return Object.freeze({...snapshot,schema:'dkds.desktop-presentation.v1',presentationModel:snapshot.schema,platform:'desktop'});
+    return Object.freeze({...snapshot,schema:'dkds.desktop-presentation.v1',presentationModel:snapshot.schema,platform:'desktop',navigation:desktopNavigation(snapshot.workspaces,snapshot.activity.id,context)});
   }
 }
 
 function mobilePlacement(surface,orientation='portrait'){
   const role=text(surface?.role);
-  if(role===roles.SCIENTIFIC_PRIMARY)return Object.freeze({region:'main',navigation:'primary'});
+  if([roles.SCIENTIFIC_PRIMARY,roles.DATA_PRIMARY,roles.UTILITY_PRIMARY].includes(role))return Object.freeze({region:'main',navigation:'primary'});
   if(role===roles.INSPECTOR)return Object.freeze({region:orientation==='landscape'?'rail':'sheet',navigation:'context'});
   if(role===roles.DATA_CONTROL)return Object.freeze({region:orientation==='landscape'?'rail':'sheet',navigation:'context'});
   return Object.freeze({region:'route',navigation:'secondary'});
@@ -24,7 +48,7 @@ class MobilePresenter {
   constructor(source=model){this.model=source;}
   present(context={}){
     const orientation=text(context.orientation||'portrait')==='landscape'?'landscape':'portrait';
-    const core=this.model.snapshot(context),activityId=core.activity.id,workspace=core.workspaces.find(row=>row.activityId===activityId)||null;
+    const core=this.model.snapshot(context),activityId=core.activity.id;
     const remapWorkspace=row=>{
       const surfaces=row.surfaces.map(surface=>mobileSurface(surface,orientation));
       return Object.freeze({...row,surfaces:Object.freeze(surfaces),primary:surfaces.find(surface=>surface.kind==='primary')||row.primary,primes:Object.freeze(surfaces.filter(surface=>surface.kind==='prime')),subs:Object.freeze(surfaces.filter(surface=>surface.kind==='sub'))});
@@ -43,7 +67,7 @@ class MobilePresenter {
 
 const desktop=new DesktopPresenter(),mobile=new MobilePresenter();
 const api=Object.freeze({
-  version:'1.0.0',roles,model,presenters:Object.freeze({desktop,mobile}),
+  version:'1.1.0',roles,model,presenters:Object.freeze({desktop,mobile}),desktopNavigation,
   configure:next=>{model.configure(next);return api;},
   setStatus:message=>model.setStatus(message),
   snapshot:context=>model.snapshot(context),

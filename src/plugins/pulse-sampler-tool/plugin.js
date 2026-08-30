@@ -568,7 +568,7 @@
       return()=>{mounted=false;for(const dispose of domDisposers.splice(0))dispose?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();waveSurface=resultSurface=waveTable=resultTable=segmentTable=null;};
     }});
 
-    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary'},prime:[],sub:[]}});
+    ctx.ui.topWorkspace.register({id:'pulse-sampler-tool',activity:'pulse-sampler-tool',label:'脉冲与采样处理',icon:'⌁',layout:{mode:'native',root:{selector:'#pulseSamplerToolPage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[],sub:[]}});
     const off=ctx.events.on('data:artifacts-changed',()=>{refreshSources();});
     return{deactivate(){off?.();waveSurface?.dispose?.();resultSurface?.dispose?.();waveTable?.dispose?.();resultTable?.dispose?.();segmentTable?.dispose?.();workbench?.dispose?.();}};
   });

@@ -24,5 +24,6 @@ if(!window.DKDSUI){
   require('./host/api');
 }
 require('./presentation/presenters');
+require('./presentation/desktop-shell');
 require('./interaction/adapters');
 module.exports=window.DKDSUI;

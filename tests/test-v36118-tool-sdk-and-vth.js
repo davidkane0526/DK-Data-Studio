@@ -23,9 +23,14 @@ runValidate(path.join(root,'sdk','templates','tool-plugin'));
 const tool=json('sdk/templates/tool-plugin/plugin.json');
 assert(tool.pluginType==='tool'&&tool.workspace?.role==='top','Default Tool template must be a TOP-equivalent Tool Workspace.');
 assert(tool.workspace.activity===tool.window?.activity,'Tool Workspace activity/window contract must match.');
-const kernel=read('src/generated/runtime/plugin-kernel.js');
-assert(kernel.includes("!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'"),'Core activity navigation must classify Tool Workspaces.');
-assert(kernel.includes("toolsMenu.appendChild(toolButton)"),'Tool Workspace opener must be collected under the Core Tools menu.');
+const packageRuntime=read('src/core/plugins/kernel/modules/package-runtime.js');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
+const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
+const activityShell=read('src/core/plugins/kernel/modules/activity/shell.js');
+assert(packageRuntime.includes('pluginType:pluginTypeForManifest'), 'Activity Registry must expose Tool metadata to the platform-neutral Presentation Model.');
+assert(presenters.includes("workspace.pluginType==='tool'")&&presenters.includes("tools.push(desktopNavigationItem"), 'Desktop Presenter must classify TOP Tool Workspaces into the Tools navigation slot.');
+assert(desktopShell.includes('snapshot.navigation.tools')&&desktopShell.includes('tools?.appendChild'), 'Desktop Presentation Shell must render Presenter-projected Tool Workspace openers in the Core Tools menu.');
+assert(!activityShell.includes('pluginTypeOf('), 'Plugin Kernel activity shell must not duplicate Tool Workspace platform classification after Presenter ownership.');
 const docs=read('sdk/TOOL_PLUGINS.md');
 assert(docs.includes('当前版本刻意不定义额外的工具语义')&&docs.includes('与 TOP 使用相同'),'Tool SDK docs must preserve the intentionally minimal TOP-equivalent Tool contract.');
 // Dependency validator must reject the exact Vth 3.0.0 class of error.

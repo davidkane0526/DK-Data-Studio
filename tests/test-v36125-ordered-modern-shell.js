@@ -18,6 +18,9 @@ const main=read('desktop/main.js');
 const web=read('src/web-bridge.js');
 const manager=read('src/core/plugins/manager-ui.js');
 const kernel=read('src/generated/runtime/plugin-kernel.js');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
+const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
+const activityShell=read('src/core/plugins/kernel/modules/activity/shell.js');
 const preload=read('desktop/preload.js');
 
 assert(html.includes('core/theme/runtime.js'),'main shell must initialize the explicit appearance runtime before app startup');
@@ -42,7 +45,7 @@ assert(web.includes("id:'web:renderer'")&&web.includes('components:[{'),'web run
 assert(html.includes('pluginManagerTypeFilter'),'Plugin Manager must expose a first-class plugin type filter');
 assert(manager.includes('plugin-type-badge type-${escapeHtml(typeMeta.id)}'),'Plugin Manager cards must show the plugin type as a first-class tag');
 assert(manager.includes("tool:{label:'工具'")||manager.includes("tool: {label:'工具'"),'Plugin Manager must retain a dedicated Tool category');
-assert(kernel.includes('function renderToolMenu(rows=activityRows())'),'Tools menu must be rebuilt deterministically from active activity contributions');
-assert(kernel.includes("!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'"),'Tool plugins must use the TOP-equivalent workspace contract');
-assert(kernel.includes("toolButton.dataset.activityId=spec.id")&&kernel.includes("state.host?.openActivityWindow?.(spec.id)"),'top Tools menu must open the installed Tool activity window');
+assert(activityShell.includes('state.host?.renderActivityNavigation'),'Activity/Tools chrome must be rebuilt through the host Presentation renderer.');
+assert(presenters.includes("workspace.pluginType==='tool'")&&presenters.includes("workspace.role==='top'"),'Desktop Presenter must retain the TOP-equivalent Tool Workspace classification.');
+assert(desktopShell.includes('snapshot.navigation.tools')&&desktopShell.includes('activityId:item.activityId'),'Desktop Presentation Shell must render Tool openers and route them through shared activity navigation.');
 console.log('ordered modern shell, appearance, memory and Tool runtime checks passed.');

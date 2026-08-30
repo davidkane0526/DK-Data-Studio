@@ -518,6 +518,10 @@ Parameter UI is schema-driven. A detector/provider should not ship its own setti
 
 A top-level plugin declares `workspace.role="top"` and a `window` contract in `plugin.json`. The dedicated renderer loads only Core dependencies and that plugin's declared support files. `window-runtime.js` is a thin lifecycle/service adapter; domain algorithms and domain rendering stay in shared modules used by SUPER and TOP alike.
 
+`ctx.ui.topWorkspace.register(...)` is also the platform-neutral Presentation contract for TOP surfaces. Declare `presentationRole` (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, or `scientific-secondary`) plus optional `priority` / `collapsible` metadata on `primary`, `prime`, and `sub` surfaces when Core needs their semantic role. Do not encode Desktop geometry into these fields and do not create platform branches such as `ctx.ui.desktop` or `ctx.ui.mobile`. Desktop and Mobile Presenters consume the same declaration and choose platform geometry downstream.
+
+Mounted `ctx.ui.workspaceSurface` state is runtime state, not a second contract. Core merges it with the registered TOP declaration by surface id so live placement/activation can change without losing semantic Presentation metadata.
+
 `window-runtime.js` must be registered as the plugin's `window-runtime` Core module. It must not duplicate feature logic.
 
 ## 17. Validation commands

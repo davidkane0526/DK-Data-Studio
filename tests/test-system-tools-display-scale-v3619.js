@@ -25,7 +25,10 @@ assert(d3surface.includes("Math.abs(n)")&&d3surface.includes('yDisplayValue(valu
 const kernel=read('src/generated/runtime/plugin-kernel.js');
 assert(kernel.includes("tool:'⌁'")&&kernel.includes("defaultMenu=definition&&pluginTypeOf(definition.manifest)==='tool'?'tools':'export'"),'Core must provide tool defaults and route tool contributions to the Tools menu.');
 assert(kernel.includes('isSystemLockedDefinition')&&kernel.includes('系统与基座插件是应用运行所必需的，不能停用'),'Core must enforce non-disableable built-in system/foundation plugins.');
-assert(kernel.includes("String(row.value?.navigation||'')!=='system'"),'System activities must be separable from ordinary plugin activity navigation.');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
+const activityShell=read('src/core/plugins/kernel/modules/activity/shell.js');
+assert(presenters.includes("workspace.system||workspace.navigation==='system'")&&presenters.includes('system.push(desktopNavigationItem'), 'Desktop Presenter must separate system activities from ordinary plugin activity navigation.');
+assert(!activityShell.includes("String(row.value?.navigation||'')!=='system'"), 'Plugin Kernel activity shell must not duplicate system-navigation composition after Presenter ownership.');
 
 const manager=read('src/core/plugins/manager-ui.js');
 assert(manager.includes("tool:{label:'工具'")&&manager.includes("'tool'"),'Plugin Manager must render a Tools category.');

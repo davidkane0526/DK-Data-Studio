@@ -248,11 +248,12 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.67.0',
+    appVersion:'3.67.1',
     platform:window.DKDSPlatform,
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
     isNativeClient:!!window.electronAPI?.isNativeClient,
+    renderActivityNavigation:()=>window.DKDSDesktopPresentationShell?.renderNavigation?.({isAuxiliaryWindow:false}),
     getRuntimeStatus:()=>window.electronAPI?.getRuntimeStatus?.(),
     getLanWebStatus:()=>state.lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),
     openLanWebPanel:showLanWebPanel,

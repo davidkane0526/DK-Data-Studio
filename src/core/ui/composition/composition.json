@@ -103,6 +103,10 @@
       "path": "src/core/ui/modules/presentation/presenters.js"
     },
     {
+      "id": "ui/presentation/desktop-shell",
+      "path": "src/core/ui/modules/presentation/desktop-shell.js"
+    },
+    {
       "id": "ui/host/api",
       "path": "src/core/ui/modules/host/api.js"
     },

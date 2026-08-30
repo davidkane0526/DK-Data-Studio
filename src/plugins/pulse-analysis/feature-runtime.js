@@ -34,7 +34,7 @@
       id:'pulse',activity:'pulse',label:'脉冲分析',icon:'▥',
       layout:{
         mode:'native',root:{selector:'#pulseAnalysisPage .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary'},prime:[{id:'raw-diagnostic'}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[{id:'raw-diagnostic',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
       }
     });
 

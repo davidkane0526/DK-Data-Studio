@@ -370,7 +370,7 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       applyManifest:(id,manifest,source)=>applyPackagedManifest(id,manifest,source)
     }),
     activities: {
-      list:()=>activityRows().map(x=>({...x.value,pluginId:x.pluginId,isSuper:x.pluginId===state.superPluginId})),
+      list:()=>activityRows().map(x=>({...x.value,pluginId:x.pluginId,isSuper:x.pluginId===state.superPluginId,pluginType:pluginTypeForManifest(definitionById(x.pluginId)?.manifest||{})})),
       active:()=>state.activeActivityId,
       set:(id,options={})=>setActiveActivity(id,{
         invoke:options?.invoke!==false,

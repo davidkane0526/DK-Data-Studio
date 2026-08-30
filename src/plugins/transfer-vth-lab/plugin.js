@@ -117,7 +117,7 @@
     left.querySelector('[data-vth="refresh"]').addEventListener('click',()=>ctx.commands.run('com.dkds.transfer-vth-lab.refresh'));
     left.querySelector('[data-vth="demo"]').addEventListener('click',()=>ctx.commands.run('com.dkds.transfer-vth-lab.demo'));
     const actions=ctx.ui.dom.query('[data-vth="header-actions"]',page);ctx.ui.actions.mount(actions,{activity:'transfer-vth-lab',actions:[{id:'refresh',icon:'↻',label:'刷新数据',order:10,onInvoke:()=>ctx.commands.run('com.dkds.transfer-vth-lab.refresh')},{id:'fit',icon:'⌂',label:'适应视图',order:20,onInvoke:()=>ctx.commands.run('com.dkds.transfer-vth-lab.fit-view')},{id:'settings',icon:'⚙',label:'默认设置',order:30,onInvoke:()=>settings.open()}]});
-    ctx.ui.topWorkspace.register({id:'transfer-vth-lab',activity:'transfer-vth-lab',label:'Vth 工作台',icon:'Vₜ',layout:{mode:'native',root:{selector:'#transferVthLabPage .dkds-plugin-workspace'},primary:{id:'vth-main',role:'analysis-primary'},prime:[],sub:[]}});
+    ctx.ui.topWorkspace.register({id:'transfer-vth-lab',activity:'transfer-vth-lab',label:'Vth 工作台',icon:'Vₜ',layout:{mode:'native',root:{selector:'#transferVthLabPage .dkds-plugin-workspace'},primary:{id:'vth-main',role:'analysis-primary',presentationRole:'scientific-primary',priority:100,collapsible:false},prime:[],sub:[]}});
 
     const offArtifacts=ctx.events.on('data:artifacts-changed',()=>refreshSources({announce:false}));
     curves=loadAssignedCurves();if(curves.length){sourceMode='project';state.patch({selectedCurveId:curves[0].id});}else{sourceMode='empty';state.patch({selectedCurveId:null});}

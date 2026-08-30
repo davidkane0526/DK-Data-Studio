@@ -17,6 +17,8 @@ const pluginWorkspace=read('src/core/ui/modules/workbench/plugin.js');
 const hostApi=read('src/core/ui/modules/host/api.js');
 const dedicated=read('src/app/modules/dedicated-plugin-windows.js');
 const pluginApi=read('docs/PLUGIN_API.md');
+const pluginApiRuntime=read('src/core/plugins/kernel/modules/plugin-api.js');
+const sdkTypes=read('sdk/plugin-api.d.ts');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=0))),'Platform Presentation Architecture Phase 1 requires v3.67.0+.');}
 const ids=composition.importableModules.map(row=>row.id);
@@ -44,7 +46,11 @@ assert(dedicated.includes('DKDSPresentation?.configure')&&dedicated.includes('pr
 assert(dedicated.includes("DKDSPresentation.present('mobile'"),'non-native connectivity fallback must reuse the Mobile Presenter instead of reconstructing a parallel shell snapshot.');
 
 assert(pluginApi.includes('Plugin API v1.18')||pluginApi.includes('Plugin API 1.18'),'Phase 1 must retain the single Plugin API 1.18 contract.');
-for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile'])assert(!pluginApi.includes(forbidden),`${forbidden} must not become a platform-specific Plugin API.`);
+for(const forbidden of ['ctx.ui.desktop','ctx.ui.mobile']){
+  assert(!pluginApiRuntime.includes(forbidden),`${forbidden} must not exist in the executable Plugin API facade.`);
+  assert(!sdkTypes.includes(forbidden),`${forbidden} must not exist in SDK authoring types.`);
+}
+assert(!/\bdesktop\s*\??\s*:/.test(sdkTypes)&&!/\bmobile\s*\??\s*:/.test(sdkTypes),'SDK ui facade must not declare desktop/mobile platform branches.');
 
 const domainPattern=/(?:resonance|\bter\b|pulse|dksmb|data-center)/i;
 for(const rel of ['src/core/ui/modules/presentation/model.js','src/core/ui/modules/presentation/presenters.js','src/core/ui/modules/interaction/intent.js','src/core/ui/modules/interaction/adapters.js']){

@@ -33,7 +33,13 @@ ctx.ui.topWorkspace.register({
   layout: {
     mode: 'native',
     root: { selector: '#myAnalysisPage .dkds-plugin-workspace' },
-    primary: { id: 'main', role: 'analysis-primary' },
+    primary: {
+      id: 'main',
+      role: 'analysis-primary',
+      presentationRole: 'scientific-primary',
+      priority: 100,
+      collapsible: false
+    },
     prime: [],
     sub: []
   }
@@ -41,6 +47,37 @@ ctx.ui.topWorkspace.register({
 ```
 
 Core owns host selection. A normal TOP opens in its reusable dedicated window. When promoted to SUPER, the same activity and workspace implementation is embedded in the main shell. Do not maintain separate TOP and SUPER implementations.
+
+### Platform-neutral Presentation semantics
+
+`topWorkspace.layout` describes **semantic UI roles**, not Desktop coordinates. The same declaration is consumed by `DesktopPresenter` and `MobilePresenter`; plugins must not branch into `ctx.ui.desktop` / `ctx.ui.mobile`.
+
+Use `presentationRole` on `primary`, `prime`, and `sub` surface declarations when the host needs to understand the surface's semantic importance:
+
+- `scientific-primary`: the principal scientific visualization/work area;
+- `data-primary`: the principal data-management work area;
+- `utility-primary`: the principal utility/tool work area;
+- `data-control`: controls that operate on the main data/scientific surface;
+- `inspector`: contextual inspection/editing of the current selection;
+- `scientific-secondary`: supporting scientific view that may become a route/sheet on constrained platforms.
+
+`priority` is a relative ordering/retention hint. `collapsible` tells a Presenter whether the surface may be represented in a compact form. These fields do **not** prescribe `left`, `right`, or `bottom`; platform geometry belongs to the Presenter. Live `workspaceSurface` state is merged with this registered contract, so a surface keeps its semantic role even after mounting.
+
+```js
+ctx.ui.topWorkspace.register({
+  id:'my-analysis',
+  activity:'my-analysis',
+  layout:{
+    mode:'native',
+    root:{selector:'#myAnalysisPage .dkds-plugin-workspace'},
+    primary:{id:'main', role:'analysis-primary', presentationRole:'scientific-primary', priority:100, collapsible:false},
+    prime:[{id:'inspector', presentationRole:'inspector', priority:80, collapsible:true}],
+    sub:[{id:'detail', presentationRole:'scientific-secondary', priority:60, collapsible:true}]
+  }
+});
+```
+
+Legacy workspace `role` values remain valid for workspace identity/layout behavior; `presentationRole` is the cross-platform semantic contract.
 
 ## 2. Project data and Data Center
 

@@ -115,7 +115,7 @@
       id:'data-center',activity:'data-center',label:'数据中心',icon:'▦',
       layout:{
         mode:'native',root:{selector:'.data-center-body .dkds-plugin-workbench-root'},
-        primary:{id:'main',role:'analysis-primary'},prime:[{id:'chart-preview'}],sub:[]
+        primary:{id:'main',role:'analysis-primary',presentationRole:'data-primary',priority:100,collapsible:false},prime:[{id:'chart-preview',presentationRole:'scientific-secondary',priority:60,collapsible:true}],sub:[]
       }
     });
 

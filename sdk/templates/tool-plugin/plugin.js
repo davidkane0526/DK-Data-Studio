@@ -15,7 +15,7 @@
     const host=ctx.ui.dom.query('.sdk-tool-workbench',page);
     workspace=ctx.ui.workspaceSurface.create(host,{header:false,activity:'sdk-tool-example',primaryScroll:'safe'});
     workspace.mountPrimary({id:'main',label:'主界面',scroll:'safe',mount:({main})=>{const shell=ctx.ui.dom.create('div',{className:'sdk-tool-main'}),plot=ctx.ui.dom.create('div',{className:'sdk-tool-plot'});ctx.ui.dom.append(shell,plot);ctx.ui.dom.append(main,shell);surface=ctx.ui.scientificPlot.create(plot,{xTitle:'X',yTitle:'Y',getCurves:()=>[],getMarkers:()=>[]});return()=>{surface?.dispose?.();surface=null;};}});
-    ctx.ui.topWorkspace.register({id:'sdk-tool-example',activity:'sdk-tool-example',label:'SDK Tool',icon:'⌁',layout:{mode:'native',root:{selector:'#sdkToolExamplePage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary'},prime:[],sub:[]}});
+    ctx.ui.topWorkspace.register({id:'sdk-tool-example',activity:'sdk-tool-example',label:'SDK Tool',icon:'⌁',layout:{mode:'native',root:{selector:'#sdkToolExamplePage .dkds-plugin-workspace'},primary:{id:'main',role:'analysis-primary',presentationRole:'utility-primary',priority:100,collapsible:false},prime:[],sub:[]}});
     return{deactivate(){surface?.dispose?.();workspace?.dispose?.();}};
   });
 })();

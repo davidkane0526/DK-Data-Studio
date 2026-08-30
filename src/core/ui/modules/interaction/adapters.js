@@ -9,7 +9,7 @@ class DesktopMouseKeyboardAdapter {
   fromBinding(binding={},event=null){
     const type=text(binding.intent||binding.type).trim();
     if(!type)return null;
-    const keyboard=event?.type==='keydown'||event?.type==='keyup';
+    const keyboard=event?.type==='keydown'||event?.type==='keyup'||(event?.type==='click'&&Number(event?.detail)===0);
     if(keyboard&&!['Enter',' ','Spacebar'].includes(text(event?.key)))return null;
     return Intent.create(type,binding.payload||{}, {
       source:'desktop',

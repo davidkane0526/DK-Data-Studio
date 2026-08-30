@@ -3,7 +3,6 @@ const {state, active, disabled}=require('../context');
 const {definitionById, isTopDefinition, topActivityIdForPlugin, superState}=require('../bootstrap');
 const {eventEmit, activityRows, activeActivity}=require('../events/history');
 const {reflowContextToolbar}=require('../shell/context-toolbar');
-const {pluginTypeOf}=require('../manifest');
 
 
   function reflowActivities(){
@@ -43,81 +42,18 @@ const {pluginTypeOf}=require('../manifest');
     for(const b of buttons)if(!keep.has(b))menu.appendChild(b);
   }
 
-  function renderToolMenu(rows=activityRows()){
-    const toolsMenu=document.querySelector('#pluginToolsMenu');
-    if(!toolsMenu)return;
-    toolsMenu.querySelectorAll?.('[data-tool-workspace-entry]')?.forEach?.(el=>el.remove());
-    if(state.host?.isAuxiliaryWindow){refreshToolMenuPresentation();return;}
-    for(const row of rows){
-      const spec=row.value||{};
-      const definition=definitionById(row.pluginId);
-      const toolWorkspace=!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId;
-      if(!toolWorkspace)continue;
-      const toolButton=document.createElement('button');
-      toolButton.type='button';toolButton.className='plugin-menu-item tool-workspace-menu-item';
-      toolButton.dataset.toolWorkspaceEntry='1';toolButton.dataset.pluginId=row.pluginId;toolButton.dataset.activityId=spec.id;toolButton.dataset.pluginOrder=String(Number(spec.order)||100);
-      toolButton.setAttribute('aria-label',String(spec.label||spec.title||spec.id));
-      toolButton.innerHTML=`${spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:''}<span>${spec.label||spec.id}</span>`;
-      toolButton.onclick=async()=>{
-        try{
-          document.querySelector('#pluginToolsMenu')?.classList?.add('hidden');
-          document.querySelector('#toolsMenuBtn')?.setAttribute?.('aria-expanded','false');
-          const opened=await state.host?.openActivityWindow?.(spec.id);
-          if(opened===false)state.host?.setStatus?.(`工具 ${spec.label||spec.id} 未能打开。`);
-        }catch(err){console.error(`[DKDS tool-window:${spec.id}]`,err);state.host?.setStatus?.(`工具 ${spec.label||spec.id} 打开失败：${err.message||err}`);}
-      };
-      toolsMenu.appendChild(toolButton);
-    }
-    sortButtons(toolsMenu);refreshToolMenuPresentation();
+  function renderToolMenu(){
+    return state.host?.renderActivityNavigation?.({reason:'tool-menu'})||false;
   }
 
   function renderActivityBar() {
-    const mount=document.querySelector('#activityBar');
-    const primaryMount=document.querySelector('#primaryActivityBar');
-    const overflow=document.querySelector('#activityMoreMenu');
-    if(!mount)return;
-    const rows=activityRows().filter(row=>String(row.value?.navigation||'')!=='system');
-    mount.innerHTML='';
-    if(primaryMount)primaryMount.innerHTML='';
-    if(overflow)overflow.innerHTML='';
-    renderToolMenu(rows);
-    for(const row of rows){
-      const spec=row.value||{};
-      const definition=definitionById(row.pluginId);
-      const toolWorkspace=!!definition&&pluginTypeOf(definition.manifest)==='tool'&&spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
-      if(toolWorkspace)continue;
-      const button=document.createElement('button');
-      button.type='button';
-      button.className='activity-tab';
-      button.dataset.activityId=spec.id;
-      button.dataset.pluginId=row.pluginId;
-      button.dataset.activityOrder=String(Number(spec.order)||100);
-      button.dataset.activityRole=spec.role||'';
-      button.classList.toggle('top-workspace-tab',spec.role==='top');
-      button.classList.toggle('super-workspace-tab',row.pluginId===state.superPluginId);
-      button.setAttribute('aria-label',String(spec.label||spec.id));
-      const icon=spec.icon?`<span class="activity-icon" aria-hidden="true">${spec.icon}</span>`:'';
-      button.innerHTML=`${icon}<span class="activity-label">${spec.label||spec.id}</span>`;
-      button.classList.toggle('active',spec.id===state.activeActivityId);
-      button.onclick=async()=>{
-        const nonSuperTop=spec.role==='top'&&row.pluginId!==state.superPluginId&&!state.host?.isAuxiliaryWindow;
-        if(nonSuperTop||(spec.openMode==='window'&&!state.host?.isAuxiliaryWindow&&row.pluginId!==state.superPluginId)){
-          try{
-            const opened=await state.host?.openActivityWindow?.(spec.id);
-            if(opened===false)state.host?.setStatus?.(`工作区 ${spec.label||spec.id} 未能打开。`);
-          }catch(err){
-            console.error(`[DKDS activity-window:${spec.id}]`,err);
-            state.host?.setStatus?.(`工作区 ${spec.label||spec.id} 打开失败：${err.message||err}`);
-          }
-          return;
-        }
-        try{await setActiveActivity(spec.id,{invoke:true});}
-        catch(err){console.error(`[DKDS activity:${spec.id}]`,err);state.host?.setStatus?.(`工作区 ${spec.label||spec.id} 打开失败：${err.message||err}`);}
-      };
-      const target=(spec.primary&&primaryMount)?primaryMount:mount;
-      target.appendChild(button);
+    const rendered=state.host?.renderActivityNavigation?.({reason:'activity-registry'})||false;
+    if(rendered){
+      sortButtons(document.querySelector('#pluginToolsMenu'));
+      refreshToolMenuPresentation();
+      queueMicrotask(reflowActivities);
     }
-    queueMicrotask(reflowActivities);
+    return rendered;
   }
 
   function sortContributions(hostEl,selector='[data-plugin-order]') {
@@ -192,8 +128,15 @@ const {pluginTypeOf}=require('../manifest');
     if(!row) return false;
     const top=row.value?.role==='top'||isTopDefinition(definitionById(row.pluginId));
     if(top&&!forceEmbedded&&!state.host?.isAuxiliaryWindow&&row.pluginId!==state.superPluginId){
-      await state.host?.openActivityWindow?.(id);
-      return 'window';
+      try{
+        const opened=await state.host?.openActivityWindow?.(id);
+        if(opened===false){state.host?.setStatus?.(`工作区 ${row.value?.label||id} 未能打开。`);return false;}
+        return 'window';
+      }catch(err){
+        console.error(`[DKDS activity-window:${id}]`,err);
+        state.host?.setStatus?.(`工作区 ${row.value?.label||id} 打开失败：${err.message||err}`);
+        return false;
+      }
     }
     state.activeActivityId=id;
     renderActivityBar();
