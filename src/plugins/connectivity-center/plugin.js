@@ -16,17 +16,17 @@
     const savePrefs=value=>{const current=loadPrefs(),next={...current,...value,password:''};localStorage.setItem(prefsKey,JSON.stringify(next));return next;};
 
     const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground'},html:`
-      <div class="dksvc-window dksmb-window dkds-dialog-shell" role="dialog" aria-modal="true">
+      <div class="dksvc-window dksmb-window dkds-dialog-shell dkds-material-role-elevated" role="dialog" aria-modal="true">
         <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">
-          <aside class="dksmb-nav dkds-surface-muted"><div class="dksmb-nav-title"><span>网络位置</span><button id="dksmbDiscover" class="dksmb-btn dkds-action-button">扫描</button></div><div id="dksmbNav"></div></aside>
-          <section class="dksmb-browser">
-            <div class="dksmb-toolbar dkds-surface-muted"><button id="dksmbUp" class="dksmb-btn dkds-action-button">↑ 上级</button><div id="dksmbPath" class="dksmb-path">尚未连接 SMB 共享</div><button id="dksmbFavorite" class="dksmb-btn dkds-action-button" data-dkds-tooltip="收藏当前共享">☆</button><button id="dksmbRefresh" class="dksmb-btn dkds-action-button">刷新</button></div>
-            <div class="dksmb-list-head"><span></span><span>名称</span><span>大小</span><span>修改时间</span></div><div id="dksmbList" class="dksmb-list dkds-list"><div class="dksmb-empty">输入服务器地址或点击左侧扫描网络设备。</div></div>
-            <div class="dksmb-connection dkds-surface-muted"><input id="dksmbServer" placeholder="服务器 / IP"><input id="dksmbShare" placeholder="共享"><input id="dksmbDomain" placeholder="域（可选）"><input id="dksmbUser" placeholder="用户名"><input id="dksmbPassword" type="password" placeholder="密码"><label class="dksmb-guest dkds-check"><input id="dksmbGuest" type="checkbox">访客</label></div>
+          <aside class="dksmb-nav dkds-material-role-sidebar"><div class="dksmb-nav-title"><span>网络位置</span><button id="dksmbDiscover" class="dksmb-btn dkds-action-button">扫描</button></div><div id="dksmbNav"></div></aside>
+          <section class="dksmb-browser dkds-material-role-surface">
+            <div class="dksmb-toolbar dkds-material-role-chrome"><button id="dksmbUp" class="dksmb-btn dkds-action-button">↑ 上级</button><div id="dksmbPath" class="dksmb-path">尚未连接 SMB 共享</div><button id="dksmbFavorite" class="dksmb-btn dkds-action-button" data-dkds-tooltip="收藏当前共享">☆</button><button id="dksmbRefresh" class="dksmb-btn dkds-action-button">刷新</button></div>
+            <div class="dksmb-list-head dkds-surface-muted"><span></span><span>名称</span><span>大小</span><span>修改时间</span></div><div id="dksmbList" class="dksmb-list dkds-list dkds-material-role-surface"><div class="dksmb-empty">输入服务器地址或点击左侧扫描网络设备。</div></div>
+            <div class="dksmb-connection dkds-material-role-sidebar"><input id="dksmbServer" placeholder="服务器 / IP"><input id="dksmbShare" placeholder="共享"><input id="dksmbDomain" placeholder="域（可选）"><input id="dksmbUser" placeholder="用户名"><input id="dksmbPassword" type="password" placeholder="密码"><label class="dksmb-guest dkds-check"><input id="dksmbGuest" type="checkbox">访客</label></div>
           </section>
         </div>
-        <div class="dksmb-foot dkds-surface-muted"><button id="dksmbShares" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">取消</button><button id="dksmbCommit" class="dksmb-primary primary dkds-action-button" data-dkds-action-layout="standalone" disabled>导入所选文件</button></div>
+        <div class="dksmb-foot dkds-material-role-chrome"><button id="dksmbShares" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">列出共享</button><span id="dksmbFootNote" class="dksmb-foot-note">SMB 通过系统/Native Host 访问，不复制到插件私有文件系统。</span><button id="dksmbCancel" class="dksmb-btn dkds-action-button" data-dkds-action-layout="standalone">取消</button><button id="dksmbCommit" class="dksmb-primary primary dkds-action-button" data-dkds-action-layout="standalone" disabled>导入所选文件</button></div>
       </div>`});
     dom.append(dom.query('body'),smbOverlay);
 

@@ -10,6 +10,30 @@ const requireText=(text,token,message)=>{if(!text.includes(token))failures.push(
 const forbidText=(text,token,message)=>{if(text.includes(token))failures.push(message);};
 const requireRegex=(text,re,message)=>{if(!re.test(text))failures.push(message);};
 const forbidRegex=(text,re,message)=>{if(re.test(text))failures.push(message);};
+const pluginVisualIdentity=/(?:\.pulse-|\.pulse-analysis\b|\.dc-|\.data-center-body\b|\.ter-|\.ter-analysis\b|#terMaxPage\b|\.respar-|\.reswin-|\.resonance-|#resonanceDedicatedPage\b|\.dksvc-|\.dksmb-|\.dkai-|\.dkds-vth-|\.transfer-vth-lab-page\b)/;
+const pluginVisualPaintProp=/^(?:background(?:-[\w-]+)?|color|border(?:-[\w-]+)?|border-radius|box-shadow|text-shadow|font(?:-[\w-]+)?|font|outline(?:-[\w-]+)?|filter|fill|stroke|accent-color)$/i;
+const controlGeometryProp=/^(?:height|min-height|max-height|padding(?:-[\w-]+)?|line-height)$/i;
+const authoredCoreCssFiles=()=>{
+  const out=[];
+  const walk=dir=>{if(!fs.existsSync(dir))return;for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(entry.isFile()&&entry.name.endsWith('.css'))out.push(file);}};
+  walk(path.join(root,'src','styles'));
+  return out;
+};
+const pluginVisualPaintRules=css=>{
+  const clean=String(css||'').replace(/\/\*[\s\S]*?\*\//g,'');
+  const out=[];
+  for(const match of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+    const selector=match[1].replace(/\s+/g,' ').trim();
+    if(!selector||selector.startsWith('@')||!pluginVisualIdentity.test(selector))continue;
+    const isControl=/(?:^|[\s>+~,])(button|input|select|textarea)(?=[.#:\[\s>+~,]|$)/i.test(selector);
+    for(const raw of match[2].split(';')){
+      const idx=raw.indexOf(':');if(idx<0)continue;
+      const prop=raw.slice(0,idx).trim();if(!prop)continue;
+      if(pluginVisualPaintProp.test(prop)||(isControl&&controlGeometryProp.test(prop)))out.push(`${selector} -> ${prop}`);
+    }
+  }
+  return out;
+};
 
 const actionStateSelector=selector=>{
   const cleaned=String(selector||'').replace(/:not\([^)]*\)/g,'');
@@ -94,7 +118,11 @@ function validate(){
   // HARD-05: large elevated Thin Glass surfaces use one stronger optical contract.
   requireRegex(thinGlass,/elevated:\{materialBlur:10,materialBlurStrong:11,materialSaturation:1\.04,materialTintOpacity:\.76\}/,'HARD-05: Thin Glass elevated surfaces must use the shared stronger dialog/panel optical recipe.');
   requireRegex(materialRoles,/role="elevated"[\s\S]*?--dkds-material-fill-floor:72%;/,'HARD-05: Core elevated surfaces must enforce the shared readability floor.');
-  requireText(connectivity,'<section class="dksmb-browser">','HARD-05: SMB browser content must remain part of the one outer dialog surface.');
+  requireText(connectivity,'dksmb-browser dkds-material-role-surface','HARD-05: SMB browser must declare the shared Core surface role without creating a nested rounded card.');
+  requireText(connectivity,'dksmb-nav dkds-material-role-sidebar','HARD-05: SMB navigation must declare the shared Core sidebar role.');
+  requireText(connectivity,'dksmb-toolbar dkds-material-role-chrome','HARD-05: SMB path strip must declare the shared Core chrome role.');
+  requireText(connectivity,'dksmb-connection dkds-material-role-sidebar','HARD-05: SMB connection strip must declare the shared Core sidebar role.');
+  requireText(connectivity,'dksmb-foot dkds-material-role-chrome','HARD-05: SMB footer must declare the shared Core chrome role.');
   forbidText(connectivity,'dksmb-browser dkds-surface','HARD-05: SMB browser must not create a rounded nested Core surface inside the dialog.');
   forbidText(connectivity,'dksmb-toolbar dkds-toolbar','HARD-05: SMB path toolbar must not create a nested toolbarGroup card.');
   forbidText(connectivity,'dksmb-connection dkds-action-row','HARD-05: SMB connection fields must not create a nested toolbarGroup card.');
@@ -154,12 +182,36 @@ function validate(){
     }
   }
 
+
+  // HARD-08: Core visual layers are domain-blind. Plugin identity may remain in
+  // plugin-owned geometry, but no authored Core stylesheet may paint it.
+  for(const file of authoredCoreCssFiles()){
+    const rel=path.relative(root,file).replace(/\\/g,'/');
+    for(const rule of pluginVisualPaintRules(fs.readFileSync(file,'utf8')))failures.push(`HARD-08: ${rel} owns plugin visual chrome: ${rule}`);
+  }
+
+
+  // HARD-09: visible UI typography never drops below the shared 10 px floor.
+  // Tiny glyphs should use SVG/CSS geometry; text must stay inside the declared
+  // Core typography range rather than bypassing it with 7-9 px literals.
+  for(const file of authoredCoreCssFiles()){
+    const css=fs.readFileSync(file,'utf8');
+    for(const match of css.matchAll(/font-size\s*:\s*([0-9.]+)px/gi)){
+      const size=Number(match[1]);
+      if(Number.isFinite(size)&&size<10){
+        const rel=path.relative(root,file).replace(/\\/g,'/');
+        failures.push(`HARD-09: ${rel} bypasses the typography floor with ${size}px.`);
+      }
+    }
+  }
+
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:7});
+  return Object.freeze({ok:true,invariants:9});
 }
 
 if(require.main===module){

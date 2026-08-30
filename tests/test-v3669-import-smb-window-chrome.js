@@ -29,10 +29,11 @@ assert(semanticStructure.includes('.dkds-overlay[data-dkds-overlay-stack="foregr
 assert(connectivity.includes("dataset:{dkdsOverlayStack:'foreground'}"),'SMB browser must request the Core foreground overlay layer when launched from another modal.');
 assert(!connectivityCss.includes('z-index:920'),'Connectivity plugin must not privately own Core overlay stacking.');
 
-assert(connectivity.includes('<section class="dksmb-browser">')&&connectivity.includes('dksmb-toolbar dkds-surface-muted')&&connectivity.includes('dksmb-connection dkds-surface-muted')&&connectivity.includes('dksmb-foot dkds-surface-muted'),'SMB must remain one outer dialog with flat internal regions.');
+assert(connectivity.includes('dksmb-browser dkds-material-role-surface')&&connectivity.includes('dksmb-nav dkds-material-role-sidebar')&&connectivity.includes('dksmb-toolbar dkds-material-role-chrome')&&connectivity.includes('dksmb-connection dkds-material-role-sidebar')&&connectivity.includes('dksmb-foot dkds-material-role-chrome'),'SMB must remain one outer dialog while declaring generic Core material roles for flat internal zoning.');
 for(const selector of ['.dksmb-window{','.dksmb-window>.dksvc-head{','.dksmb-nav{','.dksmb-browser{','.dksmb-toolbar{','.dksmb-list-head{','.dksmb-list{','.dksmb-connection{','.dksmb-foot{']){
-  assert(connectivityPresentation.includes(selector),`Core Connectivity presentation must own SMB zone paint: ${selector}`);
+  assert(!connectivityPresentation.includes(selector),`Core Connectivity presentation must stay domain-blind and must not paint SMB identity: ${selector}`);
 }
+assert(connectivityCss.includes('.dksmb-window{')&&connectivityCss.includes('.dksmb-layout{')&&connectivityCss.includes('.dksmb-connection{'),'Connectivity plugin may retain SMB geometry/layout selectors while Core material roles own paint.');
 
 assert(componentAppearance.includes('[data-dkds-component-variant="primary"]:disabled')&&componentAppearance.includes('color:#fff;-webkit-text-fill-color:#fff'),'Disabled primary commands must retain white labels while Core softens the disabled surface.');
 assert(theme.includes("toolbarAction:{")&&theme.includes("active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent}"),'Light-theme active toolbar actions must use the former bright mint/teal treatment instead of the dark emerald fill.');
@@ -49,4 +50,4 @@ for(const api of ['minimizeCurrentWindow','toggleMaximizeCurrentWindow','getCurr
 for(const id of ['windowCommandbar','windowMinimizeBtn','windowMaximizeBtn','windowCloseBtn']){assert(html.includes(`id="${id}"`),`Self-drawn title bar is missing ${id}.`);}
 assert(shellSchemaStructure.includes('-webkit-app-region:drag')&&shellStructure.includes('.window-commandbar')&&shellStructure.includes('.window-control-btn'),'Core shell geometry must own the draggable title bar and native-like window-control hit regions.');
 
-console.log('v3.66.9 import/SMB/window chrome PASS: project filter, nested SMB layering/zoning, command contrast, restored scan controls, bright active chrome and frameless self-drawn window controls are enforced.');
+console.log('v3.66.9 import/SMB/window chrome PASS: project filter, nested SMB layering, semantic Core zoning, command contrast, restored scan controls, bright active chrome and frameless self-drawn window controls are enforced.');

@@ -832,6 +832,10 @@ module.exports = {
       "file": "tests/test-v3669-import-smb-window-chrome.js",
       "args": []
     },
+    {
+      "file": "tests/test-v36610-core-freeze-audit.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1696,6 +1700,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3669-import-smb-window-chrome.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36610-core-freeze-audit.js",
       "args": []
     },
   ],

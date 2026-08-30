@@ -28,8 +28,8 @@ assert(atLeast(tuple(pkg.version),[3,66,6]),'UI integration ownership closure re
 // radius and outline.
 assert(connectivity.includes('dksmb-window dkds-dialog-shell'),'SMB must keep one Core-owned outer dialog surface.');
 for(const forbidden of ['dksmb-browser dkds-surface','dksmb-toolbar dkds-toolbar','dksmb-connection dkds-action-row','dksmb-foot dkds-toolbar'])assert(!connectivity.includes(forbidden),`SMB internal card shell must stay removed: ${forbidden}`);
-assert(connectivity.includes('dksmb-toolbar dkds-surface-muted')&&connectivity.includes('dksmb-connection dkds-surface-muted')&&connectivity.includes('dksmb-foot dkds-surface-muted'),'SMB functional regions should be distinguished by flat semantic fills rather than nested cards.');
-assert(visualGate.includes('SMB browser must not create a rounded nested Core surface'),'Hard visual gate must protect flat SMB internal composition.');
+assert(connectivity.includes('dksmb-nav dkds-material-role-sidebar')&&connectivity.includes('dksmb-browser dkds-material-role-surface')&&connectivity.includes('dksmb-toolbar dkds-material-role-chrome')&&connectivity.includes('dksmb-connection dkds-material-role-sidebar')&&connectivity.includes('dksmb-foot dkds-material-role-chrome'),'SMB functional regions should declare generic Core material roles rather than domain-specific paint or nested cards.');
+assert(visualGate.includes('SMB browser must not create a rounded nested Core surface')&&visualGate.includes('SMB path strip must declare the shared Core chrome role'),'Hard visual gate must protect flat SMB composition and semantic Core material-role consumption.');
 
 // Header actions are canonical ToolbarActions. Separated actions explicitly own
 // a standalone neutral control surface; Presentation no longer paints them by

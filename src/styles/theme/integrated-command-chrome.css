@@ -150,7 +150,7 @@ body.dkds-modern-ui .dkds-theme-panel-head{
 }
 body.dkds-modern-ui .dkds-theme-panel-heading{display:grid;min-width:0;gap:1px}
 body.dkds-modern-ui .dkds-theme-panel-heading strong{font-size:12px;line-height:1.2}
-body.dkds-modern-ui .dkds-theme-panel-heading span{font-size:9px;color:var(--dkui-text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.dkds-modern-ui .dkds-theme-panel-heading span{font-size:var(--ui-font-tiny,10px);color:var(--dkui-text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body.dkds-modern-ui .dkds-theme-panel-head>.dkds-icon-button{
   width:26px;height:26px;min-width:26px;min-height:26px;
   padding:0;border-radius:50%;background:transparent;border-color:transparent;box-shadow:none

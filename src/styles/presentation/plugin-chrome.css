@@ -129,7 +129,7 @@ body.dkds-modern-ui .dkds-memory-component-name {min-width:0;overflow:hidden;tex
 }
 body.dkds-modern-ui .dkds-memory-component-main strong {flex:0 0 auto;color:var(--dkui-text);font-size:11px
 }
-body.dkds-modern-ui .dkds-memory-component-meta {margin-top:2px;color:var(--dkui-muted);font-size:9px
+body.dkds-modern-ui .dkds-memory-component-meta {margin-top:2px;color:var(--dkui-muted);font-size:var(--ui-font-tiny,10px)
 }
 body.dkds-modern-ui .dkds-memory-meter {height:3px;margin-top:6px;overflow:hidden;border-radius:99px;background:#e5edf7
 }

@@ -202,7 +202,7 @@
 }
 .import-series-vg-hint{
   margin-left:auto;
-  font-size:9px;
+  font-size:var(--ui-font-tiny,10px);
 }
 .import-series-vg-rows{
   display:grid;

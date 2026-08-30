@@ -251,7 +251,7 @@
   height:var(--dkds-statusbar-height,26px);
   min-height:var(--dkds-statusbar-height,26px);
   padding:4px 8px;
-  font-size:9px;
+  font-size:var(--ui-font-tiny,10px);
 }
 .react-native-client .statusbar-plugin-zone{max-width:34vw}
 .react-native-client .analysis-page{
@@ -265,7 +265,7 @@
   align-items:flex-start;
 }
 .react-native-client .analysis-page-header h2{font-size:15px}
-.react-native-client .analysis-subtitle{font-size:9px;line-height:1.35}
+.react-native-client .analysis-subtitle{font-size:var(--ui-font-tiny,10px);line-height:1.35}
 .react-native-client .analysis-page-header>div:last-child,
 .react-native-client .plugin-manager-header-actions,
 .react-native-client .automation-test-header-actions{

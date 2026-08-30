@@ -17,8 +17,8 @@
 /* Plugin manager: TOP icon is the only SUPER selector; one selected at a time. */
 .plugin-card-icon.plugin-super-selector{position:relative;padding:0;cursor:pointer;}
 .plugin-card-icon.plugin-super-selector:disabled{cursor:default;}
-.plugin-super-home-mark{position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;display:grid;place-items:center;font-size:8px;line-height:1;}
-.plugin-role-badge{flex:0 0 auto;padding:2px 6px;font-size:9px;font-weight:760;letter-spacing:.02em;}
+.plugin-super-home-mark{position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;display:grid;place-items:center;font-size:var(--ui-font-tiny,10px);line-height:1;}
+.plugin-role-badge{flex:0 0 auto;padding:2px 6px;font-size:var(--ui-font-tiny,10px);font-weight:760;letter-spacing:.02em;}
 .plugin-enable-switch:has(.plugin-enable-input:disabled){cursor:default;}
 
 /* One horizontal control rhythm. The selected workspace no longer has a blue underline. */
@@ -180,8 +180,8 @@ button.plugin-status-item{cursor:pointer;}
 
 @media(max-width:760px){
   #statusBar.statusbar{gap:3px;padding-left:7px;padding-right:4px}
-  .statusbar-message{font-size:9px}
-  .plugin-status-item{padding:0 4px;gap:3px;font-size:9px}
+  .statusbar-message{font-size:var(--ui-font-tiny,10px)}
+  .plugin-status-item{padding:0 4px;gap:3px;font-size:var(--ui-font-tiny,10px)}
   .plugin-status-label{max-width:105px}
   .project-save-choice-actions{grid-template-columns:1fr}
 }
@@ -227,10 +227,10 @@ button.plugin-status-item{cursor:pointer;}
 
 /* Plugin prewarm preference and stable manager viewport. */
 .plugin-card-switches{display:flex;flex-direction:column;align-items:flex-end;gap:6px;justify-self:end;}
-.plugin-prewarm-switch{display:flex;align-items:center;gap:5px;font-size:8.5px;cursor:pointer;user-select:none;}
+.plugin-prewarm-switch{display:flex;align-items:center;gap:5px;font-size:var(--ui-font-tiny,10px);cursor:pointer;user-select:none;}
 .plugin-prewarm-switch input{position:absolute;pointer-events:none;}
 .plugin-prewarm-box{width:13px;height:13px;display:grid;place-items:center;box-sizing:border-box;}
-.plugin-prewarm-switch input:checked + .plugin-prewarm-box::after{content:"✓";font-size:9px;line-height:1;font-weight:800;}
+.plugin-prewarm-switch input:checked + .plugin-prewarm-box::after{content:"✓";font-size:var(--ui-font-tiny,10px);line-height:1;font-weight:800;}
 
 @media(max-width:760px){.plugin-card-switches{grid-column:1/-1;justify-self:end}}
 
@@ -239,7 +239,7 @@ button.plugin-status-item{cursor:pointer;}
    ========================================================= */
 .dkds-action-group{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;}
 .dkds-action-button{height:30px;min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}.dkds-action-button:disabled{cursor:not-allowed;}
-.dkds-action-icon{font-size:12px;line-height:1;}.dkds-action-caret{font-size:9px;}.dkds-action-separator{width:1px;height:20px;margin:0 2px;}
+.dkds-action-icon{font-size:12px;line-height:1;}.dkds-action-caret{font-size:var(--ui-font-tiny,10px);}.dkds-action-separator{width:1px;height:20px;margin:0 2px;}
 .dkds-ui-workspace{min-width:0;min-height:0;position:relative;}.dkds-ui-region{min-width:0;min-height:0;}
 /* Core layout splitter geometry. Presentation is owned by the visual layer. */
 .dkds-split-handle{position:relative;flex:0 0 auto;touch-action:none;user-select:none;}
@@ -283,7 +283,7 @@ button.plugin-status-item{cursor:pointer;}
   justify-content:center;gap:2px;white-space:nowrap;
 }
 .dkds-portable-location-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1;}
-.dkds-portable-caret{font-size:7px;margin-top:1px;}
+.dkds-portable-caret{font-size:var(--ui-font-tiny,10px);margin-top:1px;}
 
 
 @media(max-width:860px){
