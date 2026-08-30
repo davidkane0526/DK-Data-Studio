@@ -111,10 +111,6 @@ body.dkds-modern-ui .dkds-memory-panel-head strong {font-size:13px;color:var(--d
 }
 body.dkds-modern-ui .dkds-memory-panel-head span {font-size:11px;color:var(--dkui-muted)
 }
-body.dkds-modern-ui .dkds-memory-panel-head button {width:26px;height:26px;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--dkui-muted);box-shadow:none
-}
-body.dkds-modern-ui .dkds-memory-panel-head button:hover {border-color:var(--dkui-border);background:var(--dkui-surface-hover);color:var(--dkui-text);transform:none
-}
 body.dkds-modern-ui .dkds-memory-panel-note {padding:8px 12px 4px;color:var(--dkui-muted);font-size:10px
 }
 body.dkds-modern-ui .dkds-memory-component-list {min-height:0;overflow:auto;padding:4px 8px 9px

@@ -743,8 +743,9 @@ body.dkds-modern-ui button.danger-soft{
 }
 .system-commandbar .menu-trigger{background:#f8faff;border-color:#e1e6ef;
 }
-.window-control-btn{background:transparent;border-color:transparent;border-radius:0;box-shadow:none}
-.window-control-close:hover:not(:disabled){background:var(--dkui-danger,#d93c4b);color:#fff;-webkit-text-fill-color:#fff;border-color:transparent}
+.window-control-btn{background:transparent;border:1px solid transparent;border-radius:7px;box-shadow:none;color:var(--dkui-text-soft)}
+.window-control-btn:hover:not(:disabled){background:var(--dkui-control-hover);border-color:var(--dkui-control-border);color:var(--dkui-text);box-shadow:none;transform:none}
+.window-control-close:hover:not(:disabled){background:var(--dkui-danger-soft);color:var(--dkui-danger);-webkit-text-fill-color:currentColor;border-color:color-mix(in srgb,var(--dkui-danger) 28%,transparent);box-shadow:none}
 .sr-only{border:0;
 }
 .version{color:#8b96a8;
@@ -994,7 +995,7 @@ body.dkds-modern-ui textarea:hover{border-color:#bfc9d7;
   box-shadow:none;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start::before{
-  background:#e1e6ee;
+  background:color-mix(in srgb,var(--dkui-divider) 68%,transparent);
 }
 .context-overflow-anchor>#contextOverflowBtn{
   border-color:transparent;

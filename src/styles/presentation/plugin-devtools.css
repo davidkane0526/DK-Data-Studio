@@ -6,7 +6,7 @@
 .dkds-plugin-devtools-window>header strong{font-size:14px}
 .dkds-plugin-devtools-window>header span{font-size:10px;color:var(--dkui-muted,var(--text-secondary,#60708c))}
 .dkds-plugin-devtools-actions{display:flex;flex:0 0 auto;gap:6px;position:relative;z-index:1}
-.dkds-plugin-devtools-actions button{min-height:28px;padding:3px 9px}
+.dkds-plugin-devtools-actions button:not(.dkds-panel-close-button){min-height:28px;padding:3px 9px}
 .dkds-plugin-devtools-window>nav{display:flex;gap:3px;padding:7px 10px;border-bottom:1px solid var(--dkui-border,var(--border-subtle,#d8e0eb));overflow:auto;background:var(--dkui-surface-secondary,var(--surface-secondary,#f6f9fd))}
 .dkds-plugin-devtools-window>nav button{padding:6px 9px}
 .dkds-plugin-devtools-window>main{overflow:auto;padding:12px}

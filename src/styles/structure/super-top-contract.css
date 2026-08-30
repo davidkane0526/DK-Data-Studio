@@ -156,17 +156,6 @@ button.plugin-status-item{cursor:pointer;}
   line-height:1;
 }
 
-.lan-web-panel .panel-header-actions>.panel-close{
-  width:32px;
-  min-width:32px;
-  height:30px;
-  min-height:30px;
-  padding:0;
-  display:inline-grid;
-  place-items:center;
-  font-size:16px;
-  line-height:1;
-}
 
 /* Floating LAN management is a shell overlay.  Keep it above SUPER/TOP
    splitters and analysis surfaces, but below the persistent status bar and
@@ -292,10 +281,9 @@ button.plugin-status-item{cursor:pointer;}
 /* Lightweight floating-panel chrome: these are window affordances, not primary
    content buttons. */
 .panel-header-actions{gap:2px;}
-.floating-panel:not(.lan-web-panel) .panel-header-actions>button{
+.floating-panel:not(.lan-web-panel) .panel-header-actions>button:not(.dkds-panel-close-button){
   min-width:24px;min-height:24px;height:24px;padding:0 6px;font-size:11px;line-height:24px;
 }
-.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close{
-  min-width:24px;min-height:24px;height:24px;line-height:24px;
+.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close:not(.dkds-panel-close-button){
+  min-width:24px;min-height:24px;height:24px;line-height:24px;font-size:15px;padding:0 5px;
 }
-.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close{font-size:15px;padding:0 5px;}

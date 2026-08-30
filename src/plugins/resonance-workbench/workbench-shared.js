@@ -12,7 +12,7 @@
   const PRESENTATION_LAYOUT=Object.freeze({
     primary:Object.freeze({id:'main',label:'共振分析',presentationRole:'scientific-primary',priority:100,collapsible:false}),
     prime:Object.freeze([
-      Object.freeze({id:'data-control',label:'数据 / 参数',semanticKind:'panel',presentationRole:'data-control',priority:95,collapsible:true}),
+      Object.freeze({id:'data-control',label:'参数',semanticKind:'panel',presentationRole:'data-control',priority:95,collapsible:true}),
       Object.freeze({id:'curve-inspector',label:'检查',semanticKind:'inspector',presentationRole:'inspector',priority:90,collapsible:true}),
       Object.freeze({id:'group-analysis',label:'组图',semanticKind:'panel',presentationRole:'scientific-secondary',priority:70,collapsible:true})
     ]),

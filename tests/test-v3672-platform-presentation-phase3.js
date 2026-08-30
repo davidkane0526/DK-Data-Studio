@@ -18,7 +18,7 @@ const mobileShell=read('mobile/src/Shell.tsx');
 const sdkTypes=read('sdk/plugin-api.d.ts');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=2))),'Platform Presentation Architecture Phase 3 requires v3.67.2+.');}
-for(const token of ["id:'main',label:'共振分析',presentationRole:'scientific-primary'","id:'data-control',label:'数据 / 参数'","presentationRole:'data-control'","id:'curve-inspector'","presentationRole:'inspector'","id:'group-analysis'","presentationRole:'scientific-secondary'"])assert(shared.includes(token),`Resonance semantic presentation contract missing ${token}.`);
+for(const token of ["id:'main',label:'共振分析',presentationRole:'scientific-primary'","id:'data-control',label:'参数'","presentationRole:'data-control'","id:'curve-inspector'","presentationRole:'inspector'","id:'group-analysis'","presentationRole:'scientific-secondary'"])assert(shared.includes(token),`Resonance semantic presentation contract missing ${token}.`);
 assert(views.includes("presentationSurface('prime','data-control')")&&views.includes('existingNode:leftPanel')&&views.includes('autoOpen:true')&&!views.includes('leftNode:leftPanel'),'Resonance data/parameter rail must be a real data-control PRIME, not PRIMARY desktop geometry.');
 for(const geometry of ["defaultPlacement:'left'","defaultPlacement:'right'","defaultPlacement:'bottom'",'placements:Object.freeze'])assert(!shared.includes(geometry),`Platform-neutral Resonance Presentation Contract must not contain Desktop geometry: ${geometry}.`);
 assert(views.includes('primary:PRESENTATION_LAYOUT.primary,prime:PRESENTATION_LAYOUT.prime,sub:PRESENTATION_LAYOUT.sub'),'TOP Workspace registration must consume the same canonical Resonance presentation contract.');
@@ -42,7 +42,7 @@ global.window={
     workspace:{top:()=>[{pluginId:'builtin.resonance-workbench',activity:'resonance',layout:{
       primary:{id:'main',label:'共振分析',presentationRole:'scientific-primary',priority:100,collapsible:false},
       prime:[
-        {id:'data-control',label:'数据 / 参数',presentationRole:'data-control',priority:95,collapsible:true},
+        {id:'data-control',label:'参数',presentationRole:'data-control',priority:95,collapsible:true},
         {id:'curve-inspector',label:'检查',presentationRole:'inspector',priority:90,collapsible:true},
         {id:'group-analysis',label:'组图',presentationRole:'scientific-secondary',priority:70,collapsible:true}
       ],

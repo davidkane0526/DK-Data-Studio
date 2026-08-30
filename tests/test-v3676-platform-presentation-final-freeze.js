@@ -15,7 +15,7 @@ const host=read('src/core/ui/modules/host/api.js');
 const workspace=read('src/core/ui/modules/workbench/plugin.js');
 const docs=read('docs/PLATFORM_PRESENTATION_FINAL_FREEZE_AUDIT_3.67.6.md');
 
-assert.strictEqual(pkg.version,'3.67.6','Platform Presentation Final Freeze Audit must ship as v3.67.6.');
+{const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=6))),'Platform Presentation Final Freeze Audit requires v3.67.6+.');}
 for(const role of ['scientific-primary','data-primary','utility-primary','data-control','inspector','scientific-secondary'])assert(contract.includes(role),`shared Presentation contract must define ${role}.`);
 assert(model.includes("require('../../../contracts/presentation')"),'Presentation Model must consume the shared role contract.');
 assert(top.includes("require('../../../../contracts/presentation')"),'TOP validator must consume the same shared role contract.');

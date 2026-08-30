@@ -39,7 +39,7 @@
     const themePanel=ctx.ui.dom.create('aside',{className:'dkds-theme-panel dkds-material-role-popover hidden',attrs:{id:'dkdsThemePanel','aria-label':'主题选择'},html:`
       <div class="dkds-theme-panel-head dkds-surface-header">
         <div class="dkds-theme-panel-heading"><strong>主题</strong><span id="dkdsThemeCurrentLabel">—</span></div>
-        <button id="dkdsThemePanelClose" class="dkds-icon-button" type="button" title="关闭" aria-label="关闭">×</button>
+        <button id="dkdsThemePanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button>
       </div>
       <div class="dkds-theme-panel-body">
         <div id="dkdsThemeProfileList" class="dkds-theme-profile-list" role="listbox" aria-label="主题配置"></div>
@@ -90,7 +90,7 @@
     const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
       <div class="dkds-memory-panel-head dkds-surface-header">
         <div class="dkds-memory-panel-title"><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
-        <div class="dkds-integrated-action-group"><button id="dkdsMemoryPanelClose" class="dkds-icon-button" type="button" title="关闭" aria-label="关闭">×</button></div>
+        <div class="dkds-integrated-action-group"><button id="dkdsMemoryPanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button></div>
       </div>
       <div class="dkds-memory-panel-note">${ctx.runtime.isNativeClient?'按 Android 应用进程 PSS 统计实际驻留内存':'按 Electron 进程 / 插件窗口统计工作集内存'}</div>
       <div id="dkdsMemoryComponentList" class="dkds-memory-component-list"></div>`});

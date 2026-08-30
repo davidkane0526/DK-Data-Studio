@@ -183,10 +183,10 @@ const {GridController}=require('../grid/controller');
       };
       const lifecycle={closeSelector:row.closeSelector,onClose:()=>this.closePrime(row.id),collapseSelector:row.collapseSelector,onCollapse:info=>{try{row.onCollapse?.(info);}catch(err){console.warn('[DKDS PRIME collapse]',err);}this.resize('prime-collapse');}};
       const portableSpec=found.existing?{
-        title:row.title||row.label||row.id,useTargetAsWrapper:row.useTargetAsWrapper!==false,
+        title:row.title||row.label||row.id,useTargetAsWrapper:row.useTargetAsWrapper!==false,chrome:row.chrome!==false,
         handle:row.handle||'.dkds-portable-handle,.dkds-surface-header,.analysis-chart-title,.dkds-analysis-prime-head',controlsHost:row.controlsHost,controlsPlacement:row.controlsPlacement||'start',
         placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,semanticKind:row.semanticKind||'panel',layout,onPlacementChanged,...lifecycle
-      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,semanticKind:row.semanticKind||'panel',layout,onPlacementChanged,...lifecycle};
+      }:{title:row.title||row.label||row.id,useTargetAsWrapper:true,chrome:row.chrome!==false,handle:'.dkds-analysis-prime-head',controlsHost:'.dkds-analysis-prime-chrome',placements:allowed,defaultPlacement:row.defaultPlacement==='inline'?'home':row.defaultPlacement,stateVersion:row.stateVersion,semanticKind:row.semanticKind||'panel',layout,onPlacementChanged,...lifecycle};
       row.portable=this.scope.panels.create(`prime:${row.id}`,container,portableSpec);
       this.markSurfaceNode(row.portable?.wrapper||container,row,'prime');
       if(Array.isArray(row.actions)&&row.actions.length){

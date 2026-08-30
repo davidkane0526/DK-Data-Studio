@@ -1,3 +1,13 @@
+# v3.67.7 — Desktop Presentation Polish & Project Cleanup
+
+- Keep the v3.67 platform-neutral Presentation Contract frozen while correcting Desktop presentation regressions below it. Plugin canvas dock slots are now layout-only; the docked surface itself owns Material paint, eliminating the nested background seen on inspectors and other translucent surfaces.
+- Restore the established desktop hierarchy: left/right control rails span the full workspace height while the scientific bottom dock remains under the center canvas. Resonance Data List therefore no longer sits above a full-width Group Plot band.
+- Add an internal `PortableView` chrome switch for fixed Desktop rails. Resonance **参数** is fixed to the left rail without injected placement arrows, while inspector/group portable controls remain unchanged.
+- Make Presenter-generated PRIME/SUB navigation sort ahead of plugin utility actions and move Resonance **设置** to the trailing utility position. The old **数据 / 参数** host label is shortened to **参数**.
+- Refine desktop command chrome: shorter/more separated section divider, compact 30 px window controls, no tall hover shadow, and centered primary/selected topbar shadow depth.
+- Add one Core `dkds-panel-close-button` contract and migrate Theme, Memory, Plugin DevTools, LAN Web and AI Agent headers to it, removing their conflicting local close-button geometry.
+- Clean-source packaging remains based on tracked source plus Git metadata. Generated runtime bundles and generated brand/mobile assets are ignored build products and are removed from the delivered Dev Repo after validation; Git object storage is compacted before packaging.
+
 # v3.67.6 — Platform Presentation Final Freeze Audit
 
 - Freeze Presentation ownership after the v3.67 migration. Core semantic surfaces now carry only identity, role, priority, collapsibility and active state; Desktop `placement / placements / defaultPlacement` no longer cross the Core Presentation Model or in-memory workspace action projection.

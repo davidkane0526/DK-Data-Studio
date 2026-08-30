@@ -46,7 +46,7 @@
     dom.append(dom.query('body'),settingsOverlay);
 
     const chat=dom.create('section',{className:'dkai-chat dkds-floating-surface hidden',html:`
-      <div class="dkai-chat-head dkds-surface-header"><span id="dkaiChatDot" class="dkai-chat-dot dkds-status-dot"></span><span class="dkai-chat-title dkds-surface-title">AI Agent</span><span id="dkaiChatModel" class="dkai-chat-model dkds-meta"></span><button id="dkaiChatSettings" class="dkds-icon-button" aria-label="AI / MCP 设置">⚙</button><button id="dkaiChatClose" class="dkds-icon-button" aria-label="收起">×</button></div>
+      <div class="dkai-chat-head dkds-surface-header"><span id="dkaiChatDot" class="dkai-chat-dot dkds-status-dot"></span><span class="dkai-chat-title dkds-surface-title">AI Agent</span><span id="dkaiChatModel" class="dkai-chat-model dkds-meta"></span><button id="dkaiChatSettings" class="dkds-icon-button" aria-label="AI / MCP 设置">⚙</button><button id="dkaiChatClose" class="dkds-icon-button dkds-panel-close-button" aria-label="收起">×</button></div>
       <div id="dkaiMessages" class="dkai-messages"><div class="dkai-msg dkds-message assistant">可以直接让我分析、清洗、绘图、调用插件或编写插件。输入 <strong>@</strong> 可引用当前数据、数据图和插件结果。</div></div>
       <div id="dkaiRefs" class="dkai-refbar"></div>
       <div class="dkai-compose dkds-surface-muted"><div id="dkaiMentions" class="dkai-mentions dkds-surface-elevated hidden"></div><div class="dkai-compose-row"><textarea id="dkaiInput" class="dkai-input dkds-field-control" placeholder="给 AI Agent 发消息；输入 @ 引用 Studio 对象"></textarea><button id="dkaiSend" class="dkai-send primary" aria-label="发送">↑</button></div><div class="dkai-compose-hint dkds-meta">Enter 发送 · Shift+Enter 换行 · @ 数据 / 数据图 / 插件结果</div></div>`});

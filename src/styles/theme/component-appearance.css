@@ -111,6 +111,14 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-shadow:var(--dkui-primary-shadow);
   --dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),0 0 0 2px var(--dkui-focus)
 }
+
+/* Desktop command rows use one centered optical depth so primary and selected
+   actions do not cast visibly different vertical halos. */
+body.dkds-modern-ui .topbar-primary [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]{
+  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
+  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),0 0 0 2px var(--dkui-focus)
+}
+
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="secondary"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft));
   --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-secondary-surface-hover,var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft)));

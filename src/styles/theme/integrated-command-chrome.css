@@ -151,11 +151,15 @@ body.dkds-modern-ui .dkds-theme-panel-head{
 body.dkds-modern-ui .dkds-theme-panel-heading{display:grid;min-width:0;gap:1px}
 body.dkds-modern-ui .dkds-theme-panel-heading strong{font-size:12px;line-height:1.2}
 body.dkds-modern-ui .dkds-theme-panel-heading span{font-size:var(--ui-font-tiny,10px);color:var(--dkui-text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-body.dkds-modern-ui .dkds-theme-panel-head>.dkds-icon-button{
-  width:26px;height:26px;min-width:26px;min-height:26px;
-  padding:0;border-radius:50%;background:transparent;border-color:transparent;box-shadow:none
+body.dkds-modern-ui .dkds-panel-close-button{
+  border:1px solid transparent;border-radius:7px;background:transparent;
+  color:var(--dkui-text-soft);box-shadow:none;transform:none
 }
-body.dkds-modern-ui .dkds-theme-panel-head>.dkds-icon-button:hover{background:var(--dkui-control-hover)}
+body.dkds-modern-ui .dkds-panel-close-button:hover:not(:disabled),
+body.dkds-modern-ui .dkds-panel-close-button:focus-visible{
+  border-color:var(--dkui-control-border);background:var(--dkui-control-hover);
+  color:var(--dkui-text);box-shadow:none;transform:none
+}
 body.dkds-modern-ui .dkds-theme-panel-body{padding:8px;display:grid;gap:9px;overflow:auto;max-height:calc(min(480px,100vh - 92px) - 43px)}
 body.dkds-modern-ui .dkds-theme-profile-list{display:grid;gap:2px}
 body.dkds-modern-ui .dkds-theme-profile-option{

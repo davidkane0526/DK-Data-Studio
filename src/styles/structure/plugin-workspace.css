@@ -28,7 +28,10 @@
   display:grid;
   grid-template-columns:0 0 minmax(0,1fr) 0 0;
   grid-template-rows:minmax(0,1fr) 0 0;
-  grid-template-areas:"cleft clsplit center crsplit cright" "cbsplit cbsplit cbsplit cbsplit cbsplit" "cbottom cbottom cbottom cbottom cbottom";
+  grid-template-areas:
+    "cleft clsplit center crsplit cright"
+    "cleft clsplit cbsplit crsplit cright"
+    "cleft clsplit cbottom crsplit cright";
 }
 .dkds-plugin-canvas-frame.has-canvas-left{grid-template-columns:var(--dkds-plugin-canvas-left-width) 7px minmax(0,1fr) 0 0;}
 .dkds-plugin-canvas-frame.has-canvas-right{grid-template-columns:0 0 minmax(0,1fr) 7px var(--dkds-plugin-canvas-right-width);}

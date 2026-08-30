@@ -24,45 +24,50 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
     readState(){return readJson(this.storageKey(),{});}
     writeState(extra={}){const prev=this.readState();writeJson(this.storageKey(),{...prev,...extra});}
     ensureWrapper(){
-      const useTarget=this.spec.useTargetAsWrapper===true;
+      const useTarget=this.spec.useTargetAsWrapper===true,chrome=this.spec.chrome!==false;
       const wrapper=useTarget?this.node:document.createElement('section');
       wrapper.classList.add('dkds-portable-view');wrapper.dataset.portableId=this.id;
       const semanticKind=String(this.spec.semanticKind||'panel').trim().toLowerCase();
       if(!PORTABLE_SEMANTIC_KINDS.has(semanticKind))throw new Error(`Unknown PortableView semanticKind: ${semanticKind}`);
       wrapper.dataset.dkdsSurfaceKind=semanticKind;wrapper.dataset.dkdsSurfaceKindOwner='portable-view';
-      let header=useTarget?resolveElement(this.spec.handle||'.analysis-chart-title',wrapper):null;
-      if(!header){header=document.createElement('header');header.className='dkds-portable-header drag-handle';if(useTarget)wrapper.prepend(header);}
-      else header.classList.add('dkds-portable-inline-header','drag-handle');
-      const specializedHeader=header.classList.contains('dkds-plot-view-head')||header.classList.contains('dkds-group-plot-head');
-      if(specializedHeader)header.classList.remove('dkds-surface-header');
-      else header.classList.add('dkds-surface-header');
-      const headingStack=header.querySelector?.(':scope > div:first-child');
-      if(headingStack&&(headingStack.querySelector?.('h1,h2,h3,h4,strong')||headingStack.querySelector?.('p,.analysis-subtitle,[class$="-description"]')))headingStack.classList.add('dkds-surface-heading-stack');
-      let title=header.querySelector?.('.dkds-portable-title');
-      if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
-      const controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb dkds-integrated-action-subgroup';controls.dataset.dkdsPortableControls=this.id;
-      const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗',global:'⤢'};
-      const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'画布悬浮 / 边缘吸附',global:'全界面自由悬浮'};
-      const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';
-      const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location-icon">${esc(placementIcons[current]||'◫')}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
-      const menuItems=()=>this.allowed.map(placement=>({id:placement,icon:placementIcons[placement]||'◫',label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}));
-      const showPlacementMenu=(event)=>{event?.stopPropagation?.();event?.preventDefault?.();this.contextMenu?.dispose?.();const rect=placementButton.getBoundingClientRect();const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:rect.left;const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:rect.bottom+4;const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x,y,items:menuItems()});};
-      placementButton.addEventListener('click',showPlacementMenu);controls.appendChild(placementButton);
-      const controlsHost=resolveElement(this.spec.controlsHost,wrapper)||header;
-      if(this.spec.controlsPlacement==='start')controlsHost.prepend(controls);else controlsHost.appendChild(controls);
-      this.refreshPlacementButton=refreshPlacementButton;refreshPlacementButton();
-      const toggleFloat=e=>{if(e.target.closest('button'))return;e.preventDefault();const preferred=this.allowed.includes('global')&&!this.allowed.includes('float')?'global':'float';this.place(this.wrapper.dataset.placement===preferred?'home':preferred);};
-      header.addEventListener('dblclick',toggleFloat);
-      this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat));
-      this.bindHeldTitleResize(header);
-      if(!useTarget){wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
-      this.wrapper=wrapper;this.injectedHeader=useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
-      const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;this.bindFloatResize(resizeHandle);
-      const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
-      const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
-      if(closeButton){closeButton.classList.add('dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
-      const collapseButton=bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
-      if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.textContent='−';collapseButton.removeAttribute('title');collapseButton.setAttribute('aria-label',String(this.spec.collapseTitle||'缩小'));}
+      let header=null,controls=null;
+      if(chrome){
+        header=useTarget?resolveElement(this.spec.handle||'.analysis-chart-title',wrapper):null;
+        if(!header){header=document.createElement('header');header.className='dkds-portable-header drag-handle';if(useTarget)wrapper.prepend(header);}
+        else header.classList.add('dkds-portable-inline-header','drag-handle');
+        const specializedHeader=header.classList.contains('dkds-plot-view-head')||header.classList.contains('dkds-group-plot-head');
+        if(specializedHeader)header.classList.remove('dkds-surface-header');
+        else header.classList.add('dkds-surface-header');
+        const headingStack=header.querySelector?.(':scope > div:first-child');
+        if(headingStack&&(headingStack.querySelector?.('h1,h2,h3,h4,strong')||headingStack.querySelector?.('p,.analysis-subtitle,[class$="-description"]')))headingStack.classList.add('dkds-surface-heading-stack');
+        let title=header.querySelector?.('.dkds-portable-title');
+        if(!title&&!useTarget){title=document.createElement('div');title.className='dkds-portable-title';title.textContent=this.spec.title||this.node.getAttribute('aria-label')||this.id;header.appendChild(title);}
+        controls=document.createElement('div');controls.className='dkds-portable-controls dkds-portable-breadcrumb dkds-integrated-action-subgroup';controls.dataset.dkdsPortableControls=this.id;
+        const placementIcons={home:'◫',sticky:'⌖',left:'←',main:'◫',right:'→',bottom:'↓',float:'↗',global:'⤢'};
+        const placementLongLabels={home:'恢复默认位置',sticky:'在当前滚动区吸附',left:'固定到左侧',main:'固定到主区域',right:'固定到右侧',bottom:'固定到底部',float:'画布悬浮 / 边缘吸附',global:'全界面自由悬浮'};
+        const placementButton=document.createElement('button');placementButton.type='button';placementButton.className='dkds-portable-placement-trigger';
+        const refreshPlacementButton=()=>{const current=normalizePlacement(this.wrapper?.dataset?.placement||'home');placementButton.innerHTML=`<span class="dkds-portable-location-icon">${esc(placementIcons[current]||'◫')}</span><span class="dkds-portable-caret">▾</span>`;placementButton.setAttribute('aria-label',`图表位置：${placementLongLabels[current]||current}`);};
+        const menuItems=()=>this.allowed.map(placement=>({id:placement,icon:placementIcons[placement]||'◫',label:placementLongLabels[placement]||placement,enabled:()=>this.wrapper.dataset.placement!==placement,onInvoke:()=>this.place(placement)}));
+        const showPlacementMenu=(event)=>{event?.stopPropagation?.();event?.preventDefault?.();this.contextMenu?.dispose?.();const rect=placementButton.getBoundingClientRect();const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:rect.left;const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:rect.bottom+4;const menu=this.contextMenu=new ContextMenu(this.owner);menu.open({x,y,items:menuItems()});};
+        placementButton.addEventListener('click',showPlacementMenu);controls.appendChild(placementButton);
+        const controlsHost=resolveElement(this.spec.controlsHost,wrapper)||header;
+        if(this.spec.controlsPlacement==='start')controlsHost.prepend(controls);else controlsHost.appendChild(controls);
+        this.refreshPlacementButton=refreshPlacementButton;refreshPlacementButton();
+        const toggleFloat=e=>{if(e.target.closest('button'))return;e.preventDefault();const preferred=this.allowed.includes('global')&&!this.allowed.includes('float')?'global':'float';this.place(this.wrapper.dataset.placement===preferred?'home':preferred);};
+        header.addEventListener('dblclick',toggleFloat);
+        this.chromeCleanups.push(()=>header.removeEventListener('dblclick',toggleFloat));
+        this.bindHeldTitleResize(header);
+      }
+      if(!useTarget){if(header)wrapper.append(header);this.node.parentNode?.insertBefore(wrapper,this.node);wrapper.appendChild(this.node);}
+      this.wrapper=wrapper;this.injectedHeader=chrome&&useTarget&&!resolveElement(this.spec.handle||'.analysis-chart-title',wrapper)?header:null;this.controls=controls;this.useTargetAsWrapper=useTarget;
+      if(chrome){
+        const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;this.bindFloatResize(resizeHandle);
+        const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
+        const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
+        if(closeButton){closeButton.classList.add('dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
+        const collapseButton=bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
+        if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.textContent='−';collapseButton.removeAttribute('title');collapseButton.setAttribute('aria-label',String(this.spec.collapseTitle||'缩小'));}
+      }
       const activatePointer=()=>{if(this.wrapper?.classList?.contains('is-floating'))this.raiseLayer();};
       wrapper.addEventListener('pointerdown',activatePointer,true);this.chromeCleanups.push(()=>wrapper.removeEventListener('pointerdown',activatePointer,true));
       const savedState=this.readState();if(savedState.collapsed===true)this.setCollapsed(true,{persist:false});

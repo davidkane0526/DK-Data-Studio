@@ -863,6 +863,10 @@ module.exports = {
     {
       "file": "tests/test-v3676-platform-presentation-final-freeze.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3677-desktop-presentation-polish.js",
+      "args": []
     }
   ],
   "check": [
@@ -1760,6 +1764,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3676-platform-presentation-final-freeze.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3677-desktop-presentation-polish.js",
       "args": []
     }
   ],

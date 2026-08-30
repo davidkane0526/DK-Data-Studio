@@ -59,8 +59,8 @@ assert(ter.includes("terHeaderActionsHost.className='dkds-plugin-header-actions'
 // Theme Coverage must not count one surface in two incompatible semantic areas.
 assert(semanticTheme.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)')&&semanticTheme.includes('.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench'),
   'Canonical semantic areas must keep generic floating surfaces separate from elevated LAN/update panels.');
-assert(semanticTheme.includes('.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-plugin-canvas-center'),
-  'SUPER/main workspace nodes must receive the same surface role that coverage expects.');
+assert(semanticTheme.includes('.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host')&&!semanticTheme.includes('.main-workspace,.dkds-plugin-canvas-center'),
+  'SUPER/main semantic surfaces must keep the surface role while PluginCanvas dock geometry remains paintless.');
 assert(material.includes('Semantic.materialAreas()')&&coverage.includes('Semantic.materialAreas()'),'Renderer and coverage must share the same semantic area authority.');
 
 console.log('v3.61.96 header action spacing + theme coverage contract PASS: separated peer controls, atomic labels, overflow safety and non-overlapping material areas.');

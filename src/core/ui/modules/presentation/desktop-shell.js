@@ -72,7 +72,7 @@ class DesktopPresentationShell {
   }
   surfaceButton(item,activityId){
     const button=document.createElement('button');button.type='button';button.className='toolbar-btn plugin-toolbar-btn';
-    button.dataset.dkdsPresentationSurface='1';button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection=text(item.section);button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,1000-(Number(item.priority)||0)));
+    button.dataset.dkdsPresentationSurface='1';button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection=text(item.section);button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,110-(Number(item.priority)||0)));
     button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-presentation-shell';button.dataset.dkdsComponentVariant=item.active?'selected':'quiet';button.dataset.dkdsComponentVariantOwner='core-presentation-shell';
     button.textContent=text(item.label||item.surfaceId);button.setAttribute('aria-label',text(item.label||item.surfaceId));button.setAttribute('aria-pressed',item.active?'true':'false');button.classList.toggle('selected',!!item.active);this.bindSurfaceButton(button,{...item,activityId});return button;
   }
@@ -82,6 +82,9 @@ class DesktopPresentationShell {
     toolbar.querySelectorAll('[data-dkds-presentation-surface]').forEach(node=>node.remove());
     const snapshot=Presentation.present('desktop',{...context,isAuxiliaryWindow:!!context.isAuxiliaryWindow}),activityId=text(snapshot.activity?.id);
     for(const item of snapshot.workspaceSurfaces||[])toolbar.appendChild(this.surfaceButton(item,activityId));
+    const buttons=[...toolbar.querySelectorAll(':scope > .plugin-toolbar-btn')];
+    buttons.sort((a,b)=>(Number(a.dataset.pluginOrder)||100)-(Number(b.dataset.pluginOrder)||100)||String(a.id||'').localeCompare(String(b.id||'')));
+    let lastSection='';for(const button of buttons){toolbar.appendChild(button);const section=String(button.dataset.pluginSection||'');button.classList.toggle('plugin-section-start',!!section&&section!==lastSection);if(section)lastSection=section;}
     queueMicrotask(()=>{try{window.dispatchEvent(new Event('resize'));}catch{}});return snapshot.workspaceSurfaces;
   }
   renderNavigation(context={}){

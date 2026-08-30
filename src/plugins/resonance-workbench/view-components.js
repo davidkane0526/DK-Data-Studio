@@ -306,7 +306,7 @@
     wb.compose({
       primary:{...mainPresentation,scroll:'contained',mainNode:mainArea},
       primes:[
-        {...dataControlPresentation,existingNode:leftPanel,autoOpen:true,defaultPlacement:'left',placements:['left','global','right','bottom'],stateVersion:'workspace-v3',mount:({container})=>{container.classList.remove('hidden');},onPlacementChanged:()=>controller.resize?.()},
+        {...dataControlPresentation,existingNode:leftPanel,autoOpen:true,defaultPlacement:'left',placements:['left'],stateVersion:'workspace-v4',chrome:false,mount:({container})=>{container.classList.remove('hidden');},onPlacementChanged:()=>controller.resize?.()},
         {...inspectorPresentation,existingNode:inspector,defaultPlacement:inspectDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v3',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="inspect"]',mount:({container})=>{container.classList.remove('hidden');R.renderInspection?.();},onPlacementChanged:()=>controller.resize?.()},
         {...groupPresentation,existingNode:group,defaultPlacement:groupDefault,placements:['float','global','left','right','bottom'],stateVersion:'workspace-v3',handle:'.respar-floating-header',controlsHost:'.respar-floating-header>div',closeSelector:'[data-respar-close="group"]',collapseSelector:'[data-respar-collapse="group"]',actionHost:'[data-respar-group-cols-menu-host]',actions:[{
           id:'group-columns',menu:true,order:10,
@@ -365,7 +365,7 @@
     if(isTop){pageHeader?.classList.remove('hidden');if(headerActions)ctx.ui.actions?.mount?.(headerActions,{activity:'resonance',actions:localActions});}
     else{
       pageHeader?.classList.add('hidden');
-      ctx.ui.toolbar.add({id:'res-settings',label:'设置',activity:'resonance',section:'SUB',order:110,priority:10,onClick:()=>settingsSurface?.open?.()});
+      ctx.ui.toolbar.add({id:'res-settings',label:'设置',activity:'resonance',section:'UTILITY',order:980,priority:10,onClick:()=>settingsSurface?.open?.()});
       const hasMainExport=()=>{const state=R.getState?.()||{};return Array.isArray(state.selectedSweep?.points)&&state.selectedSweep.points.length>0;};
       const hasPeakExport=()=>{const state=R.getState?.()||{};return Array.isArray(state.workspace?.peaks)&&state.workspace.peaks.length>0;};
       const menuRows=[['res-export-main-svg','共振 I–V 主图 · SVG',10,()=>R.exportMainSvg?.(),hasMainExport],['res-export-main-png','共振 I–V 主图 · PNG',20,()=>R.exportMainPng?.(),hasMainExport],['res-export-main-csv','共振 I–V 主图数据 · CSV',30,()=>R.exportMainCsv?.(),hasMainExport],['res-export-main-copy','复制共振 I–V 主图数据',40,()=>R.copyMainCsv?.(),hasMainExport],['res-export-peaks','峰参数 CSV',60,()=>R.exportPeaks?.(),hasPeakExport],['res-export-peaks-copy','复制峰参数',70,()=>R.copyPeaks?.(),hasPeakExport]];
