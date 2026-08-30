@@ -1,7 +1,7 @@
 DKDSPlugins.define({
   id:'com.dkds.theme.aurora-pop',
   name:'Aurora Pop',
-  version:'2.2.1',
+  version:'2.2.2',
   apiVersion:'1.18.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
@@ -19,15 +19,31 @@ DKDSPlugins.define({
   ];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
   if(missing.length){
-    throw new Error(`Aurora Pop 2.2.1 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
+    throw new Error(`Aurora Pop 2.2.2 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   }
+
+  const LIGHT_EMERALD=Object.freeze({
+    accent:'#16C995',
+    accentHover:'#10B786',
+    fill:'#08A77A',
+    fillHover:'#07996F',
+    soft:'rgba(22,201,149,.20)',
+    softSurface:'#D4F8E9',
+    softSurfaceHover:'#C5F3E0',
+    activeSurface:'rgba(22,201,149,.24)',
+    focus:'rgba(22,201,149,.38)',
+    border:'#5CDEB7',
+    borderStrong:'#19BC8E',
+    indicator:'#A9F3D8',
+    text:'#00664D'
+  });
 
   const profile=ctx.ui.theme.register('default',{
     label:'Aurora Pop',
     metadata:{
-      style:'aurora-spectrum-v10',
-      hierarchy:'cool neutral scientific content + stronger violet/cyan interaction rhythm + restrained warm emphasis + visible controlled aurora shell effects',
-      visualIntent:'bright harmonious violet-cyan primary axis, cool indigo structure, sky-blue floating tools, coral only for active emphasis, and semantic green/amber/red accents without large candy-color surfaces',
+      style:'aurora-spectrum-v11',
+      hierarchy:'cool neutral scientific content + brighter violet/emerald interaction rhythm + restrained warm emphasis + visible controlled aurora shell effects',
+      visualIntent:'bright harmonious violet-emerald primary axis, cool indigo structure, sky-blue floating tools, coral only for active emphasis, and semantic green/amber/red accents without large candy-color surfaces',
       contract:'component-appearance-3.9'
     },
     recipes:{
@@ -95,10 +111,10 @@ DKDSPlugins.define({
           accent:'#6F50FF',
           accentHover:'#5D3BEF',
           accentSoft:'rgba(111,80,255,.24)',
-          accentAlt:'#00B9C8',
-          accentAltHover:'#009EAC',
-          accentAltSoft:'rgba(0,185,200,.21)',
-          focus:'rgba(0,185,200,.40)',
+          accentAlt:LIGHT_EMERALD.accent,
+          accentAltHover:LIGHT_EMERALD.accentHover,
+          accentAltSoft:LIGHT_EMERALD.soft,
+          focus:LIGHT_EMERALD.focus,
 
           success:'#2AB374',
           successSoft:'#E5F8EE',
@@ -112,8 +128,8 @@ DKDSPlugins.define({
           selectionSurface:'rgba(111,80,255,.30)',
           selectionText:'#4527AE',
           selectionBorder:'rgba(111,80,255,.86)',
-          activeSurface:'rgba(0,185,200,.27)',
-          activeText:'#006D75',
+          activeSurface:LIGHT_EMERALD.activeSurface,
+          activeText:LIGHT_EMERALD.text,
           disabledSurface:'#EFF1F5',
           disabledText:'#727C90',
 
@@ -135,30 +151,30 @@ DKDSPlugins.define({
           },
           components:{
             tab:{
-              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:'#008B97',surfaceSelected:'#6F50FF',
+              surface:'transparent',surfaceHover:'#E8E1FF',surfaceActive:LIGHT_EMERALD.fill,surfaceSelected:'#6F50FF',
               text:'#596176',textSoft:'#858CA0',textActive:'#FFFFFF',textSelected:'#FFFFFF',
               border:'transparent',borderHover:'rgba(117,84,255,.46)',borderActive:'rgba(111,80,255,.90)',indicator:'#6F50FF',
               variants:{
                 selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8466FF',indicator:'#D8D0FF'},
-                active:{surface:'#008B97',text:'#FFFFFF',border:'#54D7D4',indicator:'#B8FAFF'},
+                active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF',border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.indicator},
                 quiet:{surface:'transparent',text:'#737B90',border:'transparent',indicator:'transparent'}
               }
             },
             toolbarAction:{
-              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:'#008B97',surfaceSelected:'#6F50FF',
+              surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:LIGHT_EMERALD.fill,surfaceSelected:'#6F50FF',
               text:'#4F586D',textActive:'#FFFFFF',textSelected:'#FFFFFF',
-              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:'rgba(0,185,200,.84)',indicator:'#00B9C8',
+              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
-                secondary:{surface:'#008B97',surfaceHover:'#00818C',text:'#FFFFFF',textActive:'#FFFFFF',border:'#54D7D4',borderActive:'#00B9C8',indicator:'#B8FAFF'},
+                secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF',textActive:'#FFFFFF',border:LIGHT_EMERALD.border,borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.indicator},
                 selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8C70FF',indicator:'#D8D0FF'},
-                active:{surface:'#008B97',text:'#FFFFFF',border:'#52D4D0',indicator:'#B8FAFF'},
+                active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF',border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.indicator},
                 quiet:{surface:'transparent',surfaceHover:'#EEF1FF',text:'#667085',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',surfaceHover:'#FFDCE5',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
               }
             },
             toolbarGroup:{
-              surface:'#E7ECFF',surfaceHover:'#DCE4FF',surfaceActive:'#C9F4F1',surfaceSelected:'#D5CBFF',
+              surface:'#E7ECFF',surfaceHover:'#DCE4FF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#D5CBFF',
               text:'#4D556A',textActive:'#4026A8',textSelected:'#4026A8',
               border:'#C0CBF2',borderHover:'#9FAFEB',borderActive:'#8063F5',indicator:'#6F50FF',
               variants:{quiet:{surface:'#F4F6FF',text:'#687086',border:'#DFE4F2',indicator:'transparent'}}
@@ -171,28 +187,28 @@ DKDSPlugins.define({
               }
             },
             inspectorHeader:{
-              surface:'#D8F8F5',surfaceHover:'#C8F3EF',text:'#29434A',textSoft:'#667A80',border:'#7FDED8',indicator:'#00B9C8',
+              surface:LIGHT_EMERALD.softSurface,surfaceHover:LIGHT_EMERALD.softSurfaceHover,text:'#29434A',textSoft:'#667A80',border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent,
               variants:{
                 quiet:{surface:'#F2F7FA',text:'#586878',border:'#DDE6EC',indicator:'#ABC9D3'},
-                active:{surface:'#BDF3EF',text:'#005B63',border:'#56D1CD',indicator:'#00B9C8'}
+                active:{surface:LIGHT_EMERALD.softSurfaceHover,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent}
               }
             },
             menuItem:{
-              surface:'transparent',surfaceHover:'#E3EDFF',surfaceActive:'#C8F7F3',surfaceSelected:'#D2C6FF',
-              text:'#34394D',textSoft:'#747B8E',textActive:'#006D75',textSelected:'#4026A8',border:'transparent',indicator:'#6F50FF',
+              surface:'transparent',surfaceHover:'#E3EDFF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#D2C6FF',
+              text:'#34394D',textSoft:'#747B8E',textActive:LIGHT_EMERALD.text,textSelected:'#4026A8',border:'transparent',indicator:'#6F50FF',
               variants:{
                 selected:{surface:'#D2C6FF',text:'#4026A8',border:'#8C70FF',indicator:'#6F50FF'},
-                active:{surface:'#C8F7F3',text:'#006D75',border:'#52D4D0',indicator:'#00B9C8'},
+                active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent},
                 quiet:{surface:'transparent',text:'#70788B',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
               }
             },
             chip:{
-              surface:'#E2EEFF',surfaceHover:'#D5E6FF',surfaceActive:'#C8F7F3',surfaceSelected:'#D2C6FF',
-              text:'#3D567A',textActive:'#006D75',textSelected:'#4026A8',border:'#B1D0F8',borderHover:'#93BDF1',borderActive:'#54CCC8',indicator:'#6F50FF',
+              surface:'#E2EEFF',surfaceHover:'#D5E6FF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#D2C6FF',
+              text:'#3D567A',textActive:LIGHT_EMERALD.text,textSelected:'#4026A8',border:'#B1D0F8',borderHover:'#93BDF1',borderActive:LIGHT_EMERALD.border,indicator:'#6F50FF',
               variants:{
                 selected:{surface:'#D2C6FF',text:'#4026A8',border:'#8C70FF',indicator:'#6F50FF'},
-                active:{surface:'#C8F7F3',text:'#006D75',border:'#52D4D0',indicator:'#00B9C8'},
+                active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent},
                 info:{surface:'#E6F0FF',text:'#235FC2',border:'#A9C8F7',indicator:'#3D8BFF'},
                 success:{surface:'#E5F8EE',text:'#167348',border:'#A7DFC1',indicator:'#2AB374'},
                 warning:{surface:'#FFF1CF',text:'#8B5B00',border:'#F1D180',indicator:'#E7A11E'},
@@ -213,9 +229,9 @@ DKDSPlugins.define({
             },
             field:{
               surface:'#FFFFFF',surfaceHover:'#F5F7FF',surfaceActive:'#FFFFFF',text:'#2F3448',textSoft:'#737B8F',
-              border:'#D4DAE8',borderHover:'#8EA8ED',borderActive:'#6F50FF',indicator:'#00B9C8',
+              border:'#D4DAE8',borderHover:'#8EA8ED',borderActive:'#6F50FF',indicator:LIGHT_EMERALD.accent,
               variants:{
-                active:{surface:'#FFFFFF',text:'#2F3448',border:'#6F50FF',indicator:'#00B9C8'},
+                active:{surface:'#FFFFFF',text:'#2F3448',border:'#6F50FF',indicator:LIGHT_EMERALD.accent},
                 quiet:{surface:'#F7F8FB',text:'#657085',border:'#E1E5EE',indicator:'transparent'}
               }
             }
@@ -223,9 +239,9 @@ DKDSPlugins.define({
         },
         effects:{
           headerGradientStart:'rgba(111,80,255,.18)',
-          headerGradientEnd:'rgba(0,185,200,.13)',
+          headerGradientEnd:'rgba(22,201,149,.13)',
           accentGlow:'#6F50FF',
-          edgeGlow:'#00B9C8',
+          edgeGlow:LIGHT_EMERALD.accent,
           ambientTint:'rgba(111,80,255,.045)',
           glowIntensity:.14,
           glowRadius:16,

@@ -1,3 +1,11 @@
+# v3.66.5 — Aurora Light Emerald Refinement
+
+- Correct Aurora Pop light-mode secondary/active interaction color at the Theme source instead of compensating in Core. The previous `#008B97` / `#00818C` pair was a deep cyan-teal and was the main reason filled actions looked heavy in light mode.
+- Replace that axis with a brighter emerald palette: the filled action state is **#08A77A**, the high-energy accent is **#16C995**, hover/border/indicator/soft surfaces derive from the same palette, and filled active/secondary actions keep white labels.
+- Centralize the light interaction axis in one `LIGHT_EMERALD` Theme palette. Tabs, toolbar actions, active menu/chip states, inspector accents, field indicators and controlled edge effects consume that palette instead of repeating unrelated hard-coded cyan values. Core Component Appearance remains unchanged and remains the sole renderer.
+- Leave the scientific series palette unchanged; this release changes UI interaction semantics only, not plotted-data colors. Aurora Pop advances to **2.2.2**.
+- Add a v3.66.5 regression gate preventing the old deep cyan-teal action fills from returning and protecting single-palette ownership.
+
 # v3.66.4 — UI Feedback Closure & I/O Source Choice
 
 - Fix Core PlotView title alignment generically by resetting native heading margins inside `dkds-plot-view-title`. Pulse Analysis and any future plugin may use `h3`/`strong`/`span` titles without shifting or clipping the shared 28 px title bar. No Pulse-only positional override is added.

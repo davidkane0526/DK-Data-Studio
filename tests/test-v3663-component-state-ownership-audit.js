@@ -23,13 +23,17 @@ const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}retu
 assert(atLeast(tuple(pkg.version),[3,66,3]),'Component State Ownership Audit requires DK Data Studio 3.66.3+.');
 
 // Aurora light mode deliberately uses filled semantic states with white labels.
+// The green interaction axis is centralized in the Theme profile instead of
+// repeating page/component-specific hex values.
 for(const token of [
-  "surfaceActive:'#008B97',surfaceSelected:'#6F50FF'",
+  "const LIGHT_EMERALD=Object.freeze({",
+  "fill:'#08A77A'",
+  "surfaceActive:LIGHT_EMERALD.fill,surfaceSelected:'#6F50FF'",
   "textActive:'#FFFFFF',textSelected:'#FFFFFF'",
   "primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF'",
-  "secondary:{surface:'#008B97',surfaceHover:'#00818C',text:'#FFFFFF',textActive:'#FFFFFF'",
+  "secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF',textActive:'#FFFFFF'",
   "selected:{surface:'#6F50FF',text:'#FFFFFF'",
-  "active:{surface:'#008B97',text:'#FFFFFF'"
+  "active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'"
 ])assert(aurora.includes(token),`Aurora light semantic state is missing ${token}`);
 
 // The exact controls that previously diverged now enter the canonical semantic pipeline.

@@ -812,6 +812,10 @@ module.exports = {
       "file": "tests/test-v3664-ui-feedback-closure.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3665-aurora-light-emerald.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1656,6 +1660,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3664-ui-feedback-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3665-aurora-light-emerald.js",
       "args": []
     },
   ],

@@ -42,8 +42,8 @@ for(const source of [html,lanStructure,lanPresentation])assert(!source.includes(
 // 6. A vector close glyph has deterministic optical centering independent of font metrics.
 assert(debug.includes('class="dkds-theme-debug-exit"')&&debug.includes('<svg viewBox="0 0 16 16"')&&devCss.includes('.dkds-theme-debug-exit>svg{display:block;width:12px;height:12px'),'Theme Inspector close control must use the centered vector icon contract.');
 
-// 7. Aurora light active/secondary commands use the lighter cyan while retaining white labels.
-assert(aurora.includes("surfaceActive:'#008B97'")&&aurora.includes("secondary:{surface:'#008B97',surfaceHover:'#00818C',text:'#FFFFFF'")&&aurora.includes("active:{surface:'#008B97',text:'#FFFFFF'"),'Aurora light active cyan must remain lighter than the reverted deep-teal baseline and keep white text.');
+// 7. Aurora light active/secondary commands retain white labels and consume the shared light interaction palette.
+assert(aurora.includes("surfaceActive:LIGHT_EMERALD.fill")&&aurora.includes("secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF'")&&aurora.includes("active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'"),'Aurora light active/secondary commands must consume the shared Theme palette and keep white text.');
 
 // 8. Import/Open Project are one command each: invoking the command first opens
 // the source chooser; only the explicit local choice calls the local host I/O.
@@ -54,4 +54,4 @@ assert(html.includes('data-menu-align="left"')&&menu.includes("closest?.('[data-
 assert(!docks.includes("$('#openBtn').onclick=importFiles")&&!docks.includes("$('#openProjectBtn').onclick=openProject")&&docks.includes("$('#openLocalImportMenuBtn').onclick=importFiles")&&docks.includes("$('#openLocalProjectMenuBtn').onclick=openProject"),'Main I/O commands must not bypass source selection.');
 assert(connectivity.includes("id:'smb-browser',side:'right',order:31")&&connectivity.includes("label:'SMB'")&&connectivity.includes("onClick:()=>openSmb('auto')"),'Connectivity plugin must expose an SMB status-bar button that opens its own panel.');
 
-console.log('v3.66.4 UI feedback closure PASS: plot titles, empty Vth, canonical tabs, LAN cleanup, Theme Inspector icon, Aurora cyan, source chooser and SMB status are enforced.');
+console.log('v3.66.4 UI feedback closure PASS: plot titles, empty Vth, canonical tabs, LAN cleanup, Theme Inspector icon, Aurora interaction color, source chooser and SMB status are enforced.');
