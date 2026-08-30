@@ -1,3 +1,13 @@
+# v3.67.8 — Desktop Chrome Coherence
+
+- Keep the frozen v3.67 platform-neutral Presentation Architecture unchanged and correct the remaining Desktop-only chrome regressions below it.
+- Make the Theme chooser an anchored fixed popover with an explicit no-portable-chrome contract. It no longer receives the PortableView placement/location button that belongs to movable workbench surfaces.
+- Extend the shared `dkds-panel-close-button` contract to PortableView, LAN/SMB/AI, Theme/Memory, settings/dialog, DevTools and legacy shell panels. Geometry, glyph sizing and neutral/danger hover treatment now come from one Core presentation rule instead of panel-specific close CSS.
+- Refine header-owned actions used by Group Plot and Curve Inspector: 24 px compact hit regions, 6 px rounded hover geometry, 7 px horizontal breathing room and 2 px action spacing. Placement, row-count, collapse and close affordances therefore remain integrated with the title bar without hard rectangular hover blocks touching their labels.
+- Revert the v3.67.7 Desktop grid experiment after visual validation. The bottom scientific-secondary dock again spans the complete left/center/right canvas width, so the Curve Inspector does not vertically occupy the bottom row and Group Plot can extend to the far right.
+- Define one top-shell vertical rhythm: 34 px action height inside a 40 px visual envelope. File commands and the Data Management / Tools / Software Management outer groups consume the same 40 px outline height, while primary and selected actions use the same centered optical shadow depth.
+- Add a v3.67.8 regression gate covering fixed Theme popover semantics, full-width bottom docking, rounded header hover geometry, shared close controls and the canonical shell height contract.
+
 # v3.67.7 — Desktop Presentation Polish & Project Cleanup
 
 - Keep the v3.67 platform-neutral Presentation Contract frozen while correcting Desktop presentation regressions below it. Plugin canvas dock slots are now layout-only; the docked surface itself owns Material paint, eliminating the nested background seen on inspectors and other translucent surfaces.

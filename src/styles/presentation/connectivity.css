@@ -3,11 +3,9 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-settings-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-address-card,
 html[data-dkds-theme="dark"] body.dkds-modern-ui .lan-web-share-section {background:#1d232e;border-color:var(--dkui-border)
 }
-body.dkds-modern-ui .lan-web-panel .panel-header-actions>button {background:transparent;border-color:transparent;box-shadow:none;color:var(--dkui-muted)
+body.dkds-modern-ui .lan-web-panel .panel-header-actions>button:not(.dkds-panel-close-button) {background:transparent;border-color:transparent;box-shadow:none;color:var(--dkui-muted)
 }
-body.dkds-modern-ui .lan-web-panel .panel-header-actions>button:hover {background:var(--dkui-control-hover);border-color:transparent;color:var(--dkui-text);box-shadow:none;transform:none
-}
-body.dkds-modern-ui .lan-web-panel .panel-header-actions>.panel-close:hover {background:var(--dkui-danger-soft);color:var(--dkui-danger)
+body.dkds-modern-ui .lan-web-panel .panel-header-actions>button:not(.dkds-panel-close-button):hover {background:var(--dkui-control-hover);border-color:transparent;color:var(--dkui-text);box-shadow:none;transform:none
 }
 body.dkds-modern-ui .lan-web-panel input[type="checkbox"] {accent-color:var(--dkui-accent)
 }

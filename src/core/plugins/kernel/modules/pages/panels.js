@@ -140,7 +140,7 @@ const {pluginTypeOf}=require('../manifest');
           <span>${spec.label||spec.id||pluginId}</span>
           <div class="panel-header-actions">
             ${spec.headerActionsHtml||''}
-            <button class="panel-close" type="button" aria-label="关闭">×</button>
+            <button class="panel-close dkds-panel-close-button" type="button" aria-label="关闭">×</button>
           </div>
         </div>
         <div class="floating-body ${spec.bodyClass||''}">${spec.html||''}</div>`;

@@ -202,16 +202,15 @@ button.plugin-status-item{cursor:pointer;}
   pointer-events:none;
 }
 
-/* File commands are visually one outlined group. Standalone shell menus use
-   the exact same outer height/radius, so Edit / Export / Manage align with
-   that group rather than only matching the inner 34 px file buttons. */
+/* Shell toolbar groups share one vertical silhouette. Standalone commands keep
+   the 34 px action rhythm and remain optically centered inside the 40 px row. */
 .global-commandbar .file-command-group{
-  height:42px;
-  min-height:42px;
+  height:var(--dkds-shell-group-height,40px);
+  min-height:var(--dkds-shell-group-height,40px);
 }
 .global-commandbar>.compact-menu-anchor>#editMenuBtn{
-  height:42px;
-  min-height:42px;
+  height:var(--dkds-shell-action-height,34px);
+  min-height:var(--dkds-shell-action-height,34px);
 }
 
 /* Plugin prewarm preference and stable manager viewport. */

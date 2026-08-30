@@ -24,7 +24,7 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
     readState(){return readJson(this.storageKey(),{});}
     writeState(extra={}){const prev=this.readState();writeJson(this.storageKey(),{...prev,...extra});}
     ensureWrapper(){
-      const useTarget=this.spec.useTargetAsWrapper===true,chrome=this.spec.chrome!==false;
+      const useTarget=this.spec.useTargetAsWrapper===true,chrome=this.spec.chrome!==false&&this.node?.dataset?.dkdsPortableChrome!=='false';
       const wrapper=useTarget?this.node:document.createElement('section');
       wrapper.classList.add('dkds-portable-view');wrapper.dataset.portableId=this.id;
       const semanticKind=String(this.spec.semanticKind||'panel').trim().toLowerCase();
@@ -64,7 +64,7 @@ const PORTABLE_SEMANTIC_KINDS=new Set(['panel','inspector']);
         const resizeHandle=document.createElement('div');resizeHandle.className='dkds-portable-resize-handle';resizeHandle.dataset.dkdsTouchGestureOwner='portable-resize';resizeHandle.setAttribute('role','separator');resizeHandle.setAttribute('aria-label','拖动调整悬浮窗口大小');wrapper.appendChild(resizeHandle);this.resizeHandle=resizeHandle;this.bindFloatResize(resizeHandle);
         const bindChromeAction=(selector,handler)=>{const el=resolveScopedElement(selector,wrapper);if(!el||typeof handler!=='function')return null;const fn=e=>{e.preventDefault();e.stopPropagation();handler(e,this);};el.addEventListener('click',fn);this.chromeCleanups.push(()=>el.removeEventListener('click',fn));return el;};
         const closeButton=bindChromeAction(this.spec.closeSelector,()=>this.spec.onClose?.({id:this.id,portable:this,wrapper:this.wrapper}));
-        if(closeButton){closeButton.classList.add('dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
+        if(closeButton){closeButton.classList.add('dkds-panel-close-button','dkds-portable-icon-action','dkds-portable-close-action');closeButton.textContent='×';closeButton.removeAttribute('title');closeButton.setAttribute('aria-label',String(this.spec.closeTitle||'关闭'));}
         const collapseButton=bindChromeAction(this.spec.collapseSelector,()=>this.toggleCollapsed());
         if(collapseButton){collapseButton.classList.add('dkds-portable-icon-action','dkds-portable-collapse-action');collapseButton.textContent='−';collapseButton.removeAttribute('title');collapseButton.setAttribute('aria-label',String(this.spec.collapseTitle||'缩小'));}
       }

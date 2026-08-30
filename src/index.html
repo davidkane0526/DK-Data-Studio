@@ -23,7 +23,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.7</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.8</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -592,7 +592,7 @@
       <div class="floating-header drag-handle">
         <span>局域网热更新</span>
         <div class="panel-header-actions dkds-integrated-action-group">
-          <button class="panel-close" data-target="updatePanel">×</button>
+          <button class="panel-close dkds-panel-close-button" data-target="updatePanel">×</button>
         </div>
       </div>
       <div class="floating-body update-panel-body">
@@ -655,7 +655,7 @@
         <span id="inspectorPanelHeaderTitle">检查器</span>
         <div class="panel-header-actions dkds-integrated-action-group">
           <button id="inspectorDockBtn" type="button">停靠右侧</button>
-          <button class="panel-close" data-target="inspectorPanel">×</button>
+          <button class="panel-close dkds-panel-close-button" data-target="inspectorPanel">×</button>
         </div>
       </div>
       <div class="floating-body" id="inspectorBody">
@@ -670,7 +670,7 @@
         <div class="panel-header-actions dkds-integrated-action-group">
           <button id="groupDockBtn" type="button">停靠底部</button>
           <button id="groupMinimizeBtn" type="button">缩小</button>
-          <button class="panel-close" data-target="groupPanel">×</button>
+          <button class="panel-close dkds-panel-close-button" data-target="groupPanel">×</button>
         </div>
       </div>
       <div class="floating-body">
@@ -697,7 +697,7 @@
     <div id="zoomPanel" class="floating-panel zoom-panel hidden">
       <div class="floating-header drag-handle">
         <span id="zoomPanelTitle">放大图</span>
-        <button class="panel-close" data-target="zoomPanel">×</button>
+        <button class="panel-close dkds-panel-close-button" data-target="zoomPanel">×</button>
       </div>
       <div class="floating-body zoom-body">
         <div id="zoomPlot" class="zoom-plot"></div>

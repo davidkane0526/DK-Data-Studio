@@ -248,7 +248,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.67.7',
+    appVersion:'3.67.8',
     platform:window.DKDSPlatform,
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
@@ -352,7 +352,7 @@ async function initializePluginArchitecture(){
   const kernelPlotPanel=()=>{
     let panel=document.getElementById('dkdsKernelPlotPanel');if(panel)return panel;
     panel=document.createElement('section');panel.id='dkdsKernelPlotPanel';panel.className='floating-panel dkds-kernel-plot-panel';panel.style.cssText='position:fixed;left:12vw;top:15vh;width:min(720px,72vw);height:min(520px,68vh);z-index:820;resize:both;overflow:hidden;min-width:320px;min-height:240px;';
-    panel.innerHTML='<div class="drag-handle"><strong>AI Plot</strong><button type="button" class="panel-close" aria-label="关闭">×</button></div><div class="dkds-kernel-plot" style="height:calc(100% - 42px);min-height:0"></div>';
+    panel.innerHTML='<div class="drag-handle"><strong>AI Plot</strong><button type="button" class="panel-close dkds-panel-close-button" aria-label="关闭">×</button></div><div class="dkds-kernel-plot" style="height:calc(100% - 42px);min-height:0"></div>';
     document.body.appendChild(panel);panel.querySelector('.panel-close').onclick=()=>panel.classList.add('hidden');makeFloating(panel);return panel;
   };
   const kernelPlotRender=async args=>{const traces=Array.isArray(args?.traces)?window.DKDSData.deepClone(args.traces):[];if(!traces.length)throw new Error('No plottable traces were supplied.');const panel=kernelPlotPanel();panel.classList.remove('hidden');panel.querySelector('.drag-handle strong').textContent=String(args?.title||'AI Plot');const target=panel.querySelector('.dkds-kernel-plot');const layout={autosize:true,margin:{l:64,r:24,t:34,b:54},showlegend:true,hovermode:'closest',...(args?.layout||{})};await window.DKDSCharts.react(target,traces,layout,{responsive:true,displayModeBar:true,scrollZoom:true,doubleClick:'reset'});return {ok:true,id:panel.id,traceCount:traces.length};};

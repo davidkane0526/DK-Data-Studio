@@ -237,6 +237,8 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
    Spacious plugin-native desktop shell
    ============================================================ */
 .topbar-primary{
+  --dkds-shell-action-height:34px;
+  --dkds-shell-group-height:40px;
   height:52px;
   min-height:52px;
   gap:9px;
@@ -266,9 +268,10 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
 .global-commandbar,.system-commandbar{gap:6px;}
 .toolbar-group{
   gap:3px;
-  padding:3px;
+  padding:2px;
+  box-sizing:border-box;
 }
-.file-command-group{gap:2px;padding:2px;}
+.file-command-group{gap:2px;padding:2px;height:var(--dkds-shell-group-height);min-height:var(--dkds-shell-group-height);box-sizing:border-box;}
 .file-command-group .toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}
 .compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}
 

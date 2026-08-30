@@ -17,7 +17,7 @@
 
     const smbOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',dataset:{dkdsOverlayStack:'foreground'},html:`
       <div class="dksvc-window dksmb-window dkds-dialog-shell dkds-material-role-elevated" role="dialog" aria-modal="true">
-        <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button" aria-label="关闭">×</button></div>
+        <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">SMB 网络文件</span><span id="dksmbModeLabel" class="dksvc-sub dkds-meta">导入数据</span><button id="dksmbClose" class="dksvc-close dkds-icon-button dkds-panel-close-button" aria-label="关闭">×</button></div>
         <div class="dksmb-layout">
           <aside class="dksmb-nav dkds-material-role-sidebar"><div class="dksmb-nav-title"><span>网络位置</span><button id="dksmbDiscover" class="dksmb-btn dkds-action-button">扫描</button></div><div id="dksmbNav"></div></aside>
           <section class="dksmb-browser dkds-material-role-surface">
@@ -32,7 +32,7 @@
 
     const settingsOverlay=dom.create('div',{className:'dksvc-overlay dkds-overlay hidden',html:`
       <div class="dksvc-window dkai-window dkds-dialog-shell" role="dialog" aria-modal="true">
-        <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">AI Agent / MCP</span><span class="dksvc-sub dkds-meta">Studio Kernel 服务</span><button id="dkaiSettingsClose" class="dksvc-close dkds-icon-button" aria-label="关闭">×</button></div>
+        <div class="dksvc-head dkds-surface-header"><span class="dksvc-title dkds-surface-title">AI Agent / MCP</span><span class="dksvc-sub dkds-meta">Studio Kernel 服务</span><button id="dkaiSettingsClose" class="dksvc-close dkds-icon-button dkds-panel-close-button" aria-label="关闭">×</button></div>
         <div class="dkai-settings-body" data-dkds-material-content="true">
           <section class="dkai-section"><div class="dkai-section-title">AI Agent</div><div class="dkai-grid">
             <div class="dkai-field dkds-field"><label>Provider</label><select id="dkaiPreset"></select></div><div class="dkai-field dkds-field"><label>模型</label><input id="dkaiModel" placeholder="model id"></div>

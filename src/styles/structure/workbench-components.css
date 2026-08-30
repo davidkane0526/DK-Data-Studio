@@ -123,7 +123,7 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-core-import-action{white-space:nowrap;}
 
 /* System command grouping: Data Center and Tools form one visual system cluster. */
-.system-core-tools-group{display:flex;align-items:center;gap:0;padding:2px;flex:0 0 auto;}
+.system-core-tools-group{display:flex;align-items:center;gap:0;padding:2px;flex:0 0 auto;height:var(--dkds-shell-group-height,40px);min-height:var(--dkds-shell-group-height,40px);box-sizing:border-box;}
 .system-core-tools-group>.toolbar-btn,.system-core-tools-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:8px;padding-right:8px;}
 .system-core-tools-group>.menu-anchor{display:flex;align-items:center;}
 

@@ -867,6 +867,10 @@ module.exports = {
     {
       "file": "tests/test-v3677-desktop-presentation-polish.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v3678-desktop-chrome-coherence.js",
+      "args": []
     }
   ],
   "check": [
@@ -1768,6 +1772,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3677-desktop-presentation-polish.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3678-desktop-chrome-coherence.js",
       "args": []
     }
   ],

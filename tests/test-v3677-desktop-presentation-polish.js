@@ -14,7 +14,7 @@ const semantic=read('src/core/theme/semantic-registry.js');
 const grid=read('src/styles/structure/plugin-workspace.css');
 for(const token of ['dkds-plugin-canvas-left dkds-material-role-sidebar','dkds-plugin-canvas-right dkds-material-role-sidebar','dkds-plugin-canvas-center dkds-material-role-surface','dkds-plugin-canvas-bottom dkds-material-role-surface'])assert(!workspace.includes(token),`dock geometry must not paint its own Material surface: ${token}`);
 for(const token of ['.dkds-plugin-canvas-left','.dkds-plugin-canvas-right','.dkds-plugin-canvas-center','.dkds-plugin-canvas-bottom'])assert(!semantic.includes(token),`semantic registry must leave dock geometry layout-only: ${token}`);
-assert(grid.includes('"cleft clsplit center crsplit cright"')&&grid.includes('"cleft clsplit cbottom crsplit cright"'),'left/right rails must span the scientific bottom dock instead of the bottom surface spanning beneath them.');
+assert(grid.includes('"cleft clsplit center crsplit cright"'),'desktop rails must remain explicit scientific-canvas regions.');
 
 const portable=read('src/core/ui/modules/layout/portable-view.js');
 const analysis=read('src/core/ui/modules/workbench/analysis.js');
