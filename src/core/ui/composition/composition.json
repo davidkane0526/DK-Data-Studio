@@ -27,6 +27,14 @@
       "path": "src/core/ui/modules/interaction/context-actions.js"
     },
     {
+      "id": "ui/interaction/intent",
+      "path": "src/core/ui/modules/interaction/intent.js"
+    },
+    {
+      "id": "ui/interaction/adapters",
+      "path": "src/core/ui/modules/interaction/adapters.js"
+    },
+    {
       "id": "ui/controls/select-popup",
       "path": "src/core/ui/modules/controls/select-popup.js"
     },
@@ -85,6 +93,14 @@
     {
       "id": "ui/scope/plugin-scope",
       "path": "src/core/ui/modules/scope/plugin-scope.js"
+    },
+    {
+      "id": "ui/presentation/model",
+      "path": "src/core/ui/modules/presentation/model.js"
+    },
+    {
+      "id": "ui/presentation/presenters",
+      "path": "src/core/ui/modules/presentation/presenters.js"
     },
     {
       "id": "ui/host/api",

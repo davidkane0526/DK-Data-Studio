@@ -56,8 +56,9 @@ const api=read('src/core/plugins/kernel/modules/plugin-api.js');
 assert(api.includes('appearanceComponents:')&&api.includes('consumption:')&&api.includes("mode:'fallback-only'"));
 const dts=read('sdk/plugin-api.d.ts');
 for(const token of ["contractVersion:'3.9.0'",'DKDSThemeAppearanceComponent','DKDSThemeComponentAppearanceValues','appearanceComponents()','consumption():DKDSThemeConsumptionReport',"mode:'fallback-only'"]) assert(dts.includes(token),`SDK type missing ${token}`);
-const mobile=read('src/core/host/mobile-host-runtime.js');
-assert(mobile.includes('themeComponents:')&&mobile.includes('themeConsumption:')&&mobile.includes('themeScientific:'));
+const presentationModel=read('src/core/ui/modules/presentation/model.js'),mobile=read('src/core/ui/modules/presentation/presenters.js');
+assert(presentationModel.includes('components:window.DKDSTheme?.appearanceComponents?.()')&&presentationModel.includes('consumption:window.DKDSTheme?.consumption?.()')&&presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()'));
+assert(mobile.includes('themeComponents:core.theme.components')&&mobile.includes('themeConsumption:core.theme.consumption')&&mobile.includes('themeScientific:core.theme.scientific'));
 
 const model=read('src/core/ui/modules/scientific-curve/model.js');
 assert(model.includes('curve?.color||scaled||initial?.color||this.categoricalColor(index)'),'Explicit/scaled/project series color must precede Theme fallback palette.');

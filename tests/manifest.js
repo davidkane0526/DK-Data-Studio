@@ -836,6 +836,10 @@ module.exports = {
       "file": "tests/test-v36610-core-freeze-audit.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3670-platform-presentation-phase1.js",
+      "args": []
+    }
   ],
   "check": [
     {
@@ -1706,6 +1710,10 @@ module.exports = {
       "file": "tests/test-v36610-core-freeze-audit.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3670-platform-presentation-phase1.js",
+      "args": []
+    }
   ],
   "mobile": [
     {
@@ -1714,6 +1722,10 @@ module.exports = {
     },
     {
       "file": "tests/test-mobile-host-runtime.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3670-platform-presentation-phase1.js",
       "args": []
     },
     {

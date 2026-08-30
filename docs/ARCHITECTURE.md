@@ -1,4 +1,4 @@
-# DK Data Studio Architecture — v3.61.91
+# DK Data Studio Architecture — v3.67.0
 
 ## 1. Runtime layers
 
@@ -23,6 +23,12 @@ Domain plugins and Algorithm Providers
 ```
 
 Dependency direction is one-way. Core may expose generic contracts to plugins; Core must not import or special-case a domain plugin. A first-party plugin receives no private host privilege merely because it ships with the application.
+
+### Platform Presentation boundary
+
+从 v3.67.0 开始，平台壳不再直接把桌面空间结构当成 Core UI 语义。Core Registry / app state 先形成平台无关的 **Core Presentation Model**，再由 `DesktopPresenter` 与 `MobilePresenter` 映射到各自的呈现方式。PRIMARY / PRIME / SUB 同时被归一化为 `scientific-primary`、`data-control`、`inspector`、`scientific-secondary` 等语义角色，并携带 `priority`、`collapsible` 等呈现提示。
+
+桌面鼠标/键盘与移动触摸/手势通过同一个 **Interaction Intent** 契约进入 Core。Plugin API 保持单一，不提供 `ctx.ui.desktop` / `ctx.ui.mobile` 分叉。Mobile Host 只消费 Presenter/Core Registry 状态，不允许通过桌面 DOM、CSS 可见性或页面 ID 反向推断应用状态。完整 Phase 1 契约见 `docs/PLATFORM_PRESENTATION_ARCHITECTURE_3.67.0.md`。
 
 ## 2. Authored Core organization
 

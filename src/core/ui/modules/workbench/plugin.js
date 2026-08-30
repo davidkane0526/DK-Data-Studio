@@ -107,9 +107,16 @@ const {AnalysisWorkbench}=require('./analysis');
       this.navigationPresentation=String(mode||'inline');const nav=this.shell?.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('host-presented',this.navigationPresentation!=='inline');return this;
     }
     navigationActions({includePrimary=true,includePrimes=true,includeSubs=true}={}){
-      const rows=[];if(includePrimary&&this.primary)rows.push({id:`workspace-primary:${this.primary.id}`,label:this.primary.label||'主界面',active:()=>!this.activeSub,onInvoke:()=>this.showPrimary()});
-      if(includePrimes)for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push({id:`workspace-prime:${row.id}`,label:row.label||row.title||row.id,active:()=>!!row.mounted,onInvoke:()=>this.togglePrime(row.id)});
-      if(includeSubs)for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push({id:`workspace-sub:${row.id}`,label:row.label||row.title||row.id,active:()=>this.activeSub===row.id,onInvoke:()=>this.openSub(row.id)});return rows;
+      const describe=(row,kind,id,active,onInvoke)=>({
+        id:`workspace-${kind}:${id}`,surfaceId:String(id),kind,semanticKind:String(row?.semanticKind||''),presentationRole:String(row?.presentationRole||row?.semanticRole||''),
+        priority:Number.isFinite(Number(row?.priority))?Number(row.priority):undefined,collapsible:row?.collapsible,placement:String(row?.portable?.wrapper?.dataset?.placement||row?.defaultPlacement||(kind==='primary'?'main':'')),
+        placements:Array.isArray(row?.placements)?[...row.placements]:[],label:row?.label||row?.title||(kind==='primary'?'主界面':id),active,onInvoke
+      });
+      const rows=[];
+      if(includePrimary&&this.primary)rows.push(describe(this.primary,'primary',this.primary.id,()=>!this.activeSub,()=>this.showPrimary()));
+      if(includePrimes)for(const row of [...this.primes.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'prime',row.id,()=>!!row.mounted,()=>this.togglePrime(row.id)));
+      if(includeSubs)for(const row of [...this.subs.values()].sort((a,b)=>(a.order||100)-(b.order||100)))rows.push(describe(row,'sub',row.id,()=>this.activeSub===row.id,()=>this.openSub(row.id)));
+      return rows;
     }
     setHostMode(mode='embedded'){
       this.hostMode=String(mode||'embedded');this.shell?.setAttribute('data-host-mode',this.hostMode);this.resize('host-mode');return this;

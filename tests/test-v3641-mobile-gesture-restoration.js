@@ -10,6 +10,7 @@ const mobilePkg=JSON.parse(read('mobile/package.json'));
 const mobileApp=JSON.parse(read('mobile/app.json')).expo;
 const mobileCss=read('src/mobile.css');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
+const inputAdapters=read('src/core/ui/modules/interaction/adapters.js');
 const scientificModel=read('src/core/ui/modules/scientific-curve/model.js');
 const scientificRender=read('src/core/ui/modules/scientific-curve/render.js');
 const portable=read('src/core/ui/modules/layout/portable-view.js');
@@ -27,8 +28,8 @@ assert(Number(mobileApp.android.versionCode)>=23,'Android versionCode must advan
 assert(/html\.react-native-client \.topbar,\s*html\.react-native-client \.project-tabs-bar,\s*html\.react-native-client #mainWorkspace,\s*html\.react-native-client #superWorkspaceDivider\{display:none\}/m.test(mobileCss),'native shell must hide the desktop topbar, project tabs, workspace and SUPER divider as one complete CSS rule');
 assert(!/#mainWorkspace,\s*\n\s*html\.react-native-client\{/.test(mobileCss),'native shell CSS must never retain the dangling selector introduced by the modular refactor');
 
-assert(mobileHost.includes("[data-dkds-touch-gesture-owner]"),'global mobile held-swipe navigation must yield to Core-owned touch gestures');
-assert(mobileHost.includes("handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize'")&&mobileHost.includes("handle.addEventListener('pointerdown'")&&mobileHost.includes('setPointerCapture'),'mobile data/parameter drawer width resizing must remain pointer-captured and touch-native');
+assert(inputAdapters.includes("[data-dkds-touch-gesture-owner]"),'Mobile Gesture Adapter held-swipe navigation must yield to Core-owned touch gestures');
+assert(inputAdapters.includes("handle.dataset.dkdsTouchGestureOwner='mobile-panel-resize'")&&inputAdapters.includes("handle.addEventListener('pointerdown'")&&inputAdapters.includes('setPointerCapture'),'Mobile Gesture Adapter must own pointer-captured data/parameter drawer resizing');
 assert(scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot'")||scientificModel.includes("data-dkds-touch-gesture-owner','scientific-plot"),'scientific plots must explicitly own their touch gesture sequence');
 assert(workspaceCss.includes('.dkds-scientific-curve-surface')&&workspaceCss.includes('touch-action:none'),'scientific plot surfaces must prevent browser pan arbitration during direct gestures');
 assert(scientificRender.includes("plotBg.on('pointerdown'")&&scientificRender.includes('setPointerCapture(event.pointerId)')&&scientificRender.includes("routeInteraction('box','background'")&&scientificRender.includes("decision.intent==='select-region'"),'scientific box selection must stay on Pointer Events with capture and select-region routing');

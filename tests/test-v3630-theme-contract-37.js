@@ -74,9 +74,10 @@ assert.equal(reg.get('explicit').color,'#ABCDEF','explicit scientific colors mus
 delete globalThis.DKDSTheme;
 delete global.window;
 
-const mobile=read('src/core/host/mobile-host-runtime.js');
-assert(mobile.includes('themeAppearance:window.DKDSTheme?.appearanceRoles?.()'));
-assert(mobile.includes('themeScientific:window.DKDSTheme?.scientific?.()'));
+const presentationModel=read('src/core/ui/modules/presentation/model.js');
+const mobile=read('src/core/ui/modules/presentation/presenters.js');
+assert(presentationModel.includes('appearance:window.DKDSTheme?.appearanceRoles?.()')&&mobile.includes('themeAppearance:core.theme.appearance'));
+assert(presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()')&&mobile.includes('themeScientific:core.theme.scientific'));
 
 const template=json('sdk/templates/theme-profile/plugin.json');
 assert.equal(template.compatibility.themeContract,'^3.9.0');

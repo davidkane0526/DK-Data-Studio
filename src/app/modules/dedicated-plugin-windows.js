@@ -248,7 +248,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.66.10',
+    appVersion:'3.67.0',
     platform:window.DKDSPlatform,
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
@@ -282,8 +282,19 @@ async function initializePluginArchitecture(){
     services:{runtime:Object.freeze({getStatus:()=>window.electronAPI?.getRuntimeStatus?.(),getDevToolsState:()=>window.electronAPI?.getDevToolsState?.(),toggleDevTools:()=>window.electronAPI?.toggleDevTools?.()}),lanWeb:Object.freeze({getStatus:()=>state.lanWebStatusState||window.electronAPI?.lanWebGetStatus?.(),openPanel:showLanWebPanel,hidePanel:hideLanWebPanel}),connectivity:window.DKDSConnectivity}
   });
 
+  // Platform presentation state is owned by Core registries and app state, not by
+  // the desktop DOM. Desktop and mobile presenters consume this same model.
+  window.DKDSPresentation?.configure?.({
+    projectSnapshot:()=>{
+      const active=activeProjectTab();
+      const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId,dirty:!!tab.dirty}));
+      return {ready:!!active,activeProjectId:String(active?.id||''),title:String(active?.title||'DK Data Studio'),projects};
+    },
+    historySnapshot:()=>systemHistorySnapshotSync()
+  });
+
   // Android invokes stable Core commands through the Mobile Host Adapter.
-  // The native shell never needs to locate or click desktop renderer nodes.
+  // The native shell consumes the Mobile Presenter and never locates or clicks desktop renderer nodes.
   window.DKDSMobileHost?.configure?.({
     importFiles:()=>importFiles(),
     openAnyFiles:()=>openFilesAuto(),
@@ -293,7 +304,6 @@ async function initializePluginArchitecture(){
     newProject:()=>createProjectTab(null,true),
     switchProject:id=>switchProjectTab(id),
     closeProject:id=>closeProjectTab(id),
-    historySnapshot:()=>systemHistorySnapshotSync(),
     undo:()=>systemUndo(),
     redo:()=>systemRedo(),
     openPluginManager:()=>{openAnalysisPage('pluginManagerPage');window.DKDSPluginManagerUI?.render?.();return true;}
@@ -301,10 +311,8 @@ async function initializePluginArchitecture(){
 
   const connectivitySnapshot=()=>{
     if(window.DKDSMobileHost?.snapshot)return window.DKDSMobileHost.snapshot();
-    const activityId=String(window.DKDSPlugins?.activities?.active?.()||'');
-    const projects=(state.projectTabs||[]).map(tab=>({id:String(tab.id),title:String(tab.title||'未命名项目'),active:tab.id===state.activeProjectTabId}));
-    const activities=(window.DKDSPlugins?.activities?.list?.()||[]).map(row=>({id:String(row.id||''),activityId:String(row.id||''),pluginId:String(row.pluginId||''),label:String(row.label||row.name||row.id||'')})).filter(row=>row.id);
-    return {ready:true,projectTitle:activeProjectTab()?.title||'DK Data Studio',projects,activityId,activityLabel:activities.find(row=>row.id===activityId)?.label||'',history:systemHistorySnapshotSync(),theme:window.DKDSTheme?.current?.()||'light',themeTokens:window.DKDSTheme?.tokens?.()||{},activities,surfaces:(window.DKDSUI?.workspaces?.actions?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),active:!!row.active})),actions:(window.DKDSUI?.actions?.list?.(activityId)||[]).map(row=>({id:String(row.id),label:String(row.label||row.id),enabled:row.enabled!==false,items:(row.items||[]).map(item=>({id:String(item.id),label:String(item.label||item.id),enabled:item.enabled!==false}))}))};
+    if(window.DKDSPresentation?.present)return window.DKDSPresentation.present('mobile',{protocol:3,canGoBack:false});
+    throw new Error('Core Presentation Model unavailable.');
   };
   const connectivityInvoke=async(method,payload={})=>{
     if(window.DKDSMobileHost?.invoke)return window.DKDSMobileHost.invoke(method,payload);

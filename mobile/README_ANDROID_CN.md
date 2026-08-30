@@ -248,3 +248,6 @@ Android 被 Core 标识为 Native Client，不会被当作 LAN Web Client。APK 
 底部五个原生导航按钮只显示图标并水平对齐，位于原桌面状态栏上方；原状态栏中的插件/系统按钮保持为可横向滚动的完整单元，展开面板置于 PRIME 之上。数据/参数抽屉支持点外部收起和拖边调宽，PRIME 左、右、底部面板使用加宽的边缘触摸分隔条调节尺寸。“更多”中提供按项目隔离的操作历史、撤销与重做。按住后向上或向左滑动分别映射为方向键上、方向键左。Android 手势导航指示条由沉浸式系统栏配置隐藏。
 
 文件选择使用 Android Storage Access Framework 的系统文档界面，可显示设备文件、第三方文件管理器和已注册的云盘提供方。选择结果保留为 provider URI 句柄并申请持久读取权限，渲染器按需读取并在完成后释放；新建与保存使用可持久写入的文档 URI。系统选择器属于交互式长事务，不再使用会在用户选文件期间误报的 15 秒命令超时。
+## v3.67.0 Presentation Architecture
+
+移动端壳现在消费 Core Presentation Model 经 Mobile Presenter 输出的状态。Activity、PRIMARY/PRIME/SUB、Actions 与 Status 均来自 Core Registry / app-state provider，不再由 Mobile Host 通过桌面 DOM、CSS 可见性或页面 ID 反向推断。触摸手势由 Mobile Gesture Adapter 转为统一 Interaction Intent；Plugin API 仍只有一套。

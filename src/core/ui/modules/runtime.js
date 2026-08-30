@@ -23,4 +23,6 @@ if(!window.DKDSUI){
   require('./scope/plugin-scope');
   require('./host/api');
 }
+require('./presentation/presenters');
+require('./interaction/adapters');
 module.exports=window.DKDSUI;

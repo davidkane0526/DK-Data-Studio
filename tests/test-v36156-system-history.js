@@ -24,7 +24,7 @@ const json=rel=>JSON.parse(read(rel));const assert=(v,m)=>{if(!v)throw new Error
   const app=read('src/generated/runtime/app.js');
   assert(app.includes('systemHistorySnapshotSync')&&app.includes('runSystemHistory')&&app.includes("historyCandidate(project,direction,'project')")&&app.includes("historyCandidate(workspace,direction,'workspace')"),'Main shell must coordinate project and workspace history.');
   assert(app.includes('撤销/重做按真实操作时间排序')&&app.includes("[${item.scopeLabel}]")&&app.includes('下一步撤销'),'History dialog must describe the real combined history rather than project-only state.');
-  assert(app.includes('history:systemHistorySnapshotSync()')&&app.includes('historyState:()=>systemHistorySnapshotSync()')&&app.includes('historySnapshot:()=>systemHistorySnapshotSync()'),'Mobile and Kernel history state must expose the same system coordinator state.');
+  assert(app.includes('DKDSPresentation?.configure')&&app.includes('historyState:()=>systemHistorySnapshotSync()')&&app.includes('historySnapshot:()=>systemHistorySnapshotSync()'),'Core Presentation Model, Mobile Host and Kernel history state must expose the same system coordinator state.');
   assert(app.includes("dkds:history-changed")&&read('src/core/host/mobile-host-runtime.js').includes("window.addEventListener('dkds:history-changed',publish)"),'History changes must proactively refresh the native mobile shell.');
 
   const windowRuntime=read('src/plugin-window/runtime.js');

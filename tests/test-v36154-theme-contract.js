@@ -16,6 +16,8 @@ const kernel=read('src/generated/runtime/plugin-kernel.js');
 const contract=read('src/core/plugins/contract-runtime.js');
 const sdkSchema=json('sdk/plugin-manifest.schema.json');
 const mobileHost=read('src/core/host/mobile-host-runtime.js');
+const presentationModel=read('src/core/ui/modules/presentation/model.js');
+const presenters=read('src/core/ui/modules/presentation/presenters.js');
 const mobileShell=read('mobile/src/Shell.tsx');
 const mobileApp=read('mobile/App.tsx');
 const apiTypes=read('sdk/plugin-api.d.ts');
@@ -40,7 +42,7 @@ assert(ui.includes("this.handle.classList.add('is-dragging')")&&ui.includes("thi
 assert(kernel.includes('theme: Object.freeze({')&&kernel.includes('window.DKDSTheme?.registerProfile?.'),'plugins must be able to register theme profiles through Core rather than painting host DOM directly.');
 assert(contract.includes("'ui.theme':api=>!!api?.ui?.theme"),'Plugin Capability contract must expose ui.theme.');
 assert((sdkSchema.properties?.requiresCore?.items?.enum||[]).includes('ui.theme'),'SDK manifest schema must declare ui.theme capability.');
-assert(mobileHost.includes('themeTokens:window.DKDSTheme?.tokens?.()||{}')&&mobileApp.includes('themeTokens: row.themeTokens')&&mobileApp.includes('paletteFor(shell.theme, shell.themeTokens || {})'),'Theme profile tokens must cross the WebView/native shell bridge.');
+assert(presentationModel.includes('tokens:window.DKDSTheme?.tokens?.()||{}')&&presenters.includes('themeTokens:core.theme.tokens')&&mobileApp.includes('themeTokens: row.themeTokens')&&mobileApp.includes('paletteFor(shell.theme, shell.themeTokens || {})'),'Theme profile tokens must cross the Core Presentation Model / Mobile Presenter bridge.');
 assert(mobileShell.includes('divider: string')&&mobileShell.includes('controlBorder: string')&&mobileShell.includes('nativeThemeColor(tokens.divider')&&mobileShell.includes('nativeThemeColor(tokens.controlBorder'),'Native mobile chrome must consume the same semantic divider/control-border channels as desktop themes.');
 assert(apiTypes.includes('DKDSThemeCapability')&&apiTypes.includes('theme:DKDSThemeCapability'),'Standalone SDK types must expose the additive ui.theme authoring contract.');
 assert(themeTemplate.includes("ctx.ui.theme.register('default'")&&themeTemplate.includes("pluginType:'theme'"),'SDK must ship a first-class semantic theme-plugin template.');

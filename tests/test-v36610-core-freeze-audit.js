@@ -9,7 +9,7 @@ const connectivity=read('src/plugins/connectivity-center/plugin.js');
 const connectivityPresentation=read('src/styles/presentation/connectivity.css');
 const coreModuleBudget=48*1024;
 
-assert(/^3\.66\.(?:[1-9]\d|\d{2,})$/.test(pkg.version)||Number(String(pkg.version).split('.')[2])>=10,'Core freeze audit requires DK Data Studio 3.66.10+.');
+{const [major,minor,patch]=String(pkg.version).split('.').map(Number);assert(major>3||(major===3&&(minor>66||(minor===66&&patch>=10))),'Core freeze audit requires DK Data Studio 3.66.10+.');}
 const visual=validateVisualGate();
 assert.strictEqual(visual.invariants,9,'Core freeze gate must enforce all 9 hard visual/ownership invariants.');
 
