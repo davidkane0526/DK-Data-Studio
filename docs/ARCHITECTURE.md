@@ -132,3 +132,7 @@ Compatibility code is permitted only at explicit boundaries: project-format migr
 ## 9. Validation
 
 `npm run check` is the release gate for generation, syntax, plugin manifests, source boundaries, CSS structure/cascade contracts and regression suites. It is not a substitute for Windows Electron visual validation, GPU/backdrop-filter behavior or device-specific layout validation.
+
+## 10. Platform presentation boundary (v3.67)
+
+Core workspace state is projected through a platform-neutral Presentation Model. Plugins declare semantic surface roles (`scientific-primary`, `data-primary`, `utility-primary`, `data-control`, `inspector`, `scientific-secondary`) once; Desktop and Mobile Presenters map those roles to platform geometry and Interaction Adapters translate platform input into shared intents. Resonance is the v3.67.2 reference migration. Platform-specific Plugin API facades are forbidden; Phase 4 removes obsolete mobile CSS/layout overrides only after equivalent Presenter ownership exists.

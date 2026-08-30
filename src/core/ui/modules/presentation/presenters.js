@@ -27,11 +27,24 @@ function desktopNavigation(workspaces,activeId,context={}){
   return Object.freeze({primary:Object.freeze(primary),secondary:Object.freeze(secondary),tools:Object.freeze(tools),system:Object.freeze(system)});
 }
 
+function desktopSurfaceItem(surface){
+  const kind=text(surface?.kind),role=text(surface?.role),priority=Number.isFinite(Number(surface?.priority))?Number(surface.priority):0;
+  const section=kind==='prime'?'PRIME':kind==='sub'?'SUB':'PRIMARY';
+  return Object.freeze({...surface,id:text(surface?.surfaceId||surface?.id),surfaceId:text(surface?.surfaceId||surface?.id),kind,role,priority,section,presentation:Object.freeze({region:'workspace-toolbar',navigation:kind==='primary'?'primary':'context'})});
+}
+function desktopWorkspaceSurfaces(workspace){
+  if(!workspace)return Object.freeze([]);
+  const rows=(workspace.surfaces||[]).filter(surface=>text(surface?.kind)!=='primary').map(desktopSurfaceItem);
+  rows.sort((a,b)=>b.priority-a.priority||String(a.section).localeCompare(String(b.section))||String(a.label).localeCompare(String(b.label))||a.surfaceId.localeCompare(b.surfaceId));
+  return Object.freeze(rows);
+}
+
 class DesktopPresenter {
   constructor(source=model){this.model=source;}
   present(context={}){
     const snapshot=this.model.snapshot(context);
-    return Object.freeze({...snapshot,schema:'dkds.desktop-presentation.v1',presentationModel:snapshot.schema,platform:'desktop',navigation:desktopNavigation(snapshot.workspaces,snapshot.activity.id,context)});
+    const navigation=desktopNavigation(snapshot.workspaces,snapshot.activity.id,context),active=snapshot.workspaces.find(row=>row.activityId===snapshot.activity.id)||null;
+    return Object.freeze({...snapshot,schema:'dkds.desktop-presentation.v1',presentationModel:snapshot.schema,platform:'desktop',navigation,workspaceSurfaces:desktopWorkspaceSurfaces(active)});
   }
 }
 
@@ -67,7 +80,7 @@ class MobilePresenter {
 
 const desktop=new DesktopPresenter(),mobile=new MobilePresenter();
 const api=Object.freeze({
-  version:'1.1.0',roles,model,presenters:Object.freeze({desktop,mobile}),desktopNavigation,
+  version:'1.2.0',roles,model,presenters:Object.freeze({desktop,mobile}),desktopNavigation,desktopWorkspaceSurfaces,
   configure:next=>{model.configure(next);return api;},
   setStatus:message=>model.setStatus(message),
   snapshot:context=>model.snapshot(context),

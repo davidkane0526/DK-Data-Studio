@@ -16,7 +16,6 @@ const packageRuntime=read('src/core/plugins/kernel/modules/package-runtime.js');
 const appHost=read('src/app/modules/dedicated-plugin-windows.js');
 const windowHost=read('src/plugin-window/runtime.js');
 const sdkTypes=read('sdk/plugin-api.d.ts');
-const resonance=read('src/plugins/resonance-workbench/view-components.js');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=1))),'Platform Presentation Architecture Phase 2 requires v3.67.1+.');}
 assert(composition.importableModules.some(row=>row.id==='ui/presentation/desktop-shell'),'Desktop Presentation Shell must be an authored Core UI module.');
@@ -40,8 +39,6 @@ const explicit=[
   ['src/plugins/transfer-vth-lab/plugin.js','scientific-primary']
 ];
 for(const [rel,role] of explicit)assert(read(rel).includes(`presentationRole:'${role}'`),`${rel} must declare ${role} in the existing TOP contract.`);
-const resonanceRegistration=resonance.match(/ctx\.ui\.topWorkspace\.register\([^\n]+/m)?.[0]||'';
-assert(resonanceRegistration&&!resonanceRegistration.includes('presentationRole'),'Resonance must remain unmigrated until Phase 3 reference migration.');
 
 // Runtime contract: live workspace state must inherit semantics from TOP contract,
 // keep contract-only surfaces, and DesktopPresenter must classify shell navigation.

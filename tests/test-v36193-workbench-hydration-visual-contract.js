@@ -45,7 +45,7 @@ assert(!/\.dkds-analysis-frame\s*\{[^}]*grid-template-columns\s*:\s*auto\s+minma
 
 assert(dataCenter.includes("wb.mountPrimary({id:'main',label:'数据中心',scroll:'auto',mainNode:layout})")&&dataCenter.includes("className='dc-native-layout'")&&dataCenter.includes("ctx.ui.layout.split({"),
   'Data Center must keep its domain data rail inside a main-only PluginWorkspace and use the Core splitter for width allocation.');
-assert(resonance.includes("primary:{id:'main',label:'共振分析',scroll:'contained',leftNode:leftPanel,mainNode:mainArea}"),
-  'Resonance must compose both its control rail and primary scientific plot area into PluginWorkspace.');
+assert(resonance.includes("primary:{...mainPresentation,scroll:'contained',mainNode:mainArea}")&&resonance.includes("existingNode:leftPanel,autoOpen:true"),
+  'Resonance must compose the scientific PRIMARY and semantic data-control PRIME through PluginWorkspace without hard-coding desktop left geometry into PRIMARY.');
 
 console.log('v3.61.93 Workbench hydration + visual contract PASS: canonical Core geometry remains single-owned while plugins retain domain-specific PRIMARY composition.');

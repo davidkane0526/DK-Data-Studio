@@ -9,6 +9,23 @@
     Object.freeze({id:'gate',label:'栅压分析',role:'derived'})
   ]);
   const VIEW_IDS=new Set(VIEW_CATALOG.map(v=>v.id));
+  const PRESENTATION_LAYOUT=Object.freeze({
+    primary:Object.freeze({id:'main',label:'共振分析',presentationRole:'scientific-primary',priority:100,collapsible:false}),
+    prime:Object.freeze([
+      Object.freeze({id:'data-control',label:'数据 / 参数',semanticKind:'panel',presentationRole:'data-control',priority:95,collapsible:true}),
+      Object.freeze({id:'curve-inspector',label:'检查',semanticKind:'inspector',presentationRole:'inspector',priority:90,collapsible:true}),
+      Object.freeze({id:'group-analysis',label:'组图',semanticKind:'panel',presentationRole:'scientific-secondary',priority:70,collapsible:true})
+    ]),
+    sub:Object.freeze([
+      Object.freeze({id:'physics',label:'物理机制',presentationRole:'scientific-secondary',priority:60,collapsible:true}),
+      Object.freeze({id:'spacing',label:'峰间距',presentationRole:'scientific-secondary',priority:50,collapsible:true}),
+      Object.freeze({id:'gate-analysis',label:'栅压分析',presentationRole:'scientific-secondary',priority:40,collapsible:true})
+    ])
+  });
+  const presentationSurface=(kind,id)=>{
+    const rows=kind==='primary'?[PRESENTATION_LAYOUT.primary]:PRESENTATION_LAYOUT[kind]||[];
+    return rows.find(row=>row.id===id)||null;
+  };
   const clone=value=>{if(value===undefined)return undefined;try{return structuredClone(value);}catch{return JSON.parse(JSON.stringify(value));}};
   const directionName=dir=>Number(dir)>0?'正扫':'反扫';
 
@@ -204,7 +221,7 @@
   }
 
   window.DKDSPluginModules.define('builtin.resonance-workbench','workbench-shared',Object.freeze({
-    PLUGIN_ID,VIEW_CATALOG,registerDataTypes,pluginSliceFromProject,defaultWorkspace,normalizeWorkspace,
+    PLUGIN_ID,VIEW_CATALOG,PRESENTATION_LAYOUT,presentationSurface,registerDataTypes,pluginSliceFromProject,defaultWorkspace,normalizeWorkspace,
     stateSnapshot,buildTrendModel,acceptedSeriesOptions,computeSpacingRows,createController
   }));
 })();

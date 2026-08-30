@@ -1,3 +1,11 @@
+# v3.67.2 — Platform Presentation Architecture / Phase 3
+
+- Migrate Resonance Workbench as the first complete multi-surface reference consumer of the platform-neutral Presentation Contract. Promote its data/parameter rail to a real `data-control` surface and declare scientific primary, inspector and scientific-secondary roles once in the shared Resonance contract.
+- Add active-workspace surface projection to `DesktopPresenter` and let the Desktop Presentation Shell render PRIME/SUB surface navigation through the shared Interaction Intent. Resonance no longer duplicates Check/Group/Physics/Spacing/Gate host-toolbar registrations.
+- Make the native Mobile shell consume Presenter `region` / `navigation` metadata. Semantic data-control/inspector surfaces map to portrait sheets or landscape rails while scientific-secondary surfaces map to routes; the legacy left-panel command remains only for unmigrated workspaces.
+- Make workspace surface invocation accept stable `surfaceId` as well as the internal action id, publish workspace-presentation changes from `PluginWorkspace`, and prevent Mobile PRIME toggles from pushing stale routes after a panel closes.
+- Keep one Plugin API and one Resonance implementation. Phase 3 intentionally leaves `mobile.css` cleanup to Phase 4.
+
 # v3.67.1 — Platform Presentation Architecture / Phase 2
 
 - Make the Desktop activity shell consume `DesktopPresenter.navigation` instead of recomputing primary/secondary/tool grouping inside Plugin Kernel. Registration, activation and dedicated-window lifecycle remain Kernel-owned; platform composition now belongs to the Desktop Presentation Shell.

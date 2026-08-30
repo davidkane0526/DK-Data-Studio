@@ -27,6 +27,24 @@ export type ShellActivity = {
   subs?: { id: string; label: string; role: 'sub' }[];
 };
 
+export type ShellSurface = {
+  id: string;
+  surfaceId?: string;
+  label: string;
+  kind?: 'primary' | 'prime' | 'sub' | string;
+  role?: string;
+  priority?: number;
+  collapsible?: boolean;
+  active?: boolean;
+  presentation?: { region?: 'main' | 'sheet' | 'rail' | 'route' | string; navigation?: 'primary' | 'context' | 'secondary' | string };
+};
+
+const surfaceRequestId = (surface: ShellSurface) => surface.surfaceId || surface.id;
+const navigableSurfaces = (shell: RendererShellState) => (shell.surfaces || []).filter(surface => surface.presentation?.navigation !== 'primary' && surface.presentation?.region !== 'main' && surface.kind !== 'primary').slice().sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0) || a.label.localeCompare(b.label));
+const contextRailSurfaces = (shell: RendererShellState) => navigableSurfaces(shell).filter(surface => surface.presentation?.region === 'rail');
+const hasSemanticDataControl = (shell: RendererShellState) => (shell.surfaces || []).some(surface => surface.role === 'data-control');
+const surfaceDetail = (surface: ShellSurface) => surface.presentation?.region === 'sheet' ? (surface.active ? '当前面板已打开' : '在当前工作区打开面板') : surface.presentation?.region === 'rail' ? (surface.active ? '当前侧栏已打开' : '在侧栏打开') : surface.presentation?.region === 'route' ? (surface.active ? '当前页面' : '打开工作区页面') : (surface.active ? '当前显示' : '在当前工作区打开');
+
 export type RendererShellState = {
   ready: boolean;
   projectTitle: string;
@@ -46,7 +64,7 @@ export type RendererShellState = {
   protocol?: number;
   revision?: number;
   route?: { kind?: string; activityId?: string; pluginId?: string; pageId?: string };
-  surfaces?: { id: string; label: string; active?: boolean }[];
+  surfaces?: ShellSurface[];
   actions?: { id: string; label: string; icon?: string; enabled?: boolean; active?: boolean; menu?: boolean; items?: { id: string; label: string; icon?: string; enabled?: boolean }[] }[];
   statusItems?: { pluginId: string; id: string; label: string; icon?: string; side?: 'left' | 'right'; state?: string; disabled?: boolean; clickable?: boolean; title?: string }[];
 };
@@ -153,11 +171,9 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
   const { width } = useWindowDimensions();
   const activeProject = (shell.projects || []).find(project => project.active) || (shell.projects || [])[0];
   const directLimit = width >= 700 ? 6 : width >= 480 ? 4 : 3;
-  const directRows = [
-    ...(shell.surfaces || []).map(row => ({ ...row, kind: 'surface' as const })),
-    ...(shell.actions || []).filter(row => !row.menu && row.enabled !== false).map(row => ({ ...row, kind: 'action' as const })),
-  ].slice(0, directLimit);
-  const hasOverflow = (shell.surfaces || []).length + (shell.actions || []).length > directRows.length;
+  const surfaces = navigableSurfaces(shell);
+  const directRows = [...surfaces.map(row => ({ ...row, kind: 'surface' as const })),...(shell.actions || []).filter(row => !row.menu && row.enabled !== false).map(row => ({ ...row, kind: 'action' as const }))].slice(0, directLimit);
+  const hasOverflow = surfaces.length + (shell.actions || []).filter(row => row.enabled !== false).length > directRows.length;
   return (
     <View style={[styles.header, { backgroundColor: palette.surface, borderBottomColor: palette.divider }]}>
       <View style={styles.unifiedHeaderRow}>
@@ -190,7 +206,7 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
               key={`${row.kind}:${row.id}`}
               accessibilityRole="button"
               accessibilityLabel={row.label}
-              onPress={() => row.kind === 'surface' ? onAction('surface', { id: row.id }) : onAction('workspace-action', { id: row.id })}
+              onPress={() => row.kind === 'surface' ? onAction('surface', { id: surfaceRequestId(row as ShellSurface) }) : onAction('workspace-action', { id: row.id })}
               style={({ pressed }) => [styles.projectAction, { backgroundColor: row.active ? palette.accentSoft : palette.surfaceSoft, borderColor: row.active ? palette.accent : palette.controlBorder }, pressed && styles.pressed]}>
               <Text style={[styles.projectActionText, { color: row.active ? palette.accent : palette.text }]} numberOfLines={1}>{row.label}</Text>
               </Pressable>
@@ -215,7 +231,7 @@ export function NativeHeader({ shell, palette, onAction, onSheet }: HeaderProps)
             style={[styles.headerHistoryButton, { backgroundColor: palette.surfaceSoft, borderColor: palette.controlBorder, opacity: shell.history?.canRedo ? 1 : .38 }]}>
             <HistoryGlyph direction="redo" color={palette.text} />
           </Pressable>
-          {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
+          {!shell.activities.find(row => row.id === shell.activityId)?.system && !hasSemanticDataControl(shell) ? (
             <Pressable
               accessibilityRole="button" accessibilityLabel="打开数据与参数"
               onPress={() => onAction('panel', { name: 'left' })}
@@ -326,12 +342,19 @@ export function NativeStatusBar({ shell, palette, onAction, webService }: Pick<N
 }
 
 export function NavigationRail({ shell, palette, onAction, onSheet }: NavigationProps) {
+  const railSurfaces = contextRailSurfaces(shell);
   return (
     <View style={[styles.rail, { backgroundColor: palette.surface, borderRightColor: palette.divider }]}>
       <View style={[styles.railBrand, { backgroundColor: palette.accent }]}>
         <Text style={styles.railBrandText}>DK</Text>
       </View>
-      {!shell.activities.find(row => row.id === shell.activityId)?.system ? (
+      {railSurfaces.map(surface => (
+        <Pressable key={`surface:${surface.id}`} accessibilityRole="button" accessibilityLabel={surface.label} onPress={() => onAction('surface', { id: surfaceRequestId(surface) })} style={({ pressed }) => [styles.railPanel, { backgroundColor: surface.active ? palette.accentSoft : palette.surfaceSoft }, pressed && styles.pressed]}>
+          <Text style={[styles.railPanelGlyph, { color: surface.active ? palette.accent : palette.textSoft }]}>{surface.role === 'data-control' ? '☷' : '◇'}</Text>
+          <Text style={[styles.railLabel, { color: surface.active ? palette.accent : palette.textSoft }]} numberOfLines={1}>{surface.label}</Text>
+        </Pressable>
+      ))}
+      {!shell.activities.find(row => row.id === shell.activityId)?.system && !hasSemanticDataControl(shell) ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="打开数据与参数"
@@ -577,26 +600,26 @@ export function ShellActionSheet({ visible, shell, palette, onAction, onSheet, o
                     onPress={() => run('activity', { id: activity.id })}
                   />
                 ))}
-                {(shell.surfaces || []).length ? (
+                {navigableSurfaces(shell).length ? (
                   <Text style={[styles.surfaceHeading, { color: palette.textSoft }]}>当前工作区页面与面板</Text>
                 ) : null}
-                {(shell.surfaces || []).map(surface => (
+                {navigableSurfaces(shell).map(surface => (
                   <SheetAction
                     key={surface.id}
                     glyph={surface.active ? '●' : '○'}
                     label={surface.label || surface.id}
-                    detail={surface.active ? '当前显示' : '在当前工作区打开'}
+                    detail={surfaceDetail(surface)}
                     palette={palette}
-                    onPress={() => run('surface', { id: surface.id })}
+                    onPress={() => run('surface', { id: surfaceRequestId(surface) })}
                   />
                 ))}
               </> : (
                 <Text style={[styles.emptyText, { color: palette.textSoft }]}>当前没有可用的插件工作区。</Text>
               )
             ) : visible === 'actions' ? (
-              (shell.actions || []).length || (shell.surfaces || []).length ? <>
-                {(shell.surfaces || []).map(surface => (
-                  <SheetAction key={`surface:${surface.id}`} glyph={surface.active ? '●' : '○'} label={surface.label} detail={surface.active ? '当前页面或面板' : '打开工作区页面或面板'} palette={palette} onPress={() => run('surface', { id: surface.id })} />
+              (shell.actions || []).length || navigableSurfaces(shell).length ? <>
+                {navigableSurfaces(shell).map(surface => (
+                  <SheetAction key={`surface:${surface.id}`} glyph={surface.active ? '●' : '○'} label={surface.label} detail={surfaceDetail(surface)} palette={palette} onPress={() => run('surface', { id: surfaceRequestId(surface) })} />
                 ))}
                 {(shell.actions || []).map(action => action.menu ? (
                   <View key={action.id} style={styles.actionMenuGroup}>

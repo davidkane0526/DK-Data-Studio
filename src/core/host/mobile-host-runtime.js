@@ -111,13 +111,17 @@
     if(!activityId||!id)throw new Error('Missing mobile workspace surface.');
     if(currentActivityId()!==activityId)await navigate({activityId});
     if(!routeStack.length)routeStack.push({kind:'workspace',activityId});
-    const surfaceRow=(presentation()?.snapshot?.({route:currentRoute()})?.workspaces||[]).find(row=>row.activityId===activityId)?.surfaces?.find(row=>text(row.id)===id);
-    if(!surfaceRow)throw new Error(`Workspace surface unavailable: ${activityId}/${id}`);
-    const ok=window.DKDSUI?.workspaces?.invoke?.(activityId,id);
-    if(!ok)throw new Error(`Workspace surface activation failed: ${activityId}/${id}`);
-    routeStack.push({kind:surfaceRow.kind==='sub'?'sub':surfaceRow.kind==='prime'?'prime':'workspace',activityId,surfaceId:id,role:text(surfaceRow.role)});
-    requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
-    publish();return {activityId,surfaceId:id,role:text(surfaceRow.role)};
+    const findSurface=()=>snapshot().workspaces?.find(row=>row.activityId===activityId)?.surfaces?.find(row=>text(row.surfaceId||row.id)===id||text(row.id)===id);
+    const before=findSurface();if(!before)throw new Error(`Workspace surface unavailable: ${activityId}/${id}`);
+    const ok=window.DKDSUI?.workspaces?.invoke?.(activityId,id);if(!ok)throw new Error(`Workspace surface activation failed: ${activityId}/${id}`);
+    const after=findSurface()||before,canonicalId=text(after.surfaceId||id),matchingIndex=routeStack.findIndex((row,index)=>index>0&&row.activityId===activityId&&row.surfaceId===canonicalId);
+    if(after.kind==='prime'&&after.active===false){if(matchingIndex>=0)routeStack.splice(matchingIndex,1);}
+    else if(after.kind==='primary'){while(routeStack.length>1&&routeStack.at(-1)?.activityId===activityId)routeStack.pop();}
+    else{
+      const route={kind:after.kind==='sub'?'sub':after.kind==='prime'?'prime':'workspace',activityId,surfaceId:canonicalId,role:text(after.role),region:text(after.presentation?.region)};
+      if(matchingIndex>=0)routeStack[matchingIndex]=route;else if(routeStack.at(-1)?.activityId===activityId&&routeStack.at(-1)?.surfaceId)routeStack[routeStack.length-1]=route;else routeStack.push(route);
+    }
+    requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));publish();return {activityId,surfaceId:canonicalId,role:text(after.role),active:after.active!==false,region:text(after.presentation?.region)};
   }
 
   async function status(payload={}){
@@ -201,6 +205,7 @@
   window.addEventListener('dkds:project-changed',publish);
   window.addEventListener('dkds:history-changed',publish);
   window.addEventListener('dkds:status-changed',publish);
+  window.addEventListener('dkds:workspace-presentation-changed',publish);
   window.addEventListener('load',()=>{
     announceReady();
     const adapter=mobileAdapter();adapter?.setDispatcher?.(dispatchIntent);adapter?.setPublisher?.(publish);adapter?.installDocumentBindings?.({dispatch:dispatchIntent,publish});

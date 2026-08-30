@@ -40,9 +40,16 @@ class DesktopPresentationShell {
   bindButton(button,item){
     const binding={intent:Intent.types.NAVIGATE,payload:{activityId:item.activityId}};
     button.addEventListener('click',event=>{
-      Promise.resolve(this.adapter.dispatch(binding,event)).catch(error=>{
+      Promise.resolve(this.adapter.dispatch(binding,event)).then(()=>this.renderWorkspaceSurfaces()).catch(error=>{
         console.error(`[DKDS desktop navigation:${item.activityId}]`,error);
       });
+    });
+  }
+  bindSurfaceButton(button,item){
+    const activityId=text(item.activityId||window.DKDSPlugins?.activities?.active?.());
+    const binding={intent:Intent.types.SURFACE,payload:{activityId,id:item.surfaceId}};
+    button.addEventListener('click',event=>{
+      Promise.resolve(this.adapter.dispatch(binding,event)).then(()=>this.renderWorkspaceSurfaces()).catch(error=>console.error(`[DKDS desktop surface:${activityId}/${item.surfaceId}]`,error));
     });
   }
   activityButton(item,{tool=false}={}){
@@ -63,6 +70,20 @@ class DesktopPresentationShell {
     button.innerHTML=`${icon}<span class="activity-label">${text(item.label||item.activityId)}</span>`;
     this.bindButton(button,item);return button;
   }
+  surfaceButton(item,activityId){
+    const button=document.createElement('button');button.type='button';button.className='toolbar-btn plugin-toolbar-btn';
+    button.dataset.dkdsPresentationSurface='1';button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection=text(item.section);button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,1000-(Number(item.priority)||0)));
+    button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-presentation-shell';button.dataset.dkdsComponentVariant=item.active?'selected':'quiet';button.dataset.dkdsComponentVariantOwner='core-presentation-shell';
+    button.textContent=text(item.label||item.surfaceId);button.setAttribute('aria-label',text(item.label||item.surfaceId));button.setAttribute('aria-pressed',item.active?'true':'false');button.classList.toggle('selected',!!item.active);this.bindSurfaceButton(button,{...item,activityId});return button;
+  }
+  renderWorkspaceSurfaces(context={}){
+    if(typeof document==='undefined')return false;
+    const toolbar=document.querySelector('#pluginToolbarAnalysis');if(!toolbar)return false;
+    toolbar.querySelectorAll('[data-dkds-presentation-surface]').forEach(node=>node.remove());
+    const snapshot=Presentation.present('desktop',{...context,isAuxiliaryWindow:!!context.isAuxiliaryWindow}),activityId=text(snapshot.activity?.id);
+    for(const item of snapshot.workspaceSurfaces||[])toolbar.appendChild(this.surfaceButton(item,activityId));
+    queueMicrotask(()=>{try{window.dispatchEvent(new Event('resize'));}catch{}});return snapshot.workspaceSurfaces;
+  }
   renderNavigation(context={}){
     if(typeof document==='undefined')return false;
     const snapshot=Presentation.present('desktop',{...context,isAuxiliaryWindow:!!context.isAuxiliaryWindow});
@@ -73,11 +94,12 @@ class DesktopPresentationShell {
     for(const item of snapshot.navigation.primary)primary?.appendChild(this.activityButton(item));
     for(const item of snapshot.navigation.secondary)secondary.appendChild(this.activityButton(item));
     for(const item of snapshot.navigation.tools)tools?.appendChild(this.activityButton(item,{tool:true}));
+    this.renderWorkspaceSurfaces(context);
     return snapshot.navigation;
   }
 }
 
 const shell=new DesktopPresentationShell();
-const api=Object.freeze({version:'1.0.0',DesktopPresentationShell,shell,renderNavigation:context=>shell.renderNavigation(context),dispatch:intent=>shell.dispatch(intent)});
-if(typeof window!=='undefined')window.DKDSDesktopPresentationShell=api;
+const api=Object.freeze({version:'1.1.0',DesktopPresentationShell,shell,renderNavigation:context=>shell.renderNavigation(context),renderWorkspaceSurfaces:context=>shell.renderWorkspaceSurfaces(context),dispatch:intent=>shell.dispatch(intent)});
+if(typeof window!=='undefined'){window.DKDSDesktopPresentationShell=api;window.addEventListener?.('dkds:workspace-presentation-changed',()=>shell.renderWorkspaceSurfaces());}
 module.exports=api;

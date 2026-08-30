@@ -65,7 +65,7 @@ const {PluginScope}=require('../scope/plugin-scope');
         const target=String(activity||''),actionId=String(id||'');
         for(const group of scopes.values())for(const scope of group)for(const workbench of (scope.pluginWorkspaces||[])){
           if(!(workbench instanceof PluginWorkspace)||String(workbench.spec?.activity||'')!==target)continue;
-          const action=(workbench.navigationActions?.()||[]).find(row=>String(row.id)===actionId);
+          const action=(workbench.navigationActions?.()||[]).find(row=>String(row.id)===actionId||String(row.surfaceId)===actionId);
           if(action){action.onInvoke?.();workbench.resize?.('mobile-navigation');return true;}
         }
         return false;

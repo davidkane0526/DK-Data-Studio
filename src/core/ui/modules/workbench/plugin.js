@@ -101,8 +101,11 @@ const {AnalysisWorkbench}=require('./analysis');
       this.canvasFrame.querySelector('.dkds-plugin-canvas-bottom-resizer')?.classList.toggle('active',state.bottom&&!state.bottomCollapsedOnly);return state;
     }
     syncRegions(){const state=super.syncRegions();this.syncCanvasRegions?.();return state;}
-    showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');return value;}
-    openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden');return ok;}
+    presentationChanged(reason='surface'){try{window.dispatchEvent?.(new CustomEvent('dkds:workspace-presentation-changed',{detail:{owner:this.owner,activity:String(this.spec?.activity||''),reason}}));}catch{}return this;}
+    showPrimary(){const value=super.showPrimary();if(this.canvasFrame)this.canvasFrame.classList.remove('hidden');if(value)this.presentationChanged('primary');return value;}
+    openPrime(id,placement){const ok=super.openPrime(id,placement);if(ok)this.presentationChanged('prime-open');return ok;}
+    closePrime(id){const ok=super.closePrime(id);if(ok)this.presentationChanged('prime-close');return ok;}
+    openSub(id){const ok=super.openSub(id);if(ok&&this.canvasFrame)this.canvasFrame.classList.add('hidden');if(ok)this.presentationChanged('sub-open');return ok;}
     setNavigationPresentation(mode='inline'){
       this.navigationPresentation=String(mode||'inline');const nav=this.shell?.querySelector('.dkds-analysis-nav');if(nav)nav.classList.toggle('host-presented',this.navigationPresentation!=='inline');return this;
     }
