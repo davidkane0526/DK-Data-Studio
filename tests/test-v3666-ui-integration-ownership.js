@@ -52,14 +52,18 @@ assert(pulseCss.includes('gap:7px;')&&pulseCss.includes('margin-top:9px;'),'Puls
 assert(resonance.includes('respar-inspector-panel hidden')&&!resonance.includes('respar-inspector-panel dkds-floating-surface'),'Curve Inspector must have exactly one PortableView surface owner.');
 assert(resonance.includes('respar-group-panel hidden')&&!resonance.includes('respar-group-panel dkds-floating-surface'),'Group panel must follow the same single-surface ownership rule.');
 
-// File IA is Import / Save / Export. Import opens the local picker directly and
-// Core auto-classifies project/data; providers such as SMB live behind the small
-// adjacent source trigger.
-assert(html.includes('aria-label="导入">导入</button>')&&html.includes('id="importSourceBtn"')&&html.includes('aria-label="保存">保存</button>')&&html.includes('>导出</button>'),'Top file command labels must be 导入 / 保存 / 导出 with a compact import-source trigger.');
+// File IA is Import / Save / Export. The top-level Import command opens the
+// Import Workbench; source choice belongs inside that workbench beside Import Data.
+assert(html.includes('aria-label="导入">导入</button>')&&html.includes('aria-label="保存">保存</button>')&&html.includes('>导出</button>'),'Top file command labels must remain 导入 / 保存 / 导出.');
+const topbarStart=html.indexOf('<div class="toolbar-group file-command-group">'),topbarEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topbarStart),topbarFileGroup=html.slice(topbarStart,topbarEnd);
+assert(!topbarFileGroup.includes('importSourceBtn')&&!topbarFileGroup.includes('importSourceMenu'),'Import-source selection must not occupy the top file command group.');
+const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);
+assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('>导入数据</button>')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-plugin-menu="import-data"'),'SMB/other provider sources must live beside Import Data inside the Import Workbench.');
 assert(!html.includes('id="openProjectBtn"')&&!html.includes('projectSourceMenu'),'Separate Read Project command must stay removed.');
 assert(html.indexOf('id="openBtn"')<html.indexOf('id="saveProjectBtn"')&&html.indexOf('id="saveProjectBtn"')<html.indexOf('id="exportMenuBtn"'),'File commands must remain ordered Import / Save / Export.');
-assert(docks.includes("$('#openBtn').onclick=openFilesAuto")&&docks.includes("$('#openLocalImportMenuBtn').onclick=openFilesAuto"),'Main and local-source Import must share automatic classification.');
-assert(importWorkbench.includes('async function openFilesAuto()')&&importWorkbench.includes('DKDSProjectFormat?.isProjectLike?.(raw)'),'Core import must classify project JSON versus ordinary data.');
+assert(docks.includes("$('#openBtn').onclick=()=>openImportWorkbench()")&&docks.includes("$('#importChooseFilesBtn').onclick=addImportFiles"),'Top Import must open the workbench and local import must start from inside it.');
+assert(importWorkbench.includes('return openFilesAuto({keepWorkbench:true});')&&importWorkbench.includes('DKDSProjectFormat?.isProjectLike?.(raw)'),'Workbench-local import must retain automatic project/data classification without resetting workbench routing.');
+assert(importWorkbench.includes('async function openFilesAuto(options={})')&&importWorkbench.includes('DKDSProjectFormat?.isProjectLike?.(raw)'),'Core import must classify project JSON versus ordinary data.');
 assert(activityShell.includes("trigger.textContent='导出'")&&activityShell.includes("setAttribute('aria-label','导出')"),'Export presentation refresh must preserve the shortened label.');
 assert(connectivity.includes("menu:'import-data',label:'SMB 网络文件…'")&&connectivity.includes("onClick:()=>openSmb('auto')")&&!connectivity.includes("menu:'open-project'"),'SMB must be one auto-classifying source rather than a separate project task.');
 
@@ -73,4 +77,4 @@ assert(!html.slice(systemEnd).includes('id="manageMenuBtn"'),'Software Managemen
 // Preserve v3.66.5's brighter Aurora emerald while completing the structural work.
 assert(aurora.includes("fill:'#08A77A'")&&aurora.includes("accent:'#16C995'"),'Aurora light emerald refinement must not regress during UI closure.');
 
-console.log('v3.66.6 UI integration ownership PASS: flat SMB, canonical header actions, pulse spacing, single-layer inspector, unified file IA and grouped system commands are enforced.');
+console.log('v3.66.6+ UI integration ownership PASS: flat SMB, canonical actions, workbench-owned import sources, single-layer inspector and grouped system commands are enforced.');

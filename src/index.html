@@ -23,19 +23,11 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.6</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.66.7</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
             <button id="openBtn" class="toolbar-btn strong" type="button" aria-label="导入">导入</button>
-            <div class="menu-anchor import-source-anchor" data-menu-align="left">
-              <button id="importSourceBtn" class="toolbar-btn menu-trigger import-source-trigger" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
-              <div id="importSourceMenu" class="command-menu hidden">
-                <button id="openLocalImportMenuBtn" type="button">本地 / 系统文件…</button>
-                <div class="command-menu-separator"></div>
-                <div data-plugin-menu="import-data"></div>
-              </div>
-            </div>
             <button id="saveProjectBtn" class="toolbar-btn" type="button" aria-label="保存">保存</button>
             <div class="menu-anchor" data-menu-align="left">
               <button id="exportMenuBtn" class="toolbar-btn menu-trigger" type="button" data-menu-target="exportMenu" aria-haspopup="true" aria-expanded="false">导出</button>
@@ -241,7 +233,15 @@
             <div class="import-workbench-subtitle">默认自动识别；特殊仪器格式可逐文件调整编码、跳行、分隔符和列映射。</div>
           </div>
           <div class="import-header-actions">
-            <button id="importChooseFilesBtn" class="primary">导入文件</button>
+            <div class="import-data-command">
+              <button id="importChooseFilesBtn" class="dkds-action-button primary" type="button">导入数据</button>
+              <div class="menu-anchor import-source-anchor" data-menu-align="right">
+                <button id="importSourceBtn" class="dkds-action-button menu-trigger import-source-trigger" data-dkds-action-layout="standalone" type="button" data-menu-target="importSourceMenu" aria-label="选择导入来源" aria-haspopup="true" aria-expanded="false">▾</button>
+                <div id="importSourceMenu" class="command-menu hidden">
+                  <div data-plugin-menu="import-data"></div>
+                </div>
+              </div>
+            </div>
             <button id="importCloseBtn">关闭</button>
           </div>
         </div>
@@ -270,7 +270,7 @@
 
           <main class="import-main-pane">
             <div id="importNoFile" class="import-empty">
-              点击“导入文件”添加 CSV / TXT / DAT / TSV / ASC / XY / IV 数据。
+              点击“导入数据”选择本地数据，或使用旁边的来源按钮从 SMB 等来源导入。
             </div>
 
             <div id="importEditor" class="hidden">

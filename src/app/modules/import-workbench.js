@@ -139,15 +139,10 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
   }
 
   async function addImportFiles(){
-    if(state.importDraft.fileDialogOpen)return;
-    state.importDraft.fileDialogOpen=true;
-    let metas=[];
-    try{metas=await window.electronAPI.openDataFiles();}
-    finally{state.importDraft.fileDialogOpen=false;}
-    return stageImportMetas(metas);
+    return openFilesAuto({keepWorkbench:true});
   }
 
-  async function openFilesAuto(){
+  async function openFilesAuto(options={}){
     if(state.importDraft.fileDialogOpen)return;
     state.importDraft.fileDialogOpen=true;
     let metas=[];
@@ -170,7 +165,8 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
       }
       if(!handled)data.push(meta);
     }
-    if(data.length){openImportWorkbench();await stageImportMetas(data);}
+    if(data.length){if(!options?.keepWorkbench)openImportWorkbench();await stageImportMetas(data);}
+    else if(openedProjects&&options?.keepWorkbench)closeImportWorkbench();
     if(openedProjects&&data.length)setStatus(`已自动识别并打开 ${openedProjects} 个工程，其余 ${data.length} 个文件进入数据导入工作台。`);
     return true;
   }
@@ -238,29 +234,53 @@ const publishCapabilitySnapshot=(...args)=>deps.windows.publishCapabilitySnapsho
     }
   }
 
+  function routeImportSeedFiles(files=[]){
+    const dataFiles=[];let openedProjects=0;
+    for(const seed of (Array.isArray(files)?files:[])){
+      const name=String(seed?.name||'').toLowerCase();let handled=false;
+      if(name.endsWith('.json')&&(typeof seed?.text==='string'||seed?.base64)){
+        try{
+          const decoded=decodeImportSeed(seed),raw=JSON.parse(String(decoded.text||''));
+          if(window.DKDSProjectFormat?.isProjectLike?.(raw)){
+            const project=window.DKDSProjectFormat.parseProjectText(String(decoded.text||''));
+            openProjectPayload({project,path:String(seed?.path||seed?.name||'provider://dk-data-project.json')});
+            openedProjects++;handled=true;
+          }
+        }catch(err){console.debug('[DKDS provider auto file classify]',seed?.name,err?.message||err);}
+      }
+      if(!handled)dataFiles.push(seed);
+    }
+    return {dataFiles,openedProjects};
+  }
+
   function openImportWorkbench(options={}){
     const scoped=String(options?.mode||'')==='scoped'||!!options?.consumerId;
+    const panelAlreadyOpen=!$('#importPanel').classList.contains('hidden');
+    const preserveRouting=panelAlreadyOpen&&!scoped&&!Array.isArray(options?.targets);
+    const routed=routeImportSeedFiles(options?.files);
     if(scoped){
       const consumerId=String(options?.consumerId||options?.targets?.[0]||'').trim();
       const target=dataConsumerTargets().find(row=>row.id===consumerId)||null;
       const accepts=Array.isArray(options?.accepts)?options.accepts.map(String).filter(Boolean):(target?.accepts||[]);
       state.importDraft.scope={mode:'scoped',consumerId,label:String(options?.consumerLabel||target?.label||consumerId||'当前工作台'),icon:String(options?.consumerIcon||target?.icon||'◇'),accepts};
       state.importDraft.targets=consumerId?[consumerId]:[];
-    }else{
+    }else if(!preserveRouting){
       state.importDraft.scope=null;
       if(Array.isArray(options?.targets))state.importDraft.targets=[...new Set(options.targets.map(String).filter(Boolean))];
       else state.importDraft.targets=null;
       ensureImportTargets();
     }
-    if(Array.isArray(options?.files)&&options.files.length)ingestImportSeedFiles(options.files);
+    if(routed.dataFiles.length)ingestImportSeedFiles(routed.dataFiles);
     if(options?.importerId){
       const provider=importProvider(options.importerId);
       if(provider)for(const item of state.importDraft.files){
         item.importerId=provider.id;item.importerTouched=true;item.settings=provider.defaultOptions?.()||{};item.mappingTouched=false;if(item.text)recomputeImportItem(item,true);
       }
     }else autoRouteImportersForTargets();
+    if(routed.openedProjects&&!routed.dataFiles.length){if(panelAlreadyOpen)closeImportWorkbench();return;}
     $('#importPanel').classList.remove('hidden');
     renderImportWorkbench();
+    if(routed.openedProjects&&routed.dataFiles.length)setStatus(`已自动识别并打开 ${routed.openedProjects} 个工程，其余 ${routed.dataFiles.length} 个文件保留在数据导入工作台。`);
   }
 
   function dataConsumerTargets(){

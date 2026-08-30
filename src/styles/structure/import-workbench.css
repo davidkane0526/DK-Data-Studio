@@ -12,6 +12,18 @@
   padding:15px 18px 13px;
 }
 .import-workbench-subtitle{margin-top:4px;}
+.import-data-command{
+  display:inline-flex;
+  align-items:stretch;
+  gap:3px;
+}
+.import-data-command>.menu-anchor{display:flex;align-items:stretch;}
+.import-data-command .import-source-trigger{
+  width:30px;
+  min-width:30px;
+  padding-left:0;
+  padding-right:0;
+}
 .import-file-actions{
   display:flex;gap:6px;align-items:center;
 }

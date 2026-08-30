@@ -1,3 +1,13 @@
+# v3.66.7 — Import Workbench Source Placement Correction
+
+- Correct the v3.66.6 file-command hierarchy: the top-level **导入** command now opens the shared Data Import Workbench instead of launching a file picker or exposing source providers beside the shell command. **保存 / 导出** remain the only peer file tasks in the top command group.
+- Move the source-provider trigger into the Import Workbench, directly beside **导入数据**. The primary button chooses local/system files; the compact adjacent trigger hosts plugin-provided sources such as SMB. SMB is therefore a source of the import workflow, not a fourth top-level file command.
+- Preserve the Import Workbench routing context when a provider such as SMB returns files. Existing scoped consumer/target selections are no longer reset merely because the source changed, so source choice does not alter the post-import workflow.
+- Route provider-returned JSON through the same Core project/data classification used by local import. DKDS project payloads open as projects; ordinary files remain in the Data Import Workbench.
+- Remove the legacy 72 px minimum width from the shell file-command buttons. **导入 / 保存 / 导出** now size to their two-character labels with compact horizontal padding, reducing the command-group footprint without changing the shared ToolbarGroup ownership.
+- Make Ctrl/Cmd+O follow the same hierarchy as clicking **导入**: it opens the Import Workbench rather than bypassing it.
+- Add a v3.66.7 regression gate protecting source placement, compact shell geometry, workbench-local provider routing and automatic project/data classification. Release validation: `npm test` **206/206 PASS**, `npm run check` **214/214 PASS**, SDK Harness **PASS**, mobile source tests **5/5 PASS**, plugin manifests/packages **17/17 PASS**, authored CSS **0 `!important`**.
+
 # v3.66.6 — UI Integration Ownership Closure
 
 - Flatten Connectivity Center SMB composition into one dialog surface. The outer dialog keeps its radius, while the path strip, credentials region and footer are no longer nested `Surface` / `Toolbar` / `ActionRow` cards with independent rounded outlines; muted region color and spacing now carry internal hierarchy. Connectivity Center advances to **1.2.6**.

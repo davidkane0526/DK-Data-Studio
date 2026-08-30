@@ -820,6 +820,10 @@ module.exports = {
       "file": "tests/test-v3666-ui-integration-ownership.js",
       "args": []
     },
+    {
+      "file": "tests/test-v3667-import-workbench-source-placement.js",
+      "args": []
+    },
   ],
   "check": [
     {
@@ -1672,6 +1676,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v3666-ui-integration-ownership.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v3667-import-workbench-source-placement.js",
       "args": []
     },
   ],

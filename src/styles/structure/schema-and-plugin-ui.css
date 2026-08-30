@@ -267,9 +267,8 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
   gap:3px;
   padding:3px;
 }
-.file-command-group .toolbar-btn{min-width:72px;}
-.file-command-group>.import-source-anchor{display:flex;align-items:center;}
-.file-command-group>.import-source-anchor>.import-source-trigger{width:30px;min-width:30px;padding-left:0;padding-right:0;}
+.file-command-group{gap:2px;padding:2px;}
+.file-command-group .toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}
 .compact-menu-anchor>.toolbar-btn,.system-commandbar>.menu-anchor>.toolbar-btn{min-width:82px;}
 
 .activity-tab{

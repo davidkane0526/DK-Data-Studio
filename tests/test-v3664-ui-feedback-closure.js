@@ -45,17 +45,18 @@ assert(debug.includes('class="dkds-theme-debug-exit"')&&debug.includes('<svg vie
 // 7. Aurora light active/secondary commands retain white labels and consume the shared light interaction palette.
 assert(aurora.includes("surfaceActive:LIGHT_EMERALD.fill")&&aurora.includes("secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF'")&&aurora.includes("active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'"),'Aurora light active/secondary commands must consume the shared Theme palette and keep white text.');
 
-// 8. Import is one type-agnostic command. Its main button opens the local
-// picker and Core classifies project versus data; an adjacent compact source
-// trigger exposes SMB/other providers without turning provider choice into a
-// top-level task. Save and Export remain the other two file commands.
-assert(html.includes('id="openBtn" class="toolbar-btn strong"')&&html.includes('aria-label="导入">导入</button>'),'Main Import must be a direct type-agnostic command, not a source-menu trigger.');
-assert(html.includes('id="importSourceBtn" class="toolbar-btn menu-trigger import-source-trigger"')&&html.includes('data-menu-target="importSourceMenu"'),'Import providers must live behind the separate compact source trigger.');
+// 8. Import is one type-agnostic top-level task. It opens the Import Workbench;
+// provider/source choice is made inside that workbench beside Import Data.
+assert(html.includes('id="openBtn" class="toolbar-btn strong"')&&html.includes('aria-label="导入">导入</button>'),'Main Import must remain a type-agnostic task command.');
+const topFileStart=html.indexOf('<div class="toolbar-group file-command-group">'),topFileEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topFileStart),topFile=html.slice(topFileStart,topFileEnd);
+assert(!topFile.includes('importSourceBtn'),'Import providers must not be exposed in the top-level file command group.');
+const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);
+assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-menu-target="importSourceMenu"')&&importHeader.includes('data-plugin-menu="import-data"'),'Import providers must live beside Import Data inside the Import Workbench.');
 assert(!html.includes('id="openProjectBtn"')&&!html.includes('projectSourceMenu')&&!html.includes('data-plugin-menu="open-project"'),'Project opening must no longer be a separate top-level file command/provider mount.');
 assert(html.includes('id="saveProjectBtn"')&&html.includes('>保存</button>')&&html.includes('id="exportMenuBtn" class="toolbar-btn menu-trigger"')&&html.includes('>导出</button>'),'File command group must be Import / Save / Export.');
 assert(html.indexOf('id="openBtn"')<html.indexOf('id="saveProjectBtn"')&&html.indexOf('id="saveProjectBtn"')<html.indexOf('id="exportMenuBtn"'),'Import / Save / Export order must be stable.');
 assert(html.includes('data-menu-align="left"')&&menu.includes(`closest?.('[data-menu-align="left"]')`),'Source chooser positioning must use the generic command-menu alignment contract.');
-assert(docks.includes("$('#openBtn').onclick=openFilesAuto")&&docks.includes("$('#openLocalImportMenuBtn').onclick=openFilesAuto")&&!docks.includes('openLocalProjectMenuBtn'),'Main/local import paths must share Core automatic project/data classification.');
+assert(docks.includes("$('#openBtn').onclick=()=>openImportWorkbench()")&&docks.includes("$('#importChooseFilesBtn').onclick=addImportFiles")&&!docks.includes('openLocalImportMenuBtn'),'Top Import must open the workbench; source selection and local file picking must live inside it.');
 assert(connectivity.includes("menu:'import-data',label:'SMB 网络文件…'")&&connectivity.includes("onClick:()=>openSmb('auto')")&&!connectivity.includes("menu:'open-project'"),'SMB must be one type-agnostic import source.');
 assert(connectivity.includes("id:'smb-browser',side:'right',order:31")&&connectivity.includes("label:'SMB'")&&connectivity.includes("onClick:()=>openSmb('auto')"),'Connectivity plugin must expose an SMB status-bar button that opens its own panel.');
 
