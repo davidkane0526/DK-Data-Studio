@@ -141,15 +141,17 @@ function defineTop(P,id,activity,{complete=true,prime=false,defaultEnabled=true,
   }
 
   {
-    // A saved but unavailable SUPER is intentional state: do not silently
-    // choose the next TOP and surprise the user.
-    const {P}=makeSandbox({'dkds.workspace.super.v1':'missing.plugin'});
+    // A stale SUPER preference can survive an upgrade/uninstall. It must never
+    // strand the desktop in an empty PRIMARY/PRIME shell: migrate to the current
+    // valid default while preserving valid persisted choices elsewhere.
+    const {P,store}=makeSandbox({'dkds.workspace.super.v1':'missing.plugin'});
     defineTop(P,'builtin.resonance-workbench','resonance');
     defineTop(P,'test.top-b','top-b');
     P.configure({applySuperWorkspace:()=>{},showNoSuperWorkspace:()=>{},setStatus:()=>{}});
     await P.activateAll();
-    assert(P.workspace.super().configured===false&&P.workspace.super().available===false,'invalid saved SUPER must enter explicit unconfigured state.');
-    assert(P.activities.active()===null,'invalid saved SUPER must not fall back to another TOP.');
+    assert(P.workspace.super().pluginId==='builtin.resonance-workbench'&&P.workspace.super().available===true,'invalid saved SUPER must migrate to the valid default TOP.');
+    assert(P.activities.active()==='resonance','invalid saved SUPER must recover a usable embedded workspace.');
+    assert(store.get(P.manager.superStorageKey)==='builtin.resonance-workbench','SUPER migration must replace the stale persisted preference.');
   }
 
   // Source-level invariants for the main shell and manager UI.

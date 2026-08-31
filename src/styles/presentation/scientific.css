@@ -280,3 +280,5 @@ body.dkds-modern-ui .dkds-plot-legend {background:transparent;border-color:var(-
 .dkds-managed-table tbody tr:last-child>td,
 .dkds-managed-table tbody tr:last-child>th {border-bottom-color:transparent
 }
+
+body.dkds-modern-ui .dkds-scientific-surface-host:focus,body.dkds-modern-ui .dkds-scientific-surface-host:focus-visible,body.dkds-modern-ui .dkds-scientific-surface-host:focus-within{outline:none}

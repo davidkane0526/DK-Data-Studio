@@ -1,15 +1,15 @@
-/* Material Renderer 3.9.
+/* Material Renderer 3.10.
    Material role describes UI semantics. Material recipe describes optical
    rendering. Core owns selectors/composition; Theme profiles only provide
    semantic tokens and role-to-recipe policy. */
-:root{--dkds-material-renderer-version:"3.9.0"}
+:root{--dkds-material-renderer-version:"3.10.0"}
 
 /* Recipes --------------------------------------------------------------- */
 body.dkds-modern-ui [data-dkds-material-recipe="clear"]{
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
   background-color:var(--dkds-material-base,var(--dkui-surface));
-  background-image:none;
+  background-image:var(--dkds-material-theme-overlay,none);
   border-color:var(--dkds-material-border,var(--dkui-divider));
   box-shadow:var(--dkds-material-shadow,var(--dkui-shadow-1));
 }
@@ -17,7 +17,7 @@ body.dkds-modern-ui [data-dkds-material-recipe="thin-glass"]{
   -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
-  background-image:linear-gradient(145deg,color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 42%,transparent),transparent 30%,transparent 72%,color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 24%,transparent));
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),linear-gradient(145deg,color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 42%,transparent),transparent 30%,transparent 72%,color-mix(in srgb,var(--dkds-material-specular,var(--dkui-specular-highlight)) 24%,transparent));
   border-color:var(--dkds-material-border,var(--dkui-divider));
   box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 48%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-1));
   filter:none;
@@ -26,7 +26,7 @@ body.dkds-modern-ui [data-dkds-material-recipe="soft-glass"]{
   -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
-  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .45px,transparent .55px);
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .45px,transparent .55px);
   background-size:3px 3px;
   border-color:var(--dkds-material-border,var(--dkui-divider));
   box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 62%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-1));
@@ -37,7 +37,7 @@ body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]{
   -webkit-backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   backdrop-filter:blur(var(--dkds-material-blur,var(--dkui-material-blur))) saturate(var(--dkds-material-saturation,var(--dkui-material-saturation)));
   background-color:color-mix(in srgb,var(--dkds-material-base,var(--dkui-surface-elevated)) var(--dkds-material-fill-opacity,var(--dkds-material-authored-opacity,var(--dkui-material-tint-opacity))),transparent);
-  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .42px,transparent .55px);
+  background-image:var(--dkds-material-theme-overlay,linear-gradient(transparent,transparent)),radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--dkui-text) var(--dkds-material-noise,var(--dkui-material-noise-opacity)),transparent) .42px,transparent .55px);
   background-size:3px 3px;
   border-color:color-mix(in srgb,var(--dkds-material-border,var(--dkui-divider)) 82%,transparent);
   box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dkds-material-inner,var(--dkui-inner-highlight)) 66%,transparent),var(--dkds-material-shadow,var(--dkui-shadow-float));
@@ -61,6 +61,24 @@ body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
   opacity:.72;
 }
 
+
+/* Theme expression remains declarative: profiles provide controlled effect
+   tokens, while Material Renderer is the only owner that composes them into
+   painted optical layers. Missing effect tokens resolve to transparent, so
+   Default and neutral themes keep their existing appearance. */
+body.dkds-modern-ui .dkds-material-role-chrome{
+  --dkds-material-theme-overlay:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start,transparent),var(--dkui-effect-header-gradient-end,transparent));
+}
+body.dkds-modern-ui .dkds-material-role-sidebar{
+  --dkds-material-theme-overlay:linear-gradient(180deg,var(--dkui-effect-ambient-tint,transparent),transparent 58%);
+}
+body.dkds-modern-ui :where(.dkds-material-role-elevated,.dkds-material-role-popover){
+  --dkds-material-theme-overlay:radial-gradient(circle at 14% 0%,color-mix(in srgb,var(--dkui-effect-accent-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent),transparent 44%),linear-gradient(160deg,var(--dkui-effect-ambient-tint,transparent),transparent 52%);
+}
+body.dkds-modern-ui .dkds-material-role-floating{
+  --dkds-material-theme-overlay:radial-gradient(circle at 82% 18%,color-mix(in srgb,var(--dkui-effect-edge-glow,transparent) var(--dkui-effect-glow-intensity,0%),transparent),transparent 48%),linear-gradient(145deg,var(--dkui-effect-ambient-tint,transparent),transparent 58%);
+}
+
 /* Composition ----------------------------------------------------------- */
 /* Canonical material edge geometry for compact command/popover surfaces.
    Optical fill, edge color and depth continue to come from the active recipe. */
@@ -81,6 +99,8 @@ body.dkds-modern-ui .floating-panel:is(.dkds-material-role-floating,.dkds-materi
 body.dkds-modern-ui .dkds-memory-panel.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:13px}
 body.dkds-modern-ui .dkds-floating-surface.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:var(--dkds-visual-radius)}
 body.dkds-modern-ui .dkds-surface.dkds-material-role-surface{border-radius:var(--dkds-visual-radius)}
+body.dkds-modern-ui [data-dkds-surface-edge="none"]{border-width:0;outline:none;box-shadow:none}
+body.dkds-modern-ui .import-workbench.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
 body.dkds-modern-ui :where(.dkds-dialog,.dkds-dialog-shell).dkds-material-role-elevated{border-radius:14px}
 body.dkds-modern-ui .dkds-settings-dialog.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
 body.dkds-modern-ui :where(.dkds-tooltip,.hover-tip,.dkds-core-tooltip,.dkds-d3-chart-tooltip){border-width:1px;border-style:solid;border-radius:7px}

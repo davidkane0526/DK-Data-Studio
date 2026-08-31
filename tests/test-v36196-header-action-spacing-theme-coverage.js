@@ -44,8 +44,8 @@ assert(shell.includes('.analysis-page-header>.analysis-page-close{flex:0 0 auto;
 // and Close, rather than one shared outer capsule with touching hit regions.
 assert(chrome.includes('.analysis-page-header>.dkds-separated-action-group')&&chrome.includes('background:transparent;'),
   'Separated header action group container must be paintless.');
-assert(actions.includes("button.dataset.dkdsActionLayout='standalone'")&&/\.dkds-action-button\{[^}]*height:30px;[^}]*padding:0 10px;/.test(structure)&&appearance.includes('[data-dkds-action-layout="standalone"]'),
-  'Separated header actions must use canonical action geometry plus the Core standalone semantic appearance.');
+assert(actions.includes("button.dataset.dkdsActionLayout='standalone'")&&/\.dkds-action-button\{[^}]*height:30px;[^}]*padding:0 10px;/.test(structure)&&semanticTheme.includes("const group=closest(target,INTEGRATED_CONTAINER_SELECTOR);return group&&group!==target?'grouped':'standalone'")&&appearance.includes('[data-dkds-component-identity="toolbarAction"]'),
+  'Separated header actions must keep canonical geometry while Theme 3.10 resolves them as standalone ToolbarAction components.');
 assert(!chrome.includes('.dkds-separated-action-group>.dkds-action-button'),
   'Presentation must not restore a page-specific paint path for separated header actions.');
 
@@ -57,8 +57,8 @@ assert(ter.includes("terHeaderActionsHost.className='dkds-plugin-header-actions'
   'TER header must continue to consume the generic Core header action contract.');
 
 // Theme Coverage must not count one surface in two incompatible semantic areas.
-assert(semanticTheme.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)')&&semanticTheme.includes('.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench'),
-  'Canonical semantic areas must keep generic floating surfaces separate from elevated LAN/update panels.');
+assert(semanticTheme.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)')&&/id:'elevated'[^\n]*\.import-workbench/.test(semanticTheme)&&semanticTheme.includes("if(matches(el,'.import-workbench'))return 'workspace-modal'"),
+  'Canonical semantic areas must keep floating surfaces separate while the near-fullscreen Import Workbench uses elevated + workspace-modal composition.');
 assert(semanticTheme.includes('.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host')&&!semanticTheme.includes('.main-workspace,.dkds-plugin-canvas-center'),
   'SUPER/main semantic surfaces must keep the surface role while PluginCanvas dock geometry remains paintless.');
 assert(material.includes('Semantic.materialAreas()')&&coverage.includes('Semantic.materialAreas()'),'Renderer and coverage must share the same semantic area authority.');

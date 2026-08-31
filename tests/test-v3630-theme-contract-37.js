@@ -7,11 +7,11 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.23.0');
+assert.equal(sdk.sdkVersion,'1.24.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
-assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(sdk.minimumAppVersion,'3.67.5');
-assert.equal(Theme.version,'3.9.0');
+assert.equal(sdk.themeContractVersion,'3.10.0');
+assert.equal(sdk.minimumAppVersion,'3.67.10');
+assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract.appearance.roles'));
 assert(Theme.supports('contract.scientific.seriesPalette'));
 const SourceContract=require('../sdk/source-contract');
@@ -80,10 +80,10 @@ assert(presentationModel.includes('appearance:window.DKDSTheme?.appearanceRoles?
 assert(presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()')&&mobile.includes('themeScientific:core.theme.scientific'));
 
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.themeContract,'^3.9.0');
+assert.equal(template.compatibility.themeContract,'^3.10.0');
 const thin=json('src/plugins/thin-glass-theme/plugin.json');
-assert.equal(thin.version,'1.10.0');
-assert.equal(thin.compatibility.themeContract,'^3.8.0');
+assert.equal(thin.version,'1.12.1');
+assert.equal(thin.compatibility.themeContract,'^3.10.0');
 
 const sdkTool=read('sdk/tools/dkds-plugin.js'),packageRuntime=read('desktop/plugin-package.js');
 assert(sdkTool.includes('usesThemeRegister(rawSource)'),'Standalone SDK must share Theme registration-source recognition.');
@@ -93,4 +93,4 @@ assert(thinJs.includes("'contract.appearance.roles'")&&thinJs.includes("'contrac
 
 const coreFiles=['src/core/theme/runtime.js','src/core/theme/material-renderer.js','src/styles/theme/material-roles.css','src/styles/theme/material-renderer.css'];
 for(const file of coreFiles){const text=read(file).toLowerCase();assert(!text.includes('aurora-pop')&&!text.includes('aurora pop'),'Core must not contain Aurora theme identity special cases.');}
-console.log('v3.64.0 Theme Contract 3.8 / SDK 1.20 semantic appearance and scientific palette PASS');
+console.log('v3.64.0 historical semantic appearance/scientific palette compatibility retained under current Theme Contract 3.10 / SDK 1.24 PASS');

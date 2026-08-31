@@ -21,7 +21,7 @@
     {uri:'dkds://capabilities',name:'Core capability registry',description:'All Core and plugin capabilities callable through the stable capability runtime.',mimeType:'application/json'},
     {uri:'dkds://plugins',name:'Plugin registry',description:'Installed builtin and external plugin states.',mimeType:'application/json'},
     {uri:'dkds://plots',name:'Rendered plots',description:'Currently rendered D3 plots and bounded trace/layout snapshots.',mimeType:'application/json'},
-    {uri:'dkds://sdk',name:'SDK authoring reference',description:'Packaged SDK 1.23.0 / Plugin API 1.19.0 / Theme Contract 3.9.0 authoring corpus summary for autonomous plugin development.',mimeType:'application/json'},
+    {uri:'dkds://sdk',name:'SDK authoring reference',description:'Packaged SDK 1.24.0 / Plugin API 1.19.0 / Theme Contract 3.10.0 authoring corpus summary for autonomous plugin development.',mimeType:'application/json'},
     {uri:'dkds://sdk/files',name:'SDK authoring files',description:'List packaged SDK contracts, schemas, API definitions, guides and plugin templates.',mimeType:'application/json'}
   ];
   const resourceTemplates=()=>[

@@ -3,8 +3,9 @@
 const fs=require('fs');
 const path=require('path');
 
-const REQUIRED_RUNNER=[1,29,0];
-const REQUIRED_CASES=['ui.hard-visual-invariants','ui.visual-geometry-closure','ui.theme-coverage'];
+const REQUIRED_RUNNER=[1,33,0];
+const REQUIRED_APP='3.67.10';
+const REQUIRED_CASES=['ui.hard-visual-invariants','ui.visual-geometry-closure','ui.theme-runtime-performance','ui.theme-coverage'];
 
 function versionTuple(value){
   const match=String(value||'').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
@@ -24,6 +25,7 @@ function verifyVisualClosureReport(report){
   if(!report||typeof report!=='object')return {ok:false,errors:['Report is not a JSON object.'],notes};
   if(report.kind!=='dkds.automation-test-report')fail(`Unexpected report kind: ${String(report.kind||'missing')}`);
   if(!versionAtLeast(report.runnerVersion))fail(`Automation runner must be >= ${REQUIRED_RUNNER.join('.')}; got ${String(report.runnerVersion||'missing')}.`);
+  if(String(report.appVersion||'')!==REQUIRED_APP)fail(`Visual Closure report appVersion must be ${REQUIRED_APP}; got ${String(report.appVersion||'missing')}.`);
 
   const runtime=String(report?.environment?.runtime||report?.desktopEnvironment?.runtime||'');
   if(runtime!=='desktop')fail(`Visual Closure requires a Windows/Electron desktop report; runtime=${runtime||'missing'}.`);
@@ -41,6 +43,19 @@ function verifyVisualClosureReport(report){
   for(const [key,expected] of [['dockTransparent',true]])if(visual[key]!==expected)fail(`Visual geometry closure did not confirm ${key}=${expected}.`);
   if(Number(visual.topbarActions||0)<3)fail('Visual geometry closure did not measure at least three visible topbar actions.');
   if(Number(visual.shellGroups||0)<3)fail('Visual geometry closure did not measure all three topbar visual groups.');
+  if(Number(visual.presentationCommands||0)<3)fail('Visual geometry closure did not measure the Desktop Presenter command set.');
+  if(Number(visual.groupedContextChecked||0)<1)fail('Visual closure did not exercise grouped Component Context resolution.');
+  if(Number(visual.standaloneContextChecked||0)<1)fail('Visual closure did not exercise standalone Component Context resolution.');
+  if(Number(visual.materialRoleCompositionChecked||0)<1)fail('Visual closure did not exercise Component × Material Role composition.');
+  if(visual.workspaceModalChecked!==true)fail('Visual closure did not confirm elevated + workspace-modal Import Workbench composition.');
+
+  const perf=rows.get('ui.theme-runtime-performance')?.data||{};
+  if(Number(perf?.delta?.materialFlushes||0)>4)fail(`Theme Runtime material idle flush budget exceeded: ${Number(perf?.delta?.materialFlushes||0)}.`);
+  if(Number(perf?.delta?.appearanceFlushes||0)>4)fail(`Theme Runtime appearance idle flush budget exceeded: ${Number(perf?.delta?.appearanceFlushes||0)}.`);
+  if(Number(perf?.delta?.semanticFlushes||0)>4)fail(`Theme Runtime semantic idle flush budget exceeded: ${Number(perf?.delta?.semanticFlushes||0)}.`);
+  if(Number(perf?.delta?.materialAssignCalls||0)>8)fail(`Theme Runtime material idle scan budget exceeded: ${Number(perf?.delta?.materialAssignCalls||0)}.`);
+  if(Number(perf?.delta?.appearanceAssignCalls||0)>8)fail(`Theme Runtime appearance idle scan budget exceeded: ${Number(perf?.delta?.appearanceAssignCalls||0)}.`);
+  if(Number(perf?.delta?.semanticAssignCalls||0)>8)fail(`Theme Runtime semantic idle scan budget exceeded: ${Number(perf?.delta?.semanticAssignCalls||0)}.`);
 
   const theme=rows.get('ui.theme-coverage')?.data||{};
   const summary=theme.summary||{};
@@ -75,4 +90,4 @@ function main(argv=process.argv.slice(2)){
 }
 
 if(require.main===module)main();
-module.exports={REQUIRED_RUNNER,REQUIRED_CASES,versionAtLeast,verifyVisualClosureReport};
+module.exports={REQUIRED_RUNNER,REQUIRED_APP,REQUIRED_CASES,versionAtLeast,verifyVisualClosureReport};

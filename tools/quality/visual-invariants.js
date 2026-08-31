@@ -82,13 +82,19 @@ function validate(){
   const devtoolsCss=read('src/styles/presentation/plugin-devtools.css');
   const chromeGeometry=read('src/styles/structure/desktop-chrome-geometry.css');
   const shellNavigation=read('src/styles/structure/shell-navigation.css');
+  const presentationShell=read('src/styles/presentation/shell.css');
   const schemaStructure=read('src/styles/structure/schema-and-plugin-ui.css');
   const workspaceStructure=read('src/styles/structure/workspace-interaction.css');
   const pluginWorkspaceStructure=read('src/styles/structure/plugin-workspace.css');
   const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
   const statusPlugin=read('src/plugins/status-monitor/plugin.js');
+  const terSharedViews=read('src/plugins/ter-analysis/shared-views.js');
+  const terAnalysisService=read('src/plugins/ter-analysis/analysis-service.js');
+  const resonanceView=read('src/plugins/resonance-workbench/view-components.js');
+  const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
   const scientificChart=read('src/core/scientific/chart-runtime.js');
   const scientificNav=read('src/core/ui/modules/scientific-curve/navigation.js');
+  const indexHtml=read('src/index.html');
 
   // HARD-01: analysis/workbench navigation is a toolbar action, never a tab.
   requireRegex(semanticRegistry,/id:'tab'[^\n]+activity-tab:not\(\.top-level-activity-tab\)/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
@@ -127,7 +133,7 @@ function validate(){
   forbidText(componentCss,'box-shadow:inset 0 -2px 0 var(--dkds-ca-tab-indicator)','HARD-04: canonical Tab selected/active paint must not stack an underline indicator on top of its filled state.');
 
   // HARD-05: large elevated Thin Glass surfaces use one stronger optical contract.
-  requireRegex(thinGlass,/elevated:\{materialBlur:10,materialBlurStrong:11,materialSaturation:1\.04,materialTintOpacity:\.76\}/,'HARD-05: Thin Glass elevated surfaces must use the shared stronger dialog/panel optical recipe.');
+  requireText(thinGlass,"'workspace-modal':{materialBlur:",'HARD-05: Thin Glass elevated surfaces must expose a dedicated workspace-modal optical context.');
   requireRegex(materialRoles,/role="elevated"[\s\S]*?--dkds-material-fill-floor:72%;/,'HARD-05: Core elevated surfaces must enforce the shared readability floor.');
   requireText(connectivity,'dksmb-browser dkds-material-role-surface','HARD-05: SMB browser must declare the shared Core surface role without creating a nested rounded card.');
   requireText(connectivity,'dksmb-nav dkds-material-role-sidebar','HARD-05: SMB navigation must declare the shared Core sidebar role.');
@@ -242,14 +248,13 @@ function validate(){
 
   // HARD-13: desktop topbar uses exact geometry, not a blur approximation.
   requireText(schemaStructure,'--dkds-shell-group-height:38px','HARD-13: shell command groups must share the 38 px visual envelope.');
-  requireRegex(componentCss,/--dkds-shell-action-halo:0 0 0 2px/,'HARD-13: selected/primary topbar actions must use an exact 2 px spread halo.');
-  forbidRegex(componentCss,/--dkds-shell-action-halo:0 0 2px/,'HARD-13: a blurred 2 px shadow must never stand in for exact shell geometry.');
+  requireText(componentCss,'--dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected','HARD-13: topbar emphasis depth must resolve through Theme component slots, not fixed Core paint.');
   requireRegex(shellNavigation,/\.plugin-context-toolbar \.plugin-toolbar-btn\{[\s\S]*?height:34px/,'HARD-13: plugin context commands must use the same 34 px action body.');
 
   // HARD-14: Presenter-generated 参数 / 检查 / 组图 are one command family.
   requireText(desktopShell,"button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command'",'HARD-14: Desktop Presenter surface commands need the canonical presentation-command geometry class.');
   requireText(desktopShell,"button.dataset.pluginSection='presentation-surfaces'",'HARD-14: Presenter surface commands must form one section without internal separators.');
-  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\{[\s\S]*?width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px/,'HARD-14: Presenter commands must all be exactly 48 px wide.');
+  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\{[\s\S]*?width:auto;[\s\S]*?min-width:48px;[\s\S]*?max-width:none/,'HARD-14: Presenter commands must keep a 48 px minimum while allowing long labels to breathe.');
 
   // HARD-15: both scientific renderers use one floating toolbar contract.
   for(const [name,source] of [['ChartRuntime',scientificChart],['ScientificCurve',scientificNav]]){
@@ -262,9 +267,10 @@ function validate(){
   requireRegex(workspaceStructure,/\.main-legend-bar\{[\s\S]*?height:34px;[\s\S]*?padding:3px/,'HARD-15: main legend must use the same 34 px / 3 px compact-strip geometry.');
   requireRegex(materialCss,/#mainPlotTools\.dkds-material-role-control,[\s\S]*?#mainLegendBar\.dkds-material-role-control[\s\S]*?border-radius:9px/,'HARD-15: main tools and legend must share one Material edge contract.');
 
-  // HARD-16: header identity supplies tokens/text only; Material Renderer owns
-  // optical background/effects. This prevents header-on-header double paint.
-  forbidRegex(componentCss,/\[data-dkds-component-identity="(?:panelHeader|inspectorHeader)"\][^{]*\{[^}]*(?:background(?:-color|-image)?|box-shadow)\s*:/s,'HARD-16: Component Appearance must not directly paint panel/inspector header surfaces.');
+  // HARD-16: nested headers may own a tonal Component band, but never an
+  // independent optical material layer. Material Renderer still uniquely owns
+  // backdrop/specular/depth composition for the parent Surface.
+  forbidRegex(componentCss,/\[data-dkds-component-identity="(?:panelHeader|inspectorHeader)"\][^{]*\{[^}]*(?:backdrop-filter|filter\s*:|box-shadow\s*:(?!none))/s,'HARD-16: panel/inspector headers must not become independent optical material surfaces.');
   requireText(materialCss,'Header-owned command wrappers are transparent composition only.','HARD-16: Material Renderer must flatten nested command wrappers inside headers.');
 
   // HARD-17: canonical fields/actions own their own control paint, and the
@@ -291,12 +297,12 @@ function validate(){
 
 
 
-  // HARD-19: Import Workbench is one elevated Material surface. Internal
+  // HARD-19: Import Workbench is one modal workspace Material surface. Internal
   // editor regions may carry semantic state/dividers but must not restore the
   // historical stack of opaque white cards or private shadows.
   const importCss=read('src/styles/presentation/import-workbench.css');
   forbidRegex(importCss,/#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})\b/i,'HARD-19: Import Workbench must not hard-code theme colors.');
-  requireRegex(importCss,/\.import-section\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-19: Import editor sections must remain flat inside the elevated workbench.');
+  requireRegex(importCss,/\.import-section\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-19: Import editor sections must remain flat inside the modal workbench.');
   requireRegex(importCss,/\.import-workbench-header[^}]*\.import-file-actions[\s\S]*?background:transparent/s,'HARD-19: Import layout regions must not place an opaque sheet over the workbench Material.');
 
   // HARD-20: LAN/Web floating panel owns optical composition. Internal service
@@ -448,7 +454,7 @@ function validate(){
   const dialogPresentation=read('src/styles/presentation/dialogs.css');
   forbidRegex(dialogPresentation,/\.dkds-dialog(?:,\.dkds-dialog-shell)?\s*\{[^}]*(?:color|background|border-radius|box-shadow)\s*:/s,'HARD-30: Dialog outer Material appearance must stay out of Presentation.');
   forbidRegex(dialogPresentation,/\.dkds-settings-dialog\s*\{[^}]*(?:color|background|border|box-shadow)\s*:/s,'HARD-30: Settings Dialog outer Material appearance must stay out of Presentation.');
-  forbidRegex(read('src/styles/presentation/import-workbench.css'),/\.import-workbench\s*\{[^}]*color\s*:/s,'HARD-30: Import Workbench outer text must come from its elevated Material role.');
+  forbidRegex(read('src/styles/presentation/import-workbench.css'),/\.import-workbench\s*\{[^}]*color\s*:/s,'HARD-30: Import Workbench outer text must come from its semantic Surface role.');
   requireRegex(materialCss,/\.dkds-surface\.dkds-material-role-surface\{[^}]*border-radius:var\(--dkds-visual-radius\)/s,'HARD-30: Material Renderer must own generic Surface radius.');
   requireRegex(materialCss,/:where\(\.dkds-dialog,\.dkds-dialog-shell\)\.dkds-material-role-elevated\{[^}]*border-radius:14px/s,'HARD-30: Material Renderer must own Dialog shell radius.');
 
@@ -513,8 +519,10 @@ function validate(){
   requireRegex(automationVisual,/Inspector dock host must remain transparent:[^`]*\$\{dockStyle\.backgroundColor\}/s,'HARD-36: Inspector dock transparency must be an executable runtime assertion.');
   requireRegex(automationVisual,/Topbar action must be 34px high:[^`]*\$\{r\.height\.toFixed\(2\)\}px/s,'HARD-36: runtime visual closure must protect 34px topbar actions.');
   requireRegex(automationVisual,/Topbar group envelope must be 38px:[^`]*\$\{group\.className\}/s,'HARD-36: runtime visual closure must protect the 38px topbar group envelope.');
-  requireRegex(automationVisual,/Presenter command must be 48×34px:/,'HARD-36: runtime visual closure must protect 48×34 Desktop Presenter commands.');
-  requireRegex(automationVisual,/0px 0px 0px 2px/,'HARD-36: runtime visual closure must validate the exact 2px selected-action halo.');
+  requireText(automationVisual,'Presenter command must be at least 48px wide and 34px high:','HARD-36: runtime visual closure must protect semantic-width Desktop Presenter commands.');
+  requireText(automationVisual,"info?.componentContext==='grouped'",'HARD-36: runtime visual closure must exercise grouped Component Context resolution.');
+  requireText(automationVisual,"info?.materialRole==='chrome'",'HARD-36: runtime visual closure must exercise Component × Material Role composition.');
+  requireText(automationVisual,"context==='workspace-modal'",'HARD-36: runtime visual closure must exercise workspace-modal Material Context resolution.');
   requireRegex(automationVisual,/Main Plot Tools[^\n]*Main Legend/,'HARD-36: runtime visual closure must validate both Scientific main tools and legend chrome.');
   requireText(automationVisual,".dkds-portable-placement-trigger",'HARD-36: runtime visual closure must protect Theme Picker from PortableView placement chrome.');
   requireText(automationVisual,".trend-card-legend",'HARD-36: runtime visual closure must verify Trend Legend remains transparent child content.');
@@ -540,12 +548,185 @@ function validate(){
   requireRegex(materialCss,/data-dkds-component-identity="toolbarGroup"\]:is\(\.dkds-material-role-surface,\.dkds-material-role-floating\)\{[^}]*border-width:1px/s,'HARD-38: Material Renderer must own edge geometry for Material toolbar groups.');
   requireText(read('src/plugins/resonance-workbench/view-components.js'),'respar-main-tools dkds-toolbar dkds-floating-surface','HARD-38: Main Plot Tools must compose ToolbarGroup semantics with the shared floating Material surface.');
 
+
+
+  // HARD-39: Presenter surface controls are visibility toggles, not selected
+  // navigation. Multiple panels can be visible simultaneously, so selected
+  // paint creates a row of competing primary pills under colorful themes.
+  requireText(desktopShell,"button.dataset.dkdsComponentVariant=item.active?'active':'quiet'",'HARD-39: Presenter surface toggles must use soft active semantics.');
+  requireText(desktopShell,"button.classList.toggle('active',!!item.active)",'HARD-39: Presenter surface toggles must publish active state rather than selected state.');
+  forbidText(desktopShell,"button.dataset.dkdsComponentVariant=item.active?'selected':'quiet'",'HARD-39: Presenter surface toggles must not regress to selected paint.');
+
+  // HARD-40: Import Workbench is a large modal workspace. Theme 3.10 keeps
+  // it elevated while giving it an explicit workspace-modal Material Context,
+  // so glass themes can tune large-surface optics without downgrading semantics.
+  requireText(indexHtml,'class="import-workbench dkds-material-role-elevated" data-dkds-material-context="workspace-modal"','HARD-40: Import Workbench must declare elevated + workspace-modal semantics.');
+  requireRegex(semanticRegistry,/id:'elevated'[^\n]*\.import-workbench/,'HARD-40: semantic elevated coverage must include Import Workbench.');
+  requireText(semanticRegistry,"if(matches(el,'.import-workbench'))return 'workspace-modal'",'HARD-40: Import Workbench must resolve workspace-modal Material Context.');
+  requireRegex(materialCss,/\.import-workbench\.dkds-material-role-elevated\{[^}]*border-width:1px[^}]*border-radius:12px/s,'HARD-40: Material Renderer must own Import Workbench edge geometry.');
+
+  // HARD-41: Theme Contract 3.10 exposes bounded composition axes. Theme
+  // authors may express depth/context, but Core remains the only final painter.
+  const themeContract=read('sdk/theme-contract.js');
+  requireText(themeContract,"const VERSION='3.10.0'",'HARD-41: Theme Contract must be 3.10.0.');
+  requireText(themeContract,"const MATERIAL_CONTEXTS=Object.freeze(['compact','panel','dialog','workspace-modal'])",'HARD-41: Theme Contract must expose the bounded Material Context vocabulary.');
+  requireText(themeContract,"const COMPONENT_CONTEXTS=Object.freeze(['standalone','grouped'])",'HARD-41: Theme Contract must expose the bounded Component Context vocabulary.');
+  requireText(themeContract,'resolveComponentAppearance','HARD-41: Theme Contract must own contextual component composition.');
+  requireText(themeContract,'resolveMaterialContext','HARD-41: Theme Contract must own contextual material composition.');
+  requireText(themeContract,"(?:url|var|calc|env|expression|attr)\\s*\\(",'HARD-41: Theme Contract must reject executable/dynamic CSS functions from depth slots.');
+
+  // HARD-42: Component Appearance and Material Renderer consume contextual
+  // declarations instead of reintroducing topbar-specific aesthetic patches.
+  const contextualComponentRuntime=read('src/core/theme/component-appearance.js');
+  requireText(contextualComponentRuntime,"const VERSION='3.0.0'",'HARD-42: Component Appearance contextual resolver must be v3.0.0.');
+  requireText(contextualComponentRuntime,'ThemeContract.resolveComponentAppearance','HARD-42: Component Appearance must resolve Theme Contract composition.');
+  requireText(materialRenderer,"const VERSION='3.10.0'",'HARD-42: Material Renderer must be v3.10.0.');
+  requireText(materialRenderer,'resolveMaterialContext?.','HARD-42: Material Renderer must resolve Material Context through Theme Contract.');
+  forbidRegex(componentAppearance,/\.topbar-primary[^}]*box-shadow:[^}]*0 0 0 2px/s,'HARD-42: Core must not hardcode a theme-specific topbar halo.');
+  forbidRegex(componentAppearance,/\.topbar-primary[^}]*toolbar-group[^}]*box-shadow:none/s,'HARD-42: Core must not hardcode grouped action depth for every Theme.');
+
+  // HARD-43: Every bundled Theme Provider uses Theme 3.10 declarative
+  // contextual composition. This includes the default Theme in Core runtime.
+  const themeRuntime=read('src/core/theme/runtime.js');
+  const thinGlassTheme=read('src/plugins/thin-glass-theme/plugin.js');
+  const auroraTheme=read('src/plugins/aurora-pop-theme/plugin.js');
+  requireText(themeRuntime,"version:'3.10.0',contractVersion:'3.10.0'",'HARD-43: Core Default Theme runtime must expose Theme 3.10.');
+  requireText(themeRuntime,'componentContexts:()=>COMPONENT_CONTEXTS.slice()','HARD-43: Core Default Theme must expose Component Contexts.');
+  requireText(thinGlassTheme,"version:'1.12.1'",'HARD-43: Thin Glass must be migrated to 1.12.1 / Theme 3.10.');
+  requireText(thinGlassTheme,"contract:'theme-3.10'",'HARD-43: Thin Glass must declare Theme 3.10 contextual composition.');
+  requireText(thinGlassTheme,'contexts:{grouped:', 'HARD-43: Thin Glass must author grouped Component Context depth declaratively.');
+  requireText(thinGlassTheme,"'workspace-modal':{materialBlur:",'HARD-43: Thin Glass must author workspace-modal Material Context optics.');
+  requireText(auroraTheme,"version:'2.3.1'",'HARD-43: Aurora Pop must be migrated to 2.3.1 / Theme 3.10.');
+  requireText(auroraTheme,"contract:'component-appearance-3.10'",'HARD-43: Aurora Pop must declare Theme 3.10 contextual composition.');
+  requireText(auroraTheme,'contexts:{grouped:', 'HARD-43: Aurora Pop must author grouped Component Context depth declaratively.');
+  requireText(auroraTheme,"'workspace-modal':{materialBlur:",'HARD-43: Aurora Pop must author workspace-modal Material Context optics.');
+
+  // HARD-44: Public SDK authoring must expose the same 3.10 contract as the
+  // bundled themes; no private first-party-only composition vocabulary.
+  const sdkContract=JSON.parse(read('sdk/contract.json'));
+  const sdkTypes=read('sdk/plugin-api.d.ts');
+  const themeTemplate=read('sdk/templates/theme-profile/plugin.js');
+  requireText(JSON.stringify(sdkContract),'"sdkVersion":"1.24.0"','HARD-44: public SDK must be 1.24.0.');
+  requireText(JSON.stringify(sdkContract),'"themeContractVersion":"3.10.0"','HARD-44: SDK must publish Theme Contract 3.10.0.');
+  requireText(sdkTypes,"readonly contractVersion:'3.10.0'",'HARD-44: SDK types must expose Theme Contract 3.10.0.');
+  requireText(sdkTypes,'DKDSThemeComponentContext','HARD-44: SDK types must expose Component Context.');
+  requireText(sdkTypes,'DKDSThemeMaterialContext','HARD-44: SDK types must expose Material Context.');
+  requireText(themeTemplate,"themeContract:'^3.10.0'",'HARD-44: official Theme template must target Theme Contract 3.10.');
+  requireText(themeTemplate,'contract.appearance.component-contexts','HARD-44: official Theme template must demonstrate Component Context capability.');
+  requireText(themeTemplate,'contract.material.contexts','HARD-44: official Theme template must demonstrate Material Context capability.');
+
+  // HARD-45: R4 Windows diagnostics validate composition semantics, not one
+  // mandatory aesthetic. Old R3 reports cannot authorize Theme 3.10.
+  const visualVerifier=read('tools/quality/verify-visual-closure-report.js');
+  const visualCases=read('src/diagnostics/automation-visual-cases.js');
+  requireText(automationRuntime,"const VERSION='1.33.0'",'HARD-45: Windows diagnostics must emit Automation Runner 1.33.0.');
+  requireText(visualVerifier,'const REQUIRED_RUNNER=[1,33,0]','HARD-45: report verifier must reject pre-R6 Core visual/performance reports.');
+  requireText(visualVerifier,'visual.groupedContextChecked','HARD-45: R4 verifier must require grouped Component Context coverage.');
+  requireText(visualVerifier,'visual.standaloneContextChecked','HARD-45: R4 verifier must require standalone Component Context coverage.');
+  requireText(visualVerifier,'visual.workspaceModalChecked','HARD-45: R4 verifier must require workspace-modal Material Context coverage.');
+  requireText(visualCases,"Appearance?.version==='3.0.0'",'HARD-45: Windows visual diagnostics must inspect the contextual Component resolver.');
+  forbidText(visualCases,'Integrated topbar action must not stack a second shadow/halo','HARD-45: R4 diagnostics must not impose R3 no-shadow aesthetics on all Themes.');
+  forbidText(visualCases,'Standalone emphasized topbar action must use an exact 2px spread halo','HARD-45: R4 diagnostics must not impose a fixed halo on all Themes.');
+
+  // HARD-46: Theme Providers stay declarative. Core theme plugins must not
+  // regain selector-owned application paint as Theme expression grows.
+  for(const [label,theme] of [['Thin Glass',thinGlassTheme],['Aurora Pop',auroraTheme]]){
+    forbidRegex(theme,/querySelector|querySelectorAll|\.style\.|insertRule|styleSheets|adoptedStyleSheets/,'HARD-46: '+label+' must not directly paint Core DOM/selectors.');
+  }
+
+
+  // HARD-47: Theme observers must not rescan D3/SVG class churn. Scientific
+  // renderers mutate SVG classes frequently; Theme ownership is HTML chrome.
+  requireText(materialRenderer,'materialClassRelevant','HARD-47: Material observer must prefilter class mutations by semantic material classes.');
+  requireText(materialRenderer,'ignoredNonHtml','HARD-47: Material observer must track and ignore non-HTML mutation churn.');
+  requireText(semanticRegistry,'htmlElement','HARD-47: Semantic observer must ignore non-HTML/SVG attribute churn.');
+  requireText(contextualComponentRuntime,'pendingAppearanceRoots','HARD-47: Component Appearance must batch mutation-driven recomposition.');
+  requireText(contextualComponentRuntime,'requestFrame','HARD-47: Component Appearance recomposition must be frame-coalesced.');
+
+  // HARD-48: Material Context assignment must be idempotent. Rewriting the same
+  // data attribute can recursively feed MutationObserver and create idle churn.
+  requireText(materialRenderer,"setData(el,'dkdsMaterialContext',context)",'HARD-48: Material Context assignment must use idempotent setData.');
+  forbidText(materialRenderer,'el.dataset.dkdsMaterialContext=context','HARD-48: direct repeated Material Context writes must not return.');
+  requireText(automationRuntime,"runCase('ui.theme-runtime-performance'",'HARD-48: Windows automation must retain an idle Theme Runtime budget case.');
+  requireText(automationVisual,'themeRuntimePerformanceSmoke','HARD-48: Theme Runtime performance smoke must live in visual diagnostics.');
+  requireText(visualVerifier,"'ui.theme-runtime-performance'",'HARD-48: release verifier must require Theme Runtime performance acceptance.');
+
+  // HARD-49: Controlled Theme effects must be consumed by the Core Material
+  // renderer. Theme expression is not useful if effect tokens are accepted but
+  // visually discarded. Intensity is normalized to a CSS percentage by Core.
+  requireText(themeRuntime,"key==='glowIntensity'?",'HARD-49: Theme Runtime must project normalized glow intensity into CSS percentage units.');
+  requireText(materialCss,'--dkds-material-theme-overlay','HARD-49: Material Renderer must consume controlled Theme effect overlays.');
+  requireText(materialCss,'--dkui-effect-header-gradient-start','HARD-49: Core chrome must consume Theme header gradient expression.');
+  requireText(materialCss,'--dkui-effect-accent-glow','HARD-49: Core elevated/popover surfaces must consume Theme accent glow expression.');
+  requireText(materialCss,'--dkui-effect-edge-glow','HARD-49: Core floating surfaces must consume Theme edge glow expression.');
+
+  // HARD-50: status popovers are anchored/portable-safe instead of receiving stray placement chrome.
+  requireText(statusPlugin,"'data-dkds-portable':'false'",'HARD-50: Status Monitor temporary surfaces must explicitly opt out of PortableView chrome.');
+  requireText(statusPlugin,'positionThemePanel','HARD-50: Theme Picker must anchor to the Theme status command.');
+  // HARD-51: scientific and mode-control buttons are integrated semantic groups.
+  requireText(semanticRegistry,'.dkds-mode-group,.dkds-scientific-nav-tools','HARD-51: mode and ScientificPlot navigation controls must resolve grouped Component Context.');
+  // HARD-52: title hierarchy is a Core Component band inside the parent Material.
+  requireRegex(componentAppearance,/component-identity=\"panelHeader\"[\s\S]*?background:var\(--dkui-component-panel-header-surface/,'HARD-52: PanelHeader must consume Theme tonal-band appearance.');
+  requireRegex(componentAppearance,/component-identity=\"inspectorHeader\"[\s\S]*?background:var\(--dkui-component-inspector-header-surface/,'HARD-52: InspectorHeader must consume Theme tonal-band appearance.');
+  // HARD-53: TER summary metadata must not masquerade as a ToolbarGroup.
+  requireText(terSharedViews,'id=\\"terSummary\\" class=\\"dkds-summary-strip\\"','HARD-53: TER summary must use the metadata strip contract.');
+  // HARD-54: Resonance main tools use equal-inset integrated chrome and legend remains content.
+  requireText(resonanceView,'respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group','HARD-54: Resonance main tools must use integrated action composition.');
+  requireText(resonanceView,'respar-main-legend dkds-scroll-x-compact dkds-legend-strip','HARD-54: Resonance legend must be a light content strip, not a ToolbarGroup/Surface.');
+
+  // HARD-55: Semantic assignment must batch child additions. The R5 Windows
+  // report proved full-root semantic rescans remained an idle performance cost.
+  requireText(semanticRegistry,'pendingSemanticRoots','HARD-55: Semantic Registry must batch mutation-driven root assignment.');
+  requireText(semanticRegistry,'scheduleSemanticAssignment','HARD-55: Semantic Registry child additions must use the batched scheduler.');
+  requireText(semanticRegistry,'framePending:!!semanticFrame','HARD-55: Semantic performance diagnostics must expose queue settlement.');
+  requireText(automationVisual,'semanticAssignCalls<=8','HARD-55: Windows performance acceptance must bound semantic full-root rescans.');
+  requireText(visualVerifier,'semanticAssignCalls','HARD-55: Release verifier must fail closed on semantic idle rescans.');
+
+  // HARD-56: integrated command envelopes own the single outer edge. 38px shell
+  // groups contain 34px actions with a mathematically equal 1px inset.
+  requireText(schemaStructure,'.file-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)','HARD-56: 38px file-command group must use a 1px equal inset around 34px actions.');
+  requireText(componentCss,':is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: explicit integrated command envelopes must suppress child outer edges/depth.');
+  forbidText(componentCss,':focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px;border-color:var(--dkds-ca-action-border-active)}','HARD-56: keyboard focus must not stack a second active border on ToolbarAction.');
+
+  // HARD-57: fixed status popovers stay visually anchored and inspectors publish
+  // explicit semantics instead of relying on fragile ancestry/class inference.
+  requireText(statusPlugin,'a.right-box.width:a.left','HARD-57: Theme Picker must edge-align to its status-bar trigger.');
+  requireText(resonanceView,'data-dkds-inspector-header','HARD-57: Resonance Curve Inspector must explicitly publish inspector-header semantics.');
+
+  // HARD-58: dense scientific metadata is a quiet semantic Chip variant across
+  // all built-in Theme providers, not a row of heavy default pills.
+  requireText(terAnalysisService,'dkds-summary-chip dkds-chip quiet','HARD-58: TER summary values must use the quiet metadata Chip variant.');
+  requireText(componentCss,'component-variant="quiet"]{background:var(--dkui-component-chip-variant-quiet-surface,transparent)','HARD-58: Core Component Appearance must render quiet Chips as lightweight metadata.');
+  requireText(thinGlass,"chip:{variants:{quiet:",'HARD-58: Thin Glass must declare quiet Chip appearance.');
+  requireText(auroraTheme,"quiet:{surface:'transparent',text:'#747B8E'",'HARD-58: Aurora Pop must declare light quiet Chip appearance.');
+
+  // HARD-59: canonical Tabs and primary scientific surfaces cannot regain
+  // presentation-owned paint or decorative focus frames.
+  forbidRegex(presentationShell,/\.project-tab\s*\{[^}]*?(?:border|background|box-shadow|color)/s,'HARD-59: Presentation must not repaint canonical Project Tabs.');
+  requireText(resonanceView,'data-dkds-surface-edge="none"','HARD-59: Resonance primary scientific plot must explicitly opt out of decorative container edges.');
+  requireText(materialCss,'[data-dkds-surface-edge="none"]{border-width:0;outline:none;box-shadow:none}','HARD-59: Core Material Renderer must own the no-edge scientific-surface policy.');
+  requireText(automationVisual,'Main scientific plot must not own a decorative','HARD-59: Windows acceptance must measure the primary plot no-edge policy.');
+
+  // HARD-60: destructive actions own a restrained semantic danger depth in
+  // Core. Domain plugins only compose/size the rich selection popover.
+  requireText(componentCss,'--dkds-ca-action-shadow:var(--dkui-component-toolbar-action-variant-destructive-shadow,0 2px 8px color-mix(in srgb,var(--dkui-danger) 14%,transparent))','HARD-60: destructive ToolbarAction must retain a Core-owned danger depth fallback.');
+  requireText(resonanceView,'data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作"','HARD-60: Resonance range-selection popover must publish rich-dialog semantics.');
+  forbidText(resonanceCss,'.respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}','HARD-60: Resonance range identity must not rely on a broad historical width override.');
+  forbidRegex(resonanceCss,/\.respar-range-menu\s*\{[^}]*(?:background|border|box-shadow|color)\s*:/s,'HARD-60: Resonance range popover must not repaint Core Material/Theme appearance.');
+
+  // HARD-61: grouped is a composition/layout semantic, not proof that a parent
+  // paints an outer shell. Only explicit integrated command envelopes may erase
+  // child edges/depth; status/activity groups must not become visually empty.
+  requireText(componentCss,':is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit integrated chrome owners must flatten their direct child actions.');
+  forbidText(componentCss,'body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;box-shadow:none}','HARD-61: generic grouped context must not globally erase child edge/depth.');
+  requireText(semanticRegistry,'.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group','HARD-61: topbar/statusbar integrated containers must still resolve grouped Component Context for semantic composition.');
+  requireText(materialRenderer,'.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button','HARD-61: Material Renderer must keep integrated top/status actions from becoming nested Material surfaces.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:38});
+  return Object.freeze({ok:true,invariants:61});
 }
 
 if(require.main===module){

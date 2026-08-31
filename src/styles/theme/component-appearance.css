@@ -13,7 +13,7 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"]{
   --dkds-ca-tab-border-hover:var(--dkui-component-tab-border-hover,var(--dkui-control-border));
   --dkds-ca-tab-border-active:var(--dkui-component-tab-border-active,var(--dkui-selection-border));
   --dkds-ca-tab-indicator:var(--dkui-component-tab-indicator,var(--dkui-accent));
-  background:var(--dkds-ca-tab-surface);color:var(--dkds-ca-tab-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-tab-border);box-shadow:none
+  --dkds-ca-tab-shadow:var(--dkui-component-tab-shadow,none);--dkds-ca-tab-shadow-hover:var(--dkui-component-tab-shadow-hover,var(--dkds-ca-tab-shadow));--dkds-ca-tab-shadow-active:var(--dkui-component-tab-shadow-active,var(--dkds-ca-tab-shadow));--dkds-ca-tab-shadow-selected:var(--dkui-component-tab-shadow-selected,var(--dkds-ca-tab-shadow));background:var(--dkds-ca-tab-surface);color:var(--dkds-ca-tab-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-tab-border);border-radius:var(--dkui-component-tab-radius,var(--dkui-radius));box-shadow:var(--dkds-ca-tab-shadow)
 }
 body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-variant="active"]{
   --dkds-ca-tab-surface:var(--dkui-component-tab-variant-active-surface,var(--dkui-component-tab-surface-active,var(--dkui-active-surface)));
@@ -49,16 +49,16 @@ body.dkds-modern-ui [data-dkds-component-identity="tab"][data-dkds-component-var
   --dkds-ca-tab-border-hover:var(--dkui-component-tab-variant-quiet-border-hover,var(--dkui-component-tab-border-hover,var(--dkui-control-border)));
   --dkds-ca-tab-indicator:var(--dkui-component-tab-variant-quiet-indicator,var(--dkui-component-tab-indicator,var(--dkui-accent)))
 }
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover:not(:disabled){background:var(--dkds-ca-tab-surface-hover);border-color:var(--dkds-ca-tab-border-hover)}
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-tab-surface-active);color:var(--dkds-ca-tab-text-active);border-color:var(--dkds-ca-tab-border-active);box-shadow:none}
-body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-tab-surface-selected);color:var(--dkds-ca-tab-text-selected);border-color:var(--dkds-ca-tab-border-active);box-shadow:none}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:hover:not(:disabled){background:var(--dkds-ca-tab-surface-hover);border-color:var(--dkds-ca-tab-border-hover);box-shadow:var(--dkds-ca-tab-shadow-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-tab-surface-active);color:var(--dkds-ca-tab-text-active);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-active)}
+body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-tab-surface-selected);color:var(--dkds-ca-tab-text-selected);border-color:var(--dkds-ca-tab-border-active);box-shadow:var(--dkds-ca-tab-shadow-selected)}
 
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]{
-  --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));color:var(--dkui-component-toolbar-group-text,var(--dkui-text))
+  --dkds-material-base:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));--dkds-material-border:var(--dkui-component-toolbar-group-border,var(--dkui-divider));--dkds-material-shadow:var(--dkui-component-toolbar-group-shadow,var(--dkui-shadow-1));color:var(--dkui-component-toolbar-group-text,var(--dkui-text))
 }
 body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]:not(:is(
   [data-dkds-material-role],.dkds-material-role-chrome,.dkds-material-role-sidebar,.dkds-material-role-surface,.dkds-material-role-elevated,.dkds-material-role-popover,.dkds-material-role-control,.dkds-material-role-floating,.dkds-surface,.dkds-surface-elevated,.dkds-floating-surface
-)){background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));border-radius:var(--dkui-radius);box-shadow:var(--dkui-shadow-1)}
+)){background:var(--dkui-component-toolbar-group-surface,var(--dkui-surface-soft));border:1px solid var(--dkui-component-toolbar-group-border,var(--dkui-divider));border-radius:var(--dkui-component-toolbar-group-radius,var(--dkui-radius));box-shadow:var(--dkui-component-toolbar-group-shadow,var(--dkui-shadow-1))}
 
 
 /* Split actions are one component surface with two hit regions. Children keep
@@ -81,24 +81,14 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]{
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-border,transparent);
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border));
   --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border));
-  --dkds-ca-action-shadow:none;
-  --dkds-ca-action-state-shadow:var(--dkui-selected-shadow);
-  --dkds-ca-action-focus-shadow:var(--dkui-focus);
-  background:var(--dkds-ca-action-surface);color:var(--dkds-ca-action-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-action-border);border-radius:var(--ui-control-radius,8px);box-shadow:var(--dkds-ca-action-shadow)
+  --dkds-ca-action-shadow:var(--dkui-component-toolbar-action-shadow,none);
+  --dkds-ca-action-shadow-hover:var(--dkui-component-toolbar-action-shadow-hover,var(--dkds-ca-action-shadow));
+  --dkds-ca-action-shadow-active:var(--dkui-component-toolbar-action-shadow-active,var(--dkds-ca-action-shadow));
+  --dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected,var(--dkds-ca-action-shadow));
+  background:var(--dkds-ca-action-surface);color:var(--dkds-ca-action-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-action-border);border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px));box-shadow:var(--dkds-ca-action-shadow)
 }
-/* Standalone header actions own a neutral control surface. Integrated toolbar
-   actions remain transparent inside their shared group surface. The semantic
-   layout flag is assigned by Core action/page factories, so location-specific
-   Presentation CSS never needs to repaint command buttons. */
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-action-layout="standalone"]:not([data-dkds-component-variant]){
-  --dkds-ca-action-surface:var(--dkui-control-bg);
-  --dkds-ca-action-surface-hover:var(--dkui-control-hover);
-  --dkds-ca-action-text:var(--dkui-text);
-  --dkds-ca-action-border:var(--dkui-control-border);
-  --dkds-ca-action-border-hover:var(--dkui-control-border-hover);
-  --dkds-ca-action-shadow:var(--dkui-shadow-1)
-}
-/* Controlled Theme 3.9 component variants. Theme declares values; Core owns
+/* Theme 3.10 resolves standalone/grouped appearance through Component Context. */
+/* Controlled Theme 3.10 component variants. Theme declares values; Core owns
    the fixed variant vocabulary, including hover/pressed state consumption. */
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-primary-surface,var(--dkui-accent));
@@ -111,19 +101,9 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent));
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-primary-border-hover,var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent)));
   --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-primary-border-active,var(--dkui-component-toolbar-action-variant-primary-border,var(--dkui-accent)));
-  --dkds-ca-action-shadow:var(--dkui-primary-shadow);
-  --dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),var(--dkui-focus)
 }
 
-/* Desktop command rows use one centered 2 px optical halo. A 34 px action plus
-   this halo occupies the same 38 px visual envelope as grouped command chrome. */
-body.dkds-modern-ui .topbar-primary [data-dkds-component-identity="toolbarAction"]:is([data-dkds-component-variant="primary"],[data-dkds-component-variant="selected"],[data-dkds-component-variant="active"]){
-  --dkds-shell-action-halo:0 0 0 2px color-mix(in srgb,var(--dkui-selection-border) 54%,transparent);
-  --dkds-ca-action-shadow:var(--dkds-shell-action-halo);
-  --dkds-ca-action-state-shadow:var(--dkds-shell-action-halo);
-  --dkds-ca-action-focus-shadow:var(--dkds-shell-action-halo),var(--dkui-focus)
-}
-
+/* Theme 3.10 depth is resolved by Core from Component Context + Material Role. */
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="secondary"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft));
   --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-secondary-surface-hover,var(--dkui-component-toolbar-action-variant-secondary-surface,var(--dkui-accent-alt-soft)));
@@ -147,8 +127,6 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-active-border-hover,var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border))));
   --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-active-border-active,var(--dkui-component-toolbar-action-variant-active-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border))));
-  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
-  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),var(--dkui-focus)
 }
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="selected"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-selected-surface,var(--dkui-component-toolbar-action-surface-selected,var(--dkui-selection-surface)));
@@ -161,8 +139,6 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border)));
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-selected-border-hover,var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-hover,var(--dkui-control-border))));
   --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-selected-border-active,var(--dkui-component-toolbar-action-variant-selected-border,var(--dkui-component-toolbar-action-border-active,var(--dkui-selection-border))));
-  --dkds-ca-action-shadow:var(--dkui-selected-shadow);
-  --dkds-ca-action-focus-shadow:var(--dkui-selected-shadow),var(--dkui-focus)
 }
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-quiet-surface,transparent);
@@ -175,10 +151,7 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-quiet-border,transparent);
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-quiet-border-hover,var(--dkui-component-toolbar-action-variant-quiet-border,transparent));
   --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-quiet-border-active,var(--dkui-component-toolbar-action-variant-quiet-border,transparent));
-  --dkds-ca-action-shadow:none;--dkds-ca-action-state-shadow:none;--dkds-ca-action-focus-shadow:var(--dkui-focus)
 }
-body.dkds-modern-ui :where(.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions,.dkds-surface-actions,.trend-header-actions) [data-dkds-component-identity="toolbarAction"]{border-radius:7px}
-body.dkds-modern-ui #dkdsThemePanel .dkds-theme-mode-switch>[data-dkds-component-identity="toolbarAction"]{border-radius:7px}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="destructive"]{
   --dkds-ca-action-surface:var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft));
   --dkds-ca-action-surface-hover:var(--dkui-component-toolbar-action-variant-destructive-surface-hover,var(--dkui-component-toolbar-action-variant-destructive-surface,var(--dkui-danger-soft)));
@@ -189,13 +162,16 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-com
   --dkds-ca-action-text-selected:var(--dkui-component-toolbar-action-variant-destructive-text-selected,var(--dkui-component-toolbar-action-variant-destructive-text,var(--dkui-danger)));
   --dkds-ca-action-border:var(--dkui-component-toolbar-action-variant-destructive-border,color-mix(in srgb,var(--dkui-danger) 32%,var(--dkui-control-border)));
   --dkds-ca-action-border-hover:var(--dkui-component-toolbar-action-variant-destructive-border-hover,var(--dkui-component-toolbar-action-variant-destructive-border,var(--dkui-control-border)));
-  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-destructive-border-active,var(--dkui-component-toolbar-action-variant-destructive-border,var(--dkui-control-border)))
+  --dkds-ca-action-border-active:var(--dkui-component-toolbar-action-variant-destructive-border-active,var(--dkui-component-toolbar-action-variant-destructive-border,var(--dkui-control-border)));
+  --dkds-ca-action-shadow:var(--dkui-component-toolbar-action-variant-destructive-shadow,0 2px 8px color-mix(in srgb,var(--dkui-danger) 14%,transparent));
+  --dkds-ca-action-shadow-hover:var(--dkui-component-toolbar-action-variant-destructive-shadow-hover,0 3px 10px color-mix(in srgb,var(--dkui-danger) 20%,transparent));
+  --dkds-ca-action-shadow-active:var(--dkui-component-toolbar-action-variant-destructive-shadow-active,0 0 0 2px color-mix(in srgb,var(--dkui-danger) 14%,transparent));
+  --dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-variant-destructive-shadow-selected,var(--dkds-ca-action-shadow-active))
 }
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:hover:not(:disabled){background:var(--dkds-ca-action-surface-hover);border-color:var(--dkds-ca-action-border-hover)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-action-surface-active);color:var(--dkds-ca-action-text-active);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-state-shadow)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-action-surface-selected);color:var(--dkds-ca-action-text-selected);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-state-shadow)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible{outline:none;border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-focus-shadow)}
-body.dkds-modern-ui .dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:hover:not(:disabled){background:var(--dkds-ca-action-surface-hover);border-color:var(--dkds-ca-action-border-hover);box-shadow:var(--dkds-ca-action-shadow-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-action-surface-active);color:var(--dkds-ca-action-text-active);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-shadow-active)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.selected,[aria-selected="true"]){background:var(--dkds-ca-action-surface-selected);color:var(--dkds-ca-action-text-selected);border-color:var(--dkds-ca-action-border-active);box-shadow:var(--dkds-ca-action-shadow-selected)}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn){
   --dkds-ca-action-surface:transparent;--dkds-ca-action-border:transparent;--dkds-ca-action-shadow:none
 }
@@ -209,15 +185,20 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-pane
 body.dkds-modern-ui [data-dkds-component-identity="panelHeader"]{
   --dkds-material-base:var(--dkui-component-panel-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   --dkds-material-border:var(--dkui-component-panel-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
-  color:var(--dkui-component-panel-header-text,var(--dkui-role-chrome-text,var(--dkui-text)))
+  background:var(--dkui-component-panel-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
+  border-bottom:1px solid var(--dkui-component-panel-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
+  color:var(--dkui-component-panel-header-text,var(--dkui-role-chrome-text,var(--dkui-text)));box-shadow:none
 }
 body.dkds-modern-ui [data-dkds-component-identity="inspectorHeader"]{
   --dkds-material-base:var(--dkui-component-inspector-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   --dkds-material-border:var(--dkui-component-inspector-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
-  color:var(--dkui-component-inspector-header-text,var(--dkui-role-chrome-text,var(--dkui-text)))
+  background:var(--dkui-component-inspector-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
+  border-bottom:1px solid var(--dkui-component-inspector-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
+  color:var(--dkui-component-inspector-header-text,var(--dkui-role-chrome-text,var(--dkui-text)));box-shadow:none
 }
-/* Header identity only supplies material tokens and text. Material Renderer is
-   the single optical paint owner for header surfaces. */
+/* Nested headers are tonal component bands inside the parent Material. They do
+   not own backdrop-filter/shadow, so Material Renderer remains the only optical
+   surface owner while title/inspector hierarchy stays visible. */
 
 body.dkds-modern-ui [data-dkds-component-identity="menuItem"]{
   --dkds-ca-menu-surface:var(--dkui-component-menu-item-surface,transparent);
@@ -230,7 +211,11 @@ body.dkds-modern-ui [data-dkds-component-identity="menuItem"]{
   --dkds-ca-menu-border:var(--dkui-component-menu-item-border,transparent);
   --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-border-hover,transparent);
   --dkds-ca-menu-border-active:var(--dkui-component-menu-item-border-active,var(--dkui-selection-border));
-  background:var(--dkds-ca-menu-surface);color:var(--dkds-ca-menu-text);-webkit-text-fill-color:currentColor;border-color:var(--dkds-ca-menu-border)
+  --dkds-ca-menu-shadow:var(--dkui-component-menu-item-shadow,none);
+  --dkds-ca-menu-shadow-hover:var(--dkui-component-menu-item-shadow-hover,var(--dkds-ca-menu-shadow));
+  --dkds-ca-menu-shadow-active:var(--dkui-component-menu-item-shadow-active,var(--dkds-ca-menu-shadow));
+  --dkds-ca-menu-shadow-selected:var(--dkui-component-menu-item-shadow-selected,var(--dkds-ca-menu-shadow));
+  background:var(--dkds-ca-menu-surface);color:var(--dkds-ca-menu-text);-webkit-text-fill-color:currentColor;border:1px solid var(--dkds-ca-menu-border);border-radius:var(--dkui-component-menu-item-radius,7px);box-shadow:var(--dkds-ca-menu-shadow)
 }
 body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-component-variant="active"]{
   --dkds-ca-menu-surface:var(--dkui-component-menu-item-variant-active-surface,var(--dkui-component-menu-item-surface-active,var(--dkui-active-surface)));
@@ -271,9 +256,9 @@ body.dkds-modern-ui [data-dkds-component-identity="menuItem"][data-dkds-componen
   --dkds-ca-menu-border-hover:var(--dkui-component-menu-item-variant-destructive-border-hover,var(--dkds-ca-menu-border));
   --dkds-ca-menu-border-active:var(--dkui-component-menu-item-variant-destructive-border-active,var(--dkds-ca-menu-border))
 }
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:hover:not(:disabled){background:var(--dkds-ca-menu-surface-hover);border-color:var(--dkds-ca-menu-border-hover)}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-menu-surface-active);color:var(--dkds-ca-menu-text-active);border-color:var(--dkds-ca-menu-border-active)}
-body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.selected,[aria-selected="true"],[aria-checked="true"]){background:var(--dkds-ca-menu-surface-selected);color:var(--dkds-ca-menu-text-selected);border-color:var(--dkds-ca-menu-border-active)}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:hover:not(:disabled){background:var(--dkds-ca-menu-surface-hover);border-color:var(--dkds-ca-menu-border-hover);box-shadow:var(--dkds-ca-menu-shadow-hover)}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-menu-surface-active);color:var(--dkds-ca-menu-text-active);border-color:var(--dkds-ca-menu-border-active);box-shadow:var(--dkds-ca-menu-shadow-active)}
+body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.selected,[aria-selected="true"],[aria-checked="true"]){background:var(--dkds-ca-menu-surface-selected);color:var(--dkds-ca-menu-text-selected);border-color:var(--dkds-ca-menu-border-active);box-shadow:var(--dkds-ca-menu-shadow-selected)}
 
 body.dkds-modern-ui [data-dkds-component-identity="chip"]{border:1px solid var(--dkui-component-chip-border,transparent);border-radius:999px;background:var(--dkui-component-chip-surface,var(--dkui-surface-soft));color:var(--dkui-component-chip-text,var(--dkui-text-soft))}
 body.dkds-modern-ui [data-dkds-component-identity="chip"]:hover{background:var(--dkui-component-chip-surface-hover,var(--dkui-surface-hover));border-color:var(--dkui-component-chip-border-hover,var(--dkui-control-border))}
@@ -283,6 +268,7 @@ body.dkds-modern-ui [data-dkds-component-identity="chip"][data-dkds-component-va
 body.dkds-modern-ui [data-dkds-component-identity="chip"][data-dkds-component-variant="warning"]{background:var(--dkui-component-chip-variant-warning-surface,var(--dkui-warning-soft));color:var(--dkui-component-chip-variant-warning-text,var(--dkui-warning))}
 body.dkds-modern-ui [data-dkds-component-identity="chip"][data-dkds-component-variant="danger"]{background:var(--dkui-component-chip-variant-danger-surface,var(--dkui-danger-soft));color:var(--dkui-component-chip-variant-danger-text,var(--dkui-danger))}
 body.dkds-modern-ui [data-dkds-component-identity="chip"][data-dkds-component-variant="info"]{background:var(--dkui-component-chip-variant-info-surface,var(--dkui-info-soft));color:var(--dkui-component-chip-variant-info-text,var(--dkui-info))}
+body.dkds-modern-ui [data-dkds-component-identity="chip"][data-dkds-component-variant="quiet"]{background:var(--dkui-component-chip-variant-quiet-surface,transparent);color:var(--dkui-component-chip-variant-quiet-text,var(--dkui-text-soft));border-color:var(--dkui-component-chip-variant-quiet-border,transparent);box-shadow:none}
 
 body.dkds-modern-ui [data-dkds-component-identity="statusBar"]{--dkds-material-base:var(--dkui-component-status-bar-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));--dkds-material-border:var(--dkui-component-status-bar-border,var(--dkui-role-chrome-border,var(--dkui-divider)));color:var(--dkui-component-status-bar-text,var(--dkui-role-chrome-text,var(--dkui-text)))}
 body.dkds-modern-ui [data-dkds-component-identity="floatingChrome"]{--dkds-material-base:var(--dkui-component-floating-chrome-surface,var(--dkui-role-floating-surface,var(--dkui-surface-elevated)));--dkds-material-border:var(--dkui-component-floating-chrome-border,var(--dkui-role-floating-border,var(--dkui-divider)));color:var(--dkui-component-floating-chrome-text,var(--dkui-role-floating-text,var(--dkui-text)))}
@@ -297,7 +283,7 @@ body.dkds-modern-ui :where([data-dkds-material-recipe="thin-glass"],[data-dkds-m
 body.dkds-modern-ui :where([data-dkds-material-recipe="thin-glass"],[data-dkds-material-recipe="soft-glass"],[data-dkds-material-recipe="liquid-glass"]) [data-dkds-component-identity="field"]:hover:not(:disabled){border-color:color-mix(in srgb,var(--dkui-divider-hover) 82%,transparent)}
 
 body.dkds-modern-ui :where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface);color:var(--dkui-disabled-text)}
-body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);border-color:var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow);opacity:.56}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:disabled{background:var(--dkds-ca-action-surface);color:var(--dkui-disabled-text);-webkit-text-fill-color:var(--dkui-disabled-text);border-color:var(--dkds-ca-action-border);box-shadow:var(--dkds-ca-action-shadow);opacity:1}
 body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]:disabled{
   background:color-mix(in srgb,var(--dkds-ca-action-surface) 58%,var(--dkui-surface));
   color:#fff;-webkit-text-fill-color:#fff;
@@ -320,3 +306,16 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="
 html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="tab"]:is(
   .active,.selected,[aria-pressed="true"],[aria-selected="true"]
 ){color:#fff;-webkit-text-fill-color:#fff}
+
+/* Integrated command surfaces own one silhouette only when their container
+   explicitly owns that chrome. A generic grouped context is not sufficient:
+   status bars/activity clusters may group actions for layout without providing
+   a parent border/depth surface. */
+body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}
+body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:first-child{border-radius:var(--dkui-component-toolbar-action-radius,7px) 0 0 var(--dkui-component-toolbar-action-radius,7px)}
+body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:last-child{border-radius:0 var(--dkui-component-toolbar-action-radius,7px) var(--dkui-component-toolbar-action-radius,7px) 0}
+body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:only-child{border-radius:var(--dkui-component-toolbar-action-radius,7px)}
+
+/* Theme picker selection is still canonical MenuItem paint. The check + fill
+   communicate selection; the picker intentionally suppresses a second ring. */
+body.dkds-modern-ui #dkdsThemePanel [data-dkds-component-identity="menuItem"].dkds-theme-profile-option[aria-selected="true"]{border-color:transparent;box-shadow:none}

@@ -10,8 +10,8 @@ const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 
 assert(atLeast(tuple(pkg.version),[3,66,5]),'Aurora light emerald refinement requires DK Data Studio 3.66.5+.');
-assert.equal(manifest.version,'2.2.3','Aurora Pop manifest must advance to 2.2.3.');
-assert(aurora.includes("version:'2.2.3'"),'Aurora runtime manifest must match plugin.json.');
+assert.equal(manifest.version,'2.3.1','Aurora Pop manifest must advance to 2.3.1.');
+assert(aurora.includes("version:'2.3.1'"),'Aurora runtime manifest must match plugin.json.');
 
 // One Theme-owned palette controls the entire light secondary/active interaction axis.
 for(const token of [

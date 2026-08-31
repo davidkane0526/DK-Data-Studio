@@ -1,11 +1,12 @@
 {
-  "sdkVersion": "1.23.0",
+  "sdkVersion": "1.24.0",
   "pluginApiVersion": "1.19.0",
   "packageSchema": 1,
-  "minimumAppVersion": "3.67.5",
+  "minimumAppVersion": "3.67.10",
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.24.0 keeps Plugin API 1.19.0 and upgrades Theme Contract to 3.10.0: theme profiles can declaratively compose Component Context (standalone/grouped), Material Role, Material Context (compact/panel/dialog/workspace-modal), component variants and bounded depth slots while Core remains the single final appearance/material paint owner.",
     "SDK 1.23.0 targets Plugin API 1.19.0 and completes Platform Presentation cutover: TOP PRIMARY no longer accepts leftNode/leftHtml; every secondary semantic region must be registered as its own PRIME/SUB surface with a declared presentationRole. The legacy Mobile workspace bridge is removed.",
     "SDK 1.22.1 adds Core-owned menu availability for ctx.ui.menus.add(...): export/tool actions may declare synchronous availability returning boolean or { visible, enabled, reason }, and shell menus re-evaluate it when opened and when project/artifact/activity context changes.",
     "SDK 1.22.0 finalizes Core visual ownership: canonical Action/ActionGroup/Tabs/SurfaceHeader/Field factories and hydration are public through ctx.ui.components, and package validation rejects plugin-owned application paint or standard control/header geometry. Theme Contract remains 3.9.0 and Plugin API remains 1.18.0.",
@@ -17,5 +18,5 @@
     "The SDK is standalone and does not require DK Data Studio source code.",
     "Manifest requirement `ui.workspace` and capability label `ui.plugin-workspace` map to the single executable runtime facade `ctx.ui.workspaceSurface`; `ctx.ui.pluginWorkspace` is not part of Plugin API 1.19.0."
   ],
-  "themeContractVersion": "3.9.0"
+  "themeContractVersion": "3.10.0"
 }

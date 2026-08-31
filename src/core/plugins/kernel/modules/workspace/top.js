@@ -177,26 +177,28 @@ const {isPresentationRole}=require('../../../../contracts/presentation');
       throw err;
     }
   }
-  async function initializeSuperSelection() {
-    if(state.host?.isAuxiliaryWindow)return false;
-    const saved=readSuperPreference();
-    if(saved!==undefined){
-      state.superPluginId=saved&&topDefinitionReady(saved)?saved:null;
-      return activateSuperWorkspace({invoke:true});
-    }
-    // First-run initialization is domain-neutral: a TOP may request the initial
-    // SUPER role through manifest.workspace.defaultSuper; otherwise manifest
-    // order decides the initial workspace. Persisted user selection always wins.
-    const candidates=[...definitions.values()]
+  function defaultSuperCandidate() {
+    return [...definitions.values()]
       .filter(definition=>isSuperEligibleDefinition(definition)&&topDefinitionReady(definition.manifest.id))
       .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)
         ||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100)
-        ||String(a.manifest.id).localeCompare(String(b.manifest.id)));
-    const initial=candidates[0]?.manifest?.id||null;
-    if(initial){
-      state.superPluginId=initial;
-      writeSuperPreference(initial);
-    }else state.superPluginId=null;
+        ||String(a.manifest.id).localeCompare(String(b.manifest.id)))[0]?.manifest?.id||null;
+  }
+  async function initializeSuperSelection() {
+    if(state.host?.isAuxiliaryWindow)return false;
+    const saved=readSuperPreference();
+    // Persisted SUPER is a preference, not a command to render a broken shell.
+    // Old plugin ids, disabled/uninstalled TOPs, or contracts that are no longer
+    // valid are migrated to the current default SUPER so upgrades cannot strand
+    // the desktop in an empty PRIMARY/PRIME shell. A valid saved choice still
+    // wins exactly as before.
+    if(saved!==undefined&&saved&&topDefinitionReady(saved)){
+      state.superPluginId=saved;
+      return activateSuperWorkspace({invoke:true});
+    }
+    const initial=defaultSuperCandidate();
+    state.superPluginId=initial;
+    if(initial&&saved!==initial)writeSuperPreference(initial);
     return activateSuperWorkspace({invoke:true});
   }
 module.exports=Object.freeze({validateTopWorkspaceSpec, registerTopWorkspace, registerPrimeContribution, primeContribution, primeRowsForPlugin, primePlacementFor, placePrimeContribution, applySuperPrimePlacements, registerSubContribution, topDefinitionReady, activateSuperWorkspace, setSuperPlugin, initializeSuperSelection});

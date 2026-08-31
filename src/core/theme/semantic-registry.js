@@ -1,9 +1,11 @@
 (() => {
   'use strict';
-  const VERSION='1.0.0';
+  const VERSION='2.0.0';
   const ThemeContract=globalThis.DKDSThemeContract;
   if(!ThemeContract)throw new Error('DKDSThemeContract is required before DKDSSemanticUI.');
   const COMPONENT_VARIANTS=new Set(ThemeContract.componentVariants());
+  const COMPONENT_CONTEXTS=new Set(ThemeContract.componentContexts?.()||['standalone','grouped']);
+  const MATERIAL_CONTEXTS=new Set(ThemeContract.materialContexts?.()||['compact','panel','dialog','workspace-modal']);
   const COMPONENT_VARIANT_MAP=ThemeContract.componentVariantMap();
   const COMPONENTS=Object.freeze([
     Object.freeze({id:'inspectorHeader',label:'Inspector Header',expectedRole:'chrome',priority:100,selector:'[data-dkds-inspector-header],[data-dkds-surface-kind="inspector"] .dkds-surface-header,[data-dkds-surface-kind="inspector"] .dkds-portable-header,[data-generic-panel="inspector"] .floating-header,[data-generic-panel="inspector"] .dkds-portable-header,.inspector-panel .floating-header'}),
@@ -33,7 +35,7 @@
   ]);
 
   const POPOVER_SELECTOR=MATERIAL_AREAS.find(row=>row.role==='popover')?.selector||'';
-  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
+  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,.dkds-mode-group,.dkds-scientific-nav-tools,[data-dkds-material-integrated="true"]';
   const SEMANTIC_CONTROL_PAINT_SELECTOR='.dkds-control-hit-region,.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
   const CHROME_SELECTOR='.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head,.dkds-analysis-prime-head';
 
@@ -97,6 +99,35 @@
     if(matches(el,'button,input,select,textarea,.dkds-field-control,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn'))return semanticControlOwnsPaint(el)?'':'control';
     return '';
   }
+  function componentContextOf(el){
+    const target=resolveComponent(el)?.target||el;if(!target)return 'standalone';
+    const explicit=String(target.dataset?.dkdsComponentContext||'').trim();if(COMPONENT_CONTEXTS.has(explicit))return explicit;
+    const group=closest(target,INTEGRATED_CONTAINER_SELECTOR);return group&&group!==target?'grouped':'standalone';
+  }
+  function materialContextOf(el){
+    if(!el)return '';
+    const explicit=String(el.dataset?.dkdsMaterialContext||'').trim();if(MATERIAL_CONTEXTS.has(explicit))return explicit;
+    if(matches(el,'.import-workbench'))return 'workspace-modal';
+    if(matches(el,'.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.dkds-theme-settings-dialog,.project-save-choice-card'))return 'dialog';
+    if(matches(el,'.command-menu,.dkds-context-menu,.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.hover-tip,.activity-more-menu,.context-overflow-menu,.range-action-menu,.dkds-scientific-nav-tools,.dkds-theme-panel'))return 'compact';
+    if(matches(el,'.floating-panel,.dkds-portable-view,.dkds-memory-panel,.lan-web-panel,.update-panel,.plugin-manager-card,.plugin-manager-toolbar-card'))return 'panel';
+    return '';
+  }
+  function materialRoleFromMarker(el){
+    const explicit=String(el?.dataset?.dkdsMaterialRole||el?.dataset?.dkdsMaterialAssignedRole||'').trim();if(explicit)return explicit;
+    for(const role of ThemeContract.materialRoles())if(matches(el,`.dkds-material-role-${role}`))return role;
+    return '';
+  }
+  function nearestMaterialRole(el){
+    let node=resolveComponent(el)?.target||el,depth=0;
+    while(node&&node!==document.documentElement&&depth<12){const marked=materialRoleFromMarker(node);if(marked)return marked;const inferred=resolveMaterialRole(node);if(inferred&&inferred!=='control')return inferred;node=node.parentElement;depth++;}
+    return '';
+  }
+  function nearestMaterialContext(el){
+    let node=resolveComponent(el)?.target||el,depth=0;
+    while(node&&node!==document.documentElement&&depth<12){const context=materialContextOf(node);if(context)return context;node=node.parentElement;depth++;}
+    return '';
+  }
   function expectedRole(el){
     const component=resolveComponent(el);if(component?.definition?.expectedRole)return component.definition.expectedRole;
     return resolveMaterialRole(component?.target||el);
@@ -107,7 +138,7 @@
     let match=null;
     for(const definition of COMPONENTS){if(matches(el,definition.selector)){match={id:definition.id,definition,target:el};break;}}
     if(!match){
-      if(el.dataset.dkdsComponentIdentityOwner==='core-runtime'){delete el.dataset.dkdsComponentIdentity;delete el.dataset.dkdsComponentIdentityOwner;delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;changed=true;}
+      if(el.dataset.dkdsComponentIdentityOwner==='core-runtime'){delete el.dataset.dkdsComponentIdentity;delete el.dataset.dkdsComponentIdentityOwner;delete el.dataset.dkdsComponentVariant;delete el.dataset.dkdsComponentVariantOwner;delete el.dataset.dkdsComponentContext;delete el.dataset.dkdsComponentContextOwner;changed=true;}
       return changed;
     }
     const explicitIdentity=el.dataset.dkdsComponentIdentityOwner==='core-component'&&componentDefinition(el.dataset.dkdsComponentIdentity);
@@ -116,6 +147,7 @@
       if(el.dataset.dkdsComponentIdentity!==componentId){el.dataset.dkdsComponentIdentity=componentId;changed=true;}
       if(el.dataset.dkdsComponentIdentityOwner!=='core-runtime'){el.dataset.dkdsComponentIdentityOwner='core-runtime';changed=true;}
     }
+    const context=componentContextOf(el);if(context){if(el.dataset.dkdsComponentContext!==context){el.dataset.dkdsComponentContext=context;changed=true;}if(el.dataset.dkdsComponentContextOwner!=='core-runtime'){el.dataset.dkdsComponentContextOwner='core-runtime';changed=true;}}
     const explicitVariant=el.dataset.dkdsComponentVariantOwner==='core-component'&&String(el.dataset.dkdsComponentVariant||'').trim();
     if(!explicitVariant){
       const variant=variantOf(el,componentId);
@@ -128,19 +160,51 @@
     }
     return changed;
   }
-  function assign(root=document){
-    const scope=root?.querySelectorAll?root:document;let assigned=0;
-    const nodes=[];if(root?.matches)nodes.push(root);for(const definition of COMPONENTS)for(const el of scope.querySelectorAll?.(definition.selector)||[])nodes.push(el);
-    for(const el of new Set(nodes))if(assignElement(el))assigned++;
-    return Object.freeze({assigned});
+  const COMPONENT_SELECTOR=COMPONENTS.map(row=>row.selector).join(',');
+  const PERF={assignCalls:0,documentAssignments:0,subtreeBatches:0,subtreeElements:0,flushes:0,scheduleCalls:0,mutationRecords:0,ignoredNonHtml:0};
+  function assignSubtree(root=document){
+    const scope=root?.querySelectorAll?root:document,nodes=[];if(root?.matches)nodes.push(root);for(const el of scope.querySelectorAll?.(COMPONENT_SELECTOR)||[])nodes.push(el);
+    let assigned=0;for(const el of new Set(nodes)){PERF.subtreeElements++;if(assignElement(el))assigned++;}return assigned;
+  }
+  function assign(root=document){PERF.assignCalls++;if(root===document)PERF.documentAssignments++;return Object.freeze({assigned:assignSubtree(root)});}
+  const htmlElement=el=>typeof HTMLElement==='undefined'||el instanceof HTMLElement;
+  const pendingSemanticRoots=new Set();
+  let semanticFrame=0;
+  const requestFrame=fn=>(globalThis.requestAnimationFrame||((cb)=>setTimeout(cb,0)))(fn);
+  function flushSemanticAssignments(){
+    semanticFrame=0;PERF.flushes++;
+    if(!pendingSemanticRoots.size)return;
+    const roots=[...pendingSemanticRoots];pendingSemanticRoots.clear();
+    for(const root of roots)assign(root);
+  }
+  function scheduleSemanticAssignment(root=document){
+    PERF.scheduleCalls++;
+    if(!root?.querySelectorAll)return;
+    if(root===document){pendingSemanticRoots.clear();pendingSemanticRoots.add(document);}
+    else if(!pendingSemanticRoots.has(document)){
+      let candidate=root,covered=false;
+      for(const existing of [...pendingSemanticRoots]){
+        if(existing===candidate||existing?.contains?.(candidate)){covered=true;break;}
+        if(candidate?.contains?.(existing)){pendingSemanticRoots.delete(existing);continue;}
+        if(existing?.parentElement&&existing.parentElement===candidate?.parentElement){pendingSemanticRoots.delete(existing);candidate=candidate.parentElement;}
+      }
+      if(!covered)pendingSemanticRoots.add(candidate);
+    }
+    if(semanticFrame)return;
+    semanticFrame=requestFrame(flushSemanticAssignments);
   }
   let observer=null;
   function start(){
     assign(document);
     if(observer||typeof MutationObserver!=='function')return;
-    observer=new MutationObserver(records=>{for(const record of records){if(record.type==='attributes'){assignElement(record.target);continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1)assign(node);}});
-    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-action-tone','data-dkds-surface-kind']});
+    observer=new MutationObserver(records=>{
+      PERF.mutationRecords+=records.length;const added=[];
+      for(const record of records){if(record.type==='attributes'){if(htmlElement(record.target))assignElement(record.target);else PERF.ignoredNonHtml++;continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1&&htmlElement(node))added.push(node);else if(node?.nodeType===1)PERF.ignoredNonHtml++;}
+      if(added.length){const roots=[];for(const node of added){if(roots.some(root=>root===node||root.contains?.(node)))continue;for(let i=roots.length-1;i>=0;i--)if(node.contains?.(roots[i]))roots.splice(i,1);roots.push(node);}PERF.subtreeBatches++;for(const root of roots)assignSubtree(root);}
+    });
+    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-selected','aria-pressed','aria-checked','data-state','data-selected','data-dkds-action-tone','data-dkds-surface-kind','data-dkds-material-context','data-dkds-component-context']});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  window.DKDSSemanticUI=Object.freeze({version:VERSION,components:()=>COMPONENTS.map(row=>({...row})),componentDefinition,resolveComponent,stateOf,variantOf,materialAreas:()=>MATERIAL_AREAS.map(row=>({...row})),resolveMaterialRole,expectedRole,semanticControlOwnsPaint,chromeOwnedIntegrated,assign,start,componentVariants:()=>[...COMPONENT_VARIANTS]});
+  const performanceSnapshot=()=>Object.freeze({...PERF,pendingRoots:pendingSemanticRoots.size,framePending:!!semanticFrame});
+  window.DKDSSemanticUI=Object.freeze({version:VERSION,performance:performanceSnapshot,components:()=>COMPONENTS.map(row=>({...row})),componentDefinition,resolveComponent,stateOf,variantOf,materialAreas:()=>MATERIAL_AREAS.map(row=>({...row})),resolveMaterialRole,materialContextOf,nearestMaterialRole,nearestMaterialContext,componentContextOf,expectedRole,semanticControlOwnsPaint,chromeOwnedIntegrated,assign,schedule:scheduleSemanticAssignment,start,componentVariants:()=>[...COMPONENT_VARIANTS]});
 })();

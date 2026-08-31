@@ -2,7 +2,7 @@ const fs=require('fs');
 const assert=require('assert');
 const runtime=(fs.readFileSync('src/diagnostics/automation-test-runtime.js','utf8')+fs.readFileSync('src/diagnostics/automation-smoke-cases.js','utf8'));
 const m=runtime.match(/const VERSION='(\d+)\.(\d+)\.(\d+)'/);assert(m,'Automation runner version missing.');
-const v=m.slice(1).map(Number);assert(v[0]>1||(v[0]===1&&v[1]>=11),'Automation runner must be v1.11.0+ for shared Scientific Scalar Field coverage.');
+const v=m.slice(1).map(Number);assert(v[0]>1||(v[0]===1&&v[1]>=11),'Automation runner must be v1.12.0+ for shared Scientific Scalar Field coverage.');
 for(const token of ["'scalar-field.shared'",'Core Scientific Scalar Field renderer','scientificScalarField:clone'])assert(runtime.includes(token),`Automation Core Scalar Field coverage missing: ${token}`);
 assert(runtime.includes("'plugin.resonance-contract'")&&runtime.includes("types.isA('resonance.feature-field','science.scalar-field')"),'Resonance-specific type coverage must live in the Resonance plugin diagnostic.');
 assert(runtime.includes("pipeline.get(pluginId,'gate-analysis')"),'Resonance plugin diagnostics must inspect the real Resonance gate Pipeline contract.');

@@ -19,7 +19,7 @@ assert(!text['scientific.css'].includes('body.dkds-modern-ui button:hover:not(:d
 assert(text['shell.css'].includes('body.dkds-modern-ui button:hover:not(:disabled){transform:none}'),'Shell must own geometry-stable generic button hover.');
 const component=fs.readFileSync(path.join(root,'src/styles/theme/component-appearance.css'),'utf8');
 assert(!text['shell.css'].includes('box-shadow:var(--dkui-selected-shadow)')&&!text['plugin-chrome.css'].includes('box-shadow:var(--dkui-selected-shadow)'),'Presentation modules must not own semantic selected-state shadow paint.');
-assert(component.includes('--dkds-ca-action-state-shadow:var(--dkui-selected-shadow)'),'Canonical Component Appearance must own the shared centered selected-state shadow.');
+assert(component.includes('--dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected,var(--dkds-ca-action-shadow))')&&component.includes('box-shadow:var(--dkds-ca-action-shadow-selected)'),'Canonical Component Appearance must be the single consumer of Theme 3.10 selected-state depth.');
 const dup=duplicates(owners);
 assert.equal(dup.length,0,`Presentation selectors must have one file owner; duplicates: ${dup.map(([s,n])=>`${s}=>${[...n].join('|')}`).join(', ')}`);
 console.log(`v3.62 presentation ownership PASS: ${files.length} modules, duplicate selectors=0.`);

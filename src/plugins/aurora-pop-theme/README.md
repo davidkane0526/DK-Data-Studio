@@ -1,5 +1,9 @@
-# Aurora Pop 2.2.2
+# Aurora Pop 2.3.1
 
-Aurora Pop is a bundled Theme Contract 3.9 profile. It owns appearance tokens only; Core owns Component Identity, Material Role, rendering, layout and scientific color precedence.
+Aurora Pop is a bundled Plugin API 1.19 / Theme Contract 3.10 profile.
 
-Version 2.2.2 moves the light-mode secondary/active interaction axis from deep cyan-teal to a brighter emerald palette. A single `LIGHT_EMERALD` palette now feeds the alternate accent, active/secondary action fills, active tabs, active menu/chip states, inspector accents and controlled edge effects, so those states cannot drift through repeated hard-coded colors. Filled active/secondary actions remain white-label controls. Scientific series colors are unchanged.
+- Keeps the violet / emerald / sky-blue Aurora identity and may remain visually expressive.
+- Uses Component Context and Material Role composition so grouped chrome, standalone primary actions and floating tools can have different depth without selector-specific CSS.
+- Uses Material Context so dialogs and large workspace modals can preserve hierarchy without flattening the theme.
+- Core remains the sole Component Appearance / Material Renderer paint owner. Aurora only declares bounded semantic values.
+- Scientific series colors remain fallback-only and do not override explicit scientific colors.

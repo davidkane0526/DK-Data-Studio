@@ -27,7 +27,7 @@ for(const token of ['occludedMaterial','rendererOk','appearanceOk','lowContrastC
 }
 assert(automation.includes("runCase('ui.visual-geometry-closure'"),
   'Windows/Electron automation must include the computed Desktop Visual Closure geometry case.');
-for(const token of ['getBoundingClientRect','getComputedStyle','48×34px','34px high','38px','0px 0px 0px 2px','inspectorDockSlot','ScientificCurve / ChartRuntime','Portable header action','Shared close action','workspaceGridChecked']){
+for(const token of ['getBoundingClientRect','getComputedStyle','at least 48px wide and 34px high','34px high','38px',"componentContext==='grouped'","context==='workspace-modal'",'materialRoleCompositionChecked','inspectorDockSlot','ScientificCurve / ChartRuntime','Portable header action','Shared close action','workspaceGridChecked']){
   assert(automationVisual.includes(token),`Computed visual-geometry closure must retain ${token}.`);
 }
 assert(automation.includes('visualGeometryClosureSmoke'),'Automation runner must dispatch the dedicated visual geometry smoke module.');
@@ -83,7 +83,7 @@ assert(automationSmoke.includes('fallbackWarnings')&&automationSmoke.includes("S
   'Automation must downgrade an incompatible built-in override to a warning only when the bundled fallback is healthy.');
 assert(ownershipTest.includes("path.resolve(file)!==path.resolve(root,'src/core/project/format.js')"),
   'Core/plugin ownership gate must compare the Project Format path platform-neutrally on Windows and POSIX.');
-assert(visualGate.includes('HARD-25')&&visualGate.includes('HARD-26')&&visualGate.includes('HARD-27')&&visualGate.includes('HARD-28')&&visualGate.includes('HARD-29')&&visualGate.includes('HARD-30')&&visualGate.includes('HARD-31')&&visualGate.includes('HARD-32')&&visualGate.includes('HARD-33')&&visualGate.includes('HARD-34')&&visualGate.includes('HARD-35')&&visualGate.includes('HARD-36')&&visualGate.includes('HARD-37')&&visualGate.includes('HARD-38')&&visualGate.includes('invariants:38'),
-  'Hard visual gate must protect corrected optical ownership through canonical nested chrome, runtime parent-owned header semantics, and floating-toolbar Material composition.');
+assert(visualGate.includes('HARD-43')&&visualGate.includes('HARD-44')&&visualGate.includes('HARD-45')&&visualGate.includes('HARD-46')&&visualGate.includes('HARD-47')&&visualGate.includes('HARD-48')&&visualGate.includes('HARD-49')&&visualGate.includes('HARD-50')&&visualGate.includes('HARD-51')&&visualGate.includes('HARD-52')&&visualGate.includes('HARD-53')&&visualGate.includes('HARD-54')&&visualGate.includes('HARD-55')&&visualGate.includes('HARD-56')&&visualGate.includes('HARD-57')&&visualGate.includes('HARD-58')&&visualGate.includes('HARD-59')&&visualGate.includes('HARD-60')&&visualGate.includes('HARD-61')&&visualGate.includes('invariants:61'),
+  'Hard visual gate must protect Theme 3.10 composition, anchored temporary surfaces, semantic-width Presenter commands, header hierarchy, scientific integrated chrome, semantic batching, quiet metadata and Core-owned destructive depth.');
 
-console.log('v3.67.10 Visual Closure final checks passed: strict Theme coverage, Windows-safe ownership, parent-owned nested chrome, floating toolbar Material composition, and override fallback diagnostics are guarded.');
+console.log('v3.67.10 Visual Closure checks passed: strict Theme coverage, Windows-safe ownership, Theme 3.10 contextual composition, parent-owned nested chrome and override fallback diagnostics are guarded.');

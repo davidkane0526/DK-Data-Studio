@@ -24,10 +24,10 @@ const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const dts=read('sdk/plugin-api.d.ts');
 
 assert(/^3\.(?:6[5-9]|[7-9]\d)\./.test(pkg.version)||Number(pkg.version.split('.')[0])>3,'Theme semantic-core regression requires app 3.65.0 or newer');
-assert.equal(sdk.sdkVersion,'1.23.0');
+assert.equal(sdk.sdkVersion,'1.24.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
-assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(Theme.version,'3.9.0');
+assert.equal(sdk.themeContractVersion,'3.10.0');
+assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must remain additive across the supported 3.x range');
 
 const semanticPos=index.indexOf('core/theme/semantic-registry.js');
@@ -39,8 +39,8 @@ assert(semantic.includes('[data-dkds-surface-kind=\"inspector\"]')&&semantic.inc
 assert(semantic.includes('[data-dkds-surface-kind=\"panel\"]')&&semantic.includes('.dkds-group-plot,.dkds-group-plot-card'),'Group Workspace and plot cards must be surface-owned through generic Core semantics');
 assert(!/respar|reswin|resonance-workbench/i.test(semantic),'Core semantic registry must not know resonance/plugin-specific selectors');
 assert(semantic.includes('.floating-panel:not(.lan-web-panel):not(.update-panel)'),'floating semantic area must exclude elevated LAN and Software Update panels');
-assert(semantic.includes('.update-panel,.lan-web-panel,.import-workbench'),'Update, LAN and Import Workbench must remain elevated semantic surfaces');
-assert(index.includes('class="import-workbench dkds-material-role-elevated"'),'Import Workbench overlay must remain elevated rather than persistent workspace surface');
+assert(semantic.includes('.update-panel,.lan-web-panel')&&/id:'elevated'[^\n]*\.import-workbench/.test(semantic)&&semantic.includes("if(matches(el,'.import-workbench'))return 'workspace-modal'"),'Update/LAN remain elevated while the near-fullscreen Import Workbench uses the Theme 3.10 workspace-modal context.');
+assert(index.includes('class="import-workbench dkds-material-role-elevated" data-dkds-material-context="workspace-modal"'),'Import Workbench modal must use elevated + workspace-modal composition inside its scrim.');
 assert(!/floatingChrome[^\n]+dkds-floating-surface/.test(semantic),'floatingChrome identity must never be assigned to an entire floating/persistent surface');
 assert(!/floatingChrome[^\n]+dkds-portable-header/.test(semantic),'portable panel headers are Panel/Inspector Header components, not Floating Chrome');
 assert(semantic.includes('[data-generic-panel="inspector"] .dkds-portable-header')&&semantic.includes("id:'panelHeader'")&&semantic.includes('.dkds-portable-header'),'portable headers must resolve through Inspector/Panel Header identity');
@@ -63,7 +63,7 @@ const normalized=Theme.validateProfile({modes:{light:{},dark:{}},appearance:{com
 assert.equal(normalized.appearance.components.toolbarAction.variants.primary.surface,'#705CE8');
 assert.throws(()=>Theme.validateProfile({modes:{light:{},dark:{}},appearance:{components:{toolbarAction:{variants:{rainbow:{surface:'#fff'}}}}}}),/unknown property "rainbow"/);
 assert.throws(()=>Theme.validateProfile({modes:{light:{},dark:{}},effects:{boxShadow:'0 0 20px red'}}),/unknown property "boxShadow"/);
-assert(dts.includes("export type DKDSThemeComponentVariant")&&dts.includes('DKDSThemeEffectSpec')&&dts.includes("readonly contractVersion:'3.9.0'"),'SDK types must expose Theme 3.9 variants/effects');
+assert(dts.includes("export type DKDSThemeComponentVariant")&&dts.includes('DKDSThemeEffectSpec')&&dts.includes("readonly contractVersion:'3.10.0'"),'SDK types must expose Theme 3.9 variants/effects');
 
 assert(group.includes("comfortable:Object.freeze({minItemHeight:220")&&group.includes("compact:Object.freeze({minItemHeight:168")&&group.includes('setDensity(value=\'comfortable\')'),'Core GroupPlot must expose a bounded compact/comfortable density policy');
 assert(dts.includes("export type DKDSGroupPlotDensity = 'comfortable'|'compact'")&&dts.includes('setDensity(value:DKDSGroupPlotDensity)'),'SDK must expose GroupPlot density');
@@ -74,4 +74,4 @@ const scientific=appearance.includes("['user-explicit','plugin-domain-explicit',
 assert(scientific,'scientific color precedence must remain user > plugin > project > Theme fallback > Core');
 for(const rel of ['src/core/theme/semantic-registry.js','src/core/theme/material-renderer.js','src/core/theme/component-appearance.js','src/styles/theme/component-appearance.css'])assert(!read(rel).toLowerCase().includes('aurora-pop')&&!read(rel).toLowerCase().includes('aurora pop'),`${rel} must not special-case Aurora Pop`);
 
-console.log('v3.65.0 canonical Theme semantic mapping, real-page diagnostics, Theme 3.9 capabilities and compact GroupPlot contracts passed.');
+console.log('v3.65.0 canonical Theme semantic mapping, real-page diagnostics, Theme 3.10 contextual capabilities and compact GroupPlot contracts passed.');

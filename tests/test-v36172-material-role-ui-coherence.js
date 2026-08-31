@@ -1,8 +1,8 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');
-assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');
+assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 const renderer=read('src/core/theme/material-renderer.js');const semanticRuntime=read('src/core/theme/semantic-registry.js');const index=read('src/index.html');
 for(const token of ['.analysis-page','dkds-settings-dialog','dkds-portable-view.is-floating'])assert(semanticRuntime.includes(token),`missing canonical material role selector: ${token}`);for(const token of ['.dkds-plugin-canvas-left','.dkds-plugin-canvas-right','.dkds-plugin-canvas-center','.dkds-plugin-canvas-bottom'])assert(!semanticRuntime.includes(token),`dock slot must not own a Material role: ${token}`);
 for(const token of ['assignSemanticRoles','refreshDerivedContrast','--dkds-on-popover','LOW_CONTRAST_MATERIAL'])assert(renderer.includes(token),`missing material render/contrast token: ${token}`);

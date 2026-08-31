@@ -25,7 +25,9 @@ for(const source of [curveNav,chartRuntime]){
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
 const appearance=read('src/styles/theme/component-appearance.css');
 const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
-assert(appearance.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'plot navigation actions must remain soft rounded canonical ToolbarAction hit regions.');
+const componentRuntime=read('src/core/theme/component-appearance.js');
+const themeRuntime=read('src/core/theme/runtime.js');
+assert(appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'plot navigation actions must remain canonical ToolbarAction hit regions while Theme 3.10 resolves their radius.');
 assert(!integrated.includes('.dkds-scientific-nav-tools button:hover:not(:disabled)'),'Integrated command Theme CSS must not repaint plot-navigation hover.');
 
 // 3/4) Portable/header actions are quiet by default, with rounded spacing and
@@ -34,7 +36,7 @@ const portable=read('src/core/ui/modules/layout/portable-view.js');
 const actions=read('src/core/ui/modules/interaction/context-actions.js');
 assert(portable.includes("placementButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("closeButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("collapseButton.dataset.dkdsComponentVariant='quiet'"),'Portable header controls must be quiet actions.');
 assert(actions.includes("headerIntegrated?'quiet':''"),'integrated header ActionGroup controls must default to quiet actions.');
-assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes(':where(.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions,.dkds-surface-actions,.trend-header-actions) [data-dkds-component-identity="toolbarAction"]{border-radius:7px}'),'header controls must combine canonical 26px Structure geometry with soft Component Appearance rounding.');
+assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'header controls must combine canonical 26px Structure geometry with Theme 3.10 resolved Component Appearance radius.');
 assert(appearance.includes('color-mix(in srgb,var(--dkui-control-hover) 62%,transparent)'),'quiet hover paint must be lighter than generic control hover.');
 
 // 5/6/8) The graph command/legend outlines and every topbar group share explicit
@@ -52,12 +54,12 @@ assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dk
 assert(shell.includes('height:var(--dkds-shell-group-height,38px)')&&shell.includes('padding:2px;'),'primary activity cluster must use the same 38px envelope with 2px inset.');
 assert(superTop.includes('height:var(--dkds-shell-group-height,38px)'),'file command outline must use the same envelope.');
 assert(workbench.includes('height:var(--dkds-shell-group-height,38px)'),'system command outline must use the same envelope.');
-assert(appearance.includes('--dkds-shell-action-halo:0 0 0 2px'),'topbar action halo must use an exact centered 2px spread so the visual envelope matches grouped chrome without blur growth.');
+assert(componentRuntime.includes('ThemeContract.resolveComponentAppearance')&&componentRuntime.includes('contextFor(target)')&&componentRuntime.includes('roleFor(target)')&&themeRuntime.includes('contexts:{grouped:')&&themeRuntime.includes('standalone:{variants:')&&!appearance.includes('--dkds-shell-action-halo'),'topbar depth must be resolved from Theme 3.10 Component Context/Material Role composition instead of a fixed 2px Core halo.');
 
 // 7) Parameters / inspector / group presentation buttons have the same content
 // geometry. No first-button padding exception may return.
-assert(shell.includes('padding:6px 10px;\n  display:inline-flex;\n  align-items:center;\n  justify-content:center;\n  text-align:center;'),'plugin presentation commands must share centered content geometry.');
-assert(shell.includes('.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{\n  margin-left:0;\n  padding-left:10px;'),'the first presentation button must use the same 10px side inset as its siblings.');
+assert(shell.includes('padding:6px 11px;\n  display:inline-flex;\n  align-items:center;\n  justify-content:center;\n  text-align:center;'),'plugin presentation commands must share centered content geometry.');
+assert(shell.includes('.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{\n  margin-left:0;\n  padding-left:11px;'),'the first presentation button must use the same 11px side inset as its siblings.');
 assert(!shell.includes('padding-left:7px;\n}\n.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child'),'the old narrow first-button exception must not return.');
 
 // 9) Theme selector is a fixed popover, never a portable view. Check both the

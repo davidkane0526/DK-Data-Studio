@@ -26,7 +26,7 @@ const material=read('src/styles/theme/material-renderer.css');
 const component=read('src/styles/theme/component-appearance.css');
 assert(contract.includes('--dkui-selected-shadow:0 0 4px'),'Selected-state shadow must remain a single restrained centered semantic halo.');
 assert(!contract.includes('--dkui-selected-shadow:0 0 0 1px'),'Selected-state shadow must not reintroduce the hard 1px rim that visually stacks selection styles.');
-assert(component.includes('--dkds-ca-action-state-shadow:var(--dkui-selected-shadow)')&&component.includes('box-shadow:var(--dkds-ca-action-state-shadow)'),'Canonical Component Appearance must preserve selected-mode shadow across Material contexts and profiles.');
+assert(component.includes('--dkds-ca-action-shadow-selected:var(--dkui-component-toolbar-action-shadow-selected,var(--dkds-ca-action-shadow))')&&component.includes('box-shadow:var(--dkds-ca-action-shadow-selected)'),'Canonical Component Appearance must preserve Theme 3.10 selected depth across Material contexts and profiles while contract.css remains only a fallback token source.');
 const thin=read('src/plugins/thin-glass-theme/plugin.js');
 for(const token of ["divider:'rgba(104,121,144,.14)'","controlBorder:'rgba(104,121,144,.22)'","glassEdge:'rgba(183,196,214,.50)'","divider:'rgba(100,116,139,.15)'","controlBorder:'rgba(100,116,139,.24)'"])assert(thin.includes(token),`Thin Glass low-line material hierarchy missing ${token}`);
 

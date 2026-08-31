@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.29.0';
+  const VERSION='1.33.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[],coverage:{}};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -62,7 +62,7 @@
   const visualCases=window.DKDSAutomationVisualCases;
   if(!visualCases)throw new Error('Automation visual-case module unavailable.');
   const {rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginContractSmoke,pluginSmoke,externalPluginPackageSmoke}=smokeCases;
-  const {visualGeometryClosureSmoke}=visualCases;
+  const {visualGeometryClosureSmoke,themeRuntimePerformanceSmoke}=visualCases;
 
   async function runAll(){
     if(state.running)return state.latest;
@@ -118,9 +118,10 @@
       for(const id of ['app','activityBar','mainWorkspace','statusBar','manageMenu','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
     });
     await runCase('ui.visual-geometry-closure','Desktop Visual Closure · computed geometry','UI / Visual',visualGeometryClosureSmoke);
+    await runCase('ui.theme-runtime-performance','Theme Runtime · idle mutation budget','UI / Theme',themeRuntimePerformanceSmoke);
     await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
-      const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.9.0'&&caps?.renderer?.backdropBlur===true,'Material Renderer 3.9 backdrop capability unavailable.');
-      assert(window.DKDSTheme?.contractVersion==='3.9.0','Theme Contract 3.9 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
+      const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.10.0'&&caps?.renderer?.backdropBlur===true&&caps?.renderer?.materialContexts===true,'Material Renderer 3.10 contextual backdrop capability unavailable.');
+      assert(window.DKDSTheme?.contractVersion==='3.10.0','Theme Contract 3.10 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('contract.appearance.component-contexts')===true,'Theme 3.10 Component Context capability unavailable.');assert(window.DKDSTheme?.supports?.('contract.material.contexts')===true,'Theme 3.10 Material Context capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.materialContexts')===true,'Material Renderer contextual projection unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
       const thin=window.DKDSThemeMaterialRenderer?.probeRecipe?.('thin-glass','popover');assert(thin?.status==='REAL_MATERIAL'&&thin?.recipe==='thin-glass',`Thin Glass probe ${thin?.status||'none'} / ${thin?.recipe||'none'}`);assert(/blur\(/.test(thin.backdropFilter||''),`Thin Glass did not compute backdrop blur: ${thin.backdropFilter||'none'}`);assert(!thin.edgeBackdropFilter&&!thin.specularBackground,'Thin Glass must not use Liquid optical layers.');
       const liquid=window.DKDSThemeMaterialRenderer?.probeRecipe?.('liquid-glass','popover');assert(liquid?.opticalStatus==='REAL_LIQUID_MATERIAL','Liquid Glass renderer regression.');
       state.coverage.themeMaterialRenderer={caps,thin,liquid};return state.coverage.themeMaterialRenderer;
@@ -138,7 +139,7 @@
       }finally{
         if(Theme?.current?.()!==originalMode){Theme?.set?.(originalMode);await settle();}
       }
-      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.9.0','Theme Coverage Runtime / Contract 3.9 unavailable.');
+      const report=Theme?.coverage?.();assert(report?.contractVersion==='3.10.0','Theme Coverage Runtime / Contract 3.10 unavailable.');
       const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,occluded=report.summary?.occludedMaterial||0,authoredUnused=report.summary?.authoredUnused||0,appearanceOk=report.summary?.appearanceOk===true,rendererOk=report.summary?.rendererOk===true,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
       if(partial||unmanaged||broken||occluded||authoredUnused||!appearanceOk||!rendererOk||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} occludedMaterial=${occluded} authoredUnused=${authoredUnused} appearanceOk=${appearanceOk} rendererOk=${rendererOk} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0||row.occludedMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,occludedMaterial:row.occludedMaterial,render:row.render}))};throw err;}
       return {...report,contrastModes};

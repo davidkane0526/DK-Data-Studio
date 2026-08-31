@@ -20,4 +20,4 @@ assert(renderer.includes("new URLSearchParams(window.location.search).get('dkdsA
 assert(renderer.includes('await window.DKDSAutomationTests?.run?.()')&&renderer.includes('diagnosticsCompleteVisualClosure({reportPath:'),'Renderer must persist the normal Automation report before asking Electron to verify and exit.');
 assert(!renderer.includes("DKDS_VISUAL_CLOSURE"),'Renderer must not read process environment or Node globals.');
 
-console.log('v3.67.10 Windows Electron Visual Closure mode PASS: one explicit command runs check, Automation 1.29, report verification, and deterministic process exit without changing normal startup.');
+console.log('v3.67.10 Windows Electron Visual Closure mode PASS: one explicit command runs check, Automation 1.33, report verification, and deterministic process exit without changing normal startup.');

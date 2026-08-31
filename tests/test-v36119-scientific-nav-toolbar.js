@@ -29,7 +29,7 @@ assert(css.includes('.dkds-scientific-nav-drag{display:flex;align-items:center;j
 const material=read('src/styles/theme/material-renderer.css');
 const components=read('src/styles/theme/component-appearance.css');
 assert(material.includes('.dkds-scientific-nav-tools.dkds-material-role-floating'),'Core Material Renderer must be the sole floating-surface owner for scientific navigation.');
-assert(components.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'Scientific navigation hit regions must share one canonical hover/shape appearance.');
+assert(components.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'Scientific navigation hit regions must consume the canonical Theme-resolved ToolbarAction radius instead of a location-specific radius.');
 
-assert(sdk.pluginApiVersion==='1.19.0'&&sdk.minimumAppVersion==='3.67.5','Historical D3 navigation behavior must remain valid under the current SDK 1.23 / Plugin API 1.19 host minimum.');
+assert(sdk.pluginApiVersion==='1.19.0'&&sdk.minimumAppVersion==='3.67.10','Historical D3 navigation behavior must remain valid under the current SDK 1.24 / Plugin API 1.19 host minimum.');
 console.log('v3.61.20 Core draggable D3 navigation toolbar checks passed.');

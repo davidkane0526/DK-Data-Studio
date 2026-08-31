@@ -38,11 +38,6 @@ body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.7
 }
 .empty-state{font-size:13px;
 }
-.project-tab{
-
-  border-bottom-color:var(--border-subtle);
-  border-radius:8px 8px 0 0;
-}
 .new-project-tab{
   font-size:18px;
   line-height:1;

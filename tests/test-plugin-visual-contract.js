@@ -43,7 +43,7 @@ assert(runtime.includes('document.body.dataset.pluginId'),'Dedicated TOP windows
 assert(runtime.includes("d3:'../../node_modules/d3/dist/d3.min.js'"),'Dedicated plugin dependency loader must support D3 for the GRS main renderer.');
 assert((manifest.window?.dependencies||[]).includes('scientific-renderer'),'Resonance TOP must declare the renderer-neutral Core scientific renderer.');
 assert(resonanceCss.includes('display:grid;grid-template-columns:minmax(0,1fr);height:100%'),'GRS plugin-owned layout must preserve a non-zero chart surface inside AnalysisWorkbench.');
-assert(resonance.includes('respar-main-legend dkds-scroll-x-compact')&&resonance.includes('dkds-toolbar dkds-surface'),'Resonance legend must consume Core scrolling, toolbar and surface primitives.');
+assert(resonance.includes('respar-main-legend dkds-scroll-x-compact dkds-legend-strip')&&!resonance.includes('respar-main-legend dkds-scroll-x-compact dkds-toolbar'),'Resonance legend must remain a lightweight content strip rather than a second ToolbarGroup/Surface.');
 assert(resonanceMainPlot.includes('compactLegendNumber')&&resonanceMainPlot.includes("chip.className='respar-legend-chip dkds-legend-item'"),'Resonance main-plot owner must format compact Vg labels and consume the Core legend-item primitive.');
 assert(resonanceSelection.includes("bindView('resonance-dataset-list'")&&resonanceSelection.includes("bindView('resonance-main-legend'"),'Resonance data list and legend must register with Core linked-selection views through the Selection runtime owner.');
 assert(resonanceSelection.includes('horizontalWheel:true')&&resonanceSelection.includes('dimOthers:true'),'Resonance legend must delegate horizontal wheel scrolling and focus dimming to Core.');

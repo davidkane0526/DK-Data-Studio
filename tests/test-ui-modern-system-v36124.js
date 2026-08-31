@@ -28,7 +28,7 @@ assert(!css.includes('#resonanceDedicatedPage')&&!css.includes('.data-center-bod
 assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css')&&resonanceCss.includes('#resonanceDedicatedPage'),'Resonance domain layout must be manifest-owned plugin CSS');
 assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.includes('plugin.css')&&dataCenterCss.includes('.data-center-body'),'Data Center domain layout must be manifest-owned plugin CSS');
 assert(scientificStructure.includes('.dkds-scientific-nav-tools button')&&scientificStructure.includes('width:25px;height:24px;min-width:25px;min-height:24px'),'Core scientific navigation buttons must keep one compact geometry contract');
-assert(materialCss.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&componentCss.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'Scientific navigation depth must be owned by Material Renderer while hit-region paint stays in Component Appearance');
+assert(materialCss.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&componentCss.includes('border-radius:var(--dkui-component-toolbar-action-radius,var(--ui-control-radius,8px))'),'Scientific navigation depth must be Material-owned while hit-region shape consumes Theme-resolved canonical ToolbarAction appearance');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 
 assert(css.includes('.menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px'),'source-choice menus must use the generic left-aligned menu contract');

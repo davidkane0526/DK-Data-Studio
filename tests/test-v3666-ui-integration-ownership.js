@@ -11,6 +11,8 @@ const connectivity=read('src/plugins/connectivity-center/plugin.js');
 const actionRuntime=read('src/core/ui/modules/interaction/context-actions.js');
 const pageRuntime=read('src/core/plugins/kernel/modules/pages/panels.js');
 const componentCss=read('src/styles/theme/component-appearance.css');
+const semanticTheme=read('src/core/theme/semantic-registry.js');
+const componentRuntime=read('src/core/theme/component-appearance.js');
 const pluginChrome=read('src/styles/presentation/plugin-chrome.css');
 const shellCss=read('src/styles/presentation/shell.css');
 const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
@@ -36,7 +38,7 @@ assert(visualGate.includes('SMB browser must not create a rounded nested Core su
 // page location.
 assert(actionRuntime.includes("button.dataset.dkdsComponentIdentity='toolbarAction'")&&actionRuntime.includes("button.dataset.dkdsActionLayout='standalone'"),'Core ActionGroup must assign canonical identity and standalone layout semantics at creation time.');
 assert(pageRuntime.includes("close.dataset.dkdsActionLayout='standalone'")&&pageRuntime.includes("button.dataset.dkdsActionLayout='standalone'"),'Core page close/import actions must use the same standalone action composition.');
-assert(componentCss.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-action-layout="standalone"]:not([data-dkds-component-variant])'),'Standalone action paint must be owned by Component Appearance.');
+assert(componentCss.includes('[data-dkds-component-identity="toolbarAction"]')&&!componentCss.includes('[data-dkds-action-layout="standalone"]')&&semanticTheme.includes("return group&&group!==target?'grouped':'standalone'")&&componentRuntime.includes('contextFor(target)'),'Theme 3.10 standalone/grouped action appearance must be resolved semantically by Core rather than by a layout-specific CSS paint path.');
 assert(!pluginChrome.includes('.dkds-plugin-header-actions button {')&&!pluginChrome.includes('.analysis-page-header>.dkds-separated-action-group>.dkds-action-button {'),'Presentation must not repaint plugin-header actions.');
 assert(!shellCss.includes('body.dkds-modern-ui button:not(.primary):not(.strong):not(.danger):not(.dkds-split-caret),'),'Legacy global action-border clearing must stay removed.');
 assert(!shellCss.includes(':where(button,input,select,textarea):disabled{background:var(--dkui-disabled-surface)'),'Generic disabled paint must have one Theme/Component Appearance owner, not a Presentation duplicate.');

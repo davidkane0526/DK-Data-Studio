@@ -10,9 +10,9 @@ const json=rel=>JSON.parse(read(rel));
 const release=json('package.json').version;
 {const [major,minor]=release.split('.').map(Number);assert(major===3&&minor>=64,'visual contract closure must remain on or beyond the 3.64 release baseline');}
 const contract=json('sdk/contract.json');
-assert.equal(contract.sdkVersion,'1.23.0');
+assert.equal(contract.sdkVersion,'1.24.0');
 assert.equal(contract.pluginApiVersion,'1.19.0');
-assert.equal(contract.minimumAppVersion,'3.67.5');
+assert.equal(contract.minimumAppVersion,'3.67.10');
 
 
 const app=read('src/generated/runtime/app.js'),index=read('src/index.html'),pluginWindow=read('src/plugin-window/runtime.js');
@@ -44,7 +44,7 @@ for(const token of [
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
 const materialRoles=read('src/styles/theme/material-roles.css');
 const semanticMaterial=read('src/core/theme/semantic-registry.js');
-assert(semanticMaterial.includes('.import-workbench')&&semanticMaterial.includes("return 'elevated'"),'Import Workbench must consume the Core elevated Material contract rather than a private Presentation theme selector.');
+assert(semanticMaterial.includes('.import-workbench')&&semanticMaterial.includes("return 'surface'"),'Import Workbench must consume the Core clear Surface contract rather than a private/glass Presentation theme selector.');
 assert(materialRoles.includes('[data-dkds-material-role="elevated"]'),'Elevated Material role must own Import Workbench surface appearance.');
 const canonicalActions=read('src/styles/theme/component-appearance.css');
 assert(canonicalActions.includes('[data-dkds-component-identity="toolbarAction"]:hover:not(:disabled)')&&canonicalActions.includes('--dkds-ca-action-surface-hover'),'Modern hover paint must be owned by canonical ToolbarAction appearance rather than a hard-coded dark fallback.');

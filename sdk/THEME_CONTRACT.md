@@ -1,9 +1,9 @@
-# DK Data Studio Theme Contract 3.9
+# DK Data Studio Theme Contract 3.10
 
-Theme Contract 3.9 is the constrained Design System contract used by DK Data Studio 3.65+. Theme plugins provide semantic values; Core owns DOM, selectors, component identity, interaction state, Material role assignment, layout and rendering.
+Theme Contract 3.10 is the constrained Design System contract used by DK Data Studio 3.67.10+. Theme plugins provide semantic values; Core owns DOM, selectors, component identity, interaction state, Material role assignment, layout and rendering.
 
 ```js
-ctx.ui.theme.contractVersion; // "3.9.0"
+ctx.ui.theme.contractVersion; // "3.10.0"
 ```
 
 A new Theme package should declare:
@@ -13,14 +13,14 @@ A new Theme package should declare:
   "pluginType": "theme",
   "requiresCore": ["ui.theme"],
   "compatibility": {
-    "app": ">=3.65.0 <4.0.0",
+    "app": ">=3.67.10 <4.0.0",
     "pluginApi": "^1.19.0",
-    "themeContract": "^3.9.0"
+    "themeContract": "^3.10.0"
   }
 }
 ```
 
-Themes written for `^3.8.0` remain valid on a 3.9 host when they use the 3.8 subset. Theme plugins still may not ship arbitrary Core-targeting CSS, choose application selectors, mutate Core DOM, own layout, or provide pseudo-elements/keyframes/filter/shadow strings.
+Themes written for supported Theme 3.x subsets remain valid on a 3.10 host when they stay within that declared subset. Theme plugins still may not ship arbitrary Core-targeting CSS, choose application selectors, mutate Core DOM, own layout, or provide pseudo-elements/keyframes/filter strings. Theme 3.10 does allow bounded literal shadow/radius depth slots, which Core validates and paints.
 
 ## Ownership model
 
@@ -93,7 +93,31 @@ indicator
 
 Theme Gallery and real application UI use the same Core resolver. For example, the real Curve Inspector header and the Gallery Inspector Header both resolve to `appearance.components.inspectorHeader.*`.
 
-## 4. Controlled Component Variants
+
+## 4. Theme 3.10 contextual composition
+
+Theme 3.10 adds two finite Core-owned context axes:
+
+```text
+Component Context: standalone | grouped
+Material Context: compact | panel | dialog | workspace-modal
+```
+
+A Theme may declare Component Appearance per Material Role and per Component Context. Components may also declare bounded Core-rendered depth slots:
+
+```text
+shadow
+shadowHover
+shadowActive
+shadowSelected
+radius
+```
+
+Material profiles may declare `contexts` and per-role `contexts`, while recipe policy may declare `recipes.contexts`. Core resolves the final composition in this order and projects one final set of CSS variables. Themes never select DOM locations themselves. This allows, for example, an expressive Aurora `toolbarAction` to use different depth when grouped on chrome versus grouped on a floating Material, and allows Thin Glass to use different optics for a compact popover versus a near-fullscreen `workspace-modal`.
+
+Literal shadow slots are validated and do not accept dynamic/executable CSS functions such as `url()`, `var()`, `calc()`, `env()`, `attr()` or `expression()`.
+
+## 5. Controlled Component Variants
 
 Theme 3.9 adds a fixed Core-owned variant vocabulary:
 
@@ -134,7 +158,7 @@ appearance: {
 }
 ```
 
-## 5. Controlled Advanced Effects
+## 6. Controlled Advanced Effects
 
 Theme 3.9 adds a small Core-rendered effect contract:
 
@@ -168,7 +192,7 @@ gradientDirection
 
 Core restricts these effects to chrome-like semantic components such as Panel Header, Inspector Header and Floating Chrome. ScientificPlot bodies, table bodies and scientific data are never decorated by this effect contract.
 
-## 6. Theme Consumption and Real Theme Inspector
+## 7. Theme Consumption and Real Theme Inspector
 
 `ctx.ui.theme.consumption()` exposes the canonical Core mapping. Theme authors do not infer identity from screenshots.
 
@@ -182,7 +206,7 @@ Development mode provides a real-page Theme Inspector (`Ctrl+Alt+T`). It reports
 
 Representative error states include `UNMANAGED_COMPONENT_APPEARANCE`, `WRONG_COMPONENT_IDENTITY`, `ROLE_MISMATCH`, `RECIPE_MISMATCH`, `TOKEN_NOT_CONSUMED`, `AUTHORED_BUT_UNUSED`, `OPAQUE_PARENT_OCCLUSION`, `HARDCODED_APPEARANCE`, and `ENGINE_UNSUPPORTED`. For Plugin API 1.19 compatibility, `OPAQUE_PARENT_OCCLUSION` retains its historical public identifier; current diagnostics only raise it when a translucent Material is itself repainted opaque (`occlusionSource: "self"`) or a large unmanaged opaque descendant covers it (`occlusionSource: "child"`). An opaque ancestor is reported only as diagnostic context and does not by itself mean that `backdrop-filter` is ineffective.
 
-## 7. Theme Coverage
+## 8. Theme Coverage
 
 `ctx.ui.theme.coverage()` reports independent coverage for:
 
@@ -195,11 +219,11 @@ Material areas use explicit states such as `NOT_PRESENT`, `MANAGED`, `PARTIAL`, 
 
 Component coverage additionally reports `AUTHORED_BUT_UNUSED` and identity mismatches.
 
-## 8. Theme Component Gallery parity
+## 9. Theme Component Gallery parity
 
 Software Management → Theme Test is the canonical Design System reference, not an isolated demo. Gallery component demos and real UI resolve through the same Component Identity / Appearance resolver. The parity report fails with `WRONG_COMPONENT_IDENTITY` when a real component maps to a different appearance slot.
 
-## 9. Scientific series palette precedence
+## 10. Scientific series palette precedence
 
 Scientific appearance remains fallback-only:
 
@@ -213,7 +237,7 @@ user explicit color
 
 A Theme never changes the meaning of scientific data or overrides explicit series colors.
 
-## 10. Material recipes
+## 11. Material recipes
 
 Core-owned recipes remain:
 

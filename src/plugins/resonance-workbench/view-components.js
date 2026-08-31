@@ -195,19 +195,19 @@
             </aside>
             <main class="respar-main-area">
               <div class="respar-main-workspace">
-                <div class="respar-plot-wrap" id="resparMainPlotWrap" data-dkds-plot-scope>
+                <div class="respar-plot-wrap" id="resparMainPlotWrap" data-dkds-plot-scope data-dkds-surface-edge="none">
                   <div class="respar-main-plot-header">
-                    <div class="respar-main-tools dkds-toolbar dkds-floating-surface">
+                    <div class="respar-main-tools dkds-toolbar dkds-floating-surface dkds-integrated-action-group">
                       <button type="button" data-respar-lock="1">锁定所选</button>
                       <button type="button" data-respar-lock="0">解锁所选</button>
                       <button type="button" id="resparSortPeakOrder">智能峰序</button>
                       <button type="button" id="resparTogglePhysics">物理标记</button>
                       <button type="button" id="resparResetView">重新居中</button>
                     </div>
-                    <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-toolbar dkds-surface" data-dkds-legend></div>
+                    <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-legend-strip" data-dkds-legend></div>
                   </div>
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
-                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden" data-dkds-menu-behavior="rich">
+                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden" data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作">
                     <div id="resparRangeSummary" class="respar-range-summary">已框选区域</div>
                     <div class="respar-range-grid"><button id="resparRangeDetect" class="dkds-action-button primary">局部寻峰</button><button id="resparRangeDelete" class="dkds-action-button danger-soft">删除框选峰</button><button id="resparRangeLock" class="dkds-action-button">锁定框选峰</button><button id="resparRangeUnlock" class="dkds-action-button">解锁框选峰</button></div>
                     <div class="respar-range-identity"><div>统一峰序 / 峰标签</div><select id="resparRangeOrder"></select><input id="resparRangeLabel" type="text" placeholder="类别标签，例如 峰3 / AB"><button id="resparRangeApplyIdentity" class="dkds-action-button">应用到框选峰</button></div>
@@ -221,7 +221,7 @@
           </section>
 
           <div id="resparInspectorPanel" class="respar-floating-panel respar-inspector-panel hidden">
-            <div class="respar-floating-header dkds-portable-header dkds-surface-header"><span>曲线检查器</span><div class="dkds-integrated-action-group"><button data-respar-close="inspect" class="respar-panel-close" aria-label="关闭">×</button></div></div>
+            <div class="respar-floating-header dkds-portable-header dkds-surface-header" data-dkds-inspector-header><span>曲线检查器</span><div class="dkds-integrated-action-group"><button data-respar-close="inspect" class="respar-panel-close" aria-label="关闭">×</button></div></div>
             <div class="respar-floating-body"><div id="reswinInspectorBody" class="respar-inspector-body"></div></div>
           </div>
 

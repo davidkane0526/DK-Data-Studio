@@ -72,7 +72,16 @@
       themeItem.update({icon:mode==='dark'?'◐':'☼',label:'主题',title:`主题：${themeLabel()} · ${mode==='dark'?'暗色':'亮色'}`});
     }
     const hideThemePanel=()=>themePanel.classList.add('hidden');
-    const showThemePanel=()=>{renderThemePanel();themePanel.classList.remove('hidden');};
+    function positionThemePanel(){
+      if(themePanel.classList.contains('hidden'))return;
+      const anchor=themeItem.element;if(!anchor?.getBoundingClientRect)return;
+      const a=anchor.getBoundingClientRect(),box=themePanel.getBoundingClientRect(),margin=8;
+      const edgeAligned=(a.left+a.width/2)>window.innerWidth/2?a.right-box.width:a.left;
+      const left=Math.max(margin,Math.min(window.innerWidth-box.width-margin,edgeAligned));
+      themePanel.style.left=`${Math.round(left)}px`;themePanel.style.right='auto';
+      themePanel.style.bottom=`calc(var(--dkds-statusbar-height,28px) + 6px)`;
+    }
+    const showThemePanel=()=>{renderThemePanel();themePanel.classList.remove('hidden');ctx.ui.dom.frame(positionThemePanel);};
     function toggleThemePanel(){if(themePanel.classList.contains('hidden'))showThemePanel();else hideThemePanel();}
 
     ctx.ui.dom.on(themeList,'click',event=>{
@@ -87,7 +96,7 @@
     ctx.ui.dom.on(themeSettingsBtn,'click',()=>window.DKDSThemeSettingsUI?.open?.(themeProfile()));
     ctx.ui.dom.on(ctx.ui.dom.query('#dkdsThemePanelClose',themePanel),'click',hideThemePanel);
 
-    const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细'},html:`
+    const panel=ctx.ui.dom.create('aside',{className:'dkds-memory-panel hidden dkds-material-role-floating',attrs:{id:'dkdsMemoryBreakdownPanel','aria-label':'内存占用明细','data-dkds-portable':'false','data-dkds-portable-chrome':'false'},html:`
       <div class="dkds-memory-panel-head dkds-surface-header">
         <div class="dkds-memory-panel-title"><strong>内存占用</strong><span id="dkdsMemoryPanelTotal">—</span></div>
         <div class="dkds-integrated-action-group"><button id="dkdsMemoryPanelClose" class="dkds-icon-button dkds-panel-close-button" type="button" title="关闭" aria-label="关闭">×</button></div>
@@ -184,6 +193,7 @@
     const onKeyDown=event=>{if(event.key!=='Escape')return;hideThemePanel();hideMemoryPanel();};
     ctx.ui.dom.on(window,'dkds:theme-changed',onThemeChanged);
     ctx.ui.dom.on(window,'dkds:theme-profile-changed',onThemeChanged);
+    ctx.ui.dom.on(window,'resize',positionThemePanel);
     ctx.ui.dom.on(panel,'pointerenter',onPanelPointerEnter);
     ctx.ui.dom.on(panel,'pointerleave',onPanelPointerLeave);
     ctx.ui.dom.on(ctx.ui.dom.query('#dkdsMemoryPanelClose',panel),'click',hideMemoryPanel);

@@ -1,9 +1,9 @@
-# Thin Glass 1.10.0
+# Thin Glass 1.12.1
 
-Plugin API 1.19 / Theme Contract 3.9 theme profile.
+Plugin API 1.19 / Theme Contract 3.10 built-in profile.
 
-- Theme owns semantic tokens, role appearance, role recipes, material parameters, state colors and the optional default scientific series palette.
-- Core owns Material Role assignment, generic `thin-glass` rendering and DOM composition.
-- Scientific/data content and ordinary controls stay clear; chrome, sidebars and transient/elevated surfaces use restrained Thin Glass.
-- Explicit scientific series colors always override the Theme fallback palette.
-- Thin Glass uses one optical layer only: low-radius backdrop blur plus restrained edge/inner/specular cues.
+- Uses Core-owned Component Context (`standalone` / `grouped`) and Material Context (`compact` / `panel` / `dialog` / `workspace-modal`).
+- Preserves a distinctly glass-oriented visual language without directly painting Core selectors.
+- Small floating/popover surfaces can use stronger blur while large `workspace-modal` surfaces use lower blur and higher fill opacity for readability.
+- ToolbarGroup/ToolbarAction depth is declared through Theme 3.10 slots and is composed once by Core.
+- Scientific/data content remains fallback-only: explicit user/plugin/project colors always outrank the Theme palette.

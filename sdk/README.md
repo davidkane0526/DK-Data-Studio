@@ -1,4 +1,4 @@
-# DK Data Studio Plugin SDK 1.23.0
+# DK Data Studio Plugin SDK 1.24.0
 
 
 ## Plugin API 1.19 Presentation cutover
@@ -8,16 +8,16 @@ Plugin API 1.19 is a breaking workspace-presentation boundary. `PRIMARY` represe
 The Mobile legacy Desktop-geometry bridge is removed in DK Data Studio 3.67.5. Plugin API 1.18 packages fail explicitly on API-version compatibility instead of silently entering a legacy layout path.
 
 
-## Theme Contract 3.9
+## Theme Contract 3.10
 
-Theme plugins are independently versioned from Plugin API 1.19.0. Theme Contract 3.9 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds constrained role-specific appearance, semantic state colors, an optional alternate accent, and an optional scientific series palette. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.9 validates token names, role appearance, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
+Theme plugins are independently versioned from Plugin API 1.19.0. Theme Contract 3.10 keeps computed-style **Render Coverage** and seven semantic Material Roles, and adds bounded Component Context, Material Context, Component × Material Role composition, and Core-rendered depth slots without giving Theme plugins DOM-selector paint ownership. Use `ctx.ui.theme.contractVersion` / `ctx.ui.theme.supports(...)`, declare `compatibility.themeContract`, and validate with `node sdk/tools/dkds-plugin.js validate <folder>`. Theme Contract 3.10 validates token names, contextual component/material appearance, bounded literal depth values, scientific palette, value types/ranges and semver compatibility while Core continues to own DOM/selectors and rendering. See [THEME_CONTRACT.md](THEME_CONTRACT.md).
 
 This directory is a **standalone plugin-development kit**. A plugin developer does not need the DK Data Studio source tree.
 
 ## Requirements
 
 - Node.js 18 or newer for validation/packaging.
-- DK Data Studio 3.67.5 or newer for SDK 1.23.0 / Plugin API 1.19.0 / Theme Contract 3.9 authoring. Plugin API 1.18 packages must be upgraded before loading.
+- DK Data Studio 3.67.10 or newer for SDK 1.24.0 / Plugin API 1.19.0 / Theme Contract 3.10 authoring. Plugin API 1.18 packages must be upgraded before loading.
 
 ## Create a plugin
 

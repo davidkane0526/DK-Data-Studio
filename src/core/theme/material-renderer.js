@@ -1,10 +1,12 @@
 (() => {
   'use strict';
-  const VERSION='3.9.0';
+  const VERSION='3.10.0';
   const Semantic=globalThis.DKDSSemanticUI;
   if(!Semantic)throw new Error('DKDSSemanticUI is required before ThemeMaterialRenderer.');
   const STRONG_ROLES=new Set(['elevated','popover','floating']);
   const MATERIAL_RECIPES=Object.freeze(['clear','thin-glass','soft-glass','liquid-glass']);
+  const MATERIAL_CONTEXTS=Object.freeze(globalThis.DKDSThemeContract?.materialContexts?.()||['compact','panel','dialog','workspace-modal']);
+  const MATERIAL_CONTEXT_VAR_MAP=Object.freeze({materialBlur:'--dkds-material-blur',materialBlurStrong:'--dkds-material-blur-strong',materialSaturation:'--dkds-material-saturation',materialTintOpacity:'--dkds-material-authored-opacity',specularHighlight:'--dkds-material-specular',innerHighlight:'--dkds-material-inner',glassEdge:'--dkds-material-edge',materialNoiseOpacity:'--dkds-material-noise'});
   const ROLE_BASE_TOKENS=Object.freeze({
     chrome:{token:'appearance.roles.chrome.surface',cssVar:'--dkui-role-chrome-surface',fallbackToken:'surfaceElevated',fallbackVar:'--dkui-surface-elevated'},
     sidebar:{token:'appearance.roles.sidebar.surface',cssVar:'--dkui-role-sidebar-surface',fallbackToken:'surfaceSidebar',fallbackVar:'--dkui-surface-sidebar'},
@@ -15,8 +17,11 @@
     control:{token:'appearance.roles.control.surface',cssVar:'--dkui-role-control-surface',fallbackToken:'controlBg',fallbackVar:'--dkui-control-bg'}
   });
   const recipePolicy=()=>Object.freeze({...(globalThis.DKDSTheme?.recipePolicy?.()||{})});
+  const materialContextOf=el=>Semantic.materialContextOf?.(el)||'';
+  const resolvedMaterialTokens=(role,context)=>{const profile=globalThis.DKDSTheme?.preview?.()||{},contract=globalThis.DKDSThemeContract;return contract?.resolveMaterialContext?.(profile.material||{},role,context)||Object.freeze({});};
+  function applyMaterialContextTokens(el,role,context){if(!el?.style)return;for(const cssVar of Object.values(MATERIAL_CONTEXT_VAR_MAP))el.style.removeProperty(cssVar);const values=resolvedMaterialTokens(role,context);for(const [key,cssVar] of Object.entries(MATERIAL_CONTEXT_VAR_MAP)){const value=values?.[key];if(value!==undefined&&value!=='')el.style.setProperty(cssVar,String(value));}if(context){setData(el,'dkdsMaterialContext',context);if(!el.dataset.dkdsMaterialContextOwner)setData(el,'dkdsMaterialContextOwner','core-runtime');}else if(el.dataset.dkdsMaterialContextOwner==='core-runtime'){delete el.dataset.dkdsMaterialContext;delete el.dataset.dkdsMaterialContextOwner;}return values;}
   const LIQUID_ROLES=new Set(['popover','floating']);
-  const recipeOf=el=>{const role=roleOf(el);if(!role)return '';const explicit=String(el?.dataset?.dkdsMaterialRecipe||'').trim();if(explicit)return explicit;return String(recipePolicy()[role]||'').trim();};
+  const recipeOf=el=>{const role=roleOf(el);if(!role)return '';const explicit=String(el?.dataset?.dkdsMaterialRecipe||'').trim();if(explicit&&el?.dataset?.dkdsMaterialRecipeOwner!=='core-runtime')return explicit;const context=materialContextOf(el);return String(globalThis.DKDSTheme?.recipeFor?.(role,context)||recipePolicy()[role]||explicit||'').trim();};
   const roleOf=el=>String(getComputedStyle(el).getPropertyValue('--dkds-material-role')||'').trim().replace(/["']/g,'');
   const prop=(style,name)=>String(style?.getPropertyValue?.(name)||'').trim();
   const backdropOf=style=>String(style?.backdropFilter||style?.webkitBackdropFilter||prop(style,'backdrop-filter')||prop(style,'-webkit-backdrop-filter')||'').trim();
@@ -47,7 +52,7 @@
   function inferRecipe(el,role){
     if(!role)return '';
     if(role==='control'&&el.matches?.(INTEGRATED_CHILD_SELECTOR))return '';
-    return recipePolicy()[role]||'';
+    const context=materialContextOf(el);return globalThis.DKDSTheme?.recipeFor?.(role,context)||recipePolicy()[role]||'';
   }
   const hasClass=(el,cls)=>!!el?.classList?.contains?.(cls);
   const addClass=(el,cls)=>{if(!hasClass(el,cls)){el.classList.add(cls);return true;}return false;};
@@ -80,6 +85,7 @@
         setData(el,'dkdsMaterialRoleClassOwner','core-runtime');
       }
       setData(el,'dkdsMaterialAssigned','core-runtime');setData(el,'dkdsMaterialAssignedRole',role);setData(el,'dkdsMaterialRole',role);
+      const context=materialContextOf(el);applyMaterialContextTokens(el,role,context);
       const recipe=inferRecipe(el,role);
       if(recipe){
         setData(el,'dkdsMaterialRecipe',recipe);setData(el,'dkdsMaterialRecipeOwner','core-runtime');
@@ -98,12 +104,15 @@
       delete el.dataset.dkdsMaterialAssigned;delete el.dataset.dkdsMaterialAssignedRole;delete el.dataset.dkdsMaterialRole;
       if(roleClassOwner==='core-runtime')delete el.dataset.dkdsMaterialRoleClassOwner;
       if(el.dataset.dkdsMaterialRecipeOwner==='core-runtime'){delete el.dataset.dkdsMaterialRecipe;delete el.dataset.dkdsMaterialRecipeOwner;removeClass(el,'dkds-optical-position-anchor');}
+      applyMaterialContextTokens(el,'','');
     }
     return role;
   }
-  function assignSemanticRoles(root=document){
+  const PERF={assignCalls:0,flushes:0,scheduleCalls:0,mutationRecords:0,ignoredClassMutations:0,ignoredNonHtml:0};
+  function assignSemanticRoles(root=document,{syncSemantic=true}={}){
+    PERF.assignCalls++;
     if(!root?.querySelectorAll)return Object.freeze({assigned:0});
-    Semantic.assign(root);
+    if(syncSemantic)Semantic.assign(root);
     const nodes=new Set();
     for(const area of Semantic.materialAreas())try{for(const el of root.querySelectorAll(area.selector))nodes.add(el);}catch{}
     try{for(const el of root.querySelectorAll(ROLE_CLASSES.map(cls=>`.${cls}`).join(',')))nodes.add(el);}catch{}
@@ -115,13 +124,24 @@
   let roleFrame=0,assignmentEnabled=false;
   const requestFrame=fn=>(globalThis.requestAnimationFrame||((cb)=>setTimeout(cb,0)))(fn);
   function flushRoleAssignments(){
-    roleFrame=0;
+    roleFrame=0;PERF.flushes++;
     if(!assignmentEnabled||!pendingRoleRoots.size)return;
     const roots=[...pendingRoleRoots];pendingRoleRoots.clear();
-    for(const root of roots)assignSemanticRoles(root);
+    for(const root of roots)assignSemanticRoles(root,{syncSemantic:false});
   }
   function scheduleRoleAssignment(root=document){
-    if(root?.querySelectorAll)pendingRoleRoots.add(root);
+    PERF.scheduleCalls++;
+    if(!root?.querySelectorAll)return;
+    if(root===document){pendingRoleRoots.clear();pendingRoleRoots.add(document);}
+    else if(!pendingRoleRoots.has(document)){
+      let candidate=root,covered=false;
+      for(const existing of [...pendingRoleRoots]){
+        if(existing===candidate||existing?.contains?.(candidate)){covered=true;break;}
+        if(candidate?.contains?.(existing)){pendingRoleRoots.delete(existing);continue;}
+        if(existing?.parentElement&&existing.parentElement===candidate?.parentElement){pendingRoleRoots.delete(existing);candidate=candidate.parentElement;}
+      }
+      if(!covered)pendingRoleRoots.add(candidate);
+    }
     if(!assignmentEnabled||roleFrame)return;
     roleFrame=requestFrame(flushRoleAssignments);
   }
@@ -247,7 +267,7 @@
 
   function inspect(el,expectedRole=''){
     if(!el||typeof getComputedStyle!=='function')return Object.freeze({status:'NO_ELEMENT',role:'',expectedRole,recipe:'clear'});
-    const style=getComputedStyle(el),role=roleOf(el),recipe=recipeOf(el),engine=engineCapabilities(),backdropFilter=backdropOf(style);
+    const style=getComputedStyle(el),role=roleOf(el),context=materialContextOf(el),recipe=recipeOf(el),engine=engineCapabilities(),backdropFilter=backdropOf(style);
     const expectedBlur=prop(style,'--dkds-material-blur'),expectedBlurStrong=prop(style,'--dkds-material-blur-strong'),expectedSaturation=prop(style,'--dkds-material-saturation');
     const backgroundColor=String(style.backgroundColor||'').trim(),backgroundAlpha=alphaOf(backgroundColor),foregroundColor=String(style.color||'').trim();
     const baseTokenRow=ROLE_BASE_TOKENS[role]||null,authoredBase=baseTokenRow?prop(style,baseTokenRow.cssVar):'',baseToken=baseTokenRow?(authoredBase?`${baseTokenRow.token} / ${baseTokenRow.cssVar}`:`${baseTokenRow.fallbackToken} / ${baseTokenRow.fallbackVar}`):'',baseColor=baseTokenRow?(authoredBase||prop(style,baseTokenRow.fallbackVar)):'';
@@ -289,7 +309,7 @@
     if(status==='REAL_MATERIAL'&&recipe!=='clear'&&backgroundAlpha!==null&&backgroundAlpha>=.985){status='OPAQUE_PARENT_OCCLUSION';occlusionSource='self';}
     if(status==='REAL_MATERIAL'&&recipe!=='clear'&&occludingChild){status='OPAQUE_PARENT_OCCLUSION';occlusionSource='child';}
     if(status==='REAL_MATERIAL'&&role==='popover'&&Number.isFinite(contrastRatio)&&contrastRatio<4.5)status='LOW_CONTRAST_MATERIAL';
-    return Object.freeze({status,opticalStatus,role,expectedRole,recipe,baseToken,baseColor,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,occludingChild,occlusionSource,recipeInstalled:recipeInstalled(),engine});
+    return Object.freeze({status,opticalStatus,role,context,expectedRole,recipe,baseToken,baseColor,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,occludingChild,occlusionSource,recipeInstalled:recipeInstalled(),engine});
   }
   function probeRole(role){
     if(!document?.body)return Object.freeze({role,status:'NO_BODY'});
@@ -306,7 +326,7 @@
     const recipes={clear:true,'thin-glass':thinProbe.status==='REAL_MATERIAL','soft-glass':softProbe.status==='REAL_MATERIAL','liquid-glass':liquidProbe.opticalStatus==='REAL_LIQUID_MATERIAL'};
     const roleReady=Object.values(roles).length>0&&Object.values(roles).every(Boolean),liquidReady=recipes['liquid-glass']===true;
     const assignment=assignSemanticRoles(document),contrastGuard=refreshDerivedContrast();
-    return Object.freeze({version:VERSION,engine,recipeInstalled:installed,policy:Object.freeze({roleToRecipe:recipePolicy(),recipes:MATERIAL_RECIPES}),renderer:Object.freeze({backdropBlur:installed&&(engine.backdropFilter||engine.webkitBackdropFilter)&&roleReady,saturation:installed&&(engine.backdropFilter||engine.webkitBackdropFilter)&&roleReady,noise:installed&&engine.radialGradient,glassEdge:installed,innerHighlight:installed,specularHighlight:installed,webMaterial:installed&&roleReady,nativeBlur:false,thinGlass:recipes['thin-glass']===true,semanticRoleAssignment:true,contrastGuard:contrastGuard.ready===true,nonUniformBlur:liquidReady,edgeRefraction:liquidReady&&engine.maskImage,dynamicSpecular:liquidReady&&engine.pointerEvents,liquidGlass:liquidReady}),recipes:Object.freeze(recipes),roles:Object.freeze(roles),assignment,contrastGuard});
+    return Object.freeze({version:VERSION,engine,recipeInstalled:installed,policy:Object.freeze({roleToRecipe:recipePolicy(),recipes:MATERIAL_RECIPES}),renderer:Object.freeze({backdropBlur:installed&&(engine.backdropFilter||engine.webkitBackdropFilter)&&roleReady,saturation:installed&&(engine.backdropFilter||engine.webkitBackdropFilter)&&roleReady,noise:installed&&engine.radialGradient,glassEdge:installed,innerHighlight:installed,specularHighlight:installed,webMaterial:installed&&roleReady,nativeBlur:false,thinGlass:recipes['thin-glass']===true,semanticRoleAssignment:true,contrastGuard:contrastGuard.ready===true,nonUniformBlur:liquidReady,edgeRefraction:liquidReady&&engine.maskImage,dynamicSpecular:liquidReady&&engine.pointerEvents,liquidGlass:liquidReady,materialContexts:true}),recipes:Object.freeze(recipes),roles:Object.freeze(roles),materialContexts:Object.freeze(MATERIAL_CONTEXTS.slice()),assignment,contrastGuard});
   }
   function supports(feature){
     const key=String(feature||'').trim(),caps=capabilities();
@@ -324,25 +344,40 @@
     if(key==='renderer.dynamicSpecular')return caps.renderer.dynamicSpecular;
     if(key==='renderer.liquidGlass')return caps.renderer.liquidGlass;
     if(key==='renderer.profilePolicy')return true;
+    if(key==='renderer.materialContexts')return caps.renderer.materialContexts===true;
     if(key.startsWith('renderer.recipes.'))return caps.recipes[key.slice('renderer.recipes.'.length)]===true;
     if(key.startsWith('renderer.roles.'))return caps.roles[key.slice('renderer.roles.'.length)]===true;
     return false;
   }
   const MATERIAL_RUNTIME_CLASS_RE=/^(?:dkds-material-role-|dkds-optical-position-anchor$|dkds-optical-active$)/;
+  const MATERIAL_CLASS_HINTS=Object.freeze(new Set([
+    ...Semantic.materialAreas().flatMap(row=>[...String(row.selector||'').matchAll(/\.([A-Za-z0-9_-]+)/g)].map(match=>match[1])),
+    ...ROLE_CLASSES,
+    'is-floating','is-global-floating'
+  ]));
+  const materialClassRelevant=value=>String(value||'').split(/\s+/).some(cls=>MATERIAL_CLASS_HINTS.has(cls)||cls.startsWith('dkds-material-role-'));
+  const htmlElement=el=>typeof HTMLElement==='undefined'||el instanceof HTMLElement;
   function semanticClassSignature(value){return String(value||'').split(/\s+/).filter(Boolean).filter(cls=>!MATERIAL_RUNTIME_CLASS_RE.test(cls)).sort().join(' ');}
   function bootAssignments(){
     setupOpticalPointerResponse();
     try{
       const observer=new MutationObserver(records=>{
+        PERF.mutationRecords+=records.length;
         for(const record of records){
           if(record.type==='attributes'){
-            if(semanticClassSignature(record.oldValue)===semanticClassSignature(record.target?.getAttribute?.('class')))continue;
-            scheduleRoleAssignment(record.target);continue;
+            const target=record.target;if(!htmlElement(target)){PERF.ignoredNonHtml++;continue;}
+            if(record.attributeName==='class'){
+              const nextClass=target?.getAttribute?.('class')||'';
+              if(semanticClassSignature(record.oldValue)===semanticClassSignature(nextClass)){PERF.ignoredClassMutations++;continue;}
+              if(!materialClassRelevant(record.oldValue)&&!materialClassRelevant(nextClass)&&!target?.dataset?.dkdsMaterialAssignedRole){PERF.ignoredClassMutations++;continue;}
+            }
+            if(record.attributeName==='data-dkds-material-context'){assignSemanticRole(target);continue;}
+            scheduleRoleAssignment(target);continue;
           }
-          for(const node of record.addedNodes||[]){if(node?.nodeType===1)scheduleRoleAssignment(node);}
+          for(const node of record.addedNodes||[]){if(node?.nodeType===1&&htmlElement(node))scheduleRoleAssignment(node);else if(node?.nodeType===1)PERF.ignoredNonHtml++;}
         }
       });
-      observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});
+      observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-dkds-material-context'],attributeOldValue:true});
       globalThis.addEventListener?.('beforeunload',()=>observer.disconnect(),{once:true});
     }catch{}
     enableAssignmentsAfterFirstPaint();
@@ -350,6 +385,7 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootAssignments,{once:true});else bootAssignments();
   globalThis.addEventListener?.('dkds:theme-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
   globalThis.addEventListener?.('dkds:theme-profile-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
-  window.DKDSThemeMaterialRenderer=Object.freeze({version:VERSION,capabilities,supports,inspect,ownership,probeRole,probeRecipe,roleOf,recipeOf,assignSemanticRoles,refreshDerivedContrast,materialRecipes:()=>MATERIAL_RECIPES.slice(),materialPolicy:()=>({...recipePolicy()}),materialSurface:Object.freeze({apply:applyMaterialSurface,create:createMaterialSurface})});
+  const performanceSnapshot=()=>Object.freeze({...PERF,pendingRoots:pendingRoleRoots.size,framePending:!!roleFrame,assignmentEnabled});
+  window.DKDSThemeMaterialRenderer=Object.freeze({version:VERSION,performance:performanceSnapshot,capabilities,supports,inspect,ownership,probeRole,probeRecipe,roleOf,recipeOf,assignSemanticRoles,refreshDerivedContrast,materialRecipes:()=>MATERIAL_RECIPES.slice(),materialContexts:()=>MATERIAL_CONTEXTS.slice(),materialContextOf,materialPolicy:()=>({...recipePolicy()}),materialSurface:Object.freeze({apply:applyMaterialSurface,create:createMaterialSurface})});
   window.DKDSMaterialSurface=Object.freeze({version:'1.0.0',apply:applyMaterialSurface,create:createMaterialSurface,inspect,roleOf,recipeOf});
 })();

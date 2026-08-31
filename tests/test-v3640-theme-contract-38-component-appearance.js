@@ -7,11 +7,11 @@ const json=rel=>JSON.parse(read(rel));
 const Theme=require('../sdk/theme-contract');
 
 const sdk=json('sdk/contract.json');
-assert.equal(sdk.sdkVersion,'1.23.0');
+assert.equal(sdk.sdkVersion,'1.24.0');
 assert.equal(sdk.pluginApiVersion,'1.19.0');
-assert.equal(sdk.themeContractVersion,'3.9.0');
-assert.equal(sdk.minimumAppVersion,'3.67.5');
-assert.equal(Theme.version,'3.9.0');
+assert.equal(sdk.themeContractVersion,'3.10.0');
+assert.equal(sdk.minimumAppVersion,'3.67.10');
+assert.equal(Theme.version,'3.10.0');
 assert(Theme.supports('contract:3.6.0')&&Theme.supports('contract:3.7.0')&&Theme.supports('contract:3.8.0')&&Theme.supports('contract:3.9.0'),'Theme 3.9 must preserve additive 3.x contract capability IDs from the supported baseline.');
 assert(!Theme.supports('contract:4.0.0')&&!Theme.supports('contract:2.9.0'),'Theme runtime must not advertise future-major or different-major contract capabilities.');
 assert(Theme.supports('contract.appearance.components')&&Theme.supports('contract.appearance.components.tab'));
@@ -36,7 +36,7 @@ assert.throws(()=>Theme.validateProfile({modes:{light:{appearance:{components:{t
 assert.throws(()=>Theme.validateProfile({modes:{light:{scientific:{mode:'decorate-all'}},dark:{}}}),/fallback-only/i);
 
 const runtime=read('src/core/theme/runtime.js');
-for(const token of ["contractVersion:'3.9.0'",'--dkui-component-','appearanceComponents','consumption','fallback-only','user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']) assert(runtime.includes(token),`Theme runtime missing ${token}`);
+for(const token of ["contractVersion:'3.10.0'",'--dkui-component-','appearanceComponents','consumption','fallback-only','user-explicit','plugin-domain-explicit','project-saved','theme-fallback','core-default']) assert(runtime.includes(token),`Theme runtime missing ${token}`);
 const components=read('src/core/theme/component-appearance.js');
 for(const token of ['toolbarAction','panelHeader','inspectorHeader','floatingChrome','AUTHORED_BUT_UNUSED','UNMANAGED_COMPONENT_APPEARANCE','appearance.components.']) assert(components.includes(token),`Component Appearance runtime missing ${token}`);
 const semantic=read('src/core/theme/semantic-registry.js');assert(semantic.includes('top-level-activity-tab'),'Top-level toolbar identity must live in the canonical semantic registry.');
@@ -55,7 +55,7 @@ for(const token of ["VERSION='4.0.0'",'Theme Component Gallery','Toolbar Action'
 const api=read('src/core/plugins/kernel/modules/plugin-api.js');
 assert(api.includes('appearanceComponents:')&&api.includes('consumption:')&&api.includes("mode:'fallback-only'"));
 const dts=read('sdk/plugin-api.d.ts');
-for(const token of ["contractVersion:'3.9.0'",'DKDSThemeAppearanceComponent','DKDSThemeComponentAppearanceValues','appearanceComponents()','consumption():DKDSThemeConsumptionReport',"mode:'fallback-only'"]) assert(dts.includes(token),`SDK type missing ${token}`);
+for(const token of ["contractVersion:'3.10.0'",'DKDSThemeAppearanceComponent','DKDSThemeComponentAppearanceValues','appearanceComponents()','consumption():DKDSThemeConsumptionReport',"mode:'fallback-only'"]) assert(dts.includes(token),`SDK type missing ${token}`);
 const presentationModel=read('src/core/ui/modules/presentation/model.js'),mobile=read('src/core/ui/modules/presentation/presenters.js');
 assert(presentationModel.includes('components:window.DKDSTheme?.appearanceComponents?.()')&&presentationModel.includes('consumption:window.DKDSTheme?.consumption?.()')&&presentationModel.includes('scientific:window.DKDSTheme?.scientific?.()'));
 assert(mobile.includes('themeComponents:core.theme.components')&&mobile.includes('themeConsumption:core.theme.consumption')&&mobile.includes('themeScientific:core.theme.scientific'));

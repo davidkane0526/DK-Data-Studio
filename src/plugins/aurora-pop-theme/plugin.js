@@ -1,16 +1,22 @@
 DKDSPlugins.define({
   id:'com.dkds.theme.aurora-pop',
   name:'Aurora Pop',
-  version:'2.2.3',
+  version:'2.3.1',
   apiVersion:'1.19.0',
   pluginType:'theme',
   requiresCore:['ui.theme'],
-  compatibility:{app:'>=3.67.5 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.9.0'}
+  capabilities:['ui.theme'],
+  compatibility:{app:'>=3.67.10 <4.0.0',pluginApi:'^1.19.0',themeContract:'^3.10.0'}
 }, async ctx => {
   const required=[
     'contract.appearance.roles',
     'contract.appearance.components',
     'contract.appearance.variants',
+    'contract.appearance.component-contexts',
+    'contract.appearance.material-role-composition',
+    'contract.material.contexts',
+    'contract.material.context-recipes',
+    'renderer.materialContexts',
     'contract.effects.controlled',
     'contract.scientific.seriesPalette',
     'contract.scientific.precedence',
@@ -19,7 +25,7 @@ DKDSPlugins.define({
   ];
   const missing=required.filter(feature=>!ctx.ui.theme.supports(feature));
   if(missing.length){
-    throw new Error(`Aurora Pop 2.2.2 requires Theme Contract 3.9 features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
+    throw new Error(`Aurora Pop 2.3.1 requires Theme Contract 3.10 contextual composition features: ${missing.join(', ')}; host provides ${ctx.ui.theme.contractVersion}`);
   }
 
   const LIGHT_EMERALD=Object.freeze({
@@ -44,7 +50,7 @@ DKDSPlugins.define({
       style:'aurora-spectrum-v11',
       hierarchy:'cool neutral scientific content + brighter violet/emerald interaction rhythm + restrained warm emphasis + visible controlled aurora shell effects',
       visualIntent:'bright harmonious violet-emerald primary axis, cool indigo structure, sky-blue floating tools, coral only for active emphasis, and semantic green/amber/red accents without large candy-color surfaces',
-      contract:'component-appearance-3.9'
+      contract:'component-appearance-3.10'
     },
     recipes:{
       chrome:'thin-glass',
@@ -53,7 +59,8 @@ DKDSPlugins.define({
       elevated:'thin-glass',
       popover:'thin-glass',
       control:'clear',
-      floating:'thin-glass'
+      floating:'thin-glass',
+      contexts:{'workspace-modal':{elevated:'thin-glass'},compact:{floating:'thin-glass',popover:'thin-glass'}}
     },
     scientific:{
       mode:'fallback-only',
@@ -68,14 +75,15 @@ DKDSPlugins.define({
       innerHighlight:'rgba(255,255,255,.02)',
       glassEdge:'rgba(104,115,150,.10)',
       materialNoiseOpacity:0,
+      contexts:{compact:{materialBlur:5,materialBlurStrong:6,materialTintOpacity:.80},panel:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.82},dialog:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.86},'workspace-modal':{materialBlur:2,materialBlurStrong:3,materialSaturation:1.02,materialTintOpacity:.94}},
       roles:{
         chrome:{materialBlur:3,materialBlurStrong:4,materialTintOpacity:.74},
         sidebar:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.76},
         surface:{materialBlur:0,materialBlurStrong:0,materialTintOpacity:1},
-        elevated:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.79},
-        popover:{materialBlur:6,materialBlurStrong:7,materialTintOpacity:.84},
+        elevated:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.79,contexts:{dialog:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.87},'workspace-modal':{materialBlur:2,materialBlurStrong:3,materialTintOpacity:.95}}},
+        popover:{materialBlur:6,materialBlurStrong:7,materialTintOpacity:.84,contexts:{compact:{materialBlur:6,materialBlurStrong:7,materialTintOpacity:.88}}},
         control:{materialBlur:0,materialBlurStrong:0,materialTintOpacity:1},
-        floating:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.76}
+        floating:{materialBlur:4,materialBlurStrong:5,materialTintOpacity:.76,contexts:{compact:{materialBlur:5,materialBlurStrong:6,materialTintOpacity:.80}}}
       }
     },
     motion:{
@@ -163,11 +171,11 @@ DKDSPlugins.define({
             toolbarAction:{
               surface:'transparent',surfaceHover:'#E1EAFF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#6F50FF',
               text:'#4F586D',textActive:LIGHT_EMERALD.text,textSelected:'#FFFFFF',
-              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,
+              border:'transparent',borderHover:'rgba(74,83,112,.13)',borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.accent,shadow:'none',shadowHover:'0 2px 8px rgba(92,72,168,.10)',shadowActive:'0 2px 10px rgba(8,167,122,.12)',shadowSelected:'0 0 0 2px rgba(111,80,255,.18)',radius:8,contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 16px rgba(111,80,255,.25)'},secondary:{shadow:'0 5px 16px rgba(8,167,122,.20)'},selected:{shadow:'0 4px 12px rgba(111,80,255,.20)'}}}},roles:{floating:{surface:'rgba(61,139,255,.08)',surfaceHover:'rgba(61,139,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(61,139,255,.12)',shadowActive:'0 2px 8px rgba(61,139,255,.16)',shadowSelected:'0 0 0 2px rgba(61,139,255,.20)'}}}},
               variants:{
                 primary:{surface:'#6F50FF',surfaceHover:'#5F3FF1',text:'#FFFFFF',textActive:'#FFFFFF',border:'#6F50FF',borderActive:'#5232E8',indicator:'#C9BCFF'},
                 secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF',textActive:'#FFFFFF',border:LIGHT_EMERALD.border,borderActive:LIGHT_EMERALD.borderStrong,indicator:LIGHT_EMERALD.indicator},
-                selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#8C70FF',indicator:'#D8D0FF'},
+                selected:{surface:'#6F50FF',text:'#FFFFFF',border:'#6F50FF',indicator:'#D8D0FF'},
                 active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent},
                 quiet:{surface:'transparent',surfaceHover:'#EEF1FF',text:'#667085',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#FFE7ED',surfaceHover:'#FFDCE5',text:'#B92E49',border:'#F4A1B2',indicator:'#FF6078'}
@@ -176,8 +184,8 @@ DKDSPlugins.define({
             toolbarGroup:{
               surface:'#E7ECFF',surfaceHover:'#DCE4FF',surfaceActive:LIGHT_EMERALD.softSurface,surfaceSelected:'#D5CBFF',
               text:'#4D556A',textActive:'#4026A8',textSelected:'#4026A8',
-              border:'#C0CBF2',borderHover:'#9FAFEB',borderActive:'#8063F5',indicator:'#6F50FF',
-              variants:{quiet:{surface:'#F4F6FF',text:'#687086',border:'#DFE4F2',indicator:'transparent'}}
+              border:'#C0CBF2',borderHover:'#9FAFEB',borderActive:'#8063F5',indicator:'#6F50FF',shadow:'0 4px 14px rgba(111,80,255,.12)',radius:10,roles:{floating:{shadow:'0 6px 20px rgba(61,139,255,.16)'}},
+              variants:{quiet:{surface:'rgba(111,80,255,.025)',text:'#687086',border:'rgba(111,80,255,.09)',indicator:'transparent'}}
             },
             panelHeader:{
               surface:'#F2EEFF',surfaceHover:'#EAE4FF',text:'#34394D',textSoft:'#70788E',border:'#D9D0FF',indicator:'#8A6BFF',
@@ -209,6 +217,7 @@ DKDSPlugins.define({
               variants:{
                 selected:{surface:'#D2C6FF',text:'#4026A8',border:'#8C70FF',indicator:'#6F50FF'},
                 active:{surface:LIGHT_EMERALD.softSurface,text:LIGHT_EMERALD.text,border:LIGHT_EMERALD.border,indicator:LIGHT_EMERALD.accent},
+                quiet:{surface:'transparent',text:'#747B8E',border:'transparent',indicator:'transparent'},
                 info:{surface:'#E6F0FF',text:'#235FC2',border:'#A9C8F7',indicator:'#3D8BFF'},
                 success:{surface:'#E5F8EE',text:'#167348',border:'#A7DFC1',indicator:'#2AB374'},
                 warning:{surface:'#FFF1CF',text:'#8B5B00',border:'#F1D180',indicator:'#E7A11E'},
@@ -326,7 +335,7 @@ DKDSPlugins.define({
               text:'#C0C7D6',textSoft:'#858FA1',textActive:'#FBF8FF',textSelected:'#FBF8FF',
               border:'transparent',borderHover:'rgba(169,131,255,.50)',borderActive:'rgba(169,131,255,.90)',indicator:'#B99EFF',
               variants:{
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
+                selected:{surface:'#493083',text:'#FCFAFF',border:'#493083',indicator:'#B99EFF'},
                 active:{surface:'#07515B',text:'#ECFFFF',border:'#27BEC5',indicator:'#24D3D9'},
                 quiet:{surface:'transparent',text:'#8F99AA',border:'transparent',indicator:'transparent'}
               }
@@ -334,21 +343,21 @@ DKDSPlugins.define({
             toolbarAction:{
               surface:'transparent',surfaceHover:'#143054',surfaceActive:'#07515B',surfaceSelected:'#3B276C',
               text:'#C5CCDA',textActive:'#E7FEFF',textSelected:'#FBF8FF',
-              border:'transparent',borderHover:'rgba(186,198,228,.17)',borderActive:'rgba(41,214,216,.82)',indicator:'#24D3D9',
+              border:'transparent',borderHover:'rgba(186,198,228,.17)',borderActive:'rgba(41,214,216,.82)',indicator:'#24D3D9',shadow:'none',shadowHover:'0 2px 8px rgba(0,0,0,.26)',shadowActive:'0 2px 10px rgba(6,71,80,.34)',shadowSelected:'0 4px 12px rgba(118,80,232,.24)',radius:8,contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 5px 18px rgba(118,80,232,.34)'},secondary:{shadow:'0 5px 18px rgba(6,71,80,.30)'},selected:{shadow:'0 4px 12px rgba(118,80,232,.24)'}}}},roles:{floating:{surface:'rgba(96,156,255,.09)',surfaceHover:'rgba(96,156,255,.16)',contexts:{grouped:{shadow:'none',shadowHover:'0 2px 8px rgba(0,0,0,.22)',shadowActive:'0 2px 8px rgba(36,211,217,.18)',shadowSelected:'0 0 0 2px rgba(160,124,255,.22)'}}}},
               variants:{
                 primary:{surface:'#7650E8',surfaceHover:'#7E5AE8',text:'#FFFFFF',textActive:'#FFFFFF',border:'#A07CFF',borderActive:'#B99EFF',indicator:'#D9CEFF'},
                 secondary:{surface:'#064750',surfaceHover:'#08535D',text:'#E8FFFF',textActive:'#F4FFFF',border:'#25808A',borderActive:'#24D3D9',indicator:'#24D3D9'},
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
+                selected:{surface:'#493083',text:'#FCFAFF',border:'#493083',indicator:'#B99EFF'},
                 active:{surface:'#07515B',text:'#E7FEFF',border:'#27BEC5',indicator:'#24D3D9'},
                 quiet:{surface:'transparent',surfaceHover:'#151F3A',text:'#9AA5B8',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#3A1B28',surfaceHover:'#492032',text:'#FFC0CC',border:'#8E4055',indicator:'#FF6B83'}
               }
             },
             toolbarGroup:{
-              surface:'#111D3E',surfaceHover:'#182A50',surfaceActive:'#0C444D',surfaceSelected:'#372567',
-              text:'#C7CEDC',textActive:'#F7F2FF',textSelected:'#F7F2FF',
-              border:'#2A3D69',borderHover:'#3A588D',borderActive:'#9876F5',indicator:'#B99EFF',
-              variants:{quiet:{surface:'#0E1730',text:'#9BA6B8',border:'#223354',indicator:'transparent'}}
+              surface:'rgba(118,80,232,.07)',surfaceHover:'rgba(118,80,232,.11)',surfaceActive:'rgba(36,211,217,.09)',surfaceSelected:'rgba(118,80,232,.14)',
+              text:'#C7CEDC',textActive:'#DDFEFF',textSelected:'#E5DCFF',
+              border:'rgba(160,124,255,.16)',borderHover:'rgba(160,124,255,.23)',borderActive:'rgba(160,124,255,.30)',indicator:'#B99EFF',shadow:'0 4px 16px rgba(0,0,0,.26)',radius:10,roles:{floating:{shadow:'0 6px 22px rgba(0,0,0,.32)'}},
+              variants:{quiet:{surface:'rgba(118,80,232,.025)',text:'#9BA6B8',border:'rgba(160,124,255,.10)',indicator:'transparent'}}
             },
             panelHeader:{
               surface:'#24204A',surfaceHover:'#30275B',text:'#F0EEFA',textSoft:'#A9A5BB',border:'#554B82',indicator:'#A07CFF',
@@ -368,7 +377,7 @@ DKDSPlugins.define({
               surface:'transparent',surfaceHover:'#153157',surfaceActive:'#07515B',surfaceSelected:'#493083',
               text:'#E4E8F0',textSoft:'#9DA6B6',textActive:'#E7FEFF',textSelected:'#FBF8FF',border:'transparent',indicator:'#B99EFF',
               variants:{
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
+                selected:{surface:'#493083',text:'#FCFAFF',border:'#493083',indicator:'#B99EFF'},
                 active:{surface:'#07515B',text:'#E7FEFF',border:'#27BEC5',indicator:'#24D3D9'},
                 quiet:{surface:'transparent',text:'#9AA5B7',border:'transparent',indicator:'transparent'},
                 destructive:{surface:'#3A1B28',text:'#FFC0CC',border:'#8E4055',indicator:'#FF6B83'}
@@ -378,8 +387,9 @@ DKDSPlugins.define({
               surface:'#143056',surfaceHover:'#1A3D67',surfaceActive:'#07515B',surfaceSelected:'#493083',
               text:'#D9E6FB',textActive:'#E7FEFF',textSelected:'#FBF8FF',border:'#315D8A',borderHover:'#4078AA',borderActive:'#38B4BB',indicator:'#B99EFF',
               variants:{
-                selected:{surface:'#493083',text:'#FCFAFF',border:'#A07CFF',indicator:'#B99EFF'},
+                selected:{surface:'#493083',text:'#FCFAFF',border:'#493083',indicator:'#B99EFF'},
                 active:{surface:'#07515B',text:'#E7FEFF',border:'#27BEC5',indicator:'#24D3D9'},
+                quiet:{surface:'transparent',text:'#9DA6B6',border:'transparent',indicator:'transparent'},
                 info:{surface:'#152C51',text:'#BFD7FF',border:'#365D99',indicator:'#609CFF'},
                 success:{surface:'#12392C',text:'#BDF2D5',border:'#2C7655',indicator:'#4ED38E'},
                 warning:{surface:'#3A2C16',text:'#FFE4A6',border:'#8B6726',indicator:'#F7C254'},

@@ -17,11 +17,13 @@
   const MOTION_KEYS=Object.freeze(['motionFast','motionNormal','motionSlow','easeStandard','easeEmphasized','hoverLift','pressScale']);
   const MATERIAL_KEYS=Object.freeze(['materialBlur','materialBlurStrong','materialSaturation','materialTintOpacity','specularHighlight','innerHighlight','glassEdge','materialNoiseOpacity']);
   const ThemeContract=globalThis.DKDSThemeContract;
-  if(!ThemeContract||ThemeContract.version!=='3.9.0')throw new Error('Theme Contract 3.9 runtime is unavailable.');
+  if(!ThemeContract||ThemeContract.version!=='3.10.0')throw new Error('Theme Contract 3.10 runtime is unavailable.');
   const MATERIAL_ROLES=Object.freeze(ThemeContract.materialRoles());
   const COMPONENT_APPEARANCE_COMPONENTS=Object.freeze(ThemeContract.componentAppearanceComponents());
   const COMPONENT_APPEARANCE_KEYS=Object.freeze(ThemeContract.componentAppearanceKeys());
   const COMPONENT_VARIANTS=Object.freeze(ThemeContract.componentVariants?.()||[]);
+  const COMPONENT_CONTEXTS=Object.freeze(ThemeContract.componentContexts?.()||[]);
+  const MATERIAL_CONTEXTS=Object.freeze(ThemeContract.materialContexts?.()||[]);
   const EFFECT_KEYS=Object.freeze(ThemeContract.effectKeys?.()||[]);
   const ROLE_APPEARANCE_SUFFIX=Object.freeze({surface:'surface',border:'border',text:'text'});
   const MATERIAL_SUFFIX=Object.freeze({materialBlur:'blur',materialBlurStrong:'blur-strong',materialSaturation:'saturation',materialTintOpacity:'tint-opacity',specularHighlight:'specular-highlight',innerHighlight:'inner-highlight',glassEdge:'glass-edge',materialNoiseOpacity:'noise-opacity'});
@@ -31,12 +33,43 @@
   const componentAppearanceCssVar=(component,key)=>`--dkui-component-${kebab(component)}-${kebab(key)}`;
   const componentVariantCssVar=(component,variant,key)=>`--dkui-component-${kebab(component)}-variant-${kebab(variant)}-${kebab(key)}`;
   const effectCssVar=key=>`--dkui-effect-${kebab(key)}`;
+  const effectCssValue=(key,value)=>key==='glowIntensity'?`${Math.max(0,Math.min(1,Number(value)||0))*100}%`:value;
   const normalizeProfile=(id,spec={})=>{
     const key=String(id||'').trim();if(!key)throw new Error('Theme profile id required.');
     const normalized=ThemeContract.validateProfile(spec,`theme.profile.${key}`);
     return Object.freeze({id:key,label:String(normalized.label||key),owner:String(normalized.owner||'core'),modes:normalized.modes,motion:normalized.motion,material:normalized.material,appearance:normalized.appearance,effects:normalized.effects||Object.freeze({}),scientific:normalized.scientific,recipes:normalized.recipes||Object.freeze({}),settings:normalized.settings||Object.freeze([]),metadata:normalized.metadata});
   };
-  profiles.set('builtin.default',normalizeProfile('builtin.default',{label:'DK Data Studio',owner:'core',recipes:{chrome:'clear',sidebar:'clear',surface:'clear',elevated:'clear',popover:'clear',control:'clear',floating:'clear'},modes:{light:{appearance:{components:{toolbarGroup:{surface:'#f6f9fd',border:'rgba(102,132,168,.085)',text:'#1c2a43'},toolbarAction:{surface:'transparent',surfaceHover:'#f0f5fc',surfaceActive:'#eaf2ff',text:'#1c2a43',textActive:'#174ea6',border:'transparent',borderHover:'rgba(102,132,168,.22)',borderActive:'rgba(71,116,197,.34)'}}}},dark:{appearance:{components:{toolbarGroup:{surface:'#202733',border:'rgba(166,181,202,.08)',text:'#e4e9f2'},toolbarAction:{surface:'transparent',surfaceHover:'#29313d',surfaceActive:'#202d55',text:'#e4e9f2',textActive:'#e7efff',border:'transparent',borderHover:'rgba(166,181,202,.16)',borderActive:'rgba(255,255,255,.12)'}}}}}}));
+  profiles.set('builtin.default',normalizeProfile('builtin.default',{
+    label:'DK Data Studio',
+    owner:'core',
+    recipes:{chrome:'clear',sidebar:'clear',surface:'clear',elevated:'clear',popover:'clear',control:'clear',floating:'clear'},
+    modes:{
+      light:{
+        appearance:{components:{
+          toolbarGroup:{surface:'#f6f9fd',border:'rgba(102,132,168,.085)',text:'#1c2a43',shadow:'0 1px 2px rgba(54,72,98,.05)',radius:8},
+          panelHeader:{surface:'#f5f8fc',text:'#27364d',textSoft:'#65758a',border:'rgba(102,132,168,.12)',indicator:'#4b74b9'},
+          inspectorHeader:{surface:'#eef6f8',text:'#2f4650',textSoft:'#6b7e86',border:'rgba(72,126,142,.15)',indicator:'#4b8ca0'},
+          chip:{variants:{quiet:{surface:'transparent',text:'#65758a',border:'transparent',indicator:'transparent'}}},
+          toolbarAction:{
+            surface:'transparent',surfaceHover:'#f0f5fc',surfaceActive:'#eaf2ff',surfaceSelected:'#eaf2ff',text:'#1c2a43',textActive:'#174ea6',textSelected:'#174ea6',border:'transparent',borderHover:'rgba(102,132,168,.22)',borderActive:'rgba(71,116,197,.34)',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'0 0 0 2px rgba(71,116,197,.14)',radius:7,
+            contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 0 0 2px rgba(71,116,197,.12)'},selected:{shadow:'0 0 0 2px rgba(71,116,197,.14)'}}}}
+          }
+        }}
+      },
+      dark:{
+        appearance:{components:{
+          toolbarGroup:{surface:'#202733',border:'rgba(166,181,202,.08)',text:'#e4e9f2',shadow:'0 1px 2px rgba(0,0,0,.18)',radius:8},
+          panelHeader:{surface:'#1d2532',text:'#e7edf5',textSoft:'#9aa7b8',border:'rgba(166,181,202,.10)',indicator:'#7093dc'},
+          inspectorHeader:{surface:'#172a31',text:'#e4f1f3',textSoft:'#96adb2',border:'rgba(88,146,158,.16)',indicator:'#5da4b4'},
+          chip:{variants:{quiet:{surface:'transparent',text:'#9aa7b8',border:'transparent',indicator:'transparent'}}},
+          toolbarAction:{
+            surface:'transparent',surfaceHover:'#29313d',surfaceActive:'#202d55',surfaceSelected:'#202d55',text:'#e4e9f2',textActive:'#e7efff',textSelected:'#e7efff',border:'transparent',borderHover:'rgba(166,181,202,.16)',borderActive:'rgba(255,255,255,.12)',shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'0 0 0 2px rgba(255,255,255,.10)',radius:7,
+            contexts:{grouped:{shadow:'none',shadowHover:'none',shadowActive:'none',shadowSelected:'none',variants:{active:{border:'transparent'},selected:{border:'transparent'}}},standalone:{variants:{primary:{shadow:'0 0 0 2px rgba(112,147,220,.18)'},selected:{shadow:'0 0 0 2px rgba(255,255,255,.10)'}}}}
+          }
+        }}
+      }
+    }
+  }));
 
 
 
@@ -75,10 +108,12 @@
   }
   function resetSettings(profileId=activeProfile){const pid=String(profileId||activeProfile);if(settingsStore[pid]!==undefined){const next={...settingsStore};delete next[pid];settingsStore=next;saveSettingsStore();if(pid===activeProfile)applyProfileTokens(current);try{globalThis.dispatchEvent(new CustomEvent('dkds:theme-settings-changed',{detail:{profile:pid,reset:true,theme:current}}));globalThis.dispatchEvent(new CustomEvent('dkds:theme-changed',{detail:{theme:current,previous:current,profile:pid,tokens:snapshotTokens()}}));}catch{}}return true;}
   function recipePolicy(profileId=activeProfile,mode=current){
-    const profile=profiles.get(String(profileId||activeProfile))||profiles.get('builtin.default');
-    let out={...(profile?.recipes||{})};
+    const profile=profiles.get(String(profileId||activeProfile))||profiles.get('builtin.default'),out={};for(const role of MATERIAL_ROLES)if(profile?.recipes?.[role])out[role]=profile.recipes[role];
     for(const row of settingRows(profile?.id)){const t=row.target||{};if(t.scope!=='recipe'||(t.mode&&t.mode!=='all'&&t.mode!==mode))continue;const saved=settingsStore?.[profile.id]?.[row.id];if(saved!==undefined)out[t.role]=String(saved);}
     return Object.freeze(out);
+  }
+  function recipeFor(role,context='',profileId=activeProfile,mode=current){
+    const profile=profiles.get(String(profileId||activeProfile))||profiles.get('builtin.default'),base=recipePolicy(profile?.id,mode),contextRecipe=profile?.recipes?.contexts?.[String(context||'')]?.[String(role||'')];return String(contextRecipe||base[String(role||'')]||'');
   }
   function applySettingOverrides(profile,theme){
     const root=document.documentElement;if(!root)return;for(const row of settingRows(profile.id)){const t=row.target||{};if(t.scope==='recipe'||(t.mode&&t.mode!=='all'&&t.mode!==theme))continue;const saved=settingsStore?.[profile.id]?.[row.id];if(saved===undefined)continue;const key=t.key,value=saved;
@@ -98,7 +133,7 @@
 
   function clearProfileTokens(){const root=document.documentElement;if(!root)return;for(const cssVar of Object.values(PUBLIC_TOKEN_MAP))root.style.removeProperty(cssVar);for(const role of MATERIAL_ROLES){for(const key of MATERIAL_KEYS)root.style.removeProperty(roleCssVar(role,key));for(const key of ThemeContract.roleAppearanceKeys())root.style.removeProperty(roleAppearanceCssVar(role,key));}for(const component of COMPONENT_APPEARANCE_COMPONENTS){for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentAppearanceCssVar(component,key));for(const variant of COMPONENT_VARIANTS)for(const key of COMPONENT_APPEARANCE_KEYS)root.style.removeProperty(componentVariantCssVar(component,variant,key));}for(const key of EFFECT_KEYS)root.style.removeProperty(effectCssVar(key));root.style.removeProperty('--dkui-effect-gradient-angle');}
   const cssTokenValue=(key,value)=>{if(['materialTintOpacity','materialNoiseOpacity'].includes(key)){const n=Number(value);if(Number.isFinite(n))return `${Math.max(0,Math.min(1,n))*100}%`;}return value;};
-  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))root.style.setProperty(roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){root.style.setProperty(roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(key!=='variants')root.style.setProperty(componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))root.style.setProperty(componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){root.style.setProperty(effectCssVar(key),value);if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';root.style.setProperty('--dkui-effect-gradient-angle',angle);}}applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';}
+  function applyProfileTokens(theme){const root=document.documentElement;if(!root)return;clearProfileTokens();const profile=profiles.get(activeProfile)||profiles.get('builtin.default');const resolved=ThemeContract.resolveProfile(profile,theme);const tokens={...(resolved?.material?.base||{}),...(resolved?.motion||{}),...(resolved?.tokens||{})};for(const [key,value] of Object.entries(tokens)){const cssVar=PUBLIC_TOKEN_MAP[key];if(cssVar)root.style.setProperty(cssVar,cssTokenValue(key,value));}for(const role of MATERIAL_ROLES){const effective={...(resolved?.material?.base||{}),...(resolved?.material?.roles?.[role]||{})};for(const [key,value] of Object.entries(effective)){if(MATERIAL_KEYS.includes(key))root.style.setProperty(roleCssVar(role,key),cssTokenValue(key,value));}for(const [key,value] of Object.entries(resolved?.appearance?.roles?.[role]||{})){root.style.setProperty(roleAppearanceCssVar(role,key),value);}}for(const component of COMPONENT_APPEARANCE_COMPONENTS){const row=resolved?.appearance?.components?.[component]||{};for(const [key,value] of Object.entries(row)){if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentAppearanceCssVar(component,key),value);}for(const [variant,variantRow] of Object.entries(row.variants||{}))for(const [key,value] of Object.entries(variantRow||{}))if(COMPONENT_APPEARANCE_KEYS.includes(key))root.style.setProperty(componentVariantCssVar(component,variant,key),value);}for(const [key,value] of Object.entries(resolved?.effects||{})){root.style.setProperty(effectCssVar(key),effectCssValue(key,value));if(key==='gradientDirection'){const angle={horizontal:'90deg',vertical:'180deg','diagonal-down':'135deg','diagonal-up':'45deg'}[value]||'90deg';root.style.setProperty('--dkui-effect-gradient-angle',angle);}}applySettingOverrides(profile,theme);root.dataset.dkdsThemeProfile=profile?.id||'builtin.default';}
   function snapshotTokens(){const root=document.documentElement;if(!root)return Object.freeze({});const style=getComputedStyle(root),out={};for(const [key,cssVar] of Object.entries(PUBLIC_TOKEN_MAP))out[key]=style.getPropertyValue(cssVar).trim();return Object.freeze(out);}
 
   function apply(theme,{persist=false,emit=true,broadcast=false,nativeSync=false}={}){
@@ -139,9 +174,9 @@
     }
   }catch{}
 
-  function rendererCapabilities(){return globalThis.DKDSThemeMaterialRenderer?.capabilities?.()||Object.freeze({version:'0.0.0',recipeInstalled:false,engine:{},renderer:{backdropBlur:false,saturation:false,noise:false,glassEdge:false,innerHighlight:false,specularHighlight:false,webMaterial:false,nativeBlur:false,thinGlass:false,nonUniformBlur:false,edgeRefraction:false,dynamicSpecular:false,liquidGlass:false},recipes:{clear:false,'thin-glass':false,'soft-glass':false,'liquid-glass':false},roles:{}});}
+  function rendererCapabilities(){return globalThis.DKDSThemeMaterialRenderer?.capabilities?.()||Object.freeze({version:'0.0.0',recipeInstalled:false,engine:{},renderer:{backdropBlur:false,saturation:false,noise:false,glassEdge:false,innerHighlight:false,specularHighlight:false,webMaterial:false,nativeBlur:false,thinGlass:false,nonUniformBlur:false,edgeRefraction:false,dynamicSpecular:false,liquidGlass:false},recipes:{clear:false,'thin-glass':false,'soft-glass':false,'liquid-glass':false},roles:{},materialContexts:[]});}
   function supports(feature){const key=String(feature||'').trim();if(!key)return false;if(key.startsWith('renderer.'))return globalThis.DKDSThemeMaterialRenderer?.supports?.(key)===true;return ThemeContract.supports(key);}
 
-  window.DKDSTheme=Object.freeze({version:'3.9.0',contractVersion:'3.9.0',supports,rendererCapabilities,current:()=>current,system:systemTheme,set,toggle,isDark:()=>current==='dark',profile:()=>activeProfile,preferredProfile:()=>preferredProfile,setProfile,registerProfile,unregisterProfile,listProfiles,settings,setSetting,resetSettings,recipePolicy,tokens:snapshotTokens,tokenNames:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materials:materialSnapshot,appearanceRoles:roleAppearanceSnapshot,appearanceComponents:()=>roleAppearanceSnapshot().components,effects:()=>previewProfile(activeProfile,current).effects,consumption:()=>globalThis.DKDSThemeComponentAppearance?.consumption?.()||Object.freeze({version:'0.0.0',components:{}}),scientific:scientificSnapshot,platformUnits:()=>ThemeContract.platformUnits,preview:previewProfile,coverage:()=>globalThis.DKDSThemeCoverage?.scan?.()||Object.freeze({version:'0.0.0',summary:{ok:false,reason:'Theme Coverage Runtime unavailable'}})});
+  window.DKDSTheme=Object.freeze({version:'3.10.0',contractVersion:'3.10.0',supports,rendererCapabilities,current:()=>current,system:systemTheme,set,toggle,isDark:()=>current==='dark',profile:()=>activeProfile,preferredProfile:()=>preferredProfile,setProfile,registerProfile,unregisterProfile,listProfiles,settings,setSetting,resetSettings,recipePolicy,recipeFor,tokens:snapshotTokens,tokenNames:()=>TOKEN_KEYS.slice(),materialRoles:()=>MATERIAL_ROLES.slice(),materialContexts:()=>MATERIAL_CONTEXTS.slice(),componentContexts:()=>COMPONENT_CONTEXTS.slice(),materials:materialSnapshot,materialFor:(role,context)=>ThemeContract.resolveMaterialContext(previewProfile(activeProfile,current).material,role,context),appearanceRoles:roleAppearanceSnapshot,appearanceComponents:()=>roleAppearanceSnapshot().components,effects:()=>previewProfile(activeProfile,current).effects,consumption:()=>globalThis.DKDSThemeComponentAppearance?.consumption?.()||Object.freeze({version:'0.0.0',components:{}}),scientific:scientificSnapshot,platformUnits:()=>ThemeContract.platformUnits,preview:previewProfile,coverage:()=>globalThis.DKDSThemeCoverage?.scan?.()||Object.freeze({version:'0.0.0',summary:{ok:false,reason:'Theme Coverage Runtime unavailable'}})});
   globalThis.addEventListener?.('beforeunload',()=>{try{nativeOff?.();channel?.close?.();}catch{}},{once:true});
 })();

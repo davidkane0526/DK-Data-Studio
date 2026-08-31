@@ -1,7 +1,7 @@
 {
   "id": "com.dkds.theme.liquid-glass",
   "name": "Thin Glass",
-  "version": "1.10.0",
+  "version": "1.12.1",
   "apiVersion": "1.19.0",
   "entry": "plugin.js",
   "scripts": [
@@ -9,7 +9,7 @@
   ],
   "enabled": true,
   "order": 30,
-  "description": "Thin Glass Theme 3.8 profile using Core role/component appearance fallbacks, semantic states, scientific fallback palette and low-radius backdrop material.",
+  "description": "Thin Glass 1.12 profile for Theme Contract 3.10: contextual glass optics and component depth declared through Core-owned composition.",
   "pluginType": "theme",
   "requiresCore": [
     "ui.theme"
@@ -18,8 +18,8 @@
     "ui.theme"
   ],
   "compatibility": {
-    "app": ">=3.67.5 <4.0.0",
+    "app": ">=3.67.10 <4.0.0",
     "pluginApi": "^1.19.0",
-    "themeContract": "^3.8.0"
+    "themeContract": "^3.10.0"
   }
 }

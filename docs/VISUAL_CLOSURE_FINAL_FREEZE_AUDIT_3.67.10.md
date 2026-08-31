@@ -1,5 +1,9 @@
 # DK Data Studio v3.67.10 · Desktop Visual Closure Final Freeze Audit
 
+> **STATUS: REOPENED / SUPERSEDED FOR RELEASE APPROVAL (2026-08-31)**
+>
+> The R2 Windows Automation report below remains valid evidence that the Core ownership/renderer pipeline was machine-green, but subsequent Windows screenshots exposed a real Theme Provider visual regression: Thin Glass 1.10 and Aurora 2.2.3 over-emphasized ToolbarGroup/ToolbarAction composition and near-fullscreen elevated glass. Therefore this document is historical evidence only and no longer authorizes a v3.67.10 final release. See `docs/VISUAL_THEME_RECOVERY_WIP_3.67.10.md`.
+
 ## Scope
 
 v3.67.10 closes Desktop visual ownership below the already frozen v3.67 Platform Presentation Architecture. It does **not** reopen the platform-neutral Presentation Model, add desktop/mobile Plugin APIs, or introduce new domain functionality.

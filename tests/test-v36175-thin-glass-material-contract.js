@@ -6,9 +6,9 @@ const json=p=>JSON.parse(read(p));
 const Theme=require(path.join(root,'sdk/theme-contract.js'));
 
 
-assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');
-assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
-assert.equal(Theme.version,'3.9.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');
+assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
+assert.equal(Theme.version,'3.10.0');
 assert(Theme.materialRecipes().includes('thin-glass'),'Theme Contract must expose thin-glass.');
 assert.throws(()=>Theme.validateProfile({label:'bad',recipes:{popover:'custom-random-effect'},modes:{light:{},dark:{}}},'bad-theme'),/recipe|custom-random-effect/i,'unknown recipe must be rejected');
 
@@ -17,7 +17,7 @@ assert(dts.includes("'clear'|'thin-glass'|'soft-glass'|'liquid-glass'"),'SDK rec
 assert(dts.includes("thinGlass:boolean"),'renderer capability type must expose thinGlass.');
 
 const renderer=read('src/core/theme/material-renderer.js');
-for(const token of ["const VERSION='3.9.0'","'thin-glass'",'DKDSMaterialSurface','OPAQUE_PARENT_OCCLUSION','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','renderer.thinGlass']) assert(renderer.includes(token),`renderer missing ${token}`);
+for(const token of ["const VERSION='3.10.0'","'thin-glass'",'DKDSMaterialSurface','OPAQUE_PARENT_OCCLUSION','ROLE_MISSING','RECIPE_MISSING','BACKDROP_FILTER_NONE','renderer.thinGlass']) assert(renderer.includes(token),`renderer missing ${token}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(renderer.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Material role bindings must not know plugin identity.');
 assert(renderer.includes("el.dataset.dkdsMaterialRoleClassOwner='material-surface'"),'MaterialSurface role ownership must be explicit.');
 assert(renderer.includes("roleClassOwner==='core-runtime'"),'runtime inference must only remove runtime-owned role classes.');
@@ -28,7 +28,7 @@ assert(thin,'independent thin-glass CSS recipe missing');
 assert(/backdrop-filter:blur\(/.test(thin),'thin-glass must use backdrop-filter blur');
 assert(/saturate\(/.test(thin),'thin-glass must use backdrop saturation');
 assert(/filter:none/.test(thin),'thin-glass must explicitly avoid filter: blur on UI content');
-assert(/background-image:linear-gradient/.test(thin)&&/inset 0 1px 0/.test(thin),'thin-glass must provide a restrained single-layer edge/inner optical cue in addition to backdrop blur.');
+assert(/--dkds-material-theme-overlay/.test(thin)&&/,linear-gradient\(/.test(thin)&&/inset 0 1px 0/.test(thin),'thin-glass must provide one Core-composed Theme overlay plus a restrained single-layer edge/inner optical cue in addition to backdrop blur.');
 assert(!/radial-gradient|noise|mask-image|scale\(|displacement|refraction|chromatic/i.test(thin.replace(/\/\*[\s\S]*?\*\//g,'')),'thin-glass must not use Liquid Glass refraction/noise/multi-layer optical effects');
 assert(!/\[data-dkds-material-recipe="thin-glass"\]::(?:before|after)/.test(css),'thin-glass must not use Liquid optical pseudo layers');
 
@@ -58,8 +58,8 @@ const sdkTool=read('sdk/tools/dkds-plugin.js');
 assert(sdkTool.includes("renderer.recipes.thin-glass"),'SDK validator Theme API must advertise thin-glass recipe support.');
 assert(sdkTool.includes('must explicitly declare a Material Recipe for every Core role'),'SDK validator must reject incomplete Theme recipe policies instead of relying on renderer fallback.');
 const template=json('sdk/templates/theme-profile/plugin.json');
-assert.equal(template.compatibility.app,'>=3.67.5 <4.0.0');
-assert.equal(template.compatibility.themeContract,'^3.9.0');
+assert.equal(template.compatibility.app,'>=3.67.10 <4.0.0');
+assert.equal(template.compatibility.themeContract,'^3.10.0');
 const templateJs=read('sdk/templates/theme-profile/plugin.js');
 assert(templateJs.includes("popover:'thin-glass'")&&templateJs.includes("surface:'clear'"),'official Theme template must demonstrate Thin Glass policy.');
 

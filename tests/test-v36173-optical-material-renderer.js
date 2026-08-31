@@ -1,13 +1,13 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');const json=p=>JSON.parse(read(p));
-assert.equal(json('sdk/contract.json').sdkVersion,'1.23.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
+assert.equal(json('sdk/contract.json').sdkVersion,'1.24.0');assert.equal(json('sdk/contract.json').themeContractVersion,'3.10.0');
 const runtime=read('src/core/theme/material-renderer.js');
-for(const x of ["const VERSION='3.9.0'","clear','thin-glass','soft-glass','liquid-glass","globalThis.DKDSTheme?.recipePolicy?.()","renderer.liquidGlass","renderer.edgeRefraction","renderer.dynamicSpecular","renderer.profilePolicy","BROKEN_OPTICAL_RENDERER","prefers-reduced-motion","--dkds-optical-shift-x"])assert(runtime.includes(x),`missing optical renderer token: ${x}`);
+for(const x of ["const VERSION='3.10.0'","clear','thin-glass','soft-glass','liquid-glass","globalThis.DKDSTheme?.recipePolicy?.()","renderer.liquidGlass","renderer.edgeRefraction","renderer.dynamicSpecular","renderer.profilePolicy","BROKEN_OPTICAL_RENDERER","prefers-reduced-motion","--dkds-optical-shift-x"])assert(runtime.includes(x),`missing optical renderer token: ${x}`);
 assert(!/(?:\.respar-|\.ter-|\.pulse-|\.data-center)/.test(runtime.match(/const ROLE_BINDINGS=[\s\S]*?\]\);/)?.[0]||''),'Optical material policy must not know plugin identity selectors.');
 const css=read('src/styles/theme/material-renderer.css');for(const x of ['data-dkds-material-recipe="clear"','data-dkds-material-recipe="soft-glass"','data-dkds-material-recipe="liquid-glass"','::before','mask-image:radial-gradient','scale(1.012)','::after','--dkds-material-blur-strong','prefers-reduced-motion'])assert(css.includes(x),`missing optical CSS recipe: ${x}`);
 assert(!fs.existsSync(path.join(root,'src/styles/modern/99-theme-material-renderer-33.css')),'3.3 renderer CSS must be replaced, not layered beneath 3.4.');
-const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));for(const x of ['Material Renderer 3.9','REAL_LIQUID_MATERIAL',"probeRecipe?.('liquid-glass','popover')","probeRecipe?.('thin-glass','popover')"])assert(automation.includes(x),`automation does not verify ${x}`);
+const automation=(read('src/diagnostics/automation-test-runtime.js')+read('src/diagnostics/automation-smoke-cases.js'));for(const x of ['Material Renderer 3.10','REAL_LIQUID_MATERIAL',"probeRecipe?.('liquid-glass','popover')","probeRecipe?.('thin-glass','popover')"])assert(automation.includes(x),`automation does not verify ${x}`);
 const coverage=read('src/core/theme/coverage-runtime.js');assert(coverage.includes('BROKEN_OPTICAL_RENDERER'));
 const dts=read('sdk/plugin-api.d.ts');for(const x of ['DKDSMaterialRecipe','nonUniformBlur','edgeRefraction','dynamicSpecular','liquidGlass','BROKEN_OPTICAL_RENDERER'])assert(dts.includes(x));
-const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Theme Contract 3.9')&&docs.includes('liquid-glass')&&docs.includes('Role-specific appearance'));
+const docs=read('sdk/THEME_CONTRACT.md');assert(docs.includes('Theme Contract 3.10')&&docs.includes('liquid-glass')&&docs.includes('Role-specific appearance'));
 console.log('v3.61.73 optical material renderer policy and verification contracts passed.');

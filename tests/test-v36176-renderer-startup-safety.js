@@ -12,10 +12,13 @@ for(const token of [
   'assignmentEnabled=false',
   'function enableAssignmentsAfterFirstPaint()',
   'requestFrame(()=>requestFrame(()=>{',
-  'scheduleRoleAssignment(record.target)',
+  'scheduleRoleAssignment(target)',
   'scheduleRoleAssignment(node)',
-  "attributeFilter:['class'],attributeOldValue:true",
-  'semanticClassSignature(record.oldValue)',
+  "attributeFilter:['class','data-dkds-material-context'],attributeOldValue:true",
+  "record.attributeName==='class'",
+  "semanticClassSignature(record.oldValue)",
+  "materialClassRelevant(record.oldValue)",
+  "materialClassRelevant(nextClass)",
   "if(!hasClass(el,'dkds-optical-position-anchor')&&getComputedStyle(el).position==='static')addClass(el,'dkds-optical-position-anchor')"
 ]) assert(renderer.includes(token),`startup-safe Material Renderer missing ${token}`);
 
@@ -23,9 +26,11 @@ const observer=renderer.match(/const observer=new MutationObserver\(records=>\{[
 assert(observer,'Material observer block missing.');
 assert(!observer.includes('assignSemanticRole(record.target)'),'MutationObserver must not mutate role classes synchronously.');
 assert(!observer.includes('assignSemanticRoles(node)'),'MutationObserver must not rescan added subtrees synchronously.');
-assert(observer.includes('scheduleRoleAssignment(record.target)')&&observer.includes('scheduleRoleAssignment(node)'),'MutationObserver must queue changed targets/subtrees.');
+assert(observer.includes('scheduleRoleAssignment(target)')&&observer.includes('scheduleRoleAssignment(node)'),'MutationObserver must queue changed targets/subtrees.');
 
-const assign=renderer.match(/function assignSemanticRole\(el\)\{[\s\S]*?\n  \}\n  function assignSemanticRoles/)?.[0]||'';
+const assignStart=renderer.indexOf('function assignSemanticRole(el){');
+const assignEnd=renderer.indexOf('function assignSemanticRoles(',assignStart);
+const assign=assignStart>=0&&assignEnd>assignStart?renderer.slice(assignStart,assignEnd):'';
 assert(assign,'assignSemanticRole block missing.');
 assert(assign.includes('addClass(el,`${ROLE_CLASS_PREFIX}${role}`)'),'role class writes must be idempotent.');
 assert(assign.includes('removeClass(el,`${ROLE_CLASS_PREFIX}${previous}`)'),'role class removals must be idempotent.');

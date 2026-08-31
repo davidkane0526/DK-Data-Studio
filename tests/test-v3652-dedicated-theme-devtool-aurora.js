@@ -34,7 +34,7 @@ assert(automation.includes('component?.id||component?.componentIdentity'),'Autom
 assert(/^2\.(?:[0-9]|[1-9]\d)\./.test(auroraManifest.version),'Built-in Aurora Pop must remain on the 2.x reference line.');
 assert.equal(auroraManifest.pluginType,'theme');
 assert.deepEqual(auroraManifest.capabilities,['ui.theme']);
-assert.equal(auroraManifest.compatibility.themeContract,'^3.9.0');
+assert.equal(auroraManifest.compatibility.themeContract,'^3.10.0');
 assert(!fs.existsSync(path.join(root,'src/plugins/aurora-pop-theme/plugin.css')),'Aurora Pop must stay token-only and must not inject theme CSS');
 for(const token of ["accent:'#7650E8'","accentHover:'#7E5AE8'","disabledText:'#8490A7'"])assert(aurora.includes(token),`Built-in Aurora Pop 2.x missing ${token}`);
 

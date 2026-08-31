@@ -887,8 +887,19 @@ module.exports = {
     {
       "file": "tests/test-v36710-visual-closure-electron-mode.js",
       "args": []
-    }
-,
+    },
+    {
+      "file": "tests/test-v36710-theme-provider-visual-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-theme-contract-310-contextual-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-r7-theme-resize-performance.js",
+      "args": []
+    },
     {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
@@ -1814,8 +1825,19 @@ module.exports = {
     {
       "file": "tests/test-v36710-visual-closure-electron-mode.js",
       "args": []
-    }
-,
+    },
+    {
+      "file": "tests/test-v36710-theme-provider-visual-recovery.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-theme-contract-310-contextual-composition.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-r7-theme-resize-performance.js",
+      "args": []
+    },
     {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []

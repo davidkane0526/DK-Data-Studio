@@ -26,10 +26,21 @@
     for(const group of shellGroups){const r=rect(group);assert(close(r.height,38),`Topbar group envelope must be 38px: ${group.className} = ${r.height.toFixed(2)}px`);}
 
     const presentationCommands=[...document.querySelectorAll('.dkds-presentation-command')].filter(visible);
-    for(const button of presentationCommands){const r=rect(button);assert(close(r.width,48)&&close(r.height,34),`Presenter command must be 48×34px: ${String(button.textContent||'').trim()} = ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);}
+    for(const button of presentationCommands){const r=rect(button),label=String(button.textContent||'').trim();assert(r.width>=47.5&&close(r.height,34),`Presenter command must be at least 48px wide and 34px high: ${label} = ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);if(label.length<=3)assert(r.width<=52,`Compact Presenter command should retain the 48px rhythm: ${label} = ${r.width.toFixed(2)}px`);else assert(r.width>=58,`Long Presenter command needs horizontal breathing room: ${label} = ${r.width.toFixed(2)}px`);}
 
-    const selected=[...document.querySelectorAll('.topbar-primary [data-dkds-component-variant="selected"],.topbar-primary [aria-selected="true"],.topbar-primary [aria-pressed="true"]')].find(visible)||null;
-    if(selected){const shadow=getComputedStyle(selected).boxShadow||'';assert(/0px 0px 0px 2px/.test(shadow),`Selected topbar action must use an exact 2px spread halo: ${shadow||'none'}`);}
+    const Appearance=window.DKDSThemeComponentAppearance,Semantic=window.DKDSThemeSemanticRegistry;
+    assert(Appearance?.version==='3.0.0','Component Appearance 3.0 contextual resolver unavailable.');
+    assert(window.DKDSTheme?.contractVersion==='3.10.0','Theme Contract 3.10 contextual composition unavailable.');
+    let groupedContextChecked=0,standaloneContextChecked=0,materialRoleCompositionChecked=0;
+    for(const action of topbarActions){const info=Appearance.inspect?.(action);if(!info?.component)continue;
+      if(info.componentContext==='grouped')groupedContextChecked++;
+      if(info.componentContext==='standalone')standaloneContextChecked++;
+      if(info.materialRole)materialRoleCompositionChecked++;
+    }
+    for(const button of presentationCommands){const info=Appearance.inspect?.(button);assert(info?.componentContext==='grouped',`Presenter command must resolve through grouped Component Context: ${String(button.textContent||'').trim()} = ${info?.componentContext||'missing'}`);assert(info?.materialRole==='chrome',`Presenter command must compose with chrome Material Role: ${String(button.textContent||'').trim()} = ${info?.materialRole||'missing'}`);}
+    for(const button of presentationCommands.filter(button=>button.getAttribute('aria-pressed')==='true')){assert(button.dataset.dkdsComponentVariant==='active',`Visible Presenter surface must use active state, not selected navigation: ${String(button.textContent||'').trim()} = ${button.dataset.dkdsComponentVariant||'none'}`);}
+    const importWorkbench=document.querySelector('.import-workbench');let workspaceModalChecked=false;
+    if(importWorkbench){const role=window.DKDSThemeMaterialRenderer?.roleOf?.(importWorkbench)||Semantic?.materialRoleOf?.(importWorkbench)||'';const context=window.DKDSThemeMaterialRenderer?.materialContextOf?.(importWorkbench)||Semantic?.materialContextOf?.(importWorkbench)||'';assert(role==='elevated',`Import Workbench must remain elevated: ${role||'missing'}`);assert(context==='workspace-modal',`Import Workbench must resolve workspace-modal Material Context: ${context||'missing'}`);workspaceModalChecked=true;}
 
     const plotTools=document.getElementById('mainPlotTools'),legend=document.getElementById('mainLegendBar');
     for(const [label,el] of [['Main Plot Tools',plotTools],['Main Legend',legend]])if(visible(el)){
@@ -71,8 +82,44 @@
     const trendLegends=[...document.querySelectorAll('.trend-card-legend')];
     for(const legendEl of trendLegends){const role=window.DKDSThemeMaterialRenderer?.roleOf?.(legendEl)||'';assert(role!=='surface',`Trend legend must remain child content, not a nested Material surface: ${role}`);assert(transparent(getComputedStyle(legendEl).backgroundColor),`Trend legend must remain transparent inside Trend Card: ${getComputedStyle(legendEl).backgroundColor}`);}
 
-    return {dockTransparent:true,topbarActions:topbarActions.length,shellGroups:shellGroups.length,presentationCommands:presentationCommands.length,selectedHaloChecked:!!selected,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length};
+    let selectedProjectTabChecked=false;
+    const selectedProjectTab=[...document.querySelectorAll('.project-tab[aria-selected="true"],.project-tab.selected')].find(visible)||null;
+    if(selectedProjectTab){const style=getComputedStyle(selectedProjectTab);assert(style.color!==style.backgroundColor,'Selected project tab lost readable foreground contrast.');selectedProjectTabChecked=true;}
+    let mainPlotEdgeChecked=false;
+    const mainPlot=document.getElementById('resparMainPlotWrap');
+    if(visible(mainPlot)){const style=getComputedStyle(mainPlot);assert(style.outlineStyle==='none'||parseFloat(style.outlineWidth||'0')===0,`Main scientific plot must not own a focus outline/frame: ${style.outline}`);for(const side of ['Top','Right','Bottom','Left'])assert(close(parseFloat(style[`border${side}Width`]||'0'),0,.1),`Main scientific plot must not own a decorative ${side.toLowerCase()} edge: ${style[`border${side}Width`]}`);mainPlotEdgeChecked=true;}
+
+    return {dockTransparent:true,topbarActions:topbarActions.length,shellGroups:shellGroups.length,presentationCommands:presentationCommands.length,groupedContextChecked,standaloneContextChecked,materialRoleCompositionChecked,workspaceModalChecked,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length,selectedProjectTabChecked,mainPlotEdgeChecked};
   }
 
-  window.DKDSAutomationVisualCases=Object.freeze({visualGeometryClosureSmoke});
+  async function themeRuntimePerformanceSmoke(){
+    const material=window.DKDSThemeMaterialRenderer,appearance=window.DKDSThemeComponentAppearance,semantic=window.DKDSSemanticUI;
+    assert(typeof material?.performance==='function','Material Renderer performance diagnostics unavailable.');
+    assert(typeof appearance?.performance==='function','Component Appearance performance diagnostics unavailable.');
+    assert(typeof semantic?.performance==='function','Semantic UI performance diagnostics unavailable.');
+    const snapshot=()=>({material:material.performance(),appearance:appearance.performance(),semantic:semantic.performance()});
+    const before=snapshot();
+    await new Promise(resolve=>setTimeout(resolve,240));
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const after=snapshot(),delta={
+      materialFlushes:after.material.flushes-before.material.flushes,
+      materialAssignCalls:after.material.assignCalls-before.material.assignCalls,
+      appearanceFlushes:after.appearance.flushes-before.appearance.flushes,
+      appearanceAssignCalls:after.appearance.assignCalls-before.appearance.assignCalls,
+      semanticFlushes:after.semantic.flushes-before.semantic.flushes,
+      semanticAssignCalls:after.semantic.assignCalls-before.semantic.assignCalls
+    };
+    assert(after.material.pendingRoots===0&&!after.material.framePending,`Material assignment queue did not settle: ${JSON.stringify(after.material)}`);
+    assert(after.appearance.pendingRoots===0&&!after.appearance.framePending,`Component Appearance queue did not settle: ${JSON.stringify(after.appearance)}`);
+    assert(after.semantic.pendingRoots===0&&!after.semantic.framePending,`Semantic UI assignment queue did not settle: ${JSON.stringify(after.semantic)}`);
+    assert(delta.materialFlushes<=4,`Material Renderer is churning while idle: ${JSON.stringify(delta)}`);
+    assert(delta.appearanceFlushes<=4,`Component Appearance is churning while idle: ${JSON.stringify(delta)}`);
+    assert(delta.semanticFlushes<=4,`Semantic UI is churning while idle: ${JSON.stringify(delta)}`);
+    assert(delta.materialAssignCalls<=8,`Material Renderer rescanned too many roots while idle: ${JSON.stringify(delta)}`);
+    assert(delta.appearanceAssignCalls<=8,`Component Appearance rescanned too many roots while idle: ${JSON.stringify(delta)}`);
+    assert(delta.semanticAssignCalls<=8,`Semantic UI rescanned too many roots while idle: ${JSON.stringify(delta)}`);
+    return {before,after,delta};
+  }
+
+  window.DKDSAutomationVisualCases=Object.freeze({visualGeometryClosureSmoke,themeRuntimePerformanceSmoke});
 })();

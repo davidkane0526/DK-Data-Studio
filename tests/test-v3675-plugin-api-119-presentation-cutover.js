@@ -28,9 +28,9 @@ const mobileCss=read('src/mobile.css');
 const sdkTool=read('sdk/tools/dkds-plugin.js');
 
 {const [major,minor,patch]=pkg.version.split('.').map(Number);assert(major>3||(major===3&&(minor>67||(minor===67&&patch>=5))),'Plugin API 1.19 Presentation Cutover requires v3.67.5+.');}
-assert.strictEqual(sdk.sdkVersion,'1.23.0');
+assert.strictEqual(sdk.sdkVersion,'1.24.0');
 assert.strictEqual(sdk.pluginApiVersion,'1.19.0');
-assert.strictEqual(sdk.minimumAppVersion,'3.67.5');
+assert.strictEqual(sdk.minimumAppVersion,'3.67.10');
 assert.strictEqual(sdkSchema.properties.apiVersion.const,'1.19.0');
 assert.strictEqual(docsSchema.properties.apiVersion.const,'1.19.0');
 
