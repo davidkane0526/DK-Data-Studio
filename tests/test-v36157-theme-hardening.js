@@ -14,12 +14,14 @@ const pulseViews=read('src/plugins/pulse-analysis/shared-views.js');
 
 assert(modern.includes('.left-panel section')&&modern.includes('.dkds-analysis-nav-btn'),'semantic first-party surface closure is missing.');
 assert(modern.includes('[data-dkds-component-identity="toolbarAction"]')&&modern.includes('--dkds-ca-action-surface:'),'Canonical Component Appearance must own first-party toolbar action surfaces instead of a broad button normalization selector.');
-assert(modern.includes('border-color:var(--control-border)'),'Interactive fields must use controlBorder rather than structural divider.');
-assert(modern.includes('.left-panel section')&&modern.includes('border:0'),'Sidebar sections must not use structural outline separators.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('[data-dkds-component-identity="field"]')&&componentAppearance.includes('var(--dkui-component-field-border,var(--dkui-control-border))'),'Interactive fields must resolve through the canonical controlBorder channel rather than structural divider paint.');
+assert(modern.includes('.left-panel section')&&!/\.left-panel\s*>?\s*section\s*\{[^}]*background\s*:/s.test(modern),'Sidebar sections must remain flat content groups without a second surface.');
 assert(!/dkds-analysis-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Analysis splitters must not paint a hard-coded light divider while idle.');
 assert(!/dkds-plugin-canvas-(?:left|right|bottom)-resizer[^}]*background:#dfe5ee/s.test(style),'Plugin canvas splitters must not paint a hard-coded light divider while idle.');
 assert(style.includes('--plugin-workspace-panel-border:var(--divider-subtle,transparent)'),'PluginWorkspace panel border must come from Theme Contract.');
-assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);')&&style.includes('.dkds-plugin-workspace {background:transparent'),'PluginWorkspace geometry and transparent presentation must remain separately owned so MaterialSurface roles can sample the real backdrop.');
+const materialCss=read('src/styles/theme/material-renderer.css');
+assert(style.includes('.dkds-plugin-workspace{--dkds-analysis-left-width:var(--plugin-workspace-sidebar-width);')&&materialCss.includes('.dkds-plugin-canvas-frame')&&materialCss.includes('.dkds-plugin-canvas-left')&&materialCss.includes('background-color:transparent'),'PluginWorkspace geometry must remain separate while layout-only canvas hosts stay transparent under MaterialSurface ownership.');
 assert(style.includes('.dkds-plugin-canvas-center{')&&modern.includes('.dkds-plugin-canvas-center')&&modern.includes('background-color:transparent'),'PluginWorkspace material-bearing canvas must be Core-role managed without an opaque wrapper blocking backdrop sampling.');
 assert(/\.pulse-card\{/.test(pulseStyle)&&!/\.pulse-card\{[^}]*border\s*:/.test(pulseStyle),'Pulse plugin must own its card geometry without private structural border paint.');
 assert(pulseViews.includes('pulse-card-heading dkds-surface-header')&&pulseViews.includes('dkds-surface-heading-stack')&&!/\.pulse-card-heading[^{}]*\{[^}]*(?:padding|height|min-height|border-bottom)\s*:/.test(pulseStyle),'Pulse plugin heading must rely entirely on the Core SurfaceHeader geometry/paint contract.');

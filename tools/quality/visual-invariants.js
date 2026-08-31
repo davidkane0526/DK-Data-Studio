@@ -61,6 +61,7 @@ function validate(){
   const integratedCss=read('src/styles/theme/integrated-command-chrome.css');
   const controlStatus=read('src/styles/presentation/control-status.css');
   const materialRenderer=read('src/core/theme/material-renderer.js');
+  const materialCss=read('src/styles/theme/material-renderer.css');
   const coverage=read('src/core/theme/coverage-runtime.js');
   const tooltip=read('src/core/ui/modules/tooltip/group-plot.js');
   const workbench=read('src/core/ui/modules/workbench/analysis.js');
@@ -79,6 +80,15 @@ function validate(){
   const foundation=read('src/app/modules/foundation.js');
   const connectivityCss=read('src/styles/presentation/connectivity.css');
   const devtoolsCss=read('src/styles/presentation/plugin-devtools.css');
+  const chromeGeometry=read('src/styles/structure/desktop-chrome-geometry.css');
+  const shellNavigation=read('src/styles/structure/shell-navigation.css');
+  const schemaStructure=read('src/styles/structure/schema-and-plugin-ui.css');
+  const workspaceStructure=read('src/styles/structure/workspace-interaction.css');
+  const pluginWorkspaceStructure=read('src/styles/structure/plugin-workspace.css');
+  const desktopShell=read('src/core/ui/modules/presentation/desktop-shell.js');
+  const statusPlugin=read('src/plugins/status-monitor/plugin.js');
+  const scientificChart=read('src/core/scientific/chart-runtime.js');
+  const scientificNav=read('src/core/ui/modules/scientific-curve/navigation.js');
 
   // HARD-01: analysis/workbench navigation is a toolbar action, never a tab.
   requireRegex(semanticRegistry,/id:'tab'[^\n]+activity-tab:not\(\.top-level-activity-tab\)/,'HARD-01: generic Tab selector must exclude top-level workspaces.');
@@ -91,10 +101,11 @@ function validate(){
   requireText(semanticRegistry,'.analysis-chart-title','HARD-02: analysis-chart-title must be a Core panelHeader semantic component.');
   requireText(materialRenderer,'Semantic.resolveMaterialRole(el)','HARD-02: Material Renderer must obtain chart-title ownership from the canonical semantic registry.');
   requireText(coverage,'Semantic.materialAreas()','HARD-02: Theme coverage must consume the canonical material-area registry that includes analysis-chart-title.');
-  requireRegex(integratedCss,/:where\([^)]*analysis-chart-title[^)]*\)[\s\S]*?:where\([^)]*(?:dkds-surface-actions|dkds-integrated-action-group)[^)]*\)/s,'HARD-02: chart-title action groups must share the title chrome even through Core layout wrappers.');
+  requireRegex(materialCss,/analysis-chart-title[^\n]*\)\s*\n?\s*:where\([^)]*(?:dkds-surface-actions|dkds-integrated-action-group)/s,'HARD-02: chart-title action groups must flatten into the parent title chrome through the Material Renderer.');
   forbidRegex(semanticRegistry,/id:'toolbarGroup'[^\n]*(?:dkds-integrated-action-group|statusbar-command-cluster)/,'HARD-02: integrated/status command clusters must never be painted as toolbarGroup components.');
   forbidRegex(componentCss,/:where\([^)]*(?:dkds-integrated-action-group|statusbar-command-cluster)[^)]*\)\s*\{[^}]*--dkds-material-base/s,'HARD-02: Theme Component Appearance must not create a second material shell around integrated/status groups.');
-  requireRegex(integratedCss,/#statusBar\.statusbar[\s\S]*?\.plugin-status-item::before\{display:none\}/,'HARD-02: status-bar command chrome must remain one parent-owned surface.');
+  requireText(statusItems,"button.className='plugin-status-item quiet'",'HARD-02: status-bar actions must declare the canonical quiet action variant so parent chrome remains the only surface.');
+  forbidRegex(integratedCss,/#statusBar\.statusbar[\s\S]*?\.plugin-status-item:is\([^}]+\{[^}]*?(?:background|border-color|box-shadow)/s,'HARD-02: Theme location CSS must not repaint status-bar actions.');
 
   // HARD-03: Core owns tooltip rendering, while tooltip presence is explicit semantic metadata.
   requireText(tooltip,"querySelectorAll?.('[title]')",'HARD-03: Core tooltip runtime must intercept every browser-native title surface.');
@@ -206,12 +217,335 @@ function validate(){
   }
 
 
+  // HARD-10: docking hosts are geometry only. A dock slot must never become a
+  // second white/glass sheet behind the Surface it hosts.
+  for(const file of authoredCoreCssFiles()){
+    const css=fs.readFileSync(file,'utf8'),rel=path.relative(root,file).replace(/\\/g,'/');
+    for(const token of ['inspector-dock-slot','prime-right-dock-slot','prime-bottom-dock-slot']){
+      const re=new RegExp(`\\.${token}[^{}]*\\{[^}]*?(?:background(?:-[\\w-]+)?|border(?:-[\\w-]+)?|box-shadow)\\s*:`,`s`);
+      if(re.test(css))failures.push(`HARD-10: ${rel} paints layout-only .${token}.`);
+    }
+  }
+
+  // HARD-11: Theme Picker is a fixed status popover, never a PortableView.
+  requireText(statusPlugin,"data-dkds-portable-chrome':'false'",'HARD-11: Theme Picker must opt out of PortableView chrome structurally.');
+  requireText(statusPlugin,"data-dkds-portable':'false'",'HARD-11: Theme Picker must opt out of PortableView placement/state restoration.');
+  requireText(statusPlugin,'dkds-fixed-popover-header','HARD-11: Theme Picker must use fixed-popover header semantics.');
+  requireRegex(portableView,/this\.portableDisabled=!!\(this\.node\.matches\?\.\('\.dkds-fixed-popover,[^']*data-dkds-portable-chrome="false"[^']*data-dkds-portable="false"/,'HARD-11: PortableView must reject fixed popovers before creating placement chrome.');
+  requireRegex(portableView,/const chrome=this\.spec\.chrome!==false&&!this\.portableDisabled/,'HARD-11: placement chrome must not be created for a disabled portable surface.');
+
+  // HARD-12: every desktop panel close action has one square geometry and one
+  // canonical corner radius, independent of which header created it.
+  requireRegex(chromeGeometry,/\.dkds-panel-close-button\{[\s\S]*?width:26px;min-width:26px;max-width:26px;height:26px;min-height:26px;[\s\S]*?padding:0/,'HARD-12: panel close geometry must be exactly 26x26 with zero padding.');
+  requireText(componentCss,'[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}','HARD-12: panel close radius must have one canonical 7 px owner.');
+  requireRegex(chromeGeometry,/dkds-fixed-popover-header>\.dkds-panel-close-button\{[\s\S]*?max-height:26px;padding:0/,'HARD-12: fixed popover close must consume the same 26x26 header geometry.');
+
+  // HARD-13: desktop topbar uses exact geometry, not a blur approximation.
+  requireText(schemaStructure,'--dkds-shell-group-height:38px','HARD-13: shell command groups must share the 38 px visual envelope.');
+  requireRegex(componentCss,/--dkds-shell-action-halo:0 0 0 2px/,'HARD-13: selected/primary topbar actions must use an exact 2 px spread halo.');
+  forbidRegex(componentCss,/--dkds-shell-action-halo:0 0 2px/,'HARD-13: a blurred 2 px shadow must never stand in for exact shell geometry.');
+  requireRegex(shellNavigation,/\.plugin-context-toolbar \.plugin-toolbar-btn\{[\s\S]*?height:34px/,'HARD-13: plugin context commands must use the same 34 px action body.');
+
+  // HARD-14: Presenter-generated 参数 / 检查 / 组图 are one command family.
+  requireText(desktopShell,"button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command'",'HARD-14: Desktop Presenter surface commands need the canonical presentation-command geometry class.');
+  requireText(desktopShell,"button.dataset.pluginSection='presentation-surfaces'",'HARD-14: Presenter surface commands must form one section without internal separators.');
+  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\{[\s\S]*?width:48px;[\s\S]*?min-width:48px;[\s\S]*?max-width:48px/,'HARD-14: Presenter commands must all be exactly 48 px wide.');
+
+  // HARD-15: both scientific renderers use one floating toolbar contract.
+  for(const [name,source] of [['ChartRuntime',scientificChart],['ScientificCurve',scientificNav]]){
+    requireText(source,"dkds-scientific-nav-tools",`HARD-15: ${name} must use the shared scientific navigation class.`);
+    requireText(source,"dkds-integrated-action-group dkds-material-role-floating",`HARD-15: ${name} must use the shared floating Material contract.`);
+    requireText(source,"drag.dataset.dkdsComponentIdentity='toolbarAction'",`HARD-15: ${name} drag affordance must be a canonical toolbarAction.`);
+    requireText(source,"drag.dataset.dkdsComponentVariant='quiet'",`HARD-15: ${name} drag affordance must use the same quiet appearance as its buttons.`);
+  }
+  requireRegex(workspaceStructure,/\.main-plot-tools\{[\s\S]*?padding:3px;[\s\S]*?height:34px/,'HARD-15: main plot tools must use the 34 px / 3 px compact-strip geometry.');
+  requireRegex(workspaceStructure,/\.main-legend-bar\{[\s\S]*?height:34px;[\s\S]*?padding:3px/,'HARD-15: main legend must use the same 34 px / 3 px compact-strip geometry.');
+  requireRegex(materialCss,/#mainPlotTools\.dkds-material-role-control,[\s\S]*?#mainLegendBar\.dkds-material-role-control[\s\S]*?border-radius:9px/,'HARD-15: main tools and legend must share one Material edge contract.');
+
+  // HARD-16: header identity supplies tokens/text only; Material Renderer owns
+  // optical background/effects. This prevents header-on-header double paint.
+  forbidRegex(componentCss,/\[data-dkds-component-identity="(?:panelHeader|inspectorHeader)"\][^{]*\{[^}]*(?:background(?:-color|-image)?|box-shadow)\s*:/s,'HARD-16: Component Appearance must not directly paint panel/inspector header surfaces.');
+  requireText(materialCss,'Header-owned command wrappers are transparent composition only.','HARD-16: Material Renderer must flatten nested command wrappers inside headers.');
+
+  // HARD-17: canonical fields/actions own their own control paint, and the
+  // Material Renderer must not add a second independent control surface.
+  requireText(semanticRegistry,"const CANONICAL_CONTROL_COMPONENTS=new Set(['toolbarAction','tab','menuItem','chip','field'])",'HARD-17: canonical control paint-owner set must remain explicit.');
+  requireText(materialRenderer,'Semantic.semanticControlOwnsPaint','HARD-17: Material Renderer must respect canonical control paint ownership.');
+  requireRegex(componentCss,/\[data-dkds-component-identity="field"\]\{[\s\S]*?background:[^;]+;[\s\S]*?border:1px[^;]+;[\s\S]*?box-shadow:none/,'HARD-17: Field Component Appearance must be the canonical field paint owner.');
+
+
+
+  // HARD-18: canonical Material surfaces may keep geometry in Presentation,
+  // but Presentation must not repaint their optical background/border/shadow.
+  requireText(semanticRegistry,'.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head','HARD-18: generic chart heads must be part of canonical panel-header semantics.');
+  const surfaceClasses=['topbar','project-tabs-bar','left-panel','floating-panel','floating-header','analysis-chart-title','dkds-chart-head','dkds-surface-header','dkds-plot-view-head','dkds-group-plot-head','docked-group-slot','dkds-portable-view'];
+  for(const file of fs.readdirSync(path.join(root,'src','styles','presentation')).filter(name=>name.endsWith('.css'))){
+    const css=fs.readFileSync(path.join(root,'src','styles','presentation',file),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    for(const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+      const selector=match[1].replace(/\s+/g,' ').trim(),body=match[2];
+      const ownsSurface=surfaceClasses.some(name=>new RegExp(`(?:^|[\\s>+~,])\\.${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?=[.#:\\[\\s>+~,]|$)`).test(selector));
+      if(!ownsSurface)continue;
+      if(/(?:^|;)\s*(?:background(?:-[\w-]+)?|box-shadow|border(?:-(?:top|right|bottom|left))?(?!-radius)\b)\s*:/m.test(body))failures.push(`HARD-18: presentation/${file} repaints canonical Material surface: ${selector}`);
+    }
+  }
+
+
+
+  // HARD-19: Import Workbench is one elevated Material surface. Internal
+  // editor regions may carry semantic state/dividers but must not restore the
+  // historical stack of opaque white cards or private shadows.
+  const importCss=read('src/styles/presentation/import-workbench.css');
+  forbidRegex(importCss,/#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})\b/i,'HARD-19: Import Workbench must not hard-code theme colors.');
+  requireRegex(importCss,/\.import-section\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-19: Import editor sections must remain flat inside the elevated workbench.');
+  requireRegex(importCss,/\.import-workbench-header[^}]*\.import-file-actions[\s\S]*?background:transparent/s,'HARD-19: Import layout regions must not place an opaque sheet over the workbench Material.');
+
+  // HARD-20: LAN/Web floating panel owns optical composition. Internal service
+  // groups stay quiet; literal white is allowed only for the QR-code paper.
+  const connectivityRules=connectivityCss.replace(/\/\*[\s\S]*?\*\//g,'');
+  for(const match of connectivityRules.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+    const selector=match[1].replace(/\s+/g,' ').trim(),body=match[2];
+    if(selector.includes('.lan-web-qr-image'))continue;
+    if(/#[0-9a-f]{3,8}\b/i.test(body))failures.push(`HARD-20: LAN presentation hard-codes theme paint outside QR paper: ${selector}`);
+  }
+  requireRegex(connectivityCss,/\.lan-web-body\{background:transparent;background-image:none/s,'HARD-20: LAN body must remain transparent under the elevated Material owner.');
+  requireRegex(connectivityCss,/lan-web-status-card[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-20: LAN service groups must not create a second opaque/shadowed card layer.');
+
+  // HARD-21: Plugin DevTools is one elevated Material owner. Its header/nav
+  // are transparent composition and Theme Inspector close uses canonical action paint.
+  requireText(devtools,'dkds-plugin-devtools-window dkds-material-role-elevated','HARD-21: Plugin DevTools window must declare the elevated Material role.');
+  requireText(devtools,"DKDSMaterialSurface?.apply?.(overlay.querySelector('.dkds-plugin-devtools-window'),'elevated')",'HARD-21: Plugin DevTools must apply its elevated Material role at creation time.');
+  forbidRegex(devtoolsCss,/\.dkds-plugin-devtools-window\{[^}]*(?:background|box-shadow)\s*:/s,'HARD-21: Plugin DevTools window must not privately repaint its Material surface.');
+  requireRegex(devtoolsCss,/\.dkds-plugin-devtools-window>header\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-21: Plugin DevTools header must remain transparent under the parent Material.');
+  requireRegex(devtoolsCss,/\.dkds-plugin-devtools-window>nav\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-21: Plugin DevTools tab rail must remain transparent under the parent Material.');
+  requireText(read('src/core/theme/debug-runtime.js'),'dkds-theme-debug-exit dkds-panel-close-button','HARD-21: Theme Inspector exit must consume the canonical close-action appearance.');
+  forbidRegex(devtoolsCss,/\.dkds-theme-debug-exit:(?:hover|focus-visible)[^{]*\{[^}]*(?:background|border-color|box-shadow)\s*:/s,'HARD-21: Theme Inspector exit must not maintain private hover/focus paint.');
+
+  // HARD-22: Plugin Manager tags/counters consume canonical Chip appearance;
+  // presentation may own category layout but not a parallel light/dark palette.
+  const pluginChromeCss=read('src/styles/presentation/plugin-chrome.css');
+  forbidRegex(pluginChromeCss,/#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})\b|rgba?\(/i,'HARD-22: Plugin Manager presentation must not restore hard-coded theme colors.');
+  requireText(pluginManager,'plugin-type-badge type-${escapeHtml(typeMeta.id)}" data-dkds-component-identity="chip"','HARD-22: plugin type tags must explicitly consume canonical Chip appearance.');
+  requireText(pluginManager,'plugin-status-badge" data-dkds-component-identity="chip"','HARD-22: plugin status tags must explicitly consume canonical Chip appearance.');
+  requireText(pluginManager,'plugin-capability-chip" data-dkds-component-identity="chip"','HARD-22: plugin capability tags must explicitly consume canonical Chip appearance.');
+  requireText(read('src/index.html'),'plugin-manager-visible-count" data-dkds-component-identity="chip"','HARD-22: Plugin Manager visible-count tag must consume canonical Chip appearance.');
+  forbidRegex(pluginChromeCss,/html\[data-dkds-theme="dark"\][^{]*\.plugin-type-badge/s,'HARD-22: plugin type tags must not fork a dark-mode palette outside Theme.');
+
+  // HARD-24: Presentation is theme-neutral by default. Literal paint is
+  // reserved for visualization marks, modal scrims, and QR content; ordinary
+  // shell/page chrome must consume semantic Theme tokens instead of forking a
+  // light/dark palette inside Presentation.
+  const presentationLiteralAllowlist=Object.freeze({
+    'connectivity.css':[selector=>selector.includes('.lan-web-qr-image')],
+    'dialogs.css':[selector=>selector.includes('.dkds-dialog-overlay')],
+    'import-workbench.css':[selector=>selector.includes('.import-panel-overlay')],
+    'plugin-devtools.css':[selector=>selector.includes('.dkds-plugin-devtools')],
+    'scientific.css':[
+      selector=>selector.includes('.brush .selection'),
+      selector=>selector.includes('.dkds-scientific-direct-box.is-range'),
+      selector=>selector.includes('.dkds-scientific-direct-box.is-zoom'),
+      selector=>selector.includes('.dkds-scientific-persisted-range')
+    ],
+    'shell.css':[
+      selector=>selector.includes('.direct-range-box'),
+      selector=>selector.includes('.direct-zoom-box'),
+      selector=>selector.includes('.dkds-direct-point-handle'),
+      selector=>selector.includes('.dkds-overlay'),
+      selector=>selector.includes('.project-save-choice-backdrop')
+    ]
+  });
+  for(const file of fs.readdirSync(path.join(root,'src','styles','presentation')).filter(name=>name.endsWith('.css'))){
+    const css=fs.readFileSync(path.join(root,'src','styles','presentation',file),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    for(const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+      const selector=match[1].replace(/\s+/g,' ').trim(),body=match[2];
+      if(selector===':root'||selector==='html[data-dkds-theme="dark"]'||selector==='from'||selector==='to'||/^\d+%$/.test(selector))continue;
+      if(!/(?:#[0-9a-f]{3,8}\b|rgba?\()/i.test(body))continue;
+      const allowed=(presentationLiteralAllowlist[file]||[]).some(test=>test(selector));
+      if(!allowed)failures.push(`HARD-24: presentation/${file} hard-codes ordinary UI paint instead of Theme semantics: ${selector}`);
+    }
+  }
+  forbidRegex(read('src/styles/presentation/shell.css'),/html\[data-dkds-theme="dark"\] body\.dkds-modern-ui \.brand(?:-mark)?\s*\{/s,'HARD-24: Shell branding must not fork a private dark-mode palette.');
+
+  // HARD-23: dialog elevated Material must remain visible through its own
+  // header/footer; modal actions are canonical ToolbarAction paint owners.
+  const dialogsCss=read('src/styles/presentation/dialogs.css');
+  requireRegex(dialogsCss,/\.dkds-dialog-header\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-23: Dialog header must remain transparent inside the elevated Material owner.');
+  requireRegex(dialogsCss,/\.dkds-dialog-footer\{[^}]*background:transparent[^}]*box-shadow:none/s,'HARD-23: Dialog footer must remain transparent inside the elevated Material owner.');
+  forbidRegex(dialogsCss,/body\.dkds-modern-ui \.dkds-dialog-(?:header|footer)\{[^}]*background:(?!transparent)/s,'HARD-23: high-specificity dialog rules must not restore an opaque header/footer strip.');
+  forbidRegex(dialogsCss,/\.dkds-dialog-action(?:\.[\w-]+)?\{[^}]*(?:background|border-color|box-shadow|color)\s*:/s,'HARD-23: Dialog action paint must stay in canonical Component Appearance.');
+  const dialogRuntime=read('src/core/ui/modules/dialog/settings.js');
+  requireText(dialogRuntime,"button.dataset.dkdsComponentIdentity='toolbarAction'",'HARD-23: Dialog actions must enter the canonical ToolbarAction system synchronously.');
+  requireText(dialogRuntime,"kind==='danger'?'destructive'",'HARD-23: Dialog danger action kind must map to the canonical destructive variant.');
+  requireText(dialogRuntime,"button.dataset.dkdsComponentVariant=variant",'HARD-23: Dialog action kind must be declared as a canonical semantic variant before first paint.');
+
+  // HARD-25: optical occlusion is a renderer/content-cover failure, not a
+  // synonym for "has an opaque ancestor". Opaque ancestors can still host
+  // valid backdrop sampling of sibling/scientific content.
+  requireText(materialRenderer,"occlusionSource='self'",'HARD-25: Material Renderer must distinguish self repaint occlusion.');
+  requireText(materialRenderer,"occlusionSource='child'",'HARD-25: Material Renderer must distinguish opaque descendant occlusion.');
+  requireText(materialRenderer,'coverage>=.72','HARD-25: opaque descendant detection must require substantial visual coverage.');
+  requireText(materialRenderer,'alpha>=.985','HARD-25: opaque descendant detection must require an actually opaque layer.');
+  forbidText(materialRenderer,"&&opaqueParent)status='OPAQUE_PARENT_OCCLUSION'",'HARD-25: an opaque ancestor alone must never fail Material rendering.');
+  requireText(materialRenderer,'color\\(srgb','HARD-25: Material alpha parsing must understand Chromium color(srgb ...) output.');
+
+  // HARD-26: layout/content wrappers below a canonical Material owner must not
+  // reintroduce an opaque sheet in Presentation. Theme Renderer keeps a runtime
+  // flattening fail-safe, but authored Presentation must be clean by itself.
+  const flattenDescendants=['analysis-page-body','plugin-manager-body','automation-test-body','dkds-settings-body','floating-body','dkds-plugin-canvas-frame','dkds-plugin-canvas-center','dkds-plugin-canvas-left','dkds-plugin-canvas-right','dkds-plugin-canvas-bottom','dkds-analysis-primary-host'];
+  for(const file of fs.readdirSync(path.join(root,'src','styles','presentation')).filter(name=>name.endsWith('.css'))){
+    const css=fs.readFileSync(path.join(root,'src','styles','presentation',file),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    for(const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+      const selector=match[1].replace(/\s+/g,' ').trim(),body=match[2];
+      if(!flattenDescendants.some(name=>new RegExp(`(?:^|[\\s>+~,])\\.${name}(?=[.#:\\[\\s>+~,]|$)`).test(selector)))continue;
+      const painted=[...body.matchAll(/(?:^|;)\s*(background(?:-color|-image)?)\s*:\s*([^;]+)/gm)]
+        .filter(row=>!/^transparent(?:\s*!important)?$/i.test(String(row[2]||'').trim())&&!/^none(?:\s*!important)?$/i.test(String(row[2]||'').trim()));
+      if(painted.length)failures.push(`HARD-26: presentation/${file} repaints Material content wrapper: ${selector}`);
+    }
+  }
+  requireText(materialCss,'.analysis-page-body,.plugin-manager-body,.automation-test-body,.dkds-settings-body,.floating-body,.dkds-plugin-canvas-frame','HARD-26: Material Renderer must retain runtime flattening for canonical content wrappers.');
+
+  // HARD-27: panel/workspace headers inherit the nearest semantic Material
+  // owner even when a transparent layout wrapper sits between them. Do not
+  // regress to direct-parent-only detection and create a second glass strip.
+  requireText(materialRenderer,'while(parent&&parent!==document.body&&parent!==document.documentElement&&depth<6)','HARD-27: nested header ownership must search the nearest Material ancestor.');
+  requireText(materialRenderer,'if(parent.matches?.(MATERIAL_OWNER_SELECTOR))','HARD-27: nested header ownership must resolve through canonical Material owners.');
+  forbidText(materialRenderer,"const parent=el?.parentElement;if(!parent?.matches?.(MATERIAL_OWNER_SELECTOR))return ''",'HARD-27: direct-parent-only header ownership must not return.');
+
+  // HARD-28: canonical Chip and ToolbarAction appearance has one idle paint
+  // owner. Presentation may arrange these controls, but must not quietly
+  // reintroduce a local background/text/border palette that outranks Theme.
+  const canonicalPresentationSelectors=[
+    '.dkds-chip','.plugin-capability-chip','.plugin-status-badge','.plugin-type-badge',
+    '.plugin-role-badge','.plugin-owned-badge','.dkds-summary-chip','#contextOverflowBtn'
+  ];
+  const canonicalIdlePaint=/(?:^|;)\s*(?:background(?:-color|-image)?|color|-webkit-text-fill-color|border(?:-(?:top|right|bottom|left)-color|-color)?|box-shadow|text-shadow)\s*:/m;
+  for(const file of fs.readdirSync(path.join(root,'src','styles','presentation')).filter(name=>name.endsWith('.css'))){
+    const css=fs.readFileSync(path.join(root,'src','styles','presentation',file),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    for(const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+      const selector=match[1].replace(/\s+/g,' ').trim();
+      if(!canonicalPresentationSelectors.some(token=>selector.includes(token)))continue;
+      if(canonicalIdlePaint.test(match[2]))failures.push(`HARD-28: presentation/${file} repaints canonical Chip/ToolbarAction appearance: ${selector}`);
+    }
+  }
+  requireRegex(componentCss,/\[data-dkds-component-identity="chip"\]\{[^}]*border:1px solid var\(--dkui-component-chip-border,transparent\)[^}]*border-radius:999px[^}]*background:/s,'HARD-28: canonical Chip border/radius/idle paint must live together in Component Appearance.');
+
+  // HARD-29: public Design System elevated/floating helpers and the memory
+  // breakdown panel are semantic Material owners, never Presentation-painted
+  // lookalikes. This keeps Plugin API 1.19 surface classes Theme-native.
+  requireRegex(semanticRegistry,/id:'elevated'[^\n]+dkds-surface-elevated/,'HARD-29: dkds-surface-elevated must resolve through the elevated Material role.');
+  requireRegex(semanticRegistry,/id:'floating'[^\n]+dkds-floating-surface/,'HARD-29: dkds-floating-surface must resolve through the floating Material role.');
+  requireText(semanticRegistry,".zoom-panel,.dkds-floating-surface,.floating-panel",'HARD-29: runtime role inference must classify dkds-floating-surface as floating.');
+  requireText(semanticRegistry,".dkds-theme-settings-dialog,.dkds-surface-elevated'))return 'elevated'",'HARD-29: runtime role inference must classify dkds-surface-elevated as elevated.');
+  forbidRegex(read('src/styles/presentation/shell.css'),/\.dkds-(?:surface-elevated|floating-surface)\s*\{[^}]*(?:background|border|box-shadow|color)\s*:/s,'HARD-29: Presentation must not repaint public elevated/floating semantic Material primitives.');
+  forbidRegex(read('src/styles/presentation/plugin-chrome.css'),/\.dkds-memory-panel\s*\{[^}]*(?:background|border|box-shadow|color)\s*:/s,'HARD-29: Memory panel outer Material paint must stay out of Presentation.');
+  requireRegex(materialCss,/\.dkds-memory-panel\.dkds-material-role-floating\{[^}]*border-width:1px[^}]*border-radius:13px/s,'HARD-29: Material Renderer must own memory-panel edge/radius geometry.');
+
+  // HARD-30: generic semantic Surface and Dialog shells are Material owners.
+  // Presentation may style their content, but not repeat outer text/radius/edge
+  // appearance already determined by Material role + recipe.
+  const shellPresentation=read('src/styles/presentation/shell.css');
+  forbidRegex(shellPresentation,/\.dkds-surface\s*\{[^}]*(?:color|background|border|box-shadow)\s*:/s,'HARD-30: dkds-surface outer Material appearance must stay out of Presentation.');
+  forbidRegex(shellPresentation,/\.dkds-surface-header\s*\{[^}]*(?:color|background|border-color|box-shadow)\s*:/s,'HARD-30: generic SurfaceHeader color/material must come from semantic chrome ownership.');
+  const dialogPresentation=read('src/styles/presentation/dialogs.css');
+  forbidRegex(dialogPresentation,/\.dkds-dialog(?:,\.dkds-dialog-shell)?\s*\{[^}]*(?:color|background|border-radius|box-shadow)\s*:/s,'HARD-30: Dialog outer Material appearance must stay out of Presentation.');
+  forbidRegex(dialogPresentation,/\.dkds-settings-dialog\s*\{[^}]*(?:color|background|border|box-shadow)\s*:/s,'HARD-30: Settings Dialog outer Material appearance must stay out of Presentation.');
+  forbidRegex(read('src/styles/presentation/import-workbench.css'),/\.import-workbench\s*\{[^}]*color\s*:/s,'HARD-30: Import Workbench outer text must come from its elevated Material role.');
+  requireRegex(materialCss,/\.dkds-surface\.dkds-material-role-surface\{[^}]*border-radius:var\(--dkds-visual-radius\)/s,'HARD-30: Material Renderer must own generic Surface radius.');
+  requireRegex(materialCss,/:where\(\.dkds-dialog,\.dkds-dialog-shell\)\.dkds-material-role-elevated\{[^}]*border-radius:14px/s,'HARD-30: Material Renderer must own Dialog shell radius.');
+
+  // HARD-31: semantic workspace/header/table hosts inherit Material text, and
+  // the range action menu is a real popover Material rather than a transparent
+  // Presentation shell with its own edge/shadow contract.
+  const analysisPresentation=read('src/styles/presentation/analysis.css');
+  forbidRegex(analysisPresentation,/\.analysis-page-body[^{}]*\{[^}]*color\s*:/s,'HARD-31: Analysis page body must inherit semantic workspace text color.');
+  forbidRegex(analysisPresentation,/\.dkds-analysis-workbench\s*\{[^}]*color\s*:/s,'HARD-31: Analysis Workbench text must come from its surface Material role.');
+  const pluginPresentation=read('src/styles/presentation/plugin-chrome.css');
+  forbidRegex(pluginPresentation,/(?:analysis-page-header|plugin-manager-header)[^{}]*\{[^}]*color\s*:/s,'HARD-31: semantic page headers must not carry a parallel Presentation text palette.');
+  forbidRegex(pluginPresentation,/\.dkds-plugin-workspace\s*\{[^}]*color\s*:/s,'HARD-31: Plugin Workspace text must inherit surface Material role.');
+  forbidRegex(read('src/styles/presentation/scientific.css'),/\.dkds-table-surface-host\s*\{[^}]*color\s*:/s,'HARD-31: TableSurface host text must inherit its surface Material role.');
+  forbidRegex(shellPresentation,/\.range-action-menu\s*\{[^}]*(?:background|border|box-shadow)\s*:/s,'HARD-31: Range action popover must not be repainted by Presentation.');
+  requireRegex(materialCss,/\.range-action-menu\.dkds-material-role-popover\{[^}]*border-width:1px[^}]*border-radius:10px/s,'HARD-31: Material Renderer must own range-action popover edge/radius.');
+
+  // HARD-32: outer edge geometry for portable/floating/popover Material owners
+  // belongs to Material Renderer. Presentation may position or animate these
+  // surfaces, but must not carry a second radius contract.
+  forbidRegex(pluginPresentation,/\.dkds-portable-view(?:\.is-docked)?\s*\{[^}]*border-radius\s*:/s,'HARD-32: PortableView outer radius must stay out of Presentation.');
+  forbidRegex(dialogPresentation,/(?:\.command-menu|\.dkds-context-menu)\s*\{[^}]*border-radius\s*:/s,'HARD-32: Popover outer radius must stay out of Presentation.');
+  forbidRegex(shellPresentation,/\.floating-panel\s*\{[^}]*border-radius\s*:/s,'HARD-32: floating-panel outer radius must stay out of Presentation.');
+  requireRegex(materialCss,/\.command-menu\.dkds-material-role-popover\{[^}]*border-radius:9px/s,'HARD-32: Material Renderer must own command-menu radius.');
+  requireRegex(materialCss,/\.dkds-context-menu\.dkds-material-role-popover\{[^}]*border-radius:10px/s,'HARD-32: Material Renderer must own context-menu radius.');
+  requireRegex(materialCss,/\.dkds-portable-view\.dkds-material-role-floating\{[^}]*border-radius:10px/s,'HARD-32: Material Renderer must own floating PortableView radius.');
+  requireRegex(materialCss,/\.dkds-portable-view:is\(\.dkds-material-role-surface,\.dkds-material-role-sidebar\)[^{]*\{[^}]*border-radius:8px/s,'HARD-32: Material Renderer must own docked PortableView radius.');
+  requireRegex(materialCss,/\.floating-panel:is\(\.dkds-material-role-floating,\.dkds-material-role-elevated\)\{[^}]*border-radius:var\(--ui-panel-radius\)/s,'HARD-32: Material Renderer must own floating-panel radius.');
+
+  // HARD-33: a Trend Card is the scientific Material owner; its legend is a
+  // transparent content region. Registering both produces nested optical
+  // surfaces under glass themes and recreates the card-within-card look.
+  forbidText(semanticRegistry,'.analysis-chart-card,.trend-card-legend,.analysis-control-card','HARD-33: Trend legend must not be registered as a scientific Material surface.');
+  forbidText(semanticRegistry,'.plugin-manager-toolbar-card,.trend-card-legend,.analysis-control-card','HARD-33: runtime role inference must not classify Trend legend as a Material surface.');
+  requireRegex(read('src/styles/presentation/scientific.css'),/\.trend-card-legend\s*\{[^}]*background:transparent/s,'HARD-33: Trend legend content region must remain transparent inside its Material-owning card.');
+
+  // HARD-34: Material-owning cards express state through semantic Material
+  // variables rather than painting status-specific surfaces in Presentation.
+  const managerRuntime=read('src/core/plugins/manager-ui.js');
+  requireText(managerRuntime,'card.dataset.dkdsMaterialState=status.className','HARD-34: Plugin Manager cards must publish semantic Material state.');
+  requireText(managerRuntime,'data-dkds-material-state="error"','HARD-34: Plugin Manager error summary must publish semantic Material state.');
+  forbidRegex(pluginPresentation,/\.plugin-manager-(?:card|stat)[^{]*\{[^}]*(?:background|border-color)\s*:/s,'HARD-34: Plugin Manager Material surfaces must not paint status background/border in Presentation.');
+  for(const state of ['active','error','disabled'])requireText(materialRoles,`[data-dkds-material-state="${state}"]`,`HARD-34: Material Role layer must support ${state} semantic surface state.`);
+  requireRegex(materialRoles,/\[data-dkds-material-state="error"\]\{[^}]*--dkds-material-border:[^}]*--dkds-material-base:/s,'HARD-34: error surface state must retarget Material tokens rather than direct paint.');
+
+  // HARD-35: Material role text color is theme-owned. Presentation must not
+  // rebuild a private dark palette for shell chrome/sidebar owners.
+  forbidRegex(shellPresentation,/html\[data-dkds-theme="dark"\][^{]*(?:\.topbar|\.left-panel)\s*\{[^}]*color\s*:/s,'HARD-35: shell Material owners must not carry dark-mode text-color overrides in Presentation.');
+  requireRegex(materialRoles,/data-dkds-material-role="chrome"[\s\S]*?color:var\(--dkui-role-chrome-text/s,'HARD-35: chrome role must own semantic text color.');
+  requireRegex(materialRoles,/data-dkds-material-role="sidebar"[\s\S]*?color:var\(--dkui-role-sidebar-text/s,'HARD-35: sidebar role must own semantic text color.');
+
+  // HARD-36: Windows/Electron Visual Closure must include a runtime computed-
+  // geometry gate. Keep the runner orchestration small; visual assertions live
+  // in their own diagnostics module so neither existing diagnostics module
+  // regresses toward a monolith.
+  const automationRuntime=read('src/diagnostics/automation-test-runtime.js');
+  const automationVisual=read('src/diagnostics/automation-visual-cases.js');
+  requireText(automationRuntime,"runCase('ui.visual-geometry-closure'",'HARD-36: Automation Runtime must retain the Desktop Visual Closure computed-geometry case.');
+  requireText(automationRuntime,'visualGeometryClosureSmoke','HARD-36: Automation Runtime must dispatch the dedicated visual smoke case.');
+  requireText(automationVisual,'getBoundingClientRect','HARD-36: runtime visual closure must measure actual DOM geometry.');
+  requireText(automationVisual,'getComputedStyle','HARD-36: runtime visual closure must inspect computed appearance.');
+  requireText(automationVisual,"document.getElementById('inspectorDockSlot')",'HARD-36: runtime visual closure must validate the Inspector dock host.');
+  requireRegex(automationVisual,/Inspector dock host must remain transparent:[^`]*\$\{dockStyle\.backgroundColor\}/s,'HARD-36: Inspector dock transparency must be an executable runtime assertion.');
+  requireRegex(automationVisual,/Topbar action must be 34px high:[^`]*\$\{r\.height\.toFixed\(2\)\}px/s,'HARD-36: runtime visual closure must protect 34px topbar actions.');
+  requireRegex(automationVisual,/Topbar group envelope must be 38px:[^`]*\$\{group\.className\}/s,'HARD-36: runtime visual closure must protect the 38px topbar group envelope.');
+  requireRegex(automationVisual,/Presenter command must be 48×34px:/,'HARD-36: runtime visual closure must protect 48×34 Desktop Presenter commands.');
+  requireRegex(automationVisual,/0px 0px 0px 2px/,'HARD-36: runtime visual closure must validate the exact 2px selected-action halo.');
+  requireRegex(automationVisual,/Main Plot Tools[^\n]*Main Legend/,'HARD-36: runtime visual closure must validate both Scientific main tools and legend chrome.');
+  requireText(automationVisual,".dkds-portable-placement-trigger",'HARD-36: runtime visual closure must protect Theme Picker from PortableView placement chrome.');
+  requireText(automationVisual,".trend-card-legend",'HARD-36: runtime visual closure must verify Trend Legend remains transparent child content.');
+  requireText(automationVisual,".dkds-scientific-surface-host > .dkds-scientific-nav-tools",'HARD-36: runtime visual closure must compare ScientificCurve navigation geometry.');
+  requireText(automationVisual,".dkds-scientific-chart-host > .dkds-scientific-nav-tools",'HARD-36: runtime visual closure must compare ChartRuntime navigation geometry.');
+  requireText(automationVisual,".dkds-portable-header .dkds-portable-controls button",'HARD-36: runtime visual closure must validate Portable header controls.');
+  requireText(automationVisual,".dkds-panel-close-button",'HARD-36: runtime visual closure must validate shared close-button geometry.');
+  requireText(automationVisual,".dkds-plugin-canvas-frame.has-canvas-left.has-canvas-right",'HARD-36: runtime visual closure must validate actual desktop workspace grid geometry.');
+
+  // HARD-37: runtime chart-header acceptance must consume the same parent-owned
+  // chrome ownership contract as Theme Coverage. Reading roleOf() directly is
+  // invalid here because CSS custom properties can inherit the parent Surface
+  // role even when the nested header is intentionally not a Material owner.
+  requireText(automationRuntime,"ownership?.(header,'chrome')",'HARD-37: Automation chart-header gate must use Material ownership semantics.');
+  requireText(automationRuntime,"ownership.status==='MATERIAL_PARENT_OWNED'",'HARD-37: Automation chart-header gate must recognize parent-owned chrome.');
+  forbidText(automationRuntime,"Analysis chart title is not Core chrome",'HARD-37: obsolete roleOf-only chart-header assertion must not return.');
+
+  // HARD-38: Component Appearance may parameterize a Material-owning toolbar,
+  // but Material Renderer remains its only background/border/shadow painter.
+  const componentAppearance=read('src/styles/theme/component-appearance.css');
+  requireRegex(componentAppearance,/data-dkds-component-identity="toolbarGroup"[^}]*--dkds-material-base:[^}]*--dkds-material-border:/s,'HARD-38: ToolbarGroup must feed semantic tokens into Material rendering.');
+  requireRegex(componentAppearance,/data-dkds-component-identity="toolbarGroup"\]:not\(:is\([^}]*dkds-floating-surface[^}]*\)\)\{[^}]*background:/s,'HARD-38: only non-Material ToolbarGroup may paint its own background.');
+  requireRegex(materialCss,/data-dkds-component-identity="toolbarGroup"\]:is\(\.dkds-material-role-surface,\.dkds-material-role-floating\)\{[^}]*border-width:1px/s,'HARD-38: Material Renderer must own edge geometry for Material toolbar groups.');
+  requireText(read('src/plugins/resonance-workbench/view-components.js'),'respar-main-tools dkds-toolbar dkds-floating-surface','HARD-38: Main Plot Tools must compose ToolbarGroup semantics with the shared floating Material surface.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:9});
+  return Object.freeze({ok:true,invariants:38});
 }
 
 if(require.main===module){

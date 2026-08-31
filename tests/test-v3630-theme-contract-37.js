@@ -52,10 +52,10 @@ for(const role of ['chrome','sidebar','surface','elevated','popover','control','
 const runtime=read('src/core/theme/runtime.js');
 for(const token of ['--dkui-accent-alt','--dkui-success','--dkui-selection-surface','--dkui-active-surface','--dkui-disabled-surface','appearanceRoles','scientificSnapshot']) assert(runtime.includes(token),`Theme runtime missing ${token}`);
 const rendererCss=read('src/styles/theme/material-renderer.css');
-assert(rendererCss.includes('var(--dkds-material-base,var(--dkui-control-bg))'),'Control role appearance must reach actual field paint.');
+const componentCss=read('src/styles/theme/component-appearance.css');
+assert(roleCss.includes('--dkds-material-base:var(--dkui-role-control-surface,var(--dkui-control-bg))')&&componentCss.includes('[data-dkds-component-identity="field"]{box-sizing:border-box')&&componentCss.includes('background:var(--dkui-component-field-surface,var(--dkui-control-bg))'),'Control role context must reach actual field paint through canonical Component Appearance.');
 assert(rendererCss.includes('--dkui-role-popover-text'),'Popover role text override must reach Core renderer.');
 const shellCss=read('src/styles/presentation/shell.css');
-const componentCss=read('src/styles/theme/component-appearance.css');
 assert(!shellCss.includes('#637188'),'Dark disabled controls must not bypass Theme 3.8 disabledText with a hard-coded presentation color.');
 assert(!shellCss.includes('color-mix(in srgb,var(--dkui-accent) 18%,var(--dkui-surface-soft))'),'Dark active controls must not reconstruct active paint from accent after semantic active tokens are resolved.');
 for(const token of ['--dkui-selection-surface','--dkui-selection-text','--dkui-selection-border','--dkui-active-surface','--dkui-active-text','--dkui-disabled-surface','--dkui-disabled-text']) assert(shellCss.includes(token),`Shell must consume semantic interaction token ${token}`);

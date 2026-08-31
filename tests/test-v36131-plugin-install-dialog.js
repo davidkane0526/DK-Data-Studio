@@ -42,7 +42,14 @@ assert(kernel.includes('window.DKDSUI?.dialogs')&&kernel.includes("dialogs.confi
 assert(manager.includes('showPluginInstallFailure')&&manager.includes('dialogs?.alert'),'Blocking install failures must open a Core modal instead of status-only notification.');
 assert(!manager.includes('window.confirm(')&&!manager.includes('window.prompt('),'Plugin Manager must use DKDS-owned dialogs instead of browser-native confirm/prompt UI.');
 assert(ui.includes('class DialogService')&&ui.includes("dialogs:{show:spec=>dialogService.show(spec)")&&ui.includes('prompt:spec=>dialogService.prompt(spec)'),'Core UI Infrastructure must own reusable alert/confirm/prompt dialogs.');
-for(const cls of ['.dkds-dialog-overlay','.dkds-dialog{','.dkds-dialog-meta','button.primary'])assert(css.includes(cls),`Core dialog visual contract missing ${cls}`);
+for(const cls of ['.dkds-dialog-overlay','.dkds-dialog{','.dkds-dialog-meta'])assert(css.includes(cls),`Core dialog structural contract missing ${cls}`);
+assert(manager.includes('dialogs?.alert'),'Plugin Manager failures must keep using the Core dialog service.');
+const dialogRuntime=read('src/core/ui/modules/dialog/settings.js');
+assert(dialogRuntime.includes("button.dataset.dkdsComponentIdentity='toolbarAction'")&&dialogRuntime.includes("button.dataset.dkdsComponentVariant=variant"),'Core dialog actions must declare canonical ToolbarAction identity/variant synchronously.');
+assert(dialogRuntime.includes("kind==='danger'?'destructive'"),'Dialog danger actions must map to the canonical destructive variant.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="primary"]'),'Primary dialog action appearance must come from canonical Component Appearance.');
+assert(!css.includes('.dkds-dialog-action.primary{background:')&&!css.includes('.dkds-dialog-action.primary { background:'),'Dialog Presentation/Structure CSS must not repaint primary actions.');
 assert(coreContract.includes("'ui.dialogs':api=>!!api?.ui?.dialogs")&&kernel.includes('dialogs: window.DKDSUI?.dialogs || null'),'Plugin Context must expose the Core Dialog Runtime as ui.dialogs.');
 assert(manifestSchema.properties.requiresCore.items.enum.includes('ui.dialogs'),'SDK manifest schema must allow declaring ui.dialogs.');
 assert(apiTypes.includes('export interface DKDSDialogRuntime')&&apiTypes.includes('dialogs:DKDSDialogRuntime'),'SDK types must describe the Core Dialog Runtime.');

@@ -18,9 +18,11 @@ assert(!roles.includes('.dkds-dialog-shell')&&!roles.includes('.dkds-settings-di
 const renderer=read('src/styles/theme/material-renderer.css');
 assert(renderer.includes('Integrated actions inside translucent surfaces retain Core component paint')&&!/data-dkds-material-recipe=\"liquid-glass\"[^}]*:where\([^)]*button/s.test(renderer),'Glass Material Renderer must leave semantic action paint to Component Appearance instead of class-based transparency exceptions.');
 const commands=read('src/styles/theme/integrated-command-chrome.css');
-assert(commands.includes('[data-dkds-material-role=\"chrome\"]')&&commands.includes('[data-dkds-material-own-surface=\"true\"]'),'Chrome ownership selector contract missing.');
-assert(commands.includes('background:transparent')&&commands.includes('box-shadow:none')&&commands.includes('overflow:visible'),'Header action groups must fuse with parent chrome.');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+assert(semanticRegistry.includes('INTEGRATED_CONTAINER_SELECTOR')&&semanticRegistry.includes('CHROME_SELECTOR')&&semanticRegistry.includes('chromeOwnedIntegrated(el)')&&semanticRegistry.includes("if(chromeOwnedIntegrated(el))return '';"),'Chrome ownership must be resolved semantically before Material-role assignment.');
+assert(renderer.includes('Header-owned command wrappers are transparent composition only.')&&renderer.includes('background:transparent')&&renderer.includes('box-shadow:none'),'Header action groups must fuse with parent chrome in Material Renderer composition.');
 const status=read('src/styles/presentation/control-status.css');
 assert(status.includes('.statusbar-command-cluster')&&!/\.statusbar-command-cluster\s*\{[^}]*background:/s.test(status),'Presentation may size the status command cluster but must not repaint it.');
-assert(commands.includes('.statusbar-command-cluster')&&commands.includes('background:transparent')&&commands.includes('box-shadow:none'),'Theme integrated-command chrome must flatten status commands into the parent status bar.');
+assert(semanticRegistry.includes('.statusbar-command-cluster')&&semanticRegistry.includes('chromeOwnedIntegrated(el)'),'Status command clusters must be flattened into parent chrome by the semantic registry rather than Theme-specific paint.');
+assert(!commands.includes('.statusbar-command-cluster'),'Integrated-command Theme CSS must not re-own status-bar Material paint.');
 console.log('v3.61.77 Thin Glass composition/core renderer corrections passed.');

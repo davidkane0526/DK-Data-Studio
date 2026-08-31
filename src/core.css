@@ -11,6 +11,7 @@
 @import url("./styles/structure/sdk-semantic-surfaces.css") layer(dkds.structure);
 @import url("./styles/structure/shell-navigation.css") layer(dkds.structure);
 @import url("./styles/structure/super-top-contract.css") layer(dkds.structure);
+@import url("./styles/structure/desktop-chrome-geometry.css") layer(dkds.structure);
 @import url("./styles/structure/workspace-interaction.css") layer(dkds.structure);
 @import url("./styles/structure/workspace-safeguards.css") layer(dkds.structure);
 @import url("./styles/presentation/shell.css") layer(dkds.presentation);

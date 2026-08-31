@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   diagnosticsRunActivitySmoke: payload => ipcRenderer.invoke('diagnostics:runActivitySmoke', payload || {}),
   diagnosticsWriteAutomationReport: report => ipcRenderer.invoke('diagnostics:writeAutomationReport', report || {}),
   diagnosticsOpenFolder: () => ipcRenderer.invoke('diagnostics:openFolder'),
+  diagnosticsCompleteVisualClosure: payload => ipcRenderer.invoke('diagnostics:completeVisualClosure', payload || {}),
   openProject: () => ipcRenderer.invoke('files:openProject'),
   openActivityWindow: payload => ipcRenderer.invoke('windows:openActivity', payload),
   listPluginWindows: () => ipcRenderer.invoke('windows:listPluginWindows'),

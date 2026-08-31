@@ -25,9 +25,10 @@ assert(resonanceMain.includes("getSelectedCurveId:()=>String(live.selectedSweepI
 // for lookup only; their CSS must not re-declare the header geometry.
 const corePlotCss=read('src/styles/structure/plugin-workspace.css');
 const coreGroupCss=read('src/styles/structure/sdk-semantic-surfaces.css');
+const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 const resonanceCss=read('src/plugins/resonance-workbench/plugin.css');
 const resonanceGroup=read('src/plugins/resonance-workbench/feature-group-runtime.js');
-assert(corePlotCss.includes('.dkds-plot-view-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch')&&corePlotCss.includes('.dkds-plot-view-title{min-width:0;height:100%')&&corePlotCss.includes('.dkds-plot-view-actions{height:100%;display:flex;align-items:center;align-self:stretch'),'Core PlotView must vertically center title and actions from the same header box.');
+assert(corePlotCss.includes('.dkds-plot-view-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch')&&corePlotCss.includes('.dkds-plot-view-title{min-width:0;height:100%')&&desktopChrome.includes('.dkds-plot-view-actions{')&&desktopChrome.includes('height:100%;display:flex;align-items:center;align-self:stretch'),'Core PlotView must vertically center title and actions from the same header box while desktop action geometry stays in the canonical Structure module.');
 assert(coreGroupCss.includes('.dkds-group-plot-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch')&&coreGroupCss.includes('.dkds-group-plot-title{min-width:0;height:100%;display:flex;align-items:center'),'Native GroupPlot must use the same centered header geometry.');
 assert(resonanceGroup.includes('reswin-group-head dkds-plot-view-head')&&!resonanceGroup.includes('reswin-group-head dkds-surface-header dkds-plot-view-head')&&resonanceGroup.includes('reswin-group-title dkds-plot-view-title'),'Resonance group cards must use the canonical Core PlotView classes without composing generic SurfaceHeader geometry.');
 for(const selector of ['.reswin-group-head{','.reswin-group-card-actions{','.reswin-group-title{','.analysis-chart-title.dkds-plot-view-head{'])assert(!resonanceCss.includes(selector),`Plugin CSS must not override Core plot-header geometry: ${selector}`);

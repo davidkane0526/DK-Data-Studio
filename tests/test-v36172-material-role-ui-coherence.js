@@ -17,7 +17,9 @@ assert(!/dkds-integrated-action-group[\s\S]{0,420}:where\(button[^}]*background:
 assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Material renderer must exempt legends from control pill rendering.');
 assert(modernRenderer.includes('--dkds-on-popover'),'Popover/tooltip renderer must consume the derived readable foreground.');
 const command=read('src/styles/theme/integrated-command-chrome.css');
-assert(command.includes('Integrated command chrome.'));assert(command.includes('border-radius:0'));assert(command.includes('background:transparent'));
+assert(command.includes('Integrated command chrome.')&&command.includes('Material Renderer owns standalone command surfaces'),'Integrated command theme CSS must remain composition/state-only.');
+assert(!command.includes('border-radius:0')&&!command.includes('background:transparent'),'Integrated command theme CSS must not re-own generic action paint/geometry.');
+assert(modernRenderer.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&modernRenderer.includes('border-radius:9px'),'Material Renderer must own the integrated floating shell edge geometry.');
 const base=['analysis-workbench.css','plugin-workspace.css','workbench-components.css'].map(name=>read(`src/styles/structure/${name}`)).join('');assert(base.includes('grid-template-rows:minmax(0,1fr) 1px'));assert(base.includes('.dkds-plugin-canvas-bottom{padding-top:0;gap:0'));
 const semantic=read('src/styles/structure/sdk-semantic-surfaces.css');assert(semantic.includes('Plot legends are labels, not pill buttons'));assert(semantic.includes('.dkds-inspector-section'));
 const resonance=read('src/plugins/resonance-workbench/feature-runtime.js');const resonanceMainPlot=read('src/plugins/resonance-workbench/feature-main-plot-runtime.js');assert(!resonance.includes('reswinInspectorSort'));assert(!resonance.includes('跨 Vg 智能整理峰序</button></div>${transformMarkup}'));assert(resonanceMainPlot.includes("respar-legend-chip dkds-legend-item"));

@@ -41,7 +41,7 @@
       row={key:String(key),title,card,plot,chart:null,portable:null,plotView:null,series:[]};groupCards.set(String(key),row);
       const plotView=live.uiRuntime?.plotViews?.bind?.(`resonance-group:${key}`,card,{
         plot,header:'.reswin-group-head',actionsHost:'.reswin-group-card-actions',fileStem:()=>`resonance_${row.key}`,csv:()=>groupCsv(row.title,row.series||[]),copyText:(text)=>copyTextToClipboard(text,`${row.title} CSV`),
-        placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v3',snap:false,
+        placements:['home','left','right','bottom','global'],defaultPlacement:'home',stateVersion:'workspace-v5',snap:false,
         contentAspectRatio:1.65,contentMinHeight:160,contentMaxHeight:226,
         portableFactory:(id,node,spec)=>live.workspaceRuntime?.portable?.(id,node,{...spec,onPlacementChanged:()=>resize()})
       })||null;

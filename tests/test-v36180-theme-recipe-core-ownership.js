@@ -11,8 +11,10 @@ assert.equal(json('sdk/contract.json').pluginApiVersion,'1.19.0');
 assert.equal(json('sdk/contract.json').themeContractVersion,'3.9.0');
 
 const material=read('src/core/theme/material-renderer.js');
-assert(material.includes("const TRANSLUCENT_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass'])"),'Material composition must be recipe-owned.');
-assert(material.includes('nestedParentOwnsBackdrop'),'Nested material ownership helper missing.');
+const renderer=read('src/styles/theme/material-renderer.css');
+for(const recipe of ['thin-glass','soft-glass','liquid-glass'])assert(renderer.includes(`[data-dkds-material-recipe="${recipe}"]`),`Material composition must remain recipe-owned for ${recipe}.`);
+assert(renderer.includes('[data-dkds-material-content="true"]')&&renderer.includes('background-color:transparent'),'Translucent recipes must flatten declared nested content through the Material Renderer.');
+assert(material.includes('nestedParentOwnsChrome'),'Nested material ownership helper missing.');
 assert(!material.includes('thinGlassActive'),'Core renderer must not special-case the built-in profile.');
 assert(!material.includes("profile?.()==='builtin.thin-glass'"),'Core renderer must not branch on built-in Thin Glass identity.');
 
@@ -28,7 +30,6 @@ for(const marker of ['--dkds-material-fill-floor:58%','--dkds-material-fill-floo
 const controlBlock=roles.match(/\[data-dkds-material-role="control"\][\s\S]*?\n\}/)?.[0]||'';
 assert(controlBlock.includes('--dkds-material-shadow:none'),'Core control Material Role must not impose recessed/elevated shadow paint.');
 
-const renderer=read('src/styles/theme/material-renderer.css');
 assert(!renderer.includes('data-dkds-theme-profile="builtin.thin-glass"'),'Renderer CSS must not contain profile-id patches.');
 for(const recipe of ['thin-glass','soft-glass','liquid-glass']){
   const block=renderer.match(new RegExp(`\\[data-dkds-material-recipe="${recipe}"\\]\\{[\\s\\S]*?\\n\\}`))?.[0]||'';
@@ -36,12 +37,13 @@ for(const recipe of ['thin-glass','soft-glass','liquid-glass']){
 }
 const componentAppearance=read('src/styles/theme/component-appearance.css');
 assert(renderer.includes('Popover surfaces own the optical material')&&componentAppearance.includes('[data-dkds-component-identity="menuItem"]'),'Popover Material Renderer must leave menu-row paint to canonical Component Appearance instead of class-based opaque-action exceptions.');
-assert(renderer.includes('Glass form controls are one flat Core-owned family'),'Glass form-control invariant must be recipe-owned.');
-assert(renderer.includes('box-shadow:none'),'Glass field renderer must suppress legacy recessed paint.');
+assert(componentAppearance.includes(':where([data-dkds-material-recipe="thin-glass"],[data-dkds-material-recipe="soft-glass"],[data-dkds-material-recipe="liquid-glass"]) [data-dkds-component-identity="field"]'),'Glass field appearance must remain recipe-aware while Component Appearance is the sole field-paint owner.');
+assert(componentAppearance.includes('[data-dkds-component-identity="field"]{box-sizing:border-box')&&componentAppearance.includes('box-shadow:none'),'Canonical field appearance must suppress legacy recessed paint.');
 
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(integrated.includes('background:var(--dkds-material-base,var(--dkui-control-bg));'),'Integrated command container must use semantic control base.');
-assert(!integrated.includes('var(--dkui-accent) var(--dkds-material-tint'),'Material fill opacity must never be reused as an accent tint percentage.');
+assert(renderer.includes('.dkds-integrated-action-group.dkds-material-role-control')&&renderer.includes('border-radius:9px'),'Material Renderer must own the standalone integrated command shell.');
+assert(componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'Component Appearance must remain the sole integrated action-paint owner.');
+assert(!integrated.includes('background:var(--dkds-material-base,var(--dkui-control-bg));')&&!integrated.includes('var(--dkui-accent) var(--dkds-material-tint'),'Integrated-command Theme CSS must not re-own semantic Material fill or misuse fill opacity as accent tint.');
 
 const runtime=read('src/core/theme/runtime.js');
 const thinTheme=read('src/plugins/thin-glass-theme/plugin.js');

@@ -875,6 +875,23 @@ module.exports = {
     {
       "file": "tests/test-v3679-desktop-visual-acceptance.js",
       "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure-report-verifier.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure-electron-mode.js",
+      "args": []
+    }
+,
+    {
+      "file": "tests/test-v36710-visual-closure-final-freeze.js",
+      "args": []
     }
   ],
   "check": [
@@ -1784,6 +1801,23 @@ module.exports = {
     },
     {
       "file": "tests/test-v3679-desktop-visual-acceptance.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure-report-verifier.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-visual-closure-electron-mode.js",
+      "args": []
+    }
+,
+    {
+      "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
   ],

@@ -105,8 +105,7 @@
 .dkds-analysis-right>.dkds-portable-view,.dkds-analysis-right>.dkds-analysis-prime-panel{width:100%;min-width:0;}
 .dkds-analysis-bottom>.dkds-portable-view,.dkds-analysis-bottom>.dkds-analysis-prime-panel{min-width:min(520px,100%);flex:1 1 520px;max-width:none;}
 .dkds-analysis-workbench .dkds-portable-view.is-floating{position:absolute;max-width:calc(100% - 16px);}
-.dkds-analysis-workbench .dkds-portable-placement-trigger{height:22px;min-width:26px;padding:0 4px;}
-.dkds-analysis-workbench .dkds-portable-controls{gap:0;flex:0 0 auto;}
+.dkds-analysis-workbench .dkds-portable-controls{flex:0 0 auto;}
 .dkds-managed-grid{display:grid;grid-template-columns:repeat(var(--dkds-grid-columns,3),minmax(0,1fr));grid-auto-flow:row dense;gap:10px;align-items:stretch;min-width:0;width:100%;}
 .dkds-managed-grid>*{min-width:0;max-width:none;margin:0;position:relative;inset:auto;}
 .dkds-analysis-workbench .analysis-chart-card{min-width:0;max-width:none;}

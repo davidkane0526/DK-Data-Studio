@@ -19,8 +19,17 @@ assert(ui.includes('this.restoreNavigationToolsPosition()')&&ui.includes("localS
 assert(ui.includes("drag.addEventListener('dblclick'")&&ui.includes('this.resetNavigationToolsPosition()'),'Double-clicking the drag handle must restore the Core default placement.');
 assert(css.includes('.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto'),'Core D3 navigation must default away from the X-axis in the upper-right plot area.');
 assert(css.includes('opacity:0')&&css.includes('pointer-events:none'),'Core D3 navigation must auto-hide at rest without changing geometry.');
-assert(css.includes('.dkds-scientific-nav-tools{position:absolute')&&css.includes('background:transparent;box-shadow:none'),'Scientific navigation shell must not own material shadow/background.');const material=read('src/styles/theme/material-renderer.css');assert(material.includes('[data-dkds-material-recipe=\"thin-glass\"]')&&material.includes('--dkds-material-shadow'),'Core Material Renderer must own floating surface depth.');
-assert(css.includes('padding:1px 4px 1px 2px')&&css.includes('width:23px;height:20px;min-width:23px')&&css.includes('width:11px;height:20px;flex:0 0 11px'),'Core D3 navigation chrome must keep the reduced vertical height, restored horizontal button width, and 4 px right shell padding.');
-assert(css.includes('display:flex;align-items:center;justify-content:center;width:23px;height:20px')&&css.includes('background-clip:padding-box;box-shadow:none'),'Core D3 navigation buttons must center their visual highlight without inherited shadow drift.');
+const chartRuntime=read('src/core/scientific/chart-runtime.js');
+const curveNavigation=read('src/core/ui/modules/scientific-curve/navigation.js');
+for(const [name,source] of [['ChartRuntime',chartRuntime],['ScientificCurve',curveNavigation]]){
+  assert(source.includes('dkds-scientific-nav-tools')&&source.includes('dkds-integrated-action-group dkds-material-role-floating'),`${name} must consume the shared floating scientific-navigation surface.`);
+  assert(source.includes("drag.dataset.dkdsComponentIdentity='toolbarAction'")&&source.includes("drag.dataset.dkdsComponentVariant='quiet'"),`${name} drag affordance must consume the same canonical quiet ToolbarAction as the navigation buttons.`);
+}
+assert(css.includes('.dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:25px;min-width:25px;height:24px;min-height:24px')&&css.includes('.dkds-scientific-nav-tools button{display:flex;align-items:center;justify-content:center;width:25px;height:24px;min-width:25px;min-height:24px'),'Both scientific navigation runtimes must share the same compact 25x24 hit-region geometry.');
+const material=read('src/styles/theme/material-renderer.css');
+const components=read('src/styles/theme/component-appearance.css');
+assert(material.includes('.dkds-scientific-nav-tools.dkds-material-role-floating'),'Core Material Renderer must be the sole floating-surface owner for scientific navigation.');
+assert(components.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'Scientific navigation hit regions must share one canonical hover/shape appearance.');
+
 assert(sdk.pluginApiVersion==='1.19.0'&&sdk.minimumAppVersion==='3.67.5','Historical D3 navigation behavior must remain valid under the current SDK 1.23 / Plugin API 1.19 host minimum.');
 console.log('v3.61.20 Core draggable D3 navigation toolbar checks passed.');

@@ -9,13 +9,15 @@ const pkg=JSON.parse(read('package.json'));
 
 const rendererCss=read('src/styles/theme/material-renderer.css');
 const chromeCss=read('src/styles/theme/integrated-command-chrome.css');
+const semanticCss=read('src/core/theme/semantic-registry.js');
+const statusCss=read('src/styles/presentation/control-status.css');
 const baseCss=read('src/styles/presentation/dialogs.css');
 const runtimeSource=read('src/core/theme/runtime.js');
 const thinThemeSource=read('src/plugins/thin-glass-theme/plugin.js');
 
-assert(chromeCss.includes('Chrome owns the group Material')&&chromeCss.includes('Child Component Appearance remains the sole action-paint owner'),'chrome group Material / child Component Appearance ownership invariant missing');
-assert(chromeCss.includes('[data-dkds-material-role="chrome"]')&&chromeCss.includes('.statusbar-command-cluster'),'status-bar/header integration must be semantic-role-owned');
-assert(chromeCss.includes('#statusBar.statusbar .plugin-status-item::before{display:none}'),'status-bar item separators must remain invisible');
+assert(semanticCss.includes('chromeOwnedIntegrated(el)')&&semanticCss.includes("if(chromeOwnedIntegrated(el))return '';")&&rendererCss.includes('Header-owned command wrappers are transparent composition only.'),'chrome group Material / child Component Appearance ownership invariant missing');
+assert(semanticCss.includes('INTEGRATED_CONTAINER_SELECTOR')&&semanticCss.includes('.statusbar-command-cluster'),'status-bar/header integration must be semantic-registry-owned');
+assert(statusCss.includes('.plugin-status-item::before{display:none}'),'status-bar item separators must remain invisible');
 const componentCss=read('src/styles/theme/component-appearance.css');
 assert(!/data-dkds-theme-mode=\"(?:light|dark)\"[^{]*\{[^}]*background:/s.test(chromeCss)&&componentCss.includes('[data-dkds-component-identity="toolbarAction"]'),'theme mode active state paint must be owned by canonical Component Appearance rather than a Theme-panel context override');
 assert(baseCss.includes('background:var(--dkui-surface-soft')&&baseCss.includes('color:var(--dkui-text-soft'),'export-menu context row must use theme tokens');

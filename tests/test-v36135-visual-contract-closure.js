@@ -40,10 +40,15 @@ assert(!css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn:hover,.
 
 const modern=readCoreCss(root);
 for(const token of [
-  'transform:none','body.dkds-modern-ui .import-workbench',
-  'body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before',
-  'background:#29313e','body.dkds-modern-ui button:hover:not(:disabled)'
+  'transform:none','body.dkds-modern-ui .dkds-analysis-nav-btn','body.dkds-modern-ui .plugin-status-item::before'
 ])assert(modern.includes(token),`Theme closure missing ${token}`);
+const materialRoles=read('src/styles/theme/material-roles.css');
+const semanticMaterial=read('src/core/theme/semantic-registry.js');
+assert(semanticMaterial.includes('.import-workbench')&&semanticMaterial.includes("return 'elevated'"),'Import Workbench must consume the Core elevated Material contract rather than a private Presentation theme selector.');
+assert(materialRoles.includes('[data-dkds-material-role="elevated"]'),'Elevated Material role must own Import Workbench surface appearance.');
+const canonicalActions=read('src/styles/theme/component-appearance.css');
+assert(canonicalActions.includes('[data-dkds-component-identity="toolbarAction"]:hover:not(:disabled)')&&canonicalActions.includes('--dkds-ca-action-surface-hover'),'Modern hover paint must be owned by canonical ToolbarAction appearance rather than a hard-coded dark fallback.');
+assert(!read('src/styles/presentation/shell.css').includes('background:#29313e'),'Shell presentation must not restore the legacy hard-coded dark hover surface.');
 const componentAppearance=read('src/styles/theme/component-appearance.css'),semanticRegistry=read('src/core/theme/semantic-registry.js');
 assert(semanticRegistry.includes('.activity-tab')&&componentAppearance.includes('[data-dkds-component-identity=\"tab\"]')&&componentAppearance.includes('--dkui-component-tab-surface-active')&&componentAppearance.includes('--dkui-component-tab-indicator'),'Semantic Registry must classify Activity tabs while Theme Component Appearance remains the single semantic paint owner for selected/active chrome.');
 assert(!read('src/styles/presentation/shell.css').match(/activity-tab[^\{]*\.active[^\{]*\{[^}]*box-shadow/i),'Shell presentation must not paint Activity selected chrome.');

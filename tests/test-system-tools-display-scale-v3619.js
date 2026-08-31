@@ -34,7 +34,7 @@ const manager=read('src/core/plugins/manager-ui.js');
 assert(manager.includes("tool:{label:'工具'")&&manager.includes("'tool'"),'Plugin Manager must render a Tools category.');
 assert(manager.includes('plugin-export-btn')&&manager.includes('DKDSPlugins.external.export'),'Plugin Manager must expose plugin package export.');
 assert(manager.includes("plugin.systemLocked?'系统功能由基座管理，不能停用'")&&manager.includes("busy||plugin.isSuper||plugin.systemLocked"),'System lock must be represented by the existing disabled enable switch.');
-assert(manager.includes('plugin.systemLocked')&&manager.includes("<span class=\"plugin-role-badge system\">系统</span>"),'System plugins must be visibly identified rather than presented as ordinary TOP/SUPER plugins.');
+assert(manager.includes('plugin.systemLocked')&&manager.includes('class="plugin-role-badge system"')&&manager.includes('data-dkds-component-identity="chip">系统</span>'),'System plugins must remain visibly identified and consume canonical Chip appearance rather than a private badge style.');
 
 const index=read('src/index.html');
 assert(index.includes('id="toolsMenuBtn"')&&index.includes('data-plugin-menu="tools"'),'Top command bar must own the Tools dropdown.');

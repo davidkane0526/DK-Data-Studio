@@ -28,8 +28,13 @@ assert(css.includes('.dkds-scientific-chart-host'),'Scientific renderer must exp
 assert(css.includes('.dkds-plot-legend.dkds-scientific-auto-legend'),'D3 must use the shared HTML legend presentation.');
 assert(css.includes('opacity:0')&&css.includes('pointer-events:none'),'Navigation chrome must auto-hide without participating in layout.');
 assert(css.includes('[data-primary-scroll="safe"] .dkds-analysis-primary-host')&&css.includes('height:100%')&&css.includes('overflow:auto'),'safe PluginWorkspace must retain a bounded Core-owned Primary scroll viewport.');
-assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger')&&modern.includes('background:transparent'),'Dark shell menu triggers must not inherit legacy white paint.');
-assert(modern.includes('.trend-card')&&modern.includes('background:var(--surface-primary)')&&modern.includes('border-color:var(--border-subtle)'),'Legacy scientific card borders/surfaces must resolve through semantic theme tokens.');
+const semantic=read('src/core/theme/semantic-registry.js');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(semantic.includes("selector:'button,.toolbar-btn,.plugin-toolbar-btn")&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'Shell menu triggers must enter canonical ToolbarAction appearance instead of receiving a dark-mode paint patch.');
+assert(!modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui .topbar .menu-trigger'),'Dark shell menu-trigger paint override must not return.');
+assert(semantic.includes('.trend-card,.analysis-chart-card'),'Scientific cards must be registered as Core semantic Material surfaces.');
+assert(!semantic.includes('.trend-card-legend'),'Trend Card legend must remain transparent child content instead of creating a nested Material surface.');
+assert(!/\.trend-card\s*\{[^}]*(?:background|border-color|box-shadow)\s*:/s.test(read('src/styles/presentation/scientific.css')),'Scientific Presentation CSS must not repaint the Trend Card Material surface.');
 assert(!/js-plotly|dkds-plotly/i.test(modern),'Modern theme must contain no vendor-specific scientific renderer chrome.');
 
 const types=read('sdk/plugin-api.d.ts');

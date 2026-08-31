@@ -297,7 +297,7 @@
     const rows=[['全部插件',total],['已启用',active],['已停用',disabled],['主题',themes],['本地插件',local],['内置更新',overrides],['错误',errors]];
     const host=$('#pluginManagerSummary');
     if(!host)return;
-    host.innerHTML=rows.map(([label,value],index)=>`<div class="plugin-manager-stat ${label==='错误'&&value?'has-error':''}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
+    host.innerHTML=rows.map(([label,value],index)=>{const error=label==='错误'&&value;return `<div class="plugin-manager-stat ${error?'has-error':''}"${error?' data-dkds-material-state="error"':''}><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`;}).join('');
   }
 
   function renderList(options={}) {
@@ -333,7 +333,7 @@
     for(const group of grouped){
       if(!group.rows.length)continue;
       const section=document.createElement('section');section.className=`plugin-manager-section plugin-manager-section-${group.id}`;section.dataset.pluginGroup=group.id;
-      section.innerHTML=`<div class="plugin-manager-section-head"><div><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(group.description)}</span></div><span class="plugin-manager-section-count">${group.rows.length}</span></div><div class="plugin-manager-section-list"></div>`;
+      section.innerHTML=`<div class="plugin-manager-section-head"><div><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(group.description)}</span></div><span class="plugin-manager-section-count" data-dkds-component-identity="chip">${group.rows.length}</span></div><div class="plugin-manager-section-list"></div>`;
       list.appendChild(section);groupHosts.set(group.id,section.querySelector('.plugin-manager-section-list'));
     }
     for(const plugin of plugins){
@@ -343,7 +343,8 @@
       const card=document.createElement('article');
       card.className=`plugin-manager-card status-${status.className}`;
       card.dataset.pluginId=plugin.id;
-      const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
+      card.dataset.dkdsMaterialState=status.className;
+      const caps=(plugin.capabilities||[]).map(cap=>`<span class="plugin-capability-chip" data-dkds-component-identity="chip">${escapeHtml(capabilityLabel(cap))}</span>`).join('');
       const source=plugin.source==='builtin'?'内置基线':plugin.source==='override'?'本地更新 · 内置基线':plugin.source==='external'?'本地安装':escapeHtml(plugin.source||'插件');
       const typeMeta=pluginTypeMeta(plugin);
       const actionLabel=plugin.status==='error'?'重试':plugin.active?'重新加载':'加载';
@@ -356,10 +357,10 @@
           <div class="plugin-card-title-wrap">
             <div class="plugin-card-title-line">
               <h3>${escapeHtml(display.name)}</h3>
-              <span class="plugin-type-badge type-${escapeHtml(typeMeta.id)}">${escapeHtml(typeMeta.label)}</span>
-              <span class="plugin-status-badge"${status.tone?` data-status="${status.tone}"`:``}>${status.label}</span>
-              ${plugin.systemLocked?`<span class="plugin-role-badge system">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top">TOP</span>`:'')}
-              ${plugin.isSuper?`<span class="plugin-role-badge super">SUPER</span>`:''}
+              <span class="plugin-type-badge type-${escapeHtml(typeMeta.id)}" data-dkds-component-identity="chip">${escapeHtml(typeMeta.label)}</span>
+              <span class="plugin-status-badge" data-dkds-component-identity="chip"${status.tone?` data-status="${status.tone}"`:``}>${status.label}</span>
+              ${plugin.systemLocked?`<span class="plugin-role-badge system" data-dkds-component-identity="chip">系统</span>`:(plugin.workspaceRole==='top'?`<span class="plugin-role-badge top" data-dkds-component-identity="chip">TOP</span>`:'')}
+              ${plugin.isSuper?`<span class="plugin-role-badge super" data-dkds-component-identity="chip" data-dkds-component-variant="info">SUPER</span>`:''}
             </div>
             <div class="plugin-card-id">${escapeHtml(plugin.id)} · v${escapeHtml(plugin.version||'?')}</div>
           </div>
@@ -378,7 +379,7 @@
         </div>
         <div class="plugin-card-body">
           <p class="plugin-card-description">${escapeHtml(display.description)}</p>
-          <div class="plugin-capability-row">${caps||'<span class="plugin-capability-chip muted">未声明能力</span>'}</div>
+          <div class="plugin-capability-row">${caps||'<span class="plugin-capability-chip muted" data-dkds-component-identity="chip">未声明能力</span>'}</div>
           ${themeProfileControls(plugin)}
           ${plugin.error?`<div class="plugin-error-box"><strong>错误：</strong>${escapeHtml(plugin.error)}</div>`:''}
         </div>

@@ -1,9 +1,9 @@
 /* Core Scientific Presentation theme boundary.
    Engine-specific chrome is not allowed to restyle semantic legend/navigation. */
 
-/* Scientific card/surface paint ownership. Geometry remains in structure; this
-   file owns semantic paint for trend, analysis and GroupPlot cards so their
-   light/dark appearance no longer depends on late cross-file overrides. */
+/* Scientific presentation supplements typography, plot-state and interaction
+   affordances. Card/header Material paint is resolved by the Core semantic
+   registry + Material Renderer; this file must not recreate those surfaces. */
 
 /* GroupPlot legends are semantic labels, never elevated controls. */
 
@@ -51,47 +51,42 @@ body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
 
 /* Scientific navigation dark-surface closure. */
 /* Canonical presentation migrated from the former Foundation baseline. */
-.legend-title {font-weight:650;color:#475569
+.legend-title {font-weight:650;color:var(--text-secondary)
 }
 .group-panel.docked {border:0;border-radius:0;box-shadow:none
 }
 .group-panel.docked:not(.collapsed) .dock-resizer {background:transparent
 }
-.group-panel.docked:not(.collapsed) .dock-resizer:hover {background:rgba(49,94,251,.16)
-}
-.trend-card {border:1px solid var(--border-subtle)
-}
-.trend-card-header {font-size:12px;font-weight:650;border-bottom:1px solid var(--border-subtle,#d8e0eb);color:var(--text-primary,#1c2a43)
+.group-panel.docked:not(.collapsed) .dock-resizer:hover {background:color-mix(in srgb,var(--accent-primary) 16%,transparent)
 }
 .trend-card-header button {font-size:11px
 }
-.trend-card-legend {border-top:1px solid var(--border-subtle,#d8e0eb);background:var(--surface-primary,#fff);font-size:11px;color:var(--text-secondary,#60708c)
+.trend-card-legend {border-top:1px solid var(--border-subtle);border-color:var(--border-subtle);background:transparent;font-size:11px;color:var(--text-secondary)
 }
-.group-panel-toolbar {font-size:12px;color:var(--text-secondary);background:var(--surface-primary,#fff);border-bottom:1px solid var(--border-subtle,#d8e0eb)
+.group-panel-toolbar {border-bottom:1px solid var(--border-subtle);font-size:12px;color:var(--text-secondary);background:transparent;border-color:var(--border-subtle)
 }
-.group-panel-hint {font-size:11px;color:#94a3b8
+.group-panel-hint {font-size:11px;color:var(--text-tertiary)
 }
-.trend-layout-controls>span {font-size:11px;color:#64748b
+.trend-layout-controls>span {font-size:11px;color:var(--text-secondary)
 }
 .trend-layout-controls button {font-size:11px
 }
 .trend-layout-controls button.active {font-weight:650;}
-.axis path {stroke:#aeb6c8
+.axis path {stroke:var(--text-tertiary)
 }
-.axis line {stroke:#aeb6c8
+.axis line {stroke:var(--text-tertiary)
 }
-.axis text {fill:#576176;font-size:11px
+.axis text {fill:var(--text-secondary);font-size:11px
 }
 .curve {fill:none
 }
 .width-band {opacity:.15
 }
-.legend-label {font-size:11px;fill:#5c667a
+.legend-label {font-size:11px;fill:var(--text-secondary)
 }
-.crosshair {stroke:#c2c8d6
+.crosshair {stroke:var(--border-strong)
 }
-.main-plot-tools button {font-size:11px;background:var(--control-bg,var(--surface-primary,#fff));border:1px solid var(--control-border,var(--border-subtle,#d7dce7));border-radius:6px
-}
+.main-plot-tools button {font-size:11px}
 .main-plot-tools button.active {font-weight:650;}
 .trend-legend-line {border-top:3px solid currentColor
 }
@@ -107,44 +102,6 @@ body.dkds-modern-ui .dkds-scientific-marker-selection-halo{
 }
 .peak-point.dimmed {opacity:.34
 }
-body.dkds-modern-ui .dkds-plot-legend.dkds-scientific-auto-legend {
-  background:transparent;border:0;box-shadow:none
-}
-body.dkds-modern-ui .trend-card {
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  box-shadow:var(--surface-shadow);
-  transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease
-}
-body.dkds-modern-ui .analysis-chart-card {
-  background:var(--surface-primary);
-  border:0;
-  box-shadow:var(--surface-shadow);
-  transition:border-color .14s ease,box-shadow .14s ease,transform .12s ease
-}
-body.dkds-modern-ui .dkds-group-plot-card {
-  background:var(--surface-primary);
-  border-color:var(--border-subtle)
-}
-body.dkds-modern-ui .trend-card-header,
-body.dkds-modern-ui .analysis-chart-title,
-body.dkds-modern-ui .dkds-group-plot-head {
-  background:var(--surface-secondary);
-  border-color:var(--border-subtle);
-  color:var(--text-primary);
-  box-shadow:none
-}
-body.dkds-modern-ui .trend-card-legend {
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  color:var(--text-secondary);
-  box-shadow:none
-}
-body.dkds-modern-ui .trend-legend-chip {
-  border-color:var(--border-subtle);
-  background:var(--surface-secondary);
-  color:var(--text-primary)
-}
 body.dkds-modern-ui .dkds-scientific-surface-host:hover>.dkds-scientific-nav-tools,
 body.dkds-modern-ui .dkds-scientific-surface-host:focus-within>.dkds-scientific-nav-tools,
 body.dkds-modern-ui .dkds-scientific-chart-host:hover>.dkds-scientific-nav-tools,
@@ -153,109 +110,45 @@ body.dkds-modern-ui .dkds-scientific-nav-tools:hover,
 body.dkds-modern-ui .dkds-scientific-nav-tools:focus-within,
 body.dkds-modern-ui .dkds-scientific-nav-tools.is-dragging {opacity:.94;pointer-events:auto
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend.dkds-scientific-auto-legend {
-  background:transparent;border:0;box-shadow:none
-}
-body.dkds-modern-ui .dkds-group-plot-card :where(.dkds-plot-legend,.dkds-plot-legend-item,.dkds-plot-legend-swatch) {box-shadow:none
-}
-body.dkds-modern-ui .dkds-group-plot-card .dkds-plot-legend {background:transparent;border-color:transparent
-}
 body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065;pointer-events:none
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band {opacity:.10
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-chip {
-  border-color:var(--dkui-border)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools button {color:#d7deeb
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-drag {color:#98a4b8
-}
-body.dkds-modern-ui .dkds-scientific-nav-tools {background:transparent;border-color:transparent;box-shadow:0 3px 10px rgba(25,39,66,.065);opacity:0;pointer-events:none;transform:none
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .main-legend-bar {background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {background:rgba(29,35,46,.94);border-color:var(--border-strong);color:var(--text-primary)
-}
-body.dkds-modern-ui .main-legend-bar {background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-secondary)
-}
-body.dkds-modern-ui .main-legend-chip {
-  border-color:var(--border-subtle);
-  background:var(--surface-secondary);
-  color:var(--text-primary)
-}
-body.dkds-modern-ui .dkds-scientific-nav-tools button {
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  transform:none
-}
-body.dkds-modern-ui .dkds-scientific-nav-tools button:hover {background:var(--dkui-control-hover)
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0;pointer-events:none;transform:none
 }
 html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
-html[data-dkds-theme="light"] body.dkds-modern-ui .analysis-chart-card {
-  background:#fbfcfe;border-color:#d8e5f4;border-radius:11px;
-  box-shadow:0 1px 0 rgba(255,255,255,.98) inset,0 -1px 0 rgba(180,202,230,.18) inset,0 4px 10px rgba(91,119,159,.055),0 13px 28px rgba(91,119,159,.075)
-}
-body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
+html[data-dkds-theme="light"] body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,
 body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis line {stroke:var(--text-tertiary)
 }
 body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis text {fill:var(--text-secondary)
 }
 body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis-title {fill:var(--text-primary)
 }
-body.dkds-modern-ui .trend-layout-controls button,
-body.dkds-modern-ui .trend-card-header button,
-body.dkds-modern-ui .main-plot-tools button {
-  border-color:var(--dkui-control-border);
-  background:var(--dkui-control-bg);
-  color:var(--dkui-text);
-  box-shadow:var(--dkui-shadow-1);
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease
-}
-body.dkds-modern-ui .trend-layout-controls button:hover:not(:disabled),
-body.dkds-modern-ui .trend-card-header button:hover:not(:disabled),
-body.dkds-modern-ui .main-plot-tools button:hover:not(:disabled) {
-  background:var(--dkui-control-hover);
-  border-color:var(--dkui-control-border-hover);
-  color:var(--dkui-text);
-  box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
-  transform:none
-}
-.analysis-chart-card {
-  background:var(--surface-primary,#fff);
-  border:1px solid var(--border-subtle,#d8e0eb);
-  border-radius:9px
-}
-.analysis-chart-title {
-  background:var(--surface-secondary,#f6f9fd);
-  border-bottom:1px solid var(--border-subtle,#d8e0eb);
-  color:var(--text-primary,#1c2a43)
-}
 .advanced-peak-settings {
-  border:1px solid #e5e9f1;
+  border:1px solid var(--border-subtle);
   border-radius:7px;
-  background:#fafbfe
+  border-color:var(--border-subtle);
+  background:var(--surface-secondary)
 }
 .advanced-peak-settings summary {
-  color:var(--text-secondary,#60708c)
+  color:var(--text-secondary)
 }
 .legend-label.dimmed {opacity:.12
 }
 .legend-swatch.dimmed {opacity:.12
 }
-.legend-label.selected {fill:#1f2937
+.legend-label.selected {fill:var(--text-primary)
 }
 .legend-swatch.selected {stroke-width:3.3
 }
 .dkds-scientific-plot-bg {fill:var(--plugin-workspace-surface);stroke:var(--plugin-workspace-grid)
 }
 .dkds-scientific-axis path,
-.dkds-scientific-axis line {stroke:var(--text-tertiary,#aeb6c8)
+.dkds-scientific-axis line {stroke:var(--text-tertiary)
 }
-.dkds-scientific-axis text {fill:var(--text-secondary,#576176)
+.dkds-scientific-axis text {fill:var(--text-secondary)
 }
-.dkds-scientific-axis-title {fill:var(--text-primary,#374151)
+.dkds-scientific-axis-title {fill:var(--text-primary)
 }
 .dkds-scientific-curve {fill:none
 }
@@ -277,93 +170,15 @@ body.dkds-modern-ui .main-plot-tools button:hover:not(:disabled) {
 }
 .dkds-plot-view-file-svg {fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round
 }
-.dkds-scientific-auto-legend {color:var(--text-secondary,#60708c)
-}
-.dkds-plot-legend-item:hover {border-color:var(--border-subtle,#d8e0eb)
-}
-.dkds-scientific-nav-tools {border:1px solid transparent;border-radius:7px;background:transparent;box-shadow:none
-}
-.dkds-scientific-nav-drag {border-radius:5px;color:#8b96a8;outline:none
-}
-.dkds-scientific-nav-drag:hover,
-.dkds-scientific-nav-drag:focus-visible {background:rgba(49,94,251,.07);color:#5f6f87
-}
-.dkds-scientific-nav-tools button {border:0;border-radius:5px;background:transparent;background-clip:padding-box;box-shadow:none;color:var(--text-primary,#1c2a43)
-}
-.dkds-scientific-nav-tools button:hover {background:var(--control-hover,var(--surface-hover));color:var(--accent-primary,#2558ed)
-}
-@media (hover:none),(pointer:coarse) {
-}
-@media (prefers-color-scheme:dark) {
-  .dkds-scientific-nav-drag {color:var(--text-secondary)
-  }
-}
-@media (prefers-color-scheme:dark) {
-  .dkds-scientific-nav-drag:hover,
-.dkds-scientific-nav-drag:focus-visible {background:var(--control-hover);color:var(--text-primary)
-  }
-}
-@media (prefers-color-scheme:dark) {
-  .dkds-scientific-nav-tools button {color:var(--text-primary)
-  }
-}
-@media (prefers-color-scheme:dark) {
-  .dkds-scientific-nav-tools button:hover {background:var(--control-hover);color:var(--text-primary)
-  }
-}
-.main-plot-tools {
-  border:1px solid #e0e6ef;
-  border-radius:9px;
-  background:rgba(255,255,255,.96)
+.dkds-scientific-auto-legend {color:var(--text-secondary)
 }
 .main-legend-bar::-webkit-scrollbar-track {background:transparent
 }
-.main-legend-bar::-webkit-scrollbar-thumb {background:#aab5c5;border-radius:999px
+.main-legend-bar::-webkit-scrollbar-thumb {background:var(--border-strong);border-radius:999px
 }
-.plot-wrap {background:#fff
-}
-.trend-card {
-  border-color:#dfe5ed;border-radius:var(--ui-panel-radius);box-shadow:0 1px 2px rgba(15,23,42,.025);background:#fff
-}
-.trend-card-header {background:#fafbfd;border-bottom-color:#edf0f4
-}
-.dkds-group-plot-card {border:1px solid var(--border-subtle,#d8e0eb);border-radius:10px;background:var(--surface-primary,#fff)
-}
-.dkds-group-plot-head {border-bottom:1px solid var(--border-subtle,#d8e0eb);background:var(--surface-secondary,#f6f9fd);color:var(--text-primary,#1c2a43)
-}
-.dkds-plot-legend.dkds-scientific-auto-legend {
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  backdrop-filter:none;
-  color:var(--text-secondary,#60708c)
-}
-.dkds-plot-legend-item {
-  border:0;
-  border-radius:3px;
-  background:transparent;
-  background-image:none;
-  box-shadow:none;
-  color:var(--text-secondary,#60708c)
-}
-body.dkds-modern-ui .dkds-plot-legend-item,
-body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"] {
-  border-radius:3px
-}
-.dkds-plot-legend-item:hover {
-  background:color-mix(in srgb,var(--surface-hover,#eef3f9) 58%,transparent);
-  border:0;
-  color:var(--text-primary,#1c2a43);
-  box-shadow:none
+.plot-wrap {background:transparent
 }
 .dkds-plot-legend-item.is-muted {opacity:.22
-}
-.dkds-plot-legend-item.is-selected,
-.dkds-plot-legend-item.is-solo {
-  opacity:1;
-  color:var(--text-primary,#1c2a43);
-  background:transparent;
-  box-shadow:none
 }
 .dkds-plot-legend-swatch {
   border:0;
@@ -386,28 +201,7 @@ body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"] {
   .dkds-scientific-nav-tools {opacity:.82
   }
 }
-html[data-dkds-theme="dark"] .dkds-plot-legend.dkds-scientific-auto-legend {
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  color:var(--text-secondary,#aeb8c8)
-}
-html[data-dkds-theme="dark"] .dkds-plot-legend-item {
-  background:transparent;
-  border:0;
-  box-shadow:none;
-  color:var(--text-secondary,#aeb8c8)
-}
-html[data-dkds-theme="dark"] .dkds-plot-legend-item:hover {
-  background:rgba(139,158,187,.10);
-  color:var(--text-primary,#eef3fa)
-}
-html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-selected,
-html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo {
-  background:transparent;
-  color:var(--text-primary,#eef3fa)
-}
-.dkds-scientific-curve-surface:focus,
+html[data-dkds-theme="dark"] .dkds-scientific-curve-surface:focus,
 .dkds-scientific-curve-surface:focus-visible {outline:none
 }
 .dkds-inspector-section {
@@ -423,37 +217,6 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo {
 }
 .dkds-inspector-section .dkds-meta {color:var(--text-secondary,var(--dkui-text-soft))
 }
-.dkds-legend-item {
-  border:0;border-radius:2px;
-  background:transparent;background-image:none;box-shadow:none;
-  color:var(--text-secondary,var(--dkui-text-soft))
-}
-.dkds-legend-item:hover {background:transparent;box-shadow:none;color:var(--text-primary,var(--dkui-text))
-}
-.dkds-legend-item:is(.selected,.is-selected,.is-solo,[aria-pressed="true"]) {background:transparent;box-shadow:none;color:var(--text-primary,var(--dkui-text))
-}
-.analysis-chart-card.dkds-portable-view.is-floating {background:var(--surface-primary,#fff)
-}
-.main-plot-tools {
-  box-shadow:0 2px 8px rgba(15,23,42,.08)
-}
-.main-legend-bar {
-  scrollbar-color:#aab5c5 transparent;
-  border:1px solid var(--border-subtle);
-  border-radius:8px;
-  background:rgba(255,255,255,.94);
-  box-shadow:0 2px 8px rgba(15,23,42,.06)
-}
-.main-legend-chip {border-color:#e2e7ee;
-  border:1px solid #e1e6ef;
-  border-radius:6px;
-  background:#fff;
-  color:#475569
-}
-.main-legend-chip:hover {background:#f5f8ff;border-color:#aebff1
-}
-.main-legend-chip.selected {color:var(--text-primary,#1f2937);border-color:color-mix(in srgb,var(--accent-primary) 42%,var(--border-subtle,#6f8ff2));background:var(--accent-soft,#eef3ff)
-}
 .main-legend-chip.dimmed {opacity:.16
 }
 .main-legend-line {
@@ -462,85 +225,46 @@ html[data-dkds-theme="dark"] .dkds-plot-legend-item.is-solo {
 .main-legend-line.reverse {border-top-style:dashed
 }
 .peak-hit-target {
-  fill:rgba(0,0,0,0);
+  fill:transparent;
   stroke:none
 }
-.dkds-managed-table[data-dkds-table-tone="analysis"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-soft,#eaf0ff) 82%,transparent)
+.dkds-managed-table[data-dkds-table-tone="analysis"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-soft) 82%,transparent)
 }
-.dkds-managed-table[data-dkds-table-tone="success"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--success,#1f9d68) 14%,var(--surface-primary,#fff))
+.dkds-managed-table[data-dkds-table-tone="success"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--success) 14%,var(--surface-primary))
 }
-.dkds-managed-table[data-dkds-table-tone="warning"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--warning,#c78314) 14%,var(--surface-primary,#fff))
+.dkds-managed-table[data-dkds-table-tone="warning"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--warning) 14%,var(--surface-primary))
 }
-.dkds-managed-table[data-dkds-table-tone="danger"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--danger,#d14343) 13%,var(--surface-primary,#fff))
+.dkds-managed-table[data-dkds-table-tone="danger"] {--dkds-table-row-selected-bg:color-mix(in srgb,var(--danger) 13%,var(--surface-primary))
 }
-.dkds-managed-table[data-dkds-table-emphasis="quiet"] {--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary,#fff) 98%,transparent)
-}
-body.dkds-modern-ui .dkds-plot-legend-item,
-body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"] {
-  background:transparent;background-image:none;border:0;box-shadow:none;
-  color:var(--text-secondary);transform:none
-}
-body.dkds-modern-ui .dkds-plot-legend-item:hover {
-  background:color-mix(in srgb,var(--surface-hover) 58%,transparent);
-  border:0;box-shadow:none;color:var(--text-primary);transform:none
-}
-body.dkds-modern-ui .dkds-plot-legend-item.is-selected,
-body.dkds-modern-ui .dkds-plot-legend-item.is-solo {
-  background:transparent;color:var(--text-primary);box-shadow:none
-}
-body.dkds-modern-ui .group-panel-toolbar {
-  background:var(--surface-primary);
-  color:var(--text-secondary);
-  box-shadow:none
-}
-body.dkds-modern-ui .dkds-plot-legend {
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  color:var(--text-secondary);
-  box-shadow:none
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item[aria-pressed="true"] {
-  background:transparent;border:0;box-shadow:none;color:var(--text-secondary)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item:hover {
-  background:rgba(139,158,187,.10);color:var(--text-primary)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-selected,
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-plot-legend-item.is-solo {
-  background:transparent;color:var(--text-primary)
-}
-body.dkds-modern-ui .group-panel-toolbar {border-color:var(--dkui-border)
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .group-panel-toolbar {
-  border-color:var(--dkui-border)
-}
-.dkds-table-surface-host {background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43)
-}
+.dkds-managed-table[data-dkds-table-emphasis="quiet"] {--dkds-table-row-odd-bg:color-mix(in srgb,var(--surface-primary) 98%,transparent)
+ }
+body.dkds-modern-ui .group-panel-toolbar {color:var(--text-secondary);box-shadow:none}
+body.dkds-modern-ui .dkds-plot-legend {background:transparent;border-color:var(--border-subtle);color:var(--text-secondary);box-shadow:none}
+
 .dkds-managed-table {
-  --dkds-table-row-even-bg:color-mix(in srgb,var(--surface-secondary,#f6f9fd) 52%,transparent);
-  --dkds-table-row-hover-bg:color-mix(in srgb,var(--accent-primary,#315efb) 7%,var(--surface-primary,#fff));
-  --dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-primary,#315efb) 12%,var(--surface-primary,#fff))
+  --dkds-table-row-even-bg:color-mix(in srgb,var(--surface-secondary) 52%,transparent);
+  --dkds-table-row-hover-bg:color-mix(in srgb,var(--accent-primary) 7%,var(--surface-primary));
+  --dkds-table-row-selected-bg:color-mix(in srgb,var(--accent-primary) 12%,var(--surface-primary))
 ;border-collapse:separate;border-spacing:0;
-  background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43)
+  background:var(--surface-primary);color:var(--text-primary)
 }
-.dkds-managed-table thead th {border:0;border-bottom:1px solid var(--border-subtle,#d8e0eb);background:var(--surface-secondary,#f6f9fd);color:var(--text-secondary,#60708c)
+.dkds-managed-table thead th {border:0;border-bottom:1px solid var(--border-subtle);background:var(--surface-secondary);color:var(--text-secondary)
 }
-.dkds-managed-table thead th.dkds-table-sortable::before {color:var(--text-tertiary,#7f8ba8);opacity:0
+.dkds-managed-table thead th.dkds-table-sortable::before {color:var(--text-tertiary);opacity:0
 }
 .dkds-managed-table thead th.dkds-table-sortable:hover::before {opacity:.72
 }
-.dkds-managed-table thead th[data-dkds-sort="asc"]::before {opacity:1;color:var(--accent-primary,#315efb)
+.dkds-managed-table thead th[data-dkds-sort="asc"]::before {opacity:1;color:var(--accent-primary)
 }
-.dkds-managed-table thead th[data-dkds-sort="desc"]::before {opacity:1;color:var(--accent-primary,#315efb)
+.dkds-managed-table thead th[data-dkds-sort="desc"]::before {opacity:1;color:var(--accent-primary)
 }
 .dkds-table-column-resizer::after {background:transparent
 }
 .dkds-managed-table thead th:hover>.dkds-table-column-resizer::after,
-.dkds-table-column-resizer:hover::after {background:var(--border-strong,#aebfd5)
+.dkds-table-column-resizer:hover::after {background:var(--border-strong)
 }
 .dkds-managed-table tbody td,
-.dkds-managed-table tbody th {border:0;border-bottom:1px solid color-mix(in srgb,var(--border-subtle,#d8e0eb) 72%,transparent);background:var(--dkds-table-row-odd-bg);color:var(--text-primary,#1c2a43)
+.dkds-managed-table tbody th {border:0;border-bottom:1px solid color-mix(in srgb,var(--border-subtle) 72%,transparent);background:var(--dkds-table-row-odd-bg);color:var(--text-primary)
 }
 .dkds-managed-table[data-dkds-table-stripe="subtle"] tbody tr:nth-child(even)>td,
 .dkds-managed-table[data-dkds-table-stripe="subtle"] tbody tr:nth-child(even)>th {background:var(--dkds-table-row-even-bg)

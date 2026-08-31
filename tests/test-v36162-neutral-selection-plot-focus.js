@@ -15,5 +15,5 @@ assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&
 assert(modern.includes('--dkui-selection-surface:var(--dkui-accent-soft);')&&modern.includes('--dkui-selection-bg:var(--dkui-selection-surface);'),'Light mode must keep Theme 3.8 selectionSurface as the canonical token with the legacy Core alias.');
 assert(modern.includes('--dkui-selection-surface:rgba(255,255,255,.075);'),'Dark mode selection must use a restrained neutral white semantic surface instead of a blue fill.');
 assert(modern.includes('--dkui-selection-border:rgba(255,255,255,.10);'),'Dark mode selected rows must use a neutral white boundary.');
-assert(modern.includes('background:var(--dkui-selection-bg,var(--dkui-accent-soft))'),'Dataset and linked-selection rows must consume the selection token.');
+assert(modern.includes('background:var(--dkui-selection-surface)'),'Dataset and linked-selection rows must consume the canonical selection surface token.');
 console.log('v3.61.62 neutral dark selection and plot focus-frame regression checks passed.');

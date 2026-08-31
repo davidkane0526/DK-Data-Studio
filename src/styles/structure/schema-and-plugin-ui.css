@@ -30,6 +30,7 @@ button.wide{ width:100%;
 }
 .floating-panel{position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
 }
+.dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + 8px);width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
 .floating-header{display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none;
 }
 .floating-body{overflow:auto;
@@ -536,6 +537,16 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{min-height:30px
   white-space:nowrap;
   text-overflow:ellipsis;
   font-size:var(--plugin-font-section,14px);
+}
+.plugin-type-badge{
+  display:inline-flex;
+  align-items:center;
+  height:20px;
+  padding:0 7px;
+  font-size:var(--ui-font-tiny,10px);
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
 }
 .plugin-card-id{
   margin-top:3px;

@@ -180,7 +180,7 @@ Development mode provides a real-page Theme Inspector (`Ctrl+Alt+T`). It reports
 - computed background/text/border/backdrop-filter
 - explicit semantic/render error state
 
-Representative error states include `UNMANAGED_COMPONENT_APPEARANCE`, `WRONG_COMPONENT_IDENTITY`, `ROLE_MISMATCH`, `RECIPE_MISMATCH`, `TOKEN_NOT_CONSUMED`, `AUTHORED_BUT_UNUSED`, `OPAQUE_PARENT_OCCLUSION`, `HARDCODED_APPEARANCE`, and `ENGINE_UNSUPPORTED`.
+Representative error states include `UNMANAGED_COMPONENT_APPEARANCE`, `WRONG_COMPONENT_IDENTITY`, `ROLE_MISMATCH`, `RECIPE_MISMATCH`, `TOKEN_NOT_CONSUMED`, `AUTHORED_BUT_UNUSED`, `OPAQUE_PARENT_OCCLUSION`, `HARDCODED_APPEARANCE`, and `ENGINE_UNSUPPORTED`. For Plugin API 1.19 compatibility, `OPAQUE_PARENT_OCCLUSION` retains its historical public identifier; current diagnostics only raise it when a translucent Material is itself repainted opaque (`occlusionSource: "self"`) or a large unmanaged opaque descendant covers it (`occlusionSource: "child"`). An opaque ancestor is reported only as diagnostic context and does not by itself mean that `backdrop-filter` is ineffective.
 
 ## 7. Theme Coverage
 

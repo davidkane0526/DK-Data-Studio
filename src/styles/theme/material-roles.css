@@ -124,3 +124,16 @@ body.dkds-modern-ui :where([data-dkds-material-role="floating"],.dkds-material-r
   --dkds-material-noise:var(--dkui-material-floating-noise-opacity,var(--dkui-material-noise-opacity));
   --dkds-material-shadow:var(--dkui-shadow-float);
 }
+
+/* Semantic Material state overlays. Runtime surfaces opt in through
+   data-dkds-material-state; recipes remain the only background/border painter. */
+body.dkds-modern-ui [data-dkds-material-state="active"]{
+  --dkds-material-border:color-mix(in srgb,var(--dkui-accent) 22%,var(--dkui-role-surface-border,var(--dkui-divider)));
+}
+body.dkds-modern-ui [data-dkds-material-state="error"]{
+  --dkds-material-border:color-mix(in srgb,var(--danger) 34%,var(--dkui-role-surface-border,var(--dkui-divider)));
+  --dkds-material-base:color-mix(in srgb,var(--danger) 7%,var(--dkui-role-surface-surface,var(--dkui-surface)));
+}
+body.dkds-modern-ui [data-dkds-material-state="disabled"]{
+  --dkds-material-base:var(--dkui-surface-soft);
+}

@@ -9,7 +9,11 @@ const dialogs=read('src/styles/presentation/dialogs.css');
 assert(!touch.includes('.plugin-manager-stat{')&&!touch.includes('.plugin-manager-toolbar-card{'),'Plugin Manager desktop layout must not return to platform/touch.css.');
 assert(touch.includes('.dkds-pointer-coarse .plugin-switch-track'),'Platform layer must retain only coarse-pointer Plugin Manager deltas.');
 assert(schema.includes('Core Plugin Manager layout')&&schema.includes('.plugin-manager-stat{')&&schema.includes('.plugin-manager-toolbar-card{'),'Plugin Manager common layout must belong to the structure owner.');
-assert(dialogs.includes('.command-menu>button:not(.primary):not(.strong):not(.danger-soft)'), 'Generic command-menu paint must not erase semantic primary/danger buttons.');
+const semantic=read('src/core/theme/semantic-registry.js');
+const appearance=read('src/styles/theme/component-appearance.css');
+assert(semantic.includes("id:'menuItem'")&&semantic.includes('.command-menu>button'),'Command-menu rows must resolve as canonical MenuItem components.');
+assert(semantic.includes("component==='chip'?'danger':'destructive'")&&appearance.includes('[data-dkds-component-identity="menuItem"][data-dkds-component-variant="destructive"]'),'Danger menu rows must resolve through the canonical destructive MenuItem variant.');
+assert(!/\.command-menu>button[^\{]*\{[^}]*(?:background|border-color|box-shadow|color)\s*:/s.test(dialogs),'Presentation CSS must not repaint command-menu row semantics.');
 
 const split=read('src/core/ui/modules/layout/workspace.js');
 for(const token of ['dkds-split-drag-active','notify:false','reason:\'split-end\''])assert(split.includes(token),`Split drag coalescing missing ${token}`);

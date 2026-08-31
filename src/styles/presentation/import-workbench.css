@@ -1,163 +1,73 @@
-/* Core-owned Import Workbench presentation. */
-body.dkds-modern-ui .import-workbench{background:var(--surface-secondary);border-color:var(--border-strong);color:var(--text-primary)}
-body.dkds-modern-ui .import-workbench-header,
-body.dkds-modern-ui .import-workbench-footer,
-body.dkds-modern-ui .import-file-pane{background:var(--surface-primary);border-color:var(--border-subtle)}
-body.dkds-modern-ui .import-target-bar,
-body.dkds-modern-ui .import-selection-hint{background:var(--surface-secondary);border-color:var(--border-subtle)}
-body.dkds-modern-ui .import-workbench-header h2,
-body.dkds-modern-ui .import-target-heading strong,
-body.dkds-modern-ui .import-file-name,
-body.dkds-modern-ui .import-section-head strong,
-body.dkds-modern-ui .import-generic-importer-note strong{color:var(--text-primary)}
-body.dkds-modern-ui .import-workbench-subtitle,
-body.dkds-modern-ui .import-target-heading span,
-body.dkds-modern-ui .import-target-hint,
-body.dkds-modern-ui .import-file-meta,
-body.dkds-modern-ui .import-global-summary,
-body.dkds-modern-ui .import-diagnosis,
-body.dkds-modern-ui .import-basic-grid label,
-body.dkds-modern-ui .import-mapping-grid label,
-body.dkds-modern-ui .import-y-multi-head,
-body.dkds-modern-ui .import-empty{color:var(--text-secondary)}
-body.dkds-modern-ui .import-target-chip,
-body.dkds-modern-ui .import-file-item,
-body.dkds-modern-ui .import-preview-table{background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-primary)}
-body.dkds-modern-ui .import-target-chip:has(input:checked),
-body.dkds-modern-ui .import-file-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 36%,var(--border-subtle));color:var(--accent-primary)}
-body.dkds-modern-ui .import-file-item:hover{background:var(--surface-hover)}
-body.dkds-modern-ui .import-file-item.error{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 38%,var(--border-subtle))}
-body.dkds-modern-ui .import-main-pane{background:var(--surface-secondary)}
-body.dkds-modern-ui .import-generic-importer-note,
-body.dkds-modern-ui .import-preview-chip{background:var(--surface-secondary);border-color:var(--border-subtle);color:var(--text-secondary)}
-body.dkds-modern-ui .import-preview-table th{background:var(--surface-secondary);color:var(--text-secondary)}
-body.dkds-modern-ui .import-preview-table-wrap,
-body.dkds-modern-ui .import-pane-title,
-body.dkds-modern-ui .import-y-multi,
-body.dkds-modern-ui .import-y-column,
-body.dkds-modern-ui .import-preview-table th,
-body.dkds-modern-ui .import-preview-table td{border-color:var(--border-subtle)}
-body.dkds-modern-ui .import-preview-table td{color:var(--text-primary)}
-body.dkds-modern-ui .import-preview-table td.import-nan{color:var(--text-tertiary);background:var(--surface-secondary)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .import-panel-overlay{background:rgba(3,8,15,.62)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .import-workbench{box-shadow:0 24px 70px rgba(0,0,0,.48)}
-body.dkds-modern-ui .import-section{background:var(--surface-primary);border-color:var(--border-subtle);color:var(--text-primary);box-shadow:var(--surface-shadow)}
-body.dkds-modern-ui .import-file-actions{border-color:var(--border-subtle);color:var(--text-primary)}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .import-section{background:#1d232e;border-color:var(--dkui-border)}
-.import-panel-overlay{
-  background:rgba(15,23,42,.38);
-  backdrop-filter:blur(2px)}
-.import-workbench{
-  background:transparent;
-  border:1px solid transparent;
-  border-radius:14px;
-  box-shadow:none}
-.import-workbench-header{
-  background:#fff;
-  border-bottom:1px solid #dfe5ef}
-.import-workbench-header h2{color:#172033}
-.import-workbench-subtitle{color:#6b7689}
-.import-target-bar{border-bottom:1px solid #e5eaf2;background:#fbfcff}
-.import-target-heading strong{color:#253047}
-.import-target-heading span,
-.import-target-hint{color:#7b8799}
-.import-target-chip{border:1px solid #d7deea;border-radius:999px;background:#fff;color:#475467}
-.import-target-chip:has(input:checked){border-color:#9eb5f4;background:#eef4ff;color:#2449a6}
-.import-generic-importer-note{border:1px solid #e0e6f0;border-radius:8px;background:#fafcff;color:#667085}
-.import-generic-importer-note strong{color:#344054}
-.import-file-pane{
-  background:#fff;
-  border-right:1px solid #dfe5ef}
-.import-pane-title{
-  color:var(--text-primary,#1c2a43);
-  border-bottom:1px solid #edf0f5}
-.import-selection-hint{border-bottom:1px solid var(--divider-subtle,#e4e8ef);color:var(--text-secondary,#7a8495);background:var(--surface-primary,#fff)}
-.import-file-item{
-  border:1px solid transparent;
-  border-radius:8px;
-  background:#fff}
-.import-file-item:hover{background:#f8faff}
-.import-file-item.active{background:#edf3ff;border-color:#a9bdf4}
-.import-file-item.error{border-color:#f0b8b3;background:#fff8f7}
-.import-file-name{
-  color:#253047}
-.import-file-meta{
-  color:#7b8495}
-.import-file-actions{
-  border-top:1px solid #edf0f5}
-.import-section{
-  border:1px solid #dfe5ef}
-.import-basic-grid label,
-.import-mapping-grid label{
-  color:#5b6577}
-.import-basic-grid input,
-.import-basic-grid select,
-.import-mapping-grid input,
-.import-mapping-grid select{
-  border:1px solid var(--border-strong,#c6d8ee);
-  border-radius:6px;
-  background:var(--input-bg,var(--surface-primary,#fff));
-  color:#273244}
-.import-section-head strong{color:#253047}
-.import-diagnosis{color:#60718d}
-.import-y-multi{
-  border-top:1px dashed #dfe5ef}
-.import-y-multi-head{
-  color:#5b6577}
-.import-y-column{
-  border:1px solid #e4e8f0;
-  border-radius:6px}
-.import-preview-chip{
-  border-radius:999px;
-  background:#f1f5fb;
-  border:1px solid #e0e7f0;
-  color:#536176}
-.import-preview-table-wrap{
-  border:1px solid #dfe5ef;
-  border-radius:7px}
-.import-preview-table{
-  border-collapse:collapse;
-  background:#fff}
-.import-preview-table td.import-nan{color:#b1b7c2;background:#fafbfc}
-.import-workbench-footer{
-  background:#fff;
-  border-top:1px solid #dfe5ef}
-.import-global-summary{color:#64748b}
-.import-column-field-filter{border:1px solid var(--border-subtle,#d8e0ec);border-radius:8px;background:color-mix(in srgb,var(--surface-primary,#fff) 97%,var(--accent-primary,#315efb) 3%)}
-.import-column-field-copy strong{color:var(--text-primary,#344054)}
-.import-column-field-copy span{color:var(--text-secondary,#7d8798)}
-.import-section{
-  border-color:#dfe5ed;border-radius:var(--ui-panel-radius);box-shadow:0 1px 2px rgba(15,23,42,.025);background:#fff}
-.import-preview-table th{
-  border-right:1px solid #e5e9f1;
-  border-bottom:1px solid #dce3ee;background:#f6f8fb;color:#475467;border-bottom-color:#dfe5ed}
-.import-preview-table td{
-  border-right:1px solid #edf0f5;
-  border-bottom:1px solid #edf0f5;border-bottom-color:#edf0f4;color:#536176}
-.import-preview-table tbody tr:hover td{background:#fafcff}
-.import-empty{color:#8a94a6;background:var(--surface-secondary,#f6f9fd);border-color:#d8e0ea}
-.import-series-vg{
-  border-top:1px dashed #dfe5ef}
-.import-series-vg-hint{
-  color:var(--text-tertiary,#7f8ba8)}
-.import-series-vg-row{
-  border:1px solid #e3e8f0;
-  border-radius:7px;
-  background:var(--surface-secondary,#f6f9fd)}
-.import-series-vg-label{
-  color:#4b5565}
-.import-series-vg-input-wrap{
-  color:var(--text-secondary,#60708c)}
-.import-series-vg-input{
-  border:1px solid var(--border-strong,#c6d8ee);
-  border-radius:5px;
-  background:#fff}
-.import-file-actions{background:var(--surface-primary)}
-.import-duplicate-warning{border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));
-        background:var(--warning-soft);color:var(--warning)}
-.import-file-item.import-name-warning{border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));background:var(--warning-soft)}
-.import-file-item.import-replace-warning{border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));background:var(--danger-soft)}
-.import-duplicate-badge{border-radius:999px;
-        background:var(--warning-soft);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));color:var(--warning)}
-.import-file-item.import-replace-warning .import-duplicate-badge{
-        background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger)}
+/* Core-owned Import Workbench presentation.
+   The workbench itself is the Material owner. Internal regions are layout/list
+   semantics, not nested card surfaces. Their visual separators stay in this
+   presentation owner; canonical component/material paint stays in Theme. */
+body.dkds-modern-ui .import-panel-overlay{background:rgba(15,23,42,.38);backdrop-filter:blur(2px);}
+html[data-dkds-theme="dark"] body.dkds-modern-ui .import-panel-overlay{background:rgba(3,8,15,.62);}
+
+/* Layout regions stay optically flat so elevated/glass recipes remain visible. */
+body.dkds-modern-ui :where(
+  .import-workbench-header,.import-target-bar,.import-file-pane,.import-main-pane,
+  .import-workbench-footer,.import-file-actions
+){background:transparent;background-image:none;box-shadow:none;}
+body.dkds-modern-ui .import-target-bar{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-file-pane{border-right:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-selection-hint{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-file-actions{border-top:1px solid var(--border-subtle,var(--dkui-divider));}
+
+body.dkds-modern-ui :where(
+  .import-workbench-header h2,.import-target-heading strong,.import-file-name,
+  .import-section-head strong,.import-column-field-copy strong
+){color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui :where(
+  .import-workbench-subtitle,.import-target-heading span,.import-target-hint,
+  .import-file-meta,.import-global-summary,.import-diagnosis,.import-basic-grid label,
+  .import-mapping-grid label,.import-y-multi-head,.import-column-field-copy span,
+  .import-series-vg-input-wrap,.import-empty
+){color:var(--text-secondary,var(--dkui-text-soft));}
+body.dkds-modern-ui :where(.import-series-vg-hint){color:var(--text-tertiary,var(--dkui-muted));}
+
+/* Files are list items. Only interaction/status state owns paint. */
+body.dkds-modern-ui .import-file-item{border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-file-item:hover{background:var(--surface-hover,var(--dkui-control-hover));}
+body.dkds-modern-ui .import-file-item.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent-primary) 36%,var(--border-subtle));color:var(--accent-primary);}
+body.dkds-modern-ui .import-file-item.error{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 38%,var(--border-subtle));}
+body.dkds-modern-ui .import-file-item.import-name-warning{background:var(--warning-soft);border-color:color-mix(in srgb,var(--warning) 45%,var(--border-subtle));}
+body.dkds-modern-ui .import-file-item.import-replace-warning{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 42%,var(--border-subtle));}
+
+/* Sections are one continuous editor, separated by rhythm/dividers rather than
+   independent white cards. Callouts remain intentionally soft. */
+body.dkds-modern-ui .import-section{border-bottom:1px solid var(--border-subtle,var(--dkui-divider));border-radius:0;background:transparent;border-color:var(--border-subtle,var(--dkui-divider));color:var(--text-primary,var(--dkui-text));box-shadow:none;}
+body.dkds-modern-ui .import-generic-importer-note{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:8px;}
+body.dkds-modern-ui .import-column-field-filter{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:8px;}
+body.dkds-modern-ui .import-series-vg-row{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:7px;}
+body.dkds-modern-ui .import-preview-chip{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:999px;}
+body.dkds-modern-ui :where(.import-generic-importer-note,.import-column-field-filter,.import-series-vg-row,.import-preview-chip){
+  background:var(--surface-secondary,var(--dkui-surface-soft));
+  border-color:var(--border-subtle,var(--dkui-divider));
+  color:var(--text-secondary,var(--dkui-text-soft));
+}
+body.dkds-modern-ui :where(.import-y-multi,.import-series-vg){border-top:1px dashed var(--border-subtle,var(--dkui-divider));}
+body.dkds-modern-ui .import-y-column{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:6px;}
+
+/* Preview table is a data surface, not another floating card. */
+body.dkds-modern-ui .import-preview-table-wrap{border:1px solid var(--border-subtle,var(--dkui-divider));border-radius:7px;background:transparent;}
+body.dkds-modern-ui .import-preview-table{border-collapse:collapse;background:transparent;color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-preview-table th{
+  border-right:1px solid var(--border-subtle,var(--dkui-divider));border-bottom:1px solid var(--border-subtle,var(--dkui-divider));
+  background:var(--surface-secondary,var(--dkui-surface-soft));
+  border-color:var(--border-subtle,var(--dkui-divider));
+  color:var(--text-secondary,var(--dkui-text-soft));
+}
+body.dkds-modern-ui .import-preview-table td{border-right:1px solid var(--border-subtle,var(--dkui-divider));border-bottom:1px solid var(--border-subtle,var(--dkui-divider));color:var(--text-primary,var(--dkui-text));}
+body.dkds-modern-ui .import-preview-table tbody tr:hover td{background:var(--surface-hover,var(--dkui-control-hover));}
+body.dkds-modern-ui .import-preview-table td.import-nan{color:var(--text-tertiary,var(--dkui-muted));background:var(--surface-secondary,var(--dkui-surface-soft));}
+body.dkds-modern-ui .import-section:last-child{border-bottom:0;}
+body.dkds-modern-ui .import-preview-table th:last-child,body.dkds-modern-ui .import-preview-table td:last-child{border-right:0;}
+body.dkds-modern-ui .import-empty{background:transparent;}
+
+/* Duplicate-name status is semantic state and intentionally survives Material
+   flattening. */
+body.dkds-modern-ui .import-duplicate-warning{border-top:1px solid color-mix(in srgb,var(--warning) 34%,var(--border-subtle));background:var(--warning-soft);color:var(--warning);}
+body.dkds-modern-ui .import-duplicate-badge{border:1px solid color-mix(in srgb,var(--warning) 40%,var(--border-subtle));border-radius:999px;background:var(--warning-soft);color:var(--warning);}
+body.dkds-modern-ui .import-file-item.import-replace-warning .import-duplicate-badge{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,var(--border-subtle));color:var(--danger);}

@@ -20,8 +20,11 @@ const grid=read('src/styles/structure/plugin-workspace.css');
 assert(grid.includes('"cleft clsplit cbsplit cbsplit cbsplit"')&&grid.includes('"cleft clsplit cbottom cbottom cbottom"'),'bottom scientific secondary surface must start after the persistent left data rail and extend through center/right.');
 
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'header action hover geometry must use soft rounded hit regions with real horizontal breathing room.');
-assert(integrated.includes('background:color-mix(in srgb,var(--dkui-danger) 8%,transparent)')&&integrated.includes('color:var(--dkui-danger)'),'all shared close buttons must use one restrained close hover treatment.');
+const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
+const appearance=read('src/styles/theme/component-appearance.css');
+assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes(':where(.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions,.dkds-surface-actions,.trend-header-actions) [data-dkds-component-identity="toolbarAction"]{border-radius:7px}'),'header actions must use canonical Structure spacing plus soft Component Appearance rounding.');
+assert(appearance.includes('background:color-mix(in srgb,var(--dkui-danger) 8%,transparent)')&&appearance.includes('color:var(--dkui-danger)'),'all shared close buttons must use one restrained canonical close hover treatment.');
+assert(!integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'Integrated command Theme CSS must not own generic header geometry.');
 
 const resonance=read('src/plugins/resonance-workbench/view-components.js');
 assert(portable.includes("closeButton.classList.add('dkds-panel-close-button'"),'Portable PRIME close actions must consume the shared close-button contract.');

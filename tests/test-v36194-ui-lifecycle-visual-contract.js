@@ -60,9 +60,11 @@ for(const token of ['.primary','.strong','.danger-soft','.accent-soft','[aria-pr
 }
 assert(semanticTheme.includes("return semanticControlOwnsPaint(el)?'':'control'")&&materialJs.includes("expected==='control'&&semanticControlOwnsPaint(el)"),
   'Semantic role inference and renderer ownership must leave semantic control paint to the semantic owner.');
-assert(shellCss.includes('button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn)'),
-  'Generic button palette must not repaint toolbar/activity controls as standalone controls.');
 const componentCss=read('src/styles/theme/component-appearance.css');
+assert(semanticTheme.includes("id:'toolbarAction'")&&semanticTheme.includes("selector:'button,.toolbar-btn,.plugin-toolbar-btn"),
+  'Every ordinary button must enter the canonical ToolbarAction identity instead of a Presentation-owned generic palette.');
+assert(!shellCss.includes('button:not(.primary):not(.strong):not(.toolbar-btn):not(.activity-tab):not(.plugin-toolbar-btn)')&&componentCss.includes('[data-dkds-component-identity="toolbarAction"]'),
+  'Legacy generic button paint must stay removed; Component Appearance is the single action paint owner.');
 assert(materialCss.includes('Popover surfaces own the optical material')&&componentCss.includes('[data-dkds-component-identity="menuItem"]'),
   'Popover material must own only the surface while canonical MenuItem appearance owns row paint for both simple and rich popovers.');
 

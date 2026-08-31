@@ -11,7 +11,7 @@ const coreModuleBudget=48*1024;
 
 {const [major,minor,patch]=String(pkg.version).split('.').map(Number);assert(major>3||(major===3&&(minor>66||(minor===66&&patch>=10))),'Core freeze audit requires DK Data Studio 3.66.10+.');}
 const visual=validateVisualGate();
-assert.strictEqual(visual.invariants,9,'Core freeze gate must enforce all 9 hard visual/ownership invariants.');
+assert(visual.invariants>=9,'Core freeze gate must retain the original 9 hard visual/ownership invariants even as later releases add stricter gates.');
 
 for(const token of ['.dksmb-window{','.dksmb-nav{','.dksmb-browser{','.dksmb-toolbar{','.dksmb-list{','.dksmb-connection{','.dksmb-foot{']){
   assert(!connectivityPresentation.includes(token),`Core presentation must not know SMB domain selector ${token}`);

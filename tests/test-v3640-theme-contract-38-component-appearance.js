@@ -74,8 +74,9 @@ const pulseCss=read('src/plugins/pulse-analysis/plugin.css');
 assert(!pulseCss.includes('.pulse-plot-actions{')&&!pulseCss.includes('.pulse-plot-heading{padding:'),'Pulse plugin must not own PlotView action/header geometry.');
 assert(pulseViews.includes('dkds-surface-heading-stack')&&!pulseCss.includes('.pulse-card-heading:not(.dkds-plot-view-head) h3'),'Non-plot card heading typography must be Core-owned through the shared SurfaceHeader heading stack.');
 const plotCore=read('src/styles/structure/plugin-workspace.css');
+const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 assert(/\.dkds-plot-view-head\{[^}]*grid-template-columns:minmax\(0,1fr\) auto/s.test(plotCore));
-assert(/\.dkds-plot-view-actions\{[^}]*height:100%[^}]*display:flex/s.test(plotCore));
+assert(/\.dkds-plot-view-actions\{[^}]*height:100%[^}]*display:flex/s.test(desktopChrome));
 
 const coreIdentity=[read('src/core/theme/runtime.js'),read('src/core/theme/component-appearance.js'),read('src/styles/theme/component-appearance.css')].join('\n').toLowerCase();
 assert(!coreIdentity.includes('aurora-pop')&&!coreIdentity.includes('aurora pop'),'Theme 3.8 Core must remain profile-identity neutral.');

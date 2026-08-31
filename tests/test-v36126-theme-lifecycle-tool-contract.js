@@ -15,7 +15,12 @@ for(const token of ['--surface-primary:','--surface-secondary:','--surface-hover
 }
 for(const alias of ['--bg','--panel','--border','--text','--muted','--accent','--shadow','--line']) assert(!new RegExp(`${alias}(?![-\w])`).test(ui),`Legacy short theme token ${alias} must not return.`);
 assert(ui.includes('.dkds-plugin-workspace')&&ui.includes('.analysis-page-header'),'Core must own PluginWorkspace and plugin-window chrome rather than leaving every plugin to restyle shared controls.');
-assert(ui.includes('background:var(--surface-primary);\n  border-color:var(--border-subtle);\n  color:var(--text-primary);'),'Core-owned scientific/plugin panels must resolve their surfaces from semantic theme tokens.');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+const materialRoles=read('src/styles/theme/material-roles.css');
+const materialRenderer=read('src/styles/theme/material-renderer.css');
+assert(semanticRegistry.includes('.dkds-plugin-workspace')&&semanticRegistry.includes('.analysis-page'),'Core semantic registry must classify shared scientific/plugin workspaces as Material Surfaces.');
+assert(materialRoles.includes('--dkds-material-base:var(--dkui-role-surface-surface,var(--dkui-surface))')&&materialRoles.includes('--dkds-material-border:var(--dkui-role-surface-border,var(--dkui-divider))'),'Surface role must resolve its base and border through semantic Theme tokens.');
+assert(materialRenderer.includes('background-color:var(--dkds-material-base,var(--dkui-surface));')&&materialRenderer.includes('border-color:var(--dkds-material-border,var(--dkui-divider));'),'Material Renderer must be the single owner that turns semantic Surface tokens into paint.');
 assert(!ui.includes('body.dkds-modern-ui #resonanceDedicatedPage .respar-left-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-inspector-panel,\nbody.dkds-modern-ui #resonanceDedicatedPage .respar-floating-panel{\n  background:#fff'),'Modern UI must not force resonance/plugin panels back to a light-only surface.');
 
 const resonance=read('src/plugins/resonance-workbench/view-components.js');

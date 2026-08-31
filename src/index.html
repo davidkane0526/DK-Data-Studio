@@ -23,7 +23,7 @@
   <div id="app">
     <header class="topbar dkds-material-role-chrome">
       <div class="topbar-primary">
-        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.9</span></div>
+        <div class="brand"><img class="brand-mark" src="../assets/dkds-mark.svg" alt="" aria-hidden="true"><span class="brand-full">DK Data Studio</span><span class="version">v3.67.10</span></div>
 
         <div class="global-commandbar" aria-label="全局命令">
           <div class="toolbar-group file-command-group">
@@ -110,10 +110,10 @@
         <div id="mainWorkspace" class="main-workspace dkds-material-role-surface">
         <div id="mainPlotWrap" class="plot-wrap" data-dkds-plot-scope>
           <div class="main-plot-header">
-          <div class="main-plot-tools" id="mainPlotTools">
+          <div class="main-plot-tools dkds-integrated-action-group dkds-material-role-control" id="mainPlotTools">
             <div id="pluginMainPlotTools" class="plugin-main-tools" data-plugin-main-tools></div>
           </div>
-          <div id="mainLegendBar" class="main-legend-bar dkds-scroll-x-compact" data-dkds-legend></div>
+          <div id="mainLegendBar" class="main-legend-bar dkds-scroll-x-compact dkds-material-role-control" data-dkds-legend></div>
           </div>
           <svg id="mainPlot"></svg>
           <div id="selectionActionMenu" class="range-action-menu hidden" aria-live="polite"></div>
@@ -160,9 +160,9 @@
       <div class="analysis-page-body plugin-manager-body">
         <div id="pluginManagerSummary" class="plugin-manager-summary"></div>
         <div class="plugin-manager-toolbar-card">
-          <div class="plugin-manager-search-wrap">
+          <div class="plugin-manager-search-wrap dkds-material-role-control">
             <span aria-hidden="true">⌕</span>
-            <input id="pluginManagerSearch" type="search" placeholder="搜索插件名称、ID、能力…" autocomplete="off">
+            <input id="pluginManagerSearch" data-dkds-field-layout="integrated" type="search" placeholder="搜索插件名称、ID、能力…" autocomplete="off">
           </div>
           <label>状态
             <select id="pluginManagerFilter">
@@ -186,7 +186,7 @@
               <option value="developer">开发与示例</option>
             </select>
           </label>
-          <span id="pluginManagerVisibleCount" class="plugin-manager-visible-count">显示 0 / 0</span>
+          <span id="pluginManagerVisibleCount" class="plugin-manager-visible-count" data-dkds-component-identity="chip">显示 0 / 0</span>
           <button id="pluginManagerInstallBtn" class="primary">安装插件</button>
           <button id="pluginManagerOpenFolderBtn">插件目录</button>
           <button id="pluginManagerRefreshBtn">刷新</button>
@@ -620,7 +620,7 @@
         <div class="update-actions">
           <button id="updateCheckNowBtn" class="primary">立即检查</button>
           <button id="updateDownloadBtn" class="hidden">开始下载</button>
-          <button id="updateInstallBtn" class="success hidden">保存工程并重启安装</button>
+          <button id="updateInstallBtn" class="primary hidden">保存工程并重启安装</button>
         </div>
 
         <details class="update-settings-details">
@@ -761,6 +761,7 @@
   <script src="core/plugins/devtools.js"></script>
   <script src="core/plugins/manager-ui.js"></script>
   <script src="diagnostics/automation-smoke-cases.js"></script>
+  <script src="diagnostics/automation-visual-cases.js"></script>
   <script src="diagnostics/automation-test-runtime.js"></script>
   <script src="generated/plugin-index.js"></script>
   <script src="generated/runtime/app.js"></script>

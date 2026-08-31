@@ -15,10 +15,12 @@ const dcViews=read('src/plugins/data-center/shared-views.js');
 
 assert(base.includes('.dkds-selection-item.dkds-selection-focused{')&&base.includes('background:var(--accent-soft'), 'Core linked selection must use semantic accent surface.');
 assert(!/\.dkds-selection-item\.dkds-selection-focused\{[^}]*background:[^}]*#fff/i.test(base),'Linked selection must not mix against white in its state rule.');
-assert(modern.includes('body.dkds-modern-ui .dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-bg,var(--dkui-accent-soft))'),'Modern selected rows must be theme-token driven.');
+assert(modern.includes('.dkds-selection-item.dkds-selection-focused{')&&modern.includes('background:var(--dkui-selection-surface)')&&modern.includes('color:var(--dkui-selection-text)'),'Modern selected rows must be theme-token driven by the canonical selection surface/text contract.');
 assert(modern.includes('html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is('),'Dark mode must cover every canonical active toolbarAction independent of page context.');
-assert(/body\.dkds-modern-ui \.floating-panel\s*\{[^}]*outline\s*:\s*0[^}]*border-color\s*:\s*transparent/.test(modern),'Floating utility panels must not expose a bright perimeter border.');
-assert(modern.includes('.lan-web-panel button:not(.primary):not(.panel-close)'),'LAN utility controls must consume host control surfaces.');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+const materialRoles=read('src/styles/theme/material-roles.css');
+assert(semanticRegistry.includes('.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel])')&&materialRoles.includes('--dkds-material-border:var(--dkui-role-floating-border,var(--dkui-divider))'),'Floating utility panels must obtain their perimeter from the semantic floating Material role, not a page-local bright border.');
+assert(semanticRegistry.includes("selector:'button,")&&semanticRegistry.includes("id:'toolbarAction'"),'LAN utility buttons must fall through the canonical ToolbarAction component contract rather than private host paint.');
 assert(dcViews.includes('data-dc-tab="formula" role="tab" class="selected" aria-selected="true"'),'Data Center initial tab state must expose tab semantics and aria-selected.');
 assert(dc.includes("b.setAttribute('aria-selected',selected?'true':'false')"),'Data Center tab changes must synchronize aria-selected.');
 assert(resonance.includes("if(!node.hasAttribute('tabindex'))node.tabIndex=-1")&&resonance.includes('claimKeyboardFocus()'),'Resonance main plot must explicitly own keyboard focus after plot/peak selection.');

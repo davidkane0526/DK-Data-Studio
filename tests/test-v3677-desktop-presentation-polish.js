@@ -31,14 +31,16 @@ assert(desktopShell.includes('110-(Number(item.priority)||0)')&&desktopShell.inc
 const nav=read('src/styles/structure/shell-navigation.css');
 const shell=read('src/styles/presentation/shell.css');
 const component=read('src/styles/theme/component-appearance.css');
+const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
 assert(/\.window-control-btn\{[^}]*width:30px[^}]*height:30px/s.test(nav),'desktop window controls must use compact 30 px hit chrome instead of full-titlebar slabs.');
-assert(/\.window-control-btn:hover:not\(:disabled\)\{[^}]*box-shadow:none/s.test(shell),'window control hover must not grow a tall shadow.');
+assert(/\[data-dkds-component-identity="toolbarAction"\]:is\(\.dkds-panel-close-button,\.window-control-close\):hover:not\(:disabled\)\{[^}]*box-shadow:none/s.test(component),'window close hover must remain a canonical shadow-free ToolbarAction state.');
 assert(/plugin-section-start\{[^}]*margin-left:10px[^}]*padding-left:10px/s.test(nav)&&/plugin-section-start::before\{[^}]*top:10px[^}]*bottom:10px/s.test(nav),'context section divider must be shorter and farther from command shadows.');
 assert(component.includes('.topbar-primary [data-dkds-component-identity="toolbarAction"]:is([data-dkds-component-variant="primary"],[data-dkds-component-variant="selected"],[data-dkds-component-variant="active"])')&&component.includes('--dkds-ca-action-shadow:var(--dkds-shell-action-halo)'),'topbar primary/selected actions must share centered optical shadow depth.');
 
 const semanticCss=read('src/styles/structure/sdk-semantic-surfaces.css');
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(semanticCss.includes('.dkds-panel-close-button')&&integrated.includes('body.dkds-modern-ui .dkds-panel-close-button{'),'Core must expose one close-button geometry and appearance contract.');
+assert(desktopChrome.includes('.dkds-panel-close-button{')&&component.includes('[data-dkds-component-identity="toolbarAction"].dkds-panel-close-button{border-radius:7px}'),'Core must expose one close-button geometry owner in Structure and one appearance owner in Component Appearance.');
+assert(!integrated.includes('body.dkds-modern-ui .dkds-panel-close-button{'),'Integrated command Theme CSS must not reclaim shared close-button appearance.');
 const status=read('src/plugins/status-monitor/plugin.js');
 const devtools=read('src/core/plugins/devtools.js');
 const index=read('src/index.html');

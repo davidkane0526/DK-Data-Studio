@@ -15,15 +15,17 @@ assert(!runtime.includes("profiles.set('builtin.thin-glass'"),'Core Theme Runtim
 
 const material=read('src/core/theme/material-renderer.js');const semantic=read('src/core/theme/semantic-registry.js');
 assert(semantic.includes(".dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel")&&semantic.includes("return 'elevated'"),'LAN Web / dialog surfaces must remain elevated Material roles while persistent pages stay surface-owned.');
-assert(material.includes("const TRANSLUCENT_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass'])"),'Nested composition must be recipe-owned.');
-assert(material.includes('nestedParentOwnsBackdrop')&&!material.includes('thinGlassActive'),'Nested header suppression must be recipe-owned rather than built-in-profile-owned.');
-
 const rendererCss=read('src/styles/theme/material-renderer.css');
+for(const recipe of ['thin-glass','soft-glass','liquid-glass'])assert(rendererCss.includes(`[data-dkds-material-recipe="${recipe}"]`),`Nested composition must remain recipe-owned for ${recipe}.`);
+assert(rendererCss.includes('[data-dkds-material-content="true"]')&&rendererCss.includes('background-color:transparent'),'Translucent Material recipes must flatten declared content layers in the Material Renderer.');
+assert(material.includes('nestedParentOwnsChrome')&&!material.includes('thinGlassActive'),'Nested header suppression must be Material-parent-owned rather than built-in-profile-owned.');
+
 assert(!rendererCss.includes('data-dkds-theme-profile="builtin.thin-glass"'),'Renderer composition must never depend on the built-in Thin Glass profile id.');
 assert(rendererCss.includes('.command-menu.dkds-command-menu-portal'),'Command menus must support body-level popover portal rendering.');
 assert(rendererCss.includes('[data-dkds-material-content="true"]'),'Large glass windows must expose transparent content layers behind the owner surface.');
 const integratedChrome=read('src/styles/theme/integrated-command-chrome.css');
-assert(integratedChrome.includes('.statusbar-command-cluster')&&integratedChrome.includes('[data-dkds-material-role="chrome"]'),'Integrated Command Chrome must fuse the statusbar command group with its parent material without taking over button state paint.');
+assert(semantic.includes('INTEGRATED_CONTAINER_SELECTOR')&&semantic.includes('.statusbar-command-cluster')&&semantic.includes('chromeOwnedIntegrated(el)')&&semantic.includes("if(chromeOwnedIntegrated(el))return '';"),'Semantic UI must fuse the statusbar command group with its parent chrome before Material-role assignment.');
+assert(!integratedChrome.includes('.statusbar-command-cluster'),'Theme-specific integrated-command CSS must not take over statusbar group paint.');
 
 const kernel=readComposition(root,'src/core/plugins/kernel');
 for(const fn of ['portalCommandMenu','restoreCommandMenu','closeCommandMenu','positionCommandMenuPortal','repositionPortaledCommandMenus'])

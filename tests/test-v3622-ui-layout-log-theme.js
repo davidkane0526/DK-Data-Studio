@@ -40,7 +40,7 @@ const theme=read('src/styles/theme/contract.css');
 const componentAppearance=read('src/styles/theme/component-appearance.css');
 const dialogs=read('src/styles/presentation/dialogs.css');
 const connectivity=read('src/styles/presentation/connectivity.css');
-assert(theme.includes('--dkui-primary-shadow:')&&componentAppearance.includes('--dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),0 0 0 2px var(--dkui-focus)')&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]:focus-visible'),'Theme tokens must provide primary depth while Component Appearance exclusively renders primary focus treatment.');
+assert(theme.includes('--dkui-primary-shadow:')&&componentAppearance.includes('--dkds-ca-action-focus-shadow:var(--dkui-primary-shadow),var(--dkui-focus)')&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]:focus-visible'),'Theme tokens must provide primary depth while Component Appearance exclusively renders primary focus treatment.');
 assert(!dialogs.includes('.dkds-dialog-action.primary{')&&!dialogs.includes('footer button.primary{'),'Dialog presentation must not re-own primary button paint.');
 assert(!connectivity.includes('.lan-web-panel button.primary'),'Connectivity presentation must consume the shared primary Theme contract.');
 

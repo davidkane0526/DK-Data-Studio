@@ -31,7 +31,9 @@ assert(scientific.includes('legendMetrics(target)'),'ScientificPlot scope must e
 
 const style=readCoreCss(root);
 assert(style.includes('.dkds-table-surface-host')&&style.includes('.dkds-managed-table'),'Core TableSurface visual contract must exist');
-assert(style.includes('background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43)'),'Core must own table base visual styling');
+assert(style.includes('.dkds-table-surface-host')&&style.includes('color:var(--text-primary)'),'Core TableSurface host must keep semantic text ownership.');
+assert(style.includes('--dkds-table-row-even-bg:color-mix(in srgb,var(--surface-secondary)')&&style.includes('--dkds-table-row-hover-bg:color-mix(in srgb,var(--accent-primary)'),'Core must own TableSurface row appearance through semantic Theme tokens.');
+assert(!style.includes('background:var(--surface-primary,#fff);color:var(--text-primary,#1c2a43)'),'Legacy literal-fallback table paint must not return.');
 const statusBlock=style.slice(style.indexOf('#statusBar.statusbar'),style.indexOf('.workspace{',style.indexOf('#statusBar.statusbar')));
 assert(statusBlock.includes('var(--surface-primary')&&statusBlock.includes('var(--border-subtle'),'Status bar must use semantic theme tokens');
 const pulseStart=style.indexOf('v3.13 pulse batch workspace');

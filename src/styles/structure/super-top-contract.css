@@ -3,7 +3,6 @@
    ============================================================ */
 /* A SUPER is the main native PluginWorkspace surface, not a dismissible child page. */
 /* Canonical geometry migrated from the former Foundation baseline. */
-.panel-header-actions{display:flex;align-items:center;}
 .analysis-page.super-workspace-root-page .analysis-page-close{display:none;}
 
 /* No implicit fallback: if SUPER is unavailable, present a deliberate choice. */
@@ -238,7 +237,7 @@ button.plugin-status-item{cursor:pointer;}
 .dkds-split-handle[data-axis="x"]::after{left:3px;top:50%;width:2px;height:44px;transform:translateY(-50%);}
 .dkds-portable-view{min-width:260px;min-height:100px;overflow:hidden;display:flex;flex-direction:column;z-index:20;}
 .dkds-portable-header{height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;padding:0 7px 0 10px;cursor:default;user-select:none;}
-.dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.dkds-portable-controls{display:flex;align-items:center;gap:3px;}.dkds-portable-controls button{width:25px;height:24px;padding:0;}
+.dkds-portable-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .dkds-portable-view.is-floating{position:fixed;max-width:calc(100vw - 12px);max-height:calc(100vh - 42px);}.dkds-portable-view.is-floating>.dkds-portable-header{cursor:move;}
 .dkds-portable-view.is-docked{width:100%;height:auto;}.dkds-portable-view.dock-right{max-height:100%;}.dkds-portable-view.dock-bottom{max-width:100%;}
 .dkds-chart-surface{min-width:0;min-height:220px;display:flex;flex-direction:column;}.dkds-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:3px 6px 3px 10px;}.dkds-chart-title{font-size:12px;}.dkds-chart-actions{display:flex;align-items:center;}.dkds-chart-plot{flex:1 1 auto;min-height:180px;min-width:0;}
@@ -263,13 +262,7 @@ button.plugin-status-item{cursor:pointer;}
    ========================================================= */
 /* Portable placement is a compact icon breadcrumb. The active icon is always
    visible (◫ at home); the caret opens the complete placement menu. */
-.dkds-portable-controls.dkds-portable-breadcrumb{display:flex;align-items:center;flex:0 0 auto;margin-left:0;gap:0;}
-.dkds-portable-placement-trigger{
-  height:24px;min-width:30px;width:auto;
-  padding:0 5px;font-size:11px;
-  line-height:1;display:inline-flex;align-items:center;
-  justify-content:center;gap:2px;white-space:nowrap;
-}
+.dkds-portable-controls.dkds-portable-breadcrumb{flex:0 0 auto;margin-left:0;}
 .dkds-portable-location-icon{display:inline-grid;place-items:center;width:14px;font-size:12px;line-height:1;}
 .dkds-portable-caret{font-size:var(--ui-font-tiny,10px);margin-top:1px;}
 
@@ -279,10 +272,3 @@ button.plugin-status-item{cursor:pointer;}
 
 /* Lightweight floating-panel chrome: these are window affordances, not primary
    content buttons. */
-.panel-header-actions{gap:2px;}
-.floating-panel:not(.lan-web-panel) .panel-header-actions>button:not(.dkds-panel-close-button){
-  min-width:24px;min-height:24px;height:24px;padding:0 6px;font-size:11px;line-height:24px;
-}
-.floating-panel:not(.lan-web-panel) .panel-header-actions>.panel-close:not(.dkds-panel-close-button){
-  min-width:24px;min-height:24px;height:24px;line-height:24px;font-size:15px;padding:0 5px;
-}

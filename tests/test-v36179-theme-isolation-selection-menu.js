@@ -32,7 +32,7 @@ assert(kernel.includes("globalThis.DKDSTheme?.recipePolicy?.()?.popover"),'Popov
 assert(kernel.includes('else menu.classList.remove(\'hidden\');'),'Clear/default recipe must use the original in-place menu behavior.');
 
 const material=read('src/core/theme/material-renderer.js');
-assert(material.includes('if(nestedParentOwnsBackdrop(el))return \'\';'),'Nested chrome suppression must depend on a translucent parent recipe.');
+assert(material.includes('if(nestedParentOwnsChrome(el))return \'\';'),'Nested chrome suppression must depend on a Core Material parent rather than repainting the header.');
 assert(material.includes("if(role==='control'&&el.matches?.(INTEGRATED_CHILD_SELECTOR))return ''"),'Integrated child controls must not become nested material recipes.');
 
 console.log('v3.61.81 default-theme isolation, recipe ownership and box-selection menu ownership checks passed.');

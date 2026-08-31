@@ -248,7 +248,7 @@ async function initializePluginArchitecture(){
   });
 
   window.DKDSPlugins.configure({
-    appVersion:'3.67.9',
+    appVersion:'3.67.10',
     platform:window.DKDSPlatform,
     isAuxiliaryWindow:false,
     isWebClient:!!window.electronAPI?.isWebClient,
@@ -444,6 +444,17 @@ async function initializePluginArchitecture(){
   const activated=await window.DKDSPlugins.activateAll();
   console.info('[DKDS plugins] activated',activated);
   await publishCapabilitySnapshot();
+  if(new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure'&&window.electronAPI?.diagnosticsCompleteVisualClosure){
+    setTimeout(async()=>{
+      try{
+        const report=await window.DKDSAutomationTests?.run?.();
+        await window.electronAPI.diagnosticsCompleteVisualClosure({reportPath:String(report?.saved?.path||'')});
+      }catch(err){
+        console.error('[DKDS Visual Closure renderer]',err);
+        await window.electronAPI.diagnosticsCompleteVisualClosure({error:err?.message||String(err)}).catch(()=>{});
+      }
+    },250);
+  }
   let capabilityPublishTimer=null;
   window.addEventListener('dkds:capabilities-changed',()=>{clearTimeout(capabilityPublishTimer);capabilityPublishTimer=setTimeout(()=>publishCapabilitySnapshot(),0);});
   window.DKDSPlugins.events.on('plugin:state-changed',()=>{

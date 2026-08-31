@@ -6,9 +6,6 @@ const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const json=rel=>JSON.parse(read(rel));
 
-const pkg=json('package.json');
-assert(pkg.version==='3.67.9','This visual acceptance gate belongs to v3.67.9.');
-
 // 1) Desktop workspace: left data rail persists; bottom group plot starts after
 // it and extends through center + inspector width.
 const grid=read('src/styles/structure/plugin-workspace.css');
@@ -26,7 +23,10 @@ for(const source of [curveNav,chartRuntime]){
   assert(source.includes("button.dataset.dkdsComponentIdentity='toolbarAction'")&&source.includes("button.dataset.dkdsComponentVariant='quiet'"),'all plot nav buttons must consume the same quiet ToolbarAction contract.');
 }
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
-assert(integrated.includes('.dkds-scientific-nav-tools button:hover:not(:disabled)')&&integrated.includes('border-radius:6px'),'plot navigation hover must remain a soft rounded hit region without a hard rectangular edge.');
+const appearance=read('src/styles/theme/component-appearance.css');
+const desktopChrome=read('src/styles/structure/desktop-chrome-geometry.css');
+assert(appearance.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'plot navigation actions must remain soft rounded canonical ToolbarAction hit regions.');
+assert(!integrated.includes('.dkds-scientific-nav-tools button:hover:not(:disabled)'),'Integrated command Theme CSS must not repaint plot-navigation hover.');
 
 // 3/4) Portable/header actions are quiet by default, with rounded spacing and
 // no accidental generic hard-border hover.
@@ -34,8 +34,7 @@ const portable=read('src/core/ui/modules/layout/portable-view.js');
 const actions=read('src/core/ui/modules/interaction/context-actions.js');
 assert(portable.includes("placementButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("closeButton.dataset.dkdsComponentVariant='quiet'")&&portable.includes("collapseButton.dataset.dkdsComponentVariant='quiet'"),'Portable header controls must be quiet actions.');
 assert(actions.includes("headerIntegrated?'quiet':''"),'integrated header ActionGroup controls must default to quiet actions.');
-assert(integrated.includes('border-radius:8px;padding-left:9px;padding-right:9px'),'header controls must have rounded hover geometry and breathing room.');
-const appearance=read('src/styles/theme/component-appearance.css');
+assert(desktopChrome.includes('min-height:26px;height:26px;min-width:26px;padding:0 8px')&&appearance.includes(':where(.dkds-portable-controls,.panel-header-actions,.dkds-plot-view-actions,.dkds-surface-actions,.trend-header-actions) [data-dkds-component-identity="toolbarAction"]{border-radius:7px}'),'header controls must combine canonical 26px Structure geometry with soft Component Appearance rounding.');
 assert(appearance.includes('color-mix(in srgb,var(--dkui-control-hover) 62%,transparent)'),'quiet hover paint must be lighter than generic control hover.');
 
 // 5/6/8) The graph command/legend outlines and every topbar group share explicit
@@ -53,7 +52,7 @@ assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dk
 assert(shell.includes('height:var(--dkds-shell-group-height,38px)')&&shell.includes('padding:2px;'),'primary activity cluster must use the same 38px envelope with 2px inset.');
 assert(superTop.includes('height:var(--dkds-shell-group-height,38px)'),'file command outline must use the same envelope.');
 assert(workbench.includes('height:var(--dkds-shell-group-height,38px)'),'system command outline must use the same envelope.');
-assert(appearance.includes('--dkds-shell-action-halo:0 0 2px'),'topbar action halo must mathematically occupy the same 38px visual envelope as grouped chrome.');
+assert(appearance.includes('--dkds-shell-action-halo:0 0 0 2px'),'topbar action halo must use an exact centered 2px spread so the visual envelope matches grouped chrome without blur growth.');
 
 // 7) Parameters / inspector / group presentation buttons have the same content
 // geometry. No first-button padding exception may return.

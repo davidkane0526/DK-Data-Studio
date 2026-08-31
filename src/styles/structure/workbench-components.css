@@ -15,7 +15,6 @@
 .group-panel.collapsed .floating-body{display:none;}
 .group-panel.docked .floating-header{cursor:default;}
 .group-panel.docked .floating-body{overflow:auto;padding:8px 10px;}
-.panel-header-actions button{padding:3px 7px;}
 .dock-resizer{display:none;}
 .group-panel.docked:not(.collapsed) .dock-resizer{display:block;position:absolute;left:0;right:0;top:0;height:7px;cursor:ns-resize;z-index:8;}
 .zoom-panel{left:50%;top:50%;transform:translate(-50%,-50%);width:980px;height:720px;z-index:180;}
@@ -34,12 +33,6 @@
 .dkds-plugin-workspace .dkds-portable-view.is-global-floating{
   z-index:var(--dkds-portable-z,var(--dkds-layer-global-float));
 }
-.dkds-portable-icon-action{
-  width:30px;min-width:30px;height:30px;min-height:30px;
-  padding:0;
-  display:inline-flex;align-items:center;justify-content:center;
-  font-size:18px;line-height:1;font-weight:500;}
-.dkds-portable-close-action{font-size:20px;}
 
 /* A collapsed bottom dock consumes only its title bars. The scientific canvas
    immediately reclaims the former fixed split height. */
@@ -105,9 +98,9 @@ body.dkds-table-resizing *{cursor:col-resize;}
 /* Core-owned compact draggable navigation for D3 ScientificCurveSurface. */
 .dkds-scientific-surface-host{position:relative;}
 .dkds-scientific-auto-legend{position:absolute;z-index:12;display:flex;align-items:center;gap:5px;padding:3px 4px;overflow:auto;pointer-events:auto;font-size:10px;line-height:1.15;}
-.dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:11px;height:20px;flex:0 0 11px;font-size:14px;line-height:1;cursor:grab;touch-action:none;}
+.dkds-scientific-nav-drag{display:flex;align-items:center;justify-content:center;width:25px;min-width:25px;height:24px;min-height:24px;flex:0 0 25px;padding:0;font-size:14px;line-height:1;cursor:grab;touch-action:none;}
 .dkds-scientific-nav-tools.is-dragging .dkds-scientific-nav-drag{cursor:grabbing;}
-.dkds-scientific-nav-tools button{display:flex;align-items:center;justify-content:center;width:23px;height:20px;min-width:23px;min-height:0;padding:0;font-size:14px;line-height:1;vertical-align:middle;}
+.dkds-scientific-nav-tools button{display:flex;align-items:center;justify-content:center;width:25px;height:24px;min-width:25px;min-height:24px;padding:0;font-size:14px;line-height:1;vertical-align:middle;}
 @media (hover:none),(pointer:coarse){}
 
 /* Core plugin settings surface */

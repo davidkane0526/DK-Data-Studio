@@ -209,7 +209,7 @@ function renderProjectTabs(){
     el.setAttribute('aria-selected',selected?'true':'false');
     el.tabIndex=selected?0:-1;
     el.title=t.projectPath||t.title;
-    el.innerHTML=`<span class="project-tab-title">${escapeHtml(t.title)}</span><button class="project-tab-close" title="关闭项目">×</button>`;
+    el.innerHTML=`<span class="project-tab-title">${escapeHtml(t.title)}</span><button class="project-tab-close quiet" title="关闭项目">×</button>`;
     el.onclick=e=>{
       if(e.target.closest('.project-tab-close'))return;
       switchProjectTab(t.id);

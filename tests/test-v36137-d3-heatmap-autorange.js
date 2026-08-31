@@ -31,7 +31,7 @@ assert(renderer.includes('const rawValue=z?.[yi]?.[xi];if(!finite(rawValue))cont
 assert(renderer.includes('return manual?scale:scale.nice()'),'Explicit Cartesian ranges must remain exact while automatic ranges use nice ticks.');
 assert(renderer.includes("value!==null&&value!==undefined&&!(typeof value==='string'&&!value.trim())"),'D3 missing scalar values must not silently become numeric zero.');
 assert(terUtils.includes("if(v===null||v===undefined||(typeof v==='string'&&!v.trim()))return null;"),'TER optional display limits must preserve automatic heatmap scaling.');
-assert(css.includes('width:11px;height:20px;flex:0 0 11px')&&css.includes('width:23px;height:20px;min-width:23px'),'Scientific floating navigation chrome must keep the reduced 20 px control height without compressing its horizontal width.');
+assert(css.includes('width:25px;min-width:25px;height:24px;min-height:24px;flex:0 0 25px')&&css.includes('width:25px;height:24px;min-width:25px;min-height:24px'),'Scientific floating navigation chrome must consume the shared 25 × 24 px Core hit-region geometry for drag and actions.');
 
 // scalarFieldSpec is pure enough to execute without a browser. Null/blank optional
 // limits must stay absent so the D3 renderer derives the real matrix extent.

@@ -27,20 +27,23 @@
   const INTEGRATED_CHILD_SELECTOR='.dkds-integrated-action-group button,.panel-header-actions button,.trend-header-actions button,.dkds-plot-view-actions button,.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button,[data-dkds-material-integrated="true"] button,.dkds-scientific-nav-tools button';
   const semanticControlOwnsPaint=el=>Semantic.semanticControlOwnsPaint(el);
   const chromeOwnedIntegrated=el=>Semantic.chromeOwnedIntegrated(el);
-  const TRANSLUCENT_RECIPES=new Set(['thin-glass','soft-glass','liquid-glass']);
-  const MATERIAL_OWNER_SELECTOR='[data-dkds-material-role="elevated"],.dkds-material-role-elevated,[data-dkds-material-role="floating"],.dkds-material-role-floating';
+  const MATERIAL_OWNER_SELECTOR='[data-dkds-material-role="sidebar"],.dkds-material-role-sidebar,[data-dkds-material-role="surface"],.dkds-material-role-surface,[data-dkds-material-role="elevated"],.dkds-material-role-elevated,[data-dkds-material-role="floating"],.dkds-material-role-floating';
+  const NESTED_HEADER_SELECTOR='.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head,.dkds-analysis-prime-head';
   function parentMaterialRole(el){
-    const parent=el?.parentElement;if(!parent?.matches?.(MATERIAL_OWNER_SELECTOR))return '';
-    if(parent.matches?.('[data-dkds-material-role="elevated"],.dkds-material-role-elevated'))return 'elevated';
-    if(parent.matches?.('[data-dkds-material-role="floating"],.dkds-material-role-floating'))return 'floating';
+    let parent=el?.parentElement||null,depth=0;
+    while(parent&&parent!==document.body&&parent!==document.documentElement&&depth<6){
+      if(parent.matches?.(MATERIAL_OWNER_SELECTOR)){
+        for(const role of ['sidebar','surface','elevated','floating'])if(parent.matches?.(`[data-dkds-material-role="${role}"],.dkds-material-role-${role}`))return role;
+      }
+      parent=parent.parentElement;depth++;
+    }
     return '';
   }
-  function nestedParentOwnsBackdrop(el){
-    if(!el?.matches?.('.dkds-surface-header,.floating-header,.analysis-chart-title'))return false;
-    const role=parentMaterialRole(el);
-    return !!role&&TRANSLUCENT_RECIPES.has(String(recipePolicy()[role]||''));
+  function nestedParentOwnsChrome(el){
+    if(!el?.matches?.(NESTED_HEADER_SELECTOR))return false;
+    return !!parentMaterialRole(el);
   }
-  function inferRole(el){if(nestedParentOwnsBackdrop(el))return '';return Semantic.resolveMaterialRole(el);}
+  function inferRole(el){if(nestedParentOwnsChrome(el))return '';return Semantic.resolveMaterialRole(el);}
   function inferRecipe(el,role){
     if(!role)return '';
     if(role==='control'&&el.matches?.(INTEGRATED_CHILD_SELECTOR))return '';
@@ -55,7 +58,7 @@
     if(expected==='control'&&semanticControlOwnsPaint(el))return Object.freeze({managed:true,status:'MATERIAL_SEMANTIC_OVERRIDE',role:actual||'semantic-control',expectedRole:expected});
     if(expected==='control'&&el?.matches?.(INTEGRATED_CHILD_SELECTOR))return Object.freeze({managed:true,status:'MATERIAL_CHROME_OWNED',role:actual||'integrated-hit-region',expectedRole:expected});
     if(expected==='control'&&chromeOwnedIntegrated(el))return Object.freeze({managed:true,status:'MATERIAL_CHROME_OWNED',role:actual||'chrome-owned-control',expectedRole:expected});
-    if(expected==='chrome'&&nestedParentOwnsBackdrop(el))return Object.freeze({managed:true,status:'MATERIAL_PARENT_OWNED',role:actual||'parent-owned-chrome',expectedRole:expected});
+    if(expected==='chrome'&&nestedParentOwnsChrome(el))return Object.freeze({managed:true,status:'MATERIAL_PARENT_OWNED',role:actual||'parent-owned-chrome',expectedRole:expected});
     return Object.freeze({managed:!!actual&&(!expected||actual===expected),status:actual&&(!expected||actual===expected)?'MATERIAL_ROLE_OWNED':'ROLE_MISSING',role:actual,expectedRole:expected});
   }
   function assignSemanticRole(el){
@@ -174,9 +177,13 @@
   }
   function alphaOf(value){
     const s=String(value||'').trim();if(!s||s==='transparent')return 0;
-    let m=s.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/i);if(m)return Number(m[1]);
-    m=s.match(/^rgb\([^/]+\/\s*([\d.]+)%?\s*\)$/i);if(m){const n=Number(m[1]);return s.includes('%')?n/100:n;}
-    return /^rgb\(/i.test(s)?1:null;
+    let m=s.match(/^rgba?\([^)]*\/\s*([\d.]+)(%)?\s*\)$/i);
+    if(m){const n=Number(m[1]);return m[2]?n/100:n;}
+    m=s.match(/^rgba\(\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*([\d.]+)(%)?\s*\)$/i);
+    if(m){const n=Number(m[1]);return m[2]?n/100:n;}
+    m=s.match(/^color\(srgb\s+[^/)]*(?:\/\s*([\d.]+)(%)?\s*)?\)$/i);
+    if(m){if(m[1]==null)return 1;const n=Number(m[1]);return m[2]?n/100:n;}
+    return /^(?:rgb|rgba|color\(srgb)\(/i.test(s)?1:null;
   }
   let opticalFrame=0,opticalPending=null,opticalActive=null,opticalIdleTimer=0;
   const reduceMotion=()=>{try{return !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;}catch{return false;}};
@@ -215,14 +222,25 @@
   }
 
   function occludingChildOf(el){
-    const parentRect=el?.getBoundingClientRect?.();if(!parentRect||parentRect.width<=0||parentRect.height<=0)return null;
-    const parentArea=parentRect.width*parentRect.height;let best=null;
-    for(const child of [...(el.children||[])]){
-      if(child.dataset?.dkdsMaterialSurface==='core')continue;
-      const rect=child.getBoundingClientRect?.();if(!rect||rect.width<=0||rect.height<=0)continue;
-      const coverage=Math.min(parentRect.width,rect.width)*Math.min(parentRect.height,rect.height)/parentArea;if(coverage<.6)continue;
-      const style=getComputedStyle(child),backgroundColor=String(style.backgroundColor||''),alpha=alphaOf(backgroundColor);if(alpha===null||alpha<.72)continue;
-      if(!best||coverage>best.coverage)best={tag:String(child.tagName||'').toLowerCase(),id:String(child.id||''),className:String(child.className||''),backgroundColor,alpha,coverage:Number(coverage.toFixed(3))};
+    const ownerRect=el?.getBoundingClientRect?.();if(!ownerRect||ownerRect.width<=0||ownerRect.height<=0)return null;
+    const ownerArea=ownerRect.width*ownerRect.height;let best=null;
+    const queue=[...(el.children||[])].map(node=>({node,depth:1}));
+    while(queue.length){
+      const {node,depth}=queue.shift();if(!node?.getBoundingClientRect)continue;
+      // A nested canonical Material surface is intentional composition. Theme
+      // Coverage checks that surface independently; it is not renderer occlusion
+      // of its parent. Occlusion here means an unmanaged opaque content sheet.
+      if(roleOf(node)||node.dataset?.dkdsMaterialSurface==='core')continue;
+      const style=getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden')continue;
+      const rect=node.getBoundingClientRect();if(rect.width<=0||rect.height<=0)continue;
+      const width=Math.max(0,Math.min(ownerRect.right,rect.right)-Math.max(ownerRect.left,rect.left));
+      const height=Math.max(0,Math.min(ownerRect.bottom,rect.bottom)-Math.max(ownerRect.top,rect.top));
+      const coverage=(width*height)/ownerArea;
+      if(coverage>=.72){
+        const backgroundColor=String(style.backgroundColor||''),alpha=alphaOf(backgroundColor);
+        if(alpha!==null&&alpha>=.985&&(!best||coverage>best.coverage))best={tag:String(node.tagName||'').toLowerCase(),id:String(node.id||''),className:String(node.className||''),backgroundColor,alpha,coverage:Number(coverage.toFixed(3)),depth};
+      }
+      if(depth<2)for(const child of [...(node.children||[])])queue.push({node:child,depth:depth+1});
     }
     return best?Object.freeze(best):null;
   }
@@ -233,7 +251,7 @@
     const expectedBlur=prop(style,'--dkds-material-blur'),expectedBlurStrong=prop(style,'--dkds-material-blur-strong'),expectedSaturation=prop(style,'--dkds-material-saturation');
     const backgroundColor=String(style.backgroundColor||'').trim(),backgroundAlpha=alphaOf(backgroundColor),foregroundColor=String(style.color||'').trim();
     const baseTokenRow=ROLE_BASE_TOKENS[role]||null,authoredBase=baseTokenRow?prop(style,baseTokenRow.cssVar):'',baseToken=baseTokenRow?(authoredBase?`${baseTokenRow.token} / ${baseTokenRow.cssVar}`:`${baseTokenRow.fallbackToken} / ${baseTokenRow.fallbackVar}`):'',baseColor=baseTokenRow?(authoredBase||prop(style,baseTokenRow.fallbackVar)):'';
-    const occludingChild=['sidebar','surface','elevated'].includes(role)?occludingChildOf(el):null;
+    const occludingChild=recipe&&recipe!=='clear'&&role!=='control'?occludingChildOf(el):null;
     let contrastRatio=null;
     if(role==='popover'){
       const fg=parseRgb(foregroundColor),bg0=parseRgb(backgroundColor),canvas=resolveCssColor('var(--dkui-canvas)','backgroundColor')||{r:255,g:255,b:255,a:1};
@@ -262,10 +280,16 @@
     else if(recipe==='clear')opticalStatus='REAL_CLEAR_MATERIAL';
     else if(recipe==='thin-glass')opticalStatus='REAL_THIN_GLASS';
     else opticalStatus='REAL_SOFT_MATERIAL';
-    if(status==='REAL_MATERIAL'&&recipe!=='clear'&&backgroundAlpha!==null&&backgroundAlpha>=.985)status='OPAQUE_PARENT_OCCLUSION';
-    if(status==='REAL_MATERIAL'&&recipe!=='clear'&&opaqueParent)status='OPAQUE_PARENT_OCCLUSION';
+    // Plugin API 1.19 exposes the legacy OPAQUE_PARENT_OCCLUSION status name.
+    // Preserve that public enum, but do not treat an opaque ancestor alone as
+    // renderer failure: backdrop-filter can still sample sibling/content pixels
+    // inside that ancestor. Real occlusion is an opaque repaint of the Material
+    // itself or an unmanaged opaque descendant covering most of its optical area.
+    let occlusionSource='';
+    if(status==='REAL_MATERIAL'&&recipe!=='clear'&&backgroundAlpha!==null&&backgroundAlpha>=.985){status='OPAQUE_PARENT_OCCLUSION';occlusionSource='self';}
+    if(status==='REAL_MATERIAL'&&recipe!=='clear'&&occludingChild){status='OPAQUE_PARENT_OCCLUSION';occlusionSource='child';}
     if(status==='REAL_MATERIAL'&&role==='popover'&&Number.isFinite(contrastRatio)&&contrastRatio<4.5)status='LOW_CONTRAST_MATERIAL';
-    return Object.freeze({status,opticalStatus,role,expectedRole,recipe,baseToken,baseColor,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,occludingChild,recipeInstalled:recipeInstalled(),engine});
+    return Object.freeze({status,opticalStatus,role,expectedRole,recipe,baseToken,baseColor,expectedBlur,expectedBlurStrong,expectedSaturation,backdropFilter,edgeBackdropFilter,edgeTransform,specularBackground,backgroundColor,backgroundAlpha,foregroundColor,contrastRatio,opaqueParent,occludingChild,occlusionSource,recipeInstalled:recipeInstalled(),engine});
   }
   function probeRole(role){
     if(!document?.body)return Object.freeze({role,status:'NO_BODY'});

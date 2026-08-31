@@ -377,8 +377,16 @@
       ...(Array.isArray(diag.external?.errors)?diag.external.errors.map(row=>({...row,source:row?.source||'external'})):[]),
       ...(Array.isArray(diag.overrides?.errors)?diag.overrides.errors.map(row=>({...row,source:row?.source||'override'})):[])
     ];
-    if(errors.length){const err=new Error(`External plugin package errors: ${errors.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:errors.map(row=>({file:row?.file||'',pluginId:row?.pluginId||'',source:row?.source||'',error:row?.error||String(row||'')}))};throw err;}
-    return {responsibility:'external-plugin-package',errors:0};
+    const pluginRows=Array.isArray(diag.plugins)?diag.plugins:[],fallbackWarnings=[],blocking=[];
+    for(const row of errors){
+      const file=String(row?.file||''),pluginId=String(row?.pluginId||'').trim()||(row?.source==='override'?file.replace(/\.dkplugin$/i,'').trim():'');
+      const fallback=pluginId?pluginRows.find(item=>String(item?.id||'')===pluginId&&item?.enabled&&item?.active&&item?.status!=='error'&&String(item?.source||'')==='builtin'):null;
+      const normalized={file,pluginId,source:row?.source||'',error:row?.error||String(row||'')};
+      if(row?.source==='override'&&fallback)fallbackWarnings.push({...normalized,fallbackVersion:String(fallback.version||'')});
+      else blocking.push(normalized);
+    }
+    if(blocking.length){const err=new Error(`External plugin package errors: ${blocking.map(row=>row?.file||row?.pluginId||'unknown').join(', ')}`);err.data={responsibility:'external-plugin-package',errors:blocking,fallbackWarnings};throw err;}
+    return {responsibility:'external-plugin-package',errors:0,fallbackWarnings};
   }
 
 

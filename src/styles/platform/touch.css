@@ -127,9 +127,6 @@
   width:min(92vw,420px);
   max-width:none;
   height:auto;
-  border:1px solid var(--border-subtle);
-  border-radius:10px 0 0 10px;
-  box-shadow:var(--surface-shadow);
 }
 .dkds-size-compact .main-workspace{
   position:relative;

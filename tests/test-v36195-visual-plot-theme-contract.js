@@ -13,6 +13,9 @@ const shell=read('src/styles/structure/analysis-shell.css');
 const integrated=read('src/styles/theme/integrated-command-chrome.css');
 const status=read('src/styles/presentation/control-status.css');
 const materialCss=read('src/styles/theme/material-renderer.css');
+const materialRoles=read('src/styles/theme/material-roles.css');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
 const materialJs=read('src/core/theme/material-renderer.js');
 const coverage=read('src/core/theme/coverage-runtime.js');
 const chart=read('src/core/scientific/chart-runtime.js');
@@ -36,8 +39,9 @@ assert(shell.includes('.analysis-page-header>.analysis-page-close{flex:0 0 auto;
   'Close-window action must remain a fixed header sibling and never be overlapped.');
 
 // Group-plot controls are title-bar hit regions, not a second rounded capsule.
-assert(integrated.includes('.dkds-group-plot-head')&&integrated.includes('border-radius:0;')&&integrated.includes('overflow:visible;'),
-  'Integrated plot actions must flatten directly into surface/group title chrome.');
+assert(semanticRegistry.includes('.dkds-group-plot-head')&&semanticRegistry.includes('CHROME_SELECTOR')&&materialCss.includes('.dkds-group-plot-head')&&materialCss.includes('Header-owned command wrappers are transparent composition only.'),
+  'Integrated plot actions must flatten directly into surface/group title chrome through semantic chrome ownership.');
+assert(!integrated.includes('.dkds-group-plot-head'),'Theme-specific Integrated Command CSS must not re-own group-title action paint.');
 
 // Bottom command cluster needs readable separation.
 assert(/\.statusbar-command-cluster\{[\s\S]*?gap:8px;/.test(status)&&/\.statusbar-plugin-zone\{[\s\S]*?gap:8px;/.test(status),
@@ -46,8 +50,8 @@ assert(/\.statusbar-command-cluster\{[\s\S]*?gap:8px;/.test(status)&&/\.statusba
 // Thin Glass inputs/selects share one Core geometry and one role-owned paint family.
 assert(workbench.includes('min-height:var(--plugin-control-height);')&&workbench.includes('height:var(--plugin-control-height);'),
   'Workbench input/select geometry must share the Core control height.');
-assert(materialCss.includes('[data-dkds-material-role="control"],.dkds-material-role-control')&&materialCss.includes('background:var(--dkds-material-base,var(--dkui-control-bg));'),
-  'Material control owners must receive the same Core field paint even when Thin Glass maps controls to clear.');
+assert(materialRoles.includes('[data-dkds-material-role="control"],.dkds-material-role-control')&&materialRoles.includes('--dkds-material-base:var(--dkui-role-control-surface,var(--dkui-control-bg))')&&componentAppearance.includes('[data-dkds-component-identity="field"]{box-sizing:border-box'),
+  'Control Material Role must supply field context while canonical Component Appearance remains the sole field-paint owner.');
 
 // Theme coverage must understand deliberate semantic/chrome ownership instead of calling it unmanaged.
 for(const token of ['function ownership(el,expectedRole','MATERIAL_SEMANTIC_OVERRIDE','MATERIAL_CHROME_OWNED','MATERIAL_PARENT_OWNED']){

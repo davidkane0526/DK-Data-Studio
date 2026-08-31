@@ -8,6 +8,9 @@ const html=fs.readFileSync(path.join(root,'src','index.html'),'utf8');
 const pluginHtml=fs.readFileSync(path.join(root,'src','plugin-window','index.html'),'utf8');
 const css=readCoreCss(root,['presentation','theme']);
 const chartRuntime=fs.readFileSync(path.join(root,'src','core','scientific','chart-runtime.js'),'utf8');
+const materialCss=fs.readFileSync(path.join(root,'src','styles','theme','material-renderer.css'),'utf8');
+const componentCss=fs.readFileSync(path.join(root,'src','styles','theme','component-appearance.css'),'utf8');
+const scientificStructure=fs.readFileSync(path.join(root,'src','styles','structure','workbench-components.css'),'utf8');
 
 
 assert(html.includes('core.css')&&html.includes('class="dkds-modern-ui"'),'main window must opt into the layered Core visual system');
@@ -24,7 +27,8 @@ const dataCenterCss=fs.readFileSync(path.join(root,'src','plugins','data-center'
 assert(!css.includes('#resonanceDedicatedPage')&&!css.includes('.data-center-body'),'Core modern CSS must not own domain-plugin selectors');
 assert(Array.isArray(resonanceManifest.styles)&&resonanceManifest.styles.includes('plugin.css')&&resonanceCss.includes('#resonanceDedicatedPage'),'Resonance domain layout must be manifest-owned plugin CSS');
 assert(Array.isArray(dataCenterManifest.styles)&&dataCenterManifest.styles.includes('plugin.css')&&dataCenterCss.includes('.data-center-body'),'Data Center domain layout must be manifest-owned plugin CSS');
-assert(css.includes('.dkds-scientific-nav-tools button')&&css.includes('box-shadow:none'),'Core scientific navigation buttons must stay compact and be protected from card/button depth');
+assert(scientificStructure.includes('.dkds-scientific-nav-tools button')&&scientificStructure.includes('width:25px;height:24px;min-width:25px;min-height:24px'),'Core scientific navigation buttons must keep one compact geometry contract');
+assert(materialCss.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&componentCss.includes('.dkds-scientific-nav-tools [data-dkds-component-identity="toolbarAction"]{border-radius:6px}'),'Scientific navigation depth must be owned by Material Renderer while hit-region paint stays in Component Appearance');
 assert(css.includes('@media (prefers-reduced-motion:reduce)'),'short motion must include a reduced-motion fallback');
 
 assert(css.includes('.menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px'),'source-choice menus must use the generic left-aligned menu contract');

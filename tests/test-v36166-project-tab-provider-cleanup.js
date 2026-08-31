@@ -5,19 +5,16 @@ const root=path.resolve(__dirname,'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 
 
+const structure=fs.readFileSync(path.join(root,'src','styles','structure','shell-navigation.css'),'utf8');
 const modern=fs.readFileSync(path.join(root,'src','styles','presentation','shell.css'),'utf8');
-assert(modern.includes('body.dkds-modern-ui .project-tab-close{'),'Project tab close must have an explicit Core icon-action rule.');
-for(const needle of [
-  'width:24px',
-  'height:24px',
-  'min-width:24px',
-  'min-height:24px',
-  'border-radius:50%',
-  'background:transparent',
-  'box-shadow:none'
-]) assert(modern.includes(needle),`Project tab close rule missing: ${needle}`);
-assert(modern.includes('.project-tab-close:hover:not(:disabled)'), 'Project tab close must own its hover state.');
-assert(modern.includes('color-mix(in srgb,var(--dkui-text'), 'Project tab close hover must use a neutral semantic tint.');
+const appearance=fs.readFileSync(path.join(root,'src','styles','theme','component-appearance.css'),'utf8');
+const tabsRuntime=fs.readFileSync(path.join(root,'src','app','modules','project-tabs-history.js'),'utf8');
+assert(structure.includes('.project-tab-close{'),'Project tab close geometry must have an explicit Structure owner.');
+for(const needle of ['width:24px','height:24px','min-width:24px','min-height:24px']) assert(structure.includes(needle),`Project tab close geometry missing: ${needle}`);
+assert(appearance.includes('[data-dkds-component-identity="toolbarAction"].project-tab-close{border-radius:50%}'),'Project tab close circular identity must be owned by Component Appearance, not Structure.');
+assert(!modern.includes('body.dkds-modern-ui .project-tab-close{')&&!modern.includes('.project-tab-close:hover:not(:disabled)'),'Project tab close paint/state must not return to Presentation.');
+assert(tabsRuntime.includes('class="project-tab-close quiet"'),'Project tab close must declare the canonical quiet ToolbarAction variant.');
+assert(appearance.includes('[data-dkds-component-identity="toolbarAction"][data-dkds-component-variant="quiet"]')&&appearance.includes('color-mix(in srgb,var(--dkui-control-hover) 62%,transparent)'),'Project tab close hover must resolve through the neutral semantic quiet ToolbarAction appearance.');
 
 const manager=require(path.join(root,'desktop','plugin-window-manager.js'));
 const vth=manager.resolveBuiltinPluginWindow(root,'transfer-vth-lab');

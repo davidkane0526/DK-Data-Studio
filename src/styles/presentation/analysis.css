@@ -1,136 +1,51 @@
 /* Analysis workspace presentation.
-   Core owns shared analysis surfaces; plugins own only domain layout and content. */
-/* Canonical presentation migrated from the former Foundation baseline. */
-/* Semantic owner consolidation from earlier presentation modules. */
-html[data-dkds-theme="dark"] body.dkds-modern-ui .peak-class-grid input{background:#202733;border-color:var(--dkui-border);color:#e0e6ef;
-}
-body.dkds-modern-ui .preset-row button{
-  border-color:var(--dkui-control-border);
-  background:var(--dkui-control-bg);
-  color:var(--dkui-text);
-  box-shadow:var(--dkui-shadow-1);
+   Core owns shared analysis semantics; Structure owns geometry and Material
+   Renderer owns canonical surfaces. This file only expresses content/state
+   presentation that is specific to the shared analysis vocabulary. */
+
+body.dkds-modern-ui .preset-row button,
+body.dkds-modern-ui .dkds-analysis-workbench button{
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
 body.dkds-modern-ui .peak-class-grid input{
-  background:var(--dkui-control-bg);
-  border-color:var(--dkui-control-border);
-  color:var(--dkui-text);
-  box-shadow:0 1px 2px rgba(26,39,64,.025) inset;
   transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
 }
-body.dkds-modern-ui .dkds-analysis-left-resizer::before,body.dkds-modern-ui .dkds-analysis-right-resizer::before,body.dkds-modern-ui .dkds-analysis-bottom-resizer::before{
-  background:transparent;
-}
-body.dkds-modern-ui .dkds-analysis-left-resizer:hover::before,body.dkds-modern-ui .dkds-analysis-right-resizer:hover::before,body.dkds-modern-ui .dkds-analysis-bottom-resizer:hover::before{
-  background:var(--divider-active);
-}
+body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled){transform:none;}
+
+.dkds-analysis-left-resizer::before,
+.dkds-analysis-right-resizer::before,
+.dkds-analysis-bottom-resizer::before{background:transparent;}
+.dkds-analysis-left-resizer:hover::before,
+.dkds-analysis-right-resizer:hover::before,
+.dkds-analysis-bottom-resizer:hover::before{background:var(--divider-active);}
+
+/* Informational notes are semantic states rather than generic Material cards. */
 .analysis-note{
-  background:#eef4ff;
-  border-left:3px solid #6f8fe8;
-  color:#556176;
-}
-.analysis-large-plot{
-  background:#fff;
-  border:1px solid #dce2ec;
-  border-radius:9px;
-}
-.analysis-table-wrap{
-  background:#fff;
-  border:1px solid #dce2ec;
-  border-radius:9px;
-}
-.analysis-table{
-  border-collapse:collapse;
-}
-.analysis-table th,.analysis-table td{
-  border-bottom:1px solid #edf0f4;
-}
-.analysis-table th{
-  background:#f8fafc;
-  color:#495468;
-}
-.dataset-item{border-radius:7px;border:1px solid transparent;
-}
-.dataset-meta{font-size:11px;color:var(--text-secondary);
-}
-.scan-toggle-row{font-size:11px;color:#4b5563;
-}
-.algorithm-row input[type="number"]{border:1px solid var(--border-subtle);border-radius:5px;
-}
-.algorithm-shape{font-size:15px;color:#334155;font-weight:700;
-}
-.peak-color-legend{border:1px solid #e5e7eb;border-radius:7px;background:#fafbfe;font-size:11px;
-}
-.peak-order-chip i{border-radius:50%;
-}
-.preset-row button{font-size:12px;
-}
-.inspector-section{border-bottom:1px solid #edf0f6;
-}
-.inspector-section h4{font-size:13px;
-}
-.kv{font-size:12px;
-}
-.kv .k{color:var(--text-secondary);
-}
-.peak-class-grid label{font-size:11px;color:var(--text-secondary);
-}
-.peak-class-grid input{border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);background:#fff;
-}
-body.dkds-modern-ui .analysis-page-body,
-body.dkds-modern-ui.plugin-window-host .analysis-page-body{
-  background:var(--app-bg);
-  color:var(--text-primary);
-}
-body.dkds-modern-ui .analysis-large-plot,
-body.dkds-modern-ui .analysis-table-wrap{
-  background:var(--surface-primary);
-  border-color:var(--border-subtle);
-  color:var(--text-primary);
-  box-shadow:var(--surface-shadow);
-}
-body.dkds-modern-ui .analysis-control-card label,
-body.dkds-modern-ui .analysis-table,
-body.dkds-modern-ui .analysis-section-title{
-  color:var(--text-secondary);
-}
-body.dkds-modern-ui .analysis-control-card input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui .analysis-control-card select,
-body.dkds-modern-ui .analysis-control-card textarea,
-body.dkds-modern-ui .analysis-page .schema-param-field input:not([type="checkbox"]):not([type="radio"]),
-body.dkds-modern-ui .analysis-page .schema-param-field select,
-body.dkds-modern-ui .analysis-page .schema-param-field textarea{
-  background:var(--input-bg);
-  border-color:var(--border-strong);
-  color:var(--text-primary);
-}
-body.dkds-modern-ui .analysis-control-card input::placeholder,
-body.dkds-modern-ui .analysis-control-card textarea::placeholder{color:var(--text-tertiary)}
-body.dkds-modern-ui .analysis-note{
   background:color-mix(in srgb,var(--accent-primary) 7%,var(--surface-secondary));
-  border-left-color:color-mix(in srgb,var(--accent-primary) 58%,var(--border-strong));
+  border-left:3px solid color-mix(in srgb,var(--accent-primary) 58%,var(--border-strong));
   color:var(--text-secondary);
 }
-body.dkds-modern-ui .analysis-table th{
-  background:var(--surface-secondary);
-  border-color:var(--border-subtle);
-  color:var(--text-secondary);
-}
-body.dkds-modern-ui .analysis-table th,
-body.dkds-modern-ui .analysis-table td{border-bottom-color:var(--border-subtle)}
-body.dkds-modern-ui .analysis-control-card{background:var(--surface-primary);border:0;color:var(--text-primary);box-shadow:none}
-body.dkds-modern-ui .analysis-subtitle{color:var(--text-secondary)}
-body.dkds-modern-ui .dkds-analysis-prime-panel{background:var(--surface-primary);border:0;color:var(--text-primary);box-shadow:none}
-body.dkds-modern-ui .dkds-analysis-prime-head{background:var(--surface-secondary);border-color:transparent;color:var(--text-primary);box-shadow:none}
-body.dkds-modern-ui .dkds-analysis-header{background:var(--surface-primary);border-color:transparent;color:var(--text-primary);box-shadow:none}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-panel{background:var(--surface-primary);border-color:transparent}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-header{background:var(--surface-primary);border-color:transparent;color:var(--text-primary);box-shadow:none}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-prime-head{background:#202631;border-color:var(--dkui-border);color:#dce3ed;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .analysis-subtitle{color:#8f9bad;
-}
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench{--plugin-workspace-panel-border:var(--dkui-border);
-}
+
+/* Table internals are content paint. The table host itself is Material-owned. */
+.analysis-table{border-collapse:collapse;}
+.analysis-table th,.analysis-table td{border-bottom:1px solid var(--border-subtle);}
+.analysis-table th{background:var(--surface-secondary);color:var(--text-secondary);}
+
+.dataset-item{border-radius:7px;border:1px solid transparent;}
+.dataset-meta,.kv .k,.peak-class-grid label{color:var(--text-secondary);}
+.dataset-meta,.scan-toggle-row,.peak-color-legend,.peak-class-grid label{font-size:11px;}
+.scan-toggle-row{color:var(--text-secondary);}
+.algorithm-shape{font-size:15px;color:var(--text-primary);font-weight:700;}
+.peak-color-legend{border:1px solid var(--border-subtle);border-radius:7px;background:var(--surface-secondary);}
+.peak-order-chip i{border-radius:50%;}
+.preset-row button,.kv{font-size:12px;}
+.inspector-section{border-bottom:1px solid var(--border-subtle);}
+.inspector-section h4{font-size:13px;}
+.analysis-subtitle{color:var(--text-secondary);}
+.analysis-control-card label,
+.analysis-table,
+.analysis-section-title{color:var(--text-secondary);}
+
 body.dkds-modern-ui .dkds-analysis-workbench{
   --plugin-workspace-panel-border:var(--border-subtle);
   --plugin-workspace-surface:var(--surface-primary);
@@ -138,77 +53,8 @@ body.dkds-modern-ui .dkds-analysis-workbench{
   --plugin-workspace-grid:var(--border-subtle);
   --plugin-workspace-shadow:var(--surface-shadow-raised);
   --plugin-surface-bg:var(--surface-primary);
-  color:var(--text-primary);background:var(--dkui-canvas);
 }
-body.dkds-modern-ui .dkds-analysis-workbench button{
-  border-color:var(--dkui-control-border);
-  background:var(--dkui-control-bg);
-  color:var(--dkui-text);
-  box-shadow:var(--dkui-shadow-1);
-  transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-analysis-workbench{
+  --plugin-workspace-panel-border:var(--dkui-border);
 }
-body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled){
-  background:var(--dkui-control-hover);
-  border-color:var(--dkui-control-border-hover);
-  color:var(--dkui-text);
-  box-shadow:0 3px 9px rgba(26,39,64,.07),0 1px 0 rgba(255,255,255,.9) inset;
-  transform:none;
-}
-.analysis-subtitle{color:#7b8495;
-}
-.analysis-control-card{
-  border:1px solid #dbe1eb;
-  border-radius:9px;
-  background:#fff;
-}
-.analysis-control-card label{
-  color:#586174;
-}
-.analysis-control-card select,
-.analysis-control-card input{
-  border:1px solid #ccd5e4;
-  border-radius:6px;
-  background:#fff;
-}
-.dkds-analysis-workbench{background:var(--app-bg,#f6f8fb);
-}
-.dkds-analysis-left-resizer,
-.dkds-analysis-right-resizer,
-.dkds-analysis-bottom-resizer{background:transparent;
-}
-.dkds-analysis-left-resizer::before,
-.dkds-analysis-right-resizer::before{background:transparent;
-}
-.dkds-analysis-left-resizer:hover::before,
-.dkds-analysis-right-resizer:hover::before{background:var(--divider-active,#748bc7);
-}
-.dkds-analysis-bottom-resizer::before{background:transparent;
-}
-.dkds-analysis-bottom-resizer:hover::before{background:var(--divider-active,#748bc7);
-}
-.dkds-analysis-prime-panel{background:var(--surface-primary,#fff);border:0;border-radius:9px;
-}
-.dkds-analysis-prime-head{border-bottom:0;background:var(--surface-secondary,var(--surface-primary,#fff));
-}
-.dkds-analysis-workbench .dkds-portable-view.is-docked{box-shadow:none;
-}
-.dkds-analysis-workbench .dkds-portable-view.is-floating{box-shadow:0 16px 42px rgba(15,23,42,.18);
-}
-.dkds-analysis-workbench .dkds-portable-placement-trigger{border:0;background:transparent;border-radius:5px;
-}
-.dkds-analysis-workbench .dkds-portable-placement-trigger:hover{background:#eef2f8;
-}
-.dkds-analysis-workbench input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-.dkds-analysis-workbench select{
-  border-width:1px;
-  border-style:solid;
-  border-radius:7px;
-}
-.dkds-analysis-workbench textarea{
-  border-width:1px;
-  border-style:solid;
-  border-radius:7px;
-}
-/* Semantic owner consolidation from later presentation modules. */
-body.dkds-modern-ui .inspector-section {border:0
-}
+body.dkds-modern-ui .inspector-section{border:0;}

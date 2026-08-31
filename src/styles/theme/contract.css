@@ -36,17 +36,11 @@ body.dkds-modern-ui{
 }
 body.dkds-modern-ui .brand{color:var(--dkui-text)}
 body.dkds-modern-ui .brand-mark{background:var(--dkui-surface-elevated);border-color:var(--dkui-control-border);box-shadow:var(--dkui-shadow-1)}
-body.dkds-modern-ui .plugin-manager-search-wrap{background:var(--dkui-control-bg);border-color:var(--dkui-control-border);color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-page-header h2,.plugin-manager-section-head strong,.plugin-card-title-line h3,.plugin-manager-stat strong){color:var(--dkui-text)}
 body.dkds-modern-ui :where(.analysis-subtitle,.plugin-manager-section-head span,.plugin-card-description,.plugin-card-meta){color:var(--dkui-muted)}
-body.dkds-modern-ui .plugin-manager-search-wrap input{background:transparent;color:var(--dkui-text)}
-body.dkds-modern-ui :where(.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card){background:var(--dkui-surface);border-color:var(--dkui-control-border);color:var(--dkui-text);box-shadow:var(--dkui-shadow-1)}
 body.dkds-modern-ui :where(.plugin-card-footer,.plugin-card-details){background:var(--dkui-surface-soft);border-color:var(--dkui-divider);color:var(--dkui-text-soft)}
 body.dkds-modern-ui :where(.plugin-manager-empty){background:var(--dkui-surface-soft);border-color:var(--dkui-control-border);color:var(--dkui-muted)}
 body.dkds-modern-ui .plugin-manager-note{background:var(--dkui-surface-soft);border-left-color:var(--dkui-control-border);color:var(--dkui-text-soft)}
-body.dkds-modern-ui :where(.trend-card-legend,.main-legend-bar){background:var(--dkui-surface);border-color:var(--dkui-divider);color:var(--dkui-text-soft)}
-body.dkds-modern-ui .dkds-scientific-nav-tools button{color:var(--dkui-text-soft)}
-body.dkds-modern-ui .dkds-scientific-nav-drag{color:var(--dkui-muted)}
 body.dkds-modern-ui .dkds-memory-meter{background:var(--dkui-surface-soft)}
 
 body.dkds-modern-ui .dkds-action-button:hover:not(:disabled){transform:translateY(var(--dkui-hover-lift));}

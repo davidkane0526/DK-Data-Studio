@@ -17,6 +17,7 @@ const index=read('src/index.html');
 const modern=read('src/styles/theme/integrated-command-chrome.css');
 const materialModern=read('src/styles/theme/material-renderer.css');
 const componentAppearance=read('src/styles/theme/component-appearance.css');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
 const status=read('src/plugins/status-monitor/plugin.js');
 const statusManifest=json('src/plugins/status-monitor/plugin.json');
 
@@ -28,11 +29,11 @@ assert(appPanels.includes('trend-header-actions dkds-integrated-action-group')&&
 assert(index.includes('panel-header-actions dkds-integrated-action-group')&&!index.includes('panel-header-actions dkds-integrated-action-group dkds-material-role-control'),'Core floating-panel header actions are chrome-owned.');
 assert(resonance.includes('曲线检查器</span><div class="dkds-integrated-action-group"')&&!resonance.includes('曲线检查器</span><div class="dkds-integrated-action-group dkds-material-role-control"'),'Resonance inspector header actions are chrome-owned.');
 assert(resonance.includes('组图面板')&&resonance.includes('data-respar-group-cols-menu-host'),'Resonance group header must keep its menu inside the same action cluster.');
-assert(modern.includes('[data-dkds-material-role="chrome"]')&&modern.includes('.statusbar-command-cluster'),'Core chrome ownership must flatten nested action paint independent of Theme profile identity.');
+assert(semanticRegistry.includes('INTEGRATED_CONTAINER_SELECTOR')&&semanticRegistry.includes('.statusbar-command-cluster')&&semanticRegistry.includes('chromeOwnedIntegrated(el)')&&semanticRegistry.includes("if(chromeOwnedIntegrated(el))return '';"),'Core semantic registry must flatten chrome-owned integrated action groups before Material-role assignment.');
 
-assert(modern.includes('display:contents')&&modern.includes('background:transparent')&&modern.includes('box-shadow:none')&&modern.includes('transform:none'),'nested/child command actions must not retain independent card visuals or hover lift.');
-assert(modern.includes('.dkds-scientific-nav-tools')&&modern.includes('border-radius:9px'),'ScientificPlot navigation must expose one outer rounded material shell.');
-assert(modern.includes('button:is(.panel-close,.dkds-portable-close-action):hover'),'close regions may use danger hover while remaining inside the shared command shell.');
+assert(materialModern.includes(':where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.dkds-surface-actions)')&&materialModern.includes('background:transparent')&&materialModern.includes('border-color:transparent')&&materialModern.includes('box-shadow:none'),'chrome-owned child action groups must not retain an independent Material card surface.');
+assert(materialModern.includes('.dkds-scientific-nav-tools.dkds-material-role-floating')&&materialModern.includes('border-radius:9px'),'ScientificPlot navigation must expose one outer rounded Material shell.');
+assert(componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]:is(.dkds-panel-close-button,.window-control-close):hover:not(:disabled)'),'close regions may use canonical danger hover while remaining inside the shared command shell.');
 
 assert(status.includes("id:'theme'")&&status.includes("label:'主题'"),'bottom status bar must expose a Theme command.');
 assert(status.includes('id:\'dkdsThemePanel\'')&&status.includes('dkds-theme-profile-list')&&status.includes('data-dkds-theme-mode'),'Theme command must open an in-app profile + light/dark selection panel.');

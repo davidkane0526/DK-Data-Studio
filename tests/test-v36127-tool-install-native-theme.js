@@ -67,7 +67,12 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
   for(const selector of ['.analysis-control-card','.analysis-note','.analysis-table-wrap']){
     assert(modern.includes(selector),`Shared modern theme must cover ${selector}.`);
   }
-  assert(modern.includes('background:var(--surface-primary)')&&modern.includes('background:var(--input-bg)'),'Legacy built-in analysis surfaces/controls must resolve through semantic theme tokens.');
+  const semanticRegistry=read('src/core/theme/semantic-registry.js');
+  const materialRoles=read('src/styles/theme/material-roles.css');
+  const componentAppearance=read('src/styles/theme/component-appearance.css');
+  assert(semanticRegistry.includes('.analysis-control-card')&&semanticRegistry.includes('.analysis-table-wrap'),'Built-in analysis surfaces must be classified by the Core semantic registry.');
+  assert(materialRoles.includes('--dkds-material-base:var(--dkui-role-surface-surface,var(--dkui-surface))'),'Built-in analysis surfaces must resolve their Material base through the semantic Surface role.');
+  assert(componentAppearance.includes('[data-dkds-component-identity="field"]'),'Built-in analysis fields must resolve through canonical Field Component Appearance instead of private page paint.');
 
   const shell=read('src/core/recipes/shell-navigation.js');
   const shellCss=read('src/styles/structure/shell-navigation.css');
@@ -81,7 +86,7 @@ sandbox.window.DKDSPlugins.configure({getActiveProjectTab:()=>({pluginState:{}})
   const importPaint=read('src/styles/presentation/import-workbench.css');
   assert(!safeguards.includes('ctx.ui.styles.add'),'Workspace safeguards recipe must own behavior only; static Core CSS belongs to authored style owners.');
   assert(importGeometry.includes('.import-file-actions')&&!/(?:background|color|border|box-shadow)\s*:/.test(importGeometry)&&!/(?:background|color|border|box-shadow)\s*:/.test(safeguardCss),'Import workbench/safeguard structure must remain paint-free.');
-  assert(importPaint.includes('.import-file-actions{background:var(--surface-primary)'),'Import action toolbar presentation must inherit the active theme.');
+  assert(importPaint.includes('.import-file-actions')&&importPaint.includes('background:transparent')&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'Import action toolbar must stay flat inside the elevated workbench while its actions inherit the active Theme through canonical ToolbarAction appearance.');
   assert(importPaint.includes('background:var(--warning-soft)')&&importPaint.includes('background:var(--danger-soft)'),'Import warning states must use semantic warning/danger surfaces in both themes.');
   assert(!importPaint.includes('#fff8e8')&&!importPaint.includes('#fffaf0'),'Import presentation must not reintroduce light-only warning surfaces.');
 

@@ -7,12 +7,12 @@
   const COMPONENT_VARIANT_MAP=ThemeContract.componentVariantMap();
   const COMPONENTS=Object.freeze([
     Object.freeze({id:'inspectorHeader',label:'Inspector Header',expectedRole:'chrome',priority:100,selector:'[data-dkds-inspector-header],[data-dkds-surface-kind="inspector"] .dkds-surface-header,[data-dkds-surface-kind="inspector"] .dkds-portable-header,[data-generic-panel="inspector"] .floating-header,[data-generic-panel="inspector"] .dkds-portable-header,.inspector-panel .floating-header'}),
-    Object.freeze({id:'panelHeader',label:'Panel Header',expectedRole:'chrome',priority:90,selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.analysis-chart-title,.trend-card-header,.floating-header,.dkds-portable-header'}),
+    Object.freeze({id:'panelHeader',label:'Panel Header',expectedRole:'chrome',priority:90,selector:'.dkds-surface-header,.dkds-plot-view-head,.dkds-group-plot-head,.analysis-chart-title,.dkds-chart-head,.trend-card-header,.floating-header,.dkds-portable-header,.dkds-analysis-prime-head'}),
     Object.freeze({id:'tab',label:'Tab',expectedRole:'',priority:80,selector:'.activity-tab:not(.top-level-activity-tab),.project-tab,[role="tab"]'}),
-    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.dkds-surface-header>button,.panel-header-actions>button,.trend-header-actions>button,.dkds-mode-group>button,.dkds-integrated-action-group button,.trend-layout-controls>button,.plugin-card-icon.plugin-super-selector'}),
+    Object.freeze({id:'toolbarAction',label:'Toolbar Action',expectedRole:'',priority:70,selector:'button,.toolbar-btn,.plugin-toolbar-btn,.primary-activity-bar .activity-tab.top-level-activity-tab,.dkds-analysis-nav-btn,.dkds-action-button,.dkds-icon-button,.dkds-plot-view-action,.dkds-portable-placement-trigger,.dkds-toolbar>button,.dkds-action-row>button,.dkds-surface-actions>button,.dkds-surface-header>button,.panel-header-actions>button,.trend-header-actions>button,.dkds-mode-group>button,.dkds-integrated-action-group button,.trend-layout-controls>button,.plugin-card-icon.plugin-super-selector'}),
     Object.freeze({id:'toolbarGroup',label:'Toolbar Group',expectedRole:'',priority:60,selector:'.toolbar-group,.system-core-tools-group,.dkds-toolbar,.dkds-action-row'}),
-    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:50,selector:'.plugin-menu-item,[role="menuitem"],[role="option"],.menu-item,.command-menu>button,.dkds-context-item,.dkds-list-item'}),
-    Object.freeze({id:'chip',label:'Chip / Tag',expectedRole:'',priority:40,selector:'.dkds-chip,.plugin-capability-chip,.plugin-status-badge,.plugin-type-badge,.dkds-summary-chip'}),
+    Object.freeze({id:'menuItem',label:'Menu Item',expectedRole:'',priority:75,selector:'.plugin-menu-item,[role="menuitem"],[role="option"],.menu-item,.command-menu>button,.dkds-context-item,.dkds-list-item,.dkds-plot-legend-item,.dkds-legend-item,.main-legend-chip,.trend-legend-chip'}),
+    Object.freeze({id:'chip',label:'Chip / Tag',expectedRole:'',priority:40,selector:'.dkds-chip,.plugin-capability-chip,.plugin-status-badge,.plugin-type-badge,.plugin-role-badge,.plugin-owned-badge,.dkds-summary-chip'}),
     Object.freeze({id:'statusBar',label:'Status Bar',expectedRole:'chrome',priority:100,selector:'#statusBar.statusbar,.statusbar'}),
     Object.freeze({id:'floatingChrome',label:'Floating Chrome',expectedRole:'floating',priority:30,selector:'.dkds-scientific-nav-tools,[data-dkds-floating-chrome]'}),
     Object.freeze({id:'field',label:'Field',expectedRole:'control',priority:20,selector:'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control'})
@@ -20,22 +20,22 @@
 
   const MATERIAL_AREAS=Object.freeze([
     Object.freeze({id:'app-chrome',label:'App Shell / Chrome',role:'chrome',selector:'.topbar,.project-tabs-bar,#statusBar.statusbar'}),
-    Object.freeze({id:'page-chrome',label:'Page / Workspace Headers',role:'chrome',selector:'.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head'}),
+    Object.freeze({id:'page-chrome',label:'Page / Workspace Headers',role:'chrome',selector:'.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head,.dkds-analysis-prime-head'}),
     Object.freeze({id:'sidebar',label:'Sidebar / Inspector Rail',role:'sidebar',selector:'.left-panel,.plugin-sidebar-sections,.dkds-analysis-left,.dkds-analysis-right,[data-dkds-surface-kind="inspector"].dkds-portable-view:not(.is-floating):not(.is-global-floating),[data-generic-panel="inspector"].dkds-portable-view:not(.is-floating):not(.is-global-floating),.dkds-material-role-sidebar'}),
-    Object.freeze({id:'workspace',label:'Workspace / Persistent Pages',role:'surface',selector:'.analysis-page,.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-material-role-surface'}),
-    Object.freeze({id:'scientific-content',label:'Scientific / Data Content',role:'surface',selector:'.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host,.dkds-group-plot,.dkds-group-plot-card,.dkds-plot-view'}),
-    Object.freeze({id:'elevated',label:'Dialog / Settings / Elevated Panel',role:'elevated',selector:'.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog,.dkds-material-role-elevated'}),
+    Object.freeze({id:'workspace',label:'Workspace / Persistent Pages',role:'surface',selector:'.analysis-page,.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-material-role-surface,.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card'}),
+    Object.freeze({id:'scientific-content',label:'Scientific / Data Content',role:'surface',selector:'.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host,.dkds-group-plot,.dkds-group-plot-card,.dkds-plot-view,.trend-card,.analysis-chart-card,.analysis-control-card,.analysis-large-plot,.analysis-table-wrap,.dkds-analysis-prime-panel'}),
+    Object.freeze({id:'elevated',label:'Dialog / Settings / Elevated Panel',role:'elevated',selector:'.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog,.dkds-surface-elevated,.dkds-material-role-elevated'}),
     Object.freeze({id:'portable',label:'Docked Tool / Portable Panel',role:'surface',selector:'.dkds-portable-view:not(.is-floating):not(.is-global-floating):not([data-dkds-surface-kind="inspector"]):not([data-generic-panel="inspector"]),[data-dkds-surface-kind="panel"].dkds-portable-view:not(.is-floating):not(.is-global-floating),[data-generic-panel="group"].dkds-portable-view:not(.is-floating):not(.is-global-floating)'}),
     Object.freeze({id:'popover',label:'Context Menu / Dropdown / Tooltip / Popover',role:'popover',selector:'.command-menu,.dkds-context-menu,.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.hover-tip,.activity-more-menu,.context-overflow-menu,.range-action-menu,[role="menu"],[data-dkds-popover],.dkds-material-role-popover'}),
     Object.freeze({id:'control',label:'Independent Controls',role:'control',selector:'button,input,select,textarea,.dkds-field-control,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn,.dkds-material-role-control'}),
     Object.freeze({id:'scientific-floating',label:'ScientificPlot Floating Chrome',role:'floating',selector:'.dkds-scientific-nav-tools'}),
-    Object.freeze({id:'floating',label:'Temporary Floating Surfaces',role:'floating',selector:'.dkds-prime-floating,.dkds-memory-panel,.zoom-panel,.dkds-portable-view.is-floating,.dkds-portable-view.is-global-floating,.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel]),.dkds-material-role-floating:not(.dkds-portable-view)'})
+    Object.freeze({id:'floating',label:'Temporary Floating Surfaces',role:'floating',selector:'.dkds-prime-floating,.dkds-memory-panel,.zoom-panel,.dkds-portable-view.is-floating,.dkds-portable-view.is-global-floating,.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel]),.dkds-floating-surface,.dkds-material-role-floating:not(.dkds-portable-view)'})
   ]);
 
   const POPOVER_SELECTOR=MATERIAL_AREAS.find(row=>row.role==='popover')?.selector||'';
-  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
+  const INTEGRATED_CONTAINER_SELECTOR='.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group,[data-dkds-material-integrated="true"]';
   const SEMANTIC_CONTROL_PAINT_SELECTOR='.dkds-control-hit-region,.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.primary,.strong,.danger-soft,.accent-soft,.selected,.active,[aria-pressed="true"],[aria-selected="true"],[aria-checked="true"],[data-state="active"],[data-selected="true"]';
-  const CHROME_SELECTOR='.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-plot-view-head,.dkds-group-plot-head';
+  const CHROME_SELECTOR='.topbar,.project-tabs-bar,#statusBar.statusbar,.analysis-page-header,.dkds-analysis-header,.plugin-manager-header,.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head,.dkds-analysis-prime-head';
 
   const matches=(el,selector)=>{try{return !!el?.matches?.(selector);}catch{return false;}};
   const closest=(el,selector)=>{try{return el?.closest?.(selector)||null;}catch{return null;}};
@@ -59,6 +59,7 @@
     if(!el)return '';
     const allowed=new Set(COMPONENT_VARIANT_MAP[component]||[]),accept=value=>COMPONENT_VARIANTS.has(value)&&allowed.has(value)?value:'';
     const authoredVariant=el.dataset?.dkdsComponentVariantOwner==='core-runtime'?'':el.dataset?.dkdsComponentVariant;const explicit=String(authoredVariant||el.dataset?.dkdsActionTone||'').trim(),accepted=accept(explicit);if(accepted)return accepted;
+    if(component==='toolbarAction'&&matches(el,'.dkds-panel-close-button,.window-control-btn,.dkds-portable-icon-action,#lanWebMinimizeBtn,.dkds-theme-settings-inline')){const value=accept('quiet');if(value)return value;}
     const state=stateOf(el);if(state==='selected'||state==='active'){const value=accept(state);if(value)return value;}
     if(matches(el,'.primary,.strong')){const value=accept('primary');if(value)return value;}
     if(matches(el,'.danger,.danger-soft,.error,.is-error,[data-tone="danger"],[data-status="error"]')){const value=accept(component==='chip'?'danger':'destructive');if(value)return value;}
@@ -70,7 +71,8 @@
     }
     return '';
   }
-  const semanticControlOwnsPaint=el=>matches(el,SEMANTIC_CONTROL_PAINT_SELECTOR);
+  const CANONICAL_CONTROL_COMPONENTS=new Set(['toolbarAction','tab','menuItem','chip','field']);
+  const semanticControlOwnsPaint=el=>{const component=resolveComponent(el);return !!component&&CANONICAL_CONTROL_COMPONENTS.has(component.id);};
   function chromeOwnedIntegrated(el){
     if(matches(el,POPOVER_SELECTOR))return false;
     if(!closest(el,CHROME_SELECTOR))return false;
@@ -87,11 +89,11 @@
     const portable=roleForPortable(el);if(portable)return portable;
     if(chromeOwnedIntegrated(el))return '';
     if(matches(el,POPOVER_SELECTOR))return 'popover';
-    if(matches(el,'.dkds-prime-floating,.dkds-memory-panel,.dkds-scientific-nav-tools,.zoom-panel,.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel])'))return 'floating';
-    if(matches(el,'.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog'))return 'elevated';
+    if(matches(el,'.dkds-prime-floating,.dkds-memory-panel,.dkds-scientific-nav-tools,.zoom-panel,.dkds-floating-surface,.floating-panel:not(.lan-web-panel):not(.update-panel):not([data-generic-panel])'))return 'floating';
+    if(matches(el,'.dkds-dialog,.dkds-dialog-shell,.dkds-settings-dialog,.update-panel,.lan-web-panel,.import-workbench,.project-save-choice-card,.dkds-theme-settings-dialog,.dkds-surface-elevated'))return 'elevated';
     if(matches(el,CHROME_SELECTOR))return 'chrome';
     if(matches(el,'[data-dkds-surface-kind="inspector"],[data-generic-panel="inspector"],.left-panel,.plugin-sidebar-sections,.dkds-analysis-left,.dkds-analysis-right'))return 'sidebar';
-    if(matches(el,'.analysis-page,[data-dkds-surface-kind="panel"],[data-generic-panel="group"],.dkds-group-plot,.dkds-group-plot-card,.dkds-plot-view,.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-surface,.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host'))return 'surface';
+    if(matches(el,'.analysis-page,[data-dkds-surface-kind="panel"],[data-generic-panel="group"],.dkds-group-plot,.dkds-group-plot-card,.dkds-plot-view,.dkds-ui-workspace,.dkds-plugin-workspace,.dkds-analysis-workbench,.super-workspace-page,.main-workspace,.dkds-analysis-primary-host,.dkds-plugin-sub-page-host,.dkds-surface,.dkds-chart-surface,.dkds-table-surface-host,.dkds-scientific-surface-host,.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card,.analysis-control-card,.analysis-large-plot,.analysis-table-wrap,.dkds-analysis-prime-panel'))return 'surface';
     if(matches(el,'button,input,select,textarea,.dkds-field-control,.dkds-icon-button,.dkds-action-button,.toolbar-btn,.plugin-toolbar-btn'))return semanticControlOwnsPaint(el)?'':'control';
     return '';
   }

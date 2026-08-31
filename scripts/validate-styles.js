@@ -241,11 +241,14 @@ for(const name of presentationFiles.filter(name=>name!=='shell.css')){
   const selectors=new Set(ownedSelectors(presentationText[name]));
   for(const target of ['body.dkds-modern-ui .floating-panel','body.dkds-modern-ui .floating-header','html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-panel','html[data-dkds-theme="dark"] body.dkds-modern-ui .floating-header'])if(selectors.has(target))violations.push(`src/styles/presentation/${name}: ${target} belongs to shell.css.`);
 }
-const scientificSurfaceTargets=['body.dkds-modern-ui .trend-card','body.dkds-modern-ui .analysis-chart-card','body.dkds-modern-ui .trend-card-header','body.dkds-modern-ui .analysis-chart-title','body.dkds-modern-ui .trend-card-legend','body.dkds-modern-ui .trend-legend-chip','body.dkds-modern-ui .dkds-group-plot-card','body.dkds-modern-ui .dkds-group-plot-head'];
-for(const target of scientificSurfaceTargets){
-  const names=presentationOwners.get(target)||new Set();
-  if(!names.has('scientific.css'))violations.push(`presentation ownership: scientific.css must own ${target}.`);
-}
+// Scientific cards/headers are semantic Material/Component surfaces. Presentation may
+// keep chart-domain marks and geometry, but it must not be the final surface-paint owner.
+// A legend inside a Trend Card is content, not another Material surface: registering both
+// produces a nested glass/card layer and recreates the card-within-card visual defect.
+const scientificMaterialSelectors=['.trend-card','.analysis-chart-card','.dkds-group-plot-card'];
+const semanticRegistryText=fs.readFileSync(path.join(root,'src','core','theme','semantic-registry.js'),'utf8');
+for(const target of scientificMaterialSelectors)if(!semanticRegistryText.includes(target))violations.push(`semantic material ownership: ${target} must be registered in semantic-registry.js.`);
+if(semanticRegistryText.includes('.trend-card-legend'))violations.push('semantic material ownership: .trend-card-legend must remain child content, not a nested Material surface.');
 // First-party plugins own domain layout/content. Core owns application paint and
 // standard control/header geometry. The same audit is shipped in the public SDK.
 if(fs.existsSync(plugins))for(const e of fs.readdirSync(plugins,{withFileTypes:true})){

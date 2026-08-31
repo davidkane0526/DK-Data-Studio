@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const pkg=JSON.parse(read('package.json'));
+assert(pkg.version==='3.67.10','Final Visual Closure freeze must publish app version 3.67.10.');
+assert(read('README_CN.md').includes('当前版本：**v3.67.10**'),'README must expose v3.67.10.');
+assert(read('CHANGELOG.md').startsWith('# v3.67.10 — Desktop Visual Closure Final Freeze'),'CHANGELOG must start with the final v3.67.10 release entry.');
+const audit=read('docs/VISUAL_CLOSURE_FINAL_FREEZE_AUDIT_3.67.10.md');
+for(const token of ['47 PASS','0 FAIL','occludedMaterial=0','rendererOk=true','appearanceOk=true','38','Electron 43.4.0']) assert(audit.includes(token),`Final audit must retain ${token}.`);
+assert(!fs.existsSync(path.join(root,'HANDOFF_v3.67.10_VISUAL_CLOSURE_WIP.md')),'Formal release must not retain the root WIP handoff.');
+assert(!fs.existsSync(path.join(root,'visual-harness.html')),'Formal release must not retain the temporary visual harness.');
+assert(!fs.existsSync(path.join(root,'docs/handoff-v3.67.10-visual-closure')),'Formal release must not retain WIP visual evidence artifacts.');
+assert(pkg.scripts?.['visual:closure:windows']==='electron . --visual-closure','Windows closure entry must remain explicit and reproducible.');
+assert(pkg.scripts?.['visual:closure:verify']==='node tools/quality/verify-visual-closure-report.js','Fail-closed report verifier must remain part of the release.');
+console.log('v3.67.10 Visual Closure Final Freeze PASS: release identity, audit, WIP cleanup, and Windows verification gates are fixed.');

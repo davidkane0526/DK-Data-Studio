@@ -62,6 +62,42 @@ body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
 }
 
 /* Composition ----------------------------------------------------------- */
+/* Canonical material edge geometry for compact command/popover surfaces.
+   Optical fill, edge color and depth continue to come from the active recipe. */
+body.dkds-modern-ui :where(
+  .dkds-integrated-action-group.dkds-material-role-control,
+  .dkds-scientific-nav-tools.dkds-material-role-floating,
+  #mainPlotTools.dkds-material-role-control,
+  #mainLegendBar.dkds-material-role-control
+){border-width:1px;border-style:solid;border-radius:9px;overflow:hidden}
+body.dkds-modern-ui [data-dkds-component-identity="toolbarGroup"]:is(.dkds-material-role-surface,.dkds-material-role-floating){border-width:1px;border-style:solid;border-radius:var(--dkui-radius)}
+body.dkds-modern-ui .dkds-theme-panel.dkds-material-role-popover{border-width:1px;border-style:solid;border-radius:12px}
+body.dkds-modern-ui .range-action-menu.dkds-material-role-popover{border-width:1px;border-style:solid;border-radius:10px}
+body.dkds-modern-ui .command-menu.dkds-material-role-popover{border-radius:9px}
+body.dkds-modern-ui .dkds-context-menu.dkds-material-role-popover{border-radius:10px}
+body.dkds-modern-ui .dkds-portable-view.dkds-material-role-floating{border-radius:10px}
+body.dkds-modern-ui .dkds-portable-view:is(.dkds-material-role-surface,.dkds-material-role-sidebar):not(.is-floating):not(.is-global-floating){border-radius:8px}
+body.dkds-modern-ui .floating-panel:is(.dkds-material-role-floating,.dkds-material-role-elevated){border-radius:var(--ui-panel-radius)}
+body.dkds-modern-ui .dkds-memory-panel.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:13px}
+body.dkds-modern-ui .dkds-floating-surface.dkds-material-role-floating{border-width:1px;border-style:solid;border-radius:var(--dkds-visual-radius)}
+body.dkds-modern-ui .dkds-surface.dkds-material-role-surface{border-radius:var(--dkds-visual-radius)}
+body.dkds-modern-ui :where(.dkds-dialog,.dkds-dialog-shell).dkds-material-role-elevated{border-radius:14px}
+body.dkds-modern-ui .dkds-settings-dialog.dkds-material-role-elevated{border-width:1px;border-style:solid;border-radius:12px}
+body.dkds-modern-ui :where(.dkds-tooltip,.hover-tip,.dkds-core-tooltip,.dkds-d3-chart-tooltip){border-width:1px;border-style:solid;border-radius:7px}
+body.dkds-modern-ui :where(.plugin-manager-card,.plugin-manager-stat,.plugin-manager-toolbar-card){border-width:1px;border-style:solid}
+body.dkds-modern-ui .plugin-manager-card{border-radius:11px}
+body.dkds-modern-ui :where(.plugin-manager-stat,.plugin-manager-toolbar-card){border-radius:10px}
+body.dkds-modern-ui :where(.analysis-control-card,.analysis-large-plot,.analysis-table-wrap,.dkds-analysis-prime-panel){
+  border-width:1px;border-style:solid;border-radius:9px;
+}
+
+/* Header-owned command wrappers are transparent composition only. */
+body.dkds-modern-ui :where(.dkds-surface-header,.floating-header,.trend-card-header,.analysis-chart-title,.dkds-chart-head,.dkds-plot-view-head,.dkds-group-plot-head)
+  :where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.dkds-surface-actions){
+  background:transparent;background-image:none;border-color:transparent;box-shadow:none;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+}
+
 body.dkds-modern-ui :where(
   [data-dkds-material-recipe="thin-glass"],
   [data-dkds-material-recipe="soft-glass"],
@@ -79,68 +115,20 @@ body.dkds-modern-ui :where(
 
 /* Layout-only descendants must not put an opaque sheet between a glass owner
    and its backdrop. */
-body.dkds-modern-ui :where(.analysis-page-body,.plugin-manager-body,.automation-test-body,.dkds-settings-body,.floating-body,.dkds-plugin-canvas-center,.dkds-analysis-primary-host){
+body.dkds-modern-ui :where(.analysis-page-body,.plugin-manager-body,.automation-test-body,.dkds-settings-body,.floating-body,.dkds-plugin-canvas-frame,.dkds-plugin-canvas-center,.dkds-plugin-canvas-left,.dkds-plugin-canvas-right,.dkds-plugin-canvas-bottom,.dkds-analysis-primary-host){
   background-color:transparent;background-image:none;
 }
 
 /* Integrated actions inside translucent surfaces retain Core component paint;
    only the enclosing MaterialSurface owns optical composition. */
 
-/* Core control recipe owns field paint even when the field itself is the
-   material owner (Thin Glass intentionally maps controls to the clear recipe).
-   Descendant fields in glass surfaces use the same Core control paint contract. */
-body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){
-  box-sizing:border-box;
-  background:var(--dkds-material-base,var(--dkui-control-bg));
-  background-image:none;
-  border:1px solid var(--dkds-material-border,var(--dkui-control-border));
-  border-radius:7px;
-  color:var(--dkui-role-control-text,var(--dkui-text,var(--text-primary)));
-  box-shadow:none;
-  -webkit-backdrop-filter:none;
-  backdrop-filter:none;
-  filter:none;
-}
-body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):hover{border-color:var(--dkui-control-border-hover);}
-body.dkds-modern-ui :where([data-dkds-material-role="control"],.dkds-material-role-control):is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):focus-visible{border-color:var(--dkui-accent);box-shadow:var(--dkui-focus);outline:none;}
 
-/* Glass form controls are one flat Core-owned family. Geometry may be supplied
-   by components; paint remains Core-owned and flat. */
-body.dkds-modern-ui :where(
-  [data-dkds-material-recipe="thin-glass"],
-  [data-dkds-material-recipe="soft-glass"],
-  [data-dkds-material-recipe="liquid-glass"]
-) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control){
-  background-color:color-mix(in srgb,var(--dkui-role-control-surface,var(--dkui-surface)) 30%,transparent);
-  background-image:none;
-  border-color:color-mix(in srgb,var(--dkui-role-control-border,var(--dkui-divider)) 48%,transparent);
-  color:var(--dkui-role-control-text,var(--dkui-text,var(--text-primary)));
-  box-shadow:none;
-  -webkit-backdrop-filter:none;
-  backdrop-filter:none;
-  filter:none;
-}
-body.dkds-modern-ui :where(
-  [data-dkds-material-recipe="thin-glass"],
-  [data-dkds-material-recipe="soft-glass"],
-  [data-dkds-material-recipe="liquid-glass"]
-) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):hover{
-  border-color:color-mix(in srgb,var(--dkui-divider-hover) 82%,transparent);
-}
-body.dkds-modern-ui :where(
-  [data-dkds-material-recipe="thin-glass"],
-  [data-dkds-material-recipe="soft-glass"],
-  [data-dkds-material-recipe="liquid-glass"]
-) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control):focus-visible{
-  border-color:var(--dkui-accent);box-shadow:var(--dkui-focus);outline:none;
-}
 
 /* Portal is a rendering capability, not a theme identity. */
 body.dkds-modern-ui .command-menu.dkds-command-menu-portal{
   position:fixed;right:auto;margin:0;z-index:1900;max-height:min(70vh,620px);overflow:auto;
 }
 
-body.dkds-modern-ui .project-tab-close:not(:hover):not(:focus-visible){background-color:transparent;box-shadow:none}
 body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item){background-color:transparent;background-image:none;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip,.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu,.dkds-material-role-popover){color:var(--dkui-role-popover-text,var(--dkds-on-popover,var(--dkui-text)))}
 body.dkds-modern-ui :where(.dkds-tooltip,.dkds-core-tooltip,.dkds-d3-chart-tooltip) :where(b,strong,span,div){color:inherit}

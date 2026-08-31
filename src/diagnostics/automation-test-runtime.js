@@ -1,7 +1,7 @@
 (() => {
   if (window.DKDSAutomationTests) return;
 
-  const VERSION='1.28.0';
+  const VERSION='1.29.0';
   const state={host:null,running:false,results:[],latest:null,reportPath:'',bound:false,consoleEvents:[],coverage:{}};
   const $=selector=>document.querySelector(selector);
   const now=()=>performance?.now?.()||Date.now();
@@ -59,7 +59,10 @@
 
   const smokeCases=window.DKDSAutomationSmokeCases;
   if(!smokeCases)throw new Error('Automation smoke-case module unavailable.');
+  const visualCases=window.DKDSAutomationVisualCases;
+  if(!visualCases)throw new Error('Automation visual-case module unavailable.');
   const {rendererPlotSmoke,scientificPlotInteractionSmoke,tableSurfaceSmoke,interactionRenderSchedulingSmoke,performanceCacheSmoke,performanceLifecycleSmoke,performanceResourceLifecycleSmoke,selectionContractSmoke,projectHistoryContractSmoke,dataSourceLifecycleSmoke,artifactRoundTripSmoke,scientificPipelineSmoke,scientificTransformRegistrySmoke,scientificScalarFieldSmoke,scientificAlgorithmRegistrySmoke,scientificAlgorithmVersionManagementSmoke,scientificAlgorithmPackageCatalogSmoke,scientificTransportAlgorithmProvidersSmoke,scientificReactiveSmoke,scienceTransformSmoke,projectFormatSmoke,dataTypeSmoke,pluginContractSmoke,pluginSmoke,externalPluginPackageSmoke}=smokeCases;
+  const {visualGeometryClosureSmoke}=visualCases;
 
   async function runAll(){
     if(state.running)return state.latest;
@@ -91,14 +94,19 @@
         assert(['0px','0'].includes(style.borderTopWidth)&&['0px','0'].includes(style.borderRightWidth)&&['0px','0'].includes(style.borderBottomWidth)&&['0px','0'].includes(style.borderLeftWidth),`Integrated chrome group regained an independent border: ${group.className}`);
       }
       const chartHeaders=[...document.querySelectorAll('.analysis-chart-title')];
-      for(const header of chartHeaders){const role=window.DKDSThemeMaterialRenderer?.roleOf?.(header)||'';assert(role==='chrome',`Analysis chart title is not Core chrome: ${role||'unmanaged'}`);}
+      let parentOwnedChartHeaders=0;
+      for(const header of chartHeaders){
+        const ownership=window.DKDSThemeMaterialRenderer?.ownership?.(header,'chrome')||null;
+        assert(ownership?.managed===true,`Analysis chart title escaped Core chrome ownership: ${ownership?.status||ownership?.role||'unmanaged'}`);
+        if(ownership.status==='MATERIAL_PARENT_OWNED')parentOwnedChartHeaders++;
+      }
       const smb=document.querySelector('.dksmb-window'),lan=document.querySelector('.lan-web-panel');
       if(smb&&lan){
         const Material=window.DKDSThemeMaterialRenderer,smbr=Material?.roleOf?.(smb)||'',lanr=Material?.roleOf?.(lan)||'',smrecipe=Material?.recipeOf?.(smb)||'',lanrecipe=Material?.recipeOf?.(lan)||'';
         assert(smbr==='elevated'&&lanr==='elevated',`SMB/LAN panels must share elevated material ownership: ${smbr}/${lanr}`);
         assert(smrecipe===lanrecipe,`SMB/LAN panels must share one Theme material recipe: ${smrecipe}/${lanrecipe}`);
       }
-      return {nativeTooltipElements:0,forbiddenTooltipZones:0,datasetLabels:datasetLabels.length,analysisNavButtons:navButtons.length,integratedGroups:integrated.length,chartHeaders:chartHeaders.length,smbLanCompared:!!(smb&&lan)};
+      return {nativeTooltipElements:0,forbiddenTooltipZones:0,datasetLabels:datasetLabels.length,analysisNavButtons:navButtons.length,integratedGroups:integrated.length,chartHeaders:chartHeaders.length,parentOwnedChartHeaders,smbLanCompared:!!(smb&&lan)};
     });
 
     await runCase('runtime.package-mode','Packaged build identity','Environment',async()=>({runtime:environment.runtime||'unknown',isPackaged:environment.isPackaged===true,appVersion:environment.appVersion||''}),{skip:environment.runtime==='desktop'&&environment.isPackaged===false,skipReason:'当前是 Electron 开发/源码运行形态；Core 测试仍会继续，但安装包/portable 的最终资源布局尚未被本次日志覆盖。'});
@@ -109,6 +117,7 @@
     await runCase('runtime.shell','Application Shell DOM','Core',async()=>{
       for(const id of ['app','activityBar','mainWorkspace','statusBar','manageMenu','pluginManagerPage','automationTestPage'])assert(document.getElementById(id),`Missing shell element #${id}`);return {viewport:[window.innerWidth,window.innerHeight],devicePixelRatio:window.devicePixelRatio||1};
     });
+    await runCase('ui.visual-geometry-closure','Desktop Visual Closure · computed geometry','UI / Visual',visualGeometryClosureSmoke);
     await runCase('ui.theme-material-renderer','Theme Material Renderer · computed style','UI / Theme',async()=>{
       const caps=window.DKDSTheme?.rendererCapabilities?.();assert(caps?.version==='3.9.0'&&caps?.renderer?.backdropBlur===true,'Material Renderer 3.9 backdrop capability unavailable.');
       assert(window.DKDSTheme?.contractVersion==='3.9.0','Theme Contract 3.9 unavailable.');assert(window.DKDSTheme?.supports?.('contract.materialBlur')===true,'Theme contract materialBlur capability unavailable.');assert(window.DKDSTheme?.supports?.('renderer.recipes.thin-glass')===true,'Thin Glass renderer capability unavailable.');
@@ -130,8 +139,8 @@
         if(Theme?.current?.()!==originalMode){Theme?.set?.(originalMode);await settle();}
       }
       const report=Theme?.coverage?.();assert(report?.contractVersion==='3.9.0','Theme Coverage Runtime / Contract 3.9 unavailable.');
-      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,authoredUnused=report.summary?.authoredUnused||0,appearanceOk=report.summary?.appearanceOk===true,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
-      if(partial||unmanaged||broken||authoredUnused||!appearanceOk||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} authoredUnused=${authoredUnused} appearanceOk=${appearanceOk} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,render:row.render}))};throw err;}
+      const partial=report.summary?.partial||0,unmanaged=report.summary?.unmanaged||0,broken=report.summary?.brokenMaterial||0,occluded=report.summary?.occludedMaterial||0,authoredUnused=report.summary?.authoredUnused||0,appearanceOk=report.summary?.appearanceOk===true,rendererOk=report.summary?.rendererOk===true,lowContrast=contrastModes.reduce((n,row)=>n+(row.issues?.length||0),0);
+      if(partial||unmanaged||broken||occluded||authoredUnused||!appearanceOk||!rendererOk||lowContrast){const err=new Error(`Core Theme coverage incomplete: partial=${partial} unmanaged=${unmanaged} brokenMaterial=${broken} occludedMaterial=${occluded} authoredUnused=${authoredUnused} appearanceOk=${appearanceOk} rendererOk=${rendererOk} lowContrastControls=${lowContrast}`);err.data={responsibility:'core.theme',summary:{...report.summary,lowContrastControls:lowContrast},contrast:report.contrast||null,contrastModes,areas:(report.core||[]).filter(row=>['partial','unmanaged'].includes(row.status)||row.brokenMaterial>0||row.occludedMaterial>0).map(row=>({id:row.id,label:row.label,role:row.role,count:row.count,managed:row.managed,status:row.status,renderStatus:row.renderStatus,brokenMaterial:row.brokenMaterial,occludedMaterial:row.occludedMaterial,render:row.render}))};throw err;}
       return {...report,contrastModes};
     });
     await runCase('ui.import-workbench','Import workbench selection & preview','UI / Import',async()=>{

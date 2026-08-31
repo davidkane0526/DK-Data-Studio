@@ -26,7 +26,10 @@ assert(vthWindow&&vthWindow.pluginId==='com.dkds.transfer-vth-lab','Vth dedicate
 const css=readCoreCss(root);
 assert(css.includes('body.dkds-modern-ui .dkds-analysis-nav-btn')&&css.includes('.statusbar-command-cluster'),'release must carry the semantic control/status composition layer.');
 assert(css.includes('body.dkds-modern-ui .dkds-analysis-nav-btn')&&css.includes('border:0;'),'AnalysisWorkbench navigation may not retain the legacy bright outlined-button treatment.');
-assert(css.includes('.dkds-dialog-action:not(.primary):not(.danger)')&&css.includes('background:var(--dkui-control-bg'),'history/core dialog actions must consume semantic control surfaces.');
+const dialogRuntime=read('src/core/ui/modules/dialog/settings.js');
+const semanticRegistry=read('src/core/theme/semantic-registry.js');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(dialogRuntime.includes("button.dataset.dkdsComponentIdentity='toolbarAction'")&&dialogRuntime.includes("button.dataset.dkdsComponentVariant=variant")&&dialogRuntime.includes("kind==='danger'?'destructive'")&&semanticRegistry.includes("matches(el,'.primary,.strong')")&&componentAppearance.includes('[data-dkds-component-identity="toolbarAction"]'),'history/core dialog actions must declare canonical ToolbarAction semantic variants synchronously rather than rely on Presentation-owned control paint.');
 assert(css.includes('.statusbar-command-cluster')&&css.includes('body.dkds-modern-ui .plugin-status-item::before{display:none}'),'status actions must be one shared command cluster without stitched vertical separators.');
 
 const html=read('src/index.html');

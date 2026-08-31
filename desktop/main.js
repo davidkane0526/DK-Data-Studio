@@ -17,6 +17,7 @@ const { createPluginPackageRuntime } = require('./main-modules/plugin-package-ru
 const { createPackagedExpiryRuntime } = require('./main-modules/packaged-expiry');
 const { createAgentRuntime } = require('./main-modules/agent-runtime');
 const { createAuxiliaryWindowRuntime } = require('./main-modules/auxiliary-window-runtime');
+const { createVisualClosureRuntime } = require('./main-modules/visual-closure-runtime');
 
 const DKDSProjectFormat = require('../src/core/project/format');
 require('../src/project-importers/compatibility-gateway').register(DKDSProjectFormat);
@@ -90,6 +91,8 @@ const {
   runDiagnosticActivitySmoke,diagnosticsDirectory,diagnosticEnvironment,requestAuxiliaryRoleSnapshot,wrapAuxiliaryRoleSnapshot,createOrFocusAuxiliaryWindow
 }=auxiliaryWindowRuntime;
 
+const visualClosureRuntime=createVisualClosureRuntime({app,appRoot:APP_ROOT,diagnosticsDirectory});
+
 
 function dispatchMcpToRenderer(request){
   const win=primaryWindow&&!primaryWindow.isDestroyed()?primaryWindow:BrowserWindow.getAllWindows().find(candidate=>!candidate.isDestroyed()&&!auxiliaryBootstrap.has(candidate.webContents.id));
@@ -123,7 +126,7 @@ function createWindow() {
   win.on('maximize',publishMaximizedState);
   win.on('unmaximize',publishMaximizedState);
   win.on('closed',()=>{ if(primaryWindow===win) primaryWindow=null; });
-  win.loadFile(path.join(APP_ROOT, 'src', 'index.html'));
+  win.loadFile(path.join(APP_ROOT, 'src', 'index.html'),visualClosureRuntime.loadFileOptions());
   return win;
 }
 
@@ -172,6 +175,7 @@ app.whenReady().then(() => {
     if(error)throw new Error(error);
     return true;
   });
+  ipcMain.handle('diagnostics:completeVisualClosure', async (_event,payload={}) => visualClosureRuntime.complete(payload));
 
   ipcMain.handle('windows:prewarmActivity', async (event, payload) => {
     const owner = BrowserWindow.fromWebContents(event.sender);

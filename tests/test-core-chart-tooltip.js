@@ -23,8 +23,10 @@ vm.createContext(context);vm.runInContext(code,context,{filename:'chart-runtime.
   const dialogCss=fs.readFileSync(path.join(root,'src/styles/presentation/dialogs.css'),'utf8');
   assert(/\.dkds-tooltip\{[^}]*position:absolute[^}]*\}/.test(structureCss)&&/\.hover-tip\{[^}]*position:absolute[^}]*\}/.test(structureCss),'custom tooltip geometry must be owned by the structure layer');
   assert(!/\.(?:dkds-tooltip|hover-tip)\{[^}]*(?:background|border(?:-color)?|box-shadow|color)\s*:/.test(structureCss),'custom tooltip structure must remain paint-free');
-  assert(/\.dkds-tooltip\{[^}]*background:transparent[^}]*box-shadow:none[^}]*\}/.test(dialogCss)&&/\.hover-tip\{[^}]*background:transparent[^}]*box-shadow:none[^}]*\}/.test(dialogCss),'custom tooltip paint must have one semantic presentation owner');
-  assert(css.includes('.dkds-d3-chart-tooltip')&&css.includes('border:1px solid transparent;background:transparent;color:inherit;box-shadow:none'),'D3 tooltip host must leave visual material to Core Material Renderer');
+  assert(!/\.(?:dkds-tooltip|hover-tip)\{[^}]*(?:background|border(?:-color)?|box-shadow|color)\s*:/.test(dialogCss),'custom tooltip presentation must remain optical-paint free');
+  const materialCss=fs.readFileSync(path.join(root,'src/styles/theme/material-renderer.css'),'utf8');
+  assert(materialCss.includes('.dkds-tooltip,.hover-tip,.dkds-core-tooltip,.dkds-d3-chart-tooltip')&&materialCss.includes('border-width:1px;border-style:solid;border-radius:7px'),'Tooltip edge/material geometry must have one Core Material Renderer owner.');
+  assert(!fs.readFileSync(path.join(root,'src/styles/presentation/shell.css'),'utf8').match(/\.dkds-d3-chart-tooltip\s*\{[^}]*(?:background|border|box-shadow|color)/s),'D3 tooltip presentation must not repaint the Material surface.');
   const semantic=fs.readFileSync(path.join(root,'src/core/theme/semantic-registry.js'),'utf8');
   assert(semantic.includes('.dkds-d3-chart-tooltip')&&semantic.includes("id:'popover'")&&semantic.includes("role:'popover'"),'D3 tooltip must be classified by the canonical Semantic Registry as the Core popover Material Role');
   console.log('Core renderer-neutral tooltip visual theme checks passed.');

@@ -40,7 +40,7 @@ assert(!/\.dkds-plugin-devtools-window>nav button\{[^}]*?(?:background|border(?:
 for(const source of [html,lanStructure,lanPresentation])assert(!source.includes('lan-web-capabilities'),'Inert LAN capability badges must stay removed.');
 
 // 6. A vector close glyph has deterministic optical centering independent of font metrics.
-assert(debug.includes('class="dkds-theme-debug-exit"')&&debug.includes('<svg viewBox="0 0 16 16"')&&devCss.includes('.dkds-theme-debug-exit>svg{display:block;width:12px;height:12px'),'Theme Inspector close control must use the centered vector icon contract.');
+assert(/class="[^"]*dkds-theme-debug-exit[^"]*dkds-panel-close-button[^"]*"/.test(debug)&&debug.includes('<svg viewBox="0 0 16 16"')&&devCss.includes('.dkds-theme-debug-exit>svg{display:block;width:12px;height:12px'),'Theme Inspector close control must use the centered vector icon and canonical close-action contract.');
 
 // 7. Aurora light active/secondary commands retain white labels and consume the shared light interaction palette.
 assert(aurora.includes("surfaceActive:LIGHT_EMERALD.fill")&&aurora.includes("secondary:{surface:LIGHT_EMERALD.fill,surfaceHover:LIGHT_EMERALD.fillHover,text:'#FFFFFF'")&&aurora.includes("active:{surface:LIGHT_EMERALD.fill,text:'#FFFFFF'"),'Aurora light active/secondary commands must consume the shared Theme palette and keep white text.');

@@ -6,6 +6,7 @@ const json=rel=>JSON.parse(read(rel));
 const pkg=json('package.json');
 const components=read('src/styles/theme/component-appearance.css');
 const chrome=read('src/styles/theme/integrated-command-chrome.css');
+const material=read('src/styles/theme/material-renderer.css');
 const surfaces=read('src/styles/structure/sdk-semantic-surfaces.css');
 const debug=read('src/core/theme/debug-runtime.js');
 const devCss=read('src/styles/presentation/plugin-devtools.css');
@@ -24,9 +25,12 @@ assert(components.includes('--dkui-component-toolbar-action-variant-primary-surf
 
 // Surface/Plot header commands share the title-bar Material; nested wrappers may not draw a capsule.
 assert(surfaces.includes('.dkds-surface-actions'),'Core Surface Header composition must remain generic.');
-assert(chrome.includes('SurfaceActions ->')&&chrome.includes('.dkds-surface-actions,.dkds-integrated-action-group'),'Header command integration must handle nested Core action wrappers, not page-specific DOM.');
-assert(chrome.includes(':where(.dkds-surface-actions,.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions)'), 'Plot and Surface actions must share one Core header integration path.');
-assert(!/data-center|\.dc-/.test(chrome),'Core header chrome must not contain Data Center-specific selectors.');
+assert(semantic.includes('INTEGRATED_CONTAINER_SELECTOR')&&semantic.includes('.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions'),'Core semantic registry must recognize generic nested header action wrappers.');
+assert(semantic.includes('chromeOwnedIntegrated(el)')&&semantic.includes("if(chromeOwnedIntegrated(el))return '';"),'Header-owned command wrappers must be flattened by semantic ownership before Material role assignment.');
+assert(material.includes('Header-owned command wrappers are transparent composition only.')&&material.includes(':where(.dkds-integrated-action-group,.panel-header-actions,.trend-header-actions,.dkds-plot-view-actions,.dkds-chart-actions,.dkds-surface-actions)'),'Plot and Surface actions must share one transparent Core header-composition path.');
+assert(material.includes('background:transparent')&&material.includes('box-shadow:none'),'Header action wrappers must not paint a second capsule over the title-bar Material.');
+assert(!/data-center|\.dc-/.test(material)&&!/data-center|\.dc-/.test(chrome),'Core header composition must remain domain-blind.');
+assert(!chrome.includes('.dkds-surface-actions'),'Integrated command Theme CSS must not reclaim generic Surface Action paint.');
 assert(semantic.includes('.dkds-surface-actions>button'),'Surface action buttons must remain in the canonical toolbarAction resolver.');
 
 // Theme Inspector is a movable dev overlay with bounded, session-scoped position.
