@@ -44,11 +44,7 @@
 #resonanceDedicatedPage .respar-dataset-vg input{width:76px}
 #resonanceDedicatedPage .respar-scan-toggle{display:flex;gap:12px;margin-top:5px}#resonanceDedicatedPage .respar-scan-toggle label{display:flex;align-items:center;gap:4px;cursor:pointer}
 #resonanceDedicatedPage .respar-dataset-transform{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:5px;margin-top:5px}#resonanceDedicatedPage .respar-dataset-transform select{min-width:0;width:100%}
-#resonanceDedicatedPage .respar-range-menu{position:absolute;z-index:150;width:260px;padding:8px}
-#resonanceDedicatedPage .respar-range-summary{padding:2px 3px 7px;margin:0}#resonanceDedicatedPage .respar-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-#resonanceDedicatedPage .respar-range-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:7px;padding-top:6px}
-#resonanceDedicatedPage .respar-range-identity{margin-top:7px;padding-top:7px;display:grid;grid-template-columns:86px minmax(0,1fr);gap:5px}
-#resonanceDedicatedPage .respar-range-identity>div{grid-column:1/-1}#resonanceDedicatedPage .respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input{min-width:0;width:auto}#resonanceDedicatedPage .respar-range-identity button{grid-column:1/-1;width:100%}#resonanceDedicatedPage .respar-inspector-section{padding-bottom:10px;margin-bottom:10px}#resonanceDedicatedPage .respar-inspector-section h4{margin:0 0 7px}
+#resonanceDedicatedPage .respar-inspector-section{padding-bottom:10px;margin-bottom:10px}#resonanceDedicatedPage .respar-inspector-section h4{margin:0 0 7px}
 #resonanceDedicatedPage .respar-inspector-kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:4px 8px}
 #resonanceDedicatedPage .respar-inspector-hint{line-height:1.7;margin-bottom:7px}
 #resonanceDedicatedPage .respar-inspector-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}

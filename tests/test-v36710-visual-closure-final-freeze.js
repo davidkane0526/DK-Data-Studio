@@ -7,7 +7,7 @@ const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
 const pkg=JSON.parse(read('package.json'));
 assert(pkg.version==='3.67.10','Final Visual Closure freeze must publish app version 3.67.10.');
 assert(read('README_CN.md').includes('当前版本：**v3.67.10**'),'README must expose v3.67.10.');
-assert(read('CHANGELOG.md').startsWith('# v3.67.10 — Desktop Visual Closure · Theme Provider Recovery WIP'),'CHANGELOG must expose the reopened Theme Provider recovery state.');
+assert(read('CHANGELOG.md').startsWith('# v3.67.10 — R7H Runtime / Visual Recovery WIP')&&read('CHANGELOG.md').includes('# v3.67.10 — Desktop Visual Closure · Theme Provider Recovery WIP'),'CHANGELOG must expose the current R7H recovery state while retaining the earlier reopened visual-closure history.');
 const audit=read('docs/VISUAL_CLOSURE_FINAL_FREEZE_AUDIT_3.67.10.md');
 for(const token of ['STATUS: REOPENED / SUPERSEDED','47 PASS','0 FAIL','occludedMaterial=0','rendererOk=true','appearanceOk=true','38','Electron 43.4.0']) assert(audit.includes(token),`Historical audit must retain ${token}.`);
 const recovery=read('docs/VISUAL_THEME_RECOVERY_WIP_3.67.10.md');

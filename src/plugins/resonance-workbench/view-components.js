@@ -207,11 +207,11 @@
                     <div id="resparMainLegend" class="respar-main-legend dkds-scroll-x-compact dkds-legend-strip" data-dkds-legend></div>
                   </div>
                   <svg id="reswinMainPlot" class="respar-main-svg"></svg>
-                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden" data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作">
-                    <div id="resparRangeSummary" class="respar-range-summary">已框选区域</div>
-                    <div class="respar-range-grid"><button id="resparRangeDetect" class="dkds-action-button primary">局部寻峰</button><button id="resparRangeDelete" class="dkds-action-button danger-soft">删除框选峰</button><button id="resparRangeLock" class="dkds-action-button">锁定框选峰</button><button id="resparRangeUnlock" class="dkds-action-button">解锁框选峰</button></div>
-                    <div class="respar-range-identity"><div>统一峰序 / 峰标签</div><select id="resparRangeOrder"></select><input id="resparRangeLabel" type="text" placeholder="类别标签，例如 峰3 / AB"><button id="resparRangeApplyIdentity" class="dkds-action-button">应用到框选峰</button></div>
-                    <div class="respar-range-footer"><span>峰位始终落在原始 I–V 采样点</span><button id="resparRangeClose" class="dkds-action-button">关闭</button></div>
+                  <div id="resparRangeMenu" class="respar-range-menu command-menu hidden range-action-menu" data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作">
+                    <div id="resparRangeSummary" class="respar-range-summary range-action-summary">已框选区域</div>
+                    <div class="respar-range-grid range-action-grid"><button id="resparRangeDetect" class="dkds-action-button primary">局部寻峰</button><button id="resparRangeDelete" class="dkds-action-button danger-soft">删除框选峰</button><button id="resparRangeLock" class="dkds-action-button">锁定框选峰</button><button id="resparRangeUnlock" class="dkds-action-button">解锁框选峰</button></div>
+                    <div class="respar-range-identity range-action-identity"><div>统一峰序 / 峰标签</div><select id="resparRangeOrder"></select><input id="resparRangeLabel" type="text" placeholder="类别标签，例如 峰3 / AB"><button id="resparRangeApplyIdentity" class="dkds-action-button">应用到框选峰</button></div>
+                    <div class="respar-range-footer range-action-footer"><span>峰位始终落在原始 I–V 采样点</span><button id="resparRangeClose" class="dkds-action-button">关闭</button></div>
                   </div>
                   <div id="resparHoverTip" class="respar-hover-tip dkds-tooltip hidden"></div>
                 </div>

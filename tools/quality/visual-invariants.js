@@ -710,7 +710,10 @@ function validate(){
   // HARD-60: destructive actions own a restrained semantic danger depth in
   // Core. Domain plugins only compose/size the rich selection popover.
   requireText(componentCss,'--dkds-ca-action-shadow:var(--dkui-component-toolbar-action-variant-destructive-shadow,0 2px 8px color-mix(in srgb,var(--dkui-danger) 14%,transparent))','HARD-60: destructive ToolbarAction must retain a Core-owned danger depth fallback.');
+  requireText(resonanceView,'class="respar-range-menu command-menu hidden range-action-menu"','HARD-60: Resonance range-selection popover must consume the shared Core range-action geometry in SUPER and TOP.');
   requireText(resonanceView,'data-dkds-menu-behavior="rich" role="dialog" aria-label="框选区域操作"','HARD-60: Resonance range-selection popover must publish rich-dialog semantics.');
+  requireText(read('src/styles/structure/analysis-shell.css'),'.range-action-menu{width:260px;padding:8px;}','HARD-60: shared range-action menu must retain the compact canonical geometry.');
+  requireText(componentCss,':where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]','HARD-60: final Component Appearance must neutralize generic MenuItem edge/depth for scientific legends.');
   forbidText(resonanceCss,'.respar-range-identity select,#resonanceDedicatedPage .respar-range-identity input,#resonanceDedicatedPage .respar-range-identity button{width:100%}','HARD-60: Resonance range identity must not rely on a broad historical width override.');
   forbidRegex(resonanceCss,/\.respar-range-menu\s*\{[^}]*(?:background|border|box-shadow|color)\s*:/s,'HARD-60: Resonance range popover must not repaint Core Material/Theme appearance.');
 

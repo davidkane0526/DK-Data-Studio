@@ -14,7 +14,9 @@ for(const label of ['Scientific / Data Content','Workspace / Persistent Pages','
 const modernRenderer=read('src/styles/theme/material-renderer.css');
 assert(modernRenderer.includes('Integrated actions inside translucent surfaces retain Core component paint'),'Material renderer must leave nested command paint to canonical Component Appearance.');
 assert(!/dkds-integrated-action-group[\s\S]{0,420}:where\(button[^}]*background:/s.test(modernRenderer),'Material renderer must not repaint integrated command buttons.');
-assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Material renderer must exempt legends from control pill rendering.');
+assert(modernRenderer.includes('.dkds-legend-item,.dkds-plot-legend-item'),'Material renderer must exempt legends from nested Material rendering.');
+const componentAppearance=read('src/styles/theme/component-appearance.css');
+assert(componentAppearance.includes(':where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]')&&componentAppearance.includes('border-radius:999px;box-shadow:none'),'Final Component Appearance must keep scientific legends borderless, rounded and shadow-free after generic MenuItem paint.');
 assert(modernRenderer.includes('--dkds-on-popover'),'Popover/tooltip renderer must consume the derived readable foreground.');
 const command=read('src/styles/theme/integrated-command-chrome.css');
 assert(command.includes('Integrated command chrome.')&&command.includes('Material Renderer owns standalone command surfaces'),'Integrated command theme CSS must remain composition/state-only.');

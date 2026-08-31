@@ -47,7 +47,20 @@ Current rule:
 - generic grouped context alone does not erase a child action's border/depth;
 - status/activity/scientific semantic grouping remains available without forcing a visual shell contract.
 
-### 4. R7 performance work retained
+
+### 4. Range-selection menu now consumes the shared Core structure
+
+The Resonance view used `respar-range-*` classes, while its compact 2×2 layout was scoped only under `#resonanceDedicatedPage`. As a result, the dedicated TOP and embedded SUPER could render the same range-selection UI with different geometry.
+
+R7H adds the shared `range-action-menu / summary / grid / identity / footer` structural classes directly to the common view, removes the duplicate dedicated-only range geometry from `plugin.css`, and restores the compact canonical 260 px / 8 px / 29 px-button geometry in Core Structure. The plugin still owns the domain content; Core owns the reusable interaction layout and Theme/Material appearance.
+
+### 5. Legend heavy-border regression was a CSS-order bug
+
+Material Renderer already attempted to clear legend background/border/shadow, but Component Appearance is loaded later in the same Theme layer and classified the interactive legend as `menuItem`, which could paint the edge back.
+
+R7H therefore places the final legend-neutralization rule at the actual last paint owner, Component Appearance: scientific legend items keep transparent edges, no shadow, and a fully rounded compact hit region; hover/selected state uses only a restrained fill.
+
+### 6. R7 performance work retained
 
 The R7F changes remain:
 
@@ -68,6 +81,21 @@ The R7F changes remain:
 - SUPER/TOP regression specifically verifies stale preference migration.
 
 Expected negative-path activation logs in plugin-manager/SUPER tests are fixtures, not suite failures.
+
+Additional platform suites after the final range/legend changes:
+
+- Mobile: **12/12 PASS**
+- SDK Harness: **PASS**
+- Scientific parity: **PASS**
+- Renderer tests: **PASS**
+- Plugin Manager tests: **PASS**
+
+A local Chromium render probe (not a substitute for Windows Electron acceptance) confirmed that the shared range-action contract produces the intended compact 2×2 layout and Core destructive red depth under both Thin Glass and Aurora. No probe screenshot or fake dependency is included in the project ZIP.
+
+
+## Runtime environment note
+
+The source declares public `electron ^43.4.0` in `devDependencies`. Installing public dependencies is allowed; the restriction is only that the user's GitHub repository must not be accessed. In this container the actual npm/Electron install attempt failed because external npm/DNS requests timed out. Existing Chromium/Xvfb was therefore used only as a rendered DOM/CSS probe. Do not interpret the absence of Electron here as a project instruction or as proof that Electron cannot be installed on another environment.
 
 ## Remaining acceptance / next work
 

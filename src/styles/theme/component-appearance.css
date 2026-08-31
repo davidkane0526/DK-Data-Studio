@@ -260,6 +260,20 @@ body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:hover:not(:disable
 body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.active,[aria-pressed="true"]){background:var(--dkds-ca-menu-surface-active);color:var(--dkds-ca-menu-text-active);border-color:var(--dkds-ca-menu-border-active);box-shadow:var(--dkds-ca-menu-shadow-active)}
 body.dkds-modern-ui [data-dkds-component-identity="menuItem"]:is(.selected,[aria-selected="true"],[aria-checked="true"]){background:var(--dkds-ca-menu-surface-selected);color:var(--dkds-ca-menu-text-selected);border-color:var(--dkds-ca-menu-border-active);box-shadow:var(--dkds-ca-menu-shadow-selected)}
 
+/* Scientific legends are compact labels/chips, not menu buttons. This rule is
+   intentionally in Component Appearance (after generic MenuItem paint) so a
+   later component rule cannot reintroduce the heavy border/shadow that the
+   Material layer already removed. */
+body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]{
+  background:transparent;border-color:transparent;border-radius:999px;box-shadow:none
+}
+body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]:hover:not(:disabled){
+  background:color-mix(in srgb,var(--dkui-control-hover) 72%,transparent);border-color:transparent;box-shadow:none
+}
+body.dkds-modern-ui :where(.dkds-legend-item,.dkds-plot-legend-item)[data-dkds-component-identity="menuItem"]:is(.active,.selected,.is-selected,.is-solo,[aria-pressed="true"],[aria-selected="true"]){
+  background:color-mix(in srgb,var(--dkui-selection-surface) 72%,transparent);border-color:transparent;box-shadow:none
+}
+
 body.dkds-modern-ui [data-dkds-component-identity="chip"]{border:1px solid var(--dkui-component-chip-border,transparent);border-radius:999px;background:var(--dkui-component-chip-surface,var(--dkui-surface-soft));color:var(--dkui-component-chip-text,var(--dkui-text-soft))}
 body.dkds-modern-ui [data-dkds-component-identity="chip"]:hover{background:var(--dkui-component-chip-surface-hover,var(--dkui-surface-hover));border-color:var(--dkui-component-chip-border-hover,var(--dkui-control-border))}
 body.dkds-modern-ui [data-dkds-component-identity="chip"]:is(.active,[aria-pressed="true"]){background:var(--dkui-component-chip-surface-active,var(--dkui-active-surface));color:var(--dkui-component-chip-text-active,var(--dkui-active-text));border-color:var(--dkui-component-chip-border-active,var(--dkui-selection-border))}

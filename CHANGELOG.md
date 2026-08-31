@@ -4,6 +4,8 @@
 - Fix stale SUPER preference recovery in the Core plugin kernel. A saved TOP id that is missing, disabled, or no longer contract-ready now migrates to the current valid default SUPER instead of intentionally leaving the Desktop in an empty PRIMARY/PRIME shell. Valid persisted SUPER choices still win.
 - Correct dark disabled ToolbarAction contrast by removing Core's second `opacity:.56` attenuation on top of Theme `disabledText`; Theme providers still own the disabled color.
 - Restrict integrated-child flattening to containers that actually own a shared command silhouette. Generic `grouped` context remains semantic/layout metadata and no longer implies that status/activity controls must lose their own border/depth.
+- Restore the Resonance box-selection popover to the shared Core `range-action-*` structure in both embedded SUPER and dedicated TOP. Remove duplicate dedicated-only range-menu geometry and return the canonical compact 260 px / 2×2 action layout; destructive feedback remains Core semantic paint.
+- Fix scientific legend final-paint ordering: legend items are explicitly borderless, rounded and shadow-free in Component Appearance after generic MenuItem composition, so later component paint cannot reintroduce the heavy legend-button frame.
 - R7 Theme/Semantic startup deduplication and Split/GroupPlot preview→single-commit performance work remain in place. Code-side validation: `npm test` 226/226 PASS, `npm run check` 234/234 PASS, Hard Visual Invariants 61/61, 44 authored CSS / 0 `!important`. Windows Electron visual/performance acceptance remains open.
 
 # v3.67.10 — Desktop Visual Closure · Theme Provider Recovery WIP

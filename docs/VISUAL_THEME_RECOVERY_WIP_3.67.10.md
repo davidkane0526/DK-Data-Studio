@@ -191,6 +191,8 @@ Windows validation exposed that passing source/style gates was not sufficient: t
 - Disabled ToolbarActions no longer receive a second global opacity attenuation on top of the Theme provider's `disabledText`; this removes the dark-theme double dimming seen in Windows screenshots.
 - R7G's overly broad grouped-action flattening is corrected. Only containers that visibly own a shared command silhouette (`.file-command-group` / `.dkds-integrated-action-group`) flatten direct child action chrome. Semantic/layout `grouped` context alone is not a visual-shell contract.
 - The R7 Theme-runtime and split-drag performance work remains intact.
+- The Resonance range-selection view now consumes the same Core `range-action-*` geometry in SUPER and dedicated TOP; the old dedicated-only duplicate layout has been removed and the compact 260 px menu geometry restored.
+- Scientific legend edge/depth neutralization now lives at the final Component Appearance owner, after MenuItem composition, preventing CSS source order from reintroducing the heavy legend-button frame.
 
 Current code-side validation after the R7H changes:
 
