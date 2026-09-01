@@ -4,7 +4,7 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
 
   class SplitController {
     constructor(scope,spec={}){
-      this.scope=scope;this.spec={axis:'x',min:180,max:null,defaultSize:320,...spec};this.container=resolveElement(spec.container);this.handle=resolveElement(spec.handle,this.container||document);this.target=resolveElement(spec.target,this.container||document)||this.container;this.axis=this.spec.axis==='y'?'y':'x';this.cleanups=[];this.drag=null;this.previewFrame=0;this.previewSize=null;
+      this.scope=scope;this.spec={axis:'x',min:180,max:null,defaultSize:320,...spec};this.container=resolveElement(spec.container);this.handle=resolveElement(spec.handle,this.container||document);this.target=resolveElement(spec.target,this.container||document)||this.container;this.axis=this.spec.axis==='y'?'y':'x';this.cleanups=[];this.drag=null;this.previewFrame=0;this.previewSize=null;this.previewOffset=0;
       if(!this.container||!this.handle||!this.target)throw new Error('SplitController container/handle/target not found.');
       this.handle.dataset.dkdsTouchGestureOwner='split-resize';
       this.key=`${hostState.storagePrefix}.${scope.owner}.split.${String(spec.id||'default')}`;
@@ -12,24 +12,28 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
       if(window.ResizeObserver){this.ro=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.apply(this.size,{persist:false,emit:false});});this.ro.observe(this.container);}
     }
     limits(){const rect=this.container.getBoundingClientRect();const total=this.axis==='x'?rect.width:rect.height;const min=Math.max(0,Number(this.spec.min)||0);const configured=Number(this.spec.max);const mobileOverlay=!!this.spec.mobileOverlay&&document.documentElement.classList.contains('react-native-client');const mobileRatio=Math.max(.45,Math.min(.96,Number(this.spec.mobileMaxRatio)||(this.axis==='x'?.92:.68)));const max=mobileOverlay?Math.max(min,total*mobileRatio):(Number.isFinite(configured)&&configured>0?configured:Math.max(min,total-Math.max(120,Number(this.spec.reserve)||220)));return {min,max:Math.max(min,max)};}
-    apply(value,{persist=true,emit=true,notify=true}={}){const {min,max}=this.limits();const next=Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});}return next;}
-    schedulePreview(value){
-      this.previewSize=value;if(this.previewFrame)return;
-      const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.previewFrame=raf(()=>{this.previewFrame=0;const next=this.previewSize;this.previewSize=null;if(next!==null)this.apply(next,{persist:false,emit:false,notify:false});});
+    clampSize(value){const {min,max}=this.limits();return Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));}
+    apply(value,{persist=true,emit=true,notify=true}={}){const next=this.clampSize(value);const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});}return next;}
+    paintPreview(){
+      const offset=Math.round(Number(this.previewOffset)||0);this.handle.style.translate=this.axis==='x'?`${offset}px 0`:`0 ${offset}px`;
     }
-    flushPreview(){
+    schedulePreview(value){
+      const next=this.clampSize(value),sign=this.spec.reverse?-1:1;this.previewSize=next;this.previewOffset=(next-this.drag.size)*sign;if(this.previewFrame)return;
+      const raf=globalThis.requestAnimationFrame||((fn)=>setTimeout(fn,16));this.previewFrame=raf(()=>{this.previewFrame=0;this.paintPreview();});
+    }
+    clearPreview(){
       if(this.previewFrame){const cancel=globalThis.cancelAnimationFrame||clearTimeout;try{cancel(this.previewFrame);}catch{}this.previewFrame=0;}
-      const next=this.previewSize;this.previewSize=null;if(next!==null)this.apply(next,{persist:false,emit:false,notify:false});
+      this.handle.style.removeProperty('translate');this.previewOffset=0;
     }
     bind(){
-      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.flushPreview();this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};document.documentElement?.classList?.add('dkds-split-drag-active');this.scope.resizeScheduler?.suspend?.();this.handle.classList.add('is-dragging');this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
+      const down=e=>{if(e.button!==0)return;const rect=this.container.getBoundingClientRect();this.clearPreview();this.previewSize=null;this.drag={start:this.axis==='x'?e.clientX:e.clientY,size:this.size,rect,pointerId:e.pointerId};document.documentElement?.classList?.add('dkds-split-drag-active');this.scope.resizeScheduler?.suspend?.();this.handle.classList.add('is-dragging');this.handle.setPointerCapture?.(e.pointerId);e.preventDefault();};
       const move=e=>{if(!this.drag||e.pointerId!==this.drag.pointerId)return;const point=this.axis==='x'?e.clientX:e.clientY;const sign=this.spec.reverse?-1:1;this.schedulePreview(this.drag.size+(point-this.drag.start)*sign);e.preventDefault();};
-      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);this.flushPreview();this.drag=null;document.documentElement?.classList?.remove('dkds-split-drag-active');this.handle.classList.remove('is-dragging');this.apply(this.size,{persist:true,emit:false,notify:false});this.scope.resizeScheduler?.resume?.();this.scope.emitResize?.({reason:'split-end',id:this.spec.id,size:this.size});};
-      const reset=e=>{e.preventDefault();this.flushPreview();this.apply(Number(this.spec.defaultSize)||320);};
+      const up=e=>{if(!this.drag||(e?.pointerId!==undefined&&e.pointerId!==this.drag.pointerId))return;this.handle.releasePointerCapture?.(this.drag.pointerId);const next=this.previewSize===null?this.size:this.previewSize;this.clearPreview();this.previewSize=null;this.drag=null;document.documentElement?.classList?.remove('dkds-split-drag-active');this.handle.classList.remove('is-dragging');this.apply(next,{persist:true,emit:false,notify:false});this.scope.resizeScheduler?.resume?.();this.scope.emitResize?.({reason:'split-end',id:this.spec.id,size:this.size});};
+      const reset=e=>{e.preventDefault();this.clearPreview();this.previewSize=null;this.apply(Number(this.spec.defaultSize)||320);};
       this.handle.addEventListener('pointerdown',down);window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);this.handle.addEventListener('dblclick',reset);
       this.cleanups.push(()=>this.handle.removeEventListener('pointerdown',down),()=>window.removeEventListener('pointermove',move),()=>window.removeEventListener('pointerup',up),()=>window.removeEventListener('pointercancel',up),()=>this.handle.removeEventListener('dblclick',reset));
     }
-    dispose(){document.documentElement?.classList?.remove('dkds-split-drag-active');this.flushPreview();this.scope.resizeScheduler?.resume?.();this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
+    dispose(){document.documentElement?.classList?.remove('dkds-split-drag-active');this.clearPreview();this.previewSize=null;this.scope.resizeScheduler?.resume?.();this.ro?.disconnect?.();this.cleanups.splice(0).forEach(cleanupCall);}
   }
 
   class MovableSurface {

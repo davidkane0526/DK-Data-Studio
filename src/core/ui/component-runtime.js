@@ -86,7 +86,10 @@
     scan('button',el=>{if(!el.dataset.dkdsComponentIdentity){if(el.closest('[role="menu"]'))semantic(el,'menuItem','','core-runtime');else if(el.getAttribute('role')==='tab'||el.closest('[role="tablist"]'))semantic(el,'tab','','core-runtime');else semantic(el,'toolbarAction','','core-runtime');}actionsCount++;});
     scan('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea,.dkds-field-control',el=>{if(!el.dataset.dkdsComponentIdentity)semantic(el,'field','','core-runtime');fields++;});
     scan('[role="tab"]',()=>tabsCount++);
-    globalThis.DKDSSemanticUI?.assign?.(base);return Object.freeze({headers,actions:actionsCount,fields,tabs:tabsCount});
+    /* Component identities are assigned synchronously above. Context/material
+       composition is mutation-driven and batched by Semantic UI; do not rescan
+       the same subtree synchronously for every DOM helper call. */
+    globalThis.DKDSSemanticUI?.schedule?.(base);return Object.freeze({headers,actions:actionsCount,fields,tabs:tabsCount});
   }
 
   function createScope(owner,{root=document}={}){

@@ -28,14 +28,14 @@ body.dkds-modern-ui #statusBar.statusbar{
 body.dkds-modern-ui .statusbar-command-cluster{
   flex:0 0 auto;
   min-width:0;
-  height:24px;
+  height:20px;
   display:flex;
   align-items:center;
   gap:8px;
   padding:0;
 }
 body.dkds-modern-ui .statusbar-plugin-zone{
-  height:20px;
+  height:18px;
   gap:8px;
   padding:0;
 }
@@ -44,7 +44,8 @@ body.dkds-modern-ui .statusbar-plugin-right{margin-left:0}
 body.dkds-modern-ui .statusbar-message + .statusbar-command-cluster{margin-left:auto}
 body.dkds-modern-ui .plugin-status-item{
   position:relative;
-  height:20px;
+  height:18px;
+  min-height:18px;
   padding:0 7px;
   border-radius:6px;
   --status-accent:currentColor;

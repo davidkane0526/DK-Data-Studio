@@ -165,11 +165,15 @@
   font-weight:560;
 }
 .plugin-context-toolbar .dkds-presentation-command{
+  box-sizing:border-box;
   width:auto;
-  min-width:48px;
+  min-width:58px;
   max-width:none;
   padding-left:11px;
   padding-right:11px;
+}
+.plugin-context-toolbar .dkds-presentation-command[data-dkds-presentation-compact="true"]{
+  width:48px;min-width:48px;max-width:48px;padding-left:6px;padding-right:6px;
 }
 .plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start{
   position:relative;

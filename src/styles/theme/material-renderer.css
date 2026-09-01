@@ -69,6 +69,16 @@ body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
 body.dkds-modern-ui .dkds-material-role-chrome{
   --dkds-material-theme-overlay:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start,transparent),var(--dkui-effect-header-gradient-end,transparent));
 }
+/* Nested semantic headers are parent-owned chrome, but they still consume the
+   theme's controlled header effect layer. Default/Thin Glass resolve both
+   endpoints to transparent; Aurora restores its original title-band gradient
+   across chart cards, inspectors and curve-checker headers. */
+body.dkds-modern-ui :where(
+  [data-dkds-component-identity="panelHeader"],
+  [data-dkds-component-identity="inspectorHeader"]
+){
+  background-image:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start,transparent),var(--dkui-effect-header-gradient-end,transparent));
+}
 body.dkds-modern-ui .dkds-material-role-sidebar{
   --dkds-material-theme-overlay:linear-gradient(180deg,var(--dkui-effect-ambient-tint,transparent),transparent 58%);
 }

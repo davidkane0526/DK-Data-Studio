@@ -254,7 +254,8 @@ function validate(){
   // HARD-14: Presenter-generated 参数 / 检查 / 组图 are one command family.
   requireText(desktopShell,"button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command'",'HARD-14: Desktop Presenter surface commands need the canonical presentation-command geometry class.');
   requireText(desktopShell,"button.dataset.pluginSection='presentation-surfaces'",'HARD-14: Presenter surface commands must form one section without internal separators.');
-  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\{[\s\S]*?width:auto;[\s\S]*?min-width:48px;[\s\S]*?max-width:none/,'HARD-14: Presenter commands must keep a 48 px minimum while allowing long labels to breathe.');
+  requireText(desktopShell,"button.dataset.dkdsPresentationCompact=[...label].length<=3?'true':'false'",'HARD-14: Presenter must explicitly classify compact labels.');
+  requireRegex(shellNavigation,/\.plugin-context-toolbar \.dkds-presentation-command\[data-dkds-presentation-compact="true"\]\{[^}]*width:48px;min-width:48px;max-width:48px/,'HARD-14: Compact Presenter commands must use an exact 48 px border box.');
 
   // HARD-15: both scientific renderers use one floating toolbar contract.
   for(const [name,source] of [['ChartRuntime',scientificChart],['ScientificCurve',scientificNav]]){
@@ -666,8 +667,9 @@ function validate(){
   // HARD-51: scientific and mode-control buttons are integrated semantic groups.
   requireText(semanticRegistry,'.dkds-mode-group,.dkds-scientific-nav-tools','HARD-51: mode and ScientificPlot navigation controls must resolve grouped Component Context.');
   // HARD-52: title hierarchy is a Core Component band inside the parent Material.
-  requireRegex(componentAppearance,/component-identity=\"panelHeader\"[\s\S]*?background:var\(--dkui-component-panel-header-surface/,'HARD-52: PanelHeader must consume Theme tonal-band appearance.');
-  requireRegex(componentAppearance,/component-identity=\"inspectorHeader\"[\s\S]*?background:var\(--dkui-component-inspector-header-surface/,'HARD-52: InspectorHeader must consume Theme tonal-band appearance.');
+  requireRegex(componentAppearance,/component-identity="panelHeader"[\s\S]*?background-color:var\(--dkui-component-panel-header-surface/,'HARD-52: PanelHeader must consume Theme tonal-band appearance without resetting the Material effect layer.');
+  requireRegex(componentAppearance,/component-identity="inspectorHeader"[\s\S]*?background-color:var\(--dkui-component-inspector-header-surface/,'HARD-52: InspectorHeader must consume Theme tonal-band appearance without resetting the Material effect layer.');
+  requireRegex(materialCss,/component-identity="panelHeader"[\s\S]*?header-gradient-start/,'HARD-52: Material Renderer must project Theme header gradients onto semantic headers.');
   // HARD-53: TER summary metadata must not masquerade as a ToolbarGroup.
   requireText(terSharedViews,'id=\\"terSummary\\" class=\\"dkds-summary-strip\\"','HARD-53: TER summary must use the metadata strip contract.');
   // HARD-54: Resonance main tools use equal-inset integrated chrome and legend remains content.
@@ -684,8 +686,9 @@ function validate(){
 
   // HARD-56: integrated command envelopes own the single outer edge. 38px shell
   // groups contain 34px actions with a mathematically equal 1px inset.
-  requireText(schemaStructure,'.file-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)','HARD-56: 38px file-command group must use a 1px equal inset around 34px actions.');
-  requireText(componentCss,':is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: explicit integrated command envelopes must suppress child outer edges/depth.');
+  requireText(schemaStructure,'.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)','HARD-56: all segmented topbar command groups must use the same 38px/1px geometry contract.');
+  requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"],','HARD-56: segmented command envelopes must flatten direct buttons.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: segmented command envelopes must flatten menu-wrapped buttons through the same appearance path.');
   forbidText(componentCss,':focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px;border-color:var(--dkds-ca-action-border-active)}','HARD-56: keyboard focus must not stack a second active border on ToolbarAction.');
 
   // HARD-57: fixed status popovers stay visually anchored and inspectors publish
@@ -720,16 +723,33 @@ function validate(){
   // HARD-61: grouped is a composition/layout semantic, not proof that a parent
   // paints an outer shell. Only explicit integrated command envelopes may erase
   // child edges/depth; status/activity groups must not become visually empty.
-  requireText(componentCss,':is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit integrated chrome owners must flatten their direct child actions.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit segmented chrome owners must flatten direct and menu-wrapped actions through one contract.');
   forbidText(componentCss,'body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;box-shadow:none}','HARD-61: generic grouped context must not globally erase child edge/depth.');
   requireText(semanticRegistry,'.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group','HARD-61: topbar/statusbar integrated containers must still resolve grouped Component Context for semantic composition.');
   requireText(materialRenderer,'.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button','HARD-61: Material Renderer must keep integrated top/status actions from becoming nested Material surfaces.');
+
+  // HARD-62: R7I closes the real Windows regressions: atomic Theme switching,
+  // compositor-only split preview, compact status hit regions and one segmented
+  // topbar contract. These are implementation invariants tied to measured bugs.
+  requireText(themeRuntime,"root.classList?.add?.('dkds-theme-switching')",'HARD-62: Theme switches must enter an atomic visual transaction.');
+  requireText(themeRuntime,"assignSemanticRoles?.(document,{syncSemantic:false})",'HARD-62: Theme recomposition must not trigger a redundant semantic document scan.');
+  requireText(contextualComponentRuntime,'if(event?.detail?.visualSynchronized)return','HARD-62: Component Appearance must not schedule a second full recomposition after synchronous Theme refresh.');
+  requireText(read('src/core/ui/component-runtime.js'),'DKDSSemanticUI?.schedule?.(base)','HARD-62: Component hydration must batch Semantic composition instead of synchronously rescanning every subtree.');
+  requireText(read('src/core/ui/modules/layout/workspace.js'),"this.handle.style.translate=this.axis==='x'",'HARD-62: Split preview must move only the divider through compositor translate.');
+  forbidText(read('src/core/ui/modules/layout/workspace.js'),'this.apply(next,{persist:false,emit:false,notify:false})','HARD-62: split pointer preview must not mutate authoritative panel geometry per frame.');
+  requireText(read('src/styles/presentation/control-status.css'),'height:18px;\n  min-height:18px;','HARD-62: status-bar command hit regions must remain inset from the 28px status chrome.');
+  requireText(indexHtml,'file-command-group dkds-segmented-command-group','HARD-62: file commands must consume the canonical segmented group.');
+  requireText(indexHtml,'system-core-tools-group dkds-segmented-command-group','HARD-62: system commands must consume the same segmented group.');
+  requireText(themeRuntime,'function commitProfile(key,{emit=true,detail={}}={})','HARD-62: Theme profile activation must use one atomic visual transaction path.');
+  requireText(automationVisual,'File/System command group chrome diverged','HARD-62: Windows acceptance must compare the two segmented topbar groups by final computed chrome.');
+  requireText(automationVisual,'Status-bar action hit region must stay inset at about 18px','HARD-62: Windows acceptance must measure status action inset height.');
+  requireText(automationVisual,'Aurora semantic header lost its Theme gradient','HARD-62: Windows acceptance must fail if Aurora semantic title gradients disappear.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:61});
+  return Object.freeze({ok:true,invariants:62});
 }
 
 if(require.main===module){

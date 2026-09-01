@@ -24,6 +24,11 @@
     const shellGroups=[...document.querySelectorAll('.file-command-group,.primary-activity-cluster,.system-core-tools-group')].filter(visible);
     assert(shellGroups.length>=3,'Topbar visual groups are not available for envelope validation.');
     for(const group of shellGroups){const r=rect(group);assert(close(r.height,38),`Topbar group envelope must be 38px: ${group.className} = ${r.height.toFixed(2)}px`);}
+    const fileGroup=document.querySelector('.file-command-group.dkds-segmented-command-group'),systemGroup=document.querySelector('.system-core-tools-group.dkds-segmented-command-group');
+    assert(visible(fileGroup)&&visible(systemGroup),'File and system commands must both consume the canonical segmented command group.');
+    const groupFingerprint=el=>{const style=getComputedStyle(el),r=rect(el);return {height:r.height,padding:[style.paddingTop,style.paddingRight,style.paddingBottom,style.paddingLeft],border:[style.borderTopWidth,style.borderTopStyle,style.borderTopColor],radius:style.borderRadius,shadow:style.boxShadow,background:style.backgroundColor};};
+    const fileFingerprint=groupFingerprint(fileGroup),systemFingerprint=groupFingerprint(systemGroup);
+    assert(close(fileFingerprint.height,systemFingerprint.height,.1)&&JSON.stringify(fileFingerprint.padding)===JSON.stringify(systemFingerprint.padding)&&JSON.stringify(fileFingerprint.border)===JSON.stringify(systemFingerprint.border)&&fileFingerprint.radius===systemFingerprint.radius&&fileFingerprint.shadow===systemFingerprint.shadow&&fileFingerprint.background===systemFingerprint.background,`File/System command group chrome diverged: ${JSON.stringify({file:fileFingerprint,system:systemFingerprint})}`);
 
     const presentationCommands=[...document.querySelectorAll('.dkds-presentation-command')].filter(visible);
     for(const button of presentationCommands){const r=rect(button),label=String(button.textContent||'').trim();assert(r.width>=47.5&&close(r.height,34),`Presenter command must be at least 48px wide and 34px high: ${label} = ${r.width.toFixed(2)}×${r.height.toFixed(2)}px`);if(label.length<=3)assert(r.width<=52,`Compact Presenter command should retain the 48px rhythm: ${label} = ${r.width.toFixed(2)}px`);else assert(r.width>=58,`Long Presenter command needs horizontal breathing room: ${label} = ${r.width.toFixed(2)}px`);}
@@ -79,6 +84,12 @@
     const themePanel=document.getElementById('dkdsThemePanel');
     if(themePanel)assert(!themePanel.querySelector('.dkds-portable-placement-trigger'),'Theme Picker must never expose PortableView placement chrome.');
 
+    const statusBar=document.getElementById('statusBar'),statusItems=[...document.querySelectorAll('#statusBar .plugin-status-item')].filter(visible);
+    if(visible(statusBar)){const barHeight=rect(statusBar).height;for(const item of statusItems){const h=rect(item).height;assert(h<=18.75,`Status-bar action hit region must stay inset at about 18px: ${String(item.textContent||'').trim()} = ${h.toFixed(2)}px`);assert(h<=barHeight-6,`Status-bar action must not touch the status chrome edges: item=${h.toFixed(2)} bar=${barHeight.toFixed(2)}`);}}
+
+    let auroraHeaderGradientChecked=false;
+    if(String(window.DKDSTheme?.profile?.()||'').includes('aurora')){for(const header of [...document.querySelectorAll('[data-dkds-component-identity="panelHeader"],[data-dkds-component-identity="inspectorHeader"]')].filter(visible)){const image=getComputedStyle(header).backgroundImage;assert(image&&image!=='none',`Aurora semantic header lost its Theme gradient: ${header.className||header.tagName}`);auroraHeaderGradientChecked=true;}}
+
     const trendLegends=[...document.querySelectorAll('.trend-card-legend')];
     for(const legendEl of trendLegends){const role=window.DKDSThemeMaterialRenderer?.roleOf?.(legendEl)||'';assert(role!=='surface',`Trend legend must remain child content, not a nested Material surface: ${role}`);assert(transparent(getComputedStyle(legendEl).backgroundColor),`Trend legend must remain transparent inside Trend Card: ${getComputedStyle(legendEl).backgroundColor}`);}
 
@@ -89,7 +100,7 @@
     const mainPlot=document.getElementById('resparMainPlotWrap');
     if(visible(mainPlot)){const style=getComputedStyle(mainPlot);assert(style.outlineStyle==='none'||parseFloat(style.outlineWidth||'0')===0,`Main scientific plot must not own a focus outline/frame: ${style.outline}`);for(const side of ['Top','Right','Bottom','Left'])assert(close(parseFloat(style[`border${side}Width`]||'0'),0,.1),`Main scientific plot must not own a decorative ${side.toLowerCase()} edge: ${style[`border${side}Width`]}`);mainPlotEdgeChecked=true;}
 
-    return {dockTransparent:true,topbarActions:topbarActions.length,shellGroups:shellGroups.length,presentationCommands:presentationCommands.length,groupedContextChecked,standaloneContextChecked,materialRoleCompositionChecked,workspaceModalChecked,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length,selectedProjectTabChecked,mainPlotEdgeChecked};
+    return {dockTransparent:true,topbarActions:topbarActions.length,shellGroups:shellGroups.length,segmentedCommandParity:true,presentationCommands:presentationCommands.length,groupedContextChecked,standaloneContextChecked,materialRoleCompositionChecked,workspaceModalChecked,plotToolsChecked:visible(plotTools),legendChecked:visible(legend),scientificNavigation:{curve:!!curveNav,chart:!!chartNav,parityChecked:!!(curveNav&&chartNav)},portableHeaderActions:portableButtons.length,closeButtons:closeButtons.length,statusItems:statusItems.length,auroraHeaderGradientChecked,workspaceGridChecked,themePickerChecked:!!themePanel,trendLegends:trendLegends.length,selectedProjectTabChecked,mainPlotEdgeChecked};
   }
 
   async function themeRuntimePerformanceSmoke(){

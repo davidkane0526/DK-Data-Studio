@@ -79,7 +79,7 @@ assert(!resonanceCss.includes('#resonanceDedicatedPage .hidden{display:none}'),
 assert(resonanceGroupFeature.includes('reswin-group-card-actions dkds-plot-view-actions dkds-integrated-action-group'),
   'Group-plot card actions must be integrated into the subplot title bar from first paint.');
 
-assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:20px;\s*gap:8px;/.test(statusCss),
+assert(/body\.dkds-modern-ui \.statusbar-plugin-zone\{\s*height:18px;\s*gap:8px;/.test(statusCss),
   'Status-bar contribution spacing must preserve a readable 6px rhythm.');
 
 assert(index.includes('id="automationTestRunBtn" class="primary">运行全部自动化测试</button>'),

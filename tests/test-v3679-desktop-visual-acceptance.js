@@ -52,13 +52,13 @@ const superTop=read('src/styles/structure/super-top-contract.css');
 const workbench=read('src/styles/structure/workbench-components.css');
 assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dkds-shell-group-height:38px'),'topbar must use the 34px action / 38px visual-envelope contract.');
 assert(shell.includes('height:var(--dkds-shell-group-height,38px)')&&shell.includes('padding:2px;'),'primary activity cluster must use the same 38px envelope with 2px inset.');
-assert(superTop.includes('height:var(--dkds-shell-group-height,38px)'),'file command outline must use the same envelope.');
-assert(workbench.includes('height:var(--dkds-shell-group-height,38px)'),'system command outline must use the same envelope.');
+assert(/\.dkds-segmented-command-group\{[^}]*height:var\(--dkds-shell-group-height\)/.test(schema),'file and system command outlines must consume the same canonical segmented 38px envelope.');
+assert(!superTop.includes('.global-commandbar .file-command-group{')&&!/system-core-tools-group\{[^}]*height:var\(--dkds-shell-group-height/.test(workbench),'file/system command envelope geometry must not be duplicated outside the canonical segmented Structure owner.');
 assert(componentRuntime.includes('ThemeContract.resolveComponentAppearance')&&componentRuntime.includes('contextFor(target)')&&componentRuntime.includes('roleFor(target)')&&themeRuntime.includes('contexts:{grouped:')&&themeRuntime.includes('standalone:{variants:')&&!appearance.includes('--dkds-shell-action-halo'),'topbar depth must be resolved from Theme 3.10 Component Context/Material Role composition instead of a fixed 2px Core halo.');
 
 // 7) Parameters / inspector / group presentation buttons have the same content
 // geometry. No first-button padding exception may return.
-assert(shell.includes('padding:6px 11px;\n  display:inline-flex;\n  align-items:center;\n  justify-content:center;\n  text-align:center;'),'plugin presentation commands must share centered content geometry.');
+assert(shell.includes('padding:6px 11px;\n  display:inline-flex;\n  align-items:center;\n  justify-content:center;\n  text-align:center;')&&shell.includes('[data-dkds-presentation-compact="true"]{\n  width:48px;min-width:48px;max-width:48px'),'plugin presentation commands must share centered content geometry and exact 48px compact width.');
 assert(shell.includes('.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child{\n  margin-left:0;\n  padding-left:11px;'),'the first presentation button must use the same 11px side inset as its siblings.');
 assert(!shell.includes('padding-left:7px;\n}\n.plugin-context-toolbar .plugin-toolbar-btn.plugin-section-start:first-child'),'the old narrow first-button exception must not return.');
 

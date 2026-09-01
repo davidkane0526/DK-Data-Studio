@@ -115,10 +115,10 @@ body.dkds-table-resizing *{cursor:col-resize;}
 .dkds-core-workbench-import-slot+.dkds-plugin-header-actions{margin-left:6px;}
 .dkds-core-import-action{white-space:nowrap;}
 
-/* System command grouping: Data Center and Tools form one visual system cluster. */
-.system-core-tools-group{display:flex;align-items:center;gap:0;padding:2px;flex:0 0 auto;height:var(--dkds-shell-group-height,38px);min-height:var(--dkds-shell-group-height,38px);box-sizing:border-box;}
-.system-core-tools-group>.toolbar-btn,.system-core-tools-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:8px;padding-right:8px;}
-.system-core-tools-group>.menu-anchor{display:flex;align-items:center;}
+/* System commands opt into the same segmented-command geometry as file commands.
+   The shared structure lives in schema-and-plugin-ui.css; this file owns no
+   second sizing contract for the same shell component. */
+.system-core-tools-group{display:flex;align-items:center;flex:0 0 auto;}
 
 /* Core split action: one visual command with independently clickable primary
    action and compact source caret. The popup anchor stays positioned while the

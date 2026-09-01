@@ -33,7 +33,7 @@ assert(app.includes('const previousArtifacts=snapshotArtifactRows()')&&app.inclu
 const dc=read('src/plugins/data-center/shared-views.js');
 assert(dc.includes('id="dcDataActionsBtn" type="button" disabled>编辑 ▾</button>'),'Data Center action button must be named 编辑.');
 const index=read('src/index.html'),css=readCoreCss(root);
-assert(index.includes('system-core-tools-group')&&css.includes('.system-core-tools-group>.menu-anchor>.toolbar-btn'),'Data Management and Tools must render as one shared visual group.');
+assert(index.includes('class="system-core-tools-group dkds-segmented-command-group"')&&css.includes('.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn'),'Data Management, Tools and Software Management must consume the same canonical segmented command group as Import/Save/Export.');
 assert(index.includes('id="editMenuBtn"')&&index.includes('>编辑 ▾</button>'),'Top Edit menu label must be concise: 编辑.');
 assert(css.includes('border:0')&&css.includes('box-shadow:none'),'Tools must not keep a second nested border/shadow inside the system group.');
 console.log('v3.61.12 universal display + legacy project Data Center checks passed.');

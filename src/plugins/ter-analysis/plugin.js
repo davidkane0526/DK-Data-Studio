@@ -1,6 +1,6 @@
 (() => {
   DKDSPlugins.define({
-    id:'builtin.ter-analysis',pluginType:'workbench',name:'TER Analysis',version:'3.12.2',apiVersion:'1.19.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","project","workspace","data.artifacts","data.types","data.reactive","data.pipeline","data.transforms","analysis.providers","analysis.algorithms","charts","parameters","ui.dom","ui.workspace","ui.plot-views","ui.actions","ui.selection","ui.interaction","ui.menus","ui.activities","ui.top-workspace","ui.shortcuts","ui.pages","ui.portable","ui.scientific-plot"],
+    id:'builtin.ter-analysis',pluginType:'workbench',name:'TER Analysis',version:'3.12.3',apiVersion:'1.19.0',requiresCore:["runtime","events","status","io","science","performance","services","modules","project","workspace","data.artifacts","data.types","data.reactive","data.pipeline","data.transforms","analysis.providers","analysis.algorithms","charts","parameters","ui.dom","ui.workspace","ui.plot-views","ui.actions","ui.selection","ui.interaction","ui.menus","ui.activities","ui.top-workspace","ui.shortcuts","ui.pages","ui.portable","ui.scientific-plot"],
     algorithmCategories:['transport-transform','transport-scalar-field','ter-analysis'],
     pluginDependencies:[{id:'builtin.scientific-data-contracts',range:'^1.0.0'}],
     description:'TER Controller + Shared Views + Feature Runtime built on DKDS workbench infrastructure.',source:'builtin',order:120,

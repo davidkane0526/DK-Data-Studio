@@ -383,8 +383,7 @@
     enableAssignmentsAfterFirstPaint();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootAssignments,{once:true});else bootAssignments();
-  globalThis.addEventListener?.('dkds:theme-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
-  globalThis.addEventListener?.('dkds:theme-profile-changed',()=>{refreshDerivedContrast();scheduleRoleAssignment(document);});
+  globalThis.addEventListener?.('dkds:theme-changed',event=>{if(event?.detail?.visualSynchronized)return;refreshDerivedContrast();scheduleRoleAssignment(document);});
   const performanceSnapshot=()=>Object.freeze({...PERF,pendingRoots:pendingRoleRoots.size,framePending:!!roleFrame,assignmentEnabled});
   window.DKDSThemeMaterialRenderer=Object.freeze({version:VERSION,performance:performanceSnapshot,capabilities,supports,inspect,ownership,probeRole,probeRecipe,roleOf,recipeOf,assignSemanticRoles,refreshDerivedContrast,materialRecipes:()=>MATERIAL_RECIPES.slice(),materialContexts:()=>MATERIAL_CONTEXTS.slice(),materialContextOf,materialPolicy:()=>({...recipePolicy()}),materialSurface:Object.freeze({apply:applyMaterialSurface,create:createMaterialSurface})});
   window.DKDSMaterialSurface=Object.freeze({version:'1.0.0',apply:applyMaterialSurface,create:createMaterialSurface,inspect,roleOf,recipeOf});

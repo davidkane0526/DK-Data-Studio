@@ -7,7 +7,7 @@ const pkg=json('package.json'),html=read('src/index.html'),docks=read('src/app/m
 const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 assert(atLeast(tuple(pkg.version),[3,66,7]),'Corrected import hierarchy requires DK Data Studio 3.66.7+.');
-const topStart=html.indexOf('<div class="toolbar-group file-command-group">');
+const topStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group">');
 const topEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topStart);
 const top=html.slice(topStart,topEnd);
 assert(top.includes('id="openBtn"')&&top.includes('id="saveProjectBtn"')&&top.includes('id="exportMenuBtn"'),'Top file group must contain the Import / Save / Export task family.');
@@ -22,6 +22,6 @@ assert(docks.includes("e.key.toLowerCase()==='o'){e.preventDefault();openImportW
 assert(imports.includes('return openFilesAuto({keepWorkbench:true});')&&imports.includes('if(!options?.keepWorkbench)openImportWorkbench()'),'Local import inside the workbench must auto-classify project/data without reopening/resetting the workbench.');
 assert(imports.includes('const preserveRouting=panelAlreadyOpen&&!scoped&&!Array.isArray(options?.targets);')&&imports.includes('const routed=routeImportSeedFiles(options?.files);'),'Provider imports opened from the workbench must preserve the current scope/target routing instead of resetting post-import behavior.');
 assert(imports.includes('function routeImportSeedFiles(files=[])')&&imports.includes('[DKDS provider auto file classify]'),'Provider sources such as SMB must share Core project/data auto-classification.');
-assert(/\.file-command-group\{[^}]*gap:0;[^}]*padding:1px;[^}]*\}/.test(structure)&&structure.includes('.file-command-group .toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}'),'Two-character file commands must size to content and share one integrated outer silhouette without inter-button gaps.');
+assert(/\.dkds-segmented-command-group\{[^}]*gap:0;[^}]*padding:1px;[^}]*\}/.test(structure)&&structure.includes('.dkds-segmented-command-group>.toolbar-btn,.dkds-segmented-command-group>.menu-anchor>.toolbar-btn{min-width:0;padding-left:9px;padding-right:9px;}'),'Top file commands must consume the canonical segmented command geometry shared with system commands.');
 assert(header.includes('dkds-split-action-group')&&header.includes('dkds-split-action-caret'),'Workbench source trigger must remain a compact peer of Import Data through the shared Core split-action composition.');
 console.log('v3.66.7 import hierarchy PASS: topbar is compact and task-only; SMB/provider choice lives inside the Import Workbench beside Import Data.');

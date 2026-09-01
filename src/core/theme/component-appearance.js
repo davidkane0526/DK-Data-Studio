@@ -129,7 +129,7 @@
   }
   function start(){
     const semanticState=Semantic.performance?.();if(!semanticState||semanticState.documentAssignments===0)Semantic.assign(document);applyAssigned(document);
-    const recomposeAll=()=>scheduleAppearance(document);globalThis.addEventListener?.('dkds:theme-changed',recomposeAll);globalThis.addEventListener?.('dkds:theme-profile-changed',recomposeAll);
+    const recomposeAll=event=>{if(event?.detail?.visualSynchronized)return;scheduleAppearance(document);};globalThis.addEventListener?.('dkds:theme-changed',recomposeAll);
     if(observer||typeof MutationObserver!=='function')return;
     const subtreeAttributes=new Set(['class','data-dkds-material-role','data-dkds-material-context']);
     observer=new MutationObserver(records=>{PERF.mutationRecords+=records.length;for(const record of records){if(record.type==='attributes'){if(!htmlElement(record.target)){PERF.ignoredNonHtml++;continue;}if(subtreeAttributes.has(record.attributeName))scheduleAppearance(record.target);else applyElement(record.target);continue;}for(const node of record.addedNodes||[])if(node?.nodeType===1)scheduleAppearance(node);}});

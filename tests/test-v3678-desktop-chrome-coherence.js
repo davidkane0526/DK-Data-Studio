@@ -41,8 +41,9 @@ const schema=read('src/styles/structure/schema-and-plugin-ui.css');
 const workbench=read('src/styles/structure/workbench-components.css');
 const superTop=read('src/styles/structure/super-top-contract.css');
 assert(schema.includes('--dkds-shell-action-height:34px')&&schema.includes('--dkds-shell-group-height:38px'),'Desktop shell must define one canonical 34/38 action-to-visual-envelope rhythm.');
-assert(workbench.includes('height:var(--dkds-shell-group-height,38px)'),'System command group must consume the canonical outer height.');
-assert(superTop.includes('.global-commandbar .file-command-group{')&&superTop.includes('height:var(--dkds-shell-group-height,38px)'),'File command outline must consume the canonical outer height contract.');
+assert(schema.includes('.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)'),'File and system command groups must consume the single canonical segmented outer-height contract.');
+assert(!/system-core-tools-group\{[^}]*height:var\(--dkds-shell-group-height/.test(workbench),'System command group must not duplicate segmented geometry in workbench-components.');
+assert(!superTop.includes('.global-commandbar .file-command-group{'),'File command geometry must not be duplicated in super-top-contract; segmented command structure has one owner.');
 assert(!superTop.includes('height:42px'),'the old 42 px file-only outline exception must not return.');
 
 console.log('v3.67.8 desktop chrome coherence PASS: fixed theme popover, persistent-left workspace geometry, softened header chrome, unified close controls, and one shell vertical rhythm.');

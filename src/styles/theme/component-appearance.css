@@ -185,14 +185,14 @@ body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"]:is(.dkds-pane
 body.dkds-modern-ui [data-dkds-component-identity="panelHeader"]{
   --dkds-material-base:var(--dkui-component-panel-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   --dkds-material-border:var(--dkui-component-panel-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
-  background:var(--dkui-component-panel-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
+  background-color:var(--dkui-component-panel-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   border-bottom:1px solid var(--dkui-component-panel-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
   color:var(--dkui-component-panel-header-text,var(--dkui-role-chrome-text,var(--dkui-text)));box-shadow:none
 }
 body.dkds-modern-ui [data-dkds-component-identity="inspectorHeader"]{
   --dkds-material-base:var(--dkui-component-inspector-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   --dkds-material-border:var(--dkui-component-inspector-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
-  background:var(--dkui-component-inspector-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
+  background-color:var(--dkui-component-inspector-header-surface,var(--dkui-role-chrome-surface,var(--dkui-surface-elevated)));
   border-bottom:1px solid var(--dkui-component-inspector-header-border,var(--dkui-role-chrome-border,var(--dkui-divider)));
   color:var(--dkui-component-inspector-header-text,var(--dkui-role-chrome-text,var(--dkui-text)));box-shadow:none
 }
@@ -321,15 +321,26 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="
   .active,.selected,[aria-pressed="true"],[aria-selected="true"]
 ){color:#fff;-webkit-text-fill-color:#fff}
 
-/* Integrated command surfaces own one silhouette only when their container
-   explicitly owns that chrome. A generic grouped context is not sufficient:
-   status bars/activity clusters may group actions for layout without providing
-   a parent border/depth surface. */
-body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}
-body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:first-child{border-radius:var(--dkui-component-toolbar-action-radius,7px) 0 0 var(--dkui-component-toolbar-action-radius,7px)}
-body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:last-child{border-radius:0 var(--dkui-component-toolbar-action-radius,7px) var(--dkui-component-toolbar-action-radius,7px) 0}
-body.dkds-modern-ui :is(.file-command-group,.dkds-integrated-action-group)>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]:only-child{border-radius:var(--dkui-component-toolbar-action-radius,7px)}
+/* Segmented command surfaces own one silhouette. Both file commands and
+   system commands use this exact contract, including buttons wrapped by a
+   menu-anchor. This keeps hover/pressed paint identical without flattening
+   unrelated semantic groups such as the status bar. */
+body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"],
+body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;border-radius:0;box-shadow:none}
+body.dkds-modern-ui .dkds-segmented-command-group>:first-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:first-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px) 0 0 var(--dkui-component-toolbar-action-radius,7px)}
+body.dkds-modern-ui .dkds-segmented-command-group>:last-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:last-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:0 var(--dkui-component-toolbar-action-radius,7px) var(--dkui-component-toolbar-action-radius,7px) 0}
+body.dkds-modern-ui .dkds-segmented-command-group>:only-child:is([data-dkds-component-identity="toolbarAction"]),
+body.dkds-modern-ui .dkds-segmented-command-group>:only-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px)}
 
 /* Theme picker selection is still canonical MenuItem paint. The check + fill
    communicate selection; the picker intentionally suppresses a second ring. */
 body.dkds-modern-ui #dkdsThemePanel [data-dkds-component-identity="menuItem"].dkds-theme-profile-option[aria-selected="true"]{border-color:transparent;box-shadow:none}
+
+/* Theme mode/profile switches are atomic visual transactions. Component values
+   are replaced synchronously by Theme Runtime; suppress interpolation from the
+   old profile so light/dark/profile paint can never overlap for a frame. */
+html.dkds-theme-switching body.dkds-modern-ui *,
+html.dkds-theme-switching body.dkds-modern-ui *::before,
+html.dkds-theme-switching body.dkds-modern-ui *::after{transition-duration:0s;transition-delay:0s}

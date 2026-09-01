@@ -686,9 +686,6 @@ body.dkds-modern-ui textarea:focus-visible{
 }
 .project-save-choice-copy span{color:var(--dkui-muted);
 }
-.global-commandbar .file-command-group{
-  border-radius:10px;
-}
 .global-commandbar>.compact-menu-anchor>#editMenuBtn{
   border-radius:10px;
 }

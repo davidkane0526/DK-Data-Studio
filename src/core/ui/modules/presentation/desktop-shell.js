@@ -74,7 +74,7 @@ class DesktopPresentationShell {
     const button=document.createElement('button');button.type='button';button.className='toolbar-btn plugin-toolbar-btn dkds-presentation-command';
     button.dataset.dkdsPresentationSurface='1';button.dataset.pluginActivity=text(activityId);button.dataset.pluginId=text(item.pluginId||'core.presentation');button.dataset.pluginSection='presentation-surfaces';button.dataset.pluginPriority=String(Number(item.priority)||0);button.dataset.pluginOrder=String(Math.max(1,110-(Number(item.priority)||0)));
     button.dataset.dkdsComponentIdentity='toolbarAction';button.dataset.dkdsComponentIdentityOwner='core-presentation-shell';button.dataset.dkdsComponentVariant=item.active?'active':'quiet';button.dataset.dkdsComponentVariantOwner='core-presentation-shell';
-    button.textContent=text(item.label||item.surfaceId);button.setAttribute('aria-label',text(item.label||item.surfaceId));button.setAttribute('aria-pressed',item.active?'true':'false');button.classList.toggle('active',!!item.active);this.bindSurfaceButton(button,{...item,activityId});return button;
+    const label=text(item.label||item.surfaceId);button.dataset.dkdsPresentationCompact=[...label].length<=3?'true':'false';button.textContent=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',item.active?'true':'false');button.classList.toggle('active',!!item.active);this.bindSurfaceButton(button,{...item,activityId});return button;
   }
   renderWorkspaceSurfaces(context={}){
     if(typeof document==='undefined')return false;
