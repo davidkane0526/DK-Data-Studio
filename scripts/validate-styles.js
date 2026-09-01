@@ -318,6 +318,17 @@ for(const name of presentationFiles){
     for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/presentation/${name}: interactive control state "${block.selector}" owns transform. Standard control motion belongs to theme/contract.css.`);
   }
 }
+// R7U segmented shell ownership: the two persistent top-shell command
+// families are one ToolbarGroup surface each. Their children are neutral idle
+// hit regions; Import is not a permanent primary/selected control.
+const indexR7U=fs.readFileSync(path.join(root,'src','index.html'),'utf8');
+const componentAppearanceR7U=fs.readFileSync(path.join(root,'src','styles','theme','component-appearance.css'),'utf8');
+if(!indexR7U.includes('class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作"'))violations.push('R7U segmented shell ownership: file commands must consume one ToolbarGroup segmented outer surface.');
+if(!indexR7U.includes('class="toolbar-group system-core-tools-group dkds-segmented-command-group" role="group"'))violations.push('R7U segmented shell ownership: system commands must consume the same ToolbarGroup segmented outer surface.');
+const importTag=(indexR7U.match(/<button id="openBtn"[^>]*>/)||[])[0]||'';
+if(!importTag||/\b(?:strong|primary|active|selected)\b/.test(importTag)||/data-dkds-component-variant="primary"/.test(importTag))violations.push('R7U segmented shell ownership: Import must remain an idle peer command and may not own persistent primary/selected fill semantics.');
+if(!componentAppearanceR7U.includes('--dkds-ca-action-surface:transparent;')||!componentAppearanceR7U.includes('--dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));'))violations.push('R7U segmented shell ownership: segmented idle children must be transparent and consume the ToolbarGroup text/fill contract.');
+
 for(const name of fs.readdirSync(path.join(root,'src','styles','theme')).filter(name=>name.endsWith('.css'))){
   if(name==='contract.css')continue;
   const css=fs.readFileSync(path.join(root,'src','styles','theme',name),'utf8');

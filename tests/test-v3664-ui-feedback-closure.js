@@ -47,8 +47,8 @@ assert(aurora.includes("surfaceActive:LIGHT_EMERALD.fill")&&aurora.includes("sec
 
 // 8. Import is one type-agnostic top-level task. It opens the Import Workbench;
 // provider/source choice is made inside that workbench beside Import Data.
-assert(html.includes('id="openBtn" class="toolbar-btn strong"')&&html.includes('aria-label="导入">导入</button>'),'Main Import must remain a type-agnostic task command.');
-const topFileStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group">'),topFileEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topFileStart),topFile=html.slice(topFileStart,topFileEnd);
+assert(html.includes('id="openBtn" class="toolbar-btn"')&&html.includes('aria-label="导入">导入</button>'),'Main Import must remain a type-agnostic task command.');
+const topFileStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group"'),topFileEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topFileStart),topFile=html.slice(topFileStart,topFileEnd);
 assert(!topFile.includes('importSourceBtn'),'Import providers must not be exposed in the top-level file command group.');
 const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);
 assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-menu-target="importSourceMenu"')&&importHeader.includes('data-plugin-menu="import-data"'),'Import providers must live beside Import Data inside the Import Workbench.');

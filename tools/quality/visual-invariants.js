@@ -690,7 +690,8 @@ function validate(){
   // groups contain 34px actions with a mathematically equal 1px inset.
   requireText(schemaStructure,'.dkds-segmented-command-group{gap:0;padding:1px;height:var(--dkds-shell-group-height)','HARD-56: all segmented topbar command groups must use the same 38px/1px geometry contract.');
   requireText(componentCss,'.dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"],','HARD-56: segmented command envelopes must flatten direct buttons.');
-  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-56: segmented command envelopes must flatten menu-wrapped buttons through the same appearance path.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{','HARD-56: segmented command envelopes must flatten menu-wrapped buttons through the same appearance path.');
+  requireText(componentCss,'border-color:transparent;border-radius:0;box-shadow:none','HARD-56: segmented child edges/depth must remain flattened inside the outer group silhouette.');
   forbidText(componentCss,':focus-visible{outline:2px solid var(--dkui-focus);outline-offset:1px;border-color:var(--dkds-ca-action-border-active)}','HARD-56: keyboard focus must not stack a second active border on ToolbarAction.');
 
   // HARD-57: fixed status popovers stay visually anchored and inspectors publish
@@ -725,7 +726,8 @@ function validate(){
   // HARD-61: grouped is a composition/layout semantic, not proof that a parent
   // paints an outer shell. Only explicit integrated command envelopes may erase
   // child edges/depth; status/activity groups must not become visually empty.
-  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}','HARD-61: explicit segmented chrome owners must flatten direct and menu-wrapped actions through one contract.');
+  requireText(componentCss,'.dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{','HARD-61: explicit segmented chrome owners must flatten direct and menu-wrapped actions through one contract.');
+  requireText(componentCss,'--dkds-ca-action-surface:transparent;','HARD-61: explicit segmented chrome owners must keep idle child fill transparent.');
   forbidText(componentCss,'body.dkds-modern-ui [data-dkds-component-identity="toolbarAction"][data-dkds-component-context="grouped"]{border-color:transparent;box-shadow:none}','HARD-61: generic grouped context must not globally erase child edge/depth.');
   requireText(semanticRegistry,'.statusbar-command-cluster,.toolbar-group,.primary-activity-cluster,.system-core-tools-group','HARD-61: topbar/statusbar integrated containers must still resolve grouped Component Context for semantic composition.');
   requireText(materialRenderer,'.statusbar-command-cluster button,.toolbar-group button,.primary-activity-cluster button,.system-core-tools-group button','HARD-61: Material Renderer must keep integrated top/status actions from becoming nested Material surfaces.');
@@ -893,12 +895,22 @@ function validate(){
   requireText(themeDebugR7T,"paintOwner:'Core Component Appearance / Material Renderer'",'HARD-79: ownership trace must identify the canonical paint owner.');
   requireText(themeDebugR7T,'inspect,traceOwnership,isEnabled','HARD-79: ownership trace must be exported by DKDSThemeDebug.');
 
+  // HARD-80: persistent shell command groups own one outer fill/silhouette.
+  // Idle children are transparent hit regions and Import is not a primary tab.
+  const indexR7U=read('src/index.html');
+  requireText(indexR7U,'class="toolbar-group file-command-group dkds-segmented-command-group" role="group" aria-label="文件操作"','HARD-80: file commands must expose the canonical ToolbarGroup segmented shell.');
+  requireText(indexR7U,'id="openBtn" class="toolbar-btn"','HARD-80: Import must be an idle peer ToolbarAction without persistent primary identity.');
+  forbidRegex(indexR7U,/id="openBtn"[^>]*\b(?:strong|primary|active|selected)\b/,'HARD-80: Import may not reclaim a persistent primary/selected shell identity.');
+  requireText(indexR7U,'class="toolbar-group system-core-tools-group dkds-segmented-command-group" role="group"','HARD-80: system commands must consume the same ToolbarGroup segmented shell.');
+  requireText(componentCss,'--dkds-ca-action-surface:transparent;','HARD-80: segmented idle children must leave fill ownership to the outer ToolbarGroup.');
+  requireText(componentCss,'--dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));','HARD-80: segmented idle child text must consume the group text contract.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:79});
+  return Object.freeze({ok:true,invariants:80});
 }
 
 if(require.main===module){

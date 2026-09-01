@@ -58,7 +58,7 @@ assert(resonance.includes('respar-group-panel hidden')&&!resonance.includes('res
 // Import Workbench; source choice belongs inside that workbench beside the
 // unified Import Data/Project action.
 assert(html.includes('aria-label="导入">导入</button>')&&html.includes('aria-label="保存">保存</button>')&&html.includes('>导出</button>'),'Top file command labels must remain 导入 / 保存 / 导出.');
-const topbarStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group">'),topbarEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topbarStart),topbarFileGroup=html.slice(topbarStart,topbarEnd);
+const topbarStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group"'),topbarEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topbarStart),topbarFileGroup=html.slice(topbarStart,topbarEnd);
 assert(!topbarFileGroup.includes('importSourceBtn')&&!topbarFileGroup.includes('importSourceMenu'),'Import-source selection must not occupy the top file command group.');
 const importHeaderStart=html.indexOf('<div class="import-header-actions">'),importHeaderEnd=html.indexOf('<div class="import-target-bar">',importHeaderStart),importHeader=html.slice(importHeaderStart,importHeaderEnd);
 assert(importHeader.includes('id="importChooseFilesBtn"')&&importHeader.includes('>导入数据/项目</button>')&&importHeader.includes('id="importSourceBtn"')&&importHeader.includes('data-plugin-menu="import-data"'),'SMB/other provider sources must live beside Import Data/Project inside the Import Workbench.');
@@ -71,7 +71,7 @@ assert(activityShell.includes("trigger.textContent='导出'")&&activityShell.inc
 assert(connectivity.includes("menu:'import-data',label:'SMB 网络文件…'")&&connectivity.includes("onClick:()=>openSmb('auto')")&&!connectivity.includes("menu:'open-project'"),'SMB must be one auto-classifying source rather than a separate project task.');
 
 // Data Management / Tools / Software Management are one system command group.
-const systemStart=html.indexOf('<div class="system-core-tools-group dkds-segmented-command-group"');
+const systemStart=html.indexOf('<div class="toolbar-group system-core-tools-group dkds-segmented-command-group"');
 const systemEnd=html.indexOf('</div>\n        </div>',systemStart);
 const systemGroup=html.slice(systemStart,systemEnd);
 for(const id of ['dataCenterSystemBtn','toolsMenuBtn','manageMenuBtn'])assert(systemGroup.includes(`id="${id}"`),`${id} must live inside the shared system group.`);

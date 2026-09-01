@@ -329,7 +329,12 @@ html[data-dkds-theme="dark"] body.dkds-modern-ui [data-dkds-component-identity="
    menu-anchor. This keeps hover/pressed paint identical without flattening
    unrelated semantic groups such as the status bar. */
 body.dkds-modern-ui .dkds-segmented-command-group>[data-dkds-component-identity="toolbarAction"],
-body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-color:transparent;border-radius:0;box-shadow:none}
+body.dkds-modern-ui .dkds-segmented-command-group>.menu-anchor>[data-dkds-component-identity="toolbarAction"]{
+  --dkds-ca-action-surface:transparent;
+  --dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));
+  --dkds-ca-action-border:transparent;
+  border-color:transparent;border-radius:0;box-shadow:none
+}
 body.dkds-modern-ui .dkds-segmented-command-group>:first-child:is([data-dkds-component-identity="toolbarAction"]),
 body.dkds-modern-ui .dkds-segmented-command-group>:first-child.menu-anchor>[data-dkds-component-identity="toolbarAction"]{border-radius:var(--dkui-component-toolbar-action-radius,7px) 0 0 var(--dkui-component-toolbar-action-radius,7px)}
 body.dkds-modern-ui .dkds-segmented-command-group>:last-child:is([data-dkds-component-identity="toolbarAction"]),

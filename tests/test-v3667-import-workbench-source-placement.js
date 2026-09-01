@@ -7,7 +7,7 @@ const pkg=json('package.json'),html=read('src/index.html'),docks=read('src/app/m
 const tuple=v=>String(v).split('.').slice(0,3).map(Number);
 const atLeast=(a,b)=>{for(let i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return true;};
 assert(atLeast(tuple(pkg.version),[3,66,7]),'Corrected import hierarchy requires DK Data Studio 3.66.7+.');
-const topStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group">');
+const topStart=html.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group"');
 const topEnd=html.indexOf('<div class="menu-anchor compact-menu-anchor">',topStart);
 const top=html.slice(topStart,topEnd);
 assert(top.includes('id="openBtn"')&&top.includes('id="saveProjectBtn"')&&top.includes('id="exportMenuBtn"'),'Top file group must contain the Import / Save / Export task family.');

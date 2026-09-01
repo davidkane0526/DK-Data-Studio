@@ -38,7 +38,7 @@ assert(manager.includes('plugin.systemLocked')&&manager.includes('class="plugin-
 
 const index=read('src/index.html');
 assert(index.includes('id="toolsMenuBtn"')&&index.includes('data-plugin-menu="tools"'),'Top command bar must own the Tools dropdown.');
-assert(index.includes('class="system-core-tools-group dkds-segmented-command-group"')&&index.includes('id="dataCenterSystemBtn"'),'Data Management and Tools must share the canonical segmented system-command visual group.');
+assert(index.includes('class="toolbar-group system-core-tools-group dkds-segmented-command-group"')&&index.includes('id="dataCenterSystemBtn"'),'Data Management and Tools must share the canonical segmented system-command visual group.');
 const dc=json('src/plugins/data-center/plugin.json');
 assert(dc.pluginType==='foundation'&&dc.systemCritical===true,'Data Center must be classified as a required system/foundation plugin.');
 assert(read('src/plugins/data-center/feature-runtime.js').includes("navigation:'system'"),'Data Center must stay out of the ordinary plugin activity strip.');

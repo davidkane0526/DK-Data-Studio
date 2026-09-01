@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const pkg=JSON.parse(read('package.json'));
+const index=read('src/index.html');
+const component=read('src/styles/theme/component-appearance.css');
+const validator=read('scripts/validate-styles.js');
+const current=String(pkg.version||'0.0.0').split('.').map(Number);
+assert(current[0]>3||(current[0]===3&&(current[1]>67||(current[1]===67&&current[2]>=18))),'R7U requires application 3.67.18 or newer.');
+
+const fileStart=index.indexOf('<div class="toolbar-group file-command-group dkds-segmented-command-group"');
+const fileEnd=index.indexOf('<div class="menu-anchor compact-menu-anchor">',fileStart);
+const fileGroup=index.slice(fileStart,fileEnd);
+const systemStart=index.indexOf('<div class="toolbar-group system-core-tools-group dkds-segmented-command-group"');
+const systemEnd=index.indexOf('</div>\n        </div>\n        <div id="windowCommandbar"',systemStart);
+const systemGroup=index.slice(systemStart,systemEnd);
+
+assert(fileStart>=0&&systemStart>=0,'File and system commands must both consume the same ToolbarGroup + segmented-command outer contract.');
+assert(fileGroup.includes('role="group"')&&fileGroup.includes('aria-label="文件操作"'),'File commands must expose one semantic group silhouette.');
+assert(systemGroup.includes('role="group"')&&systemGroup.includes('aria-label="系统数据、工具与软件管理"'),'System commands must expose one semantic group silhouette.');
+assert(fileGroup.includes('id="openBtn" class="toolbar-btn"')&&!/id="openBtn"[^>]*\b(?:strong|primary|active|selected)\b/.test(fileGroup),'Import is a peer task command and must not carry a persistent primary/selected identity.');
+assert(!/data-dkds-component-variant="primary"/.test(fileGroup),'The persistent shell file group must not author a primary child variant.');
+assert(systemGroup.includes('id="dataCenterSystemBtn" class="toolbar-btn"')&&systemGroup.includes('id="toolsMenuBtn" class="toolbar-btn menu-trigger"')&&systemGroup.includes('id="manageMenuBtn" class="toolbar-btn menu-trigger"'),'System command children must remain peer ToolbarActions inside the shared group.');
+assert(component.includes('--dkds-ca-action-surface:transparent;')&&component.includes('--dkds-ca-action-text:var(--dkui-component-toolbar-group-text,var(--dkui-text));'),'Segmented children must consume the outer ToolbarGroup fill/text in idle state instead of painting independent idle cards.');
+assert(component.includes('--dkds-ca-action-border:transparent;')&&component.includes('border-color:transparent;border-radius:0;box-shadow:none'),'Segmented children must leave the common outer edge/depth to ToolbarGroup.');
+assert(component.includes(':is(:hover,.active,.selected,[aria-pressed="true"],[aria-selected="true"]){box-shadow:none}'),'Transient child states may recolor but must not regain independent depth.');
+assert(validator.includes('R7U segmented shell ownership'),'Style validation must prevent a persistent shell child from reclaiming an idle primary fill.');
+console.log('v3.67.18 R7U segmented command fill ownership PASS.');

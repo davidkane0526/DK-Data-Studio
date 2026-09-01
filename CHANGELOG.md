@@ -1,3 +1,13 @@
+# v3.67.18 — R7U Segmented Command Fill Ownership · Desktop Visual Closure WIP
+
+- Make the persistent File and System shell command families consume the same `ToolbarGroup + dkds-segmented-command-group` outer component contract.
+- Remove the historical `strong` semantic from the global **Import** command. Import / Save / Export are peer task commands; Import no longer resolves to a persistent `primary` ToolbarAction variant.
+- Make segmented child ToolbarActions transparent in idle state and consume the outer ToolbarGroup text contract. The group owns the single background, border, radius and depth; child hover/pressed states remain transient.
+- Add `role="group"` to the File command family and retain the System command group semantics so both command families expose one accessibility/visual silhouette.
+- Extend the style validator and Hard Visual Invariants to **80** so Import cannot silently reclaim persistent primary/selected fill and both shell families cannot diverge from the shared outer contract.
+- Add the v3.67.18 R7U regression and update historical tests to protect behavior rather than the obsolete `strong` implementation detail.
+- Windows Electron visual acceptance remains authoritative before Final Freeze.
+
 # v3.67.17 — R7T Property Ownership Diagnostics WIP
 
 - Continue **Desktop Visual Closure** by removing remaining generic-control fallback overlap with Plugin Manager, Settings/Dialog actions and Scientific floating chrome. Specialized Core controls now own explicit action/field geometry slots instead of consuming generic button/input content-box defaults.
