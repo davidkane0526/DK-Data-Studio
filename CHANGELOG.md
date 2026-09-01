@@ -1,3 +1,12 @@
+# v3.67.17 — R7T Property Ownership Diagnostics WIP
+
+- Continue **Desktop Visual Closure** by removing remaining generic-control fallback overlap with Plugin Manager, Settings/Dialog actions and Scientific floating chrome. Specialized Core controls now own explicit action/field geometry slots instead of consuming generic button/input content-box defaults.
+- Make legacy `.floating-panel` / `.group-panel` / `.inspector-panel` geometry mutually exclusive with `PortableView`; once a surface is portable, legacy placement selectors cannot remain a second position/size/overflow owner.
+- Centralize hover/active/focus motion in the Core Theme Contract. Standard controls and command-menu items remain geometrically stationary; Presentation layers no longer cancel transforms through later `transform:none` counter-rules.
+- Add `DKDSThemeDebug.traceOwnership(...)`, an on-demand computed-style provenance diagnostic for height, padding, background, border, shadow and transform. It reports final computed values plus all matching CSS declaration sources without adding normal-startup work.
+- Extend `validate-styles.js` and Hard Visual Invariants to 79 so fallback/specialized overlap, legacy/PortableView dual geometry ownership, Presentation motion ownership and loss of the computed ownership diagnostic fail during development.
+- Keep historical regression tests capability-based as ownership implementations move; Theme Inspector movable-HUD and stationary-menu behavior remain preserved under the newer debug/motion contracts.
+
 # v3.67.16 — R7S Property Ownership Audit WIP
 
 - Continue **Desktop Visual Closure** by extending Core property ownership to Settings/Dialog fields, managed-table density, Scientific legend density, collapsed PortableView headers and splitter/resizer hit geometry.

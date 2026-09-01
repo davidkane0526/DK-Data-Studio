@@ -2,7 +2,23 @@
    Schema-driven parameter controls
    ============================================================ */
 /* Canonical geometry migrated from the former Foundation baseline. */
-button{ padding:6px 10px; cursor:pointer;
+button{cursor:pointer;
+}
+/* Generic fallback geometry is intentionally excluded from standard Core action
+   contexts that own their own hit boxes. This prevents Plugin Manager/Dialog
+   controls from depending on a later override of the global button baseline. */
+button:not(:is(
+  .toolbar-btn,.plugin-toolbar-btn,.plugin-main-tool-btn,.dkds-action-button,.dkds-icon-button,
+  .dkds-panel-close-button,.dkds-portable-icon-action,.dkds-plot-view-action,.dkds-plot-legend-item,
+  .plugin-manager-page button,.dkds-settings-dialog button,.dkds-dialog button,
+  .command-menu button,.dkds-scientific-nav-tools>button
+)){
+  --dkds-generic-button-min-height:30px;
+  --dkds-generic-button-padding-block:6px;
+  --dkds-generic-button-padding-inline:10px;
+  min-height:var(--dkds-generic-button-min-height);
+  padding-block:var(--dkds-generic-button-padding-block);
+  padding-inline:var(--dkds-generic-button-padding-inline);
 }
 button.wide{ width:100%;
 }
@@ -26,7 +42,7 @@ button.wide{ width:100%;
 }
 .preset-row button{flex:1;
 }
-.floating-panel{position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
+.floating-panel:not(.dkds-portable-view){position:absolute;z-index:var(--dkds-floating-z,100);resize:both;overflow:hidden;min-width:320px;min-height:220px;
 }
 .dkds-memory-panel{position:fixed;z-index:1750;right:10px;bottom:calc(var(--dkds-statusbar-height,28px) + 8px);width:min(390px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 110px));display:flex;flex-direction:column;overflow:hidden}
 .floating-header{display:flex;align-items:center;justify-content:space-between;padding:0 9px;cursor:move;user-select:none;
@@ -335,7 +351,6 @@ button.wide{margin-top:6px;min-height:30px;padding-top:4px;padding-bottom:4px;}
    ============================================================ */
 html,body,#app{font-family:var(--ui-font-family);font-size:var(--ui-font-size);}
 button,input,select,textarea{font-family:inherit;font-size:var(--ui-font-size);}
-button{min-height:30px;}
 
 /* Stable type scale shared by the shell and built-in/external plugin surfaces. */
 .plugin-toolbar-btn,.plugin-main-tool-btn,.left-panel,.plugin-sidebar-section,.floating-panel,.command-menu,.plugin-manager-page,.plugin-window-host{font-size:var(--ui-font-size);}
@@ -363,9 +378,9 @@ button{min-height:30px;}
   top:calc(100% + 5px);
   z-index:1650;padding:5px;}
 
-input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *),
-select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *),
-textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *){min-height:30px;
+input:not([type="checkbox"]):not([type="radio"]):not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
+select:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *),
+textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-param-field *):not(.dkds-settings-field *):not(.dkds-dialog-field *):not(.plugin-manager-page *){min-height:30px;
 }
 
 .dataset-item,.plugin-manager-card,.trend-card{transition:background .12s,border-color .12s,box-shadow .12s,opacity .12s;}
@@ -394,8 +409,6 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
 
 /* Plugin manager typography belongs to the plugin/schema UI owner, not shell navigation. */
 .plugin-card-title-line h3{line-height:1.35}
-.plugin-card-actions button{min-height:var(--plugin-control-height,32px)}
-
 /* Core Plugin Manager layout. Theme paint is supplied by dkds.theme;
    this structure owner intentionally precedes the Theme layer. */
 .plugin-manager-header-actions{
@@ -429,6 +442,9 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
 .plugin-manager-stat span{font-size:var(--plugin-font-meta,11px)}
 .plugin-manager-stat strong{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
 .plugin-manager-toolbar-card{
+  --dkds-plugin-manager-toolbar-action-height:34px;
+  --dkds-plugin-manager-toolbar-action-padding-block:6px;
+  --dkds-plugin-manager-toolbar-action-padding-inline:10px;
   display:grid;
   grid-template-columns:minmax(240px,1fr) auto auto auto auto auto;
   align-items:center;
@@ -463,7 +479,12 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   padding:3px 7px;
   font-size:var(--plugin-font-body,12.5px);
 }
-.plugin-manager-toolbar-card>button{height:34px}
+.plugin-manager-toolbar-card>button{
+  height:var(--dkds-plugin-manager-toolbar-action-height);
+  min-height:var(--dkds-plugin-manager-toolbar-action-height);
+  padding-block:var(--dkds-plugin-manager-toolbar-action-padding-block);
+  padding-inline:var(--dkds-plugin-manager-toolbar-action-padding-inline);
+}
 .plugin-manager-visible-count{
   padding:5px 8px;
   font-size:var(--plugin-font-meta,11px);
@@ -601,8 +622,19 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
   padding:7px 10px 7px 13px;
 }
 .plugin-card-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:var(--plugin-font-meta,11px)}
-.plugin-card-actions{display:flex;align-items:center;gap:5px}
-.plugin-card-actions button{height:var(--plugin-control-height,32px);padding:3px 8px;font-size:var(--plugin-font-meta,11px)}
+.plugin-card-actions{
+  --dkds-plugin-card-action-height:var(--plugin-control-height,32px);
+  --dkds-plugin-card-action-padding-block:3px;
+  --dkds-plugin-card-action-padding-inline:8px;
+  display:flex;align-items:center;gap:5px
+}
+.plugin-card-actions button{
+  height:var(--dkds-plugin-card-action-height);
+  min-height:var(--dkds-plugin-card-action-height);
+  padding-block:var(--dkds-plugin-card-action-padding-block);
+  padding-inline:var(--dkds-plugin-card-action-padding-inline);
+  font-size:var(--plugin-font-meta,11px)
+}
 .plugin-card-details{
   padding:9px 13px 10px;
   font-size:var(--plugin-font-meta,11px);
@@ -645,7 +677,8 @@ textarea:not(.dkds-field-control):not(.dkds-analysis-workbench *):not(.schema-pa
 .plugin-theme-profile-block span{font-size:var(--ui-font-tiny,10px)}
 .plugin-theme-profile-actions{display:flex;align-items:center;gap:6px;min-width:min(320px,48%)}
 .plugin-theme-profile-select{height:28px;min-width:140px;flex:1 1 auto;padding:0 24px 0 8px;font-size:var(--ui-font-tiny,10px)}
-.plugin-theme-activate-btn{height:28px;min-height:28px;padding:0 9px}
+.plugin-theme-profile-actions{--dkds-plugin-theme-action-height:28px;--dkds-plugin-theme-action-padding-inline:9px}
+.plugin-theme-profile-actions button{height:var(--dkds-plugin-theme-action-height);min-height:var(--dkds-plugin-theme-action-height);padding:0 var(--dkds-plugin-theme-action-padding-inline)}
 .plugin-theme-profile-block.is-disabled,.plugin-theme-profile-block.is-empty{justify-content:flex-start}
 @media(max-width:760px){.plugin-theme-profile-block{align-items:stretch;flex-direction:column}.plugin-theme-profile-actions{min-width:0;width:100%}}
 /* Consolidated geometry from former secondary owners. */

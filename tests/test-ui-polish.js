@@ -28,7 +28,7 @@ assert(nav.includes('primaryButtons'),'navigation hierarchy must derive from reg
 assert(!nav.includes('data-nav-density'),'dead width-density navigation mode must not return');
 assert(css.includes('--ui-font-family:'));
 assert(css.includes('button:focus-visible'));
-assert(/\.floating-panel\s*\{[^}]*z-index\s*:\s*var\(--dkds-floating-z,100\)/i.test(css), 'Floating panels must consume the semantic stacking variable instead of owning fixed stacking values.');
+assert(/\.floating-panel(?::not\(\.dkds-portable-view\))?\s*\{[^}]*z-index\s*:\s*var\(--dkds-floating-z,100\)/i.test(css), 'Legacy floating panels must consume semantic stacking while excluding PortableView geometry ownership.');
 assert(/\.lan-web-panel\s*\{[^}]*--dkds-floating-z\s*:\s*1850/i.test(css), 'LAN panel must declare its semantic stacking level above shell chrome.');
 assert(!/\.floating-panel\.lan-web-panel\s*\{/i.test(css), 'LAN visibility must not be repaired with a higher-specificity selector patch.');
 assert(html.includes('class="panel-close dkds-panel-close-button" data-target="lanWebPanel"') && css.includes('.dkds-panel-close-button'), 'LAN close control must consume the shared Core close-button geometry contract');

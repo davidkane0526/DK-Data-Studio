@@ -173,7 +173,7 @@
   overflow:hidden;
 }
 .inspector-dock-slot.active{display:block}
-.inspector-panel.docked-right{
+.inspector-panel.docked-right:not(.dkds-portable-view){
   position:relative;
   left:auto;
   right:auto;
@@ -187,9 +187,9 @@
   resize:none;
   z-index:65;
 }
-.inspector-panel.docked-right .floating-header{cursor:default}
+.inspector-panel.docked-right:not(.dkds-portable-view) .floating-header{cursor:default}
 .inspector-dock-resizer{display:none}
-.inspector-panel.docked-right .inspector-dock-resizer{
+.inspector-panel.docked-right:not(.dkds-portable-view) .inspector-dock-resizer{
   display:block;
   position:absolute;
   left:0;
@@ -199,7 +199,7 @@
   cursor:ew-resize;
   z-index:9;
 }
-.inspector-panel.docked-right .floating-body{padding-left:11px}
+.inspector-panel.docked-right:not(.dkds-portable-view) .floating-body{padding-left:11px}
 .import-series-vg{
   margin-top:10px;
   padding-top:8px;

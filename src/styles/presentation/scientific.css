@@ -114,7 +114,7 @@ body.dkds-modern-ui .dkds-scientific-width-band {opacity:.065;pointer-events:non
 }
 html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-width-band {opacity:.10
 }
-html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0;pointer-events:none;transform:none
+html[data-dkds-theme="dark"] body.dkds-modern-ui .dkds-scientific-nav-tools {opacity:0;pointer-events:none
 }
 html[data-dkds-theme="light"] body.dkds-modern-ui .trend-card,
 html[data-dkds-theme="light"] body.dkds-modern-ui .dkds-plugin-workspace .dkds-scientific-axis path,

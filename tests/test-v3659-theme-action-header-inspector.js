@@ -34,7 +34,7 @@ assert(!chrome.includes('.dkds-surface-actions'),'Integrated command Theme CSS m
 assert(semantic.includes('.dkds-surface-actions>button'),'Surface action buttons must remain in the canonical toolbarAction resolver.');
 
 // Theme Inspector is a movable dev overlay with bounded, session-scoped position.
-assert(debug.includes("const VERSION='2.2.0'")&&debug.includes("POSITION_KEY='dkds.themeInspector.position'"),'Theme Inspector must expose the movable HUD runtime.');
+assert(/const VERSION='2\.(?:[3-9]|\d{2,})\.\d+'/.test(debug)&&debug.includes("POSITION_KEY='dkds.themeInspector.position'"),'Theme Inspector must expose the movable HUD runtime at debug contract 2.3+ while preserving session-scoped placement.');
 assert(debug.includes("closest?.('.dkds-theme-debug-header')")&&debug.includes('setPointerCapture')&&debug.includes('placeOverlay(overlay,{x,y})'),'Theme Inspector drag must use Pointer Events and bounded placement.');
 assert(debug.includes('sessionStorage.setItem(POSITION_KEY'),'Theme Inspector position must persist for the current session.');
 assert(devCss.includes('.dkds-theme-debug-header')&&devCss.includes('cursor:move')&&devCss.includes('touch-action:none'),'Theme Inspector header must expose a touch-safe drag affordance.');

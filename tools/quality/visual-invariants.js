@@ -861,12 +861,44 @@ function validate(){
   requireText(styleValidatorR7S,'R7S paint ownership','HARD-75: style validator must enforce Component Runtime paint ownership.');
   requireText(styleValidatorR7S,"['component-appearance.css','material-renderer.css']",'HARD-75: standard component paint must be restricted to the two Core renderers.');
 
+
+  // HARD-76: generic fallback controls must not participate in specialized
+  // Plugin Manager / Settings / Dialog / Scientific floating hit geometry.
+  requireRegex(schemaUi,/button:not\(:is\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\)\)/,'HARD-76: generic button geometry must exclude specialized Core action contexts.');
+  requireText(schemaUi,'--dkds-plugin-manager-toolbar-action-height:34px','HARD-76: Plugin Manager toolbar actions need an explicit geometry slot.');
+  requireText(schemaUi,'--dkds-plugin-card-action-height:var(--plugin-control-height,32px)','HARD-76: Plugin Manager card actions need an explicit geometry slot.');
+  requireText(workbenchComponentsR7R,'--dkds-dialog-action-height:32px','HARD-76: Dialog actions need an explicit geometry slot.');
+
+  // HARD-77: legacy FloatingPanel geometry is mutually exclusive with the
+  // newer PortableView contract. An element may never consume both owners.
+  requireText(schemaUi,'.floating-panel:not(.dkds-portable-view){','HARD-77: legacy FloatingPanel geometry must exclude PortableView.');
+  requireText(workbenchComponentsR7R,'.group-panel:not(.dkds-portable-view){','HARD-77: legacy Group Panel geometry must exclude PortableView.');
+  requireText(workbenchComponentsR7R,'.inspector-panel:not(.dkds-portable-view){','HARD-77: legacy Inspector Panel geometry must exclude PortableView.');
+  requireText(read('src/styles/structure/workspace-interaction.css'),'.inspector-panel.docked-right:not(.dkds-portable-view){','HARD-77: legacy docked Inspector geometry must exclude PortableView.');
+
+  // HARD-78: control motion has one recipe owner. Presentation/theme feature
+  // files cannot move standard buttons on hover/active/focus.
+  const themeContractR7T=read('src/styles/theme/contract.css');
+  requireText(themeContractR7T,'Standard Core controls are stationary','HARD-78: standard-control motion ownership must be explicit in Theme Contract.');
+  requireText(themeContractR7T,':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)','HARD-78: stationary standard-control states must be owned centrally.');
+  forbidRegex(read('src/styles/presentation/shell.css'),/button[^{}]*(?:hover|active|focus-visible)[^{]*\{[^}]*transform\s*:/s,'HARD-78: Shell presentation must not own interactive button transform.');
+  forbidRegex(read('src/styles/presentation/dialogs.css'),/button[^{}]*(?:hover|active|focus-visible)[^{]*\{[^}]*transform\s*:/s,'HARD-78: Dialog presentation must not own interactive button transform.');
+
+  // HARD-79: on-demand Theme diagnostics expose a computed ownership trace so
+  // Windows regressions can report matching declarations instead of guessing
+  // which stylesheet loaded last.
+  const themeDebugR7T=read('src/core/theme/debug-runtime.js');
+  requireText(themeDebugR7T,'function traceOwnership(el,properties=TRACE_DEFAULT_PROPERTIES)','HARD-79: Theme Debug must expose computed property ownership tracing.');
+  requireText(themeDebugR7T,"geometryOwner:'Core Structure'",'HARD-79: ownership trace must identify the canonical geometry owner.');
+  requireText(themeDebugR7T,"paintOwner:'Core Component Appearance / Material Renderer'",'HARD-79: ownership trace must identify the canonical paint owner.');
+  requireText(themeDebugR7T,'inspect,traceOwnership,isEnabled','HARD-79: ownership trace must be exported by DKDSThemeDebug.');
+
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];
     throw error;
   }
-  return Object.freeze({ok:true,invariants:75});
+  return Object.freeze({ok:true,invariants:79});
 }
 
 if(require.main===module){

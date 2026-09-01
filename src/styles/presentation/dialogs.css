@@ -9,11 +9,6 @@
 .dkds-dialog-header{border-bottom:1px solid var(--border-subtle);background:transparent;box-shadow:none}
 .dkds-dialog-footer{border-top:1px solid var(--border-subtle);background:transparent;box-shadow:none}
 
-/* Dialog actions are canonical ToolbarAction components. Presentation only
-   suppresses geometric lift so modal/footer controls remain stationary. */
-body.dkds-modern-ui .dkds-dialog-action:hover:not(:disabled),
-body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:none}
-
 .dkds-dialog-icon{border-radius:9px;background:var(--accent-soft);color:var(--accent-primary);border:1px solid color-mix(in srgb,var(--accent-primary) 18%,var(--border-subtle))}
 .dkds-dialog-error .dkds-dialog-icon{background:var(--danger-soft);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 22%,var(--border-subtle))}
 .dkds-dialog-warning .dkds-dialog-icon{background:var(--warning-soft);color:var(--warning);border-color:color-mix(in srgb,var(--warning) 22%,var(--border-subtle))}
@@ -35,23 +30,10 @@ body.dkds-modern-ui .dkds-dialog-action:active:not(:disabled){transform:none}
 .dkds-settings-field small{color:var(--text-tertiary)}
 .dkds-settings-dialog>footer{border-top:1px solid var(--divider-subtle,transparent);background:transparent;box-shadow:none}
 
-/* Stationary menu motion contract. Menus/popovers resolve anchor geometry
-   before reveal and never translate/scale/lift during interaction. */
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu){
-  animation:none;transform:none;transition-property:opacity,background-color,border-color,color,box-shadow
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item){
-  transform:none;transition-property:background-color,border-color,color,box-shadow
-}
-body.dkds-modern-ui :where(.command-menu,.dkds-context-menu,.activity-more-menu,.context-overflow-menu,.range-action-menu)
-  :where(button,.plugin-menu-item,[role="menuitem"],.menu-item):is(:hover,:active,:focus-visible){transform:none}
 body.dkds-modern-ui .command-menu{z-index:1650}
 body.dkds-modern-ui .menu-anchor[data-menu-align="left"]>.command-menu{left:0;right:auto;min-width:190px}
 body.dkds-modern-ui .dkds-settings-dialog button,
 body.dkds-modern-ui .command-menu button{transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}
-body.dkds-modern-ui .dkds-settings-dialog button:hover:not(:disabled),
-body.dkds-modern-ui .command-menu button:hover:not(:disabled){transform:none}
 body.dkds-modern-ui .dkds-settings-field input[type="text"],
 body.dkds-modern-ui .dkds-settings-field input[type="number"],
 body.dkds-modern-ui .dkds-settings-field select{transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease}

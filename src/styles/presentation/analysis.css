@@ -10,7 +10,6 @@ body.dkds-modern-ui .dkds-analysis-workbench button{
 body.dkds-modern-ui .peak-class-grid input{
   transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease;
 }
-body.dkds-modern-ui .dkds-analysis-workbench button:hover:not(:disabled){transform:none;}
 
 .dkds-analysis-left-resizer::before,
 .dkds-analysis-right-resizer::before,

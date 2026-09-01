@@ -20,6 +20,7 @@ const plot=read('src/core/scientific/plot-runtime.js');
 const ui=read('src/generated/runtime/ui-infrastructure.js');
 const css=readCoreCss(root);
 const modern=readCoreCss(root);
+const themeContract=read('src/styles/theme/contract.css');
 const index=read('src/index.html');
 const dedicated=read('src/plugin-window/runtime.js');
 
@@ -41,7 +42,7 @@ assert(!css.includes('opacity:.64'),'Permanent visible plot toolbar regression m
 assert(/\.dkds-plot-legend\.dkds-scientific-auto-legend\s*\{[^}]*overflow:hidden/s.test(css),'Horizontal legend scrollbar must not be forced visible.');
 assert(css.includes('.dkds-plot-legend-item.is-selected')&&css.includes('width:18px'),'Legend selection must use restrained swatch emphasis rather than a blue chip.');
 assert(css.includes('.dkds-plot-view-head')&&css.includes('height:28px'),'Standard plot title bars must use compact Core geometry.');
-assert(modern.includes('body.dkds-modern-ui button:hover:not(:disabled)')&&modern.includes('transform:none'),'Modern hover states must not move buttons.');
+assert(themeContract.includes(':where(button,.dkds-action-button,.project-tab-close):is(:hover,:active,:focus-visible)')&&themeContract.includes('transform:none'),'Modern control motion must remain stationary under the central Theme motion contract.');
 
 // Execute the pure shared layout solver without a browser dependency.
 const context={window:{},console};vm.createContext(context);vm.runInContext(presentation,context);

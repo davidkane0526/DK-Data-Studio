@@ -178,26 +178,11 @@ body.dkds-modern-ui .activity-tab,
 body.dkds-modern-ui .plugin-toolbar-btn{
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
 }
-body.dkds-modern-ui .toolbar-btn:hover:not(.strong):not(:disabled),
-body.dkds-modern-ui .activity-tab:hover,
-body.dkds-modern-ui .plugin-toolbar-btn:hover{
-
-
-
-
-  transform:none;
-}
-body.dkds-modern-ui .toolbar-btn:active:not(:disabled),
-body.dkds-modern-ui .activity-tab:active,
-body.dkds-modern-ui .plugin-toolbar-btn:active{transform:none}
 
 /* Modern shell owns the default control palette. Plugin/page selectors may tune geometry, not fall back to legacy white paint. */
 
 /* Modern surface contract: small radius + restrained depth, no glossy gradients. */
 
-
-/* Hover may change paint, never control geometry. */
-body.dkds-modern-ui button:hover:not(:disabled){transform:none}
 
 /* App-owned controls only. Renderer-internal elements are deliberately excluded. */
 
@@ -308,17 +293,6 @@ body.dkds-modern-ui .zoom-actions button{
 
 
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease;
-}
-body.dkds-modern-ui .panel-header-actions button:hover:not(:disabled),
-body.dkds-modern-ui .scan-global-buttons button:hover:not(:disabled),
-body.dkds-modern-ui .preset-row button:hover:not(:disabled),
-body.dkds-modern-ui .action-grid button:hover:not(:disabled),
-body.dkds-modern-ui .zoom-actions button:hover:not(:disabled){
-
-
-
-
-  transform:none;
 }
 body.dkds-modern-ui .dataset-vg-edit input,
 body.dkds-modern-ui .schema-param-field input,

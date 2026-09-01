@@ -224,12 +224,14 @@ for(const name of structureFiles){
     for(const [prop] of block.decls){
       const normalized=String(prop).trim().toLowerCase();
       if(headerActionHitGeometry.test(normalized)&&/(?:\.dkds-portable-icon-action\b|\.dkds-panel-close-button\b|\.dkds-portable-placement-trigger\b|\.dkds-plot-view-action\b|\.dkds-portable-history-action\b)/.test(selector)){
-        violations.push(`src/styles/structure/${name}: portable/header action subtype "${selector}" rewrites ${normalized}. Header action hit height belongs to desktop-chrome-geometry.css and must be changed through --dkds-header-action-height.`);
+        const genericFallback=selector.startsWith('button:not(:is(');
+        if(!genericFallback)violations.push(`src/styles/structure/${name}: portable/header action subtype "${selector}" rewrites ${normalized}. Header action hit height belongs to desktop-chrome-geometry.css and must be changed through --dkds-header-action-height.`);
       }
       if(/\.dkds-scientific-nav-tools(?:\s*>?\s*button|\b)/.test(selector)&&/^(?:height|min-height|padding|padding-block|padding-inline)$/i.test(normalized)){
+        const genericFallback=selector.startsWith('button:not(:is(');
         const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools>button'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
         const container=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-scientific-nav-tools'&&/^(?:padding|padding-block|padding-inline)$/i.test(normalized);
-        if(!canonical&&!container)violations.push(`src/styles/structure/${name}: scientific floating chrome "${selector}" rewrites ${normalized}. Item height is owned by --dkds-scientific-nav-item-* / --dkds-header-action-height slots in sdk-semantic-surfaces.css.`);
+        if(!genericFallback&&!canonical&&!container)violations.push(`src/styles/structure/${name}: scientific floating chrome "${selector}" rewrites ${normalized}. Item height is owned by --dkds-scientific-nav-item-* / --dkds-header-action-height slots in sdk-semantic-surfaces.css.`);
       }
       if(/(^|[^-])\.dkds-field-control\b/.test(selector)&&!/:not\(\.dkds-field-control\)/.test(selector)&&fieldDensityGeometry.test(normalized)){
         const canonical=name==='sdk-semantic-surfaces.css'&&selector==='.dkds-field-control';
@@ -283,6 +285,45 @@ for(const name of structureFiles){
         if(!structuralActivation)violations.push(`src/styles/structure/${name}: resizer state "${selector}" rewrites ${normalized}. Resize hit geometry must be state-invariant and slot-owned.`);
       }
     }
+  }
+}
+
+
+// R7T closes the remaining overlap between generic fallback controls and
+// specialized Plugin Manager/Dialog actions, isolates legacy FloatingPanel
+// geometry from PortableView, and centralizes interactive transform ownership.
+const schemaR7T=fs.readFileSync(path.join(structureDirFinal,'schema-and-plugin-ui.css'),'utf8');
+const workbenchR7T=fs.readFileSync(path.join(structureDirFinal,'workbench-components.css'),'utf8');
+if(!/button:not\(:is\([\s\S]*\.plugin-manager-page button[\s\S]*\.dkds-settings-dialog button[\s\S]*\.dkds-dialog button[\s\S]*\.dkds-scientific-nav-tools>button[\s\S]*\)\)/.test(schemaR7T))violations.push('R7T generic button fallback must explicitly exclude Plugin Manager, Settings/Dialog and Scientific floating action owners.');
+if(!/:not\(\.plugin-manager-page \*\)/.test(schemaR7T))violations.push('R7T generic field fallback must exclude Plugin Manager field density.');
+for(const required of ['--dkds-plugin-manager-toolbar-action-height','--dkds-plugin-card-action-height','--dkds-plugin-theme-action-height'])if(!schemaR7T.includes(required))violations.push(`R7T Plugin Manager action geometry is missing ${required}.`);
+for(const required of ['--dkds-settings-header-action-size','--dkds-settings-footer-action-height','--dkds-dialog-action-height'])if(!workbenchR7T.includes(required))violations.push(`R7T Settings/Dialog action geometry is missing ${required}.`);
+const legacyFloatingGeometry=/^(?:position|inset|left|right|top|bottom|width|min-width|max-width|height|min-height|max-height|overflow|overflow-x|overflow-y|resize|z-index|transform)$/i;
+for(const name of structureFiles){
+  const css=fs.readFileSync(path.join(structureDirFinal,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    const selector=block.selector;
+    const legacy=/(?:\.floating-panel|\.group-panel|\.inspector-panel)(?=$|[.#:\[\s,>{+~])/.test(selector);
+    if(!legacy)continue;
+    for(const [prop] of block.decls){
+      const normalized=String(prop).trim().toLowerCase();
+      if(legacyFloatingGeometry.test(normalized)&&!selector.includes(':not(.dkds-portable-view)'))violations.push(`src/styles/structure/${name}: legacy floating geometry "${selector}" owns ${normalized} without excluding .dkds-portable-view. PortableView must never receive legacy FloatingPanel geometry.`);
+    }
+  }
+}
+for(const name of presentationFiles){
+  const css=fs.readFileSync(path.join(presentationDir,name),'utf8');
+  for(const block of ruleBlocks(css)){
+    if(!/(?:hover|active|focus-visible)/.test(block.selector)||!/(?:button|toolbar-btn|activity-tab|dialog-action|plugin-manager)/.test(block.selector))continue;
+    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/presentation/${name}: interactive control state "${block.selector}" owns transform. Standard control motion belongs to theme/contract.css.`);
+  }
+}
+for(const name of fs.readdirSync(path.join(root,'src','styles','theme')).filter(name=>name.endsWith('.css'))){
+  if(name==='contract.css')continue;
+  const css=fs.readFileSync(path.join(root,'src','styles','theme',name),'utf8');
+  for(const block of ruleBlocks(css)){
+    if(!/(?:hover|active|focus-visible)/.test(block.selector)||!/(?:button|toolbarAction|toolbar-btn|activity-tab)/.test(block.selector))continue;
+    for(const [prop] of block.decls)if(String(prop).trim().toLowerCase()==='transform')violations.push(`src/styles/theme/${name}: standard control state "${block.selector}" owns transform. Motion recipes belong to theme/contract.css.`);
   }
 }
 

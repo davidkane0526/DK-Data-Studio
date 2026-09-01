@@ -93,3 +93,53 @@ application chrome. Theme plugins provide Theme Contract values instead of CSS.
 The goal is stronger than “no late override block”: changing CSS file order must
 not be required to fix a Core component. If a visual or geometry result depends
 on which competing owner loads later, the ownership contract is violated.
+
+
+## R7T: fallback, legacy panel and motion ownership closure
+
+### Generic fallback controls are not standard-component owners
+
+The generic `button` / `input` / `select` fallback exists only for unclassified
+application controls. Plugin Manager actions, Settings/Dialog actions,
+Scientific floating controls and other standard Core action families are
+explicitly excluded from that fallback. Their hit boxes are resolved by their
+own bounded slots, including `--dkds-plugin-manager-*`,
+`--dkds-plugin-card-action-*`, `--dkds-settings-*-action-*` and
+`--dkds-dialog-action-*`.
+
+This removes the old pattern `generic min-height/padding -> later specialized
+override` from these surfaces.
+
+### Legacy FloatingPanel and PortableView are mutually exclusive geometry owners
+
+Legacy `.floating-panel`, `.group-panel` and `.inspector-panel` geometry must
+use `:not(.dkds-portable-view)`. Once a surface participates in PortableView,
+PortableView is the only owner of position, size, overflow, resize and z-layer
+placement. A reusable view must never consume both geometry systems.
+
+### Standard control motion is centrally owned
+
+Interactive control state may change paint, but standard Core controls remain
+stationary. `src/styles/theme/contract.css` is the single motion recipe owner for
+hover/active/focus transforms. Presentation files may not add or cancel button
+motion with later `transform` declarations.
+
+Theme profiles may still provide bounded motion timing values. They do not own
+state selectors and they do not move component geometry.
+
+### Computed ownership diagnostics
+
+The optional Theme debug runtime exposes:
+
+`DKDSThemeDebug.traceOwnership(element[, properties])`
+
+The report includes the browser's final computed value plus all matching CSS
+rule declarations for the requested geometry/paint properties, with stylesheet
+source and selector information. The report also states the architectural owner
+for the two primary property families:
+
+- geometry: `Core Structure`
+- standard-component paint: `Core Component Appearance / Material Renderer`
+
+This diagnostic is loaded only with Theme debug tooling and therefore does not
+add work to normal startup.

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION='2.2.0';
+  const VERSION='2.3.0';
   let enabled=false,overlay=null,last=null,moveHandler=null,clickHandler=null,keyHandler=null,pinned=false;
   let dragState=null,dragMoveHandler=null,dragEndHandler=null;
   const POSITION_KEY='dkds.themeInspector.position';
@@ -13,6 +13,43 @@
   const componentName=el=>{if(!el)return '(none)';const label=el.getAttribute?.('aria-label')||el.getAttribute?.('title')||'';if(label)return label;if(el.id)return `#${el.id}`;const cls=String(el.className||'').trim().split(/\s+/).filter(Boolean).slice(0,3).join('.');return `${String(el.tagName||'element').toLowerCase()}${cls?'.'+cls:''}`;};
   const materialTarget=el=>el?.closest?.('[data-dkds-material-role],[class*="dkds-material-role-"]')||el||null;
   const inlineAppearance=el=>{const style=String(el?.getAttribute?.('style')||'');return /(?:^|;)\s*(?:background(?:-color|-image)?|color|border(?:-color)?|box-shadow)\s*:/i.test(style);};
+
+  const TRACE_DEFAULT_PROPERTIES=Object.freeze(['height','min-height','padding-top','padding-right','padding-bottom','padding-left','background-color','background-image','border-color','box-shadow','transform']);
+  const TRACE_SHORTHANDS=Object.freeze({
+    'padding-top':['padding','padding-block','padding-top'],'padding-right':['padding','padding-inline','padding-right'],
+    'padding-bottom':['padding','padding-block','padding-bottom'],'padding-left':['padding','padding-inline','padding-left'],
+    'background-color':['background','background-color'],'background-image':['background','background-image'],
+    'border-color':['border','border-color','border-top','border-right','border-bottom','border-left'],
+    'box-shadow':['box-shadow'],'transform':['transform'],'height':['height'],'min-height':['min-height']
+  });
+  const sheetLabel=sheet=>{const href=String(sheet?.href||'');if(!href)return 'inline-style';try{return new URL(href,location.href).pathname.split('/').slice(-3).join('/');}catch{return href;}};
+  function traceRuleList(rules,target,properties,source,out,order){
+    for(const rule of Array.from(rules||[])){
+      if(rule?.cssRules){try{traceRuleList(rule.cssRules,target,properties,source,out,order);}catch{}continue;}
+      const selector=String(rule?.selectorText||'');if(!selector||!rule?.style)continue;
+      let matched=false;try{matched=target.matches(selector);}catch{}if(!matched)continue;
+      for(const property of properties){
+        const aliases=TRACE_SHORTHANDS[property]||[property];
+        const declarations=[];
+        for(const alias of aliases){const value=rule.style.getPropertyValue(alias);if(value)declarations.push(Object.freeze({property:alias,value:value.trim(),important:rule.style.getPropertyPriority(alias)==='important'}));}
+        if(declarations.length)out.push(Object.freeze({property,selector,source,order:order.value++,declarations:Object.freeze(declarations)}));
+      }
+    }
+  }
+  function traceOwnership(el,properties=TRACE_DEFAULT_PROPERTIES){
+    const target=el?.nodeType===1?el:null;if(!target)return Object.freeze({element:null,properties:Object.freeze([])});
+    const props=[...new Set((Array.isArray(properties)?properties:TRACE_DEFAULT_PROPERTIES).map(x=>String(x||'').trim()).filter(Boolean))];
+    const candidates=[],order={value:0};
+    for(const sheet of Array.from(document.styleSheets||[])){try{traceRuleList(sheet.cssRules,target,props,sheetLabel(sheet),candidates,order);}catch{}}
+    const inline=target.style||null,computed=getComputedStyle(target);
+    const rows=props.map(property=>{
+      const aliases=TRACE_SHORTHANDS[property]||[property],inlineDecl=[];
+      for(const alias of aliases){const value=inline?.getPropertyValue?.(alias);if(value)inlineDecl.push({property:alias,value:value.trim(),important:inline.getPropertyPriority(alias)==='important'});}
+      return Object.freeze({property,computed:String(computed.getPropertyValue(property)||'').trim(),inline:Object.freeze(inlineDecl),candidates:Object.freeze(candidates.filter(row=>row.property===property))});
+    });
+    const component=globalThis.DKDSThemeComponentAppearance?.inspect?.(target)||{};
+    return Object.freeze({componentName:componentName(target),componentIdentity:component.componentIdentity||component.component||'',geometryOwner:'Core Structure',paintOwner:'Core Component Appearance / Material Renderer',properties:Object.freeze(rows)});
+  }
   function inspect(el){
     const Renderer=globalThis.DKDSThemeMaterialRenderer,Semantic=globalThis.DKDSSemanticUI,Appearance=globalThis.DKDSThemeComponentAppearance,target=materialTarget(el),component=Appearance?.inspect?.(el)||{},semanticMatch=Semantic?.resolveComponent?.(el)||null;
     const row=target&&Renderer?.inspect?Renderer.inspect(target):{status:'ROLE_MISSING',role:'',recipe:''},style=getComputedStyle(semanticMatch?.target||el||target),profile=globalThis.DKDSTheme?.preview?.()||{},expectedRole=component.expectedRole||Semantic?.expectedRole?.(semanticMatch?.target||el)||'',actualRole=row.role||'',expectedRecipe=actualRole?String(globalThis.DKDSTheme?.recipePolicy?.()?.[actualRole]||''):'';
@@ -74,5 +111,5 @@
   function pause(owner='external'){pauseOwners.add(String(owner||'external'));if(overlay)overlay.hidden=true;return true;}
   function resume(owner='external'){pauseOwners.delete(String(owner||'external'));if(enabled&&!isPaused()){ensureOverlay().hidden=false;render(last?inspect(last):inspect(document.body));}return true;}
   function toggle(){return enabled?disable():enable();}
-  window.DKDSThemeDebug=Object.freeze({version:VERSION,enable,disable,pause,resume,toggle,inspect,isEnabled:()=>enabled,isPaused,isPinned:()=>pinned});
+  window.DKDSThemeDebug=Object.freeze({version:VERSION,enable,disable,pause,resume,toggle,inspect,traceOwnership,isEnabled:()=>enabled,isPaused,isPinned:()=>pinned});
 })();

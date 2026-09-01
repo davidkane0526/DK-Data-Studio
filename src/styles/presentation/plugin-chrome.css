@@ -105,13 +105,6 @@ body.dkds-modern-ui .plugin-card-actions button {
 
   transition:background-color .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease
 ;}
-body.dkds-modern-ui .plugin-manager-page button:hover:not(:disabled) {
-
-
-
-
-  transform:none
-;}
 body.dkds-modern-ui .plugin-manager-body {background:transparent
 }
 body.dkds-modern-ui .plugin-manager-stat strong {color:var(--dkui-text)
