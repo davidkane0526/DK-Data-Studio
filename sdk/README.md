@@ -341,6 +341,21 @@ The callback may return `boolean` or `{ visible, enabled, reason }`. Unavailable
 Non-theme plugin stylesheets are validated by the SDK visual ownership gate. Plugin CSS may not repaint application chrome or redefine standard Core control/header geometry. Size the surrounding domain layout instead. Scientific series/mark styling and domain geometry remain plugin-owned where they carry scientific meaning.
 The validator is source-aware: a plugin-specific class attached to a Core header/action/field is treated as an alias of that Core component, so the alias cannot silently override the Core geometry. ComponentRuntime also auto-hydrates dynamically inserted DOM, keeping Component Identity consistent even for older plugins that still build markup through `innerHTML`.
 
+
+### Integrated scientific floating chrome is one silhouette (SDK 1.24.0 hard rule)
+
+Scientific/data plots use Core-owned floating navigation chrome (`.dkds-scientific-nav-tools`). The drag handle, zoom-in, zoom-out, home, and any future Core plot actions are **one physical control group**, not a row of independent rounded buttons.
+
+Hard contract:
+
+- the floating container owns the only outer border, radius, material and depth;
+- child actions may receive semantic hover/active fills, but Core suppresses child border/radius/shadow so they remain visually fused;
+- plugins/themes may choose semantic `floatingChrome` / `toolbarAction` tokens, but may not target the DOM to recreate separate button cards;
+- plugin CSS that changes `gap`, padding, height, radius, shadow, overflow or other integrated-chrome geometry is rejected by the SDK visual ownership validator.
+
+This rule applies to every Theme. Aurora may be more expressive in color/material, but it must still render plot navigation as one integrated silhouette.
+
+
 ### Shared surface-header composition (SDK 1.21.2)
 
 `ctx.ui.designSystem.classes` now exposes `surfaceHeading`, `surfaceActions`, and `surfaceTabs`. These are Core-owned structure classes for a single-line header title plus right-aligned controls; Theme Component Appearance continues to own paint. `ParameterSchema` `multiselect` / `columns` fields now use the shared themed popup by default; use field-level `presentation: "listbox"` only when a permanently expanded list is genuinely required.

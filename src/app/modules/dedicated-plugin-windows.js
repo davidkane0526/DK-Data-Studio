@@ -439,12 +439,25 @@ async function initializePluginArchitecture(){
     setStatus
   });
 
-  await window.DKDSPlugins.loadBuiltinEntries();
-  await window.DKDSPlugins.loadExternalEntries?.();
-  const activated=await window.DKDSPlugins.activateAll();
+  const visualClosure=new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure';
+  await window.DKDSPlugins.loadBuiltinEntries(undefined,{startupOnly:!visualClosure});
+  // Keep a user-selected external SUPER deterministic: it must be available before
+  // Core resolves the initial Presentation Model. All other external packages are
+  // scanned after first paint together with deferred built-ins.
+  if(visualClosure||window.DKDSPlugins.startupRequiresExternal?.())await window.DKDSPlugins.loadExternalEntries?.();
+  const activated=visualClosure
+    ?await window.DKDSPlugins.activateAll()
+    :await (window.DKDSPlugins.activateStartup?.()||window.DKDSPlugins.activateAll());
   console.info('[DKDS plugins] activated',activated);
+  // Initial capabilities describe the first-paint Core/SUPER set. Once staged
+  // plugins finish loading, republish exactly once so LAN/Mobile consumers see
+  // the complete registry without making cold start wait for that registry.
+  if(!visualClosure&&window.DKDSPlugins.startupState?.().deferredPending){
+    let offReady=null;
+    offReady=window.DKDSPlugins.events?.on?.('plugins:ready',()=>{offReady?.();void publishCapabilitySnapshot();});
+  }
   await publishCapabilitySnapshot();
-  if(new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure'&&window.electronAPI?.diagnosticsCompleteVisualClosure){
+  if(visualClosure&&window.electronAPI?.diagnosticsCompleteVisualClosure){
     setTimeout(async()=>{
       try{
         const report=await window.DKDSAutomationTests?.run?.();

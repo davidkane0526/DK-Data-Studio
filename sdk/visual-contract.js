@@ -10,6 +10,8 @@ const HEADER_CONTROL_SELECTOR=/(?:header|head|heading|toolbar|actions?|tabs?)[^,
 const HEADER_GEOMETRY_PROPS=/^(?:height|min-height|max-height|padding(?:-.+)?|border-radius|font(?:-.+)?|line-height|box-shadow|transform)$/i;
 const BUTTON_GEOMETRY_PROPS=/^(?:width|min-width|max-width|height|min-height|max-height|padding(?:-.+)?|border-radius|font(?:-.+)?|line-height|box-shadow|transform)$/i;
 const FIELD_GEOMETRY_PROPS=CONTROL_GEOMETRY_PROPS;
+const INTEGRATED_CHROME_SELECTOR=/(?:\.dkds-scientific-nav-tools|\.dkds-integrated-action-group)/i;
+const INTEGRATED_CHROME_GEOMETRY_PROPS=/^(?:gap|row-gap|column-gap|padding(?:-.+)?|margin(?:-.+)?|overflow|border-radius|box-shadow|height|min-height|max-height)$/i;
 const CORE_ALIAS_CLASSES=Object.freeze({
   header:new Set(['dkds-surface-header','dkds-portable-header','dkds-plot-view-head','dkds-group-plot-head']),
   action:new Set(['dkds-action-button','dkds-icon-button','dkds-choice-button']),
@@ -92,6 +94,7 @@ function inspectPluginCss(css,{path='plugin.css',aliases=null}={}){
       if(selectorUsesAlias(selector,aliases?.header)&&HEADER_GEOMETRY_PROPS.test(row.prop))issues.push({code:'PLUGIN_ALIASES_CORE_HEADER_GEOMETRY',path,selector,property:row.prop,value:row.value,message:`${path}: ${selector} aliases a Core header and may not redefine ${row.prop}.`});
       if(selectorUsesAlias(selector,aliases?.action)&&BUTTON_GEOMETRY_PROPS.test(row.prop))issues.push({code:'PLUGIN_ALIASES_CORE_ACTION_GEOMETRY',path,selector,property:row.prop,value:row.value,message:`${path}: ${selector} aliases a Core action and may not redefine ${row.prop}.`});
       if(selectorUsesAlias(selector,aliases?.field)&&FIELD_GEOMETRY_PROPS.test(row.prop))issues.push({code:'PLUGIN_ALIASES_CORE_FIELD_GEOMETRY',path,selector,property:row.prop,value:row.value,message:`${path}: ${selector} aliases a Core field and may not redefine ${row.prop}.`});
+      if(INTEGRATED_CHROME_SELECTOR.test(selector)&&INTEGRATED_CHROME_GEOMETRY_PROPS.test(row.prop))issues.push({code:'PLUGIN_RESTYLES_INTEGRATED_CHROME',path,selector,property:row.prop,value:row.value,message:`${path}: integrated/scientific floating chrome is one Core-owned silhouette; plugins may not redefine ${row.prop}.`});
     }
   }
   return {ok:issues.length===0,issues};

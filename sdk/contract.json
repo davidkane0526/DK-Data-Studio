@@ -6,6 +6,7 @@
   "manifestSchema": "plugin-manifest.schema.json",
   "entryGlobal": "DKDSPlugins",
   "notes": [
+    "SDK 1.24.0 hard visual rule: scientific floating action chrome is one integrated silhouette; plugin CSS may not split it with per-child spacing, radius, border or shadow.",
     "SDK 1.24.0 keeps Plugin API 1.19.0 and upgrades Theme Contract to 3.10.0: theme profiles can declaratively compose Component Context (standalone/grouped), Material Role, Material Context (compact/panel/dialog/workspace-modal), component variants and bounded depth slots while Core remains the single final appearance/material paint owner.",
     "SDK 1.23.0 targets Plugin API 1.19.0 and completes Platform Presentation cutover: TOP PRIMARY no longer accepts leftNode/leftHtml; every secondary semantic region must be registered as its own PRIME/SUB surface with a declared presentationRole. The legacy Mobile workspace bridge is removed.",
     "SDK 1.22.1 adds Core-owned menu availability for ctx.ui.menus.add(...): export/tool actions may declare synchronous availability returning boolean or { visible, enabled, reason }, and shell menus re-evaluate it when opened and when project/artifact/activity context changes.",

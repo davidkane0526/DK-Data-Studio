@@ -743,7 +743,8 @@ function validate(){
   requireText(themeRuntime,'function commitProfile(key,{emit=true,detail={}}={})','HARD-62: Theme profile activation must use one atomic visual transaction path.');
   requireText(automationVisual,'File/System command group chrome diverged','HARD-62: Windows acceptance must compare the two segmented topbar groups by final computed chrome.');
   requireText(automationVisual,'Status-bar action hit region must stay inset at about 18px','HARD-62: Windows acceptance must measure status action inset height.');
-  requireText(automationVisual,'Aurora semantic header lost its Theme gradient','HARD-62: Windows acceptance must fail if Aurora semantic title gradients disappear.');
+  requireText(automationVisual,'Theme semantic header lost its declared gradient','HARD-62: Windows acceptance must fail if an active Theme header gradient disappears.');
+  requireText(automationVisual,'Neutral Theme semantic header retained a stale gradient','HARD-62: Windows acceptance must fail if a neutral Theme retains stale header effects.');
   if(failures.length){
     const error=new Error(`Hard visual invariants failed (${failures.length})\n${failures.map((x,i)=>`${i+1}. ${x}`).join('\n')}`);
     error.failures=[...failures];

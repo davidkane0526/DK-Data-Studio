@@ -117,6 +117,10 @@ Material profiles may declare `contexts` and per-role `contexts`, while recipe p
 
 Literal shadow slots are validated and do not accept dynamic/executable CSS functions such as `url()`, `var()`, `calc()`, `env()`, `attr()` or `expression()`.
 
+## 4.1 Integrated floating chrome hard rule
+
+`floatingChrome` is the single Material/edge owner for scientific plot navigation. A Core scientific floating toolbar is one fused silhouette: child `toolbarAction` items may change semantic fill/text for hover, active, selected, or destructive states, but child border, radius, and shadow are suppressed by Core. Themes express the group through `appearance.components.floatingChrome` plus `toolbarAction` tokens; they do not create per-button cards. Plugin CSS may not redefine the integrated chrome geometry.
+
 ## 5. Controlled Component Variants
 
 Theme 3.9 adds a fixed Core-owned variant vocabulary:

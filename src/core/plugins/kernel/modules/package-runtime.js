@@ -1,6 +1,6 @@
 'use strict';
 const {state, definitions, active, disabled, registries, externalPackages, overridePackages, overrideLoadErrors, externalLoadErrors}=require('./context');
-const {preferenceStorageKey, prewarmPreferenceStorageKey, superPreferenceStorageKey, primePlacementStorageKey, API_VERSION, readPreferences, preferenceFor, isDefinitionEnabled, setPreference, clearPreference, clearPrewarmPreference, definitionById, topWorkspaceRows, superState}=require('./bootstrap');
+const {preferenceStorageKey, prewarmPreferenceStorageKey, superPreferenceStorageKey, primePlacementStorageKey, API_VERSION, readPreferences, preferenceFor, isDefinitionEnabled, setPreference, clearPreference, clearPrewarmPreference, definitionById, topWorkspaceRows, superState, readSuperPreference, isSuperEligibleDefinition}=require('./bootstrap');
 const {primePlacementFor, placePrimeContribution, setSuperPlugin, initializeSuperSelection}=require('./workspace/top');
 const {assertId}=require('./registry');
 const {eventOn,eventEmit,activityRows,activePluginId,invokeEditAction,supportsEditAction,editActionAvailable,editHistoryState,notifyEditHistory}=require('./events/history');
@@ -16,6 +16,81 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
     const index=definitions.findIndex(d=>d.manifest.id===id);
     if(index>=0)definitions.splice(index,1);
     disabled.delete(id);
+  }
+
+  const activationOrder=()=>definitions.slice().sort((a,b)=>(a.manifest.order||100)-(b.manifest.order||100));
+  let deferredBuiltinRows=[];
+  let builtinOverrideById=new Map();
+  let deferredEntryLoadPromise=null;
+  let startupNeedsExternalSuper=false;
+  const builtinRowOrder=row=>Number(row?.manifest?.order)||100;
+  const builtinRowType=row=>String(row?.manifest?.pluginType||'').trim().toLowerCase();
+  function builtinStartupCriticalIds(rows=[]){
+    const byId=new Map(rows.map(row=>[String(row?.id||row?.manifest?.id||''),row]).filter(([id])=>id));
+    const saved=String(readSuperPreference?.()||'').trim();
+    const defaultSuper=[...rows].filter(row=>row?.manifest?.workspace?.defaultSuper===true)
+      .sort((a,b)=>builtinRowOrder(a)-builtinRowOrder(b))[0];
+    const superId=(saved&&byId.has(saved)?saved:String(defaultSuper?.id||defaultSuper?.manifest?.id||''));
+    startupNeedsExternalSuper=!!saved&&!byId.has(saved);
+    const ids=new Set();
+    for(const row of rows){
+      const m=row?.manifest||{},id=String(row?.id||m.id||''),type=builtinRowType(row),order=builtinRowOrder(row);
+      if(!id||m.enabled===false)continue;
+      if(order<=20||m.systemCritical===true||type==='theme'||type==='algorithm'||id===superId||id==='builtin.scientific-data-contracts')ids.add(id);
+    }
+    const visit=id=>{const row=byId.get(id);for(const dep of row?.manifest?.pluginDependencies||[]){const depId=String(dep?.id||'').trim();if(depId&&byId.has(depId)&&!ids.has(depId)){ids.add(depId);visit(depId);}}};
+    for(const id of [...ids])visit(id);
+    return ids;
+  }
+  function startupSuperId(){
+    const saved=String(readSuperPreference?.()||'').trim();
+    if(saved){const row=definitionById(saved);if(row&&isDefinitionEnabled(row)&&isSuperEligibleDefinition(row))return saved;}
+    return activationOrder().filter(def=>isDefinitionEnabled(def)&&isSuperEligibleDefinition(def))
+      .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100))[0]?.manifest?.id||'';
+  }
+  function startupCriticalIds(){
+    const ids=new Set(),superId=startupSuperId();
+    for(const def of activationOrder()){
+      if(!isDefinitionEnabled(def))continue;
+      const m=def.manifest||{},type=pluginTypeForManifest(m),order=Number(m.order)||100;
+      if(order<=20||m.systemCritical===true||type==='theme'||type==='algorithm'||m.id===superId||m.id==='builtin.scientific-data-contracts')ids.add(m.id);
+    }
+    const visit=id=>{const def=definitionById(id);for(const dep of def?.manifest?.pluginDependencies||[]){const depId=String(dep?.id||'').trim();if(depId&&!ids.has(depId)){ids.add(depId);visit(depId);}}};
+    for(const id of [...ids])visit(id);
+    return ids;
+  }
+  const scheduleAfterFirstPaint=fn=>{
+    const idle=globalThis.requestIdleCallback||((cb)=>setTimeout(()=>cb({didTimeout:true,timeRemaining:()=>0}),0));
+    const frame=globalThis.requestAnimationFrame||((cb)=>setTimeout(cb,16));
+    frame(()=>idle(fn,{timeout:120}));
+  };
+  let deferredActivationPromise=null;
+  async function activateStartup(){
+    if(state.host?.isAuxiliaryWindow)return window.DKDSPlugins.activateAll();
+    const ordered=activationOrder(),critical=startupCriticalIds();
+    for(const def of ordered){
+      if(!isDefinitionEnabled(def)||active.has(def.manifest.id))continue;
+      if(critical.has(def.manifest.id))await activateDefinition(def,{restoreCurrentProject:false});
+    }
+    await initializeSuperSelection();
+    const pendingIds=[...deferredBuiltinRows.map(row=>String(row?.id||row?.manifest?.id||'')).filter(Boolean),...ordered.filter(def=>isDefinitionEnabled(def)&&!active.has(def.manifest.id)).map(def=>def.manifest.id)];
+    eventEmit('plugins:startup-ready',{active:[...active.keys()],deferred:[...new Set(pendingIds)]});
+    eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+    if((deferredBuiltinRows.length||ordered.some(def=>isDefinitionEnabled(def)&&!active.has(def.manifest.id)))&&!deferredActivationPromise){
+      deferredActivationPromise=new Promise(resolve=>scheduleAfterFirstPaint(async()=>{
+        await window.DKDSPlugins.loadDeferredEntries?.({includeExternal:true});
+        for(const def of activationOrder()){
+          if(!isDefinitionEnabled(def)||active.has(def.manifest.id))continue;
+          await activateDefinition(def,{restoreCurrentProject:true});
+        }
+        eventEmit('plugins:ready',{active:[...active.keys()],deferred:false});
+        eventEmit('plugin:manager-changed',{plugins:listPluginStates()});
+        resolve([...active.keys()]);
+      })).finally(()=>{deferredActivationPromise=null;});
+    }else if(!deferredBuiltinRows.length){
+      eventEmit('plugins:ready',{active:[...active.keys()],deferred:false});
+    }
+    return [...active.keys()];
   }
 
   function loadInlinePluginScript(source,label){
@@ -251,7 +326,32 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
     });
   }
 
-  async function loadBuiltinEntries(entries = window.DKDS_BUILTIN_PLUGIN_ENTRIES || []) {
+  async function loadBuiltinRow(row){
+    const id=String(row?.id||'');
+    const override=id?builtinOverrideById.get(id):null;
+    if(override){
+      try{if(override?.compatibilityStatus?.compatible===false)throw new Error(`override 与当前环境不兼容：${(override.compatibilityStatus.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ')}`);await loadOverridePackage(override);return;}
+      catch(err){overrideLoadErrors.push({file:id,error:err.message});console.error('[DKDS built-in plugin override fallback]',id,err);}
+    }
+    const scripts=Array.isArray(row?.scripts)&&row.scripts.length?row.scripts:[row.entry];
+    for(const script of scripts)await loadScript(script);
+    const definition=id?definitionById(id):null;
+    if(definition&&row?.manifest&&typeof row.manifest==='object')definition.manifest={...definition.manifest,...row.manifest,source:'builtin'};
+    const styleSources=Array.isArray(row?.styleSources)?row.styleSources:[];
+    if(definition&&styleSources.length){
+      const originalActivate=definition.activate;
+      definition.activate=async api=>{
+        for(let i=0;i<styleSources.length;i++){
+          const source=styleSources[i];
+          if(typeof source?.css!=='string')throw new Error(`Built-in plugin stylesheet missing: ${id}/${source?.file||i}`);
+          api.ui.styles.add(`builtin-style-${i}`,source.css);
+        }
+        return await originalActivate(api);
+      };
+    }
+  }
+
+  async function loadBuiltinEntries(entries = window.DKDS_BUILTIN_PLUGIN_ENTRIES || [], options={}) {
     if (state.loadingPromise) return state.loadingPromise;
     state.loadingPromise = (async () => {
       const generated=Array.isArray(window.DKDS_BUILTIN_PLUGINS)&&window.DKDS_BUILTIN_PLUGINS.length
@@ -263,42 +363,30 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
         catch(err){overrideLoadErrors.push({file:'<override directory>',error:err.message});}
       }
       for(const row of overrideResult?.errors||[])overrideLoadErrors.push(row);
-      const byId=new Map((overrideResult?.packages||[]).map(pkg=>[String(pkg?.manifest?.id||''),pkg]));
-      for (const row of generated) {
-        const id=String(row?.id||'');
-        const override=id?byId.get(id):null;
-        if(override){
-          try{if(override?.compatibilityStatus?.compatible===false)throw new Error(`override 与当前环境不兼容：${(override.compatibilityStatus.issues||[]).map(issue=>issue.kind==='plugin-dependency'?`${issue.id} ${issue.required} (current ${issue.actual||'missing'})`:`${issue.kind} ${issue.required} (current ${issue.actual||'unknown'})`).join('; ')}`);await loadOverridePackage(override);continue;}
-          catch(err){
-            overrideLoadErrors.push({file:id,error:err.message});
-            console.error('[DKDS built-in plugin override fallback]',id,err);
-          }
-        }
-        const scripts=Array.isArray(row?.scripts)&&row.scripts.length?row.scripts:[row.entry];
-        for(const script of scripts)await loadScript(script);
-        // Built-ins and .dkplugin packages use the same two-layer manifest model:
-        // plugin.js registers executable behavior, while plugin.json is the
-        // machine-readable source of truth for window/category/package metadata.
-        // Merge it before activation so Plugin Manager and Core lifecycle never
-        // depend on hand-duplicated runtime-only fields.
-        const definition=id?definitionById(id):null;
-        if(definition&&row?.manifest&&typeof row.manifest==='object')definition.manifest={...definition.manifest,...row.manifest,source:'builtin'};
-        const styleSources=Array.isArray(row?.styleSources)?row.styleSources:[];
-        if(definition&&styleSources.length){
-          const originalActivate=definition.activate;
-          definition.activate=async api=>{
-            for(let i=0;i<styleSources.length;i++){
-              const source=styleSources[i];
-              if(typeof source?.css!=='string')throw new Error(`Built-in plugin stylesheet missing: ${id}/${source?.file||i}`);
-              api.ui.styles.add(`builtin-style-${i}`,source.css);
-            }
-            return await originalActivate(api);
-          };
-        }
+      builtinOverrideById=new Map((overrideResult?.packages||[]).map(pkg=>[String(pkg?.manifest?.id||''),pkg]));
+      const staged=options?.startupOnly===true&&!state.host?.isAuxiliaryWindow;
+      if(staged){
+        const critical=builtinStartupCriticalIds(generated);
+        deferredBuiltinRows=generated.filter(row=>!critical.has(String(row?.id||row?.manifest?.id||'')));
+        for(const row of generated.filter(row=>critical.has(String(row?.id||row?.manifest?.id||''))))await loadBuiltinRow(row);
+      }else{
+        deferredBuiltinRows=[];
+        for(const row of generated)await loadBuiltinRow(row);
       }
       return definitions.length;
     })();
     return state.loadingPromise;
+  }
+
+  async function loadDeferredEntries({includeExternal=true}={}){
+    if(deferredEntryLoadPromise)return deferredEntryLoadPromise;
+    deferredEntryLoadPromise=(async()=>{
+      const rows=deferredBuiltinRows.splice(0);
+      for(const row of rows)await loadBuiltinRow(row);
+      if(includeExternal)await loadExternalEntries();
+      return {builtin:rows.map(row=>String(row?.id||row?.manifest?.id||'')).filter(Boolean),external:[...externalPackages.keys()]};
+    })().finally(()=>{deferredEntryLoadPromise=null;});
+    return deferredEntryLoadPromise;
   }
 
   window.DKDSPlugins = {
@@ -321,9 +409,11 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       list:()=>window.DKDSServices?.list?.()||[]
     },
     loadBuiltinEntries,
+    loadDeferredEntries,
     loadExternalEntries,
+    startupRequiresExternal:()=>startupNeedsExternalSuper,
     async activateAll() {
-      for (const def of definitions.slice().sort((a,b)=>(a.manifest.order||100)-(b.manifest.order||100))) {
+      for (const def of activationOrder()) {
         if (!isDefinitionEnabled(def)) continue;
         await activateDefinition(def, { restoreCurrentProject:false });
       }
@@ -333,6 +423,8 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       eventEmit('plugin:manager-changed', { plugins:listPluginStates() });
       return [...active.keys()];
     },
+    activateStartup,
+    startupState:()=>Object.freeze({deferredPending:!!deferredActivationPromise||!!deferredEntryLoadPromise||deferredBuiltinRows.length>0,deferredBuiltin:deferredBuiltinRows.map(row=>String(row?.id||row?.manifest?.id||'')).filter(Boolean),active:[...active.keys()]}),
     deactivate,
     external: {
       available:()=>!!window.electronAPI?.pluginSelectPackage&&!!window.electronAPI?.pluginInstallPackage&&!window.electronAPI?.isWebClient,

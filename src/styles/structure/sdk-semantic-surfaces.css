@@ -18,7 +18,7 @@
   max-height:none;}
 .dkds-scientific-auto-legend.is-top,.dkds-scientific-auto-legend.is-bottom{align-content:center;}
 .dkds-scientific-auto-legend.is-right,.dkds-scientific-auto-legend.is-left{flex-direction:column;align-items:stretch;justify-content:flex-start;}
-.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:1px;padding:1px 4px 1px 2px;user-select:none;pointer-events:none;transform:none;transition:opacity .12s ease,border-color .12s ease,box-shadow .12s ease;}
+.dkds-scientific-nav-tools{position:absolute;right:8px;top:8px;bottom:auto;z-index:18;display:flex;align-items:center;gap:0;padding:1px 2px;overflow:hidden;user-select:none;pointer-events:none;transform:none;transition:opacity .12s ease,border-color .12s ease,box-shadow .12s ease;}
 @media (hover:none),(pointer:coarse){.dkds-scientific-nav-tools{transform:none}}
 .dkds-group-plot{display:grid;grid-template-columns:repeat(var(--dkds-group-cols,1),minmax(0,1fr));gap:var(--dkds-group-gap,12px);align-items:stretch;min-width:0;overflow:auto}
 .dkds-group-plot-card{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;height:var(--dkds-group-item-height,260px);overflow:hidden}
