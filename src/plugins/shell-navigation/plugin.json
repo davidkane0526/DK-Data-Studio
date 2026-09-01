@@ -14,5 +14,6 @@
     "ui.styles",
     "ui.activity"
   ],
-  "pluginType": "foundation"
+  "pluginType": "foundation",
+  "systemCritical": true
 }

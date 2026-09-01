@@ -76,7 +76,7 @@ const {GridController}=require('../grid/controller');
         this.regionObserver=new MutationObserver(()=>this.syncRegions());
         for(const el of [this.slots.left,this.slots.right,this.slots.bottom])this.regionObserver.observe(el,{childList:true,subtree:false});
       }
-      if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>{this.syncRegions();if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.scope.emitResize?.({reason:'analysis-workbench-observer'});});this.resizeObserver.observe(this.shell);}
+      if(window.ResizeObserver){this.resizeObserver=new ResizeObserver(()=>{if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.syncRegions();this.scope.emitResize?.({reason:'analysis-workbench-observer'});});this.resizeObserver.observe(this.shell);}
     }
     markSurfaceNode(node,row={},kind='prime'){
       if(!node?.dataset)return node;

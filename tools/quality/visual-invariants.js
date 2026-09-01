@@ -735,8 +735,8 @@ function validate(){
   requireText(themeRuntime,"assignSemanticRoles?.(document,{syncSemantic:false})",'HARD-62: Theme recomposition must not trigger a redundant semantic document scan.');
   requireText(contextualComponentRuntime,'if(event?.detail?.visualSynchronized)return','HARD-62: Component Appearance must not schedule a second full recomposition after synchronous Theme refresh.');
   requireText(read('src/core/ui/component-runtime.js'),'DKDSSemanticUI?.schedule?.(base)','HARD-62: Component hydration must batch Semantic composition instead of synchronously rescanning every subtree.');
-  requireText(read('src/core/ui/modules/layout/workspace.js'),"this.handle.style.translate=this.axis==='x'",'HARD-62: Split preview must move only the divider through compositor translate.');
-  forbidText(read('src/core/ui/modules/layout/workspace.js'),'this.apply(next,{persist:false,emit:false,notify:false})','HARD-62: split pointer preview must not mutate authoritative panel geometry per frame.');
+  requireText(read('src/core/ui/modules/layout/workspace.js'),'this.apply(this.previewSize,{persist:false,emit:false,notify:false})','HARD-62: Split preview must make the panel geometry follow the pointer without notifying chart/layout runtimes.');
+  requireText(read('src/core/ui/modules/workbench/analysis.js'),"if(document.documentElement?.classList?.contains('dkds-split-drag-active'))return;this.syncRegions()",'HARD-62: analysis workbench resize work must short-circuit before region synchronization during split drag.');
   requireText(read('src/styles/presentation/control-status.css'),'height:18px;\n  min-height:18px;','HARD-62: status-bar command hit regions must remain inset from the 28px status chrome.');
   requireText(indexHtml,'file-command-group dkds-segmented-command-group','HARD-62: file commands must consume the canonical segmented group.');
   requireText(indexHtml,'system-core-tools-group dkds-segmented-command-group','HARD-62: system commands must consume the same segmented group.');

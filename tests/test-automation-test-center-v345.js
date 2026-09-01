@@ -13,7 +13,10 @@ const runtime=(read('src/diagnostics/automation-test-runtime.js')+read('src/diag
 const css=readCoreCss(root);
 assert(html.includes('id="automationTestBtn"'),'Software Management must expose Automation Test');
 assert(html.includes('id="automationTestPage"'),'Automation Test page missing');
-assert(html.includes('diagnostics/automation-test-runtime.js'),'Automation Test runtime not loaded by main shell');
+assert(html.includes('core/host/optional-runtime-loader.js'),'Automation Test optional runtime loader missing from main shell');
+assert(!html.includes('<script src="diagnostics/automation-test-runtime.js"></script>'),'Automation Test runtime must not block normal startup');
+const optional=read('src/core/host/optional-runtime-loader.js');
+assert(optional.includes('ensureAutomationRuntime')&&optional.includes('diagnostics/automation-test-runtime.js'),'optional runtime loader must own Automation Test runtime loading');
 for(const id of ['automationTestRunBtn','automationTestCopyBtn','automationTestFolderBtn','automationTestResults'])assert(html.includes(`id="${id}"`),`missing UI ${id}`);
 assert(app.includes('DKDSAutomationTests?.configure'),'app must configure Automation Test Center');
 for(const name of ['diagnosticsGetEnvironment','diagnosticsRunActivitySmoke','diagnosticsWriteAutomationReport','diagnosticsOpenFolder'])assert(preload.includes(name),`preload bridge missing ${name}`);

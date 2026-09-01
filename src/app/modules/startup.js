@@ -6,10 +6,19 @@ const {openImportWorkbench}=require('./import-workbench');
 const {applySuperWorkspace, bindSuperWorkspaceControls, renderAll, syncAnalysisPageViewport, updateMainModeButtons}=require('./workspace-super-shell');
 const {saveProject}=require('./project-persistence');
 const {applyGroupPanelLayout, applyInspectorPanelLayout}=require('./floating-docks');
-const {applyActivityProjectSnapshot, initializePluginArchitecture, prewarmDedicatedPluginWindows}=require('./dedicated-plugin-windows');
+const {applyActivityProjectSnapshot, configureAutomationTests, initializePluginArchitecture, prewarmDedicatedPluginWindows}=require('./dedicated-plugin-windows');
 const {initializeWindowChrome}=require('./window-chrome');
 async function startApplication(){
   void initializeWindowChrome();
+  const visualClosure=new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure';
+  if(visualClosure)await window.DKDSOptionalRuntime?.ensureAutomationRuntime?.();
+  const automationButton=$('#automationTestBtn');
+  automationButton?.addEventListener('click',async event=>{
+    if(window.DKDSAutomationTests)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const runtime=await window.DKDSOptionalRuntime?.ensureAutomationRuntime?.();
+    configureAutomationTests();runtime?.open?.();
+  },true);
   await initializePluginArchitecture();
   bindSuperWorkspaceControls();
   applySuperWorkspace(window.DKDSPlugins?.workspace?.super?.());

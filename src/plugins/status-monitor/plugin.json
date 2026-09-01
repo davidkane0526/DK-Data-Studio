@@ -23,5 +23,6 @@
     "ui.theme"
   ],
   "source": "builtin",
-  "pluginType": "foundation"
+  "pluginType": "foundation",
+  "systemCritical": true
 }

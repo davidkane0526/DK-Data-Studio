@@ -10,7 +10,9 @@ const walk=(dir,out=[])=>{for(const name of fs.readdirSync(dir)){if(['.git','nod
 
 
 assert.equal(pkg.main,'desktop/main.js');
-assert.equal(fs.readdirSync(path.join(root,'scripts')).filter(n=>n.endsWith('.js')).length<=12,true,'scripts/ must contain build/maintenance tools only.');
+const scriptFiles=fs.readdirSync(path.join(root,'scripts')).filter(n=>n.endsWith('.js'));
+assert.equal(scriptFiles.length<=13,true,'scripts/ must contain build/maintenance tools only.');
+assert(scriptFiles.includes('prepare-dev-start.js'),'fast dev-start preparation belongs in the build/maintenance layer.');
 assert(!fs.existsSync(path.join(root,'scripts/generate-build-info.js')),'build-info generation must stay inside prepare-build, not another one-use script.');
 assert(fs.existsSync(path.join(root,'docs/CODE_QUALITY_AUDIT.md')),'code-quality audit is required at the cleanup checkpoint.');
 assert(!fs.readdirSync(path.join(root,'docs')).some(n=>/^VERIFICATION_V|^verification-v/i.test(n)),'per-version verification notes must not accumulate in active docs.');

@@ -15,5 +15,6 @@
     "workspace.integrity",
     "data.import"
   ],
-  "pluginType": "foundation"
+  "pluginType": "foundation",
+  "systemCritical": true
 }

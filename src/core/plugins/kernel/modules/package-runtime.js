@@ -25,6 +25,14 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
   let startupNeedsExternalSuper=false;
   const builtinRowOrder=row=>Number(row?.manifest?.order)||100;
   const builtinRowType=row=>String(row?.manifest?.pluginType||'').trim().toLowerCase();
+  function preferredThemePluginId(){
+    try{
+      const profile=String(globalThis.localStorage?.getItem?.('dkds.theme-profile.v1')||'').trim();
+      if(!profile||profile==='builtin.default')return '';
+      const marker=profile.lastIndexOf(':');
+      return marker>0?profile.slice(0,marker):profile;
+    }catch{return '';}
+  }
   function builtinStartupCriticalIds(rows=[]){
     const byId=new Map(rows.map(row=>[String(row?.id||row?.manifest?.id||''),row]).filter(([id])=>id));
     const saved=String(readSuperPreference?.()||'').trim();
@@ -32,11 +40,11 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       .sort((a,b)=>builtinRowOrder(a)-builtinRowOrder(b))[0];
     const superId=(saved&&byId.has(saved)?saved:String(defaultSuper?.id||defaultSuper?.manifest?.id||''));
     startupNeedsExternalSuper=!!saved&&!byId.has(saved);
-    const ids=new Set();
+    const ids=new Set(),themeId=preferredThemePluginId();
     for(const row of rows){
-      const m=row?.manifest||{},id=String(row?.id||m.id||''),type=builtinRowType(row),order=builtinRowOrder(row);
+      const m=row?.manifest||{},id=String(row?.id||m.id||''),type=builtinRowType(row);
       if(!id||m.enabled===false)continue;
-      if(order<=20||m.systemCritical===true||type==='theme'||type==='algorithm'||id===superId||id==='builtin.scientific-data-contracts')ids.add(id);
+      if(m.systemCritical===true||type==='algorithm'||id===themeId||id===superId||id==='builtin.scientific-data-contracts')ids.add(id);
     }
     const visit=id=>{const row=byId.get(id);for(const dep of row?.manifest?.pluginDependencies||[]){const depId=String(dep?.id||'').trim();if(depId&&byId.has(depId)&&!ids.has(depId)){ids.add(depId);visit(depId);}}};
     for(const id of [...ids])visit(id);
@@ -49,11 +57,11 @@ const {restorePluginProjectState, activateDefinition, deactivate, pluginTypeForM
       .sort((a,b)=>Number(b.manifest?.workspace?.defaultSuper===true)-Number(a.manifest?.workspace?.defaultSuper===true)||(Number(a.manifest?.order)||100)-(Number(b.manifest?.order)||100))[0]?.manifest?.id||'';
   }
   function startupCriticalIds(){
-    const ids=new Set(),superId=startupSuperId();
+    const ids=new Set(),superId=startupSuperId(),themeId=preferredThemePluginId();
     for(const def of activationOrder()){
       if(!isDefinitionEnabled(def))continue;
-      const m=def.manifest||{},type=pluginTypeForManifest(m),order=Number(m.order)||100;
-      if(order<=20||m.systemCritical===true||type==='theme'||type==='algorithm'||m.id===superId||m.id==='builtin.scientific-data-contracts')ids.add(m.id);
+      const m=def.manifest||{},type=pluginTypeForManifest(m);
+      if(m.systemCritical===true||type==='algorithm'||m.id===themeId||m.id===superId||m.id==='builtin.scientific-data-contracts')ids.add(m.id);
     }
     const visit=id=>{const def=definitionById(id);for(const dep of def?.manifest?.pluginDependencies||[]){const depId=String(dep?.id||'').trim();if(depId&&!ids.has(depId)){ids.add(depId);visit(depId);}}};
     for(const id of [...ids])visit(id);

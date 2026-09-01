@@ -67,7 +67,10 @@ body.dkds-modern-ui [data-dkds-material-recipe="liquid-glass"]::after{
    painted optical layers. Missing effect tokens resolve to transparent, so
    Default and neutral themes keep their existing appearance. */
 body.dkds-modern-ui .dkds-material-role-chrome{
-  --dkds-material-theme-overlay:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start,transparent),var(--dkui-effect-header-gradient-end,transparent));
+  --dkds-material-theme-overlay:none;
+}
+html[data-dkds-theme-header-effect="true"] body.dkds-modern-ui .dkds-material-role-chrome{
+  --dkds-material-theme-overlay:linear-gradient(var(--dkui-effect-gradient-angle,90deg),var(--dkui-effect-header-gradient-start),var(--dkui-effect-header-gradient-end));
 }
 /* Nested semantic headers are parent-owned chrome, but they still consume the
    theme's controlled header effect layer. Default/Thin Glass resolve both

@@ -217,7 +217,7 @@ body.dkds-modern-ui .topbar{position:relative;z-index:1400;isolation:isolate}
 body.dkds-modern-ui .topbar :is(.menu-anchor,.context-overflow-anchor,.activity-more-anchor){position:relative;z-index:2}
 body.dkds-modern-ui :is(.toolbar-btn,.activity-tab,.plugin-toolbar-btn,.plugin-main-tool-btn,.tool-workspace-menu-item){white-space:nowrap}
 /* Consolidated geometry from former secondary owners. */
-.workspace{grid-template-columns:280px 1fr;height:calc(100% - 96px - var(--dkds-statusbar-height,28px));}
+.workspace{grid-template-columns:280px 1fr;height:calc(100% - var(--dkds-shell-top-height,92px) - var(--dkds-statusbar-height,28px));}
 .main-area{grid-template-rows:minmax(0,1fr) auto;}
 
 

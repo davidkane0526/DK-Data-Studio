@@ -100,7 +100,7 @@ body.dkds-modern-ui .dkds-split-handle:is(:hover,.is-dragging)::after{opacity:.7
   --dkui-motion-slow:220ms;
   --dkui-ease-standard:cubic-bezier(.2,.8,.2,1);
   --dkui-ease-emphasized:cubic-bezier(.2,.75,.25,1);
-  --dkui-hover-lift:-1px;
+  --dkui-hover-lift:0px;
   --dkui-press-scale:.98;
   --dkui-material-blur:12px;
   --dkui-material-blur-strong:14px;

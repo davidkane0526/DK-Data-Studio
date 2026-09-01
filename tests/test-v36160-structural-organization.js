@@ -19,7 +19,8 @@ for(const expected of ['main.js','preload.js','plugin-package.js','plugin-window
 }
 
 const scriptFiles=list('scripts','.js');
-assert(scriptFiles.length<=12,`scripts/ should contain maintenance/build scripts only; found ${scriptFiles.length}`);
+assert(scriptFiles.length<=13,`scripts/ should contain maintenance/build scripts only; found ${scriptFiles.length}`);
+assert(scriptFiles.includes('prepare-dev-start.js'),'fast dev-start preparation must remain a maintenance/build script under scripts/.');
 assert(list('tests','.js').length>=130,'regression tests must live under tests/.');
 assert(pkg.scripts.test.includes('node tests/run.js test'),'npm test must use the centralized test runner.');
 assert(pkg.scripts.check.includes('node tests/run.js check'),'npm check must use the centralized test runner.');
@@ -55,7 +56,7 @@ assert(fs.existsSync(path.join(root,'src/generated/plugin-index.js')),'Plugin in
 assert(!fs.existsSync(path.join(root,'src/core/sdk-authoring-reference.generated.js')),'old generated SDK path must not remain.');
 assert(!fs.existsSync(path.join(root,'src/plugins/plugin-index.generated.js')),'old generated plugin-index path must not remain.');
 const html=read('src/index.html');
-assert(html.includes('generated/sdk-authoring-reference.js')&&html.includes('generated/plugin-index.js'),'renderer must load generated artifacts from src/generated/.');
+assert(html.includes('core/host/optional-runtime-loader.js')&&html.includes('generated/plugin-index.js'),'renderer must load the generated plugin index eagerly and route heavy SDK authoring through the optional-runtime loader.');
 
 assert(fs.existsSync(path.join(root,'scripts/generate-runtime-compositions.js')),'runtime composition generator missing.');
 assert(fs.existsSync(path.join(root,'scripts/validate-styles.js')),'style architecture validator missing.');

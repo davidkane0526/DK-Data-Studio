@@ -905,6 +905,10 @@ module.exports = {
       "args": []
     },
     {
+      "file": "tests/test-v36710-r7k-final-ui-startup.js",
+      "args": []
+    },
+    {
       "file": "tests/test-v36710-visual-closure-final-freeze.js",
       "args": []
     }
@@ -1844,6 +1848,10 @@ module.exports = {
     },
     {
       "file": "tests/test-v36710-r7j-integrated-chrome-startup.js",
+      "args": []
+    },
+    {
+      "file": "tests/test-v36710-r7k-final-ui-startup.js",
       "args": []
     },
     {

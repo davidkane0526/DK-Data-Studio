@@ -15,7 +15,11 @@ const {hostState, isElement, resolveElement, cleanupCall, readJson, writeJson}=r
     clampSize(value){const {min,max}=this.limits();return Math.round(Math.max(min,Math.min(max,Number(value)||Number(this.spec.defaultSize)||min)));}
     apply(value,{persist=true,emit=true,notify=true}={}){const next=this.clampSize(value);const changed=next!==this.size;this.size=next;if(this.spec.cssVar)this.container.style.setProperty(this.spec.cssVar,`${next}px`);else if(this.axis==='x')this.target.style.width=`${next}px`;else this.target.style.height=`${next}px`;if(persist)writeJson(this.key,{size:next});if(notify){if(emit&&changed)this.scope.emitResize?.({reason:'split',id:this.spec.id,size:next});else this.scope.requestChartResize?.({reason:'split-observer',id:this.spec.id,size:next});}return next;}
     paintPreview(){
-      const offset=Math.round(Number(this.previewOffset)||0);this.handle.style.translate=this.axis==='x'?`${offset}px 0`:`0 ${offset}px`;
+      if(this.previewSize===null||!this.drag)return;
+      // Follow the pointer with the real panel geometry, but keep all expensive
+      // chart/layout notification paths frozen until pointerup. ResizeObservers
+      // also short-circuit while dkds-split-drag-active is present.
+      this.apply(this.previewSize,{persist:false,emit:false,notify:false});
     }
     schedulePreview(value){
       const next=this.clampSize(value),sign=this.spec.reverse?-1:1;this.previewSize=next;this.previewOffset=(next-this.drag.size)*sign;if(this.previewFrame)return;

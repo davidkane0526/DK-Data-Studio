@@ -40,9 +40,9 @@ const componentCss=read('src/styles/theme/component-appearance.css');
 assert(componentCss.includes('border:1px solid var(--dkds-ca-menu-border);border-radius:var(--dkui-component-menu-item-radius,7px)')&&componentCss.includes('--dkds-ca-menu-shadow-selected:'),
   'R7 menu/legend actions must own a one-pixel rounded canonical edge instead of inheriting the browser button frame or a square double border.');
 assert(split.includes('schedulePreview(value)')&&split.includes('const raf=globalThis.requestAnimationFrame')&&split.includes('this.previewFrame=raf(()=>{this.previewFrame=0;this.paintPreview();'),
-  'R7 SplitController must coalesce compositor-only divider preview with requestAnimationFrame.');
-assert(split.includes('this.handle.style.translate=')&&!split.includes('if(next!==null)this.apply(next,{persist:false,emit:false,notify:false})'),
-  'R7I split preview must not resize authoritative panel geometry before pointer release.');
+  'R7 SplitController must coalesce live panel preview writes with requestAnimationFrame.');
+assert(split.includes('this.apply(this.previewSize,{persist:false,emit:false,notify:false})'),
+  'R7K split preview must make panel geometry follow the pointer while suppressing persistence and chart/layout notifications.');
 assert(split.includes('this.schedulePreview(this.drag.size+(point-this.drag.start)*sign)')&&!/const move=e=>[^\n]*this\.apply\(this\.drag\.size/.test(split),
   'R7 split pointermove must only schedule preview geometry, not synchronously apply every pointer event.');
 assert(split.includes('this.scope.resizeScheduler?.suspend?.()')&&split.includes('this.scope.resizeScheduler?.resume?.()'),

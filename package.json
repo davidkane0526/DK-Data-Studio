@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "visual:gate": "node tools/quality/visual-invariants.js",
-    "prestart": "npm run visual:gate",
+    "prestart": "node scripts/prepare-dev-start.js",
     "pretest": "npm run visual:gate",
     "precheck": "npm run visual:gate",
     "predist": "npm run visual:gate",
@@ -19,7 +19,7 @@
     "plugin:index": "node scripts/generate-plugin-index.js",
     "plugin:validate": "node scripts/validate-plugins.js",
     "version:patch": "node scripts/set-version.js",
-    "start": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && electron .",
+    "start": "electron .",
     "test": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js test",
     "check": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && npm run plugin:index && npm run plugin:validate && node tests/run.js check",
     "dist": "npm run runtime:build && npm run styles:build && npm run brand:assets && npm run sdk:authoring && node scripts/generate-plugin-index.js && node scripts/validate-plugins.js && node scripts/prepare-build.js && electron-builder --win nsis portable --publish never && node scripts/verify-dist.js",

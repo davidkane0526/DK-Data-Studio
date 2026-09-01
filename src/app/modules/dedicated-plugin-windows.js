@@ -231,6 +231,11 @@ async function preparePluginSuperTransition(change={}){
   return result||{snapshots:[],closed:0};
 }
 
+
+function configureAutomationTests(){
+  return window.DKDSAutomationTests?.configure?.({openAnalysisPage,closeAnalysisPage,syncAnalysisPageViewport,setStatus});
+}
+
 async function initializePluginArchitecture(){
   if(!window.DKDSPlugins)return;
 
@@ -364,7 +369,7 @@ async function initializePluginArchitecture(){
     historyState:()=>systemHistorySnapshotSync(),historyUndo:()=>systemUndo(),historyRedo:()=>systemRedo(),artifacts:kernelArtifactApi,artifactUpsert:kernelArtifactUpsert,artifactRemove:kernelArtifactRemove,
     plotInspect:kernelPlotInspect,plotRender:kernelPlotRender,plotClose:()=>{document.getElementById('dkdsKernelPlotPanel')?.classList.add('hidden');return true;},
     pluginList:()=>window.DKDSPlugins?.manager?.list?.()||[],pluginValidate:pkg=>window.DKDSPlugins?.external?.validatePackage?.(pkg),pluginInstallGenerated:(pkg,options)=>window.DKDSPlugins?.external?.installPackage?.(pkg,options),pluginSetEnabled:(id,enabled)=>window.DKDSPlugins?.manager?.setEnabled?.(id,enabled),pluginUninstall:id=>window.DKDSPlugins?.external?.uninstall?.(id),
-    files:()=>window.DKDSConnectivity?.files,smb:()=>window.DKDSConnectivity?.smb,runtimeStatus:kernelRuntimeStatus,automationRun:()=>window.DKDSAutomationTests?.run?.()
+    files:()=>window.DKDSConnectivity?.files,smb:()=>window.DKDSConnectivity?.smb,runtimeStatus:kernelRuntimeStatus,automationRun:async()=>{const runtime=window.DKDSAutomationTests||await window.DKDSOptionalRuntime?.ensureAutomationRuntime?.();configureAutomationTests();return runtime?.run?.();}
   });
   window.DKDSMcpRuntime?.configure?.({kernel:window.DKDSKernel});
 
@@ -432,12 +437,7 @@ async function initializePluginArchitecture(){
     setStatus
   });
 
-  window.DKDSAutomationTests?.configure?.({
-    openAnalysisPage,
-    closeAnalysisPage,
-    syncAnalysisPageViewport,
-    setStatus
-  });
+  configureAutomationTests();
 
   const visualClosure=new URLSearchParams(window.location.search).get('dkdsAutomation')==='visual-closure';
   await window.DKDSPlugins.loadBuiltinEntries(undefined,{startupOnly:!visualClosure});
@@ -484,4 +484,4 @@ async function initializePluginArchitecture(){
   window.DKDSPlugins.events.on('super:changed',()=>applySuperWorkspace(window.DKDSPlugins.workspace.super()));
 }
 
-module.exports=Object.freeze({configure, capabilitySnapshotForWindows, publishCapabilitySnapshot, openPluginActivityWindow, prewarmDedicatedPluginWindows, cloneAuxSnapshot, applyArtifactDeltaToTab, applyDedicatedActivitySnapshot, applyActivityProjectSnapshot, preparePluginSuperTransition, initializePluginArchitecture, dedicatedPrewarmToken});
+module.exports=Object.freeze({configure, capabilitySnapshotForWindows, publishCapabilitySnapshot, openPluginActivityWindow, prewarmDedicatedPluginWindows, cloneAuxSnapshot, applyArtifactDeltaToTab, applyDedicatedActivitySnapshot, applyActivityProjectSnapshot, preparePluginSuperTransition, configureAutomationTests, initializePluginArchitecture, dedicatedPrewarmToken});
